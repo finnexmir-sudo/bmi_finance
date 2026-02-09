@@ -1,0 +1,36 @@
+﻿@using FinNex.Domain.Entities.PR_Odenis_Tapsirigi
+@model IEnumerable<BankHesabi>
+
+<div class="card shadow-sm border-0 mt-3">
+    <div class="card-header fw-bold">
+        Emitent bankda hesablar
+    </div>
+
+    <table class="table table-sm table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Hesab</th>
+                <th>Kod</th>
+                <th>VÖEN</th>
+                <th>SWIFT</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var h in Model)
+            {
+                <tr>
+                    <td>@h.Iban</td>
+                    <td>@h.Valyuta</td>
+                    <td>@h.Bank.Ad</td>
+                    <td>@h.Bank.Kod</td>
+                    <td>@h.Bank.SwiftBic</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary">Seç</button>
+                    </td>
+                </tr>
+            }
+
+        </tbody>
+    </table>
+</div>

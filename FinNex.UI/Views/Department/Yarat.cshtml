@@ -1,0 +1,36 @@
+﻿@model FinNex.Domain.Entities.Structure.Department
+
+<div class="container mt-5" style="max-width:600px">
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <h4 class="mb-4">
+                <i class="bi bi-diagram-3 me-2"></i>Yeni Departament
+            </h4>
+
+            <form method="post">
+
+                <div class="mb-3">
+                    <label class="form-label">Departament adı</label>
+                    <input asp-for="Ad" class="form-control" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Açıqlama</label>
+                    <textarea asp-for="Aciqlama" class="form-control"></textarea>
+                </div>
+
+                <div class="form-check mb-4">
+                    <input asp-for="Silinib " class="form-check-input" />
+                    <label class="form-check-label">Aktivdir</label>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-outline-secondary">Geri</a>
+                    <button class="btn btn-primary">Yadda saxla</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>

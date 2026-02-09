@@ -1,0 +1,183 @@
+﻿/* ===============================
+   PAYMENT CREATE PAGE ONLY
+================================ */
+
+.payment-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+}
+
+    /* HEADER */
+    .payment-page .payment-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    /* SECTION */
+    .payment-page .payment-section {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(15,118,110,.08);
+        margin-bottom: 28px;
+        overflow: hidden;
+    }
+
+    /* SECTION HEADER */
+    .payment-page .section-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 20px;
+        background: linear-gradient(90deg, #0F766E, #0D9488);
+        color: #fff;
+        font-weight: 600;
+    }
+
+    /* BODY */
+    .payment-page .section-body {
+        padding: 22px;
+    }
+
+    /* GRID */
+    .payment-page .two-column {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    /* FORM GROUP */
+    .payment-page .form-group-box {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 10px;
+        padding: 18px;
+    }
+
+        /* INPUT SPACING */
+        .payment-page .form-group-box .form-control {
+            margin-bottom: 12px;
+        }
+
+            .payment-page .form-group-box .form-control:last-child {
+                margin-bottom: 0;
+            }
+
+    /* GRID-2 */
+    .payment-page .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    /* AMOUNT */
+    .payment-page .amount-row {
+        display: grid;
+        grid-template-columns: 160px 200px 1fr;
+        gap: 16px;
+    }
+
+    /* ACTIONS */
+    .payment-page .form-actions {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 40px;
+    }
+
+/* MOBILE */
+@media (max-width: 768px) {
+    .payment-page .two-column,
+    .payment-page .amount-row {
+        grid-template-columns: 1fr;
+    }
+}
+.payment-page .form-control,
+.payment-page .form-select {
+    height: 38px;
+}
+.payment-page .btn-bank {
+    height: 38px;
+    padding: 0 14px;
+    font-size: 14px;
+    white-space: nowrap;
+}
+/* Create page background */
+.payment-wrapper {
+    background: #F1F5F9; /* dashboard-dan ayırır */
+    min-height: 100vh;
+    padding-top: 90px;
+}
+.payment-page .payment-header h4 {
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.payment-page .payment-header span {
+    color: #64748B;
+    font-size: 14px;
+}
+.payment-page .form-group-box {
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    padding: 20px;
+}
+.payment-page .form-control,
+.payment-page .form-select {
+    height: 38px;
+    font-size: 14px;
+    border-radius: 8px;
+}
+.payment-page .btn-bank {
+    height: 38px;
+    padding: 0 14px;
+    font-size: 14px;
+    border-radius: 8px;
+}
+@media (max-width: 768px) {
+    .payment-wrapper {
+        padding-top: 70px;
+    }
+
+    .payment-page {
+        padding: 16px 12px 40px;
+    }
+}
+/* Bütün input, select və düymələri 38px-ə sabitləyirik */
+/* SİL */
+.payment-page .d-flex {
+    align-items: flex-start !important;
+}
+
+
+/* Yan-yana olan elementlərin (VÖEN + Button) hizalanması */
+.payment-page .d-flex {
+    display: flex !important;
+    align-items: flex-start !important; /* Yuxarıdan bərabər başlasınlar */
+    gap: 8px;
+}
+
+/* Ödəyən bank tərəfdəki o lazımsız boşluğu və sürüşməni ləğv etmək üçün */
+.payment-page .btn-placeholder {
+    display: none !important;
+}
+
+/* İnputların altındakı artıq boşluqları təmizləyək */
+.payment-page .form-group-box .form-control {
+    margin-bottom: 12px;
+}
+/* VÖEN + Bank button perfect alignment */
+.payment-page .btn-bank {
+    height: 38px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center; /* yazı vertikal mərkəz */
+    justify-content: center; /* yazı horizontal mərkəz */
+    line-height: 1;
+}
+
+/* input + button eyni səviyyədə */
+.payment-page .d-flex.align-items-center {
+    align-items: center !important;
+}

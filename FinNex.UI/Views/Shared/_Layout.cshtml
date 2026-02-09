@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="utf-8" />
+    <title>BMI Finance - Maliyyə Sistemi</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <!-- Icons -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <!-- Global styles -->
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/navbar.css" asp-append-version="true" />
+
+
+    @RenderSection("Styles", required: false)
+</head>
+
+<body>
+
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark fin-navbar fixed-top">
+            <div class="container-fluid px-4">
+
+                <!-- Logo -->
+                <a class="navbar-brand d-flex align-items-center gap-2 fw-bold"
+                   asp-controller="Home" asp-action="Index">
+
+                    <div class="logo-box">
+                        <img src="~/images/Logobank.jpg" alt="BMI Finance">
+                    </div>
+
+                    <span class="brand-text">BMI Finance</span>
+                </a>
+
+
+                <!-- Mobile toggle -->
+                <button class="navbar-toggler"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#mainNavbar"
+                        aria-controls="mainNavbar"
+                        aria-expanded="false"
+                        aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Menu -->
+                <div class="collapse navbar-collapse" id="mainNavbar">
+                    <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Bank" asp-action="Index">
+                                <i class="bi bi-building"></i>
+                                Banklar
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Musteri" asp-action="Index">
+                                <i class="bi bi-people"></i>
+                                Müştərilər
+                            </a>
+                        </li>
+
+                        <!-- SWIFT DROPDOWN -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle"
+                               href="#"
+                               role="button"
+                               data-bs-toggle="dropdown"
+                               aria-expanded="false">
+                                <i class="bi bi-arrow-left-right"></i>
+                                Swift
+                            </a>
+
+                            <ul class="dropdown-menu dropdown-menu-end fin-dropdown">
+
+                                <li>
+                                    <span class="fin-dropdown-title">
+                                        Əməliyyatlar
+                                    </span>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item fin-action-primary"
+                                       asp-controller="OdenisTapsirigi"
+                                       asp-action="Create">
+                                        <i class="bi bi-plus-lg"></i>
+                                        Ödəniş tapşırığı
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item"
+                                       asp-controller="OdenisTapsirigi"
+                                       asp-action="Index">
+                                        <i class="bi bi-list-ul"></i>
+                                        Ödəniş tapşırıqları
+                                    </a>
+                                </li>
+
+                            </ul>
+                        </li>
+
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- MAIN -->
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    @RenderSection("Scripts", required: false)
+
+</body>
+</html>

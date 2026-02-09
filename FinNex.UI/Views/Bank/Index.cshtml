@@ -1,0 +1,51 @@
+﻿@model IEnumerable<FinNex.Domain.Entities.PR_Odenis_Tapsirigi.Bank>
+
+
+<div class="container bank-container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2 class="text-dark"><i class="bi bi-bank me-2"></i>Banklar</h2>
+            <p class="text-muted">Sistemdə olan bütün bankların siyahısı</p>
+        </div>
+        <div class="col-md-6 text-end">
+            <a asp-action="Yarat" class="btn btn-primary btn-lg rounded-pill shadow">
+                <i class="bi bi-plus-circle me-1"></i> Yeni Bank
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <table class="table table-hover custom-table mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Bankın Adı</th>
+                        <th>SWIFT / Kod</th>
+                        <th>VÖEN</th>
+                        <th>Status</th>
+                        <th class="text-center">Əməliyyatlar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var bank in Model)
+                    {
+                        <tr>
+                            <td class="ps-4 fw-bold text-primary">@bank.Ad</td>
+                            <td><span class="badge bg-light text-dark border">@bank.Kod</span></td>
+                            <td>@bank.Voen</td>
+                            <td><span class="badge bg-success">Aktiv</span></td>
+                            <td class="text-center">
+                                <a asp-action="Duzelt" asp-route-id="@bank.Id" class="btn btn-sm btn-outline-warning action-btn">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button onclick="sil(@bank.Id)" class="btn btn-sm btn-outline-danger action-btn">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div></div>

@@ -1,0 +1,39 @@
+﻿/* === GLOBAL RESET & THEME === */
+:root {
+    --fin-primary: #0F766E;
+    --fin-primary-dark: #115E59;
+    --fin-bg: #F2F4F7;
+    --fin-border: #CBD5E1;
+    --fin-text: #1F2937;
+}
+
+body {
+    background: var(--fin-bg);
+    font-family: "Segoe UI", Inter, system-ui, sans-serif;
+    color: var(--fin-text);
+    padding-top: 70px;
+}
+
+/* Global input */
+.form-control,
+.form-select {
+    border-radius: 6px;
+    border: 1px solid var(--fin-border);
+    font-size: 13px;
+    padding: 8px 12px;
+}
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--fin-primary);
+        box-shadow: none;
+    }
+@media (max-width: 576px) {
+    .alert {
+        padding: 10px 14px;
+        font-size: 14px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+    }
+}
+

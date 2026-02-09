@@ -1,0 +1,115 @@
+﻿<div class="container-fluid mt-3">
+
+    <h5 class="fw-bold text-center mb-3">
+        “A” formatlı Ödəniş Tapşırığı
+    </h5>
+
+    <div class="row g-3">
+
+        <!-- A1 -->
+        <div class="col-md-6">
+            <div class="border p-3 rounded bg-light">
+                <h6>A1: Emitent (Ödəyən) bank</h6>
+
+                <label>Bankın adı</label>
+                <select class="form-select form-select-sm"></select>
+
+                <div class="row mt-2">
+                    <div class="col">
+                        <label>Kod</label>
+                        <input class="form-control form-control-sm">
+                    </div>
+                    <div class="col">
+                        <label>VÖEN</label>
+                        <input class="form-control form-control-sm">
+                    </div>
+                </div>
+
+                <label class="mt-2">Müxbir hesab</label>
+                <input class="form-control form-control-sm">
+
+                <label class="mt-2">SWIFT BIC</label>
+                <input class="form-control form-control-sm">
+            </div>
+        </div>
+
+        <!-- B1 -->
+        <div class="col-md-6">
+            <div class="border p-3 rounded bg-light">
+                <h6>B1: Benefisiar (Alan) bank</h6>
+
+                <label>Bankın adı</label>
+                <select class="form-select form-select-sm"></select>
+
+                <div class="row mt-2">
+                    <div class="col">
+                        <label>Kod</label>
+                        <input class="form-control form-control-sm">
+                    </div>
+                    <div class="col">
+                        <label>VÖEN</label>
+                        <input class="form-control form-control-sm">
+                    </div>
+                </div>
+
+                <label class="mt-2">Müxbir hesab</label>
+                <input class="form-control form-control-sm">
+
+                <label class="mt-2">SWIFT BIC</label>
+                <input class="form-control form-control-sm">
+            </div>
+        </div>
+
+        <!-- C -->
+        <div class="col-md-12">
+            <div class="border p-3 rounded bg-white">
+                <h6>C: Valyuta və məbləğ</h6>
+
+                <div class="row">
+                    <div class="col-md-3">
+                        <label>Valyuta</label>
+                        <select class="form-select form-select-sm">
+                            <option>AZN</option>
+                            <option>USD</option>
+                            <option>EUR</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label>Məbləğ</label>
+                        <input class="form-control form-control-sm text-end">
+                    </div>
+                    <div class="col-md-6">
+                        <label>Məbləğ yazı ilə</label>
+                        <input class="form-control form-control-sm">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- D -->
+        <div class="col-md-12">
+            <div class="border p-3 rounded bg-light">
+                <h6>D: Ödəniş təyinatı</h6>
+                <textarea class="form-control form-control-sm" rows="3"></textarea>
+
+                <div class="row mt-2">
+                    <div class="col-md-3">
+                        <label>Büdcə kodu</label>
+                        <input class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-3">
+                        <label>Büdcə səviyyəsi</label>
+                        <input class="form-control form-control-sm">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="text-end mt-3">
+        <button class="btn btn-success">Yadda saxla</button>
+        <button class="btn btn-secondary">Çıxış</button>
+    </div>
+
+</div>

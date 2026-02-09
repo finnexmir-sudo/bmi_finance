@@ -1,0 +1,252 @@
+﻿@model FinNex.UI.ViewModels.Dashboard.DashboardVM
+@{
+    ViewData["Title"] = "FinNex Dashboard";
+}
+
+<div class="container-fluid py-4">
+
+    <!-- Alerts -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var a in Model.Alerts)
+                {
+                    <div class="alert alert-@a.Type mb-0 py-2 px-3 rounded-pill shadow-sm">
+                        <i class="bi bi-bell me-1"></i>@a.Text
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-white bg-gradient-primary">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-1 small">Ümumi Layihələr</p>
+                        <h3 class="mb-0 fw-bold">@Model.UmumiLayiheler</h3>
+                    </div>
+                    <i class="bi bi-layers fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-white bg-gradient-success">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-1 small">Aktiv Modullar</p>
+                        <h3 class="mb-0 fw-bold">@Model.AktivModullar</h3>
+                    </div>
+                    <i class="bi bi-cpu fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-white bg-gradient-info">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-1 small">İstifadəçi Sayı</p>
+                        <h3 class="mb-0 fw-bold">@Model.IstifadeciSayi+</h3>
+                    </div>
+                    <i class="bi bi-people fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-white bg-gradient-warning">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-1 small">Sistem Statusu</p>
+                        <h3 class="mb-0 fw-bold">@Model.SistemStatusu</h3>
+                    </div>
+                    <i class="bi bi-shield-check fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-graph-up me-2"></i>Aylıq Dövriyyə (Demo)</h5>
+                    <canvas id="monthlyChart" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-activity me-2"></i>Son 7 gün Aktivlik</h5>
+                    <canvas id="weekChart" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0"><i class="bi bi-receipt me-2"></i>Son Əməliyyatlar</h5>
+                        <span class="badge bg-light text-dark border">Top 10</span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Tarix</th>
+                                    <th>Bank</th>
+                                    <th>Məbləğ</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in Model.RecentTransactions)
+                                {
+                                    var badge = t.Status == "Tamamlandı" ? "success"
+                                    : t.Status == "Gözləmədə" ? "warning"
+                                    : "danger";
+
+                                    <tr>
+                                        <td>@t.Tarix.ToString("dd.MM.yyyy HH:mm")</td>
+                                        <td class="fw-semibold">@t.Bank</td>
+                                        <td class="fw-bold">@t.Mebleg @t.Valyuta</td>
+                                        <td><span class="badge bg-@badge">@t.Status</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<hr class="my-5" />
+
+<h4 class="fw-bold mb-4 text-secondary">
+    <i class="bi bi-diagram-3 me-2"></i>
+    Sistemdə Nələri İdarə Etmək Olar
+</h4>
+
+<div class="row g-4">
+
+    <!-- Departamentlər -->
+    <div class="col-xl-3 col-lg-4 col-md-6">
+        <div class="project-card-new h-100 bg-white p-4 shadow-sm">
+            <div class="project-badge">Aktiv</div>
+            <div class="icon-circle bg-primary-soft text-primary mb-3">
+                <i class="bi bi-diagram-3"></i>
+            </div>
+            <h6 class="fw-bold">Departamentlər</h6>
+            <p class="text-muted x-small">
+                Bankın struktur bölmələrinin yaradılması və idarə olunması.
+            </p>
+            <a asp-controller="Department" asp-action="Index"
+               class="btn btn-sm btn-primary rounded-pill px-3">
+                Daxil ol
+            </a>
+
+        </div>
+    </div>
+
+    <!-- Vəzifələr -->
+    <div class="col-xl-3 col-lg-4 col-md-6">
+        <div class="project-card-new h-100 bg-white p-4 shadow-sm">
+            <div class="project-badge">Plan</div>
+            <div class="icon-circle bg-info-soft text-info mb-3">
+                <i class="bi bi-person-workspace"></i>
+            </div>
+            <h6 class="fw-bold">Vəzifələr</h6>
+            <p class="text-muted x-small">
+                Hər departament üçün vəzifə siyahılarının idarəsi.
+            </p>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" disabled>
+                Planlanır
+            </button>
+        </div>
+    </div>
+
+    <!-- İşçilər -->
+    <div class="col-xl-3 col-lg-4 col-md-6">
+        <div class="project-card-new h-100 bg-white p-4 shadow-sm">
+            <div class="project-badge bg-warning">HR</div>
+            <div class="icon-circle bg-warning-soft text-warning mb-3">
+                <i class="bi bi-people"></i>
+            </div>
+            <h6 class="fw-bold">İşçilər</h6>
+            <p class="text-muted x-small">
+                İşçi qeydiyyatı, statusu və şəxsi məlumatlar.
+            </p>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" disabled>
+                HR Modulunda
+            </button>
+        </div>
+    </div>
+
+    <!-- Rollar və İcazələr -->
+    <div class="col-xl-3 col-lg-4 col-md-6">
+        <div class="project-card-new h-100 bg-white p-4 shadow-sm">
+            <div class="project-badge bg-danger">Təhlükəsizlik</div>
+            <div class="icon-circle bg-danger-soft text-danger mb-3">
+                <i class="bi bi-shield-lock"></i>
+            </div>
+            <h6 class="fw-bold">Rollar və İcazələr</h6>
+            <p class="text-muted x-small">
+                İstifadəçilərin sistemə giriş səlahiyyətləri.
+            </p>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" disabled>
+                Tezliklə
+            </button>
+        </div>
+    </div>
+
+</div>
+
+
+@section Scripts {
+    <script>
+        const monthlyLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyLabels));
+        const monthlyAmounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyAmounts));
+
+        const weekLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Last7DaysLabels));
+        const weekCounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Last7DaysCounts));
+
+        new Chart(document.getElementById('monthlyChart'), {
+            type: 'line',
+            data: {
+                labels: monthlyLabels,
+                datasets: [{
+                    label: 'AZN',
+                    data: monthlyAmounts,
+                    tension: 0.35,
+                    fill: true
+                }]
+            }
+        });
+
+
+        new Chart(document.getElementById('weekChart'), {
+            type: 'bar',
+            data: {
+                labels: weekLabels,
+                datasets: [{
+                    label: 'Əməliyyat sayı',
+                    data: weekCounts
+                }]
+            }
+        });
+    </script>
+}
