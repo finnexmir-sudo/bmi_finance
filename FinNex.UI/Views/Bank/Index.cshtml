@@ -1,46 +1,70 @@
-﻿@model IEnumerable<FinNex.Domain.Entities.PR_Odenis_Tapsirigi.Bank>
+@model IEnumerable<FinNex.Domain.Entities.PR_Odenis_Tapsirigi.Bank>
 
+<div class="bank-page">
 
-<div class="container bank-container mt-4">
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <h2 class="text-dark"><i class="bi bi-bank me-2"></i>Banklar</h2>
-            <p class="text-muted">Sistemdə olan bütün bankların siyahısı</p>
-        </div>
-        <div class="col-md-6 text-end">
-            <a asp-action="Yarat" class="btn btn-primary btn-lg rounded-pill shadow">
-                <i class="bi bi-plus-circle me-1"></i> Yeni Bank
-            </a>
+    <!-- HEADER -->
+    <div class="bank-header">
+        <div class="bank-header-content">
+            <div class="bank-header-icon">
+                <i class="bi bi-bank"></i>
+            </div>
+            <div>
+                <h3>Banklar</h3>
+                <p>Sistemde olan butun banklarin siyahisi</p>
+            </div>
         </div>
     </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <table class="table table-hover custom-table mb-0">
+    <!-- ACTIONS BAR -->
+    <div class="bank-actions-bar">
+        <a asp-action="Yarat" class="btn btn-primary rounded-pill px-4 shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Yeni Bank
+        </a>
+        <a asp-controller="OdenisTapsirigi" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
+            <i class="bi bi-arrow-left me-1"></i> Odenis Tapsirigi
+        </a>
+    </div>
+
+    <!-- TABLE -->
+    <div class="bank-table-card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th class="ps-4">Bankın Adı</th>
+                        <th class="ps-4">Bankin Adi</th>
                         <th>SWIFT / Kod</th>
-                        <th>VÖEN</th>
+                        <th>VOEN</th>
                         <th>Status</th>
-                        <th class="text-center">Əməliyyatlar</th>
+                        <th class="text-center">Emeliyyatlar</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var bank in Model)
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var bank in Model)
+                        {
+                            <tr>
+                                <td class="ps-4 fw-bold text-primary">@bank.Ad</td>
+                                <td><span class="badge bg-light text-dark border">@bank.Kod</span></td>
+                                <td>@bank.Voen</td>
+                                <td><span class="badge bg-success">Aktiv</span></td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-primary action-btn-sm me-1">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger action-btn-sm">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
                     {
                         <tr>
-                            <td class="ps-4 fw-bold text-primary">@bank.Ad</td>
-                            <td><span class="badge bg-light text-dark border">@bank.Kod</span></td>
-                            <td>@bank.Voen</td>
-                            <td><span class="badge bg-success">Aktiv</span></td>
-                            <td class="text-center">
-                                <a asp-action="Duzelt" asp-route-id="@bank.Id" class="btn btn-sm btn-outline-warning action-btn">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <button onclick="sil(@bank.Id)" class="btn btn-sm btn-outline-danger action-btn">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="bi bi-bank fs-1 d-block mb-2 opacity-50"></i>
+                                Hele bank elave olunmayib
                             </td>
                         </tr>
                     }
@@ -48,4 +72,9 @@
             </table>
         </div>
     </div>
-</div></div>
+
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/bank-index.css" asp-append-version="true" />
+}
