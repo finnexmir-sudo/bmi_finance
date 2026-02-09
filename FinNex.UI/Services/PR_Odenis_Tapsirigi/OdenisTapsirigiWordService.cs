@@ -3,7 +3,7 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using FinNex.UI.ViewModels.PR_Odenis_Tapsirigi;
 
-namespace FinNex.UI.Services;
+namespace FinNex.UI.Services.PR_Odenis_Tapsirigi;
 
 public static class OdenisTapsirigiWordService
 {
