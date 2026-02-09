@@ -1,0 +1,110 @@
+@{
+    ViewData["Title"] = "Odenis Tapsirigi";
+}
+
+<div class="payment-hub">
+
+    <!-- HEADER -->
+    <div class="hub-header">
+        <div class="hub-header-content">
+            <div class="hub-icon-wrap">
+                <i class="bi bi-arrow-left-right"></i>
+            </div>
+            <div>
+                <h2>Odenis Tapsirigi</h2>
+                <p>SWIFT emeliyyatlari ve odenis idareetmesi</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- NAV CARDS -->
+    <div class="hub-grid">
+
+        <!-- Yeni Odenis Yaz -->
+        <a asp-controller="OdenisTapsirigi" asp-action="Create" class="hub-card hub-card--primary">
+            <div class="hub-card-icon">
+                <i class="bi bi-plus-circle"></i>
+            </div>
+            <div class="hub-card-body">
+                <h5>Yeni Odenis Yaz</h5>
+                <p>Yeni odenis tapsirigi yaradin ve Word formatinda ixrac edin</p>
+            </div>
+            <div class="hub-card-arrow">
+                <i class="bi bi-arrow-right"></i>
+            </div>
+        </a>
+
+        <!-- Banklar -->
+        <a asp-controller="Bank" asp-action="Index" class="hub-card hub-card--teal">
+            <div class="hub-card-icon">
+                <i class="bi bi-bank"></i>
+            </div>
+            <div class="hub-card-body">
+                <h5>Banklar</h5>
+                <p>Banklarin siyahisi, yeni bank elave etme ve redakte</p>
+            </div>
+            <div class="hub-card-arrow">
+                <i class="bi bi-arrow-right"></i>
+            </div>
+        </a>
+
+        <!-- Odenis Tapsirigi Siyahisi -->
+        <a asp-controller="OdenisTapsirigi" asp-action="Siyahi" class="hub-card hub-card--indigo">
+            <div class="hub-card-icon">
+                <i class="bi bi-list-ul"></i>
+            </div>
+            <div class="hub-card-body">
+                <h5>Odenis Tapsirigi Siyahisi</h5>
+                <p>Butun odenis tapsiriglarinin tarixcesi ve izlenmesi</p>
+            </div>
+            <div class="hub-card-arrow">
+                <i class="bi bi-arrow-right"></i>
+            </div>
+        </a>
+
+        <!-- Musteriler -->
+        <a asp-controller="Musteri" asp-action="Index" class="hub-card hub-card--amber">
+            <div class="hub-card-icon">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="hub-card-body">
+                <h5>Musteriler</h5>
+                <p>Musteri melumatlarinin idaresi ve hesab emeliyyatlari</p>
+            </div>
+            <div class="hub-card-arrow">
+                <i class="bi bi-arrow-right"></i>
+            </div>
+        </a>
+
+    </div>
+
+    <!-- STATS STRIP -->
+    <div class="hub-stats">
+        <div class="hub-stat">
+            <i class="bi bi-file-earmark-text"></i>
+            <div>
+                <span class="hub-stat-label">Suretli emeliyyat</span>
+                <span class="hub-stat-value">Word ixraci</span>
+            </div>
+        </div>
+        <div class="hub-stat">
+            <i class="bi bi-shield-check"></i>
+            <div>
+                <span class="hub-stat-label">Format</span>
+                <span class="hub-stat-value">A-format SWIFT</span>
+            </div>
+        </div>
+        <div class="hub-stat">
+            <i class="bi bi-globe"></i>
+            <div>
+                <span class="hub-stat-label">Valyuta</span>
+                <span class="hub-stat-value">AZN / USD / EUR</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/PR_Odenis_Tapsirigi/payment-hub.css" asp-append-version="true" />
+}

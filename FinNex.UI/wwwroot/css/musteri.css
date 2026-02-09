@@ -1,0 +1,231 @@
+/* ===============================
+   MUSTERI PAGES
+================================ */
+
+/* --- INDEX PAGE --- */
+.musteri-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+}
+
+.musteri-header {
+    background: linear-gradient(135deg, #D97706 0%, #F59E0B 50%, #FBBF24 100%);
+    border-radius: 20px;
+    padding: 32px 30px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(217, 119, 6, .18);
+}
+
+.musteri-header::before {
+    content: "";
+    position: absolute;
+    top: -50px;
+    right: -30px;
+    width: 160px;
+    height: 160px;
+    background: rgba(255, 255, 255, .08);
+    border-radius: 50%;
+}
+
+.musteri-header-content {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    position: relative;
+    z-index: 1;
+}
+
+.musteri-header-icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, .18);
+    backdrop-filter: blur(10px);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.musteri-header h3 {
+    color: #fff;
+    font-weight: 700;
+    font-size: 22px;
+    margin: 0 0 4px;
+}
+
+.musteri-header p {
+    color: rgba(255, 255, 255, .85);
+    font-size: 14px;
+    margin: 0;
+}
+
+.musteri-actions-bar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.musteri-table-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .05);
+    overflow: hidden;
+}
+
+.musteri-table-card thead {
+    background: #F8FAFC;
+}
+
+.musteri-table-card thead th {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    color: #6B7280;
+    padding: 14px 16px;
+    border-bottom: 2px solid #E5E7EB;
+}
+
+.musteri-table-card tbody td {
+    padding: 14px 16px;
+    font-size: 14px;
+    border-bottom: 1px solid #F3F4F6;
+}
+
+.musteri-table-card tbody tr:hover {
+    background: #F9FAFB;
+}
+
+.action-btn-sm {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    padding: 0;
+}
+
+/* --- FORM PAGE --- */
+.musteri-form-page {
+    max-width: 580px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+}
+
+.musteri-form-header {
+    background: linear-gradient(135deg, #D97706 0%, #F59E0B 50%, #FBBF24 100%);
+    border-radius: 20px;
+    padding: 32px 30px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(217, 119, 6, .18);
+}
+
+.musteri-form-header::before {
+    content: "";
+    position: absolute;
+    top: -50px;
+    right: -30px;
+    width: 160px;
+    height: 160px;
+    background: rgba(255, 255, 255, .08);
+    border-radius: 50%;
+}
+
+.musteri-form-header-content {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    position: relative;
+    z-index: 1;
+}
+
+.musteri-form-icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, .18);
+    backdrop-filter: blur(10px);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.musteri-form-header h3 {
+    color: #fff;
+    font-weight: 700;
+    font-size: 22px;
+    margin: 0 0 4px;
+}
+
+.musteri-form-header p {
+    color: rgba(255, 255, 255, .85);
+    font-size: 14px;
+    margin: 0;
+}
+
+.musteri-form-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .05);
+    padding: 32px;
+}
+
+.musteri-field-group {
+    margin-bottom: 20px;
+}
+
+.musteri-field-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+}
+
+.musteri-input {
+    height: 44px;
+    border-radius: 10px;
+    font-size: 14px;
+    border: 1.5px solid #E5E7EB;
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.musteri-input:focus {
+    border-color: #D97706;
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, .1);
+}
+
+.musteri-form-actions {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #F3F4F6;
+}
+
+/* MOBILE */
+@media (max-width: 640px) {
+    .musteri-form-card {
+        padding: 24px 20px;
+    }
+
+    .musteri-actions-bar {
+        flex-direction: column;
+    }
+}

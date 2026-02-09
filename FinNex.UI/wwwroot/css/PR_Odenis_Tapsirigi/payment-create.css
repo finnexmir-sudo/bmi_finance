@@ -181,3 +181,25 @@
 .payment-page .d-flex.align-items-center {
     align-items: center !important;
 }
+
+/* Meta chips */
+.meta-chip {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    background: #E0F2FE;
+    color: #0284C7;
+    font-weight: 500;
+}
+
+.meta-chip-link {
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .2s ease;
+}
+
+.meta-chip-link:hover {
+    background: #BAE6FD;
+    color: #0284C7;
+}
