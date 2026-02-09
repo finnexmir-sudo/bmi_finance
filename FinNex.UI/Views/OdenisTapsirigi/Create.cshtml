@@ -43,12 +43,12 @@
                     </div>
 
                     <div class="grid-2">
-                        <input class="form-control" placeholder="Kod" readonly>
-                        <input class="form-control" placeholder="VÖEN" readonly>
+                        <input class="form-control" id="OduyenBankKod" placeholder="Kod" readonly>
+                        <input class="form-control" id="OduyenBankVoen" placeholder="VÖEN" readonly>
                     </div>
 
-                    <input class="form-control" placeholder="Müxbir hesab" readonly>
-                    <input class="form-control" placeholder="SWIFT" readonly>
+                    <input class="form-control" id="OduyenBankMuxbirHesab" placeholder="Müxbir hesab" readonly>
+                    <input class="form-control" id="OduyenBankSwift" placeholder="SWIFT" readonly>
                 </div>
 
 
@@ -72,9 +72,9 @@
                     </div>
 
 
-                    <input class="form-control" placeholder="Kod" readonly>
-                    <input class="form-control" placeholder="Müxbir hesab" readonly>
-                    <input class="form-control" placeholder="SWIFT" readonly>
+                    <input class="form-control" id="AlanBankKod" placeholder="Kod" readonly>
+                    <input class="form-control" id="AlanBankMuxbirHesab" placeholder="Müxbir hesab" readonly>
+                    <input class="form-control" id="AlanBankSwift" placeholder="SWIFT" readonly>
                 </div>
 
 
@@ -147,8 +147,8 @@
                         </div>
 
                         <select class="form-control" asp-for="Odenis.OduyenMusteriId"></select>
-                        <input class="form-control" placeholder="Hesab №" readonly>
-                        <input class="form-control" placeholder="VÖEN" readonly>
+                        <input class="form-control" id="OduyenMusteriHesab" placeholder="Hesab №" readonly>
+                        <input class="form-control" id="OduyenMusteriVoen" placeholder="VÖEN" readonly>
                     </div>
 
                     <div class="form-group-box">
@@ -219,7 +219,7 @@
 
                     <div>
                         <label>Məbləğ (yazı ilə)</label>
-                        <input class="form-control" placeholder="Bir min manat 00 qəpik">
+                        <input class="form-control" id="MeblegYazi" placeholder="Bir min manat 00 qəpik">
                     </div>
 
                 </div>
@@ -239,13 +239,15 @@
                               placeholder="Ödənişin təyinatı"></textarea>
 
                     <input class="form-control mt-2"
+                           id="ElaveInfo"
                            placeholder="Əlavə informasiya">
                 </div>
             </section>
 
             <!-- ACTIONS -->
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary">
+                <button type="button" class="btn btn-primary" id="btnGenerateWord">
+                    <i class="bi bi-file-earmark-word"></i>
                     Yadda saxla
                 </button>
                 <a asp-action="Index" class="btn btn-outline-secondary">
@@ -261,5 +263,6 @@
 
 @section Scripts {
     <script src="~/js/payment-bank.js"></script>
+    <script src="~/js/payment-word.js"></script>
 }
 
