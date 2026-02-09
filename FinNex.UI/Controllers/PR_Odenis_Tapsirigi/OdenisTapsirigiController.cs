@@ -16,8 +16,14 @@ namespace FinNex.UI.Controllers
             _uow = uow;
         }
 
-        // 📄 SİYAHI
-        public async Task<IActionResult> Index()
+        // Ana hub sehifesi
+        public IActionResult Index()
+        {
+            return View();
+        }
+
+        // Odenis tapsiriglarinin siyahisi
+        public async Task<IActionResult> Siyahi()
         {
             var list = await _uow
                 .Repository<OdenisTapsirigi>()

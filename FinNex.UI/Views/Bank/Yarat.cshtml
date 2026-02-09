@@ -1,0 +1,88 @@
+@model FinNex.Domain.Entities.PR_Odenis_Tapsirigi.Bank
+
+<div class="bank-form-page">
+
+    <!-- HEADER -->
+    <div class="bank-form-header">
+        <div class="bank-form-header-content">
+            <div class="bank-form-icon">
+                <i class="bi bi-bank"></i>
+            </div>
+            <div>
+                <h3>Yeni Bank Elave Et</h3>
+                <p>Bank melumatlarini daxil edin</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORM -->
+    <form asp-action="Yarat" method="post" class="bank-form-card">
+
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" style="display:none"></div>
+
+        <!-- Bank Adi -->
+        <div class="bank-field-group">
+            <label class="bank-field-label">
+                <i class="bi bi-building me-1"></i> Bankin adi
+            </label>
+            <input asp-for="Ad" class="form-control bank-input" placeholder="Meselen: Kapital Bank" />
+            <span asp-validation-for="Ad" class="text-danger small"></span>
+        </div>
+
+        <div class="bank-field-row">
+            <!-- Kod -->
+            <div class="bank-field-group">
+                <label class="bank-field-label">
+                    <i class="bi bi-hash me-1"></i> Bank kodu
+                </label>
+                <input asp-for="Kod" class="form-control bank-input" placeholder="Meselen: 210005" />
+                <span asp-validation-for="Kod" class="text-danger small"></span>
+            </div>
+
+            <!-- VOEN -->
+            <div class="bank-field-group">
+                <label class="bank-field-label">
+                    <i class="bi bi-upc-scan me-1"></i> VOEN
+                </label>
+                <input asp-for="Voen" class="form-control bank-input" placeholder="Meselen: 1400076681" />
+                <span asp-validation-for="Voen" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="bank-field-row">
+            <!-- SWIFT/BIC -->
+            <div class="bank-field-group">
+                <label class="bank-field-label">
+                    <i class="bi bi-globe me-1"></i> SWIFT / BIC
+                </label>
+                <input asp-for="SwiftBic" class="form-control bank-input" placeholder="Meselen: AIIBAZ2X" />
+                <span asp-validation-for="SwiftBic" class="text-danger small"></span>
+            </div>
+
+            <!-- Muxbir Hesab -->
+            <div class="bank-field-group">
+                <label class="bank-field-label">
+                    <i class="bi bi-credit-card me-1"></i> Muxbir hesab
+                </label>
+                <input asp-for="MuxHesab" class="form-control bank-input" placeholder="Meselen: AZ00NABZ0000..." />
+                <span asp-validation-for="MuxHesab" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="bank-form-actions">
+            <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
+                <i class="bi bi-check-lg me-1"></i> Yadda Saxla
+            </button>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-lg rounded-pill px-4">
+                <i class="bi bi-x-lg me-1"></i> Legv Et
+            </a>
+        </div>
+
+    </form>
+
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/bank-form.css" asp-append-version="true" />
+}

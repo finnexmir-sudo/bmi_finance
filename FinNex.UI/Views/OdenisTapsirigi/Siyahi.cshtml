@@ -1,0 +1,76 @@
+@model IEnumerable<FinNex.Domain.Entities.PR_Odenis_Tapsirigi.OdenisTapsirigi>
+
+<div class="payment-list-page">
+
+    <!-- HEADER -->
+    <div class="list-header">
+        <div>
+            <h3><i class="bi bi-list-ul me-2"></i>Odenis Tapsirilari Siyahisi</h3>
+            <p class="text-muted mb-0">Butun odenis tapsiriglarinin tarixcesi</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Create" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                <i class="bi bi-plus-lg me-1"></i> Yeni Odenis
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
+                <i class="bi bi-arrow-left me-1"></i> Geri
+            </a>
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="list-table-card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Nomre</th>
+                        <th>Tarix</th>
+                        <th>Odeyen Musteri</th>
+                        <th>Alan Musteri</th>
+                        <th>Mebleg</th>
+                        <th>Valyuta</th>
+                        <th class="text-center">Emeliyyatlar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <span class="fw-bold text-primary">@item.Nomre</span>
+                                </td>
+                                <td>@item.Tarix.ToString("dd.MM.yyyy")</td>
+                                <td>@item.OduyenMusteri?.Ad</td>
+                                <td>@item.AlanMusteri?.Ad</td>
+                                <td class="fw-bold">@item.Mebleg.ToString("N2")</td>
+                                <td><span class="badge bg-light text-dark border">@item.Valyuta</span></td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-primary action-btn-sm">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
+                                Hele odenis tapsirigi yoxdur
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/PR_Odenis_Tapsirigi/payment-list.css" asp-append-version="true" />
+}

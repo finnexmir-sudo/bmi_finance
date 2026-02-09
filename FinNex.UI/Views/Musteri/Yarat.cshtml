@@ -1,0 +1,57 @@
+@model FinNex.Domain.Entities.PR_Odenis_Tapsirigi.Musteri
+
+<div class="musteri-form-page">
+
+    <!-- HEADER -->
+    <div class="musteri-form-header">
+        <div class="musteri-form-header-content">
+            <div class="musteri-form-icon">
+                <i class="bi bi-person-plus"></i>
+            </div>
+            <div>
+                <h3>Yeni Musteri Elave Et</h3>
+                <p>Musteri melumatlarini daxil edin</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORM -->
+    <form asp-action="Yarat" method="post" class="musteri-form-card">
+
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" style="display:none"></div>
+
+        <!-- Musteri Adi -->
+        <div class="musteri-field-group">
+            <label class="musteri-field-label">
+                <i class="bi bi-person me-1"></i> Musterinin adi
+            </label>
+            <input asp-for="Ad" class="form-control musteri-input" placeholder="Meselen: BMI Sigorta MMC" />
+            <span asp-validation-for="Ad" class="text-danger small"></span>
+        </div>
+
+        <!-- VOEN -->
+        <div class="musteri-field-group">
+            <label class="musteri-field-label">
+                <i class="bi bi-upc-scan me-1"></i> VOEN
+            </label>
+            <input asp-for="Voen" class="form-control musteri-input" placeholder="Meselen: 1400012345" />
+            <span asp-validation-for="Voen" class="text-danger small"></span>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="musteri-form-actions">
+            <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
+                <i class="bi bi-check-lg me-1"></i> Yadda Saxla
+            </button>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-lg rounded-pill px-4">
+                <i class="bi bi-x-lg me-1"></i> Legv Et
+            </a>
+        </div>
+
+    </form>
+
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/musteri.css" asp-append-version="true" />
+}
