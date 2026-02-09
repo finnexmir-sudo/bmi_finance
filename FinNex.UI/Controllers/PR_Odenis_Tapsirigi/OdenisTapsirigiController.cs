@@ -1,5 +1,6 @@
 ﻿using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
 using FinNex.Domain.Interfaces;
+using FinNex.UI.Services;
 using FinNex.UI.ViewModels.PR_Odenis_Tapsirigi;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -65,6 +66,19 @@ namespace FinNex.UI.Controllers
             await _uow.YaddaSaxlaAsync();
 
             return RedirectToAction(nameof(Index));
+        }
+
+
+        [HttpPost]
+        public IActionResult GenerateWord([FromBody] OdenisTapsirigiWordDto dto)
+        {
+            var bytes = OdenisTapsirigiWordService.Generate(dto);
+
+            var fileName = $"OdenisTapsirigi_{DateTime.Now:yyyyMMdd_HHmmss}.docx";
+
+            return File(bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                fileName);
         }
 
     }
