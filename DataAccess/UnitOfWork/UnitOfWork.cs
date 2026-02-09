@@ -9,7 +9,7 @@ namespace FinNex.DataAccess.UnitOfWork;
 public class UnitOfWork : IUnitOfWork
 {
     private readonly AppDbContext _context;
-    private Hashtable _repositories; // Yaradılan repository-ləri keşdə saxlamaq üçün
+    private Hashtable? _repositories; // Yaradılan repository-ləri keşdə saxlamaq üçün
 
     public UnitOfWork(AppDbContext context)
     {
