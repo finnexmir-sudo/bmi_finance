@@ -1,6 +1,6 @@
 ﻿using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
 using FinNex.Domain.Interfaces;
-using FinNex.UI.Services;
+using FinNex.UI.Services.PR_Odenis_Tapsirigi;
 using FinNex.UI.ViewModels.PR_Odenis_Tapsirigi;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
