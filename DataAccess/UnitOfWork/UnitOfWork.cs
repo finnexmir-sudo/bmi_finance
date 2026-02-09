@@ -4,7 +4,7 @@ using FinNex.Domain.Interfaces;
 using FinNex.Domain.Entities; // BaseEntity üçün lazımdır
 using System.Collections;
 
-namespace FinNex.DataAccess.UnitOfWork;
+namespace FinNex.DataAccess.UnitOfWorks;
 
 public class UnitOfWork : IUnitOfWork
 {

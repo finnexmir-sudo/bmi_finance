@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using FinNex.Domain.Interfaces;
 using FinNex.Domain.Entities.Structure;
+using Microsoft.AspNetCore.Authorization;
 
 namespace FinNex.UI.Controllers;
-
+[Authorize]
 public class DepartmentController : Controller
 {
     private readonly IUnitOfWork _uow;

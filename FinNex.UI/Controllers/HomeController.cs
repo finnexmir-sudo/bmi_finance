@@ -1,10 +1,12 @@
 ﻿using FinNex.UI.Models;
 using FinNex.UI.ViewModels.Dashboard;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
 namespace FinNex.UI.Controllers
 {
+    [Authorize] // 🔐 Login olmadan GİRİŞ YOXDUR
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
@@ -52,9 +54,11 @@ namespace FinNex.UI.Controllers
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+
+        [AllowAnonymous]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View();
         }
     }
 }

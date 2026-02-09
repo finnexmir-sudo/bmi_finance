@@ -1,0 +1,57 @@
+﻿@model FinNex.UI.DTO.RegisterDto
+
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Qeydiyyat";
+}
+
+<div class="auth-card">
+    <!-- LOGO + BRAND -->
+    <div class="auth-logo">
+        <img src="~/images/Logobank.jpg" alt="BMI Finance" />
+    </div>
+
+    <div class="auth-title">BMI Finance</div>
+    <div class="auth-title">Yeni Hesab</div>
+    <div class="auth-subtitle">BMI Finance platformasına qoşulun</div>
+
+    <form asp-action="Register" method="post">
+        @Html.AntiForgeryToken()
+
+        <input asp-for="Ad" class="form-control mb-3" placeholder="Ad" />
+        <span asp-validation-for="Ad" class="text-danger"></span>
+
+        <input asp-for="Soyad" class="form-control mb-3" placeholder="Soyad" />
+        <span asp-validation-for="Soyad" class="text-danger"></span>
+
+        <input asp-for="Email" class="form-control mb-3" placeholder="Email" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <input asp-for="Password"
+                       type="password"
+                       class="form-control"
+                       placeholder="Şifrə" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <input asp-for="ConfirmPassword"
+                       type="password"
+                       class="form-control"
+                       placeholder="Şifrə təkrarı" />
+                <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+            </div>
+        </div>
+
+
+        <button class="btn btn-success w-100 btn-auth">
+            Qeydiyyatdan keç
+        </button>
+    </form>
+
+    <div class="auth-footer">
+        <a asp-action="Login">Girişə qayıt</a>
+    </div>
+</div>

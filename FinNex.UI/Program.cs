@@ -1,55 +1,117 @@
-﻿using FinNex.DataAccess.Contexts;
-using FinNex.DataAccess.Repositories;
-using FinNex.DataAccess.UnitOfWork;
-using FinNex.Domain.Interfaces;
-using Microsoft.EntityFrameworkCore;
-using System;
+﻿using FinNex.DataAccess;
+using FinNex.DataAccess.Seed;
+using FinNex.UI.Middleware;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using System.Threading.RateLimiting;
 
 namespace FinNex.UI
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // 1. DbContext-i qeydiyyatdan keçiririk
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-            builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(connectionString));
+            // ==================================================
+            // 1. DataAccess + Identity
+            // ==================================================
+            builder.Services.AddDataAccessServices(builder.Configuration);
 
-            // 2. Repository və UnitOfWork-u sistemə tanıdırıq (Dependency Injection)
-            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-            builder.Services.AddScoped(typeof(IRepositoryAsync<>), typeof(EfRepositoryAsync<>));
+            // ==================================================
+            // 2. Authentication (Cookie-based)
+            // ==================================================
+            builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(options =>
+                {
+                    options.LoginPath = "/Account/Login";
+                    options.LogoutPath = "/Account/Logout";
+                    options.AccessDeniedPath = "/Account/AccessDenied";
+                    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+                    options.SlidingExpiration = true;
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                });
 
-            // Digər standart servisler...
+            // ==================================================
+            // 3. Rate Limiting (Login protection)
+            // ==================================================
+            builder.Services.AddRateLimiter(options =>
+            {
+                options.AddPolicy("login", context =>
+                {
+                    var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+                    return RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: ip,
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 5,                   // 5 cəhd
+                            Window = TimeSpan.FromMinutes(1),  // 1 dəqiqə
+                            QueueLimit = 0,                    // gözlətmə YOX
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+                        });
+                });
+
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            });
+
+            // ==================================================
+            // 4. MVC + FluentValidation (.NET 8 way)
+            // ==================================================
             builder.Services.AddControllersWithViews();
 
-            builder.WebHost.UseUrls(
-    "https://0.0.0.0:7172",
-    "http://0.0.0.0:5172"
-);
+            builder.Services.AddFluentValidationAutoValidation();
+            builder.Services.AddFluentValidationClientsideAdapters();
+            builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+            // ==================================================
+            // 5. Logging (basic – Console + Debug)
+            // ==================================================
+            builder.Logging.ClearProviders();
+            builder.Logging.AddConsole();
+            builder.Logging.AddDebug();
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
+            // ==================================================
+            // 6. Middleware pipeline (ORDER IS CRITICAL)
+            // ==================================================
+
+            // 🔥 Global exception handler (ən yuxarı)
+            //app.UseMiddleware<GlobalExceptionMiddleware>();
+
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
 
             app.UseHttpsRedirection();
+
+            // 🔐 Security headers
+            app.UseMiddleware<SecurityHeadersMiddleware>();
+
             app.UseStaticFiles();
 
             app.UseRouting();
 
+            // 🔐 Rate Limiting (auth-dan əvvəl)
+            app.UseRateLimiter();
+
+            // 🔐 Authentication / Authorization
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}");
+                pattern: "{controller=Account}/{action=Login}/{id?}");
+
+            // ==================================================
+            // 7. Identity Seed (Admin + Roles)
+            // ==================================================
+            await IdentitySeed.SeedAsync(app.Services);
 
             app.Run();
         }

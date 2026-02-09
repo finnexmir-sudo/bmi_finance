@@ -54,31 +54,53 @@
                 <div class="collapse navbar-collapse" id="mainNavbar">
                     <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
 
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Bank" asp-action="Index">
-                                <i class="bi bi-building"></i>
-                                Banklar
-                            </a>
-                        </li>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Bank" asp-action="Index">
+                                    <i class="bi bi-building"></i>
+                                    Banklar
+                                </a>
+                            </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Musteri" asp-action="Index">
-                                <i class="bi bi-people"></i>
-                                Müştərilər
-                            </a>
-                        </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Musteri" asp-action="Index">
+                                    <i class="bi bi-people"></i>
+                                    Müştərilər
+                                </a>
+                            </li>
 
-                        <!-- SWIFT / ODENIS TAPSIRIGI -->
-                        <li class="nav-item">
-                            <a class="nav-link"
-                               asp-controller="OdenisTapsirigi"
-                               asp-action="Index">
-                                <i class="bi bi-arrow-left-right"></i>
-                                Odenis Tapsirigi
-                            </a>
-                        </li>
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="OdenisTapsirigi"
+                                   asp-action="Index">
+                                    <i class="bi bi-arrow-left-right"></i>
+                                    Ödəniş Tapşırığı
+                                </a>
+                            </li>
+
+                            <!-- LOGOUT -->
+                            <li class="nav-item ms-2">
+                                <form asp-controller="Account" asp-action="Logout" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button class="btn btn-sm btn-outline-light">
+                                        Çıxış
+                                    </button>
+                                </form>
+                            </li>
+                        }
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Bank" asp-action="Index">
+                                    <i class="bi bi-building"></i>
+                                    Banklar
+                                </a>
+                            </li>
+                        }
 
                     </ul>
+
                 </div>
             </div>
         </nav>

@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using FinNex.Domain.Interfaces;
 using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
+using Microsoft.AspNetCore.Authorization;
 
 namespace FinNex.UI.Controllers;
 
+[Authorize]
 public class MusteriController : Controller
 {
     private readonly IUnitOfWork _uow;

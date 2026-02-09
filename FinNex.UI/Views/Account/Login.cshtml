@@ -1,0 +1,57 @@
+﻿@model FinNex.UI.DTO.LoginDto
+
+@{
+    Layout = "_AuthLayout";
+}
+
+<div class="auth-card">
+
+    <div class="auth-logo">
+        <img src="~/images/Logobank.jpg" />
+    </div>
+
+    <div class="auth-title">BMI Finance</div>
+    <div class="auth-subtitle">Təhlükəsiz giriş</div>
+
+    <form asp-action="Login" method="post" id="loginForm">
+        @Html.AntiForgeryToken()
+
+        <div class="mb-3 input-group">
+            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+            <input asp-for="Email" class="form-control" placeholder="Email" />
+        </div>
+
+        <div class="mb-3 input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            <input asp-for="Password" type="password" class="form-control" placeholder="Şifrə" />
+        </div>
+
+        <div class="form-check mb-3">
+            <input asp-for="RememberMe" class="form-check-input" />
+            <label class="form-check-label">Məni xatırla</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 btn-auth" id="loginBtn">
+            <span id="btnText">Giriş et</span>
+            <span id="btnSpinner" class="spinner-border spinner-border-sm d-none"></span>
+        </button>
+    </form>
+    <div class="auth-footer">
+        <span>Hesabınız yoxdur?</span>
+        <a asp-controller="Account" asp-action="Register">
+            Qeydiyyatdan keç
+        </a>
+    </div>
+
+
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", function () {
+            document.getElementById("loginBtn").disabled = true;
+            document.getElementById("btnText").classList.add("d-none");
+            document.getElementById("btnSpinner").classList.remove("d-none");
+        });
+    </script>
+}

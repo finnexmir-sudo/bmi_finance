@@ -2,11 +2,13 @@
 using FinNex.Domain.Interfaces;
 using FinNex.UI.Services.PR_Odenis_Tapsirigi;
 using FinNex.UI.ViewModels.PR_Odenis_Tapsirigi;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.UI.Controllers
 {
+    [Authorize]
     public class OdenisTapsirigiController : Controller
     {
         private readonly IUnitOfWork _uow;
