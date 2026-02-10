@@ -1,0 +1,179 @@
+@model DashboardVM
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stat-value">@Model.TotalUsers</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stat-value">@Model.ActiveUsers</div>
+                    <div class="stat-label">Active Users</div>
+                </div>
+                <div class="stat-icon bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-person-check-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stat-value">@Model.InactiveUsers</div>
+                    <div class="stat-label">Inactive Users</div>
+                </div>
+                <div class="stat-icon bg-danger bg-opacity-10 text-danger">
+                    <i class="bi bi-person-x-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stat-value">@Model.TotalRoles</div>
+                    <div class="stat-label">Total Roles</div>
+                </div>
+                <div class="stat-icon bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6 col-xl-3">
+        <a asp-controller="UserManagement" asp-action="Index"
+           class="admin-stat-card d-block text-decoration-none">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div>
+                    <div class="fw-semibold text-dark">Manage Users</div>
+                    <div class="stat-label">View and manage user accounts</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <a asp-controller="RoleManagement" asp-action="Index"
+           class="admin-stat-card d-block text-decoration-none">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <div>
+                    <div class="fw-semibold text-dark">Manage Roles</div>
+                    <div class="stat-label">Configure roles and permissions</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <a asp-controller="SystemLogs" asp-action="Index"
+           class="admin-stat-card d-block text-decoration-none">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon bg-secondary bg-opacity-10 text-secondary">
+                    <i class="bi bi-journal-text"></i>
+                </div>
+                <div>
+                    <div class="fw-semibold text-dark">System Logs</div>
+                    <div class="stat-label">View application logs</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <a asp-controller="Home" asp-action="Index" asp-area=""
+           class="admin-stat-card d-block text-decoration-none">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-house-fill"></i>
+                </div>
+                <div>
+                    <div class="fw-semibold text-dark">Main App</div>
+                    <div class="stat-label">Return to main application</div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Recent Users Table -->
+<div class="admin-table-card">
+    <div class="card-header">
+        <h5><i class="bi bi-clock-history me-2"></i>Recently Registered Users</h5>
+        <a asp-controller="UserManagement" asp-action="Index"
+           class="btn btn-sm btn-outline-primary">
+            View All
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="table admin-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Registered</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.RecentUsers.Any())
+                {
+                    @foreach (var user in Model.RecentUsers)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@user.FullName</td>
+                            <td>@user.Email</td>
+                            <td>
+                                <span class="badge bg-primary bg-opacity-10 text-primary admin-badge">
+                                    @user.Role
+                                </span>
+                            </td>
+                            <td>@user.RegisteredAt.ToString("dd MMM yyyy")</td>
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success admin-badge">
+                                        Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger bg-opacity-10 text-danger admin-badge">
+                                        Inactive
+                                    </span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">No users found.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
