@@ -1,73 +1,73 @@
-document.addEventListener('DOMContentLoaded', function () {
+﻿document.addEventListener('DOMContentLoaded', function () {
 
     const btn = document.getElementById('btnGenerateWord');
     if (!btn) return;
 
+    // Helper: read value by id
+    const val = id =>
+        (document.getElementById(id)?.value ?? '').trim();
+
+    // Helper: selected text from select
+    const selText = id => {
+        const el = document.getElementById(id);
+        if (!el || el.selectedIndex < 0) return '';
+        return el.options[el.selectedIndex].text.trim();
+    };
+
+    // Helper: value by name
+    const nameVal = name => {
+        const el = document.querySelector(`[name="${name}"]`);
+        return el ? el.value.trim() : '';
+    };
+
     btn.addEventListener('click', async function () {
 
-        // Helper: read value by id (returns empty string if not found)
-        const val = id => (document.getElementById(id)?.value ?? '').trim();
-
-        // Helper: get selected option text from a <select>
-        const selText = id => {
-            const el = document.getElementById(id);
-            if (!el || el.selectedIndex < 0) return '';
-            return el.options[el.selectedIndex].text.trim();
-        };
-
-        // Helper: get value from input by name attribute
-        const nameVal = name => {
-            const el = document.querySelector(`[name="${name}"]`);
-            return el ? el.value.trim() : '';
-        };
-
-        // Collect all form data
         const dto = {
-            // Tapshiriq nomresi ve tarix
-            nomre: '',  // auto-generated on server
-            tarix: '',  // auto-generated on server
+            // Server terefde generasiya olunur
+            nomre: null,
+            tarix: null,
 
-            // Oduyun bank (A1)
-            oduyenBankAd:          selText('Odenis_OduyenHesabId'),
-            oduyenBankKod:         val('OduyenBankKod'),
-            oduyenBankVoen:        val('OduyenBankVoen'),
+            // A1 – Ödəyən bank
+            oduyenBankAd: selText('Odenis_OduyenHesabId'),
+            oduyenBankKod: val('OduyenBankKod'),
+            oduyenBankVoen: val('OduyenBankVoen'),
             oduyenBankMuxbirHesab: val('OduyenBankMuxbirHesab'),
-            oduyenBankSwift:       val('OduyenBankSwift'),
+            oduyenBankSwift: val('OduyenBankSwift'),
 
-            // Oduyun mushteri (A2)
-            oduyenMusteriAd:    selText('Odenis_OduyenMusteriId'),
+            // A2 – Ödəyən müştəri
+            oduyenMusteriAd: selText('Odenis_OduyenMusteriId'),
             oduyenMusteriHesab: val('OduyenMusteriHesab'),
-            oduyenMusteriVoen:  val('OduyenMusteriVoen'),
+            oduyenMusteriVoen: val('OduyenMusteriVoen'),
 
-            // Alan bank (B1)
-            alanBankAd:          val('AlanBankAd'),
-            alanBankKod:         val('AlanBankKod'),
-            alanBankVoen:        val('AlanBankVoen'),
+            // B1 – Alan bank
+            alanBankAd: val('AlanBankAd'),
+            alanBankKod: val('AlanBankKod'),
+            alanBankVoen: val('AlanBankVoen'),
             alanBankMuxbirHesab: val('AlanBankMuxbirHesab'),
-            alanBankSwift:       val('AlanBankSwift'),
-            alanBankVbank:       '',
+            alanBankSwift: val('AlanBankSwift'),
+            alanBankVbank: '',
 
-            // Alan mushteri (B2)
-            alanMusteriAd:    nameVal('ManualAlanMusteriAd') || selText('Odenis_AlanMusteriId'),
+            // B2 – Alan müştəri
+            alanMusteriAd: nameVal('ManualAlanMusteriAd') || selText('Odenis_AlanMusteriId'),
             alanMusteriHesab: nameVal('ManualAlanHesab'),
-            alanMusteriVoen:  nameVal('ManualAlanVoen'),
+            alanMusteriVoen: nameVal('ManualAlanVoen'),
 
-            // Mebleg
-            valyuta:    val('Odenis_Valyuta') || selText('Odenis_Valyuta'),
-            mebleg:     val('Odenis_Mebleg'),
+            // Məbləğ
+            valyuta: val('Odenis_Valyuta') || selText('Odenis_Valyuta'),
+            mebleg: val('Odenis_Mebleg'),
             meblegYazi: val('Odenis_MeblegYazi'),
 
-            // Teyinat
-            teyinat:   val('Odenis_Teyinat'),
+            // Təyinat
+            teyinat: val('Odenis_Teyinat'),
             elaveInfo: val('Odenis_ElaveInformasiya'),
 
-            // Budce
-            budceTesnifatininKodu:  val('Odenis_BudceTesnifatininKodu'),
-            budceSeviyyesininKodu:  val('Odenis_BudceSeviyyesininKodu')
+            // Büdcə
+            budceTesnifatininKodu: val('Odenis_BudceTesnifatininKodu'),
+            budceSeviyyesininKodu: val('Odenis_BudceSeviyyesininKodu')
         };
 
         btn.disabled = true;
-        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Hazirlanir...';
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Hazırlanır...';
 
         try {
             const response = await fetch('/OdenisTapsirigi/GenerateWord', {
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             if (!response.ok) {
-                throw new Error('Xeta bash verdi: ' + response.status);
+                throw new Error('Server xətası: ' + response.status);
             }
 
             const blob = await response.blob();
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
             a.remove();
 
         } catch (err) {
-            alert('Word senedi hazirlanarken xeta bash verdi:\n' + err.message);
+            alert('Word sənədi hazırlanarkən xəta baş verdi:\n' + err.message);
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-file-earmark-word"></i> Yadda saxla';

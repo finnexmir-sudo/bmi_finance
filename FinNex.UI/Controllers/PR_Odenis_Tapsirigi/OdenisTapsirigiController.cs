@@ -1,4 +1,6 @@
-﻿using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
+﻿using FinNex.Application.Interfaces.PR_Odenis_Tapsirigi;
+using FinNex.Application.Services.PR_Odenis_Tapsirigi;
+using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
 using FinNex.Domain.Interfaces;
 using FinNex.UI.Services.PR_Odenis_Tapsirigi;
 using FinNex.UI.ViewModels.PR_Odenis_Tapsirigi;
@@ -12,16 +14,18 @@ namespace FinNex.UI.Controllers
     public class OdenisTapsirigiController : Controller
     {
         private readonly IUnitOfWork _uow;
-
-        public OdenisTapsirigiController(IUnitOfWork uow)
+        private readonly IOdenisTapsirigiNomreService _odenisNomreService;
+        public OdenisTapsirigiController(IUnitOfWork uow, IOdenisTapsirigiNomreService odenisNomreService)
         {
             _uow = uow;
+            _odenisNomreService = odenisNomreService;
         }
 
         // Ana hub sehifesi
         public IActionResult Index()
         {
             return View();
+
         }
 
         // Odenis tapsiriglarinin siyahisi
@@ -78,16 +82,32 @@ namespace FinNex.UI.Controllers
 
 
         [HttpPost]
-        public IActionResult GenerateWord([FromBody] OdenisTapsirigiWordDto dto)
+        public async Task<IActionResult> GenerateWord([FromBody] OdenisTapsirigiWordDto dto)
         {
-            var bytes = OdenisTapsirigiWordService.Generate(dto);
+            int nomre = await _odenisNomreService.NovbetiNomreAlAsync();
+
+            dto.Nomre = nomre.ToString("D6"); // 000001
+            dto.Tarix = DateTime.Now.ToString("dd MMMM yyyy");
+
+            var templatePath = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot",
+                "Files",
+                "Word",
+                "Odenis_tapsirigi.docx"
+            );
+
+            var bytes = OdenisTapsirigiWordService.GenerateFromTemplate(templatePath, dto);
 
             var fileName = $"OdenisTapsirigi_{DateTime.Now:yyyyMMdd_HHmmss}.docx";
 
-            return File(bytes,
+            return File(
+                bytes,
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                fileName);
+                fileName
+            );
         }
+
 
     }
 

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using System.Threading.RateLimiting;
+using FinNex.Application;
 
 namespace FinNex.UI
 {
@@ -26,6 +27,7 @@ namespace FinNex.UI
             // 1. DataAccess + Identity
             // ==================================================
             builder.Services.AddDataAccessServices(builder.Configuration);
+            builder.Services.AddApplicationServices();
 
             // ==================================================
             // 2. Authentication (Cookie-based)
@@ -96,6 +98,7 @@ namespace FinNex.UI
 
             // 🔥 Global exception handler (ən yuxarı)
             //app.UseMiddleware<GlobalExceptionMiddleware>();
+            app.UseDeveloperExceptionPage();
 
             if (!app.Environment.IsDevelopment())
             {
