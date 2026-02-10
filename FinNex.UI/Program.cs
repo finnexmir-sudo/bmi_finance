@@ -14,6 +14,14 @@ namespace FinNex.UI
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            //bunu sileceyik
+            //builder.WebHost.ConfigureKestrel(options =>
+            //{
+            //    options.ListenAnyIP(7172); // HTTPS
+            //    options.ListenAnyIP(5172); // HTTP (şəbəkə üçün rahat)
+            //});
+            //
+
             // ==================================================
             // 1. DataAccess + Identity
             // ==================================================
@@ -73,6 +81,8 @@ namespace FinNex.UI
             builder.Logging.AddConsole();
             builder.Logging.AddDebug();
 
+
+
             var app = builder.Build();
 
             // ==================================================
@@ -87,6 +97,7 @@ namespace FinNex.UI
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
             }
+            //mehemmed gormesi ucun bunu kommente alarsa
 
             app.UseHttpsRedirection();
 
