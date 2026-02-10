@@ -1,5 +1,13 @@
 @model UserDetailVM
 
+@if (TempData["StatusMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@TempData["StatusMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
 <div class="row g-4">
     <!-- User Info Card -->
     <div class="col-lg-8">
@@ -98,6 +106,11 @@
                     <a asp-action="ChangeRole" asp-route-id="@Model.Id"
                        class="btn btn-sm btn-outline-primary">
                         <i class="bi bi-shield me-1"></i>Change Role
+                    </a>
+
+                    <a asp-action="ResetPassword" asp-route-id="@Model.Id"
+                       class="btn btn-sm btn-outline-warning">
+                        <i class="bi bi-key me-1"></i>Reset Password
                     </a>
 
                     @if (Model.IsLockedOut)

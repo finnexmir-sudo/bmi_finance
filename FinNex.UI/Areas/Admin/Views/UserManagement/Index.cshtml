@@ -73,6 +73,10 @@
                                    class="btn btn-sm btn-outline-primary" title="Change Role">
                                     <i class="bi bi-shield"></i>
                                 </a>
+                                <a asp-action="ResetPassword" asp-route-id="@user.Id"
+                                   class="btn btn-sm btn-outline-warning" title="Reset Password">
+                                    <i class="bi bi-key"></i>
+                                </a>
                                 <form asp-action="ToggleActive" asp-route-id="@user.Id" method="post"
                                       class="d-inline">
                                     @Html.AntiForgeryToken()
