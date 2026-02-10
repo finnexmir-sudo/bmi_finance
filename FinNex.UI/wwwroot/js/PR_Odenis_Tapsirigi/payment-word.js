@@ -23,42 +23,51 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Collect all form data
         const dto = {
-            // Ödəyən bank (A1)
+            // Tapshiriq nomresi ve tarix
+            nomre: '',  // auto-generated on server
+            tarix: '',  // auto-generated on server
+
+            // Oduyun bank (A1)
             oduyenBankAd:          selText('Odenis_OduyenHesabId'),
             oduyenBankKod:         val('OduyenBankKod'),
             oduyenBankVoen:        val('OduyenBankVoen'),
             oduyenBankMuxbirHesab: val('OduyenBankMuxbirHesab'),
             oduyenBankSwift:       val('OduyenBankSwift'),
 
-            // Ödəyən müştəri (A2)
+            // Oduyun mushteri (A2)
             oduyenMusteriAd:    selText('Odenis_OduyenMusteriId'),
             oduyenMusteriHesab: val('OduyenMusteriHesab'),
             oduyenMusteriVoen:  val('OduyenMusteriVoen'),
 
             // Alan bank (B1)
-            alanBankAd:          '',
+            alanBankAd:          val('AlanBankAd'),
             alanBankKod:         val('AlanBankKod'),
             alanBankVoen:        val('AlanBankVoen'),
             alanBankMuxbirHesab: val('AlanBankMuxbirHesab'),
             alanBankSwift:       val('AlanBankSwift'),
+            alanBankVbank:       '',
 
-            // Alan müştəri (B2) – bazadan və ya əl ilə
+            // Alan mushteri (B2)
             alanMusteriAd:    nameVal('ManualAlanMusteriAd') || selText('Odenis_AlanMusteriId'),
             alanMusteriHesab: nameVal('ManualAlanHesab'),
             alanMusteriVoen:  nameVal('ManualAlanVoen'),
 
-            // Məbləğ
-            valyuta:   val('Odenis_Valyuta') || selText('Odenis_Valyuta'),
-            mebleg:    val('Odenis_Mebleg'),
-            meblegYazi: val('MeblegYazi'),
+            // Mebleg
+            valyuta:    val('Odenis_Valyuta') || selText('Odenis_Valyuta'),
+            mebleg:     val('Odenis_Mebleg'),
+            meblegYazi: val('Odenis_MeblegYazi'),
 
-            // Təyinat
+            // Teyinat
             teyinat:   val('Odenis_Teyinat'),
-            elaveInfo: val('ElaveInfo')
+            elaveInfo: val('Odenis_ElaveInformasiya'),
+
+            // Budce
+            budceTesnifatininKodu:  val('Odenis_BudceTesnifatininKodu'),
+            budceSeviyyesininKodu:  val('Odenis_BudceSeviyyesininKodu')
         };
 
         btn.disabled = true;
-        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Hazırlanır...';
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Hazirlanir...';
 
         try {
             const response = await fetch('/OdenisTapsirigi/GenerateWord', {
@@ -68,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             if (!response.ok) {
-                throw new Error('Xəta baş verdi: ' + response.status);
+                throw new Error('Xeta bash verdi: ' + response.status);
             }
 
             const blob = await response.blob();
@@ -84,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
             a.remove();
 
         } catch (err) {
-            alert('Word sənədi hazırlanarkən xəta baş verdi:\n' + err.message);
+            alert('Word senedi hazirlanarken xeta bash verdi:\n' + err.message);
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-file-earmark-word"></i> Yadda saxla';

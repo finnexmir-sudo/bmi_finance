@@ -2,14 +2,18 @@ namespace FinNex.UI.ViewModels.PR_Odenis_Tapsirigi;
 
 public class OdenisTapsirigiWordDto
 {
-    // Ödəyən bank (A1)
+    // Tapshiriq nomresi ve tarix
+    public string Nomre { get; set; } = "";
+    public string Tarix { get; set; } = "";
+
+    // Oduyun bank (A1)
     public string OduyenBankAd { get; set; } = "";
     public string OduyenBankKod { get; set; } = "";
     public string OduyenBankVoen { get; set; } = "";
     public string OduyenBankMuxbirHesab { get; set; } = "";
     public string OduyenBankSwift { get; set; } = "";
 
-    // Ödəyən müştəri (A2)
+    // Oduyun mushteri (A2)
     public string OduyenMusteriAd { get; set; } = "";
     public string OduyenMusteriHesab { get; set; } = "";
     public string OduyenMusteriVoen { get; set; } = "";
@@ -20,18 +24,27 @@ public class OdenisTapsirigiWordDto
     public string AlanBankVoen { get; set; } = "";
     public string AlanBankMuxbirHesab { get; set; } = "";
     public string AlanBankSwift { get; set; } = "";
+    public string AlanBankVbank { get; set; } = "";
 
-    // Alan müştəri (B2)
+    // Alan mushteri (B2)
     public string AlanMusteriAd { get; set; } = "";
     public string AlanMusteriHesab { get; set; } = "";
     public string AlanMusteriVoen { get; set; } = "";
 
-    // Məbləğ
+    // C - Mebleg
     public string Valyuta { get; set; } = "";
     public string Mebleg { get; set; } = "";
     public string MeblegYazi { get; set; } = "";
 
-    // Təyinat
+    // D1 - Teyinat
     public string Teyinat { get; set; } = "";
+
+    // D2 - Elave informasiya
     public string ElaveInfo { get; set; } = "";
+
+    // D3 - Budce tesnifatinin kodu
+    public string BudceTesnifatininKodu { get; set; } = "";
+
+    // D4 - Budce seviyyesinin kodu
+    public string BudceSeviyyesininKodu { get; set; } = "";
 }
