@@ -7,3 +7,4 @@ public class Musteri : BaseEntity
 
     public ICollection<MusteriHesabi> MusteriHesablari { get; set; } = new List<MusteriHesabi>();
 }
+

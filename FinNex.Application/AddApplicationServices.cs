@@ -14,6 +14,8 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IMusteriService, MusteriService>();
         services.AddScoped<IMusteriHesabiService, MusteriHesabiService>();
         services.AddScoped<IOdenisTapsirigiService, OdenisTapsirigiService>();
+        services.AddScoped<IOdenisTapsirigiNomreService, OdenisTapsirigiNomreService>();
+
 
         // AutoMapper üçün aşağıdakı düzəlişə bax
         services.AddAutoMapper(typeof(MappingProfile));

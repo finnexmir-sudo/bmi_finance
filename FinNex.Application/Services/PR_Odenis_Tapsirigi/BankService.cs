@@ -10,4 +10,5 @@ namespace FinNex.Application.Services.PR_Odenis_Tapsirigi
     {
         public BankService(IUnitOfWork unitOfWork, IMapper mapper) : base(unitOfWork, mapper) { }
     }
+
 }

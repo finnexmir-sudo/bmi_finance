@@ -20,6 +20,8 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<MusteriHesabi> MusteriHesablari { get; set; }
     public DbSet<OdenisTapsirigi> OdenisTapsiriqlari { get; set; }
     public DbSet<Department> Departments { get; set; }
+    public DbSet<OdenisTapsirigiNomresi> OdenisTapsirigiNomreleri { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
