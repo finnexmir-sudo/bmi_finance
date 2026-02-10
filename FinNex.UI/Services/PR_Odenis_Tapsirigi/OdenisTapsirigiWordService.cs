@@ -1,4 +1,4 @@
-using DocumentFormat.OpenXml;
+﻿using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using FinNex.UI.ViewModels.PR_Odenis_Tapsirigi;
@@ -8,8 +8,8 @@ namespace FinNex.UI.Services.PR_Odenis_Tapsirigi;
 public static class OdenisTapsirigiWordService
 {
     private const string FontName = "Times New Roman";
-    private const string FontSize = "20"; // 10pt in half-points
-    private const string SmallFontSize = "18"; // 9pt
+    private const string FontSize = "22"; // 10pt in half-points
+    private const string SmallFontSize = "26"; // 9pt
 
     public static byte[] Generate(OdenisTapsirigiWordDto dto)
     {
