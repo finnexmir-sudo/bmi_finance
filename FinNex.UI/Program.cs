@@ -31,16 +31,21 @@ namespace FinNex.UI
             // 2. Authentication (Cookie-based)
             // ==================================================
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-                .AddCookie(options =>
-                {
-                    options.LoginPath = "/Account/Login";
-                    options.LogoutPath = "/Account/Logout";
-                    options.AccessDeniedPath = "/Account/AccessDenied";
-                    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
-                    options.SlidingExpiration = true;
-                    options.Cookie.HttpOnly = true;
-                    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-                });
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
+        options.AccessDeniedPath = "/Account/AccessDenied";
+
+        // 🔥 RememberMe üçün
+        options.ExpireTimeSpan = TimeSpan.FromDays(14);
+        options.SlidingExpiration = false; // 🔥 VACİB
+
+        options.Cookie.HttpOnly = true;
+        options.Cookie.IsEssential = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+    });
 
             // ==================================================
             // 3. Rate Limiting (Login protection)

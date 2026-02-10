@@ -10,8 +10,9 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
 
     <!-- Icons -->
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+
 
     <!-- Global styles -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -89,16 +90,7 @@
                                 </form>
                             </li>
                         }
-                        @if (User.IsInRole("Admin"))
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Bank" asp-action="Index">
-                                    <i class="bi bi-building"></i>
-                                    Banklar
-                                </a>
-                            </li>
-                        }
-
+                       
                     </ul>
 
                 </div>

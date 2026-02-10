@@ -13,23 +13,36 @@
     <div class="auth-title">BMI Finance</div>
     <div class="auth-subtitle">Təhlükəsiz giriş</div>
 
-    <form asp-action="Login" method="post" id="loginForm">
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger">
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <div>@error.ErrorMessage</div>
+            }
+        </div>
+    }
+
+    <form asp-action="Login" method="post" id="loginForm" autocomplete="off">
         @Html.AntiForgeryToken()
 
         <div class="mb-3 input-group">
             <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-            <input asp-for="Email" class="form-control" placeholder="Email" />
+            <input asp-for="UserName" class="form-control" placeholder="İstifadəçi adı" autocomplete="username-new" />
         </div>
 
         <div class="mb-3 input-group">
             <span class="input-group-text"><i class="bi bi-lock"></i></span>
-            <input asp-for="Password" type="password" class="form-control" placeholder="Şifrə" />
+            <input asp-for="Password" type="password" class="form-control" placeholder="Şifrə" autocomplete="new-password" />
         </div>
 
-        <div class="form-check mb-3">
+        <div class="form-check">
             <input asp-for="RememberMe" class="form-check-input" />
-            <label class="form-check-label">Məni xatırla</label>
+            <label asp-for="RememberMe" class="form-check-label">
+                Məni xatırla
+            </label>
         </div>
+
 
         <button type="submit" class="btn btn-primary w-100 btn-auth" id="loginBtn">
             <span id="btnText">Giriş et</span>

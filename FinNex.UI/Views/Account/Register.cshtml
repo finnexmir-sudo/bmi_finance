@@ -15,16 +15,20 @@
     <div class="auth-title">Yeni Hesab</div>
     <div class="auth-subtitle">BMI Finance platformasına qoşulun</div>
 
-    <form asp-action="Register" method="post">
+    <form asp-action="Register" method="post" autocomplete="off">
         @Html.AntiForgeryToken()
 
-        <input asp-for="Ad" class="form-control mb-3" placeholder="Ad" />
+        <input asp-for="UserName" class="form-control mb-3" placeholder="İstifadəçi adı" autocomplete="off" />
+        <span asp-validation-for="UserName" class="text-danger"></span>
+
+
+        <input asp-for="Ad" class="form-control mb-3" placeholder="Ad" autocomplete="off" />
         <span asp-validation-for="Ad" class="text-danger"></span>
 
-        <input asp-for="Soyad" class="form-control mb-3" placeholder="Soyad" />
+        <input asp-for="Soyad" class="form-control mb-3" placeholder="Soyad" autocomplete="off" />
         <span asp-validation-for="Soyad" class="text-danger"></span>
 
-        <input asp-for="Email" class="form-control mb-3" placeholder="Email" />
+        <input asp-for="Email" class="form-control mb-3" placeholder="Email" autocomplete="off" />
         <span asp-validation-for="Email" class="text-danger"></span>
 
         <div class="row">
@@ -32,7 +36,7 @@
                 <input asp-for="Password"
                        type="password"
                        class="form-control"
-                       placeholder="Şifrə" />
+                       placeholder="Şifrə" autocomplete="new-password" />
                 <span asp-validation-for="Password" class="text-danger"></span>
             </div>
 
@@ -40,7 +44,7 @@
                 <input asp-for="ConfirmPassword"
                        type="password"
                        class="form-control"
-                       placeholder="Şifrə təkrarı" />
+                       placeholder="Şifrə təkrarı" autocomplete="off" />
                 <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
             </div>
         </div>

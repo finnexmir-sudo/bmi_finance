@@ -30,12 +30,12 @@ namespace FinNex.UI.Controllers
         [HttpGet]
         public IActionResult Login()
         {
-            return View();
+
+            return View(new LoginDto());
         }
 
         // ======================
         // LOGIN (POST)
-        // ======================
         [HttpPost]
         [EnableRateLimiting("login")]
         [ValidateAntiForgeryToken]
@@ -44,28 +44,29 @@ namespace FinNex.UI.Controllers
             if (!ModelState.IsValid)
                 return View(dto);
 
-            var user = await _userManager.FindByEmailAsync(dto.Email);
+            var user = await _userManager.FindByNameAsync(dto.UserName);
 
             if (user == null || !user.Aktivdir)
             {
-                ModelState.AddModelError("", "Email və ya şifrə yanlışdır");
+                ModelState.AddModelError("", "İstifadəçi adı və ya şifrə yanlışdır");
                 return View(dto);
             }
 
             var result = await _signInManager.PasswordSignInAsync(
                 user.UserName!,
                 dto.Password,
-                isPersistent: false,
+                dto.RememberMe,
                 lockoutOnFailure: true);
 
             if (!result.Succeeded)
             {
-                ModelState.AddModelError("", "Email və ya şifrə yanlışdır");
+                ModelState.AddModelError("", "İstifadəçi adı və ya şifrə yanlışdır");
                 return View(dto);
             }
 
             return RedirectToAction("Index", "Home");
         }
+
 
         // ======================
         // REGISTER (GET)
@@ -73,7 +74,7 @@ namespace FinNex.UI.Controllers
         [HttpGet]
         public IActionResult Register()
         {
-            return View();
+            return View(new RegisterDto());
         }
 
         // ======================
@@ -86,14 +87,22 @@ namespace FinNex.UI.Controllers
             if (!ModelState.IsValid)
                 return View(dto);
 
+            // 🔴 Username təkrarı YOXLA
+            var exists = await _userManager.FindByNameAsync(dto.UserName);
+            if (exists != null)
+            {
+                ModelState.AddModelError("UserName", "Bu istifadəçi adı artıq mövcuddur");
+                return View(dto);
+            }
+
             var user = new AppUser
             {
-                UserName = dto.Email,
-                Email = dto.Email,
+                UserName = dto.UserName, // 🔥 LOGIN BUNUNLA OLACAQ
                 Ad = dto.Ad,
                 Soyad = dto.Soyad,
-                Aktivdir = true,
-                EmailConfirmed = true
+                Email = dto.Email,
+                EmailConfirmed = true,
+                Aktivdir = true
             };
 
             var result = await _userManager.CreateAsync(user, dto.Password);
@@ -110,6 +119,7 @@ namespace FinNex.UI.Controllers
 
             return RedirectToAction("Login");
         }
+
 
         // ======================
         // LOGOUT

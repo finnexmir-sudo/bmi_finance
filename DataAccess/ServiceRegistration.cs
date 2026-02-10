@@ -26,11 +26,11 @@ namespace FinNex.DataAccess
             services.AddIdentity<AppUser, AppRole>(options =>
             {
                 // 🔐 Password qaydaları (minimum bank standardı)
-                options.Password.RequiredLength = 8;
+                options.Password.RequiredLength = 5;
                 options.Password.RequireDigit = true;
-                options.Password.RequireUppercase = true;
-                options.Password.RequireLowercase = true;
-                options.Password.RequireNonAlphanumeric = true;
+                options.Password.RequireUppercase = false;
+                options.Password.RequireLowercase = false;
+                options.Password.RequireNonAlphanumeric = false;
 
                 // 🔒 Brute-force qorunması
                 options.Lockout.MaxFailedAccessAttempts = 5;
