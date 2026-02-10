@@ -2,6 +2,7 @@
 
 public class OdenisTapsirigiNomresi : BaseEntity
 {
+    public int Il { get; set; }         
     public int SonNomre { get; set; }
 }
 

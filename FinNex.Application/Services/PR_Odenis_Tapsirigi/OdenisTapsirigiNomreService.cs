@@ -16,14 +16,18 @@ namespace FinNex.Application.Services.PR_Odenis_Tapsirigi
         public async Task<int> NovbetiNomreAlAsync()
         {
             var repo = _unitOfWork.Repository<OdenisTapsirigiNomresi>();
+            int cariIl = DateTime.Now.Year;
 
+            // ⚠️ Cari il üçün sayğacı tap
             var saygac = (await repo.HamisiniGetirAsync())
-                            .FirstOrDefault();
+                            .FirstOrDefault(x => x.Il == cariIl);
 
             if (saygac == null)
             {
+                // 🔹 İl dəyişibsə → 1-dən başla
                 saygac = new OdenisTapsirigiNomresi
                 {
+                    Il = cariIl,
                     SonNomre = 1
                 };
 
@@ -31,6 +35,7 @@ namespace FinNex.Application.Services.PR_Odenis_Tapsirigi
             }
             else
             {
+                // 🔹 Eyni il → artır
                 saygac.SonNomre++;
                 await repo.YenileAsync(saygac);
             }
@@ -39,6 +44,7 @@ namespace FinNex.Application.Services.PR_Odenis_Tapsirigi
 
             return saygac.SonNomre;
         }
+
     }
 
 }
