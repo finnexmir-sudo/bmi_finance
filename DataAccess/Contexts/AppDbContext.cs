@@ -52,6 +52,19 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .WithMany()
             .HasForeignKey(x => x.AlanHesabId)
             .OnDelete(DeleteBehavior.NoAction);
+
+        // Bank FK-lari
+        builder.Entity<OdenisTapsirigi>()
+            .HasOne(x => x.OduyenBank)
+            .WithMany()
+            .HasForeignKey(x => x.OduyenBankId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<OdenisTapsirigi>()
+            .HasOne(x => x.AlanBank)
+            .WithMany()
+            .HasForeignKey(x => x.AlanBankId)
+            .OnDelete(DeleteBehavior.NoAction);
     }
 
     // ƏN VACİB HİSSƏ: SaveChanges zamanı avtomatik Audit məlumatlarının doldurulması
