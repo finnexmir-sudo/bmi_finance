@@ -1,4 +1,4 @@
-﻿
+
 using FinNex.Application.Common.Paged;
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.SenedDovriyyesi;
@@ -16,12 +16,18 @@ namespace FinNex.Application.Interfaces.SenedDovriyyesi
         Task<Result<PagedResult<SenedListDto>>> GetPagedAsync(
             PagedRequest req, int? sobeId, int? senedNovuId, SenedStatusu? status, string? search);
 
+        Task<Result<PagedResult<SenedListDto>>> GetDeletedPagedAsync(PagedRequest req);
+
         Task<Result<SenedDetailDto>> GetDetailAsync(int senedId);
+
+        Task<Result<SenedDashboardDto>> GetDashboardAsync();
 
         Task<Result<int>> UploadNewVersionAsync(SenedFaylUploadDto dto, int userId, string? ip);
 
         Task<Result> SoftDeleteAsync(int senedId, int userId, string? ip);
         Task<Result> RestoreAsync(int senedId, int userId, string? ip);
+
+        Task<Result<SenedFayl>> GetFileEntityAsync(int faylId);
     }
     public interface IFileStorageService
     {
@@ -33,6 +39,7 @@ namespace FinNex.Application.Interfaces.SenedDovriyyesi
     public interface IAuditLogService
     {
         Task WriteAsync(int userId, string action, int? senedId, string? ip, object? details = null);
+        Task<List<AuditLogDto>> GetBySenedIdAsync(int senedId);
     }
 
 }

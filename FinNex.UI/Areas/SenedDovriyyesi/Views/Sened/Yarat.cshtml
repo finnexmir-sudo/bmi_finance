@@ -1,0 +1,134 @@
+@model SenedCreateVM
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="sd-form-card">
+            <div class="sd-form-header">
+                <i class="bi bi-file-earmark-plus me-2"></i>Yeni Sənəd Yaradın
+            </div>
+            <div class="sd-form-body">
+                <form asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Yarat"
+                      method="post" novalidate>
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger sd-validation-summary"></div>
+
+                    <div class="row g-3">
+                        <!-- Şöbə -->
+                        <div class="col-md-6">
+                            <label asp-for="SobeId" class="form-label sd-form-label">
+                                <i class="bi bi-building me-1"></i>Şöbə <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="SobeId" class="form-select" id="sobeSelect">
+                                <option value="">Şöbə seçin...</option>
+                                @foreach (var s in Model.Sobeler)
+                                {
+                                    <option value="@s.Id">@s.Ad</option>
+                                }
+                            </select>
+                            <span asp-validation-for="SobeId" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Sənəd Növü -->
+                        <div class="col-md-6">
+                            <label asp-for="SenedNovuId" class="form-label sd-form-label">
+                                <i class="bi bi-file-earmark me-1"></i>Sənəd Növü <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="SenedNovuId" class="form-select" id="senedNovuSelect">
+                                <option value="">Sənəd növü seçin...</option>
+                                @foreach (var n in Model.SenedNovleri)
+                                {
+                                    <option value="@n.Id">@n.Ad</option>
+                                }
+                            </select>
+                            <span asp-validation-for="SenedNovuId" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Başlıq -->
+                        <div class="col-12">
+                            <label asp-for="Basliq" class="form-label sd-form-label">
+                                <i class="bi bi-type me-1"></i>Başlıq <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Basliq" class="form-control" placeholder="Sənəd başlığını daxil edin..." />
+                            <span asp-validation-for="Basliq" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Açar Söz -->
+                        <div class="col-12">
+                            <label asp-for="AcarSoz" class="form-label sd-form-label">
+                                <i class="bi bi-key me-1"></i>Açar Söz <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="AcarSoz" class="form-control"
+                                   placeholder="Axtarışda istifadə olunacaq açar sözlər..." />
+                            <span asp-validation-for="AcarSoz" class="text-danger small"></span>
+                            <div class="form-text">Vergüllə ayırmaq tövsiyə olunur: kredit, müqavilə, ərizə</div>
+                        </div>
+
+                        <!-- Tag-lər -->
+                        <div class="col-12">
+                            <label class="form-label sd-form-label">
+                                <i class="bi bi-tags me-1"></i>Tag-lər
+                            </label>
+                            <div class="sd-tag-selector">
+                                @foreach (var t in Model.Tagler)
+                                {
+                                    <label class="sd-tag-option">
+                                        <input type="checkbox" name="TagIds" value="@t.Id" />
+                                        <span class="sd-tag-label">@t.Ad</span>
+                                    </label>
+                                }
+                                @if (!Model.Tagler.Any())
+                                {
+                                    <span class="text-muted small">Tag mövcud deyil</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="sd-form-actions">
+                        <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg me-1"></i>Ləğv et
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>Sənəd Yarat
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="~/Views/Shared/_ValidationScriptsPartial.cshtml" />
+    <script>
+        // Dynamic SenedNovu loading based on Sobe selection
+        document.getElementById('sobeSelect').addEventListener('change', function () {
+            var sobeId = this.value;
+            var novSelect = document.getElementById('senedNovuSelect');
+            novSelect.innerHTML = '<option value="">Yüklənir...</option>';
+
+            if (!sobeId) {
+                novSelect.innerHTML = '<option value="">Sənəd növü seçin...</option>';
+                return;
+            }
+
+            fetch('@Url.Action("SenedNovleriByShobe", "Sened", new { area = "SenedDovriyyesi" })?sobeId=' + sobeId)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    novSelect.innerHTML = '<option value="">Sənəd növü seçin...</option>';
+                    data.forEach(function(item) {
+                        var opt = document.createElement('option');
+                        opt.value = item.id;
+                        opt.textContent = item.ad;
+                        novSelect.appendChild(opt);
+                    });
+                })
+                .catch(function() {
+                    novSelect.innerHTML = '<option value="">Xəta baş verdi</option>';
+                });
+        });
+    </script>
+}
