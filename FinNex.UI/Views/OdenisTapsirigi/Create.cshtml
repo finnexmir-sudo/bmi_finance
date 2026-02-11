@@ -1,287 +1,277 @@
-    @model FinNex.UI.ViewModels.PR_Odenis_Tapsirigi.OdenisTapsirigiCreateVM
+@model FinNex.UI.ViewModels.PR_Odenis_Tapsirigi.OdenisTapsirigiCreateVM
 
-    <div class="payment-page">
+<div class="payment-page">
 
-        <!-- PAGE HEADER -->
-        <div class="payment-header">
-            <div class="payment-title">
-                <h2>"A" formatli odenis tapshirigi</h2>
-                <span>A-format · Daxili bank kocurmesi</span>
-            </div>
-
-            <div class="payment-meta">
-                <a asp-action="Index" class="meta-chip meta-chip-link">
-                    <i class="bi bi-arrow-left me-1"></i> Geri
-                </a>
-                <span class="meta-chip">Tehlukesiz emeliyyat</span>
-                <span class="meta-chip">Bank sistemi</span>
-            </div>
+    <!-- PAGE HEADER -->
+    <div class="payment-header">
+        <div class="payment-title">
+            <h2>"A" formatli odenis tapshirigi</h2>
+            <span>A-format · Daxili bank kocurmesi</span>
         </div>
 
-        <form method="post" class="payment-form">
+        <div class="payment-meta">
+            <a asp-action="Index" class="meta-chip meta-chip-link">
+                <i class="bi bi-arrow-left me-1"></i> Geri
+            </a>
+            <span class="meta-chip">Tehlukesiz emeliyyat</span>
+            <span class="meta-chip">Bank sistemi</span>
+        </div>
+    </div>
 
-            <!-- Hidden bank ID-leri -->
-            <input type="hidden" asp-for="Odenis.OduyenBankId" id="OduyenBankIdHidden" />
-            <input type="hidden" asp-for="Odenis.AlanBankId" id="AlanBankIdHidden" />
+    <form method="post" class="payment-form" id="paymentForm">
 
-            <!-- BANKLAR -->
-            <section class="payment-section">
-                <header class="section-header">
-                    <i class="bi bi-bank"></i>
-                    <span>Bank melumatları</span>
-                </header>
+        <!-- Hidden ID-lər -->
+        <input type="hidden" asp-for="Odenis.OduyenBankId"    id="OduyenBankIdHidden" />
+        <input type="hidden" asp-for="Odenis.AlanBankId"      id="AlanBankIdHidden" />
+        <input type="hidden" asp-for="Odenis.OduyenMusteriId" id="OduyenMusteriIdHidden" />
+        <input type="hidden" asp-for="Odenis.OduyenHesabId"   id="OduyenHesabIdHidden" />
+        <input type="hidden" asp-for="Odenis.AlanMusteriId"   id="AlanMusteriIdHidden" />
+        <input type="hidden" asp-for="Odenis.AlanHesabId"     id="AlanHesabIdHidden" />
 
-                <div class="section-body two-column">
+        <!-- BANKLAR -->
+        <section class="payment-section">
+            <header class="section-header">
+                <i class="bi bi-bank"></i>
+                <span>Bank melumatlari</span>
+            </header>
 
-                    <!-- A1 - ODUYUN BANK -->
+            <div class="section-body two-column">
+
+                <!-- A1 - ODUYEN BANK -->
                 <div class="form-group-box">
                     <div class="group-title">
-                        <span>Ödüyən bank</span>
+                        <span>Oduyen bank</span>
                         <small>A1</small>
                     </div>
 
-                    <div class="d-flex gap-2 align-items-center">
-                        <select class="form-control flex-grow-1"
-                                asp-for="Odenis.OduyenHesabId">
-                        </select>
-
-                        <!-- bosh yer -->
-                        <div class="btn-placeholder"></div>
+                    <div class="search-row">
+                        <input type="text"
+                               class="form-control"
+                               id="OduyenBankKodSearch"
+                               placeholder="Bank kodu ile axtar...">
+                        <button type="button"
+                                class="btn btn-outline-primary btn-bank"
+                                id="btnOduyenBankAxtar">
+                            <i class="bi bi-search"></i> Axtar
+                        </button>
                     </div>
+                    <div id="OduyenBankXeta" class="text-danger small mb-1" style="display:none"></div>
 
+                    <input class="form-control" id="OduyenBankAd"        placeholder="Bankin adi"    readonly>
                     <div class="grid-2">
-                        <input class="form-control" id="OduyenBankKod" placeholder="Kod" readonly>
-                        <input class="form-control" id="OduyenBankVoen" placeholder="VOEN" readonly>
+                        <input class="form-control" id="OduyenBankKod"   placeholder="Kod"           readonly>
+                        <input class="form-control" id="OduyenBankVoen"  placeholder="VOEN"          readonly>
                     </div>
-
                     <input class="form-control" id="OduyenBankMuxbirHesab" placeholder="Muxbir hesab" readonly>
-                    <input class="form-control" id="OduyenBankSwift" placeholder="SWIFT" readonly>
+                    <input class="form-control" id="OduyenBankSwift"       placeholder="SWIFT"        readonly>
                 </div>
 
-
-                    <!-- B1 - ALAN BANK -->
+                <!-- B1 - ALAN BANK -->
                 <div class="form-group-box">
                     <div class="group-title">
                         <span>Alan bank (Benefisiar)</span>
                         <small>B1</small>
                     </div>
 
-                    <div class="d-flex align-items-center gap-2">
+                    <div class="search-row">
                         <input type="text"
-                               class="form-control voen-input"
-                               id="AlanBankVoen"
-                               placeholder="VOEN">
-
+                               class="form-control"
+                               id="AlanBankKodSearch"
+                               placeholder="Bank kodu ile axtar...">
                         <button type="button"
-                                class="btn btn-outline-primary btn-bank">
-                            + Bank
+                                class="btn btn-outline-primary btn-bank"
+                                id="btnAlanBankAxtar">
+                            <i class="bi bi-search"></i> Axtar
                         </button>
                     </div>
+                    <div id="AlanBankXeta" class="text-danger small mb-1" style="display:none"></div>
 
-
-                    <input class="form-control" id="AlanBankAd" placeholder="Bankın adı" readonly>
-                    <input class="form-control" id="AlanBankKod" placeholder="Kod" readonly>
-                    <input class="form-control" id="AlanBankMuxbirHesab" placeholder="Muxbir hesab" readonly>
-                    <input class="form-control" id="AlanBankSwift" placeholder="SWIFT" readonly>
+                    <input class="form-control" id="AlanBankAd"           placeholder="Bankin adi"   readonly>
+                    <div class="grid-2">
+                        <input class="form-control" id="AlanBankKod"      placeholder="Kod"          readonly>
+                        <input class="form-control" id="AlanBankVoen"     placeholder="VOEN"         readonly>
+                    </div>
+                    <input class="form-control" id="AlanBankMuxbirHesab"  placeholder="Muxbir hesab" readonly>
+                    <input class="form-control" id="AlanBankSwift"        placeholder="SWIFT"        readonly>
                 </div>
 
-
-                    <div class="modal fade" id="newBankModal" tabindex="-1">
-                        <div class="modal-dialog modal-dialog-centered modal-lg">
-                            <div class="modal-content">
-
-                                <div class="modal-header">
-                                    <h5 class="modal-title">Yeni bank elavə et</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
-
-                                <div class="modal-body">
-
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <input class="form-control" id="NewBankName" placeholder="Bankın adı">
-                                        </div>
-
-                                        <div class="col-md-3">
-                                            <input class="form-control" id="NewBankCode" placeholder="Kod">
-                                        </div>
-
-                                        <div class="col-md-3">
-                                            <input class="form-control" id="NewBankVoen" placeholder="VOEN">
-                                        </div>
-
-                                        <div class="col-md-6">
-                                            <input class="form-control" id="NewBankSwift" placeholder="SWIFT">
-                                        </div>
-
-                                        <div class="col-md-6">
-                                            <input class="form-control" id="NewBankCorr" placeholder="Muxbir hesab">
-                                        </div>
-
-                                        <div class="col-12">
-                                            <input class="form-control" id="NewBankAgent" placeholder="Vasitechi bank (istəyə gorə)">
-                                        </div>
-                                    </div>
-
-                                </div>
-
-                                <div class="modal-footer">
-                                    <button class="btn btn-secondary" data-bs-dismiss="modal">Bağla</button>
-                                    <button class="btn btn-primary" id="saveNewBank">
-                                        Yadda saxla
-                                    </button>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-
-            <!-- MUSHTERILER -->
-            <section class="payment-section">
-                <header class="section-header">
-                    <i class="bi bi-people"></i>
-                    <span>Mushteriler</span>
-                </header>
-
-                <div class="section-body two-column">
-
-                    <div class="form-group-box">
-                        <div class="group-title">
-                            <span>Ödüyən müştəri</span>
-                            <small>A2</small>
-                        </div>
-
-                        <select class="form-control" asp-for="Odenis.OduyenMusteriId"></select>
-                        <input class="form-control" id="OduyenMusteriHesab" placeholder="Hesab №" readonly>
-                        <input class="form-control" id="OduyenMusteriVoen" placeholder="VOEN" readonly>
-                    </div>
-
-                    <div class="form-group-box">
-                        <div class="group-title">
-                            <span>Alan müştəri</span>
-                            <small>B2</small>
-                        </div>
-
-                        <!-- 1) Bazadan sechim -->
-                        <label class="form-label">Bazadan sech</label>
-                        <select class="form-control"
-                                asp-for="Odenis.AlanMusteriId">
-                            <option value="">— Bazadan sech (eger varsa) —</option>
-                        </select>
-
-                        <!-- 2) El ile daxil etme -->
-                        <label class="form-label mt-2">El ile daxil et</label>
-                        <input class="form-control"
-                               name="ManualAlanMusteriAd"
-                               placeholder="Alan mushterinin adı" />
-
-                        <input class="form-control mt-2"
-                               name="ManualAlanHesab"
-                               placeholder="Hesab №" />
-
-                        <input class="form-control mt-2"
-                               name="ManualAlanVoen"
-                               placeholder="VOEN" />
-
-                        <div class="mt-2">
-                            <button type="button"
-                                class="btn btn-outline-primary btn-bank">
-                                Bu mushterini bazaya elave et
-                            </button>
-                        </div>
-                    </div>
-
-
-                </div>
-            </section>
-
-            <!-- MEBLEG -->
-            <section class="payment-section">
-                <header class="section-header">
-                    <i class="bi bi-currency-exchange"></i>
-                    <span>Mebleg</span>
-                </header>
-
-                <div class="section-body amount-row">
-
-                    <div>
-                        <label>C1. Valyuta novu</label>
-                        <select class="form-control" asp-for="Odenis.Valyuta">
-                            <option>AZN</option>
-                            <option>USD</option>
-                            <option>EUR</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label>C2. Mebleg (reqemle)</label>
-                        <input class="form-control amount-input"
-                               asp-for="Odenis.Mebleg"
-                               value="0.00">
-                    </div>
-
-                    <div>
-                        <label>C2. Mebleg (yazı ile)</label>
-                        <input class="form-control"
-                               asp-for="Odenis.MeblegYazi"
-                               placeholder="Otuz dord manat 31 qep.">
-                    </div>
-
-                </div>
-            </section>
-
-            <!-- TEYINAT -->
-            <section class="payment-section">
-                <header class="section-header">
-                    <i class="bi bi-chat-left-text"></i>
-                    <span>Odenish teyinatı</span>
-                </header>
-
-                <div class="section-body">
-                    <label>D1. Odenishin teyinatı ve esası</label>
-                    <textarea class="form-control"
-                              rows="3"
-                              asp-for="Odenis.Teyinat"
-                              placeholder="Odenishin teyinatı"></textarea>
-
-                    <label class="mt-2">D2. Odenishle elaqedar elave informasiya</label>
-                    <input class="form-control"
-                           asp-for="Odenis.ElaveInformasiya"
-                           placeholder="Elave informasiya">
-
-                    <div class="grid-2 mt-2">
-                        <div>
-                            <label>D3. Budce tesnifatının kodu</label>
-                            <input class="form-control"
-                                   asp-for="Odenis.BudceTesnifatininKodu"
-                                   placeholder="111254">
-                        </div>
-                        <div>
-                            <label>D4. Budce seviyyesinin kodu</label>
-                            <input class="form-control"
-                                   asp-for="Odenis.BudceSeviyyesininKodu"
-                                   placeholder="1">
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ACTIONS -->
-            <div class="form-actions">
-                <button type="button" class="btn btn-primary" id="btnGenerateWord">
-                    <i class="bi bi-file-earmark-word"></i>
-                    Yadda saxla
-                </button>
-                <a asp-action="Index" class="btn btn-outline-secondary">
-                    Legv et
-                </a>
             </div>
+        </section>
 
-        </form>
-    </div>
+        <!-- MUSHTERILER -->
+        <section class="payment-section">
+            <header class="section-header">
+                <i class="bi bi-people"></i>
+                <span>Mushteriler</span>
+            </header>
+
+            <div class="section-body two-column">
+
+                <!-- A2 - ODUYEN MUSTERI -->
+                <div class="form-group-box">
+                    <div class="group-title">
+                        <span>Oduyen musteri</span>
+                        <small>A2</small>
+                    </div>
+
+                    <div class="search-row">
+                        <input type="text"
+                               class="form-control"
+                               id="OduyenMusteriVoenSearch"
+                               placeholder="VOEN ile axtar...">
+                        <button type="button"
+                                class="btn btn-outline-primary btn-bank"
+                                id="btnOduyenMusteriAxtar">
+                            <i class="bi bi-search"></i> Axtar
+                        </button>
+                    </div>
+                    <div id="OduyenMusteriXeta" class="text-danger small mb-1" style="display:none"></div>
+
+                    <input class="form-control" id="OduyenMusteriAd"   placeholder="Musterinin adi" readonly>
+                    <input class="form-control" id="OduyenMusteriVoen" placeholder="VOEN"           readonly>
+
+                    <div id="OduyenHesabSecimDiv" style="display:none">
+                        <label class="form-label mt-1">Hesabi secin</label>
+                        <select class="form-control" id="OduyenHesabSelect">
+                        </select>
+                    </div>
+
+                    <input class="form-control mt-1" id="OduyenMusteriHesab" placeholder="Hesab (IBAN)" readonly>
+                </div>
+
+                <!-- B2 - ALAN MUSTERI -->
+                <div class="form-group-box">
+                    <div class="group-title">
+                        <span>Alan musteri</span>
+                        <small>B2</small>
+                    </div>
+
+                    <div class="search-row">
+                        <input type="text"
+                               class="form-control"
+                               id="AlanMusteriVoenSearch"
+                               placeholder="VOEN ile axtar...">
+                        <button type="button"
+                                class="btn btn-outline-primary btn-bank"
+                                id="btnAlanMusteriAxtar">
+                            <i class="bi bi-search"></i> Axtar
+                        </button>
+                    </div>
+                    <div id="AlanMusteriXeta" class="text-danger small mb-1" style="display:none"></div>
+
+                    <input class="form-control" id="AlanMusteriAd"   placeholder="Musterinin adi" readonly>
+                    <input class="form-control" id="AlanMusteriVoen" placeholder="VOEN"           readonly>
+
+                    <div id="AlanHesabSecimDiv" style="display:none">
+                        <label class="form-label mt-1">Hesabi secin</label>
+                        <select class="form-control" id="AlanHesabSelect">
+                        </select>
+                    </div>
+
+                    <input class="form-control mt-1" id="AlanMusteriHesab" placeholder="Hesab (IBAN)" readonly>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- MEBLEG -->
+        <section class="payment-section">
+            <header class="section-header">
+                <i class="bi bi-currency-exchange"></i>
+                <span>Mebleg</span>
+            </header>
+
+            <div class="section-body amount-row">
+
+                <div>
+                    <label>C1. Valyuta novu</label>
+                    <select class="form-control" asp-for="Odenis.Valyuta" id="Odenis_Valyuta">
+                        <option>AZN</option>
+                        <option>USD</option>
+                        <option>EUR</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label>C2. Mebleg (reqemle)</label>
+                    <input class="form-control"
+                           asp-for="Odenis.Mebleg"
+                           id="Odenis_Mebleg"
+                           placeholder="0.00">
+                </div>
+
+                <div>
+                    <label>C2. Mebleg (yazi ile)</label>
+                    <input class="form-control"
+                           asp-for="Odenis.MeblegYazi"
+                           id="Odenis_MeblegYazi"
+                           placeholder="Otuz dord manat 31 qep."
+                           readonly>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TEYINAT -->
+        <section class="payment-section">
+            <header class="section-header">
+                <i class="bi bi-chat-left-text"></i>
+                <span>Odenish teyinati</span>
+            </header>
+
+            <div class="section-body">
+                <label>D1. Odenishin teyinati ve esasi</label>
+                <textarea class="form-control"
+                          rows="3"
+                          asp-for="Odenis.Teyinat"
+                          id="Odenis_Teyinat"
+                          placeholder="Odenishin teyinati"></textarea>
+
+                <label class="mt-2">D2. Odenishle elaqedar elave informasiya</label>
+                <input class="form-control"
+                       asp-for="Odenis.ElaveInformasiya"
+                       id="Odenis_ElaveInformasiya"
+                       placeholder="Elave informasiya">
+
+                <div class="grid-2 mt-2">
+                    <div>
+                        <label>D3. Budce tesnifatinin kodu</label>
+                        <input class="form-control"
+                               asp-for="Odenis.BudceTesnifatininKodu"
+                               id="Odenis_BudceTesnifatininKodu"
+                               placeholder="111254">
+                    </div>
+                    <div>
+                        <label>D4. Budce seviyyesinin kodu</label>
+                        <input class="form-control"
+                               asp-for="Odenis.BudceSeviyyesininKodu"
+                               id="Odenis_BudceSeviyyesininKodu"
+                               placeholder="1">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Xeta mesaji -->
+        <div id="formXetalar" class="alert alert-danger" style="display:none">
+            <strong>Xeta:</strong>
+            <ul id="formXetalarList" class="mb-0 mt-1"></ul>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="form-actions">
+            <button type="button" class="btn btn-primary" id="btnGenerateWord">
+                <i class="bi bi-file-earmark-word"></i>
+                Yadda saxla
+            </button>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                Legv et
+            </a>
+        </div>
+
+    </form>
+</div>
+
 @section Styles {
     <link rel="stylesheet" href="~/css/PR_Odenis_Tapsirigi/payment-create.css" />
 }
