@@ -144,42 +144,30 @@
         padding: 16px 12px 40px;
     }
 }
-/* Bütün input, select və düymələri 38px-ə sabitləyirik */
-/* SİL */
-.payment-page .d-flex {
-    align-items: flex-start !important;
-}
-
-
-/* Yan-yana olan elementlərin (VÖEN + Button) hizalanması */
-.payment-page .d-flex {
-    display: flex !important;
-    align-items: flex-start !important; /* Yuxarıdan bərabər başlasınlar */
+/* Axtarış sətri: input + düymə eyni hündürlükdə yan-yana */
+.payment-page .search-row {
+    display: flex;
+    align-items: center;
     gap: 8px;
-}
-
-/* Ödəyən bank tərəfdəki o lazımsız boşluğu və sürüşməni ləğv etmək üçün */
-.payment-page .btn-placeholder {
-    display: none !important;
-}
-
-/* İnputların altındakı artıq boşluqları təmizləyək */
-.payment-page .form-group-box .form-control {
     margin-bottom: 12px;
 }
-/* VÖEN + Bank button perfect alignment */
+
+.payment-page .search-row .form-control {
+    margin-bottom: 0;
+    flex: 1;
+}
+
+/* Bank / axtarış düyməsi */
 .payment-page .btn-bank {
     height: 38px;
     padding: 0 14px;
-    display: flex;
-    align-items: center; /* yazı vertikal mərkəz */
-    justify-content: center; /* yazı horizontal mərkəz */
-    line-height: 1;
-}
-
-/* input + button eyni səviyyədə */
-.payment-page .d-flex.align-items-center {
-    align-items: center !important;
+    font-size: 14px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 8px;
 }
 
 /* Meta chips */
