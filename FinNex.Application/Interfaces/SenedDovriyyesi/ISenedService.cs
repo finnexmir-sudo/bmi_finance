@@ -28,6 +28,15 @@ namespace FinNex.Application.Interfaces.SenedDovriyyesi
         Task<Result> RestoreAsync(int senedId, int userId, string? ip);
 
         Task<Result<SenedFayl>> GetFileEntityAsync(int faylId);
+        Task<Result<int>> CreateWithFileAsync(
+    SenedCreateDto dto,
+    Stream stream,
+    string originalName,
+    string contentType,
+    long size,
+    int userId,
+    string? ip);
+
     }
     public interface IFileStorageService
     {

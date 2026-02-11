@@ -9,7 +9,9 @@ public class LocalFileStorageService : IFileStorageService
 
     public LocalFileStorageService(IConfiguration config)
     {
-        _root = config["DocumentStorage:RootPath"] ?? Path.Combine(Directory.GetCurrentDirectory(), "App_Data", "Documents");
+        _root = config["DocumentStorage:RootPath"]
+            ?? Path.Combine(Directory.GetCurrentDirectory(), "App_Data", "Documents");
+
         Directory.CreateDirectory(_root);
     }
 
@@ -17,16 +19,19 @@ public class LocalFileStorageService : IFileStorageService
         Stream stream, string originalName, string contentType)
     {
         var ext = Path.GetExtension(originalName);
-        var safeExt = string.IsNullOrEmpty(ext) ? ".bin" : ext;
+        var safeExt = string.IsNullOrWhiteSpace(ext) ? ".bin" : ext;
+
         var storedName = $"{Guid.NewGuid():N}{safeExt}";
 
         var datePath = DateTime.Now.ToString("yyyy/MM");
-        var dir = Path.Combine(_root, datePath);
-        Directory.CreateDirectory(dir);
+        var relativePath = Path.Combine(datePath, storedName);
 
-        var fullPath = Path.Combine(dir, storedName);
+        var fullDirectory = Path.Combine(_root, datePath);
+        Directory.CreateDirectory(fullDirectory);
 
-        // Compute SHA256 first
+        var fullPath = Path.Combine(fullDirectory, storedName);
+
+        // SHA256
         stream.Position = 0;
         var sha256 = await HashHelper.Sha256Async(stream);
 
@@ -35,15 +40,18 @@ public class LocalFileStorageService : IFileStorageService
         using var fs = new FileStream(fullPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
         await stream.CopyToAsync(fs);
 
-        return (storedName, fullPath, sha256);
+        // DB-ə relative path qaytarırıq
+        return (storedName, relativePath, sha256);
     }
 
-    public Task<Stream> OpenReadAsync(string path)
+    public Task<Stream> OpenReadAsync(string relativePath)
     {
-        if (!File.Exists(path))
-            throw new FileNotFoundException("Fayl tapılmadı.", path);
+        var fullPath = Path.Combine(_root, relativePath);
 
-        Stream s = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        if (!File.Exists(fullPath))
+            throw new FileNotFoundException("Fayl tapılmadı.", fullPath);
+
+        Stream s = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         return Task.FromResult(s);
     }
 }

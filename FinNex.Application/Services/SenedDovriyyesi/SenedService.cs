@@ -1,14 +1,14 @@
 using AutoMapper;
 using FinNex.Application.Common.Paged;
 using FinNex.Application.Common.Results;
-using FinNex.Application.DTOs.SenedDovriyyesi;
 using FinNex.Application.DTOs.SenedDovriyyesi.Fayl;
 using FinNex.Application.DTOs.SenedDovriyyesi.Sened;
 using FinNex.Application.Interfaces.SenedDovriyyesi;
+using FinNex.DataAccess.UnitOfWorks;
 using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
+using Microsoft.Identity.Client.Extensions.Msal;
 
 namespace FinNex.Application.Services.SenedDovriyyesi
 {
@@ -292,49 +292,112 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             return Result<SenedFayl>.Ok(fayl);
         }
 
-    }
-    public class AuditLogService : IAuditLogService
-    {
-        private readonly IUnitOfWork _uow;
-        private readonly IMapper _mapper;
-
-        public AuditLogService(IUnitOfWork uow, IMapper mapper)
+        public async Task<Result<int>> CreateWithFileAsync(
+    SenedCreateDto dto,
+    Stream stream,
+    string originalName,
+    string contentType,
+    long size,
+    int userId,
+    string? ip)
         {
-            _uow = uow;
-            _mapper = mapper;
-        }
+            await using var transaction = await _uow.BeginTransactionAsync();
 
-        public async Task WriteAsync(int userId, string action, int? senedId, string? ip, object? details = null)
-        {
-            string? json = null;
-
-            if (details != null)
+            try
             {
-                json = JsonSerializer.Serialize(details);
+                // ===== 1️⃣ VALIDATION =====
+
+                if (string.IsNullOrWhiteSpace(dto.AcarSoz))
+                    return Result<int>.Fail("Açar söz boş ola bilməz.");
+
+                var sobe = await _uow.Repository<Sobe>()
+                    .GetirAsync(x => x.Id == dto.SobeId && !x.Silinib);
+
+                if (sobe is null)
+                    return Result<int>.Fail("Şöbə tapılmadı.");
+
+                var nov = await _uow.Repository<SenedNovu>()
+                    .GetirAsync(x => x.Id == dto.SenedNovuId && !x.Silinib);
+
+                if (nov is null)
+                    return Result<int>.Fail("Sənəd növü tapılmadı.");
+
+                // ===== 2️⃣ SENED YARAT =====
+
+                var sened = new Sened
+                {
+                    SobeId = dto.SobeId,
+                    SenedNovuId = dto.SenedNovuId,
+                    Basliq = dto.Basliq.Trim(),
+                    AcarSoz = dto.AcarSoz.Trim(),
+                    Status = SenedStatusu.Yeni,
+                    YaradanIcraciId = userId
+                };
+
+                await _uow.Repository<Sened>().YaratAsync(sened);
+                await _uow.YaddaSaxlaAsync();
+
+                // ===== 3️⃣ STORAGE (FAYL YAZ) =====
+
+                var (storedName, path, sha256) =
+                    await _storage.SaveAsync(stream, originalName, contentType);
+
+                // ===== 4️⃣ SENEDFAYL YARAT =====
+
+                var senedFayl = new SenedFayl
+                {
+                    SenedId = sened.Id,
+                    VersiyaNo = 1,
+                    OriginalAd = originalName,
+                    StoredAd = storedName,
+                    ContentType = contentType,
+                    OlcuBytes = size,
+                    Sha256 = sha256,
+                    Yol = path,
+                    AktivVersiya = true,
+                    YaradanIcraciId = userId
+                };
+
+                await _uow.Repository<SenedFayl>().YaratAsync(senedFayl);
+
+                // ===== 5️⃣ TAG MAPS =====
+
+                if (dto.TagIds?.Count > 0)
+                {
+                    foreach (var tagId in dto.TagIds.Distinct())
+                    {
+                        await _uow.Repository<SenedTagMap>()
+                            .YaratAsync(new SenedTagMap
+                            {
+                                SenedId = sened.Id,
+                                TagId = tagId
+                            });
+                    }
+                }
+
+                await _uow.YaddaSaxlaAsync();
+
+                // ===== 6️⃣ AUDIT =====
+
+                await _audit.WriteAsync(userId, "CreateWithFile", sened.Id, ip,
+                    new
+                    {
+                        dto.SobeId,
+                        dto.SenedNovuId,
+                        dto.AcarSoz,
+                        originalName,
+                        size
+                    });
+
+                await transaction.CommitAsync();
+
+                return Result<int>.Ok(sened.Id, "Sənəd və fayl uğurla yaradıldı.");
             }
-
-            var log = new AuditLog
+            catch (Exception ex)
             {
-                UserId = userId,
-                Action = action,
-                SenedId = senedId,
-                Ip = ip,
-                DetailsJson = json,
-                YaradanIcraciId = userId
-            };
-
-            await _uow.Repository<AuditLog>().YaratAsync(log);
-            await _uow.YaddaSaxlaAsync();
-        }
-
-        public async Task<List<AuditLogDto>> GetBySenedIdAsync(int senedId)
-        {
-            var logs = await _uow.Repository<AuditLog>().Query()
-                .Where(x => x.SenedId == senedId && !x.Silinib)
-                .OrderByDescending(x => x.YaradilmaTarixi)
-                .ToListAsync();
-
-            return _mapper.Map<List<AuditLogDto>>(logs);
+                await transaction.RollbackAsync();
+                return Result<int>.Fail("Xəta baş verdi: " + ex.Message);
+            }
         }
 
     }

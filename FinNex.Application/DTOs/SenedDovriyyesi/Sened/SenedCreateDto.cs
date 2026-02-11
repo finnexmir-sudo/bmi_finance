@@ -37,4 +37,10 @@ namespace FinNex.Application.DTOs.SenedDovriyyesi.Sened
         public List<string> Tags { get; set; } = new();
         public List<SenedFaylDto> Fayllar { get; set; } = new();
     }
+    public class SenedNovuCreateDto
+    {
+        public int SobeId { get; set; }
+        public string Kod { get; set; }
+        public string Ad { get; set; }
+    }
 }

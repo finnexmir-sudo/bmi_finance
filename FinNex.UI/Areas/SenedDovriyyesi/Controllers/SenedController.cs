@@ -144,7 +144,8 @@ public class SenedController : Controller
     // POST: /SenedDovriyyesi/Sened/Yarat
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Yarat(SenedCreateVM vm)
+    [RequestSizeLimit(30 * 1024 * 1024)]
+    public async Task<IActionResult> Yarat(SenedCreateVM vm, IFormFile Fayl)
     {
         ViewData["Title"] = "Yeni Sənəd";
         ViewData["ActivePage"] = "Yarat";
@@ -163,8 +164,37 @@ public class SenedController : Controller
             AcarSoz = vm.AcarSoz,
             TagIds = vm.TagIds
         };
+        if (Fayl == null || Fayl.Length == 0)
+        {
+            ModelState.AddModelError("", "Fayl seçilməlidir.");
+            await LoadCreateDropdowns(vm);
+            return View(vm);
+        }
 
-        var result = await _senedService.CreateAsync(dto, GetUserId(), GetIp());
+        if (Fayl.Length > MaxFileSize)
+        {
+            ModelState.AddModelError("", "Fayl ölçüsü 25MB-dan böyük ola bilməz.");
+            await LoadCreateDropdowns(vm);
+            return View(vm);
+        }
+
+        if (!AllowedContentTypes.Contains(Fayl.ContentType))
+        {
+            ModelState.AddModelError("", "Bu fayl növü dəstəklənmir.");
+            await LoadCreateDropdowns(vm);
+            return View(vm);
+        }
+
+        using var stream = Fayl.OpenReadStream();
+            
+        var result = await _senedService.CreateWithFileAsync(
+            dto,
+            stream,
+            Fayl.FileName,
+            Fayl.ContentType,
+            Fayl.Length,
+            GetUserId(),
+            GetIp());
 
         if (!result.Success)
         {
@@ -350,4 +380,48 @@ public class SenedController : Controller
         var tagler = await _uow.Repository<Tag>().HamisiniGetirAsync(x => !x.Silinib);
         vm.Tagler = tagler.Select(t => new DropdownItemVM { Id = t.Id, Ad = t.Ad }).ToList();
     }
+    [HttpPost]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SenedNovuElaveEt(int sobeId, string kod, string ad)
+    {
+        if (string.IsNullOrWhiteSpace(kod) || string.IsNullOrWhiteSpace(ad))
+            return Json(new { success = false, message = "Kod və ad boş ola bilməz." });
+
+        // 🔎 1️⃣ Şöbə mövcuddurmu?
+        var sobe = await _uow.Repository<Sobe>()
+            .GetirAsync(x => x.Id == sobeId && x.Aktiv && !x.Silinib);
+
+        if (sobe is null)
+            return Json(new { success = false, message = "Şöbə tapılmadı." });
+
+        // 🔎 2️⃣ Eyni kod artıq varmı?
+        var exists = await _uow.Repository<SenedNovu>()
+            .GetirAsync(x => x.SobeId == sobeId && x.Kod == kod.ToUpper() && !x.Silinib);
+
+        if (exists != null)
+            return Json(new { success = false, message = "Bu kod artıq mövcuddur." });
+
+        // ✅ 3️⃣ Yarat
+        var entity = new SenedNovu
+        {
+            SobeId = sobeId,
+            Kod = kod.Trim().ToUpper(),
+            Ad = ad.Trim(),
+            Aktiv = true,
+            YaradanIcraciId = GetUserId()
+        };
+
+        await _uow.Repository<SenedNovu>().YaratAsync(entity);
+        await _uow.YaddaSaxlaAsync();
+
+        return Json(new
+        {
+            success = true,
+            id = entity.Id,
+            ad = entity.Ad
+        });
+    }
+
+
 }

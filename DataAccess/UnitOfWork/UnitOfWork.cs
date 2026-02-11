@@ -3,6 +3,7 @@ using FinNex.DataAccess.Repositories;
 using FinNex.Domain.Interfaces;
 using FinNex.Domain.Entities; // BaseEntity üçün lazımdır
 using System.Collections;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace FinNex.DataAccess.UnitOfWorks;
 
@@ -49,5 +50,9 @@ public class UnitOfWork : IUnitOfWork
     {
         _context.Dispose();
         GC.SuppressFinalize(this);
+    }
+    public async Task<IDbContextTransaction> BeginTransactionAsync()
+    {
+        return await _context.Database.BeginTransactionAsync();
     }
 }

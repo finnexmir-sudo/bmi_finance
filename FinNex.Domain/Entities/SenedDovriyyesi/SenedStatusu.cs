@@ -20,5 +20,12 @@
         Role = 2,
         Sobe = 3
     }
-
+    public enum AccessPermission
+    {
+        Oxu = 1,
+        Yukle = 2,
+        Redakte = 3,
+        Sil = 4,
+        TamHuquq = 5
+    }
 }

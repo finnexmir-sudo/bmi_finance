@@ -79,17 +79,54 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasForeignKey(x => x.AlanBankId)
             .OnDelete(DeleteBehavior.NoAction);
 
+        // -------------------------
+        // SenedTagMap (Many-to-Many)
+        // -------------------------
         builder.Entity<SenedTagMap>()
-    .HasKey(x => new { x.SenedId, x.TagId });
-        builder.Entity<Sened>()
-    .HasIndex(x => x.AcarSoz);
+            .HasKey(x => new { x.SenedId, x.TagId });
 
-        builder.Entity<Sened>()
-            .HasIndex(x => new { x.ReferenceType, x.ReferenceId });
+        builder.Entity<SenedTagMap>()
+            .HasOne(x => x.Sened)
+            .WithMany(x => x.SenedTagMaps)
+            .HasForeignKey(x => x.SenedId)
+            .OnDelete(DeleteBehavior.Cascade);
 
+        builder.Entity<SenedTagMap>()
+            .HasOne(x => x.Tag)
+            .WithMany(x => x.SenedTagMaps)
+            .HasForeignKey(x => x.TagId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // -------------------------
+        // SenedFayl Unique Version
+        // -------------------------
         builder.Entity<SenedFayl>()
             .HasIndex(x => new { x.SenedId, x.VersiyaNo })
             .IsUnique();
+
+        // -------------------------
+        // Sened Relationships
+        // -------------------------
+        builder.Entity<Sened>()
+            .HasOne(x => x.Sobe)
+            .WithMany(x => x.Senedler)
+            .HasForeignKey(x => x.SobeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Sened>()
+            .HasOne(x => x.SenedNovu)
+            .WithMany()
+            .HasForeignKey(x => x.SenedNovuId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // -------------------------
+        // SenedAccess
+        // -------------------------
+        builder.Entity<SenedAccess>()
+            .HasOne(x => x.Sened)
+            .WithMany()
+            .HasForeignKey(x => x.SenedId)
+            .OnDelete(DeleteBehavior.Cascade);
 
     }
 
