@@ -26,11 +26,14 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<OdenisTapsirigiNomresi> OdenisTapsirigiNomreleri { get; set; }
     public DbSet<Valyuta> Valyutalar { get; set; } = null!;
 
-    public DbSet<Sobe> Sobeler => Set<Sobe>();
-    public DbSet<SenedNovu> SenedNovleri => Set<SenedNovu>();
-    public DbSet<Sened> Senedler => Set<Sened>();
-    public DbSet<SenedFayl> SenedFayllar => Set<SenedFayl>();
-    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<Sened> Senedler { get; set; }
+    public DbSet<SenedFayl> SenedFayllar { get; set; }
+    public DbSet<SenedNovu> SenedNovleri { get; set; }
+    public DbSet<Sobe> Sobeler { get; set; }
+    public DbSet<Tag> Tagler { get; set; }
+    public DbSet<SenedTagMap> SenedTagMaps { get; set; }
+    public DbSet<SenedAccess> SenedAccessler { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -76,58 +79,18 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasForeignKey(x => x.AlanBankId)
             .OnDelete(DeleteBehavior.NoAction);
 
-        builder.Entity<Sobe>(e =>
-        {
-            e.ToTable("Sobeler");
-            e.Property(x => x.Kod).HasMaxLength(20).IsRequired();
-            e.Property(x => x.Ad).HasMaxLength(200).IsRequired();
-            e.HasIndex(x => x.Kod).IsUnique();
-            e.HasQueryFilter(x => !x.Silinib);
-        });
+        builder.Entity<SenedTagMap>()
+    .HasKey(x => new { x.SenedId, x.TagId });
+        builder.Entity<Sened>()
+    .HasIndex(x => x.AcarSoz);
 
-        builder.Entity<SenedNovu>(e =>
-        {
-            e.ToTable("SenedNovleri");
-            e.Property(x => x.Kod).HasMaxLength(30).IsRequired();
-            e.Property(x => x.Ad).HasMaxLength(200).IsRequired();
-            e.HasIndex(x => new { x.SobeId, x.Kod }).IsUnique();
-            e.HasQueryFilter(x => !x.Silinib);
-        });
+        builder.Entity<Sened>()
+            .HasIndex(x => new { x.ReferenceType, x.ReferenceId });
 
-        builder.Entity<Sened>(e =>
-        {
-            e.ToTable("Senedler");
-            e.Property(x => x.Basliq).HasMaxLength(250).IsRequired();
-            e.Property(x => x.AcarSoz).HasMaxLength(200).IsRequired();
-            e.HasIndex(x => x.AcarSoz);
-            e.HasQueryFilter(x => !x.Silinib);
+        builder.Entity<SenedFayl>()
+            .HasIndex(x => new { x.SenedId, x.VersiyaNo })
+            .IsUnique();
 
-            e.HasOne(x => x.Sobe).WithMany(x => x.Senedler).HasForeignKey(x => x.SobeId);
-            e.HasOne(x => x.SenedNovu).WithMany().HasForeignKey(x => x.SenedNovuId);
-        });
-
-        builder.Entity<SenedFayl>(e =>
-        {
-            e.ToTable("SenedFayllar");
-            e.Property(x => x.OriginalAd).HasMaxLength(260).IsRequired();
-            e.Property(x => x.StoredAd).HasMaxLength(260).IsRequired();
-            e.Property(x => x.ContentType).HasMaxLength(100).IsRequired();
-            e.Property(x => x.Sha256).HasMaxLength(64).IsRequired();
-            e.Property(x => x.Yol).HasMaxLength(500).IsRequired();
-
-            e.HasIndex(x => new { x.SenedId, x.VersiyaNo }).IsUnique();
-            e.HasQueryFilter(x => !x.Silinib);
-
-            e.HasOne(x => x.Sened).WithMany(x => x.Fayllar).HasForeignKey(x => x.SenedId);
-        });
-
-        builder.Entity<AuditLog>(e =>
-        {
-            e.ToTable("AuditLogs");
-            e.Property(x => x.UserId).HasMaxLength(100).IsRequired();
-            e.Property(x => x.Action).HasMaxLength(50).IsRequired();
-            e.HasQueryFilter(x => !x.Silinib);
-        });
     }
 
     // ƏN VACİB HİSSƏ: SaveChanges zamanı avtomatik Audit məlumatlarının doldurulması

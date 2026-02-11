@@ -33,5 +33,7 @@ namespace FinNex.Domain.Interfaces
                bool izlemeden = false);
 
         Task<int> SayAsync(Expression<Func<T, bool>>? predicate = null);
+        IQueryable<T> Query();
+
     }
 }

@@ -106,4 +106,8 @@ public class EfRepositoryAsync<T> : IRepositoryAsync<T> where T : BaseEntity
 
         return await _dbSet.CountAsync(x => !x.Silinib);
     }
+    public IQueryable<T> Query()
+    {
+        return _context.Set<T>().Where(x => !x.Silinib);
+    }
 }
