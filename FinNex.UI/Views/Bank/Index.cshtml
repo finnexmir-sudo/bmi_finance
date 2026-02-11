@@ -32,9 +32,9 @@
                 <thead>
                     <tr>
                         <th class="ps-4">Bankin Adi</th>
-                        <th>SWIFT / Kod</th>
+                        <th>Kod</th>
                         <th>VOEN</th>
-                        <th>Status</th>
+                        <th>SWIFT / BIC</th>
                         <th class="text-center">Emeliyyatlar</th>
                     </tr>
                 </thead>
@@ -44,17 +44,26 @@
                         @foreach (var bank in Model)
                         {
                             <tr>
-                                <td class="ps-4 fw-bold text-primary">@bank.Ad</td>
+                                <td class="ps-4 fw-bold">@bank.Ad</td>
                                 <td><span class="badge bg-light text-dark border">@bank.Kod</span></td>
                                 <td>@bank.Voen</td>
-                                <td><span class="badge bg-success">Aktiv</span></td>
+                                <td class="text-muted">@bank.SwiftBic</td>
                                 <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-primary action-btn-sm me-1">
+                                    <a asp-action="Duzelis" asp-route-id="@bank.Id"
+                                       class="btn btn-sm btn-outline-primary action-btn-sm me-1"
+                                       title="Duzelis et">
                                         <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger action-btn-sm">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    </a>
+                                    <form asp-action="Sil" asp-route-id="@bank.Id"
+                                          method="post" style="display:inline"
+                                          onsubmit="return confirm('Bu banki silmek isteyirsinizmi?')">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-danger action-btn-sm"
+                                                title="Sil">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         }
