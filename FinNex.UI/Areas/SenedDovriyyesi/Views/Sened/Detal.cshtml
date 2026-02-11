@@ -1,0 +1,369 @@
+@model SenedDetailVM
+
+<!-- Header Panel -->
+<div class="sd-detail-header">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <div class="sd-detail-icon">
+                    <i class="bi bi-file-earmark-text"></i>
+                </div>
+                <div>
+                    <h4 class="mb-1 fw-bold">@Model.Basliq</h4>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        @{
+                            var badgeClass = Model.Status switch
+                            {
+                                SenedStatusu.Yeni => "sd-badge-info",
+                                SenedStatusu.Yoxlanilir => "sd-badge-warning",
+                                SenedStatusu.Tesdiq => "sd-badge-success",
+                                SenedStatusu.Arxiv => "sd-badge-secondary",
+                                _ => "sd-badge-secondary"
+                            };
+                            var statusText = Model.Status switch
+                            {
+                                SenedStatusu.Yeni => "Yeni",
+                                SenedStatusu.Yoxlanilir => "Yoxlanılır",
+                                SenedStatusu.Tesdiq => "Təsdiqlənmiş",
+                                SenedStatusu.Arxiv => "Arxiv",
+                                _ => "Naməlum"
+                            };
+                        }
+                        <span class="sd-badge @badgeClass">@statusText</span>
+                        <span class="text-muted small">
+                            <i class="bi bi-calendar3 me-1"></i>@Model.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")
+                        </span>
+                        <span class="text-muted small">
+                            <i class="bi bi-building me-1"></i>@Model.Sobe
+                        </span>
+                        <span class="text-muted small">
+                            <i class="bi bi-file-earmark me-1"></i>@Model.SenedNovu
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
+               class="btn btn-sm btn-outline-secondary me-1">
+                <i class="bi bi-arrow-left me-1"></i>Geri
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Metadata & Status Actions -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <!-- Metadata Card -->
+        <div class="sd-card mb-3">
+            <div class="sd-card-header">
+                <i class="bi bi-info-circle me-2"></i>Sənəd Məlumatları
+            </div>
+            <div class="sd-card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="sd-meta-item">
+                            <div class="sd-meta-label">Sənəd ID</div>
+                            <div class="sd-meta-value">#@Model.Id</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="sd-meta-item">
+                            <div class="sd-meta-label">Şöbə</div>
+                            <div class="sd-meta-value">@Model.Sobe</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="sd-meta-item">
+                            <div class="sd-meta-label">Sənəd Növü</div>
+                            <div class="sd-meta-value">@Model.SenedNovu</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="sd-meta-item">
+                            <div class="sd-meta-label">Yaradılma Tarixi</div>
+                            <div class="sd-meta-value">@Model.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</div>
+                        </div>
+                    </div>
+                    @if (Model.YenilenmeTarixi.HasValue)
+                    {
+                        <div class="col-md-6">
+                            <div class="sd-meta-item">
+                                <div class="sd-meta-label">Son Yenilənmə</div>
+                                <div class="sd-meta-value">@Model.YenilenmeTarixi.Value.ToString("dd.MM.yyyy HH:mm")</div>
+                            </div>
+                        </div>
+                    }
+                    <div class="col-12">
+                        <div class="sd-meta-item">
+                            <div class="sd-meta-label">Açar Söz</div>
+                            <div class="sd-meta-value">@Model.AcarSoz</div>
+                        </div>
+                    </div>
+                    @if (Model.Tags.Any())
+                    {
+                        <div class="col-12">
+                            <div class="sd-meta-item">
+                                <div class="sd-meta-label">Tag-lər</div>
+                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                    @foreach (var tag in Model.Tags)
+                                    {
+                                        <span class="sd-tag">@tag</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- File Versions -->
+        <div class="sd-card mb-3">
+            <div class="sd-card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-paperclip me-2"></i>Fayl Versiyaları (@Model.Fayllar.Count)</span>
+            </div>
+            <div class="sd-card-body p-0">
+                @if (Model.Fayllar.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table sd-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Versiya</th>
+                                    <th>Fayl Adı</th>
+                                    <th>Tip</th>
+                                    <th>Ölçü</th>
+                                    <th>SHA256</th>
+                                    <th>Tarix</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var f in Model.Fayllar)
+                                {
+                                    <tr class="@(f.AktivVersiya ? "sd-active-version" : "")">
+                                        <td>
+                                            <span class="fw-semibold">v@(f.VersiyaNo)</span>
+                                            @if (f.AktivVersiya)
+                                            {
+                                                <span class="sd-badge sd-badge-success ms-1">Aktiv</span>
+                                            }
+                                        </td>
+                                        <td class="fw-semibold">@f.OriginalAd</td>
+                                        <td class="text-muted small">@f.ContentType</td>
+                                        <td class="text-muted text-nowrap">@f.FormattedSize</td>
+                                        <td>
+                                            <code class="sd-sha256" title="@f.Sha256">
+                                                @(f.Sha256.Length > 16 ? f.Sha256.Substring(0, 16) + "..." : f.Sha256)
+                                            </code>
+                                        </td>
+                                        <td class="text-muted text-nowrap">@f.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</td>
+                                        <td class="text-end">
+                                            <a asp-area="SenedDovriyyesi" asp-controller="Sened"
+                                               asp-action="Download" asp-route-id="@f.Id"
+                                               class="btn btn-sm btn-outline-primary sd-btn-sm" title="Yüklə">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-cloud-upload fs-1 d-block mb-2 opacity-25"></i>
+                        Hələ fayl yüklənməyib
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Status Change -->
+        <div class="sd-card mb-3">
+            <div class="sd-card-header">
+                <i class="bi bi-arrow-repeat me-2"></i>Status Dəyiş
+            </div>
+            <div class="sd-card-body">
+                <form asp-area="SenedDovriyyesi" asp-controller="Sened"
+                      asp-action="StatusDeyis" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="senedId" value="@Model.Id" />
+                    <div class="d-grid gap-2">
+                        @if (Model.Status != SenedStatusu.Yoxlanilir)
+                        {
+                            <button type="submit" name="status" value="@SenedStatusu.Yoxlanilir"
+                                    class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-hourglass-split me-1"></i>Yoxlamaya Göndər
+                            </button>
+                        }
+                        @if (Model.Status != SenedStatusu.Tesdiq)
+                        {
+                            <button type="submit" name="status" value="@SenedStatusu.Tesdiq"
+                                    class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-check-circle me-1"></i>Təsdiqlə
+                            </button>
+                        }
+                        @if (Model.Status != SenedStatusu.Arxiv)
+                        {
+                            <button type="submit" name="status" value="@SenedStatusu.Arxiv"
+                                    class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-archive me-1"></i>Arxivə Göndər
+                            </button>
+                        }
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Upload New Version -->
+        <div class="sd-card mb-3">
+            <div class="sd-card-header">
+                <i class="bi bi-cloud-arrow-up me-2"></i>Yeni Versiya Yüklə
+            </div>
+            <div class="sd-card-body">
+                <form asp-area="SenedDovriyyesi" asp-controller="Sened"
+                      asp-action="Upload" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="senedId" value="@Model.Id" />
+                    <div class="mb-3">
+                        <input type="file" name="fayl" id="fileInput" class="form-control form-control-sm"
+                               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt,.zip,.rar" />
+                        <div class="form-text">Maks. 25MB. PDF, Word, Excel, Image, ZIP, RAR</div>
+                    </div>
+                    <div id="filePreview" class="mb-3" style="display:none;">
+                        <div class="sd-file-preview">
+                            <i class="bi bi-file-earmark me-2"></i>
+                            <span id="fileName"></span>
+                            <span id="fileSize" class="text-muted ms-2"></span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary w-100" id="uploadBtn" disabled>
+                        <i class="bi bi-upload me-1"></i>Yüklə
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="sd-card sd-card-danger">
+            <div class="sd-card-header sd-card-header-danger">
+                <i class="bi bi-exclamation-triangle me-2"></i>Təhlükəli Zona
+            </div>
+            <div class="sd-card-body">
+                <form asp-area="SenedDovriyyesi" asp-controller="Sened"
+                      asp-action="Sil" method="post"
+                      onsubmit="return confirm('Bu sənədi silmək istədiyinizə əminsiniz?')">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                        <i class="bi bi-trash3 me-1"></i>Sənədi Sil
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Audit Log Timeline -->
+<div class="sd-card">
+    <div class="sd-card-header">
+        <i class="bi bi-clock-history me-2"></i>Audit Log (Əməliyyat Tarixçəsi)
+    </div>
+    <div class="sd-card-body">
+        @if (Model.AuditLogs.Any())
+        {
+            <div class="sd-timeline">
+                @foreach (var log in Model.AuditLogs)
+                {
+                    var actionIcon = log.Action switch
+                    {
+                        "Create" => "bi-plus-circle text-primary",
+                        "Upload" => "bi-cloud-arrow-up text-info",
+                        "Status" => "bi-arrow-repeat text-warning",
+                        "SoftDelete" => "bi-trash3 text-danger",
+                        "Restore" => "bi-arrow-counterclockwise text-success",
+                        _ => "bi-dot text-muted"
+                    };
+                    var actionText = log.Action switch
+                    {
+                        "Create" => "Sənəd yaradıldı",
+                        "Upload" => "Yeni versiya yükləndi",
+                        "Status" => "Status dəyişdirildi",
+                        "SoftDelete" => "Sənəd silindi",
+                        "Restore" => "Sənəd bərpa edildi",
+                        _ => log.Action
+                    };
+                    <div class="sd-timeline-item">
+                        <div class="sd-timeline-dot">
+                            <i class="bi @actionIcon"></i>
+                        </div>
+                        <div class="sd-timeline-content">
+                            <div class="sd-timeline-title">@actionText</div>
+                            <div class="sd-timeline-meta">
+                                <span><i class="bi bi-clock me-1"></i>@log.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm:ss")</span>
+                                <span><i class="bi bi-person me-1"></i>User #@log.UserId</span>
+                                @if (!string.IsNullOrEmpty(log.Ip))
+                                {
+                                    <span><i class="bi bi-globe me-1"></i>@log.Ip</span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(log.DetailsJson))
+                            {
+                                <code class="sd-timeline-details">@log.DetailsJson</code>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-clock-history fs-1 d-block mb-2 opacity-25"></i>
+                Əməliyyat tarixçəsi boşdur
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // File upload preview
+        document.getElementById('fileInput').addEventListener('change', function () {
+            var preview = document.getElementById('filePreview');
+            var uploadBtn = document.getElementById('uploadBtn');
+
+            if (this.files.length > 0) {
+                var file = this.files[0];
+                var maxSize = 25 * 1024 * 1024;
+
+                if (file.size > maxSize) {
+                    alert('Fayl ölçüsü 25MB-dan böyük ola bilməz.');
+                    this.value = '';
+                    preview.style.display = 'none';
+                    uploadBtn.disabled = true;
+                    return;
+                }
+
+                document.getElementById('fileName').textContent = file.name;
+                var sizeKB = (file.size / 1024).toFixed(1);
+                var sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+                document.getElementById('fileSize').textContent = file.size > 1024 * 1024
+                    ? '(' + sizeMB + ' MB)'
+                    : '(' + sizeKB + ' KB)';
+                preview.style.display = 'block';
+                uploadBtn.disabled = false;
+            } else {
+                preview.style.display = 'none';
+                uploadBtn.disabled = true;
+            }
+        });
+    </script>
+}

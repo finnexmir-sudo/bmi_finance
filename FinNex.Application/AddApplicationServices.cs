@@ -29,8 +29,8 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<ISenedService, SenedService>();
         services.AddScoped<IAuditLogService, AuditLogService>();
 
-        // Storage (bunu Infrastructure/DataAccess-da edəcəksən)
-        // services.AddScoped<IFileStorageService, FileServerStorageService>();
+        // Storage
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
         // AutoMapper üçün aşağıdakı düzəlişə bax
         services.AddAutoMapper(typeof(Mapping));

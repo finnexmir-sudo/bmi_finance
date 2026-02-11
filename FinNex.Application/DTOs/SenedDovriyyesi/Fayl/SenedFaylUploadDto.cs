@@ -15,6 +15,7 @@
         public string OriginalAd { get; set; } = null!;
         public string ContentType { get; set; } = null!;
         public long OlcuBytes { get; set; }
+        public string Sha256 { get; set; } = null!;
         public bool AktivVersiya { get; set; }
         public DateTime YaradilmaTarixi { get; set; }
     }

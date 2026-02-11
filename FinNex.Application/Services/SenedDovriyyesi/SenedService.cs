@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FinNex.Application.Common.Paged;
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.SenedDovriyyesi;
@@ -109,9 +109,39 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             });
         }
 
+        public async Task<Result<PagedResult<SenedListDto>>> GetDeletedPagedAsync(PagedRequest req)
+        {
+            var query = _uow.Repository<Sened>().Query()
+                .IgnoreQueryFilters()
+                .Where(x => x.Silinib)
+                .Include(x => x.Sobe)
+                .Include(x => x.SenedNovu)
+                .Include(x => x.Fayllar);
+
+            var total = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(x => x.SilinmeTarixi)
+                .Skip((req.Page - 1) * req.PageSize)
+                .Take(req.PageSize)
+                .ToListAsync();
+
+            var dto = _mapper.Map<List<SenedListDto>>(items);
+
+            return Result<PagedResult<SenedListDto>>.Ok(new PagedResult<SenedListDto>
+            {
+                Items = dto,
+                TotalCount = total,
+                Page = req.Page,
+                PageSize = req.PageSize
+            });
+        }
+
         public async Task<Result<SenedDetailDto>> GetDetailAsync(int senedId)
         {
             var sened = await _uow.Repository<Sened>().Query()
+                .Include(x => x.Sobe)
+                .Include(x => x.SenedNovu)
                 .Include(x => x.Fayllar)
                 .Include(x => x.SenedTagMaps).ThenInclude(m => m.Tag)
                 .FirstOrDefaultAsync(x => x.Id == senedId && !x.Silinib);
@@ -119,6 +149,37 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             if (sened is null) return Result<SenedDetailDto>.Fail("Sənəd tapılmadı.");
 
             return Result<SenedDetailDto>.Ok(_mapper.Map<SenedDetailDto>(sened));
+        }
+
+        public async Task<Result<SenedDashboardDto>> GetDashboardAsync()
+        {
+            var query = _uow.Repository<Sened>().Query().Where(x => !x.Silinib);
+
+            var umumi = await query.CountAsync();
+            var yeni = await query.CountAsync(x => x.Status == SenedStatusu.Yeni);
+            var yoxlanilir = await query.CountAsync(x => x.Status == SenedStatusu.Yoxlanilir);
+            var tesdiq = await query.CountAsync(x => x.Status == SenedStatusu.Tesdiq);
+            var arxiv = await query.CountAsync(x => x.Status == SenedStatusu.Arxiv);
+
+            var sonSenedler = await query
+                .Include(x => x.Sobe)
+                .Include(x => x.SenedNovu)
+                .Include(x => x.Fayllar)
+                .OrderByDescending(x => x.YaradilmaTarixi)
+                .Take(10)
+                .ToListAsync();
+
+            var dto = new SenedDashboardDto
+            {
+                UmumiSenedler = umumi,
+                YeniSenedler = yeni,
+                YoxlanilirSenedler = yoxlanilir,
+                TesdiqSenedler = tesdiq,
+                ArxivSenedler = arxiv,
+                SonSenedler = _mapper.Map<List<SenedListDto>>(sonSenedler)
+            };
+
+            return Result<SenedDashboardDto>.Ok(dto);
         }
 
         public async Task<Result<int>> UploadNewVersionAsync(SenedFaylUploadDto dto, int userId, string? ip)
@@ -224,12 +285,24 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             return Result.Ok("Sənəd bərpa edildi.");
         }
 
+        public async Task<Result<SenedFayl>> GetFileEntityAsync(int faylId)
+        {
+            var fayl = await _uow.Repository<SenedFayl>().GetirAsync(x => x.Id == faylId && !x.Silinib);
+            if (fayl is null) return Result<SenedFayl>.Fail("Fayl tapılmadı.");
+            return Result<SenedFayl>.Ok(fayl);
+        }
+
     }
     public class AuditLogService : IAuditLogService
     {
         private readonly IUnitOfWork _uow;
+        private readonly IMapper _mapper;
 
-        public AuditLogService(IUnitOfWork uow) => _uow = uow;
+        public AuditLogService(IUnitOfWork uow, IMapper mapper)
+        {
+            _uow = uow;
+            _mapper = mapper;
+        }
 
         public async Task WriteAsync(int userId, string action, int? senedId, string? ip, object? details = null)
         {
@@ -252,6 +325,16 @@ namespace FinNex.Application.Services.SenedDovriyyesi
 
             await _uow.Repository<AuditLog>().YaratAsync(log);
             await _uow.YaddaSaxlaAsync();
+        }
+
+        public async Task<List<AuditLogDto>> GetBySenedIdAsync(int senedId)
+        {
+            var logs = await _uow.Repository<AuditLog>().Query()
+                .Where(x => x.SenedId == senedId && !x.Silinib)
+                .OrderByDescending(x => x.YaradilmaTarixi)
+                .ToListAsync();
+
+            return _mapper.Map<List<AuditLogDto>>(logs);
         }
 
     }
