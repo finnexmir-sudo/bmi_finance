@@ -5,5 +5,6 @@ namespace FinNex.Application.Interfaces.PR_Odenis_Tapsirigi
 {
     public interface IBankService : IServiceAsync<Bank, BankDetailDto, BankCreateDto, BankUpdateDto>
     {
+        Task<BankDetailDto?> KodlaAxtar(string kod);
     }
 }

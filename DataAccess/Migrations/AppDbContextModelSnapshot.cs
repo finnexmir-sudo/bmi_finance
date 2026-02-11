@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace DataAccess.Migrations
+namespace FinNex.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     partial class AppDbContextModelSnapshot : ModelSnapshot
@@ -212,9 +212,8 @@ namespace DataAccess.Migrations
                     b.Property<DateTime?>("SilinmeTarixi")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Valyuta")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("ValyutaId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("YaradanIcraciId")
                         .HasColumnType("int");
@@ -231,6 +230,8 @@ namespace DataAccess.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BankId");
+
+                    b.HasIndex("ValyutaId");
 
                     b.ToTable("BankHesablari");
                 });
@@ -301,9 +302,8 @@ namespace DataAccess.Migrations
                     b.Property<DateTime?>("SilinmeTarixi")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Valyuta")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("ValyutaId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("YaradanIcraciId")
                         .HasColumnType("int");
@@ -320,6 +320,8 @@ namespace DataAccess.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("MusteriId");
+
+                    b.HasIndex("ValyutaId");
 
                     b.ToTable("MusteriHesablari");
                 });
@@ -385,9 +387,8 @@ namespace DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Valyuta")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("ValyutaId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("YaradanIcraciId")
                         .HasColumnType("int");
@@ -414,6 +415,8 @@ namespace DataAccess.Migrations
                     b.HasIndex("OduyenHesabId");
 
                     b.HasIndex("OduyenMusteriId");
+
+                    b.HasIndex("ValyutaId");
 
                     b.ToTable("OdenisTapsiriqlari");
                 });
@@ -497,6 +500,48 @@ namespace DataAccess.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Departments");
+                });
+
+            modelBuilder.Entity("FinNex.Domain.Entities.Valyuta", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Ad")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Kod")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("SilenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Silinib")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SilinmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YaradanIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("YaradilmaTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("YenilenmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YenileyenIcraciId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Valyutalar");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
@@ -610,7 +655,15 @@ namespace DataAccess.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("FinNex.Domain.Entities.Valyuta", "Valyuta")
+                        .WithMany()
+                        .HasForeignKey("ValyutaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Bank");
+
+                    b.Navigation("Valyuta");
                 });
 
             modelBuilder.Entity("FinNex.Domain.Entities.PR_Odenis_Tapsirigi.MusteriHesabi", b =>
@@ -621,7 +674,15 @@ namespace DataAccess.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("FinNex.Domain.Entities.Valyuta", "Valyuta")
+                        .WithMany()
+                        .HasForeignKey("ValyutaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Musteri");
+
+                    b.Navigation("Valyuta");
                 });
 
             modelBuilder.Entity("FinNex.Domain.Entities.PR_Odenis_Tapsirigi.OdenisTapsirigi", b =>
@@ -662,6 +723,12 @@ namespace DataAccess.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
+                    b.HasOne("FinNex.Domain.Entities.Valyuta", "Valyuta")
+                        .WithMany()
+                        .HasForeignKey("ValyutaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("AlanBank");
 
                     b.Navigation("AlanHesab");
@@ -673,6 +740,8 @@ namespace DataAccess.Migrations
                     b.Navigation("OduyenHesab");
 
                     b.Navigation("OduyenMusteri");
+
+                    b.Navigation("Valyuta");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>

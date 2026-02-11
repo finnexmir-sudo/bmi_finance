@@ -6,5 +6,6 @@ public class MusteriHesabi : BaseEntity
     public Musteri Musteri { get; set; } = null!;
 
     public string Iban { get; set; } = null!;
-    public string Valyuta { get; set; } = null!;
+    public int ValyutaId { get; set; }
+    public Valyuta Valyuta { get; set; } = null!;
 }

@@ -6,7 +6,7 @@ using FinNex.Domain.Interfaces;
 
 namespace FinNex.Application.Services.PR_Odenis_Tapsirigi
 {
-    public class MusteriHesabiService : ServiceAsync<MusteriHesabi, MusteriHesabiDetailDto, MusteriHesabiCreateDto, MusteriHesabiUpdateDto>, IMusteriHesabiService
+    public class MusteriHesabiService : ServiceAsync<MusteriHesabi, MusteriHesabiDto, MusteriHesabiCreateDto, MusteriHesabiUpdateDto>, IMusteriHesabiService
     {
         public MusteriHesabiService(IUnitOfWork unitOfWork, IMapper mapper) : base(unitOfWork, mapper) { }
     }

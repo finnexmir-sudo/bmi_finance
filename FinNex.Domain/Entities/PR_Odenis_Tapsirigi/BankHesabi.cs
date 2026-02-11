@@ -6,5 +6,6 @@ public class BankHesabi : BaseEntity
     public Bank Bank { get; set; } = null!; // Navigation Property
 
     public string Iban { get; set; } = null!;
-    public string Valyuta { get; set; } = null!;
+    public int ValyutaId { get; set; }
+    public Valyuta Valyuta { get; set; } = null!;
 }

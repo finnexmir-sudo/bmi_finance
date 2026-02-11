@@ -1,6 +1,6 @@
 ﻿using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
-using FinNex.UI.ViewModels.PR_Odenis_Tapsirigi;
+using FinNex.UI.Areas.PR_Odenis_Tapsirigi.ViewModels;
 
 namespace FinNex.UI.Services.PR_Odenis_Tapsirigi;
 

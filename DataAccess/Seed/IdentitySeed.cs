@@ -1,5 +1,8 @@
-﻿using FinNex.Domain;
+﻿using FinNex.DataAccess.Contexts;
+using FinNex.Domain;
+using FinNex.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FinNex.DataAccess.Seed
@@ -53,6 +56,25 @@ namespace FinNex.DataAccess.Seed
                 {
                     await userManager.AddToRoleAsync(adminUser, "Admin");
                 }
+            }
+
+            // ======================
+            // 3. Valyutalar
+            // ======================
+
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            if (!await context.Set<Valyuta>().AnyAsync())
+            {
+                var valyutalar = new List<Valyuta>
+    {
+        new Valyuta { Kod = "AZN", Ad = "Azerbaycan Manati", Silinib = true },
+        new Valyuta { Kod = "USD", Ad = "US Dollar", Silinib = true },
+        new Valyuta { Kod = "EUR", Ad = "Euro", Silinib = true }
+    };
+
+                context.AddRange(valyutalar);
+                await context.SaveChangesAsync();
             }
         }
     }

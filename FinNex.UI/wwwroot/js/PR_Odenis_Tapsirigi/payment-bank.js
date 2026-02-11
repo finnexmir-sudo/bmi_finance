@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!kod) { xeta(errId, 'Bank kodunu daxil edin.'); return; }
 
         try {
-            const r = await fetch('/OdenisTapsirigi/BankiKodlaAxtar?kod=' + encodeURIComponent(kod));
+            const r = await fetch('/PR_Odenis_Tapsirigi/OdenisTapsirigi/BankiKodlaAxtar?kod=' + encodeURIComponent(kod));
             if (!r.ok) { xeta(errId, 'Server xətası: ' + r.status); return; }
             const d = await r.json();
 
@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!voen) { xeta(errId, 'VOEN daxil edin.'); return; }
 
         try {
-            const r = await fetch('/OdenisTapsirigi/MusteriVoenleAxtar?voen=' + encodeURIComponent(voen));
+            const r = await fetch('/PR_Odenis_Tapsirigi/OdenisTapsirigi/MusteriVoenleAxtar?voen=' + encodeURIComponent(voen));
             if (!r.ok) { xeta(errId, 'Server xətası: ' + r.status); return; }
             const d = await r.json();
 
@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!out) return;
         if (!v || isNaN(parseFloat(v))) { out.value = ''; return; }
         try {
-            const r = await fetch('/OdenisTapsirigi/MeblegiSoze?mebleg=' + encodeURIComponent(v));
+            const r = await fetch('/PR_Odenis_Tapsirigi/OdenisTapsirigi/MeblegiSoze?mebleg=' + encodeURIComponent(v));
             if (r.ok) { const d = await r.json(); out.value = d.metn || ''; }
         } catch (_) {}
     }

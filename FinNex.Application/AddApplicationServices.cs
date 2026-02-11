@@ -1,5 +1,7 @@
 ﻿
 using FinNex.Application.Interfaces.PR_Odenis_Tapsirigi;
+using FinNex.Application.MappingProfile.PR_Odenis_Tapsirigi;
+using FinNex.Application.Services;
 using FinNex.Application.Services.PR_Odenis_Tapsirigi;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,9 +17,10 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IMusteriHesabiService, MusteriHesabiService>();
         services.AddScoped<IOdenisTapsirigiService, OdenisTapsirigiService>();
         services.AddScoped<IOdenisTapsirigiNomreService, OdenisTapsirigiNomreService>();
+        services.AddScoped<IValyutaService, ValyutaService>();
 
 
         // AutoMapper üçün aşağıdakı düzəlişə bax
-        services.AddAutoMapper(typeof(MappingProfile));
+        services.AddAutoMapper(typeof(Mapping));
     }
 }

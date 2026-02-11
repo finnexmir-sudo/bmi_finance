@@ -29,7 +29,8 @@ public class OdenisTapsirigi : BaseEntity
 
     // C - Mebleg
     public decimal Mebleg { get; set; }
-    public string Valyuta { get; set; } = null!;
+    public int ValyutaId { get; set; }
+    public Valyuta Valyuta { get; set; } = null!;
     public string? MeblegYazi { get; set; }
 
     // D1 - Odenishin teyinati ve esasi

@@ -20,4 +20,10 @@
     <ProjectReference Include="..\FinNex.Domain\FinNex.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Areas\SenedDovriyyesi\Controllers\" />
+    <Folder Include="Areas\SenedDovriyyesi\Views\" />
+    <Folder Include="Areas\SenedDovriyyesi\ViewModels\" />
+  </ItemGroup>
+
 </Project>
