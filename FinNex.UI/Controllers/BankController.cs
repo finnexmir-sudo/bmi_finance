@@ -36,4 +36,34 @@ public class BankController : Controller
         }
         return View(bank);
     }
+
+    // DÜZƏLİŞ – GET
+    public async Task<IActionResult> Duzelis(int id)
+    {
+        var bank = await _uow.Repository<Bank>().IdIleGetirAsync(id);
+        if (bank == null) return NotFound();
+        return View(bank);
+    }
+
+    // DÜZƏLİŞ – POST
+    [HttpPost]
+    public async Task<IActionResult> Duzelis(Bank bank)
+    {
+        if (ModelState.IsValid)
+        {
+            await _uow.Repository<Bank>().YenileAsync(bank);
+            await _uow.YaddaSaxlaAsync();
+            return RedirectToAction(nameof(Index));
+        }
+        return View(bank);
+    }
+
+    // SİL – POST
+    [HttpPost]
+    public async Task<IActionResult> Sil(int id)
+    {
+        await _uow.Repository<Bank>().YumshakSilAsync(id);
+        await _uow.YaddaSaxlaAsync();
+        return RedirectToAction(nameof(Index));
+    }
 }
