@@ -1,0 +1,187 @@
+@model SenedYukleVM
+@{
+    ViewData["Title"] = "Sənəd Yüklə";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/PR_Document/document.css" asp-append-version="true" />
+}
+
+<div class="doc-dashboard py-4">
+
+    <!-- Page Header -->
+    <div class="doc-page-header">
+        <div class="header-icon" style="background: rgba(15,118,110,0.12); color: var(--fin-primary);">
+            <i class="bi bi-cloud-upload"></i>
+        </div>
+        <div>
+            <h4>Sənəd Yüklə</h4>
+            <p>Yeni sənəd əlavə edin</p>
+        </div>
+    </div>
+
+    <!-- Breadcrumb -->
+    <nav class="mb-3">
+        <ol class="breadcrumb" style="font-size: 13px;">
+            <li class="breadcrumb-item">
+                <a asp-action="Index" class="text-decoration-none">Sənəd İdarəetməsi</a>
+            </li>
+            <li class="breadcrumb-item active">Yüklə</li>
+        </ol>
+    </nav>
+
+    <!-- Upload Form -->
+    <div class="doc-upload-card card">
+        <div class="card-body">
+            <form asp-action="Yukle" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+
+                <div class="row">
+                    <!-- Department -->
+                    <div class="col-md-6">
+                        <div class="doc-form-group">
+                            <label asp-for="SobeId">Şöbə <span class="text-danger">*</span></label>
+                            <select asp-for="SobeId" class="form-select" id="sobeSelect">
+                                <option value="">-- Şöbə seçin --</option>
+                                @foreach (var sobe in Model.Sobeler)
+                                {
+                                    <option value="@sobe.Id">@sobe.Ad</option>
+                                }
+                            </select>
+                            <span asp-validation-for="SobeId" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- Document Type -->
+                    <div class="col-md-6">
+                        <div class="doc-form-group">
+                            <label asp-for="SenedNovuId">Sənəd Növü <span class="text-danger">*</span></label>
+                            <select asp-for="SenedNovuId" class="form-select" id="senedNovuSelect">
+                                <option value="">-- Əvvəlcə şöbə seçin --</option>
+                                @foreach (var nov in Model.SenedNovleri)
+                                {
+                                    <option value="@nov.Id">@nov.Ad</option>
+                                }
+                            </select>
+                            <span asp-validation-for="SenedNovuId" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Title -->
+                <div class="doc-form-group">
+                    <label asp-for="Basliq">Başlıq <span class="text-danger">*</span></label>
+                    <input asp-for="Basliq" class="form-control" placeholder="Sənədin başlığını daxil edin" />
+                    <span asp-validation-for="Basliq" class="text-danger small"></span>
+                </div>
+
+                <!-- Keyword -->
+                <div class="doc-form-group">
+                    <label asp-for="AcarSoz">Açar söz <span class="text-danger">*</span></label>
+                    <input asp-for="AcarSoz" class="form-control"
+                           placeholder="Məsələn: FIN:ABC123 / VOEN:1234567890 / MUQ:2024-001" />
+                    <span asp-validation-for="AcarSoz" class="text-danger small"></span>
+                </div>
+
+                <!-- File Upload -->
+                <div class="doc-form-group">
+                    <label>Fayl <span class="text-danger">*</span></label>
+                    <div class="doc-file-zone" id="fileZone">
+                        <div class="file-icon"><i class="bi bi-cloud-arrow-up"></i></div>
+                        <p>Faylı bura sürükləyin və ya klikləyin</p>
+                        <div class="file-formats">PDF, JPG, PNG (maks. 10 MB)</div>
+                    </div>
+                    <input asp-for="Fayl" type="file" class="d-none" id="fileInput"
+                           accept=".pdf,.jpg,.jpeg,.png" />
+                    <div class="doc-file-name" id="fileName">
+                        <i class="bi bi-file-earmark-check text-success"></i>
+                        <span id="fileNameText"></span>
+                    </div>
+                    <span asp-validation-for="Fayl" class="text-danger small"></span>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn doc-btn-primary text-white">
+                        <i class="bi bi-upload me-2"></i>Yüklə
+                    </button>
+                    <a asp-action="Index" class="btn doc-btn-outline">
+                        <i class="bi bi-arrow-left me-2"></i>Geri
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // File zone click
+        const fileZone = document.getElementById('fileZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileNameDiv = document.getElementById('fileName');
+        const fileNameText = document.getElementById('fileNameText');
+
+        fileZone.addEventListener('click', () => fileInput.click());
+
+        fileZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileZone.style.borderColor = '#0F766E';
+        });
+
+        fileZone.addEventListener('dragleave', () => {
+            fileZone.style.borderColor = '#D1D5DB';
+        });
+
+        fileZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileZone.style.borderColor = '#D1D5DB';
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                showFileName(e.dataTransfer.files[0].name);
+            }
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                showFileName(fileInput.files[0].name);
+            }
+        });
+
+        function showFileName(name) {
+            fileNameText.textContent = name;
+            fileNameDiv.classList.add('active');
+            fileZone.style.borderColor = '#10B981';
+        }
+
+        // Dynamic document types based on department
+        const sobeSelect = document.getElementById('sobeSelect');
+        const senedNovuSelect = document.getElementById('senedNovuSelect');
+
+        sobeSelect.addEventListener('change', async () => {
+            const sobeId = sobeSelect.value;
+            senedNovuSelect.innerHTML = '<option value="">-- Yüklənir... --</option>';
+
+            if (!sobeId) {
+                senedNovuSelect.innerHTML = '<option value="">-- Əvvəlcə şöbə seçin --</option>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`@Url.Action("SenedNovleriGetir", "Sened", new { area = "PR_Document" })?sobeId=${sobeId}`);
+                const data = await response.json();
+
+                senedNovuSelect.innerHTML = '<option value="">-- Sənəd növü seçin --</option>';
+                data.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.textContent = item.ad;
+                    senedNovuSelect.appendChild(opt);
+                });
+            } catch {
+                senedNovuSelect.innerHTML = '<option value="">-- Xəta baş verdi --</option>';
+            }
+        });
+    </script>
+}

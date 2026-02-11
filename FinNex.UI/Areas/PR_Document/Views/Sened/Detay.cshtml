@@ -1,0 +1,161 @@
+@model SenedDetailDto
+@{
+    ViewData["Title"] = "Sənəd Detalları";
+
+    var badgeClass = Model.StatusDeger switch
+    {
+        1 => "doc-badge-yeni",
+        2 => "doc-badge-yoxlanilir",
+        3 => "doc-badge-tesdiq",
+        4 => "doc-badge-arxiv",
+        _ => "doc-badge-yeni"
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/PR_Document/document.css" asp-append-version="true" />
+}
+
+<div class="doc-dashboard py-4">
+
+    <!-- Page Header -->
+    <div class="doc-page-header">
+        <div class="header-icon" style="background: rgba(16,185,129,0.12); color: #10B981;">
+            <i class="bi bi-file-earmark-text"></i>
+        </div>
+        <div>
+            <h4>@Model.Basliq</h4>
+            <p>Sənəd detalları və fayllar</p>
+        </div>
+    </div>
+
+    <!-- Breadcrumb -->
+    <nav class="mb-3">
+        <ol class="breadcrumb" style="font-size: 13px;">
+            <li class="breadcrumb-item">
+                <a asp-action="Index" class="text-decoration-none">Sənəd İdarəetməsi</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a asp-action="Siyahi" class="text-decoration-none">Siyahı</a>
+            </li>
+            <li class="breadcrumb-item active">Detay</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+        <!-- Document Info -->
+        <div class="col-lg-7">
+            <div class="doc-detail-card card">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">
+                        <i class="bi bi-info-circle me-2 text-primary"></i>Sənəd Məlumatları
+                    </h6>
+
+                    <div class="doc-detail-row">
+                        <div class="doc-detail-label">Başlıq</div>
+                        <div class="doc-detail-value">@Model.Basliq</div>
+                    </div>
+
+                    <div class="doc-detail-row">
+                        <div class="doc-detail-label">Şöbə</div>
+                        <div class="doc-detail-value">@Model.SobeAd</div>
+                    </div>
+
+                    <div class="doc-detail-row">
+                        <div class="doc-detail-label">Sənəd Növü</div>
+                        <div class="doc-detail-value">@Model.SenedNovuAd</div>
+                    </div>
+
+                    <div class="doc-detail-row">
+                        <div class="doc-detail-label">Açar Söz</div>
+                        <div class="doc-detail-value">
+                            <span class="badge bg-light text-dark border">@Model.AcarSoz</span>
+                        </div>
+                    </div>
+
+                    <div class="doc-detail-row">
+                        <div class="doc-detail-label">Status</div>
+                        <div class="doc-detail-value">
+                            <span class="doc-badge @badgeClass">@Model.StatusAd</span>
+                        </div>
+                    </div>
+
+                    <div class="doc-detail-row">
+                        <div class="doc-detail-label">Yaradılma Tarixi</div>
+                        <div class="doc-detail-value">@Model.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Files -->
+        <div class="col-lg-5">
+            <div class="doc-detail-card card">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">
+                        <i class="bi bi-paperclip me-2 text-primary"></i>Əlavə edilmiş fayllar
+                    </h6>
+
+                    @if (Model.Fayllar.Any())
+                    {
+                        <ul class="doc-file-list">
+                            @foreach (var f in Model.Fayllar)
+                            {
+                                var ext = Path.GetExtension(f.OriginalAd).ToLowerInvariant();
+                                var iconClass = ext switch
+                                {
+                                    ".pdf" => "bi-file-earmark-pdf text-danger",
+                                    ".jpg" or ".jpeg" => "bi-file-earmark-image text-info",
+                                    ".png" => "bi-file-earmark-image text-info",
+                                    _ => "bi-file-earmark text-secondary"
+                                };
+                                var iconBg = ext switch
+                                {
+                                    ".pdf" => "background: #FEE2E2;",
+                                    ".jpg" or ".jpeg" or ".png" => "background: #DBEAFE;",
+                                    _ => "background: #F3F4F6;"
+                                };
+                                var size = f.OlcuBytes < 1024 * 1024
+                                    ? $"{f.OlcuBytes / 1024.0:F1} KB"
+                                    : $"{f.OlcuBytes / (1024.0 * 1024.0):F1} MB";
+
+                                <li class="doc-file-item">
+                                    <div class="file-info">
+                                        <div class="file-icon-sm" style="@iconBg">
+                                            <i class="bi @iconClass"></i>
+                                        </div>
+                                        <div>
+                                            <div class="file-name">@f.OriginalAd</div>
+                                            <div class="file-meta">@size &middot; v@(f.VersiyaNo)</div>
+                                        </div>
+                                    </div>
+                                    <a asp-action="FaylYukle" asp-route-id="@f.Id"
+                                       class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div class="doc-empty-state" style="padding: 24px;">
+                            <div class="empty-icon" style="font-size: 32px;"><i class="bi bi-file-earmark-x"></i></div>
+                            <p class="mb-0">Fayl tapılmadı</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back Actions -->
+    <div class="mt-4 d-flex gap-2">
+        <a asp-action="Siyahi" class="btn doc-btn-outline">
+            <i class="bi bi-arrow-left me-2"></i>Siyahıya qayıt
+        </a>
+        <a asp-action="Index" class="btn doc-btn-outline">
+            <i class="bi bi-house me-2"></i>Ana Səhifə
+        </a>
+    </div>
+</div>

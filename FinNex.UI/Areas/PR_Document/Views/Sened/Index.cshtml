@@ -1,0 +1,162 @@
+@model SenedDashboardVM
+@{
+    ViewData["Title"] = "Sənəd İdarəetməsi";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/PR_Document/document.css" asp-append-version="true" />
+}
+
+<div class="doc-dashboard py-4">
+
+    <!-- Page Header -->
+    <div class="doc-page-header">
+        <div class="header-icon bg-primary-soft text-primary">
+            <i class="bi bi-folder2-open"></i>
+        </div>
+        <div>
+            <h4>Sənəd İdarəetməsi</h4>
+            <p>Şöbələr üzrə sənədlərin idarə edilməsi</p>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="doc-stat-card bg-white shadow-sm stat-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-files"></i>
+                </div>
+                <div class="stat-value">@Model.UmumiSened</div>
+                <p class="stat-label">Ümumi Sənəd</p>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="doc-stat-card bg-white shadow-sm stat-info">
+                <div class="stat-icon">
+                    <i class="bi bi-file-earmark-plus"></i>
+                </div>
+                <div class="stat-value">@Model.YeniSened</div>
+                <p class="stat-label">Yeni Sənəd</p>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="doc-stat-card bg-white shadow-sm stat-success">
+                <div class="stat-icon">
+                    <i class="bi bi-file-earmark-check"></i>
+                </div>
+                <div class="stat-value">@Model.TesdiqSened</div>
+                <p class="stat-label">Təsdiqlənmiş</p>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="doc-stat-card bg-white shadow-sm stat-warning">
+                <div class="stat-icon">
+                    <i class="bi bi-archive"></i>
+                </div>
+                <div class="stat-value">@Model.ArxivSened</div>
+                <p class="stat-label">Arxiv</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <a asp-action="Yukle" class="doc-quick-action">
+                <div class="action-icon bg-primary-soft text-primary">
+                    <i class="bi bi-cloud-upload"></i>
+                </div>
+                <div class="action-text">
+                    <h6>Sənəd Yüklə</h6>
+                    <p>Yeni sənəd əlavə et</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a asp-action="Siyahi" class="doc-quick-action">
+                <div class="action-icon" style="background: rgba(59,130,246,0.12); color: #3B82F6;">
+                    <i class="bi bi-list-ul"></i>
+                </div>
+                <div class="action-text">
+                    <h6>Sənəd Siyahısı</h6>
+                    <p>Bütün sənədlərə bax</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a asp-action="Siyahi" asp-route-status="4" class="doc-quick-action">
+                <div class="action-icon" style="background: rgba(245,158,11,0.12); color: #F59E0B;">
+                    <i class="bi bi-archive"></i>
+                </div>
+                <div class="action-text">
+                    <h6>Arxiv</h6>
+                    <p>Arxivləşdirilmiş sənədlər</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Documents -->
+    <div class="doc-table-card card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6><i class="bi bi-clock-history me-2"></i>Son Sənədlər</h6>
+            <a asp-action="Siyahi" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                Hamısına bax
+            </a>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.SonSenedler.Any())
+            {
+                <div class="table-responsive">
+                    <table class="doc-table table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Başlıq</th>
+                                <th>Şöbə</th>
+                                <th>Növ</th>
+                                <th>Tarix</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in Model.SonSenedler)
+                            {
+                                var badgeClass = s.StatusDeger switch
+                                {
+                                    1 => "doc-badge-yeni",
+                                    2 => "doc-badge-yoxlanilir",
+                                    3 => "doc-badge-tesdiq",
+                                    4 => "doc-badge-arxiv",
+                                    _ => "doc-badge-yeni"
+                                };
+                                <tr>
+                                    <td class="fw-semibold">@s.Basliq</td>
+                                    <td>@s.SobeAd</td>
+                                    <td>@s.SenedNovuAd</td>
+                                    <td>@s.YaradilmaTarixi.ToString("dd.MM.yyyy")</td>
+                                    <td><span class="doc-badge @badgeClass">@s.StatusAd</span></td>
+                                    <td>
+                                        <a asp-action="Detay" asp-route-id="@s.Id"
+                                           class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                            <i class="bi bi-eye me-1"></i>Bax
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="doc-empty-state">
+                    <div class="empty-icon"><i class="bi bi-folder2-open"></i></div>
+                    <h6>Hələ sənəd yoxdur</h6>
+                    <p>İlk sənədinizi yükləmək üçün yuxarıdakı "Sənəd Yüklə" düyməsinə basın.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

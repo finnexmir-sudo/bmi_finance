@@ -136,6 +136,42 @@
 </div>
 <hr class="my-5" />
 
+<!-- Document Management Feature Card -->
+<div class="row g-4 mb-5">
+    <div class="col-12">
+        <a asp-area="PR_Document" asp-controller="Sened" asp-action="Index"
+           class="text-decoration-none">
+            <div class="card border-0 shadow-sm p-4"
+                 style="background: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
+                        border-radius: 16px; transition: transform 0.2s ease, box-shadow 0.2s ease;"
+                 onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 30px rgba(15,118,110,0.3)';"
+                 onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='';">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width: 56px; height: 56px; background: rgba(255,255,255,0.15);
+                                    border-radius: 14px; display: flex; align-items: center;
+                                    justify-content: center;">
+                            <i class="bi bi-folder2-open text-white fs-3"></i>
+                        </div>
+                        <div>
+                            <h5 class="text-white fw-bold mb-1">Sənəd İdarəetməsi</h5>
+                            <p class="mb-0" style="color: rgba(255,255,255,0.7); font-size: 13px;">
+                                Şöbələr üzrə sənədlərin yüklənməsi, axtarışı və idarə edilməsi
+                            </p>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge rounded-pill px-3 py-2"
+                              style="background: rgba(255,255,255,0.2); color: #fff; font-size: 12px;">
+                            <i class="bi bi-arrow-right me-1"></i>Daxil ol
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
 <h4 class="fw-bold mb-4 text-secondary">
     <i class="bi bi-diagram-3 me-2"></i>
     Sistemdə Nələri İdarə Etmək Olar

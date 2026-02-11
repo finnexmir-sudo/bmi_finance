@@ -1,0 +1,200 @@
+@model SenedSiyahiVM
+@{
+    ViewData["Title"] = "Sənəd Siyahısı";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/PR_Document/document.css" asp-append-version="true" />
+}
+
+<div class="doc-dashboard py-4">
+
+    <!-- Page Header -->
+    <div class="doc-page-header">
+        <div class="header-icon" style="background: rgba(59,130,246,0.12); color: #3B82F6;">
+            <i class="bi bi-list-ul"></i>
+        </div>
+        <div>
+            <h4>Sənəd Siyahısı</h4>
+            <p>Bütün sənədlər üzrə axtarış və filtrasiya</p>
+        </div>
+    </div>
+
+    <!-- Breadcrumb -->
+    <nav class="mb-3">
+        <ol class="breadcrumb" style="font-size: 13px;">
+            <li class="breadcrumb-item">
+                <a asp-action="Index" class="text-decoration-none">Sənəd İdarəetməsi</a>
+            </li>
+            <li class="breadcrumb-item active">Siyahı</li>
+        </ol>
+    </nav>
+
+    <!-- Filters -->
+    <div class="doc-filter-bar">
+        <form method="get" asp-action="Siyahi">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Şöbə</label>
+                    <select name="sobeId" class="form-select">
+                        <option value="">Hamısı</option>
+                        @foreach (var s in Model.Sobeler)
+                        {
+                            <option value="@s.Id" selected="@(Model.SobeId == s.Id)">@s.Ad</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Sənəd Növü</label>
+                    <select name="senedNovuId" class="form-select">
+                        <option value="">Hamısı</option>
+                        @foreach (var n in Model.SenedNovleri)
+                        {
+                            <option value="@n.Id" selected="@(Model.SenedNovuId == n.Id)">@n.Ad</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">Hamısı</option>
+                        <option value="1" selected="@(Model.Status == 1)">Yeni</option>
+                        <option value="2" selected="@(Model.Status == 2)">Yoxlanılır</option>
+                        <option value="3" selected="@(Model.Status == 3)">Təsdiqlənib</option>
+                        <option value="4" selected="@(Model.Status == 4)">Arxiv</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Açar söz</label>
+                    <input type="text" name="acarSoz" class="form-control"
+                           value="@Model.AcarSoz" placeholder="Axtar..." />
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn doc-btn-primary text-white flex-fill">
+                        <i class="bi bi-search me-1"></i>Axtar
+                    </button>
+                    <a asp-action="Siyahi" class="btn doc-btn-outline">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="text-muted small">
+            <strong>@Model.UmumiSay</strong> sənəd tapıldı
+        </span>
+        <a asp-action="Yukle" class="btn doc-btn-primary text-white btn-sm">
+            <i class="bi bi-plus-lg me-1"></i>Yeni Sənəd
+        </a>
+    </div>
+
+    <!-- Table -->
+    <div class="doc-table-card card">
+        <div class="card-body p-0">
+            @if (Model.Senedler.Any())
+            {
+                <div class="table-responsive">
+                    <table class="doc-table table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Başlıq</th>
+                                <th>Şöbə</th>
+                                <th>Növ</th>
+                                <th>Yüklənmə Tarixi</th>
+                                <th>Status</th>
+                                <th class="text-end">Əməliyyatlar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in Model.Senedler)
+                            {
+                                var badgeClass = s.StatusDeger switch
+                                {
+                                    1 => "doc-badge-yeni",
+                                    2 => "doc-badge-yoxlanilir",
+                                    3 => "doc-badge-tesdiq",
+                                    4 => "doc-badge-arxiv",
+                                    _ => "doc-badge-yeni"
+                                };
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold">@s.Basliq</div>
+                                        <div class="text-muted" style="font-size: 11px;">@s.AcarSoz</div>
+                                    </td>
+                                    <td>@s.SobeAd</td>
+                                    <td>@s.SenedNovuAd</td>
+                                    <td>@s.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td><span class="doc-badge @badgeClass">@s.StatusAd</span></td>
+                                    <td class="text-end">
+                                        <a asp-action="Detay" asp-route-id="@s.Id"
+                                           class="btn btn-sm btn-outline-primary rounded-pill px-3 me-1">
+                                            <i class="bi bi-eye me-1"></i>Bax
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="doc-empty-state">
+                    <div class="empty-icon"><i class="bi bi-search"></i></div>
+                    <h6>Nəticə tapılmadı</h6>
+                    <p>Axtarış parametrlərini dəyişdirin və ya yeni sənəd yükləyin.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.UmumiSehife > 1)
+    {
+        <nav class="mt-4 d-flex justify-content-center">
+            <ul class="pagination doc-pagination mb-0">
+                <li class="page-item @(Model.Sehife <= 1 ? "disabled" : "")">
+                    <a class="page-link"
+                       asp-action="Siyahi"
+                       asp-route-sehife="@(Model.Sehife - 1)"
+                       asp-route-sobeId="@Model.SobeId"
+                       asp-route-senedNovuId="@Model.SenedNovuId"
+                       asp-route-status="@Model.Status"
+                       asp-route-acarSoz="@Model.AcarSoz">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+
+                @for (int i = 1; i <= Model.UmumiSehife; i++)
+                {
+                    <li class="page-item @(i == Model.Sehife ? "active" : "")">
+                        <a class="page-link"
+                           asp-action="Siyahi"
+                           asp-route-sehife="@i"
+                           asp-route-sobeId="@Model.SobeId"
+                           asp-route-senedNovuId="@Model.SenedNovuId"
+                           asp-route-status="@Model.Status"
+                           asp-route-acarSoz="@Model.AcarSoz">
+                            @i
+                        </a>
+                    </li>
+                }
+
+                <li class="page-item @(Model.Sehife >= Model.UmumiSehife ? "disabled" : "")">
+                    <a class="page-link"
+                       asp-action="Siyahi"
+                       asp-route-sehife="@(Model.Sehife + 1)"
+                       asp-route-sobeId="@Model.SobeId"
+                       asp-route-senedNovuId="@Model.SenedNovuId"
+                       asp-route-status="@Model.Status"
+                       asp-route-acarSoz="@Model.AcarSoz">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>
