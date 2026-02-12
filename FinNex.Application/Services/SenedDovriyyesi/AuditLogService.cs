@@ -53,7 +53,24 @@ namespace FinNex.Application.Services.SenedDovriyyesi
 
             return _mapper.Map<List<AuditLogDto>>(logs);
         }
-       
 
+
+    }
+    public class SenedNovuService : ISenedNovuService
+    {
+        private readonly IUnitOfWork _uow;
+        private readonly IMapper _mapper;
+        public SenedNovuService(IUnitOfWork uow, IMapper mapper)
+        {
+            _uow = uow;
+            _mapper = mapper;
+        }
+        public async Task<Result<int>> CreateAsync(SenedNovuCreateDto dto)
+        {
+            var entity = _mapper.Map<SenedNovu>(dto);
+            await _uow.Repository<SenedNovu>().YaratAsync(entity);
+            await _uow.YaddaSaxlaAsync();
+            return Result<int>.Ok(entity.Id);
+        }
     }
 }

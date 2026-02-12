@@ -805,7 +805,7 @@ body.sd-body {
     height: 100%;
     opacity: 0;
     cursor: pointer;
-    z-index: -1;
+    display: none;
 }
 
 .sd-file-drop-icon {

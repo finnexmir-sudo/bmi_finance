@@ -162,7 +162,6 @@
     </div>
 </div>
 
-<!-- Modal: Yeni Sənəd Növü -->
 <div class="modal fade" id="novModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content sd-modal">
@@ -174,23 +173,27 @@
             </div>
             <div class="modal-body">
                 <div id="novError" class="alert alert-danger d-none"></div>
+
                 <div class="mb-3">
                     <label class="form-label sd-form-label">Kod *</label>
                     <input type="text" id="novKod" class="form-control"
-                           placeholder="Məs: MUQAVILE" />
-                    <div class="form-text">Avtomatik böyük hərfə çevriləcək</div>
+                           placeholder="Məs: MUQAVILE"
+                           style="text-transform: uppercase;"
+                           autocomplete="off" />
+                    <div class="form-text">Məsələn: MUQ, EM_QAYDA (Boşluq istifadə etməyin)</div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label sd-form-label">Ad *</label>
                     <input type="text" id="novAd" class="form-control"
-                           placeholder="Məs: Müqavilə" />
+                           placeholder="Məs: Müqavilə"
+                           autocomplete="off" />
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                     Ləğv et
                 </button>
-                <button type="button" class="btn btn-primary" onclick="saveNov()" id="saveNovBtn">
+                <button type="button" class="btn btn-primary" onclick="saveSenedNov()" id="saveNovBtn">
                     <i class="bi bi-check-lg me-1"></i>Saxla
                 </button>
             </div>

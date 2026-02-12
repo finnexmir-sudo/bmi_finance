@@ -400,5 +400,36 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             }
         }
 
+        public async Task<Result> UpdateAsync(SenedUpdateDto dto, int userId, string? ip)
+        {
+            // 1. Sənədi bazadan tapırıq (və varsa əlaqəli cədvəlləri Include edirik)
+            var sened = await _uow.Repository<Sened>().Query()
+                .FirstOrDefaultAsync(x => x.Id == dto.Id && !x.Silinib);
+
+            if (sened == null)
+                return Result.Fail("Sənəd tapılmadı.");
+
+            // 2. Biznes validasiyalar (Məsələn, açar söz boş ola bilməz)
+            if (string.IsNullOrWhiteSpace(dto.AcarSoz))
+                return Result.Fail("Açar söz boş ola bilməz.");
+
+            // 3. Şöbənin mövcudluğunu yoxlayırıq (əgər dto-da gəlirsə)
+            var sobe = await _uow.Repository<Sobe>().GetirAsync(x => x.Id == dto.SobeId && !x.Silinib);
+            if (sobe == null)
+                return Result.Fail("Şöbə tapılmadı.");
+
+            // 4. Məlumatları mapiyirik (və ya əllə mənimsədirik)
+            sened.Basliq = dto.Basliq;
+            sened.SobeId = dto.SobeId;
+            sened.SenedNovuId = dto.SenedNovuId;
+            sened.AcarSoz = dto.AcarSoz;
+            // sened.UpdateDate = DateTime.Now; // Lazımdırsa audit məlumatları
+
+            // 5. Yadda saxlayırıq
+            _uow.Repository<Sened>().YenileAsync(sened);
+            await _uow.YaddaSaxlaAsync();
+
+            return Result.Ok();
+        }
     }
 }

@@ -40,7 +40,16 @@ namespace FinNex.Application.DTOs.SenedDovriyyesi.Sened
     public class SenedNovuCreateDto
     {
         public int SobeId { get; set; }
-        public string Kod { get; set; }
-        public string Ad { get; set; }
+        public string Kod { get; set; }=null!;
+        public string Ad { get; set; }=null!;
+    }
+    public class SenedUpdateDto
+    {
+        public int Id { get; set; }
+        public int SobeId { get; set; }
+        public int SenedNovuId { get; set; }
+        public string Basliq { get; set; } = null!;
+        public string AcarSoz { get; set; } = null!;
+        public List<int> TagIds { get; set; } = new();
     }
 }

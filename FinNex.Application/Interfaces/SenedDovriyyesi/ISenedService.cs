@@ -1,4 +1,4 @@
-
+﻿
 using FinNex.Application.Common.Paged;
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.SenedDovriyyesi.Fayl;
@@ -9,9 +9,27 @@ namespace FinNex.Application.Interfaces.SenedDovriyyesi
 {
     public interface ISenedService
     {
+        // --- Yaratma Əməliyyatları ---
         Task<Result<int>> CreateAsync(SenedCreateDto dto, int userId, string? ip);
+
+        Task<Result<int>> CreateWithFileAsync(
+            SenedCreateDto dto,
+            Stream stream,
+            string originalName,
+            string contentType,
+            long size,
+            int userId,
+            string? ip);
+
+        // --- Yeniləmə Əməliyyatları ---
+        // Claude tərəfindən yeni əlavə edilən metod:
+        Task<Result> UpdateAsync(SenedUpdateDto dto, int userId, string? ip);
+
         Task<Result> UpdateStatusAsync(int senedId, SenedStatusu status, int userId, string? ip);
 
+        Task<Result<int>> UploadNewVersionAsync(SenedFaylUploadDto dto, int userId, string? ip);
+
+        // --- Oxuma/Listələmə Əməliyyatları ---
         Task<Result<PagedResult<SenedListDto>>> GetPagedAsync(
             PagedRequest req, int? sobeId, int? senedNovuId, SenedStatusu? status, string? search);
 
@@ -21,21 +39,12 @@ namespace FinNex.Application.Interfaces.SenedDovriyyesi
 
         Task<Result<SenedDashboardDto>> GetDashboardAsync();
 
-        Task<Result<int>> UploadNewVersionAsync(SenedFaylUploadDto dto, int userId, string? ip);
-
-        Task<Result> SoftDeleteAsync(int senedId, int userId, string? ip);
-        Task<Result> RestoreAsync(int senedId, int userId, string? ip);
-
         Task<Result<SenedFayl>> GetFileEntityAsync(int faylId);
-        Task<Result<int>> CreateWithFileAsync(
-    SenedCreateDto dto,
-    Stream stream,
-    string originalName,
-    string contentType,
-    long size,
-    int userId,
-    string? ip);
 
+        // --- Silmə və Bərpa Əməliyyatları ---
+        Task<Result> SoftDeleteAsync(int senedId, int userId, string? ip);
+
+        Task<Result> RestoreAsync(int senedId, int userId, string? ip);
     }
 
 }

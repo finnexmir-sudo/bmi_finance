@@ -1,182 +1,173 @@
 ﻿document.addEventListener("DOMContentLoaded", function () {
 
-    // ========================
-    // Şöbə dəyişəndə növləri yüklə
-    // ========================
-    var sobeSelect = document.getElementById('sobeSelect');
-    if (sobeSelect) {
-        sobeSelect.addEventListener('change', function () {
-            var sobeId = this.value;
-            var select = document.getElementById('senedNovuSelect');
+    // 1. Əsas elementləri əvvəlcədən tapırıq
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const sobeSelect = document.getElementById('sobeSelect');
+    const senedNovuSelect = document.getElementById('senedNovuSelect');
+    const novModal = document.getElementById('novModal');
+    const saveNovBtn = document.getElementById('saveNovBtn');
 
-            if (!sobeId) {
-                select.innerHTML = '<option value="">Əvvəlcə şöbə seçin...</option>';
-                return;
+    // =====================================================
+    // Fayl Yükləmə (Klik və Drag & Drop)
+    // =====================================================
+
+    if (dropZone && fileInput) {
+        // Drop zone-a klik edəndə gizli file input-u tetiklə
+        dropZone.addEventListener('click', function () {
+            fileInput.click();
+        });
+
+        // Sürüşdürmə hadisələrini idarə et
+        ['dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+
+        // Faylı drop zone-a buraxanda
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length > 0) {
+                fileInput.files = files; // Faylları input-a ötür
+                // Change hadisəsini əllə tetiklə ki, ölçü kontrolu işləsin
+                fileInput.dispatchEvent(new Event('change'));
             }
-
-            select.innerHTML = '<option value="">Yüklənir...</option>';
-
-            fetch('/SenedDovriyyesi/Sened/SenedNovleriByShobe?sobeId=' + sobeId)
-
-                .then(r => r.json())
-                .then(data => {
-                    select.innerHTML = '<option value="">Sənəd növü seçin...</option>';
-                    data.forEach(x => {
-                        var opt = document.createElement("option");
-                        opt.value = x.id;
-                        opt.textContent = x.ad;
-                        select.appendChild(opt);
-                    });
-
-                    if (data.length === 0) {
-                        select.innerHTML = '<option value="">Bu şöbədə növ yoxdur</option>';
-                    }
-                });
         });
     }
 
-    // ========================
-    // Yeni Növ Button Event
-    // ========================
-    var yeniBtn = document.querySelector('[onclick="openNovModal()"]');
-    if (yeniBtn) {
-        yeniBtn.addEventListener("click", function (e) {
-            e.preventDefault();
-            openNovModal();
-        });
-    }
+    // Fayl ölçü kontrolu
+    if (fileInput) {
+        fileInput.addEventListener('change', function () {
+            if (this.files.length === 0) return;
 
-});
-// Sidebar toggle
-(function () {
-    var sidebar = document.getElementById('sdSidebar');
-    var overlay = document.getElementById('sidebarOverlay');
-    var toggle = document.getElementById('sidebarToggle');
-
-    if (toggle) {
-        toggle.addEventListener('click', function () {
-            sidebar.classList.toggle('show');
-            overlay.classList.toggle('show');
-        });
-    }
-    if (overlay) {
-        overlay.addEventListener('click', function () {
-            sidebar.classList.remove('show');
-            overlay.classList.remove('show');
-        });
-    }
-})();
-
-var fileInput = document.getElementById('fileInput');
-
-if (fileInput) {
-    fileInput.addEventListener('change', function () {
-        var preview = document.getElementById('filePreview');
-        var uploadBtn = document.getElementById('uploadBtn');
-
-        if (this.files.length > 0) {
-            var file = this.files[0];
-            var maxSize = 25 * 1024 * 1024;
+            const file = this.files[0];
+            const maxSize = 25 * 1024 * 1024; // 25MB
 
             if (file.size > maxSize) {
                 alert('Fayl ölçüsü 25MB-dan böyük ola bilməz.');
                 this.value = '';
-                preview.style.display = 'none';
-                uploadBtn.disabled = true;
-                return;
             }
-        }
-    });
-}
-
-
-function openNovModal() {
-    document.getElementById("novSobe").value = "";
-    document.getElementById("novKod").value = "";
-    document.getElementById("novAd").value = "";
-    document.getElementById("novError").classList.add("d-none");
-    document.getElementById("novSuccess").classList.add("d-none");
-    new bootstrap.Modal(document.getElementById('novModal')).show();
-}
-
-function saveNov() {
-    var sobeId = document.getElementById("novSobe").value;
-    var kod = document.getElementById("novKod").value;
-    var ad = document.getElementById("novAd").value;
-
-    var errEl = document.getElementById("novError");
-    var succEl = document.getElementById("novSuccess");
-    errEl.classList.add("d-none");
-    succEl.classList.add("d-none");
-
-    if (!sobeId) {
-        errEl.innerText = "Şöbə seçilməlidir.";
-        errEl.classList.remove("d-none");
-        return;
-    }
-    if (!kod.trim() || !ad.trim()) {
-        errEl.innerText = "Kod və ad boş ola bilməz.";
-        errEl.classList.remove("d-none");
-        return;
-    }
-
-    var btn = document.getElementById("saveBtn");
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saxlanılır...';
-
-    fetch('@Url.Action("YeniSenedNovu", "Sened", new { area = "SenedDovriyyesi" })', {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "RequestVerificationToken":
-                document.querySelector('meta[name="RequestVerificationToken"]')?.content
-                || document.querySelector('input[name="__RequestVerificationToken"]')?.value
-        },
-        body: JSON.stringify({ sobeId: parseInt(sobeId), kod: kod, ad: ad })
-    })
-        .then(r => r.json())
-        .then(data => {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Saxla';
-
-            if (!data.success) {
-                errEl.innerText = data.message;
-                errEl.classList.remove("d-none");
-                return;
-            }
-
-            succEl.innerText = "Sənəd növü uğurla əlavə edildi!";
-            succEl.classList.remove("d-none");
-
-            setTimeout(function () {
-                location.reload();
-            }, 800);
-        })
-        .catch(function () {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Saxla';
-            errEl.innerText = "Xəta baş verdi. Yenidən cəhd edin.";
-            errEl.classList.remove("d-none");
         });
-}
+    }
 
-function filterTable() {
-    var sobeFilter = document.getElementById("sobeFilter").value;
-    var searchVal = document.getElementById("searchInput").value.toLowerCase();
-    var rows = document.querySelectorAll("#novTable tbody tr[data-sobe]");
-    var visibleCount = 0;
+    // =====================================================
+    // Şöbə dəyişəndə sənəd növlərini yüklə
+    // =====================================================
 
-    rows.forEach(function (row) {
-        var matchSobe = !sobeFilter || row.dataset.sobe === sobeFilter;
-        var matchSearch = !searchVal ||
-            row.dataset.kod.includes(searchVal) ||
-            row.dataset.ad.includes(searchVal);
+    if (sobeSelect) {
+        sobeSelect.addEventListener('change', function () {
+            const sobeId = this.value;
 
-        if (matchSobe && matchSearch) {
-            row.style.display = "";
-            visibleCount++;
-        } else {
-            row.style.display = "none";
-        }
-    });
-}
+            if (!sobeId) {
+                senedNovuSelect.innerHTML = '<option value="">Əvvəlcə şöbə seçin...</option>';
+                return;
+            }
+
+            senedNovuSelect.innerHTML = '<option value="">Yüklənir...</option>';
+
+            fetch(`/SenedDovriyyesi/Sened/SenedNovleriByShobe?sobeId=${sobeId}`)
+                .then(r => r.json())
+                .then(data => {
+                    senedNovuSelect.innerHTML = '<option value="">Sənəd növü seçin...</option>';
+
+                    if (!data || data.length === 0) {
+                        senedNovuSelect.innerHTML = '<option value="">Bu şöbədə növ yoxdur</option>';
+                        return;
+                    }
+
+                    data.forEach(x => {
+                        const opt = document.createElement("option");
+                        opt.value = x.id;
+                        opt.textContent = x.ad;
+                        senedNovuSelect.appendChild(opt);
+                    });
+                })
+                .catch(() => {
+                    senedNovuSelect.innerHTML = '<option value="">Xəta baş verdi</option>';
+                });
+        });
+    }
+
+    // =====================================================
+    // Modal açılarkən inputları təmizlə
+    // =====================================================
+
+    if (novModal) {
+        novModal.addEventListener('show.bs.modal', function () {
+            document.getElementById('novKod').value = '';
+            document.getElementById('novAd').value = '';
+
+            const errorDiv = document.getElementById('novError');
+            if (errorDiv) errorDiv.classList.add('d-none');
+        });
+    }
+
+    // =====================================================
+    // Yeni sənəd növünü yarat (Modal Save)
+    // =====================================================
+
+    if (saveNovBtn) {
+        saveNovBtn.addEventListener('click', function () {
+            const sobeId = sobeSelect?.value;
+            const kod = document.getElementById('novKod').value.trim();
+            const ad = document.getElementById('novAd').value.trim();
+            const errorDiv = document.getElementById('novError');
+
+            if (errorDiv) errorDiv.classList.add('d-none');
+
+            if (!sobeId) {
+                errorDiv.textContent = "Əvvəlcə şöbə seçilməlidir.";
+                errorDiv.classList.remove('d-none');
+                return;
+            }
+
+            if (!kod || !ad) {
+                errorDiv.textContent = "Kod və Ad boş ola bilməz.";
+                errorDiv.classList.remove('d-none');
+                return;
+            }
+
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+
+            saveNovBtn.disabled = true;
+            saveNovBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Gözləyin...';
+
+            fetch('/SenedDovriyyesi/Sened/YeniSenedNovu', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(tokenInput && { 'RequestVerificationToken': tokenInput.value })
+                },
+                body: JSON.stringify({
+                    sobeId: parseInt(sobeId),
+                    kod: kod.toUpperCase(),
+                    ad: ad
+                })
+            })
+                .then(res => res.json())
+                .then(res => {
+                    if (!res.success) {
+                        errorDiv.textContent = res.message;
+                        errorDiv.classList.remove('d-none');
+                        return;
+                    }
+
+                    const option = new Option(res.ad, res.id, true, true);
+                    senedNovuSelect.add(option);
+                    bootstrap.Modal.getInstance(novModal).hide();
+                })
+                .catch(() => {
+                    errorDiv.textContent = "Sistem xətası baş verdi.";
+                    errorDiv.classList.remove('d-none');
+                })
+                .finally(() => {
+                    saveNovBtn.disabled = false;
+                    saveNovBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Saxla';
+                });
+        });
+    }
+});
