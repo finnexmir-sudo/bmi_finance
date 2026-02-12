@@ -58,6 +58,14 @@
                 Yeni Sənəd
             </a>
 
+            <div class="nav-section">İdarəetmə</div>
+
+            <a class="nav-link @(activePage == "SenedNovleri" ? "active" : "")"
+               asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="SenedNovleri">
+                <i class="bi bi-tags-fill"></i>
+                Sənəd Növləri
+            </a>
+
             <div class="nav-section">Arxiv</div>
 
             <a class="nav-link @(activePage == "Silinmisler" ? "active" : "")"

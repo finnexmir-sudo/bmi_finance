@@ -381,33 +381,29 @@ public class SenedController : Controller
         vm.Tagler = tagler.Select(t => new DropdownItemVM { Id = t.Id, Ad = t.Ad }).ToList();
     }
     [HttpPost]
-    [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SenedNovuElaveEt(int sobeId, string kod, string ad)
+    public async Task<IActionResult> YeniSenedNovu([FromBody] SenedNovuElaveEtRequest request)
     {
-        if (string.IsNullOrWhiteSpace(kod) || string.IsNullOrWhiteSpace(ad))
+        if (string.IsNullOrWhiteSpace(request.Kod) || string.IsNullOrWhiteSpace(request.Ad))
             return Json(new { success = false, message = "Kod və ad boş ola bilməz." });
 
-        // 🔎 1️⃣ Şöbə mövcuddurmu?
         var sobe = await _uow.Repository<Sobe>()
-            .GetirAsync(x => x.Id == sobeId && x.Aktiv && !x.Silinib);
+            .GetirAsync(x => x.Id == request.SobeId && x.Aktiv && !x.Silinib);
 
         if (sobe is null)
             return Json(new { success = false, message = "Şöbə tapılmadı." });
 
-        // 🔎 2️⃣ Eyni kod artıq varmı?
         var exists = await _uow.Repository<SenedNovu>()
-            .GetirAsync(x => x.SobeId == sobeId && x.Kod == kod.ToUpper() && !x.Silinib);
+            .GetirAsync(x => x.SobeId == request.SobeId && x.Kod == request.Kod.ToUpper() && !x.Silinib);
 
         if (exists != null)
             return Json(new { success = false, message = "Bu kod artıq mövcuddur." });
 
-        // ✅ 3️⃣ Yarat
         var entity = new SenedNovu
         {
-            SobeId = sobeId,
-            Kod = kod.Trim().ToUpper(),
-            Ad = ad.Trim(),
+            SobeId = request.SobeId,
+            Kod = request.Kod.Trim().ToUpper(),
+            Ad = request.Ad.Trim(),
             Aktiv = true,
             YaradanIcraciId = GetUserId()
         };
@@ -421,6 +417,82 @@ public class SenedController : Controller
             id = entity.Id,
             ad = entity.Ad
         });
+    }
+
+    // GET: /SenedDovriyyesi/Sened/SenedNovleri
+    public async Task<IActionResult> SenedNovleri()
+    {
+        ViewData["Title"] = "Sənəd Növləri";
+        ViewData["ActivePage"] = "SenedNovleri";
+
+        var sobeler = await _uow.Repository<Sobe>().HamisiniGetirAsync(x => x.Aktiv && !x.Silinib);
+        var novler = await _uow.Repository<SenedNovu>().HamisiniGetirAsync(x => !x.Silinib);
+
+        var vm = new SenedNovleriVM
+        {
+            Sobeler = sobeler.Select(s => new DropdownItemVM { Id = s.Id, Ad = s.Ad }).ToList(),
+            Novler = novler.Select(n => new SenedNovuItemVM
+            {
+                Id = n.Id,
+                Kod = n.Kod,
+                Ad = n.Ad,
+                SobeId = n.SobeId,
+                SobeAd = sobeler.FirstOrDefault(s => s.Id == n.SobeId)?.Ad ?? "-",
+                Aktiv = n.Aktiv,
+                YaradilmaTarixi = n.YaradilmaTarixi
+            }).ToList()
+        };
+
+        return View(vm);
+    }
+
+    // POST: /SenedDovriyyesi/Sened/SenedNovuSil
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SenedNovuSil(int id)
+    {
+        var entity = await _uow.Repository<SenedNovu>().GetirAsync(x => x.Id == id && !x.Silinib);
+        if (entity is null)
+        {
+            TempData["Error"] = "Sənəd növü tapılmadı.";
+            return RedirectToAction("SenedNovleri");
+        }
+
+        entity.Silinib = true;
+        entity.SilinmeTarixi = DateTime.Now;
+        entity.SilenIcraciId = GetUserId();
+        await _uow.YaddaSaxlaAsync();
+
+        TempData["Success"] = "Sənəd növü silindi.";
+        return RedirectToAction("SenedNovleri");
+    }
+
+    // POST: /SenedDovriyyesi/Sened/SenedNovuAktivDeyis
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SenedNovuAktivDeyis(int id)
+    {
+        var entity = await _uow.Repository<SenedNovu>().GetirAsync(x => x.Id == id && !x.Silinib);
+        if (entity is null)
+        {
+            TempData["Error"] = "Sənəd növü tapılmadı.";
+            return RedirectToAction("SenedNovleri");
+        }
+
+        entity.Aktiv = !entity.Aktiv;
+        entity.YenileyenIcraciId = GetUserId();
+        entity.YenilenmeTarixi = DateTime.Now;
+        await _uow.YaddaSaxlaAsync();
+
+        TempData["Success"] = entity.Aktiv ? "Sənəd növü aktivləşdirildi." : "Sənəd növü deaktiv edildi.";
+        return RedirectToAction("SenedNovleri");
+    }
+
+    public class SenedNovuElaveEtRequest
+    {
+        public int SobeId { get; set; }
+        public string Kod { get; set; } = null!;
+        public string Ad { get; set; } = null!;
     }
 
 
