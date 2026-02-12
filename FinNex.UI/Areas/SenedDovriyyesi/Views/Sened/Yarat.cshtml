@@ -49,14 +49,14 @@
                                 <span asp-validation-for="SobeId" class="text-danger small"></span>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label sd-form-label d-flex justify-content-between align-items-center">
-                                    <span>Sənəd Növü *</span>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label sd-form-label mb-0" for="senedNovuSelect">Sənəd Növü *</label>
                                     <button type="button"
                                             class="btn btn-sm btn-outline-primary sd-btn-inline"
-                                            onclick="openNovModal()">
+                                            id="yeniNovBtn">
                                         <i class="bi bi-plus-lg me-1"></i>Yeni Növ
                                     </button>
-                                </label>
+                                </div>
                                 <select asp-for="SenedNovuId" class="form-select" id="senedNovuSelect">
                                     <option value="">Əvvəlcə şöbə seçin...</option>
                                 </select>
@@ -209,6 +209,12 @@
         // ========================
         // Yeni Sənəd Növü Modal
         // ========================
+        document.getElementById('yeniNovBtn').addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            openNovModal();
+        });
+
         function openNovModal() {
             var sobeId = document.getElementById("sobeSelect").value;
             if (!sobeId) {
