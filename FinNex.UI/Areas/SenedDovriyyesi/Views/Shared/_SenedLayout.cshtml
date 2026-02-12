@@ -133,28 +133,8 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Sidebar toggle
-        (function () {
-            var sidebar = document.getElementById('sdSidebar');
-            var overlay = document.getElementById('sidebarOverlay');
-            var toggle = document.getElementById('sidebarToggle');
 
-            if (toggle) {
-                toggle.addEventListener('click', function () {
-                    sidebar.classList.toggle('show');
-                    overlay.classList.toggle('show');
-                });
-            }
-            if (overlay) {
-                overlay.addEventListener('click', function () {
-                    sidebar.classList.remove('show');
-                    overlay.classList.remove('show');
-                });
-            }
-        })();
-    </script>
-
+    
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

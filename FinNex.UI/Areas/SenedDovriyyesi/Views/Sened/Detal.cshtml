@@ -345,36 +345,5 @@
     </div>
 </div>
 
-@section Scripts {
-    <script>
-        document.getElementById('fileInput').addEventListener('change', function () {
-            var preview = document.getElementById('filePreview');
-            var uploadBtn = document.getElementById('uploadBtn');
-
-            if (this.files.length > 0) {
-                var file = this.files[0];
-                var maxSize = 25 * 1024 * 1024;
-
-                if (file.size > maxSize) {
-                    alert('Fayl ölçüsü 25MB-dan böyük ola bilməz.');
-                    this.value = '';
-                    preview.style.display = 'none';
-                    uploadBtn.disabled = true;
-                    return;
-                }
-
-                document.getElementById('fileName').textContent = file.name;
-                var sizeKB = (file.size / 1024).toFixed(1);
-                var sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-                document.getElementById('fileSize').textContent = file.size > 1024 * 1024
-                    ? '(' + sizeMB + ' MB)'
-                    : '(' + sizeKB + ' KB)';
-                preview.style.display = 'block';
-                uploadBtn.disabled = false;
-            } else {
-                preview.style.display = 'none';
-                uploadBtn.disabled = true;
-            }
-        });
-    </script>
-}
+<script src="~/js/sened-yarat.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)

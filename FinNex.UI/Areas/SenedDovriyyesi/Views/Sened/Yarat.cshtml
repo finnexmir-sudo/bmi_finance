@@ -36,34 +36,59 @@
                             <span class="sd-step-number">1</span>
                             Kateqoriya Seçimi
                         </div>
+
                         <div class="row g-3">
+
+                            <!-- Şöbə -->
                             <div class="col-md-6">
-                                <label class="form-label sd-form-label">Şöbə *</label>
-                                <select asp-for="SobeId" class="form-select" id="sobeSelect">
+                                <label class="form-label sd-form-label">
+                                    Şöbə *
+                                </label>
+
+                                <select asp-for="SobeId"
+                                        class="form-select"
+                                        id="sobeSelect">
                                     <option value="">Şöbə seçin...</option>
                                     @foreach (var s in Model.Sobeler)
                                     {
                                         <option value="@s.Id">@s.Ad</option>
                                     }
                                 </select>
-                                <span asp-validation-for="SobeId" class="text-danger small"></span>
+
+                                <span asp-validation-for="SobeId"
+                                      class="text-danger small"></span>
                             </div>
+
+                            <!-- Sənəd Növü -->
                             <div class="col-md-6">
-                                <label class="form-label sd-form-label d-flex justify-content-between align-items-center">
-                                    <span>Sənəd Növü *</span>
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-primary sd-btn-inline"
-                                            onclick="openNovModal()">
-                                        <i class="bi bi-plus-lg me-1"></i>Yeni Növ
-                                    </button>
+                                <label class="form-label sd-form-label">
+                                    Sənəd Növü *
                                 </label>
-                                <select asp-for="SenedNovuId" class="form-select" id="senedNovuSelect">
-                                    <option value="">Əvvəlcə şöbə seçin...</option>
-                                </select>
-                                <span asp-validation-for="SenedNovuId" class="text-danger small"></span>
+
+                                <div class="d-flex align-items-stretch gap-2">
+
+                                    <select asp-for="SenedNovuId"
+                                            class="form-select"
+                                            id="senedNovuSelect">
+                                        <option value="">Əvvəlcə şöbə seçin...</option>
+                                    </select>
+
+                                    <button type="button"
+                                            class="btn btn-outline-primary d-flex align-items-center justify-content-center px-3"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#novModal">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </button>
+
+                                </div>
+
+                                <span asp-validation-for="SenedNovuId"
+                                      class="text-danger small"></span>
                             </div>
+
                         </div>
                     </div>
+
 
                     <!-- Step 2: Sənəd Məlumatları -->
                     <div class="sd-form-section">
@@ -174,179 +199,7 @@
 </div>
 
 @section Scripts {
-    <script>
-        // ========================
-        // Şöbə dəyişəndə növləri yüklə
-        // ========================
-        document.getElementById('sobeSelect').addEventListener('change', function () {
-            var sobeId = this.value;
-            var select = document.getElementById('senedNovuSelect');
-
-            if (!sobeId) {
-                select.innerHTML = '<option value="">Əvvəlcə şöbə seçin...</option>';
-                return;
-            }
-
-            select.innerHTML = '<option value="">Yüklənir...</option>';
-
-            fetch('@Url.Action("SenedNovleriByShobe", "Sened", new { area = "SenedDovriyyesi" })?sobeId=' + sobeId)
-                .then(r => r.json())
-                .then(data => {
-                    select.innerHTML = '<option value="">Sənəd növü seçin...</option>';
-                    data.forEach(x => {
-                        var opt = document.createElement("option");
-                        opt.value = x.id;
-                        opt.textContent = x.ad;
-                        select.appendChild(opt);
-                    });
-
-                    if (data.length === 0) {
-                        select.innerHTML = '<option value="">Bu şöbədə növ yoxdur</option>';
-                    }
-                });
-        });
-
-        // ========================
-        // Yeni Sənəd Növü Modal
-        // ========================
-        function openNovModal() {
-            var sobeId = document.getElementById("sobeSelect").value;
-            if (!sobeId) {
-                alert("Əvvəlcə şöbə seçin.");
-                return;
-            }
-            document.getElementById("novKod").value = "";
-            document.getElementById("novAd").value = "";
-            document.getElementById("novError").classList.add("d-none");
-            new bootstrap.Modal(document.getElementById('novModal')).show();
-        }
-
-        function saveNov() {
-            var sobeId = document.getElementById("sobeSelect").value;
-            var kod = document.getElementById("novKod").value;
-            var ad = document.getElementById("novAd").value;
-            var errEl = document.getElementById("novError");
-            errEl.classList.add("d-none");
-
-            if (!kod.trim() || !ad.trim()) {
-                errEl.innerText = "Kod və ad boş ola bilməz.";
-                errEl.classList.remove("d-none");
-                return;
-            }
-
-            var btn = document.getElementById("saveNovBtn");
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saxlanılır...';
-
-            fetch('@Url.Action("YeniSenedNovu", "Sened", new { area = "SenedDovriyyesi" })', {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "RequestVerificationToken":
-                        document.querySelector('input[name="__RequestVerificationToken"]').value
-                },
-                body: JSON.stringify({ sobeId: parseInt(sobeId), kod: kod, ad: ad })
-            })
-            .then(r => r.json())
-            .then(data => {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Saxla';
-
-                if (!data.success) {
-                    errEl.innerText = data.message;
-                    errEl.classList.remove("d-none");
-                    return;
-                }
-
-                var select = document.getElementById("senedNovuSelect");
-                var opt = document.createElement("option");
-                opt.value = data.id;
-                opt.textContent = data.ad;
-                opt.selected = true;
-                select.appendChild(opt);
-
-                bootstrap.Modal.getInstance(document.getElementById('novModal')).hide();
-            })
-            .catch(function () {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Saxla';
-                errEl.innerText = "Xəta baş verdi.";
-                errEl.classList.remove("d-none");
-            });
-        }
-
-        // ========================
-        // Fayl Yükləmə (Drag & Drop + Click)
-        // ========================
-        var dropZone = document.getElementById('dropZone');
-        var fileInput = document.getElementById('fileInput');
-        var maxSize = 25 * 1024 * 1024;
-
-        dropZone.addEventListener('click', function (e) {
-            if (e.target.closest('.sd-file-remove')) return;
-            fileInput.click();
-        });
-
-        dropZone.addEventListener('dragover', function (e) {
-            e.preventDefault();
-            dropZone.classList.add('sd-file-drop-active');
-        });
-
-        dropZone.addEventListener('dragleave', function () {
-            dropZone.classList.remove('sd-file-drop-active');
-        });
-
-        dropZone.addEventListener('drop', function (e) {
-            e.preventDefault();
-            dropZone.classList.remove('sd-file-drop-active');
-            if (e.dataTransfer.files.length > 0) {
-                fileInput.files = e.dataTransfer.files;
-                showFilePreview(e.dataTransfer.files[0]);
-            }
-        });
-
-        fileInput.addEventListener('change', function () {
-            if (this.files.length > 0) {
-                showFilePreview(this.files[0]);
-            }
-        });
-
-        function showFilePreview(file) {
-            if (file.size > maxSize) {
-                alert('Fayl ölçüsü 25MB-dan böyük ola bilməz.');
-                fileInput.value = '';
-                return;
-            }
-
-            document.getElementById('dropContent').classList.add('d-none');
-            document.getElementById('filePreviewBox').classList.remove('d-none');
-
-            document.getElementById('fileName').textContent = file.name;
-
-            var sizeStr = file.size > 1024 * 1024
-                ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
-                : (file.size / 1024).toFixed(1) + ' KB';
-            document.getElementById('fileMeta').textContent = sizeStr + ' | ' + file.type;
-
-            var iconEl = document.getElementById('fileIcon');
-            var ext = file.name.split('.').pop().toLowerCase();
-            var iconClass = 'bi-file-earmark';
-            var iconColor = '#6c757d';
-
-            if (ext === 'pdf') { iconClass = 'bi-file-earmark-pdf-fill'; iconColor = '#dc3545'; }
-            else if (['doc', 'docx'].includes(ext)) { iconClass = 'bi-file-earmark-word-fill'; iconColor = '#0d6efd'; }
-            else if (['xls', 'xlsx'].includes(ext)) { iconClass = 'bi-file-earmark-excel-fill'; iconColor = '#198754'; }
-            else if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) { iconClass = 'bi-file-earmark-image-fill'; iconColor = '#e8a317'; }
-            else if (['zip', 'rar'].includes(ext)) { iconClass = 'bi-file-earmark-zip-fill'; iconColor = '#6c757d'; }
-
-            iconEl.innerHTML = '<i class="bi ' + iconClass + '"></i>';
-            iconEl.style.color = iconColor;
-        }
-
-        function removeFile() {
-            fileInput.value = '';
-            document.getElementById('dropContent').classList.remove('d-none');
-            document.getElementById('filePreviewBox').classList.add('d-none');
-        }
-    </script>
+    <script src="~/js/sened-yarat.js" asp-append-version="true"></script>
 }
+
+
