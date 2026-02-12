@@ -43,9 +43,9 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-4 text-lg-end">
+        <div class="col-lg-4 text-lg-end mt-2 mt-lg-0">
             <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
-               class="btn btn-sm btn-outline-secondary me-1">
+               class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-arrow-left me-1"></i>Geri
             </a>
         </div>
@@ -71,13 +71,17 @@
                     <div class="col-md-6">
                         <div class="sd-meta-item">
                             <div class="sd-meta-label">Şöbə</div>
-                            <div class="sd-meta-value">@Model.Sobe</div>
+                            <div class="sd-meta-value">
+                                <i class="bi bi-building me-1 text-muted"></i>@Model.Sobe
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="sd-meta-item">
                             <div class="sd-meta-label">Sənəd Növü</div>
-                            <div class="sd-meta-value">@Model.SenedNovu</div>
+                            <div class="sd-meta-value">
+                                <code class="sd-kod-badge">@Model.SenedNovu</code>
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -135,9 +139,8 @@
                                     <th>Fayl Adı</th>
                                     <th>Tip</th>
                                     <th>Ölçü</th>
-                                    <th>SHA256</th>
                                     <th>Tarix</th>
-                                    <th></th>
+                                    <th class="text-end">Yüklə</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -151,14 +154,23 @@
                                                 <span class="sd-badge sd-badge-success ms-1">Aktiv</span>
                                             }
                                         </td>
-                                        <td class="fw-semibold">@f.OriginalAd</td>
+                                        <td class="fw-semibold">
+                                            @{
+                                                var ext = f.OriginalAd.Split('.').LastOrDefault()?.ToLower() ?? "";
+                                                var fIconClass = ext switch
+                                                {
+                                                    "pdf" => "bi-file-earmark-pdf-fill text-danger",
+                                                    "doc" or "docx" => "bi-file-earmark-word-fill text-primary",
+                                                    "xls" or "xlsx" => "bi-file-earmark-excel-fill text-success",
+                                                    "jpg" or "jpeg" or "png" or "gif" => "bi-file-earmark-image-fill text-warning",
+                                                    "zip" or "rar" => "bi-file-earmark-zip-fill text-secondary",
+                                                    _ => "bi-file-earmark text-muted"
+                                                };
+                                            }
+                                            <i class="bi @fIconClass me-1"></i>@f.OriginalAd
+                                        </td>
                                         <td class="text-muted small">@f.ContentType</td>
                                         <td class="text-muted text-nowrap">@f.FormattedSize</td>
-                                        <td>
-                                            <code class="sd-sha256" title="@f.Sha256">
-                                                @(f.Sha256.Length > 16 ? f.Sha256.Substring(0, 16) + "..." : f.Sha256)
-                                            </code>
-                                        </td>
                                         <td class="text-muted text-nowrap">@f.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</td>
                                         <td class="text-end">
                                             <a asp-area="SenedDovriyyesi" asp-controller="Sened"
@@ -274,7 +286,7 @@
 <!-- Audit Log Timeline -->
 <div class="sd-card">
     <div class="sd-card-header">
-        <i class="bi bi-clock-history me-2"></i>Audit Log (Əməliyyat Tarixçəsi)
+        <i class="bi bi-clock-history me-2"></i>Əməliyyat Tarixçəsi
     </div>
     <div class="sd-card-body">
         @if (Model.AuditLogs.Any())
@@ -335,7 +347,6 @@
 
 @section Scripts {
     <script>
-        // File upload preview
         document.getElementById('fileInput').addEventListener('change', function () {
             var preview = document.getElementById('filePreview');
             var uploadBtn = document.getElementById('uploadBtn');

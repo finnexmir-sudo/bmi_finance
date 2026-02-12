@@ -1,0 +1,257 @@
+@model SenedNovleriVM
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <span class="text-muted sd-result-count">
+            Cəmi: <strong>@Model.Novler.Count</strong> sənəd növü
+        </span>
+    </div>
+    <button type="button" class="btn btn-sm btn-primary" onclick="openNovModal()">
+        <i class="bi bi-plus-lg me-1"></i>Yeni Sənəd Növü
+    </button>
+</div>
+
+<!-- Filter -->
+<div class="sd-filter-bar">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label sd-form-label">Şöbəyə görə filtr</label>
+            <select id="sobeFilter" class="form-select form-select-sm" onchange="filterTable()">
+                <option value="">Hamısı</option>
+                @foreach (var s in Model.Sobeler)
+                {
+                    <option value="@s.Id">@s.Ad</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label sd-form-label">Axtar</label>
+            <input type="text" id="searchInput" class="form-control form-control-sm"
+                   placeholder="Kod və ya ad ilə axtar..." oninput="filterTable()" />
+        </div>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="sd-table-card">
+    <div class="table-responsive">
+        <table class="table sd-table mb-0" id="novTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Kod</th>
+                    <th>Ad</th>
+                    <th>Şöbə</th>
+                    <th>Status</th>
+                    <th>Tarix</th>
+                    <th class="text-end">Əməliyyat</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Novler.Any())
+                {
+                    @foreach (var n in Model.Novler)
+                    {
+                        <tr data-sobe="@n.SobeId" data-kod="@n.Kod.ToLower()" data-ad="@n.Ad.ToLower()">
+                            <td class="fw-semibold text-muted">@n.Id</td>
+                            <td>
+                                <code class="sd-kod-badge">@n.Kod</code>
+                            </td>
+                            <td class="fw-semibold">@n.Ad</td>
+                            <td>
+                                <span class="sd-sobe-badge">
+                                    <i class="bi bi-building me-1"></i>@n.SobeAd
+                                </span>
+                            </td>
+                            <td>
+                                @if (n.Aktiv)
+                                {
+                                    <span class="sd-badge sd-badge-success">Aktiv</span>
+                                }
+                                else
+                                {
+                                    <span class="sd-badge sd-badge-secondary">Deaktiv</span>
+                                }
+                            </td>
+                            <td class="text-muted text-nowrap">@n.YaradilmaTarixi.ToString("dd.MM.yyyy")</td>
+                            <td class="text-end text-nowrap">
+                                <form asp-area="SenedDovriyyesi" asp-controller="Sened"
+                                      asp-action="SenedNovuAktivDeyis" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@n.Id" />
+                                    <button type="submit"
+                                            class="btn btn-sm @(n.Aktiv ? "btn-outline-warning" : "btn-outline-success") sd-btn-sm"
+                                            title="@(n.Aktiv ? "Deaktiv et" : "Aktivləşdir")">
+                                        <i class="bi @(n.Aktiv ? "bi-pause-circle" : "bi-play-circle")"></i>
+                                    </button>
+                                </form>
+                                <form asp-area="SenedDovriyyesi" asp-controller="Sened"
+                                      asp-action="SenedNovuSil" method="post" class="d-inline"
+                                      onsubmit="return confirm('Bu sənəd növünü silmək istədiyinizə əminsiniz?')">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@n.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger sd-btn-sm" title="Sil">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr id="emptyRow">
+                        <td colspan="7" class="text-center text-muted py-5">
+                            <i class="bi bi-folder2-open fs-1 d-block mb-2 opacity-25"></i>
+                            Hələ sənəd növü əlavə edilməyib
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal fade" id="novModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content sd-modal">
+            <div class="modal-header sd-modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle me-2"></i>Yeni Sənəd Növü
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="novError" class="alert alert-danger d-none"></div>
+                <div id="novSuccess" class="alert alert-success d-none"></div>
+
+                <div class="mb-3">
+                    <label class="form-label sd-form-label">Şöbə *</label>
+                    <select id="novSobe" class="form-select">
+                        <option value="">Şöbə seçin...</option>
+                        @foreach (var s in Model.Sobeler)
+                        {
+                            <option value="@s.Id">@s.Ad</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label sd-form-label">Kod *</label>
+                    <input type="text" id="novKod" class="form-control"
+                           placeholder="Məs: MUQAVILE, ERIZE..." />
+                    <div class="form-text">Avtomatik böyük hərfə çevriləcək</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label sd-form-label">Ad *</label>
+                    <input type="text" id="novAd" class="form-control"
+                           placeholder="Məs: Müqavilə, Ərizə..." />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    Ləğv et
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveNov()" id="saveBtn">
+                    <i class="bi bi-check-lg me-1"></i>Saxla
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openNovModal() {
+            document.getElementById("novSobe").value = "";
+            document.getElementById("novKod").value = "";
+            document.getElementById("novAd").value = "";
+            document.getElementById("novError").classList.add("d-none");
+            document.getElementById("novSuccess").classList.add("d-none");
+            new bootstrap.Modal(document.getElementById('novModal')).show();
+        }
+
+        function saveNov() {
+            var sobeId = document.getElementById("novSobe").value;
+            var kod = document.getElementById("novKod").value;
+            var ad = document.getElementById("novAd").value;
+
+            var errEl = document.getElementById("novError");
+            var succEl = document.getElementById("novSuccess");
+            errEl.classList.add("d-none");
+            succEl.classList.add("d-none");
+
+            if (!sobeId) {
+                errEl.innerText = "Şöbə seçilməlidir.";
+                errEl.classList.remove("d-none");
+                return;
+            }
+            if (!kod.trim() || !ad.trim()) {
+                errEl.innerText = "Kod və ad boş ola bilməz.";
+                errEl.classList.remove("d-none");
+                return;
+            }
+
+            var btn = document.getElementById("saveBtn");
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saxlanılır...';
+
+            fetch('@Url.Action("YeniSenedNovu", "Sened", new { area = "SenedDovriyyesi" })', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "RequestVerificationToken":
+                        document.querySelector('meta[name="RequestVerificationToken"]')?.content
+                        || document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                },
+                body: JSON.stringify({ sobeId: parseInt(sobeId), kod: kod, ad: ad })
+            })
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Saxla';
+
+                if (!data.success) {
+                    errEl.innerText = data.message;
+                    errEl.classList.remove("d-none");
+                    return;
+                }
+
+                succEl.innerText = "Sənəd növü uğurla əlavə edildi!";
+                succEl.classList.remove("d-none");
+
+                setTimeout(function () {
+                    location.reload();
+                }, 800);
+            })
+            .catch(function () {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Saxla';
+                errEl.innerText = "Xəta baş verdi. Yenidən cəhd edin.";
+                errEl.classList.remove("d-none");
+            });
+        }
+
+        function filterTable() {
+            var sobeFilter = document.getElementById("sobeFilter").value;
+            var searchVal = document.getElementById("searchInput").value.toLowerCase();
+            var rows = document.querySelectorAll("#novTable tbody tr[data-sobe]");
+            var visibleCount = 0;
+
+            rows.forEach(function (row) {
+                var matchSobe = !sobeFilter || row.dataset.sobe === sobeFilter;
+                var matchSearch = !searchVal ||
+                    row.dataset.kod.includes(searchVal) ||
+                    row.dataset.ad.includes(searchVal);
+
+                if (matchSobe && matchSearch) {
+                    row.style.display = "";
+                    visibleCount++;
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        }
+    </script>
+}

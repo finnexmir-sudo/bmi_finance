@@ -37,9 +37,9 @@
                     </select>
                 </div>
                 <div class="col-md-2 col-sm-6">
-                    <label class="form-label sd-form-label">Açar söz</label>
+                    <label class="form-label sd-form-label">Axtarış</label>
                     <input type="text" name="q" value="@Model.AxtarisKelimesi"
-                           class="form-control form-control-sm" placeholder="Axtar..." />
+                           class="form-control form-control-sm" placeholder="Açar söz..." />
                 </div>
                 <div class="col-md-2 col-sm-12">
                     <div class="d-flex gap-2">
@@ -47,7 +47,7 @@
                             <i class="bi bi-search me-1"></i>Axtar
                         </button>
                         <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
-                           class="btn btn-sm btn-outline-secondary">
+                           class="btn btn-sm btn-outline-secondary" title="Filtri təmizlə">
                             <i class="bi bi-x-lg"></i>
                         </a>
                     </div>
@@ -64,13 +64,15 @@
             Cəmi: <strong>@Model.TotalCount</strong> sənəd
         </span>
     </div>
-    @if (!Model.Silinmisler)
-    {
-        <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Yarat"
-           class="btn btn-sm btn-primary">
-            <i class="bi bi-plus-lg me-1"></i>Yeni Sənəd
-        </a>
-    }
+    <div class="d-flex gap-2">
+        @if (!Model.Silinmisler)
+        {
+            <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Yarat"
+               class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>Yeni Sənəd
+            </a>
+        }
+    </div>
 </div>
 
 <!-- Table -->
@@ -81,7 +83,6 @@
                 <tr>
                     <th>#</th>
                     <th>Başlıq</th>
-                    <th>Açar Söz</th>
                     <th>Şöbə</th>
                     <th>Növ</th>
                     <th>Status</th>
@@ -97,25 +98,34 @@
                     {
                         <tr>
                             <td class="fw-semibold text-muted">@s.Id</td>
-                            <td class="fw-semibold">
+                            <td>
                                 <a asp-area="SenedDovriyyesi" asp-controller="Sened"
                                    asp-action="Detal" asp-route-id="@s.Id"
                                    class="text-decoration-none sd-link">
                                     @s.Basliq
                                 </a>
-                            </td>
-                            <td class="text-muted">
-                                @if (s.AcarSoz.Length > 30)
+                                @if (!string.IsNullOrEmpty(s.AcarSoz))
                                 {
-                                    @s.AcarSoz.Substring(0, 30)<text>...</text>
-                                }
-                                else
-                                {
-                                    @s.AcarSoz
+                                    <div class="text-muted" style="font-size:0.72rem;margin-top:2px;">
+                                        @if (s.AcarSoz.Length > 40)
+                                        {
+                                            @s.AcarSoz.Substring(0, 40)<text>...</text>
+                                        }
+                                        else
+                                        {
+                                            @s.AcarSoz
+                                        }
+                                    </div>
                                 }
                             </td>
-                            <td>@s.Sobe</td>
-                            <td>@s.SenedNovu</td>
+                            <td>
+                                <span class="sd-sobe-badge">
+                                    <i class="bi bi-building me-1 text-muted"></i>@s.Sobe
+                                </span>
+                            </td>
+                            <td>
+                                <code class="sd-kod-badge">@s.SenedNovu</code>
+                            </td>
                             <td>
                                 @{
                                     var badgeClass = s.Status switch
@@ -181,7 +191,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="9" class="text-center text-muted py-5">
+                        <td colspan="8" class="text-center text-muted py-5">
                             <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
                             @(Model.Silinmisler ? "Silinmiş sənəd yoxdur" : "Nəticə tapılmadı")
                         </td>
