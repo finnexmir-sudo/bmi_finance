@@ -31,7 +31,6 @@ public class MusteriController : Controller
     }
 
     [HttpPost]
-    [HttpPost]
     public async Task<IActionResult> Yarat(MusteriCreateDto dto)
     {
         if (!ModelState.IsValid)

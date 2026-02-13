@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using FinNex.Domain.Entities.Structure;
+using Microsoft.AspNetCore.Identity;
 
 namespace FinNex.Domain
 {
@@ -10,5 +11,8 @@ namespace FinNex.Domain
         // İstifadəçinin profil şəkli və ya qeydiyyat tarixi kimi əlavə sütunlar
         public DateTime QeydiyyatTarixi { get; set; } = DateTime.Now;
         public bool Aktivdir { get; set; } = true;
+        public ICollection<UserDepartment> UserDepartments { get; set; }
+    = new List<UserDepartment>();
+
     }
 }

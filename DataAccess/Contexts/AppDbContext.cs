@@ -35,6 +35,9 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<SenedAccess> SenedAccessler { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
 
+    public DbSet<UserDepartment> UserDepartments { get; set; }
+
+
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -127,6 +130,30 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .WithMany()
             .HasForeignKey(x => x.SenedId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<UserDepartment>(entity =>
+        {
+            entity.ToTable("UserDepartments");
+
+            entity.HasKey(x => x.Id);
+
+            entity.HasOne(x => x.User)
+                  .WithMany(u => u.UserDepartments)
+                  .HasForeignKey(x => x.UserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Department)
+                  .WithMany(d => d.UserDepartments)
+                  .HasForeignKey(x => x.DepartmentId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(x => x.Esasdir)
+                  .HasDefaultValue(false);
+        });
+        builder.Entity<MusteriHesabi>()
+     .HasIndex(x => new { x.MusteriId, x.Iban })
+     .IsUnique();
+
 
     }
 

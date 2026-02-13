@@ -1,8 +1,11 @@
+﻿using FinNex.Application.DTOs.Structur;
+using FinNex.Application.Interfaces.Structur;
 using FinNex.Domain;
 using FinNex.UI.Areas.Admin.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.UI.Areas.Admin.Controllers;
@@ -13,13 +16,19 @@ public class UserManagementController : Controller
 {
     private readonly UserManager<AppUser> _userManager;
     private readonly RoleManager<AppRole> _roleManager;
+    private readonly IUserDepartmentService _userDepartmentService;
+    private readonly IDepartmentService _departmentService;
+
 
     public UserManagementController(
         UserManager<AppUser> userManager,
-        RoleManager<AppRole> roleManager)
+        RoleManager<AppRole> roleManager,
+        IUserDepartmentService userDepartmentService,IDepartmentService departmentService)
     {
         _userManager = userManager;
         _roleManager = roleManager;
+        _userDepartmentService = userDepartmentService;
+        _departmentService = departmentService;
     }
 
     public async Task<IActionResult> Index()
@@ -57,6 +66,9 @@ public class UserManagementController : Controller
 
         var roles = await _userManager.GetRolesAsync(user);
 
+        var departments = await _userDepartmentService
+            .GetUserDepartmentsAsync(id);
+
         var vm = new UserDetailVM
         {
             Id = user.Id,
@@ -64,16 +76,34 @@ public class UserManagementController : Controller
             FullName = $"{user.Ad} {user.Soyad}",
             Email = user.Email ?? "",
             Roles = roles,
-            IsActive = user.Aktivdir,
-            RegisteredAt = user.QeydiyyatTarixi,
-            IsLockedOut = await _userManager.IsLockedOutAsync(user),
-            LockoutEnd = user.LockoutEnd,
-            AccessFailedCount = user.AccessFailedCount
+            Departments = departments
         };
 
-        ViewData["Title"] = "User Detail";
         return View(vm);
     }
+
+    public async Task<IActionResult> AssignDepartment(int id)
+    {
+        var user = await _userManager.FindByIdAsync(id.ToString());
+        if (user == null)
+            return NotFound();
+
+        var departments = await _departmentService.HamisiniGetirAsync();
+
+        var vm = new AssignDepartmentVM
+        {
+            UserId = id,
+            Departments = departments
+                .Select(d => new SelectListItem
+                {
+                    Value = d.Id.ToString(),
+                    Text = d.Ad
+                }).ToList()
+        };
+
+        return View(vm);
+    }
+
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -211,4 +241,26 @@ public class UserManagementController : Controller
         TempData["StatusMessage"] = $"Password for '{user.UserName}' has been reset successfully.";
         return RedirectToAction(nameof(Detail), new { id = vm.UserId });
     }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AssignDepartment(AssignDepartmentVM model)
+    {
+        if (!ModelState.IsValid)
+            return View(model);
+        
+
+            var dto = new UserDepartmentCreateDto
+        {
+            UserId = model.UserId,
+            DepartmentId = model.DepartmentId!
+        };
+
+        await _userDepartmentService.AssignAsync(dto);
+
+        return RedirectToAction("Detail", new { id = model.UserId });
+    }
+
+
+
 }

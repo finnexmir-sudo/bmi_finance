@@ -77,6 +77,13 @@
                                    class="btn btn-sm btn-outline-warning" title="Reset Password">
                                     <i class="bi bi-key"></i>
                                 </a>
+                                <a asp-action="AssignDepartment"
+                                   asp-route-id="@user.Id"
+                                   class="btn btn-sm btn-outline-info"
+                                   title="Assign Department">
+                                    <i class="bi bi-diagram-3"></i>
+                                </a>
+
                                 <form asp-action="ToggleActive" asp-route-id="@user.Id" method="post"
                                       class="d-inline">
                                     @Html.AntiForgeryToken()

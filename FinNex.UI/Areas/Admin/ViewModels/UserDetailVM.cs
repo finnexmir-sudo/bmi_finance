@@ -1,3 +1,5 @@
+using FinNex.Application.DTOs.Structur;
+
 namespace FinNex.UI.Areas.Admin.ViewModels;
 
 public class UserDetailVM
@@ -12,4 +14,7 @@ public class UserDetailVM
     public bool IsLockedOut { get; set; }
     public DateTimeOffset? LockoutEnd { get; set; }
     public int AccessFailedCount { get; set; }
+
+    public IList<UserDepartmentListDto> Departments { get; set; }
+        = new List<UserDepartmentListDto>();
 }

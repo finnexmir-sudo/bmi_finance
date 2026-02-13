@@ -1,11 +1,13 @@
 ﻿
 using FinNex.Application.Interfaces.PR_Odenis_Tapsirigi;
 using FinNex.Application.Interfaces.SenedDovriyyesi;
+using FinNex.Application.Interfaces.Structur;
 using FinNex.Application.MappingProfile;
 using FinNex.Application.MappingProfile.PR_Odenis_Tapsirigi;
 using FinNex.Application.Services;
 using FinNex.Application.Services.PR_Odenis_Tapsirigi;
 using FinNex.Application.Services.SenedDovriyyesi;
+using FinNex.Application.Services.Structur;
 using FinNex.DataAccess.Repositories;
 using FinNex.DataAccess.UnitOfWorks;
 using FinNex.Domain.Interfaces;
@@ -24,9 +26,12 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IOdenisTapsirigiService, OdenisTapsirigiService>();
         services.AddScoped<IOdenisTapsirigiNomreService, OdenisTapsirigiNomreService>();
         services.AddScoped<IValyutaService, ValyutaService>();
+        services.AddScoped<IUserDepartmentService, UserDepartmentService>();
+        services.AddScoped<IDepartmentService, DepartmentService>();
+
 
         // AutoMapper: profil assembly scan
-        services.AddAutoMapper(typeof(SenedDovriyyesiProfile).Assembly);
+        //services.AddAutoMapper(typeof(SenedDovriyyesiProfile).Assembly);
 
         // Sened dovriyyesi
         services.AddScoped<ISenedService, SenedService>();
@@ -41,6 +46,8 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
 
 
         // AutoMapper üçün aşağıdakı düzəlişə bax
-        services.AddAutoMapper(typeof(Mapping));
+        //services.AddAutoMapper(typeof(Mapping));
+        services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
     }
 }

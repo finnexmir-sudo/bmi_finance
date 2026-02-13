@@ -1,0 +1,44 @@
+﻿@model IList<FinNex.Application.DTOs.User.UserListDto>
+
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="admin-table-card">
+    <div class="card-header">
+        <h5>
+            @ViewBag.DepartmentName - İşçilər
+        </h5>
+    </div>
+
+    <div class="card-body">
+
+        @if (Model.Any())
+        {
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Full Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>@user.UserName</td>
+                            <td>@user.FullName</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="text-muted">
+                Bu departamentdə işçi yoxdur.
+            </div>
+        }
+
+    </div>
+</div>

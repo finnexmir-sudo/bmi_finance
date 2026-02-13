@@ -1,4 +1,6 @@
 ﻿
+using System.Linq.Expressions;
+
 namespace FinNex.Application.Interfaces
 {
     public interface IServiceAsync<TEntity, TDto, TCreateDto, TUpdateDto>
@@ -10,5 +12,7 @@ namespace FinNex.Application.Interfaces
         Task<TDto> YaratAsync(TCreateDto dto);
         Task YenileAsync(TUpdateDto dto);
         Task SilAsync(int id);
+        Task<bool> MovcuddurmuAsync(Expression<Func<TEntity, bool>> predicate);
+
     }
 }
