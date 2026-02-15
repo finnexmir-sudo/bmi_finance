@@ -1,4 +1,5 @@
-﻿using FinNex.Domain.Entities.Structure;
+﻿using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Entities.Structure;
 using Microsoft.AspNetCore.Identity;
 
 namespace FinNex.Domain
@@ -13,6 +14,9 @@ namespace FinNex.Domain
         public bool Aktivdir { get; set; } = true;
         public ICollection<UserDepartment> UserDepartments { get; set; }
     = new List<UserDepartment>();
+
+        public int? IsciId { get; set; }
+        public Isci? Isci { get; set; }
 
     }
 }

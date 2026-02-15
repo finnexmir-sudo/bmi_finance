@@ -35,6 +35,8 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
 
         // Sened dovriyyesi
         services.AddScoped<ISenedService, SenedService>();
+        services.AddScoped<ISenedNovuService, SenedNovuService>();
+
         services.AddScoped<IAuditLogService, AuditLogService>();
 
         // Storage
@@ -48,6 +50,12 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         // AutoMapper üçün aşağıdakı düzəlişə bax
         //services.AddAutoMapper(typeof(Mapping));
         services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+        services.AddScoped<IIsciService, IsciService>();
+        services.AddScoped<IVezifeService, VezifeService>();
+        services.AddScoped<IMaasService, MaasService>();
+        services.AddScoped<IDavamiyyetService, DavamiyyetService>();
+        services.AddScoped<IMezuniyyetService, MezuniyyetService>();
 
     }
 }

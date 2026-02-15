@@ -16,7 +16,8 @@ public class SenedDashboardItemVM
 {
     public int Id { get; set; }
     public string Basliq { get; set; } = null!;
-    public string Sobe { get; set; } = null!;
+    public string Departament { get; set; } = null!;
+    public string IsciAdi { get; set; } = null!;
     public string SenedNovu { get; set; } = null!;
     public SenedStatusu Status { get; set; }
     public int FaylSayi { get; set; }

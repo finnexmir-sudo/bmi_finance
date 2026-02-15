@@ -20,16 +20,25 @@ namespace FinNex.UI.Areas.Admin.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var departments = await _departmentService.HamisiniGetirAsync();
+            var departmentsResult = await _departmentService.HamisiniGetirAsync();
 
-            var vm = departments.Select(d => new DepartamentVM
+            if (!departmentsResult.Success || departmentsResult.Data == null)
             {
-                Id = d.Id,
-                Ad = d.Ad,
-                Aciqlama = d.Aciqlama
-            }).ToList();
+                TempData["Error"] = departmentsResult.Message;
+                return View(new List<DepartamentVM>());
+            }
+
+            var vm = departmentsResult.Data
+                .Select(d => new DepartamentVM
+                {
+                    Id = d.Id,
+                    Ad = d.Ad,
+                    Aciqlama = d.Aciqlama
+                })
+                .ToList();
 
             return View(vm);
+
         }
 
 
@@ -55,14 +64,15 @@ namespace FinNex.UI.Areas.Admin.Controllers
 
         public async Task<IActionResult> Users(int id)
         {
-            var department = await _departmentService.IdIleGetirAsync(id);
-            if (department == null)
+            var departmentResult = await _departmentService.IdIleGetirAsync(id);
+
+            if (!departmentResult.Success || departmentResult.Data == null)
                 return NotFound();
 
             var users = await _userDepartmentService
                 .GetUsersByDepartmentAsync(id);
 
-            ViewBag.DepartmentName = department.Ad;
+            ViewBag.DepartmentName = departmentResult.Data.Ad;
 
             return View(users);
         }

@@ -1,9 +1,11 @@
-﻿namespace FinNex.Domain.Entities.SenedDovriyyesi
+﻿using FinNex.Domain.Entities.Structure;
+
+namespace FinNex.Domain.Entities.SenedDovriyyesi
 {
     public class SenedNovu : BaseEntity
     {
-        public int SobeId { get; set; }
-        public Sobe Sobe { get; set; } = null!;
+        public int DepartmentId { get; set; }
+        public Department Department { get; set; } = null!;
 
         public string Kod { get; set; } = null!;   // məsələn: MUQAVILE, ERIZE
         public string Ad { get; set; } = null!;

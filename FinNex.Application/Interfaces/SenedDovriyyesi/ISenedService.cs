@@ -35,7 +35,7 @@ namespace FinNex.Application.Interfaces.SenedDovriyyesi
 
         Task<Result<PagedResult<SenedListDto>>> GetDeletedPagedAsync(PagedRequest req);
 
-        Task<Result<SenedDetailDto>> GetDetailAsync(int senedId);
+        Task<Result<SenedDetailDto>> GetDetailAsync(int senedId, int userId, bool isAdmin);
 
         Task<Result<SenedDashboardDto>> GetDashboardAsync();
 

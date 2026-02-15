@@ -1,0 +1,98 @@
+﻿@using FinNex.Application.DTOs.Structur
+@model IEnumerable<DepartmentListDto>
+
+@{
+    ViewData["Title"] = "Departamentlər";
+    Layout = "_HRLayout";
+}
+
+<div class="page-container">
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Departamentlər</h1>
+            <p class="page-subtitle">Şöbələrin idarə olunması</p>
+        </div>
+        <a asp-action="Create" class="btn-add">
+            <i class="bi bi-plus-lg"></i> Yeni Departament
+        </a>
+    </div>
+
+    <!-- Table Card -->
+    <div class="table-card">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Departament Adı</th>
+                    <th>İşçi Sayı</th>
+                    @* <th>Status</th> *@
+                    <th class="text-end">Əməliyyatlar</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="cell-main">@item.Ad</div>
+                            </td>
+                            
+                            <td>
+                                <span class="badge-count">@item.IsciSayi</span>
+                            </td>
+                            @* <td>
+                                @if (item.IsActive)
+                                {
+                                    <span class="badge-active">Aktiv</span>
+                                }
+                                else
+                                {
+                                    <span class="badge-inactive">Deaktiv</span>
+                                }
+                            </td> *@
+                            <td class="text-end">
+                                <div class="action-btns">
+                                    <a asp-action="Details" asp-route-id="@item.Id"
+                                       class="btn-icon" title="Bax">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+
+                                    <a asp-action="Edit" asp-route-id="@item.Id"
+                                       class="btn-icon" title="Redaktə">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+
+                                    <button type="button"
+                                            class="btn-icon btn-delete"
+                                            data-id="@item.Id"
+                                            title="Sil">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="text-center empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>Heç bir departament tapılmadı</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/departament-list.css" />
+}
+
+@section Scripts {
+    <script src="~/js/hr/departament-list.js"></script>
+}

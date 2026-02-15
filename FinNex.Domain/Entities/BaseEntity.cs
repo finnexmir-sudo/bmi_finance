@@ -1,11 +1,15 @@
-﻿public abstract class BaseEntity
+﻿using FinNex.Domain;
+
+public abstract class BaseEntity
 {
     public int Id { get; set; }
     public DateTime YaradilmaTarixi { get; set; } = DateTime.Now;
 
     // İcracı ID-ləri artıq int (çünki AppUser-i int etdik)
     public int? YaradanIcraciId { get; set; }
+
     public int? YenileyenIcraciId { get; set; }
+
     public int? SilenIcraciId { get; set; }
 
     public DateTime? YenilenmeTarixi { get; set; }

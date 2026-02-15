@@ -1,0 +1,82 @@
+﻿@using FinNex.Application.ViewModels.HR.Vezife
+@model VezifeCreateVM
+@{
+    ViewData["Title"] = "Yeni Vəzifə";
+    Layout = "_HRLayout";
+}
+
+<div class="create-wrapper">
+    <div class="create-card">
+        <div class="card-header">
+            <div class="header-icon">
+                <i class="bi bi-briefcase-fill"></i>
+            </div>
+            <div>
+                <h2 class="card-title">Yeni Vəzifə Əlavə Et</h2>
+                <p class="card-subtitle">Vəzifə məlumatlarını daxil edin</p>
+            </div>
+        </div>
+
+        <form asp-action="Create" method="post" id="vezifeForm">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="form-grid">
+                <!-- Vəzifə Adı -->
+                <div class="form-field full-width">
+                    <label asp-for="Ad">Vəzifə Adı <span class="req">*</span></label>
+                    <input asp-for="Ad" class="form-input" placeholder="Məsələn: Proqramçı, Mühasib, Menecer" />
+                    <span asp-validation-for="Ad" class="error-text"></span>
+                </div>
+
+                <!-- Departament -->
+                <div class="form-field">
+                    <label asp-for="DepartamentId">Departament <span class="req">*</span></label>
+                    <select asp-for="DepartamentId" asp-items="Model.Departamentlar" class="form-select">
+                        <option value="">Departament seçin</option>
+                    </select>
+                    <span asp-validation-for="DepartamentId" class="error-text"></span>
+                </div>
+
+                <!-- Maaş -->
+                <div class="form-field">
+                    <label asp-for="Maas">Əsas Maaş (AZN)</label>
+                    <input asp-for="Maas" type="number" step="0.01" class="form-input" placeholder="0.00" />
+                    <span asp-validation-for="Maas" class="error-text"></span>
+                </div>
+
+                <!-- Təsvir -->
+                <div class="form-field full-width">
+                    <label asp-for="Tesvir">Təsvir</label>
+                    <textarea asp-for="Tesvir" class="form-textarea" rows="4" placeholder="Vəzifə haqqında qısa məlumat..."></textarea>
+                    <span asp-validation-for="Tesvir" class="error-text"></span>
+                </div>
+
+                <!-- Status -->
+                <div class="form-field">
+                    <label class="checkbox-label">
+                        <input asp-for="IsActive" type="checkbox" class="form-checkbox" checked />
+                        <span>Aktiv vəzifə</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">
+                    <i class="bi bi-check-lg"></i> Yadda Saxla
+                </button>
+                <a asp-action="Index" class="btn-secondary">
+                    <i class="bi bi-x-lg"></i> Ləğv Et
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/vezife-create.css" />
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/hr/vezife-create.js"></script>
+}

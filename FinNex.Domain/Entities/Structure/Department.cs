@@ -1,4 +1,6 @@
-﻿namespace FinNex.Domain.Entities.Structure;
+﻿using FinNex.Domain.Entities.SenedDovriyyesi;
+
+namespace FinNex.Domain.Entities.Structure;
 
 public class Department : BaseEntity
 {
@@ -6,5 +8,7 @@ public class Department : BaseEntity
     public string? Aciqlama { get; set; }
     public ICollection<UserDepartment> UserDepartments { get; set; }
     = new List<UserDepartment>();
+    public ICollection<Sened> Senedler { get; set; } = new List<Sened>();
+    public ICollection<SenedNovu> SenedNovleri { get; set; } = new List<SenedNovu>();
 
 }

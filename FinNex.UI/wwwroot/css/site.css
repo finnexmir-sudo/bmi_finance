@@ -37,3 +37,24 @@ body {
     }
 }
 
+.hr-card:hover,
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    transition: 0.3s ease;
+    cursor: pointer;
+}
+
+.dashboard-card {
+    border-radius: 15px;
+    padding: 15px;
+}
+
+    .dashboard-card i {
+        transition: 0.3s;
+    }
+
+    .dashboard-card:hover i {
+        transform: scale(1.2);
+    }
+
+

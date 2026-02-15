@@ -88,17 +88,24 @@ public class UserManagementController : Controller
         if (user == null)
             return NotFound();
 
-        var departments = await _departmentService.HamisiniGetirAsync();
+        var departmentsResult = await _departmentService.HamisiniGetirAsync();
+
+        if (!departmentsResult.Success || departmentsResult.Data == null)
+        {
+            TempData["Error"] = departmentsResult.Message ?? "Şöbələr yüklənmədi.";
+            return RedirectToAction(nameof(Index));
+        }
 
         var vm = new AssignDepartmentVM
         {
             UserId = id,
-            Departments = departments
+            Departments = departmentsResult.Data
                 .Select(d => new SelectListItem
                 {
                     Value = d.Id.ToString(),
                     Text = d.Ad
-                }).ToList()
+                })
+                .ToList()
         };
 
         return View(vm);

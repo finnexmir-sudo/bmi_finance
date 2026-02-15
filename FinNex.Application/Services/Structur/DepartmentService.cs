@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.Structur;
 using FinNex.Application.DTOs.User;
 using FinNex.Application.Interfaces.Structur;
@@ -34,7 +35,25 @@ namespace FinNex.Application.Services.Structur
 
             await _unitOfWork.YaddaSaxlaAsync();
         }
-       
+
+        public async Task<Result<List<DepartmentListDto>>> GetAllWithEmployeeCountAsync()
+        {
+            var data = await _unitOfWork
+     .Repository<Department>()
+     .Query()
+     .Where(d => !d.Silinib) // silinmişləri göstərmə
+     .Select(d => new DepartmentListDto
+     {
+         Id = d.Id,
+         Ad = d.Ad,
+         Aciqlama = d.Aciqlama,
+         IsciSayi = d.UserDepartments.Count()
+     })
+     .ToListAsync();
+
+
+            return Result<List<DepartmentListDto>>.Ok(data);
+        }
     }
 
 }

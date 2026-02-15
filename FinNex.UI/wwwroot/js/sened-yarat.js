@@ -6,7 +6,8 @@
     const sobeSelect = document.getElementById('sobeSelect');
     const senedNovuSelect = document.getElementById('senedNovuSelect');
     const novModal = document.getElementById('novModal');
-    const saveNovBtn = document.getElementById('saveNovBtn');
+    const saveNovBtn = document.getElementById('saveBtn');
+
 
     // =====================================================
     // Fayl Yükləmə (Klik və Drag & Drop)
@@ -111,13 +112,18 @@
     // =====================================================
 
     if (saveNovBtn) {
+
         saveNovBtn.addEventListener('click', function () {
-            const sobeId = sobeSelect?.value;
-            const kod = document.getElementById('novKod').value.trim();
-            const ad = document.getElementById('novAd').value.trim();
+
+            const kodElement = document.getElementById('novKod');
+            const adElement = document.getElementById('novAd');
             const errorDiv = document.getElementById('novError');
 
-            if (errorDiv) errorDiv.classList.add('d-none');
+            const sobeId = sobeSelect.value;
+            const kod = kodElement.value.trim();
+            const ad = adElement.value.trim();
+
+            errorDiv.classList.add('d-none');
 
             if (!sobeId) {
                 errorDiv.textContent = "Əvvəlcə şöbə seçilməlidir.";
@@ -131,43 +137,63 @@
                 return;
             }
 
-            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
-
-            saveNovBtn.disabled = true;
-            saveNovBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Gözləyin...';
-
             fetch('/SenedDovriyyesi/Sened/YeniSenedNovu', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    ...(tokenInput && { 'RequestVerificationToken': tokenInput.value })
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    sobeId: parseInt(sobeId),
+                    departmentId: parseInt(sobeId),   // BURANI DÜZƏLTDİM
                     kod: kod.toUpperCase(),
                     ad: ad
                 })
             })
                 .then(res => res.json())
-                .then(res => {
-                    if (!res.success) {
-                        errorDiv.textContent = res.message;
+                .then(data => {
+
+                    if (!data.success) {
+                        errorDiv.textContent = data.message;
                         errorDiv.classList.remove('d-none');
                         return;
                     }
 
-                    const option = new Option(res.ad, res.id, true, true);
+                    const option = new Option(ad, data.id, true, true);
                     senedNovuSelect.add(option);
-                    bootstrap.Modal.getInstance(novModal).hide();
+
+                    const modalInstance = bootstrap.Modal.getInstance(novModal);
+                    modalInstance.hide();
+
                 })
                 .catch(() => {
-                    errorDiv.textContent = "Sistem xətası baş verdi.";
+                    errorDiv.textContent = "Server xətası baş verdi.";
                     errorDiv.classList.remove('d-none');
-                })
-                .finally(() => {
-                    saveNovBtn.disabled = false;
-                    saveNovBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Saxla';
                 });
+
         });
     }
 });
+document.addEventListener("DOMContentLoaded", function () {
+
+    const sobeSelect = document.getElementById('sobeSelect');
+    const openNovBtn = document.getElementById('openNovBtn');
+    const novModal = new bootstrap.Modal(document.getElementById('novModal'));
+
+    if (openNovBtn) {
+
+        openNovBtn.addEventListener('click', function () {
+
+            const sobeId = sobeSelect.value;
+
+            if (!sobeId) {
+                alert("Əvvəlcə şöbə seçilməlidir.");
+                return;
+            }
+
+            novModal.show();
+        });
+
+    }
+
+});
+
+    

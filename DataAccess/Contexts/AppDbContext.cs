@@ -1,6 +1,7 @@
 ﻿using System.Reflection.Emit;
 using FinNex.Domain;
 using FinNex.Domain.Entities;
+using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
 using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Entities.Structure;
@@ -29,7 +30,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<Sened> Senedler { get; set; }
     public DbSet<SenedFayl> SenedFayllar { get; set; }
     public DbSet<SenedNovu> SenedNovleri { get; set; }
-    public DbSet<Sobe> Sobeler { get; set; }
+    public DbSet<Department> Departamentler { get; set; }
     public DbSet<Tag> Tagler { get; set; }
     public DbSet<SenedTagMap> SenedTagMaps { get; set; }
     public DbSet<SenedAccess> SenedAccessler { get; set; }
@@ -37,7 +38,15 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
 
     public DbSet<UserDepartment> UserDepartments { get; set; }
 
+    // =====================
+    // HR Module
+    // =====================
 
+    public DbSet<Isci> Isciler { get; set; }
+    public DbSet<Vezife> Vezifeler { get; set; }
+    public DbSet<Maas> Maaslar { get; set; }
+    public DbSet<Davamiyyet> Davamiyyetler { get; set; }
+    public DbSet<Mezuniyyet> Mezuniyyetler { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -100,6 +109,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasForeignKey(x => x.TagId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        
         // -------------------------
         // SenedFayl Unique Version
         // -------------------------
@@ -111,9 +121,9 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         // Sened Relationships
         // -------------------------
         builder.Entity<Sened>()
-            .HasOne(x => x.Sobe)
+            .HasOne(x => x.Department)
             .WithMany(x => x.Senedler)
-            .HasForeignKey(x => x.SobeId)
+            .HasForeignKey(x => x.DepartmentId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<Sened>()
@@ -130,6 +140,62 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .WithMany()
             .HasForeignKey(x => x.SenedId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Vezife>()
+    .HasIndex(x => x.Ad)
+    .IsUnique();
+        builder.Entity<Isci>()
+            .HasOne(x => x.Sobe)
+            .WithMany()
+            .HasForeignKey(x => x.SobeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Isci>()
+            .HasOne(x => x.Vezife)
+            .WithMany(v => v.Isciler)
+            .HasForeignKey(x => x.VezifeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Isci>()
+            .HasOne(x => x.AppUser)
+            .WithOne()
+            .HasForeignKey<Isci>(x => x.AppUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<Isci>()
+            .HasIndex(x => x.FIN)
+            .IsUnique();
+        builder.Entity<Maas>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Maas>()
+            .HasIndex(x => new { x.IsciId, x.Il, x.Ay })
+            .IsUnique();
+        builder.Entity<Davamiyyet>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Davamiyyet>()
+            .HasIndex(x => new { x.IsciId, x.Tarix })
+            .IsUnique();
+        builder.Entity<Mezuniyyet>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<AppUser>()
+    .HasOne(x => x.Isci)
+    .WithOne(x => x.AppUser)
+    .HasForeignKey<Isci>(x => x.AppUserId)
+    .OnDelete(DeleteBehavior.SetNull);
+
+
 
         builder.Entity<UserDepartment>(entity =>
         {

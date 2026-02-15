@@ -1,0 +1,75 @@
+﻿@model List<IsciListDto>
+@using FinNex.Domain.Entities.HR
+
+
+@{
+    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
+    ViewData["Title"] = "İşçilər";
+}
+
+<div class="page-header">
+    <div>
+        <h2 class="page-title">İşçilər</h2>
+        <div class="page-sub">Bütün işçilərin idarəsi</div>
+    </div>
+
+    <a asp-area="HR"
+       asp-controller="Isci"
+       asp-action="Create"
+       class="btn btn-primary hr-btn-add">
+        <i class="bi bi-plus-lg"></i> Yeni işçi
+    </a>
+
+</div>
+
+<div class="card-soft">
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle custom-table">
+            <thead>
+                <tr>
+                    <th>Ad Soyad</th>
+                    <th>Şöbə</th>
+                    <th>Vəzifə</th>
+                    <th>Status</th>
+                    <th class="text-end">Əməliyyat</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <div class="emp-info">
+                                <div class="emp-avatar">
+                                    @item.TamAd.Substring(0, 1)
+                                </div>
+                                <div>
+                                    <div class="emp-name">@item.TamAd</div>
+                                    <div class="emp-email">@item.</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>@item.Sobe</td>
+                        <td>@item.Vezife</td>
+                        <td>
+                            <span class="status-pill @(item.Status == IsciStatus.Aktiv ? "status-active" : "status-passiv")">
+                                @(item.Status == IsciStatus.Aktiv ? "Aktiv" : "Qeyri-aktiv")
+                            </span>
+
+                        </td>
+                        <td class="text-end">
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="action-icon">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a asp-action="Delete" asp-route-id="@item.Id" class="action-icon text-danger">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+</div>

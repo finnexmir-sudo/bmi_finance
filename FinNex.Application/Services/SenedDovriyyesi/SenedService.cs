@@ -4,8 +4,10 @@ using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.SenedDovriyyesi.Fayl;
 using FinNex.Application.DTOs.SenedDovriyyesi.Sened;
 using FinNex.Application.Interfaces.SenedDovriyyesi;
+using FinNex.Application.Interfaces.Structur;
 using FinNex.DataAccess.UnitOfWorks;
 using FinNex.Domain.Entities.SenedDovriyyesi;
+using FinNex.Domain.Entities.Structure;
 using FinNex.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client.Extensions.Msal;
@@ -18,13 +20,21 @@ namespace FinNex.Application.Services.SenedDovriyyesi
         private readonly IMapper _mapper;
         private readonly IFileStorageService _storage;
         private readonly IAuditLogService _audit;
+        private readonly IDepartmentService _departmentService;
 
-        public SenedService(IUnitOfWork uow, IMapper mapper, IFileStorageService storage, IAuditLogService audit)
+        public SenedService(IUnitOfWork uow,
+            IMapper mapper,
+            IFileStorageService storage,
+            IAuditLogService audit,
+            IDepartmentService departmentService
+)
         {
             _uow = uow;
             _mapper = mapper;
             _storage = storage;
             _audit = audit;
+            _departmentService = departmentService;
+
         }
 
         public async Task<Result<int>> CreateAsync(SenedCreateDto dto, int userId, string? ip)
@@ -34,15 +44,15 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 return Result<int>.Fail("Açar söz boş ola bilməz.");
 
             // var olsa: Sobe, SenedNovu yoxla
-            var sobe = await _uow.Repository<Sobe>().GetirAsync(x => x.Id == dto.SobeId && !x.Silinib);
-            if (sobe is null) return Result<int>.Fail("Şöbə tapılmadı.");
+            var sobe = await _departmentService.HamisiniGetirAsync(x => x.Id == dto.SobeId && !x.Silinib);
+            if (sobe is null) return Result<int>.Fail("Departament tapılmadı.");
 
             var nov = await _uow.Repository<SenedNovu>().GetirAsync(x => x.Id == dto.SenedNovuId && !x.Silinib);
             if (nov is null) return Result<int>.Fail("Sənəd növü tapılmadı.");
 
             var sened = new Sened
             {
-                SobeId = dto.SobeId,
+                DepartmentId = dto.SobeId,
                 SenedNovuId = dto.SenedNovuId,
                 Basliq = dto.Basliq.Trim(),
                 AcarSoz = dto.AcarSoz.Trim(),
@@ -76,12 +86,12 @@ namespace FinNex.Application.Services.SenedDovriyyesi
 
             query = query
                 .Where(x => !x.Silinib)
-                .Include(x => x.Sobe)
+                .Include(x => x.Department)
                 .Include(x => x.SenedNovu)
                 .Include(x => x.Fayllar);
 
 
-            if (sobeId.HasValue) query = query.Where(x => x.SobeId == sobeId);
+            if (sobeId.HasValue) query = query.Where(x => x.DepartmentId == sobeId);
             if (senedNovuId.HasValue) query = query.Where(x => x.SenedNovuId == senedNovuId);
             if (status.HasValue) query = query.Where(x => x.Status == status);
             if (!string.IsNullOrWhiteSpace(search))
@@ -114,7 +124,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             var query = _uow.Repository<Sened>().Query()
                 .IgnoreQueryFilters()
                 .Where(x => x.Silinib)
-                .Include(x => x.Sobe)
+                .Include(x => x.Department)
                 .Include(x => x.SenedNovu)
                 .Include(x => x.Fayllar);
 
@@ -137,16 +147,29 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             });
         }
 
-        public async Task<Result<SenedDetailDto>> GetDetailAsync(int senedId)
+        public async Task<Result<SenedDetailDto>> GetDetailAsync(int senedId, int userId, bool isAdmin)
         {
-            var sened = await _uow.Repository<Sened>().Query()
-                .Include(x => x.Sobe)
-                .Include(x => x.SenedNovu)
+            var query = _uow.Repository<Sened>()
+                .Query()
+                .Include(x => x.Department)
                 .Include(x => x.Fayllar)
-                .Include(x => x.SenedTagMaps).ThenInclude(m => m.Tag)
-                .FirstOrDefaultAsync(x => x.Id == senedId && !x.Silinib);
+                .AsQueryable();
 
-            if (sened is null) return Result<SenedDetailDto>.Fail("Sənəd tapılmadı.");
+            if (!isAdmin)
+            {
+                var userDepartments = await _uow.Repository<UserDepartment>()
+                    .Query()
+                    .Where(x => x.UserId == userId)
+                    .Select(x => x.DepartmentId)
+                    .ToListAsync();
+
+                query = query.Where(x => userDepartments.Contains(x.DepartmentId));
+            }
+
+            var sened = await query.FirstOrDefaultAsync(x => x.Id == senedId);
+
+            if (sened == null)
+                return Result<SenedDetailDto>.Fail("Sənəd tapılmadı və ya icazəniz yoxdur.");
 
             return Result<SenedDetailDto>.Ok(_mapper.Map<SenedDetailDto>(sened));
         }
@@ -162,7 +185,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             var arxiv = await query.CountAsync(x => x.Status == SenedStatusu.Arxiv);
 
             var sonSenedler = await query
-                .Include(x => x.Sobe)
+                .Include(x => x.Department)
                 .Include(x => x.SenedNovu)
                 .Include(x => x.Fayllar)
                 .OrderByDescending(x => x.YaradilmaTarixi)
@@ -310,8 +333,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 if (string.IsNullOrWhiteSpace(dto.AcarSoz))
                     return Result<int>.Fail("Açar söz boş ola bilməz.");
 
-                var sobe = await _uow.Repository<Sobe>()
-                    .GetirAsync(x => x.Id == dto.SobeId && !x.Silinib);
+                var sobe = await _departmentService.HamisiniGetirAsync(x => x.Id == dto.SobeId && !x.Silinib);
 
                 if (sobe is null)
                     return Result<int>.Fail("Şöbə tapılmadı.");
@@ -326,7 +348,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
 
                 var sened = new Sened
                 {
-                    SobeId = dto.SobeId,
+                    DepartmentId = dto.SobeId,
                     SenedNovuId = dto.SenedNovuId,
                     Basliq = dto.Basliq.Trim(),
                     AcarSoz = dto.AcarSoz.Trim(),
@@ -414,13 +436,13 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 return Result.Fail("Açar söz boş ola bilməz.");
 
             // 3. Şöbənin mövcudluğunu yoxlayırıq (əgər dto-da gəlirsə)
-            var sobe = await _uow.Repository<Sobe>().GetirAsync(x => x.Id == dto.SobeId && !x.Silinib);
+            var sobe = await _departmentService.HamisiniGetirAsync(x => x.Id == dto.SobeId && !x.Silinib);
             if (sobe == null)
                 return Result.Fail("Şöbə tapılmadı.");
 
             // 4. Məlumatları mapiyirik (və ya əllə mənimsədirik)
             sened.Basliq = dto.Basliq;
-            sened.SobeId = dto.SobeId;
+            sened.DepartmentId = dto.SobeId;
             sened.SenedNovuId = dto.SenedNovuId;
             sened.AcarSoz = dto.AcarSoz;
             // sened.UpdateDate = DateTime.Now; // Lazımdırsa audit məlumatları

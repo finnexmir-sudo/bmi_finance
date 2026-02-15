@@ -36,7 +36,7 @@ public class DashboardController : Controller
             {
                 Id = s.Id,
                 Basliq = s.Basliq,
-                Sobe = s.Sobe,
+                Departament = s.Sobe,
                 SenedNovu = s.SenedNovu,
                 Status = s.Status,
                 FaylSayi = s.FaylSayi,
