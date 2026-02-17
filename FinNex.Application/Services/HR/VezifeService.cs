@@ -15,7 +15,7 @@ public class VezifeService
     public async Task<IList<VezifeListDto>> AktivOlanlarAsync()
     {
         var entities = await _unitOfWork.Repository<Vezife>()
-            .HamisiniGetirAsync(x => x.Aktivdir, izlemeden: true);
+            .GetAllAsync(x => x.Aktivdir, izlemeden: true);
 
         return _mapper.Map<IList<VezifeListDto>>(entities);
     }
@@ -23,6 +23,6 @@ public class VezifeService
     public async Task<bool> AdMovcuddurmuAsync(string ad)
     {
         return await _unitOfWork.Repository<Vezife>()
-            .MovcuddurmuAsync(x => x.Ad == ad);
+            .ExistsAsync(x => x.Ad == ad);
     }
 }

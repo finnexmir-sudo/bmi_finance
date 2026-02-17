@@ -36,6 +36,10 @@ namespace FinNex.Application.MappingProfile
             CreateMap<DTOs.SenedDovriyyesi.SenedNovu.SenedNovuCreateDto, SenedNovu>();
             CreateMap<SenedNovuUpdateDto, SenedNovu>();
 
+            CreateMap<AuditLog, AuditLogDto>();
+            CreateMap<SenedFayl, SenedFaylDto>();
+            CreateMap<Sened, SenedDetailDto>();
+
         }
     }
 }

@@ -24,20 +24,20 @@ namespace FinNex.Application.Services.Structur
         {
             var entity = _mapper.Map<UserDepartment>(dto);
 
-            await _unitOfWork.Repository<UserDepartment>().YaratAsync(entity);
+            await _unitOfWork.Repository<UserDepartment>().AddAsync(entity);
             await _unitOfWork.YaddaSaxlaAsync();
         }
 
         public async Task RemoveAsync(int id)
         {
-            await _unitOfWork.Repository<UserDepartment>().YumshakSilAsync(id);
+            await _unitOfWork.Repository<UserDepartment>().SoftDeleteAsync(id);
             await _unitOfWork.YaddaSaxlaAsync();
         }
 
         public async Task<IList<UserDepartmentListDto>> GetUserDepartmentsAsync(int userId)
         {
             var list = await _unitOfWork.Repository<UserDepartment>()
-                .HamisiniGetirAsync(x => x.UserId == userId,
+                .GetAllAsync(x => x.UserId == userId,
                     include: q => q.Include(x => x.Department),
                     izlemeden: true);
 
@@ -48,12 +48,12 @@ namespace FinNex.Application.Services.Structur
         {
             var repo = _unitOfWork.Repository<UserDepartment>();
 
-            var entity = await repo.IdIleGetirAsync(userDepartmentId);
+            var entity = await repo.GetByIdAsync(userDepartmentId);
             if (entity == null)
                 throw new Exception("Assignment not found");
 
             // 1️⃣ əvvəl həmin user-in bütün primary-lərini false et
-            var allUserDeps = await repo.HamisiniGetirAsync(x => x.UserId == entity.UserId);
+            var allUserDeps = await repo.GetAllAsync(x => x.UserId == entity.UserId);
 
             foreach (var item in allUserDeps)
                 item.Esasdir = false;
@@ -67,7 +67,7 @@ namespace FinNex.Application.Services.Structur
         {
             var userDepartments = await _unitOfWork
                 .Repository<UserDepartment>()
-                .HamisiniGetirAsync(
+                .GetAllAsync(
                     x => x.DepartmentId == departmentId,
                     include: q => q.Include(x => x.User),
                     izlemeden: true);

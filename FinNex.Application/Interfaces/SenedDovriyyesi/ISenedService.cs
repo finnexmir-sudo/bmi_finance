@@ -7,7 +7,7 @@ using FinNex.Domain.Entities.SenedDovriyyesi;
 
 namespace FinNex.Application.Interfaces.SenedDovriyyesi
 {
-    public interface ISenedService
+    public interface ISenedService : IServiceAsync<Sened, SenedListDto, SenedCreateDto, SenedUpdateDto>
     {
         // --- Yaratma Əməliyyatları ---
         Task<Result<int>> CreateAsync(SenedCreateDto dto, int userId, string? ip);
@@ -45,6 +45,10 @@ namespace FinNex.Application.Interfaces.SenedDovriyyesi
         Task<Result> SoftDeleteAsync(int senedId, int userId, string? ip);
 
         Task<Result> RestoreAsync(int senedId, int userId, string? ip);
+        Task<Sened?> GetEntityAsync(int id);
+
+        Task ChangeStatusAsync(int senedId, SenedStatusu status, string? comment, int userId);
+
     }
 
 }

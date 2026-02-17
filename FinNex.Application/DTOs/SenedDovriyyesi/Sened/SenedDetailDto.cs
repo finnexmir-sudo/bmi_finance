@@ -17,5 +17,7 @@ namespace FinNex.Application.DTOs.SenedDovriyyesi.Sened
         public DateTime? YenilenmeTarixi { get; set; }
         public List<string> Tags { get; set; } = new();
         public List<SenedFaylDto> Fayllar { get; set; } = new();
+        public List<AuditLogDto> AuditLogs { get; set; } = new();
+
     }
 }

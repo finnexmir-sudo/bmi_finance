@@ -22,7 +22,7 @@ namespace FinNex.UI.Areas.SenedDovriyyesi.Controllers
                 return Json(new { success = false, message = "Məlumatlar tam deyil." });
 
             // Sənəd növünü yaradırıq
-            var result = await _senedNovuService.YaratAsync(dto);
+            var result = await _senedNovuService.AddAsync(dto);
 
             if (result.Success)
             {

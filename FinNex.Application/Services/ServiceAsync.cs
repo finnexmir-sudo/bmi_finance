@@ -21,13 +21,13 @@ namespace FinNex.Application.Services
             _mapper = mapper;
         }
 
-        public async Task<Result<IList<TDto>>> HamisiniGetirAsync()
+        public async Task<Result<IList<TDto>>> GetAllAsync()
         {
             try
             {
                 var entities = await _unitOfWork
                     .Repository<TEntity>()
-                    .HamisiniGetirAsync(izlemeden: true);
+                    .GetAllAsync(izlemeden: true);
 
                 var data = _mapper.Map<IList<TDto>>(entities);
 
@@ -39,7 +39,7 @@ namespace FinNex.Application.Services
             }
         }
 
-        public async Task<Result<IList<TDto>>> HamisiniGetirAsync(
+        public async Task<Result<IList<TDto>>> GetAllAsync(
             Expression<Func<TEntity, bool>>? predicate = null,
             Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>? include = null,
             bool izlemeden = true)
@@ -48,7 +48,7 @@ namespace FinNex.Application.Services
             {
                 var entities = await _unitOfWork
                     .Repository<TEntity>()
-                    .HamisiniGetirAsync(predicate, include, izlemeden);
+                    .GetAllAsync(predicate, include, izlemeden);
 
                 var data = _mapper.Map<IList<TDto>>(entities);
 
@@ -60,13 +60,13 @@ namespace FinNex.Application.Services
             }
         }
 
-        public async Task<Result<TDto?>> IdIleGetirAsync(int id)
+        public async Task<Result<TDto?>> GetByIdAsync(int id)
         {
             try
             {
                 var entity = await _unitOfWork
                     .Repository<TEntity>()
-                    .IdIleGetirAsync(id);
+                    .GetByIdAsync(id);
 
                 if (entity == null)
                     return Result<TDto?>.Fail("Tapılmadı.");
@@ -81,13 +81,13 @@ namespace FinNex.Application.Services
             }
         }
 
-        public virtual async Task<Result<TDto>> YaratAsync(TCreateDto dto)
+        public virtual async Task<Result<TDto>> AddAsync(TCreateDto dto)
         {
             try
             {
                 var entity = _mapper.Map<TEntity>(dto);
 
-                await _unitOfWork.Repository<TEntity>().YaratAsync(entity);
+                await _unitOfWork.Repository<TEntity>().AddAsync(entity);
                 await _unitOfWork.YaddaSaxlaAsync();
 
                 var data = _mapper.Map<TDto>(entity);
@@ -100,13 +100,13 @@ namespace FinNex.Application.Services
             }
         }
 
-        public async Task<Result> YenileAsync(TUpdateDto dto)
+        public async Task<Result> UpdateAsync(TUpdateDto dto)
         {
             try
             {
                 var entity = _mapper.Map<TEntity>(dto);
 
-                await _unitOfWork.Repository<TEntity>().YenileAsync(entity);
+                await _unitOfWork.Repository<TEntity>().UpdateAsync(entity);
                 await _unitOfWork.YaddaSaxlaAsync();
 
                 return Result.Ok("Uğurla yeniləndi.");
@@ -117,11 +117,11 @@ namespace FinNex.Application.Services
             }
         }
 
-        public async Task<Result> SilAsync(int id)
+        public async Task<Result> SoftDeleteAsync(int id)
         {
             try
             {
-                await _unitOfWork.Repository<TEntity>().YumshakSilAsync(id);
+                await _unitOfWork.Repository<TEntity>().SoftDeleteAsync(id);
                 await _unitOfWork.YaddaSaxlaAsync();
 
                 return Result.Ok("Uğurla silindi.");
@@ -132,13 +132,13 @@ namespace FinNex.Application.Services
             }
         }
 
-        public async Task<Result<bool>> MovcuddurmuAsync(Expression<Func<TEntity, bool>> predicate)
+        public async Task<Result<bool>> ExistsAsync(Expression<Func<TEntity, bool>> predicate)
         {
             try
             {
                 var exists = await _unitOfWork
                     .Repository<TEntity>()
-                    .MovcuddurmuAsync(predicate);
+                    .ExistsAsync(predicate);
 
                 return Result<bool>.Ok(exists);
             }

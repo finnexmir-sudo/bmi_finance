@@ -9,16 +9,16 @@ namespace FinNex.Application.Interfaces
     where TEntity : class
     where TDto : class
     {
-        Task<Result<IList<TDto>>> HamisiniGetirAsync();
-        Task<Result<IList<TDto>>> HamisiniGetirAsync(
+        Task<Result<IList<TDto>>> GetAllAsync();
+        Task<Result<IList<TDto>>> GetAllAsync(
     Expression<Func<TEntity, bool>>? predicate = null,
     Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>? include = null,
     bool izlemeden = true);
-        Task<Result<TDto?>> IdIleGetirAsync(int id);
-        Task<Result< TDto>> YaratAsync(TCreateDto dto);
-        Task<Result> YenileAsync(TUpdateDto dto);
-        Task<Result> SilAsync(int id);  
-        Task<Result<bool>> MovcuddurmuAsync(Expression<Func<TEntity, bool>> predicate);
+        Task<Result<TDto?>> GetByIdAsync(int id);
+        Task<Result< TDto>> AddAsync(TCreateDto dto);
+        Task<Result> UpdateAsync(TUpdateDto dto);
+        Task<Result> SoftDeleteAsync(int id);  
+        Task<Result<bool>> ExistsAsync(Expression<Func<TEntity, bool>> predicate);
 
     }
 }

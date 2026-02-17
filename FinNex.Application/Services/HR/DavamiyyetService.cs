@@ -16,7 +16,7 @@ public class DavamiyyetService
     public async Task<IList<DavamiyyetListDto>> TarixUzreAsync(DateTime tarix)
     {
         var entities = await _unitOfWork.Repository<Davamiyyet>()
-            .HamisiniGetirAsync(
+            .GetAllAsync(
                 x => x.Tarix.Date == tarix.Date,
                 include: q => q.Include(x => x.Isci),
                 izlemeden: true);
@@ -27,7 +27,7 @@ public class DavamiyyetService
     public async Task<IList<DavamiyyetListDto>> IsciUzreAsync(int isciId)
     {
         var entities = await _unitOfWork.Repository<Davamiyyet>()
-            .HamisiniGetirAsync(
+            .GetAllAsync(
                 x => x.IsciId == isciId,
                 include: q => q.Include(x => x.Isci),
                 izlemeden: true);
@@ -38,6 +38,6 @@ public class DavamiyyetService
     public async Task<bool> BuGunMovcuddurmuAsync(int isciId, DateTime tarix)
     {
         return await _unitOfWork.Repository<Davamiyyet>()
-            .MovcuddurmuAsync(x => x.IsciId == isciId && x.Tarix.Date == tarix.Date);
+            .ExistsAsync(x => x.IsciId == isciId && x.Tarix.Date == tarix.Date);
     }
 }

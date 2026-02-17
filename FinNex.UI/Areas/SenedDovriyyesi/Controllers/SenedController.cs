@@ -1,3 +1,4 @@
+using DocumentFormat.OpenXml.Spreadsheet;
 using FinNex.Application.Common.Paged;
 using FinNex.Application.DTOs.SenedDovriyyesi.Sened;
 using FinNex.Application.DTOs.SenedDovriyyesi.SenedNovu;
@@ -19,17 +20,19 @@ public class SenedController : Controller
     private readonly ISenedNovuService _novuService;
     private readonly IDepartmentService _departmentService;
     private readonly IUserDepartmentService _userDepartmentService;
+    private readonly ISenedWorkflowService _workflow;
 
     public SenedController(
         ISenedService senedService,
         ISenedNovuService novuService,
         IDepartmentService departmentService,
-        IUserDepartmentService userDepartmentService)
+        IUserDepartmentService userDepartmentService, ISenedWorkflowService workflow)
     {
         _senedService = senedService;
         _novuService = novuService;
         _departmentService = departmentService;
         _userDepartmentService = userDepartmentService;
+        _workflow = workflow;
     }
 
     private int GetUserId() =>
@@ -138,7 +141,8 @@ public class SenedController : Controller
     // =========================
     // DETAL
     // =========================
-    public async Task<IActionResult> Detal(int id)
+    [HttpGet]
+    public async Task<IActionResult> Detail(int id)
     {
         var userId = GetUserId();
         var isAdmin = User.IsInRole("Admin");
@@ -146,13 +150,11 @@ public class SenedController : Controller
         var result = await _senedService.GetDetailAsync(id, userId, isAdmin);
 
         if (!result.Success || result.Data == null)
-        {
-            TempData["Error"] = result.Message ?? "Tapılmadı";
-            return RedirectToAction(nameof(Index));
-        }
+            return NotFound();
 
         return View(result.Data);
     }
+
 
 
     // =========================
@@ -160,8 +162,8 @@ public class SenedController : Controller
     // =========================
     public async Task<IActionResult> SenedNovleri()
     {
-        var sobelerResult = await _departmentService.HamisiniGetirAsync(x => !x.Silinib);
-        var novlerResult = await _novuService.HamisiniGetirAsync(x => !x.Silinib);
+        var sobelerResult = await _departmentService.GetAllAsync(x => !x.Silinib);
+        var novlerResult = await _novuService.GetAllAsync(x => !x.Silinib);
 
         if (!sobelerResult.Success || !novlerResult.Success)
         {
@@ -224,7 +226,7 @@ public class SenedController : Controller
     public async Task<IActionResult> SenedNovleriByShobe(int sobeId)
     {
         var result = await _novuService
-            .HamisiniGetirAsync(x => x.DepartmentId == sobeId && x.Aktiv);
+            .GetAllAsync(x => x.DepartmentId == sobeId && x.Aktiv);
 
         if (!result.Success || result.Data == null)
             return Json(new List<object>());
@@ -271,7 +273,7 @@ public class SenedController : Controller
     // =========================
     private async Task LoadDropdowns(SenedListVM vm)
     {
-        var sobeler = await _departmentService.HamisiniGetirAsync(x => !x.Silinib);
+        var sobeler = await _departmentService.GetAllAsync(x => !x.Silinib);
 
         if (sobeler.Success && sobeler.Data != null)
         {
@@ -288,8 +290,8 @@ public class SenedController : Controller
 
     private async Task LoadCreateDropdowns(SenedCreateVM vm)
     {
-        var sobeler = await _departmentService.HamisiniGetirAsync(x => !x.Silinib);
-        var novler = await _novuService.HamisiniGetirAsync(x => x.Aktiv);
+        var sobeler = await _departmentService.GetAllAsync(x => !x.Silinib);
+        var novler = await _novuService.GetAllAsync(x => x.Aktiv);
 
         if (sobeler.Success && sobeler.Data != null)
         {
@@ -315,4 +317,43 @@ public class SenedController : Controller
         }
 
     }
+
+    [HttpPost]
+    public async Task<IActionResult> ChangeStatus(
+    int id,
+    SenedStatusu status,
+    string? comment)
+    {
+        var userId = GetUserId();
+
+        var role =
+            User.IsInRole("Admin") ? "Admin" :
+            User.IsInRole("Manager") ? "Manager" :
+            User.IsInRole("SobeRehberi") ? "SobeRehberi" :
+            "Operator";
+
+        var result = await _senedService.GetByIdAsync(id);
+
+        if (!result.Success || result.Data == null)
+            return NotFound();
+
+        var sened = result.Data;
+
+        if (!_workflow.CanChangeStatus(role, sened.Status, status))
+            return Forbid();
+
+        if (_workflow.RequiresRejectComment(sened.Status, status)
+            && string.IsNullOrWhiteSpace(comment))
+        {
+            TempData["Error"] = "Rədd üçün səbəb yazılmalıdır.";
+            return RedirectToAction("Detail", new { id });
+        }
+
+        await _senedService.ChangeStatusAsync(id, status, comment, userId);
+
+        return RedirectToAction("Detail", new { id });
+    }
+
+
+
 }

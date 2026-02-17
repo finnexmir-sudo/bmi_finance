@@ -39,7 +39,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             if (!ModelState.IsValid)
                 return View(dto);
 
-            await _departamentService.YaratAsync(dto);
+            await _departamentService.AddAsync(dto);
 
             return RedirectToAction(nameof(Index));
         }

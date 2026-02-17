@@ -22,7 +22,7 @@ public class SenedNovuService
     public async Task<Result<List<SenedNovuListDto>>> GetByDepartmentAsync(int departmentId)
     {
         var entities = await _unitOfWork.Repository<SenedNovu>()
-            .HamisiniGetirAsync(x =>
+            .GetAllAsync(x =>
                 x.DepartmentId == departmentId &&
                 !x.Silinib);
 
@@ -37,7 +37,7 @@ public class SenedNovuService
     public async Task<Result<int>> CreateAsync(SenedNovuCreateDto dto, int userId)
     {
         var exists = await _unitOfWork.Repository<SenedNovu>()
-            .MovcuddurmuAsync(x =>
+            .ExistsAsync(x =>
                 x.DepartmentId == dto.DepartmentId &&
                 x.Kod == dto.Kod.ToUpper() &&
                 !x.Silinib);
@@ -52,7 +52,7 @@ public class SenedNovuService
         entity.Aktiv = true;
         entity.YaradanIcraciId = userId;
 
-        await _unitOfWork.Repository<SenedNovu>().YaratAsync(entity);
+        await _unitOfWork.Repository<SenedNovu>().AddAsync(entity);
         await _unitOfWork.YaddaSaxlaAsync();
 
         return Result<int>.Ok(entity.Id, "Sənəd növü yaradıldı.");
@@ -64,7 +64,7 @@ public class SenedNovuService
     public async Task<Result> SoftDeleteAsync(int id, int userId)
     {
         var entity = await _unitOfWork.Repository<SenedNovu>()
-            .IdIleGetirAsync(id);
+            .GetByIdAsync(id);
 
         if (entity == null || entity.Silinib)
             return Result.Fail("Sənəd növü tapılmadı.");
@@ -84,7 +84,7 @@ public class SenedNovuService
     public async Task<Result> ToggleAktivAsync(int id, int userId)
     {
         var entity = await _unitOfWork.Repository<SenedNovu>()
-            .IdIleGetirAsync(id);
+            .GetByIdAsync(id);
 
         if (entity == null || entity.Silinib)
             return Result.Fail("Sənəd növü tapılmadı.");

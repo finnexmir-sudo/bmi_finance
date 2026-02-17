@@ -88,7 +88,7 @@ public class UserManagementController : Controller
         if (user == null)
             return NotFound();
 
-        var departmentsResult = await _departmentService.HamisiniGetirAsync();
+        var departmentsResult = await _departmentService.GetAllAsync();
 
         if (!departmentsResult.Success || departmentsResult.Data == null)
         {

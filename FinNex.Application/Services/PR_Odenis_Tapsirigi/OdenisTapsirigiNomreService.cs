@@ -19,7 +19,7 @@ namespace FinNex.Application.Services.PR_Odenis_Tapsirigi
             int cariIl = DateTime.Now.Year;
 
             // ⚠️ Cari il üçün sayğacı tap
-            var saygac = (await repo.HamisiniGetirAsync())
+            var saygac = (await repo.GetAllAsync())
                             .FirstOrDefault(x => x.Il == cariIl);
 
             if (saygac == null)
@@ -31,13 +31,13 @@ namespace FinNex.Application.Services.PR_Odenis_Tapsirigi
                     SonNomre = 1
                 };
 
-                await repo.YaratAsync(saygac);
+                await repo.AddAsync(saygac);
             }
             else
             {
                 // 🔹 Eyni il → artır
                 saygac.SonNomre++;
-                await repo.YenileAsync(saygac);
+                await repo.UpdateAsync(saygac);
             }
 
             await _unitOfWork.YaddaSaxlaAsync();

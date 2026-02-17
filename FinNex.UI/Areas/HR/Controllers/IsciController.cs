@@ -19,13 +19,13 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var result = await _isciService.HamisiniGetirAsync();
+            var result = await _isciService.GetAllAsync();
             return View(result.Data);
         }
         // GET
         public async Task<IActionResult> Create()
         {
-            var result = await _departmentService.HamisiniGetirAsync(x => !x.Silinib);
+            var result = await _departmentService.GetAllAsync(x => !x.Silinib);
 
             var vm = new IsciCreateVM();
 
@@ -64,7 +64,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 IsheBaslamaTarixi = vm.IseQebulTarixi
             };
 
-            var result = await _isciService.YaratAsync(dto);
+            var result = await _isciService.AddAsync(dto);
 
             if (!result.Success)
             {
@@ -79,7 +79,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         private async Task ReloadDepartments(IsciCreateVM vm)
         {
-            var result = await _departmentService.HamisiniGetirAsync(x => !x.Silinib);
+            var result = await _departmentService.GetAllAsync(x => !x.Silinib);
 
             if (result.Success && result.Data != null)
             {

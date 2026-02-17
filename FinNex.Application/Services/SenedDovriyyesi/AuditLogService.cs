@@ -38,7 +38,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 YaradanIcraciId = userId
             };
 
-            await _uow.Repository<AuditLog>().YaratAsync(log);
+            await _uow.Repository<AuditLog>().AddAsync(log);
             await _uow.YaddaSaxlaAsync();
         }
 

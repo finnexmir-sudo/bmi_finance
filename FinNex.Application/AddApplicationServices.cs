@@ -57,5 +57,7 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IDavamiyyetService, DavamiyyetService>();
         services.AddScoped<IMezuniyyetService, MezuniyyetService>();
 
+        services.AddScoped<ISenedWorkflowService, SenedWorkflowService>();
+
     }
 }

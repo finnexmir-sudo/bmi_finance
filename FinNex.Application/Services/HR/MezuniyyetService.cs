@@ -16,7 +16,7 @@ public class MezuniyyetService
     public async Task<IList<MezuniyyetListDto>> AktivOlanlarAsync()
     {
         var entities = await _unitOfWork.Repository<Mezuniyyet>()
-            .HamisiniGetirAsync(
+            .GetAllAsync(
                 x => x.Status == MezuniyyetStatus.Tesdiqlenib &&
                      x.BitmeTarixi >= DateTime.Now,
                 include: q => q.Include(x => x.Isci),
@@ -28,7 +28,7 @@ public class MezuniyyetService
     public async Task<IList<MezuniyyetListDto>> IsciUzreAsync(int isciId)
     {
         var entities = await _unitOfWork.Repository<Mezuniyyet>()
-            .HamisiniGetirAsync(
+            .GetAllAsync(
                 x => x.IsciId == isciId,
                 include: q => q.Include(x => x.Isci),
                 izlemeden: true);
@@ -39,7 +39,7 @@ public class MezuniyyetService
     public async Task<bool> TarixToqqusurmuAsync(int isciId, DateTime baslama, DateTime bitme)
     {
         return await _unitOfWork.Repository<Mezuniyyet>()
-            .MovcuddurmuAsync(x =>
+            .ExistsAsync(x =>
                 x.IsciId == isciId &&
                 x.BaslamaTarixi <= bitme &&
                 x.BitmeTarixi >= baslama);

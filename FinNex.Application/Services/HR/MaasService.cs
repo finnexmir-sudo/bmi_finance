@@ -16,7 +16,7 @@ public class MaasService
     public async Task<IList<MaasListDto>> IsciUzreAsync(int isciId)
     {
         var entities = await _unitOfWork.Repository<Maas>()
-            .HamisiniGetirAsync(
+            .GetAllAsync(
                 x => x.IsciId == isciId,
                 include: q => q.Include(x => x.Isci),
                 izlemeden: true);
@@ -27,7 +27,7 @@ public class MaasService
     public async Task<IList<MaasListDto>> AyUzreAsync(int il, int ay)
     {
         var entities = await _unitOfWork.Repository<Maas>()
-            .HamisiniGetirAsync(
+            .GetAllAsync(
                 x => x.Il == il && x.Ay == ay,
                 include: q => q
                     .Include(x => x.Isci)
@@ -42,6 +42,6 @@ public class MaasService
     public async Task<bool> MovcuddurmuAsync(int isciId, int il, int ay)
     {
         return await _unitOfWork.Repository<Maas>()
-            .MovcuddurmuAsync(x => x.IsciId == isciId && x.Il == il && x.Ay == ay);
+            .ExistsAsync(x => x.IsciId == isciId && x.Il == il && x.Ay == ay);
     }
 }

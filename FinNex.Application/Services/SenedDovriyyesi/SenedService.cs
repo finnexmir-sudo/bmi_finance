@@ -1,6 +1,7 @@
 using AutoMapper;
 using FinNex.Application.Common.Paged;
 using FinNex.Application.Common.Results;
+using FinNex.Application.DTOs.SenedDovriyyesi;
 using FinNex.Application.DTOs.SenedDovriyyesi.Fayl;
 using FinNex.Application.DTOs.SenedDovriyyesi.Sened;
 using FinNex.Application.Interfaces.SenedDovriyyesi;
@@ -14,7 +15,7 @@ using Microsoft.Identity.Client.Extensions.Msal;
 
 namespace FinNex.Application.Services.SenedDovriyyesi
 {
-    public class SenedService : ISenedService
+    public class SenedService : ServiceAsync<Sened, SenedListDto, SenedCreateDto, SenedUpdateDto>,ISenedService
     {
         private readonly IUnitOfWork _uow;
         private readonly IMapper _mapper;
@@ -22,20 +23,21 @@ namespace FinNex.Application.Services.SenedDovriyyesi
         private readonly IAuditLogService _audit;
         private readonly IDepartmentService _departmentService;
 
-        public SenedService(IUnitOfWork uow,
-            IMapper mapper,
-            IFileStorageService storage,
-            IAuditLogService audit,
-            IDepartmentService departmentService
-)
+        public SenedService(
+    IUnitOfWork uow,
+    IMapper mapper,
+    IFileStorageService storage,
+    IAuditLogService audit,
+    IDepartmentService departmentService
+) : base(uow, mapper)   // 🔥 BURASI VACİBDİR
         {
             _uow = uow;
             _mapper = mapper;
             _storage = storage;
             _audit = audit;
             _departmentService = departmentService;
-
         }
+
 
         public async Task<Result<int>> CreateAsync(SenedCreateDto dto, int userId, string? ip)
         {
@@ -44,7 +46,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 return Result<int>.Fail("Açar söz boş ola bilməz.");
 
             // var olsa: Sobe, SenedNovu yoxla
-            var sobe = await _departmentService.HamisiniGetirAsync(x => x.Id == dto.SobeId && !x.Silinib);
+            var sobe = await _departmentService.GetAllAsync(x => x.Id == dto.SobeId && !x.Silinib);
             if (sobe is null) return Result<int>.Fail("Departament tapılmadı.");
 
             var nov = await _uow.Repository<SenedNovu>().GetirAsync(x => x.Id == dto.SenedNovuId && !x.Silinib);
@@ -60,7 +62,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 YaradanIcraciId = userId
             };
 
-            await _uow.Repository<Sened>().YaratAsync(sened);
+            await _uow.Repository<Sened>().AddAsync(sened);
             await _uow.YaddaSaxlaAsync(); // burada Id yaranır
 
             // Tag maps
@@ -69,7 +71,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 foreach (var tagId in dto.TagIds.Distinct())
                 {
                     var map = new SenedTagMap { SenedId = sened.Id, TagId = tagId };
-                    await _uow.Repository<SenedTagMap>().YaratAsync(map);
+                    await _uow.Repository<SenedTagMap>().AddAsync(map);
                 }
                 await _uow.YaddaSaxlaAsync();
             }
@@ -79,8 +81,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             return Result<int>.Ok(sened.Id, "Sənəd yaradıldı.");
         }
 
-        public async Task<Result<PagedResult<SenedListDto>>> GetPagedAsync(
-            PagedRequest req, int? sobeId, int? senedNovuId, SenedStatusu? status, string? search)
+        public async Task<Result<PagedResult<SenedListDto>>> GetPagedAsync( PagedRequest req, int? sobeId, int? senedNovuId, SenedStatusu? status, string? search)
         {
             var query = _uow.Repository<Sened>().Query();
 
@@ -147,31 +148,37 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             });
         }
 
-        public async Task<Result<SenedDetailDto>> GetDetailAsync(int senedId, int userId, bool isAdmin)
+        public async Task<Result<SenedDetailDto>> GetDetailAsync(int id, int userId, bool isAdmin)
         {
-            var query = _uow.Repository<Sened>()
-                .Query()
-                .Include(x => x.Department)
-                .Include(x => x.Fayllar)
-                .AsQueryable();
+            var sened = await _uow.Repository<Sened>()
+                .GetAllAsync(
+                    x => x.Id == id,
+                    include: q => q
+                        .Include(x => x.Department)
+                        .Include(x => x.SenedNovu)
+                );
 
+            var entity = sened.FirstOrDefault();
+
+            if (entity == null)
+                return Result<SenedDetailDto>.Fail("Tapılmadı");
+
+            // 🔐 ACCESS CONTROL
             if (!isAdmin)
             {
-                var userDepartments = await _uow.Repository<UserDepartment>()
-                    .Query()
-                    .Where(x => x.UserId == userId)
-                    .Select(x => x.DepartmentId)
-                    .ToListAsync();
+                var userDepartmentIds = await _uow.Repository<UserDepartment>()
+                    .GetAllAsync(x => x.UserId == userId);
 
-                query = query.Where(x => userDepartments.Contains(x.DepartmentId));
+                var allowed = userDepartmentIds
+                    .Any(x => x.DepartmentId == entity.DepartmentId);
+
+                if (!allowed)
+                    return Result<SenedDetailDto>.Fail("İcazə yoxdur");
             }
 
-            var sened = await query.FirstOrDefaultAsync(x => x.Id == senedId);
+            var dto = _mapper.Map<SenedDetailDto>(entity);
 
-            if (sened == null)
-                return Result<SenedDetailDto>.Fail("Sənəd tapılmadı və ya icazəniz yoxdur.");
-
-            return Result<SenedDetailDto>.Ok(_mapper.Map<SenedDetailDto>(sened));
+            return Result<SenedDetailDto>.Ok(dto);
         }
 
         public async Task<Result<SenedDashboardDto>> GetDashboardAsync()
@@ -211,7 +218,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             if (sened is null) return Result<int>.Fail("Sənəd tapılmadı.");
 
             // Aktiv versiyanı söndür
-            var aktivler = await _uow.Repository<SenedFayl>().HamisiniGetirAsync(
+            var aktivler = await _uow.Repository<SenedFayl>().GetAllAsync(
                 x => x.SenedId == dto.SenedId && x.AktivVersiya && !x.Silinib);
 
             foreach (var f in aktivler)
@@ -219,7 +226,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 f.AktivVersiya = false;
                 f.YenileyenIcraciId = userId;
                 f.YenilenmeTarixi = DateTime.Now;
-                await _uow.Repository<SenedFayl>().YenileAsync(f);
+                await _uow.Repository<SenedFayl>().UpdateAsync(f);
             }
 
             // versiya no
@@ -247,7 +254,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 YaradanIcraciId = userId
             };
 
-            await _uow.Repository<SenedFayl>().YaratAsync(entity);
+            await _uow.Repository<SenedFayl>().AddAsync(entity);
             await _uow.YaddaSaxlaAsync();
 
             await _audit.WriteAsync(userId, "Upload", dto.SenedId, ip, new { nextVersiya, dto.OriginalAd, dto.OlcuBytes });
@@ -264,7 +271,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             sened.YenileyenIcraciId = userId;
             sened.YenilenmeTarixi = DateTime.Now;
 
-            await _uow.Repository<Sened>().YenileAsync(sened);
+            await _uow.Repository<Sened>().UpdateAsync(sened);
             await _uow.YaddaSaxlaAsync();
 
             await _audit.WriteAsync(userId, "Status", senedId, ip, new { status });
@@ -281,7 +288,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             sened.SilenIcraciId = userId;
             sened.SilinmeTarixi = DateTime.Now;
 
-            await _uow.Repository<Sened>().YenileAsync(sened);
+            await _uow.Repository<Sened>().UpdateAsync(sened);
             await _uow.YaddaSaxlaAsync();
 
             await _audit.WriteAsync(userId, "SoftDelete", senedId, ip);
@@ -300,7 +307,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             sened.YenileyenIcraciId = userId;
             sened.YenilenmeTarixi = DateTime.Now;
 
-            await _uow.Repository<Sened>().YenileAsync(sened);
+            await _uow.Repository<Sened>().UpdateAsync(sened);
             await _uow.YaddaSaxlaAsync();
 
             await _audit.WriteAsync(userId, "Restore", senedId, ip);
@@ -315,14 +322,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             return Result<SenedFayl>.Ok(fayl);
         }
 
-        public async Task<Result<int>> CreateWithFileAsync(
-    SenedCreateDto dto,
-    Stream stream,
-    string originalName,
-    string contentType,
-    long size,
-    int userId,
-    string? ip)
+        public async Task<Result<int>> CreateWithFileAsync(SenedCreateDto dto,Stream stream,string originalName,string contentType,long size,int userId,string? ip)
         {
             await using var transaction = await _uow.BeginTransactionAsync();
 
@@ -333,7 +333,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 if (string.IsNullOrWhiteSpace(dto.AcarSoz))
                     return Result<int>.Fail("Açar söz boş ola bilməz.");
 
-                var sobe = await _departmentService.HamisiniGetirAsync(x => x.Id == dto.SobeId && !x.Silinib);
+                var sobe = await _departmentService.GetAllAsync(x => x.Id == dto.SobeId && !x.Silinib);
 
                 if (sobe is null)
                     return Result<int>.Fail("Şöbə tapılmadı.");
@@ -356,7 +356,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                     YaradanIcraciId = userId
                 };
 
-                await _uow.Repository<Sened>().YaratAsync(sened);
+                await _uow.Repository<Sened>().AddAsync(sened);
                 await _uow.YaddaSaxlaAsync();
 
                 // ===== 3️⃣ STORAGE (FAYL YAZ) =====
@@ -380,7 +380,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                     YaradanIcraciId = userId
                 };
 
-                await _uow.Repository<SenedFayl>().YaratAsync(senedFayl);
+                await _uow.Repository<SenedFayl>().AddAsync(senedFayl);
 
                 // ===== 5️⃣ TAG MAPS =====
 
@@ -389,7 +389,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                     foreach (var tagId in dto.TagIds.Distinct())
                     {
                         await _uow.Repository<SenedTagMap>()
-                            .YaratAsync(new SenedTagMap
+                            .AddAsync(new SenedTagMap
                             {
                                 SenedId = sened.Id,
                                 TagId = tagId
@@ -421,7 +421,6 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 return Result<int>.Fail("Xəta baş verdi: " + ex.Message);
             }
         }
-
         public async Task<Result> UpdateAsync(SenedUpdateDto dto, int userId, string? ip)
         {
             // 1. Sənədi bazadan tapırıq (və varsa əlaqəli cədvəlləri Include edirik)
@@ -436,7 +435,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 return Result.Fail("Açar söz boş ola bilməz.");
 
             // 3. Şöbənin mövcudluğunu yoxlayırıq (əgər dto-da gəlirsə)
-            var sobe = await _departmentService.HamisiniGetirAsync(x => x.Id == dto.SobeId && !x.Silinib);
+            var sobe = await _departmentService.GetAllAsync(x => x.Id == dto.SobeId && !x.Silinib);
             if (sobe == null)
                 return Result.Fail("Şöbə tapılmadı.");
 
@@ -448,10 +447,43 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             // sened.UpdateDate = DateTime.Now; // Lazımdırsa audit məlumatları
 
             // 5. Yadda saxlayırıq
-            _uow.Repository<Sened>().YenileAsync(sened);
+            _uow.Repository<Sened>().UpdateAsync(sened);
             await _uow.YaddaSaxlaAsync();
 
             return Result.Ok();
         }
+        public async Task<Sened?> GetEntityAsync(int id)
+        {
+            return await _uow.Repository<Sened>()
+                .Query()
+                .Include(x => x.Fayllar)
+                .FirstOrDefaultAsync(x => x.Id == id);
+        }
+        public async Task ChangeStatusAsync(int senedId,SenedStatusu newStatus,string? comment,int userId)
+        {
+            var sened = await _uow
+                .Repository<Sened>()
+                .GetByIdAsync(senedId);
+
+            if (sened == null)
+                throw new Exception("Sənəd tapılmadı");
+
+            var oldStatus = sened.Status;
+
+            sened.Status = newStatus;
+
+            await _uow.Repository<AuditLog>().AddAsync(new AuditLog
+            {
+                Action = "Status",
+                SenedId = sened.Id,
+                UserId = userId,
+                DetailsJson = $"Old: {oldStatus}, New: {newStatus}, Comment: {comment}",
+                YaradilmaTarixi = DateTime.UtcNow
+            });
+
+            await _uow.YaddaSaxlaAsync();
+        }
+
+
     }
 }

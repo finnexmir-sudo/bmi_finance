@@ -26,7 +26,7 @@ public class MusteriController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var musteriler = await _uow.HamisiniGetirAsync();
+        var musteriler = await _uow.GetAllAsync();
         return View(musteriler);
     }
 

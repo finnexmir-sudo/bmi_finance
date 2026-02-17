@@ -1,6 +1,6 @@
 ﻿namespace FinNex.Application.DTOs.SenedDovriyyesi.SenedNovu
 {
-    public class SenedNovuListDto
+    public class SenedNovuDetailDto
     {
         public int Id { get; set; }
 
@@ -11,6 +11,8 @@
         public string DepartmentAd { get; set; } = null!;
 
         public bool Aktiv { get; set; }
+
         public DateTime YaradilmaTarixi { get; set; }
+        public DateTime? YenilenmeTarixi { get; set; }
     }
 }

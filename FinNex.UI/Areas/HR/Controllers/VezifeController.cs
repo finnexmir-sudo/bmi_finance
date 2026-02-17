@@ -21,7 +21,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var result = await _vezifeService.HamisiniGetirAsync();
+            var result = await _vezifeService.GetAllAsync();
 
             if (!result.Success)
             {
@@ -34,7 +34,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         public async Task<IActionResult> Create()
         {
-            var result = await _departmentService.HamisiniGetirAsync();
+            var result = await _departmentService.GetAllAsync();
 
             var vm = new VezifeCreateVM
             {
@@ -56,7 +56,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         {
             if (!ModelState.IsValid)
             {
-                var deptResult = await _departmentService.HamisiniGetirAsync();
+                var deptResult = await _departmentService.GetAllAsync();
                 vm.Departamentlar = deptResult.Success && deptResult.Data != null
                     ? deptResult.Data.Select(d => new SelectListItem
                     {
@@ -75,13 +75,13 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Tesvir = vm.Tesvir,
             };
 
-            var result = await _vezifeService.YaratAsync(dto);
+            var result = await _vezifeService.AddAsync(dto);
 
             if (!result.Success)
             {
                 TempData["Error"] = result.Message;
 
-                var deptResult = await _departmentService.HamisiniGetirAsync();
+                var deptResult = await _departmentService.GetAllAsync();
                 vm.Departamentlar = deptResult.Success && deptResult.Data != null
                     ? deptResult.Data.Select(d => new SelectListItem
                     {
@@ -100,7 +100,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _vezifeService.SilAsync(id);
+            var result = await _vezifeService.SoftDeleteAsync(id);
 
             if (!result.Success)
             {

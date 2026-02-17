@@ -31,7 +31,7 @@ namespace FinNex.Application.Services.Structur
             var entity = _mapper.Map<UserDepartment>(dto);
 
             await _unitOfWork.Repository<UserDepartment>()
-                .YaratAsync(entity);
+                .AddAsync(entity);
 
             await _unitOfWork.YaddaSaxlaAsync();
         }

@@ -16,7 +16,7 @@ public class DepartmentController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var list = await _uow.Repository<Department>().HamisiniGetirAsync();
+        var list = await _uow.Repository<Department>().GetAllAsync();
         return View(list);
     }
 
@@ -28,7 +28,7 @@ public class DepartmentController : Controller
         if (!ModelState.IsValid)
             return View(model);
 
-        await _uow.Repository<Department>().YaratAsync(model);
+        await _uow.Repository<Department>().AddAsync(model);
         await _uow.YaddaSaxlaAsync();
 
         return RedirectToAction(nameof(Index));

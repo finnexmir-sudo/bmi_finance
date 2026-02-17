@@ -20,7 +20,7 @@ namespace FinNex.UI.Areas.Admin.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var departmentsResult = await _departmentService.HamisiniGetirAsync();
+            var departmentsResult = await _departmentService.GetAllAsync();
 
             if (!departmentsResult.Success || departmentsResult.Data == null)
             {
@@ -53,7 +53,7 @@ namespace FinNex.UI.Areas.Admin.Controllers
             if (!ModelState.IsValid)
                 return View(vm);
 
-            await _departmentService.YaratAsync(new DepartmentCreateDto
+            await _departmentService.AddAsync(new DepartmentCreateDto
             {
                 Ad = vm.Ad,
                 Aciqlama = vm.Aciqlama
@@ -64,7 +64,7 @@ namespace FinNex.UI.Areas.Admin.Controllers
 
         public async Task<IActionResult> Users(int id)
         {
-            var departmentResult = await _departmentService.IdIleGetirAsync(id);
+            var departmentResult = await _departmentService.GetByIdAsync(id);
 
             if (!departmentResult.Success || departmentResult.Data == null)
                 return NotFound();

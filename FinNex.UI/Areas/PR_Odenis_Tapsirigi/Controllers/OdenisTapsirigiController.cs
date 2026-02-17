@@ -35,7 +35,7 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
         {
             var list = await _uow
                 .Repository<OdenisTapsirigi>()
-                .HamisiniGetirAsync(
+                .GetAllAsync(
                     include: q => q
                         .Include(x => x.OduyenMusteri)
                         .Include(x => x.AlanMusteri)
@@ -51,11 +51,11 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
             var vm = new OdenisTapsirigiCreateVM
             {
                 Banklar = (await _uow.Repository<Bank>()
-                                .HamisiniGetirAsync())
+                                .GetAllAsync())
                                 .ToList(),
 
                 Musteriler = (await _uow.Repository<Musteri>()
-                                    .HamisiniGetirAsync())
+                                    .GetAllAsync())
                                     .ToList()
             };
 
@@ -69,13 +69,13 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
             if (!ModelState.IsValid)
             {
                 // dropdown-lar boş qalmasın deyə
-                vm.Banklar = (await _uow.Repository<Bank>().HamisiniGetirAsync()).ToList();
-                vm.Musteriler = (await _uow.Repository<Musteri>().HamisiniGetirAsync()).ToList();
+                vm.Banklar = (await _uow.Repository<Bank>().GetAllAsync()).ToList();
+                vm.Musteriler = (await _uow.Repository<Musteri>().GetAllAsync()).ToList();
                 return View(vm);
             }
 
             await _uow.Repository<OdenisTapsirigi>()
-                      .YaratAsync(vm.Odenis);
+                      .AddAsync(vm.Odenis);
 
             await _uow.YaddaSaxlaAsync();
 
@@ -116,7 +116,7 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
                 return Json(new { tapildi = false });
 
             var musteriler = await _uow.Repository<Musteri>()
-                .HamisiniGetirAsync(
+                .GetAllAsync(
                     predicate: m => m.Voen == voen.Trim(),
                     include: q => q.Include(m => m.MusteriHesablari)
                 );

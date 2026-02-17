@@ -20,7 +20,7 @@ public class BankController : Controller
     // BANKLARIN SİYAHISINI GÖSTƏRİR
     public async Task<IActionResult> Index()
     {
-        var banklar = await _uow.Repository<Bank>().HamisiniGetirAsync();
+        var banklar = await _uow.Repository<Bank>().GetAllAsync();
         return View(banklar);
     }
 
@@ -32,7 +32,7 @@ public class BankController : Controller
     {
         if (ModelState.IsValid)
         {
-            await _uow.Repository<Bank>().YaratAsync(bank);
+            await _uow.Repository<Bank>().AddAsync(bank);
             await _uow.YaddaSaxlaAsync();
             return RedirectToAction(nameof(Index));
         }
@@ -42,7 +42,7 @@ public class BankController : Controller
     // DÜZƏLİŞ – GET
     public async Task<IActionResult> Duzelis(int id)
     {
-        var bank = await _uow.Repository<Bank>().IdIleGetirAsync(id);
+        var bank = await _uow.Repository<Bank>().GetByIdAsync(id);
         if (bank == null) return NotFound();
         return View(bank);
     }
@@ -53,7 +53,7 @@ public class BankController : Controller
     {
         if (ModelState.IsValid)
         {
-            await _uow.Repository<Bank>().YenileAsync(bank);
+            await _uow.Repository<Bank>().UpdateAsync(bank);
             await _uow.YaddaSaxlaAsync();
             return RedirectToAction(nameof(Index));
         }
@@ -64,7 +64,7 @@ public class BankController : Controller
     [HttpPost]
     public async Task<IActionResult> Sil(int id)
     {
-        await _uow.Repository<Bank>().YumshakSilAsync(id);
+        await _uow.Repository<Bank>().SoftDeleteAsync(id);
         await _uow.YaddaSaxlaAsync();
         return RedirectToAction(nameof(Index));
     }

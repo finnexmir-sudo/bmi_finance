@@ -15,7 +15,7 @@ namespace FinNex.Application.Services.PR_Odenis_Tapsirigi
         public async Task<MusteriHesabiDto?> VoenleAxtar(string voen)
         {
             var list = await _unitOfWork.Repository<Musteri>()
-                .HamisiniGetirAsync(a => a.Voen == voen.Trim(),
+                .GetAllAsync(a => a.Voen == voen.Trim(),
                 include: q => q.Include(m => m.MusteriHesablari),
                 izlemeden: true);
             
@@ -35,7 +35,7 @@ namespace FinNex.Application.Services.PR_Odenis_Tapsirigi
                     Voen = dto.Voen
                 };
 
-                await _unitOfWork.Repository<Musteri>().YaratAsync(musteri);
+                await _unitOfWork.Repository<Musteri>().AddAsync(musteri);
                 await _unitOfWork.YaddaSaxlaAsync(); // 👈 ID burada yaranır
             }
 
@@ -46,7 +46,7 @@ namespace FinNex.Application.Services.PR_Odenis_Tapsirigi
                 MusteriId = musteri.Id
             };
 
-            await _unitOfWork.Repository<MusteriHesabi>().YaratAsync(hesab);
+            await _unitOfWork.Repository<MusteriHesabi>().AddAsync(hesab);
 
             await _unitOfWork.YaddaSaxlaAsync();
         }

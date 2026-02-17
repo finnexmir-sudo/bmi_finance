@@ -21,7 +21,7 @@ namespace FinNex.Application.Services
         public async Task<List<ValyutaListDto>> GetAktivAsync()
         {
             var list = await _unitOfWork.Repository<Valyuta>()
-                .HamisiniGetirAsync(x => x.Silinib == false);
+                .GetAllAsync(x => x.Silinib == false);
 
             return _mapper.Map<List<ValyutaListDto>>(list);
         }

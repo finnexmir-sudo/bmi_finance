@@ -31,7 +31,7 @@ public class IsciService
     public async Task<IList<IsciListDto>> SobeUzreAsync(int sobeId)
     {
         var entities = await _unitOfWork.Repository<Isci>()
-            .HamisiniGetirAsync(
+            .GetAllAsync(
                 x => x.SobeId == sobeId,
                 include: q => q
                     .Include(x => x.Sobe)
@@ -45,6 +45,6 @@ public class IsciService
     public async Task<bool> FINMovcuddurmuAsync(string fin)
     {
         return await _unitOfWork.Repository<Isci>()
-            .MovcuddurmuAsync(x => x.FIN == fin);
+            .ExistsAsync(x => x.FIN == fin);
     }
 }
