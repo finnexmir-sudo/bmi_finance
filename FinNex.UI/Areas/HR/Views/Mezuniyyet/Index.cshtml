@@ -1,26 +1,33 @@
-﻿@using FinNex.UI.Areas.HR.ViewModels
-@model MaasIndexVM
+@using FinNex.UI.Areas.HR.ViewModels
+@using FinNex.Domain.Entities.HR
+@model MezuniyyetIndexVM
 @{
-    ViewData["Title"] = "Maaşlar";
+    ViewData["Title"] = "Məzuniyyət";
     Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
 
-    ViewData["FilterBar_Action"]      = "Index";
-    ViewData["FilterBar_ShowSearch"]  = true;
-    ViewData["FilterBar_ShowDept"]    = true;
-    ViewData["FilterBar_ShowDate"]    = false;
-    ViewData["FilterBar_ShowStatus"]  = false;
-    ViewData["FilterBar_SearchTerm"]  = Model.SearchTerm;
-    ViewData["FilterBar_SobeFilter"]  = Model.SobeFilter;
-    ViewData["FilterBar_DeptOptions"] = Model.SobeLer;
-    ViewData["FilterBar_AddUrl"]      = Url.Action("Create");
-    ViewData["FilterBar_AddLabel"]    = "Maaş Hesabla";
+    ViewData["FilterBar_Action"]       = "Index";
+    ViewData["FilterBar_ShowSearch"]   = true;
+    ViewData["FilterBar_ShowDept"]     = true;
+    ViewData["FilterBar_ShowDate"]     = true;
+    ViewData["FilterBar_ShowStatus"]   = true;
+    ViewData["FilterBar_SearchTerm"]   = Model.SearchTerm;
+    ViewData["FilterBar_SobeFilter"]   = Model.SobeFilter;
+    ViewData["FilterBar_BasTarix"]     = Model.BasTarix?.ToString("yyyy-MM-dd");
+    ViewData["FilterBar_SonTarix"]     = Model.SonTarix?.ToString("yyyy-MM-dd");
+    ViewData["FilterBar_StatusFilter"] = Model.StatusFilter?.ToString();
+    ViewData["FilterBar_DeptOptions"]  = Model.SobeLer;
+    ViewData["FilterBar_AddUrl"]       = Url.Action("Create");
+    ViewData["FilterBar_AddLabel"]     = "Yeni Məzuniyyət";
+    ViewData["FilterBar_StatusOptions"] = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+    {
+        new() { Value = "Gozlemede",    Text = "Gözləmədə"    },
+        new() { Value = "Tesdiqlenib",  Text = "Təsdiqlənilib" },
+        new() { Value = "ImtinaEdilib", Text = "İmtina Edilib" },
+    };
 
     ViewData["Pagination_CurrentPage"] = Model.CurrentPage;
     ViewData["Pagination_TotalPages"]  = Model.TotalPages;
     ViewData["Pagination_Action"]      = "Index";
-
-    string[] months = { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
-                         "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
 }
 
 <div class="page-container">
@@ -29,62 +36,41 @@
     <div class="mod-page-header">
         <div>
             <h1 class="mod-page-title">
-                <i class="bi bi-cash-stack title-icon title-icon-purple"></i>
-                Maaş İdarəetməsi
+                <i class="bi bi-umbrella-fill title-icon title-icon-green"></i>
+                Məzuniyyət İdarəetməsi
             </h1>
-            <p class="mod-page-subtitle">İşçilərin aylıq maaş hesablamalarını idarə edin</p>
-        </div>
-        <!-- Month/Year quick filter -->
-        <div class="maas-period-filter">
-            <form method="get" asp-action="Index" class="d-flex gap-2 align-items-center">
-                <input type="hidden" name="SearchTerm" value="@Model.SearchTerm" />
-                <input type="hidden" name="SobeFilter" value="@Model.SobeFilter" />
-                <select name="AyFilter" class="filter-select" onchange="this.form.submit()">
-                    <option value="">Bütün aylar</option>
-                    @for (int m = 1; m <= 12; m++)
-                    {
-                        <option value="@m" selected="@(Model.AyFilter == m)">@months[m]</option>
-                    }
-                </select>
-                <select name="IlFilter" class="filter-select" onchange="this.form.submit()">
-                    <option value="">Bütün illər</option>
-                    @for (int y = DateTime.Today.Year; y >= DateTime.Today.Year - 5; y--)
-                    {
-                        <option value="@y" selected="@(Model.IlFilter == y)">@y</option>
-                    }
-                </select>
-            </form>
+            <p class="mod-page-subtitle">İşçilərin məzuniyyət müraciətləri və təsdiqləri</p>
         </div>
     </div>
 
     <!-- Stats -->
     <div class="mod-stats-grid">
-        <div class="mod-stat-card mod-stat-purple">
-            <div class="mod-stat-ico"><i class="bi bi-cash-stack"></i></div>
+        <div class="mod-stat-card mod-stat-orange">
+            <div class="mod-stat-ico"><i class="bi bi-hourglass-split"></i></div>
             <div class="mod-stat-body">
-                <div class="mod-stat-val mod-stat-val-sm">@Model.UmumiMaas.ToString("N2") ₼</div>
-                <div class="mod-stat-lbl">Ümumi Maaş</div>
+                <div class="mod-stat-val">@Model.GozlemedeSayi</div>
+                <div class="mod-stat-lbl">Gözləmədə</div>
             </div>
         </div>
         <div class="mod-stat-card mod-stat-green">
-            <div class="mod-stat-ico"><i class="bi bi-plus-circle-fill"></i></div>
+            <div class="mod-stat-ico"><i class="bi bi-check-circle-fill"></i></div>
             <div class="mod-stat-body">
-                <div class="mod-stat-val mod-stat-val-sm">+@Model.UmumiElave.ToString("N2") ₼</div>
-                <div class="mod-stat-lbl">Əlavələr</div>
+                <div class="mod-stat-val">@Model.TesdiqlenibSayi</div>
+                <div class="mod-stat-lbl">Təsdiqlənilib</div>
             </div>
         </div>
         <div class="mod-stat-card mod-stat-red">
-            <div class="mod-stat-ico"><i class="bi bi-dash-circle-fill"></i></div>
+            <div class="mod-stat-ico"><i class="bi bi-x-circle-fill"></i></div>
             <div class="mod-stat-body">
-                <div class="mod-stat-val mod-stat-val-sm">-@Model.UmumiCerime.ToString("N2") ₼</div>
-                <div class="mod-stat-lbl">Cərimələr</div>
+                <div class="mod-stat-val">@Model.ImtinaEdilib</div>
+                <div class="mod-stat-lbl">İmtina Edilib</div>
             </div>
         </div>
         <div class="mod-stat-card mod-stat-blue">
-            <div class="mod-stat-ico"><i class="bi bi-people-fill"></i></div>
+            <div class="mod-stat-ico"><i class="bi bi-list-check"></i></div>
             <div class="mod-stat-body">
-                <div class="mod-stat-val">@Model.IsciSayi</div>
-                <div class="mod-stat-lbl">İşçi Sayı</div>
+                <div class="mod-stat-val">@Model.UmumiSayi</div>
+                <div class="mod-stat-lbl">Ümumi</div>
             </div>
         </div>
     </div>
@@ -106,45 +92,56 @@
                     <thead>
                         <tr>
                             <th>İşçi</th>
-                            <th>Şöbə</th>
-                            <th>Dövr</th>
-                            <th>Əsas Maaş</th>
-                            <th>Əlavə</th>
-                            <th>Cərimə</th>
-                            <th class="fw-bold">Ümumi</th>
+                            <th>Növ</th>
+                            <th>Başlama</th>
+                            <th>Bitmə</th>
+                            <th>Gün</th>
+                            <th>Status</th>
                             <th class="text-end">Əməliyyatlar</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var item in Model.Items)
                         {
+                            var gunSayi = (item.BitmeTarixi - item.BaslamaTarixi).Days + 1;
                             <tr>
                                 <td>
                                     <div class="emp-cell">
-                                        <div class="emp-av emp-av-purple">@item.IsciTamAd[..Math.Min(2, item.IsciTamAd.Length)].ToUpper()</div>
+                                        <div class="emp-av emp-av-green">@item.IsciTamAd[..Math.Min(2, item.IsciTamAd.Length)].ToUpper()</div>
                                         <span class="emp-name">@item.IsciTamAd</span>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="dept-chip">@item.Sobe</span>
+                                    @{
+                                        ViewData["Badge_Type"]  = "mezuniyyet-nov";
+                                        ViewData["Badge_Value"] = item.Nov.ToString();
+                                    }
+                                    <partial name="_StatusBadge" />
                                 </td>
                                 <td>
-                                    <span class="period-chip">
+                                    <span class="date-chip">
                                         <i class="bi bi-calendar3"></i>
-                                        @item.AyAd @item.Il
+                                        @item.BaslamaTarixi.ToString("dd.MM.yyyy")
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="amount-base">@item.EsasMaas.ToString("N2") ₼</span>
+                                    <span class="date-chip">
+                                        <i class="bi bi-calendar3"></i>
+                                        @item.BitmeTarixi.ToString("dd.MM.yyyy")
+                                    </span>
                                 </td>
                                 <td>
-                                    <span class="amount-plus">+@item.Elave.ToString("N2") ₼</span>
+                                    <span class="duration-chip">
+                                        <i class="bi bi-calendar-week"></i>
+                                        @gunSayi gün
+                                    </span>
                                 </td>
                                 <td>
-                                    <span class="amount-minus">-@item.Cerime.ToString("N2") ₼</span>
-                                </td>
-                                <td>
-                                    <span class="amount-total fw-bold">@item.UmumiMaas.ToString("N2") ₼</span>
+                                    @{
+                                        ViewData["Badge_Type"]  = "mezuniyyet";
+                                        ViewData["Badge_Value"] = item.Status.ToString();
+                                    }
+                                    <partial name="_StatusBadge" />
                                 </td>
                                 <td class="text-end">
                                     <div class="mod-action-btns">
@@ -167,17 +164,6 @@
                             </tr>
                         }
                     </tbody>
-                    <!-- Total row -->
-                    <tfoot>
-                        <tr class="maas-total-row">
-                            <td colspan="3"><strong>Cəmi</strong></td>
-                            <td><strong>@Model.Items.Sum(x => x.EsasMaas).ToString("N2") ₼</strong></td>
-                            <td><strong class="amount-plus">+@Model.Items.Sum(x => x.Elave).ToString("N2") ₼</strong></td>
-                            <td><strong class="amount-minus">-@Model.Items.Sum(x => x.Cerime).ToString("N2") ₼</strong></td>
-                            <td><strong class="amount-total">@Model.Items.Sum(x => x.UmumiMaas).ToString("N2") ₼</strong></td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
                 </table>
             </div>
             <div class="mod-table-footer">
@@ -187,11 +173,11 @@
         else
         {
             @{
-                ViewData["EmptyState_Icon"]     = "bi-cash-coin";
-                ViewData["EmptyState_Title"]    = "Maaş qeydi tapılmadı";
-                ViewData["EmptyState_Sub"]      = "Seçilmiş filtrə uyğun heç bir maaş hesablaması yoxdur";
+                ViewData["EmptyState_Icon"]     = "bi-umbrella";
+                ViewData["EmptyState_Title"]    = "Məzuniyyət qeydi tapılmadı";
+                ViewData["EmptyState_Sub"]      = "Seçilmiş filtrə uyğun heç bir məzuniyyət müraciəti yoxdur";
                 ViewData["EmptyState_AddUrl"]   = Url.Action("Create");
-                ViewData["EmptyState_AddLabel"] = "Maaş Hesabla";
+                ViewData["EmptyState_AddLabel"] = "İlk Məzuniyyəti Əlavə Et";
             }
             <partial name="_EmptyState" />
         }
@@ -210,7 +196,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p class="mb-0"><strong id="deleteEmpName"></strong> işçisinin maaş qeydi silinəcək.</p>
+                <p class="mb-0"><strong id="deleteEmpName"></strong> işçisinin məzuniyyət qeydi silinəcək.</p>
             </div>
             <div class="modal-footer mod-modal-footer">
                 <button type="button" class="btn-mod-secondary" data-bs-dismiss="modal">Ləğv Et</button>
@@ -224,12 +210,11 @@
 </div>
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/hr/maas-list.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hr/mezuniyyet-list.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/hr/hr-modules.css" asp-append-version="true" />
 }
 
 @section Scripts {
-    <script src="~/js/hr/maas-list.js" asp-append-version="true"></script>
     <script src="~/js/hr/hr-modules.js" asp-append-version="true"></script>
     <script>
         function confirmDelete(id, name) {

@@ -1,0 +1,10 @@
+/* mezuniyyet-list.css — Məzuniyyət module specific overrides */
+
+/* Override table avatar for leave module */
+.emp-av.emp-av-green {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+/* Məzuniyyət növü chip colours in table */
+.badge-pill.badge-info   { background: #dbeafe; color: #1e40af; }
+.badge-pill.badge-purple { background: #ede9fe; color: #5b21b6; }

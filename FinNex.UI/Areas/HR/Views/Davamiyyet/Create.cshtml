@@ -1,0 +1,179 @@
+@using FinNex.UI.Areas.HR.ViewModels
+@using FinNex.Domain.Entities.HR
+@model DavamiyyetCreateVM
+@{
+    ViewData["Title"] = "Yeni Davamiyyət";
+    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
+}
+
+<div class="mod-form-wrapper">
+
+    <!-- Back -->
+    <a asp-action="Index" class="mod-back-link">
+        <i class="bi bi-arrow-left"></i> Davamiyyət siyahısına qayıt
+    </a>
+
+    <div class="mod-form-card">
+
+        <!-- Header -->
+        <div class="mod-form-card-header">
+            <div class="mod-form-ico mod-ico-blue">
+                <i class="bi bi-calendar-plus-fill"></i>
+            </div>
+            <div>
+                <h2 class="mod-form-title">Yeni Davamiyyət Qeydi</h2>
+                <p class="mod-form-subtitle">İşçi davamiyyət məlumatlarını daxil edin</p>
+            </div>
+        </div>
+
+        <form asp-action="Create" method="post" id="createForm" novalidate>
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="mod-alert-danger"></div>
+
+            <!-- Section: İşçi məlumatları -->
+            <div class="mod-form-section">
+                <div class="mod-section-title">
+                    <i class="bi bi-person-fill"></i> İşçi Məlumatları
+                </div>
+                <div class="mod-form-grid mod-grid-2">
+
+                    <!-- İşçi -->
+                    <div class="mod-form-field mod-field-full">
+                        <label asp-for="IsciId" class="mod-label">
+                            İşçi <span class="mod-req">*</span>
+                        </label>
+                        <div class="mod-select-wrap">
+                            <i class="bi bi-person-fill mod-select-ico"></i>
+                            <select asp-for="IsciId" asp-items="Model.Isciler"
+                                    class="mod-select">
+                                <option value="">— İşçi seçin —</option>
+                            </select>
+                        </div>
+                        <span asp-validation-for="IsciId" class="mod-error"></span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Section: Tarix məlumatları -->
+            <div class="mod-form-section">
+                <div class="mod-section-title">
+                    <i class="bi bi-calendar3"></i> Tarix və Vaxt
+                </div>
+                <div class="mod-form-grid mod-grid-3">
+
+                    <!-- Tarix -->
+                    <div class="mod-form-field">
+                        <label asp-for="Tarix" class="mod-label">
+                            Tarix <span class="mod-req">*</span>
+                        </label>
+                        <div class="mod-input-wrap">
+                            <i class="bi bi-calendar3 mod-input-ico"></i>
+                            <input asp-for="Tarix" type="date" class="mod-input" />
+                        </div>
+                        <span asp-validation-for="Tarix" class="mod-error"></span>
+                    </div>
+
+                    <!-- Giriş Vaxtı -->
+                    <div class="mod-form-field">
+                        <label asp-for="GirisVaxti" class="mod-label">Giriş Vaxtı</label>
+                        <div class="mod-input-wrap">
+                            <i class="bi bi-box-arrow-in-right mod-input-ico"></i>
+                            <input asp-for="GirisVaxti" type="time" class="mod-input" />
+                        </div>
+                        <span asp-validation-for="GirisVaxti" class="mod-error"></span>
+                    </div>
+
+                    <!-- Çıxış Vaxtı -->
+                    <div class="mod-form-field">
+                        <label asp-for="CixisVaxti" class="mod-label">Çıxış Vaxtı</label>
+                        <div class="mod-input-wrap">
+                            <i class="bi bi-box-arrow-right mod-input-ico"></i>
+                            <input asp-for="CixisVaxti" type="time" class="mod-input" />
+                        </div>
+                        <span asp-validation-for="CixisVaxti" class="mod-error"></span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Section: Status -->
+            <div class="mod-form-section">
+                <div class="mod-section-title">
+                    <i class="bi bi-flag-fill"></i> Status
+                </div>
+                <div class="mod-form-grid mod-grid-2">
+
+                    <div class="mod-form-field">
+                        <label asp-for="Status" class="mod-label">
+                            Status <span class="mod-req">*</span>
+                        </label>
+                        <div class="mod-status-picker">
+                            <label class="mod-status-opt mod-opt-green">
+                                <input type="radio" asp-for="Status" value="@((int)DavamiyyetStatus.Isde)" />
+                                <i class="bi bi-check-circle-fill"></i> İşdə
+                            </label>
+                            <label class="mod-status-opt mod-opt-orange">
+                                <input type="radio" asp-for="Status" value="@((int)DavamiyyetStatus.Gecikme)" />
+                                <i class="bi bi-clock-fill"></i> Gecikmə
+                            </label>
+                            <label class="mod-status-opt mod-opt-red">
+                                <input type="radio" asp-for="Status" value="@((int)DavamiyyetStatus.Qayib)" />
+                                <i class="bi bi-x-circle-fill"></i> Qayıb
+                            </label>
+                        </div>
+                        <span asp-validation-for="Status" class="mod-error"></span>
+                    </div>
+
+                    <!-- Live duration preview -->
+                    <div class="mod-form-field">
+                        <label class="mod-label">İş Saatı Hesablaması</label>
+                        <div class="duration-preview" id="durationPreview">
+                            <i class="bi bi-hourglass"></i>
+                            <span id="durationText">Vaxt daxil edin</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="mod-form-actions">
+                <a asp-action="Index" class="btn-mod-secondary">
+                    <i class="bi bi-x-lg"></i> Ləğv Et
+                </a>
+                <button type="submit" class="btn-mod-primary">
+                    <i class="bi bi-check-lg"></i> Yadda Saxla
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/hr-modules.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/hr/hr-modules.js" asp-append-version="true"></script>
+    <script>
+        // Live duration calculation
+        const giriş = document.querySelector('[name="GirisVaxti"]');
+        const çıxış = document.querySelector('[name="CixisVaxti"]');
+        const preview = document.getElementById('durationText');
+
+        function calcDuration() {
+            if (!giriş.value || !çıxış.value) { preview.textContent = 'Vaxt daxil edin'; return; }
+            const [gh, gm] = giriş.value.split(':').map(Number);
+            const [ch, cm] = çıxış.value.split(':').map(Number);
+            const total = (ch * 60 + cm) - (gh * 60 + gm);
+            if (total < 0) { preview.textContent = 'Yanlış vaxt'; return; }
+            preview.textContent = `${Math.floor(total / 60)} saat ${total % 60} dəqiqə`;
+        }
+
+        giriş.addEventListener('change', calcDuration);
+        çıxış.addEventListener('change', calcDuration);
+    </script>
+}

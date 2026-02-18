@@ -1,0 +1,237 @@
+@using FinNex.UI.Areas.HR.ViewModels
+@using FinNex.Domain.Entities.HR
+@model MezuniyyetDetailVM
+@{
+    ViewData["Title"] = "Məzuniyyət Detalları";
+    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
+}
+
+<div class="mod-detail-wrapper">
+
+    <!-- Back -->
+    <a asp-action="Index" class="mod-back-link">
+        <i class="bi bi-arrow-left"></i> Məzuniyyət siyahısına qayıt
+    </a>
+
+    <!-- Hero card -->
+    <div class="mod-detail-hero mod-hero-green">
+        <div class="mod-detail-hero-left">
+            <div class="mod-detail-avatar mod-av-green">
+                @Model.IsciTamAd[..Math.Min(2, Model.IsciTamAd.Length)].ToUpper()
+            </div>
+            <div>
+                <div class="mod-detail-name">@Model.IsciTamAd</div>
+                <div class="mod-detail-meta">
+                    <span><i class="bi bi-building"></i> @Model.Sobe</span>
+                    <span><i class="bi bi-briefcase"></i> @Model.Vezife</span>
+                </div>
+            </div>
+        </div>
+        <div class="mod-detail-hero-right">
+            @{
+                ViewData["Badge_Type"]  = "mezuniyyet";
+                ViewData["Badge_Value"] = Model.Status.ToString();
+            }
+            <partial name="_StatusBadge" />
+            <div class="mod-detail-id">#@Model.Id</div>
+        </div>
+    </div>
+
+    <!-- Summary chips -->
+    <div class="mod-summary-chips">
+        <div class="mod-chip">
+            <i class="bi bi-tag-fill"></i>
+            @{
+                ViewData["Badge_Type"]  = "mezuniyyet-nov";
+                ViewData["Badge_Value"] = Model.Nov.ToString();
+            }
+            <partial name="_StatusBadge" />
+        </div>
+        <div class="mod-chip">
+            <i class="bi bi-calendar-range"></i>
+            @Model.BaslamaTarixi.ToString("dd.MM.yyyy") — @Model.BitmeTarixi.ToString("dd.MM.yyyy")
+        </div>
+        <div class="mod-chip mod-chip-highlight">
+            <i class="bi bi-calendar-week"></i>
+            <strong>@Model.GunSayi gün</strong>
+        </div>
+    </div>
+
+    <!-- Info grid -->
+    <div class="mod-detail-grid">
+
+        <!-- Tarix məlumatları -->
+        <div class="mod-info-card">
+            <div class="mod-info-card-title">
+                <i class="bi bi-calendar-range"></i> Məzuniyyət Dövrü
+            </div>
+            <div class="mod-info-rows">
+                <div class="mod-info-row">
+                    <span class="mod-info-lbl">Başlama Tarixi</span>
+                    <span class="mod-info-val">
+                        <span class="date-chip">
+                            <i class="bi bi-calendar3"></i>
+                            @Model.BaslamaTarixi.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-Latn-AZ"))
+                        </span>
+                    </span>
+                </div>
+                <div class="mod-info-row">
+                    <span class="mod-info-lbl">Bitmə Tarixi</span>
+                    <span class="mod-info-val">
+                        <span class="date-chip">
+                            <i class="bi bi-calendar3"></i>
+                            @Model.BitmeTarixi.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-Latn-AZ"))
+                        </span>
+                    </span>
+                </div>
+                <div class="mod-info-row">
+                    <span class="mod-info-lbl">Ümumi Müddət</span>
+                    <span class="mod-info-val">
+                        <span class="duration-chip">
+                            <i class="bi bi-calendar-week"></i>
+                            @Model.GunSayi gün
+                        </span>
+                    </span>
+                </div>
+                <div class="mod-info-row">
+                    <span class="mod-info-lbl">Növ</span>
+                    <span class="mod-info-val">
+                        @{
+                            ViewData["Badge_Type"]  = "mezuniyyet-nov";
+                            ViewData["Badge_Value"] = Model.Nov.ToString();
+                        }
+                        <partial name="_StatusBadge" />
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status & Qeyd -->
+        <div class="mod-info-card">
+            <div class="mod-info-card-title">
+                <i class="bi bi-flag"></i> Status & Qeyd
+            </div>
+            <div class="mod-info-rows">
+                <div class="mod-info-row">
+                    <span class="mod-info-lbl">Status</span>
+                    <span class="mod-info-val">
+                        @{
+                            ViewData["Badge_Type"]  = "mezuniyyet";
+                            ViewData["Badge_Value"] = Model.Status.ToString();
+                        }
+                        <partial name="_StatusBadge" />
+                    </span>
+                </div>
+                <div class="mod-info-row">
+                    <span class="mod-info-lbl">Qeyd №</span>
+                    <span class="mod-info-val fw-bold">#@Model.Id</span>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.Qeyd))
+            {
+                <div class="mod-note-box">
+                    <div class="mod-note-label">
+                        <i class="bi bi-chat-text-fill"></i> Qeyd
+                    </div>
+                    <p class="mod-note-text">@Model.Qeyd</p>
+                </div>
+            }
+
+            <!-- Timeline -->
+            <div class="mod-timeline-placeholder">
+                <div class="mod-timeline-title">
+                    <i class="bi bi-clock-history"></i> Tarixçə
+                </div>
+                <div class="mod-timeline-item mod-tl-active">
+                    <div class="mod-tl-dot"></div>
+                    <div class="mod-tl-body">
+                        <div class="mod-tl-label">Müraciət göndərildi</div>
+                        <div class="mod-tl-sub">@Model.BaslamaTarixi.ToString("dd.MM.yyyy")</div>
+                    </div>
+                </div>
+                @if (Model.Status == MezuniyyetStatus.Tesdiqlenib)
+                {
+                    <div class="mod-timeline-item mod-tl-success">
+                        <div class="mod-tl-dot mod-tl-dot-green"></div>
+                        <div class="mod-tl-body">
+                            <div class="mod-tl-label">Təsdiqləndi</div>
+                            <div class="mod-tl-sub">—</div>
+                        </div>
+                    </div>
+                }
+                else if (Model.Status == MezuniyyetStatus.ImtinaEdilib)
+                {
+                    <div class="mod-timeline-item mod-tl-danger">
+                        <div class="mod-tl-dot mod-tl-dot-red"></div>
+                        <div class="mod-tl-body">
+                            <div class="mod-tl-label">İmtina edildi</div>
+                            <div class="mod-tl-sub">—</div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="mod-timeline-item">
+                        <div class="mod-tl-dot mod-tl-dot-empty"></div>
+                        <div class="mod-tl-body">
+                            <div class="mod-tl-label mod-tl-muted">Qərar gözlənilir</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Actions -->
+    <div class="mod-detail-actions">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn-mod-primary">
+            <i class="bi bi-pencil"></i> Redaktə Et
+        </a>
+        <button type="button" class="btn-mod-danger"
+                onclick="confirmDelete(@Model.Id)">
+            <i class="bi bi-trash"></i> Sil
+        </button>
+        <a asp-action="Index" class="btn-mod-secondary">
+            <i class="bi bi-list-ul"></i> Siyahıya Qayıt
+        </a>
+    </div>
+
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content mod-modal">
+            <div class="modal-header mod-modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Silmə Təsdiqi
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Bu məzuniyyət qeydi birdəfəlik silinəcək. Davam edirsiniz?</p>
+            </div>
+            <div class="modal-footer mod-modal-footer">
+                <button type="button" class="btn-mod-secondary" data-bs-dismiss="modal">Ləğv Et</button>
+                <form asp-action="Delete" asp-route-id="@Model.Id" method="post" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-mod-danger"><i class="bi bi-trash"></i> Sil</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/hr-modules.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script>
+        function confirmDelete() {
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+    </script>
+}

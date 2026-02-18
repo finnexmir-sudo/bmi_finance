@@ -1,0 +1,78 @@
+@*
+    _Pagination.cshtml - UI-only pagination component
+    Usage: <partial name="_Pagination" />
+
+    Expects ViewData:
+    - Pagination_CurrentPage (int) : current page number
+    - Pagination_TotalPages (int)  : total pages
+    - Pagination_Action (string)   : controller action for links
+    - Pagination_RouteValues (object) : additional route values to preserve filters
+*@
+
+@{
+    int current    = (int)(ViewData["Pagination_CurrentPage"] ?? 1);
+    int total      = (int)(ViewData["Pagination_TotalPages"]  ?? 1);
+    string action  = ViewData["Pagination_Action"]?.ToString() ?? "Index";
+
+    if (total <= 1) { return; }
+
+    int from = Math.Max(1, current - 2);
+    int to   = Math.Min(total, current + 2);
+}
+
+<div class="pagination-wrap">
+    <div class="pagination-info">
+        Səhifə <strong>@current</strong> / <strong>@total</strong>
+    </div>
+    <nav class="pagination-nav" aria-label="Pagination">
+        <ul class="pag-list">
+
+            @* First *@
+            <li class="pag-item @(current == 1 ? "disabled" : "")">
+                <a class="pag-link" asp-action="@action" asp-route-page="1" title="İlk səhifə">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+
+            @* Prev *@
+            <li class="pag-item @(current == 1 ? "disabled" : "")">
+                <a class="pag-link" asp-action="@action" asp-route-page="@(current - 1)" title="Əvvəlki">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+
+            @* Pages *@
+            @if (from > 1)
+            {
+                <li class="pag-item disabled"><span class="pag-link">…</span></li>
+            }
+
+            @for (int p = from; p <= to; p++)
+            {
+                <li class="pag-item @(p == current ? "active" : "")">
+                    <a class="pag-link" asp-action="@action" asp-route-page="@p">@p</a>
+                </li>
+            }
+
+            @if (to < total)
+            {
+                <li class="pag-item disabled"><span class="pag-link">…</span></li>
+            }
+
+            @* Next *@
+            <li class="pag-item @(current == total ? "disabled" : "")">
+                <a class="pag-link" asp-action="@action" asp-route-page="@(current + 1)" title="Növbəti">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+
+            @* Last *@
+            <li class="pag-item @(current == total ? "disabled" : "")">
+                <a class="pag-link" asp-action="@action" asp-route-page="@total" title="Son səhifə">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+
+        </ul>
+    </nav>
+</div>

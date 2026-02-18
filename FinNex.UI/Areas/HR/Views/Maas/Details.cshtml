@@ -1,0 +1,199 @@
+@using FinNex.UI.Areas.HR.ViewModels
+@model MaasDetailVM
+@{
+    ViewData["Title"] = "Maaş Detalları";
+    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
+}
+
+<div class="mod-detail-wrapper">
+
+    <!-- Back -->
+    <a asp-action="Index" class="mod-back-link">
+        <i class="bi bi-arrow-left"></i> Maaş siyahısına qayıt
+    </a>
+
+    <!-- Hero card -->
+    <div class="mod-detail-hero mod-hero-purple">
+        <div class="mod-detail-hero-left">
+            <div class="mod-detail-avatar mod-av-purple">
+                @Model.IsciTamAd[..Math.Min(2, Model.IsciTamAd.Length)].ToUpper()
+            </div>
+            <div>
+                <div class="mod-detail-name">@Model.IsciTamAd</div>
+                <div class="mod-detail-meta">
+                    <span><i class="bi bi-building"></i> @Model.Sobe</span>
+                    <span><i class="bi bi-briefcase"></i> @Model.Vezife</span>
+                </div>
+            </div>
+        </div>
+        <div class="mod-detail-hero-right">
+            <div class="period-badge-large">
+                <i class="bi bi-calendar3"></i>
+                @Model.AyAd @Model.Il
+            </div>
+            <div class="mod-detail-id">#@Model.Id</div>
+        </div>
+    </div>
+
+    <!-- Salary breakdown -->
+    <div class="maas-breakdown-card">
+        <div class="maas-breakdown-title">
+            <i class="bi bi-calculator"></i> Maaş Hesablaması
+        </div>
+
+        <div class="maas-breakdown-rows">
+            <div class="maas-breakdown-row">
+                <div class="maas-breakdown-label">
+                    <i class="bi bi-cash"></i> Əsas Maaş
+                </div>
+                <div class="maas-breakdown-val amount-base">
+                    @Model.EsasMaas.ToString("N2") ₼
+                </div>
+            </div>
+            <div class="maas-breakdown-row">
+                <div class="maas-breakdown-label maas-label-plus">
+                    <i class="bi bi-plus-circle-fill"></i> Əlavə
+                </div>
+                <div class="maas-breakdown-val amount-plus">
+                    +@Model.Elave.ToString("N2") ₼
+                </div>
+            </div>
+            <div class="maas-breakdown-row">
+                <div class="maas-breakdown-label maas-label-minus">
+                    <i class="bi bi-dash-circle-fill"></i> Cərimə
+                </div>
+                <div class="maas-breakdown-val amount-minus">
+                    -@Model.Cerime.ToString("N2") ₼
+                </div>
+            </div>
+        </div>
+
+        <div class="maas-breakdown-total">
+            <div class="maas-total-label">Ümumi Maaş</div>
+            <div class="maas-total-val">@Model.UmumiMaas.ToString("N2") ₼</div>
+        </div>
+    </div>
+
+    <!-- Detail grid -->
+    <div class="mod-detail-grid">
+
+        <!-- İşçi məlumatları -->
+        <div class="mod-info-card">
+            <div class="mod-info-card-title">
+                <i class="bi bi-person-fill"></i> İşçi Məlumatları
+            </div>
+            <div class="mod-info-rows">
+                <div class="mod-info-row">
+                    <span class="mod-info-lbl">Ad Soyad</span>
+                    <span class="mod-info-val fw-bold">@Model.IsciTamAd</span>
+                </div>
+                <div class="mod-info-row">
+                    <span class="mod-info-lbl">Şöbə</span>
+                    <span class="mod-info-val"><span class="dept-chip">@Model.Sobe</span></span>
+                </div>
+                <div class="mod-info-row">
+                    <span class="mod-info-lbl">Vəzifə</span>
+                    <span class="mod-info-val">@Model.Vezife</span>
+                </div>
+                <div class="mod-info-row">
+                    <span class="mod-info-lbl">Dövr</span>
+                    <span class="mod-info-val">
+                        <span class="period-chip">
+                            <i class="bi bi-calendar3"></i>
+                            @Model.AyAd @Model.Il
+                        </span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visual bar -->
+        <div class="mod-info-card">
+            <div class="mod-info-card-title">
+                <i class="bi bi-bar-chart-fill"></i> Maaş Bölgüsü
+            </div>
+            @{
+                var total = Model.EsasMaas + Model.Elave;
+                var esasPct  = total > 0 ? (double)Model.EsasMaas / (double)total * 100 : 0;
+                var elavePct = total > 0 ? (double)Model.Elave     / (double)total * 100 : 0;
+            }
+            <div class="maas-bar-wrap">
+                <div class="maas-bar-label">
+                    <span>Əsas Maaş</span>
+                    <span>@esasPct.ToString("N0")%</span>
+                </div>
+                <div class="maas-bar">
+                    <div class="maas-bar-fill maas-bar-base" style="width:@esasPct.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                </div>
+                <div class="maas-bar-label mt-2">
+                    <span>Əlavə</span>
+                    <span>@elavePct.ToString("N0")%</span>
+                </div>
+                <div class="maas-bar">
+                    <div class="maas-bar-fill maas-bar-elave" style="width:@elavePct.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                </div>
+            </div>
+
+            @if (Model.Cerime > 0)
+            {
+                <div class="mod-note-box mod-note-danger mt-3">
+                    <div class="mod-note-label">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Cərimə tətbiq edilib
+                    </div>
+                    <p class="mod-note-text">-@Model.Cerime.ToString("N2") ₼ tutulmuşdur</p>
+                </div>
+            }
+        </div>
+
+    </div>
+
+    <!-- Actions -->
+    <div class="mod-detail-actions">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn-mod-primary btn-mod-purple">
+            <i class="bi bi-pencil"></i> Redaktə Et
+        </a>
+        <button type="button" class="btn-mod-danger" onclick="confirmDelete()">
+            <i class="bi bi-trash"></i> Sil
+        </button>
+        <a asp-action="Index" class="btn-mod-secondary">
+            <i class="bi bi-list-ul"></i> Siyahıya Qayıt
+        </a>
+    </div>
+
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content mod-modal">
+            <div class="modal-header mod-modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Silmə Təsdiqi
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Bu maaş qeydi silinəcək. Davam edirsiniz?</p>
+            </div>
+            <div class="modal-footer mod-modal-footer">
+                <button type="button" class="btn-mod-secondary" data-bs-dismiss="modal">Ləğv Et</button>
+                <form asp-action="Delete" asp-route-id="@Model.Id" method="post" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-mod-danger"><i class="bi bi-trash"></i> Sil</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/hr-modules.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script>
+        function confirmDelete() {
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+    </script>
+}

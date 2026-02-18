@@ -1,0 +1,30 @@
+@*
+    _EmptyState.cshtml - Reusable empty state component
+    Usage: <partial name="_EmptyState" />
+
+    Expects ViewData:
+    - EmptyState_Icon (string)    : Bootstrap Icons class, default: bi-inbox
+    - EmptyState_Title (string)   : main message
+    - EmptyState_Sub (string)     : secondary message
+    - EmptyState_AddUrl (string)  : optional action URL
+    - EmptyState_AddLabel (string): optional action label
+*@
+
+<div class="empty-state-block">
+    <div class="empty-state-ico">
+        <i class="bi @(ViewData["EmptyState_Icon"] ?? "bi-inbox")"></i>
+    </div>
+    <div class="empty-state-title">
+        @(ViewData["EmptyState_Title"] ?? "Məlumat tapılmadı")
+    </div>
+    <div class="empty-state-sub">
+        @(ViewData["EmptyState_Sub"] ?? "Göstəriləcək heç bir qeyd yoxdur")
+    </div>
+    @if (ViewData["EmptyState_AddUrl"] is string url && !string.IsNullOrEmpty(url))
+    {
+        <a href="@url" class="btn-empty-add">
+            <i class="bi bi-plus-lg"></i>
+            @(ViewData["EmptyState_AddLabel"] ?? "Yeni Əlavə Et")
+        </a>
+    }
+</div>
