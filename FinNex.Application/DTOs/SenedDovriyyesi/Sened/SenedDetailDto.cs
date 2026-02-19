@@ -20,4 +20,6 @@ namespace FinNex.Application.DTOs.SenedDovriyyesi.Sened
         public List<AuditLogDto> AuditLogs { get; set; } = new();
 
     }
+
+    
 }

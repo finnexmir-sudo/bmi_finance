@@ -152,7 +152,45 @@ public class SenedController : Controller
         if (!result.Success || result.Data == null)
             return NotFound();
 
-        return View(result.Data);
+
+
+        var list = new SenedDetailVM
+        {
+            AcarSoz = result.Data.AcarSoz,
+            Id = id,
+            SenedNovu = result.Data.SenedNovu,
+            Sobe = result.Data.Sobe,
+            Status = result.Data.Status,
+            Tags = result.Data.Tags,
+            YaradilmaTarixi = result.Data.YaradilmaTarixi,
+            AuditLogs = result.Data.AuditLogs
+    .Select(x => new AuditLogItemVM
+    {
+        
+       UserId = userId,
+       Ip = x.Ip,
+       DetailsJson = x.DetailsJson,
+       Action = x.Action,
+       YaradilmaTarixi = x.YaradilmaTarixi
+    })
+    .ToList(),
+
+            Basliq = result.Data.Basliq,
+            Fayllar = result.Data.Fayllar.Select(a=> new SenedFaylItemVM 
+            {
+                ContentType = a.ContentType,
+                AktivVersiya=a.AktivVersiya,
+                Id = a.Id,
+                OlcuBytes = a.OlcuBytes,
+                OriginalAd=a.OriginalAd,
+                Sha256 = a.Sha256,
+                VersiyaNo = a.VersiyaNo,
+                YaradilmaTarixi = a.YaradilmaTarixi,
+            }
+            ).ToList()
+        };
+
+        return View(list);
     }
 
 

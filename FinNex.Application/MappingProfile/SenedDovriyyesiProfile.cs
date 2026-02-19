@@ -38,7 +38,6 @@ namespace FinNex.Application.MappingProfile
 
             CreateMap<AuditLog, AuditLogDto>();
             CreateMap<SenedFayl, SenedFaylDto>();
-            CreateMap<Sened, SenedDetailDto>();
 
         }
     }

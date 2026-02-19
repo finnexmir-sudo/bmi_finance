@@ -1,25 +1,21 @@
 ﻿document.addEventListener("DOMContentLoaded", function () {
 
-    // 1. Əsas elementləri əvvəlcədən tapırıq
-    const fileInput = document.getElementById('fileInput');
-    const dropZone = document.getElementById('dropZone');
     const sobeSelect = document.getElementById('sobeSelect');
-    const senedNovuSelect = document.getElementById('senedNovuSelect');
-    const novModal = document.getElementById('novModal');
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const novModalEl = document.getElementById('novModal');
     const saveNovBtn = document.getElementById('saveBtn');
+    const openNovBtn = document.getElementById('openNovBtn');
 
+    const SobeId = document.getElementById('SobeId');
 
-    // =====================================================
-    // Fayl Yükləmə (Klik və Drag & Drop)
-    // =====================================================
-
+    // =============================
+    // Fayl Drag & Drop
+    // =============================
     if (dropZone && fileInput) {
-        // Drop zone-a klik edəndə gizli file input-u tetiklə
-        dropZone.addEventListener('click', function () {
-            fileInput.click();
-        });
 
-        // Sürüşdürmə hadisələrini idarə et
+        dropZone.addEventListener('click', () => fileInput.click());
+
         ['dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropZone.addEventListener(eventName, e => {
                 e.preventDefault();
@@ -27,26 +23,19 @@
             });
         });
 
-        // Faylı drop zone-a buraxanda
         dropZone.addEventListener('drop', (e) => {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-
+            const files = e.dataTransfer.files;
             if (files.length > 0) {
-                fileInput.files = files; // Faylları input-a ötür
-                // Change hadisəsini əllə tetiklə ki, ölçü kontrolu işləsin
+                fileInput.files = files;
                 fileInput.dispatchEvent(new Event('change'));
             }
         });
-    }
 
-    // Fayl ölçü kontrolu
-    if (fileInput) {
         fileInput.addEventListener('change', function () {
-            if (this.files.length === 0) return;
+            if (!this.files.length) return;
 
             const file = this.files[0];
-            const maxSize = 25 * 1024 * 1024; // 25MB
+            const maxSize = 25 * 1024 * 1024;
 
             if (file.size > maxSize) {
                 alert('Fayl ölçüsü 25MB-dan böyük ola bilməz.');
@@ -55,13 +44,17 @@
         });
     }
 
-    // =====================================================
-    // Şöbə dəyişəndə sənəd növlərini yüklə
-    // =====================================================
-
+    // =============================
+    // Şöbə dəyişəndə növləri yüklə
+    // =============================
     if (sobeSelect) {
+
         sobeSelect.addEventListener('change', function () {
+
             const sobeId = this.value;
+            const senedNovuSelect = document.getElementById('senedNovuSelect');
+
+            if (!senedNovuSelect) return;
 
             if (!sobeId) {
                 senedNovuSelect.innerHTML = '<option value="">Əvvəlcə şöbə seçin...</option>';
@@ -70,9 +63,21 @@
 
             senedNovuSelect.innerHTML = '<option value="">Yüklənir...</option>';
 
-            fetch(`/SenedDovriyyesi/Sened/SenedNovleriByShobe?sobeId=${sobeId}`)
-                .then(r => r.json())
+            fetch('/SenedDovriyyesi/Sened/SenedNovleriByShobe?sobeId=' + sobeId, {
+                method: 'GET',
+                credentials: 'include'
+            })
+
+
+
+
+
+                .then(response => {
+                    if (!response.ok) throw new Error(response.status);
+                    return response.json();
+                })
                 .then(data => {
+
                     senedNovuSelect.innerHTML = '<option value="">Sənəd növü seçin...</option>';
 
                     if (!data || data.length === 0) {
@@ -87,41 +92,45 @@
                         senedNovuSelect.appendChild(opt);
                     });
                 })
-                .catch(() => {
+                .catch(err => {
+                    console.error("Fetch error:", err);
                     senedNovuSelect.innerHTML = '<option value="">Xəta baş verdi</option>';
                 });
+
         });
     }
 
-    // =====================================================
-    // Modal açılarkən inputları təmizlə
-    // =====================================================
+    // =============================
+    // Modal Açılması (Şöbə yoxdursa açılmasın)
+    // =============================
+    if (openNovBtn && novModalEl) {
 
-    if (novModal) {
-        novModal.addEventListener('show.bs.modal', function () {
-            document.getElementById('novKod').value = '';
-            document.getElementById('novAd').value = '';
+        const novModal = new bootstrap.Modal(novModalEl);
 
-            const errorDiv = document.getElementById('novError');
-            if (errorDiv) errorDiv.classList.add('d-none');
+        openNovBtn.addEventListener('click', function () {
+
+            const sobeId = sobeSelect.value;
+
+            if (!sobeId) {
+                alert("Əvvəlcə şöbə seçilməlidir.");
+                return;
+            }
+
+            novModal.show();
         });
     }
 
-    // =====================================================
-    // Yeni sənəd növünü yarat (Modal Save)
-    // =====================================================
-
-    if (saveNovBtn) {
+    // =============================
+    // Yeni növ yarat
+    // =============================
+    if (saveNovBtn && novModalEl) {
 
         saveNovBtn.addEventListener('click', function () {
 
-            const kodElement = document.getElementById('novKod');
-            const adElement = document.getElementById('novAd');
+            const kod = document.getElementById('novKod').value.trim();
+            const ad = document.getElementById('novAd').value.trim();
             const errorDiv = document.getElementById('novError');
-
             const sobeId = sobeSelect.value;
-            const kod = kodElement.value.trim();
-            const ad = adElement.value.trim();
 
             errorDiv.classList.add('d-none');
 
@@ -139,11 +148,9 @@
 
             fetch('/SenedDovriyyesi/Sened/YeniSenedNovu', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    departmentId: parseInt(sobeId),   // BURANI DÜZƏLTDİM
+                    departmentId: parseInt(sobeId),
                     kod: kod.toUpperCase(),
                     ad: ad
                 })
@@ -157,12 +164,11 @@
                         return;
                     }
 
+                    const senedNovuSelect = document.getElementById('senedNovuSelect');
                     const option = new Option(ad, data.id, true, true);
                     senedNovuSelect.add(option);
 
-                    const modalInstance = bootstrap.Modal.getInstance(novModal);
-                    modalInstance.hide();
-
+                    bootstrap.Modal.getInstance(novModalEl).hide();
                 })
                 .catch(() => {
                     errorDiv.textContent = "Server xətası baş verdi.";
@@ -171,29 +177,5 @@
 
         });
     }
-});
-document.addEventListener("DOMContentLoaded", function () {
-
-    const sobeSelect = document.getElementById('sobeSelect');
-    const openNovBtn = document.getElementById('openNovBtn');
-    const novModal = new bootstrap.Modal(document.getElementById('novModal'));
-
-    if (openNovBtn) {
-
-        openNovBtn.addEventListener('click', function () {
-
-            const sobeId = sobeSelect.value;
-
-            if (!sobeId) {
-                alert("Əvvəlcə şöbə seçilməlidir.");
-                return;
-            }
-
-            novModal.show();
-        });
-
-    }
 
 });
-
-    
