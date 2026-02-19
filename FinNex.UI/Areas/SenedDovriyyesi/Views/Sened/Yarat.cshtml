@@ -231,6 +231,8 @@
     <script>
         // Make AJAX URL available before the JS file loads
         var senedNovUrl = '@Url.Action("SenedNovleriByShobe", "Sened", new { area = "SenedDovriyyesi" })';
+        // Pre-selected values (used to restore state after form validation failure)
+        var preSelectedNovuId = '@(Model.SenedNovuId > 0 ? Model.SenedNovuId.ToString() : "")';
     </script>
     <script src="~/js/sened-yarat.js" asp-append-version="true"></script>
 }

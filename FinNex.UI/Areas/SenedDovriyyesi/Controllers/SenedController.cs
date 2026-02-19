@@ -226,6 +226,7 @@ public class SenedController : Controller
             Kod = n.Kod,
             Ad = n.Ad,
             SobeId = n.DepartmentId,
+            SobeAd = sobelerResult.Data!.FirstOrDefault(s => s.Id == n.DepartmentId)?.Ad ?? "-",
             Aktiv = n.Aktiv,
             YaradilmaTarixi = n.YaradilmaTarixi
         })

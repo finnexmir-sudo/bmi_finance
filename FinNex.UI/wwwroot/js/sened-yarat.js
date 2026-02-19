@@ -113,66 +113,101 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // =============================
+    // Sənəd növlərini yüklə (reusable)
+    // =============================
+    function loadSenedNovleri(sobeId, selectValueAfterLoad) {
+        const senedNovuSelect = document.getElementById('senedNovuSelect');
+        const novWrapper      = document.getElementById('senedNovuWrapper');
+
+        if (!senedNovuSelect) return;
+
+        if (!sobeId) {
+            senedNovuSelect.innerHTML = '<option value="">Əvvəlcə şöbə seçin...</option>';
+            senedNovuSelect.disabled  = false;
+            if (novWrapper) novWrapper.classList.remove('sd-select-loading');
+            return;
+        }
+
+        // Loading state
+        senedNovuSelect.innerHTML = '<option value="">Yüklənir...</option>';
+        senedNovuSelect.disabled  = true;
+        if (novWrapper) novWrapper.classList.add('sd-select-loading');
+
+        const baseUrl = (typeof senedNovUrl !== 'undefined')
+            ? senedNovUrl
+            : '/SenedDovriyyesi/Sened/SenedNovleriByShobe';
+
+        fetch(baseUrl + '?sobeId=' + encodeURIComponent(sobeId), {
+            method: 'GET',
+            credentials: 'include',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                senedNovuSelect.disabled = false;
+                if (novWrapper) novWrapper.classList.remove('sd-select-loading');
+
+                if (!data || data.length === 0) {
+                    senedNovuSelect.innerHTML = '<option value="">Bu şöbədə aktiv növ yoxdur</option>';
+                    return;
+                }
+
+                senedNovuSelect.innerHTML = '<option value="">Sənəd növü seçin...</option>';
+                data.forEach(x => {
+                    const opt       = document.createElement('option');
+                    opt.value       = x.id;
+                    opt.textContent = x.ad;
+                    senedNovuSelect.appendChild(opt);
+                });
+
+                // Restore pre-selected value after AJAX load (e.g. after form validation error)
+                if (selectValueAfterLoad) {
+                    senedNovuSelect.value = String(selectValueAfterLoad);
+                }
+            })
+            .catch(err => {
+                console.error('SenedNovu fetch error:', err);
+                senedNovuSelect.disabled = false;
+                if (novWrapper) novWrapper.classList.remove('sd-select-loading');
+                senedNovuSelect.innerHTML = '<option value="">Yükləmə xətası – yenidən cəhd edin</option>';
+            });
+    }
+
+    // =============================
     // Şöbə seçiləndə sənəd növlərini yüklə
     // =============================
     if (sobeSelect) {
-
         sobeSelect.addEventListener('change', function () {
+            loadSenedNovleri(this.value, null);
+        });
 
-            const sobeId          = this.value;
-            const senedNovuSelect = document.getElementById('senedNovuSelect');
-            const novWrapper      = document.getElementById('senedNovuWrapper');
+        // Auto-restore: if SobeId was pre-selected (e.g. after form validation failure),
+        // reload document types and restore the previously selected SenedNovuId.
+        if (sobeSelect.value) {
+            const novToRestore = (typeof preSelectedNovuId !== 'undefined' && preSelectedNovuId)
+                ? preSelectedNovuId
+                : null;
+            loadSenedNovleri(sobeSelect.value, novToRestore);
+        }
+    }
 
-            if (!senedNovuSelect) return;
-
-            if (!sobeId) {
-                senedNovuSelect.innerHTML = '<option value="">Əvvəlcə şöbə seçin...</option>';
-                senedNovuSelect.disabled  = false;
-                if (novWrapper) novWrapper.classList.remove('sd-select-loading');
-                return;
-            }
-
-            // Loading state
-            senedNovuSelect.innerHTML = '<option value="">Yüklənir...</option>';
-            senedNovuSelect.disabled  = true;
-            if (novWrapper) novWrapper.classList.add('sd-select-loading');
-
-            const baseUrl = (typeof senedNovUrl !== 'undefined')
-                ? senedNovUrl
-                : '/SenedDovriyyesi/Sened/SenedNovleriByShobe';
-
-            fetch(baseUrl + '?sobeId=' + encodeURIComponent(sobeId), {
-                method: 'GET',
-                credentials: 'include',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            })
-                .then(response => {
-                    if (!response.ok) throw new Error('HTTP ' + response.status);
-                    return response.json();
-                })
-                .then(data => {
-                    senedNovuSelect.disabled = false;
-                    if (novWrapper) novWrapper.classList.remove('sd-select-loading');
-
-                    if (!data || data.length === 0) {
-                        senedNovuSelect.innerHTML = '<option value="">Bu şöbədə aktiv növ yoxdur</option>';
-                        return;
-                    }
-
-                    senedNovuSelect.innerHTML = '<option value="">Sənəd növü seçin...</option>';
-                    data.forEach(x => {
-                        const opt       = document.createElement('option');
-                        opt.value       = x.id;
-                        opt.textContent = x.ad;
-                        senedNovuSelect.appendChild(opt);
-                    });
-                })
-                .catch(err => {
-                    console.error('SenedNovu fetch error:', err);
-                    senedNovuSelect.disabled = false;
-                    if (novWrapper) novWrapper.classList.remove('sd-select-loading');
-                    senedNovuSelect.innerHTML = '<option value="">Yükləmə xətası – yenidən cəhd edin</option>';
-                });
+    // =============================
+    // Modal: reset inputs on show
+    // =============================
+    if (novModalEl) {
+        novModalEl.addEventListener('show.bs.modal', function () {
+            const kodInput  = document.getElementById('novKod');
+            const adInput   = document.getElementById('novAd');
+            const errDiv    = document.getElementById('novError');
+            const succDiv   = document.getElementById('novSuccess');
+            if (kodInput) kodInput.value = '';
+            if (adInput)  adInput.value  = '';
+            if (errDiv)   errDiv.classList.add('d-none');
+            if (succDiv)  succDiv.classList.add('d-none');
+            setTimeout(() => { if (kodInput) kodInput.focus(); }, 300);
         });
     }
 
@@ -184,23 +219,14 @@ document.addEventListener("DOMContentLoaded", function () {
         const novModal = new bootstrap.Modal(novModalEl);
 
         openNovBtn.addEventListener('click', function () {
-            if (!sobeSelect || !sobeSelect.value) {
+            // On Yarat page, validate that a department is selected before opening modal
+            if (sobeSelect && !sobeSelect.value) {
                 sobeSelect.classList.add('is-invalid');
                 sobeSelect.focus();
                 sobeSelect.addEventListener('change', () => sobeSelect.classList.remove('is-invalid'), { once: true });
                 return;
             }
-
-            // Reset modal inputs
-            const kodInput = document.getElementById('novKod');
-            const adInput  = document.getElementById('novAd');
-            const errDiv   = document.getElementById('novError');
-            if (kodInput) kodInput.value = '';
-            if (adInput)  adInput.value  = '';
-            if (errDiv)   errDiv.classList.add('d-none');
-
             novModal.show();
-            if (kodInput) setTimeout(() => kodInput.focus(), 300);
         });
     }
 
@@ -214,7 +240,13 @@ document.addEventListener("DOMContentLoaded", function () {
             const kod      = (document.getElementById('novKod')?.value ?? '').trim();
             const ad       = (document.getElementById('novAd')?.value ?? '').trim();
             const errorDiv = document.getElementById('novError');
-            const sobeId   = sobeSelect?.value ?? '';
+
+            // SenedNovleri page: sobeId from novSobe select inside modal
+            // Yarat page:        sobeId from sobeSelect on the main form
+            const novSobeSelect = document.getElementById('novSobe');
+            const sobeId = novSobeSelect
+                ? (novSobeSelect.value ?? '')
+                : (sobeSelect?.value ?? '');
 
             if (errorDiv) errorDiv.classList.add('d-none');
 
@@ -252,11 +284,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     const senedNovuSelect = document.getElementById('senedNovuSelect');
                     if (senedNovuSelect) {
+                        // Yarat page: add new option and select it
                         const option = new Option(ad, data.id, true, true);
                         senedNovuSelect.add(option);
+                        bootstrap.Modal.getInstance(novModalEl)?.hide();
+                    } else {
+                        // SenedNovleri page: reload to show new row in table
+                        bootstrap.Modal.getInstance(novModalEl)?.hide();
+                        setTimeout(() => location.reload(), 400);
                     }
-
-                    bootstrap.Modal.getInstance(novModalEl)?.hide();
                 })
                 .catch(() => {
                     saveNovBtn.disabled  = false;
