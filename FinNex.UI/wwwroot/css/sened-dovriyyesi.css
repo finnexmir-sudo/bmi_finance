@@ -993,3 +993,174 @@ body.sd-body {
         padding: 1rem;
     }
 }
+
+/* ============================================================
+   Premium UI Extensions — Yarat & Detail pages
+   ============================================================ */
+
+/* ---- Page Hero (Yarat page header) ---- */
+.sd-page-hero {
+    display: flex;
+    align-items: center;
+}
+
+.sd-hero-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(26,115,232,0.15) 0%, rgba(26,115,232,0.08) 100%);
+    color: var(--sd-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    border: 1px solid rgba(26,115,232,0.15);
+}
+
+.sd-hero-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--sd-text);
+    line-height: 1.25;
+}
+
+.sd-hero-subtitle {
+    font-size: 0.8rem;
+    color: var(--sd-text-muted);
+    margin-top: 0.15rem;
+}
+
+/* ---- Step Progress Bar ---- */
+.sd-step-progress {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--sd-card-bg);
+    border: 1px solid var(--sd-border);
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+}
+
+.sd-step-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-shrink: 0;
+}
+
+.sd-step-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--sd-border);
+    color: var(--sd-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.sd-step-active .sd-step-circle {
+    background: var(--sd-accent);
+    color: #fff;
+    box-shadow: 0 0 0 3px rgba(26,115,232,0.15);
+}
+
+.sd-step-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--sd-text-muted);
+}
+
+.sd-step-active .sd-step-label {
+    color: var(--sd-accent);
+}
+
+.sd-step-line {
+    flex: 1;
+    height: 2px;
+    background: var(--sd-border);
+    margin: 0 0.75rem;
+    min-width: 20px;
+}
+
+/* ---- Select with Loading Spinner ---- */
+.sd-select-group {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.sd-select-inner {
+    flex: 1;
+    position: relative;
+}
+
+.sd-select-inner .form-select {
+    padding-right: 2.5rem;
+}
+
+.sd-select-spinner {
+    position: absolute;
+    top: 50%;
+    right: 0.65rem;
+    transform: translateY(-50%);
+    display: none;
+    pointer-events: none;
+}
+
+.sd-select-loading .sd-select-spinner {
+    display: flex;
+    align-items: center;
+}
+
+.sd-select-loading .form-select {
+    opacity: 0.65;
+    cursor: wait;
+}
+
+.sd-add-btn {
+    flex-shrink: 0;
+    width: 38px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+/* ---- Enhanced select & input focus ---- */
+.sd-select:focus,
+.sd-input:focus {
+    border-color: var(--sd-accent);
+    box-shadow: 0 0 0 3px rgba(26,115,232,0.12);
+}
+
+/* ---- Metadata divider items ---- */
+.sd-meta-divider {
+    border-bottom: 1px solid var(--sd-border);
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+}
+
+.sd-meta-divider:last-child {
+    border-bottom: none;
+}
+
+/* ---- Status current display ---- */
+.sd-status-current {
+    background: #fafbfc;
+    border: 1px solid var(--sd-border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+}
+
+/* ---- min-width helper ---- */
+.min-w-0 {
+    min-width: 0;
+}

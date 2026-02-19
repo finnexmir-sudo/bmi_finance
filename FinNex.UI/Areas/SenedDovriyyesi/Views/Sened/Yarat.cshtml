@@ -1,21 +1,40 @@
 @model SenedCreateVM
 
 <div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="sd-form-card">
-            <div class="sd-form-header">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="sd-detail-icon" style="width:36px;height:36px;font-size:1rem;">
-                        <i class="bi bi-file-earmark-plus"></i>
-                    </div>
-                    <div>
-                        <div class="fw-bold">Yeni Sənəd Yaradın</div>
-                        <div class="text-muted" style="font-size:0.75rem;font-weight:400;">
-                            Bütün məcburi sahələri doldurun
-                        </div>
-                    </div>
+    <div class="col-lg-8 col-xl-7">
+
+        <!-- Page Header -->
+        <div class="sd-page-hero mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <div class="sd-hero-icon">
+                    <i class="bi bi-file-earmark-plus-fill"></i>
+                </div>
+                <div>
+                    <h2 class="sd-hero-title mb-0">Yeni Sənəd Yaradın</h2>
+                    <p class="sd-hero-subtitle mb-0">Aşağıdakı addımları ardıcıl doldurun</p>
                 </div>
             </div>
+        </div>
+
+        <!-- Step Progress -->
+        <div class="sd-step-progress mb-4">
+            <div class="sd-step-item sd-step-active">
+                <div class="sd-step-circle">1</div>
+                <div class="sd-step-label">Kateqoriya</div>
+            </div>
+            <div class="sd-step-line"></div>
+            <div class="sd-step-item">
+                <div class="sd-step-circle">2</div>
+                <div class="sd-step-label">Məlumatlar</div>
+            </div>
+            <div class="sd-step-line"></div>
+            <div class="sd-step-item">
+                <div class="sd-step-circle">3</div>
+                <div class="sd-step-label">Fayl</div>
+            </div>
+        </div>
+
+        <div class="sd-form-card">
             <div class="sd-form-body">
 
                 <!-- Validation Summary -->
@@ -30,7 +49,7 @@
 
                     @Html.AntiForgeryToken()
 
-                    <!-- Step 1: Şöbə & Sənəd Növü -->
+                    <!-- ─── Step 1: Kateqoriya ─── -->
                     <div class="sd-form-section">
                         <div class="sd-form-section-title">
                             <span class="sd-step-number">1</span>
@@ -41,12 +60,9 @@
 
                             <!-- Şöbə -->
                             <div class="col-md-6">
-                                <label class="form-label sd-form-label">
-                                    Şöbə *
-                                </label>
-
+                                <label class="form-label sd-form-label">Şöbə <span class="text-danger">*</span></label>
                                 <select asp-for="SobeId"
-                                        class="form-select"
+                                        class="form-select sd-select"
                                         id="sobeSelect">
                                     <option value="">Şöbə seçin...</option>
                                     @foreach (var s in Model.Sobeler)
@@ -54,43 +70,39 @@
                                         <option value="@s.Id">@s.Ad</option>
                                     }
                                 </select>
-
-                                <span asp-validation-for="SobeId"
-                                      class="text-danger small"></span>
+                                <span asp-validation-for="SobeId" class="text-danger small"></span>
                             </div>
 
                             <!-- Sənəd Növü -->
                             <div class="col-md-6">
-                                <label class="form-label sd-form-label">
-                                    Sənəd Növü *
-                                </label>
+                                <label class="form-label sd-form-label">Sənəd Növü <span class="text-danger">*</span></label>
 
-                                <div class="d-flex align-items-stretch gap-2">
-
-                                    <select asp-for="SenedNovuId"
-                                            class="form-select"
-                                            id="senedNovuSelect">
-                                        <option value="">Əvvəlcə şöbə seçin...</option>
-                                    </select>
-
+                                <div class="sd-select-group" id="senedNovuWrapper">
+                                    <div class="sd-select-inner">
+                                        <select asp-for="SenedNovuId"
+                                                class="form-select sd-select"
+                                                id="senedNovuSelect">
+                                            <option value="">Əvvəlcə şöbə seçin...</option>
+                                        </select>
+                                        <div class="sd-select-spinner" title="Yüklənir...">
+                                            <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                                        </div>
+                                    </div>
                                     <button type="button"
-                                            class="btn btn-outline-primary"
-                                            id="openNovBtn">
+                                            class="btn btn-outline-primary sd-add-btn"
+                                            id="openNovBtn"
+                                            title="Yeni sənəd növü əlavə et">
                                         <i class="bi bi-plus-lg"></i>
                                     </button>
-
-
                                 </div>
 
-                                <span asp-validation-for="SenedNovuId"
-                                      class="text-danger small"></span>
+                                <span asp-validation-for="SenedNovuId" class="text-danger small"></span>
                             </div>
 
                         </div>
                     </div>
 
-
-                    <!-- Step 2: Sənəd Məlumatları -->
+                    <!-- ─── Step 2: Sənəd Məlumatları ─── -->
                     <div class="sd-form-section">
                         <div class="sd-form-section-title">
                             <span class="sd-step-number">2</span>
@@ -98,23 +110,27 @@
                         </div>
                         <div class="row g-3">
                             <div class="col-12">
-                                <label class="form-label sd-form-label">Başlıq *</label>
-                                <input asp-for="Basliq" class="form-control"
+                                <label class="form-label sd-form-label">Başlıq <span class="text-danger">*</span></label>
+                                <input asp-for="Basliq"
+                                       class="form-control sd-input"
                                        placeholder="Sənədin başlığını daxil edin..." />
                                 <span asp-validation-for="Basliq" class="text-danger small"></span>
                             </div>
                             <div class="col-12">
-                                <label class="form-label sd-form-label">Açar Söz *</label>
-                                <input asp-for="AcarSoz" class="form-control"
-                                       placeholder="Axtarış üçün açar sözlər (vergüllə ayırın)..." />
+                                <label class="form-label sd-form-label">Açar Söz <span class="text-danger">*</span></label>
+                                <input asp-for="AcarSoz"
+                                       class="form-control sd-input"
+                                       placeholder="Axtarış açar sözlər, vergüllə ayırın..." />
                                 <span asp-validation-for="AcarSoz" class="text-danger small"></span>
-                                <div class="form-text">Sənədi tapmaq üçün istifadə olunacaq açar sözlər</div>
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle me-1"></i>Sənədi tapmaq üçün istifadə ediləcək açar sözlər
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Step 3: Fayl Yükləmə -->
-                    <div class="sd-form-section">
+                    <!-- ─── Step 3: Fayl Yükləmə ─── -->
+                    <div class="sd-form-section" style="border-bottom:none; margin-bottom:0; padding-bottom:0;">
                         <div class="sd-form-section-title">
                             <span class="sd-step-number">3</span>
                             Fayl Yükləmə
@@ -123,11 +139,13 @@
                         <div class="sd-file-drop-zone" id="dropZone">
                             <input type="file" name="Fayl" class="sd-file-input" id="fileInput"
                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt,.zip,.rar" />
+
                             <div class="sd-file-drop-content" id="dropContent">
                                 <i class="bi bi-cloud-arrow-up sd-file-drop-icon"></i>
                                 <div class="sd-file-drop-text">Faylı buraya sürüşdürün və ya klikləyin</div>
-                                <div class="sd-file-drop-hint">PDF, Word, Excel, Şəkil, ZIP, RAR (Maks. 25MB)</div>
+                                <div class="sd-file-drop-hint">PDF, Word, Excel, Şəkil, ZIP, RAR &mdash; Maks. 25 MB</div>
                             </div>
+
                             <div class="sd-file-preview-box d-none" id="filePreviewBox">
                                 <div class="sd-file-preview-info">
                                     <div class="sd-file-icon" id="fileIcon">
@@ -137,80 +155,82 @@
                                         <div class="sd-file-name" id="fileName"></div>
                                         <div class="sd-file-meta" id="fileMeta"></div>
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-outline-danger sd-file-remove"
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger sd-file-remove"
                                             onclick="removeFile()">
                                         <i class="bi bi-x-lg"></i>
                                     </button>
                                 </div>
                             </div>
                         </div>
+
                     </div>
 
-                    <!-- Actions -->
+                    <!-- ─── Actions ─── -->
                     <div class="sd-form-actions">
                         <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
                            class="btn btn-outline-secondary">
                             <i class="bi bi-arrow-left me-1"></i>Geri
                         </a>
-                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <button type="submit" class="btn btn-primary px-4" id="submitBtn">
                             <i class="bi bi-check-lg me-1"></i>Sənədi Yarat
                         </button>
                     </div>
+
                 </form>
             </div>
         </div>
+
     </div>
 </div>
 
+<!-- ─── Modal: Yeni Sənəd Növü ─── -->
 <div class="modal fade" id="novModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content sd-modal">
             <div class="modal-header sd-modal-header">
-                <h5 class="modal-title">
-                    <i class="bi bi-plus-circle me-2"></i>Yeni Sənəd Növü
-                </h5>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="sd-detail-icon" style="width:32px;height:32px;font-size:0.9rem;">
+                        <i class="bi bi-plus-circle"></i>
+                    </div>
+                    <h5 class="modal-title mb-0">Yeni Sənəd Növü</h5>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div id="novError" class="alert alert-danger d-none"></div>
+            <div class="modal-body p-4">
+                <div id="novError" class="alert alert-danger d-none py-2 mb-3"></div>
 
                 <div class="mb-3">
-                    <label class="form-label sd-form-label">Kod *</label>
-                    <input type="text" id="novKod" class="form-control"
+                    <label class="form-label sd-form-label">Kod <span class="text-danger">*</span></label>
+                    <input type="text" id="novKod" class="form-control sd-input"
                            placeholder="Məs: MUQAVILE"
-                           style="text-transform: uppercase;"
-                           autocomplete="off" />
-                    <div class="form-text">Məsələn: MUQ, EM_QAYDA (Boşluq istifadə etməyin)</div>
+                           style="text-transform: uppercase; font-family: monospace; letter-spacing: 0.05em;"
+                           autocomplete="off" maxlength="30" />
+                    <div class="form-text"><i class="bi bi-info-circle me-1"></i>Boşluqsuz, böyük hərflər: MUQ, EM_QAYDA</div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label sd-form-label">Ad *</label>
-                    <input type="text" id="novAd" class="form-control"
+                <div class="mb-1">
+                    <label class="form-label sd-form-label">Ad <span class="text-danger">*</span></label>
+                    <input type="text" id="novAd" class="form-control sd-input"
                            placeholder="Məs: Müqavilə"
-                           autocomplete="off" />
+                           autocomplete="off" maxlength="100" />
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer border-top" style="padding: 1rem 1.5rem;">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                     Ləğv et
                 </button>
-                <button type="button"
-                        class="btn btn-primary"
-                        id="saveBtn">
+                <button type="button" class="btn btn-primary" id="saveBtn">
                     <i class="bi bi-check-lg me-1"></i>Saxla
                 </button>
-
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-
     <script>
-        senedNovUrl = '@Url.Action("SenedNovleriByShobe", "Sened", new { area = "SenedDovriyyesi" })';
+        // Make AJAX URL available before the JS file loads
+        var senedNovUrl = '@Url.Action("SenedNovleriByShobe", "Sened", new { area = "SenedDovriyyesi" })';
     </script>
-
     <script src="~/js/sened-yarat.js" asp-append-version="true"></script>
 }
-
-
