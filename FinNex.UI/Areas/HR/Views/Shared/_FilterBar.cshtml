@@ -1,0 +1,117 @@
+@*
+    _FilterBar.cshtml - Universal filter bar partial
+    Usage: <partial name="_FilterBar" model="@filterBarModel" />
+
+    Expects ViewData:
+    - FilterBar_Action (string)     : form action name
+    - FilterBar_ShowDept (bool)     : show department filter
+    - FilterBar_ShowDate (bool)     : show date range filter
+    - FilterBar_ShowStatus (bool)   : show status dropdown
+    - FilterBar_ShowSearch (bool)   : show search box
+    - FilterBar_StatusOptions (List<SelectListItem>) : status options
+    - FilterBar_DeptOptions (List<SelectListItem>)   : department options
+    - FilterBar_SearchTerm (string) : current search value
+    - FilterBar_SobeFilter (string) : current dept value
+    - FilterBar_StatusFilter (string): current status value
+    - FilterBar_BasTarix (string)   : date from
+    - FilterBar_SonTarix (string)   : date to
+    - FilterBar_AddUrl (string)     : URL for "Yeni Əlavə Et" button
+    - FilterBar_AddLabel (string)   : label for add button
+*@
+
+<div class="filter-bar-card">
+    <form method="get" asp-action="@ViewData["FilterBar_Action"]" id="filterBarForm" class="filter-bar-form">
+        <div class="filter-bar-row">
+
+            @* Search *@
+            @if ((bool)(ViewData["FilterBar_ShowSearch"] ?? true))
+            {
+                <div class="filter-item filter-search">
+                    <div class="search-wrap">
+                        <i class="bi bi-search search-ico"></i>
+                        <input type="text"
+                               name="SearchTerm"
+                               value="@ViewData["FilterBar_SearchTerm"]"
+                               class="filter-input"
+                               placeholder="İşçi adını axtarın..." />
+                    </div>
+                </div>
+            }
+
+            @* Department *@
+            @if ((bool)(ViewData["FilterBar_ShowDept"] ?? false))
+            {
+                <div class="filter-item">
+                    <select name="SobeFilter" class="filter-select-input" onchange="this.form.submit()">
+                        <option value="">Bütün şöbələr</option>
+                        @if (ViewData["FilterBar_DeptOptions"] is List<SelectListItem> deptOpts)
+                        {
+                            @foreach (var opt in deptOpts)
+                            {
+                                <option value="@opt.Value"
+                                        selected="@(opt.Value == ViewData["FilterBar_SobeFilter"]?.ToString())">
+                                    @opt.Text
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+            }
+
+            @* Date Range *@
+            @if ((bool)(ViewData["FilterBar_ShowDate"] ?? false))
+            {
+                <div class="filter-item filter-date-wrap">
+                    <div class="date-range">
+                        <input type="date" name="BasTarix"
+                               value="@ViewData["FilterBar_BasTarix"]"
+                               class="filter-input filter-date"
+                               title="Başlanğıc tarixi" />
+                        <span class="date-sep"><i class="bi bi-arrow-right"></i></span>
+                        <input type="date" name="SonTarix"
+                               value="@ViewData["FilterBar_SonTarix"]"
+                               class="filter-input filter-date"
+                               title="Son tarix" />
+                    </div>
+                </div>
+            }
+
+            @* Status *@
+            @if ((bool)(ViewData["FilterBar_ShowStatus"] ?? false))
+            {
+                <div class="filter-item">
+                    <select name="StatusFilter" class="filter-select-input" onchange="this.form.submit()">
+                        <option value="">Bütün statuslar</option>
+                        @if (ViewData["FilterBar_StatusOptions"] is List<SelectListItem> statusOpts)
+                        {
+                            @foreach (var opt in statusOpts)
+                            {
+                                <option value="@opt.Value"
+                                        selected="@(opt.Value == ViewData["FilterBar_StatusFilter"]?.ToString())">
+                                    @opt.Text
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+            }
+
+            <div class="filter-actions">
+                <button type="submit" class="btn-filter-apply">
+                    <i class="bi bi-funnel-fill"></i> Filter
+                </button>
+                <a asp-action="@ViewData["FilterBar_Action"]" class="btn-filter-reset" title="Sıfırla">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+
+                @if (ViewData["FilterBar_AddUrl"] is string addUrl && !string.IsNullOrEmpty(addUrl))
+                {
+                    <a href="@addUrl" class="btn-filter-add">
+                        <i class="bi bi-plus-lg"></i>
+                        @(ViewData["FilterBar_AddLabel"] ?? "Yeni Əlavə Et")
+                    </a>
+                }
+            </div>
+        </div>
+    </form>
+</div>

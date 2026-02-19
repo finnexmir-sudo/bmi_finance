@@ -1,0 +1,169 @@
+@using FinNex.UI.Areas.HR.ViewModels
+@using FinNex.Domain.Entities.HR
+@model DavamiyyetEditVM
+@{
+    ViewData["Title"] = "Davamiyyəti Redaktə Et";
+    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
+}
+
+<div class="mod-form-wrapper">
+
+    <!-- Back -->
+    <a asp-action="Index" class="mod-back-link">
+        <i class="bi bi-arrow-left"></i> Davamiyyət siyahısına qayıt
+    </a>
+
+    <div class="mod-form-card">
+
+        <!-- Header -->
+        <div class="mod-form-card-header">
+            <div class="mod-form-ico mod-ico-amber">
+                <i class="bi bi-pencil-fill"></i>
+            </div>
+            <div>
+                <h2 class="mod-form-title">Davamiyyəti Redaktə Et</h2>
+                <p class="mod-form-subtitle">
+                    <i class="bi bi-person-fill"></i> @Model.IsciTamAd —
+                    @Model.Tarix.ToString("dd.MM.yyyy")
+                </p>
+            </div>
+        </div>
+
+        <!-- Info banner -->
+        <div class="mod-edit-info-banner">
+            <div class="mod-edit-info-item">
+                <i class="bi bi-person-fill"></i>
+                <span>@Model.IsciTamAd</span>
+            </div>
+            <div class="mod-edit-info-sep"></div>
+            <div class="mod-edit-info-item">
+                <i class="bi bi-building"></i>
+                <span>@Model.Sobe</span>
+            </div>
+            <div class="mod-edit-info-sep"></div>
+            <div class="mod-edit-info-item">
+                <i class="bi bi-calendar3"></i>
+                <span>@Model.Tarix.ToString("dd.MM.yyyy")</span>
+            </div>
+        </div>
+
+        <form asp-action="Edit" method="post" id="editForm" novalidate>
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" class="mod-alert-danger"></div>
+
+            <!-- Section: Vaxt -->
+            <div class="mod-form-section">
+                <div class="mod-section-title">
+                    <i class="bi bi-clock"></i> Vaxt Məlumatları
+                </div>
+                <div class="mod-form-grid mod-grid-2">
+
+                    <div class="mod-form-field">
+                        <label asp-for="GirisVaxti" class="mod-label">Giriş Vaxtı</label>
+                        <div class="mod-input-wrap">
+                            <i class="bi bi-box-arrow-in-right mod-input-ico"></i>
+                            <input asp-for="GirisVaxti" type="time" class="mod-input" />
+                        </div>
+                        <span asp-validation-for="GirisVaxti" class="mod-error"></span>
+                    </div>
+
+                    <div class="mod-form-field">
+                        <label asp-for="CixisVaxti" class="mod-label">Çıxış Vaxtı</label>
+                        <div class="mod-input-wrap">
+                            <i class="bi bi-box-arrow-right mod-input-ico"></i>
+                            <input asp-for="CixisVaxti" type="time" class="mod-input" />
+                        </div>
+                        <span asp-validation-for="CixisVaxti" class="mod-error"></span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Section: Status -->
+            <div class="mod-form-section">
+                <div class="mod-section-title">
+                    <i class="bi bi-flag-fill"></i> Status
+                </div>
+                <div class="mod-form-grid mod-grid-2">
+
+                    <div class="mod-form-field">
+                        <label asp-for="Status" class="mod-label">
+                            Status <span class="mod-req">*</span>
+                        </label>
+                        <div class="mod-status-picker">
+                            <label class="mod-status-opt mod-opt-green @(Model.Status == DavamiyyetStatus.Isde ? "checked" : "")">
+                                <input type="radio" asp-for="Status" value="@((int)DavamiyyetStatus.Isde)" />
+                                <i class="bi bi-check-circle-fill"></i> İşdə
+                            </label>
+                            <label class="mod-status-opt mod-opt-orange @(Model.Status == DavamiyyetStatus.Gecikme ? "checked" : "")">
+                                <input type="radio" asp-for="Status" value="@((int)DavamiyyetStatus.Gecikme)" />
+                                <i class="bi bi-clock-fill"></i> Gecikmə
+                            </label>
+                            <label class="mod-status-opt mod-opt-red @(Model.Status == DavamiyyetStatus.Qayib ? "checked" : "")">
+                                <input type="radio" asp-for="Status" value="@((int)DavamiyyetStatus.Qayib)" />
+                                <i class="bi bi-x-circle-fill"></i> Qayıb
+                            </label>
+                        </div>
+                        <span asp-validation-for="Status" class="mod-error"></span>
+                    </div>
+
+                    <div class="mod-form-field">
+                        <label class="mod-label">İş Saatı Hesablaması</label>
+                        <div class="duration-preview" id="durationPreview">
+                            <i class="bi bi-hourglass-split"></i>
+                            <span id="durationText">—</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="mod-form-actions">
+                <a asp-action="Details" asp-route-id="@Model.Id" class="btn-mod-secondary">
+                    <i class="bi bi-eye"></i> Detallara Qayıt
+                </a>
+                <button type="submit" class="btn-mod-primary">
+                    <i class="bi bi-check-lg"></i> Dəyişiklikləri Saxla
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/hr-modules.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/hr/hr-modules.js" asp-append-version="true"></script>
+    <script>
+        const giriş = document.querySelector('[name="GirisVaxti"]');
+        const çıxış = document.querySelector('[name="CixisVaxti"]');
+        const preview = document.getElementById('durationText');
+
+        function calcDuration() {
+            if (!giriş.value || !çıxış.value) { preview.textContent = '—'; return; }
+            const [gh, gm] = giriş.value.split(':').map(Number);
+            const [ch, cm] = çıxış.value.split(':').map(Number);
+            const total = (ch * 60 + cm) - (gh * 60 + gm);
+            if (total < 0) { preview.textContent = 'Yanlış vaxt'; return; }
+            preview.textContent = `${Math.floor(total / 60)} saat ${total % 60} dəqiqə`;
+        }
+
+        giriş.addEventListener('change', calcDuration);
+        çıxış.addEventListener('change', calcDuration);
+        calcDuration();
+
+        // Status picker visual feedback
+        document.querySelectorAll('.mod-status-opt input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                document.querySelectorAll('.mod-status-opt').forEach(l => l.classList.remove('checked'));
+                radio.closest('.mod-status-opt').classList.add('checked');
+            });
+        });
+    </script>
+}

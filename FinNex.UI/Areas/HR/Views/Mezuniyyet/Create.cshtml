@@ -1,0 +1,190 @@
+@using FinNex.UI.Areas.HR.ViewModels
+@using FinNex.Domain.Entities.HR
+@model MezuniyyetCreateVM
+@{
+    ViewData["Title"] = "Yeni Məzuniyyət";
+    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
+}
+
+<div class="mod-form-wrapper">
+
+    <!-- Back -->
+    <a asp-action="Index" class="mod-back-link">
+        <i class="bi bi-arrow-left"></i> Məzuniyyət siyahısına qayıt
+    </a>
+
+    <div class="mod-form-card">
+
+        <!-- Header -->
+        <div class="mod-form-card-header">
+            <div class="mod-form-ico mod-ico-green">
+                <i class="bi bi-umbrella-fill"></i>
+            </div>
+            <div>
+                <h2 class="mod-form-title">Yeni Məzuniyyət Müraciəti</h2>
+                <p class="mod-form-subtitle">İşçi məzuniyyət məlumatlarını daxil edin</p>
+            </div>
+        </div>
+
+        <form asp-action="Create" method="post" id="createForm" novalidate>
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="mod-alert-danger"></div>
+
+            <!-- Section: İşçi -->
+            <div class="mod-form-section">
+                <div class="mod-section-title">
+                    <i class="bi bi-person-fill"></i> İşçi Məlumatları
+                </div>
+                <div class="mod-form-grid mod-grid-2">
+
+                    <div class="mod-form-field mod-field-full">
+                        <label asp-for="IsciId" class="mod-label">
+                            İşçi <span class="mod-req">*</span>
+                        </label>
+                        <div class="mod-select-wrap">
+                            <i class="bi bi-person-fill mod-select-ico"></i>
+                            <select asp-for="IsciId" asp-items="Model.Isciler" class="mod-select">
+                                <option value="">— İşçi seçin —</option>
+                            </select>
+                        </div>
+                        <span asp-validation-for="IsciId" class="mod-error"></span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Section: Məzuniyyət növü -->
+            <div class="mod-form-section">
+                <div class="mod-section-title">
+                    <i class="bi bi-tag-fill"></i> Məzuniyyət Növü
+                </div>
+                <div class="mod-form-grid mod-grid-3">
+                    <div class="mod-form-field mod-field-full">
+                        <div class="mod-nov-picker">
+                            <label class="mod-nov-opt mod-nov-blue">
+                                <input type="radio" asp-for="Nov" value="@((int)MezuniyyetNovu.Illik)" />
+                                <i class="bi bi-sun-fill"></i>
+                                <span>İllik</span>
+                                <small>Ödənişli illik məzuniyyət</small>
+                            </label>
+                            <label class="mod-nov-opt mod-nov-orange">
+                                <input type="radio" asp-for="Nov" value="@((int)MezuniyyetNovu.Xestelik)" />
+                                <i class="bi bi-heart-pulse-fill"></i>
+                                <span>Xəstəlik</span>
+                                <small>Tibbi arayışla</small>
+                            </label>
+                            <label class="mod-nov-opt mod-nov-purple">
+                                <input type="radio" asp-for="Nov" value="@((int)MezuniyyetNovu.Ezamiyyet)" />
+                                <i class="bi bi-airplane-fill"></i>
+                                <span>Ezamiyyət</span>
+                                <small>İş ezamiyyəti</small>
+                            </label>
+                        </div>
+                        <span asp-validation-for="Nov" class="mod-error"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Tarixlər -->
+            <div class="mod-form-section">
+                <div class="mod-section-title">
+                    <i class="bi bi-calendar-range"></i> Tarix Aralığı
+                </div>
+                <div class="mod-form-grid mod-grid-3">
+
+                    <div class="mod-form-field">
+                        <label asp-for="BaslamaTarixi" class="mod-label">
+                            Başlama Tarixi <span class="mod-req">*</span>
+                        </label>
+                        <div class="mod-input-wrap">
+                            <i class="bi bi-calendar3 mod-input-ico"></i>
+                            <input asp-for="BaslamaTarixi" type="date" class="mod-input" id="basTarix" />
+                        </div>
+                        <span asp-validation-for="BaslamaTarixi" class="mod-error"></span>
+                    </div>
+
+                    <div class="mod-form-field">
+                        <label asp-for="BitmeTarixi" class="mod-label">
+                            Bitmə Tarixi <span class="mod-req">*</span>
+                        </label>
+                        <div class="mod-input-wrap">
+                            <i class="bi bi-calendar3 mod-input-ico"></i>
+                            <input asp-for="BitmeTarixi" type="date" class="mod-input" id="sonTarix" />
+                        </div>
+                        <span asp-validation-for="BitmeTarixi" class="mod-error"></span>
+                    </div>
+
+                    <div class="mod-form-field">
+                        <label class="mod-label">Müddət</label>
+                        <div class="duration-preview" id="dayPreview">
+                            <i class="bi bi-calendar-week"></i>
+                            <span id="dayCount">—</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Section: Qeyd -->
+            <div class="mod-form-section">
+                <div class="mod-section-title">
+                    <i class="bi bi-chat-text"></i> Əlavə Qeyd
+                </div>
+                <div class="mod-form-grid mod-grid-1">
+                    <div class="mod-form-field">
+                        <label asp-for="Qeyd" class="mod-label">Qeyd (istəyə görə)</label>
+                        <textarea asp-for="Qeyd"
+                                  class="mod-textarea"
+                                  rows="4"
+                                  placeholder="Məzuniyyət haqqında əlavə məlumat..."></textarea>
+                        <span asp-validation-for="Qeyd" class="mod-error"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="mod-form-actions">
+                <a asp-action="Index" class="btn-mod-secondary">
+                    <i class="bi bi-x-lg"></i> Ləğv Et
+                </a>
+                <button type="submit" class="btn-mod-primary btn-mod-green">
+                    <i class="bi bi-send-fill"></i> Müraciət Göndər
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/hr-modules.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/hr/hr-modules.js" asp-append-version="true"></script>
+    <script>
+        const bas  = document.getElementById('basTarix');
+        const son  = document.getElementById('sonTarix');
+        const cnt  = document.getElementById('dayCount');
+
+        function calcDays() {
+            if (!bas.value || !son.value) { cnt.textContent = '—'; return; }
+            const d = (new Date(son.value) - new Date(bas.value)) / 86400000 + 1;
+            cnt.textContent = d > 0 ? d + ' gün' : 'Yanlış aralıq';
+        }
+
+        bas.addEventListener('change', calcDays);
+        son.addEventListener('change', calcDays);
+        calcDays();
+
+        // Növ picker visual
+        document.querySelectorAll('.mod-nov-opt input[type="radio"]').forEach(r => {
+            r.addEventListener('change', () => {
+                document.querySelectorAll('.mod-nov-opt').forEach(l => l.classList.remove('checked'));
+                r.closest('.mod-nov-opt').classList.add('checked');
+            });
+            if (r.checked) r.closest('.mod-nov-opt').classList.add('checked');
+        });
+    </script>
+}

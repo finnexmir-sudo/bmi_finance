@@ -1,0 +1,53 @@
+@*
+    _StatusBadge.cshtml - Universal status badge partial
+    Usage: <partial name="_StatusBadge" model="@badgeModel" />
+
+    Expects ViewData:
+    - Badge_Type (string) : "davamiyyet" | "mezuniyyet" | "maas" | "isci"
+    - Badge_Value (string): the enum value as string
+*@
+
+@using FinNex.Domain.Entities.HR
+
+@{
+    var badgeType  = ViewData["Badge_Type"]?.ToString()  ?? "";
+    var badgeValue = ViewData["Badge_Value"]?.ToString() ?? "";
+
+    string badgeClass = "badge-secondary";
+    string badgeText  = badgeValue;
+
+    switch (badgeType)
+    {
+        case "davamiyyet":
+            (badgeClass, badgeText) = badgeValue switch
+            {
+                "Isde"    => ("badge-success",   "İşdə"),
+                "Gecikme" => ("badge-warning",   "Gecikmə"),
+                "Qayib"   => ("badge-danger",    "Qayıb"),
+                _         => ("badge-secondary", badgeValue)
+            };
+            break;
+
+        case "mezuniyyet":
+            (badgeClass, badgeText) = badgeValue switch
+            {
+                "Gozlemede"    => ("badge-warning",   "Gözləmədə"),
+                "Tesdiqlenib"  => ("badge-success",   "Təsdiqlənilib"),
+                "ImtinaEdilib" => ("badge-danger",    "İmtina Edilib"),
+                _              => ("badge-secondary", badgeValue)
+            };
+            break;
+
+        case "mezuniyyet-nov":
+            (badgeClass, badgeText) = badgeValue switch
+            {
+                "Illik"      => ("badge-info",      "İllik"),
+                "Xestelik"   => ("badge-warning",   "Xəstəlik"),
+                "Ezamiyyet"  => ("badge-purple",    "Ezamiyyət"),
+                _            => ("badge-secondary", badgeValue)
+            };
+            break;
+    }
+}
+
+<span class="badge-pill @badgeClass">@badgeText</span>

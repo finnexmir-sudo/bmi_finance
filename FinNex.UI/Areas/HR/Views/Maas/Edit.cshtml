@@ -1,0 +1,201 @@
+@using FinNex.UI.Areas.HR.ViewModels
+@model MaasEditVM
+@{
+    ViewData["Title"] = "Maaşı Redaktə Et";
+    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
+
+    string[] months = { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+                         "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+}
+
+<div class="mod-form-wrapper">
+
+    <!-- Back -->
+    <a asp-action="Index" class="mod-back-link">
+        <i class="bi bi-arrow-left"></i> Maaş siyahısına qayıt
+    </a>
+
+    <div class="mod-form-card">
+
+        <!-- Header -->
+        <div class="mod-form-card-header">
+            <div class="mod-form-ico mod-ico-amber">
+                <i class="bi bi-pencil-fill"></i>
+            </div>
+            <div>
+                <h2 class="mod-form-title">Maaşı Redaktə Et</h2>
+                <p class="mod-form-subtitle">
+                    <i class="bi bi-person-fill"></i> @Model.IsciTamAd
+                </p>
+            </div>
+        </div>
+
+        <!-- Info banner -->
+        <div class="mod-edit-info-banner">
+            <div class="mod-edit-info-item">
+                <i class="bi bi-person-fill"></i>
+                <span>@Model.IsciTamAd</span>
+            </div>
+            <div class="mod-edit-info-sep"></div>
+            <div class="mod-edit-info-item">
+                <i class="bi bi-building"></i>
+                <span>@Model.Sobe</span>
+            </div>
+            <div class="mod-edit-info-sep"></div>
+            <div class="mod-edit-info-item">
+                <i class="bi bi-briefcase"></i>
+                <span>@Model.Vezife</span>
+            </div>
+        </div>
+
+        <form asp-action="Edit" method="post" id="editForm" novalidate>
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" class="mod-alert-danger"></div>
+
+            <!-- Section: Dövr -->
+            <div class="mod-form-section">
+                <div class="mod-section-title">
+                    <i class="bi bi-calendar3"></i> Hesablama Dövrü
+                </div>
+                <div class="mod-form-grid mod-grid-2">
+
+                    <div class="mod-form-field">
+                        <label asp-for="Il" class="mod-label">
+                            İl <span class="mod-req">*</span>
+                        </label>
+                        <div class="mod-input-wrap">
+                            <i class="bi bi-calendar4 mod-input-ico"></i>
+                            <input asp-for="Il" type="number" class="mod-input"
+                                   min="2000" max="2100" />
+                        </div>
+                        <span asp-validation-for="Il" class="mod-error"></span>
+                    </div>
+
+                    <div class="mod-form-field">
+                        <label asp-for="Ay" class="mod-label">
+                            Ay <span class="mod-req">*</span>
+                        </label>
+                        <div class="mod-select-wrap">
+                            <i class="bi bi-calendar3 mod-select-ico"></i>
+                            <select asp-for="Ay" class="mod-select">
+                                @for (int m = 1; m <= 12; m++)
+                                {
+                                    <option value="@m" selected="@(Model.Ay == m)">@months[m]</option>
+                                }
+                            </select>
+                        </div>
+                        <span asp-validation-for="Ay" class="mod-error"></span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Section: Maliyyə -->
+            <div class="mod-form-section">
+                <div class="mod-section-title">
+                    <i class="bi bi-currency-dollar"></i> Maliyyə Məlumatları
+                </div>
+                <div class="mod-form-grid mod-grid-3">
+
+                    <div class="mod-form-field">
+                        <label asp-for="EsasMaas" class="mod-label">
+                            Əsas Maaş <span class="mod-req">*</span>
+                        </label>
+                        <div class="mod-input-wrap mod-input-currency">
+                            <i class="bi bi-cash mod-input-ico"></i>
+                            <input asp-for="EsasMaas" type="number" class="mod-input"
+                                   step="0.01" min="0" id="esasMaas" />
+                            <span class="mod-currency-suffix">₼</span>
+                        </div>
+                        <span asp-validation-for="EsasMaas" class="mod-error"></span>
+                    </div>
+
+                    <div class="mod-form-field">
+                        <label asp-for="Elave" class="mod-label">Əlavə</label>
+                        <div class="mod-input-wrap mod-input-currency mod-input-plus">
+                            <i class="bi bi-plus-circle mod-input-ico"></i>
+                            <input asp-for="Elave" type="number" class="mod-input"
+                                   step="0.01" min="0" id="elave" />
+                            <span class="mod-currency-suffix">₼</span>
+                        </div>
+                        <span asp-validation-for="Elave" class="mod-error"></span>
+                    </div>
+
+                    <div class="mod-form-field">
+                        <label asp-for="Cerime" class="mod-label">Cərimə</label>
+                        <div class="mod-input-wrap mod-input-currency mod-input-minus">
+                            <i class="bi bi-dash-circle mod-input-ico"></i>
+                            <input asp-for="Cerime" type="number" class="mod-input"
+                                   step="0.01" min="0" id="cerime" />
+                            <span class="mod-currency-suffix">₼</span>
+                        </div>
+                        <span asp-validation-for="Cerime" class="mod-error"></span>
+                    </div>
+
+                </div>
+
+                <!-- Live total preview -->
+                <div class="maas-total-preview">
+                    <div class="maas-calc-row">
+                        <span>Əsas Maaş</span>
+                        <span id="prevBase">@Model.EsasMaas.ToString("N2") ₼</span>
+                    </div>
+                    <div class="maas-calc-row maas-calc-plus">
+                        <span>+ Əlavə</span>
+                        <span id="prevElave">@Model.Elave.ToString("N2") ₼</span>
+                    </div>
+                    <div class="maas-calc-row maas-calc-minus">
+                        <span>- Cərimə</span>
+                        <span id="prevCerime">@Model.Cerime.ToString("N2") ₼</span>
+                    </div>
+                    <div class="maas-calc-divider"></div>
+                    <div class="maas-calc-row maas-calc-total">
+                        <span>Ümumi Maaş</span>
+                        <span id="prevTotal">@((Model.EsasMaas + Model.Elave - Model.Cerime).ToString("N2")) ₼</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Actions -->
+            <div class="mod-form-actions">
+                <a asp-action="Details" asp-route-id="@Model.Id" class="btn-mod-secondary">
+                    <i class="bi bi-eye"></i> Detallara Qayıt
+                </a>
+                <button type="submit" class="btn-mod-primary btn-mod-purple">
+                    <i class="bi bi-check-lg"></i> Dəyişiklikləri Saxla
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/hr-modules.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/hr/hr-modules.js" asp-append-version="true"></script>
+    <script>
+        const esasEl   = document.getElementById('esasMaas');
+        const elaveEl  = document.getElementById('elave');
+        const cerimeEl = document.getElementById('cerime');
+
+        function calc() {
+            const esas   = parseFloat(esasEl.value)   || 0;
+            const elave  = parseFloat(elaveEl.value)  || 0;
+            const cerime = parseFloat(cerimeEl.value) || 0;
+            const total  = esas + elave - cerime;
+
+            document.getElementById('prevBase').textContent   = esas.toFixed(2)   + ' ₼';
+            document.getElementById('prevElave').textContent  = elave.toFixed(2)  + ' ₼';
+            document.getElementById('prevCerime').textContent = cerime.toFixed(2) + ' ₼';
+            document.getElementById('prevTotal').textContent  = total.toFixed(2)  + ' ₼';
+        }
+
+        [esasEl, elaveEl, cerimeEl].forEach(el => el.addEventListener('input', calc));
+    </script>
+}

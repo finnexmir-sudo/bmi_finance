@@ -1,192 +1,238 @@
-﻿@using FinNex.Application.DTOs.HR.Davamiyyet
+﻿@using FinNex.UI.Areas.HR.ViewModels
 @using FinNex.Domain.Entities.HR
-@model IEnumerable<DavamiyyetListDto>
+@model DavamiyyetIndexVM
 @{
     ViewData["Title"] = "Davamiyyət";
     Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
+
+    ViewData["FilterBar_Action"]       = "Index";
+    ViewData["FilterBar_ShowSearch"]   = true;
+    ViewData["FilterBar_ShowDept"]     = true;
+    ViewData["FilterBar_ShowDate"]     = true;
+    ViewData["FilterBar_ShowStatus"]   = true;
+    ViewData["FilterBar_SearchTerm"]   = Model.SearchTerm;
+    ViewData["FilterBar_SobeFilter"]   = Model.SobeFilter;
+    ViewData["FilterBar_BasTarix"]     = Model.BasTarix?.ToString("yyyy-MM-dd");
+    ViewData["FilterBar_SonTarix"]     = Model.SonTarix?.ToString("yyyy-MM-dd");
+    ViewData["FilterBar_StatusFilter"] = Model.StatusFilter?.ToString();
+    ViewData["FilterBar_DeptOptions"]  = Model.SobeLer;
+    ViewData["FilterBar_AddUrl"]       = Url.Action("Create");
+    ViewData["FilterBar_AddLabel"]     = "Yeni Qeyd";
+    ViewData["FilterBar_StatusOptions"] = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+    {
+        new() { Value = "Isde",    Text = "İşdə"    },
+        new() { Value = "Gecikme", Text = "Gecikmə" },
+        new() { Value = "Qayib",   Text = "Qayıb"   },
+    };
+
+    ViewData["Pagination_CurrentPage"] = Model.CurrentPage;
+    ViewData["Pagination_TotalPages"]  = Model.TotalPages;
+    ViewData["Pagination_Action"]      = "Index";
 }
 
 <div class="page-container">
-    <!-- Header -->
-    <div class="page-header">
+
+    <!-- Page Header -->
+    <div class="mod-page-header">
         <div>
-            <h1 class="page-title">Davamiyyət İdarəetməsi</h1>
-            <p class="page-subtitle">İşçilərin davamiyyət qeydləri</p>
-        </div>
-        <div class="header-actions">
-            <input type="date" id="dateFilter" class="filter-date" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
-            <select id="statusFilter" class="filter-select">
-                <option value="">Bütün statuslar</option>
-                <option value="0">İşdə</option>
-                <option value="1">Gecikmə</option>
-                <option value="2">Qayıb</option>
-                <option value="3">Məzuniyyət</option>
-                <option value="4">Xəstəlik</option>
-            </select>
-            <a asp-action="Create" class="btn-add">
-                <i class="bi bi-plus-lg"></i> Yeni Qeyd
-            </a>
+            <h1 class="mod-page-title">
+                <i class="bi bi-calendar-check-fill title-icon"></i>
+                Davamiyyət İdarəetməsi
+            </h1>
+            <p class="mod-page-subtitle">İşçilərin gündəlik davamiyyət qeydləri</p>
         </div>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon stat-green">
-
-                <i class="bi bi-check-circle-fill"></i>
-            </div>
-            <div class="stat-content">
-                <div class="stat-label">İşdə</div>
-                <div class="stat-value">@ViewBag.IsdeSayi</div>
+    <!-- Stats -->
+    <div class="mod-stats-grid">
+        <div class="mod-stat-card mod-stat-green">
+            <div class="mod-stat-ico"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="mod-stat-body">
+                <div class="mod-stat-val">@Model.IsdeSayi</div>
+                <div class="mod-stat-lbl">İşdə</div>
             </div>
         </div>
-
-        <div class="stat-card">
-            <div class="stat-icon stat-orange">
-                <i class="bi bi-clock-fill"></i>
-            </div>
-            <div class="stat-content">
-                <div class="stat-label">Gecikmə</div>
-                <div class="stat-value">@ViewBag.GecikmeliSayi</div>
+        <div class="mod-stat-card mod-stat-orange">
+            <div class="mod-stat-ico"><i class="bi bi-clock-fill"></i></div>
+            <div class="mod-stat-body">
+                <div class="mod-stat-val">@Model.GecikmeliSayi</div>
+                <div class="mod-stat-lbl">Gecikmə</div>
             </div>
         </div>
-
-        <div class="stat-card">
-            <div class="stat-icon stat-red">
-                <i class="bi bi-x-circle-fill"></i>
-            </div>
-            <div class="stat-content">
-                <div class="stat-label">Qayıb</div>
-                <div class="stat-value">@ViewBag.QayibSayi</div>
+        <div class="mod-stat-card mod-stat-red">
+            <div class="mod-stat-ico"><i class="bi bi-x-circle-fill"></i></div>
+            <div class="mod-stat-body">
+                <div class="mod-stat-val">@Model.QayibSayi</div>
+                <div class="mod-stat-lbl">Qayıb</div>
             </div>
         </div>
-
-        <div class="stat-card">
-            <div class="stat-icon stat-purple">
-                <i class="bi bi-card-checklist"></i>
-            </div>
-            <div class="stat-content">
-                <div class="stat-label">Ümumi Qeyd</div>
-                <div class="stat-value">@Model?.Count() ?? 0</div>
+        <div class="mod-stat-card mod-stat-blue">
+            <div class="mod-stat-ico"><i class="bi bi-card-checklist"></i></div>
+            <div class="mod-stat-body">
+                <div class="mod-stat-val">@Model.UmumiSayi</div>
+                <div class="mod-stat-lbl">Ümumi</div>
             </div>
         </div>
     </div>
 
-    <!-- Table Card -->
-    <div class="table-card">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>İşçi</th>
-                    <th>Tarix</th>
-                    <th>Giriş</th>
-                    <th>Çıxış</th>
-                    <th>İş Saatı</th>
-                    <th>Status</th>
-                    <th class="text-end">Əməliyyatlar</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (Model != null && Model.Any())
-                {
-                    @foreach (var item in Model)
-                    {
+    <!-- Filter Bar -->
+    <partial name="_FilterBar" />
+
+    <!-- Table -->
+    <div class="mod-table-card">
+        @if (Model.Items != null && Model.Items.Any())
+        {
+            <div class="mod-table-header">
+                <span class="mod-table-count">
+                    <strong>@Model.Items.Count()</strong> qeyd göstərilir
+                </span>
+            </div>
+            <div class="table-responsive">
+                <table class="mod-table">
+                    <thead>
                         <tr>
-                            <td>
-                                <div class="employee-cell">
-                                    <div class="employee-avatar">@item.IsciTamAd.Substring(0, 2).ToUpper()</div>
-                                    <div class="cell-main">@item.IsciTamAd</div>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="date-text">@item.Tarix.ToString("dd.MM.yyyy")</span>
-                            </td>
-                            <td>
-                                @if (item.GirisVaxti.HasValue)
-                                {
-                                    <span class="time-text">@item.GirisVaxti.Value.ToString("HH:mm")</span>
-                                }
-                                else
-                                {
-                                    <span class="no-data">--:--</span>
-                                }
-                            </td>
-                            <td>
-                                @if (item.CixisVaxti.HasValue)
-                                {
-                                    <span class="time-text">@item.CixisVaxti.Value.ToString("HH:mm")</span>
-                                }
-                                else
-                                {
-                                    <span class="no-data">--:--</span>
-                                }
-                            </td>
-                            <td>
-                                @if (item.GirisVaxti.HasValue && item.CixisVaxti.HasValue)
-                                {
-                                    var duration = item.CixisVaxti.Value - item.GirisVaxti.Value;
-                                    <span class="duration-text">@duration.Hours saat @duration.Minutes dəq</span>
-                                }
-                                else
-                                {
-                                    <span class="no-data">---</span>
-                                }
-                            </td>
-                            <td>
-                                @switch (item.Status)
-                                {
-                                    case DavamiyyetStatus.Isde:
-                                        <span class="badge-success">İşdə</span>
-                                        break;
-                                    case DavamiyyetStatus.Gecikme:
-                                        <span class="badge-warning">Gecikmə</span>
-                                        break;
-                                    case DavamiyyetStatus.Qayib:
-                                        <span class="badge-danger">Qayıb</span>
-                                        break;
-                                    @* case DavamiyyetStatus.Mezuniyyet:
-                                        <span class="badge-info">Məzuniyyət</span>
-                                        break;
-                                    case DavamiyyetStatus.Xestelik:
-                                        <span class="badge-secondary">Xəstəlik</span>
-                                        break; *@
-                                }
-                            </td>
-                            <td class="text-end">
-                                <div class="action-btns">
-                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn-icon" title="Bax">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn-icon" title="Redaktə">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <button type="button" class="btn-icon btn-delete" onclick="deleteDavamiyyet(@item.Id)" title="Sil">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
+                            <th>İşçi</th>
+                            <th>Tarix</th>
+                            <th>Giriş</th>
+                            <th>Çıxış</th>
+                            <th>İş Saatı</th>
+                            <th>Status</th>
+                            <th class="text-end">Əməliyyatlar</th>
                         </tr>
-                    }
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="7" class="text-center empty-state">
-                            <i class="bi bi-inbox"></i>
-                            <p>Heç bir davamiyyət qeydi tapılmadı</p>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="emp-cell">
+                                        <div class="emp-av">@item.IsciTamAd[..Math.Min(2, item.IsciTamAd.Length)].ToUpper()</div>
+                                        <span class="emp-name">@item.IsciTamAd</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="date-chip">
+                                        <i class="bi bi-calendar3"></i>
+                                        @item.Tarix.ToString("dd.MM.yyyy")
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (item.GirisVaxti.HasValue)
+                                    {
+                                        <span class="time-chip time-in">
+                                            <i class="bi bi-box-arrow-in-right"></i>
+                                            @item.GirisVaxti.Value.ToString("HH:mm")
+                                        </span>
+                                    }
+                                    else { <span class="no-data">--:--</span> }
+                                </td>
+                                <td>
+                                    @if (item.CixisVaxti.HasValue)
+                                    {
+                                        <span class="time-chip time-out">
+                                            <i class="bi bi-box-arrow-right"></i>
+                                            @item.CixisVaxti.Value.ToString("HH:mm")
+                                        </span>
+                                    }
+                                    else { <span class="no-data">--:--</span> }
+                                </td>
+                                <td>
+                                    @if (item.GirisVaxti.HasValue && item.CixisVaxti.HasValue)
+                                    {
+                                        var dur = item.CixisVaxti.Value - item.GirisVaxti.Value;
+                                        <span class="duration-chip">
+                                            <i class="bi bi-hourglass-split"></i>
+                                            @dur.Hours s @dur.Minutes dəq
+                                        </span>
+                                    }
+                                    else { <span class="no-data">---</span> }
+                                </td>
+                                <td>
+                                    @{
+                                        ViewData["Badge_Type"]  = "davamiyyet";
+                                        ViewData["Badge_Value"] = item.Status.ToString();
+                                    }
+                                    <partial name="_StatusBadge" />
+                                </td>
+                                <td class="text-end">
+                                    <div class="mod-action-btns">
+                                        <a asp-action="Details" asp-route-id="@item.Id"
+                                           class="mod-btn-icon mod-btn-view" title="Bax">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@item.Id"
+                                           class="mod-btn-icon mod-btn-edit" title="Redaktə">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button"
+                                                class="mod-btn-icon mod-btn-delete"
+                                                onclick="confirmDelete(@item.Id, '@item.IsciTamAd')"
+                                                title="Sil">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="mod-table-footer">
+                <partial name="_Pagination" />
+            </div>
+        }
+        else
+        {
+            @{
+                ViewData["EmptyState_Icon"]     = "bi-calendar-x";
+                ViewData["EmptyState_Title"]    = "Davamiyyət qeydi tapılmadı";
+                ViewData["EmptyState_Sub"]      = "Seçilmiş filtrə uyğun heç bir qeyd yoxdur";
+                ViewData["EmptyState_AddUrl"]   = Url.Action("Create");
+                ViewData["EmptyState_AddLabel"] = "İlk Qeydi Əlavə Et";
+            }
+            <partial name="_EmptyState" />
+        }
+    </div>
+
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content mod-modal">
+            <div class="modal-header mod-modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Silmə Təsdiqi
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0"><strong id="deleteEmpName"></strong> işçisinin qeydi silinəcək. Davam edirsiniz?</p>
+            </div>
+            <div class="modal-footer mod-modal-footer">
+                <button type="button" class="btn-mod-secondary" data-bs-dismiss="modal">Ləğv Et</button>
+                <form id="deleteForm" method="post" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-mod-danger"><i class="bi bi-trash"></i> Sil</button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/hr/davamiyyet-list.css" />
+    <link rel="stylesheet" href="~/css/hr/davamiyyet-list.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hr/hr-modules.css" asp-append-version="true" />
 }
 
 @section Scripts {
-    <script src="~/js/hr/davamiyyet-list.js"></script>
+    <script src="~/js/hr/davamiyyet-list.js" asp-append-version="true"></script>
+    <script src="~/js/hr/hr-modules.js" asp-append-version="true"></script>
+    <script>
+        function confirmDelete(id, name) {
+            document.getElementById('deleteEmpName').textContent = name;
+            document.getElementById('deleteForm').action = '@Url.Action("Delete")/' + id;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+    </script>
 }

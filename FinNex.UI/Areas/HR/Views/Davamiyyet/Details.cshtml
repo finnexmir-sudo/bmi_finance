@@ -1,0 +1,203 @@
+@using FinNex.UI.Areas.HR.ViewModels
+@using FinNex.Domain.Entities.HR
+@model DavamiyyetDetailVM
+@{
+    ViewData["Title"] = "Davamiyyət Detalları";
+    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
+}
+
+<div class="mod-detail-wrapper">
+
+    <!-- Back -->
+    <a asp-action="Index" class="mod-back-link">
+        <i class="bi bi-arrow-left"></i> Davamiyyət siyahısına qayıt
+    </a>
+
+    <!-- Hero card -->
+    <div class="mod-detail-hero">
+        <div class="mod-detail-hero-left">
+            <div class="mod-detail-avatar">
+                @Model.IsciTamAd[..Math.Min(2, Model.IsciTamAd.Length)].ToUpper()
+            </div>
+            <div>
+                <div class="mod-detail-name">@Model.IsciTamAd</div>
+                <div class="mod-detail-meta">
+                    <span><i class="bi bi-building"></i> @Model.Sobe</span>
+                    <span><i class="bi bi-briefcase"></i> @Model.Vezife</span>
+                </div>
+            </div>
+        </div>
+        <div class="mod-detail-hero-right">
+            @{
+                ViewData["Badge_Type"]  = "davamiyyet";
+                ViewData["Badge_Value"] = Model.Status.ToString();
+            }
+            <partial name="_StatusBadge" />
+            <div class="mod-detail-id">#@Model.Id</div>
+        </div>
+    </div>
+
+    <!-- Info cards -->
+    <div class="mod-detail-grid">
+
+        <!-- Tarix & Vaxt -->
+        <div class="mod-info-card">
+            <div class="mod-info-card-title">
+                <i class="bi bi-calendar3"></i> Tarix Məlumatları
+            </div>
+            <div class="mod-info-rows">
+                <div class="mod-info-row">
+                    <span class="mod-info-lbl">Tarix</span>
+                    <span class="mod-info-val date-chip">
+                        <i class="bi bi-calendar3"></i>
+                        @Model.Tarix.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-Latn-AZ"))
+                    </span>
+                </div>
+                <div class="mod-info-row">
+                    <span class="mod-info-lbl">Giriş Vaxtı</span>
+                    <span class="mod-info-val">
+                        @if (Model.GirisVaxti.HasValue)
+                        {
+                            <span class="time-chip time-in">
+                                <i class="bi bi-box-arrow-in-right"></i>
+                                @Model.GirisVaxti.Value.ToString("HH:mm")
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="no-data">Qeydə alınmayıb</span>
+                        }
+                    </span>
+                </div>
+                <div class="mod-info-row">
+                    <span class="mod-info-lbl">Çıxış Vaxtı</span>
+                    <span class="mod-info-val">
+                        @if (Model.CixisVaxti.HasValue)
+                        {
+                            <span class="time-chip time-out">
+                                <i class="bi bi-box-arrow-right"></i>
+                                @Model.CixisVaxti.Value.ToString("HH:mm")
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="no-data">Qeydə alınmayıb</span>
+                        }
+                    </span>
+                </div>
+                <div class="mod-info-row">
+                    <span class="mod-info-lbl">İş Müddəti</span>
+                    <span class="mod-info-val">
+                        @if (Model.IsSaati.HasValue)
+                        {
+                            <span class="duration-chip">
+                                <i class="bi bi-hourglass-split"></i>
+                                @Model.IsSaati.Value.Hours saat @Model.IsSaati.Value.Minutes dəqiqə
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="no-data">---</span>
+                        }
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="mod-info-card">
+            <div class="mod-info-card-title">
+                <i class="bi bi-flag"></i> Status Məlumatları
+            </div>
+            <div class="mod-info-rows">
+                <div class="mod-info-row">
+                    <span class="mod-info-lbl">Cari Status</span>
+                    <span class="mod-info-val">
+                        @{
+                            ViewData["Badge_Type"]  = "davamiyyet";
+                            ViewData["Badge_Value"] = Model.Status.ToString();
+                        }
+                        <partial name="_StatusBadge" />
+                    </span>
+                </div>
+                <div class="mod-info-row">
+                    <span class="mod-info-lbl">Qeyd №</span>
+                    <span class="mod-info-val fw-bold">#@Model.Id</span>
+                </div>
+            </div>
+
+            <!-- Timeline placeholder -->
+            <div class="mod-timeline-placeholder">
+                <div class="mod-timeline-title">
+                    <i class="bi bi-clock-history"></i> Tarixçə
+                </div>
+                <div class="mod-timeline-item mod-tl-active">
+                    <div class="mod-tl-dot"></div>
+                    <div class="mod-tl-body">
+                        <div class="mod-tl-label">Qeyd yaradıldı</div>
+                        <div class="mod-tl-sub">@Model.Tarix.ToString("dd.MM.yyyy")</div>
+                    </div>
+                </div>
+                <div class="mod-timeline-item">
+                    <div class="mod-tl-dot mod-tl-dot-empty"></div>
+                    <div class="mod-tl-body">
+                        <div class="mod-tl-label mod-tl-muted">Son dəyişiklik</div>
+                        <div class="mod-tl-sub mod-tl-muted">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Actions -->
+    <div class="mod-detail-actions">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn-mod-primary">
+            <i class="bi bi-pencil"></i> Redaktə Et
+        </a>
+        <button type="button" class="btn-mod-danger"
+                onclick="confirmDelete(@Model.Id)">
+            <i class="bi bi-trash"></i> Sil
+        </button>
+        <a asp-action="Index" class="btn-mod-secondary">
+            <i class="bi bi-list-ul"></i> Siyahıya Qayıt
+        </a>
+    </div>
+
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content mod-modal">
+            <div class="modal-header mod-modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Silmə Təsdiqi
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Bu davamiyyət qeydi silinəcək. Davam edirsiniz?</p>
+            </div>
+            <div class="modal-footer mod-modal-footer">
+                <button type="button" class="btn-mod-secondary" data-bs-dismiss="modal">Ləğv Et</button>
+                <form asp-action="Delete" asp-route-id="@Model.Id" method="post" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-mod-danger"><i class="bi bi-trash"></i> Sil</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/hr-modules.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script>
+        function confirmDelete(id) {
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+    </script>
+}
