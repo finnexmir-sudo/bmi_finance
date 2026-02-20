@@ -1,0 +1,62 @@
+﻿@using FinNex.Application.DTOs.Structur
+@model DepartmentCreateDto
+@{
+    ViewData["Title"] = "Yeni Departament";
+    Layout = "_HRLayout";
+}
+
+<div class="create-wrapper">
+    <div class="create-card">
+        <div class="card-header">
+            <div class="header-icon">
+                <i class="bi bi-briefcase-fill"></i>
+            </div>
+            <div>
+                <h2 class="card-title">Yeni Departament Əlavə Et</h2>
+                <p class="card-subtitle">Departament məlumatlarını daxil edin</p>
+            </div>
+        </div>
+
+        <form asp-action="Create" method="post" id="vezifeForm">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="form-grid">
+                <!-- Departament Adı -->
+                <div class="form-field full-width">
+                    <label asp-for="Ad">Departament Adı <span class="req">*</span></label>
+                    <input asp-for="Ad" class="form-input" placeholder="Məsələn: Kredit, Kassa" />
+                    <span asp-validation-for="Ad" class="error-text"></span>
+                </div>
+                <!-- Açıqlama -->
+                <div class="form-field full-width">
+                    <label asp-for="Aciqlama">Açıqlama</label>
+                    <textarea asp-for="Aciqlama"
+                              class="form-textarea"
+                              rows="4"
+                              placeholder="Departamentin funksiyası və məsuliyyət sahəsi haqqında qısa məlumat..."></textarea>
+                    <span asp-validation-for="Aciqlama" class="error-text"></span>
+                </div>
+
+                
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">
+                    <i class="bi bi-check-lg"></i> Yadda Saxla
+                </button>
+                <a asp-action="Index" class="btn-secondary">
+                    <i class="bi bi-x-lg"></i> Ləğv Et
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/vezife-create.css" />
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/hr/vezife-create.js"></script>
+}

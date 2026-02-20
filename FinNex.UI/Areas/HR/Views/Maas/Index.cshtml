@@ -1,0 +1,178 @@
+﻿@using FinNex.Application.DTOs.HR.Maas
+@model IEnumerable<MaasListDto>
+@{
+    ViewData["Title"] = "Maaşlar";
+    Layout = "_HRLayout";
+}
+
+<div class="page-container">
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Maaş İdarəetməsi</h1>
+            <p class="page-subtitle">İşçilərin maaş məlumatları</p>
+        </div>
+        <div class="header-actions">
+            <select id="monthFilter" class="filter-select">
+                <option value="">Bütün aylar</option>
+                <option value="1">Yanvar</option>
+                <option value="2">Fevral</option>
+                <option value="3">Mart</option>
+                <option value="4">Aprel</option>
+                <option value="5">May</option>
+                <option value="6">İyun</option>
+                <option value="7">İyul</option>
+                <option value="8">Avqust</option>
+                <option value="9">Sentyabr</option>
+                <option value="10">Oktyabr</option>
+                <option value="11">Noyabr</option>
+                <option value="12">Dekabr</option>
+            </select>
+            <select id="yearFilter" class="filter-select">
+                <option value="">Bütün illər</option>
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+            </select>
+            <a asp-action="Create" class="btn-add">
+                <i class="bi bi-plus-lg"></i> Maaş Hesabla
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon stat-purple">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">@ViewBag.UmumiMaas?.ToString("N2") AZN</div>
+                <div class="stat-label">Ümumi Maaş</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+        <div class="stat-icon stat-pink">
+            <i class="bi bi-plus-circle"></i>
+        </div>
+                <i class="bi bi-plus-circle"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">@ViewBag.UmumiElave?.ToString("N2") AZN</div>
+                <div class="stat-label">Əlavələr</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+    <div class="stat-icon stat-orange">
+        <i class="bi bi-dash-circle"></i>
+    </div>
+                <i class="bi bi-dash-circle"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">@ViewBag.UmumiCerime?.ToString("N2") AZN</div>
+                <div class="stat-label">Cərimələr</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+    <div class="stat-icon stat-cyan">
+        <i class="bi bi-people"></i>
+    </div>
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">@Model?.Count() ?? 0</div>
+                <div class="stat-label">İşçi Sayı</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="table-card">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>İşçi</th>
+                    <th>Dövr</th>
+                    <th>Əsas Maaş</th>
+                    <th>Əlavə</th>
+                    <th>Cərimə</th>
+                    <th>Ümumi</th>
+                    <th class="text-end">Əməliyyatlar</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="employee-cell">
+                                    <div class="employee-avatar">@item.IsciTamAd.Substring(0, 2).ToUpper()</div>
+                                    <div>
+                                        <div class="cell-main">@item.IsciTamAd</div>
+                                        <div class="cell-sub">@item.Sobe</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge-period">@item.AyAd @item.Il</span>
+                            </td>
+                            <td>
+                                <span class="amount">@item.EsasMaas.ToString("N2") ₼</span>
+                            </td>
+                            <td>
+                                <span class="amount-success">+@item.Elave.ToString("N2") ₼</span>
+                            </td>
+                            <td>
+                                <span class="amount-danger">-@item.Cerime.ToString("N2") ₼</span>
+                            </td>
+                            <td>
+                                <span class="amount-total">@item.UmumiMaas.ToString("N2") ₼</span>
+                            </td>
+                            <td class="text-end">
+                                <div class="action-btns">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn-icon" title="Bax">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn-icon" title="Redaktə">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                <button type="button"
+                                        class="btn-icon btn-delete"
+                                        data-id="@item.Id"
+                                        title="Sil">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>Heç bir maaş qeydi tapılmadı</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/maas-list.css" />
+}
+
+@section Scripts {
+    <script src="~/js/hr/maas-list.js"></script>
+}

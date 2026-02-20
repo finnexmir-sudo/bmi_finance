@@ -1,0 +1,262 @@
+/* ================================================================
+   PAYMENT CREATE PAGE
+================================================================ */
+
+/* ── Wrapper ─────────────────────────────────────────────────── */
+.payment-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 16px 64px;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.payment-page .payment-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.payment-page .payment-title h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1E293B;
+    margin: 0 0 4px;
+}
+
+.payment-page .payment-title span {
+    font-size: 13px;
+    color: #64748B;
+}
+
+/* ── Section card ────────────────────────────────────────────── */
+.payment-page .payment-section {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 2px 12px rgba(0,0,0,.05);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.payment-page .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: linear-gradient(90deg, #0F766E, #0D9488);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.payment-page .section-body {
+    padding: 20px;
+}
+
+/* ── Two-column grid ─────────────────────────────────────────── */
+.payment-page .two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* ── Form-group box ──────────────────────────────────────────── */
+.payment-page .form-group-box {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ── Group label (tag + name) ────────────────────────────────── */
+.payment-page .group-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 2px;
+}
+
+.payment-page .group-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 22px;
+    border-radius: 6px;
+    background: #0D9488;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .4px;
+    padding: 0 6px;
+    flex-shrink: 0;
+}
+
+.payment-page .group-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+}
+
+/* ── Field label ─────────────────────────────────────────────── */
+.payment-page .field-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* ── Form controls ───────────────────────────────────────────── */
+.payment-page .form-control,
+.payment-page .form-select {
+    height: 38px;
+    font-size: 13.5px;
+    border-radius: 8px;
+    border: 1px solid #D1D5DB;
+    padding: 0 10px;
+}
+
+.payment-page textarea.form-control {
+    height: auto;
+    padding: 8px 10px;
+}
+
+.payment-page .form-control:focus,
+.payment-page .form-select:focus {
+    border-color: #0D9488;
+    box-shadow: 0 0 0 3px rgba(13,148,136,.12);
+}
+
+.payment-page .form-control[readonly] {
+    background: #F1F5F9;
+    color: #475569;
+}
+
+/* ── Field row: input + button(s) yan-yana ───────────────────── */
+.payment-page .field-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.payment-page .field-row .form-control {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Axtar düyməsi */
+.payment-page .btn-search {
+    height: 38px;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 8px;
+    background: #0F766E;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background .18s;
+}
+
+.payment-page .btn-search:hover {
+    background: #0D9488;
+}
+
+/* +Yeni düyməsi (icon-only) */
+.payment-page .btn-add {
+    height: 38px;
+    width: 38px;
+    padding: 0;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: #E0F2FE;
+    color: #0284C7;
+    border: 1px solid #BAE6FD;
+    font-size: 16px;
+    text-decoration: none;
+    transition: background .18s;
+}
+
+.payment-page .btn-add:hover {
+    background: #BAE6FD;
+    color: #0284C7;
+}
+
+/* ── Xəta mesajı ─────────────────────────────────────────────── */
+.payment-page .field-error {
+    color: #DC2626;
+    font-size: 12px;
+    padding: 4px 6px;
+    background: #FEF2F2;
+    border-radius: 6px;
+    border-left: 3px solid #DC2626;
+}
+
+/* ── Two-field (2 input yan-yana) ────────────────────────────── */
+.payment-page .two-field {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+/* ── Amount row ──────────────────────────────────────────────── */
+.payment-page .amount-row {
+    display: grid;
+    grid-template-columns: 140px 200px 1fr;
+    gap: 16px;
+    align-items: end;
+}
+
+/* ── Actions ─────────────────────────────────────────────────── */
+.payment-page .form-actions {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 32px;
+}
+
+/* ── Meta chips ──────────────────────────────────────────────── */
+.meta-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    background: #E0F2FE;
+    color: #0284C7;
+    font-weight: 500;
+    text-decoration: none;
+    gap: 4px;
+}
+
+.meta-chip-link { transition: background .18s; cursor: pointer; }
+.meta-chip-link:hover { background: #BAE6FD; color: #0284C7; }
+
+/* ── Mobile ──────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .payment-page .two-column,
+    .payment-page .amount-row {
+        grid-template-columns: 1fr;
+    }
+
+    .payment-page .two-field {
+        grid-template-columns: 1fr;
+    }
+}

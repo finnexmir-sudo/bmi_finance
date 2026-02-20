@@ -1,0 +1,223 @@
+@model SenedCreateVM
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="sd-form-card">
+            <div class="sd-form-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="sd-detail-icon" style="width:36px;height:36px;font-size:1rem;">
+                        <i class="bi bi-file-earmark-plus"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Yeni Sənəd Yaradın</div>
+                        <div class="text-muted" style="font-size:0.75rem;font-weight:400;">
+                            Bütün məcburi sahələri doldurun
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sd-form-body">
+
+                <div asp-validation-summary="All"
+                     class="alert alert-danger"></div>
+
+                <form asp-area="SenedDovriyyesi"
+                      asp-controller="Sened"
+                      asp-action="Yarat"
+                      method="post"
+                      enctype="multipart/form-data">
+
+                    @Html.AntiForgeryToken()
+
+                    <!-- ========================= -->
+                    <!-- 1️⃣ Kateqoriya -->
+                    <!-- ========================= -->
+                    <div class="sd-form-section">
+                        <div class="sd-form-section-title">
+                            <span class="sd-step-number">1</span>
+                            Kateqoriya Seçimi
+                        </div>
+
+                        <div class="row g-3">
+
+                            <!-- Şöbə -->
+                            <div class="col-md-6">
+                                <label class="form-label">Şöbə *</label>
+                                <select asp-for="SobeId"
+                                        class="form-select"
+                                        id="sobeSelect">
+                                    <option value="">Şöbə seçin...</option>
+                                    @foreach (var s in Model.Sobeler)
+                                    {
+                                        <option value="@s.Id">@s.Ad</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="SobeId"
+                                      class="text-danger small"></span>
+                            </div>
+
+                            <!-- Sənəd Növü -->
+                            <div class="col-md-6">
+                                <label class="form-label">Sənəd Növü *</label>
+                                <div class="d-flex gap-2">
+                                    <select asp-for="SenedNovuId"
+                                            class="form-select"
+                                            id="senedNovuSelect">
+                                        <option value="">Əvvəlcə şöbə seçin...</option>
+                                    </select>
+
+                                    <button type="button"
+                                            class="btn btn-outline-primary"
+                                            id="openNovBtn">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </button>
+                                </div>
+                                <span asp-validation-for="SenedNovuId"
+                                      class="text-danger small"></span>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- ========================= -->
+                    <!-- 2️⃣ Məlumatlar -->
+                    <!-- ========================= -->
+                    <div class="sd-form-section">
+                        <div class="sd-form-section-title">
+                            <span class="sd-step-number">2</span>
+                            Sənəd Məlumatları
+                        </div>
+
+                        <div class="row g-3">
+
+                            <div class="col-12">
+                                <label class="form-label">Başlıq *</label>
+                                <input asp-for="Basliq"
+                                       class="form-control"
+                                       placeholder="Sənədin başlığını daxil edin..." />
+                                <span asp-validation-for="Basliq"
+                                      class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Açar Söz *</label>
+                                <input asp-for="AcarSoz"
+                                       class="form-control"
+                                       placeholder="Vergüllə ayırın..." />
+                                <span asp-validation-for="AcarSoz"
+                                      class="text-danger small"></span>
+                            </div>
+
+                        
+
+                        </div>
+                    </div>
+
+                    <!-- ========================= -->
+                    <!-- 3️⃣ Fayl -->
+                    <!-- ========================= -->
+                    <div class="sd-form-section">
+                        <div class="sd-form-section-title">
+                            <span class="sd-step-number">3</span>
+                            Fayl Yükləmə
+                        </div>
+
+                        <div class="sd-file-drop-zone">
+
+                            <input asp-for="Fayl"
+                                   type="file"
+                                   class="form-control"
+                                   accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt,.zip,.rar" />
+
+                            <span asp-validation-for="Fayl"
+                                  class="text-danger small"></span>
+
+                            <div class="form-text">
+                                Maksimum 25MB.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ========================= -->
+                    <!-- Actions -->
+                    <!-- ========================= -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <a asp-area="SenedDovriyyesi"
+                           asp-controller="Sened"
+                           asp-action="Index"
+                           class="btn btn-outline-secondary">
+                            Geri
+                        </a>
+
+                        <button type="submit"
+                                class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>
+                            Sənədi Yarat
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================= -->
+<!-- Modal – Yeni Sənəd Növü -->
+<!-- ========================= -->
+<div class="modal fade" id="novModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Yeni Sənəd Növü
+                </h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div id="novError"
+                     class="alert alert-danger d-none"></div>
+
+                <div class="mb-3">
+                    <label class="form-label">Kod *</label>
+                    <input type="text"
+                           id="novKod"
+                           class="form-control"
+                           style="text-transform: uppercase;" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Ad *</label>
+                    <input type="text"
+                           id="novAd"
+                           class="form-control" />
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal">
+                    Ləğv et
+                </button>
+
+                <button type="button"
+                        class="btn btn-primary"
+                        id="saveBtn">
+                    Saxla
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/sened-yarat.js" asp-append-version="true"></script>
+}
+    

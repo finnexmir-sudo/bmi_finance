@@ -1,0 +1,140 @@
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var activePage = ViewData["ActivePage"]?.ToString() ?? "";
+    var currentUser = User.Identity?.Name ?? "User";
+    var initials = currentUser.Length >= 2
+        ? currentUser.Substring(0, 2).ToUpper()
+        : currentUser.ToUpper();
+}
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Sənəd Dövriyyəsi | BMI Finance</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/sened-dovriyyesi.css" asp-append-version="true" />
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="sd-body">
+
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sd-sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="sd-sidebar" id="sdSidebar">
+
+        <a class="sd-sidebar-brand" asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index">
+            <img src="~/images/Logobank.jpg" alt="BMI" class="brand-icon" />
+            <div>
+                <div class="brand-title">BMI Finance</div>
+                <div class="brand-subtitle">Sənəd Dövriyyəsi</div>
+            </div>
+        </a>
+
+        <nav class="sd-sidebar-nav">
+            <div class="nav-section">Əsas</div>
+
+            <a class="nav-link @(activePage == "Dashboard" ? "active" : "")"
+               asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index">
+                <i class="bi bi-grid-1x2-fill"></i>
+                Dashboard
+            </a>
+
+            <div class="nav-section">Sənədlər</div>
+
+            <a class="nav-link @(activePage == "Siyahi" ? "active" : "")"
+               asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index">
+                <i class="bi bi-file-earmark-text-fill"></i>
+                Sənəd Siyahısı
+            </a>
+
+            <a class="nav-link @(activePage == "Yarat" ? "active" : "")"
+               asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Yarat">
+                <i class="bi bi-file-earmark-plus-fill"></i>
+                Yeni Sənəd
+            </a>
+
+            <div class="nav-section">İdarəetmə</div>
+
+            <a class="nav-link @(activePage == "SenedNovleri" ? "active" : "")"
+               asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="SenedNovleri">
+                <i class="bi bi-tags-fill"></i>
+                Sənəd Növləri
+            </a>
+
+            <div class="nav-section">Arxiv</div>
+
+            <a class="nav-link @(activePage == "Silinmisler" ? "active" : "")"
+               asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Silinmisler">
+                <i class="bi bi-trash3-fill"></i>
+                Silinmişlər
+            </a>
+        </nav>
+
+        <a class="sd-back-link" asp-controller="Home" asp-action="Index" asp-area="">
+            <i class="bi bi-arrow-left"></i>
+            Ana Səhifəyə Qayıt
+        </a>
+
+        <div class="sd-sidebar-footer">
+            <div class="sd-user-info">
+                <div class="sd-user-avatar">@initials</div>
+                <div>
+                    <div class="sd-user-name">@currentUser</div>
+                    <div class="sd-user-role">İstifadəçi</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="sd-main">
+
+        <!-- Top Bar -->
+        <div class="sd-topbar">
+            <div class="d-flex align-items-center">
+                <button class="sd-sidebar-toggle" id="sidebarToggle" type="button">
+                    <i class="bi bi-list"></i>
+                </button>
+                <h1 class="sd-topbar-title d-inline-block ms-2">@ViewData["Title"]</h1>
+            </div>
+            <div class="sd-topbar-actions">
+                <span class="sd-topbar-breadcrumb">
+                    <a asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index">Sənəd Dövriyyəsi</a>
+                    / @ViewData["Title"]
+                </span>
+            </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="sd-content">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show sd-alert" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show sd-alert" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @RenderBody()
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

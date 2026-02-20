@@ -1,0 +1,143 @@
+﻿@{
+    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
+    ViewData["Title"] = "HR Dashboard";
+}
+
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-head">
+            <div class="kpi-label">Ümumi işçi</div>
+            <div class="kpi-ico kpi-ico-indigo">
+                <i class="bi bi-people-fill"></i>
+            </div>
+        </div>
+        <div class="kpi-value">24</div>
+        <div class="kpi-sub">Son 30 gün: +2</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-head">
+            <div class="kpi-label">Aktiv işçi</div>
+            <div class="kpi-ico kpi-ico-emerald">
+                <i class="bi bi-person-check-fill"></i>
+            </div>
+        </div>
+        <div class="kpi-value">21</div>
+        <div class="kpi-sub">Stabil</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-head">
+            <div class="kpi-label">Məzuniyyətdə</div>
+            <div class="kpi-ico kpi-ico-amber">
+                <i class="bi bi-airplane-fill"></i>
+            </div>
+        </div>
+        <div class="kpi-value">2</div>
+        <div class="kpi-sub">Bu həftə: 1 bitir</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-head">
+            <div class="kpi-label">Bu ay gecikmə</div>
+            <div class="kpi-ico kpi-ico-rose">
+                <i class="bi bi-clock-fill"></i>
+            </div>
+        </div>
+        <div class="kpi-value">5</div>
+        <div class="kpi-sub">Diqqət tələb edir</div>
+    </div>
+</div>
+
+<div class="action-grid">
+    <a class="action-card" asp-area="HR" asp-controller="Isci" asp-action="Create">
+        <div class="action-ico"><i class="bi bi-plus-lg"></i></div>
+        <div class="action-text">
+            <div class="action-title">Yeni işçi əlavə et</div>
+            <div class="action-sub">İşçi qeydiyyatını başlat</div>
+        </div>
+        <div class="action-go"><i class="bi bi-arrow-right"></i></div>
+    </a>
+
+    <a class="action-card" asp-area="HR" asp-controller="Davamiyyet" asp-action="Create">
+        <div class="action-ico"><i class="bi bi-calendar-plus"></i></div>
+        <div class="action-text">
+            <div class="action-title">Davamiyyət daxil et</div>
+            <div class="action-sub">Giriş/çıxış qeydiyyatı</div>
+        </div>
+        <div class="action-go"><i class="bi bi-arrow-right"></i></div>
+    </a>
+
+    <a class="action-card" asp-area="HR" asp-controller="Mezuniyyet" asp-action="Create">
+        <div class="action-ico"><i class="bi bi-airplane-engines"></i></div>
+        <div class="action-text">
+            <div class="action-title">Məzuniyyət yarat</div>
+            <div class="action-sub">Sorğunu qeyd et</div>
+        </div>
+        <div class="action-go"><i class="bi bi-arrow-right"></i></div>
+    </a>
+</div>
+
+<div class="panel-grid">
+    <div class="panel">
+        <div class="panel-head">
+            <div class="panel-title">Son əlavə olunan işçilər</div>
+            <a class="panel-link" asp-area="HR" asp-controller="Isci" asp-action="Index">Hamısı</a>
+        </div>
+
+        <div class="list">
+            <div class="list-row">
+                <div class="mini-avatar">A</div>
+                <div class="list-text">
+                    <div class="list-title">Ali Məmmədov</div>
+                    <div class="list-sub">Kredit şöbəsi • Analyst</div>
+                </div>
+                <div class="list-meta">Bu gün</div>
+            </div>
+
+            <div class="list-row">
+                <div class="mini-avatar">N</div>
+                <div class="list-text">
+                    <div class="list-title">Nigar Əliyeva</div>
+                    <div class="list-sub">Müştəri xidməti • Operator</div>
+                </div>
+                <div class="list-meta">Dünən</div>
+            </div>
+
+            <div class="list-row">
+                <div class="mini-avatar">R</div>
+                <div class="list-text">
+                    <div class="list-title">Rəşad İsmayılov</div>
+                    <div class="list-sub">IT • Developer</div>
+                </div>
+                <div class="list-meta">2 gün əvvəl</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div class="panel-title">Bu günün xülasəsi</div>
+            <span class="panel-chip">Live</span>
+        </div>
+
+        <div class="summary">
+            <div class="summary-row">
+                <span>Gələnlər</span>
+                <b>18</b>
+            </div>
+            <div class="summary-row">
+                <span>Gecikənlər</span>
+                <b>3</b>
+            </div>
+            <div class="summary-row">
+                <span>Məzuniyyətdə</span>
+                <b>2</b>
+            </div>
+            <div class="summary-row">
+                <span>Gəlməyən</span>
+                <b>1</b>
+            </div>
+        </div>
+    </div>
+</div>

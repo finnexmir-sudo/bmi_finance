@@ -1,0 +1,68 @@
+﻿@model AssignDepartmentVM
+
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Assign Department";
+}
+
+<div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold">
+            <i class="bi bi-diagram-3-fill me-2 text-primary"></i>
+            Assign Department
+        </h4>
+
+        <a asp-action="Detail" asp-route-id="@Model.UserId"
+           class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>
+            Back
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+
+            <form method="post">
+
+                <input asp-for="UserId" type="hidden" />
+
+                <div class="mb-4">
+
+                    <label asp-for="DepartmentId"
+                           class="form-label fw-semibold">
+                        Select Department
+                    </label>
+
+                    <select asp-for="DepartmentId"
+                            asp-items="Model.Departments"
+                            class="form-select">
+
+                        <option value="">-- Select Department --</option>
+
+                    </select>
+
+                    <span asp-validation-for="DepartmentId"
+                          class="text-danger small"></span>
+
+                </div>
+
+                <div class="alert alert-light border small">
+                    <i class="bi bi-info-circle me-2 text-primary"></i>
+                    User can belong to multiple departments.
+                </div>
+
+                <div class="text-end mt-4">
+                    <button type="submit"
+                            class="btn btn-primary px-4">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Save Assignment
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>

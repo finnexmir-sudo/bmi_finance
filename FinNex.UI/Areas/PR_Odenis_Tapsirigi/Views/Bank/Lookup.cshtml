@@ -1,0 +1,44 @@
+﻿@using FinNex.Domain.Entities.PR_Odenis_Tapsirigi
+@model IEnumerable<Bank>
+
+<div class="container-fluid mt-4">
+
+    <h4 class="fw-bold mb-3">Azərbaycan banklarının siyahısı</h4>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+
+            <table class="table table-hover table-sm align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Kod</th>
+                        <th>Bankın adı</th>
+                        <th>Müxbir hesab</th>
+                        <th>VÖEN</th>
+                        <th>SWIFT</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in Model)
+                    {
+                        <tr>
+                            <td>@b.Kod</td>
+                            <td class="fw-semibold">@b.Ad</td>
+                            <td>@b.MuxHesab</td>
+                            <td>@b.Voen</td>
+                            <td>@b.SwiftBic</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-primary"
+                                        onclick="selectBank('@b.Id','@b.Ad')">
+                                    Seç
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+</div>

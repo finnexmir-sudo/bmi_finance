@@ -1,0 +1,168 @@
+﻿@{
+    Layout = null;
+    var title = (ViewData["Title"] ?? "HR").ToString();
+
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+
+    var isStructureOpen =
+        currentController == "Departament" ||
+        currentController == "Vezife";
+
+    var isWorkOpen =
+        currentController == "Isci" ||
+        currentController == "Davamiyyet" ||
+        currentController == "Mezuniyyet" ||
+        currentController == "Maas";
+}
+
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@title</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/hr/hr-premium.css" asp-append-version="true" />
+
+    @RenderSection("Styles", required: false)
+</head>
+
+<body>
+
+    <div class="hr-shell">
+
+        <!-- Sidebar -->
+        <aside class="hr-side">
+
+            <div class="hr-brand">
+                <div class="hr-badge">HR</div>
+                <div class="hr-brand-text">
+                    <div class="hr-brand-title">FinNex</div>
+                    <div class="hr-brand-sub">Human Resources</div>
+                </div>
+            </div>
+
+            <nav class="hr-nav">
+
+                <!-- Dashboard -->
+                <a class="hr-nav-item @(currentController == "HR" ? "active" : "")"
+                   asp-area="HR"
+                   asp-controller="HR"
+                   asp-action="Index">
+                    <span class="hr-nav-ico">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                    </span>
+                    <span>Dashboard</span>
+                </a>
+
+                <!-- Struktur -->
+                <div class="hr-nav-group @(isStructureOpen ? "open" : "")">
+                    <div class="hr-nav-parent">
+                        <span class="hr-nav-ico">
+                            <i class="bi bi-diagram-3-fill"></i>
+                        </span>
+                        <span>Struktur</span>
+                        <i class="bi bi-chevron-down arrow"></i>
+                    </div>
+
+                    <div class="hr-submenu">
+                        <a class="hr-nav-sub-item @(currentController == "Departament" ? "active" : "")"
+                           asp-area="HR"
+                           asp-controller="Departament"
+                           asp-action="Index">
+                            Departamentlər
+                        </a>
+
+                        <a class="hr-nav-sub-item @(currentController == "Vezife" ? "active" : "")"
+                           asp-area="HR"
+                           asp-controller="Vezife"
+                           asp-action="Index">
+                            Vəzifələr
+                        </a>
+                    </div>
+                </div>
+
+                <!-- İşçi İdarəsi -->
+                <div class="hr-nav-group @(isWorkOpen ? "open" : "")">
+                    <div class="hr-nav-parent">
+                        <span class="hr-nav-ico">
+                            <i class="bi bi-people-fill"></i>
+                        </span>
+                        <span>İşçi İdarəsi</span>
+                        <i class="bi bi-chevron-down arrow"></i>
+                    </div>
+
+                    <div class="hr-submenu">
+                        <a class="hr-nav-sub-item @(currentController == "Isci" ? "active" : "")"
+                           asp-area="HR"
+                           asp-controller="Isci"
+                           asp-action="Index">
+                            İşçilər
+                        </a>
+
+                        <a class="hr-nav-sub-item @(currentController == "Davamiyyet" ? "active" : "")"
+                           asp-area="HR"
+                           asp-controller="Davamiyyet"
+                           asp-action="Index">
+                            Davamiyyət
+                        </a>
+
+                        <a class="hr-nav-sub-item @(currentController == "Mezuniyyet" ? "active" : "")"
+                           asp-area="HR"
+                           asp-controller="Mezuniyyet"
+                           asp-action="Index">
+                            Məzuniyyət
+                        </a>
+
+                        <a class="hr-nav-sub-item @(currentController == "Maas" ? "active" : "")"
+                           asp-area="HR"
+                           asp-controller="Maas"
+                           asp-action="Index">
+                            Maaş
+                        </a>
+                    </div>
+                </div>
+
+            </nav>
+
+            <!-- Footer -->
+            <div class="hr-side-footer">
+                <div class="hr-user">
+                    <div class="hr-avatar">SA</div>
+                    <div class="hr-user-text">
+                        <div class="hr-user-name">Samir</div>
+                        <div class="hr-user-role">İstifadəçi</div>
+                    </div>
+                </div>
+
+                <a class="hr-back" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="bi bi-arrow-left"></i> Ana səhifəyə qayıt
+                </a>
+            </div>
+
+        </aside>
+
+        <!-- Main -->
+        <main class="hr-main">
+            <header class="hr-top">
+                <div>
+                    <div class="hr-crumb">HR</div>
+                    <h1 class="hr-title">@title</h1>
+                </div>
+            </header>
+
+            <section class="hr-content">
+                @RenderBody()
+            </section>
+        </main>
+
+    </div>
+
+    <!-- JS-lər yalnız burada -->
+    <script src="~/js/hr/sidebar.js" asp-append-version="true"></script>
+    @RenderSection("Scripts", required: false)
+
+</body>
+</html>

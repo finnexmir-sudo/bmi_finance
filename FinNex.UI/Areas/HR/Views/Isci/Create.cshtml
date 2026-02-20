@@ -1,0 +1,134 @@
+﻿@model IsciCreateVM
+@{
+    ViewData["Title"] = "Yeni İşçi";
+    Layout = "_HRLayout";
+}
+
+<div class="create-wrapper">
+    <div class="create-card">
+        <div class="card-header">
+            <div class="header-icon">
+                <i class="bi bi-person-plus-fill"></i>
+            </div>
+            <div>
+                <h2 class="card-title">Yeni İşçi Əlavə Et</h2>
+                <p class="card-subtitle">İşçi məlumatlarını daxil edin</p>
+            </div>
+        </div>
+
+        <form asp-action="Create" method="post" id="isciForm">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="form-grid">
+                <!-- Ad -->
+                <div class="form-field">
+                    <label asp-for="Ad">Ad <span class="req">*</span></label>
+                    <input asp-for="Ad" class="form-input" placeholder="Ad" />
+                    <span asp-validation-for="Ad" class="error-text"></span>
+                </div>
+
+                <!-- Soyad -->
+                <div class="form-field">
+                    <label asp-for="Soyad">Soyad <span class="req">*</span></label>
+                    <input asp-for="Soyad" class="form-input" placeholder="Soyad" />
+                    <span asp-validation-for="Soyad" class="error-text"></span>
+                </div>
+
+                <!-- Ata Adı -->
+                <div class="form-field">
+                    <label>Ata Adı</label>
+                    <input name="AtaAdi" class="form-input" placeholder="Ata adı" />
+                </div>
+
+                <!-- FIN -->
+                <div class="form-field">
+                    <label>FIN <span class="req">*</span></label>
+                    <input name="FIN" class="form-input" placeholder="FIN kod" maxlength="7" style="text-transform: uppercase;" required />
+                </div>
+
+                <!-- Seriya Nömrə -->
+                <div class="form-field">
+                    <label>Şəxsiyyət Vəsiqəsi</label>
+                    <input name="SeriyaNomre" class="form-input" placeholder="AA1234567" />
+                </div>
+
+                <!-- Doğum Tarixi -->
+                <div class="form-field">
+                    <label>Doğum Tarixi <span class="req">*</span></label>
+                    <input name="DogumTarixi" type="date" class="form-input" required />
+                </div>
+
+                <!-- Cins -->
+                <div class="form-field">
+                    <label>Cins <span class="req">*</span></label>
+                    <select name="Cins" class="form-select" required>
+                        <option value="">Seçin</option>
+                        <option value="0">Kişi</option>
+                        <option value="1">Qadın</option>
+                    </select>
+                </div>
+
+                <!-- Telefon -->
+                <div class="form-field">
+                    <label asp-for="Telefon">Telefon <span class="req">*</span></label>
+                    <input asp-for="Telefon" type="tel" class="form-input" placeholder="+994501234567" />
+                    <span asp-validation-for="Telefon" class="error-text"></span>
+                </div>
+
+                <!-- Email -->
+                <div class="form-field">
+                    <label asp-for="Email">Email <span class="req">*</span></label>
+                    <input asp-for="Email" type="email" class="form-input" placeholder="email@example.com" />
+                    <span asp-validation-for="Email" class="error-text"></span>
+                </div>
+
+                <!-- Ünvan -->
+                <div class="form-field">
+                    <label>Ünvan</label>
+                    <input name="Unvan" class="form-input" placeholder="Yaşayış ünvanı" />
+                </div>
+
+                <!-- Departament -->
+                <div class="form-field">
+                    <label>Departament <span class="req">*</span></label>
+                    <select name="DepartamentId" class="form-select" required>
+                        <option value="">Departament seçin</option>
+                    </select>
+                </div>
+
+                <!-- Vəzifə -->
+                <div class="form-field">
+                    <label>Vəzifə <span class="req">*</span></label>
+                    <select name="VezifeId" class="form-select" required>
+                        <option value="">Vəzifə seçin</option>
+                    </select>
+                </div>
+
+                <!-- İşə Başlama Tarixi -->
+                <div class="form-field">
+                    <label asp-for="IseQebulTarixi">İşə Başlama Tarixi <span class="req">*</span></label>
+                    <input asp-for="IseQebulTarixi" type="date" class="form-input" />
+                    <span asp-validation-for="IseQebulTarixi" class="error-text"></span>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">
+                    <i class="bi bi-check-lg"></i> Yadda Saxla
+                </button>
+                <a asp-action="Index" class="btn-secondary">
+                    <i class="bi bi-x-lg"></i> Ləğv Et
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/isci-create.css" />
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/hr/isci-create.js"></script>
+}
