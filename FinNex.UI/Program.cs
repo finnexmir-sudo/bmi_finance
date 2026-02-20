@@ -6,6 +6,8 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using System.Threading.RateLimiting;
 using FinNex.Application;
+using FinNex.DataAccess.Contexts;
+using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.UI
 {
@@ -91,6 +93,12 @@ namespace FinNex.UI
 
 
             var app = builder.Build();
+
+            using (var scope = app.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                db.Database.Migrate();
+            }
 
             // ==================================================
             // 6. Middleware pipeline (ORDER IS CRITICAL)

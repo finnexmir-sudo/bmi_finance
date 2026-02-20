@@ -1,0 +1,249 @@
+﻿@model FinNex.Application.DTOs.HR.Mezuniyyet.MezuniyyetCreateDto
+@using FinNex.Domain.Entities.HR
+
+@{
+    ViewData["Title"] = "Yeni Məzuniyyət Sorğusu";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/mezuniyyet.css" />
+}
+
+<div class="container-fluid px-4 py-4">
+
+    <!-- Page Header -->
+    <div class="mez-page-header d-flex align-items-center gap-3">
+        <div class="header-icon">
+            <i class="bi bi-calendar2-plus"></i>
+        </div>
+        <div>
+            <div class="mez-breadcrumb">
+                <a href="#">HR Modulu</a>
+                <span class="sep"><i class="bi bi-chevron-right"></i></span>
+                <a asp-action="Index">Məzuniyyət</a>
+                <span class="sep"><i class="bi bi-chevron-right"></i></span>
+                <span class="current">Yeni Sorğu</span>
+            </div>
+            <h1>Yeni Məzuniyyət Sorğusu</h1>
+            <p>İşçi üçün məzuniyyət sorğusu yaradın</p>
+        </div>
+        <div class="ms-auto">
+            <a asp-action="Index" class="btn-mez-ghost">
+                <i class="bi bi-arrow-left"></i> Geri qayıt
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- Main Form -->
+        <div class="col-lg-8">
+            <form asp-action="Create" method="post" class="mez-validate-form">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3 mb-3" style="font-size:0.875rem;"></div>
+
+                <!-- Employee & Leave Type -->
+                <div class="mez-card mb-4">
+                    <div class="mez-card-header">
+                        <div class="card-icon" style="background:#ede9fe; color:#7c3aed;">
+                            <i class="bi bi-person-badge"></i>
+                        </div>
+                        <span class="card-title">İşçi və Növ Məlumatı</span>
+                    </div>
+                    <div class="mez-card-body">
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mez-form-group">
+                                    <label class="mez-label" asp-for="IsciId">
+                                        İşçi <span class="req">*</span>
+                                    </label>
+                                    <div class="mez-select-wrap">
+                                        <select class="mez-select"
+                                                asp-for="IsciId"
+                                                asp-items="@(ViewBag.Isciler as SelectList)"
+                                                data-required>
+                                            <option value="">İşçi seçin...</option>
+                                        </select>
+                                    </div>
+                                    <span asp-validation-for="IsciId" class="mez-invalid-feedback"></span>
+                                    <div class="mez-invalid-feedback"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mez-form-group">
+                                    <label class="mez-label" asp-for="Nov">
+                                        Məzuniyyət Növü <span class="req">*</span>
+                                    </label>
+                                    <div class="mez-select-wrap">
+                                        <select class="mez-select" asp-for="Nov" data-required>
+                                            <option value="">Növ seçin...</option>
+                                            <option value="@((int)MezuniyyetNovu.Illik)">
+                                                ☀️ İllik Məzuniyyət
+                                            </option>
+                                            <option value="@((int)MezuniyyetNovu.Xestelik)">
+                                                🏥 Xəstəlik Məzuniyyəti
+                                            </option>
+                                            <option value="@((int)MezuniyyetNovu.Ezamiyyet)">
+                                                ✈️ Ezamiyyət
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <span asp-validation-for="Nov" class="mez-invalid-feedback"></span>
+                                    <div class="mez-invalid-feedback"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Date Range -->
+                <div class="mez-card mb-4">
+                    <div class="mez-card-header">
+                        <div class="card-icon" style="background:#dbeafe; color:#2563eb;">
+                            <i class="bi bi-calendar-range"></i>
+                        </div>
+                        <span class="card-title">Tarix Aralığı</span>
+                        <span id="durationDisplay" class="ms-auto mez-duration" style="display:none;">
+                            <i class="bi bi-clock"></i>
+                        </span>
+                    </div>
+                    <div class="mez-card-body">
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mez-form-group">
+                                    <label class="mez-label" asp-for="BaslamaTarixi">
+                                        Başlama Tarixi <span class="req">*</span>
+                                    </label>
+                                    <input type="date" class="mez-input" asp-for="BaslamaTarixi"
+                                           data-required />
+                                    <span asp-validation-for="BaslamaTarixi" class="mez-invalid-feedback"></span>
+                                    <div class="mez-invalid-feedback"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mez-form-group">
+                                    <label class="mez-label" asp-for="BitmeTarixi">
+                                        Bitmə Tarixi <span class="req">*</span>
+                                    </label>
+                                    <input type="date" class="mez-input" asp-for="BitmeTarixi"
+                                           data-required />
+                                    <span asp-validation-for="BitmeTarixi" class="mez-invalid-feedback"></span>
+                                    <div class="mez-invalid-feedback"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="mez-card mb-4">
+                    <div class="mez-card-header">
+                        <div class="card-icon" style="background:#f0fdf4; color:#16a34a;">
+                            <i class="bi bi-chat-square-text"></i>
+                        </div>
+                        <span class="card-title">Əlavə Qeyd</span>
+                        <span class="ms-auto text-muted" style="font-size:0.78rem;">İstəyə bağlı</span>
+                    </div>
+                    <div class="mez-card-body">
+                        <div class="mez-form-group mb-0">
+                            <textarea class="mez-textarea" asp-for="Qeyd"
+                                      placeholder="Məzuniyyət barədə əlavə məlumat daxil edin..." rows="4"></textarea>
+                            <span asp-validation-for="Qeyd" class="mez-invalid-feedback"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn-mez-primary">
+                        <i class="bi bi-send"></i> Sorğu Göndər
+                    </button>
+                    <a asp-action="Index" class="btn-mez-ghost">
+                        <i class="bi bi-x-lg"></i> Ləğv et
+                    </a>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Info Sidebar -->
+        <div class="col-lg-4">
+            <div class="mez-card mb-3">
+                <div class="mez-card-header">
+                    <div class="card-icon" style="background:#fef3c7; color:#d97706;">
+                        <i class="bi bi-info-circle"></i>
+                    </div>
+                    <span class="card-title">Məzuniyyət Növləri</span>
+                </div>
+                <div class="mez-card-body">
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex align-items-start gap-2">
+                            <span class="type-indicator badge-illik mt-1" style="padding:0.25rem 0.5rem;">
+                                <i class="bi bi-sun"></i>
+                            </span>
+                            <div>
+                                <div style="font-weight:600; font-size:0.875rem;">İllik Məzuniyyət</div>
+                                <div style="font-size:0.78rem; color:var(--mez-text-muted);">Hər il hüququ olan ödənişli istirahət</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-start gap-2">
+                            <span class="type-indicator badge-xestelik mt-1" style="padding:0.25rem 0.5rem;">
+                                <i class="bi bi-heart-pulse"></i>
+                            </span>
+                            <div>
+                                <div style="font-weight:600; font-size:0.875rem;">Xəstəlik Məzuniyyəti</div>
+                                <div style="font-size:0.78rem; color:var(--mez-text-muted);">Tibbi sənəd tələb olunur</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-start gap-2">
+                            <span class="type-indicator badge-ezamiyyet mt-1" style="padding:0.25rem 0.5rem;">
+                                <i class="bi bi-airplane"></i>
+                            </span>
+                            <div>
+                                <div style="font-weight:600; font-size:0.875rem;">Ezamiyyət</div>
+                                <div style="font-size:0.78rem; color:var(--mez-text-muted);">Xidməti ezamiyyət sorğusu</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mez-card">
+                <div class="mez-card-header">
+                    <div class="card-icon" style="background:#e0f2fe; color:#0284c7;">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <span class="card-title">Təsdiqləmə Axını</span>
+                </div>
+                <div class="mez-card-body">
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width:28px; height:28px; border-radius:50%; background:rgba(79,126,248,0.1); display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:var(--mez-accent);">1</div>
+                            <span style="font-size:0.82rem; color:var(--mez-text-muted);">Sorğu göndərilir</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width:28px; height:28px; border-radius:50%; background:rgba(245,158,11,0.1); display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:var(--mez-warning);">2</div>
+                            <span style="font-size:0.82rem; color:var(--mez-text-muted);">Rəhbər baxışı</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width:28px; height:28px; border-radius:50%; background:rgba(16,185,129,0.1); display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:var(--mez-success);">3</div>
+                            <span style="font-size:0.82rem; color:var(--mez-text-muted);">Təsdiq / İmtina</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script src="~/js/hr/mezuniyyet.js"></script>
+}

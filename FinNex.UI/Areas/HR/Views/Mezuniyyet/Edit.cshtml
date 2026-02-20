@@ -1,0 +1,229 @@
+﻿@model FinNex.Application.DTOs.HR.Mezuniyyet.MezuniyyetUpdateDto
+@using FinNex.Domain.Entities.HR
+
+@{
+    ViewData["Title"] = "Məzuniyyəti Düzəliş Et";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    string employeeName = ViewBag.IsciTamAd as string ?? "—";
+    string leaveType = ViewBag.MezuniyyetNov as string ?? "—";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/mezuniyyet.css" />
+}
+
+<div class="container-fluid px-4 py-4">
+
+    <!-- Page Header -->
+    <div class="mez-page-header d-flex align-items-center gap-3">
+        <div class="header-icon">
+            <i class="bi bi-pencil-square"></i>
+        </div>
+        <div>
+            <div class="mez-breadcrumb">
+                <a href="#">HR Modulu</a>
+                <span class="sep"><i class="bi bi-chevron-right"></i></span>
+                <a asp-action="Index">Məzuniyyət</a>
+                <span class="sep"><i class="bi bi-chevron-right"></i></span>
+                <span class="current">Düzəliş</span>
+            </div>
+            <h1>Məzuniyyəti Düzəliş Et</h1>
+            <p>Sorğu #@Model.Id.ToString("D4") — @employeeName</p>
+        </div>
+        <div class="ms-auto d-flex gap-2">
+            <a asp-action="Detail" asp-route-id="@Model.Id" class="btn-mez-ghost">
+                <i class="bi bi-eye"></i> Ətraflı
+            </a>
+            <a asp-action="Index" class="btn-mez-ghost">
+                <i class="bi bi-arrow-left"></i> Geri
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <div class="col-lg-8">
+            <form asp-action="Edit" method="post" class="mez-validate-form">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3 mb-3" style="font-size:0.875rem;"></div>
+
+                <input type="hidden" asp-for="Id" />
+
+                <!-- Current Info Banner -->
+                <div class="mez-note-box mb-4" style="font-style:normal; border-left-color:var(--mez-warning);">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-person-check" style="color:var(--mez-warning); font-size:1rem;"></i>
+                        <div>
+                            <strong>@employeeName</strong>
+                            <span style="color:var(--mez-text-muted); font-size:0.82rem; margin-left:0.5rem;">— @leaveType</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date Range -->
+                <div class="mez-card mb-4">
+                    <div class="mez-card-header">
+                        <div class="card-icon" style="background:#dbeafe; color:#2563eb;">
+                            <i class="bi bi-calendar-range"></i>
+                        </div>
+                        <span class="card-title">Tarix Aralığı</span>
+                        <span id="durationDisplay" class="ms-auto mez-duration" style="display:none;">
+                            <i class="bi bi-clock"></i>
+                        </span>
+                    </div>
+                    <div class="mez-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mez-form-group">
+                                    <label class="mez-label" asp-for="BaslamaTarixi">
+                                        Başlama Tarixi <span class="req">*</span>
+                                    </label>
+                                    <input type="date" class="mez-input" asp-for="BaslamaTarixi"
+                                           data-required />
+                                    <span asp-validation-for="BaslamaTarixi" class="mez-invalid-feedback"></span>
+                                    <div class="mez-invalid-feedback"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mez-form-group">
+                                    <label class="mez-label" asp-for="BitmeTarixi">
+                                        Bitmə Tarixi <span class="req">*</span>
+                                    </label>
+                                    <input type="date" class="mez-input" asp-for="BitmeTarixi"
+                                           data-required />
+                                    <span asp-validation-for="BitmeTarixi" class="mez-invalid-feedback"></span>
+                                    <div class="mez-invalid-feedback"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div class="mez-card mb-4">
+                    <div class="mez-card-header">
+                        <div class="card-icon" style="background:#f0fdf4; color:#16a34a;">
+                            <i class="bi bi-toggle-on"></i>
+                        </div>
+                        <span class="card-title">Sorğu Statusu</span>
+                    </div>
+                    <div class="mez-card-body">
+                        <div class="mez-form-group mb-0">
+                            <label class="mez-label" asp-for="Status">Status <span class="req">*</span></label>
+                            <div class="mez-select-wrap">
+                                <select class="mez-select" asp-for="Status" data-required>
+                                    <option value="@((int)MezuniyyetStatus.Gozlemede)"
+                                            selected="@(Model.Status == MezuniyyetStatus.Gozlemede)">
+                                        ⏳ Gözləmədə
+                                    </option>
+
+                                    <option value="@((int)MezuniyyetStatus.Tesdiqlenib)"
+                                            selected="@(Model.Status == MezuniyyetStatus.Tesdiqlenib)">
+                                        ✅ Təsdiqlənib
+                                    </option>
+
+                                    <option value="@((int)MezuniyyetStatus.ImtinaEdildi)"
+                                            selected="@(Model.Status == MezuniyyetStatus.ImtinaEdildi)">
+                                        ❌ İmtina Edilib
+                                    </option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="Status" class="mez-invalid-feedback"></span>
+                            <div class="mez-hint">Status dəyişikliyi işçiyə bildiriş göndərəcəkdir.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="mez-card mb-4">
+                    <div class="mez-card-header">
+                        <div class="card-icon" style="background:#fef3c7; color:#d97706;">
+                            <i class="bi bi-chat-square-text"></i>
+                        </div>
+                        <span class="card-title">Qeyd</span>
+                        <span class="ms-auto text-muted" style="font-size:0.78rem;">İstəyə bağlı</span>
+                    </div>
+                    <div class="mez-card-body">
+                        <div class="mez-form-group mb-0">
+                            <textarea class="mez-textarea" asp-for="Qeyd"
+                                      placeholder="Əlavə qeyd..." rows="4"></textarea>
+                            <span asp-validation-for="Qeyd" class="mez-invalid-feedback"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn-mez-primary">
+                        <i class="bi bi-floppy2"></i> Dəyişiklikləri Saxla
+                    </button>
+                    <a asp-action="Index" class="btn-mez-ghost">
+                        <i class="bi bi-x-lg"></i> Ləğv et
+                    </a>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+
+            <!-- Status Legend -->
+            <div class="mez-card mb-3">
+                <div class="mez-card-header">
+                    <div class="card-icon" style="background:#ede9fe; color:#7c3aed;">
+                        <i class="bi bi-info-circle"></i>
+                    </div>
+                    <span class="card-title">Status Məlumatı</span>
+                </div>
+                <div class="mez-card-body">
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="mez-badge badge-pending"><span class="dot"></span> Gözləmədə</span>
+                            <span style="font-size:0.78rem; color:var(--mez-text-muted);">Rəhbər qərarı gözlənilir</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="mez-badge badge-approved"><span class="dot"></span> Təsdiqlənib</span>
+                            <span style="font-size:0.78rem; color:var(--mez-text-muted);">Sorğu qəbul edilib</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="mez-badge badge-rejected"><span class="dot"></span> İmtina Edilib</span>
+                            <span style="font-size:0.78rem; color:var(--mez-text-muted);">Sorğu rədd edilib</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="mez-card" style="border-color: #fee2e2;">
+                <div class="mez-card-header" style="background:#fff5f5;">
+                    <div class="card-icon" style="background:#fee2e2; color:#dc2626;">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <span class="card-title" style="color:#dc2626;">Təhlükəli Zona</span>
+                </div>
+                <div class="mez-card-body">
+                    <p style="font-size:0.82rem; color:var(--mez-text-muted); margin-bottom:1rem;">
+                        Bu məzuniyyəti silmək bütün əlaqəli məlumatları birdəfəlik siləcəkdir.
+                    </p>
+                    <button class="btn-mez-danger w-100"
+                            data-bs-toggle="modal"
+                            data-bs-target="#deleteModal"
+                            data-id="@Model.Id"
+                            data-name="@employeeName">
+                        <i class="bi bi-trash3"></i> Məzuniyyəti Sil
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+@await Html.PartialAsync("_DeleteModal")
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script src="~/js/mezuniyyet.js"></script>
+}

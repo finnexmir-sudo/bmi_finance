@@ -46,7 +46,10 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<Vezife> Vezifeler { get; set; }
     public DbSet<Maas> Maaslar { get; set; }
     public DbSet<Davamiyyet> Davamiyyetler { get; set; }
+    // Məzuniyyət modulu üçün yeni DbSet-lər
     public DbSet<Mezuniyyet> Mezuniyyetler { get; set; }
+    public DbSet<MezuniyyetBalans> MezuniyyetBalanslari { get; set; }
+    public DbSet<BayramGunu> BayramGunleri { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -195,6 +198,23 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     .HasForeignKey<Isci>(x => x.AppUserId)
     .OnDelete(DeleteBehavior.SetNull);
 
+        // Məzuniyyət balansı üçün unikal indeks (Bir işçinin bir ildə yalnız bir balansı ola bilər)
+        builder.Entity<MezuniyyetBalans>()
+            .HasIndex(x => new { x.IsciId, x.Il })
+            .IsUnique();
+
+        // Məzuniyyət cədvəlində Isci və EvezEdenIsci əlaqələri
+        builder.Entity<Mezuniyyet>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<Mezuniyyet>()
+            .HasOne(x => x.EvezEdenIsci)
+            .WithMany()
+            .HasForeignKey(x => x.EvezEdenIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
 
 
         builder.Entity<UserDepartment>(entity =>

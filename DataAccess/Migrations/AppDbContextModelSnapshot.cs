@@ -137,6 +137,49 @@ namespace FinNex.DataAccess.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("FinNex.Domain.Entities.HR.BayramGunu", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Ad")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("HerIlTeyinOlunur")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("SilenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Silinib")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SilinmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("Tarix")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YaradanIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("YaradilmaTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("YenilenmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YenileyenIcraciId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BayramGunleri");
+                });
+
             modelBuilder.Entity("FinNex.Domain.Entities.HR.Davamiyyet", b =>
                 {
                     b.Property<int>("Id")
@@ -359,6 +402,24 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<DateTime>("BitmeTarixi")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("EvezEdenIsciId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("HrId")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("HrTesdiq")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("HrTesdiqTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImtinaSebebi")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IsGunlerininSayi")
+                        .HasColumnType("int");
+
                     b.Property<int>("IsciId")
                         .HasColumnType("int");
 
@@ -368,6 +429,15 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<string>("Qeyd")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("RehberId")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("RehberTesdiq")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("RehberTesdiqTarixi")
+                        .HasColumnType("datetime2");
+
                     b.Property<int?>("SilenIcraciId")
                         .HasColumnType("int");
 
@@ -375,6 +445,15 @@ namespace FinNex.DataAccess.Migrations
                         .HasColumnType("bit");
 
                     b.Property<DateTime?>("SilinmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("SobeReisiId")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("SobeReisiTesdiq")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SobeReisiTesdiqTarixi")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("Status")
@@ -394,9 +473,60 @@ namespace FinNex.DataAccess.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("EvezEdenIsciId");
+
                     b.HasIndex("IsciId");
 
                     b.ToTable("Mezuniyyetler");
+                });
+
+            modelBuilder.Entity("FinNex.Domain.Entities.HR.MezuniyyetBalans", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Il")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IsciId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IstifadeOlunanGun")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SilenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Silinib")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SilinmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ToplamGun")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("YaradanIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("YaradilmaTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("YenilenmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YenileyenIcraciId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsciId", "Il")
+                        .IsUnique();
+
+                    b.ToTable("MezuniyyetBalanslari");
                 });
 
             modelBuilder.Entity("FinNex.Domain.Entities.HR.Vezife", b =>
@@ -1427,6 +1557,24 @@ namespace FinNex.DataAccess.Migrations
                 });
 
             modelBuilder.Entity("FinNex.Domain.Entities.HR.Mezuniyyet", b =>
+                {
+                    b.HasOne("FinNex.Domain.Entities.HR.Isci", "EvezEdenIsci")
+                        .WithMany()
+                        .HasForeignKey("EvezEdenIsciId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("FinNex.Domain.Entities.HR.Isci", "Isci")
+                        .WithMany()
+                        .HasForeignKey("IsciId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("EvezEdenIsci");
+
+                    b.Navigation("Isci");
+                });
+
+            modelBuilder.Entity("FinNex.Domain.Entities.HR.MezuniyyetBalans", b =>
                 {
                     b.HasOne("FinNex.Domain.Entities.HR.Isci", "Isci")
                         .WithMany()

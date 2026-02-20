@@ -27,12 +27,10 @@ public class HRProfile : Profile
         // =========================
 
         CreateMap<Isci, IsciListDto>()
-            .ForMember(d => d.TamAd,
-                o => o.MapFrom(s => s.Ad + " " + s.Soyad))
-            .ForMember(d => d.Sobe,
-                o => o.MapFrom(s => s.Sobe.Ad))
-            .ForMember(d => d.Vezife,
-                o => o.MapFrom(s => s.Vezife.Ad));
+    .ForMember(dest => dest.TamAd, opt => opt.MapFrom(src => $"{src.Ad} {src.Soyad} {src.AtaAdi}"))
+    .ForMember(dest => dest.CariMaas, opt => opt.MapFrom(src => src.Maliye.CariMaas))
+    .ForMember(dest => dest.SobeAdi, opt => opt.MapFrom(src => src.Sobe.Ad)) // Səndə Department.Name ola bilər
+    .ForMember(dest => dest.VezifeAdi, opt => opt.MapFrom(src => src.Vezife.Ad));
 
         CreateMap<Isci, IsciDetailDto>()
             .ForMember(d => d.Sobe,
@@ -42,7 +40,13 @@ public class HRProfile : Profile
             .ForMember(d => d.LoginVar,
                 o => o.MapFrom(s => s.AppUserId != null));
 
-        CreateMap<IsciCreateDto, Isci>();
+        CreateMap<IsciCreateDto, Isci>()
+    .ForMember(dest => dest.Maliye, opt => opt.MapFrom(src => new IsciMaliye
+    {
+        CariMaas = src.CariMaas,
+        MezuniyyetQaliqGunu = src.MezuniyyetQaliqGunu,
+        BankHesabNo = src.BankHesabNo
+    }));
         CreateMap<IsciUpdateDto, Isci>();
 
 
@@ -90,19 +94,14 @@ public class HRProfile : Profile
         // MEZUNIYYET
         // =========================
 
-        CreateMap<Mezuniyyet, MezuniyyetListDto>()
-            .ForMember(d => d.IsciTamAd,
-                o => o.MapFrom(s => s.Isci.Ad + " " + s.Isci.Soyad));
-
-        CreateMap<Mezuniyyet, MezuniyyetDetailDto>()
-            .ForMember(d => d.IsciTamAd,
-                o => o.MapFrom(s => s.Isci.Ad + " " + s.Isci.Soyad))
-            .ForMember(d => d.Sobe,
-                o => o.MapFrom(s => s.Isci.Sobe.Ad))
-            .ForMember(d => d.Vezife,
-                o => o.MapFrom(s => s.Isci.Vezife.Ad));
+        CreateMap<Mezuniyyet, MezuniyyetDto>()
+    .ForMember(dest => dest.IsciAdSoyad, opt => opt.MapFrom(src => src.Isci.Ad + " " + src.Isci.Soyad))
+    .ForMember(dest => dest.EvezEdenIsciAdSoyad, opt => opt.MapFrom(src => src.EvezEdenIsci != null ? src.EvezEdenIsci.Ad + " " + src.EvezEdenIsci.Soyad : ""));
 
         CreateMap<MezuniyyetCreateDto, Mezuniyyet>();
         CreateMap<MezuniyyetUpdateDto, Mezuniyyet>();
+        CreateMap<Mezuniyyet, MezuniyyetListDto>()
+    .ForMember(dest => dest.SobeAdi, opt => opt.MapFrom(src => src.Isci.Sobe.Ad))
+    .ForMember(dest => dest.VezifeAdi, opt => opt.MapFrom(src => src.Isci.Vezife.Ad));
     }
 }

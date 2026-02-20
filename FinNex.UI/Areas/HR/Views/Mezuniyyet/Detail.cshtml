@@ -1,0 +1,313 @@
+﻿@model FinNex.Application.DTOs.HR.Mezuniyyet.MezuniyyetListDto
+@using FinNex.Domain.Entities.HR
+
+@{
+    ViewData["Title"] = "Məzuniyyət Ətraflı";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var initials = string.Join("", Model.IsciAdSoyad.Split(' ')
+        .Take(2).Select(w => w.FirstOrDefault().ToString().ToUpper()));
+
+    var typeClass = Model.Nov switch
+    {
+        MezuniyyetNovu.Illik => "badge-illik",
+        MezuniyyetNovu.Xestelik => "badge-xestelik",
+        MezuniyyetNovu.Ezamiyyet => "badge-ezamiyyet",
+        _ => ""
+    };
+    var typeStripClass = Model.Nov switch
+    {
+        MezuniyyetNovu.Illik => "illik",
+        MezuniyyetNovu.Xestelik => "xestelik",
+        MezuniyyetNovu.Ezamiyyet => "ezamiyyet",
+        _ => ""
+    };
+    var typeIcon = Model.Nov switch
+    {
+        MezuniyyetNovu.Illik => "bi-sun",
+        MezuniyyetNovu.Xestelik => "bi-heart-pulse",
+        MezuniyyetNovu.Ezamiyyet => "bi-airplane",
+        _ => "bi-calendar"
+    };
+    var typeLabel = Model.Nov switch
+    {
+        MezuniyyetNovu.Illik => "İllik Məzuniyyət",
+        MezuniyyetNovu.Xestelik => "Xəstəlik Məzuniyyəti",
+        MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
+        _ => Model.Nov.ToString()
+    };
+
+    var days = (int)(Model.BitmeTarixi - Model.BaslamaTarixi).TotalDays + 1;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/mezuniyyet.css" />
+}
+
+<div class="container-fluid px-4 py-4">
+
+    <!-- Page Header -->
+    <div class="mez-page-header d-flex align-items-center gap-3">
+        <div class="header-icon">
+            <i class="bi bi-calendar2-check"></i>
+        </div>
+        <div>
+            <div class="mez-breadcrumb">
+                <a href="#">HR Modulu</a>
+                <span class="sep"><i class="bi bi-chevron-right"></i></span>
+                <a asp-action="Index">Məzuniyyət</a>
+                <span class="sep"><i class="bi bi-chevron-right"></i></span>
+                <span class="current">Ətraflı</span>
+            </div>
+            <h1>Məzuniyyət Ətraflı</h1>
+            <p>Sorğu #@Model.Id.ToString("D4")</p>
+        </div>
+        <div class="ms-auto d-flex gap-2">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn-mez-outline">
+                <i class="bi bi-pencil"></i> Düzəliş et
+            </a>
+            <a asp-action="Index" class="btn-mez-ghost">
+                <i class="bi bi-arrow-left"></i> Siyahıya qayıt
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- Left: Main Detail -->
+        <div class="col-lg-8">
+
+            <!-- Employee Header Card -->
+            <div class="mez-detail-header mb-4">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.3); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:1.3rem; color:#fff; flex-shrink:0; backdrop-filter:blur(6px);">
+                        @initials
+                    </div>
+                    <div>
+                        <div class="detail-id">Sorğu #@Model.Id.ToString("D4")</div>
+                        <h2>@Model.IsciAdSoyad</h2>
+                        <div class="detail-sub">
+                            <i class="bi bi-building me-1"></i>@Model.
+                            &nbsp;·&nbsp;
+                            <i class="bi bi-person-badge me-1"></i>@Model.VezifeAdi
+                        </div>
+                    </div>
+                    <div class="ms-auto">
+                        @if (Model.Status == MezuniyyetStatus.Gozlemede)
+                        {
+                            <span class="mez-badge badge-pending" style="font-size:0.85rem; padding:0.45rem 1rem;">
+                                <span class="dot"></span> Gözləmədə
+                            </span>
+                        }
+                        else if (Model.Status == MezuniyyetStatus.Tesdiqlenib)
+                        {
+                            <span class="mez-badge badge-approved" style="font-size:0.85rem; padding:0.45rem 1rem;">
+                                <span class="dot"></span> Təsdiqlənib
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="mez-badge badge-rejected" style="font-size:0.85rem; padding:0.45rem 1rem;">
+                                <span class="dot"></span> İmtina Edilib
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Grid -->
+            <div class="mez-card mb-4">
+                <div class="mez-card-header">
+                    <div class="card-icon" style="background:#f0f4ff; color:var(--mez-accent);">
+                        <i class="bi bi-grid-3x2-gap"></i>
+                    </div>
+                    <span class="card-title">Məzuniyyət Məlumatları</span>
+                </div>
+                <div class="mez-card-body">
+                    <div class="mez-info-grid">
+                        <div class="mez-info-item">
+                            <div class="info-label"><i class="bi bi-tag me-1"></i>Növ</div>
+                            <div class="info-value">
+                                <span class="type-indicator @typeClass">
+                                    <i class="bi @typeIcon"></i> @typeLabel
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mez-info-item">
+                            <div class="info-label"><i class="bi bi-calendar-check me-1"></i>Başlama Tarixi</div>
+                            <div class="info-value mono">@Model.BaslamaTarixi.ToString("dd MMMM yyyy")</div>
+                        </div>
+                        <div class="mez-info-item">
+                            <div class="info-label"><i class="bi bi-calendar-x me-1"></i>Bitmə Tarixi</div>
+                            <div class="info-value mono">@Model.BitmeTarixi.ToString("dd MMMM yyyy")</div>
+                        </div>
+                        <div class="mez-info-item">
+                            <div class="info-label"><i class="bi bi-clock me-1"></i>Müddət</div>
+                            <div class="info-value">
+                                <span class="mez-duration">
+                                    <i class="bi bi-hourglass-split"></i> @days gün
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mez-info-item">
+                            <div class="info-label"><i class="bi bi-building me-1"></i>Şöbə</div>
+                            <div class="info-value">@Model.SobeAdi</div>
+                        </div>
+                        <div class="mez-info-item">
+                            <div class="info-label"><i class="bi bi-person-badge me-1"></i>Vəzifə</div>
+                            <div class="info-value">@Model.VezifeAdi</div>
+                        </div>
+                    </div>
+
+                    <!-- Date Timeline -->
+                    <div class="mt-4 pt-3" style="border-top: 1px solid var(--mez-border);">
+                        <div class="mez-section-divider">Tarix Zolağı</div>
+                        <div class="date-timeline">
+                            <div class="date-pill">
+                                <i class="bi bi-calendar-event" style="color:var(--mez-accent);"></i>
+                                @Model.BaslamaTarixi.ToString("dd.MM.yyyy")
+                            </div>
+                            <i class="bi bi-arrow-right arrow-icon"></i>
+                            <div class="mez-duration">
+                                <i class="bi bi-clock"></i> @days gün
+                            </div>
+                            <i class="bi bi-arrow-right arrow-icon"></i>
+                            <div class="date-pill">
+                                <i class="bi bi-calendar-check" style="color:var(--mez-success);"></i>
+                                @Model.BitmeTarixi.ToString("dd.MM.yyyy")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="mez-card">
+                <div class="mez-card-header">
+                    <div class="card-icon" style="background:#fef3c7; color:#d97706;">
+                        <i class="bi bi-chat-square-quote"></i>
+                    </div>
+                    <span class="card-title">Qeyd</span>
+                </div>
+               @*  <div class="mez-card-body">
+                    @if (string.IsNullOrWhiteSpace(Model.Qeyd))
+                    {
+                        <div class="mez-note-box empty">
+                            <i class="bi bi-dash-circle me-2"></i>Qeyd əlavə edilməyib.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mez-note-box">
+                            <i class="bi bi-quote me-2" style="color:var(--mez-accent);"></i>@Model.Qeyd
+                        </div>
+                    }
+                </div> *@
+            </div>
+
+        </div>
+
+        <!-- Right: Sidebar Actions -->
+        <div class="col-lg-4">
+
+            <!-- Type Card -->
+            <div class="mez-card mb-3">
+                <div class="mez-card-header">
+                    <div class="card-icon @typeClass" style="font-size:1rem;">
+                        <i class="bi @typeIcon"></i>
+                    </div>
+                    <span class="card-title">@typeLabel</span>
+                </div>
+                <div class="mez-card-body">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="mez-type-strip @typeStripClass"></div>
+                        <div>
+                            <div style="font-size:2rem; font-weight:700; line-height:1; color:var(--mez-text);">@days</div>
+                            <div style="font-size:0.8rem; color:var(--mez-text-muted); font-weight:500; text-transform:uppercase; letter-spacing:0.05em;">Gün</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="mez-card mb-3">
+                <div class="mez-card-header">
+                    <div class="card-icon" style="background:#f0f4ff; color:var(--mez-accent);">
+                        <i class="bi bi-gear"></i>
+                    </div>
+                    <span class="card-title">Əməliyyatlar</span>
+                </div>
+                <div class="mez-card-body d-flex flex-column gap-2">
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn-mez-outline w-100 justify-content-center">
+                        <i class="bi bi-pencil"></i> Düzəliş et
+                    </a>
+                    <button class="btn-mez-danger w-100 justify-content-center"
+                            data-bs-toggle="modal"
+                            data-bs-target="#deleteModal"
+                            data-id="@Model.Id"
+                            data-name="@Model.IsciAdSoyad">
+                        <i class="bi bi-trash3"></i> Sil
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status History Placeholder -->
+            <div class="mez-card">
+                <div class="mez-card-header">
+                    <div class="card-icon" style="background:#f0fdf4; color:#16a34a;">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <span class="card-title">Status Tarixçəsi</span>
+                </div>
+                <div class="mez-card-body">
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex align-items-start gap-2">
+                            <div style="width:8px; height:8px; border-radius:50%; background:var(--mez-accent); margin-top:5px; flex-shrink:0;"></div>
+                            <div>
+                                <div style="font-size:0.82rem; font-weight:600;">Sorğu yaradıldı</div>
+                                <div style="font-size:0.75rem; color:var(--mez-text-muted);">@Model.BaslamaTarixi.ToString("dd.MM.yyyy")</div>
+                            </div>
+                        </div>
+                        @if (Model.Status == MezuniyyetStatus.Tesdiqlenib)
+                        {
+                            <div class="d-flex align-items-start gap-2">
+                                <div style="width:8px; height:8px; border-radius:50%; background:var(--mez-success); margin-top:5px; flex-shrink:0;"></div>
+                                <div>
+                                    <div style="font-size:0.82rem; font-weight:600;">Təsdiqləndi</div>
+                                    <div style="font-size:0.75rem; color:var(--mez-text-muted);">Rəhbər tərəfindən</div>
+                                </div>
+                            </div>
+                        }
+                        else if (Model.Status == MezuniyyetStatus.ImtinaEdildi)
+                        {
+                            <div class="d-flex align-items-start gap-2">
+                                <div style="width:8px; height:8px; border-radius:50%; background:var(--mez-danger); margin-top:5px; flex-shrink:0;"></div>
+                                <div>
+                                    <div style="font-size:0.82rem; font-weight:600;">İmtina edildi</div>
+                                    <div style="font-size:0.75rem; color:var(--mez-text-muted);">Rəhbər tərəfindən</div>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="d-flex align-items-start gap-2">
+                                <div style="width:8px; height:8px; border-radius:50%; background:var(--mez-warning); margin-top:5px; flex-shrink:0;"></div>
+                                <div>
+                                    <div style="font-size:0.82rem; font-weight:600;">Baxış gözlənilir</div>
+                                    <div style="font-size:0.75rem; color:var(--mez-text-muted);">Hazırda gözləmədə</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@await Html.PartialAsync("_DeleteModal")
+
+@section Scripts {
+    <script src="~/js/mezuniyyet.js"></script>
+}

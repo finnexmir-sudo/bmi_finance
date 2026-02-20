@@ -1,15 +1,16 @@
 ﻿
+using FinNex.Application.DTOs.HR.Mezuniyyet;
+using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.PR_Odenis_Tapsirigi;
 using FinNex.Application.Interfaces.SenedDovriyyesi;
 using FinNex.Application.Interfaces.Structur;
-using FinNex.Application.MappingProfile;
-using FinNex.Application.MappingProfile.PR_Odenis_Tapsirigi;
 using FinNex.Application.Services;
 using FinNex.Application.Services.PR_Odenis_Tapsirigi;
 using FinNex.Application.Services.SenedDovriyyesi;
 using FinNex.Application.Services.Structur;
 using FinNex.DataAccess.Repositories;
 using FinNex.DataAccess.UnitOfWorks;
+using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -55,7 +56,13 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IVezifeService, VezifeService>();
         services.AddScoped<IMaasService, MaasService>();
         services.AddScoped<IDavamiyyetService, DavamiyyetService>();
+        // Məzuniyyət Modulu Servisləri
         services.AddScoped<IMezuniyyetService, MezuniyyetService>();
+
+        // Əgər BayramGunu və Balans üçün xüsusi məntiq yazmamısansa, 
+        // onları generik servis üzərindən belə qeydiyyatdan keçirə bilərsən:
+        services.AddScoped(typeof(IServiceAsync<BayramGunu, BayramGunuDto, BayramGunuCreateDto, BayramGunuUpdateDto>), typeof(ServiceAsync<BayramGunu, BayramGunuDto, BayramGunuCreateDto, BayramGunuUpdateDto>));
+        services.AddScoped(typeof(IServiceAsync<MezuniyyetBalans, MezuniyyetBalansDto, MezuniyyetBalansCreateDto, MezuniyyetBalansUpdateDto>), typeof(ServiceAsync<MezuniyyetBalans, MezuniyyetBalansDto, MezuniyyetBalansCreateDto, MezuniyyetBalansUpdateDto>));
 
     }
 }

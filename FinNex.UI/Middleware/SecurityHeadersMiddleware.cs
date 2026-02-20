@@ -41,5 +41,6 @@ namespace FinNex.UI.Middleware
 
             await _next(context);
         }
+
     }
 }

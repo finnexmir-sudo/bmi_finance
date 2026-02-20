@@ -1,50 +1,62 @@
 ﻿using AutoMapper;
+using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Isci;
-using FinNex.Application.Interfaces;
 using FinNex.Application.Services;
-using FinNex.DataAccess.UnitOfWorks;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-public class IsciService
-    : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUpdateDto>, IIsciService
+public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUpdateDto>, IIsciService
 {
-    public IsciService(IUnitOfWork unitOfWork, IMapper mapper)
-        : base(unitOfWork, mapper)
-    {
-    }
+    public IsciService(IUnitOfWork unitOfWork, IMapper mapper) : base(unitOfWork, mapper) { }
 
-    public async Task<IsciDetailDto?> DetailAsync(int id)
+    public async Task<IsciDetailDto?> GetIsciDetailsAsync(int id)
     {
-        var entity = await _unitOfWork.Repository<Isci>()
-            .GetirAsync(
-                x => x.Id == id,
-                include: q => q
-                    .Include(x => x.Sobe)
-                    .Include(x => x.Vezife)
-            );
-
+        var entity = await _unitOfWork.Repository<Isci>().GetirAsync(
+            x => x.Id == id,
+            include: q => q.Include(x => x.Sobe).Include(x => x.Vezife).Include(x => x.Maliye)
+        );
         return _mapper.Map<IsciDetailDto>(entity);
     }
 
-    public async Task<IList<IsciListDto>> SobeUzreAsync(int sobeId)
+    public async Task<IList<IsciListDto>> GetIscilerBySobeIdAsync(int sobeId)
     {
-        var entities = await _unitOfWork.Repository<Isci>()
-            .HamisiniGetirAsync(
-                x => x.SobeId == sobeId,
-                include: q => q
-                    .Include(x => x.Sobe)
-                    .Include(x => x.Vezife),
-                izlemeden: true
-            );
-
+        var entities = await _unitOfWork.Repository<Isci>().HamisiniGetirAsync(
+            x => x.SobeId == sobeId,
+            include: q => q.Include(x => x.Sobe).Include(x => x.Vezife).Include(x => x.Maliye),
+            izlemeden: true
+        );
         return _mapper.Map<IList<IsciListDto>>(entities);
     }
 
-    public async Task<bool> FINMovcuddurmuAsync(string fin)
+    public async Task<bool> CheckFinExistsAsync(string fin) =>
+        await _unitOfWork.Repository<Isci>().MovcuddurmuAsync(x => x.FIN == fin);
+
+    public async Task<Result<List<IsciListDto>>> SearchIscilerByFinAsync(string fin)
     {
-        return await _unitOfWork.Repository<Isci>()
-            .MovcuddurmuAsync(x => x.FIN == fin);
+        var entities = await _unitOfWork.Repository<Isci>().HamisiniGetirAsync(
+            x => x.FIN.Contains(fin),
+            include: q => q.Include(x => x.Maliye).Include(x => x.Sobe),
+            izlemeden: true
+        );
+        return Result<List<IsciListDto>>.Ok(_mapper.Map<List<IsciListDto>>(entities));
+    }
+
+    public async Task<Result> UpdateSalaryWithHistoryAsync(int isciId, decimal yeniMaas, string emrNo)
+    {
+        var isci = await _unitOfWork.Repository<Isci>().GetirAsync(x => x.Id == isciId, include: q => q.Include(x => x.Maliye));
+        if (isci == null) return Result.Fail("İşçi tapılmadı.");
+
+        var tarixce = new IsciMaasTarixcesi
+        {
+            IsciId = isciId,
+            KohneMaas = isci.Maliye.CariMaas,
+            YeniMaas = yeniMaas,
+            DeyismeTarixi = DateTime.Now,
+            EmrinNomresi = emrNo
+        };
+        isci.Maliye.CariMaas = yeniMaas;
+        await _unitOfWork.Repository<IsciMaasTarixcesi>().YaratAsync(tarixce);
+        return await _unitOfWork.YaddaSaxlaAsync() > 0 ? Result.Ok() : Result.Fail("Xəta!");
     }
 }

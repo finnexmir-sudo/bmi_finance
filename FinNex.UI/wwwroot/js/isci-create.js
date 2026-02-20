@@ -28,6 +28,40 @@
             e.target.value = value;
         });
     }
+    // Departamentləri yükləmək funksiyası
+    document.addEventListener('DOMContentLoaded', function () {
+        const depSelect = document.querySelector('select[name="DepartamentId"]');
+        const vezSelect = document.querySelector('select[name="VezifeId"]');
+
+        // 1. Səhifə yüklənəndə Departamentləri gətir
+        fetch('/HR/Isci/GetDepartamentler')
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(d => {
+                    depSelect.innerHTML += `<option value="${d.id}">${d.ad}</option>`;
+                });
+            });
+
+        // 2. Departament seçiləndə Vəzifələri gətir
+        depSelect.addEventListener('change', function () {
+            const depId = this.value;
+
+            // Vəzifə siyahısını təmizlə
+            vezSelect.innerHTML = '<option value="">Vəzifə seçin</option>';
+            vezSelect.disabled = true;
+
+            if (depId) {
+                fetch(`/HR/Isci/GetVezifeler?departamentId=${depId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        data.forEach(v => {
+                            vezSelect.innerHTML += `<option value="${v.id}">${v.ad}</option>`;
+                        });
+                        vezSelect.disabled = false;
+                    });
+            }
+        });
+    });
 
     // Form validasiyası
     form.addEventListener('submit', function (e) {

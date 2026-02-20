@@ -10,11 +10,13 @@ namespace FinNex.UI.Areas.HR.Controllers
     {
         private readonly IIsciService _isciService;
         private readonly IDepartmentService _departmentService;
+        private readonly IVezifeService _vezifeService;
 
-        public IsciController(IIsciService isciService,IDepartmentService departmentService)
+        public IsciController(IIsciService isciService,IDepartmentService departmentService,IVezifeService vezifeService)
         {
             _isciService = isciService;
             _departmentService = departmentService;
+            _vezifeService = vezifeService;
         }
 
         public async Task<IActionResult> Index()
@@ -22,6 +24,27 @@ namespace FinNex.UI.Areas.HR.Controllers
             var result = await _isciService.HamisiniGetirAsync();
             return View(result.Data);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetDepartamentler()
+        {
+            var result = await _departmentService.HamisiniGetirAsync(x => !x.Silinib);
+            if (result.Success)
+            {
+                return Json(result.Data?.Select(d => new { id = d.Id, ad = d.Ad }));
+            }
+            return BadRequest();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetVezifeler(int departamentId)
+        {
+            // Artıq x.DepartamentId tanınacaq
+            var result = await _vezifeService.HamisiniGetirAsync(x => x.DepartamentId == departamentId && !x.Silinib);
+
+            return Json(result.Data?.Select(v => new { id = v.Id, ad = v.Ad }));
+        }
+
         // GET
         public async Task<IActionResult> Create()
         {
@@ -60,7 +83,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Soyad = vm.Soyad,
                 Email = vm.Email,
                 Telefon = vm.Telefon,
-                DepartamentId = vm.DepartmentId,
+                SobeId = vm.DepartmentId,
                 IsheBaslamaTarixi = vm.IseQebulTarixi
             };
 

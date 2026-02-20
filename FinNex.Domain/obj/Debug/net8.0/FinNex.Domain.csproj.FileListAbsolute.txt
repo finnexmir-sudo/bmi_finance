@@ -1,0 +1,15 @@
+C:\Users\samir_hu\Source\Repos\finnexmir_bmi\FinNex.Domain\bin\Debug\net8.0\FinNex.Domain.deps.json
+C:\Users\samir_hu\Source\Repos\finnexmir_bmi\FinNex.Domain\bin\Debug\net8.0\FinNex.Domain.runtimeconfig.json
+C:\Users\samir_hu\Source\Repos\finnexmir_bmi\FinNex.Domain\bin\Debug\net8.0\FinNex.Domain.dll
+C:\Users\samir_hu\Source\Repos\finnexmir_bmi\FinNex.Domain\bin\Debug\net8.0\FinNex.Domain.pdb
+C:\Users\samir_hu\Source\Repos\finnexmir_bmi\FinNex.Domain\obj\Debug\net8.0\FinNex.Domain.csproj.AssemblyReference.cache
+C:\Users\samir_hu\Source\Repos\finnexmir_bmi\FinNex.Domain\obj\Debug\net8.0\FinNex.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\samir_hu\Source\Repos\finnexmir_bmi\FinNex.Domain\obj\Debug\net8.0\FinNex.Domain.AssemblyInfoInputs.cache
+C:\Users\samir_hu\Source\Repos\finnexmir_bmi\FinNex.Domain\obj\Debug\net8.0\FinNex.Domain.AssemblyInfo.cs
+C:\Users\samir_hu\Source\Repos\finnexmir_bmi\FinNex.Domain\obj\Debug\net8.0\FinNex.Domain.csproj.CoreCompileInputs.cache
+C:\Users\samir_hu\Source\Repos\finnexmir_bmi\FinNex.Domain\obj\Debug\net8.0\FinNex.Domain.sourcelink.json
+C:\Users\samir_hu\Source\Repos\finnexmir_bmi\FinNex.Domain\obj\Debug\net8.0\FinNex.Domain.dll
+C:\Users\samir_hu\Source\Repos\finnexmir_bmi\FinNex.Domain\obj\Debug\net8.0\refint\FinNex.Domain.dll
+C:\Users\samir_hu\Source\Repos\finnexmir_bmi\FinNex.Domain\obj\Debug\net8.0\FinNex.Domain.pdb
+C:\Users\samir_hu\Source\Repos\finnexmir_bmi\FinNex.Domain\obj\Debug\net8.0\FinNex.Domain.genruntimeconfig.cache
+C:\Users\samir_hu\Source\Repos\finnexmir_bmi\FinNex.Domain\obj\Debug\net8.0\ref\FinNex.Domain.dll
