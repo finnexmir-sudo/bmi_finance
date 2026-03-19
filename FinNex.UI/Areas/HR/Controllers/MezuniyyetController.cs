@@ -1,8 +1,10 @@
 ﻿using FinNex.Application.DTOs.HR;
+using FinNex.Application.DTOs.HR.Isci;
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Domain.Entities.HR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace FinNex.UI.Areas.HR.Controllers
 {
@@ -11,10 +13,12 @@ namespace FinNex.UI.Areas.HR.Controllers
     public class MezuniyyetController : Controller
     {
         private readonly IMezuniyyetService _mezuniyyetService;
+        private readonly IIsciService _isciService;
 
-        public MezuniyyetController(IMezuniyyetService mezuniyyetService)
+        public MezuniyyetController(IMezuniyyetService mezuniyyetService, IIsciService isciService)
         {
             _mezuniyyetService = mezuniyyetService;
+            _isciService = isciService;
         }
 
         #region Sayfalar (Views)
@@ -27,10 +31,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         // Yeni məzuniyyət müraciəti səhifəsi
-        public IActionResult Yarat()
-        {
-            return View();
-        }
+
 
         // Müraciətin detalı səhifəsi
         public async Task<IActionResult> Detal(int id)
@@ -45,10 +46,24 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         #region API İşlemleri (POST)
 
+        [HttpGet]
+        public async Task<IActionResult> Create()
+        {
+            var isciler = await _isciService.HamisiniGetirAsync();
+            if (isciler == null) return NotFound();
+
+            ViewBag.IsciList = new SelectList(isciler?.Data ?? new List<IsciListDto>(), "Id", "TamAd");
+            ViewBag.EvezEdenIsciList = new SelectList(isciler?.Data ?? new List<IsciListDto>(), "Id", "TamAd");
+
+            
+
+            return View();
+        }
+
         // İşçinin müraciət göndərməsi
         [HttpPost]
         [ValidateAntiForgeryToken] // Təhlükəsizlik üçün
-        public async Task<IActionResult> Yarat(MezuniyyetCreateDto dto)
+        public async Task<IActionResult> Create(MezuniyyetCreateDto dto)
         {
             if (!ModelState.IsValid)
                 return Json(new { isSuccess = false, message = "Məlumatlar düzgün daxil edilməyib." });
@@ -59,9 +74,15 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // 1. Mərhələ: Şöbə rəisinin təsdiqi
         [HttpPost]
-       
+        public async Task<IActionResult> SobeReisiTesdiq(int id, bool status, string? qeyd)
+        {
+            // Köhnə SobeReisiTesdiqAsync əvəzinə yeni adı çağır:
+            var result = await _mezuniyyetService.SobeReisiTesdiqAsync(id, status, qeyd);
+            return Json(result);
+        }
 
-      
+
+
         // Müraciəti ləğv etmək (İşçi hələ təsdiq olunmamış fikrini dəyişərsə)
         [HttpPost]
         public async Task<IActionResult> Sil(int id)

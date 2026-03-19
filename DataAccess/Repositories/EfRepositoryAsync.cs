@@ -48,6 +48,18 @@ public class EfRepositoryAsync<T> : IRepositoryAsync<T> where T : BaseEntity
         return await sorgu.FirstOrDefaultAsync(predicate);
     }
 
+    public async Task<T?> SilinmisGetirAsync(Expression<Func<T, bool>> predicate,
+        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
+        bool izlemeden = false)
+    {
+        IQueryable<T> sorgu = _dbSet.Where(x => x.Silinib);
+
+        if (izlemeden) sorgu = sorgu.AsNoTracking();
+        if (include != null) sorgu = include(sorgu);
+
+        return await sorgu.FirstOrDefaultAsync(predicate);
+    }
+
     public async Task<T> YaratAsync(T entity)
     {
         await _dbSet.AddAsync(entity);
@@ -109,6 +121,10 @@ public class EfRepositoryAsync<T> : IRepositoryAsync<T> where T : BaseEntity
     public IQueryable<T> Query()
     {
         return _context.Set<T>().Where(x => !x.Silinib);
+    }
+    public IQueryable<T> QueryDeleted()
+    {
+        return _context.Set<T>().Where(x => x.Silinib);
     }
     public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
     {

@@ -23,14 +23,14 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<Musteri> Musteriler { get; set; }
     public DbSet<MusteriHesabi> MusteriHesablari { get; set; }
     public DbSet<OdenisTapsirigi> OdenisTapsiriqlari { get; set; }
-    public DbSet<Department> Departments { get; set; }
+    public DbSet<Departament> Departments { get; set; }
     public DbSet<OdenisTapsirigiNomresi> OdenisTapsirigiNomreleri { get; set; }
     public DbSet<Valyuta> Valyutalar { get; set; } = null!;
 
     public DbSet<Sened> Senedler { get; set; }
     public DbSet<SenedFayl> SenedFayllar { get; set; }
     public DbSet<SenedNovu> SenedNovleri { get; set; }
-    public DbSet<Department> Departamentler { get; set; }
+    public DbSet<Departament> Departamentler { get; set; }
     public DbSet<Tag> Tagler { get; set; }
     public DbSet<SenedTagMap> SenedTagMaps { get; set; }
     public DbSet<SenedAccess> SenedAccessler { get; set; }
@@ -148,9 +148,9 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     .HasIndex(x => x.Ad)
     .IsUnique();
         builder.Entity<Isci>()
-            .HasOne(x => x.Sobe)
+            .HasOne(x => x.Departament)
             .WithMany()
-            .HasForeignKey(x => x.SobeId)
+            .HasForeignKey(x => x.DepartamentId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<Isci>()

@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.Linq.Expressions;
+using AutoMapper;
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.SenedDovriyyesi.SenedNovu;
 using FinNex.Application.Interfaces.SenedDovriyyesi;
@@ -6,6 +7,8 @@ using FinNex.Application.Services;
 using FinNex.DataAccess.UnitOfWorks;
 using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 
 public class SenedNovuService
     : ServiceAsync<SenedNovu, SenedNovuListDto, SenedNovuCreateDto, SenedNovuUpdateDto>,
@@ -100,5 +103,21 @@ public class SenedNovuService
             : "Sənəd növü deaktiv edildi.";
 
         return Result.Ok(message);
+    }
+
+    public override async Task<Result<IList<SenedNovuListDto>>> HamisiniGetirAsync(Expression<Func<SenedNovu, bool>> predicate = null,
+    Func<IQueryable<SenedNovu>, IIncludableQueryable<SenedNovu, object>> include = null,
+    bool izlemeden = true)
+    {
+        var list = await _unitOfWork.Repository<SenedNovu>().HamisiniGetirAsync(izlemeden: true, include: a => a.Include(b => b.Department));
+
+        if (list !=null)
+        {
+            var dtoList = _mapper.Map<List<SenedNovuListDto>>(list);
+
+            return Result<IList<SenedNovuListDto>>.Ok(dtoList);
+        }
+
+        return Result<IList<SenedNovuListDto>>.Fail("");
     }
 }

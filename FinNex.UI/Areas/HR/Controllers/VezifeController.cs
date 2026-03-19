@@ -32,6 +32,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             return View(result.Data);
         }
 
+        [HttpGet]
         public async Task<IActionResult> Create()
         {
             var result = await _departmentService.HamisiniGetirAsync();

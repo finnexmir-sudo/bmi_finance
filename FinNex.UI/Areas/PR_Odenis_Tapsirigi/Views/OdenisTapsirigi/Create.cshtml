@@ -6,7 +6,7 @@
     <!-- HEADER -->
     <div class="payment-header">
         <div class="payment-title">
-            <h2><i class="bi bi-file-earmark-text me-2"></i>"A" Formatli Odenis Tapshirigi</h2>
+            <h2><i class="bi bi-file-earmark-text me-2"></i>"A" Formatli Odenis Tapshirigi Yeni</h2>
             <span>A-format · Daxili bank kocurmesi</span>
         </div>
         <div class="payment-meta">
@@ -17,7 +17,7 @@
     </div>
 
     <form method="post" class="payment-form" id="paymentForm">
-
+        @Html.AntiForgeryToken()
         <!-- Hidden ID-lər -->
         <input type="hidden" asp-for="Odenis.OduyenBankId"    id="OduyenBankIdHidden" />
         <input type="hidden" asp-for="Odenis.AlanBankId"      id="AlanBankIdHidden" />
@@ -43,20 +43,20 @@
 
                     <div class="field-row">
                         <input type="text" class="form-control" id="OduyenBankKodSearch"
-                               placeholder="Bank kodunu daxil edin...">
+                                placeholder="Bank kodunu daxil edin...">
                         <button type="button" class="btn btn-search" id="btnOduyenBankAxtar">
                             <i class="bi bi-search"></i> Axtar
                         </button>
                     </div>
                     <div id="OduyenBankXeta" class="field-error" style="display:none"></div>
 
-                    <input class="form-control" id="OduyenBankAd"         placeholder="Bankin adi"    readonly>
+                    <input class="form-control" id="OduyenBankAd" value="'Bank Melli Iran' Bakı filialı" placeholder="Bankin adi" readonly>
                     <div class="two-field">
-                        <input class="form-control" id="OduyenBankKod"    placeholder="Kod"           readonly>
-                        <input class="form-control" id="OduyenBankVoen"   placeholder="VOEN"          readonly>
+                        <input class="form-control" id="OduyenBankKod" value="509761" placeholder="Kod" readonly>
+                        <input class="form-control" id="OduyenBankVoen" value="1300036291" placeholder="VOEN" readonly>
                     </div>
-                    <input class="form-control" id="OduyenBankMuxbirHesab" placeholder="Muxbir hesab" readonly>
-                    <input class="form-control" id="OduyenBankSwift"       placeholder="SWIFT / BIC"  readonly>
+                    <input class="form-control" id="OduyenBankMuxbirHesab" value="AZ74NABZ01350100000000037944" placeholder="Muxbir hesab" readonly>
+                    <input class="form-control" id="OduyenBankSwift" value="MELIAZ22" placeholder="SWIFT / BIC" readonly>
                 </div>
 
                 <!-- B1 – Alan bank -->
@@ -72,21 +72,33 @@
                         <button type="button" class="btn btn-search" id="btnAlanBankAxtar">
                             <i class="bi bi-search"></i> Axtar
                         </button>
-                        <a asp-controller="Bank" asp-action="Yarat"
-                           class="btn btn-add" title="Yeni bank elave et">
-                            <i class="bi bi-plus-lg"></i>
-                        </a>
+                        
 
                     </div>
                     <div id="AlanBankXeta" class="field-error" style="display:none"></div>
 
-                    <input class="form-control" id="AlanBankAd"            placeholder="Bankin adi"   readonly>
+                    <input class="form-control" id="AlanBankAd"            placeholder="Bankin adi"   >
                     <div class="two-field">
-                        <input class="form-control" id="AlanBankKod"       placeholder="Kod"          readonly>
-                        <input class="form-control" id="AlanBankVoen"      placeholder="VOEN"         readonly>
+                        <input class="form-control" id="AlanBankKod"       placeholder="Kod"          >
+                        <input class="form-control" id="AlanBankVoen"      placeholder="VOEN"         >
                     </div>
-                    <input class="form-control" id="AlanBankMuxbirHesab"   placeholder="Muxbir hesab" readonly>
-                    <input class="form-control" id="AlanBankSwift"         placeholder="SWIFT / BIC"  readonly>
+                    <!-- Hesab - combo + manual -->
+                    <!-- Hesab - autocomplete style -->
+                    <div class="hesab-radio-wrapper" id="AlanBankHesabRadioWrapper" style="display:none">
+                        <div class="hesab-radio-label">Müxbir hesab seçin</div>
+                        <div id="AlanBankHesabRadioList"></div>
+                    </div>
+
+                    <!-- Hesab yoxdursa manual input -->
+                    <input class="form-control hesab-radio-manual"
+                           id="AlanBankMuxbirHesab"
+                           placeholder="Hesab (IBAN)"
+                           autocomplete="off"
+                           style="display:none">
+
+                    <input type="hidden" id="AlanHesabIdHidden" asp-for="Odenis.AlanHesabId" />
+
+                    <input class="form-control" id="AlanBankSwift"         placeholder="SWIFT / BIC"  >
                 </div>
 
             </div>
@@ -113,12 +125,13 @@
                         <button type="button" class="btn btn-search" id="btnOduyenMusteriAxtar">
                             <i class="bi bi-search"></i> Axtar
                         </button>
+                       
                     </div>
                     <div id="OduyenMusteriXeta" class="field-error" style="display:none"></div>
 
-                    <input class="form-control" id="OduyenMusteriAd"   placeholder="Musterinin adi" readonly>
-                    <input class="form-control" id="OduyenMusteriVoen" placeholder="VOEN"           readonly>
-                    <input class="form-control" id="OduyenMusteriHesab" placeholder="Hesab (IBAN)"  readonly>
+                    <input class="form-control" id="OduyenMusteriAd" value="'Bank Melli Iran' Bakı filialı" placeholder="Musterinin adi" readonly>
+                    <input class="form-control" id="OduyenMusteriHesab" value="AZ02MELI45019000000000400000" placeholder="Hesab (IBAN)" readonly>
+                    <input class="form-control" id="OduyenMusteriVoen" value="1300036291" placeholder="VOEN" readonly>
                 </div>
 
                 <!-- B2 – Alan müştəri -->
@@ -129,17 +142,47 @@
                     </div>
 
                     <div class="field-row">
-                        <input type="text" class="form-control" id="AlanMusteriVoenSearch"
-                               placeholder="VOEN ile axtar...">
+                        <input type="text" class="form-control" id="AlanMusteriVoenSearch" placeholder="VOEN ile axtar...">
+
                         <button type="button" class="btn btn-search" id="btnAlanMusteriAxtar">
                             <i class="bi bi-search"></i> Axtar
                         </button>
+
+                        <!-- Köhnə (səhv): button ilə asp-controller/asp-action -->
+                        <!-- Yeni (düzgün): <a> ilə -->
+                        
                     </div>
+
+
+
+
                     <div id="AlanMusteriXeta" class="field-error" style="display:none"></div>
 
-                    <input class="form-control" id="AlanMusteriAd"    placeholder="Musterinin adi" readonly>
-                    <input class="form-control" id="AlanMusteriVoen"  placeholder="VOEN"           readonly>
-                    <input class="form-control" id="AlanMusteriHesab" placeholder="Hesab (IBAN)"   readonly>
+                    <input class="form-control" id="AlanMusteriAd"
+                           asp-for="@Model.MusteriCreateDto!.Ad"
+                           placeholder="Musterinin adi">
+
+                    <!-- Hesab - radio seçim style (C variant) -->
+                    <div class="hesab-radio-wrapper" id="AlanMusteriHesabRadioWrapper" style="display:none">
+                        <div class="hesab-radio-label">Hesab seçin</div>
+                        <div id="AlanMusteriHesabRadioList"></div>
+                    </div>
+
+                    <!-- Hesab yoxdursa manual input -->
+                    <input class="form-control hesab-radio-manual"
+                           id="AlanMusteriHesab"
+                           asp-for="@Model.MusteriCreateDto!.Hesab"
+                           placeholder="Hesab (IBAN)">
+
+                    <input type="hidden" id="AlanMusteriHesabId">
+
+                    <input class="form-control" id="AlanMusteriVoen"
+                           asp-for="@Model.MusteriCreateDto!.Voen"
+                           placeholder="VOEN">
+
+
+
+
                 </div>
 
             </div>
@@ -154,11 +197,14 @@
             <div class="section-body amount-row">
                 <div>
                     <label class="field-label">C1. Valyuta</label>
-                    <select class="form-control" asp-for="Odenis.Valyuta" id="Odenis_Valyuta">
+
+                    <select class="form-control" asp-for="Odenis.Valyuta" id="Odenis_Valyuta"
+                            onchange="document.getElementById('Odenis_ValyutaId').value = this.selectedIndex + 1">
                         <option>AZN</option>
                         <option>USD</option>
                         <option>EUR</option>
                     </select>
+                    <input type="hidden" id="Odenis_ValyutaId" value="1" />
                 </div>
                 <div>
                     <label class="field-label">C2. Reqemle</label>
@@ -215,7 +261,7 @@
         <!-- ACTIONS -->
         <div class="form-actions">
             <button type="button" class="btn btn-primary px-5" id="btnGenerateWord">
-                <i class="bi bi-file-earmark-word me-1"></i> Yadda Saxla
+                <i class="bi bi-file-earmark-word me-1"></i> ÖT hazırlanması
             </button>
             <a asp-action="Index" class="btn btn-outline-secondary px-4">
                 <i class="bi bi-x-lg me-1"></i> Legv Et
@@ -229,6 +275,22 @@
     <link rel="stylesheet" href="~/css/PR_Odenis_Tapsirigi/payment-create.css" />
 }
 @section Scripts {
-    <script src="~/js/PR_Odenis_Tapsirigi/payment-bank.js"></script>
-    <script src="~/js/PR_Odenis_Tapsirigi/payment-word.js"></script>
+    <script src="~/js/PR_Odenis_Tapsirigi/payment-bank.js" asp-append-version="true"></script>
+    <script src="~/js/PR_Odenis_Tapsirigi/payment-word.js" asp-append-version="true"></script>
+
+    @if (TempData["AlanMusteri_Ad"] != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var adInput    = document.querySelector('input[name="MusteriCreateDto.Ad"]');
+                var voenInput  = document.querySelector('input[name="MusteriCreateDto.Voen"]');
+                var hesabInput = document.querySelector('input[name="MusteriCreateDto.Hesab"]');
+
+                if (adInput)    adInput.value    = '@TempData["AlanMusteri_Ad"]';
+                if (voenInput)  voenInput.value  = '@TempData["AlanMusteri_Voen"]';
+                if (hesabInput) hesabInput.value = '@TempData["AlanMusteri_Hesab"]';
+            });
+        </script>
+    }
+
 }

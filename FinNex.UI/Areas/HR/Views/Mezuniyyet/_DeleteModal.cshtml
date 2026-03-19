@@ -1,49 +1,56 @@
-﻿<div class="modal fade mez-modal" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+﻿@*
+    _DeleteModal.cshtml
+    Partial view – Delete Confirmation Modal
+    Usage: @await Html.PartialAsync("_DeleteModal")
+    Trigger via: data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="{id}" data-name="{name}"
+*@
+
+<div class="modal fade mez-modal"
+     id="deleteModal"
+     tabindex="-1"
+     aria-labelledby="deleteModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
 
+            <!-- Header -->
             <div class="modal-header">
                 <h5 class="modal-title" id="deleteModalLabel">
-                    <i class="bi bi-trash3 me-2 text-danger"></i>Silməyi Təsdiqləyin
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Bağla"></button>
-            </div>
-
-            <div class="modal-body text-center">
-                <div class="mez-delete-icon">
                     <i class="bi bi-exclamation-triangle-fill"></i>
-                </div>
-
-                <h6 style="font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; color: var(--mez-text);">
-                    Bu məzuniyyəti silmək istəyirsiniz?
-                </h6>
-
-                <p class="mez-delete-warning">
-                    Bu əməliyyat geri qaytarıla bilməz. Aşağıdakı işçinin məzuniyyət sorğusu
-                    birdəfəlik silinəcəkdir.
-                </p>
-
-                <div class="mez-delete-target">
-                    <i class="bi bi-person-circle me-2" style="color: var(--mez-accent);"></i>
-                    <span id="deleteTargetName">—</span>
-                </div>
+                    Silmə Təsdiqi
+                </h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Bağla"></button>
             </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn-mez-ghost" data-bs-dismiss="modal">
-                    <i class="bi bi-x-lg"></i> Ləğv et
-                </button>
+            <!-- Body -->
+            <div class="modal-body">
+                <div class="delete-confirm-icon">
+                    <i class="bi bi-trash3-fill"></i>
+                </div>
+                <p class="delete-confirm-text">
+                    <span class="delete-confirm-name" id="deleteEmployeeName"></span>
+                    adlı işçinin məzuniyyət müraciətini silmək istədiyinizdən əminsiniz?
+                    <br><br>
+                    <span style="font-size:0.8rem; color:var(--gray-400);">Bu əməliyyat geri qaytarıla bilməz.</span>
+                </p>
+            </div>
 
+            <!-- Footer -->
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn-mez-secondary"
+                        data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg"></i> Ləğv Et
+                </button>
                 <form id="deleteForm"
-                      asp-action="Delete"
-                      asp-controller="Mezuniyyet"
-                      asp-area="HR"
                       method="post"
-                      data-base-action="/HR/Mezuniyyet/Delete/__ID__">
+                      data-base-url="@Url.Action("Delete", "Mezuniyyet", new { area = "HR" })">
                     @Html.AntiForgeryToken()
-                    <input type="hidden" name="id" id="deleteFormId" />
                     <button type="submit" class="btn-mez-danger">
-                        <i class="bi bi-trash3-fill"></i> Bəli, Sil
+                        <i class="bi bi-trash3"></i> Sil
                     </button>
                 </form>
             </div>
@@ -51,21 +58,3 @@
         </div>
     </div>
 </div>
-
-@* Patch: sync the hidden input with the modal data on show *@
-<script>
-    (function () {
-        var modal = document.getElementById('deleteModal');
-        if (!modal) return;
-        modal.addEventListener('show.bs.modal', function (e) {
-            var btn = e.relatedTarget;
-            if (!btn) return;
-            var id = btn.dataset.id;
-            var name = btn.dataset.name;
-            var nameEl = modal.querySelector('#deleteTargetName');
-            var idInput = modal.querySelector('#deleteFormId');
-            if (nameEl) nameEl.textContent = name || '—';
-            if (idInput) idInput.value = id || '';
-        });
-    })();
-</script>

@@ -260,3 +260,127 @@
         grid-template-columns: 1fr;
     }
 }
+/* ================================================================
+   Bank Hesab — Radio Seçim Dizaynı (C Variant)
+   payment-create.css faylına əlavə edin
+================================================================ */
+
+/* ── Hesab seçim wrapper ─────────────────────────────────────── */
+.hesab-radio-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.hesab-radio-label {
+    font-size: 10px;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+/* ── Hər bir hesab sətri ─────────────────────────────────────── */
+.hesab-radio-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    background: #fff;
+    user-select: none;
+}
+
+    .hesab-radio-option:hover {
+        border-color: #5DCAA5;
+        background: #f0fdf8;
+    }
+
+    .hesab-radio-option.active {
+        border-color: #1D9E75;
+        background: #E1F5EE;
+    }
+
+/* ── Radio dairəsi ───────────────────────────────────────────── */
+.hesab-radio-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid #d1d5db;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s, background 0.15s;
+    background: #fff;
+}
+
+.hesab-radio-option.active .hesab-radio-dot {
+    border-color: #1D9E75;
+    background: #1D9E75;
+}
+
+.hesab-radio-dot-inner {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #fff;
+    display: none;
+}
+
+.hesab-radio-option.active .hesab-radio-dot-inner {
+    display: block;
+}
+
+/* ── IBAN mətni ──────────────────────────────────────────────── */
+.hesab-radio-iban {
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    color: #1a1d23;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hesab-radio-option.active .hesab-radio-iban {
+    color: #064e3b;
+    font-weight: 600;
+}
+
+/* ── "Əsas" / "Əlavə" tag ────────────────────────────────────── */
+.hesab-radio-tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+    .hesab-radio-tag.esass {
+        background: #E1F5EE;
+        color: #0F6E56;
+    }
+
+    .hesab-radio-tag.elave {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+/* ── Hesab yoxdursa manual input ────────────────────────────── */
+.hesab-radio-option.active::after {
+    content: '↓';
+    font-size: 11px;
+    color: #1D9E75;
+    margin-left: 4px;
+    opacity: 0.7;
+}
+.hesab-goster {
+    display: block !important;
+}

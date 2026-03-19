@@ -13,12 +13,20 @@
       "PackagePath": "staticwebassets\\css\\PR_Odenis_Tapsirigi\\payment-create.css"
     },
     {
+      "Id": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-detail.css",
+      "PackagePath": "staticwebassets\\css\\PR_Odenis_Tapsirigi\\payment-detail.css"
+    },
+    {
       "Id": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-hub.css",
       "PackagePath": "staticwebassets\\css\\PR_Odenis_Tapsirigi\\payment-hub.css"
     },
     {
       "Id": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-list.css",
       "PackagePath": "staticwebassets\\css\\PR_Odenis_Tapsirigi\\payment-list.css"
+    },
+    {
+      "Id": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-update.css",
+      "PackagePath": "staticwebassets\\css\\PR_Odenis_Tapsirigi\\payment-update.css"
     },
     {
       "Id": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\admin.css",
@@ -35,6 +43,10 @@
     {
       "Id": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\bank-index.css",
       "PackagePath": "staticwebassets\\css\\bank-index.css"
+    },
+    {
+      "Id": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\change-password.css",
+      "PackagePath": "staticwebassets\\css\\change-password.css"
     },
     {
       "Id": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\hr\\davamiyyet-list.css",
@@ -105,12 +117,24 @@
       "PackagePath": "staticwebassets\\js\\PR_Odenis_Tapsirigi\\payment-bank.js"
     },
     {
+      "Id": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-detail.js",
+      "PackagePath": "staticwebassets\\js\\PR_Odenis_Tapsirigi\\payment-detail.js"
+    },
+    {
+      "Id": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-word -Update.js",
+      "PackagePath": "staticwebassets\\js\\PR_Odenis_Tapsirigi\\payment-word -Update.js"
+    },
+    {
       "Id": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-word.js",
       "PackagePath": "staticwebassets\\js\\PR_Odenis_Tapsirigi\\payment-word.js"
     },
     {
       "Id": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\admin-sidebar.js",
       "PackagePath": "staticwebassets\\js\\admin-sidebar.js"
+    },
+    {
+      "Id": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\change-password.js",
+      "PackagePath": "staticwebassets\\js\\change-password.js"
     },
     {
       "Id": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\hr\\davamiyyet-list.js",

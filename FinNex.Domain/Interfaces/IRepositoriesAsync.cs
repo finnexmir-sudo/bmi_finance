@@ -5,13 +5,17 @@ namespace FinNex.Domain.Interfaces
 {
     public interface IRepositoryAsync<T> where T : BaseEntity
     {
-        Task<IList<T>> HamisiniGetirAsync(Expression<Func<T, bool>>? predicate = null,
+     Task<IList<T>> HamisiniGetirAsync(Expression<Func<T, bool>>? predicate = null,
                Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
                bool izlemeden = false);
 
         Task<T?> IdIleGetirAsync(int id);
 
         Task<T?> GetirAsync(Expression<Func<T, bool>> predicate,
+               Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
+               bool izlemeden = false);
+
+        Task<T?> SilinmisGetirAsync(Expression<Func<T, bool>> predicate,
                Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
                bool izlemeden = false);
 
@@ -34,6 +38,7 @@ namespace FinNex.Domain.Interfaces
 
         Task<int> SayAsync(Expression<Func<T, bool>>? predicate = null);
         IQueryable<T> Query();
+        IQueryable<T> QueryDeleted();
         Task<bool> AnyAsync(Expression<Func<T, bool>> predicate);
 
 

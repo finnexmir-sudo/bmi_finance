@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FinNex.UI.Areas.HR.Controllers
 {
     [Area("HR")]
+    [Authorize(Roles = "HR")]
     public class DashboardController : Controller
     {
         public IActionResult Index()

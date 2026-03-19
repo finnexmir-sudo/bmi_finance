@@ -15,7 +15,8 @@ public class HRProfile : Profile
         // VEZIFE
         // =========================
 
-        CreateMap<Vezife, VezifeListDto>();
+        CreateMap<Vezife, VezifeListDto>()
+    .ForMember(dest => dest.DepartamentAd, opt => opt.MapFrom(src => src.Departament.Ad));
         CreateMap<Vezife, VezifeDetailDto>();
 
         CreateMap<VezifeCreateDto, Vezife>();
@@ -29,24 +30,19 @@ public class HRProfile : Profile
         CreateMap<Isci, IsciListDto>()
     .ForMember(dest => dest.TamAd, opt => opt.MapFrom(src => $"{src.Ad} {src.Soyad} {src.AtaAdi}"))
     .ForMember(dest => dest.CariMaas, opt => opt.MapFrom(src => src.Maliye.CariMaas))
-    .ForMember(dest => dest.SobeAdi, opt => opt.MapFrom(src => src.Sobe.Ad)) // Səndə Department.Name ola bilər
+    .ForMember(dest => dest.SobeAdi, opt => opt.MapFrom(src => src.Departament.Ad)) // Səndə Department.Name ola bilər
     .ForMember(dest => dest.VezifeAdi, opt => opt.MapFrom(src => src.Vezife.Ad));
 
         CreateMap<Isci, IsciDetailDto>()
             .ForMember(d => d.Sobe,
-                o => o.MapFrom(s => s.Sobe.Ad))
+                o => o.MapFrom(s => s.Departament.Ad))
             .ForMember(d => d.Vezife,
                 o => o.MapFrom(s => s.Vezife.Ad))
             .ForMember(d => d.LoginVar,
                 o => o.MapFrom(s => s.AppUserId != null));
 
-        CreateMap<IsciCreateDto, Isci>()
-    .ForMember(dest => dest.Maliye, opt => opt.MapFrom(src => new IsciMaliye
-    {
-        CariMaas = src.CariMaas,
-        MezuniyyetQaliqGunu = src.MezuniyyetQaliqGunu,
-        BankHesabNo = src.BankHesabNo
-    }));
+        CreateMap<IsciCreateDto, Isci>();
+    
         CreateMap<IsciUpdateDto, Isci>();
 
 
@@ -62,7 +58,7 @@ public class HRProfile : Profile
             .ForMember(d => d.IsciTamAd,
                 o => o.MapFrom(s => s.Isci.Ad + " " + s.Isci.Soyad))
             .ForMember(d => d.Sobe,
-                o => o.MapFrom(s => s.Isci.Sobe.Ad))
+                o => o.MapFrom(s => s.Isci.Departament.Ad))
             .ForMember(d => d.Vezife,
                 o => o.MapFrom(s => s.Isci.Vezife.Ad));
 
@@ -82,7 +78,7 @@ public class HRProfile : Profile
             .ForMember(d => d.IsciTamAd,
                 o => o.MapFrom(s => s.Isci.Ad + " " + s.Isci.Soyad))
             .ForMember(d => d.Sobe,
-                o => o.MapFrom(s => s.Isci.Sobe.Ad))
+                o => o.MapFrom(s => s.Isci.Departament.Ad))
             .ForMember(d => d.Vezife,
                 o => o.MapFrom(s => s.Isci.Vezife.Ad));
 
@@ -101,7 +97,7 @@ public class HRProfile : Profile
         CreateMap<MezuniyyetCreateDto, Mezuniyyet>();
         CreateMap<MezuniyyetUpdateDto, Mezuniyyet>();
         CreateMap<Mezuniyyet, MezuniyyetListDto>()
-    .ForMember(dest => dest.SobeAdi, opt => opt.MapFrom(src => src.Isci.Sobe.Ad))
+    .ForMember(dest => dest.SobeAdi, opt => opt.MapFrom(src => src.Isci.Departament.Ad))
     .ForMember(dest => dest.VezifeAdi, opt => opt.MapFrom(src => src.Isci.Vezife.Ad));
     }
 }

@@ -39,7 +39,7 @@
             <div class="nav-section">Əsas</div>
 
             <a class="nav-link @(activePage == "Dashboard" ? "active" : "")"
-               asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index">
+            asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index">
                 <i class="bi bi-grid-1x2-fill"></i>
                 Dashboard
             </a>
@@ -47,13 +47,13 @@
             <div class="nav-section">Sənədlər</div>
 
             <a class="nav-link @(activePage == "Siyahi" ? "active" : "")"
-               asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index">
+            asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index">
                 <i class="bi bi-file-earmark-text-fill"></i>
                 Sənəd Siyahısı
             </a>
 
             <a class="nav-link @(activePage == "Yarat" ? "active" : "")"
-               asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Yarat">
+            asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Yarat">
                 <i class="bi bi-file-earmark-plus-fill"></i>
                 Yeni Sənəd
             </a>
@@ -61,18 +61,23 @@
             <div class="nav-section">İdarəetmə</div>
 
             <a class="nav-link @(activePage == "SenedNovleri" ? "active" : "")"
-               asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="SenedNovleri">
+            asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="SenedNovleri">
                 <i class="bi bi-tags-fill"></i>
                 Sənəd Növləri
             </a>
 
-            <div class="nav-section">Arxiv</div>
+            
+            @if (User.IsInRole("Admin"))
+            {
+                <div class="nav-section">Arxiv</div>
 
-            <a class="nav-link @(activePage == "Silinmisler" ? "active" : "")"
-               asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Silinmisler">
-                <i class="bi bi-trash3-fill"></i>
-                Silinmişlər
-            </a>
+                <a class="nav-link @(activePage == "Silinmisler" ? "active" : "")"
+                   asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Silinmisler">
+                    <i class="bi bi-trash3-fill"></i>
+                    Silinmişlər
+                </a>
+            }
+            
         </nav>
 
         <a class="sd-back-link" asp-controller="Home" asp-action="Index" asp-area="">
@@ -133,6 +138,7 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+   
 
     
     @await RenderSectionAsync("Scripts", required: false)

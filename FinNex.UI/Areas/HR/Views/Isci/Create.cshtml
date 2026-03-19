@@ -20,6 +20,14 @@
             <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
             <div class="form-grid">
+
+                <!-- Ad -->
+                <div class="form-field">
+                    <label asp-for="IstifadeciAd">İstifadəçi adı <span class="req">*</span></label>
+                    <input asp-for="IstifadeciAd" class="form-input" placeholder="İstifadəçi adı" />
+                    <span asp-validation-for="IstifadeciAd" class="error-text"></span>
+                </div>
+
                 <!-- Ad -->
                 <div class="form-field">
                     <label asp-for="Ad">Ad <span class="req">*</span></label>
@@ -42,31 +50,44 @@
 
                 <!-- FIN -->
                 <div class="form-field">
-                    <label>FIN <span class="req">*</span></label>
-                    <input name="FIN" class="form-input" placeholder="FIN kod" maxlength="7" style="text-transform: uppercase;" required />
+                    <label asp-for="FIN">FIN <span class="req">*</span></label>
+                    <input asp-for="FIN" class="form-input" placeholder="FIN kod" maxlength="7" style="text-transform: uppercase;" />
+                    <span asp-validation-for="FIN" class="error-text"></span>
                 </div>
 
                 <!-- Seriya Nömrə -->
                 <div class="form-field">
-                    <label>Şəxsiyyət Vəsiqəsi</label>
-                    <input name="SeriyaNomre" class="form-input" placeholder="AA1234567" />
+                    <label asp-for="SeriyaNomre">Şəxsiyyət Vəsiqəsi <span class="req">*</span></label>
+                    <input asp-for="SeriyaNomre" class="form-input" placeholder="AA1234567" />
+                    <span asp-validation-for="SeriyaNomre" class="error-text"></span>
                 </div>
 
                 <!-- Doğum Tarixi -->
                 <div class="form-field">
-                    <label>Doğum Tarixi <span class="req">*</span></label>
-                    <input name="DogumTarixi" type="date" class="form-input" required />
+                    <label asp-for="DogumTarixi">Doğum Tarixi <span class="req">*</span></label>
+                    <input asp-for="DogumTarixi" type="date" class="form-input" />
+                    <span asp-validation-for="DogumTarixi" class="error-text"></span>
                 </div>
 
                 <!-- Cins -->
                 <div class="form-field">
-                    <label>Cins <span class="req">*</span></label>
-                    <select name="Cins" class="form-select" required>
+                    <label asp-for="CinsId">Cins <span class="req">*</span></label>
+                    <select asp-for="CinsId" class="form-select" required>
                         <option value="">Seçin</option>
                         <option value="0">Kişi</option>
                         <option value="1">Qadın</option>
                     </select>
+                    <span asp-validation-for="CinsId" class="error-text"></span>
                 </div>
+
+                @* <div class="form-field">
+                    <label>Cins <span class="req">*</span></label>
+                    <select name="CinsId" id="CinsId" class="form-select" required>
+                        <option value="">Seçin</option>
+                        <option value="0">Kişi</option>
+                        <option value="1">Qadın</option>
+                    </select>
+                </div> *@
 
                 <!-- Telefon -->
                 <div class="form-field">
@@ -91,7 +112,8 @@
                 <!-- Departament -->
                 <div class="form-field">
                     <label>Departament <span class="req">*</span></label>
-                    <select name="DepartamentId" class="form-select" required>
+                    <select name="DepartamentId" id="DepartamentId" class="form-select"
+                            asp-items="@(new SelectList(Model.Departments, "Value", "Text"))" required>
                         <option value="">Departament seçin</option>
                     </select>
                 </div>
@@ -99,7 +121,7 @@
                 <!-- Vəzifə -->
                 <div class="form-field">
                     <label>Vəzifə <span class="req">*</span></label>
-                    <select name="VezifeId" class="form-select" required disabled>
+                    <select name="VezifeId" id="VezifeId" class="form-select" required>
                         <option value="">Vəzifə seçin</option>
                     </select>
                 </div>
@@ -130,5 +152,5 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="~/js/hr/isci-create.js"></script>
+    <script src="~/js/isci-create.js"></script>
 }

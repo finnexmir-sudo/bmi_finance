@@ -5,7 +5,7 @@ namespace FinNex.Domain.Entities.SenedDovriyyesi
     public class SenedNovu : BaseEntity
     {
         public int DepartmentId { get; set; }
-        public Department Department { get; set; } = null!;
+        public Departament Department { get; set; } = null!;
 
         public string Kod { get; set; } = null!;   // məsələn: MUQAVILE, ERIZE
         public string Ad { get; set; } = null!;

@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Məbləğ
             valyuta:    val('Odenis_Valyuta'),
-            mebleg:     val('Odenis_Mebleg'),
+            mebleg: parseFloat(val('Odenis_Mebleg') || '0').toFixed(2),
             meblegYazi: val('Odenis_MeblegYazi'),
 
             // Təyinat
@@ -102,16 +102,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Büdcə
             budceTesnifatininKodu: val('Odenis_BudceTesnifatininKodu'),
-            budceSeviyyesininKodu: val('Odenis_BudceSeviyyesininKodu')
+            budceSeviyyesininKodu: val('Odenis_BudceSeviyyesininKodu'),
+
+            oduyenBankId: val('OduyenBankIdHidden'),
+            alanBankId: val('AlanBankIdHidden'),
+            oduyenMusteriId: val('OduyenMusteriIdHidden'),
+            oduyenHesabId: val('OduyenHesabIdHidden'),
+            alanMusteriId: val('AlanMusteriIdHidden'),
+            alanHesabId: val('AlanHesabIdHidden'),
+            valyutaId: val('Odenis_ValyutaId'), 
         };
 
         btn.disabled = true;
         btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Hazırlanır...';
 
         try {
-            const response = await fetch('/OdenisTapsirigi/GenerateWord', {
+            const response = await fetch('/PR_Odenis_Tapsirigi/OdenisTapsirigi/GenerateWord', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? ''
+                },
                 body: JSON.stringify(dto)
             });
 
@@ -119,8 +130,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 throw new Error('Server xətası: ' + response.status);
             }
 
+            console.log({
+                oduyenBankId: document.getElementById('OduyenBankIdHidden')?.value,
+                alanBankId: document.getElementById('AlanBankIdHidden')?.value,
+                oduyenMusteriId: document.getElementById('OduyenMusteriIdHidden')?.value,
+                oduyenHesabId: document.getElementById('OduyenHesabIdHidden')?.value,
+                alanMusteriId: document.getElementById('AlanMusteriIdHidden')?.value,
+                alanHesabId: document.getElementById('AlanHesabIdHidden')?.value,
+                valyutaId: document.getElementById('Odenis_ValyutaId')?.value,
+            });
+
+
             const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
+            const url = window.URL.createObjectURL(blob);   
 
             const a = document.createElement('a');
             a.href = url;
@@ -130,6 +152,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             window.URL.revokeObjectURL(url);
             a.remove();
+
+            // Word yükləndi - Siyahi səhifəsinə get
+            window.location.href = '/PR_Odenis_Tapsirigi/OdenisTapsirigi/Siyahi';
 
         } catch (err) {
             alert('Word sənədi hazırlanarkən xəta baş verdi:\n' + err.message);

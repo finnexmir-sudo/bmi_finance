@@ -38,6 +38,8 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<ISenedService, SenedService>();
         services.AddScoped<ISenedNovuService, SenedNovuService>();
 
+        services.AddScoped<IOdenisTapsirigiNomreService, OdenisTapsirigiNomreService>();
+
         services.AddScoped<IAuditLogService, AuditLogService>();
 
         // Storage
@@ -58,6 +60,8 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IDavamiyyetService, DavamiyyetService>();
         // Məzuniyyət Modulu Servisləri
         services.AddScoped<IMezuniyyetService, MezuniyyetService>();
+
+
 
         // Əgər BayramGunu və Balans üçün xüsusi məntiq yazmamısansa, 
         // onları generik servis üzərindən belə qeydiyyatdan keçirə bilərsən:

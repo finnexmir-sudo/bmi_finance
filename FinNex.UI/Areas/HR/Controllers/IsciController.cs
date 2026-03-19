@@ -1,5 +1,9 @@
-﻿using FinNex.Application.DTOs.HR.Isci;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using FinNex.Application.DTOs.HR.Isci;
 using FinNex.Application.Interfaces.Structur;
+using FinNex.Domain;
+using FinNex.Domain.Entities.HR;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -11,12 +15,14 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IIsciService _isciService;
         private readonly IDepartmentService _departmentService;
         private readonly IVezifeService _vezifeService;
+        private readonly UserManager<AppUser> _userManager;
 
-        public IsciController(IIsciService isciService,IDepartmentService departmentService,IVezifeService vezifeService)
+        public IsciController(IIsciService isciService, IDepartmentService departmentService, IVezifeService vezifeService, UserManager<AppUser> userManager)
         {
             _isciService = isciService;
             _departmentService = departmentService;
             _vezifeService = vezifeService;
+            _userManager = userManager;
         }
 
         public async Task<IActionResult> Index()
@@ -46,6 +52,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         // GET
+        [HttpGet]
         public async Task<IActionResult> Create()
         {
             var result = await _departmentService.HamisiniGetirAsync(x => !x.Silinib);
@@ -76,27 +83,71 @@ namespace FinNex.UI.Areas.HR.Controllers
                 await ReloadDepartments(vm);
                 return View(vm);
             }
+            var userYoxla = await _userManager.FindByNameAsync(vm.IstifadeciAd);
+            if (userYoxla != null)
+            {
+                ModelState.AddModelError("IstifadeciAd", "Bu istifadəçi adı artıq mövcuddur");
+                await ReloadDepartments(vm);
+                return View(vm);
+            }
+
+            var user = new AppUser
+            {
+                UserName = vm.IstifadeciAd, // 🔥 LOGIN BUNUNLA OLACAQ
+                Ad = vm.Ad,
+                Soyad = vm.Soyad,
+                Email = vm.Email,
+                EmailConfirmed = true,
+                Aktivdir = true,
+                
+            };
+
+            var resultUser = await _userManager.CreateAsync(user, "user123");
+
+            if (!resultUser.Succeeded)
+            {
+                foreach (var error in resultUser.Errors)
+                    ModelState.AddModelError("", error.Description);
+                await ReloadDepartments(vm);
+                return View(vm);
+            }
 
             var dto = new IsciCreateDto
             {
                 Ad = vm.Ad,
                 Soyad = vm.Soyad,
+                AtaAdi = vm.AtaAdi ?? "",
                 Email = vm.Email,
+                VezifeId = vm.VezifeId,
                 Telefon = vm.Telefon,
-                SobeId = vm.DepartmentId,
-                IsheBaslamaTarixi = vm.IseQebulTarixi
+                DepartamentId = vm.DepartamentId,
+                IsheBaslamaTarixi = vm.IseQebulTarixi,
+                FIN = vm.FIN,
+                Unvan = vm.Unvan,
+                SeriyaNomre = vm.SeriyaNomre,
+                DogumTarixi = vm.DogumTarixi,
+                Cins = (Cins)vm.CinsId,
+                UserId=vm.UserId
             };
 
-            var result = await _isciService.YaratAsync(dto);
+            var resultIsci = await _isciService.YaratAsync(dto);
 
-            if (!result.Success)
+            if (!resultIsci.Success)
             {
-                ModelState.AddModelError("", result.Message ?? "Xəta baş verdi");
-                await ReloadDepartments(vm);
+                // Əgər işçi yaradıla bilməsə, yuxarıda yaranan user-i silmək olar (Rollback)
+                await _userManager.DeleteAsync(user);
+                ModelState.AddModelError("", resultIsci.Message ?? "İşçi yaradıla bilmədi");
                 return View(vm);
             }
 
-            TempData["Success"] = "İşçi uğurla yaradıldı.";
+            // 5. 🔥 USER-I YENİDƏN UPDATE EDİRİK (IsciId-ni mənimsətmək üçün)
+            if (resultIsci.Data != null)
+            {
+                user.IsciId = resultIsci.Data.Id; // 🔥 resultIsci.Data yox, resultIsci.Data.Id yazılmalıdır
+                await _userManager.UpdateAsync(user);
+            }
+
+            TempData["Success"] = "İşçi və İstifadəçi uğurla yaradıldı.";
             return RedirectToAction(nameof(Index));
         }
 

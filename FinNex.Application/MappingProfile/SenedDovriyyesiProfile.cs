@@ -24,7 +24,9 @@ namespace FinNex.Application.MappingProfile
                 .ForMember(d => d.Tags, o => o.MapFrom(s => s.SenedTagMaps.Select(x => x.Tag!.Ad)))
                 .ForMember(d => d.Fayllar, o => o.MapFrom(s => s.Fayllar.OrderByDescending(f => f.VersiyaNo)));
 
-            CreateMap<AuditLog, AuditLogDto>();
+            CreateMap<AuditLog, AuditLogDto>()
+    .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.UserName));
+            // Və ya src.AppUser.FullName (AppUser daxilində hansı property varsa)
             CreateMap<SenedNovu, SenedNovuListDto>()
     .ForMember(dest => dest.DepartmentAd,
         opt => opt.MapFrom(src => src.Department.Ad));

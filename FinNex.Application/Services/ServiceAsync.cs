@@ -21,7 +21,7 @@ namespace FinNex.Application.Services
             _mapper = mapper;
         }
 
-        public async Task<Result<IList<TDto>>> HamisiniGetirAsync()
+        public virtual async Task<Result<IList<TDto>>> HamisiniGetirAsync()
         {
             try
             {
@@ -39,7 +39,7 @@ namespace FinNex.Application.Services
             }
         }
 
-        public async Task<Result<IList<TDto>>> HamisiniGetirAsync(
+        public virtual async Task<Result<IList<TDto>>> HamisiniGetirAsync(
             Expression<Func<TEntity, bool>>? predicate = null,
             Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>? include = null,
             bool izlemeden = true)
@@ -60,7 +60,7 @@ namespace FinNex.Application.Services
             }
         }
 
-        public async Task<Result<TDto?>> IdIleGetirAsync(int id)
+        public virtual async Task<Result<TDto?>> IdIleGetirAsync(int id)
         {
             try
             {

@@ -6,7 +6,8 @@ public class Bank : BaseEntity
     public string Kod { get; set; } = null!;
     public string Voen { get; set; } = null!;
     public string SwiftBic { get; set; } = null!;
-    public string MuxHesab { get; set; } = null!;
+    //public string MuxHesab { get; set; } = null!;
+    public string MuxHesab { get; set; } = "";
 
     // Bir bankın çoxlu hesabı ola bilər
     public ICollection<BankHesabi> BankHesablari { get; set; } = new List<BankHesabi>();

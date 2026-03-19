@@ -7,7 +7,9 @@
             Cəmi: <strong>@Model.Novler.Count</strong> sənəd növü
         </span>
     </div>
-    <button type="button" class="btn btn-sm btn-primary" onclick="openNovModal()">
+    <button type="button"
+            class="btn btn-sm btn-primary"
+            id="openNovBtn">
         <i class="bi bi-plus-lg me-1"></i>Yeni Sənəd Növü
     </button>
 </div>
@@ -61,7 +63,7 @@
                             <td class="fw-semibold">@n.Ad</td>
                             <td>
                                 <span class="sd-sobe-badge">
-                                    <i class="bi bi-building me-1"></i>@n.SobeAd
+                                    <i class="bi bi-building me-1"></i>@n.DepartmentAd
                                 </span>
                             </td>
                             <td>
@@ -162,4 +164,7 @@
     </div>
 </div>
 
-<script src="~/js/sened-yarat.js" asp-append-version="true"></script>
+@section Scripts {
+    <script src="~/js/sened-yarat.js" asp-append-version="true"></script>
+}
+

@@ -1,189 +1,197 @@
-﻿'use strict';
+﻿/**
+ * mezuniyyet.js
+ * FinNex HR – Leave Management Module Scripts
+ */
 
-// ── INDEX: Search + Filter ──
-(function initIndexFilter() {
-    const searchInput = document.getElementById('mezSearch');
-    const statusFilter = document.getElementById('mezStatusFilter');
-    const typeFilter = document.getElementById('mezTypeFilter');
-    const tableBody = document.getElementById('mezTableBody');
-    const noResults = document.getElementById('noResults');
+(function () {
+    'use strict';
 
-    if (!searchInput || !tableBody) return;
+    /* ──────────────────────────────────────────
+       TABLE SEARCH & FILTER
+    ────────────────────────────────────────── */
+    function initTableFilter() {
+        const searchInput = document.getElementById('mez-search');
+        const statusFilter = document.getElementById('mez-filter-status');
+        const typeFilter = document.getElementById('mez-filter-type');
+        const tableBody = document.getElementById('mez-table-body');
+        const emptyState = document.getElementById('mez-empty-state');
+        const countEl = document.getElementById('mez-row-count');
 
-    function filterRows() {
-        const q = searchInput.value.trim().toLowerCase();
-        const status = statusFilter ? statusFilter.value : '';
-        const type = typeFilter ? typeFilter.value : '';
+        if (!searchInput || !tableBody) return;
 
-        let visible = 0;
-        const rows = tableBody.querySelectorAll('tr[data-row]');
+        function filterRows() {
+            const searchVal = searchInput.value.toLowerCase().trim();
+            const statusVal = statusFilter ? statusFilter.value : '';
+            const typeVal = typeFilter ? typeFilter.value : '';
 
-        rows.forEach(row => {
-            const name = (row.dataset.name || '').toLowerCase();
-            const rowStatus = row.dataset.status || '';
-            const rowType = row.dataset.type || '';
+            const rows = tableBody.querySelectorAll('tr[data-row]');
+            let visible = 0;
 
-            const matchQ = !q || name.includes(q);
-            const matchStatus = !status || rowStatus === status;
-            const matchType = !type || rowType === type;
+            rows.forEach(function (row) {
+                const text = row.textContent.toLowerCase();
+                const status = row.dataset.status || '';
+                const type = row.dataset.type || '';
 
-            if (matchQ && matchStatus && matchType) {
-                row.style.display = '';
-                visible++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
+                const matchSearch = !searchVal || text.includes(searchVal);
+                const matchStatus = !statusVal || status === statusVal;
+                const matchType = !typeVal || type === typeVal;
 
-        if (noResults) {
-            noResults.style.display = visible === 0 ? 'block' : 'none';
+                const show = matchSearch && matchStatus && matchType;
+                row.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+
+            if (emptyState) emptyState.style.display = visible === 0 ? '' : 'none';
+            if (countEl) countEl.textContent = visible + ' nəticə';
         }
+
+        searchInput.addEventListener('input', filterRows);
+        if (statusFilter) statusFilter.addEventListener('change', filterRows);
+        if (typeFilter) typeFilter.addEventListener('change', filterRows);
     }
 
-    searchInput.addEventListener('input', filterRows);
-    if (statusFilter) statusFilter.addEventListener('change', filterRows);
-    if (typeFilter) typeFilter.addEventListener('change', filterRows);
-})();
+    /* ──────────────────────────────────────────
+       DELETE MODAL
+    ────────────────────────────────────────── */
+    function initDeleteModal() {
+        const modal = document.getElementById('deleteModal');
+        const nameEl = document.getElementById('deleteEmployeeName');
+        const deleteForm = document.getElementById('deleteForm');
 
-// ── DELETE MODAL ──
-(function initDeleteModal() {
-    const deleteModal = document.getElementById('deleteModal');
-    if (!deleteModal) return;
+        if (!modal) return;
 
-    deleteModal.addEventListener('show.bs.modal', function (event) {
-        const trigger = event.relatedTarget;
-        if (!trigger) return;
+        modal.addEventListener('show.bs.modal', function (e) {
+            const btn = e.relatedTarget;
+            const id = btn.dataset.id;
+            const name = btn.dataset.name;
 
-        const id = trigger.dataset.id;
-        const name = trigger.dataset.name;
+            if (nameEl) nameEl.textContent = name || '';
+            if (deleteForm) deleteForm.action = deleteForm.dataset.baseUrl + '/' + id;
+        });
+    }
 
-        const nameEl = deleteModal.querySelector('#deleteTargetName');
-        const formEl = deleteModal.querySelector('#deleteForm');
+    /* ──────────────────────────────────────────
+       DATE VALIDATION
+    ────────────────────────────────────────── */
+    function initDateValidation() {
+        const startDate = document.getElementById('BaslamaTarixi');
+        const endDate = document.getElementById('BitmeTarixi');
+        const dayCount = document.getElementById('mez-day-count');
 
-        if (nameEl) nameEl.textContent = name || '—';
-        if (formEl && id) {
-            const action = formEl.dataset.baseAction;
-            formEl.action = action.replace('__ID__', id);
+        if (!startDate || !endDate) return;
+
+        function calcDays() {
+            const s = new Date(startDate.value);
+            const e = new Date(endDate.value);
+
+            if (!startDate.value || !endDate.value) return;
+
+            // Clear error
+            endDate.classList.remove('is-invalid');
+            const errEl = document.getElementById('date-range-error');
+            if (errEl) errEl.style.display = 'none';
+
+            if (e < s) {
+                endDate.classList.add('is-invalid');
+                if (errEl) {
+                    errEl.textContent = 'Bitmə tarixi başlama tarixindən əvvəl ola bilməz';
+                    errEl.style.display = 'block';
+                }
+                if (dayCount) dayCount.textContent = '—';
+                return;
+            }
+
+            const diffMs = e - s;
+            const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1;
+            if (dayCount) dayCount.textContent = diffDays + ' gün';
         }
+
+        startDate.addEventListener('change', calcDays);
+        endDate.addEventListener('change', calcDays);
+        calcDays(); // initial
+    }
+
+    /* ──────────────────────────────────────────
+       FORM VALIDATION BOOTSTRAP STYLE
+    ────────────────────────────────────────── */
+    function initFormValidation() {
+        const forms = document.querySelectorAll('.mez-validated-form');
+        forms.forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                if (!form.checkValidity()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            });
+        });
+    }
+
+    /* ──────────────────────────────────────────
+       AVATAR INITIALS GENERATOR
+    ────────────────────────────────────────── */
+    function initAvatars() {
+        document.querySelectorAll('.employee-avatar[data-name]').forEach(function (el) {
+            const name = el.dataset.name || '';
+            const parts = name.trim().split(' ');
+            const initials = parts.length >= 2
+                ? parts[0][0] + parts[parts.length - 1][0]
+                : (parts[0] || '?')[0];
+            el.textContent = initials.toUpperCase();
+        });
+    }
+
+    /* ──────────────────────────────────────────
+       TABLE SORT
+    ────────────────────────────────────────── */
+    function initTableSort() {
+        document.querySelectorAll('.mez-table thead th[data-sort]').forEach(function (th) {
+            th.addEventListener('click', function () {
+                const col = th.dataset.sort;
+                const asc = th.dataset.dir !== 'asc';
+                th.dataset.dir = asc ? 'asc' : 'desc';
+
+                // Reset others
+                document.querySelectorAll('.mez-table thead th[data-sort]').forEach(function (t) {
+                    if (t !== th) delete t.dataset.dir;
+                });
+
+                const tbody = document.getElementById('mez-table-body');
+                if (!tbody) return;
+
+                const rows = Array.from(tbody.querySelectorAll('tr[data-row]'));
+                rows.sort(function (a, b) {
+                    const aVal = (a.dataset[col] || '').toLowerCase();
+                    const bVal = (b.dataset[col] || '').toLowerCase();
+                    return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                });
+
+                rows.forEach(function (r) { tbody.appendChild(r); });
+            });
+        });
+    }
+
+    /* ──────────────────────────────────────────
+       TOOLTIPS
+    ────────────────────────────────────────── */
+    function initTooltips() {
+        var tooltipEls = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipEls.map(function (el) {
+            return new bootstrap.Tooltip(el, { trigger: 'hover' });
+        });
+    }
+
+    /* ──────────────────────────────────────────
+       INIT
+    ────────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', function () {
+        initTableFilter();
+        initDeleteModal();
+        initDateValidation();
+        initFormValidation();
+        initAvatars();
+        initTableSort();
+        if (typeof bootstrap !== 'undefined') initTooltips();
     });
-})();
 
-// ── CREATE / EDIT: Client-side Validation ──
-(function initFormValidation() {
-    const forms = document.querySelectorAll('.mez-validate-form');
-
-    forms.forEach(form => {
-        form.addEventListener('submit', function (e) {
-            let valid = true;
-
-            // Required fields
-            form.querySelectorAll('[data-required]').forEach(field => {
-                if (!field.value || field.value.trim() === '') {
-                    setInvalid(field, 'Bu sahə məcburidir.');
-                    valid = false;
-                } else {
-                    setValid(field);
-                }
-            });
-
-            // Date range validation
-            const startDate = form.querySelector('[name="BaslamaTarixi"]');
-            const endDate = form.querySelector('[name="BitmeTarixi"]');
-
-            if (startDate && endDate && startDate.value && endDate.value) {
-                if (new Date(endDate.value) < new Date(startDate.value)) {
-                    setInvalid(endDate, 'Bitmə tarixi başlama tarixindən əvvəl ola bilməz.');
-                    valid = false;
-                } else {
-                    setValid(endDate);
-                }
-            }
-
-            if (!valid) {
-                e.preventDefault();
-                const firstInvalid = form.querySelector('.mez-input.is-invalid, .mez-select.is-invalid');
-                if (firstInvalid) {
-                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    firstInvalid.focus();
-                }
-            }
-        });
-
-        // Live validation on blur
-        form.querySelectorAll('.mez-input, .mez-select, .mez-textarea').forEach(field => {
-            field.addEventListener('blur', function () {
-                if (this.dataset.required && !this.value.trim()) {
-                    setInvalid(this, 'Bu sahə məcburidir.');
-                } else {
-                    setValid(this);
-                }
-            });
-
-            field.addEventListener('input', function () {
-                if (this.classList.contains('is-invalid') && this.value.trim()) {
-                    setValid(this);
-                }
-            });
-        });
-    });
-
-    function setInvalid(field, msg) {
-        field.classList.add('is-invalid');
-        field.classList.remove('is-valid');
-        let fb = field.parentElement.querySelector('.mez-invalid-feedback');
-        if (!fb) {
-            fb = field.closest('.mez-form-group')?.querySelector('.mez-invalid-feedback');
-        }
-        if (fb) {
-            fb.textContent = msg;
-            fb.style.display = 'block';
-        }
-    }
-
-    function setValid(field) {
-        field.classList.remove('is-invalid');
-        const fb = field.closest('.mez-form-group')?.querySelector('.mez-invalid-feedback');
-        if (fb) fb.style.display = 'none';
-    }
-})();
-
-// ── DATE RANGE: Auto-calc duration ──
-(function initDurationCalc() {
-    const startInput = document.querySelector('[name="BaslamaTarixi"]');
-    const endInput = document.querySelector('[name="BitmeTarixi"]');
-    const durationDisplay = document.getElementById('durationDisplay');
-
-    if (!startInput || !endInput || !durationDisplay) return;
-
-    function updateDuration() {
-        if (!startInput.value || !endInput.value) {
-            durationDisplay.style.display = 'none';
-            return;
-        }
-
-        const start = new Date(startInput.value);
-        const end = new Date(endInput.value);
-        const diffTime = end - start;
-
-        if (diffTime < 0) {
-            durationDisplay.style.display = 'none';
-            return;
-        }
-
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        durationDisplay.textContent = diffDays + ' gün';
-        durationDisplay.style.display = 'inline-flex';
-    }
-
-    startInput.addEventListener('change', updateDuration);
-    endInput.addEventListener('change', updateDuration);
-    updateDuration();
-})();
-
-// ── TOOLTIP INIT ──
-(function initTooltips() {
-    const tooltipEls = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    if (typeof bootstrap !== 'undefined') {
-        tooltipEls.forEach(el => new bootstrap.Tooltip(el, { trigger: 'hover' }));
-    }
 })();

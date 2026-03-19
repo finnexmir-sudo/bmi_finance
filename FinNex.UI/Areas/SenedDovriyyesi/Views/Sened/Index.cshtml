@@ -20,13 +20,13 @@
                     <label class="form-label sd-form-label">Sənəd Növü</label>
                     <select name="senedNovuId" class="form-select form-select-sm">
                         <option value="">Hamısı</option>
-                        @foreach (var n in Model.SenedNovleri)
+                        @foreach (var n in Model.Senedler)
                         {
-                            <option value="@n.Id" selected="@(Model.SenedNovuId == n.Id)">@n.Ad</option>
+                            <option value="@n.Id" selected="@(Model.SenedNovuId == n.Id)">@n.SenedNovu</option>
                         }
                     </select>
                 </div>
-                <div class="col-md-2 col-sm-6">
+                @* <div class="col-md-2 col-sm-6">
                     <label class="form-label sd-form-label">Status</label>
                     <select name="status" class="form-select form-select-sm">
                         <option value="">Hamısı</option>
@@ -35,7 +35,7 @@
                         <option value="@SenedStatusu.Tesdiq" selected="@(Model.Status == SenedStatusu.Tesdiq)">Təsdiqlənmiş</option>
                         <option value="@SenedStatusu.Arxiv" selected="@(Model.Status == SenedStatusu.Arxiv)">Arxiv</option>
                     </select>
-                </div>
+                </div> *@
                 <div class="col-md-2 col-sm-6">
                     <label class="form-label sd-form-label">Axtarış</label>
                     <input type="text" name="q" value="@Model.AxtarisKelimesi"
@@ -173,16 +173,20 @@
                                        class="btn btn-sm btn-outline-primary sd-btn-sm" title="Bax">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <form asp-area="SenedDovriyyesi" asp-controller="Sened"
-                                          asp-action="Sil" method="post" class="d-inline"
-                                          onsubmit="return confirm('Bu sənədi silmək istədiyinizə əminsiniz?')">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@s.Id" />
-                                        <button type="submit" class="btn btn-sm btn-outline-danger sd-btn-sm"
-                                                title="Sil">
-                                            <i class="bi bi-trash3"></i>
-                                        </button>
-                                    </form>
+
+                                    <a asp-area="SenedDovriyyesi" asp-controller="Sened"
+                                       asp-action="Redakte" asp-route-id="@s.Id"
+                                       class="btn btn-sm btn-outline-warning sd-btn-sm" title="Düzəliş">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger sd-btn-sm"
+                                            title="Sil"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#silModal"
+                                            data-id="@s.Id">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
                                 }
                             </td>
                         </tr>
@@ -269,4 +273,33 @@
             </li>
         </ul>
     </nav>
+}
+<!-- Silmə Təsdiq Modalı -->
+<div class="modal fade" id="silModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:350px">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size:2.5rem"></i>
+                <h6 class="mt-3 mb-1">Silmək istədiyinizə əminsiniz?</h6>
+                <p class="text-muted small">Bu əməliyyat geri alına bilməz.</p>
+            </div>
+            <div class="modal-footer justify-content-center border-0 pt-0">
+                <form id="silForm" asp-area="SenedDovriyyesi"
+                      asp-controller="Sened" asp-action="Sil" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" id="silId" />
+                    <button type="button" class="btn btn-secondary btn-sm"
+                            data-bs-dismiss="modal">
+                        Xeyr
+                    </button>
+                    <button type="submit" class="btn btn-danger btn-sm ms-2">
+                        <i class="bi bi-trash3"></i> Bəli, Sil
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script src="~/js/sened-yarat.js" asp-append-version="true"></script>
 }

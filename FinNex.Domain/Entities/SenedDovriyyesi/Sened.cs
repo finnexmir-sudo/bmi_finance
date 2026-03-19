@@ -5,7 +5,7 @@ namespace FinNex.Domain.Entities.SenedDovriyyesi
     public class Sened : BaseEntity
     {
         public int DepartmentId { get; set; }
-        public Department Department { get; set; } = null!;
+        public Departament Department { get; set; } = null!;
 
         public int SenedNovuId { get; set; }
         public SenedNovu SenedNovu { get; set; } = null!;

@@ -16,19 +16,19 @@ public class DepartmentController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var list = await _uow.Repository<Department>().HamisiniGetirAsync();
+        var list = await _uow.Repository<Departament>().HamisiniGetirAsync();
         return View(list);
     }
 
     public IActionResult Yarat() => View();
 
     [HttpPost]
-    public async Task<IActionResult> Yarat(Department model)
+    public async Task<IActionResult> Yarat(Departament model)
     {
         if (!ModelState.IsValid)
             return View(model);
 
-        await _uow.Repository<Department>().YaratAsync(model);
+        await _uow.Repository<Departament>().YaratAsync(model);
         await _uow.YaddaSaxlaAsync();
 
         return RedirectToAction(nameof(Index));

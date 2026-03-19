@@ -47,4 +47,12 @@ public class OdenisTapsirigiWordDto
 
     // D4 - Budce seviyyesinin kodu
     public string BudceSeviyyesininKodu { get; set; } = "";
+
+    public string OduyenBankId { get; set; } = "";
+    public string AlanBankId { get; set; } = "";
+    public string OduyenMusteriId { get; set; } = "";
+    public string OduyenHesabId { get; set; } = "";
+    public string AlanMusteriId { get; set; } = "";
+    public string AlanHesabId { get; set; } = "";
+    public string ValyutaId { get; set; } = "";
 }

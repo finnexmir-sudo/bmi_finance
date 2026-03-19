@@ -5,5 +5,6 @@ namespace FinNex.Application.Interfaces.PR_Odenis_Tapsirigi
 {
     public interface IOdenisTapsirigiService : IServiceAsync<OdenisTapsirigi, OdenisTapsirigiDetailDto, OdenisTapsirigiCreateDto, OdenisTapsirigiUpdateDto>
     {
+        Task<DateTime> DbTarixiniGetirAsync();
     }
 }

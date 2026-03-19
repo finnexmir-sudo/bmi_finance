@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "xuEvof6k0BwyZr6o7hXM4sB4ev5rH0gCGAkGD/u/gyg=",
+  "Hash": "SwyGfAaRAUO3rpshosjnJk9Ro6sdzQEgKPZDHSj/hWE=",
   "Source": "FinNex.UI",
   "BasePath": "_content/FinNex.UI",
   "Mode": "Default",
@@ -143,6 +143,27 @@
       "OriginalItemSpec": "wwwroot\\css\\bank-index.css"
     },
     {
+      "Identity": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\change-password.css",
+      "SourceId": "FinNex.UI",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\",
+      "BasePath": "_content/FinNex.UI",
+      "RelativePath": "css/change-password#[.{fingerprint}]?.css",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "66l2v1ohon",
+      "Integrity": "UkXJMkTy0qe1I9vJFKDlC+zW1137p5rAxl5NU9gou28=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\css\\change-password.css"
+    },
+    {
       "Identity": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\hr\\davamiyyet-list.css",
       "SourceId": "FinNex.UI",
       "SourceType": "Discovered",
@@ -283,8 +304,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "gf8xlo8xvt",
-      "Integrity": "7P3iqFJJkN0acnLySKp9fnAHG4Uzk1mbifKuRSZmZ9g=",
+      "Fingerprint": "3iqajnlzbz",
+      "Integrity": "q2MJMyqxARlnKk9J0maXMVexltJHQfdepZXQBkxp2zY=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\css\\hr\\mezuniyyet.css"
@@ -409,11 +430,32 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "d4p82bugzl",
-      "Integrity": "LV+dz313TJkvX9Pzv1JQceZ+7ZzzP1KHpsRg/b19T0s=",
+      "Fingerprint": "ujhxy59em5",
+      "Integrity": "5oJSxjEEMG7sgtSU8B/1MAgYqmThTHEL1Bgkdu1XadU=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-create.css"
+    },
+    {
+      "Identity": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-detail.css",
+      "SourceId": "FinNex.UI",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\",
+      "BasePath": "_content/FinNex.UI",
+      "RelativePath": "css/PR_Odenis_Tapsirigi/payment-detail#[.{fingerprint}]?.css",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "ypyfs8hbew",
+      "Integrity": "humo2L7bXgwxHcyULpWDHcm+iV04b3+2UBn1IsMu++Q=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-detail.css"
     },
     {
       "Identity": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-hub.css",
@@ -451,11 +493,32 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "5kgo8sacrc",
-      "Integrity": "1QF1YAA5vI4i0C3I6LmrGdRXHbalMGD2LmisUysrc3s=",
+      "Fingerprint": "ya3mh04s5k",
+      "Integrity": "xlRc8JnuDuWc5mY9+JJ09ttJMwlpbWiu2bPFR+VYHFk=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-list.css"
+    },
+    {
+      "Identity": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-update.css",
+      "SourceId": "FinNex.UI",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\",
+      "BasePath": "_content/FinNex.UI",
+      "RelativePath": "css/PR_Odenis_Tapsirigi/payment-update#[.{fingerprint}]?.css",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "aimkk174aw",
+      "Integrity": "8lZGMPaMqhcg4dYUXjMQsF6IjcrDJZCnpuETL89qAvI=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-update.css"
     },
     {
       "Identity": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\sened-dovriyyesi.css",
@@ -472,8 +535,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "7zd9duquj7",
-      "Integrity": "AzQFc6qwNQ1u+tFaiTVwwtV41Rm3Ai5ByGHshJ+/Id8=",
+      "Fingerprint": "g9wekyrs55",
+      "Integrity": "LFks6JbgOM7Ojioj32s56G4fDwuGIsFJZCPV++XYYPw=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\css\\sened-dovriyyesi.css"
@@ -535,8 +598,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "nj5sa8bsz9",
-      "Integrity": "EyUFRWn8XFYVuRsHmr3m6lC+AguUO18fXH4bju4oPds=",
+      "Fingerprint": "ud1c56lxqd",
+      "Integrity": "Ah8pI0vljhx6q7Brs5lV28B+QybEJD1caSLro5Ovo+Q=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\Files\\Word\\Odenis_tapsirigi.docx"
@@ -582,6 +645,27 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\js\\admin-sidebar.js"
+    },
+    {
+      "Identity": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\change-password.js",
+      "SourceId": "FinNex.UI",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\",
+      "BasePath": "_content/FinNex.UI",
+      "RelativePath": "js/change-password#[.{fingerprint}]?.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "ynsj1xj9ig",
+      "Integrity": "IrP4CI7fMKSOSFX5pi40GfWdSaIiEMv6knGONUXMz1M=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\js\\change-password.js"
     },
     {
       "Identity": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\hr\\davamiyyet-list.js",
@@ -661,8 +745,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "hj5tq8vazq",
-      "Integrity": "Tavgw7yIDlhG1F43juN+dbq1Uq1PYauXbNzTRlOI3H0=",
+      "Fingerprint": "6sxkx70xls",
+      "Integrity": "+prNPIcKGYiUZywqxTCGsq9QShGQkLnHQHMfW8oxC3s=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\js\\hr\\mezuniyyet.js"
@@ -745,8 +829,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "hrcy5h5g27",
-      "Integrity": "Hc4Kwt9g3HVBHg6nANOBV+e3rYOwUys288AuJ6wVOMc=",
+      "Fingerprint": "4lppqpsu7k",
+      "Integrity": "OBShMT4b347owjMnQOMOzzmc7R3BiP0svbFAC0mUPhM=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\js\\isci-create.js"
@@ -787,11 +871,53 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "2fk962ysv8",
-      "Integrity": "nv3DhXrIdUFVYZeGNutyUkB5gfo2GGdWJq6PCgIORoI=",
+      "Fingerprint": "z657o6abuh",
+      "Integrity": "9Zl+AeFmVGqCn5Nz5yTOp+HqKSnN936Pgu6csked38A=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-bank.js"
+    },
+    {
+      "Identity": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-detail.js",
+      "SourceId": "FinNex.UI",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\",
+      "BasePath": "_content/FinNex.UI",
+      "RelativePath": "js/PR_Odenis_Tapsirigi/payment-detail#[.{fingerprint}]?.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "mqocxofnw8",
+      "Integrity": "Ptn/lnT+cDYLCE/pe/Do9qUbJc8ZOO3F6Fa81o39UiE=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-detail.js"
+    },
+    {
+      "Identity": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-word -Update.js",
+      "SourceId": "FinNex.UI",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\",
+      "BasePath": "_content/FinNex.UI",
+      "RelativePath": "js/PR_Odenis_Tapsirigi/payment-word -Update#[.{fingerprint}]?.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "i2xzfi61cc",
+      "Integrity": "Kin+FuZvR5Qppw71UWtkE8x3OMl2MmZEy2KfRpmKys8=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-word -Update.js"
     },
     {
       "Identity": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-word.js",
@@ -808,8 +934,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "polxza2p24",
-      "Integrity": "CbcXMBNGCaYC1D89Ou3hLVgwlvoV1WkaylLbva7swrg=",
+      "Fingerprint": "vbj58m1mka",
+      "Integrity": "G6GvtuepWPpBggM7ia1h72HUanWBXMcE0k7Pfd9rUvk=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-word.js"
@@ -829,8 +955,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "b6omdnyg3j",
-      "Integrity": "4yzFz3w6qzM5XwSawJkByln+eDk/kW3O4rqsGjcGJhA=",
+      "Fingerprint": "kj5uhidt4i",
+      "Integrity": "kMA1+Zl4wd86fYrxsS5v7oiY9Zzof4USQCcbHmn/KGM=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\js\\sened-yarat.js"
@@ -2447,6 +2573,88 @@
       ]
     },
     {
+      "Route": "css/change-password.66l2v1ohon.css",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\change-password.css",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "7718"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/css"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"UkXJMkTy0qe1I9vJFKDlC+zW1137p5rAxl5NU9gou28=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Thu, 05 Mar 2026 08:09:50 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "66l2v1ohon"
+        },
+        {
+          "Name": "label",
+          "Value": "css/change-password.css"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-UkXJMkTy0qe1I9vJFKDlC+zW1137p5rAxl5NU9gou28="
+        }
+      ]
+    },
+    {
+      "Route": "css/change-password.css",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\change-password.css",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "7718"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/css"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"UkXJMkTy0qe1I9vJFKDlC+zW1137p5rAxl5NU9gou28=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Thu, 05 Mar 2026 08:09:50 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-UkXJMkTy0qe1I9vJFKDlC+zW1137p5rAxl5NU9gou28="
+        }
+      ]
+    },
+    {
       "Route": "css/hr/davamiyyet-list.css",
       "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\hr\\davamiyyet-list.css",
       "Selectors": [],
@@ -2797,7 +3005,7 @@
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 04:34:38 GMT"
+          "Value": "Fri, 27 Feb 2026 06:15:12 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -2842,7 +3050,7 @@
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 04:34:38 GMT"
+          "Value": "Fri, 27 Feb 2026 06:15:12 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -2939,6 +3147,51 @@
       ]
     },
     {
+      "Route": "css/hr/mezuniyyet.3iqajnlzbz.css",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\hr\\mezuniyyet.css",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "23830"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/css"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"q2MJMyqxARlnKk9J0maXMVexltJHQfdepZXQBkxp2zY=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sun, 22 Feb 2026 07:53:25 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "3iqajnlzbz"
+        },
+        {
+          "Name": "label",
+          "Value": "css/hr/mezuniyyet.css"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-q2MJMyqxARlnKk9J0maXMVexltJHQfdepZXQBkxp2zY="
+        }
+      ]
+    },
+    {
       "Route": "css/hr/mezuniyyet.css",
       "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\hr\\mezuniyyet.css",
       "Selectors": [],
@@ -2949,7 +3202,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "23036"
+          "Value": "23830"
         },
         {
           "Name": "Content-Type",
@@ -2957,11 +3210,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"7P3iqFJJkN0acnLySKp9fnAHG4Uzk1mbifKuRSZmZ9g=\""
+          "Value": "\"q2MJMyqxARlnKk9J0maXMVexltJHQfdepZXQBkxp2zY=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 05:23:25 GMT"
+          "Value": "Sun, 22 Feb 2026 07:53:25 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -2971,52 +3224,7 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-7P3iqFJJkN0acnLySKp9fnAHG4Uzk1mbifKuRSZmZ9g="
-        }
-      ]
-    },
-    {
-      "Route": "css/hr/mezuniyyet.gf8xlo8xvt.css",
-      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\hr\\mezuniyyet.css",
-      "Selectors": [],
-      "ResponseHeaders": [
-        {
-          "Name": "Accept-Ranges",
-          "Value": "bytes"
-        },
-        {
-          "Name": "Content-Length",
-          "Value": "23036"
-        },
-        {
-          "Name": "Content-Type",
-          "Value": "text/css"
-        },
-        {
-          "Name": "ETag",
-          "Value": "\"7P3iqFJJkN0acnLySKp9fnAHG4Uzk1mbifKuRSZmZ9g=\""
-        },
-        {
-          "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 05:23:25 GMT"
-        },
-        {
-          "Name": "Cache-Control",
-          "Value": "max-age=31536000, immutable"
-        }
-      ],
-      "EndpointProperties": [
-        {
-          "Name": "fingerprint",
-          "Value": "gf8xlo8xvt"
-        },
-        {
-          "Name": "label",
-          "Value": "css/hr/mezuniyyet.css"
-        },
-        {
-          "Name": "integrity",
-          "Value": "sha256-7P3iqFJJkN0acnLySKp9fnAHG4Uzk1mbifKuRSZmZ9g="
+          "Value": "sha256-q2MJMyqxARlnKk9J0maXMVexltJHQfdepZXQBkxp2zY="
         }
       ]
     },
@@ -3441,7 +3649,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "7513"
+          "Value": "10939"
         },
         {
           "Name": "Content-Type",
@@ -3449,11 +3657,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"LV+dz313TJkvX9Pzv1JQceZ+7ZzzP1KHpsRg/b19T0s=\""
+          "Value": "\"5oJSxjEEMG7sgtSU8B/1MAgYqmThTHEL1Bgkdu1XadU=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 04:34:38 GMT"
+          "Value": "Thu, 19 Mar 2026 07:30:58 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -3463,12 +3671,12 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-LV+dz313TJkvX9Pzv1JQceZ+7ZzzP1KHpsRg/b19T0s="
+          "Value": "sha256-5oJSxjEEMG7sgtSU8B/1MAgYqmThTHEL1Bgkdu1XadU="
         }
       ]
     },
     {
-      "Route": "css/PR_Odenis_Tapsirigi/payment-create.d4p82bugzl.css",
+      "Route": "css/PR_Odenis_Tapsirigi/payment-create.ujhxy59em5.css",
       "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-create.css",
       "Selectors": [],
       "ResponseHeaders": [
@@ -3478,7 +3686,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "7513"
+          "Value": "10939"
         },
         {
           "Name": "Content-Type",
@@ -3486,11 +3694,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"LV+dz313TJkvX9Pzv1JQceZ+7ZzzP1KHpsRg/b19T0s=\""
+          "Value": "\"5oJSxjEEMG7sgtSU8B/1MAgYqmThTHEL1Bgkdu1XadU=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 04:34:38 GMT"
+          "Value": "Thu, 19 Mar 2026 07:30:58 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -3500,7 +3708,7 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "d4p82bugzl"
+          "Value": "ujhxy59em5"
         },
         {
           "Name": "label",
@@ -3508,7 +3716,89 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-LV+dz313TJkvX9Pzv1JQceZ+7ZzzP1KHpsRg/b19T0s="
+          "Value": "sha256-5oJSxjEEMG7sgtSU8B/1MAgYqmThTHEL1Bgkdu1XadU="
+        }
+      ]
+    },
+    {
+      "Route": "css/PR_Odenis_Tapsirigi/payment-detail.css",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-detail.css",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "3905"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/css"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"humo2L7bXgwxHcyULpWDHcm+iV04b3+2UBn1IsMu++Q=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 18 Mar 2026 07:55:38 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-humo2L7bXgwxHcyULpWDHcm+iV04b3+2UBn1IsMu++Q="
+        }
+      ]
+    },
+    {
+      "Route": "css/PR_Odenis_Tapsirigi/payment-detail.ypyfs8hbew.css",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-detail.css",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "3905"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/css"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"humo2L7bXgwxHcyULpWDHcm+iV04b3+2UBn1IsMu++Q=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 18 Mar 2026 07:55:38 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "ypyfs8hbew"
+        },
+        {
+          "Name": "label",
+          "Value": "css/PR_Odenis_Tapsirigi/payment-detail.css"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-humo2L7bXgwxHcyULpWDHcm+iV04b3+2UBn1IsMu++Q="
         }
       ]
     },
@@ -3595,51 +3885,6 @@
       ]
     },
     {
-      "Route": "css/PR_Odenis_Tapsirigi/payment-list.5kgo8sacrc.css",
-      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-list.css",
-      "Selectors": [],
-      "ResponseHeaders": [
-        {
-          "Name": "Accept-Ranges",
-          "Value": "bytes"
-        },
-        {
-          "Name": "Content-Length",
-          "Value": "1415"
-        },
-        {
-          "Name": "Content-Type",
-          "Value": "text/css"
-        },
-        {
-          "Name": "ETag",
-          "Value": "\"1QF1YAA5vI4i0C3I6LmrGdRXHbalMGD2LmisUysrc3s=\""
-        },
-        {
-          "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 04:34:38 GMT"
-        },
-        {
-          "Name": "Cache-Control",
-          "Value": "max-age=31536000, immutable"
-        }
-      ],
-      "EndpointProperties": [
-        {
-          "Name": "fingerprint",
-          "Value": "5kgo8sacrc"
-        },
-        {
-          "Name": "label",
-          "Value": "css/PR_Odenis_Tapsirigi/payment-list.css"
-        },
-        {
-          "Name": "integrity",
-          "Value": "sha256-1QF1YAA5vI4i0C3I6LmrGdRXHbalMGD2LmisUysrc3s="
-        }
-      ]
-    },
-    {
       "Route": "css/PR_Odenis_Tapsirigi/payment-list.css",
       "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-list.css",
       "Selectors": [],
@@ -3650,7 +3895,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "1415"
+          "Value": "4697"
         },
         {
           "Name": "Content-Type",
@@ -3658,11 +3903,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"1QF1YAA5vI4i0C3I6LmrGdRXHbalMGD2LmisUysrc3s=\""
+          "Value": "\"xlRc8JnuDuWc5mY9+JJ09ttJMwlpbWiu2bPFR+VYHFk=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 04:34:38 GMT"
+          "Value": "Wed, 18 Mar 2026 07:13:30 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -3672,13 +3917,13 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-1QF1YAA5vI4i0C3I6LmrGdRXHbalMGD2LmisUysrc3s="
+          "Value": "sha256-xlRc8JnuDuWc5mY9+JJ09ttJMwlpbWiu2bPFR+VYHFk="
         }
       ]
     },
     {
-      "Route": "css/sened-dovriyyesi.7zd9duquj7.css",
-      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\sened-dovriyyesi.css",
+      "Route": "css/PR_Odenis_Tapsirigi/payment-list.ya3mh04s5k.css",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-list.css",
       "Selectors": [],
       "ResponseHeaders": [
         {
@@ -3687,7 +3932,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "20077"
+          "Value": "4697"
         },
         {
           "Name": "Content-Type",
@@ -3695,11 +3940,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"AzQFc6qwNQ1u+tFaiTVwwtV41Rm3Ai5ByGHshJ+/Id8=\""
+          "Value": "\"xlRc8JnuDuWc5mY9+JJ09ttJMwlpbWiu2bPFR+VYHFk=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 04:34:38 GMT"
+          "Value": "Wed, 18 Mar 2026 07:13:30 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -3709,15 +3954,97 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "7zd9duquj7"
+          "Value": "ya3mh04s5k"
         },
         {
           "Name": "label",
-          "Value": "css/sened-dovriyyesi.css"
+          "Value": "css/PR_Odenis_Tapsirigi/payment-list.css"
         },
         {
           "Name": "integrity",
-          "Value": "sha256-AzQFc6qwNQ1u+tFaiTVwwtV41Rm3Ai5ByGHshJ+/Id8="
+          "Value": "sha256-xlRc8JnuDuWc5mY9+JJ09ttJMwlpbWiu2bPFR+VYHFk="
+        }
+      ]
+    },
+    {
+      "Route": "css/PR_Odenis_Tapsirigi/payment-update.aimkk174aw.css",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-update.css",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "11611"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/css"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"8lZGMPaMqhcg4dYUXjMQsF6IjcrDJZCnpuETL89qAvI=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Thu, 19 Mar 2026 07:50:50 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "aimkk174aw"
+        },
+        {
+          "Name": "label",
+          "Value": "css/PR_Odenis_Tapsirigi/payment-update.css"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-8lZGMPaMqhcg4dYUXjMQsF6IjcrDJZCnpuETL89qAvI="
+        }
+      ]
+    },
+    {
+      "Route": "css/PR_Odenis_Tapsirigi/payment-update.css",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\PR_Odenis_Tapsirigi\\payment-update.css",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "11611"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/css"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"8lZGMPaMqhcg4dYUXjMQsF6IjcrDJZCnpuETL89qAvI=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Thu, 19 Mar 2026 07:50:50 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-8lZGMPaMqhcg4dYUXjMQsF6IjcrDJZCnpuETL89qAvI="
         }
       ]
     },
@@ -3732,7 +4059,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "20077"
+          "Value": "20685"
         },
         {
           "Name": "Content-Type",
@@ -3740,11 +4067,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"AzQFc6qwNQ1u+tFaiTVwwtV41Rm3Ai5ByGHshJ+/Id8=\""
+          "Value": "\"LFks6JbgOM7Ojioj32s56G4fDwuGIsFJZCPV++XYYPw=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 04:34:38 GMT"
+          "Value": "Fri, 13 Mar 2026 12:36:00 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -3754,7 +4081,52 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-AzQFc6qwNQ1u+tFaiTVwwtV41Rm3Ai5ByGHshJ+/Id8="
+          "Value": "sha256-LFks6JbgOM7Ojioj32s56G4fDwuGIsFJZCPV++XYYPw="
+        }
+      ]
+    },
+    {
+      "Route": "css/sened-dovriyyesi.g9wekyrs55.css",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\css\\sened-dovriyyesi.css",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "20685"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/css"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"LFks6JbgOM7Ojioj32s56G4fDwuGIsFJZCPV++XYYPw=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Fri, 13 Mar 2026 12:36:00 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "g9wekyrs55"
+        },
+        {
+          "Name": "label",
+          "Value": "css/sened-dovriyyesi.css"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-LFks6JbgOM7Ojioj32s56G4fDwuGIsFJZCPV++XYYPw="
         }
       ]
     },
@@ -3933,7 +4305,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "17539"
+          "Value": "20920"
         },
         {
           "Name": "Content-Type",
@@ -3941,11 +4313,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"EyUFRWn8XFYVuRsHmr3m6lC+AguUO18fXH4bju4oPds=\""
+          "Value": "\"Ah8pI0vljhx6q7Brs5lV28B+QybEJD1caSLro5Ovo+Q=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 04:34:38 GMT"
+          "Value": "Tue, 17 Mar 2026 08:30:06 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -3955,12 +4327,12 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-EyUFRWn8XFYVuRsHmr3m6lC+AguUO18fXH4bju4oPds="
+          "Value": "sha256-Ah8pI0vljhx6q7Brs5lV28B+QybEJD1caSLro5Ovo+Q="
         }
       ]
     },
     {
-      "Route": "Files/Word/Odenis_tapsirigi.nj5sa8bsz9.docx",
+      "Route": "Files/Word/Odenis_tapsirigi.ud1c56lxqd.docx",
       "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\Files\\Word\\Odenis_tapsirigi.docx",
       "Selectors": [],
       "ResponseHeaders": [
@@ -3970,7 +4342,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "17539"
+          "Value": "20920"
         },
         {
           "Name": "Content-Type",
@@ -3978,11 +4350,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"EyUFRWn8XFYVuRsHmr3m6lC+AguUO18fXH4bju4oPds=\""
+          "Value": "\"Ah8pI0vljhx6q7Brs5lV28B+QybEJD1caSLro5Ovo+Q=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 04:34:38 GMT"
+          "Value": "Tue, 17 Mar 2026 08:30:06 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -3992,7 +4364,7 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "nj5sa8bsz9"
+          "Value": "ud1c56lxqd"
         },
         {
           "Name": "label",
@@ -4000,7 +4372,7 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-EyUFRWn8XFYVuRsHmr3m6lC+AguUO18fXH4bju4oPds="
+          "Value": "sha256-Ah8pI0vljhx6q7Brs5lV28B+QybEJD1caSLro5Ovo+Q="
         }
       ]
     },
@@ -4027,7 +4399,7 @@
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 13:24:27 GMT"
+          "Value": "Thu, 19 Mar 2026 10:58:01 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -4064,7 +4436,7 @@
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 13:24:27 GMT"
+          "Value": "Thu, 19 Mar 2026 10:58:01 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -4109,7 +4481,7 @@
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 13:24:27 GMT"
+          "Value": "Thu, 19 Mar 2026 10:58:01 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -4154,7 +4526,7 @@
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 13:24:27 GMT"
+          "Value": "Thu, 19 Mar 2026 10:58:01 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -4329,6 +4701,88 @@
         {
           "Name": "integrity",
           "Value": "sha256-X7Wm+ZBQAAV3MuQu4xLGxpscxcFZCMCMlchNdGRd0KM="
+        }
+      ]
+    },
+    {
+      "Route": "js/change-password.js",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\change-password.js",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "3595"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/javascript"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"IrP4CI7fMKSOSFX5pi40GfWdSaIiEMv6knGONUXMz1M=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Fri, 27 Feb 2026 11:25:30 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-IrP4CI7fMKSOSFX5pi40GfWdSaIiEMv6knGONUXMz1M="
+        }
+      ]
+    },
+    {
+      "Route": "js/change-password.ynsj1xj9ig.js",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\change-password.js",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "3595"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/javascript"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"IrP4CI7fMKSOSFX5pi40GfWdSaIiEMv6knGONUXMz1M=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Fri, 27 Feb 2026 11:25:30 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "ynsj1xj9ig"
+        },
+        {
+          "Name": "label",
+          "Value": "js/change-password.js"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-IrP4CI7fMKSOSFX5pi40GfWdSaIiEMv6knGONUXMz1M="
         }
       ]
     },
@@ -4579,7 +5033,7 @@
       ]
     },
     {
-      "Route": "js/hr/mezuniyyet.hj5tq8vazq.js",
+      "Route": "js/hr/mezuniyyet.6sxkx70xls.js",
       "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\hr\\mezuniyyet.js",
       "Selectors": [],
       "ResponseHeaders": [
@@ -4589,7 +5043,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "6860"
+          "Value": "9027"
         },
         {
           "Name": "Content-Type",
@@ -4597,11 +5051,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"Tavgw7yIDlhG1F43juN+dbq1Uq1PYauXbNzTRlOI3H0=\""
+          "Value": "\"+prNPIcKGYiUZywqxTCGsq9QShGQkLnHQHMfW8oxC3s=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 05:23:25 GMT"
+          "Value": "Sun, 22 Feb 2026 07:53:25 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -4611,7 +5065,7 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "hj5tq8vazq"
+          "Value": "6sxkx70xls"
         },
         {
           "Name": "label",
@@ -4619,7 +5073,7 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-Tavgw7yIDlhG1F43juN+dbq1Uq1PYauXbNzTRlOI3H0="
+          "Value": "sha256-+prNPIcKGYiUZywqxTCGsq9QShGQkLnHQHMfW8oxC3s="
         }
       ]
     },
@@ -4634,7 +5088,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "6860"
+          "Value": "9027"
         },
         {
           "Name": "Content-Type",
@@ -4642,11 +5096,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"Tavgw7yIDlhG1F43juN+dbq1Uq1PYauXbNzTRlOI3H0=\""
+          "Value": "\"+prNPIcKGYiUZywqxTCGsq9QShGQkLnHQHMfW8oxC3s=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 05:23:25 GMT"
+          "Value": "Sun, 22 Feb 2026 07:53:25 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -4656,7 +5110,7 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-Tavgw7yIDlhG1F43juN+dbq1Uq1PYauXbNzTRlOI3H0="
+          "Value": "sha256-+prNPIcKGYiUZywqxTCGsq9QShGQkLnHQHMfW8oxC3s="
         }
       ]
     },
@@ -4907,7 +5361,7 @@
       ]
     },
     {
-      "Route": "js/isci-create.hrcy5h5g27.js",
+      "Route": "js/isci-create.4lppqpsu7k.js",
       "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\isci-create.js",
       "Selectors": [],
       "ResponseHeaders": [
@@ -4917,7 +5371,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "2788"
+          "Value": "2575"
         },
         {
           "Name": "Content-Type",
@@ -4925,11 +5379,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"Hc4Kwt9g3HVBHg6nANOBV+e3rYOwUys288AuJ6wVOMc=\""
+          "Value": "\"OBShMT4b347owjMnQOMOzzmc7R3BiP0svbFAC0mUPhM=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 13:05:13 GMT"
+          "Value": "Fri, 27 Feb 2026 06:15:12 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -4939,7 +5393,7 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "hrcy5h5g27"
+          "Value": "4lppqpsu7k"
         },
         {
           "Name": "label",
@@ -4947,7 +5401,7 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-Hc4Kwt9g3HVBHg6nANOBV+e3rYOwUys288AuJ6wVOMc="
+          "Value": "sha256-OBShMT4b347owjMnQOMOzzmc7R3BiP0svbFAC0mUPhM="
         }
       ]
     },
@@ -4962,7 +5416,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "2788"
+          "Value": "2575"
         },
         {
           "Name": "Content-Type",
@@ -4970,11 +5424,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"Hc4Kwt9g3HVBHg6nANOBV+e3rYOwUys288AuJ6wVOMc=\""
+          "Value": "\"OBShMT4b347owjMnQOMOzzmc7R3BiP0svbFAC0mUPhM=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 13:05:13 GMT"
+          "Value": "Fri, 27 Feb 2026 06:15:12 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -4984,7 +5438,7 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-Hc4Kwt9g3HVBHg6nANOBV+e3rYOwUys288AuJ6wVOMc="
+          "Value": "sha256-OBShMT4b347owjMnQOMOzzmc7R3BiP0svbFAC0mUPhM="
         }
       ]
     },
@@ -5071,51 +5525,6 @@
       ]
     },
     {
-      "Route": "js/PR_Odenis_Tapsirigi/payment-bank.2fk962ysv8.js",
-      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-bank.js",
-      "Selectors": [],
-      "ResponseHeaders": [
-        {
-          "Name": "Accept-Ranges",
-          "Value": "bytes"
-        },
-        {
-          "Name": "Content-Length",
-          "Value": "6232"
-        },
-        {
-          "Name": "Content-Type",
-          "Value": "text/javascript"
-        },
-        {
-          "Name": "ETag",
-          "Value": "\"nv3DhXrIdUFVYZeGNutyUkB5gfo2GGdWJq6PCgIORoI=\""
-        },
-        {
-          "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 04:34:38 GMT"
-        },
-        {
-          "Name": "Cache-Control",
-          "Value": "max-age=31536000, immutable"
-        }
-      ],
-      "EndpointProperties": [
-        {
-          "Name": "fingerprint",
-          "Value": "2fk962ysv8"
-        },
-        {
-          "Name": "label",
-          "Value": "js/PR_Odenis_Tapsirigi/payment-bank.js"
-        },
-        {
-          "Name": "integrity",
-          "Value": "sha256-nv3DhXrIdUFVYZeGNutyUkB5gfo2GGdWJq6PCgIORoI="
-        }
-      ]
-    },
-    {
       "Route": "js/PR_Odenis_Tapsirigi/payment-bank.js",
       "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-bank.js",
       "Selectors": [],
@@ -5126,7 +5535,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "6232"
+          "Value": "19046"
         },
         {
           "Name": "Content-Type",
@@ -5134,11 +5543,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"nv3DhXrIdUFVYZeGNutyUkB5gfo2GGdWJq6PCgIORoI=\""
+          "Value": "\"9Zl+AeFmVGqCn5Nz5yTOp+HqKSnN936Pgu6csked38A=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 04:34:38 GMT"
+          "Value": "Wed, 18 Mar 2026 12:14:29 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -5148,7 +5557,216 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-nv3DhXrIdUFVYZeGNutyUkB5gfo2GGdWJq6PCgIORoI="
+          "Value": "sha256-9Zl+AeFmVGqCn5Nz5yTOp+HqKSnN936Pgu6csked38A="
+        }
+      ]
+    },
+    {
+      "Route": "js/PR_Odenis_Tapsirigi/payment-bank.z657o6abuh.js",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-bank.js",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "19046"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/javascript"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"9Zl+AeFmVGqCn5Nz5yTOp+HqKSnN936Pgu6csked38A=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 18 Mar 2026 12:14:29 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "z657o6abuh"
+        },
+        {
+          "Name": "label",
+          "Value": "js/PR_Odenis_Tapsirigi/payment-bank.js"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-9Zl+AeFmVGqCn5Nz5yTOp+HqKSnN936Pgu6csked38A="
+        }
+      ]
+    },
+    {
+      "Route": "js/PR_Odenis_Tapsirigi/payment-detail.js",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-detail.js",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "5038"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/javascript"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"Ptn/lnT+cDYLCE/pe/Do9qUbJc8ZOO3F6Fa81o39UiE=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 18 Mar 2026 12:33:52 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-Ptn/lnT+cDYLCE/pe/Do9qUbJc8ZOO3F6Fa81o39UiE="
+        }
+      ]
+    },
+    {
+      "Route": "js/PR_Odenis_Tapsirigi/payment-detail.mqocxofnw8.js",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-detail.js",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "5038"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/javascript"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"Ptn/lnT+cDYLCE/pe/Do9qUbJc8ZOO3F6Fa81o39UiE=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 18 Mar 2026 12:33:52 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "mqocxofnw8"
+        },
+        {
+          "Name": "label",
+          "Value": "js/PR_Odenis_Tapsirigi/payment-detail.js"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-Ptn/lnT+cDYLCE/pe/Do9qUbJc8ZOO3F6Fa81o39UiE="
+        }
+      ]
+    },
+    {
+      "Route": "js/PR_Odenis_Tapsirigi/payment-word -Update.i2xzfi61cc.js",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-word -Update.js",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "7018"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/javascript"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"Kin+FuZvR5Qppw71UWtkE8x3OMl2MmZEy2KfRpmKys8=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Thu, 19 Mar 2026 11:14:15 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "i2xzfi61cc"
+        },
+        {
+          "Name": "label",
+          "Value": "js/PR_Odenis_Tapsirigi/payment-word -Update.js"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-Kin+FuZvR5Qppw71UWtkE8x3OMl2MmZEy2KfRpmKys8="
+        }
+      ]
+    },
+    {
+      "Route": "js/PR_Odenis_Tapsirigi/payment-word -Update.js",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-word -Update.js",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "7018"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/javascript"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"Kin+FuZvR5Qppw71UWtkE8x3OMl2MmZEy2KfRpmKys8=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Thu, 19 Mar 2026 11:14:15 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-Kin+FuZvR5Qppw71UWtkE8x3OMl2MmZEy2KfRpmKys8="
         }
       ]
     },
@@ -5163,7 +5781,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "5294"
+          "Value": "6678"
         },
         {
           "Name": "Content-Type",
@@ -5171,11 +5789,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"CbcXMBNGCaYC1D89Ou3hLVgwlvoV1WkaylLbva7swrg=\""
+          "Value": "\"G6GvtuepWPpBggM7ia1h72HUanWBXMcE0k7Pfd9rUvk=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 04:34:38 GMT"
+          "Value": "Tue, 17 Mar 2026 10:05:24 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -5185,12 +5803,12 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-CbcXMBNGCaYC1D89Ou3hLVgwlvoV1WkaylLbva7swrg="
+          "Value": "sha256-G6GvtuepWPpBggM7ia1h72HUanWBXMcE0k7Pfd9rUvk="
         }
       ]
     },
     {
-      "Route": "js/PR_Odenis_Tapsirigi/payment-word.polxza2p24.js",
+      "Route": "js/PR_Odenis_Tapsirigi/payment-word.vbj58m1mka.js",
       "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\PR_Odenis_Tapsirigi\\payment-word.js",
       "Selectors": [],
       "ResponseHeaders": [
@@ -5200,7 +5818,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "5294"
+          "Value": "6678"
         },
         {
           "Name": "Content-Type",
@@ -5208,11 +5826,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"CbcXMBNGCaYC1D89Ou3hLVgwlvoV1WkaylLbva7swrg=\""
+          "Value": "\"G6GvtuepWPpBggM7ia1h72HUanWBXMcE0k7Pfd9rUvk=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 04:34:38 GMT"
+          "Value": "Tue, 17 Mar 2026 10:05:24 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -5222,7 +5840,7 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "polxza2p24"
+          "Value": "vbj58m1mka"
         },
         {
           "Name": "label",
@@ -5230,52 +5848,7 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-CbcXMBNGCaYC1D89Ou3hLVgwlvoV1WkaylLbva7swrg="
-        }
-      ]
-    },
-    {
-      "Route": "js/sened-yarat.b6omdnyg3j.js",
-      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\sened-yarat.js",
-      "Selectors": [],
-      "ResponseHeaders": [
-        {
-          "Name": "Accept-Ranges",
-          "Value": "bytes"
-        },
-        {
-          "Name": "Content-Length",
-          "Value": "7005"
-        },
-        {
-          "Name": "Content-Type",
-          "Value": "text/javascript"
-        },
-        {
-          "Name": "ETag",
-          "Value": "\"4yzFz3w6qzM5XwSawJkByln+eDk/kW3O4rqsGjcGJhA=\""
-        },
-        {
-          "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 08:44:53 GMT"
-        },
-        {
-          "Name": "Cache-Control",
-          "Value": "max-age=31536000, immutable"
-        }
-      ],
-      "EndpointProperties": [
-        {
-          "Name": "fingerprint",
-          "Value": "b6omdnyg3j"
-        },
-        {
-          "Name": "label",
-          "Value": "js/sened-yarat.js"
-        },
-        {
-          "Name": "integrity",
-          "Value": "sha256-4yzFz3w6qzM5XwSawJkByln+eDk/kW3O4rqsGjcGJhA="
+          "Value": "sha256-G6GvtuepWPpBggM7ia1h72HUanWBXMcE0k7Pfd9rUvk="
         }
       ]
     },
@@ -5290,7 +5863,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "7005"
+          "Value": "14201"
         },
         {
           "Name": "Content-Type",
@@ -5298,11 +5871,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"4yzFz3w6qzM5XwSawJkByln+eDk/kW3O4rqsGjcGJhA=\""
+          "Value": "\"kMA1+Zl4wd86fYrxsS5v7oiY9Zzof4USQCcbHmn/KGM=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Fri, 20 Feb 2026 08:44:53 GMT"
+          "Value": "Fri, 13 Mar 2026 12:36:00 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -5312,7 +5885,52 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-4yzFz3w6qzM5XwSawJkByln+eDk/kW3O4rqsGjcGJhA="
+          "Value": "sha256-kMA1+Zl4wd86fYrxsS5v7oiY9Zzof4USQCcbHmn/KGM="
+        }
+      ]
+    },
+    {
+      "Route": "js/sened-yarat.kj5uhidt4i.js",
+      "AssetFile": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.UI\\wwwroot\\js\\sened-yarat.js",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "14201"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/javascript"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"kMA1+Zl4wd86fYrxsS5v7oiY9Zzof4USQCcbHmn/KGM=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Fri, 13 Mar 2026 12:36:00 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "kj5uhidt4i"
+        },
+        {
+          "Name": "label",
+          "Value": "js/sened-yarat.js"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-kMA1+Zl4wd86fYrxsS5v7oiY9Zzof4USQCcbHmn/KGM="
         }
       ]
     },

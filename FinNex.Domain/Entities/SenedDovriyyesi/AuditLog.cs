@@ -3,6 +3,7 @@
     public class AuditLog : BaseEntity
     {
         public int UserId { get; set; }   // string yox!
+        public AppUser User { get; set; } = null!;
 
         public string Action { get; set; } = null!;
 

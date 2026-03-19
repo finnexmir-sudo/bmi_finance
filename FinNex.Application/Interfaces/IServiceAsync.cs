@@ -10,7 +10,7 @@ namespace FinNex.Application.Interfaces
     where TDto : class
     {
         Task<Result<IList<TDto>>> HamisiniGetirAsync();
-        Task<Result<IList<TDto>>> HamisiniGetirAsync(
+      Task<Result<IList<TDto>>> HamisiniGetirAsync(
     Expression<Func<TEntity, bool>>? predicate = null,
     Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>? include = null,
     bool izlemeden = true);

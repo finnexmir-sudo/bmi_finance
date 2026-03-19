@@ -10,7 +10,7 @@ namespace FinNex.Domain.Entities.HR
 
         // --- ƏLAVƏ EDİLMƏLİ OLAN HİSSƏ ---
         public int DepartamentId { get; set; } // Foreign Key
-        public Department Departament { get; set; } = null!; // Navigation Property
+        public Departament Departament { get; set; } = null!; // Navigation Property
                                                               // --------------------------------
 
         public ICollection<Isci> Isciler { get; set; } = new List<Isci>();

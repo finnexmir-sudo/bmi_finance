@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using FinNex.Domain.Interfaces;
 using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
 using Microsoft.AspNetCore.Authorization;
@@ -27,44 +27,65 @@ public class MusteriController : Controller
     public async Task<IActionResult> Index()
     {
         var musteriler = await _uow.HamisiniGetirAsync();
-        return View(musteriler);
+        if (musteriler ==null)
+        {
+            return NotFound();
+
+        }
+        return View(musteriler.Data);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Yarat(string? returnUrl = null,
+                                        string? ad = null,
+                                        string? voen = null,
+                                        string? hesab = null)
+    {
+        var valyutalar = await _valyutaService.GetAktivAsync();
+        ViewBag.Valyutalar = valyutalar.Select(v => new SelectListItem
+        {
+            Value = v.Id.ToString(),
+            Text = v.Kod
+        }).ToList();
+
+        ViewBag.ReturnUrl = returnUrl;
+
+        // Gələn məlumatları forma doldur
+        return View(new MusteriCreateDto
+        {
+            Ad = ad,
+            Voen = voen,
+            Hesab = hesab
+        });
     }
 
     [HttpPost]
-    public async Task<IActionResult> Yarat(MusteriCreateDto dto)
+    public async Task<IActionResult> Yarat(MusteriCreateDto dto, string? returnUrl = null)
     {
         if (!ModelState.IsValid)
         {
             var valyutalar = await _valyutaService.GetAktivAsync();
-
-            ViewBag.Valyutalar = valyutalar
-                .Select(v => new SelectListItem
-                {
-                    Value = v.Id.ToString(),
-                    Text = v.Kod
-                }).ToList();
-
+            ViewBag.Valyutalar = valyutalar.Select(v => new SelectListItem
+            {
+                Value = v.Id.ToString(),
+                Text = v.Kod
+            }).ToList();
+            ViewBag.ReturnUrl = returnUrl;
             return View(dto);
         }
 
         await _uow.YaratAsync(dto);
 
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            // Məlumatları TempData-ya yaz
+            TempData["AlanMusteri_Ad"] = dto.Ad;
+            TempData["AlanMusteri_Voen"] = dto.Voen;
+            TempData["AlanMusteri_Hesab"] = dto.Hesab;
+            return Redirect(returnUrl);
+        }
+
         return RedirectToAction(nameof(Index));
-    }
-
-
-    public async Task<IActionResult> Yarat()
-    {
-        var valyutalar = await _valyutaService.GetAktivAsync();
-
-        ViewBag.Valyutalar = valyutalar
-            .Select(v => new SelectListItem
-            {
-                Value = v.Id.ToString(),
-                Text = v.Kod
-            }).ToList();
-
-        return View(new MusteriCreateDto());
     }
 
 }

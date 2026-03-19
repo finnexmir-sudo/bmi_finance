@@ -28,7 +28,7 @@
             </div>
         </div>
     </div>
-    <div class="col-xl-5col col-lg-4 col-md-6">
+    @* <div class="col-xl-5col col-lg-4 col-md-6">
         <div class="sd-stat-card">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
@@ -53,7 +53,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> *@
     <div class="col-xl-5col col-lg-4 col-md-6">
         <div class="sd-stat-card">
             <div class="d-flex justify-content-between align-items-center">
@@ -73,7 +73,7 @@
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Yarat"
-           class="sd-quick-action-card d-block text-decoration-none">
+        class="sd-quick-action-card d-block text-decoration-none">
             <div class="d-flex align-items-center gap-3">
                 <div class="qa-icon bg-primary-soft text-primary">
                     <i class="bi bi-plus-lg"></i>
@@ -87,7 +87,7 @@
     </div>
     <div class="col-md-4">
         <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
-           class="sd-quick-action-card d-block text-decoration-none">
+        class="sd-quick-action-card d-block text-decoration-none">
             <div class="d-flex align-items-center gap-3">
                 <div class="qa-icon bg-info-soft text-info">
                     <i class="bi bi-search"></i>
@@ -99,20 +99,24 @@
             </div>
         </a>
     </div>
-    <div class="col-md-4">
-        <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Silinmisler"
-           class="sd-quick-action-card d-block text-decoration-none">
-            <div class="d-flex align-items-center gap-3">
-                <div class="qa-icon bg-danger-soft text-danger">
-                    <i class="bi bi-trash3"></i>
+    @if (User.IsInRole("Admin"))
+    { 
+        <div class="col-md-4">
+            <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Silinmisler"
+               class="sd-quick-action-card d-block text-decoration-none">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="qa-icon bg-danger-soft text-danger">
+                        <i class="bi bi-trash3"></i>
+                    </div>
+                    <div>
+                        <div class="qa-title">Silinmişlər</div>
+                        <div class="qa-desc">Silinmiş sənədlərə baxın</div>
+                    </div>
                 </div>
-                <div>
-                    <div class="qa-title">Silinmişlər</div>
-                    <div class="qa-desc">Silinmiş sənədlərə baxın</div>
-                </div>
-            </div>
-        </a>
-    </div>
+            </a>
+        </div>
+    }
+    
 </div>
 
 <!-- Recent Documents -->
@@ -175,7 +179,7 @@
                                 </span>
                             </td>
                             <td class="text-muted">@s.YaradilmaTarixi.ToString("dd.MM.yyyy")</td>
-                            <td>
+                            <td class="text-end text-nowrap">
                                 <a asp-area="SenedDovriyyesi" asp-controller="Sened"
                                    asp-action="Detal" asp-route-id="@s.Id"
                                    class="btn btn-sm btn-outline-primary sd-btn-sm">

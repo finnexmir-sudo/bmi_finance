@@ -176,12 +176,24 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xPZGVuaXNUYXBzaXJpZ2lcQ3JlYXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/samir_hu/Source/Repos/finnexmir_bmi/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/CreateKohne.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xPZGVuaXNUYXBzaXJpZ2lcQ3JlYXRlS29obmUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/samir_hu/Source/Repos/finnexmir_bmi/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/Detail.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xPZGVuaXNUYXBzaXJpZ2lcRGV0YWlsLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/samir_hu/Source/Repos/finnexmir_bmi/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xPZGVuaXNUYXBzaXJpZ2lcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/samir_hu/Source/Repos/finnexmir_bmi/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/Siyahi.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xPZGVuaXNUYXBzaXJpZ2lcU2l5YWhpLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/samir_hu/Source/Repos/finnexmir_bmi/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/Update.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xPZGVuaXNUYXBzaXJpZ2lcVXBkYXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/samir_hu/Source/Repos/finnexmir_bmi/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/Payment/Create.cshtml]
@@ -204,12 +216,28 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXFNlbmVkXERldGFsLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/samir_hu/Source/Repos/finnexmir_bmi/FinNex.UI/Areas/SenedDovriyyesi/Views/Sened/DetalSilinmis.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXFNlbmVkXERldGFsU2lsaW5taXMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/samir_hu/Source/Repos/finnexmir_bmi/FinNex.UI/Areas/SenedDovriyyesi/Views/Sened/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXFNlbmVkXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/samir_hu/Source/Repos/finnexmir_bmi/FinNex.UI/Areas/SenedDovriyyesi/Views/Sened/Redakte.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXFNlbmVkXFJlZGFrdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/samir_hu/Source/Repos/finnexmir_bmi/FinNex.UI/Areas/SenedDovriyyesi/Views/Sened/SenedNovleri.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXFNlbmVkXFNlbmVkTm92bGVyaS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/samir_hu/Source/Repos/finnexmir_bmi/FinNex.UI/Areas/SenedDovriyyesi/Views/Sened/Silinmisler.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXFNlbmVkXFNpbGlubWlzbGVyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/samir_hu/Source/Repos/finnexmir_bmi/FinNex.UI/Areas/SenedDovriyyesi/Views/Sened/SilTesdiq.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXFNlbmVkXFNpbFRlc2RpcS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/samir_hu/Source/Repos/finnexmir_bmi/FinNex.UI/Areas/SenedDovriyyesi/Views/Sened/Yarat.cshtml]
@@ -234,6 +262,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/samir_hu/Source/Repos/finnexmir_bmi/FinNex.UI/Views/Account/ByBank.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxCeUJhbmsuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/samir_hu/Source/Repos/finnexmir_bmi/FinNex.UI/Views/Account/Changepassword.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxDaGFuZ2VwYXNzd29yZC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/samir_hu/Source/Repos/finnexmir_bmi/FinNex.UI/Views/Account/Login.cshtml]

@@ -45,6 +45,7 @@ namespace FinNex.UI.Controllers
                 return View(dto);
 
             var user = await _userManager.FindByNameAsync(dto.UserName);
+            var roles = await _userManager.GetRolesAsync(user);
 
             if (user == null || !user.Aktivdir)
             {
@@ -138,5 +139,48 @@ namespace FinNex.UI.Controllers
         {
             return View();
         }
+
+        // GET
+[HttpGet]
+[Authorize]
+public IActionResult ChangePassword()
+{
+    return View(new UI.DTO.ChangePasswordDto());
+}
+
+// POST
+[HttpPost]
+[Authorize]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> ChangePassword(Application.DTOs.Auth.ChangePasswordDto dto)
+{
+    if (!ModelState.IsValid)
+        return View(dto);
+
+    if (dto.NewPassword != dto.ConfirmNewPassword)
+    {
+        ModelState.AddModelError(nameof(dto.ConfirmNewPassword), "Yeni şifrələr uyğun deyil.");
+        return View(dto);
+    }
+
+    var user = await _userManager.GetUserAsync(User);
+    if (user == null)
+        return RedirectToAction("Login");
+
+    var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+
+    if (result.Succeeded)
+    {
+        await _signInManager.RefreshSignInAsync(user);
+        TempData["SuccessMessage"] = "Şifrəniz uğurla yeniləndi.";
+        return RedirectToAction(nameof(ChangePassword));
+    }
+
+    foreach (var error in result.Errors)
+        ModelState.AddModelError(string.Empty, error.Description);
+
+    TempData["ErrorMessage"] = "Şifrə dəyişdirilə bilmədi. Cari şifrənizi yoxlayın.";
+    return View(dto);
+}
     }
 }

@@ -12,7 +12,7 @@ public class SenedNovuItemVM
     public string Kod { get; set; } = null!;
     public string Ad { get; set; } = null!;
     public int SobeId { get; set; }
-    public string SobeAd { get; set; } = null!;
+    public string DepartmentAd { get; set; } = null!;
     public bool Aktiv { get; set; }
     public DateTime YaradilmaTarixi { get; set; }
 }

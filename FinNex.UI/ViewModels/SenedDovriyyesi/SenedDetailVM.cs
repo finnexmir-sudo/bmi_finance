@@ -41,9 +41,11 @@ public class SenedFaylItemVM
 
 public class AuditLogItemVM
 {
+    public int Id { get; set; }
     public string Action { get; set; } = null!;
     public string? DetailsJson { get; set; }
     public string? Ip { get; set; }
     public DateTime YaradilmaTarixi { get; set; }
     public int UserId { get; set; }
+    public string? UserName { get; set; }
 }

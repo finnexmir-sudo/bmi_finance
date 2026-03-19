@@ -1,107 +1,149 @@
 ﻿@model IEnumerable<FinNex.Application.DTOs.HR.Mezuniyyet.MezuniyyetListDto>
+@using FinNex.Application.DTOs.HR.Mezuniyyet
 @using FinNex.Domain.Entities.HR
-
 @{
     ViewData["Title"] = "Məzuniyyət İdarəetməsi";
     Layout = "~/Views/Shared/_Layout.cshtml";
 
-    // int totalCount = Model.Count();
-    // int pendingCount = Model.Count(x => x.Status == MezuniyyetStatus.Gozlemede);
-    // int approvedCount = Model.Count(x => x.Status == MezuniyyetStatus.Tesdiqlenib);
-    // int rejectedCount = Model.Count(x => x.Status == MezuniyyetStatus.ImtinaEdilib);
+    static string StatusBadgeClass(MezuniyyetStatus s) => s switch
+    {
+        MezuniyyetStatus.Gozlemede => "mez-badge-gozlemede",
+        MezuniyyetStatus.SobeReisiTesdiqinde => "mez-badge-sobe",
+        MezuniyyetStatus.RehberTesdiqinde => "mez-badge-rehber",
+        MezuniyyetStatus.HrTesdiqinde => "mez-badge-hr",
+        MezuniyyetStatus.Tesdiqlenib => "mez-badge-tesdiq",
+        MezuniyyetStatus.ImtinaEdildi => "mez-badge-imtina",
+        _ => ""
+    };
 
-    int totalCount = 6;
-    int pendingCount = 4;
-    int approvedCount = 3;
-    int rejectedCount = 2;
+    static string StatusIcon(MezuniyyetStatus s) => s switch
+    {
+        MezuniyyetStatus.Gozlemede => "bi-clock",
+        MezuniyyetStatus.SobeReisiTesdiqinde => "bi-person-check",
+        MezuniyyetStatus.RehberTesdiqinde => "bi-person-lines-fill",
+        MezuniyyetStatus.HrTesdiqinde => "bi-shield-check",
+        MezuniyyetStatus.Tesdiqlenib => "bi-check-circle-fill",
+        MezuniyyetStatus.ImtinaEdildi => "bi-x-circle-fill",
+        _ => "bi-circle"
+    };
+
+    static string StatusText(MezuniyyetStatus s) => s switch
+    {
+        MezuniyyetStatus.Gozlemede => "Gözləmədə",
+        MezuniyyetStatus.SobeReisiTesdiqinde => "Şöbə Rəisi",
+        MezuniyyetStatus.RehberTesdiqinde => "Rəhbər",
+        MezuniyyetStatus.HrTesdiqinde => "HR Təsdiqi",
+        MezuniyyetStatus.Tesdiqlenib => "Təsdiqlənib",
+        MezuniyyetStatus.ImtinaEdildi => "İmtina",
+        _ => s.ToString()
+    };
+
+    static string TypeClass(MezuniyyetNovu n) => n switch
+    {
+        MezuniyyetNovu.Illik => "type-illik",
+        MezuniyyetNovu.Xestelik => "type-xestelik",
+        MezuniyyetNovu.Ezamiyyet => "type-ezamiyyet",
+        _ => ""
+    };
+
+    static string TypeIcon(MezuniyyetNovu n) => n switch
+    {
+        MezuniyyetNovu.Illik => "bi-sun",
+        MezuniyyetNovu.Xestelik => "bi-heart-pulse",
+        MezuniyyetNovu.Ezamiyyet => "bi-airplane",
+        _ => "bi-calendar"
+    };
+
+    var list = Model?.ToList() ?? new List<MezuniyyetListDto>();
+    var total = list.Count;
+    var pending = list.Count(x => x.Status == MezuniyyetStatus.Gozlemede || x.Status == MezuniyyetStatus.SobeReisiTesdiqinde || x.Status == MezuniyyetStatus.RehberTesdiqinde || x.Status == MezuniyyetStatus.HrTesdiqinde);
+    var approved = list.Count(x => x.Status == MezuniyyetStatus.Tesdiqlenib);
+    var rejected = list.Count(x => x.Status == MezuniyyetStatus.ImtinaEdildi);
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/hr/mezuniyyet.css" />
+    <link rel="stylesheet" href="~/css/hr/mezuniyyet.css" asp-append-version="true" />
 }
 
-<div class="container-fluid px-4 py-4">
+<div class="container-fluid py-4">
 
     <!-- Page Header -->
-    <div class="mez-page-header d-flex align-items-center gap-3">
+    <div class="mez-page-header d-flex align-items-center gap-3 mez-animate">
         <div class="header-icon">
-            <i class="bi bi-calendar2-week"></i>
+            <i class="bi bi-calendar2-week-fill"></i>
         </div>
-        <div>
-            <div class="mez-breadcrumb">
-                <a href="#">HR Modulu</a>
-                <span class="sep"><i class="bi bi-chevron-right"></i></span>
-                <span class="current">Məzuniyyət</span>
-            </div>
-            <h1>Məzuniyyət İdarəetməsi</h1>
-            <p>Bütün işçi məzuniyyət sorğularını izləyin və idarə edin</p>
+        <div class="flex-grow-1">
+            <h1 class="page-title">Məzuniyyət İdarəetməsi</h1>
+            <p class="page-subtitle">Bütün işçi məzuniyyət müraciətlərini idarə edin</p>
         </div>
-        <div class="ms-auto">
-            <a asp-action="Create" class="btn-mez-primary">
-                <i class="bi bi-plus-lg"></i> Yeni Məzuniyyət
-            </a>
-        </div>
+        <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Create" class="btn-mez-primary">
+            <i class="bi bi-plus-lg"></i> Yeni Müraciət
+        </a>
     </div>
 
-    <!-- Stats Row -->
+    <!-- Stat Cards -->
     <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-lg-3 mez-animate mez-animate-delay-1">
             <div class="mez-stat-card">
-                <div class="stat-label">Cəmi Sorğu</div>
-                <div class="stat-value" style="color: var(--mez-primary)">@totalCount</div>
-                <i class="bi bi-journal-text stat-icon"></i>
+                <div class="stat-icon stat-icon-primary"><i class="bi bi-calendar3"></i></div>
+                <div class="stat-value">@total</div>
+                <div class="stat-label">Ümumi Müraciət</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-lg-3 mez-animate mez-animate-delay-2">
             <div class="mez-stat-card">
-                <div class="stat-label">Gözləmədə</div>
-                <div class="stat-value" style="color: var(--mez-warning)">@pendingCount</div>
-                <i class="bi bi-hourglass-split stat-icon"></i>
+                <div class="stat-icon stat-icon-warning"><i class="bi bi-hourglass-split"></i></div>
+                <div class="stat-value">@pending</div>
+                <div class="stat-label">Gözləyən</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-lg-3 mez-animate mez-animate-delay-3">
             <div class="mez-stat-card">
-                <div class="stat-label">Təsdiqlənib</div>
-                <div class="stat-value" style="color: var(--mez-success)">@approvedCount</div>
-                <i class="bi bi-check-circle stat-icon"></i>
+                <div class="stat-icon stat-icon-success"><i class="bi bi-check-circle"></i></div>
+                <div class="stat-value">@approved</div>
+                <div class="stat-label">Təsdiqlənmiş</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-lg-3 mez-animate mez-animate-delay-4">
             <div class="mez-stat-card">
-                <div class="stat-label">İmtina Edilib</div>
-                <div class="stat-value" style="color: var(--mez-danger)">@rejectedCount</div>
-                <i class="bi bi-x-circle stat-icon"></i>
+                <div class="stat-icon stat-icon-danger"><i class="bi bi-x-circle"></i></div>
+                <div class="stat-value">@rejected</div>
+                <div class="stat-label">İmtina Edilmiş</div>
             </div>
         </div>
     </div>
 
-    <!-- Table Card -->
-    <div class="mez-card">
+    <!-- Main Table Card -->
+    <div class="mez-card mez-animate">
 
-        <!-- Toolbar -->
-        <div class="mez-toolbar">
+        <!-- Filter Bar -->
+        <div class="mez-filter-bar">
             <div class="mez-search-wrap">
-                <i class="bi bi-search"></i>
-                <input id="mezSearch" type="text" class="mez-search-input" placeholder="İşçi adına görə axtar..." />
+                <i class="bi bi-search search-icon"></i>
+                <input type="text"
+                       id="mez-search"
+                       class="mez-search-input"
+                       placeholder="İşçi adı, şöbə axtar..." />
             </div>
 
-            <select id="mezStatusFilter" class="mez-filter-select">
+            <select id="mez-filter-status" class="mez-filter-select">
                 <option value="">Bütün Statuslar</option>
                 <option value="1">Gözləmədə</option>
-                <option value="2">Təsdiqlənib</option>
-                <option value="3">İmtina Edilib</option>
+                <option value="2">Şöbə Rəisi</option>
+                <option value="3">Rəhbər</option>
+                <option value="4">HR Təsdiqi</option>
+                <option value="5">Təsdiqlənib</option>
+                <option value="6">İmtina</option>
             </select>
 
-            <select id="mezTypeFilter" class="mez-filter-select">
+            <select id="mez-filter-type" class="mez-filter-select">
                 <option value="">Bütün Növlər</option>
                 <option value="1">İllik</option>
                 <option value="2">Xəstəlik</option>
                 <option value="3">Ezamiyyət</option>
             </select>
 
-            <div class="ms-auto text-muted" style="font-size:0.8rem; white-space:nowrap;">
-                <i class="bi bi-list-ul me-1"></i> @totalCount qeyd
-            </div>
+            <span class="ms-auto text-muted" style="font-size:0.8rem;" id="mez-row-count">@list.Count nəticə</span>
         </div>
 
         <!-- Table -->
@@ -109,26 +151,26 @@
             <table class="mez-table">
                 <thead>
                     <tr>
-                        <th>#</th>
-                        <th>İşçi</th>
-                        <th>Məzuniyyət Növü</th>
-                        <th>Tarix Aralığı</th>
-                        <th>Müddət</th>
-                        <th>Status</th>
-                        <th>Əməliyyatlar</th>
+                        <th data-sort="employee">İşçi <i class="bi bi-arrow-down-up ms-1 opacity-50"></i></th>
+                        <th>Şöbə / Vəzifə</th>
+                        <th data-sort="type">Növ</th>
+                        <th data-sort="start">Tarix Aralığı</th>
+                        <th>İş Günü</th>
+                        <th data-sort="status">Status</th>
+                        <th style="width:100px;">Əməliyyat</th>
                     </tr>
                 </thead>
-                <tbody id="mezTableBody">
-                    @if (!Model.Any())
+                <tbody id="mez-table-body">
+                    @if (!list.Any())
                     {
                         <tr>
                             <td colspan="7">
                                 <div class="mez-empty">
-                                    <i class="bi bi-calendar2-x empty-icon"></i>
-                                    <h4>Məzuniyyət qeydi tapılmadı</h4>
-                                    <p>Hələ heç bir məzuniyyət sorğusu yoxdur.</p>
-                                    <a asp-action="Create" class="btn-mez-primary">
-                                        <i class="bi bi-plus-lg"></i> İlk Sorğunu Yarat
+                                    <div class="mez-empty-icon"><i class="bi bi-calendar-x"></i></div>
+                                    <div class="mez-empty-title">Heç bir məzuniyyət tapılmadı</div>
+                                    <div class="mez-empty-desc">Hələlik məzuniyyət müraciəti yoxdur.</div>
+                                    <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Create" class="btn-mez-primary">
+                                        <i class="bi bi-plus-lg"></i> İlk Müraciəti Yarat
                                     </a>
                                 </div>
                             </td>
@@ -136,95 +178,60 @@
                     }
                     else
                     {
-                        @foreach (var item in Model)
+                        @foreach (var item in list)
                         {
-                            var initials = string.Join("", item.IsciAdSoyad.Split(' ')
-                            .Take(2).Select(w => w.FirstOrDefault().ToString().ToUpper()));
-
-                            var typeClass = item.Nov switch
-                            {
-                                MezuniyyetNovu.Illik => "badge-illik",
-                                MezuniyyetNovu.Xestelik => "badge-xestelik",
-                                MezuniyyetNovu.Ezamiyyet => "badge-ezamiyyet",
-                                _ => ""
-                            };
-                            var typeIcon = item.Nov switch
-                            {
-                                MezuniyyetNovu.Illik => "bi-sun",
-                                MezuniyyetNovu.Xestelik => "bi-heart-pulse",
-                                MezuniyyetNovu.Ezamiyyet => "bi-airplane",
-                                _ => "bi-calendar"
-                            };
-                            var typeLabel = item.Nov switch
-                            {
-                                MezuniyyetNovu.Illik => "İllik",
-                                MezuniyyetNovu.Xestelik => "Xəstəlik",
-                                MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
-                                _ => item.Nov.ToString()
-                            };
-
-                            var days = (int)(item.BitmeTarixi - item.BaslamaTarixi).TotalDays + 1;
-
-                            <tr data-row data-name="@item.IsciAdSoyad.ToLower()" data-status="@((int)item.Status)" data-type="@((int)item.Nov)">
-                                <td>
-                                    <span class="text-muted" style="font-family: var(--font-mono); font-size:0.78rem;">#@item.Id.ToString("D4")</span>
-                                </td>
+                            <tr data-row
+                                data-employee="@item.IsciAdSoyad"
+                                data-status="@((int)item.Status)"
+                                data-type="@((int)item.Nov)"
+                                data-start="@item.BaslamaTarixi.ToString("yyyy-MM-dd")">
                                 <td>
                                     <div class="employee-cell">
-                                        <div class="mez-avatar">@initials</div>
-                                        <span class="employee-name">@item.IsciAdSoyad</span>
+                                        <div class="employee-avatar" data-name="@item.IsciAdSoyad"></div>
+                                        <div>
+                                            <div class="employee-name">@item.IsciAdSoyad</div>
+                                        </div>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="type-indicator @typeClass">
-                                        <i class="bi @typeIcon"></i> @typeLabel
+                                    <div style="font-size:0.85rem; font-weight:600; color:var(--gray-800);">@item.SobeAdi</div>
+                                    <div style="font-size:0.75rem; color:var(--gray-400);">@item.VezifeAdi</div>
+                                </td>
+                                <td>
+                                    <span class="mez-type-pill @TypeClass(item.Nov)">
+                                        <i class="bi @TypeIcon(item.Nov)"></i>
+                                        @item.NovText
                                     </span>
                                 </td>
                                 <td>
                                     <div class="date-range">
-                                        <span class="date-from">@item.BaslamaTarixi.ToString("dd.MM.yyyy")</span>
-                                        <span class="date-arrow"><i class="bi bi-arrow-down"></i></span>
-                                        <span class="date-to">@item.BitmeTarixi.ToString("dd.MM.yyyy")</span>
+                                        <span>@item.BaslamaTarixi.ToString("dd.MM.yyyy")</span>
+                                        <i class="bi bi-arrow-right date-arrow"></i>
+                                        <span>@item.BitmeTarixi.ToString("dd.MM.yyyy")</span>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="mez-duration">
-                                        <i class="bi bi-clock"></i> @days gün
+                                    <span class="days-pill">@item.IsGunlerininSayi g</span>
+                                </td>
+                                <td>
+                                    <span class="mez-badge @StatusBadgeClass(item.Status)">
+                                        <i class="bi @StatusIcon(item.Status)"></i>
+                                        @StatusText(item.Status)
                                     </span>
                                 </td>
                                 <td>
-                                    @if (item.Status == MezuniyyetStatus.Gozlemede)
-                                    {
-                                        <span class="mez-badge badge-pending">
-                                            <span class="dot"></span> Gözləmədə
-                                        </span>
-                                    }
-                                    else if (item.Status == MezuniyyetStatus.Tesdiqlenib)
-                                    {
-                                        <span class="mez-badge badge-approved">
-                                            <span class="dot"></span> Təsdiqlənib
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="mez-badge badge-rejected">
-                                            <span class="dot"></span> İmtina Edilib
-                                        </span>
-                                    }
-                                </td>
-                                <td>
-                                    <div class="d-flex gap-2">
-                                        <a asp-action="Detail" asp-route-id="@item.Id"
-                                           class="btn-icon btn-icon-view"
-                                           data-bs-toggle="tooltip" title="Ətraflı">
+                                    <div class="d-flex gap-1">
+                                        <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Detail" asp-route-id="@item.Id"
+                                           class="mez-action-btn view-btn"
+                                           data-bs-toggle="tooltip" title="Bax">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a asp-action="Edit" asp-route-id="@item.Id"
-                                           class="btn-icon btn-icon-edit"
-                                           data-bs-toggle="tooltip" title="Düzəliş et">
+                                        <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Edit" asp-route-id="@item.Id"
+                                           class="mez-action-btn edit-btn"
+                                           data-bs-toggle="tooltip" title="Redaktə">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <button class="btn-icon btn-icon-delete"
+                                        <button class="mez-action-btn del-btn"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#deleteModal"
                                                 data-id="@item.Id"
@@ -239,16 +246,37 @@
                     }
                 </tbody>
             </table>
-            <div id="noResults" style="display:none; text-align:center; padding:2.5rem; color:var(--mez-text-muted); font-size:0.875rem;">
-                <i class="bi bi-search" style="font-size:1.5rem; opacity:0.3; display:block; margin-bottom:0.5rem;"></i>
-                Axtarışa uyğun nəticə tapılmadı.
+        </div>
+
+        @if (!list.Any()) { }
+        else
+        {
+            <div id="mez-empty-state" style="display:none;">
+                <div class="mez-empty">
+                    <div class="mez-empty-icon"><i class="bi bi-search"></i></div>
+                    <div class="mez-empty-title">Nəticə tapılmadı</div>
+                    <div class="mez-empty-desc">Axtarış kriteriyalarınıza uyğun məlumat yoxdur.</div>
+                </div>
             </div>
+        }
+
+        <!-- Pagination placeholder -->
+        <div class="mez-pagination">
+            <span class="pagination-info">Cəmi <strong>@list.Count</strong> müraciət</span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item disabled"><a class="page-link" href="#">»</a></li>
+                </ul>
+            </nav>
         </div>
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
 @await Html.PartialAsync("_DeleteModal")
 
 @section Scripts {
-    <script src="~/js/hr/mezuniyyet.js"></script>
+    <script src="~/js/hr/mezuniyyet.js" asp-append-version="true"></script>
 }

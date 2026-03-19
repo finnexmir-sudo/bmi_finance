@@ -1,17 +1,24 @@
 ﻿
+using AutoMapper;
 using FinNex.Application.Common.Paged;
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.SenedDovriyyesi;
 using FinNex.Application.DTOs.SenedDovriyyesi.Fayl;
 using FinNex.Application.DTOs.SenedDovriyyesi.Sened;
+using FinNex.Application.DTOs.Structur;
+using FinNex.Application.Interfaces.Structur;
+using FinNex.Application.Services;
 using FinNex.Domain.Entities.SenedDovriyyesi;
+using FinNex.Domain.Entities.Structure;
+using FinNex.Domain.Interfaces;
 
 namespace FinNex.Application.Interfaces.SenedDovriyyesi
 {
-    public interface ISenedService
+    public interface ISenedService: IServiceAsync<Sened,SenedDetailDto,SenedCreateDto,SenedUpdateDto>
     {
-        // --- Yaratma Əməliyyatları ---
-        Task<Result<int>> CreateAsync(SenedCreateDto dto, SenedUploadDto sdto, int userId, string? ip);
+
+            // --- Yaratma Əməliyyatları ---
+            Task<Result<int>> CreateAsync(SenedCreateDto dto, SenedUploadDto sdto, int userId, string? ip);
         
         Task<Result<int>> CreateWithFileAsync(
             SenedCreateDto dto,
@@ -33,10 +40,14 @@ namespace FinNex.Application.Interfaces.SenedDovriyyesi
         // --- Oxuma/Listələmə Əməliyyatları ---
         Task<Result<PagedResult<SenedListDto>>> GetPagedAsync(
             PagedRequest req, int? sobeId, int? senedNovuId, SenedStatusu? status, string? search);
+        Task<Result<PagedResult<SenedListDto>>> GetSilinmisPagedAsync(
+            PagedRequest req, int? sobeId, int? senedNovuId, SenedStatusu? status, string? search);
 
-        Task<Result<PagedResult<SenedListDto>>> GetDeletedPagedAsync(PagedRequest req);
+
 
         Task<Result<SenedDetailDto>> GetDetailAsync(int senedId, int userId, bool isAdmin);
+        Task<Result<SenedDetailDto>> GetDetailSilinmisAsync(int senedId, int userId, bool isAdmin);
+        Task<Result<SenedDetailDto>> silmeİCazeSorgusuAsync(int senedId, int userId, bool isAdmin);
 
         Task<Result<SenedDashboardDto>> GetDashboardAsync();
 

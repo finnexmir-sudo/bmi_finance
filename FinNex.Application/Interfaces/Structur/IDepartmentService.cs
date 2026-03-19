@@ -6,7 +6,7 @@ using FinNex.Domain.Entities.Structure;
 namespace FinNex.Application.Interfaces.Structur
 {
     public interface IDepartmentService :
-        IServiceAsync<Department, DepartmentListDto, DepartmentCreateDto, DepartmentUpdateDto>
+        IServiceAsync<Departament, DepartmentListDto, DepartmentCreateDto, DepartmentUpdateDto>
     {
         Task<Result<List<DepartmentListDto>>> GetAllWithEmployeeCountAsync();
     }

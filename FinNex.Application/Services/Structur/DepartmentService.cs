@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FinNex.Application.Services.Structur
 {
     public class DepartmentService
-    : ServiceAsync<Department, DepartmentListDto, DepartmentCreateDto, DepartmentUpdateDto>,
+    : ServiceAsync<Departament, DepartmentListDto, DepartmentCreateDto, DepartmentUpdateDto>,
       IDepartmentService
     {
         public DepartmentService(IUnitOfWork unitOfWork, IMapper mapper)
@@ -39,7 +39,7 @@ namespace FinNex.Application.Services.Structur
         public async Task<Result<List<DepartmentListDto>>> GetAllWithEmployeeCountAsync()
         {
             var data = await _unitOfWork
-     .Repository<Department>()
+     .Repository<Departament>()
      .Query()
      .Where(d => !d.Silinib) // silinmişləri göstərmə
      .Select(d => new DepartmentListDto

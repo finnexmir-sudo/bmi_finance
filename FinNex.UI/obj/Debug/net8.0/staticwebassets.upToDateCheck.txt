@@ -2,6 +2,7 @@ wwwroot\css\admin.css
 wwwroot\css\auth.css
 wwwroot\css\bank-form.css
 wwwroot\css\bank-index.css
+wwwroot\css\change-password.css
 wwwroot\css\hr\davamiyyet-list.css
 wwwroot\css\hr\departament-list.css
 wwwroot\css\hr\hr-premium.css
@@ -15,14 +16,17 @@ wwwroot\css\hr\vezife-list.css
 wwwroot\css\musteri.css
 wwwroot\css\navbar.css
 wwwroot\css\PR_Odenis_Tapsirigi\payment-create.css
+wwwroot\css\PR_Odenis_Tapsirigi\payment-detail.css
 wwwroot\css\PR_Odenis_Tapsirigi\payment-hub.css
 wwwroot\css\PR_Odenis_Tapsirigi\payment-list.css
+wwwroot\css\PR_Odenis_Tapsirigi\payment-update.css
 wwwroot\css\sened-dovriyyesi.css
 wwwroot\css\site.css
 wwwroot\favicon.ico
 wwwroot\Files\Word\Odenis_tapsirigi.docx
 wwwroot\images\Logobank.jpg
 wwwroot\js\admin-sidebar.js
+wwwroot\js\change-password.js
 wwwroot\js\hr\davamiyyet-list.js
 wwwroot\js\hr\departament-list.js
 wwwroot\js\hr\maas-list.js
@@ -33,6 +37,8 @@ wwwroot\js\hr\vezife-list.js
 wwwroot\js\isci-create.js
 wwwroot\js\isci-form.js
 wwwroot\js\PR_Odenis_Tapsirigi\payment-bank.js
+wwwroot\js\PR_Odenis_Tapsirigi\payment-detail.js
+wwwroot\js\PR_Odenis_Tapsirigi\payment-word -Update.js
 wwwroot\js\PR_Odenis_Tapsirigi\payment-word.js
 wwwroot\js\sened-yarat.js
 wwwroot\js\site.js

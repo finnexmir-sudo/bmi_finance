@@ -1,5 +1,6 @@
 @model SenedDetailVM
 
+
 <!-- Header Panel -->
 <div class="sd-detail-header">
     <div class="row align-items-center">
@@ -55,6 +56,7 @@
 <!-- Metadata & Status Actions -->
 <div class="row g-3 mb-4">
     <div class="col-lg-8">
+
         <!-- Metadata Card -->
         <div class="sd-card mb-3">
             <div class="sd-card-header">
@@ -140,7 +142,7 @@
                                     <th>Tip</th>
                                     <th>Ölçü</th>
                                     <th>Tarix</th>
-                                    <th class="text-end">Yüklə</th>
+                                    <th class="text-end">Əməliyyat</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -173,6 +175,18 @@
                                         <td class="text-muted text-nowrap">@f.FormattedSize</td>
                                         <td class="text-muted text-nowrap">@f.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</td>
                                         <td class="text-end">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-secondary sd-btn-sm me-1 btn-preview"
+                                                    data-id="@f.Id"
+                                                    data-name="@f.OriginalAd"
+                                                    data-mime="@f.ContentType"
+                                                    data-size="@f.FormattedSize"
+                                                    data-date="@f.YaradilmaTarixi.ToString("dd.MM.yyyy")"
+                                                    data-version="v@(f.VersiyaNo)"
+                                                    data-active="@f.AktivVersiya.ToString().ToLower()"
+                                                    title="Ön izlə">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
                                             <a asp-area="SenedDovriyyesi" asp-controller="Sened"
                                                asp-action="Download" asp-route-id="@f.Id"
                                                class="btn btn-sm btn-outline-primary sd-btn-sm" title="Yüklə">
@@ -194,11 +208,12 @@
                 }
             </div>
         </div>
+
     </div>
 
     <div class="col-lg-4">
         <!-- Status Change -->
-        <div class="sd-card mb-3">
+        @* <div class="sd-card mb-3">
             <div class="sd-card-header">
                 <i class="bi bi-arrow-repeat me-2"></i>Status Dəyiş
             </div>
@@ -232,10 +247,10 @@
                     </div>
                 </form>
             </div>
-        </div>
+        </div> *@
 
         <!-- Upload New Version -->
-        <div class="sd-card mb-3">
+        @* <div class="sd-card mb-3">
             <div class="sd-card-header">
                 <i class="bi bi-cloud-arrow-up me-2"></i>Yeni Versiya Yüklə
             </div>
@@ -261,10 +276,10 @@
                     </button>
                 </form>
             </div>
-        </div>
+        </div> *@
 
         <!-- Danger Zone -->
-        <div class="sd-card sd-card-danger">
+        @* <div class="sd-card sd-card-danger">
             <div class="sd-card-header sd-card-header-danger">
                 <i class="bi bi-exclamation-triangle me-2"></i>Təhlükəli Zona
             </div>
@@ -279,7 +294,7 @@
                     </button>
                 </form>
             </div>
-        </div>
+        </div> *@
     </div>
 </div>
 
@@ -320,7 +335,7 @@
                             <div class="sd-timeline-title">@actionText</div>
                             <div class="sd-timeline-meta">
                                 <span><i class="bi bi-clock me-1"></i>@log.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm:ss")</span>
-                                <span><i class="bi bi-person me-1"></i>User #@log.UserId</span>
+                                <span><i class="bi bi-person me-1"></i>User #@log.UserName</span>
                                 @if (!string.IsNullOrEmpty(log.Ip))
                                 {
                                     <span><i class="bi bi-globe me-1"></i>@log.Ip</span>
@@ -342,6 +357,32 @@
                 Əməliyyat tarixçəsi boşdur
             </div>
         }
+    </div>
+</div>
+
+<!-- File Preview Modal -->
+<div class="modal fade" id="filePreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style="max-width: 95%; height: 95vh; margin: 2.5vh auto;">
+        <div class="modal-content sd-modal" style="height: 100%; border: none;">
+            <div class="modal-header sd-modal-header py-2">
+                <div class="d-flex align-items-center gap-3">
+                    <span id="pvModalIcon" style="font-size:1.5rem"></span>
+                    <div>
+                        <h6 class="modal-title mb-0" id="pvModalTitle"></h6>
+                        <small class="text-muted" id="pvModalSub"></small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0 bg-dark" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;" id="pvModalBody">
+            </div>
+            <div class="modal-footer py-1 px-3 justify-content-between bg-white">
+                <small class="text-muted" id="pvModalVersion"></small>
+                <a id="pvDownloadBtn" class="btn btn-sm btn-primary" href="#">
+                    <i class="bi bi-download me-1"></i>Yüklə
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 

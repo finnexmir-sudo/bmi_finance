@@ -1,61 +1,119 @@
-﻿@model FinNex.UI.DTO.RegisterDto
+﻿@using FinNex.Application.DTOs.Auth
+@model ChangePasswordDto
+@{
+    ViewData["Title"] = "Sifreni Deyis";
+}
 
 @{
     Layout = "_AuthLayout";
-    ViewData["Title"] = "Qeydiyyat";
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/change-password.css" asp-append-version="true" />
 }
 
-<div class="auth-card">
-    <!-- LOGO + BRAND -->
-    <div class="auth-logo">
-        <img src="~/images/Logobank.jpg" alt="BMI Finance" />
-    </div>
+<div class="cp-page">
+    <div class="cp-card">
 
-    <div class="auth-title">BMI Finance</div>
-    <div class="auth-title">Yeni Hesab</div>
-    <div class="auth-subtitle">BMI Finance platformasına qoşulun</div>
+        <div class="cp-logo">
+            <img src="~/images/Logobank.jpg" alt="BMI Finance" />
+        </div>
+        <div class="cp-brand">BMI Finance</div>
+        <div class="cp-heading">Sifreni deyis</div>
 
-    <form asp-action="Register" method="post" autocomplete="off">
-        @Html.AntiForgeryToken()
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="cp-alert cp-alert--ok">
+                <i class="bi bi-check-circle-fill"></i>
+                @TempData["SuccessMessage"]
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="cp-alert cp-alert--err">
+                <i class="bi bi-exclamation-circle-fill"></i>
+                @TempData["ErrorMessage"]
+            </div>
+        }
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="cp-alert cp-alert--err">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@error.ErrorMessage</div>
+                }
+            </div>
+        }
 
-        <input asp-for="UserName" class="form-control mb-3" placeholder="İstifadəçi adı" autocomplete="off" />
-        <span asp-validation-for="UserName" class="text-danger"></span>
+        <form asp-action="ChangePassword" asp-controller="Account"
+              method="post" id="cpForm" autocomplete="off">
+            @Html.AntiForgeryToken()
 
-
-        <input asp-for="Ad" class="form-control mb-3" placeholder="Ad" autocomplete="off" />
-        <span asp-validation-for="Ad" class="text-danger"></span>
-
-        <input asp-for="Soyad" class="form-control mb-3" placeholder="Soyad" autocomplete="off" />
-        <span asp-validation-for="Soyad" class="text-danger"></span>
-
-        <input asp-for="Email" class="form-control mb-3" placeholder="Email" autocomplete="off" />
-        <span asp-validation-for="Email" class="text-danger"></span>
-
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <input asp-for="Password"
-                       type="password"
-                       class="form-control"
-                       placeholder="Şifrə" autocomplete="new-password" />
-                <span asp-validation-for="Password" class="text-danger"></span>
+            <div class="cp-group">
+                <div class="cp-field">
+                    <span class="cp-icon"><i class="bi bi-lock"></i></span>
+                    <input asp-for="CurrentPassword" type="password"
+                           class="cp-input" placeholder="Cari sifre"
+                           id="inp-current" autocomplete="current-password" />
+                    <button type="button" class="cp-eye" data-target="inp-current">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
             </div>
 
-            <div class="col-md-6 mb-3">
-                <input asp-for="ConfirmPassword"
-                       type="password"
-                       class="form-control"
-                       placeholder="Şifrə təkrarı" autocomplete="off" />
-                <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+            <div class="cp-sep"></div>
+
+            <div class="cp-group">
+                <div class="cp-field">
+                    <span class="cp-icon"><i class="bi bi-key"></i></span>
+                    <input asp-for="NewPassword" type="password"
+                           class="cp-input" placeholder="Yeni sifre"
+                           id="inp-new" autocomplete="new-password" />
+                    <button type="button" class="cp-eye" data-target="inp-new">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <div class="cp-strength-wrap">
+                    <div class="cp-strength-track">
+                        <div class="cp-strength-fill" id="strengthFill"></div>
+                    </div>
+                    <span class="cp-strength-lbl" id="strengthLabel"></span>
+                </div>
+                <ul class="cp-rules">
+                    <li class="cp-rule" id="rule-length"><span>&#9675;</span> Min. 8 simvol</li>
+                    <li class="cp-rule" id="rule-upper"><span>&#9675;</span> Boyuk herf</li>
+                    <li class="cp-rule" id="rule-number"><span>&#9675;</span> Reqem</li>
+                    <li class="cp-rule" id="rule-special"><span>&#9675;</span> Xususi simvol</li>
+                </ul>
             </div>
+
+            <div class="cp-group">
+                <div class="cp-field">
+                    <span class="cp-icon"><i class="bi bi-key-fill"></i></span>
+                    <input asp-for="ConfirmNewPassword" type="password"
+                           class="cp-input" placeholder="Yeni sifreni tesdiqle"
+                           id="inp-confirm" autocomplete="new-password" />
+                    <button type="button" class="cp-eye" data-target="inp-confirm">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <p class="cp-match" id="matchMsg"></p>
+            </div>
+
+            <button type="submit" class="cp-btn" id="cpBtn">
+                <span id="cpBtnText">Sifreni yenile</span>
+                <span id="cpBtnSpinner" class="spinner-border spinner-border-sm d-none"></span>
+            </button>
+        </form>
+
+        <div class="cp-footer">
+            <span>Girise qayit.</span>
+            <a asp-controller="Account" asp-action="Login">Giris sehifesi</a>
         </div>
 
-
-        <button class="btn btn-success w-100 btn-auth">
-            Qeydiyyatdan keç
-        </button>
-    </form>
-
-    <div class="auth-footer">
-        <a asp-action="Login">Girişə qayıt</a>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/change-password.js" asp-append-version="true"></script>
+}

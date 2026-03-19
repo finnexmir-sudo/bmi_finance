@@ -1,52 +1,35 @@
 ﻿document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('isciForm');
-
     if (!form) return;
 
-    // FIN kod formatlaması
+    const depSelect = form.querySelector('select[name="DepartamentId"]');
+    const vezSelect = form.querySelector('select[name="VezifeId"]');
+
+    // 1. FIN kod formatlaması
     const finInput = form.querySelector('input[name="FIN"]');
     if (finInput) {
-        finInput.addEventListener('input', function (e) {
+        finInput.addEventListener('input', function () {
             this.value = this.value.toUpperCase();
         });
     }
 
-    // Telefon formatlaması
+    // 2. Telefon formatlaması
     const telefonInput = form.querySelector('input[name="Telefon"]');
     if (telefonInput) {
         telefonInput.addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '');
-
-            if (value.startsWith('994')) {
-                value = '+' + value;
-            } else if (value.startsWith('0')) {
-                value = '+994' + value.substring(1);
-            } else if (value.length > 0 && !value.startsWith('+')) {
-                value = '+994' + value;
-            }
-
+            if (value.startsWith('994')) value = '+' + value;
+            else if (value.startsWith('0')) value = '+994' + value.substring(1);
+            else if (value.length > 0) value = '+994' + value;
             e.target.value = value;
         });
     }
-    // Departamentləri yükləmək funksiyası
-    document.addEventListener('DOMContentLoaded', function () {
-        const depSelect = document.querySelector('select[name="DepartamentId"]');
-        const vezSelect = document.querySelector('select[name="VezifeId"]');
 
-        // 1. Səhifə yüklənəndə Departamentləri gətir
-        fetch('/HR/Isci/GetDepartamentler')
-            .then(res => res.json())
-            .then(data => {
-                data.forEach(d => {
-                    depSelect.innerHTML += `<option value="${d.id}">${d.ad}</option>`;
-                });
-            });
-
-        // 2. Departament seçiləndə Vəzifələri gətir
+    // 3. Departamentləri yüklə (Əgər dropdown boşdursa)
+    if (depSelect && vezSelect) {
         depSelect.addEventListener('change', function () {
             const depId = this.value;
 
-            // Vəzifə siyahısını təmizlə
             vezSelect.innerHTML = '<option value="">Vəzifə seçin</option>';
             vezSelect.disabled = true;
 
@@ -55,24 +38,28 @@
                     .then(res => res.json())
                     .then(data => {
                         data.forEach(v => {
-                            vezSelect.innerHTML += `<option value="${v.id}">${v.ad}</option>`;
+                            // Həm 'id', həm 'Id' ehtimalını yoxlayırıq
+                            const optionValue = v.id || v.Id || v.ID;
+                            const optionText = v.ad || v.Ad;
+
+                            if (optionValue !== undefined) {
+                                const option = new Option(optionText, optionValue);
+                                vezSelect.add(option);
+                            }
                         });
                         vezSelect.disabled = false;
-                    });
+                    })
+                    .catch(err => console.error("Vəzifələr yüklənmədi:", err));
             }
         });
-    });
+    }
 
-    // Form validasiyası
+    // 5. Form validasiyası
     form.addEventListener('submit', function (e) {
         if (!form.checkValidity()) {
             e.preventDefault();
-            e.stopPropagation();
-
             const firstError = form.querySelector(':invalid');
-            if (firstError) {
-                firstError.focus();
-            }
+            if (firstError) firstError.focus();
         }
     });
 });

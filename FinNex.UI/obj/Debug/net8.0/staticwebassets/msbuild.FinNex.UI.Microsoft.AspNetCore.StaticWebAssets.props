@@ -72,6 +72,24 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\bank-index.css'))</OriginalItemSpec>
     </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\change-password.css'))">
+      <SourceType>Package</SourceType>
+      <SourceId>FinNex.UI</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/FinNex.UI</BasePath>
+      <RelativePath>css/change-password.css</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>66l2v1ohon</Fingerprint>
+      <Integrity>UkXJMkTy0qe1I9vJFKDlC+zW1137p5rAxl5NU9gou28=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\change-password.css'))</OriginalItemSpec>
+    </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\hr\davamiyyet-list.css'))">
       <SourceType>Package</SourceType>
       <SourceId>FinNex.UI</SourceId>
@@ -192,8 +210,8 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>gf8xlo8xvt</Fingerprint>
-      <Integrity>7P3iqFJJkN0acnLySKp9fnAHG4Uzk1mbifKuRSZmZ9g=</Integrity>
+      <Fingerprint>3iqajnlzbz</Fingerprint>
+      <Integrity>q2MJMyqxARlnKk9J0maXMVexltJHQfdepZXQBkxp2zY=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\hr\mezuniyyet.css'))</OriginalItemSpec>
@@ -300,11 +318,29 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>d4p82bugzl</Fingerprint>
-      <Integrity>LV+dz313TJkvX9Pzv1JQceZ+7ZzzP1KHpsRg/b19T0s=</Integrity>
+      <Fingerprint>ujhxy59em5</Fingerprint>
+      <Integrity>5oJSxjEEMG7sgtSU8B/1MAgYqmThTHEL1Bgkdu1XadU=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\PR_Odenis_Tapsirigi\payment-create.css'))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\PR_Odenis_Tapsirigi\payment-detail.css'))">
+      <SourceType>Package</SourceType>
+      <SourceId>FinNex.UI</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/FinNex.UI</BasePath>
+      <RelativePath>css/PR_Odenis_Tapsirigi/payment-detail.css</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>ypyfs8hbew</Fingerprint>
+      <Integrity>humo2L7bXgwxHcyULpWDHcm+iV04b3+2UBn1IsMu++Q=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\PR_Odenis_Tapsirigi\payment-detail.css'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\PR_Odenis_Tapsirigi\payment-hub.css'))">
       <SourceType>Package</SourceType>
@@ -336,11 +372,29 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>5kgo8sacrc</Fingerprint>
-      <Integrity>1QF1YAA5vI4i0C3I6LmrGdRXHbalMGD2LmisUysrc3s=</Integrity>
+      <Fingerprint>ya3mh04s5k</Fingerprint>
+      <Integrity>xlRc8JnuDuWc5mY9+JJ09ttJMwlpbWiu2bPFR+VYHFk=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\PR_Odenis_Tapsirigi\payment-list.css'))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\PR_Odenis_Tapsirigi\payment-update.css'))">
+      <SourceType>Package</SourceType>
+      <SourceId>FinNex.UI</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/FinNex.UI</BasePath>
+      <RelativePath>css/PR_Odenis_Tapsirigi/payment-update.css</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>aimkk174aw</Fingerprint>
+      <Integrity>8lZGMPaMqhcg4dYUXjMQsF6IjcrDJZCnpuETL89qAvI=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\PR_Odenis_Tapsirigi\payment-update.css'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\sened-dovriyyesi.css'))">
       <SourceType>Package</SourceType>
@@ -354,8 +408,8 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>7zd9duquj7</Fingerprint>
-      <Integrity>AzQFc6qwNQ1u+tFaiTVwwtV41Rm3Ai5ByGHshJ+/Id8=</Integrity>
+      <Fingerprint>g9wekyrs55</Fingerprint>
+      <Integrity>LFks6JbgOM7Ojioj32s56G4fDwuGIsFJZCPV++XYYPw=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\sened-dovriyyesi.css'))</OriginalItemSpec>
@@ -408,8 +462,8 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>nj5sa8bsz9</Fingerprint>
-      <Integrity>EyUFRWn8XFYVuRsHmr3m6lC+AguUO18fXH4bju4oPds=</Integrity>
+      <Fingerprint>ud1c56lxqd</Fingerprint>
+      <Integrity>Ah8pI0vljhx6q7Brs5lV28B+QybEJD1caSLro5Ovo+Q=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Files\Word\Odenis_tapsirigi.docx'))</OriginalItemSpec>
@@ -467,6 +521,24 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\admin-sidebar.js'))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\change-password.js'))">
+      <SourceType>Package</SourceType>
+      <SourceId>FinNex.UI</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/FinNex.UI</BasePath>
+      <RelativePath>js/change-password.js</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>ynsj1xj9ig</Fingerprint>
+      <Integrity>IrP4CI7fMKSOSFX5pi40GfWdSaIiEMv6knGONUXMz1M=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\change-password.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\hr\davamiyyet-list.js'))">
       <SourceType>Package</SourceType>
@@ -534,8 +606,8 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>hj5tq8vazq</Fingerprint>
-      <Integrity>Tavgw7yIDlhG1F43juN+dbq1Uq1PYauXbNzTRlOI3H0=</Integrity>
+      <Fingerprint>6sxkx70xls</Fingerprint>
+      <Integrity>+prNPIcKGYiUZywqxTCGsq9QShGQkLnHQHMfW8oxC3s=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\hr\mezuniyyet.js'))</OriginalItemSpec>
@@ -606,8 +678,8 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>hrcy5h5g27</Fingerprint>
-      <Integrity>Hc4Kwt9g3HVBHg6nANOBV+e3rYOwUys288AuJ6wVOMc=</Integrity>
+      <Fingerprint>4lppqpsu7k</Fingerprint>
+      <Integrity>OBShMT4b347owjMnQOMOzzmc7R3BiP0svbFAC0mUPhM=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\isci-create.js'))</OriginalItemSpec>
@@ -642,11 +714,47 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>2fk962ysv8</Fingerprint>
-      <Integrity>nv3DhXrIdUFVYZeGNutyUkB5gfo2GGdWJq6PCgIORoI=</Integrity>
+      <Fingerprint>z657o6abuh</Fingerprint>
+      <Integrity>9Zl+AeFmVGqCn5Nz5yTOp+HqKSnN936Pgu6csked38A=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\PR_Odenis_Tapsirigi\payment-bank.js'))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\PR_Odenis_Tapsirigi\payment-detail.js'))">
+      <SourceType>Package</SourceType>
+      <SourceId>FinNex.UI</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/FinNex.UI</BasePath>
+      <RelativePath>js/PR_Odenis_Tapsirigi/payment-detail.js</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>mqocxofnw8</Fingerprint>
+      <Integrity>Ptn/lnT+cDYLCE/pe/Do9qUbJc8ZOO3F6Fa81o39UiE=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\PR_Odenis_Tapsirigi\payment-detail.js'))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\PR_Odenis_Tapsirigi\payment-word -Update.js'))">
+      <SourceType>Package</SourceType>
+      <SourceId>FinNex.UI</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/FinNex.UI</BasePath>
+      <RelativePath>js/PR_Odenis_Tapsirigi/payment-word -Update.js</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>i2xzfi61cc</Fingerprint>
+      <Integrity>Kin+FuZvR5Qppw71UWtkE8x3OMl2MmZEy2KfRpmKys8=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\PR_Odenis_Tapsirigi\payment-word -Update.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\PR_Odenis_Tapsirigi\payment-word.js'))">
       <SourceType>Package</SourceType>
@@ -660,8 +768,8 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>polxza2p24</Fingerprint>
-      <Integrity>CbcXMBNGCaYC1D89Ou3hLVgwlvoV1WkaylLbva7swrg=</Integrity>
+      <Fingerprint>vbj58m1mka</Fingerprint>
+      <Integrity>G6GvtuepWPpBggM7ia1h72HUanWBXMcE0k7Pfd9rUvk=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\PR_Odenis_Tapsirigi\payment-word.js'))</OriginalItemSpec>
@@ -678,8 +786,8 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>b6omdnyg3j</Fingerprint>
-      <Integrity>4yzFz3w6qzM5XwSawJkByln+eDk/kW3O4rqsGjcGJhA=</Integrity>
+      <Fingerprint>kj5uhidt4i</Fingerprint>
+      <Integrity>kMA1+Zl4wd86fYrxsS5v7oiY9Zzof4USQCcbHmn/KGM=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\sened-yarat.js'))</OriginalItemSpec>

@@ -1,0 +1,312 @@
+﻿@model SenedListVM
+
+@if (!Model.Silinmisler)
+{
+	<!-- Filter Panel -->
+	<div class="sd-filter-bar">
+		<form method="get" asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Silinmisler">
+			<div class="row g-2 align-items-end">
+				<div class="col-md-3 col-sm-6">
+					<label class="form-label">Şöbə *</label>
+					<select asp-for="SobeId"
+							class="form-select"
+							id="sobeSelect">
+						<option value="">Şöbə seçin...</option>
+						@foreach (var s in Model.Sobeler)
+						{
+							<option value="@s.Id">@s.Ad</option>
+						}
+					</select>
+					<span asp-validation-for="SobeId"
+						  class="text-danger small"></span>
+				</div>
+				<div class="col-md-3 col-sm-6">
+					<label class="form-label">Sənəd Növü *</label>
+					<div class="d-flex gap-2">
+						<select asp-for="SenedNovuId"
+								class="form-select"
+								id="senedNovuSelect">
+							<option value="">Əvvəlcə şöbə seçin...</option>
+						</select>
+
+
+					</div>
+					<span asp-validation-for="SenedNovuId"
+						  class="text-danger small"></span>
+				</div>
+
+
+
+
+				@* <div class="col-md-2 col-sm-6">
+                    <label class="form-label sd-form-label">Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">Hamısı</option>
+                        <option value="@SenedStatusu.Yeni" selected="@(Model.Status == SenedStatusu.Yeni)">Yeni</option>
+                        <option value="@SenedStatusu.Yoxlanilir" selected="@(Model.Status == SenedStatusu.Yoxlanilir)">Yoxlanılır</option>
+                        <option value="@SenedStatusu.Tesdiq" selected="@(Model.Status == SenedStatusu.Tesdiq)">Təsdiqlənmiş</option>
+                        <option value="@SenedStatusu.Arxiv" selected="@(Model.Status == SenedStatusu.Arxiv)">Arxiv</option>
+                    </select>
+                </div> *@
+				<div class="col-md-2 col-sm-6">
+					<label class="form-label sd-form-label">Axtarış</label>
+					<input type="text" name="q" value="@Model.AxtarisKelimesi"
+						   class="form-control form-control-sm" placeholder="Açar söz..." />
+				</div>
+				<div class="col-md-2 col-sm-12">
+					<div class="d-flex gap-2">
+						<button type="submit" class="btn btn-sm btn-primary flex-fill">
+							<i class="bi bi-search me-1"></i>Axtar
+						</button>
+						<a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Silinmisler"
+						   class="btn btn-sm btn-outline-secondary" title="Filtri təmizlə">
+							<i class="bi bi-x-lg"></i>
+						</a>
+					</div>
+				</div>
+			</div>
+		</form>
+	</div>
+}
+
+<!-- Header Actions -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<div>
+		<span class="text-muted sd-result-count">
+			Cəmi: <strong>@Model.TotalCount</strong> sənəd
+		</span>
+	</div>
+	<div class="d-flex gap-2">
+		@if (!Model.Silinmisler)
+		{
+			<a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Yarat"
+			   class="btn btn-sm btn-primary">
+				<i class="bi bi-plus-lg me-1"></i>Yeni Sənəd
+			</a>
+		}
+	</div>
+</div>
+
+<!-- Table -->
+<div class="sd-table-card">
+	<div class="table-responsive">
+		<table class="table sd-table mb-0">
+			<thead>
+				<tr>
+					<th>#</th>
+					<th>Başlıq</th>
+					<th>Şöbə</th>
+					<th>Növ</th>
+					<th>Status</th>
+					<th>Fayl</th>
+					<th>Tarix</th>
+					<th class="text-end">Əməliyyat</th>
+				</tr>
+			</thead>
+			<tbody>
+				@if (Model.Senedler.Any())
+				{
+					@foreach (var s in Model.Senedler)
+					{
+						<tr>
+							<td class="fw-semibold text-muted">@s.Id</td>
+							<td>
+								<a asp-area="SenedDovriyyesi" asp-controller="Sened"
+								   asp-action="Detal" asp-route-id="@s.Id"
+								   class="text-decoration-none sd-link">
+									@s.Basliq
+								</a>
+								@if (!string.IsNullOrEmpty(s.AcarSoz))
+								{
+									<div class="text-muted" style="font-size:0.72rem;margin-top:2px;">
+										@if (s.AcarSoz.Length > 40)
+										{
+											@s.AcarSoz.Substring(0, 40)
+
+											<text>...</text>
+										}
+										else
+										{
+											@s.AcarSoz
+										}
+									</div>
+								}
+							</td>
+							<td>
+								<span class="sd-sobe-badge">
+									<i class="bi bi-building me-1 text-muted"></i>@s.Sobe
+								</span>
+							</td>
+							<td>
+								<code class="sd-kod-badge">@s.SenedNovu</code>
+							</td>
+							<td>
+								@{
+									var badgeClass = s.Status switch
+									{
+										SenedStatusu.Yeni => "sd-badge-info",
+										SenedStatusu.Yoxlanilir => "sd-badge-warning",
+										SenedStatusu.Tesdiq => "sd-badge-success",
+										SenedStatusu.Arxiv => "sd-badge-secondary",
+										_ => "sd-badge-secondary"
+									};
+									var statusText = s.Status switch
+									{
+										SenedStatusu.Yeni => "Yeni",
+										SenedStatusu.Yoxlanilir => "Yoxlanılır",
+										SenedStatusu.Tesdiq => "Təsdiqlənmiş",
+										SenedStatusu.Arxiv => "Arxiv",
+										_ => "Naməlum"
+									};
+								}
+								<span class="sd-badge @badgeClass">@statusText</span>
+							</td>
+							<td>
+								<span class="text-muted">
+									<i class="bi bi-paperclip me-1"></i>@s.FaylSayi
+								</span>
+							</td>
+							<td class="text-muted text-nowrap">@s.YaradilmaTarixi.ToString("dd.MM.yyyy")</td>
+							<td class="text-end text-nowrap">
+								@if (Model.Silinmisler)
+								{
+									<form asp-area="SenedDovriyyesi" asp-controller="Sened"
+										  asp-action="BerpaEt" method="post" class="d-inline">
+										@Html.AntiForgeryToken()
+										<input type="hidden" name="id" value="@s.Id" />
+										<button type="submit" class="btn btn-sm btn-outline-success sd-btn-sm"
+												title="Bərpa et">
+											<i class="bi bi-arrow-counterclockwise"></i>
+										</button>
+									</form>
+								}
+								else
+								{
+									<a asp-area="SenedDovriyyesi" asp-controller="Sened"
+									   asp-action="DetalSilinmis" asp-route-id="@s.Id"
+									   class="btn btn-sm btn-outline-primary sd-btn-sm" title="Bax">
+										<i class="bi bi-eye"></i>
+									</a>
+
+									<a asp-area="SenedDovriyyesi" asp-controller="Sened"
+									   asp-action="Restore" asp-route-id="@s.Id"
+									   class="btn btn-sm btn-outline-success sd-btn-sm" title="Geri qaytar">
+										<i class="bi bi-arrow-counterclockwise"></i>
+									</a>
+
+								}
+							</td>
+						</tr>
+					}
+				}
+				else
+				{
+					<tr>
+						<td colspan="8" class="text-center text-muted py-5">
+							<i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
+							@(Model.Silinmisler ? "Silinmiş sənəd yoxdur" : "Nəticə tapılmadı")
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+</div>
+
+<!-- Pagination -->
+@if (Model.TotalPages > 1)
+{
+	<nav class="mt-3">
+		<ul class="pagination sd-pagination justify-content-center">
+			<li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+				@if (Model.Silinmisler)
+				{
+					<a class="page-link" asp-area="SenedDovriyyesi" asp-controller="Sened"
+					   asp-action="Silinmisler" asp-route-page="@(Model.Page - 1)">
+						<i class="bi bi-chevron-left"></i>
+					</a>
+				}
+				else
+				{
+					<a class="page-link" asp-area="SenedDovriyyesi" asp-controller="Sened"
+					   asp-action="Index" asp-route-page="@(Model.Page - 1)"
+					   asp-route-sobeId="@Model.SobeId" asp-route-senedNovuId="@Model.SenedNovuId"
+					   asp-route-status="@Model.Status" asp-route-q="@Model.AxtarisKelimesi">
+						<i class="bi bi-chevron-left"></i>
+					</a>
+				}
+			</li>
+
+			@{
+				var startPage = Math.Max(1, Model.Page - 2);
+				var endPage = Math.Min(Model.TotalPages, Model.Page + 2);
+			}
+
+			@for (int i = startPage; i <= endPage; i++)
+			{
+				<li class="page-item @(i == Model.Page ? "active" : "")">
+					@if (Model.Silinmisler)
+					{
+						<a class="page-link" asp-area="SenedDovriyyesi" asp-controller="Sened"
+						   asp-action="Silinmisler" asp-route-page="@i">@i</a>
+					}
+					else
+					{
+						<a class="page-link" asp-area="SenedDovriyyesi" asp-controller="Sened"
+						   asp-action="Index" asp-route-page="@i"
+						   asp-route-sobeId="@Model.SobeId" asp-route-senedNovuId="@Model.SenedNovuId"
+						   asp-route-status="@Model.Status" asp-route-q="@Model.AxtarisKelimesi">@i</a>
+					}
+				</li>
+			}
+
+			<li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+				@if (Model.Silinmisler)
+				{
+					<a class="page-link" asp-area="SenedDovriyyesi" asp-controller="Sened"
+					   asp-action="Silinmisler" asp-route-page="@(Model.Page + 1)">
+						<i class="bi bi-chevron-right"></i>
+					</a>
+				}
+				else
+				{
+					<a class="page-link" asp-area="SenedDovriyyesi" asp-controller="Sened"
+					   asp-action="Index" asp-route-page="@(Model.Page + 1)"
+					   asp-route-sobeId="@Model.SobeId" asp-route-senedNovuId="@Model.SenedNovuId"
+					   asp-route-status="@Model.Status" asp-route-q="@Model.AxtarisKelimesi">
+						<i class="bi bi-chevron-right"></i>
+					</a>
+				}
+			</li>
+		</ul>
+	</nav>
+}
+<!-- Silmə Təsdiq Modalı -->
+<div class="modal fade" id="silModal" tabindex="-1">
+	<div class="modal-dialog modal-dialog-centered" style="max-width:350px">
+		<div class="modal-content">
+			<div class="modal-body text-center py-4">
+				<i class="bi bi-exclamation-triangle-fill text-warning" style="font-size:2.5rem"></i>
+				<h6 class="mt-3 mb-1">Silmək istədiyinizə əminsiniz?</h6>
+				<p class="text-muted small">Bu əməliyyat geri alına bilməz.</p>
+			</div>
+			<div class="modal-footer justify-content-center border-0 pt-0">
+				<form id="silForm" asp-area="SenedDovriyyesi"
+					  asp-controller="Sened" asp-action="Sil" method="post">
+					@Html.AntiForgeryToken()
+					<input type="hidden" name="id" id="silId" />
+					<button type="button" class="btn btn-secondary btn-sm"
+							data-bs-dismiss="modal">
+						Xeyr
+					</button>
+					<button type="submit" class="btn btn-danger btn-sm ms-2">
+						<i class="bi bi-trash3"></i> Bəli, Sil
+					</button>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
+@section Scripts {
+	<script src="~/js/sened-yarat.js" asp-append-version="true"></script>
+}

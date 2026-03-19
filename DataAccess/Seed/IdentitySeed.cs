@@ -68,9 +68,9 @@ namespace FinNex.DataAccess.Seed
             {
                 var valyutalar = new List<Valyuta>
     {
-        new Valyuta { Kod = "AZN", Ad = "Azerbaycan Manati", Silinib = true },
-        new Valyuta { Kod = "USD", Ad = "US Dollar", Silinib = true },
-        new Valyuta { Kod = "EUR", Ad = "Euro", Silinib = true }
+        new Valyuta { Kod = "AZN", Ad = "AZN", Silinib = true },
+        new Valyuta { Kod = "USD", Ad = "USD", Silinib = true },
+        new Valyuta { Kod = "EUR", Ad = "EUR", Silinib = true }
     };
 
                 context.AddRange(valyutalar);
