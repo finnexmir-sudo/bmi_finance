@@ -1,0 +1,313 @@
+﻿@model FinNex.UI.Areas.User.Models.MuracietPortalViewModel
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = "Müraciətlərim";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["UserRole"] = User.IsInRole("Employee") ? "İşçi" : "";
+
+    bool mezTab = Model.AktivTab == "mezuniyyet";
+    bool icazeTab = Model.AktivTab == "icaze";
+
+    string MezBadgeClass(MezuniyyetStatus s) => s switch
+    {
+        MezuniyyetStatus.Gozlemede => "fn-badge--wait",
+        MezuniyyetStatus.SobeReisiTesdiqinde => "fn-badge--review",
+        MezuniyyetStatus.RehberTesdiqinde => "fn-badge--review",
+        MezuniyyetStatus.HrTesdiqinde => "fn-badge--review",
+        MezuniyyetStatus.Tesdiqlenib => "fn-badge--done",
+        MezuniyyetStatus.ImtinaEdildi => "fn-badge--rejected",
+        _ => "fn-badge--wait"
+    };
+
+    string MezWorkflow(MezuniyyetStatus s) => s switch
+    {
+        MezuniyyetStatus.Gozlemede => "Gözləmədə",
+        MezuniyyetStatus.SobeReisiTesdiqinde => "Şöbə rəisi təsdiqində",
+        MezuniyyetStatus.RehberTesdiqinde => "Rəhbər təsdiqində",
+        MezuniyyetStatus.HrTesdiqinde => "HR təsdiqində",
+        MezuniyyetStatus.Tesdiqlenib => "Təsdiqlənib",
+        MezuniyyetStatus.ImtinaEdildi => "İmtina edildi",
+        _ => "-"
+    };
+
+    string NovAd(MezuniyyetNovu n) => n switch
+    {
+        MezuniyyetNovu.Illik => "İllik məzuniyyət",
+        MezuniyyetNovu.Xestelik => "Xəstəlik məzuniyyəti",
+        MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
+        _ => n.ToString()
+    };
+
+    string IcazeBadgeClass(IcazeStatus s) => s switch
+    {
+        IcazeStatus.Gozlemede => "fn-badge--wait",
+        IcazeStatus.SobeReisiTesdiqinde => "fn-badge--review",
+        IcazeStatus.RehberTesdiqinde => "fn-badge--review",
+        IcazeStatus.HrTesdiqinde => "fn-badge--review",
+        IcazeStatus.Tesdiqlenib => "fn-badge--done",
+        IcazeStatus.ImtinaEdildi => "fn-badge--rejected",
+        _ => "fn-badge--wait"
+    };
+
+    string IcazeWorkflow(IcazeStatus s) => s switch
+    {
+        IcazeStatus.Gozlemede => "Gözləmədə",
+        IcazeStatus.SobeReisiTesdiqinde => "Şöbə rəisi təsdiqində",
+        IcazeStatus.RehberTesdiqinde => "Rəhbər təsdiqində",
+        IcazeStatus.HrTesdiqinde => "HR təsdiqində",
+        IcazeStatus.Tesdiqlenib => "Təsdiqlənib",
+        IcazeStatus.ImtinaEdildi => "İmtina edildi",
+        _ => "-"
+    };
+
+    bool MezLegvEde(MezuniyyetStatus s) =>
+        s == MezuniyyetStatus.Gozlemede ||
+        s == MezuniyyetStatus.SobeReisiTesdiqinde;
+
+    bool IcazeLegvEde(IcazeStatus s) =>
+        s == IcazeStatus.Gozlemede;
+}
+
+<div class="fn-page">
+
+    @* ── Başlıq ── *@
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Müraciətlərim</div>
+            <div class="fn-page-sub">Bütün müraciətlərinizi buradan izləyə bilərsiniz</div>
+        </div>
+        @if (mezTab)
+        {
+            <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Create"
+               class="fn-btn fn-btn--primary">+ Məzuniyyət müraciəti</a>
+        }
+        else
+        {
+            <a asp-area="User" asp-controller="Icaze" asp-action="Create"
+               class="fn-btn fn-btn--primary">+ İcazə müraciəti</a>
+        }
+    </div>
+
+    @* ── Ümumi statistika ── *@
+    <div class="fn-stat-row">
+        <div class="fn-stat">
+            <div class="fn-stat-val">@(Model.MezuniyyetCemi + Model.IcazeCemi)</div>
+            <div class="fn-stat-lbl">Cəmi</div>
+        </div>
+        <div class="fn-stat">
+            <div class="fn-stat-val" style="color:#1e9b6b">
+                @(Model.MezuniyyetTesdiq + Model.IcazeTesdiq)
+            </div>
+            <div class="fn-stat-lbl">Təsdiqlənib</div>
+        </div>
+        <div class="fn-stat">
+            <div class="fn-stat-val" style="color:#c9900a">
+                @(Model.MezuniyyetGozlemede + Model.IcazeGozlemede)
+            </div>
+            <div class="fn-stat-lbl">Gözləmədə</div>
+        </div>
+        <div class="fn-stat">
+            <div class="fn-stat-val" style="color:#2d6cdf">@Model.MezuniyyetCemi</div>
+            <div class="fn-stat-lbl">Məzuniyyət</div>
+        </div>
+        <div class="fn-stat">
+            <div class="fn-stat-val" style="color:#7c5cbf">@Model.IcazeCemi</div>
+            <div class="fn-stat-lbl">İcazə</div>
+        </div>
+    </div>
+
+    @* ── Tab-lar ── *@
+    <div class="fn-card" style="padding:0">
+        <div class="fn-tabs">
+            <a asp-area="User" asp-controller="Muraciet" asp-action="Index"
+               asp-route-tab="mezuniyyet"
+               class="fn-tab @(mezTab ? "fn-tab--active" : "")">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" />
+                    <path d="M1 5h12M5 2v2M9 2v2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+                </svg>
+                Məzuniyyət
+                <span class="fn-tab-count">@Model.MezuniyyetCemi</span>
+            </a>
+            <a asp-area="User" asp-controller="Muraciet" asp-action="Index"
+               asp-route-tab="icaze"
+               class="fn-tab @(icazeTab ? "fn-tab--active" : "")">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2" />
+                    <path d="M7 4v3.5l2 1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+                </svg>
+                İcazə
+                <span class="fn-tab-count">@Model.IcazeCemi</span>
+            </a>
+        </div>
+
+        @* ══ MƏZUNİYYƏT TAB-I ══ *@
+        @if (mezTab)
+        {
+            @if (!Model.Mezuniyyetler.Any())
+            {
+                <div class="fn-tab-empty">
+                    <div class="fn-empty-title">Məzuniyyət müraciətiniz yoxdur</div>
+                    <div class="fn-empty-sub">
+                        <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Create"
+                           style="color:#e8b84b">Yeni müraciət göndər →</a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="fn-icaze-list">
+                    @foreach (var m in Model.Mezuniyyetler)
+                    {
+                        <div class="fn-icaze-item">
+                            <div class="fn-icaze-date-block">
+                                <div class="fn-icaze-day">@m.BaslamaTarixi.ToString("dd")</div>
+                                <div class="fn-icaze-month">@m.BaslamaTarixi.ToString("MMM")</div>
+                            </div>
+
+                            <div class="fn-icaze-info">
+                                <div class="fn-icaze-title">
+                                    @NovAd(m.Nov)
+                                    <span class="fn-icaze-dur">
+                                        (@m.BaslamaTarixi.ToString("dd.MM") –
+                                        @m.BitmeTarixi.ToString("dd.MM.yyyy") ·
+                                        @m.IsGunlerininSayi iş günü)
+                                    </span>
+                                </div>
+                                @if (!string.IsNullOrEmpty(m.EvezEdenIsciAdSoyad))
+                                {
+                                    <div class="fn-icaze-meta">
+                                        <span class="fn-icaze-evez">Əvəzedici: @m.EvezEdenIsciAdSoyad</span>
+                                    </div>
+                                }
+                                <div class="fn-workflow-steps">
+                                    <div class="fn-ws @(m.Status >= MezuniyyetStatus.SobeReisiTesdiqinde ? "fn-ws--done" : m.Status == MezuniyyetStatus.Gozlemede ? "fn-ws--active" : "")">
+                                        <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Müraciət</div>
+                                    </div>
+                                    <div class="fn-ws-line @(m.Status >= MezuniyyetStatus.SobeReisiTesdiqinde ? "fn-ws-line--done" : "")"></div>
+                                    <div class="fn-ws @(m.Status >= MezuniyyetStatus.RehberTesdiqinde ? "fn-ws--done" : m.Status == MezuniyyetStatus.SobeReisiTesdiqinde ? "fn-ws--active" : "")">
+                                        <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Şöbə rəisi</div>
+                                    </div>
+                                    <div class="fn-ws-line @(m.Status >= MezuniyyetStatus.RehberTesdiqinde ? "fn-ws-line--done" : "")"></div>
+                                    <div class="fn-ws @(m.Status >= MezuniyyetStatus.HrTesdiqinde ? "fn-ws--done" : m.Status == MezuniyyetStatus.RehberTesdiqinde ? "fn-ws--active" : "")">
+                                        <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Rəhbər</div>
+                                    </div>
+                                    <div class="fn-ws-line @(m.Status >= MezuniyyetStatus.HrTesdiqinde ? "fn-ws-line--done" : "")"></div>
+                                    <div class="fn-ws @(m.Status == MezuniyyetStatus.Tesdiqlenib ? "fn-ws--done" : m.Status == MezuniyyetStatus.HrTesdiqinde ? "fn-ws--active" : "")">
+                                        <div class="fn-ws-dot"></div><div class="fn-ws-lbl">HR</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="fn-icaze-actions">
+                                <span class="fn-badge @MezBadgeClass(m.Status)">@MezWorkflow(m.Status)</span>
+                                @if (MezLegvEde(m.Status))
+                                {
+                                    <form asp-area="User" asp-controller="Mezuniyyet"
+                                          asp-action="Legv" method="post" style="margin-top:8px"
+                                          onsubmit="return confirm('Bu müraciəti ləğv etmək istəyirsiniz?')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@m.Id" />
+                                        <button type="submit" class="fn-btn fn-btn--danger-sm">Ləğv et</button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+
+        @* ══ İCAZƏ TAB-I ══ *@
+        @if (icazeTab)
+        {
+            @if (!Model.Icazeler.Any())
+            {
+                <div class="fn-tab-empty">
+                    <div class="fn-empty-title">İcazə müraciətiniz yoxdur</div>
+                    <div class="fn-empty-sub">
+                        <a asp-area="User" asp-controller="Icaze" asp-action="Create"
+                           style="color:#e8b84b">Yeni müraciət göndər →</a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="fn-icaze-list">
+                    @foreach (var i in Model.Icazeler)
+                    {
+                        <div class="fn-icaze-item">
+                            <div class="fn-icaze-date-block">
+                                <div class="fn-icaze-day">@i.IcazeTarixi.ToString("dd")</div>
+                                <div class="fn-icaze-month">@i.IcazeTarixi.ToString("MMM")</div>
+                            </div>
+
+                            <div class="fn-icaze-info">
+                                <div class="fn-icaze-title">
+                                    Saatlıq icazə
+                                    <span class="fn-icaze-dur">
+                                        (@i.BaslamaSaati.ToString(@"hh\:mm") –
+                                        @i.BitisSaati.ToString(@"hh\:mm") ·
+                                        @i.IcazeSaati.ToString("F1") saat)
+                                    </span>
+                                </div>
+                                <div class="fn-icaze-meta">
+                                    <span class="fn-icaze-evez">Əvəzedici: @i.EvezEdenAdSoyad</span>
+                                    @if (!string.IsNullOrEmpty(i.Sebeb))
+                                    {
+                                        <span class="fn-icaze-sep">·</span>
+                                        <span class="fn-icaze-sebeb">@i.Sebeb</span>
+                                    }
+                                </div>
+                                <div class="fn-workflow-steps">
+                                    <div class="fn-ws @(i.Status >= IcazeStatus.SobeReisiTesdiqinde ? "fn-ws--done" : i.Status == IcazeStatus.Gozlemede ? "fn-ws--active" : "")">
+                                        <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Müraciət</div>
+                                    </div>
+                                    <div class="fn-ws-line @(i.Status >= IcazeStatus.SobeReisiTesdiqinde ? "fn-ws-line--done" : "")"></div>
+                                    <div class="fn-ws @(i.Status >= IcazeStatus.RehberTesdiqinde ? "fn-ws--done" : i.Status == IcazeStatus.SobeReisiTesdiqinde ? "fn-ws--active" : "")">
+                                        <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Şöbə rəisi</div>
+                                    </div>
+                                    <div class="fn-ws-line @(i.Status >= IcazeStatus.RehberTesdiqinde ? "fn-ws-line--done" : "")"></div>
+                                    <div class="fn-ws @(i.Status >= IcazeStatus.HrTesdiqinde ? "fn-ws--done" : i.Status == IcazeStatus.RehberTesdiqinde ? "fn-ws--active" : "")">
+                                        <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Rəhbər</div>
+                                    </div>
+                                    <div class="fn-ws-line @(i.Status >= IcazeStatus.HrTesdiqinde ? "fn-ws-line--done" : "")"></div>
+                                    <div class="fn-ws @(i.Status == IcazeStatus.Tesdiqlenib ? "fn-ws--done" : i.Status == IcazeStatus.HrTesdiqinde ? "fn-ws--active" : "")">
+                                        <div class="fn-ws-dot"></div><div class="fn-ws-lbl">HR</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="fn-icaze-actions">
+                                <span class="fn-badge @IcazeBadgeClass(i.Status)">@IcazeWorkflow(i.Status)</span>
+                                @if (IcazeLegvEde(i.Status))
+                                {
+                                    <form asp-area="User" asp-controller="Icaze"
+                                          asp-action="Legv" method="post" style="margin-top:8px"
+                                          onsubmit="return confirm('Bu icazəni ləğv etmək istəyirsiniz?')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@i.Id" />
+                                        <button type="submit" class="fn-btn fn-btn--danger-sm">Ləğv et</button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Tab keçidindən sonra həmin tab-ın scroll mövqeyinə qayıt
+        document.addEventListener('DOMContentLoaded', function () {
+            var hash = window.location.hash;
+            if (hash) {
+                var el = document.querySelector(hash);
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    </script>
+}

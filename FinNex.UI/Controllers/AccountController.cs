@@ -65,7 +65,18 @@ namespace FinNex.UI.Controllers
                 return View(dto);
             }
 
-            return RedirectToAction("Index", "Home");
+            if (roles.Contains("Admin"))
+            {
+                return RedirectToAction("Index", "Home");
+            }
+            //return RedirectToAction("Index", "Home");
+
+            // "Index" action-ı, "Home" controller-i, "User" area-sı
+            else
+            {
+                return RedirectToAction("Index", "Dashboard", new { area = "User" });
+            }
+            
         }
 
 

@@ -1,7 +1,7 @@
 ﻿using FinNex.Application.DTOs.HR.Vezife;
 using FinNex.Application.Interfaces.Structur;
 using FinNex.Application.Services.Structur;
-using FinNex.Application.ViewModels.HR.Vezife;
+using FinNex.UI.Areas.HR.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 

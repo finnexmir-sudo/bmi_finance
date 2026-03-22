@@ -1,0 +1,150 @@
+﻿@model FinNex.Application.DTOs.HR.Icaze.IcazeCreateDto
+@{
+    ViewData["Title"] = "Yeni İcazə Müraciəti";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["UserRole"] = User.IsInRole("Employee") ? "İşçi" : "";
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Yeni icazə müraciəti</div>
+            <div class="fn-page-sub">Saatlıq icazə üçün müraciət göndərin</div>
+        </div>
+        <a asp-area="User" asp-controller="Icaze" asp-action="Index"
+           class="fn-btn fn-btn--outline">
+            ← Geri
+        </a>
+    </div>
+
+    <div class="fn-form-wrap">
+        <form asp-area="User" asp-controller="Icaze" asp-action="Create"
+              method="post" id="icazeForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="IsciId" />
+
+            <div class="fn-card fn-card--form">
+
+                @* ── İcazə tarixi ── *@
+                <div class="fn-form-group">
+                    <label asp-for="IcazeTarixi" class="fn-label">
+                        İcazə tarixi <span class="fn-required">*</span>
+                    </label>
+                    <input asp-for="IcazeTarixi" type="date"
+                           min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                           class="fn-input" />
+                    <span asp-validation-for="IcazeTarixi" class="fn-val-msg"></span>
+                </div>
+
+                @* ── Saat aralığı ── *@
+                <div class="fn-form-row">
+                    <div class="fn-form-group">
+                        <label asp-for="BaslamaSaati" class="fn-label">
+                            Başlama saatı <span class="fn-required">*</span>
+                        </label>
+                        <input asp-for="BaslamaSaati" type="time"
+                               class="fn-input" id="baslamaSaati" />
+                        <span asp-validation-for="BaslamaSaati" class="fn-val-msg"></span>
+                    </div>
+                    <div class="fn-form-group">
+                        <label asp-for="BitisSaati" class="fn-label">
+                            Bitmə saatı <span class="fn-required">*</span>
+                        </label>
+                        <input asp-for="BitisSaati" type="time"
+                               class="fn-input" id="bitisSaati" />
+                        <span asp-validation-for="BitisSaati" class="fn-val-msg"></span>
+                    </div>
+                </div>
+
+                @* ── Müddət hesablanır ── *@
+                <div class="fn-duration-box" id="durationBox" style="display:none">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <circle cx="7" cy="7" r="5.5" stroke="#1e9b6b" stroke-width="1.2" />
+                        <path d="M7 4v3.5l2 1.5" stroke="#1e9b6b" stroke-width="1.1" stroke-linecap="round" />
+                    </svg>
+                    İcazə müddəti: <strong id="durationText"></strong>
+                </div>
+
+                @* ── Əvəzedici işçi ── *@
+                <div class="fn-form-group">
+                    <label asp-for="EvezEdenIsciId" class="fn-label">
+                        Əvəzedici işçi <span class="fn-required">*</span>
+                        <span class="fn-label-hint">(bankda mütləqdir)</span>
+                    </label>
+                    <select asp-for="EvezEdenIsciId"
+                            asp-items="ViewBag.EvezEdenList"
+                            class="fn-select">
+                        <option value="">— Seçin —</option>
+                    </select>
+                    <span asp-validation-for="EvezEdenIsciId" class="fn-val-msg"></span>
+                </div>
+
+                @* ── Səbəb ── *@
+                <div class="fn-form-group">
+                    <label asp-for="Sebeb" class="fn-label">
+                        Səbəb
+                        <span class="fn-label-hint">(istəyə bağlı)</span>
+                    </label>
+                    <textarea asp-for="Sebeb" rows="3"
+                              class="fn-textarea"
+                              placeholder="İcazənin səbəbini qısaca yazın..."></textarea>
+                    <span asp-validation-for="Sebeb" class="fn-val-msg"></span>
+                </div>
+
+                @* ── Xəbərdarlıq bloku ── *@
+                <div class="fn-info-box">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <circle cx="7" cy="7" r="5.5" stroke="#c9900a" stroke-width="1.2" />
+                        <path d="M7 4.5v3M7 9v.5" stroke="#c9900a" stroke-width="1.2" stroke-linecap="round" />
+                    </svg>
+                    Müraciətiniz 3 mərhələdən keçəcək:
+                    <strong>Şöbə rəisi → Rəhbər → HR</strong>.
+                    Yalnız <strong>Gözləmədə</strong> statusunda ləğv edə bilərsiniz.
+                </div>
+
+                @* ── Düymələr ── *@
+                <div class="fn-form-actions">
+                    <a asp-area="User" asp-controller="Icaze" asp-action="Index"
+                       class="fn-btn fn-btn--outline">Ləğv et</a>
+                    <button type="submit" class="fn-btn fn-btn--primary">
+                        Müraciət göndər
+                    </button>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Saat hesablama
+        function hesabla() {
+            var bas  = document.getElementById('baslamaSaati').value;
+            var bitis = document.getElementById('bitisSaati').value;
+            var box  = document.getElementById('durationBox');
+            var txt  = document.getElementById('durationText');
+
+            if (!bas || !bitis) { box.style.display = 'none'; return; }
+
+            var bParts = bas.split(':').map(Number);
+            var eParts = bitis.split(':').map(Number);
+            var diff = (eParts[0] * 60 + eParts[1]) - (bParts[0] * 60 + bParts[1]);
+
+            if (diff <= 0) { box.style.display = 'none'; return; }
+
+            var saat   = Math.floor(diff / 60);
+            var deqiqe = diff % 60;
+            var metn   = saat > 0 ? saat + ' saat' : '';
+            if (deqiqe > 0) metn += (metn ? ' ' : '') + deqiqe + ' dəqiqə';
+
+            txt.textContent = metn;
+            box.style.display = 'flex';
+        }
+
+        document.getElementById('baslamaSaati').addEventListener('change', hesabla);
+        document.getElementById('bitisSaati').addEventListener('change', hesabla);
+        hesabla();
+    </script>
+}

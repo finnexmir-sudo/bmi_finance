@@ -1,7 +1,7 @@
 ﻿using FinNex.Application.DTOs.HR;
 using FinNex.Application.DTOs.HR.Isci;
 using FinNex.Application.DTOs.HR.Mezuniyyet;
-using FinNex.Domain.Entities.HR;
+using FinNex.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;

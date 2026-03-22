@@ -61,6 +61,7 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         // Məzuniyyət Modulu Servisləri
         services.AddScoped<IMezuniyyetService, MezuniyyetService>();
 
+        services.AddScoped<IDashboardService, DashboardService>();
 
 
         // Əgər BayramGunu və Balans üçün xüsusi məntiq yazmamısansa, 

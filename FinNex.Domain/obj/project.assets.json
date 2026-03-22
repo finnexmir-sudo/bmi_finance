@@ -4177,23 +4177,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\samir_hu\\.nuget\\packages\\": {},
+    "C:\\Users\\Samir\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.Domain\\FinNex.Domain.csproj",
+      "projectUniqueName": "C:\\Users\\Samir\\source\\repos\\bmi_finance\\FinNex.Domain\\FinNex.Domain.csproj",
       "projectName": "FinNex.Domain",
-      "projectPath": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.Domain\\FinNex.Domain.csproj",
-      "packagesPath": "C:\\Users\\samir_hu\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\samir_hu\\Source\\Repos\\finnexmir_bmi\\FinNex.Domain\\obj\\",
+      "projectPath": "C:\\Users\\Samir\\source\\repos\\bmi_finance\\FinNex.Domain\\FinNex.Domain.csproj",
+      "packagesPath": "C:\\Users\\Samir\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Samir\\source\\repos\\bmi_finance\\FinNex.Domain\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\samir_hu\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\Samir\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -4221,7 +4221,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "9.0.100"
+      "SdkAnalysisLevel": "10.0.100"
     },
     "frameworks": {
       "net8.0": {
@@ -4262,7 +4262,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.102/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

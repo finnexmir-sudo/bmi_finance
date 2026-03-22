@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
-namespace FinNex.Application.ViewModels.HR.Vezife
+namespace FinNex.UI.Areas.HR.ViewModels
 {
     public class VezifeCreateVM
     {

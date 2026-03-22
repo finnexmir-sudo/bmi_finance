@@ -4,7 +4,8 @@
     {
         Isde = 1,
         Gecikme = 2,
-        Qayib = 3
+        Qayib = 3,
+        Icazeli = 4
     }
 
 }

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FinNex.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3e73a5c79af7d9926bf3e430bef232dc56e9625a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ec607b7032b69dbd0f0bd4757d60190089647259")]
 [assembly: System.Reflection.AssemblyProductAttribute("FinNex.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FinNex.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

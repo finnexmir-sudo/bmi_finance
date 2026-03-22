@@ -1,0 +1,159 @@
+﻿<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — FinNex</title>
+    <link rel="stylesheet" href="~/css/User/user-area.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+
+    <div class="fn-layout">
+
+        <aside class="fn-sidebar">
+            <div class="fn-sidebar-top">
+                <div class="fn-sidebar-logo">Fin<span>Nex</span></div>
+                <div class="fn-sidebar-tagline">Bank İdarəetmə Sistemi</div>
+            </div>
+
+            <nav class="fn-nav">
+                <div class="fn-nav-label">Əsas</div>
+                <a asp-area="User" asp-controller="Dashboard" asp-action="Index"
+                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <rect x="1" y="1" width="5" height="5" rx="1" fill="currentColor" />
+                        <rect x="8" y="1" width="5" height="5" rx="1" fill="currentColor" />
+                        <rect x="1" y="8" width="5" height="5" rx="1" fill="currentColor" />
+                        <rect x="8" y="8" width="5" height="5" rx="1" fill="currentColor" />
+                    </svg>
+                    Dashboard
+                </a>
+                <a asp-area="User" asp-controller="Profile" asp-action="Index"
+                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Profile" ? "active" : "")">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <circle cx="7" cy="4.5" r="2.5" stroke="currentColor" stroke-width="1.2" />
+                        <path d="M1.5 12c0-3 2.5-4.5 5.5-4.5S12 9 12 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                    </svg>
+                    Profil
+                </a>
+
+                <div class="fn-nav-label">Maliyyə</div>
+                <a asp-area="User" asp-controller="Odenis" asp-action="Index"
+                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Odenis" ? "active" : "")">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <rect x="1" y="2.5" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2" />
+                        <path d="M1 5.5h12" stroke="currentColor" stroke-width="1.2" />
+                        <path d="M4 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                    </svg>
+                    Ödənişlər
+                </a>
+                <a asp-area="User" asp-controller="Sened" asp-action="Index"
+                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Sened" ? "active" : "")">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M2 1.5h8l2 2v9H2v-11z" stroke="currentColor" stroke-width="1.2" />
+                        <path d="M4 6h6M4 8.5h4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+                    </svg>
+                    Sənədlər
+                </a>
+
+                <div class="fn-nav-label">İnsan Resursları</div>
+                <a asp-area="User" asp-controller="Davamiyyet" asp-action="Index"
+                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Davamiyyet" ? "active" : "")">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" />
+                        <path d="M1 5h12M5 2v2M9 2v2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+                    </svg>
+                    Davamiyyət
+                </a>
+                <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Index"
+                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Mezuniyyet" ? "active" : "")">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2" />
+                        <path d="M7 4v3.5l2 1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+                    </svg>
+                    Məzuniyyət
+                </a>
+                <a asp-area="User" asp-controller="Muraciet" asp-action="Index"
+                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Muraciet" ? "active" : "")">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M2 11l3-3 2 2 5-6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Müraciətlər
+                </a>
+                <a asp-area="User" asp-controller="Hesabat" asp-action="Index"
+                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Hesabat" ? "active" : "")">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M1.5 10L5 6.5l3 3 4.5-5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Hesabatlar
+                </a>
+            </nav>
+
+            <div class="fn-sidebar-footer">
+                <div class="fn-sidebar-user">
+                    @{
+                        var userName = User.Identity?.Name ?? "";
+                        var parts = userName.Split(' ');
+                        var initials = parts.Length >= 2
+                        ? $"{parts[0][0]}{parts[1][0]}"
+                        : userName.Length > 0 ? userName[0].ToString() : "?";
+                    }
+                    <div class="fn-sidebar-avatar">@initials</div>
+                    <div class="fn-sidebar-info">
+                        <div class="fn-sidebar-username">@userName</div>
+                        <div class="fn-sidebar-role">@ViewData["UserRole"]</div>
+                    </div>
+                </div>
+                <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="fn-logout-btn">
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                            <path d="M5 2H2a1 1 0 00-1 1v7a1 1 0 001 1h3M9 9l3-2.5L9 4M5 6.5h7"
+                                  stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        Çıxış
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <main class="fn-main">
+            <div class="fn-topbar-wrap">
+                <div>
+                    <div class="fn-topbar-title">@ViewData["Title"]</div>
+                    <div class="fn-topbar-sub">@DateTime.Now.ToString("dd MMMM yyyy") · @ViewData["UserRole"]</div>
+                </div>
+                <div class="fn-topbar-right">
+                    <div class="fn-notif-btn">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M7 1a4 4 0 014 4c0 4 1.5 5 1.5 5H1.5S3 9 3 5a4 4 0 014-4zM5.5 10.5a1.5 1.5 0 003 0"
+                                  stroke="#5a647a" stroke-width="1.2" stroke-linecap="round" />
+                        </svg>
+                        <div class="fn-notif-dot"></div>
+                    </div>
+                    <div class="fn-topbar-av">@initials</div>
+                </div>
+            </div>
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="fn-alert fn-alert--error">@TempData["Error"]</div>
+            }
+
+            @RenderBody()
+        </main>
+
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/User/user-area.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>
