@@ -1,19 +1,27 @@
-﻿@model IList<FinNex.Application.DTOs.HR.Icaze.IcazeListDto>
-@using FinNex.Domain.Entities.HR
+@model FinNex.UI.Areas.User.ViewModels.Icaze.IcazeIndexVM
 @{
     ViewData["Title"] = "İcazələrim";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-    ViewData["UserRole"] = User.IsInRole("Employee") ? "İşçi" : "";
+    ViewData["UserRole"] = User.IsInRole("Operator") ? "Operator" : "";
 
-    string BadgeClass(IcazeStatus s) => s switch
+    // Workflow addım nömrəsinə çevir (string, entity enum yox)
+    int WorkflowStep(string merhele) => merhele switch
     {
-        IcazeStatus.Gozlemede => "fn-badge--wait",
-        IcazeStatus.SobeReisiTesdiqinde => "fn-badge--review",
-        IcazeStatus.RehberTesdiqinde => "fn-badge--review",
-        IcazeStatus.HrTesdiqinde => "fn-badge--review",
-        IcazeStatus.Tesdiqlenib => "fn-badge--done",
-        IcazeStatus.ImtinaEdildi => "fn-badge--rejected",
-        _ => "fn-badge--wait"
+        "Gözləmədə"               => 0,
+        "Şöbə rəisi təsdiqində"   => 1,
+        "Rəhbər təsdiqində"       => 2,
+        "HR təsdiqində"           => 3,
+        "Təsdiqlənib"             => 4,
+        "İmtina edildi"           => -1,
+        _                         => 0
+    };
+
+    string BadgeClass(string merhele) => merhele switch
+    {
+        "Təsdiqlənib"   => "fn-badge--done",
+        "İmtina edildi" => "fn-badge--rejected",
+        "Gözləmədə"     => "fn-badge--wait",
+        _               => "fn-badge--review"
     };
 }
 
@@ -32,14 +40,13 @@
     </div>
 
     @* ── Boş vəziyyət ── *@
-    @if (!Model.Any())
+    @if (!Model.Icazeler.Any())
     {
         <div class="fn-empty-state">
             <div class="fn-empty-icon">
                 <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                    <rect x="6" y="6" width="28" height="28" rx="6" stroke="#dde1ea" stroke-width="2" />
-                    <circle cx="20" cy="20" r="5" stroke="#dde1ea" stroke-width="2" />
-                    <path d="M20 11v3M20 26v3M11 20h3M26 20h3" stroke="#dde1ea" stroke-width="2" stroke-linecap="round" />
+                    <circle cx="20" cy="20" r="14" stroke="#dde1ea" stroke-width="2" />
+                    <path d="M20 12v9l5 4" stroke="#dde1ea" stroke-width="2" stroke-linecap="round" />
                 </svg>
             </div>
             <div class="fn-empty-title">Hələ icazə müraciətiniz yoxdur</div>
@@ -51,52 +58,39 @@
         @* ── Statistika sətri ── *@
         <div class="fn-stat-row">
             <div class="fn-stat">
-                <div class="fn-stat-val">@Model.Count</div>
+                <div class="fn-stat-val">@Model.Cemi</div>
                 <div class="fn-stat-lbl">Cəmi</div>
             </div>
             <div class="fn-stat">
-                <div class="fn-stat-val" style="color:#1e9b6b">
-                    @Model.Count(x => x.Status == IcazeStatus.Tesdiqlenib)
-                </div>
+                <div class="fn-stat-val" style="color:#1e9b6b">@Model.TesdiqCem</div>
                 <div class="fn-stat-lbl">Təsdiqlənib</div>
             </div>
             <div class="fn-stat">
-                <div class="fn-stat-val" style="color:#c9900a">
-                    @Model.Count(x => x.Status != IcazeStatus.Tesdiqlenib &&
-                    x.Status != IcazeStatus.ImtinaEdildi)
+                <div class="fn-stat-val" style="color:#c9900a">@Model.GozlemeCem</div>
+                <div class="fn-stat-lbl">Gözləmədə</div>
             </div>
-            <div class="fn-stat-lbl">Gözləmədə</div>
-        </div>
-        <div class="fn-stat">
-            <div class="fn-stat-val" style="color:#c0392b">
-                @Model.Count(x => x.Status == IcazeStatus.ImtinaEdildi)
+            <div class="fn-stat">
+                <div class="fn-stat-val" style="color:#c0392b">@Model.ImtinaCem</div>
+                <div class="fn-stat-lbl">İmtina edildi</div>
             </div>
-            <div class="fn-stat-lbl">İmtina edildi</div>
-        </div>
-        <div class="fn-stat">
-            <div class="fn-stat-val" style="color:#2d6cdf">
-                @Model.Where(x => x.Status == IcazeStatus.Tesdiqlenib)
-                .Sum(x => x.IcazeSaati).ToString("F1") saat
+            <div class="fn-stat">
+                <div class="fn-stat-val" style="color:#2d6cdf">@Model.IstifadeOlunanSaat.ToString("F1") saat</div>
+                <div class="fn-stat-lbl">İstifadə edilib</div>
             </div>
-            <div class="fn-stat-lbl">İstifadə edilib</div>
         </div>
-    </div>
 
-    @* ── Siyahı ── *@
-    <div class="fn-card">
-        <div class="fn-icaze-list">
-            @foreach (var icaze in Model)
+        @* ── Siyahı ── *@
+        <div class="fn-card">
+            <div class="fn-icaze-list">
+                @foreach (var icaze in Model.Icazeler)
                 {
+                    @{ var step = WorkflowStep(icaze.WorkflowMerhele); }
                     <div class="fn-icaze-item">
 
                         @* Sol: tarix + saat bloku *@
                         <div class="fn-icaze-date-block">
-                            <div class="fn-icaze-day">
-                                @icaze.IcazeTarixi.ToString("dd")
-                            </div>
-                            <div class="fn-icaze-month">
-                                @icaze.IcazeTarixi.ToString("MMM")
-                            </div>
+                            <div class="fn-icaze-day">@icaze.IcazeTarixi.ToString("dd")</div>
+                            <div class="fn-icaze-month">@icaze.IcazeTarixi.ToString("MMM")</div>
                         </div>
 
                         @* Mərkəz: məlumatlar *@
@@ -116,36 +110,40 @@
                                     <span class="fn-icaze-sebeb">@icaze.Sebeb</span>
                                 }
                             </div>
-                            @* Workflow addım göstəricisi *@
-                            <div class="fn-workflow-steps">
-                                <div class="fn-ws @(icaze.Status >= IcazeStatus.SobeReisiTesdiqinde ? "fn-ws--done" : icaze.Status == IcazeStatus.Gozlemede ? "fn-ws--active" : "")">
-                                    <div class="fn-ws-dot"></div>
-                                    <div class="fn-ws-lbl">Müraciət</div>
+
+                            @* Workflow addım göstəricisi (string-based, entity yox) *@
+                            @if (step != -1)
+                            {
+                                <div class="fn-workflow-steps">
+                                    <div class="fn-ws @(step >= 1 ? "fn-ws--done" : step == 0 ? "fn-ws--active" : "")">
+                                        <div class="fn-ws-dot"></div>
+                                        <div class="fn-ws-lbl">Müraciət</div>
+                                    </div>
+                                    <div class="fn-ws-line @(step >= 2 ? "fn-ws-line--done" : "")"></div>
+                                    <div class="fn-ws @(step >= 2 ? "fn-ws--done" : step == 1 ? "fn-ws--active" : "")">
+                                        <div class="fn-ws-dot"></div>
+                                        <div class="fn-ws-lbl">Şöbə rəisi</div>
+                                    </div>
+                                    <div class="fn-ws-line @(step >= 3 ? "fn-ws-line--done" : "")"></div>
+                                    <div class="fn-ws @(step >= 3 ? "fn-ws--done" : step == 2 ? "fn-ws--active" : "")">
+                                        <div class="fn-ws-dot"></div>
+                                        <div class="fn-ws-lbl">Rəhbər</div>
+                                    </div>
+                                    <div class="fn-ws-line @(step >= 4 ? "fn-ws-line--done" : "")"></div>
+                                    <div class="fn-ws @(step >= 4 ? "fn-ws--done" : step == 3 ? "fn-ws--active" : "")">
+                                        <div class="fn-ws-dot"></div>
+                                        <div class="fn-ws-lbl">HR</div>
+                                    </div>
                                 </div>
-                                <div class="fn-ws-line @(icaze.Status >= IcazeStatus.SobeReisiTesdiqinde ? "fn-ws-line--done" : "")"></div>
-                                <div class="fn-ws @(icaze.Status == IcazeStatus.Tesdiqlenib || icaze.Status == IcazeStatus.RehberTesdiqinde || icaze.Status == IcazeStatus.HrTesdiqinde ? "fn-ws--done" : icaze.Status == IcazeStatus.SobeReisiTesdiqinde ? "fn-ws--active" : "")">
-                                    <div class="fn-ws-dot"></div>
-                                    <div class="fn-ws-lbl">Şöbə rəisi</div>
-                                </div>
-                                <div class="fn-ws-line @(icaze.Status >= IcazeStatus.RehberTesdiqinde ? "fn-ws-line--done" : "")"></div>
-                                <div class="fn-ws @(icaze.Status == IcazeStatus.Tesdiqlenib || icaze.Status == IcazeStatus.HrTesdiqinde ? "fn-ws--done" : icaze.Status == IcazeStatus.RehberTesdiqinde ? "fn-ws--active" : "")">
-                                    <div class="fn-ws-dot"></div>
-                                    <div class="fn-ws-lbl">Rəhbər</div>
-                                </div>
-                                <div class="fn-ws-line @(icaze.Status >= IcazeStatus.HrTesdiqinde ? "fn-ws-line--done" : "")"></div>
-                                <div class="fn-ws @(icaze.Status == IcazeStatus.Tesdiqlenib ? "fn-ws--done" : icaze.Status == IcazeStatus.HrTesdiqinde ? "fn-ws--active" : "")">
-                                    <div class="fn-ws-dot"></div>
-                                    <div class="fn-ws-lbl">HR</div>
-                                </div>
-                            </div>
+                            }
                         </div>
 
                         @* Sağ: status + ləğv düyməsi *@
                         <div class="fn-icaze-actions">
-                            <span class="fn-badge @BadgeClass(icaze.Status)">
+                            <span class="fn-badge @BadgeClass(icaze.WorkflowMerhele)">
                                 @icaze.WorkflowMerhele
                             </span>
-                            @if (icaze.Status == IcazeStatus.Gozlemede)
+                            @if (icaze.WorkflowMerhele == "Gözləmədə")
                             {
                                 <form asp-area="User" asp-controller="Icaze"
                                       asp-action="Legv" method="post"

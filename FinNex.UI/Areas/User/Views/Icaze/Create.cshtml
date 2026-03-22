@@ -1,8 +1,8 @@
-﻿@model FinNex.Application.DTOs.HR.Icaze.IcazeCreateDto
+@model FinNex.UI.Areas.User.ViewModels.Icaze.IcazeCreateVM
 @{
     ViewData["Title"] = "Yeni İcazə Müraciəti";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-    ViewData["UserRole"] = User.IsInRole("Employee") ? "İşçi" : "";
+    ViewData["UserRole"] = User.IsInRole("Operator") ? "Operator" : "";
 }
 
 <div class="fn-page">
@@ -13,9 +13,7 @@
             <div class="fn-page-sub">Saatlıq icazə üçün müraciət göndərin</div>
         </div>
         <a asp-area="User" asp-controller="Icaze" asp-action="Index"
-           class="fn-btn fn-btn--outline">
-            ← Geri
-        </a>
+           class="fn-btn fn-btn--outline">← Geri</a>
     </div>
 
     <div class="fn-form-wrap">
@@ -73,7 +71,7 @@
                         <span class="fn-label-hint">(bankda mütləqdir)</span>
                     </label>
                     <select asp-for="EvezEdenIsciId"
-                            asp-items="ViewBag.EvezEdenList"
+                            asp-items="Model.EvezEdenList"
                             class="fn-select">
                         <option value="">— Seçin —</option>
                     </select>
@@ -119,7 +117,6 @@
 
 @section Scripts {
     <script>
-        // Saat hesablama
         function hesabla() {
             var bas  = document.getElementById('baslamaSaati').value;
             var bitis = document.getElementById('bitisSaati').value;

@@ -1,71 +1,31 @@
-﻿@model FinNex.UI.Areas.User.Models.MuracietPortalViewModel
-@using FinNex.Domain.Entities.HR
+@model FinNex.UI.Areas.User.Models.MuracietPortalViewModel
 @{
     ViewData["Title"] = "Müraciətlərim";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-    ViewData["UserRole"] = User.IsInRole("Employee") ? "İşçi" : "";
+    ViewData["UserRole"] = User.IsInRole("Operator") ? "Operator" : "";
 
-    bool mezTab = Model.AktivTab == "mezuniyyet";
+    bool mezTab  = Model.AktivTab == "mezuniyyet";
     bool icazeTab = Model.AktivTab == "icaze";
 
-    string MezBadgeClass(MezuniyyetStatus s) => s switch
+    // Workflow addımı: string → int (entity enum yox)
+    int WorkflowStep(string merhele) => merhele switch
     {
-        MezuniyyetStatus.Gozlemede => "fn-badge--wait",
-        MezuniyyetStatus.SobeReisiTesdiqinde => "fn-badge--review",
-        MezuniyyetStatus.RehberTesdiqinde => "fn-badge--review",
-        MezuniyyetStatus.HrTesdiqinde => "fn-badge--review",
-        MezuniyyetStatus.Tesdiqlenib => "fn-badge--done",
-        MezuniyyetStatus.ImtinaEdildi => "fn-badge--rejected",
-        _ => "fn-badge--wait"
+        "Gözləmədə"               => 0,
+        "Şöbə rəisi təsdiqində"   => 1,
+        "Rəhbər təsdiqində"       => 2,
+        "HR təsdiqində"           => 3,
+        "Təsdiqlənib"             => 4,
+        "İmtina edildi"           => -1,
+        _                         => 0
     };
 
-    string MezWorkflow(MezuniyyetStatus s) => s switch
+    string BadgeClass(string merhele) => merhele switch
     {
-        MezuniyyetStatus.Gozlemede => "Gözləmədə",
-        MezuniyyetStatus.SobeReisiTesdiqinde => "Şöbə rəisi təsdiqində",
-        MezuniyyetStatus.RehberTesdiqinde => "Rəhbər təsdiqində",
-        MezuniyyetStatus.HrTesdiqinde => "HR təsdiqində",
-        MezuniyyetStatus.Tesdiqlenib => "Təsdiqlənib",
-        MezuniyyetStatus.ImtinaEdildi => "İmtina edildi",
-        _ => "-"
+        "Təsdiqlənib"   => "fn-badge--done",
+        "İmtina edildi" => "fn-badge--rejected",
+        "Gözləmədə"     => "fn-badge--wait",
+        _               => "fn-badge--review"
     };
-
-    string NovAd(MezuniyyetNovu n) => n switch
-    {
-        MezuniyyetNovu.Illik => "İllik məzuniyyət",
-        MezuniyyetNovu.Xestelik => "Xəstəlik məzuniyyəti",
-        MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
-        _ => n.ToString()
-    };
-
-    string IcazeBadgeClass(IcazeStatus s) => s switch
-    {
-        IcazeStatus.Gozlemede => "fn-badge--wait",
-        IcazeStatus.SobeReisiTesdiqinde => "fn-badge--review",
-        IcazeStatus.RehberTesdiqinde => "fn-badge--review",
-        IcazeStatus.HrTesdiqinde => "fn-badge--review",
-        IcazeStatus.Tesdiqlenib => "fn-badge--done",
-        IcazeStatus.ImtinaEdildi => "fn-badge--rejected",
-        _ => "fn-badge--wait"
-    };
-
-    string IcazeWorkflow(IcazeStatus s) => s switch
-    {
-        IcazeStatus.Gozlemede => "Gözləmədə",
-        IcazeStatus.SobeReisiTesdiqinde => "Şöbə rəisi təsdiqində",
-        IcazeStatus.RehberTesdiqinde => "Rəhbər təsdiqində",
-        IcazeStatus.HrTesdiqinde => "HR təsdiqində",
-        IcazeStatus.Tesdiqlenib => "Təsdiqlənib",
-        IcazeStatus.ImtinaEdildi => "İmtina edildi",
-        _ => "-"
-    };
-
-    bool MezLegvEde(MezuniyyetStatus s) =>
-        s == MezuniyyetStatus.Gozlemede ||
-        s == MezuniyyetStatus.SobeReisiTesdiqinde;
-
-    bool IcazeLegvEde(IcazeStatus s) =>
-        s == IcazeStatus.Gozlemede;
 }
 
 <div class="fn-page">
@@ -95,15 +55,11 @@
             <div class="fn-stat-lbl">Cəmi</div>
         </div>
         <div class="fn-stat">
-            <div class="fn-stat-val" style="color:#1e9b6b">
-                @(Model.MezuniyyetTesdiq + Model.IcazeTesdiq)
-            </div>
+            <div class="fn-stat-val" style="color:#1e9b6b">@(Model.MezuniyyetTesdiq + Model.IcazeTesdiq)</div>
             <div class="fn-stat-lbl">Təsdiqlənib</div>
         </div>
         <div class="fn-stat">
-            <div class="fn-stat-val" style="color:#c9900a">
-                @(Model.MezuniyyetGozlemede + Model.IcazeGozlemede)
-            </div>
+            <div class="fn-stat-val" style="color:#c9900a">@(Model.MezuniyyetGozlemede + Model.IcazeGozlemede)</div>
             <div class="fn-stat-lbl">Gözləmədə</div>
         </div>
         <div class="fn-stat">
@@ -159,6 +115,7 @@
                 <div class="fn-icaze-list">
                     @foreach (var m in Model.Mezuniyyetler)
                     {
+                        @{ var step = WorkflowStep(m.WorkflowMerhele); }
                         <div class="fn-icaze-item">
                             <div class="fn-icaze-date-block">
                                 <div class="fn-icaze-day">@m.BaslamaTarixi.ToString("dd")</div>
@@ -167,7 +124,7 @@
 
                             <div class="fn-icaze-info">
                                 <div class="fn-icaze-title">
-                                    @NovAd(m.Nov)
+                                    @m.NovText
                                     <span class="fn-icaze-dur">
                                         (@m.BaslamaTarixi.ToString("dd.MM") –
                                         @m.BitmeTarixi.ToString("dd.MM.yyyy") ·
@@ -180,31 +137,38 @@
                                         <span class="fn-icaze-evez">Əvəzedici: @m.EvezEdenIsciAdSoyad</span>
                                     </div>
                                 }
-                                <div class="fn-workflow-steps">
-                                    <div class="fn-ws @(m.Status >= MezuniyyetStatus.SobeReisiTesdiqinde ? "fn-ws--done" : m.Status == MezuniyyetStatus.Gozlemede ? "fn-ws--active" : "")">
-                                        <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Müraciət</div>
+                                @if (step != -1)
+                                {
+                                    <div class="fn-workflow-steps">
+                                        <div class="fn-ws @(step >= 1 ? "fn-ws--done" : step == 0 ? "fn-ws--active" : "")">
+                                            <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Müraciət</div>
+                                        </div>
+                                        <div class="fn-ws-line @(step >= 2 ? "fn-ws-line--done" : "")"></div>
+                                        <div class="fn-ws @(step >= 2 ? "fn-ws--done" : step == 1 ? "fn-ws--active" : "")">
+                                            <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Şöbə rəisi</div>
+                                        </div>
+                                        <div class="fn-ws-line @(step >= 3 ? "fn-ws-line--done" : "")"></div>
+                                        <div class="fn-ws @(step >= 3 ? "fn-ws--done" : step == 2 ? "fn-ws--active" : "")">
+                                            <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Rəhbər</div>
+                                        </div>
+                                        <div class="fn-ws-line @(step >= 4 ? "fn-ws-line--done" : "")"></div>
+                                        <div class="fn-ws @(step >= 4 ? "fn-ws--done" : step == 3 ? "fn-ws--active" : "")">
+                                            <div class="fn-ws-dot"></div><div class="fn-ws-lbl">HR</div>
+                                        </div>
                                     </div>
-                                    <div class="fn-ws-line @(m.Status >= MezuniyyetStatus.SobeReisiTesdiqinde ? "fn-ws-line--done" : "")"></div>
-                                    <div class="fn-ws @(m.Status >= MezuniyyetStatus.RehberTesdiqinde ? "fn-ws--done" : m.Status == MezuniyyetStatus.SobeReisiTesdiqinde ? "fn-ws--active" : "")">
-                                        <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Şöbə rəisi</div>
-                                    </div>
-                                    <div class="fn-ws-line @(m.Status >= MezuniyyetStatus.RehberTesdiqinde ? "fn-ws-line--done" : "")"></div>
-                                    <div class="fn-ws @(m.Status >= MezuniyyetStatus.HrTesdiqinde ? "fn-ws--done" : m.Status == MezuniyyetStatus.RehberTesdiqinde ? "fn-ws--active" : "")">
-                                        <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Rəhbər</div>
-                                    </div>
-                                    <div class="fn-ws-line @(m.Status >= MezuniyyetStatus.HrTesdiqinde ? "fn-ws-line--done" : "")"></div>
-                                    <div class="fn-ws @(m.Status == MezuniyyetStatus.Tesdiqlenib ? "fn-ws--done" : m.Status == MezuniyyetStatus.HrTesdiqinde ? "fn-ws--active" : "")">
-                                        <div class="fn-ws-dot"></div><div class="fn-ws-lbl">HR</div>
-                                    </div>
-                                </div>
+                                }
                             </div>
 
                             <div class="fn-icaze-actions">
-                                <span class="fn-badge @MezBadgeClass(m.Status)">@MezWorkflow(m.Status)</span>
-                                @if (MezLegvEde(m.Status))
+                                <span class="fn-badge @BadgeClass(m.WorkflowMerhele)">@m.WorkflowMerhele</span>
+                                <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Detail"
+                                   asp-route-id="@m.Id" class="fn-btn fn-btn--ghost-sm" style="margin-top:6px">
+                                    Detay
+                                </a>
+                                @if (m.WorkflowMerhele == "Gözləmədə" || m.WorkflowMerhele == "Şöbə rəisi təsdiqində")
                                 {
                                     <form asp-area="User" asp-controller="Mezuniyyet"
-                                          asp-action="Legv" method="post" style="margin-top:8px"
+                                          asp-action="Legv" method="post" style="margin-top:4px"
                                           onsubmit="return confirm('Bu müraciəti ləğv etmək istəyirsiniz?')">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@m.Id" />
@@ -236,6 +200,7 @@
                 <div class="fn-icaze-list">
                     @foreach (var i in Model.Icazeler)
                     {
+                        @{ var step = WorkflowStep(i.WorkflowMerhele); }
                         <div class="fn-icaze-item">
                             <div class="fn-icaze-date-block">
                                 <div class="fn-icaze-day">@i.IcazeTarixi.ToString("dd")</div>
@@ -259,28 +224,31 @@
                                         <span class="fn-icaze-sebeb">@i.Sebeb</span>
                                     }
                                 </div>
-                                <div class="fn-workflow-steps">
-                                    <div class="fn-ws @(i.Status >= IcazeStatus.SobeReisiTesdiqinde ? "fn-ws--done" : i.Status == IcazeStatus.Gozlemede ? "fn-ws--active" : "")">
-                                        <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Müraciət</div>
+                                @if (step != -1)
+                                {
+                                    <div class="fn-workflow-steps">
+                                        <div class="fn-ws @(step >= 1 ? "fn-ws--done" : step == 0 ? "fn-ws--active" : "")">
+                                            <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Müraciət</div>
+                                        </div>
+                                        <div class="fn-ws-line @(step >= 2 ? "fn-ws-line--done" : "")"></div>
+                                        <div class="fn-ws @(step >= 2 ? "fn-ws--done" : step == 1 ? "fn-ws--active" : "")">
+                                            <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Şöbə rəisi</div>
+                                        </div>
+                                        <div class="fn-ws-line @(step >= 3 ? "fn-ws-line--done" : "")"></div>
+                                        <div class="fn-ws @(step >= 3 ? "fn-ws--done" : step == 2 ? "fn-ws--active" : "")">
+                                            <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Rəhbər</div>
+                                        </div>
+                                        <div class="fn-ws-line @(step >= 4 ? "fn-ws-line--done" : "")"></div>
+                                        <div class="fn-ws @(step >= 4 ? "fn-ws--done" : step == 3 ? "fn-ws--active" : "")">
+                                            <div class="fn-ws-dot"></div><div class="fn-ws-lbl">HR</div>
+                                        </div>
                                     </div>
-                                    <div class="fn-ws-line @(i.Status >= IcazeStatus.SobeReisiTesdiqinde ? "fn-ws-line--done" : "")"></div>
-                                    <div class="fn-ws @(i.Status >= IcazeStatus.RehberTesdiqinde ? "fn-ws--done" : i.Status == IcazeStatus.SobeReisiTesdiqinde ? "fn-ws--active" : "")">
-                                        <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Şöbə rəisi</div>
-                                    </div>
-                                    <div class="fn-ws-line @(i.Status >= IcazeStatus.RehberTesdiqinde ? "fn-ws-line--done" : "")"></div>
-                                    <div class="fn-ws @(i.Status >= IcazeStatus.HrTesdiqinde ? "fn-ws--done" : i.Status == IcazeStatus.RehberTesdiqinde ? "fn-ws--active" : "")">
-                                        <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Rəhbər</div>
-                                    </div>
-                                    <div class="fn-ws-line @(i.Status >= IcazeStatus.HrTesdiqinde ? "fn-ws-line--done" : "")"></div>
-                                    <div class="fn-ws @(i.Status == IcazeStatus.Tesdiqlenib ? "fn-ws--done" : i.Status == IcazeStatus.HrTesdiqinde ? "fn-ws--active" : "")">
-                                        <div class="fn-ws-dot"></div><div class="fn-ws-lbl">HR</div>
-                                    </div>
-                                </div>
+                                }
                             </div>
 
                             <div class="fn-icaze-actions">
-                                <span class="fn-badge @IcazeBadgeClass(i.Status)">@IcazeWorkflow(i.Status)</span>
-                                @if (IcazeLegvEde(i.Status))
+                                <span class="fn-badge @BadgeClass(i.WorkflowMerhele)">@i.WorkflowMerhele</span>
+                                @if (i.WorkflowMerhele == "Gözləmədə")
                                 {
                                     <form asp-area="User" asp-controller="Icaze"
                                           asp-action="Legv" method="post" style="margin-top:8px"
@@ -301,7 +269,6 @@
 
 @section Scripts {
     <script>
-        // Tab keçidindən sonra həmin tab-ın scroll mövqeyinə qayıt
         document.addEventListener('DOMContentLoaded', function () {
             var hash = window.location.hash;
             if (hash) {
@@ -310,4 +277,16 @@
             }
         });
     </script>
+}
+
+@section Styles {
+    <style>
+        .fn-btn--ghost-sm {
+            font-size: 11px; padding: 4px 10px;
+            background: none; border: 1px solid #dde1ea;
+            border-radius: 5px; color: #5a647a; cursor: pointer;
+            display: inline-block; text-decoration: none;
+        }
+        .fn-btn--ghost-sm:hover { background: #f3f4f8; }
+    </style>
 }
