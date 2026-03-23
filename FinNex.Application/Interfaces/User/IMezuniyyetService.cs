@@ -16,5 +16,10 @@ namespace FinNex.Application.Interfaces
         // YENİ: İşçi paneli üçün əlavə edildi
         Task<Result<IList<MezuniyyetListDto>>> GetIsciMezuniyyetleriAsync(int isciId);
         Task<Result> LegvEtAsync(int id, int isciId);
+
+        // Təsdiq paneli üçün
+        Task<Result<IList<MezuniyyetListDto>>> GetGozlemededeAsync();
+        Task<Result<IList<MezuniyyetListDto>>> GetRehberTesdiqindeAsync();
+        Task<Result<IList<MezuniyyetListDto>>> GetHrTesdiqindeAsync();
     }
 }
