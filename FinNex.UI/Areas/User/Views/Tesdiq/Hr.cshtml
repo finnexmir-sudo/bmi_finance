@@ -1,0 +1,245 @@
+@model FinNex.UI.Areas.User.ViewModels.Tesdiq.TesdiqIndexVM
+@using FinNex.Application.DTOs.HR.Mezuniyyet
+@using FinNex.Application.DTOs.HR.Icaze
+@{
+    ViewData["Title"] = "HR Paneli";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["UserRole"] = "HR";
+    var rol = "Hr";
+    var headerClass = "tsd-header--purple";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/tesdiq.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    @* ── Panel Header ── *@
+    <div class="tsd-header @headerClass">
+        <div class="tsd-header-left">
+            <div class="tsd-header-title">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="vertical-align:-3px;margin-right:8px">
+                    <rect x="3" y="3" width="14" height="14" rx="3" stroke="rgba(255,255,255,.85)" stroke-width="1.4" />
+                    <path d="M7 10h6M10 7v6" stroke="rgba(255,255,255,.85)" stroke-width="1.4" stroke-linecap="round" />
+                </svg>
+                @Model.RolBasliq
+            </div>
+            <div class="tsd-header-sub">@Model.RolAciqlamasi</div>
+        </div>
+        <div class="tsd-header-badge">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px">
+                <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2" />
+                <path d="M6 4v2.5l1.5 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+            </svg>
+            @Model.CemiSayi müraciət gözləyir
+        </div>
+    </div>
+
+    @* ── Stats ── *@
+    <div class="tsd-stats">
+        <div class="tsd-stat-card">
+            <div class="tsd-stat-icon tsd-stat-icon--purple">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <rect x="2" y="3" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.3" />
+                    <path d="M2 7h14M6 3v3M12 3v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                </svg>
+            </div>
+            <div class="tsd-stat-body">
+                <div class="tsd-stat-num">@Model.MezuniyyetSayi</div>
+                <div class="tsd-stat-lbl">Məzuniyyət</div>
+            </div>
+        </div>
+        <div class="tsd-stat-card">
+            <div class="tsd-stat-icon tsd-stat-icon--purple">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.3" />
+                    <path d="M9 6v4M6.5 12h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                </svg>
+            </div>
+            <div class="tsd-stat-body">
+                <div class="tsd-stat-num">@Model.IcazeSayi</div>
+                <div class="tsd-stat-lbl">İcazə</div>
+            </div>
+        </div>
+        <div class="tsd-stat-card">
+            <div class="tsd-stat-icon tsd-stat-icon--green">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M3 9l4 4 8-8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </div>
+            <div class="tsd-stat-body">
+                <div class="tsd-stat-num">@Model.CemiSayi</div>
+                <div class="tsd-stat-lbl">Cəmi gözləyən</div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Tabs ── *@
+    <div class="tsd-tabs" role="tablist">
+        <button class="tsd-tab active" data-tab="mezuniyyet" role="tab">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <rect x="1" y="2" width="11" height="10" rx="1.5" stroke="currentColor" stroke-width="1.1" />
+                <path d="M1 5h11M4.5 2v2M8.5 2v2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+            </svg>
+            Məzuniyyətlər
+            <span class="tsd-tab-count">@Model.MezuniyyetSayi</span>
+        </button>
+        <button class="tsd-tab" data-tab="icaze" role="tab">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.1" />
+                <path d="M6.5 4v3l1.5 1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+            </svg>
+            İcazələr
+            <span class="tsd-tab-count">@Model.IcazeSayi</span>
+        </button>
+    </div>
+
+    @* ── Mezuniyyet Tab Panel ── *@
+    <div data-panel="mezuniyyet" class="tsd-tab-panel">
+        <div class="tsd-filter">
+            <div class="tsd-search">
+                <svg class="tsd-search-icon" width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <circle cx="5.5" cy="5.5" r="4" stroke="#8a93a8" stroke-width="1.2" />
+                    <path d="M9 9l2.5 2.5" stroke="#8a93a8" stroke-width="1.2" stroke-linecap="round" />
+                </svg>
+                <input type="text" class="tsd-search-input" data-panel="mezuniyyet" placeholder="İşçi adı, şöbə axtarın..." />
+            </div>
+        </div>
+
+        @if (!Model.Mezuniyyetler.Any())
+        {
+            <div class="tsd-empty">
+                <div class="tsd-empty-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="4" width="18" height="17" rx="3" stroke="#c8cdd8" stroke-width="1.5" />
+                        <path d="M3 9h18M8 4v4M16 4v4" stroke="#c8cdd8" stroke-width="1.4" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div class="tsd-empty-title">HR təsdiqindəki məzuniyyət yoxdur</div>
+                <div class="tsd-empty-sub">Rəhbər tərəfindən təsdiqlənmiş müraciətlər burada görünəcək</div>
+            </div>
+        }
+        else
+        {
+            <div class="tsd-list">
+                @foreach (var m in Model.Mezuniyyetler)
+                {
+                    <div class="tsd-card">
+                        <div class="tsd-card-date">
+                            <div class="tsd-date-day">@m.BaslamaTarixi.ToString("dd")</div>
+                            <div class="tsd-date-mon">@m.BaslamaTarixi.ToString("MMM")</div>
+                        </div>
+                        <div class="tsd-card-info">
+                            <div class="tsd-card-name">@m.IsciAdSoyad</div>
+                            <div class="tsd-card-meta">
+                                <span class="tsd-card-dept">@m.SobeAdi</span>
+                                <span class="tsd-card-type">@m.NovText</span>
+                            </div>
+                            <div class="tsd-card-dates">
+                                @m.BaslamaTarixi.ToString("dd.MM.yyyy") — @m.BitmeTarixi.ToString("dd.MM.yyyy")
+                                · @m.IsGunlerininSayi iş günü
+                                @if (!string.IsNullOrEmpty(m.EvezEdenIsciAdSoyad))
+                                {
+                                    <span> · Əvəzedici: @m.EvezEdenIsciAdSoyad</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="tsd-card-actions">
+                            <span class="tsd-badge tsd-badge--hr">HR təsdiqindəki</span>
+                            <a asp-area="User" asp-controller="Tesdiq" asp-action="MezuniyyetDetal"
+                               asp-route-id="@m.Id" asp-route-rol="@rol"
+                               class="tsd-btn tsd-btn--ghost">
+                                Detay
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    @* ── Icaze Tab Panel ── *@
+    <div data-panel="icaze" class="tsd-tab-panel" style="display:none">
+        <div class="tsd-filter">
+            <div class="tsd-search">
+                <svg class="tsd-search-icon" width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <circle cx="5.5" cy="5.5" r="4" stroke="#8a93a8" stroke-width="1.2" />
+                    <path d="M9 9l2.5 2.5" stroke="#8a93a8" stroke-width="1.2" stroke-linecap="round" />
+                </svg>
+                <input type="text" class="tsd-search-input" data-panel="icaze" placeholder="İşçi adı, şöbə axtarın..." />
+            </div>
+        </div>
+
+        @if (!Model.Icazeler.Any())
+        {
+            <div class="tsd-empty">
+                <div class="tsd-empty-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="9" stroke="#c8cdd8" stroke-width="1.5" />
+                        <path d="M12 8v5M12 15v.5" stroke="#c8cdd8" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div class="tsd-empty-title">HR təsdiqindəki icazə yoxdur</div>
+                <div class="tsd-empty-sub">Rəhbər tərəfindən təsdiqlənmiş icazələr burada görünəcək</div>
+            </div>
+        }
+        else
+        {
+            <div class="tsd-list">
+                @foreach (var ic in Model.Icazeler)
+                {
+                    <div class="tsd-card">
+                        <div class="tsd-card-date">
+                            <div class="tsd-date-day">@ic.IcazeTarixi.ToString("dd")</div>
+                            <div class="tsd-date-mon">@ic.IcazeTarixi.ToString("MMM")</div>
+                        </div>
+                        <div class="tsd-card-info">
+                            <div class="tsd-card-name">@ic.IsciAdSoyad</div>
+                            <div class="tsd-card-meta">
+                                <span class="tsd-card-dept">@ic.SobeAdi</span>
+                                <span class="tsd-card-type">İcazə</span>
+                            </div>
+                            <div class="tsd-card-dates">
+                                @ic.IcazeTarixi.ToString("dd.MM.yyyy")
+                                · @ic.BaslamaSaati.ToString(@"hh\:mm") — @ic.BitisSaati.ToString(@"hh\:mm")
+                                · @ic.IcazeSaati.ToString("0.##") saat
+                            </div>
+                        </div>
+                        <div class="tsd-card-actions">
+                            <span class="tsd-badge tsd-badge--hr">HR təsdiqindəki</span>
+                            <a asp-area="User" asp-controller="Tesdiq" asp-action="IcazeDetal"
+                               asp-route-id="@ic.Id" asp-route-rol="@rol"
+                               class="tsd-btn tsd-btn--ghost">
+                                Detay
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+</div>
+
+@* Confirm Modal *@
+<div class="tsd-modal-overlay" id="tsd-confirm-overlay">
+    <div class="tsd-modal">
+        <div class="tsd-modal-icon tsd-modal-icon--approve" id="tsd-modal-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12l5 5 9-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </div>
+        <div class="tsd-modal-title" id="tsd-modal-title">Təsdiqlə</div>
+        <div class="tsd-modal-sub" id="tsd-modal-sub">Əminsiniz?</div>
+        <div class="tsd-modal-footer">
+            <button class="tsd-btn tsd-btn--ghost" id="tsd-modal-cancel">Ləğv et</button>
+            <button class="tsd-btn tsd-btn--approve" id="tsd-modal-confirm">Bəli</button>
+        </div>
+        <input type="hidden" id="tsd-modal-status" />
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/User/tesdiq.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,789 @@
+/* =============================================
+   FinNex — Tesdiq (Approval) Panel CSS
+   Uses design language from user-area.css
+   Navy #1a2332  ·  Gold #e8b84b
+   ============================================= */
+
+/* ── Variables ──────────────────────────────── */
+:root {
+    --tesdiq-green:  #1e9b6b;
+    --tesdiq-blue:   #2d6cdf;
+    --tesdiq-purple: #7c3aed;
+    --tesdiq-amber:  #e8b84b;
+    --tesdiq-red:    #c0392b;
+    --tesdiq-bg:     #f4f6fb;
+    --tesdiq-card:   #ffffff;
+    --tesdiq-border: #e8eaef;
+    --tesdiq-text:   #1a2332;
+    --tesdiq-muted:  #8a93a8;
+    --tesdiq-radius: 10px;
+    --tesdiq-shadow: 0 1px 4px rgba(26,35,50,.06);
+    --tesdiq-shadow-hover: 0 4px 16px rgba(26,35,50,.11);
+}
+
+/* ── Panel Header Card ──────────────────────── */
+.tsd-header {
+    border-radius: var(--tesdiq-radius);
+    padding: 24px 28px;
+    margin-bottom: 20px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.tsd-header::before {
+    content: '';
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.08);
+    pointer-events: none;
+}
+
+.tsd-header--green  { background: linear-gradient(135deg, #1e9b6b 0%, #148d58 100%); }
+.tsd-header--blue   { background: linear-gradient(135deg, #2d6cdf 0%, #1d56bc 100%); }
+.tsd-header--purple { background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); }
+
+.tsd-header-left { display: flex; flex-direction: column; gap: 4px; }
+
+.tsd-header-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -.3px;
+}
+
+.tsd-header-sub {
+    font-size: 13px;
+    opacity: .8;
+}
+
+.tsd-header-badge {
+    background: rgba(255,255,255,.18);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    white-space: nowrap;
+}
+
+/* ── Stats Bar ──────────────────────────────── */
+.tsd-stats {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.tsd-stat-card {
+    background: var(--tesdiq-card);
+    border: 1px solid var(--tesdiq-border);
+    border-radius: var(--tesdiq-radius);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+    min-width: 140px;
+    box-shadow: var(--tesdiq-shadow);
+    transition: box-shadow .15s;
+}
+
+.tsd-stat-card:hover {
+    box-shadow: var(--tesdiq-shadow-hover);
+}
+
+.tsd-stat-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.tsd-stat-icon--green  { background: rgba(30,155,107,.1); color: var(--tesdiq-green); }
+.tsd-stat-icon--blue   { background: rgba(45,108,223,.1); color: var(--tesdiq-blue); }
+.tsd-stat-icon--purple { background: rgba(124,58,237,.1); color: var(--tesdiq-purple); }
+.tsd-stat-icon--amber  { background: rgba(232,184,75,.1); color: var(--tesdiq-amber); }
+
+.tsd-stat-body {}
+
+.tsd-stat-num {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--tesdiq-text);
+    line-height: 1;
+}
+
+.tsd-stat-lbl {
+    font-size: 11px;
+    color: var(--tesdiq-muted);
+    margin-top: 2px;
+}
+
+/* ── Tabs ───────────────────────────────────── */
+.tsd-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--tesdiq-card);
+    border: 1px solid var(--tesdiq-border);
+    border-radius: var(--tesdiq-radius);
+    padding: 4px;
+    margin-bottom: 16px;
+    width: fit-content;
+}
+
+.tsd-tab {
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--tesdiq-muted);
+    border-radius: 7px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    transition: background .15s, color .15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tsd-tab:hover {
+    background: var(--tesdiq-bg);
+    color: var(--tesdiq-text);
+}
+
+.tsd-tab.active {
+    background: var(--tesdiq-text);
+    color: #fff;
+}
+
+.tsd-tab-count {
+    background: rgba(255,255,255,.22);
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.tsd-tab:not(.active) .tsd-tab-count {
+    background: var(--tesdiq-border);
+    color: var(--tesdiq-muted);
+}
+
+/* ── Filter Bar ─────────────────────────────── */
+.tsd-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+.tsd-search {
+    flex: 1;
+    min-width: 180px;
+    max-width: 340px;
+    position: relative;
+}
+
+.tsd-search-input {
+    width: 100%;
+    padding: 8px 12px 8px 34px;
+    border: 1px solid var(--tesdiq-border);
+    border-radius: 8px;
+    font-size: 13px;
+    background: var(--tesdiq-card);
+    color: var(--tesdiq-text);
+    outline: none;
+    transition: border-color .15s;
+}
+
+.tsd-search-input:focus {
+    border-color: var(--tesdiq-blue);
+}
+
+.tsd-search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--tesdiq-muted);
+}
+
+/* ── Request Cards ──────────────────────────── */
+.tsd-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tsd-card {
+    background: var(--tesdiq-card);
+    border: 1px solid var(--tesdiq-border);
+    border-radius: var(--tesdiq-radius);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--tesdiq-shadow);
+    transition: box-shadow .15s, transform .15s, border-color .15s;
+    animation: fadeSlideIn .2s ease;
+}
+
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.tsd-card:hover {
+    box-shadow: var(--tesdiq-shadow-hover);
+    border-color: #d0d5e0;
+    transform: translateY(-1px);
+}
+
+/* Date block */
+.tsd-card-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 54px;
+    border-radius: 9px;
+    background: var(--tesdiq-bg);
+    flex-shrink: 0;
+}
+
+.tsd-date-day {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--tesdiq-text);
+    line-height: 1;
+}
+
+.tsd-date-mon {
+    font-size: 10px;
+    color: var(--tesdiq-muted);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+/* Info section */
+.tsd-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.tsd-card-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--tesdiq-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tsd-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+
+.tsd-card-dept {
+    font-size: 11.5px;
+    color: var(--tesdiq-muted);
+}
+
+.tsd-card-type {
+    font-size: 11px;
+    background: var(--tesdiq-bg);
+    color: var(--tesdiq-text);
+    border-radius: 5px;
+    padding: 2px 8px;
+    font-weight: 500;
+}
+
+.tsd-card-dates {
+    font-size: 11.5px;
+    color: var(--tesdiq-muted);
+    margin-top: 3px;
+}
+
+/* Actions section */
+.tsd-card-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+/* ── Status Badges ──────────────────────────── */
+.tsd-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .2px;
+}
+
+.tsd-badge--wait   { background: rgba(232,184,75,.12);  color: #a07620; }
+.tsd-badge--rehber { background: rgba(45,108,223,.1);   color: var(--tesdiq-blue); }
+.tsd-badge--hr     { background: rgba(124,58,237,.1);   color: var(--tesdiq-purple); }
+.tsd-badge--done   { background: rgba(30,155,107,.1);   color: var(--tesdiq-green); }
+.tsd-badge--reject { background: rgba(192,57,43,.1);    color: var(--tesdiq-red); }
+
+/* ── Action Buttons ─────────────────────────── */
+.tsd-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: background .15s, transform .1s;
+    white-space: nowrap;
+}
+
+.tsd-btn:hover {
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+.tsd-btn--ghost {
+    background: var(--tesdiq-bg);
+    color: var(--tesdiq-text);
+    border: 1px solid var(--tesdiq-border);
+}
+
+.tsd-btn--ghost:hover {
+    background: #edf0f7;
+    color: var(--tesdiq-text);
+}
+
+.tsd-btn--approve {
+    background: var(--tesdiq-green);
+    color: #fff;
+}
+
+.tsd-btn--approve:hover {
+    background: #178a5d;
+    color: #fff;
+}
+
+.tsd-btn--reject {
+    background: var(--tesdiq-red);
+    color: #fff;
+}
+
+.tsd-btn--reject:hover {
+    background: #a93226;
+    color: #fff;
+}
+
+.tsd-btn--outline-approve {
+    background: transparent;
+    color: var(--tesdiq-green);
+    border: 1.5px solid var(--tesdiq-green);
+}
+
+.tsd-btn--outline-approve:hover {
+    background: rgba(30,155,107,.08);
+    color: var(--tesdiq-green);
+}
+
+.tsd-btn--outline-reject {
+    background: transparent;
+    color: var(--tesdiq-red);
+    border: 1.5px solid var(--tesdiq-red);
+}
+
+.tsd-btn--outline-reject:hover {
+    background: rgba(192,57,43,.08);
+    color: var(--tesdiq-red);
+}
+
+/* ── Empty State ────────────────────────────── */
+.tsd-empty {
+    text-align: center;
+    padding: 48px 24px;
+    background: var(--tesdiq-card);
+    border: 1px dashed var(--tesdiq-border);
+    border-radius: var(--tesdiq-radius);
+}
+
+.tsd-empty-icon {
+    margin: 0 auto 14px;
+    width: 52px;
+    height: 52px;
+    background: var(--tesdiq-bg);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tsd-empty-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--tesdiq-text);
+    margin-bottom: 6px;
+}
+
+.tsd-empty-sub {
+    font-size: 13px;
+    color: var(--tesdiq-muted);
+}
+
+/* ── Detail Page ────────────────────────────── */
+.tsd-detal-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 768px) {
+    .tsd-detal-grid { grid-template-columns: 1fr; }
+}
+
+.tsd-info-card {
+    background: var(--tesdiq-card);
+    border: 1px solid var(--tesdiq-border);
+    border-radius: var(--tesdiq-radius);
+    padding: 20px 24px;
+    box-shadow: var(--tesdiq-shadow);
+    margin-bottom: 16px;
+}
+
+.tsd-info-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--tesdiq-muted);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--tesdiq-border);
+}
+
+.tsd-info-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid #f2f4f8;
+}
+
+.tsd-info-row:last-child {
+    border-bottom: none;
+}
+
+.tsd-info-lbl {
+    font-size: 12px;
+    color: var(--tesdiq-muted);
+    min-width: 140px;
+    flex-shrink: 0;
+}
+
+.tsd-info-val {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--tesdiq-text);
+}
+
+/* ── Workflow Tracker ───────────────────────── */
+.tsd-workflow {
+    background: var(--tesdiq-card);
+    border: 1px solid var(--tesdiq-border);
+    border-radius: var(--tesdiq-radius);
+    padding: 20px 24px;
+    box-shadow: var(--tesdiq-shadow);
+    margin-bottom: 16px;
+}
+
+.tsd-workflow-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--tesdiq-muted);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin-bottom: 18px;
+}
+
+.tsd-wf-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.tsd-wf-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    position: relative;
+}
+
+.tsd-wf-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 14px;
+    top: 30px;
+    bottom: -4px;
+    width: 2px;
+    background: var(--tesdiq-border);
+}
+
+.tsd-wf-step.done::after,
+.tsd-wf-step.done + .tsd-wf-step::before {
+    background: var(--tesdiq-green);
+}
+
+.tsd-wf-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 2px solid var(--tesdiq-border);
+    background: var(--tesdiq-card);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--tesdiq-muted);
+    position: relative;
+    z-index: 1;
+    margin-top: 2px;
+}
+
+.tsd-wf-step.done .tsd-wf-dot {
+    background: var(--tesdiq-green);
+    border-color: var(--tesdiq-green);
+    color: #fff;
+}
+
+.tsd-wf-step.active .tsd-wf-dot {
+    background: var(--tesdiq-blue);
+    border-color: var(--tesdiq-blue);
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(45,108,223,.15);
+}
+
+.tsd-wf-step.rejected .tsd-wf-dot {
+    background: var(--tesdiq-red);
+    border-color: var(--tesdiq-red);
+    color: #fff;
+}
+
+.tsd-wf-info {
+    padding: 4px 0 16px;
+}
+
+.tsd-wf-role {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--tesdiq-text);
+}
+
+.tsd-wf-date {
+    font-size: 11px;
+    color: var(--tesdiq-muted);
+    margin-top: 2px;
+}
+
+.tsd-wf-result {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 3px;
+    padding: 2px 8px;
+    border-radius: 5px;
+}
+
+.tsd-wf-result--ok     { background: rgba(30,155,107,.1); color: var(--tesdiq-green); }
+.tsd-wf-result--wait   { background: rgba(232,184,75,.1); color: #a07620; }
+.tsd-wf-result--reject { background: rgba(192,57,43,.1);  color: var(--tesdiq-red); }
+
+/* ── Approval Form ──────────────────────────── */
+.tsd-approve-panel {
+    background: var(--tesdiq-card);
+    border: 1px solid var(--tesdiq-border);
+    border-radius: var(--tesdiq-radius);
+    padding: 20px 24px;
+    box-shadow: var(--tesdiq-shadow);
+}
+
+.tsd-approve-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--tesdiq-muted);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--tesdiq-border);
+}
+
+.tsd-approve-reason {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--tesdiq-border);
+    border-radius: 7px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+    color: var(--tesdiq-text);
+    outline: none;
+    transition: border-color .15s;
+    margin-bottom: 12px;
+}
+
+.tsd-approve-reason:focus {
+    border-color: var(--tesdiq-blue);
+}
+
+.tsd-approve-btns {
+    display: flex;
+    gap: 10px;
+}
+
+.tsd-approve-btns .tsd-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 16px;
+    font-size: 13px;
+}
+
+/* ── Confirm Modal ──────────────────────────── */
+.tsd-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(26,35,50,.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+}
+
+.tsd-modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.tsd-modal {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px 28px 22px;
+    width: 100%;
+    max-width: 400px;
+    transform: translateY(12px);
+    transition: transform .2s;
+    box-shadow: 0 20px 60px rgba(26,35,50,.18);
+}
+
+.tsd-modal-overlay.open .tsd-modal {
+    transform: translateY(0);
+}
+
+.tsd-modal-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.tsd-modal-icon--approve { background: rgba(30,155,107,.1); color: var(--tesdiq-green); }
+.tsd-modal-icon--reject  { background: rgba(192,57,43,.1);  color: var(--tesdiq-red); }
+
+.tsd-modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--tesdiq-text);
+    margin-bottom: 6px;
+}
+
+.tsd-modal-sub {
+    font-size: 13px;
+    color: var(--tesdiq-muted);
+    margin-bottom: 18px;
+    line-height: 1.5;
+}
+
+.tsd-modal-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+/* ── Toast ──────────────────────────────────── */
+.tsd-toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 99999;
+}
+
+.tsd-toast {
+    background: #fff;
+    border-radius: 9px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 260px;
+    max-width: 360px;
+    box-shadow: 0 8px 30px rgba(26,35,50,.15);
+    border-left: 4px solid var(--tesdiq-green);
+    animation: toastIn .25s ease;
+    font-size: 13px;
+    color: var(--tesdiq-text);
+}
+
+.tsd-toast--error  { border-left-color: var(--tesdiq-red); }
+.tsd-toast--warn   { border-left-color: var(--tesdiq-amber); }
+
+@keyframes toastIn {
+    from { opacity: 0; transform: translateX(24px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Responsive ─────────────────────────────── */
+@media (max-width: 600px) {
+    .tsd-card { flex-wrap: wrap; }
+    .tsd-card-actions { flex-direction: row; width: 100%; justify-content: flex-end; }
+    .tsd-stats { flex-direction: column; }
+}

@@ -83,6 +83,24 @@ namespace FinNex.UI.Areas.HR.Controllers
 
 
 
+        // 2. Mərhələ: Rəhbərin təsdiqi
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RehberTesdiq(int id, bool status, string? qeyd)
+        {
+            var result = await _mezuniyyetService.RehberTesdiqAsync(id, status, qeyd);
+            return Json(result);
+        }
+
+        // 3. Mərhələ: HR-ın təsdiqi
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> HrTesdiq(int id, bool status, string? qeyd)
+        {
+            var result = await _mezuniyyetService.HrTesdiqAsync(id, status, qeyd);
+            return Json(result);
+        }
+
         // Müraciəti ləğv etmək (İşçi hələ təsdiq olunmamış fikrini dəyişərsə)
         [HttpPost]
         public async Task<IActionResult> Sil(int id)

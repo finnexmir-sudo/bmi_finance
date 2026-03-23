@@ -90,6 +90,31 @@
                     </svg>
                     Hesabatlar
                 </a>
+
+                <div class="fn-nav-label">Təsdiq Paneli</div>
+                <a asp-area="User" asp-controller="Tesdiq" asp-action="SobeReisi"
+                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tesdiq" && ViewContext.RouteData.Values["action"]?.ToString() == "SobeReisi" ? "active" : "")">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <circle cx="7" cy="4.5" r="2.5" stroke="currentColor" stroke-width="1.2" />
+                        <path d="M1.5 12c0-3 2.5-4.5 5.5-4.5S12 9 12 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                    </svg>
+                    Şöbə Rəhbəri
+                </a>
+                <a asp-area="User" asp-controller="Tesdiq" asp-action="Rehber"
+                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tesdiq" && ViewContext.RouteData.Values["action"]?.ToString() == "Rehber" ? "active" : "")">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M7 1l1.8 3.7 4.2.6-3 2.9.7 4.2L7 10.3l-3.7 2.1.7-4.2-3-2.9 4.2-.6L7 1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" />
+                    </svg>
+                    Rəhbər
+                </a>
+                <a asp-area="User" asp-controller="Tesdiq" asp-action="Hr"
+                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tesdiq" && ViewContext.RouteData.Values["action"]?.ToString() == "Hr" ? "active" : "")">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <rect x="1.5" y="1.5" width="11" height="11" rx="2.5" stroke="currentColor" stroke-width="1.2" />
+                        <path d="M5 7h4M7 5v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                    </svg>
+                    HR
+                </a>
             </nav>
 
             <div class="fn-sidebar-footer">

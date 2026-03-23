@@ -174,6 +174,135 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         }
     }
 
+    public async Task<Result<IList<MezuniyyetListDto>>> GetGozlemededeAsync()
+    {
+        try
+        {
+            var entities = await _unitOfWork.Repository<Mezuniyyet>()
+                .HamisiniGetirAsync(
+                    predicate: x => x.Status == MezuniyyetStatus.Gozlemede,
+                    include: q => q
+                        .Include(m => m.Isci)
+                            .ThenInclude(i => i.IsciTeyinatlari)
+                        .Include(m => m.EvezEdenIsci),
+                    izlemeden: true);
+
+            var dtos = entities
+                .OrderByDescending(x => x.BaslamaTarixi)
+                .Select(m => new MezuniyyetListDto
+                {
+                    Id = m.Id,
+                    IsciAdSoyad = m.Isci.TamAd,
+                    SobeAdi = m.Isci.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => t.Departament.Ad)
+                        .FirstOrDefault() ?? "-",
+                    VezifeAdi = m.Isci.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => t.Vezife.Ad)
+                        .FirstOrDefault() ?? "-",
+                    EvezEdenIsciAdSoyad = m.EvezEdenIsci?.TamAd,
+                    Nov = m.Nov,
+                    Status = m.Status,
+                    BaslamaTarixi = m.BaslamaTarixi,
+                    BitmeTarixi = m.BitmeTarixi,
+                    IsGunlerininSayi = m.IsGunlerininSayi,
+                }).ToList();
+
+            return Result<IList<MezuniyyetListDto>>.Ok(dtos);
+        }
+        catch (Exception ex)
+        {
+            return Result<IList<MezuniyyetListDto>>.Fail($"Gözləmədə məzuniyyətlər gətirilmədi: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<IList<MezuniyyetListDto>>> GetRehberTesdiqindeAsync()
+    {
+        try
+        {
+            var entities = await _unitOfWork.Repository<Mezuniyyet>()
+                .HamisiniGetirAsync(
+                    predicate: x => x.Status == MezuniyyetStatus.RehberTesdiqinde,
+                    include: q => q
+                        .Include(m => m.Isci)
+                            .ThenInclude(i => i.IsciTeyinatlari)
+                        .Include(m => m.EvezEdenIsci),
+                    izlemeden: true);
+
+            var dtos = entities
+                .OrderByDescending(x => x.BaslamaTarixi)
+                .Select(m => new MezuniyyetListDto
+                {
+                    Id = m.Id,
+                    IsciAdSoyad = m.Isci.TamAd,
+                    SobeAdi = m.Isci.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => t.Departament.Ad)
+                        .FirstOrDefault() ?? "-",
+                    VezifeAdi = m.Isci.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => t.Vezife.Ad)
+                        .FirstOrDefault() ?? "-",
+                    EvezEdenIsciAdSoyad = m.EvezEdenIsci?.TamAd,
+                    Nov = m.Nov,
+                    Status = m.Status,
+                    BaslamaTarixi = m.BaslamaTarixi,
+                    BitmeTarixi = m.BitmeTarixi,
+                    IsGunlerininSayi = m.IsGunlerininSayi,
+                }).ToList();
+
+            return Result<IList<MezuniyyetListDto>>.Ok(dtos);
+        }
+        catch (Exception ex)
+        {
+            return Result<IList<MezuniyyetListDto>>.Fail($"Rəhbər təsdiqindəki məzuniyyətlər gətirilmədi: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<IList<MezuniyyetListDto>>> GetHrTesdiqindeAsync()
+    {
+        try
+        {
+            var entities = await _unitOfWork.Repository<Mezuniyyet>()
+                .HamisiniGetirAsync(
+                    predicate: x => x.Status == MezuniyyetStatus.HrTesdiqinde,
+                    include: q => q
+                        .Include(m => m.Isci)
+                            .ThenInclude(i => i.IsciTeyinatlari)
+                        .Include(m => m.EvezEdenIsci),
+                    izlemeden: true);
+
+            var dtos = entities
+                .OrderByDescending(x => x.BaslamaTarixi)
+                .Select(m => new MezuniyyetListDto
+                {
+                    Id = m.Id,
+                    IsciAdSoyad = m.Isci.TamAd,
+                    SobeAdi = m.Isci.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => t.Departament.Ad)
+                        .FirstOrDefault() ?? "-",
+                    VezifeAdi = m.Isci.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => t.Vezife.Ad)
+                        .FirstOrDefault() ?? "-",
+                    EvezEdenIsciAdSoyad = m.EvezEdenIsci?.TamAd,
+                    Nov = m.Nov,
+                    Status = m.Status,
+                    BaslamaTarixi = m.BaslamaTarixi,
+                    BitmeTarixi = m.BitmeTarixi,
+                    IsGunlerininSayi = m.IsGunlerininSayi,
+                }).ToList();
+
+            return Result<IList<MezuniyyetListDto>>.Ok(dtos);
+        }
+        catch (Exception ex)
+        {
+            return Result<IList<MezuniyyetListDto>>.Fail($"HR təsdiqindəki məzuniyyətlər gətirilmədi: {ex.Message}");
+        }
+    }
+
     public async Task<Result> LegvEtAsync(int id, int isciId)
     {
         var m = await _unitOfWork.Repository<Mezuniyyet>().IdIleGetirAsync(id);
