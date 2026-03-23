@@ -1,0 +1,294 @@
+@model FinNex.Application.DTOs.HR.Icaze.IcazeDetailDto
+@using FinNex.Application.DTOs.HR.Icaze
+@{
+    ViewData["Title"] = "İcazə Detayı";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["UserRole"] = User.IsInRole("Operator") ? "Operator" : "";
+
+    // Workflow addım nömrəsinə çevir (string, entity enum yox)
+    int Step = Model.WorkflowMerhele switch
+    {
+        "Gözləmədə"               => 0,
+        "Şöbə rəisi təsdiqində"   => 1,
+        "Rəhbər təsdiqində"       => 2,
+        "HR təsdiqində"           => 3,
+        "Təsdiqlənib"             => 4,
+        "İmtina edildi"           => -1,
+        _                         => 0
+    };
+
+    string BadgeClass = Model.WorkflowMerhele switch
+    {
+        "Təsdiqlənib"   => "fn-badge--done",
+        "İmtina edildi" => "fn-badge--rejected",
+        "Gözləmədə"     => "fn-badge--wait",
+        _               => "fn-badge--review"
+    };
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">İcazə detayı</div>
+            <div class="fn-page-sub">
+                @Model.IcazeTarixi.ToString("dd MMMM yyyy") ·
+                @Model.BaslamaSaati.ToString(@"hh\:mm") – @Model.BitisSaati.ToString(@"hh\:mm")
+            </div>
+        </div>
+        <a asp-area="User" asp-controller="Icaze" asp-action="Index"
+           class="fn-btn fn-btn--outline">← Geri</a>
+    </div>
+
+    <div class="fn-detail-layout">
+
+        @* ── Sol: workflow ── *@
+        <div>
+            @* Status kartı *@
+            <div class="fn-card fn-detail-status-card">
+                <div class="fn-dsc-left">
+                    <div class="fn-dsc-nov">Saatlıq icazə</div>
+                    <div class="fn-dsc-dates">
+                        @Model.IcazeTarixi.ToString("dd MMMM yyyy") ·
+                        @Model.BaslamaSaati.ToString(@"hh\:mm") – @Model.BitisSaati.ToString(@"hh\:mm")
+                    </div>
+                    <div class="fn-dsc-days">@Model.IcazeSaati.ToString("F1") saat</div>
+                </div>
+                <div class="fn-dsc-right">
+                    <span class="fn-badge fn-badge--lg @BadgeClass">@Model.WorkflowMerhele</span>
+                </div>
+            </div>
+
+            @* Workflow xətti *@
+            @if (Step != -1)
+            {
+                <div class="fn-card fn-workflow-card">
+                    <div class="fn-card-title" style="margin-bottom:16px">Müraciət gedişatı</div>
+                    <div class="fn-workflow-track">
+
+                        <div class="fn-wt-step @(Step >= 0 ? "fn-wt-step--done" : "")
+                                               @(Step == 0 ? "fn-wt-step--active" : "")">
+                            <div class="fn-wt-circle">
+                                @if (Step >= 1) { <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg> }
+                                else { <span>1</span> }
+                            </div>
+                            <div class="fn-wt-info">
+                                <div class="fn-wt-label">Müraciət göndərildi</div>
+                                <div class="fn-wt-sub">Sistem tərəfindən qeydə alındı</div>
+                            </div>
+                        </div>
+
+                        <div class="fn-wt-connector @(Step >= 1 ? "fn-wt-connector--done" : "")"></div>
+
+                        <div class="fn-wt-step @(Step >= 2 ? "fn-wt-step--done" : "")
+                                               @(Step == 1 ? "fn-wt-step--active" : "")">
+                            <div class="fn-wt-circle">
+                                @if (Step >= 2) { <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg> }
+                                else { <span>2</span> }
+                            </div>
+                            <div class="fn-wt-info">
+                                <div class="fn-wt-label">Şöbə rəisi</div>
+                                <div class="fn-wt-sub">
+                                    @if (Model.SobeReisiTesdiq == true)
+                                    { <span style="color:#1e9b6b">Təsdiqləndi · @Model.SobeReisiTesdiqTarixi?.ToString("dd.MM.yyyy")</span> }
+                                    else if (Model.SobeReisiTesdiq == false)
+                                    { <span style="color:#c0392b">İmtina edildi</span> }
+                                    else if (Step == 1)
+                                    { <span style="color:#c9900a">Gözlənilir...</span> }
+                                    else { <span>Gözlənilir</span> }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="fn-wt-connector @(Step >= 2 ? "fn-wt-connector--done" : "")"></div>
+
+                        <div class="fn-wt-step @(Step >= 3 ? "fn-wt-step--done" : "")
+                                               @(Step == 2 ? "fn-wt-step--active" : "")">
+                            <div class="fn-wt-circle">
+                                @if (Step >= 3) { <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg> }
+                                else { <span>3</span> }
+                            </div>
+                            <div class="fn-wt-info">
+                                <div class="fn-wt-label">Rəhbər</div>
+                                <div class="fn-wt-sub">
+                                    @if (Model.RehberTesdiq == true)
+                                    { <span style="color:#1e9b6b">Təsdiqləndi · @Model.RehberTesdiqTarixi?.ToString("dd.MM.yyyy")</span> }
+                                    else if (Model.RehberTesdiq == false)
+                                    { <span style="color:#c0392b">İmtina edildi</span> }
+                                    else if (Step == 2)
+                                    { <span style="color:#c9900a">Gözlənilir...</span> }
+                                    else { <span>Gözlənilir</span> }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="fn-wt-connector @(Step >= 3 ? "fn-wt-connector--done" : "")"></div>
+
+                        <div class="fn-wt-step @(Step >= 4 ? "fn-wt-step--done" : "")
+                                               @(Step == 3 ? "fn-wt-step--active" : "")">
+                            <div class="fn-wt-circle">
+                                @if (Step >= 4) { <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg> }
+                                else { <span>4</span> }
+                            </div>
+                            <div class="fn-wt-info">
+                                <div class="fn-wt-label">HR</div>
+                                <div class="fn-wt-sub">
+                                    @if (Model.HrTesdiq == true)
+                                    { <span style="color:#1e9b6b">Təsdiqləndi · @Model.HrTesdiqTarixi?.ToString("dd.MM.yyyy")</span> }
+                                    else if (Model.HrTesdiq == false)
+                                    { <span style="color:#c0392b">İmtina edildi</span> }
+                                    else if (Step == 3)
+                                    { <span style="color:#c9900a">Gözlənilir...</span> }
+                                    else { <span>Gözlənilir</span> }
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="fn-card fn-rejected-card">
+                    <div class="fn-rc-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="9" stroke="#c0392b" stroke-width="1.5" />
+                            <path d="M8 8l8 8M16 8l-8 8" stroke="#c0392b" stroke-width="1.5" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <div class="fn-rc-body">
+                        <div class="fn-rc-title">İcazə imtina edildi</div>
+                        @if (!string.IsNullOrEmpty(Model.ImtinaSebebi))
+                        {
+                            <div class="fn-rc-reason">Səbəb: @Model.ImtinaSebebi</div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* ── Sağ: məlumatlar ── *@
+        <div>
+            <div class="fn-card fn-info-list-card">
+                <div class="fn-card-title" style="margin-bottom:14px">İcazə məlumatları</div>
+
+                <div class="fn-info-row">
+                    <span class="fn-ir-lbl">İşçi</span>
+                    <span class="fn-ir-val">@Model.IsciAdSoyad</span>
+                </div>
+                <div class="fn-info-row">
+                    <span class="fn-ir-lbl">Şöbə</span>
+                    <span class="fn-ir-val">@Model.SobeAdi</span>
+                </div>
+                <div class="fn-info-row">
+                    <span class="fn-ir-lbl">Tarix</span>
+                    <span class="fn-ir-val">@Model.IcazeTarixi.ToString("dd MMMM yyyy")</span>
+                </div>
+                <div class="fn-info-row">
+                    <span class="fn-ir-lbl">Saat aralığı</span>
+                    <span class="fn-ir-val">
+                        @Model.BaslamaSaati.ToString(@"hh\:mm") – @Model.BitisSaati.ToString(@"hh\:mm")
+                    </span>
+                </div>
+                <div class="fn-info-row">
+                    <span class="fn-ir-lbl">Müddət</span>
+                    <span class="fn-ir-val">@Model.IcazeSaati.ToString("F1") saat</span>
+                </div>
+                <div class="fn-info-row">
+                    <span class="fn-ir-lbl">Əvəzedici</span>
+                    <span class="fn-ir-val">@Model.EvezEdenAdSoyad</span>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Sebeb))
+                {
+                    <div class="fn-info-row fn-info-row--full">
+                        <span class="fn-ir-lbl">Səbəb</span>
+                        <span class="fn-ir-val">@Model.Sebeb</span>
+                    </div>
+                }
+            </div>
+
+            @if (Model.WorkflowMerhele == "Gözləmədə")
+            {
+                <div class="fn-card" style="margin-top:14px">
+                    <div class="fn-card-title" style="margin-bottom:10px">Əməliyyatlar</div>
+                    <form asp-area="User" asp-controller="Icaze" asp-action="Legv"
+                          method="post"
+                          onsubmit="return confirm('Bu icazəni ləğv etmək istəyirsiniz?')">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <button type="submit" class="fn-btn fn-btn--danger" style="width:100%">
+                            İcazəni ləğv et
+                        </button>
+                    </form>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .fn-detail-layout {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .fn-detail-status-card {
+            display: flex; justify-content: space-between;
+            align-items: center; padding: 20px;
+            margin-bottom: 0; gap: 16px;
+        }
+
+        .fn-dsc-left { flex: 1; }
+        .fn-dsc-nov { font-size: 16px; font-weight: 600; color: #1e2535; margin-bottom: 4px; }
+        .fn-dsc-dates { font-size: 13px; color: #5a647a; margin-bottom: 2px; }
+        .fn-dsc-days { font-size: 12px; color: #8a93a8; }
+        .fn-badge--lg { font-size: 12px; padding: 5px 12px; }
+        .fn-workflow-card { padding: 20px; }
+        .fn-workflow-track { display: flex; flex-direction: column; gap: 0; }
+
+        .fn-wt-step { display: flex; align-items: flex-start; gap: 12px; }
+        .fn-wt-circle {
+            width: 28px; height: 28px; border-radius: 50%;
+            border: 2px solid #e0e3ea; background: #f7f8fb;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; font-size: 11px; font-weight: 600; color: #8a93a8;
+        }
+        .fn-wt-step--done .fn-wt-circle { border-color: #1e9b6b; background: #1e9b6b; color: #fff; }
+        .fn-wt-step--active .fn-wt-circle { border-color: #2d6cdf; background: #f0f5ff; color: #2d6cdf; }
+        .fn-wt-info { padding: 4px 0 16px; }
+        .fn-wt-label { font-size: 13px; font-weight: 500; color: #3d4557; }
+        .fn-wt-sub { font-size: 11px; color: #8a93a8; margin-top: 2px; }
+        .fn-wt-connector { width: 2px; height: 20px; background: #e0e3ea; margin-left: 13px; flex-shrink: 0; }
+        .fn-wt-connector--done { background: #1e9b6b; }
+
+        .fn-rejected-card {
+            display: flex; align-items: flex-start; gap: 14px;
+            padding: 18px; background: #fdf4f3; border-color: #f5c6c2;
+        }
+        .fn-rc-title { font-size: 14px; font-weight: 600; color: #c0392b; }
+        .fn-rc-reason { font-size: 12px; color: #5a647a; margin-top: 4px; }
+
+        .fn-info-list-card { padding: 20px; }
+        .fn-info-row {
+            display: flex; justify-content: space-between;
+            align-items: flex-start; padding: 8px 0;
+            border-bottom: 1px solid #f2f4f7; gap: 10px;
+        }
+        .fn-info-row:last-child { border-bottom: none; }
+        .fn-info-row--full { flex-direction: column; gap: 4px; }
+        .fn-ir-lbl { font-size: 11px; color: #8a93a8; white-space: nowrap; min-width: 80px; }
+        .fn-ir-val { font-size: 12px; color: #3d4557; font-weight: 500; text-align: right; }
+        .fn-info-row--full .fn-ir-val { text-align: left; }
+
+        .fn-btn--danger {
+            background: #c0392b; color: #fff; border: none;
+            padding: 9px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;
+        }
+        .fn-btn--danger:hover { background: #a93226; }
+
+        @@media (max-width: 900px) { .fn-detail-layout { grid-template-columns: 1fr; } }
+    </style>
+}

@@ -1,0 +1,407 @@
+@model FinNex.UI.Areas.User.ViewModels.Mezuniyyet.MezuniyyetCreateVM
+@{
+    ViewData["Title"] = "Yeni Məzuniyyət Müraciəti";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["UserRole"] = User.IsInRole("Operator") ? "Operator" : "";
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Yeni məzuniyyət müraciəti</div>
+            <div class="fn-page-sub">Məzuniyyət üçün müraciət göndərin</div>
+        </div>
+        <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Index"
+           class="fn-btn fn-btn--outline">← Geri</a>
+    </div>
+
+    <div class="fn-create-layout">
+
+        @* ── Forma ── *@
+        <div class="fn-form-wrap fn-form-wrap--wide">
+            <form asp-area="User" asp-controller="Mezuniyyet" asp-action="Create"
+                  method="post" id="mezForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="IsciId" />
+
+                <div class="fn-card fn-card--form">
+
+                    @* ── Məzuniyyət növü ── *@
+                    <div class="fn-form-group">
+                        <label class="fn-label">
+                            Məzuniyyət növü <span class="fn-required">*</span>
+                        </label>
+                        <div class="fn-nov-grid" id="novGrid">
+                            @foreach (var item in Model.NovList)
+                            {
+                                <label class="fn-nov-card @(Model.Nov.ToString() == item.Value ? "fn-nov-card--active" : "")"
+                                       id="novCard_@item.Value">
+                                    <input type="radio" asp-for="Nov" value="@item.Value"
+                                           class="fn-nov-radio"
+                                           @(Model.Nov.ToString() == item.Value ? "checked" : "") />
+                                    @if (item.Value == "0")
+                                    {
+                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                            <rect x="2" y="3" width="16" height="15" rx="2.5" stroke="#2d6cdf" stroke-width="1.4" />
+                                            <path d="M2 7.5h16M7 3v3.5M13 3v3.5" stroke="#2d6cdf" stroke-width="1.3" stroke-linecap="round" />
+                                        </svg>
+                                        <span>@item.Text</span>
+                                        <small>Qalıq: @Model.IllikQaligGun gün</small>
+                                    }
+                                    else if (item.Value == "1")
+                                    {
+                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                            <circle cx="10" cy="10" r="7" stroke="#d85a30" stroke-width="1.4" />
+                                            <path d="M10 6.5v5M10 13.5v.5" stroke="#d85a30" stroke-width="1.4" stroke-linecap="round" />
+                                        </svg>
+                                        <span>@item.Text</span>
+                                        <small>Qalıq: @Model.XestelikQaligGun gün</small>
+                                    }
+                                    else
+                                    {
+                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                            <path d="M3 3h12l2 2v12H3V3z" stroke="#1e9b6b" stroke-width="1.4" />
+                                            <path d="M6 9h8M6 12h5" stroke="#1e9b6b" stroke-width="1.3" stroke-linecap="round" />
+                                        </svg>
+                                        <span>@item.Text</span>
+                                        <small>Qalıq: @Model.EzamiyyetQaligGun gün</small>
+                                    }
+                                </label>
+                            }
+                        </div>
+                        <span asp-validation-for="Nov" class="fn-val-msg"></span>
+                    </div>
+
+                    @* ── Tarixlər ── *@
+                    <div class="fn-form-row">
+                        <div class="fn-form-group">
+                            <label asp-for="BaslamaTarixi" class="fn-label">
+                                Başlama tarixi <span class="fn-required">*</span>
+                            </label>
+                            <input asp-for="BaslamaTarixi" type="date"
+                                   min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                   class="fn-input" id="baslamaTarixi" />
+                            <span asp-validation-for="BaslamaTarixi" class="fn-val-msg"></span>
+                        </div>
+                        <div class="fn-form-group">
+                            <label asp-for="BitmeTarixi" class="fn-label">
+                                Bitmə tarixi <span class="fn-required">*</span>
+                            </label>
+                            <input asp-for="BitmeTarixi" type="date"
+                                   min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                   class="fn-input" id="bitmeTarixi" />
+                            <span asp-validation-for="BitmeTarixi" class="fn-val-msg"></span>
+                        </div>
+                    </div>
+
+                    @* ── Müddət göstəricisi ── *@
+                    <div class="fn-duration-box" id="durationBox" style="display:none">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <rect x="1" y="1.5" width="12" height="11" rx="2" stroke="#1e9b6b" stroke-width="1.2" />
+                            <path d="M1 5h12" stroke="#1e9b6b" stroke-width="1.2" />
+                        </svg>
+                        Seçilmiş müddət: <strong id="durationText"></strong>
+                    </div>
+
+                    @* ── Əvəzedici işçi ── *@
+                    <div class="fn-form-group">
+                        <label asp-for="EvezEdenIsciId" class="fn-label">
+                            Əvəzedici işçi
+                            <span class="fn-label-hint">(isteğe bağlı)</span>
+                        </label>
+                        <select asp-for="EvezEdenIsciId"
+                                asp-items="Model.EvezEdenList"
+                                class="fn-select">
+                            <option value="">— Seçin —</option>
+                        </select>
+                        <span asp-validation-for="EvezEdenIsciId" class="fn-val-msg"></span>
+                    </div>
+
+                    @* ── Qeyd ── *@
+                    <div class="fn-form-group">
+                        <label asp-for="Qeyd" class="fn-label">
+                            Qeyd
+                            <span class="fn-label-hint">(istəyə bağlı, maks. 500 simvol)</span>
+                        </label>
+                        <textarea asp-for="Qeyd" rows="3"
+                                  class="fn-textarea"
+                                  placeholder="Məzuniyyətin səbəbini qısaca yazın..."></textarea>
+                        <span asp-validation-for="Qeyd" class="fn-val-msg"></span>
+                    </div>
+
+                    @* ── Məlumat qutusu ── *@
+                    <div class="fn-info-box">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <circle cx="7" cy="7" r="5.5" stroke="#c9900a" stroke-width="1.2" />
+                            <path d="M7 4.5v3.5M7 9.5v.5" stroke="#c9900a" stroke-width="1.2" stroke-linecap="round" />
+                        </svg>
+                        Müraciətiniz <strong>3 mərhələdən</strong> keçəcək:
+                        <strong>Şöbə rəisi → Rəhbər → HR</strong>.
+                        Yalnız <strong>Gözləmədə</strong> və <strong>Şöbə rəisi</strong> mərhələsində ləğv edə bilərsiniz.
+                    </div>
+
+                    @* ── Düymələr ── *@
+                    <div class="fn-form-actions">
+                        <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Index"
+                           class="fn-btn fn-btn--outline">Ləğv et</a>
+                        <button type="submit" class="fn-btn fn-btn--primary">
+                            Müraciət göndər
+                        </button>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+
+        @* ── Sağ panel: qalıq info ── *@
+        <div class="fn-side-info">
+            <div class="fn-card">
+                <div class="fn-card-title" style="margin-bottom:12px">Qalıq balans</div>
+
+                <div class="fn-side-balance-item">
+                    <div class="fn-sbi-label">İllik məzuniyyət</div>
+                    <div class="fn-sbi-bar">
+                        <div class="fn-lb-track">
+                            <div class="fn-lb-fill" style="width:@(Model.IllikToplamGun > 0 ? (int)((double)Model.IllikQaligGun / Model.IllikToplamGun * 100) : 0)%;background:#1e9b6b"></div>
+                        </div>
+                        <span class="fn-sbi-val" style="color:#1e9b6b">@Model.IllikQaligGun / @Model.IllikToplamGun</span>
+                    </div>
+                </div>
+
+                <div class="fn-side-balance-item">
+                    <div class="fn-sbi-label">Xəstəlik məzuniyyəti</div>
+                    <div class="fn-sbi-bar">
+                        <div class="fn-lb-track">
+                            <div class="fn-lb-fill" style="width:@(Model.XestelikToplamGun > 0 ? (int)((double)Model.XestelikQaligGun / Model.XestelikToplamGun * 100) : 0)%;background:#2d6cdf"></div>
+                        </div>
+                        <span class="fn-sbi-val" style="color:#2d6cdf">@Model.XestelikQaligGun / @Model.XestelikToplamGun</span>
+                    </div>
+                </div>
+
+                <div class="fn-side-balance-item">
+                    <div class="fn-sbi-label">Ezamiyyət</div>
+                    <div class="fn-sbi-bar">
+                        <div class="fn-lb-track">
+                            <div class="fn-lb-fill" style="width:@(Model.EzamiyyetToplamGun > 0 ? (int)((double)Model.EzamiyyetQaligGun / Model.EzamiyyetToplamGun * 100) : 0)%;background:#e8b84b"></div>
+                        </div>
+                        <span class="fn-sbi-val" style="color:#e8b84b">@Model.EzamiyyetQaligGun / @Model.EzamiyyetToplamGun</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fn-card" style="margin-top:16px">
+                <div class="fn-card-title" style="margin-bottom:10px">Workflow mərhələləri</div>
+                <div class="fn-workflow-info">
+                    <div class="fn-wi-step">
+                        <div class="fn-wi-num">1</div>
+                        <div class="fn-wi-text">
+                            <strong>Şöbə rəisi</strong>
+                            <span>İlk təsdiq mərhələsi</span>
+                        </div>
+                    </div>
+                    <div class="fn-wi-step">
+                        <div class="fn-wi-num">2</div>
+                        <div class="fn-wi-text">
+                            <strong>Rəhbər</strong>
+                            <span>İkinci təsdiq mərhələsi</span>
+                        </div>
+                    </div>
+                    <div class="fn-wi-step">
+                        <div class="fn-wi-num">3</div>
+                        <div class="fn-wi-text">
+                            <strong>HR</strong>
+                            <span>Son təsdiq mərhələsi</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Nov seçimi
+        document.querySelectorAll('.fn-nov-radio').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                document.querySelectorAll('.fn-nov-card').forEach(c => c.classList.remove('fn-nov-card--active'));
+                this.closest('.fn-nov-card').classList.add('fn-nov-card--active');
+            });
+        });
+
+        // Müddət hesabla
+        function hesabla() {
+            var bas  = document.getElementById('baslamaTarixi').value;
+            var bitis = document.getElementById('bitmeTarixi').value;
+            var box  = document.getElementById('durationBox');
+            var txt  = document.getElementById('durationText');
+
+            if (!bas || !bitis) { box.style.display = 'none'; return; }
+
+            var d1 = new Date(bas);
+            var d2 = new Date(bitis);
+            var diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+
+            if (diff <= 0) { box.style.display = 'none'; return; }
+
+            txt.textContent = diff + ' təqvim günü (~' + Math.max(1, Math.round(diff * 5 / 7)) + ' iş günü)';
+            box.style.display = 'flex';
+        }
+
+        document.getElementById('baslamaTarixi').addEventListener('change', hesabla);
+        document.getElementById('bitmeTarixi').addEventListener('change', hesabla);
+        hesabla();
+    </script>
+}
+
+@section Styles {
+    <style>
+        .fn-create-layout {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .fn-nov-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .fn-nov-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 14px 10px;
+            border: 1.5px solid #e8eaef;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: border-color .15s, background .15s;
+            font-size: 13px;
+            color: #3d4557;
+        }
+
+        .fn-nov-card small {
+            font-size: 11px;
+            color: #8a93a8;
+        }
+
+        .fn-nov-card:hover {
+            border-color: #c0cadb;
+            background: #f7f8fb;
+        }
+
+        .fn-nov-card--active {
+            border-color: #2d6cdf !important;
+            background: #f0f5ff !important;
+        }
+
+        .fn-nov-radio { display: none; }
+
+        .fn-filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .fn-filter-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .fn-filter-lbl {
+            font-size: 12px;
+            color: #8a93a8;
+            white-space: nowrap;
+        }
+
+        .fn-select--sm { padding: 5px 10px; font-size: 12px; }
+        .fn-btn--sm { padding: 5px 12px; font-size: 12px; }
+        .fn-btn--ghost-sm {
+            font-size: 11px; padding: 4px 10px;
+            background: none; border: 1px solid #dde1ea;
+            border-radius: 5px; color: #5a647a; cursor: pointer;
+            display: inline-block; text-decoration: none;
+        }
+
+        .fn-btn--ghost-sm:hover { background: #f3f4f8; }
+
+        .fn-balance-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .fn-balance-card {
+            background: #fff;
+            border: 1px solid #e8eaef;
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .fn-bc-icon {
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            background: #f7f8fb;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .fn-bc-body { flex: 1; min-width: 0; }
+        .fn-bc-title { font-size: 11px; color: #8a93a8; margin-bottom: 4px; }
+        .fn-bc-nums { display: flex; align-items: baseline; gap: 4px; }
+        .fn-bc-big { font-size: 22px; font-weight: 700; line-height: 1; }
+        .fn-bc-slash { color: #c0c7d4; }
+        .fn-bc-total { font-size: 11px; color: #8a93a8; }
+
+        .fn-imtina-box {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 11px; color: #c0392b;
+            background: #fdf0ee; border-radius: 4px;
+            padding: 3px 8px; margin-top: 4px;
+        }
+
+        .fn-side-balance-item { margin-bottom: 14px; }
+        .fn-sbi-label { font-size: 11px; color: #8a93a8; margin-bottom: 5px; }
+        .fn-sbi-bar { display: flex; align-items: center; gap: 8px; }
+        .fn-sbi-bar .fn-lb-track { flex: 1; }
+        .fn-sbi-val { font-size: 11px; font-weight: 600; white-space: nowrap; }
+
+        .fn-workflow-info { display: flex; flex-direction: column; gap: 10px; }
+
+        .fn-wi-step {
+            display: flex; align-items: flex-start; gap: 10px;
+        }
+
+        .fn-wi-num {
+            width: 22px; height: 22px; border-radius: 50%;
+            background: #f0f5ff; color: #2d6cdf;
+            font-size: 11px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .fn-wi-text { display: flex; flex-direction: column; gap: 1px; }
+        .fn-wi-text strong { font-size: 12px; color: #3d4557; }
+        .fn-wi-text span { font-size: 11px; color: #8a93a8; }
+
+        @@media (max-width: 900px) {
+            .fn-create-layout { grid-template-columns: 1fr; }
+            .fn-nov-grid { grid-template-columns: repeat(3, 1fr); }
+            .fn-balance-row { grid-template-columns: 1fr; }
+        }
+    </style>
+}
