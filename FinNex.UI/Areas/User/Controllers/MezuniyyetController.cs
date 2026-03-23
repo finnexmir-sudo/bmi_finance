@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace FinNex.UI.Areas.User.Controllers
 {
     [Area("User")]
-    [Authorize(Roles = "Operator")]
+    [Authorize]
     public class MezuniyyetController : Controller
     {
         private readonly IMezuniyyetService _mezuniyyetService;

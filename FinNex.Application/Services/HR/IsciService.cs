@@ -18,8 +18,10 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             var entities = await _unitOfWork.Repository<Isci>()
                 .HamisiniGetirAsync(
                     izlemeden: true,
-                    include: x => x.Include(i => i.Departament)
-                                   .Include(i => i.Vezife)
+                    include: x => x.Include(x => x.IsciTeyinatlari)
+    .ThenInclude(t => t.Departament)
+.Include(x => x.IsciTeyinatlari)
+    .ThenInclude(t => t.Vezife)
                                    .Include(i => i.Maliye)
                 );
 
@@ -36,7 +38,10 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
     {
         var entity = await _unitOfWork.Repository<Isci>().GetirAsync(
             x => x.Id == id,
-            include: q => q.Include(x => x.Departament).Include(x => x.Vezife).Include(x => x.Maliye)
+            include: q => q.Include(x => x.IsciTeyinatlari)
+    .ThenInclude(t => t.Departament)
+.Include(x => x.IsciTeyinatlari)
+    .ThenInclude(t => t.Vezife).Include(x => x.Maliye)
         );
         return _mapper.Map<IsciDetailDto>(entity);
     }
@@ -44,8 +49,11 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
     public async Task<IList<IsciListDto>> GetIscilerBySobeIdAsync(int sobeId)
     {
         var entities = await _unitOfWork.Repository<Isci>().HamisiniGetirAsync(
-            x => x.DepartamentId == sobeId,
-            include: q => q.Include(x => x.Departament).Include(x => x.Vezife).Include(x => x.Maliye),
+            x => x.IsciTeyinatlari.Any(t => t.Aktivdir && t.DepartamentId == sobeId),
+            include: q => q.Include(x => x.IsciTeyinatlari)
+    .ThenInclude(t => t.Departament)
+.Include(x => x.IsciTeyinatlari)
+    .ThenInclude(t => t.Vezife).Include(x => x.Maliye),
             izlemeden: true
         );
         return _mapper.Map<IList<IsciListDto>>(entities);
@@ -58,7 +66,8 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
     {
         var entities = await _unitOfWork.Repository<Isci>().HamisiniGetirAsync(
             x => x.FIN.Contains(fin),
-            include: q => q.Include(x => x.Maliye).Include(x => x.Departament),
+            include: q => q.Include(x => x.Maliye).Include(x => x.IsciTeyinatlari)
+    .ThenInclude(t => t.Departament),
             izlemeden: true
         );
         return Result<List<IsciListDto>>.Ok(_mapper.Map<List<IsciListDto>>(entities));

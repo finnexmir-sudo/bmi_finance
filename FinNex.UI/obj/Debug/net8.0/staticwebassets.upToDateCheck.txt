@@ -4,6 +4,8 @@ wwwroot\css\PR_Odenis_Tapsirigi\payment-detail.css
 wwwroot\css\PR_Odenis_Tapsirigi\payment-hub.css
 wwwroot\css\PR_Odenis_Tapsirigi\payment-list.css
 wwwroot\css\PR_Odenis_Tapsirigi\payment-update.css
+wwwroot\css\User\createmezuniyyet.css
+wwwroot\css\User\dashboard.css
 wwwroot\css\User\user-area.css
 wwwroot\css\admin.css
 wwwroot\css\auth.css
@@ -31,6 +33,8 @@ wwwroot\js\PR_Odenis_Tapsirigi\payment-detail.js
 wwwroot\js\PR_Odenis_Tapsirigi\payment-word -Update.js
 wwwroot\js\PR_Odenis_Tapsirigi\payment-word.js
 wwwroot\js\User\user-area.js
+wwwroot\js\User\user_create_icaze.js
+wwwroot\js\User\user_create_mezuniyyet.js
 wwwroot\js\admin-sidebar.js
 wwwroot\js\change-password.js
 wwwroot\js\hr\davamiyyet-list.js

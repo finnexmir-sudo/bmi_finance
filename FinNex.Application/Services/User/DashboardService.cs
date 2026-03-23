@@ -33,10 +33,12 @@ namespace FinNex.Application.Services
                     .GetirAsync(
                         x => x.AppUserId == appUser.Id,
                         include: q => q
-                            .Include(i => i.Departament)
-                            .Include(i => i.Vezife)
-                            .Include(i => i.Maliye)
-                            .Include(i => i.mezuniyyetBalans),
+    .Include(i => i.IsciTeyinatlari.Where(t => t.Aktivdir))
+        .ThenInclude(t => t.Departament)
+    .Include(i => i.IsciTeyinatlari.Where(t => t.Aktivdir))
+        .ThenInclude(t => t.Vezife)
+    .Include(i => i.Maliye)
+    .Include(i => i.MezuniyyetBalans),
                         izlemeden: true);
 
                 if (isci == null)
@@ -46,9 +48,16 @@ namespace FinNex.Application.Services
                 {
                     IsciId = isci.Id,
                     TamAd = isci.TamAd,
-                    VezifeAdi = isci.Vezife?.Ad ?? "-",
-                    SobeAdi = isci.Departament?.Ad ?? "-",
-                    IsheBaslamaTarixi = isci.IsheBaslamaTarixi,
+                    VezifeAdi = isci.IsciTeyinatlari
+    .Where(t => t.Aktivdir)
+    .Select(t => t.Vezife.Ad)
+    .FirstOrDefault() ?? "-",
+
+                    SobeAdi = isci.IsciTeyinatlari
+    .Where(t => t.Aktivdir)
+    .Select(t => t.Departament.Ad)
+    .FirstOrDefault() ?? "-",
+                    IsheBaslamaTarixi = isci.IsheQebulTarixi,
                 };
 
                 // ── 2. Davamiyyət (cari ay) ──────────────────────────────
@@ -93,7 +102,7 @@ namespace FinNex.Application.Services
 
                 // ── 4. Məzuniyyət balansı ────────────────────────────────
                 // İllik — MezuniyyetBalans-dan
-                var balans = isci.mezuniyyetBalans;
+                var balans = isci.MezuniyyetBalans;
                 if (balans != null && balans.Il == buIl)
                 {
                     dto.IllikToplamGun = balans.ToplamGun;

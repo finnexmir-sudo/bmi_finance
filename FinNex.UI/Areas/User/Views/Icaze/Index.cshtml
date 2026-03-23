@@ -81,85 +81,89 @@
 
         @* ── Siyahı ── *@
         <div class="fn-card">
-            <div class="fn-icaze-list">
-                @foreach (var icaze in Model.Icazeler)
-                {
-                    @{ var step = WorkflowStep(icaze.WorkflowMerhele); }
-                    <div class="fn-icaze-item">
+    <div class="fn-icaze-list">
+        @foreach (var icaze in Model.Icazeler)
+        {
+            @* C# kodunu burada təyin edirik *@
+             
+                var step = WorkflowStep(icaze.WorkflowMerhele); 
+            
 
-                        @* Sol: tarix + saat bloku *@
-                        <div class="fn-icaze-date-block">
-                            <div class="fn-icaze-day">@icaze.IcazeTarixi.ToString("dd")</div>
-                            <div class="fn-icaze-month">@icaze.IcazeTarixi.ToString("MMM")</div>
-                        </div>
+            <div class="fn-icaze-item">
 
-                        @* Mərkəz: məlumatlar *@
-                        <div class="fn-icaze-info">
-                            <div class="fn-icaze-title">
-                                @icaze.BaslamaSaati.ToString(@"hh\:mm") —
-                                @icaze.BitisSaati.ToString(@"hh\:mm")
-                                <span class="fn-icaze-dur">(@icaze.IcazeSaati.ToString("F1") saat)</span>
-                            </div>
-                            <div class="fn-icaze-meta">
-                                <span class="fn-icaze-evez">
-                                    Əvəzedici: @icaze.EvezEdenAdSoyad
-                                </span>
-                                @if (!string.IsNullOrEmpty(icaze.Sebeb))
-                                {
-                                    <span class="fn-icaze-sep">·</span>
-                                    <span class="fn-icaze-sebeb">@icaze.Sebeb</span>
-                                }
-                            </div>
+                @* Sol: tarix + saat bloku *@
+                <div class="fn-icaze-date-block">
+                    <div class="fn-icaze-day">@icaze.IcazeTarixi.ToString("dd")</div>
+                    <div class="fn-icaze-month">@icaze.IcazeTarixi.ToString("MMM")</div>
+                </div>
 
-                            @* Workflow addım göstəricisi (string-based, entity yox) *@
-                            @if (step != -1)
-                            {
-                                <div class="fn-workflow-steps">
-                                    <div class="fn-ws @(step >= 1 ? "fn-ws--done" : step == 0 ? "fn-ws--active" : "")">
-                                        <div class="fn-ws-dot"></div>
-                                        <div class="fn-ws-lbl">Müraciət</div>
-                                    </div>
-                                    <div class="fn-ws-line @(step >= 2 ? "fn-ws-line--done" : "")"></div>
-                                    <div class="fn-ws @(step >= 2 ? "fn-ws--done" : step == 1 ? "fn-ws--active" : "")">
-                                        <div class="fn-ws-dot"></div>
-                                        <div class="fn-ws-lbl">Şöbə rəisi</div>
-                                    </div>
-                                    <div class="fn-ws-line @(step >= 3 ? "fn-ws-line--done" : "")"></div>
-                                    <div class="fn-ws @(step >= 3 ? "fn-ws--done" : step == 2 ? "fn-ws--active" : "")">
-                                        <div class="fn-ws-dot"></div>
-                                        <div class="fn-ws-lbl">Rəhbər</div>
-                                    </div>
-                                    <div class="fn-ws-line @(step >= 4 ? "fn-ws-line--done" : "")"></div>
-                                    <div class="fn-ws @(step >= 4 ? "fn-ws--done" : step == 3 ? "fn-ws--active" : "")">
-                                        <div class="fn-ws-dot"></div>
-                                        <div class="fn-ws-lbl">HR</div>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-
-                        @* Sağ: status + ləğv düyməsi *@
-                        <div class="fn-icaze-actions">
-                            <span class="fn-badge @BadgeClass(icaze.WorkflowMerhele)">
-                                @icaze.WorkflowMerhele
-                            </span>
-                            @if (icaze.WorkflowMerhele == "Gözləmədə")
-                            {
-                                <form asp-area="User" asp-controller="Icaze"
-                                      asp-action="Legv" method="post"
-                                      style="margin-top:8px"
-                                      onsubmit="return confirm('Bu icazəni ləğv etmək istəyirsiniz?')">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@icaze.Id" />
-                                    <button type="submit" class="fn-btn fn-btn--danger-sm">
-                                        Ləğv et
-                                    </button>
-                                </form>
-                            }
-                        </div>
+                @* Mərkəz: məlumatlar *@
+                <div class="fn-icaze-info">
+                    <div class="fn-icaze-title">
+                        @icaze.BaslamaSaati.ToString(@"hh\:mm") —
+                        @icaze.BitisSaati.ToString(@"hh\:mm")
+                        <span class="fn-icaze-dur">(@icaze.IcazeSaati.ToString("F1") saat)</span>
                     </div>
-                }
+                    <div class="fn-icaze-meta">
+                        <span class="fn-icaze-evez">
+                            Əvəzedici: @icaze.EvezEdenAdSoyad
+                        </span>
+                        @if (!string.IsNullOrEmpty(icaze.Sebeb))
+                        {
+                            <span class="fn-icaze-sep">·</span>
+                            <span class="fn-icaze-sebeb">@icaze.Sebeb</span>
+                        }
+                    </div>
+
+                    @* Workflow addım göstəricisi *@
+                    @if (step != -1)
+                    {
+                        <div class="fn-workflow-steps">
+                            <div class="fn-ws @(step >= 1 ? "fn-ws--done" : step == 0 ? "fn-ws--active" : "")">
+                                <div class="fn-ws-dot"></div>
+                                <div class="fn-ws-lbl">Müraciət</div>
+                            </div>
+                            <div class="fn-ws-line @(step >= 2 ? "fn-ws-line--done" : "")"></div>
+                            <div class="fn-ws @(step >= 2 ? "fn-ws--done" : step == 1 ? "fn-ws--active" : "")">
+                                <div class="fn-ws-dot"></div>
+                                <div class="fn-ws-lbl">Şöbə rəisi</div>
+                            </div>
+                            <div class="fn-ws-line @(step >= 3 ? "fn-ws-line--done" : "")"></div>
+                            <div class="fn-ws @(step >= 3 ? "fn-ws--done" : step == 2 ? "fn-ws--active" : "")">
+                                <div class="fn-ws-dot"></div>
+                                <div class="fn-ws-lbl">Rəhbər</div>
+                            </div>
+                            <div class="fn-ws-line @(step >= 4 ? "fn-ws-line--done" : "")"></div>
+                            <div class="fn-ws @(step >= 4 ? "fn-ws--done" : step == 3 ? "fn-ws--active" : "")">
+                                <div class="fn-ws-dot"></div>
+                                <div class="fn-ws-lbl">HR</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @* Sağ: status + ləğv düyməsi *@
+                <div class="fn-icaze-actions">
+                    <span class="fn-badge @BadgeClass(icaze.WorkflowMerhele)">
+                        @icaze.WorkflowMerhele
+                    </span>
+                    @if (icaze.WorkflowMerhele == "Gözləmədə")
+                    {
+                        <form asp-area="User" asp-controller="Icaze"
+                              asp-action="Legv" method="post"
+                              style="margin-top:8px"
+                              onsubmit="return confirm('Bu icazəni ləğv etmək istəyirsiniz?')">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@icaze.Id" />
+                            <button type="submit" class="fn-btn fn-btn--danger-sm">
+                                Ləğv et
+                            </button>
+                        </form>
+                    }
+                </div>
             </div>
-        </div>
+        }
+    </div>
+</div>
     }
 </div>

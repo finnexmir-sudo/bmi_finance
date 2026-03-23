@@ -31,7 +31,8 @@ namespace FinNex.Application.Services
                     .HamisiniGetirAsync(
                         x => x.IsciId == isciId,
                         include: q => q
-                            .Include(i => i.Isci).ThenInclude(i => i.Departament)
+                            .Include(i => i.Isci)
+    .ThenInclude(i => i.IsciTeyinatlari)
                             .Include(i => i.EvezEdenIsci),
                         izlemeden: true);
 
@@ -75,7 +76,8 @@ namespace FinNex.Application.Services
                     .GetirAsync(
                         x => x.Id == entity.Id,
                         include: q => q
-                            .Include(i => i.Isci).ThenInclude(i => i.Departament)
+                            .Include(i => i.Isci)
+    .ThenInclude(i => i.IsciTeyinatlari)
                             .Include(i => i.EvezEdenIsci),
                         izlemeden: true);
 
@@ -121,7 +123,8 @@ namespace FinNex.Application.Services
                     .GetirAsync(
                         x => x.Id == icazeId,
                         include: q => q
-                            .Include(i => i.Isci).ThenInclude(i => i.Departament)
+                            .Include(i => i.Isci)
+    .ThenInclude(i => i.IsciTeyinatlari)
                             .Include(i => i.EvezEdenIsci),
                         izlemeden: true);
 
@@ -132,7 +135,10 @@ namespace FinNex.Application.Services
                 {
                     Id = icaze.Id,
                     IsciAdSoyad = icaze.Isci.TamAd,
-                    SobeAdi = icaze.Isci.Departament?.Ad ?? "-",
+                    SobeAdi = icaze.Isci.IsciTeyinatlari
+                    .Where(t => t.Aktivdir)
+                    .Select(t => t.Departament.Ad)
+                    .FirstOrDefault() ?? "-",
                     EvezEdenAdSoyad = icaze.EvezEdenIsci.TamAd,
                     IcazeTarixi = icaze.IcazeTarixi,
                     BaslamaSaati = icaze.BaslamaSaati,
@@ -161,7 +167,10 @@ namespace FinNex.Application.Services
         {
             Id = icaze.Id,
             IsciAdSoyad = icaze.Isci.TamAd,
-            SobeAdi = icaze.Isci.Departament?.Ad ?? "-",
+            SobeAdi = icaze.Isci.IsciTeyinatlari
+    .Where(t => t.Aktivdir)
+    .Select(t => t.Departament.Ad)
+    .FirstOrDefault() ?? "-",
             EvezEdenAdSoyad = icaze.EvezEdenIsci.TamAd,
             IcazeTarixi = icaze.IcazeTarixi,
             BaslamaSaati = icaze.BaslamaSaati,

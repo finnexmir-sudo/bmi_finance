@@ -5,9 +5,11 @@ using FinNex.Application.Interfaces.PR_Odenis_Tapsirigi;
 using FinNex.Application.Interfaces.SenedDovriyyesi;
 using FinNex.Application.Interfaces.Structur;
 using FinNex.Application.Services;
+using FinNex.Application.Services.HR;
 using FinNex.Application.Services.PR_Odenis_Tapsirigi;
 using FinNex.Application.Services.SenedDovriyyesi;
 using FinNex.Application.Services.Structur;
+using FinNex.Application.Services.Structure;
 using FinNex.DataAccess.Repositories;
 using FinNex.DataAccess.UnitOfWorks;
 using FinNex.Domain.Entities.HR;
@@ -63,6 +65,11 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IIcazeService, IcazeService>();
 
         services.AddScoped<IDashboardService, DashboardService>();
+
+        services.AddScoped<IIsciTeyinatService, IsciTeyinatService>();
+        services.AddScoped<IIsciStrukturRoluService, IsciStrukturRoluService>();
+        services.AddScoped<IPermissionService, PermissionService>();
+        services.AddScoped<IUserPermissionService, UserPermissionService>();
 
 
         // Əgər BayramGunu və Balans üçün xüsusi məntiq yazmamısansa, 

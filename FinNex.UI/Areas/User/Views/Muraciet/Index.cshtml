@@ -115,7 +115,7 @@
                 <div class="fn-icaze-list">
                     @foreach (var m in Model.Mezuniyyetler)
                     {
-                        @{ var step = WorkflowStep(m.WorkflowMerhele); }
+                         var step = WorkflowStep(m.WorkflowMerhele); 
                         <div class="fn-icaze-item">
                             <div class="fn-icaze-date-block">
                                 <div class="fn-icaze-day">@m.BaslamaTarixi.ToString("dd")</div>
@@ -200,7 +200,7 @@
                 <div class="fn-icaze-list">
                     @foreach (var i in Model.Icazeler)
                     {
-                        @{ var step = WorkflowStep(i.WorkflowMerhele); }
+                         var step = WorkflowStep(i.WorkflowMerhele); 
                         <div class="fn-icaze-item">
                             <div class="fn-icaze-date-block">
                                 <div class="fn-icaze-day">@i.IcazeTarixi.ToString("dd")</div>

@@ -1,10 +1,8 @@
-﻿using FinNex.Domain.Entities.Structure;
-
-namespace FinNex.Domain.Entities.HR
+﻿namespace FinNex.Domain.Entities.HR
 {
     public class Isci : BaseEntity
     {
-        // ===== Şəxsi məlumatlar =====
+        // Şəxsi məlumatlar
         public string Ad { get; set; } = null!;
         public string Soyad { get; set; } = null!;
         public string? AtaAdi { get; set; }
@@ -16,27 +14,22 @@ namespace FinNex.Domain.Entities.HR
         public string? Email { get; set; }
         public string? Unvan { get; set; }
 
-        // ===== İş məlumatları =====
-        public int DepartamentId { get; set; }
-        public Departament Departament { get; set; } = null!;
-
-        public int VezifeId { get; set; }
-        public Vezife Vezife { get; set; } = null!;
-
-        public DateTime IsheBaslamaTarixi { get; set; }
-        public DateTime? IshtenCixmaTarixi { get; set; }
+        // İşçi statusu
+        public DateTime IsheQebulTarixi { get; set; }
+        public DateTime? IsdenAyrilmaTarixi { get; set; }
         public IsciStatus Status { get; set; } = IsciStatus.Aktiv;
 
-        // ===== Əlaqələr =====
+        // Sistem əlaqəsi
         public int? AppUserId { get; set; }
         public AppUser? AppUser { get; set; }
 
-        // Maliyyə və Maaş əlaqələri
+        // Əlaqələr
         public IsciMaliye? Maliye { get; set; }
-        public MezuniyyetBalans? mezuniyyetBalans { get; set; }
-        
+        public MezuniyyetBalans? MezuniyyetBalans { get; set; }
+
         public ICollection<Maas> Maaslar { get; set; } = new List<Maas>();
-        public ICollection<IsciMaasTarixcesi> MaasTarixçesi { get; set; } = new List<IsciMaasTarixcesi>();
+        public ICollection<IsciMaasTarixcesi> MaasTarixcesi { get; set; } = new List<IsciMaasTarixcesi>();
+        public ICollection<IsciTeyinat> IsciTeyinatlari { get; set; } = new List<IsciTeyinat>();
 
         public string TamAd => $"{Ad} {Soyad} {AtaAdi}";
     }

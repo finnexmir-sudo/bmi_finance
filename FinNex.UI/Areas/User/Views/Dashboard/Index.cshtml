@@ -1,402 +1,346 @@
-@model FinNex.UI.Areas.User.Models.UserDashboardViewModel
-@using FinNex.Application.DTOs.HR.Dashboard
-@{
-    ViewData["Title"] = "Dashboard";
-    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-    ViewData["UserRole"] = Model.VezifeAdi;
+    @model FinNex.UI.Areas.User.Models.UserDashboardViewModel
+    @using FinNex.Application.DTOs.HR.Dashboard
+    @{
+        ViewData["Title"] = "Dashboard";
+        Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+        ViewData["UserRole"] = Model.VezifeAdi;
 
-    // ── String-based köməkçi funksiyalar (entity enum yox) ──────
-    string DavClass(string statusText, bool gelecek, bool hefteSonu) =>
-        hefteSonu ? "fn-ad--weekend" :
-        gelecek   ? "fn-ad--future"  :
-        statusText switch
+        // ── String-based köməkçi funksiyalar (entity enum yox) ──────
+        string DavClass(string statusText, bool gelecek, bool hefteSonu) =>
+            hefteSonu ? "fn-ad--weekend" :
+            gelecek ? "fn-ad--future" :
+            statusText switch
+            {
+                "İşdə" => "fn-ad--present",
+                "Gecikme" => "fn-ad--late",
+                "Qayıb" => "fn-ad--absent",
+                "İcazəli" => "fn-ad--leave",
+                _ => "fn-ad--future"
+            };
+
+        string MaasStatusClass(string s) => s switch
         {
-            "İşdə"    => "fn-ad--present",
-            "Gecikme" => "fn-ad--late",
-            "Qayıb"   => "fn-ad--absent",
-            "İcazəli" => "fn-ad--leave",
-            _         => "fn-ad--future"
+            "Ödənildi" => "fn-badge--done",
+            "Təsdiqləndi" => "fn-badge--review",
+            "Hazırlanır" => "fn-badge--wait",
+            "Ləğv edildi" => "fn-badge--rejected",
+            _ => "fn-badge--wait"
         };
 
-    string MaasStatusClass(string s) => s switch
-    {
-        "Ödənildi"    => "fn-badge--done",
-        "Təsdiqləndi" => "fn-badge--review",
-        "Hazırlanır"  => "fn-badge--wait",
-        "Ləğv edildi" => "fn-badge--rejected",
-        _             => "fn-badge--wait"
-    };
+        string MuracietBadgeClass(string merhele) => merhele switch
+        {
+            "Gözləmədə" => "fn-badge--wait",
+            "Təsdiqlənib" => "fn-badge--done",
+            "İmtina edildi" => "fn-badge--rejected",
+            _ => "fn-badge--review"
+        };
 
-    string MuracietBadgeClass(string merhele) => merhele switch
-    {
-        "Gözləmədə"   => "fn-badge--wait",
-        "Təsdiqlənib" => "fn-badge--done",
-        "İmtina edildi" => "fn-badge--rejected",
-        _             => "fn-badge--review"
-    };
+        string BildiriDot(string novText) => novText switch
+        {
+            "Ugur" => "#1e9b6b",
+            "Xeberdarliq" => "#e8b84b",
+            "Tehlike" => "#d85a30",
+            "Melumat" => "#2d6cdf",
+            _ => "#8a93a8"
+        };
+    }
 
-    string BildiriDot(string novText) => novText switch
-    {
-        "Ugur"        => "#1e9b6b",
-        "Xeberdarliq" => "#e8b84b",
-        "Tehlike"     => "#d85a30",
-        "Melumat"     => "#2d6cdf",
-        _             => "#8a93a8"
-    };
-}
+    <div class="fn-dashboard">
 
-<div class="fn-dashboard">
-
-    @* ── Salam + sürətli əməliyyatlar ── *@
-    <div class="fn-greeting-bar">
-        <div>
-            <div class="fn-greeting-title">Xoş gəldin, @Model.TamAd</div>
-            <div class="fn-greeting-sub">
-                @Model.SobeAdi · @Model.VezifeAdi · @Model.IsStaji il staj
-            </div>
-        </div>
-        <div class="fn-quick-actions">
-            <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Create"
-               class="fn-qa-btn fn-qa-btn--primary">
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                    <rect x="1" y="1.5" width="11" height="10" rx="1.5" stroke="currentColor" stroke-width="1.1" />
-                    <path d="M1 4.5h11M4.5 1.5v2M8.5 1.5v2" stroke="currentColor" stroke-width="1" stroke-linecap="round" />
-                </svg>
-                Məzuniyyət müraciəti
-            </a>
-            <a asp-area="User" asp-controller="Icaze" asp-action="Create"
-               class="fn-qa-btn fn-qa-btn--secondary">
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                    <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.1" />
-                    <path d="M6.5 4v3.5l2 1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
-                </svg>
-                İcazə müraciəti
-            </a>
-            <div class="fn-date-pill">@DateTime.Now.ToString("MMMM yyyy")</div>
-        </div>
-    </div>
-
-    @* ── 2 sütunlu grid ── *@
-    <div class="fn-grid2">
-
-        @* ── Davamiyyət təqvimi ── *@
-        <div class="fn-card">
-            <div class="fn-card-head">
-                <div class="fn-card-title">
-                    Davamiyyət — @DateTime.Now.ToString("MMMM yyyy")
+        @* ── Salam + sürətli əməliyyatlar ── *@
+        <div class="fn-greeting-bar">
+            <div>
+                <div class="fn-greeting-title">Xoş gəldin, @Model.TamAd</div>
+                <div class="fn-greeting-sub">
+                    @Model.SobeAdi · @Model.VezifeAdi · @Model.IsStaji il staj
                 </div>
-                <a asp-area="User" asp-controller="Davamiyyet" asp-action="Index"
-                   class="fn-card-link">Tam bax →</a>
             </div>
+        <div class="fn-quick-actions"> 
+            <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Create" class="fn-qa-btn fn-qa-btn--primary">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"> 
+                    <rect x="1" y="1.5" width="11" height="10" rx="1.5" stroke="currentColor" stroke-width="1.1" /> 
+                    <path d="M1 4.5h11M4.5 1.5v2M8.5 1.5v2" stroke="currentColor" stroke-width="1" stroke-linecap="round" /> 
+                </svg> Məzuniyyət müraciəti </a>
+                <a asp-area="User" asp-controller="Icaze" asp-action="Create" class="fn-qa-btn fn-qa-btn--secondary">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"> 
+                        <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.1" /> 
+                        <path d="M6.5 4v3.5l2 1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" /> 
+                    </svg> İcazə müraciəti </a> <div class="fn-date-pill">@DateTime.Now.ToString("MMMM yyyy")</div> </div>
+        </div>
 
-            <div class="fn-att-grid">
-                <div class="fn-ad fn-ad--hdr">B.e</div>
-                <div class="fn-ad fn-ad--hdr">Ç.a</div>
-                <div class="fn-ad fn-ad--hdr">Ç</div>
-                <div class="fn-ad fn-ad--hdr">C.a</div>
-                <div class="fn-ad fn-ad--hdr">C</div>
-                <div class="fn-ad fn-ad--hdr">Ş</div>
-                <div class="fn-ad fn-ad--hdr">B</div>
+        @* ── 2 sütunlu grid ── *@
+        <div class="fn-grid2">
 
-                @{
-                    var buIl   = DateTime.Now.Year;
-                    var buAy   = DateTime.Now.Month;
-                    var ilkGun = new DateTime(buIl, buAy, 1);
-                    var boshGun = (int)ilkGun.DayOfWeek == 0 ? 6 : (int)ilkGun.DayOfWeek - 1;
-                    for (int b = 0; b < boshGun; b++)
-                    {
-                        <div class="fn-ad fn-ad--empty"></div>
-                    }
-                }
-
-                @foreach (var g in Model.DavamiyyetTakvim)
-                {
-                    <div class="fn-ad @DavClass(g.StatusText, g.Gelecek, g.HefteSonu)"
-                         title="@g.Tarix.ToString("dd MMMM") — @g.StatusText">
-                        @g.Gun
+            @* ── Davamiyyət təqvimi ── *@
+            <div class="fn-card">
+                <div class="fn-card-head">
+                    <div class="fn-card-title">
+                        Davamiyyət — @DateTime.Now.ToString("MMMM yyyy")
                     </div>
-                }
-            </div>
+                    <a asp-area="User" asp-controller="Davamiyyet" asp-action="Index"
+                       class="fn-card-link">Tam bax →</a>
+                </div>
 
-            <div class="fn-att-stats">
-                <div class="fn-as">
-                    <div class="fn-as-val" style="color:#1e9b6b">@Model.IslenanGun</div>
-                    <div class="fn-as-lbl">İşlədi</div>
-                </div>
-                <div class="fn-as">
-                    <div class="fn-as-val" style="color:#c0392b">@Model.QaibGun</div>
-                    <div class="fn-as-lbl">Qayıb</div>
-                </div>
-                <div class="fn-as">
-                    <div class="fn-as-val" style="color:#b8860b">@Model.IcazeliGun</div>
-                    <div class="fn-as-lbl">İcazəli</div>
-                </div>
-                <div class="fn-as">
-                    <div class="fn-as-val" style="color:#aab0bf">@Model.GozlenilenGun</div>
-                    <div class="fn-as-lbl">Gözlənilir</div>
-                </div>
-            </div>
-        </div>
+                <div class="fn-att-grid">
+                    <div class="fn-ad fn-ad--hdr">B.e</div>
+                    <div class="fn-ad fn-ad--hdr">Ç.a</div>
+                    <div class="fn-ad fn-ad--hdr">Ç</div>
+                    <div class="fn-ad fn-ad--hdr">C.a</div>
+                    <div class="fn-ad fn-ad--hdr">C</div>
+                    <div class="fn-ad fn-ad--hdr">Ş</div>
+                    <div class="fn-ad fn-ad--hdr">B</div>
 
-        @* ── Bildirişlər ── *@
-        <div class="fn-card">
-            <div class="fn-card-head">
-                <div class="fn-card-title">Bildirişlər</div>
-                <a asp-area="User" asp-controller="Bildiri" asp-action="Index"
-                   class="fn-card-link">Hamısı →</a>
-            </div>
+                    @{
+                        var buIl = DateTime.Now.Year;
+                        var buAy = DateTime.Now.Month;
+                        var ilkGun = new DateTime(buIl, buAy, 1);
+                        var boshGun = (int)ilkGun.DayOfWeek == 0 ? 6 : (int)ilkGun.DayOfWeek - 1;
+                        for (int b = 0; b < boshGun; b++)
+                        {
+                            <div class="fn-ad fn-ad--empty"></div>
+                        }
+                    }
 
-            @if (Model.Bildiriler.Any())
-            {
-                <div class="fn-nlist">
-                    @foreach (var b in Model.Bildiriler)
+                    @foreach (var g in Model.DavamiyyetTakvim)
                     {
-                        <div class="fn-nitem">
-                            <div class="fn-ndot" style="background:@BildiriDot(b.NovText)"></div>
-                            <div>
-                                <div class="fn-ntext">@b.Metn</div>
-                                <div class="fn-ntime">@b.TarixAd</div>
-                            </div>
+                        <div class="fn-ad @DavClass(g.StatusText, g.Gelecek, g.HefteSonu)"
+                             title="@g.Tarix.ToString("dd MMMM") — @g.StatusText">
+                            @g.Gun
                         </div>
                     }
                 </div>
-            }
-            else
-            {
-                <div class="fn-empty">Bildiriş yoxdur</div>
-            }
-        </div>
 
-        @* ── Son ödənişlər ── *@
-        <div class="fn-card">
-            <div class="fn-card-head">
-                <div class="fn-card-title">Son ödənişlər</div>
-                <a asp-area="User" asp-controller="Odenis" asp-action="Index"
-                   class="fn-card-link">Hamısı →</a>
+                <div class="fn-att-stats">
+                    <div class="fn-as">
+                        <div class="fn-as-val" style="color:#1e9b6b">@Model.IslenanGun</div>
+                        <div class="fn-as-lbl">İşlədi</div>
+                    </div>
+                    <div class="fn-as">
+                        <div class="fn-as-val" style="color:#c0392b">@Model.QaibGun</div>
+                        <div class="fn-as-lbl">Qayıb</div>
+                    </div>
+                    <div class="fn-as">
+                        <div class="fn-as-val" style="color:#b8860b">@Model.IcazeliGun</div>
+                        <div class="fn-as-lbl">İcazəli</div>
+                    </div>
+                    <div class="fn-as">
+                        <div class="fn-as-val" style="color:#aab0bf">@Model.GozlenilenGun</div>
+                        <div class="fn-as-lbl">Gözlənilir</div>
+                    </div>
+                </div>
             </div>
 
-            @if (Model.SonOdenisler.Any())
-            {
-                <div class="fn-plist">
-                    @foreach (var p in Model.SonOdenisler)
-                    {
-                        <div class="fn-pi">
-                            <div class="fn-pi-left">
-                                <div class="fn-pi-name">@p.AyAd</div>
-                                <div class="fn-pi-date">@p.Il / @p.Ay</div>
+            @* ── Bildirişlər ── *@
+            <div class="fn-card">
+                <div class="fn-card-head">
+                    <div class="fn-card-title">Bildirişlər</div>
+                    <a asp-area="User" asp-controller="Bildiri" asp-action="Index"
+                       class="fn-card-link">Hamısı →</a>
+                </div>
+
+                @if (Model.Bildiriler.Any())
+                {
+                    <div class="fn-nlist">
+                        @foreach (var b in Model.Bildiriler)
+                        {
+                            <div class="fn-nitem">
+                                <div class="fn-ndot" style="background:@BildiriDot(b.NovText)"></div>
+                                <div>
+                                    <div class="fn-ntext">@b.Metn</div>
+                                    <div class="fn-ntime">@b.TarixAd</div>
+                                </div>
                             </div>
-                            <div class="fn-pi-right">
-                                <div class="fn-pi-amount">@p.NetMebleg.ToString("N0") ₼</div>
-                                <span class="fn-badge @MaasStatusClass(p.StatusText)">
-                                    @p.StatusText
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="fn-empty">Bildiriş yoxdur</div>
+                }
+            </div>
+
+            @* ── Son ödənişlər ── *@
+            <div class="fn-card">
+                <div class="fn-card-head">
+                    <div class="fn-card-title">Son ödənişlər</div>
+                    <a asp-area="User" asp-controller="Odenis" asp-action="Index"
+                       class="fn-card-link">Hamısı →</a>
+                </div>
+
+                @if (Model.SonOdenisler.Any())
+                {
+                    <div class="fn-plist">
+                        @foreach (var p in Model.SonOdenisler)
+                        {
+                            <div class="fn-pi">
+                                <div class="fn-pi-left">
+                                    <div class="fn-pi-name">@p.AyAd</div>
+                                    <div class="fn-pi-date">@p.Il / @p.Ay</div>
+                                </div>
+                                <div class="fn-pi-right">
+                                    <div class="fn-pi-amount">@p.NetMebleg.ToString("N0") ₼</div>
+                                    <span class="fn-badge @MaasStatusClass(p.StatusText)">
+                                        @p.StatusText
+                                    </span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="fn-empty">Ödəniş məlumatı yoxdur</div>
+                }
+            </div>
+
+            @* ── Məzuniyyət qalığı ── *@
+            <div class="fn-card">
+                <div class="fn-card-head">
+                    <div class="fn-card-title">Məzuniyyət qalığı</div>
+                    <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Index"
+                       class="fn-card-link">Hamısı →</a>
+                </div>
+
+                <div class="fn-lb-list">
+                    <div class="fn-lb">
+                        <div class="fn-lb-top">
+                            <span class="fn-lb-name">İllik məzuniyyət</span>
+                            <span class="fn-lb-val">
+                                @Model.IllikQaligGun / @Model.IllikToplamGun gün
+                            </span>
+                        </div>
+                        <div class="fn-lb-track">
+                            <div class="fn-lb-fill"
+                                 style="width:@(Model.IllikToplamGun > 0
+                                                                  ? (int)((double)Model.IllikQaligGun / Model.IllikToplamGun * 100)
+                                                                  : 0)%;background:#1e9b6b">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="fn-lb">
+                        <div class="fn-lb-top">
+                            <span class="fn-lb-name">Xəstəlik məzuniyyəti</span>
+                            <span class="fn-lb-val">
+                                @Model.XestelikQaligGun / @Model.XestelikToplamGun gün
+                            </span>
+                        </div>
+                        <div class="fn-lb-track">
+                            <div class="fn-lb-fill"
+                                 style="width:@(Model.XestelikToplamGun > 0
+                                                                  ? (int)((double)Model.XestelikQaligGun / Model.XestelikToplamGun * 100)
+                                                                  : 0)%;background:#2d6cdf">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="fn-lb">
+                        <div class="fn-lb-top">
+                            <span class="fn-lb-name">Ezamiyyət</span>
+                            <span class="fn-lb-val">
+                                @Model.EzamiyyetQaligGun / @Model.EzamiyyetToplamGun gün
+                            </span>
+                        </div>
+                        <div class="fn-lb-track">
+                            <div class="fn-lb-fill"
+                                 style="width:@(Model.EzamiyyetToplamGun > 0
+                                                                  ? (int)((double)Model.EzamiyyetQaligGun / Model.EzamiyyetToplamGun * 100)
+                                                                  : 0)%;background:#e8b84b">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* ── Sürətli müraciət düymələri ── *@
+                <div class="fn-lb-actions">
+                    <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Create"
+                       class="fn-btn fn-btn--primary fn-btn--sm">+ Müraciət et</a>
+                    <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Index"
+                       class="fn-btn fn-btn--outline fn-btn--sm">Bütün müraciətlər</a>
+                </div>
+            </div>
+
+            @* ── Aktiv müraciətlər (tam en) ── *@
+            <div class="fn-card fn-card--full">
+                <div class="fn-card-head">
+                    <div class="fn-card-title">Aktiv müraciətlər</div>
+                    <a asp-area="User" asp-controller="Muraciet" asp-action="Index"
+                       class="fn-card-link">Hamısı →</a>
+                </div>
+
+                @if (!Model.AktivMuracietler.Any() && !Model.AktivIcazeler.Any())
+                {
+                    <div class="fn-empty">Aktiv müraciət yoxdur</div>
+                }
+                else
+                {
+                    <div class="fn-rlist">
+                        @* Məzuniyyət müraciətləri *@
+                        @foreach (var r in Model.AktivMuracietler)
+                        {
+                            <div class="fn-ri">
+                                <div class="fn-ri-ico"
+                                     style="background:@(r.NovAd == "İllik məzuniyyət" ? "#eef3ff" : r.NovAd == "Xəstəlik məzuniyyəti" ? "#fdf0ee" : "#edfaf4")">
+                                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                        <rect x="1" y="1.5" width="11" height="10" rx="1.5"
+                                              stroke="@(r.NovAd == "İllik məzuniyyət" ? "#2d6cdf" : r.NovAd == "Xəstəlik məzuniyyəti" ? "#d85a30" : "#1e9b6b")"
+                                              stroke-width="1.1" />
+                                    </svg>
+                                </div>
+                                <div class="fn-ri-info">
+                                    <div class="fn-ri-name">
+                                        @r.NovAd —
+                                        @r.BaslamaTarixi.ToString("dd.MM") –
+                                        @r.BitmeTarixi.ToString("dd.MM.yyyy")
+                                        (@r.IsGunlerininSayi iş günü)
+                                    </div>
+                                    <div class="fn-ri-date">
+                                        @r.WorkflowMerhele
+                                        @if (!string.IsNullOrEmpty(r.EvezEdenAdSoyad))
+                                        {
+                                            <span class="fn-ri-evez">· Əvəzedici: @r.EvezEdenAdSoyad</span>
+                                        }
+                                    </div>
+                                </div>
+                                <span class="fn-badge @MuracietBadgeClass(r.WorkflowMerhele)">
+                                    @r.WorkflowMerhele
                                 </span>
                             </div>
-                        </div>
-                    }
-                </div>
-            }
-            else
-            {
-                <div class="fn-empty">Ödəniş məlumatı yoxdur</div>
-            }
-        </div>
+                        }
 
-        @* ── Məzuniyyət qalığı ── *@
-        <div class="fn-card">
-            <div class="fn-card-head">
-                <div class="fn-card-title">Məzuniyyət qalığı</div>
-                <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Index"
-                   class="fn-card-link">Hamısı →</a>
-            </div>
-
-            <div class="fn-lb-list">
-                <div class="fn-lb">
-                    <div class="fn-lb-top">
-                        <span class="fn-lb-name">İllik məzuniyyət</span>
-                        <span class="fn-lb-val">
-                            @Model.IllikQaligGun / @Model.IllikToplamGun gün
-                        </span>
-                    </div>
-                    <div class="fn-lb-track">
-                        <div class="fn-lb-fill"
-                             style="width:@(Model.IllikToplamGun > 0
-                                 ? (int)((double)Model.IllikQaligGun / Model.IllikToplamGun * 100)
-                                 : 0)%;background:#1e9b6b">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="fn-lb">
-                    <div class="fn-lb-top">
-                        <span class="fn-lb-name">Xəstəlik məzuniyyəti</span>
-                        <span class="fn-lb-val">
-                            @Model.XestelikQaligGun / @Model.XestelikToplamGun gün
-                        </span>
-                    </div>
-                    <div class="fn-lb-track">
-                        <div class="fn-lb-fill"
-                             style="width:@(Model.XestelikToplamGun > 0
-                                 ? (int)((double)Model.XestelikQaligGun / Model.XestelikToplamGun * 100)
-                                 : 0)%;background:#2d6cdf">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="fn-lb">
-                    <div class="fn-lb-top">
-                        <span class="fn-lb-name">Ezamiyyət</span>
-                        <span class="fn-lb-val">
-                            @Model.EzamiyyetQaligGun / @Model.EzamiyyetToplamGun gün
-                        </span>
-                    </div>
-                    <div class="fn-lb-track">
-                        <div class="fn-lb-fill"
-                             style="width:@(Model.EzamiyyetToplamGun > 0
-                                 ? (int)((double)Model.EzamiyyetQaligGun / Model.EzamiyyetToplamGun * 100)
-                                 : 0)%;background:#e8b84b">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            @* ── Sürətli müraciət düymələri ── *@
-            <div class="fn-lb-actions">
-                <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Create"
-                   class="fn-btn fn-btn--primary fn-btn--sm">+ Müraciət et</a>
-                <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Index"
-                   class="fn-btn fn-btn--outline fn-btn--sm">Bütün müraciətlər</a>
-            </div>
-        </div>
-
-        @* ── Aktiv müraciətlər (tam en) ── *@
-        <div class="fn-card fn-card--full">
-            <div class="fn-card-head">
-                <div class="fn-card-title">Aktiv müraciətlər</div>
-                <a asp-area="User" asp-controller="Muraciet" asp-action="Index"
-                   class="fn-card-link">Hamısı →</a>
-            </div>
-
-            @if (!Model.AktivMuracietler.Any() && !Model.AktivIcazeler.Any())
-            {
-                <div class="fn-empty">Aktiv müraciət yoxdur</div>
-            }
-            else
-            {
-                <div class="fn-rlist">
-                    @* Məzuniyyət müraciətləri *@
-                    @foreach (var r in Model.AktivMuracietler)
-                    {
-                        <div class="fn-ri">
-                            <div class="fn-ri-ico"
-                                 style="background:@(r.NovAd == "İllik məzuniyyət" ? "#eef3ff" : r.NovAd == "Xəstəlik məzuniyyəti" ? "#fdf0ee" : "#edfaf4")">
-                                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                                    <rect x="1" y="1.5" width="11" height="10" rx="1.5"
-                                          stroke="@(r.NovAd == "İllik məzuniyyət" ? "#2d6cdf" : r.NovAd == "Xəstəlik məzuniyyəti" ? "#d85a30" : "#1e9b6b")"
-                                          stroke-width="1.1" />
-                                </svg>
-                            </div>
-                            <div class="fn-ri-info">
-                                <div class="fn-ri-name">
-                                    @r.NovAd —
-                                    @r.BaslamaTarixi.ToString("dd.MM") –
-                                    @r.BitmeTarixi.ToString("dd.MM.yyyy")
-                                    (@r.IsGunlerininSayi iş günü)
+                        @* İcazə müraciətləri *@
+                        @foreach (var ic in Model.AktivIcazeler)
+                        {
+                            <div class="fn-ri">
+                                <div class="fn-ri-ico" style="background:#f3effe">
+                                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                        <circle cx="6.5" cy="6.5" r="5" stroke="#7c5cbf" stroke-width="1.1" />
+                                        <path d="M6.5 4v3.5l2 1.5" stroke="#7c5cbf" stroke-width="1.1" stroke-linecap="round" />
+                                    </svg>
                                 </div>
-                                <div class="fn-ri-date">
-                                    @r.WorkflowMerhele
-                                    @if (!string.IsNullOrEmpty(r.EvezEdenAdSoyad))
-                                    {
-                                        <span class="fn-ri-evez">· Əvəzedici: @r.EvezEdenAdSoyad</span>
-                                    }
+                                <div class="fn-ri-info">
+                                    <div class="fn-ri-name">
+                                        Saatlıq icazə —
+                                        @ic.IcazeTarixi.ToString("dd.MM.yyyy")
+                                        (@ic.BaslamaSaati.ToString(@"hh\:mm") – @ic.BitisSaati.ToString(@"hh\:mm") · @ic.IcazeSaati.ToString("F1") saat)
+                                    </div>
+                                    <div class="fn-ri-date">
+                                        @ic.WorkflowMerhele
+                                        @if (!string.IsNullOrEmpty(ic.EvezEdenAdSoyad))
+                                        {
+                                            <span class="fn-ri-evez">· Əvəzedici: @ic.EvezEdenAdSoyad</span>
+                                        }
+                                    </div>
                                 </div>
-                            </div>
-                            <span class="fn-badge @MuracietBadgeClass(r.WorkflowMerhele)">
-                                @r.WorkflowMerhele
-                            </span>
-                        </div>
-                    }
-
-                    @* İcazə müraciətləri *@
-                    @foreach (var ic in Model.AktivIcazeler)
-                    {
-                        <div class="fn-ri">
-                            <div class="fn-ri-ico" style="background:#f3effe">
-                                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                                    <circle cx="6.5" cy="6.5" r="5" stroke="#7c5cbf" stroke-width="1.1" />
-                                    <path d="M6.5 4v3.5l2 1.5" stroke="#7c5cbf" stroke-width="1.1" stroke-linecap="round" />
-                                </svg>
-                            </div>
-                            <div class="fn-ri-info">
-                                <div class="fn-ri-name">
-                                    Saatlıq icazə —
-                                    @ic.IcazeTarixi.ToString("dd.MM.yyyy")
-                                    (@ic.BaslamaSaati.ToString(@"hh\:mm") – @ic.BitisSaati.ToString(@"hh\:mm") · @ic.IcazeSaati.ToString("F1") saat)
-                                </div>
-                                <div class="fn-ri-date">
+                                <span class="fn-badge @MuracietBadgeClass(ic.WorkflowMerhele)">
                                     @ic.WorkflowMerhele
-                                    @if (!string.IsNullOrEmpty(ic.EvezEdenAdSoyad))
-                                    {
-                                        <span class="fn-ri-evez">· Əvəzedici: @ic.EvezEdenAdSoyad</span>
-                                    }
-                                </div>
+                                </span>
                             </div>
-                            <span class="fn-badge @MuracietBadgeClass(ic.WorkflowMerhele)">
-                                @ic.WorkflowMerhele
-                            </span>
-                        </div>
-                    }
-                </div>
-            }
+                        }
+                    </div>
+                }
+            </div>
+
         </div>
-
     </div>
-</div>
 
-@section Styles {
-    <style>
-        .fn-quick-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .fn-qa-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 14px;
-            border-radius: 7px;
-            font-size: 12px;
-            font-weight: 500;
-            text-decoration: none;
-            transition: all .15s;
-        }
-
-        .fn-qa-btn--primary {
-            background: #2d6cdf;
-            color: #fff;
-            border: 1px solid #2d6cdf;
-        }
-
-        .fn-qa-btn--primary:hover { background: #2559c7; }
-
-        .fn-qa-btn--secondary {
-            background: #f3f4f8;
-            color: #3d4557;
-            border: 1px solid #e8eaef;
-        }
-
-        .fn-qa-btn--secondary:hover { background: #e8eaef; }
-
-        .fn-lb-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 14px;
-            padding-top: 12px;
-            border-top: 1px solid #f2f4f7;
-        }
-
-        .fn-btn--sm { padding: 6px 12px; font-size: 12px; }
-    </style>
-}

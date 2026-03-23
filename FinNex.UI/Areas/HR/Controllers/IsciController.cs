@@ -99,7 +99,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Email = vm.Email,
                 EmailConfirmed = true,
                 Aktivdir = true,
-                
+
             };
 
             var resultUser = await _userManager.CreateAsync(user, "user123");
@@ -127,7 +127,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 SeriyaNomre = vm.SeriyaNomre,
                 DogumTarixi = vm.DogumTarixi,
                 Cins = (Cins)vm.CinsId,
-                UserId=vm.UserId
+                UserId = user.Id
             };
 
             var resultIsci = await _isciService.YaratAsync(dto);

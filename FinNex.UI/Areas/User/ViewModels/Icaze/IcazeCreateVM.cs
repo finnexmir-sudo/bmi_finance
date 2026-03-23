@@ -12,8 +12,8 @@ namespace FinNex.UI.Areas.User.ViewModels.Icaze
         // Sistem avtomatik doldurur
         public int IsciId { get; set; }
 
-        [Required(ErrorMessage = "Əvəzedici işçi seçilməlidir")]
-        public int EvezEdenIsciId { get; set; }
+       
+        public int? EvezEdenIsciId { get; set; }
 
         [Required(ErrorMessage = "İcazə tarixi seçilməlidir")]
         public DateTime IcazeTarixi { get; set; } = DateTime.Today;

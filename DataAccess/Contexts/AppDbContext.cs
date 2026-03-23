@@ -50,10 +50,18 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<Mezuniyyet> Mezuniyyetler { get; set; }
     public DbSet<MezuniyyetBalans> MezuniyyetBalanslari { get; set; }
     public DbSet<BayramGunu> BayramGunleri { get; set; }
+    public DbSet<Icaze> Icazeler { get; set; }
+
+    public DbSet<IsciTeyinat> IsciTeyinatlari { get; set; }
+    public DbSet<IsciStrukturRolu> IsciStrukturRollari { get; set; }
+    public DbSet<Permission> Permissions { get; set; }
+    public DbSet<UserPermission> UserPermissions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+
 
         // Müştərilər üçün artıq yazmışdıq (Yenə də yoxla)
         builder.Entity<OdenisTapsirigi>()
@@ -147,18 +155,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         builder.Entity<Vezife>()
     .HasIndex(x => x.Ad)
     .IsUnique();
-        builder.Entity<Isci>()
-            .HasOne(x => x.Departament)
-            .WithMany()
-            .HasForeignKey(x => x.DepartamentId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder.Entity<Isci>()
-            .HasOne(x => x.Vezife)
-            .WithMany(v => v.Isciler)
-            .HasForeignKey(x => x.VezifeId)
-            .OnDelete(DeleteBehavior.Restrict);
-
+        
         builder.Entity<Isci>()
             .HasOne(x => x.AppUser)
             .WithOne()
@@ -192,6 +189,37 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasForeignKey(x => x.IsciId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // İcazə cədvəlində Isci və digər işçi əlaqələri
+        builder.Entity<Icaze>()
+    .HasOne(x => x.Isci)
+    .WithMany()
+    .HasForeignKey(x => x.IsciId)
+    .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<Icaze>()
+            .HasOne(x => x.EvezEdenIsci)
+            .WithMany()
+            .HasForeignKey(x => x.EvezEdenIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<Icaze>()
+            .HasOne(x => x.SobeReisi)
+            .WithMany()
+            .HasForeignKey(x => x.SobeReisiId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<Icaze>()
+            .HasOne(x => x.Rehber)
+            .WithMany()
+            .HasForeignKey(x => x.RehberId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<Icaze>()
+            .HasOne(x => x.HrTesdiqleyen)
+            .WithMany()
+            .HasForeignKey(x => x.HrId)
+            .OnDelete(DeleteBehavior.NoAction);
+
         builder.Entity<AppUser>()
     .HasOne(x => x.Isci)
     .WithOne(x => x.AppUser)
@@ -214,6 +242,36 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasOne(x => x.EvezEdenIsci)
             .WithMany()
             .HasForeignKey(x => x.EvezEdenIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<IsciTeyinat>()
+    .HasOne(x => x.Isci)
+    .WithMany(x => x.IsciTeyinatlari)
+    .HasForeignKey(x => x.IsciId)
+    .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<IsciTeyinat>()
+            .HasOne(x => x.Departament)
+            .WithMany()
+            .HasForeignKey(x => x.DepartamentId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<IsciTeyinat>()
+            .HasOne(x => x.Vezife)
+            .WithMany()
+            .HasForeignKey(x => x.VezifeId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<IsciStrukturRolu>()
+    .HasOne(x => x.Isci)
+    .WithMany()
+    .HasForeignKey(x => x.IsciId)
+    .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<IsciStrukturRolu>()
+            .HasOne(x => x.Departament)
+            .WithMany()
+            .HasForeignKey(x => x.DepartamentId)
             .OnDelete(DeleteBehavior.NoAction);
 
 

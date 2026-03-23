@@ -136,15 +136,13 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         try
         {
             var entities = await _unitOfWork.Repository<Mezuniyyet>()
-                .HamisiniGetirAsync(
-                    predicate: x => x.IsciId == isciId,
-                    include: q => q
-                        .Include(m => m.Isci)
-                            .ThenInclude(i => i.Departament)
-                        .Include(m => m.Isci)
-                            .ThenInclude(i => i.Vezife)
-                        .Include(m => m.EvezEdenIsci),
-                    izlemeden: true);
+            .HamisiniGetirAsync(
+                predicate: x => x.IsciId == isciId,
+                include: q => q
+                    .Include(m => m.Isci)
+                        .ThenInclude(i => i.IsciTeyinatlari)
+                    .Include(m => m.EvezEdenIsci),
+                izlemeden: true);
 
             var dtos = entities
                 .OrderByDescending(x => x.BaslamaTarixi)
@@ -152,8 +150,14 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 {
                     Id = m.Id,
                     IsciAdSoyad = m.Isci.TamAd,
-                    SobeAdi = m.Isci.Departament?.Ad ?? "-",
-                    VezifeAdi = m.Isci.Vezife?.Ad ?? "-",
+                    SobeAdi = m.Isci.IsciTeyinatlari
+                    .Where(t => t.Aktivdir)
+                    .Select(t => t.Departament.Ad)
+                    .FirstOrDefault() ?? "-",
+                    VezifeAdi = m.Isci.IsciTeyinatlari
+                    .Where(t => t.Aktivdir)
+                    .Select(t => t.Vezife.Ad)
+                    .FirstOrDefault() ?? "-",
                     EvezEdenIsciAdSoyad = m.EvezEdenIsci?.TamAd,
                     Nov = m.Nov,
                     Status = m.Status,

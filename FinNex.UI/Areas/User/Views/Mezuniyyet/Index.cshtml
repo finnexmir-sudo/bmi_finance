@@ -1,4 +1,4 @@
-@model FinNex.UI.Areas.User.ViewModels.Mezuniyyet.MezuniyyetIndexVM
+@model MezuniyyetIndexVM
 @{
     ViewData["Title"] = "Məzuniyyətlərim";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
@@ -143,23 +143,25 @@
             <label class="fn-filter-lbl">Növ</label>
             <select name="nov" class="fn-select fn-select--sm" onchange="this.form.submit()">
                 <option value="">Hamısı</option>
-                <option value="İllik məzuniyyət"     @(Model.FilterNov == "İllik məzuniyyət"     ? "selected" : "")>İllik</option>
-                <option value="Xəstəlik məzuniyyəti" @(Model.FilterNov == "Xəstəlik məzuniyyəti" ? "selected" : "")>Xəstəlik</option>
-                <option value="Ezamiyyət"            @(Model.FilterNov == "Ezamiyyət"            ? "selected" : "")>Ezamiyyət</option>
+                <option value="İllik məzuniyyət" selected="@(Model.FilterNov == "İllik məzuniyyət")">İllik</option>
+                <option value="Xəstəlik məzuniyyəti" selected="@(Model.FilterNov == "Xəstəlik məzuniyyəti")">Xəstəlik</option>
+                <option value="Ezamiyyət" selected="@(Model.FilterNov == "Ezamiyyət")">Ezamiyyət</option>
             </select>
         </div>
+
         <div class="fn-filter-group">
             <label class="fn-filter-lbl">Status</label>
             <select name="status" class="fn-select fn-select--sm" onchange="this.form.submit()">
                 <option value="">Hamısı</option>
-                <option value="Gözləmədə"             @(Model.FilterStatus == "Gözləmədə"             ? "selected" : "")>Gözləmədə</option>
-                <option value="Şöbə rəisi təsdiqində" @(Model.FilterStatus == "Şöbə rəisi təsdiqində" ? "selected" : "")>Şöbə rəisi</option>
-                <option value="Rəhbər təsdiqində"     @(Model.FilterStatus == "Rəhbər təsdiqində"     ? "selected" : "")>Rəhbər</option>
-                <option value="HR təsdiqində"         @(Model.FilterStatus == "HR təsdiqində"         ? "selected" : "")>HR</option>
-                <option value="Təsdiqlənib"           @(Model.FilterStatus == "Təsdiqlənib"           ? "selected" : "")>Təsdiqlənib</option>
-                <option value="İmtina edildi"         @(Model.FilterStatus == "İmtina edildi"         ? "selected" : "")>İmtina</option>
+                <option value="Gözləmədə" selected="@(Model.FilterStatus == "Gözləmədə")">Gözləmədə</option>
+                <option value="Şöbə rəisi təsdiqində" selected="@(Model.FilterStatus == "Şöbə rəisi təsdiqində")">Şöbə rəisi</option>
+                <option value="Rəhbər təsdiqində" selected="@(Model.FilterStatus == "Rəhbər təsdiqində")">Rəhbər</option>
+                <option value="HR təsdiqində" selected="@(Model.FilterStatus == "HR təsdiqində")">HR</option>
+                <option value="Təsdiqlənib" selected="@(Model.FilterStatus == "Təsdiqlənib")">Təsdiqlənib</option>
+                <option value="İmtina edildi" selected="@(Model.FilterStatus == "İmtina edildi")">İmtina</option>
             </select>
         </div>
+
         @if (!string.IsNullOrEmpty(Model.FilterNov) || !string.IsNullOrEmpty(Model.FilterStatus))
         {
             <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Index"
@@ -192,10 +194,10 @@
             <div class="fn-icaze-list">
                 @foreach (var m in Model.FilteredList)
                 {
-                    @{
+                    
                         var step = WorkflowStep(m.WorkflowMerhele);
                         var color = NovIconColor(m.NovText);
-                    }
+                    
                     <div class="fn-icaze-item">
 
                         @* Sol: tarix bloku *@

@@ -1,0 +1,265 @@
+﻿.fn-create-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 20px;
+    align-items: start;
+}
+
+.fn-nov-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.fn-nov-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 10px;
+    border: 1.5px solid #e8eaef;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color .15s, background .15s;
+    font-size: 13px;
+    color: #3d4557;
+}
+
+    .fn-nov-card small {
+        font-size: 11px;
+        color: #8a93a8;
+    }
+
+    .fn-nov-card:hover {
+        border-color: #c0cadb;
+        background: #f7f8fb;
+    }
+
+.fn-nov-card--active {
+    border-color: #2d6cdf !important;
+    background: #f0f5ff !important;
+}
+
+.fn-nov-radio {
+    display: none;
+}
+
+.fn-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.fn-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.fn-filter-lbl {
+    font-size: 12px;
+    color: #8a93a8;
+    white-space: nowrap;
+}
+
+.fn-select--sm {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.fn-btn--sm {
+    padding: 5px 12px;
+    font-size: 12px;
+}
+
+.fn-btn--ghost-sm {
+    font-size: 11px;
+    padding: 4px 10px;
+    background: none;
+    border: 1px solid #dde1ea;
+    border-radius: 5px;
+    color: #5a647a;
+    cursor: pointer;
+    display: inline-block;
+    text-decoration: none;
+}
+
+    .fn-btn--ghost-sm:hover {
+        background: #f3f4f8;
+    }
+
+.fn-balance-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.fn-balance-card {
+    background: #fff;
+    border: 1px solid #e8eaef;
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.fn-bc-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #f7f8fb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.fn-bc-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.fn-bc-title {
+    font-size: 11px;
+    color: #8a93a8;
+    margin-bottom: 4px;
+}
+
+.fn-bc-nums {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.fn-bc-big {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.fn-bc-slash {
+    color: #c0c7d4;
+}
+
+.fn-bc-total {
+    font-size: 11px;
+    color: #8a93a8;
+}
+
+.fn-imtina-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #c0392b;
+    background: #fdf0ee;
+    border-radius: 4px;
+    padding: 3px 8px;
+    margin-top: 4px;
+}
+
+.fn-side-balance-item {
+    margin-bottom: 14px;
+}
+
+.fn-sbi-label {
+    font-size: 11px;
+    color: #8a93a8;
+    margin-bottom: 5px;
+}
+
+.fn-sbi-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+    .fn-sbi-bar .fn-lb-track {
+        flex: 1;
+    }
+
+.fn-sbi-val {
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.fn-workflow-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.fn-wi-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.fn-wi-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #f0f5ff;
+    color: #2d6cdf;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.fn-wi-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+    .fn-wi-text strong {
+        font-size: 12px;
+        color: #3d4557;
+    }
+
+    .fn-wi-text span {
+        font-size: 11px;
+        color: #8a93a8;
+    }
+
+@@media (max-width: 900px) {
+    .fn-create-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .fn-nov-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .fn-balance-row {
+        grid-template-columns: 1fr;
+    }
+}
+.fn-mez-create .fn-create-layout {
+    display: grid;
+    grid-template-columns: minmax(760px, 860px) 280px;
+    gap: 32px;
+    align-items: start;
+}
+
+.fn-mez-create .fn-form-wrap {
+    max-width: 860px;
+}
+
+.fn-mez-create .fn-form-wrap--wide {
+    max-width: 860px;
+}
+
+.fn-mez-create .fn-side-info {
+    width: 280px;
+}

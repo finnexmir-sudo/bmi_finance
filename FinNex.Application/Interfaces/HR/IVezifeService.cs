@@ -10,3 +10,5 @@ public interface IVezifeService
     Task<bool> AdMovcuddurmuAsync(string ad);
 }
 
+
+

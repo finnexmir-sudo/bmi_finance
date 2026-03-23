@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FinNex.DataAccess.Migrations
 {
     /// <inheritdoc />
-    public partial class bazaYarat : Migration
+    public partial class InitNewStructure : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -186,6 +186,28 @@ namespace FinNex.DataAccess.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_OdenisTapsirigiNomreleri", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Permissions",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Kod = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Ad = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Aciqlama = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Silinib = table.Column<bool>(type: "bit", nullable: false),
+                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Permissions", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -428,6 +450,40 @@ namespace FinNex.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "UserPermissions",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    PermissionId = table.Column<int>(type: "int", nullable: false),
+                    Allowed = table.Column<bool>(type: "bit", nullable: false),
+                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Silinib = table.Column<bool>(type: "bit", nullable: false),
+                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserPermissions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_UserPermissions_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UserPermissions_Permissions_PermissionId",
+                        column: x => x.PermissionId,
+                        principalTable: "Permissions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "BankHesablari",
                 columns: table => new
                 {
@@ -550,12 +606,11 @@ namespace FinNex.DataAccess.Migrations
                     Telefon = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Email = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Unvan = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    DepartamentId = table.Column<int>(type: "int", nullable: false),
-                    VezifeId = table.Column<int>(type: "int", nullable: false),
-                    IsheBaslamaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    IshtenCixmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsheQebulTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsdenAyrilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Status = table.Column<int>(type: "int", nullable: false),
                     AppUserId = table.Column<int>(type: "int", nullable: true),
+                    VezifeId = table.Column<int>(type: "int", nullable: true),
                     YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
                     YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
                     YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
@@ -574,17 +629,10 @@ namespace FinNex.DataAccess.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
-                        name: "FK_Isciler_Departament_DepartamentId",
-                        column: x => x.DepartamentId,
-                        principalTable: "Departament",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
                         name: "FK_Isciler_Vezifeler_VezifeId",
                         column: x => x.VezifeId,
                         principalTable: "Vezifeler",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -679,6 +727,12 @@ namespace FinNex.DataAccess.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AuditLogs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AuditLogs_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_AuditLogs_Senedler_SenedId",
                         column: x => x.SenedId,
@@ -819,6 +873,67 @@ namespace FinNex.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Icazeler",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    IsciId = table.Column<int>(type: "int", nullable: false),
+                    EvezEdenIsciId = table.Column<int>(type: "int", nullable: false),
+                    IcazeTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    BaslamaSaati = table.Column<TimeSpan>(type: "time", nullable: false),
+                    BitisSaati = table.Column<TimeSpan>(type: "time", nullable: false),
+                    Sebeb = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ImtinaSebebi = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    SobeReisiTesdiq = table.Column<bool>(type: "bit", nullable: true),
+                    SobeReisiId = table.Column<int>(type: "int", nullable: true),
+                    SobeReisiTesdiqTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    RehberTesdiq = table.Column<bool>(type: "bit", nullable: true),
+                    RehberId = table.Column<int>(type: "int", nullable: true),
+                    RehberTesdiqTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    HrTesdiq = table.Column<bool>(type: "bit", nullable: true),
+                    HrId = table.Column<int>(type: "int", nullable: true),
+                    HrTesdiqTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Silinib = table.Column<bool>(type: "bit", nullable: false),
+                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Icazeler", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Icazeler_Isciler_EvezEdenIsciId",
+                        column: x => x.EvezEdenIsciId,
+                        principalTable: "Isciler",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Icazeler_Isciler_HrId",
+                        column: x => x.HrId,
+                        principalTable: "Isciler",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Icazeler_Isciler_IsciId",
+                        column: x => x.IsciId,
+                        principalTable: "Isciler",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Icazeler_Isciler_RehberId",
+                        column: x => x.RehberId,
+                        principalTable: "Isciler",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Icazeler_Isciler_SobeReisiId",
+                        column: x => x.SobeReisiId,
+                        principalTable: "Isciler",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "IsciMaasTarixcesi",
                 columns: table => new
                 {
@@ -876,6 +991,82 @@ namespace FinNex.DataAccess.Migrations
                         principalTable: "Isciler",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "IsciStrukturRollari",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    IsciId = table.Column<int>(type: "int", nullable: false),
+                    RolTipi = table.Column<int>(type: "int", nullable: false),
+                    DepartamentId = table.Column<int>(type: "int", nullable: true),
+                    BaslamaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    BitmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Aktivdir = table.Column<bool>(type: "bit", nullable: false),
+                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Silinib = table.Column<bool>(type: "bit", nullable: false),
+                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_IsciStrukturRollari", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_IsciStrukturRollari_Departament_DepartamentId",
+                        column: x => x.DepartamentId,
+                        principalTable: "Departament",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_IsciStrukturRollari_Isciler_IsciId",
+                        column: x => x.IsciId,
+                        principalTable: "Isciler",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "IsciTeyinatlari",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    IsciId = table.Column<int>(type: "int", nullable: false),
+                    DepartamentId = table.Column<int>(type: "int", nullable: false),
+                    VezifeId = table.Column<int>(type: "int", nullable: false),
+                    BaslamaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    BitmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Esasdir = table.Column<bool>(type: "bit", nullable: false),
+                    Aktivdir = table.Column<bool>(type: "bit", nullable: false),
+                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Silinib = table.Column<bool>(type: "bit", nullable: false),
+                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_IsciTeyinatlari", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_IsciTeyinatlari_Departament_DepartamentId",
+                        column: x => x.DepartamentId,
+                        principalTable: "Departament",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_IsciTeyinatlari_Isciler_IsciId",
+                        column: x => x.IsciId,
+                        principalTable: "Isciler",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_IsciTeyinatlari_Vezifeler_VezifeId",
+                        column: x => x.VezifeId,
+                        principalTable: "Vezifeler",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -1070,6 +1261,11 @@ namespace FinNex.DataAccess.Migrations
                 column: "SenedId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_AuditLogs_UserId",
+                table: "AuditLogs",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_BankHesablari_BankId",
                 table: "BankHesablari",
                 column: "BankId");
@@ -1086,16 +1282,36 @@ namespace FinNex.DataAccess.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Icazeler_EvezEdenIsciId",
+                table: "Icazeler",
+                column: "EvezEdenIsciId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Icazeler_HrId",
+                table: "Icazeler",
+                column: "HrId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Icazeler_IsciId",
+                table: "Icazeler",
+                column: "IsciId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Icazeler_RehberId",
+                table: "Icazeler",
+                column: "RehberId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Icazeler_SobeReisiId",
+                table: "Icazeler",
+                column: "SobeReisiId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Isciler_AppUserId",
                 table: "Isciler",
                 column: "AppUserId",
                 unique: true,
                 filter: "[AppUserId] IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Isciler_DepartamentId",
-                table: "Isciler",
-                column: "DepartamentId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Isciler_FIN",
@@ -1118,6 +1334,31 @@ namespace FinNex.DataAccess.Migrations
                 table: "IsciMaliye",
                 column: "IsciId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IsciStrukturRollari_DepartamentId",
+                table: "IsciStrukturRollari",
+                column: "DepartamentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IsciStrukturRollari_IsciId",
+                table: "IsciStrukturRollari",
+                column: "IsciId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IsciTeyinatlari_DepartamentId",
+                table: "IsciTeyinatlari",
+                column: "DepartamentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IsciTeyinatlari_IsciId",
+                table: "IsciTeyinatlari",
+                column: "IsciId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IsciTeyinatlari_VezifeId",
+                table: "IsciTeyinatlari",
+                column: "VezifeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MaasDetay_MaasId",
@@ -1255,6 +1496,16 @@ namespace FinNex.DataAccess.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_UserPermissions_PermissionId",
+                table: "UserPermissions",
+                column: "PermissionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserPermissions_UserId",
+                table: "UserPermissions",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Vezifeler_Ad",
                 table: "Vezifeler",
                 column: "Ad",
@@ -1297,10 +1548,19 @@ namespace FinNex.DataAccess.Migrations
                 name: "Davamiyyetler");
 
             migrationBuilder.DropTable(
+                name: "Icazeler");
+
+            migrationBuilder.DropTable(
                 name: "IsciMaasTarixcesi");
 
             migrationBuilder.DropTable(
                 name: "IsciMaliye");
+
+            migrationBuilder.DropTable(
+                name: "IsciStrukturRollari");
+
+            migrationBuilder.DropTable(
+                name: "IsciTeyinatlari");
 
             migrationBuilder.DropTable(
                 name: "MaasDetay");
@@ -1330,6 +1590,9 @@ namespace FinNex.DataAccess.Migrations
                 name: "UserDepartments");
 
             migrationBuilder.DropTable(
+                name: "UserPermissions");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
@@ -1349,6 +1612,9 @@ namespace FinNex.DataAccess.Migrations
 
             migrationBuilder.DropTable(
                 name: "Tagler");
+
+            migrationBuilder.DropTable(
+                name: "Permissions");
 
             migrationBuilder.DropTable(
                 name: "Isciler");
