@@ -8,7 +8,7 @@ namespace FinNex.Application.DTOs.HR.Isci
 
         public string Ad { get; set; } = null!;
         public string Soyad { get; set; } = null!;
-        public string AtaAdi { get; set; } = null!;
+        public string? AtaAdi { get; set; }
 
         public string FIN { get; set; } = null!;
         public string SeriyaNomre { get; set; } = null!;
@@ -20,15 +20,15 @@ namespace FinNex.Application.DTOs.HR.Isci
         public string? Email { get; set; }
         public string? Unvan { get; set; }
 
-        public string Sobe { get; set; } = null!;
-        public string Vezife { get; set; } = null!;
+        public string SobeAdi { get; set; } = null!;
+        public string VezifeAdi { get; set; } = null!;
 
-        public DateTime IsheBaslamaTarixi { get; set; }
-        public DateTime? IshtenCixmaTarixi { get; set; }
+        public DateTime IsheQebulTarixi { get; set; }
+        public DateTime? IsdenAyrilmaTarixi { get; set; }
 
         public IsciStatus Status { get; set; }
 
         public bool LoginVar { get; set; }
+        public string TamAd => $"{Ad} {Soyad} {AtaAdi}".Trim();
     }
-
 }

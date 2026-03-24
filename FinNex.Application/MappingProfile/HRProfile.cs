@@ -34,6 +34,15 @@ public class HRProfile : Profile
         // ISCI
         // =========================
 
+        CreateMap<IsciCreateDto, Isci>()
+    .ForMember(dest => dest.AppUserId, opt => opt.MapFrom(src => src.UserId))
+    .ForMember(dest => dest.IsheQebulTarixi, opt => opt.MapFrom(src => src.IsheQebulTarixi))
+    .ForMember(dest => dest.Maliye, opt => opt.Ignore())
+    .ForMember(dest => dest.MezuniyyetBalans, opt => opt.Ignore())
+    .ForMember(dest => dest.Maaslar, opt => opt.Ignore())
+    .ForMember(dest => dest.MaasTarixcesi, opt => opt.Ignore())
+    .ForMember(dest => dest.IsciTeyinatlari, opt => opt.Ignore());
+
         CreateMap<Isci, IsciListDto>()
             .ForMember(dest => dest.TamAd,
                 opt => opt.MapFrom(src => $"{src.Ad} {src.Soyad} {src.AtaAdi}"))
@@ -53,18 +62,6 @@ public class HRProfile : Profile
                         .FirstOrDefault()));
 
         CreateMap<Isci, IsciDetailDto>()
-            .ForMember(dest => dest.Sobe,
-                opt => opt.MapFrom(src =>
-                    src.IsciTeyinatlari
-                        .Where(t => t.Aktivdir)
-                        .Select(t => t.Departament.Ad)
-                        .FirstOrDefault()))
-            .ForMember(dest => dest.Vezife,
-                opt => opt.MapFrom(src =>
-                    src.IsciTeyinatlari
-                        .Where(t => t.Aktivdir)
-                        .Select(t => t.Vezife.Ad)
-                        .FirstOrDefault()))
             .ForMember(dest => dest.LoginVar,
                 opt => opt.MapFrom(src => src.AppUserId != null));
 

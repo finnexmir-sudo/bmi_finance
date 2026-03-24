@@ -121,7 +121,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 VezifeId = vm.VezifeId,
                 Telefon = vm.Telefon,
                 DepartamentId = vm.DepartamentId,
-                IsheBaslamaTarixi = vm.IseQebulTarixi,
+                IsheQebulTarixi = vm.IseQebulTarixi,
                 FIN = vm.FIN,
                 Unvan = vm.Unvan,
                 SeriyaNomre = vm.SeriyaNomre,

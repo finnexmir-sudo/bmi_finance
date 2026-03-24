@@ -13,7 +13,6 @@ namespace FinNex.Domain.Entities.HR
         public Departament Departament { get; set; } = null!; // Navigation Property
                                                               // --------------------------------
 
-        public ICollection<Isci> Isciler { get; set; } = new List<Isci>();
     }
 
 }

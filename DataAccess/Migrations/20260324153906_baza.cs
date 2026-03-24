@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FinNex.DataAccess.Migrations
 {
     /// <inheritdoc />
-    public partial class InitNewStructure : Migration
+    public partial class baza : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -358,6 +358,45 @@ namespace FinNex.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Isciler",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Ad = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Soyad = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AtaAdi = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    FIN = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    SeriyaNomre = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DogumTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Cins = table.Column<int>(type: "int", nullable: false),
+                    Telefon = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Unvan = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsheQebulTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsdenAyrilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    AppUserId = table.Column<int>(type: "int", nullable: true),
+                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Silinib = table.Column<bool>(type: "bit", nullable: false),
+                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Isciler", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Isciler_AspNetUsers_AppUserId",
+                        column: x => x.AppUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "SenedNovleri",
                 columns: table => new
                 {
@@ -552,297 +591,6 @@ namespace FinNex.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Senedler",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    DepartmentId = table.Column<int>(type: "int", nullable: false),
-                    SenedNovuId = table.Column<int>(type: "int", nullable: false),
-                    Basliq = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    AcarSoz = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    Mexfilik = table.Column<int>(type: "int", nullable: false),
-                    ReferenceType = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ReferenceId = table.Column<int>(type: "int", nullable: true),
-                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Silinib = table.Column<bool>(type: "bit", nullable: false),
-                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Senedler", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Senedler_Departament_DepartmentId",
-                        column: x => x.DepartmentId,
-                        principalTable: "Departament",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Senedler_SenedNovleri_SenedNovuId",
-                        column: x => x.SenedNovuId,
-                        principalTable: "SenedNovleri",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Isciler",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Ad = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Soyad = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    AtaAdi = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    FIN = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    SeriyaNomre = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    DogumTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Cins = table.Column<int>(type: "int", nullable: false),
-                    Telefon = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Email = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Unvan = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    IsheQebulTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    IsdenAyrilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    AppUserId = table.Column<int>(type: "int", nullable: true),
-                    VezifeId = table.Column<int>(type: "int", nullable: true),
-                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Silinib = table.Column<bool>(type: "bit", nullable: false),
-                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Isciler", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Isciler_AspNetUsers_AppUserId",
-                        column: x => x.AppUserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
-                    table.ForeignKey(
-                        name: "FK_Isciler_Vezifeler_VezifeId",
-                        column: x => x.VezifeId,
-                        principalTable: "Vezifeler",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "OdenisTapsiriqlari",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Nomre = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Tarix = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    OduyenBankId = table.Column<int>(type: "int", nullable: false),
-                    OduyenMusteriId = table.Column<int>(type: "int", nullable: false),
-                    OduyenHesabId = table.Column<int>(type: "int", nullable: false),
-                    AlanBankId = table.Column<int>(type: "int", nullable: false),
-                    AlanMusteriId = table.Column<int>(type: "int", nullable: false),
-                    AlanHesabId = table.Column<int>(type: "int", nullable: false),
-                    Mebleg = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    ValyutaId = table.Column<int>(type: "int", nullable: false),
-                    MeblegYazi = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Teyinat = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ElaveInformasiya = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    BudceTesnifatininKodu = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    BudceSeviyyesininKodu = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Silinib = table.Column<bool>(type: "bit", nullable: false),
-                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_OdenisTapsiriqlari", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_OdenisTapsiriqlari_Banklar_AlanBankId",
-                        column: x => x.AlanBankId,
-                        principalTable: "Banklar",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_OdenisTapsiriqlari_Banklar_OduyenBankId",
-                        column: x => x.OduyenBankId,
-                        principalTable: "Banklar",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_OdenisTapsiriqlari_MusteriHesablari_AlanHesabId",
-                        column: x => x.AlanHesabId,
-                        principalTable: "MusteriHesablari",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_OdenisTapsiriqlari_MusteriHesablari_OduyenHesabId",
-                        column: x => x.OduyenHesabId,
-                        principalTable: "MusteriHesablari",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_OdenisTapsiriqlari_Musteriler_AlanMusteriId",
-                        column: x => x.AlanMusteriId,
-                        principalTable: "Musteriler",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_OdenisTapsiriqlari_Musteriler_OduyenMusteriId",
-                        column: x => x.OduyenMusteriId,
-                        principalTable: "Musteriler",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_OdenisTapsiriqlari_Valyutalar_ValyutaId",
-                        column: x => x.ValyutaId,
-                        principalTable: "Valyutalar",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "AuditLogs",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    Action = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    SenedId = table.Column<int>(type: "int", nullable: true),
-                    Ip = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    DetailsJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Silinib = table.Column<bool>(type: "bit", nullable: false),
-                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_AuditLogs", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_AuditLogs_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_AuditLogs_Senedler_SenedId",
-                        column: x => x.SenedId,
-                        principalTable: "Senedler",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SenedAccessler",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    SenedId = table.Column<int>(type: "int", nullable: false),
-                    PrincipalType = table.Column<int>(type: "int", nullable: false),
-                    PrincipalId = table.Column<int>(type: "int", nullable: false),
-                    Permission = table.Column<int>(type: "int", nullable: false),
-                    SenedId1 = table.Column<int>(type: "int", nullable: true),
-                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Silinib = table.Column<bool>(type: "bit", nullable: false),
-                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SenedAccessler", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_SenedAccessler_Senedler_SenedId",
-                        column: x => x.SenedId,
-                        principalTable: "Senedler",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_SenedAccessler_Senedler_SenedId1",
-                        column: x => x.SenedId1,
-                        principalTable: "Senedler",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SenedFayllar",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    SenedId = table.Column<int>(type: "int", nullable: false),
-                    VersiyaNo = table.Column<int>(type: "int", nullable: false),
-                    OriginalAd = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    StoredAd = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ContentType = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    OlcuBytes = table.Column<long>(type: "bigint", nullable: false),
-                    Sha256 = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Yol = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    AktivVersiya = table.Column<bool>(type: "bit", nullable: false),
-                    StorageProvider = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Silinib = table.Column<bool>(type: "bit", nullable: false),
-                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SenedFayllar", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_SenedFayllar_Senedler_SenedId",
-                        column: x => x.SenedId,
-                        principalTable: "Senedler",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SenedTagMaps",
-                columns: table => new
-                {
-                    SenedId = table.Column<int>(type: "int", nullable: false),
-                    TagId = table.Column<int>(type: "int", nullable: false),
-                    Id = table.Column<int>(type: "int", nullable: false),
-                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Silinib = table.Column<bool>(type: "bit", nullable: false),
-                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SenedTagMaps", x => new { x.SenedId, x.TagId });
-                    table.ForeignKey(
-                        name: "FK_SenedTagMaps_Senedler_SenedId",
-                        column: x => x.SenedId,
-                        principalTable: "Senedler",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_SenedTagMaps_Tagler_TagId",
-                        column: x => x.TagId,
-                        principalTable: "Tagler",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Davamiyyetler",
                 columns: table => new
                 {
@@ -1029,47 +777,6 @@ namespace FinNex.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "IsciTeyinatlari",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    IsciId = table.Column<int>(type: "int", nullable: false),
-                    DepartamentId = table.Column<int>(type: "int", nullable: false),
-                    VezifeId = table.Column<int>(type: "int", nullable: false),
-                    BaslamaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    BitmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Esasdir = table.Column<bool>(type: "bit", nullable: false),
-                    Aktivdir = table.Column<bool>(type: "bit", nullable: false),
-                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Silinib = table.Column<bool>(type: "bit", nullable: false),
-                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_IsciTeyinatlari", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_IsciTeyinatlari_Departament_DepartamentId",
-                        column: x => x.DepartamentId,
-                        principalTable: "Departament",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_IsciTeyinatlari_Isciler_IsciId",
-                        column: x => x.IsciId,
-                        principalTable: "Isciler",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_IsciTeyinatlari_Vezifeler_VezifeId",
-                        column: x => x.VezifeId,
-                        principalTable: "Vezifeler",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Maaslar",
                 columns: table => new
                 {
@@ -1182,6 +889,156 @@ namespace FinNex.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Senedler",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    DepartmentId = table.Column<int>(type: "int", nullable: false),
+                    SenedNovuId = table.Column<int>(type: "int", nullable: false),
+                    Basliq = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AcarSoz = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    Mexfilik = table.Column<int>(type: "int", nullable: false),
+                    ReferenceType = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ReferenceId = table.Column<int>(type: "int", nullable: true),
+                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Silinib = table.Column<bool>(type: "bit", nullable: false),
+                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Senedler", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Senedler_Departament_DepartmentId",
+                        column: x => x.DepartmentId,
+                        principalTable: "Departament",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Senedler_SenedNovleri_SenedNovuId",
+                        column: x => x.SenedNovuId,
+                        principalTable: "SenedNovleri",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "IsciTeyinatlari",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    IsciId = table.Column<int>(type: "int", nullable: false),
+                    DepartamentId = table.Column<int>(type: "int", nullable: false),
+                    VezifeId = table.Column<int>(type: "int", nullable: false),
+                    BaslamaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    BitmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Esasdir = table.Column<bool>(type: "bit", nullable: false),
+                    Aktivdir = table.Column<bool>(type: "bit", nullable: false),
+                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Silinib = table.Column<bool>(type: "bit", nullable: false),
+                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_IsciTeyinatlari", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_IsciTeyinatlari_Departament_DepartamentId",
+                        column: x => x.DepartamentId,
+                        principalTable: "Departament",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_IsciTeyinatlari_Isciler_IsciId",
+                        column: x => x.IsciId,
+                        principalTable: "Isciler",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_IsciTeyinatlari_Vezifeler_VezifeId",
+                        column: x => x.VezifeId,
+                        principalTable: "Vezifeler",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OdenisTapsiriqlari",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Nomre = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Tarix = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    OduyenBankId = table.Column<int>(type: "int", nullable: false),
+                    OduyenMusteriId = table.Column<int>(type: "int", nullable: false),
+                    OduyenHesabId = table.Column<int>(type: "int", nullable: false),
+                    AlanBankId = table.Column<int>(type: "int", nullable: false),
+                    AlanMusteriId = table.Column<int>(type: "int", nullable: false),
+                    AlanHesabId = table.Column<int>(type: "int", nullable: false),
+                    Mebleg = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    ValyutaId = table.Column<int>(type: "int", nullable: false),
+                    MeblegYazi = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Teyinat = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ElaveInformasiya = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    BudceTesnifatininKodu = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    BudceSeviyyesininKodu = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Silinib = table.Column<bool>(type: "bit", nullable: false),
+                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OdenisTapsiriqlari", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OdenisTapsiriqlari_Banklar_AlanBankId",
+                        column: x => x.AlanBankId,
+                        principalTable: "Banklar",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_OdenisTapsiriqlari_Banklar_OduyenBankId",
+                        column: x => x.OduyenBankId,
+                        principalTable: "Banklar",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_OdenisTapsiriqlari_MusteriHesablari_AlanHesabId",
+                        column: x => x.AlanHesabId,
+                        principalTable: "MusteriHesablari",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_OdenisTapsiriqlari_MusteriHesablari_OduyenHesabId",
+                        column: x => x.OduyenHesabId,
+                        principalTable: "MusteriHesablari",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_OdenisTapsiriqlari_Musteriler_AlanMusteriId",
+                        column: x => x.AlanMusteriId,
+                        principalTable: "Musteriler",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_OdenisTapsiriqlari_Musteriler_OduyenMusteriId",
+                        column: x => x.OduyenMusteriId,
+                        principalTable: "Musteriler",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_OdenisTapsiriqlari_Valyutalar_ValyutaId",
+                        column: x => x.ValyutaId,
+                        principalTable: "Valyutalar",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "MaasDetay",
                 columns: table => new
                 {
@@ -1212,6 +1069,143 @@ namespace FinNex.DataAccess.Migrations
                         name: "FK_MaasDetay_Maaslar_MaasId",
                         column: x => x.MaasId,
                         principalTable: "Maaslar",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AuditLogs",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    Action = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SenedId = table.Column<int>(type: "int", nullable: true),
+                    Ip = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DetailsJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Silinib = table.Column<bool>(type: "bit", nullable: false),
+                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AuditLogs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AuditLogs_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AuditLogs_Senedler_SenedId",
+                        column: x => x.SenedId,
+                        principalTable: "Senedler",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SenedAccessler",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    SenedId = table.Column<int>(type: "int", nullable: false),
+                    PrincipalType = table.Column<int>(type: "int", nullable: false),
+                    PrincipalId = table.Column<int>(type: "int", nullable: false),
+                    Permission = table.Column<int>(type: "int", nullable: false),
+                    SenedId1 = table.Column<int>(type: "int", nullable: true),
+                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Silinib = table.Column<bool>(type: "bit", nullable: false),
+                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SenedAccessler", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SenedAccessler_Senedler_SenedId",
+                        column: x => x.SenedId,
+                        principalTable: "Senedler",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_SenedAccessler_Senedler_SenedId1",
+                        column: x => x.SenedId1,
+                        principalTable: "Senedler",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SenedFayllar",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    SenedId = table.Column<int>(type: "int", nullable: false),
+                    VersiyaNo = table.Column<int>(type: "int", nullable: false),
+                    OriginalAd = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    StoredAd = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ContentType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    OlcuBytes = table.Column<long>(type: "bigint", nullable: false),
+                    Sha256 = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Yol = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AktivVersiya = table.Column<bool>(type: "bit", nullable: false),
+                    StorageProvider = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Silinib = table.Column<bool>(type: "bit", nullable: false),
+                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SenedFayllar", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SenedFayllar_Senedler_SenedId",
+                        column: x => x.SenedId,
+                        principalTable: "Senedler",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SenedTagMaps",
+                columns: table => new
+                {
+                    SenedId = table.Column<int>(type: "int", nullable: false),
+                    TagId = table.Column<int>(type: "int", nullable: false),
+                    Id = table.Column<int>(type: "int", nullable: false),
+                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Silinib = table.Column<bool>(type: "bit", nullable: false),
+                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SenedTagMaps", x => new { x.SenedId, x.TagId });
+                    table.ForeignKey(
+                        name: "FK_SenedTagMaps_Senedler_SenedId",
+                        column: x => x.SenedId,
+                        principalTable: "Senedler",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_SenedTagMaps_Tagler_TagId",
+                        column: x => x.TagId,
+                        principalTable: "Tagler",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -1318,11 +1312,6 @@ namespace FinNex.DataAccess.Migrations
                 table: "Isciler",
                 column: "FIN",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Isciler_VezifeId",
-                table: "Isciler",
-                column: "VezifeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_IsciMaasTarixcesi_IsciId",
@@ -1596,6 +1585,9 @@ namespace FinNex.DataAccess.Migrations
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
+                name: "Vezifeler");
+
+            migrationBuilder.DropTable(
                 name: "MaasNovu");
 
             migrationBuilder.DropTable(
@@ -1630,9 +1622,6 @@ namespace FinNex.DataAccess.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
-
-            migrationBuilder.DropTable(
-                name: "Vezifeler");
 
             migrationBuilder.DropTable(
                 name: "Departament");

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FinNex.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260323204542_InitNewStructure")]
-    partial class InitNewStructure
+    [Migration("20260324153906_baza")]
+    partial class baza
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -393,9 +393,6 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<string>("Unvan")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("VezifeId")
-                        .HasColumnType("int");
-
                     b.Property<int?>("YaradanIcraciId")
                         .HasColumnType("int");
 
@@ -416,8 +413,6 @@ namespace FinNex.DataAccess.Migrations
 
                     b.HasIndex("FIN")
                         .IsUnique();
-
-                    b.HasIndex("VezifeId");
 
                     b.ToTable("Isciler");
                 });
@@ -2073,10 +2068,6 @@ namespace FinNex.DataAccess.Migrations
                         .HasForeignKey("FinNex.Domain.Entities.HR.Isci", "AppUserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("FinNex.Domain.Entities.HR.Vezife", null)
-                        .WithMany("Isciler")
-                        .HasForeignKey("VezifeId");
-
                     b.Navigation("AppUser");
                 });
 
@@ -2527,11 +2518,6 @@ namespace FinNex.DataAccess.Migrations
             modelBuilder.Entity("FinNex.Domain.Entities.HR.MaasNovu", b =>
                 {
                     b.Navigation("MaasDetallari");
-                });
-
-            modelBuilder.Entity("FinNex.Domain.Entities.HR.Vezife", b =>
-                {
-                    b.Navigation("Isciler");
                 });
 
             modelBuilder.Entity("FinNex.Domain.Entities.PR_Odenis_Tapsirigi.Bank", b =>

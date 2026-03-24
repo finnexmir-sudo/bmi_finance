@@ -14,9 +14,9 @@ namespace FinNex.UI.Areas.HR.ViewModels
         [Display(Name = "Departament")]
         public int DepartamentId { get; set; }
 
-        [Display(Name = "Əsas Maaş")]
-        [Range(0, 999999.99, ErrorMessage = "Maaş 0 ilə 999999.99 arasında olmalıdır")]
-        public decimal? Maas { get; set; }
+        //[Display(Name = "Əsas Maaş")]
+        //[Range(0, 999999.99, ErrorMessage = "Maaş 0 ilə 999999.99 arasında olmalıdır")]
+        //public decimal? Maas { get; set; }
 
         [StringLength(500, ErrorMessage = "Təsvir maksimum 500 simvol ola bilər")]
         [Display(Name = "Təsvir")]
