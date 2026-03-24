@@ -1,0 +1,308 @@
+@model FinNex.UI.Areas.HR.ViewModels.IsciDetailVM
+@using FinNex.Domain.Entities.HR
+
+@{
+    ViewData["Title"] = Model.TamAd;
+    Layout = "_HRLayout";
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="toast-success" id="toastSuccess">
+        <i class="bi bi-check-circle-fill"></i>
+        @TempData["Success"]
+    </div>
+}
+
+<!-- Profile Hero -->
+<div class="profile-hero">
+    <div class="profile-hero-left">
+        <div class="profile-avatar-xl">
+            @Model.Ad.Substring(0, 1)@Model.Soyad.Substring(0, 1)
+        </div>
+        <div class="profile-hero-info">
+            <h1 class="profile-name">@Model.TamAd</h1>
+            <div class="profile-meta-row">
+                <span class="profile-badge-dept">
+                    <i class="bi bi-building"></i>
+                    @(Model.CariDepartament ?? "—")
+                </span>
+                <span class="profile-badge-role">
+                    <i class="bi bi-briefcase"></i>
+                    @(Model.CariVezife ?? "—")
+                </span>
+                <span class="profile-status @(Model.Status == IsciStatus.Aktiv ? "status-on" : "status-off")">
+                    <span class="status-dot"></span>
+                    @(Model.Status == IsciStatus.Aktiv ? "Aktiv" : "Qeyri-aktiv")
+                </span>
+            </div>
+            <div class="profile-fin">FIN: <strong>@Model.FIN</strong></div>
+        </div>
+    </div>
+    <div class="profile-hero-actions">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="ph-btn ph-btn-outline">
+            <i class="bi bi-pencil-square"></i> Redaktə Et
+        </a>
+        <a asp-action="TeyinatDeyis" asp-route-id="@Model.Id" class="ph-btn ph-btn-blue">
+            <i class="bi bi-arrow-left-right"></i> Təyinat Dəyiş
+        </a>
+        <a asp-action="MaasDeyis" asp-route-id="@Model.Id" class="ph-btn ph-btn-emerald">
+            <i class="bi bi-currency-dollar"></i> Maaş Dəyiş
+        </a>
+    </div>
+</div>
+
+<!-- Stat Strip -->
+<div class="stat-strip">
+    <div class="stat-strip-item">
+        <div class="stat-strip-ico indigo"><i class="bi bi-calendar-check"></i></div>
+        <div>
+            <div class="stat-strip-label">İşə Başlama</div>
+            <div class="stat-strip-val">@Model.IsheQebulTarixi.ToString("dd.MM.yyyy")</div>
+        </div>
+    </div>
+    <div class="stat-strip-item">
+        <div class="stat-strip-ico emerald"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <div class="stat-strip-label">Cari Maaş</div>
+            <div class="stat-strip-val">@Model.CariMaas.ToString("N2") ₼</div>
+        </div>
+    </div>
+    <div class="stat-strip-item">
+        <div class="stat-strip-ico blue"><i class="bi bi-clock-history"></i></div>
+        <div>
+            <div class="stat-strip-label">Staj</div>
+            <div class="stat-strip-val">
+                @{
+                    var staj = DateTime.Today - Model.IsheQebulTarixi;
+                    var il = (int)(staj.TotalDays / 365);
+                    var ay = (int)((staj.TotalDays % 365) / 30);
+                }
+                @il il @ay ay
+            </div>
+        </div>
+    </div>
+    <div class="stat-strip-item">
+        <div class="stat-strip-ico amber"><i class="bi bi-person-badge"></i></div>
+        <div>
+            <div class="stat-strip-label">Şəxsiyyət</div>
+            <div class="stat-strip-val">@Model.SeriyaNomre</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="detail-tabs">
+    <button class="detail-tab active" data-tab="info">
+        <i class="bi bi-person-lines-fill"></i> Şəxsi Məlumat
+    </button>
+    <button class="detail-tab" data-tab="teyinat">
+        <i class="bi bi-diagram-3"></i> Təyinat Tarixçəsi
+        <span class="tab-count">@Model.TeyinatTarixcesi.Count</span>
+    </button>
+    <button class="detail-tab" data-tab="maas">
+        <i class="bi bi-graph-up-arrow"></i> Maaş Tarixçəsi
+        <span class="tab-count">@Model.MaasTarixcesi.Count</span>
+    </button>
+</div>
+
+<!-- Tab: Şəxsi Məlumat -->
+<div class="tab-panel active" id="tab-info">
+    <div class="info-grid">
+        <div class="info-card">
+            <div class="info-card-title"><i class="bi bi-person-fill"></i> Şəxsi Məlumatlar</div>
+            <div class="info-rows">
+                <div class="info-row">
+                    <span class="info-key">Ad Soyad</span>
+                    <span class="info-val">@Model.TamAd</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-key">FIN Kod</span>
+                    <span class="info-val info-mono">@Model.FIN</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-key">Şəxsiyyət Vəsiqəsi</span>
+                    <span class="info-val info-mono">@Model.SeriyaNomre</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-key">Doğum Tarixi</span>
+                    <span class="info-val">@Model.DogumTarixi.ToString("dd MMMM yyyy")</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-key">Cins</span>
+                    <span class="info-val">@Model.CinsAd</span>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Unvan))
+                {
+                    <div class="info-row">
+                        <span class="info-key">Ünvan</span>
+                        <span class="info-val">@Model.Unvan</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-card-title"><i class="bi bi-telephone-fill"></i> Əlaqə Məlumatları</div>
+            <div class="info-rows">
+                @if (!string.IsNullOrEmpty(Model.Telefon))
+                {
+                    <div class="info-row">
+                        <span class="info-key">Telefon</span>
+                        <span class="info-val">
+                            <a href="tel:@Model.Telefon" class="info-link">@Model.Telefon</a>
+                        </span>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Email))
+                {
+                    <div class="info-row">
+                        <span class="info-key">Email</span>
+                        <span class="info-val">
+                            <a href="mailto:@Model.Email" class="info-link">@Model.Email</a>
+                        </span>
+                    </div>
+                }
+            </div>
+            <div class="info-card-title mt-16"><i class="bi bi-building-fill"></i> İş Məlumatları</div>
+            <div class="info-rows">
+                <div class="info-row">
+                    <span class="info-key">Departament</span>
+                    <span class="info-val">@(Model.CariDepartament ?? "—")</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-key">Vəzifə</span>
+                    <span class="info-val">@(Model.CariVezife ?? "—")</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-key">İşə başlama</span>
+                    <span class="info-val">@Model.IsheQebulTarixi.ToString("dd.MM.yyyy")</span>
+                </div>
+                @if (Model.IsdenAyrilmaTarixi.HasValue)
+                {
+                    <div class="info-row">
+                        <span class="info-key">İşdən ayrılma</span>
+                        <span class="info-val text-rose">@Model.IsdenAyrilmaTarixi.Value.ToString("dd.MM.yyyy")</span>
+                    </div>
+                }
+                <div class="info-row">
+                    <span class="info-key">Sistem Girişi</span>
+                    <span class="info-val">
+                        @if (Model.LoginVar)
+                        {
+                            <span class="badge-yes"><i class="bi bi-check-circle-fill"></i> Var</span>
+                        }
+                        else
+                        {
+                            <span class="badge-no"><i class="bi bi-x-circle-fill"></i> Yoxdur</span>
+                        }
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tab: Teyinat Tarixçəsi -->
+<div class="tab-panel" id="tab-teyinat">
+    @if (!Model.TeyinatTarixcesi.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon"><i class="bi bi-diagram-3"></i></div>
+            <div class="empty-title">Təyinat tarixçəsi yoxdur</div>
+        </div>
+    }
+    else
+    {
+        <div class="timeline">
+            @foreach (var t in Model.TeyinatTarixcesi.OrderByDescending(x => x.BaslamaTarixi))
+            {
+                <div class="timeline-item @(t.Aktivdir ? "tl-active" : "")">
+                    <div class="tl-dot @(t.Aktivdir ? "dot-active" : "dot-past")"></div>
+                    <div class="tl-body">
+                        <div class="tl-head">
+                            <div class="tl-title">@t.DepartamentAd</div>
+                            @if (t.Aktivdir)
+                            {
+                                <span class="tl-badge-aktiv">Aktiv</span>
+                            }
+                        </div>
+                        <div class="tl-sub">@t.VezifeAd</div>
+                        <div class="tl-dates">
+                            <i class="bi bi-calendar3"></i>
+                            @t.BaslamaTarixi.ToString("dd.MM.yyyy")
+                            @if (t.BitmeTarixi.HasValue)
+                            {
+                                <span> — @t.BitmeTarixi.Value.ToString("dd.MM.yyyy")</span>
+                            }
+                            else
+                            {
+                                <span> — davam edir</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Tab: Maaş Tarixçəsi -->
+<div class="tab-panel" id="tab-maas">
+    @if (!Model.MaasTarixcesi.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon"><i class="bi bi-cash-coin"></i></div>
+            <div class="empty-title">Maaş dəyişiklik tarixçəsi yoxdur</div>
+        </div>
+    }
+    else
+    {
+        <div class="maas-table-wrap">
+            <table class="maas-table">
+                <thead>
+                    <tr>
+                        <th>Tarix</th>
+                        <th>Köhnə Maaş</th>
+                        <th>Yeni Maaş</th>
+                        <th>Fərq</th>
+                        <th>Əmr Nömrəsi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in Model.MaasTarixcesi)
+                    {
+                        var ferg = m.YeniMaas - m.KohneMaas;
+                        <tr>
+                            <td>@m.DeyismeTarixi.ToString("dd.MM.yyyy")</td>
+                            <td class="maas-val">@m.KohneMaas.ToString("N2") ₼</td>
+                            <td class="maas-val new">@m.YeniMaas.ToString("N2") ₼</td>
+                            <td>
+                                <span class="maas-diff @(ferg >= 0 ? "diff-up" : "diff-down")">
+                                    <i class="bi @(ferg >= 0 ? "bi-arrow-up" : "bi-arrow-down")"></i>
+                                    @Math.Abs(ferg).ToString("N2") ₼
+                                </span>
+                            </td>
+                            <td class="maas-emr">@(m.EmrinNomresi ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Back link -->
+<div class="back-row">
+    <a asp-action="Index" class="back-link">
+        <i class="bi bi-arrow-left"></i> İşçilər siyahısına qayıt
+    </a>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/isci-detail.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/hr/isci-detail.js" asp-append-version="true"></script>
+}

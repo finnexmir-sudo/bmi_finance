@@ -132,6 +132,13 @@
                     <input asp-for="IseQebulTarixi" type="date" class="form-input" />
                     <span asp-validation-for="IseQebulTarixi" class="error-text"></span>
                 </div>
+
+                <!-- Başlanğıc Maaş -->
+                <div class="form-field">
+                    <label asp-for="BaslangicMaas">Başlanğıc Maaş (₼)</label>
+                    <input asp-for="BaslangicMaas" type="number" step="0.01" min="0" class="form-input" placeholder="0.00" />
+                    <span asp-validation-for="BaslangicMaas" class="error-text"></span>
+                </div>
             </div>
 
             <div class="form-actions">

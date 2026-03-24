@@ -1,0 +1,95 @@
+@model FinNex.UI.Areas.HR.ViewModels.MaasDeyisVM
+
+@{
+    ViewData["Title"] = "Maaş Dəyişikliyi";
+    Layout = "_HRLayout";
+}
+
+<div class="form-page-header">
+    <a asp-action="Detail" asp-route-id="@Model.IsciId" class="form-back-link">
+        <i class="bi bi-arrow-left"></i> Geriyə
+    </a>
+    <div>
+        <h2 class="form-page-title">Maaş Dəyişikliyi</h2>
+        <p class="form-page-sub">@Model.IsciTamAd üçün maaş yeniləmə</p>
+    </div>
+</div>
+
+<div class="maas-deyis-layout">
+
+    <!-- Mövcud Maaş -->
+    <div class="maas-current-card">
+        <div class="mc-label">Cari Maaş</div>
+        <div class="mc-amount">@Model.KohneMaas.ToString("N2") <span class="mc-currency">₼</span></div>
+        <div class="mc-sub">Aylıq xalis maaş</div>
+        <div class="mc-worker">
+            <i class="bi bi-person-fill"></i> @Model.IsciTamAd
+        </div>
+    </div>
+
+    <!-- Dəyişiklik Forması -->
+    <div class="form-card">
+        <form asp-action="MaasDeyis" method="post" id="maasForm">
+            <input type="hidden" asp-for="IsciId" />
+            <input type="hidden" asp-for="IsciTamAd" />
+            <input type="hidden" asp-for="KohneMaas" />
+            <div asp-validation-summary="ModelOnly" class="alert-error"></div>
+
+            <div class="section-label">
+                <i class="bi bi-cash-stack"></i> Yeni Maaş Məlumatı
+            </div>
+
+            <div class="form-field">
+                <label asp-for="YeniMaas">Yeni Maaş (₼) <span class="req">*</span></label>
+                <div class="input-prefix-wrap">
+                    <span class="input-prefix">₼</span>
+                    <input asp-for="YeniMaas" type="number" step="0.01" min="0.01"
+                           class="form-input has-prefix" id="yeniMaasInput"
+                           placeholder="0.00" />
+                </div>
+                <span asp-validation-for="YeniMaas" class="error-text"></span>
+            </div>
+
+            <!-- Fərq göstəricisi -->
+            <div class="maas-diff-preview" id="diffPreview" style="display:none">
+                <div class="diff-from">@Model.KohneMaas.ToString("N2") ₼</div>
+                <div class="diff-arrow"><i class="bi bi-arrow-right"></i></div>
+                <div class="diff-to" id="diffTo">—</div>
+                <div class="diff-amount" id="diffAmount"></div>
+            </div>
+
+            <div class="form-field">
+                <label asp-for="EmrNomresi">Əmr Nömrəsi <span class="req">*</span></label>
+                <input asp-for="EmrNomresi" class="form-input" placeholder="Məs: Əmr №12/2024" />
+                <span asp-validation-for="EmrNomresi" class="error-text"></span>
+            </div>
+
+            <div class="info-notice">
+                <i class="bi bi-info-circle-fill"></i>
+                Bu dəyişiklik maaş tarixçəsində qeyd olunacaq və geri qaytarıla bilməz.
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-save btn-emerald">
+                    <i class="bi bi-check-lg"></i> Maaşı Yenilə
+                </button>
+                <a asp-action="Detail" asp-route-id="@Model.IsciId" class="btn-cancel">
+                    <i class="bi bi-x-lg"></i> Ləğv Et
+                </a>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/isci-teyinat.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const kohneMaas = @Model.KohneMaas;
+    </script>
+    <script src="~/js/hr/maas-deyis.js" asp-append-version="true"></script>
+}
