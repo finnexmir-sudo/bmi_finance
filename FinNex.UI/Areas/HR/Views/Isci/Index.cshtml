@@ -59,11 +59,17 @@
 
                         </td>
                         <td class="text-end">
-                            <a asp-action="Edit" asp-route-id="@item.Id" class="action-icon">
+                            <a asp-action="Detail" asp-route-id="@item.Id" class="action-icon" title="Bax">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="action-icon" title="Redaktə">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <a asp-action="Delete" asp-route-id="@item.Id" class="action-icon text-danger">
-                                <i class="bi bi-trash"></i>
+                            <a asp-action="TeyinatDeyis" asp-route-id="@item.Id" class="action-icon text-blue" title="Təyinat Dəyiş">
+                                <i class="bi bi-arrow-left-right"></i>
+                            </a>
+                            <a asp-action="MaasDeyis" asp-route-id="@item.Id" class="action-icon text-emerald" title="Maaş Dəyiş">
+                                <i class="bi bi-currency-dollar"></i>
                             </a>
                         </td>
                     </tr>

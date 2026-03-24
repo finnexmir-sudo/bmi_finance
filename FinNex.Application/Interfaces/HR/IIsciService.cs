@@ -10,4 +10,6 @@ public interface IIsciService : IServiceAsync<Isci, IsciListDto, IsciCreateDto, 
     Task<bool> CheckFinExistsAsync(string fin);
     Task<Result<List<IsciListDto>>> SearchIscilerByFinAsync(string fin);
     Task<Result> UpdateSalaryWithHistoryAsync(int isciId, decimal yeniMaas, string emrNo);
+    Task<Result<IList<IsciMaasTarixcesiDto>>> GetMaasTarixcesiAsync(int isciId);
+    Task<Result> TeyinatDeyisAsync(int isciId, int departamentId, int vezifeId, DateTime baslamaTarixi);
 }

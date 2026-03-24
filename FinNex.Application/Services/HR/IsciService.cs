@@ -5,6 +5,7 @@ using FinNex.Application.Services;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUpdateDto>, IIsciService
 {
@@ -81,13 +82,85 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
         var tarixce = new IsciMaasTarixcesi
         {
             IsciId = isciId,
-            KohneMaas = isci.Maliye.CariMaas,
+            KohneMaas = isci.Maliye != null ? isci.Maliye.CariMaas : 0,
             YeniMaas = yeniMaas,
             DeyismeTarixi = DateTime.Now,
             EmrinNomresi = emrNo
         };
-        isci.Maliye.CariMaas = yeniMaas;
+
+        if (isci.Maliye != null)
+        {
+            isci.Maliye.CariMaas = yeniMaas;
+            await _unitOfWork.Repository<IsciMaliye>().YenileAsync(isci.Maliye);
+        }
+        else
+        {
+            var maliye = new IsciMaliye { IsciId = isciId, CariMaas = yeniMaas };
+            await _unitOfWork.Repository<IsciMaliye>().YaratAsync(maliye);
+        }
+
         await _unitOfWork.Repository<IsciMaasTarixcesi>().YaratAsync(tarixce);
         return await _unitOfWork.YaddaSaxlaAsync() > 0 ? Result.Ok() : Result.Fail("Xəta!");
+    }
+
+    public async Task<Result<IList<IsciMaasTarixcesiDto>>> GetMaasTarixcesiAsync(int isciId)
+    {
+        try
+        {
+            var list = await _unitOfWork.Repository<IsciMaasTarixcesi>()
+                .HamisiniGetirAsync(x => x.IsciId == isciId, izlemeden: true);
+
+            var dto = list.OrderByDescending(x => x.DeyismeTarixi)
+                         .Select(x => new IsciMaasTarixcesiDto
+                         {
+                             Id = x.Id,
+                             IsciId = x.IsciId,
+                             KohneMaas = x.KohneMaas,
+                             YeniMaas = x.YeniMaas,
+                             DeyismeTarixi = x.DeyismeTarixi,
+                             EmrinNomresi = x.EmrinNomresi
+                         }).ToList();
+
+            return Result<IList<IsciMaasTarixcesiDto>>.Ok(dto);
+        }
+        catch
+        {
+            return Result<IList<IsciMaasTarixcesiDto>>.Fail("Maaş tarixçəsi gətirilərkən xəta baş verdi.");
+        }
+    }
+
+    public async Task<Result> TeyinatDeyisAsync(int isciId, int departamentId, int vezifeId, DateTime baslamaTarixi)
+    {
+        try
+        {
+            // Köhnə aktiv teyinatı deaktiv et
+            var kohne = await _unitOfWork.Repository<IsciTeyinat>()
+                .GetirAsync(x => x.IsciId == isciId && x.Aktivdir);
+
+            if (kohne != null)
+            {
+                kohne.Aktivdir = false;
+                kohne.BitmeTarixi = baslamaTarixi;
+                await _unitOfWork.Repository<IsciTeyinat>().YenileAsync(kohne);
+            }
+
+            // Yeni teyinat yarat
+            var yeniTeyinat = new IsciTeyinat
+            {
+                IsciId = isciId,
+                DepartamentId = departamentId,
+                VezifeId = vezifeId,
+                BaslamaTarixi = baslamaTarixi,
+                Esasdir = true,
+                Aktivdir = true
+            };
+            await _unitOfWork.Repository<IsciTeyinat>().YaratAsync(yeniTeyinat);
+
+            return await _unitOfWork.YaddaSaxlaAsync() > 0 ? Result.Ok() : Result.Fail("Xəta baş verdi.");
+        }
+        catch (Exception ex)
+        {
+            return Result.Fail($"Təyinat dəyişikliyi zamanı xəta: {ex.Message}");
+        }
     }
 }

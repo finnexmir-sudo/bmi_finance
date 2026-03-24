@@ -713,3 +713,36 @@ body {
         color: white;
     }
 
+/* Extra status */
+.status-passiv {
+    background: rgba(244,63,94,.12);
+    color: #e11d48;
+}
+
+/* Extra action icon colors */
+.action-icon.text-blue { color: #3b82f6; }
+.action-icon.text-blue:hover { color: #1d4ed8; }
+.action-icon.text-emerald { color: #059669; }
+.action-icon.text-emerald:hover { color: #047857; }
+
+/* Add button */
+.hr-btn-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #6366f1, #3b82f6);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    box-shadow: 0 10px 24px rgba(99,102,241,.28);
+    transition: .22s ease;
+}
+
+.hr-btn-add:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 32px rgba(99,102,241,.38);
+    color: #fff;
+}

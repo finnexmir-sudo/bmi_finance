@@ -1,0 +1,103 @@
+@model FinNex.UI.Areas.HR.ViewModels.TeyinatDeyisVM
+
+@{
+    ViewData["Title"] = "Təyinat Dəyişikliyi";
+    Layout = "_HRLayout";
+}
+
+<div class="form-page-header">
+    <a asp-action="Detail" asp-route-id="@Model.IsciId" class="form-back-link">
+        <i class="bi bi-arrow-left"></i> Geriyə
+    </a>
+    <div>
+        <h2 class="form-page-title">Təyinat Dəyişikliyi</h2>
+        <p class="form-page-sub">@Model.IsciTamAd üçün departament/vəzifə dəyişikliyi</p>
+    </div>
+</div>
+
+<div class="teyinat-layout">
+
+    <!-- Köhnə Vəziyyət -->
+    <div class="teyinat-current-card">
+        <div class="tc-label">Mövcud Vəziyyət</div>
+        <div class="tc-row">
+            <div class="tc-ico tc-ico-dept"><i class="bi bi-building"></i></div>
+            <div>
+                <div class="tc-key">Departament</div>
+                <div class="tc-val">@(Model.KohneDepartament ?? "Təyin edilməyib")</div>
+            </div>
+        </div>
+        <div class="tc-divider"></div>
+        <div class="tc-row">
+            <div class="tc-ico tc-ico-role"><i class="bi bi-briefcase"></i></div>
+            <div>
+                <div class="tc-key">Vəzifə</div>
+                <div class="tc-val">@(Model.KohneVezife ?? "Təyin edilməyib")</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Yeni Məlumat -->
+    <div class="form-card">
+        <form asp-action="TeyinatDeyis" method="post" id="teyinatForm">
+            <input type="hidden" asp-for="IsciId" />
+            <div asp-validation-summary="ModelOnly" class="alert-error"></div>
+
+            <div class="section-label">
+                <i class="bi bi-arrow-left-right"></i> Yeni Təyinat
+            </div>
+
+            <div class="form-field">
+                <label asp-for="YeniDepartamentId">Yeni Departament <span class="req">*</span></label>
+                <select asp-for="YeniDepartamentId" id="departamentSec"
+                        asp-items="@(new SelectList(Model.Departamentler, "Value", "Text"))"
+                        class="form-select">
+                    <option value="">Departament seçin</option>
+                </select>
+                <span asp-validation-for="YeniDepartamentId" class="error-text"></span>
+            </div>
+
+            <div class="form-field">
+                <label asp-for="YeniVezifeId">Yeni Vəzifə <span class="req">*</span></label>
+                <select asp-for="YeniVezifeId" id="vezifeSec" class="form-select">
+                    <option value="">Əvvəl departament seçin</option>
+                </select>
+                <span asp-validation-for="YeniVezifeId" class="error-text"></span>
+            </div>
+
+            <div class="form-field">
+                <label asp-for="BaslamaTarixi">Başlama Tarixi <span class="req">*</span></label>
+                <input asp-for="BaslamaTarixi" type="date" class="form-input" />
+                <span asp-validation-for="BaslamaTarixi" class="error-text"></span>
+            </div>
+
+            <div class="info-notice">
+                <i class="bi bi-info-circle-fill"></i>
+                Köhnə aktiv təyinat avtomatik olaraq bağlanacaq və yeni təyinat yaradılacaq.
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-save">
+                    <i class="bi bi-check-lg"></i> Təyinatı Dəyiş
+                </button>
+                <a asp-action="Detail" asp-route-id="@Model.IsciId" class="btn-cancel">
+                    <i class="bi bi-x-lg"></i> Ləğv Et
+                </a>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/isci-teyinat.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const getVezifelerUrl = '@Url.Action("GetVezifeler", "Isci", new { area = "HR" })';
+        const initialDeptId = @Model.YeniDepartamentId;
+    </script>
+    <script src="~/js/hr/isci-teyinat.js" asp-append-version="true"></script>
+}
