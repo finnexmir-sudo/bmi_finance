@@ -2,8 +2,8 @@
 {
     public enum Cins
     {
-        Kisi = 1,
-        Qadin = 2
+        Kisi = 0,
+        Qadin = 1
     }
 
 }

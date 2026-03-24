@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FinNex.DataAccess.Migrations
 {
     /// <inheritdoc />
-    public partial class baza : Migration
+    public partial class AddHrPayrollEntitiesConfig : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -125,13 +125,13 @@ namespace FinNex.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MaasNovu",
+                name: "MaasNovleri",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Ad = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Gelirdir = table.Column<bool>(type: "bit", nullable: false),
+                    Ad = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                    Tip = table.Column<int>(type: "int", nullable: false),
                     Aktivdir = table.Column<bool>(type: "bit", nullable: false),
                     YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
                     YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
@@ -143,7 +143,33 @@ namespace FinNex.DataAccess.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MaasNovu", x => x.Id);
+                    table.PrimaryKey("PK_MaasNovleri", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MaasParametrleri",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Nov = table.Column<int>(type: "int", nullable: false),
+                    Tip = table.Column<int>(type: "int", nullable: false),
+                    Deyer = table.Column<decimal>(type: "decimal(18,4)", precision: 18, scale: 4, nullable: false),
+                    Aciqlama = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
+                    BaslamaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    BitmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Aktivdir = table.Column<bool>(type: "bit", nullable: false),
+                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Silinib = table.Column<bool>(type: "bit", nullable: false),
+                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MaasParametrleri", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -682,16 +708,18 @@ namespace FinNex.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "IsciMaasTarixcesi",
+                name: "IsciMaasTarixceleri",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     IsciId = table.Column<int>(type: "int", nullable: false),
-                    KohneMaas = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    YeniMaas = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    KohneMaas = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    YeniMaas = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     DeyismeTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    EmrinNomresi = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    EmrinNomresi = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    Sebeb = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
+                    IsciId1 = table.Column<int>(type: "int", nullable: true),
                     YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
                     YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
                     YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
@@ -702,26 +730,31 @@ namespace FinNex.DataAccess.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_IsciMaasTarixcesi", x => x.Id);
+                    table.PrimaryKey("PK_IsciMaasTarixceleri", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_IsciMaasTarixcesi_Isciler_IsciId",
+                        name: "FK_IsciMaasTarixceleri_Isciler_IsciId",
                         column: x => x.IsciId,
                         principalTable: "Isciler",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_IsciMaasTarixceleri_Isciler_IsciId1",
+                        column: x => x.IsciId1,
+                        principalTable: "Isciler",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
-                name: "IsciMaliye",
+                name: "IsciMaliyeleri",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     IsciId = table.Column<int>(type: "int", nullable: false),
-                    CariMaas = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    MezuniyyetQaliqGunu = table.Column<int>(type: "int", nullable: false),
-                    BankHesabNo = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    SosialSigortaNo = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CariMaas = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    BankHesabNo = table.Column<string>(type: "nvarchar(34)", maxLength: 34, nullable: true),
+                    SosialSigortaNo = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    IsciId1 = table.Column<int>(type: "int", nullable: true),
                     YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
                     YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
                     YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
@@ -732,13 +765,18 @@ namespace FinNex.DataAccess.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_IsciMaliye", x => x.Id);
+                    table.PrimaryKey("PK_IsciMaliyeleri", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_IsciMaliye_Isciler_IsciId",
+                        name: "FK_IsciMaliyeleri_Isciler_IsciId",
                         column: x => x.IsciId,
                         principalTable: "Isciler",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_IsciMaliyeleri_Isciler_IsciId1",
+                        column: x => x.IsciId1,
+                        principalTable: "Isciler",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -785,6 +823,9 @@ namespace FinNex.DataAccess.Migrations
                     IsciId = table.Column<int>(type: "int", nullable: false),
                     Il = table.Column<int>(type: "int", nullable: false),
                     Ay = table.Column<int>(type: "int", nullable: false),
+                    HesablanmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    TesdiqTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    OdenisTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
                     NetMebleg = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
                     IsciId1 = table.Column<int>(type: "int", nullable: true),
@@ -1039,15 +1080,15 @@ namespace FinNex.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MaasDetay",
+                name: "MaasDetaylari",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     MaasId = table.Column<int>(type: "int", nullable: false),
                     MaasNovuId = table.Column<int>(type: "int", nullable: false),
-                    Mebleg = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Acıqlama = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Mebleg = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    Aciqlama = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
                     YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
                     YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
@@ -1058,15 +1099,15 @@ namespace FinNex.DataAccess.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MaasDetay", x => x.Id);
+                    table.PrimaryKey("PK_MaasDetaylari", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_MaasDetay_MaasNovu_MaasNovuId",
+                        name: "FK_MaasDetaylari_MaasNovleri_MaasNovuId",
                         column: x => x.MaasNovuId,
-                        principalTable: "MaasNovu",
+                        principalTable: "MaasNovleri",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_MaasDetay_Maaslar_MaasId",
+                        name: "FK_MaasDetaylari_Maaslar_MaasId",
                         column: x => x.MaasId,
                         principalTable: "Maaslar",
                         principalColumn: "Id",
@@ -1314,15 +1355,27 @@ namespace FinNex.DataAccess.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_IsciMaasTarixcesi_IsciId",
-                table: "IsciMaasTarixcesi",
+                name: "IX_IsciMaasTarixceleri_IsciId",
+                table: "IsciMaasTarixceleri",
                 column: "IsciId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_IsciMaliye_IsciId",
-                table: "IsciMaliye",
+                name: "IX_IsciMaasTarixceleri_IsciId1",
+                table: "IsciMaasTarixceleri",
+                column: "IsciId1");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IsciMaliyeleri_IsciId",
+                table: "IsciMaliyeleri",
                 column: "IsciId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IsciMaliyeleri_IsciId1",
+                table: "IsciMaliyeleri",
+                column: "IsciId1",
+                unique: true,
+                filter: "[IsciId1] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_IsciStrukturRollari_DepartamentId",
@@ -1350,13 +1403,13 @@ namespace FinNex.DataAccess.Migrations
                 column: "VezifeId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaasDetay_MaasId",
-                table: "MaasDetay",
+                name: "IX_MaasDetaylari_MaasId",
+                table: "MaasDetaylari",
                 column: "MaasId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaasDetay_MaasNovuId",
-                table: "MaasDetay",
+                name: "IX_MaasDetaylari_MaasNovuId",
+                table: "MaasDetaylari",
                 column: "MaasNovuId");
 
             migrationBuilder.CreateIndex(
@@ -1369,6 +1422,18 @@ namespace FinNex.DataAccess.Migrations
                 name: "IX_Maaslar_IsciId1",
                 table: "Maaslar",
                 column: "IsciId1");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MaasNovleri_Ad",
+                table: "MaasNovleri",
+                column: "Ad",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MaasParametrleri_Nov_BaslamaTarixi",
+                table: "MaasParametrleri",
+                columns: new[] { "Nov", "BaslamaTarixi" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_MezuniyyetBalanslari_IsciId",
@@ -1540,10 +1605,10 @@ namespace FinNex.DataAccess.Migrations
                 name: "Icazeler");
 
             migrationBuilder.DropTable(
-                name: "IsciMaasTarixcesi");
+                name: "IsciMaasTarixceleri");
 
             migrationBuilder.DropTable(
-                name: "IsciMaliye");
+                name: "IsciMaliyeleri");
 
             migrationBuilder.DropTable(
                 name: "IsciStrukturRollari");
@@ -1552,7 +1617,10 @@ namespace FinNex.DataAccess.Migrations
                 name: "IsciTeyinatlari");
 
             migrationBuilder.DropTable(
-                name: "MaasDetay");
+                name: "MaasDetaylari");
+
+            migrationBuilder.DropTable(
+                name: "MaasParametrleri");
 
             migrationBuilder.DropTable(
                 name: "MezuniyyetBalanslari");
@@ -1588,7 +1656,7 @@ namespace FinNex.DataAccess.Migrations
                 name: "Vezifeler");
 
             migrationBuilder.DropTable(
-                name: "MaasNovu");
+                name: "MaasNovleri");
 
             migrationBuilder.DropTable(
                 name: "Maaslar");

@@ -25,4 +25,73 @@ public class MaasService : ServiceAsync<Maas, MaasListDto, MaasCreateDto, MaasUp
         await _unitOfWork.Repository<Maas>().YaratAsync(maasMaster);
         return await _unitOfWork.YaddaSaxlaAsync() > 0 ? Result.Ok() : Result.Fail("Xəta!");
     }
+    public async Task<Result<IList<MaasDto>>> IsciyeGoreGetirAsync(int isciId)
+    {
+        try
+        {
+            var entities = await _unitOfWork.Repository<Maas>()
+                .HamisiniGetirAsync(
+                    x => x.IsciId == isciId,
+                    q => q.Include(x => x.Detallar),
+                    true);
+
+            var dtos = _mapper.Map<IList<MaasDto>>(entities);
+            return Result<IList<MaasDto>>.Ok(dtos);
+        }
+        catch
+        {
+            return Result<IList<MaasDto>>.Fail("İşçinin maaş məlumatları gətirilərkən xəta baş verdi.");
+        }
+    }
+
+    public async Task<Result<MaasDto?>> IsciAyUzreGetirAsync(int isciId, int il, int ay)
+    {
+        try
+        {
+            var entity = await _unitOfWork.Repository<Maas>()
+                .GetirAsync(
+                    x => x.IsciId == isciId && x.Il == il && x.Ay == ay,
+                    q => q.Include(x => x.Detallar).ThenInclude(d => d.MaasNovu),
+                    true);
+
+            if (entity == null)
+                return Result<MaasDto?>.Fail("Bu ay üçün maaş tapılmadı.");
+
+            var dto = _mapper.Map<MaasDto>(entity);
+            return Result<MaasDto?>.Ok(dto);
+        }
+        catch
+        {
+            return Result<MaasDto?>.Fail("Maaş məlumatı gətirilərkən xəta baş verdi.");
+        }
+    }
+
+    public async Task<Result> StatusDeyisAsync(int maasId, MaasStatus yeniStatus)
+    {
+        try
+        {
+            var repo = _unitOfWork.Repository<Maas>();
+            var entity = await repo.IdIleGetirAsync(maasId);
+
+            if (entity == null)
+                return Result.Fail("Maaş tapılmadı.");
+
+            entity.Status = yeniStatus;
+
+            if (yeniStatus == MaasStatus.Tesdiqlendi)
+                entity.TesdiqTarixi = DateTime.UtcNow;
+
+            if (yeniStatus == MaasStatus.Odenildi)
+                entity.OdenisTarixi = DateTime.UtcNow;
+
+            await repo.YenileAsync(entity);
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            return Result.Ok("Maaş statusu uğurla dəyişdirildi.");
+        }
+        catch
+        {
+            return Result.Fail("Status dəyişdirilərkən xəta baş verdi.");
+        }
+    }
 }

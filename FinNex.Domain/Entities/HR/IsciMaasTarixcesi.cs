@@ -10,5 +10,6 @@
         public decimal YeniMaas { get; set; }
         public DateTime DeyismeTarixi { get; set; }
         public string? EmrinNomresi { get; set; } // Rəsmi əmr
+        public string? Sebeb { get; set; }
     }
 }

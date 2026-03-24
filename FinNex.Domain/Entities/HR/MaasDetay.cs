@@ -10,6 +10,6 @@
         public MaasNovu MaasNovu { get; set; } = null!;
 
         public decimal Mebleg { get; set; } // Rəqəmsal dəyər
-        public string? Acıqlama { get; set; } // Məs: "Gecikmə cəriməsi"
+        public string? Aciqlama { get; set; } // Məs: "Gecikmə cəriməsi"
     }
 }

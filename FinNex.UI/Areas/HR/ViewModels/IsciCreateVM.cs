@@ -54,6 +54,7 @@ public class IsciCreateVM
     [Display(Name = "Başlanğıc maaş")]
     [Range(0, double.MaxValue, ErrorMessage = "Maaş 0-dan kiçik ola bilməz")]
     public decimal? BaslangicMaas { get; set; }
+    public int? BaslangicMezuniyyet { get; set; }
 
     public List<SelectListItem> Departments { get; set; } = new();
     public int IsciId { get; set; }

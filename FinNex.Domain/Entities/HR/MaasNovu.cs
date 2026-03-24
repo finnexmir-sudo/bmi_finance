@@ -4,7 +4,7 @@
     public class MaasNovu : BaseEntity
     {
         public string Ad { get; set; } = null!;
-        public bool Gelirdir { get; set; } // true (+), false (-)
+        public MaasDetayTipi Tip { get; set; }
         public bool Aktivdir { get; set; } = true;
 
         public ICollection<MaasDetay> MaasDetallari { get; set; } = new List<MaasDetay>();

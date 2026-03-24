@@ -28,5 +28,6 @@ namespace FinNex.Application.DTOs.HR.Isci
 
         // İlkin maaş - IsciMaliye yaratmaq üçün
         public decimal? BaslangicMaas { get; set; }
+        public int? BaslangicMezuniyyet { get; set; }
     }
 }

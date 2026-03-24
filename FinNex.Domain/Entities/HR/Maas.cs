@@ -8,7 +8,9 @@
 
         public int Il { get; set; }
         public int Ay { get; set; }
-
+        public DateTime HesablanmaTarixi { get; set; } = DateTime.UtcNow;
+        public DateTime? TesdiqTarixi { get; set; }
+        public DateTime? OdenisTarixi { get; set; }
         public decimal NetMebleg { get; set; } // O ay işçinin kartına yatan son məbləğ
         public MaasStatus Status { get; set; } = MaasStatus.Layihe;
 

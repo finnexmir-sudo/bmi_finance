@@ -1,6 +1,7 @@
 using AutoMapper;
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Isci;
+using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Services;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
@@ -58,10 +59,28 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             {
                 IsciId = isci.Id,
                 CariMaas = dto.BaslangicMaas ?? 0
+
             };
             await _unitOfWork.Repository<IsciMaliye>().YaratAsync(maliye);
 
+            var mezuniyyetBalans = new MezuniyyetBalans
+            {
+                IsciId = isci.Id,
+                Il = DateTime.Now.Year,
+                ToplamGun = dto.BaslangicMezuniyyet ?? 0
+            };
+
+            await _unitOfWork.Repository<MezuniyyetBalans>().YaratAsync(mezuniyyetBalans);
+
             await _unitOfWork.YaddaSaxlaAsync();
+
+            var createdIsci = await _unitOfWork.Repository<Isci>().GetirAsync(
+            x => x.Id == isci.Id,
+            include: q => q
+                .Include(x => x.IsciTeyinatlari).ThenInclude(t => t.Departament)
+                .Include(x => x.IsciTeyinatlari).ThenInclude(t => t.Vezife)
+                .Include(x => x.Maliye)
+        );
 
             return Result<IsciListDto>.Ok(_mapper.Map<IsciListDto>(isci));
         }

@@ -151,7 +151,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 DogumTarixi = vm.DogumTarixi,
                 Cins = (Cins)vm.CinsId,
                 UserId = user.Id,
-                BaslangicMaas = vm.BaslangicMaas
+                BaslangicMaas = vm.BaslangicMaas,
+                BaslangicMezuniyyet = vm.BaslangicMezuniyyet
             };
 
             var resultIsci = await _isciService.YaratAsync(dto);

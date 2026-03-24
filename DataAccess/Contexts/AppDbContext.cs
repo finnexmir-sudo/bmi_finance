@@ -57,6 +57,12 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<Permission> Permissions { get; set; }
     public DbSet<UserPermission> UserPermissions { get; set; }
 
+    public DbSet<IsciMaliye> IsciMaliyeleri { get; set; }
+    public DbSet<MaasDetay> MaasDetaylari { get; set; }
+    public DbSet<MaasNovu> MaasNovleri { get; set; }
+    public DbSet<IsciMaasTarixcesi> IsciMaasTarixceleri { get; set; }
+    public DbSet<MaasParametri> MaasParametrleri { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -179,6 +185,108 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .WithMany()
             .HasForeignKey(x => x.IsciId)
             .OnDelete(DeleteBehavior.Cascade);
+
+
+        builder.Entity<IsciMaliye>()
+    .HasOne(x => x.Isci)
+    .WithOne()
+    .HasForeignKey<IsciMaliye>(x => x.IsciId)
+    .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<IsciMaliye>()
+            .HasIndex(x => x.IsciId)
+            .IsUnique();
+
+        builder.Entity<IsciMaliye>()
+            .Property(x => x.CariMaas)
+            .HasPrecision(18, 2);
+
+        builder.Entity<IsciMaliye>()
+            .Property(x => x.BankHesabNo)
+            .HasMaxLength(34);
+
+        builder.Entity<IsciMaliye>()
+            .Property(x => x.SosialSigortaNo)
+            .HasMaxLength(50);
+
+
+        // ==========================
+        // MaasNovu
+        // ==========================
+        builder.Entity<MaasNovu>()
+            .HasIndex(x => x.Ad)
+            .IsUnique();
+
+        builder.Entity<MaasNovu>()
+            .Property(x => x.Ad)
+            .HasMaxLength(150);
+
+
+        // ==========================
+        // MaasDetay
+        // ==========================
+        builder.Entity<MaasDetay>()
+            .HasOne(x => x.Maas)
+            .WithMany(x => x.Detallar)
+            .HasForeignKey(x => x.MaasId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<MaasDetay>()
+            .HasOne(x => x.MaasNovu)
+            .WithMany(x => x.MaasDetallari)
+            .HasForeignKey(x => x.MaasNovuId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<MaasDetay>()
+            .Property(x => x.Mebleg)
+            .HasPrecision(18, 2);
+
+        builder.Entity<MaasDetay>()
+            .Property(x => x.Aciqlama)
+            .HasMaxLength(500);
+
+
+        // ==========================
+        // IsciMaasTarixcesi
+        // ==========================
+        builder.Entity<IsciMaasTarixcesi>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<IsciMaasTarixcesi>()
+            .Property(x => x.KohneMaas)
+            .HasPrecision(18, 2);
+
+        builder.Entity<IsciMaasTarixcesi>()
+            .Property(x => x.YeniMaas)
+            .HasPrecision(18, 2);
+
+        builder.Entity<IsciMaasTarixcesi>()
+            .Property(x => x.EmrinNomresi)
+            .HasMaxLength(100);
+
+        builder.Entity<IsciMaasTarixcesi>()
+            .Property(x => x.Sebeb)
+            .HasMaxLength(300);
+
+
+        // ==========================
+        // MaasParametri
+        // ==========================
+        builder.Entity<MaasParametri>()
+            .Property(x => x.Deyer)
+            .HasPrecision(18, 4);
+
+        builder.Entity<MaasParametri>()
+            .Property(x => x.Aciqlama)
+            .HasMaxLength(300);
+
+        // Eyni parametr növü üçün eyni başlanma tarixində təkrar olmasın
+        builder.Entity<MaasParametri>()
+            .HasIndex(x => new { x.Nov, x.BaslamaTarixi })
+            .IsUnique();
 
         builder.Entity<Davamiyyet>()
             .HasIndex(x => new { x.IsciId, x.Tarix })

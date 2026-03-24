@@ -18,6 +18,9 @@ wwwroot\css\hr\departament-list.css
 wwwroot\css\hr\hr-premium.css
 wwwroot\css\hr\hr-pro - Copy.css
 wwwroot\css\hr\isci-create.css
+wwwroot\css\hr\isci-detail.css
+wwwroot\css\hr\isci-edit.css
+wwwroot\css\hr\isci-teyinat.css
 wwwroot\css\hr\maas-list.css
 wwwroot\css\hr\mezuniyyet.css
 wwwroot\css\hr\premium-form.css
@@ -41,6 +44,9 @@ wwwroot\js\admin-sidebar.js
 wwwroot\js\change-password.js
 wwwroot\js\hr\davamiyyet-list.js
 wwwroot\js\hr\departament-list.js
+wwwroot\js\hr\isci-detail.js
+wwwroot\js\hr\isci-teyinat.js
+wwwroot\js\hr\maas-deyis.js
 wwwroot\js\hr\maas-list.js
 wwwroot\js\hr\mezuniyyet.js
 wwwroot\js\hr\sidebar.js
