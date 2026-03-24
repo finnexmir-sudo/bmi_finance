@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Isci;
 using FinNex.Application.Services;
@@ -15,19 +15,16 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
     {
         try
         {
-            // Burada repository-nin Include dəstəkləyən metodundan istifadə edirik
             var entities = await _unitOfWork.Repository<Isci>()
                 .HamisiniGetirAsync(
                     izlemeden: true,
-                    include: x => x.Include(x => x.IsciTeyinatlari)
-    .ThenInclude(t => t.Departament)
-.Include(x => x.IsciTeyinatlari)
-    .ThenInclude(t => t.Vezife)
-                                   .Include(i => i.Maliye)
+                    include: x => x
+                        .Include(i => i.IsciTeyinatlari).ThenInclude(t => t.Departament)
+                        .Include(i => i.IsciTeyinatlari).ThenInclude(t => t.Vezife)
+                        .Include(i => i.Maliye)
                 );
 
             var data = _mapper.Map<IList<IsciListDto>>(entities);
-
             return Result<IList<IsciListDto>>.Ok(data);
         }
         catch (Exception)
@@ -35,14 +32,53 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             return Result<IList<IsciListDto>>.Fail("İşçi siyahısı gətirilərkən xəta baş verdi.");
         }
     }
+
+    public override async Task<Result<IsciListDto>> YaratAsync(IsciCreateDto dto)
+    {
+        try
+        {
+            var isci = _mapper.Map<Isci>(dto);
+            await _unitOfWork.Repository<Isci>().YaratAsync(isci);
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            // İlkin IsciTeyinat yarat
+            var teyinat = new IsciTeyinat
+            {
+                IsciId = isci.Id,
+                DepartamentId = dto.DepartamentId,
+                VezifeId = dto.VezifeId,
+                BaslamaTarixi = dto.IsheQebulTarixi,
+                Esasdir = true,
+                Aktivdir = true
+            };
+            await _unitOfWork.Repository<IsciTeyinat>().YaratAsync(teyinat);
+
+            // İlkin IsciMaliye yarat
+            var maliye = new IsciMaliye
+            {
+                IsciId = isci.Id,
+                CariMaas = dto.BaslangicMaas ?? 0
+            };
+            await _unitOfWork.Repository<IsciMaliye>().YaratAsync(maliye);
+
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            return Result<IsciListDto>.Ok(_mapper.Map<IsciListDto>(isci));
+        }
+        catch (Exception ex)
+        {
+            return Result<IsciListDto>.Fail($"İşçi yaradılarkən xəta baş verdi: {ex.Message}");
+        }
+    }
+
     public async Task<IsciDetailDto?> GetIsciDetailsAsync(int id)
     {
         var entity = await _unitOfWork.Repository<Isci>().GetirAsync(
             x => x.Id == id,
-            include: q => q.Include(x => x.IsciTeyinatlari)
-    .ThenInclude(t => t.Departament)
-.Include(x => x.IsciTeyinatlari)
-    .ThenInclude(t => t.Vezife).Include(x => x.Maliye)
+            include: q => q
+                .Include(x => x.IsciTeyinatlari).ThenInclude(t => t.Departament)
+                .Include(x => x.IsciTeyinatlari).ThenInclude(t => t.Vezife)
+                .Include(x => x.Maliye)
         );
         return _mapper.Map<IsciDetailDto>(entity);
     }
@@ -51,10 +87,10 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
     {
         var entities = await _unitOfWork.Repository<Isci>().HamisiniGetirAsync(
             x => x.IsciTeyinatlari.Any(t => t.Aktivdir && t.DepartamentId == sobeId),
-            include: q => q.Include(x => x.IsciTeyinatlari)
-    .ThenInclude(t => t.Departament)
-.Include(x => x.IsciTeyinatlari)
-    .ThenInclude(t => t.Vezife).Include(x => x.Maliye),
+            include: q => q
+                .Include(x => x.IsciTeyinatlari).ThenInclude(t => t.Departament)
+                .Include(x => x.IsciTeyinatlari).ThenInclude(t => t.Vezife)
+                .Include(x => x.Maliye),
             izlemeden: true
         );
         return _mapper.Map<IList<IsciListDto>>(entities);
@@ -67,8 +103,9 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
     {
         var entities = await _unitOfWork.Repository<Isci>().HamisiniGetirAsync(
             x => x.FIN.Contains(fin),
-            include: q => q.Include(x => x.Maliye).Include(x => x.IsciTeyinatlari)
-    .ThenInclude(t => t.Departament),
+            include: q => q
+                .Include(x => x.IsciTeyinatlari).ThenInclude(t => t.Departament)
+                .Include(x => x.Maliye),
             izlemeden: true
         );
         return Result<List<IsciListDto>>.Ok(_mapper.Map<List<IsciListDto>>(entities));
@@ -76,7 +113,9 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
 
     public async Task<Result> UpdateSalaryWithHistoryAsync(int isciId, decimal yeniMaas, string emrNo)
     {
-        var isci = await _unitOfWork.Repository<Isci>().GetirAsync(x => x.Id == isciId, include: q => q.Include(x => x.Maliye));
+        var isci = await _unitOfWork.Repository<Isci>().GetirAsync(
+            x => x.Id == isciId,
+            include: q => q.Include(x => x.Maliye));
         if (isci == null) return Result.Fail("İşçi tapılmadı.");
 
         var tarixce = new IsciMaasTarixcesi
@@ -133,7 +172,6 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
     {
         try
         {
-            // Köhnə aktiv teyinatı deaktiv et
             var kohne = await _unitOfWork.Repository<IsciTeyinat>()
                 .GetirAsync(x => x.IsciId == isciId && x.Aktivdir);
 
@@ -144,7 +182,6 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
                 await _unitOfWork.Repository<IsciTeyinat>().YenileAsync(kohne);
             }
 
-            // Yeni teyinat yarat
             var yeniTeyinat = new IsciTeyinat
             {
                 IsciId = isciId,

@@ -35,17 +35,24 @@ public class HRProfile : Profile
         // =========================
 
         CreateMap<IsciCreateDto, Isci>()
-    .ForMember(dest => dest.AppUserId, opt => opt.MapFrom(src => src.UserId))
-    .ForMember(dest => dest.IsheQebulTarixi, opt => opt.MapFrom(src => src.IsheQebulTarixi))
-    .ForMember(dest => dest.Maliye, opt => opt.Ignore())
-    .ForMember(dest => dest.MezuniyyetBalans, opt => opt.Ignore())
-    .ForMember(dest => dest.Maaslar, opt => opt.Ignore())
-    .ForMember(dest => dest.MaasTarixcesi, opt => opt.Ignore())
-    .ForMember(dest => dest.IsciTeyinatlari, opt => opt.Ignore());
+            .ForMember(dest => dest.AppUserId, opt => opt.MapFrom(src => src.UserId))
+            .ForMember(dest => dest.Maliye, opt => opt.Ignore())
+            .ForMember(dest => dest.MezuniyyetBalans, opt => opt.Ignore())
+            .ForMember(dest => dest.Maaslar, opt => opt.Ignore())
+            .ForMember(dest => dest.MaasTarixcesi, opt => opt.Ignore())
+            .ForMember(dest => dest.IsciTeyinatlari, opt => opt.Ignore());
+
+        CreateMap<IsciUpdateDto, Isci>()
+            .ForMember(dest => dest.AppUserId, opt => opt.MapFrom(src => src.UserId))
+            .ForMember(dest => dest.Maliye, opt => opt.Ignore())
+            .ForMember(dest => dest.MezuniyyetBalans, opt => opt.Ignore())
+            .ForMember(dest => dest.Maaslar, opt => opt.Ignore())
+            .ForMember(dest => dest.MaasTarixcesi, opt => opt.Ignore())
+            .ForMember(dest => dest.IsciTeyinatlari, opt => opt.Ignore());
 
         CreateMap<Isci, IsciListDto>()
             .ForMember(dest => dest.TamAd,
-                opt => opt.MapFrom(src => $"{src.Ad} {src.Soyad} {src.AtaAdi}"))
+                opt => opt.MapFrom(src => $"{src.Ad} {src.Soyad} {src.AtaAdi}".Trim()))
             .ForMember(dest => dest.CariMaas,
                 opt => opt.MapFrom(src => src.Maliye != null ? src.Maliye.CariMaas : 0))
             .ForMember(dest => dest.SobeAdi,
@@ -63,10 +70,37 @@ public class HRProfile : Profile
 
         CreateMap<Isci, IsciDetailDto>()
             .ForMember(dest => dest.LoginVar,
-                opt => opt.MapFrom(src => src.AppUserId != null));
-
-        CreateMap<IsciCreateDto, Isci>();
-        CreateMap<IsciUpdateDto, Isci>();
+                opt => opt.MapFrom(src => src.AppUserId != null))
+            .ForMember(dest => dest.CariMaas,
+                opt => opt.MapFrom(src => src.Maliye != null ? src.Maliye.CariMaas : 0))
+            .ForMember(dest => dest.BankHesabNo,
+                opt => opt.MapFrom(src => src.Maliye != null ? src.Maliye.BankHesabNo : null))
+            .ForMember(dest => dest.SosialSigortaNo,
+                opt => opt.MapFrom(src => src.Maliye != null ? src.Maliye.SosialSigortaNo : null))
+            .ForMember(dest => dest.SobeAdi,
+                opt => opt.MapFrom(src =>
+                    src.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => t.Departament.Ad)
+                        .FirstOrDefault()))
+            .ForMember(dest => dest.VezifeAdi,
+                opt => opt.MapFrom(src =>
+                    src.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => t.Vezife.Ad)
+                        .FirstOrDefault()))
+            .ForMember(dest => dest.AktivDepartamentId,
+                opt => opt.MapFrom(src =>
+                    src.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => (int?)t.DepartamentId)
+                        .FirstOrDefault()))
+            .ForMember(dest => dest.AktivVezifeId,
+                opt => opt.MapFrom(src =>
+                    src.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => (int?)t.VezifeId)
+                        .FirstOrDefault()));
 
 
         // =========================

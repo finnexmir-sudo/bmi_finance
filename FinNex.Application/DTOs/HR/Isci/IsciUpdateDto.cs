@@ -1,8 +1,7 @@
-﻿using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Entities.HR;
 
 namespace FinNex.Application.DTOs.HR.Isci
 {
-    // Update üçün
     public class IsciUpdateDto
     {
         public int Id { get; set; }
@@ -22,13 +21,9 @@ namespace FinNex.Application.DTOs.HR.Isci
         public string? Email { get; set; }
         public string? Unvan { get; set; }
 
-        public int DepartamentId { get; set; }
-        public int VezifeId { get; set; }
-
         public DateTime IsheQebulTarixi { get; set; }
         public DateTime? IsdenAyrilmaTarixi { get; set; }
 
         public IsciStatus Status { get; set; }
     }
-
 }

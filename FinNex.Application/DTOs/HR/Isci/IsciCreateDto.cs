@@ -1,4 +1,4 @@
-﻿using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Entities.HR;
 
 namespace FinNex.Application.DTOs.HR.Isci
 {
@@ -20,10 +20,13 @@ namespace FinNex.Application.DTOs.HR.Isci
         public string? Email { get; set; }
         public string? Unvan { get; set; }
 
-        // İşə qəbul zamanı ilkin təyinat üçün
+        public DateTime IsheQebulTarixi { get; set; }
+
+        // İlkin təyinat - IsciTeyinat yaratmaq üçün
         public int DepartamentId { get; set; }
         public int VezifeId { get; set; }
 
-        public DateTime IsheQebulTarixi { get; set; }
+        // İlkin maaş - IsciMaliye yaratmaq üçün
+        public decimal? BaslangicMaas { get; set; }
     }
-}   
+}

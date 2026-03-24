@@ -1,4 +1,4 @@
-﻿using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Entities.HR;
 
 namespace FinNex.Application.DTOs.HR.Isci
 {
@@ -20,15 +20,24 @@ namespace FinNex.Application.DTOs.HR.Isci
         public string? Email { get; set; }
         public string? Unvan { get; set; }
 
-        public string SobeAdi { get; set; } = null!;
-        public string VezifeAdi { get; set; } = null!;
-
         public DateTime IsheQebulTarixi { get; set; }
         public DateTime? IsdenAyrilmaTarixi { get; set; }
 
         public IsciStatus Status { get; set; }
 
+        // IsciTeyinat-dan (aktiv)
+        public string? SobeAdi { get; set; }
+        public string? VezifeAdi { get; set; }
+        public int? AktivDepartamentId { get; set; }
+        public int? AktivVezifeId { get; set; }
+
+        // IsciMaliye-dan
+        public decimal CariMaas { get; set; }
+        public string? BankHesabNo { get; set; }
+        public string? SosialSigortaNo { get; set; }
+
         public bool LoginVar { get; set; }
+
         public string TamAd => $"{Ad} {Soyad} {AtaAdi}".Trim();
     }
 }
