@@ -1,0 +1,78 @@
+@model FinNex.UI.Areas.HR.ViewModels.MaasCreateVM
+
+@{
+    ViewData["Title"] = "Yeni Maaş";
+    Layout = "_HRLayout";
+    var aylar = new[] { "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun", "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+}
+
+<div class="form-page-header">
+    <a asp-action="Index" class="form-back-link">
+        <i class="bi bi-arrow-left"></i> Geriyə
+    </a>
+    <div>
+        <h2 class="form-page-title">Yeni Maaş Hesablaması</h2>
+        <p class="form-page-sub">İşçi üçün yeni aylıq maaş yarıdın</p>
+    </div>
+</div>
+
+<div class="form-card">
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="alert-error"></div>
+
+        <div class="section-label">
+            <i class="bi bi-person-fill"></i> İşçi və Dövr
+        </div>
+
+        <div class="form-grid-3">
+            <div class="form-field">
+                <label asp-for="IsciId">İşçi <span class="req">*</span></label>
+                <select asp-for="IsciId" asp-items="Model.Isciler" class="form-select">
+                    <option value="">İşçi seçin</option>
+                </select>
+                <span asp-validation-for="IsciId" class="error-text"></span>
+            </div>
+
+            <div class="form-field">
+                <label asp-for="Il">İl <span class="req">*</span></label>
+                <select asp-for="Il" class="form-select">
+                    @for (int y = DateTime.Today.Year; y >= 2020; y--)
+                    {
+                        <option value="@y" @(y == Model.Il ? "selected" : "")>@y</option>
+                    }
+                </select>
+                <span asp-validation-for="Il" class="error-text"></span>
+            </div>
+
+            <div class="form-field">
+                <label asp-for="Ay">Ay <span class="req">*</span></label>
+                <select asp-for="Ay" class="form-select">
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        <option value="@m" @(m == Model.Ay ? "selected" : "")>@aylar[m - 1]</option>
+                    }
+                </select>
+                <span asp-validation-for="Ay" class="error-text"></span>
+            </div>
+        </div>
+
+        <div class="alert alert-info d-flex align-items-center gap-2 mt-2" style="font-size:0.85rem; border-radius:8px;">
+            <i class="bi bi-info-circle-fill"></i>
+            Eyni il/ay üçün hər işçinin yalnız bir maaşı ola bilər. Maaş yaradıldıqdan sonra detail səhifəsindən detalları əlavə edə bilərsiniz.
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-save">
+                <i class="bi bi-check-lg"></i> Yadda Saxla
+            </button>
+            <a asp-action="Index" class="btn-cancel">
+                <i class="bi bi-x-lg"></i> Ləğv Et
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

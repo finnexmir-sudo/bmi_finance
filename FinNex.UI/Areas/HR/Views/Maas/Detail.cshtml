@@ -1,0 +1,143 @@
+@model FinNex.UI.Areas.HR.ViewModels.MaasDetailVM
+@using FinNex.Domain.Entities.HR
+
+@{
+    ViewData["Title"] = "Maaş Detalı";
+    Layout = "_HRLayout";
+    var aylar = new[] { "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun", "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+    var (statusClass, statusText) = Model.Status switch
+    {
+        MaasStatus.Layihe => ("bg-warning text-dark", "Layihə"),
+        MaasStatus.Tesdiqlendi => ("bg-primary text-white", "Təsdiqəldi"),
+        MaasStatus.Odenildi => ("bg-success text-white", "Ödənildi"),
+        MaasStatus.LegvEdildi => ("bg-danger text-white", "Ləğv Edildi"),
+        _ => ("bg-secondary text-white", Model.Status.ToString())
+    };
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="toast-success" id="toastSuccess">
+        <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
+    </div>
+}
+
+<!-- Profile Hero (Maaş üçün adapt) -->
+<div class="profile-hero">
+    <div class="profile-hero-left">
+        <div class="profile-avatar-xl">
+            @(Model.IsciTamAd?.Length > 0 ? Model.IsciTamAd.Substring(0, 1) : "M")
+        </div>
+        <div class="profile-hero-info">
+            <h1 class="profile-name">@Model.IsciTamAd</h1>
+            <div class="profile-meta-row">
+                @if (!string.IsNullOrEmpty(Model.IsciDepartament))
+                {
+                    <span class="profile-badge-dept">
+                        <i class="bi bi-building"></i> @Model.IsciDepartament
+                    </span>
+                }
+                @if (!string.IsNullOrEmpty(Model.IsciVezife))
+                {
+                    <span class="profile-badge-role">
+                        <i class="bi bi-briefcase"></i> @Model.IsciVezife
+                    </span>
+                }
+                <span class="badge @statusClass px-3 py-1 rounded-pill">@statusText</span>
+            </div>
+            <div class="profile-fin">
+                Dövr: <strong>@(Model.Ay > 0 ? aylar[Model.Ay - 1] : "") @Model.Il</strong>
+            </div>
+        </div>
+    </div>
+    <div class="profile-hero-actions">
+        @if (Model.Status == MaasStatus.Layihe)
+        {
+            <a href="#" class="ph-btn ph-btn-blue">
+                <i class="bi bi-check-circle"></i> Təsdiqələ
+            </a>
+            <a href="#" class="ph-btn ph-btn-outline" style="color:#dc3545; border-color:#dc3545;">
+                <i class="bi bi-x-circle"></i> Ləğv Et
+            </a>
+        }
+        @if (Model.Status == MaasStatus.Tesdiqlendi)
+        {
+            <a href="#" class="ph-btn ph-btn-emerald">
+                <i class="bi bi-cash-coin"></i> Ödənildi İşarələ
+            </a>
+        }
+        <a asp-action="Index" class="ph-btn ph-btn-outline">
+            <i class="bi bi-arrow-left"></i> Geri
+        </a>
+    </div>
+</div>
+
+<!-- Stat Strip -->
+<div class="stat-strip">
+    <div class="stat-strip-item">
+        <div class="stat-strip-ico emerald"><i class="bi bi-arrow-up-circle"></i></div>
+        <div>
+            <div class="stat-strip-label">Ümumi Gəlir</div>
+            <div class="stat-strip-val">@Model.UmumiGelir.ToString("N2") ₼</div>
+        </div>
+    </div>
+    <div class="stat-strip-item">
+        <div class="stat-strip-ico amber"><i class="bi bi-arrow-down-circle"></i></div>
+        <div>
+            <div class="stat-strip-label">Ümumi Tutulma</div>
+            <div class="stat-strip-val">@Model.UmumiTutulma.ToString("N2") ₼</div>
+        </div>
+    </div>
+    <div class="stat-strip-item">
+        <div class="stat-strip-ico blue"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <div class="stat-strip-label">Net Məbləğ</div>
+            <div class="stat-strip-val fw-bold">@Model.NetMebleg.ToString("N2") ₼</div>
+        </div>
+    </div>
+    <div class="stat-strip-item">
+        <div class="stat-strip-ico indigo"><i class="bi bi-calendar-check"></i></div>
+        <div>
+            <div class="stat-strip-label">Hesablanma</div>
+            <div class="stat-strip-val">@Model.HesablanmaTarixi.ToString("dd.MM.yyyy")</div>
+        </div>
+    </div>
+    @if (Model.TesdiqTarixi.HasValue)
+    {
+        <div class="stat-strip-item">
+            <div class="stat-strip-ico blue"><i class="bi bi-check-circle"></i></div>
+            <div>
+                <div class="stat-strip-label">Təsdiq Tarixi</div>
+                <div class="stat-strip-val">@Model.TesdiqTarixi.Value.ToString("dd.MM.yyyy")</div>
+            </div>
+        </div>
+    }
+    @if (Model.OdenisTarixi.HasValue)
+    {
+        <div class="stat-strip-item">
+            <div class="stat-strip-ico emerald"><i class="bi bi-bank"></i></div>
+            <div>
+                <div class="stat-strip-label">Ödəniş Tarixi</div>
+                <div class="stat-strip-val">@Model.OdenisTarixi.Value.ToString("dd.MM.yyyy")</div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Maaş Detalları Partial -->
+@await Html.PartialAsync("_MaasDetayPartial", Model)
+
+<!-- Back -->
+<div class="back-row">
+    <a asp-action="Index" class="back-link">
+        <i class="bi bi-arrow-left"></i> Maaş siyahısına qayit
+    </a>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/isci-detail.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/hr/isci-detail.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,119 @@
+@model FinNex.UI.Areas.HR.ViewModels.MaasDetailVM
+@using FinNex.Domain.Entities.HR
+
+<div class="detail-tabs">
+    <button class="detail-tab active" data-tab="gelir">
+        <i class="bi bi-arrow-up-circle"></i> Gəlirlər
+        <span class="tab-count">@Model.Detallar.Count(d => d.Tip == MaasDetayTipi.Gelir)</span>
+    </button>
+    <button class="detail-tab" data-tab="tutulma">
+        <i class="bi bi-arrow-down-circle"></i> Tutulmalar
+        <span class="tab-count">@Model.Detallar.Count(d => d.Tip == MaasDetayTipi.Tutulma)</span>
+    </button>
+</div>
+
+<!-- Tab: Gəlirlər -->
+<div class="tab-panel active" id="tab-gelir">
+    @{
+        var gelirler = Model.Detallar.Where(d => d.Tip == MaasDetayTipi.Gelir).ToList();
+    }
+    @if (!gelirler.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon"><i class="bi bi-arrow-up-circle"></i></div>
+            <div class="empty-title">Gəlir qeydi yoxdur</div>
+        </div>
+    }
+    else
+    {
+        <div class="maas-table-wrap">
+            <table class="maas-table">
+                <thead>
+                    <tr>
+                        <th>Növ</th>
+                        <th>Açıqlama</th>
+                        <th class="text-end">Məbləğ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var detay in gelirler)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@detay.MaasNovuAd</td>
+                            <td class="text-muted">@(detay.Aciqlama ?? "—")</td>
+                            <td class="text-end fw-bold text-success">+@detay.Mebleg.ToString("N2") ₼</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="table-light fw-bold">
+                        <td colspan="2">Ümumi Gəlir</td>
+                        <td class="text-end text-success">+@Model.UmumiGelir.ToString("N2") ₼</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Tab: Tutulmalar -->
+<div class="tab-panel" id="tab-tutulma">
+    @{
+        var tutulmalar = Model.Detallar.Where(d => d.Tip == MaasDetayTipi.Tutulma).ToList();
+    }
+    @if (!tutulmalar.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon"><i class="bi bi-arrow-down-circle"></i></div>
+            <div class="empty-title">Tutulma qeydi yoxdur</div>
+        </div>
+    }
+    else
+    {
+        <div class="maas-table-wrap">
+            <table class="maas-table">
+                <thead>
+                    <tr>
+                        <th>Növ</th>
+                        <th>Açıqlama</th>
+                        <th class="text-end">Məbləğ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var detay in tutulmalar)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@detay.MaasNovuAd</td>
+                            <td class="text-muted">@(detay.Aciqlama ?? "—")</td>
+                            <td class="text-end fw-bold text-danger">-@detay.Mebleg.ToString("N2") ₼</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="table-light fw-bold">
+                        <td colspan="2">Ümumi Tutulma</td>
+                        <td class="text-end text-danger">-@Model.UmumiTutulma.ToString("N2") ₼</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Net xülasə -->
+<div class="info-card" style="margin-top: 1rem;">
+    <div class="info-rows">
+        <div class="info-row">
+            <span class="info-key">Ümumi Gəlir</span>
+            <span class="info-val fw-bold text-success">+@Model.UmumiGelir.ToString("N2") ₼</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key">Ümumi Tutulma</span>
+            <span class="info-val fw-bold text-danger">-@Model.UmumiTutulma.ToString("N2") ₼</span>
+        </div>
+        <div class="info-row" style="border-top: 2px solid var(--border); padding-top: 0.75rem; margin-top: 0.5rem;">
+            <span class="info-key fw-bold">NET MȆBLƎĞ</span>
+            <span class="info-val fw-bold" style="font-size:1.1rem;">@Model.NetMebleg.ToString("N2") ₼</span>
+        </div>
+    </div>
+</div>
