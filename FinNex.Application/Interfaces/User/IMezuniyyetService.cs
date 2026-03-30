@@ -9,9 +9,9 @@ namespace FinNex.Application.Interfaces
     {
         // Mövcud metodlar
         Task<Result<IList<MezuniyyetListDto>>> GetListAsync();
-        Task<Result> SobeReisiTesdiqAsync(int id, bool status, string? qeyd);
-        Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd);
-        Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd);
+        Task<Result> SobeReisiTesdiqAsync(int id, bool status, string? qeyd, int sobeReisiId);
+        Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId);
+        Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd, int hrId);
 
         // YENİ: İşçi paneli üçün əlavə edildi
         Task<Result<IList<MezuniyyetListDto>>> GetIsciMezuniyyetleriAsync(int isciId);
@@ -21,5 +21,7 @@ namespace FinNex.Application.Interfaces
         Task<Result<IList<MezuniyyetListDto>>> GetGozlemededeAsync();
         Task<Result<IList<MezuniyyetListDto>>> GetRehberTesdiqindeAsync();
         Task<Result<IList<MezuniyyetListDto>>> GetHrTesdiqindeAsync();
+        Task<Result<IList<MezuniyyetListDto>>> GetSobeyeGoreMezuniyyetlerAsync(int departamentId, int sobeReisiIsciId);
+        Task<Result<IList<MezuniyyetListDto>>> GetFiltrliAsync( DateTime? baslaTarixFrom,DateTime? baslaTarixTo,int? departamentId,int? status,string? axtaris);
     }
 }

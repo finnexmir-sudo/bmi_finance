@@ -1,265 +1,304 @@
 @model FinNex.UI.Areas.HR.ViewModels.IsciDetailVM
 @using FinNex.Domain.Entities.HR
-
 @{
     ViewData["Title"] = Model.TamAd;
-    Layout = "_HRLayout";
 }
 
-@if (TempData["Success"] != null)
-{
-    <div class="toast-success" id="toastSuccess">
-        <i class="bi bi-check-circle-fill"></i>
-        @TempData["Success"]
-    </div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/HR/isci.css" asp-append-version="true" />
 }
 
-<!-- Profile Hero -->
-<div class="profile-hero">
-    <div class="profile-hero-left">
-        <div class="profile-avatar-xl">
-            @Model.Ad.Substring(0, 1)@Model.Soyad.Substring(0, 1)
-        </div>
-        <div class="profile-hero-info">
-            <h1 class="profile-name">@Model.TamAd</h1>
-            <div class="profile-meta-row">
-                <span class="profile-badge-dept">
-                    <i class="bi bi-building"></i>
-                    @(Model.CariDepartament ?? "—")
-                </span>
-                <span class="profile-badge-role">
-                    <i class="bi bi-briefcase"></i>
-                    @(Model.CariVezife ?? "—")
-                </span>
-                <span class="profile-status @(Model.Status == IsciStatus.Aktiv ? "status-on" : "status-off")">
-                    <span class="status-dot"></span>
-                    @(Model.Status == IsciStatus.Aktiv ? "Aktiv" : "Qeyri-aktiv")
-                </span>
+<div class="fn-page">
+
+    <!-- ── Hero ─────────────────────────────────── -->
+    <div class="isci-detail-hero">
+        <div class="isci-hero-left">
+            <div class="isci-hero-avatar">@Model.Ad.Substring(0, 1)@Model.Soyad.Substring(0, 1)</div>
+            <div>
+                <div class="isci-hero-name">@Model.TamAd</div>
+                <div class="isci-hero-meta">
+                    @if (!string.IsNullOrEmpty(Model.CariDepartament))
+                    {
+                        <span class="isci-hero-tag">
+                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                <rect x="1" y="1" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2" />
+                                <path d="M1 4h9" stroke="currentColor" stroke-width="1.2" />
+                            </svg>
+                            @Model.CariDepartament
+                        </span>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.CariVezife))
+                    {
+                        <span class="isci-hero-tag">
+                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                <rect x="2" y="3" width="7" height="6" rx="1" stroke="currentColor" stroke-width="1.2" />
+                                <path d="M4 3V2h3v1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                            </svg>
+                            @Model.CariVezife
+                        </span>
+                    }
+                    @if (Model.Status == IsciStatus.Aktiv)
+                    {
+                        <span class="fn-badge fn-badge--done">Aktiv</span>
+                    }
+                    else
+                    {
+                        <span class="fn-badge fn-badge--rejected">Qeyri-aktiv</span>
+                    }
+                </div>
             </div>
-            <div class="profile-fin">FIN: <strong>@Model.FIN</strong></div>
+        </div>
+        <div class="isci-hero-actions">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="fn-btn fn-btn--outline fn-btn--sm">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M8.5 1.5l2 2-6 6H2.5v-2l6-6z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" />
+                </svg>
+                Redaktə
+            </a>
+            <a asp-action="TeyinatDeyis" asp-route-id="@Model.Id" class="fn-btn fn-btn--outline fn-btn--sm" style="color:#3a5bcf;border-color:rgba(99,130,246,0.4);">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M1 4h10M8 1l3 3-3 3M11 8H1M4 5l-3 3 3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                Təyinat Dəyiş
+            </a>
+            <a asp-action="MaasDeyis" asp-route-id="@Model.Id" class="fn-btn fn-btn--outline fn-btn--sm" style="color:#1a7a50;border-color:rgba(30,155,107,0.4);">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.3" />
+                    <path d="M6 3v6M4.5 4.5h2.5a1 1 0 010 2H5a1 1 0 000 2h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                </svg>
+                Maaş Dəyiş
+            </a>
         </div>
     </div>
-    <div class="profile-hero-actions">
-        <a asp-action="Edit" asp-route-id="@Model.Id" class="ph-btn ph-btn-outline">
-            <i class="bi bi-pencil-square"></i> Redaktə Et
-        </a>
-        <a asp-action="TeyinatDeyis" asp-route-id="@Model.Id" class="ph-btn ph-btn-blue">
-            <i class="bi bi-arrow-left-right"></i> Təyinat Dəyiş
-        </a>
-        <a asp-action="MaasDeyis" asp-route-id="@Model.Id" class="ph-btn ph-btn-emerald">
-            <i class="bi bi-currency-dollar"></i> Maaş Dəyiş
-        </a>
-    </div>
-</div>
 
-<!-- Stat Strip -->
-<div class="stat-strip">
-    <div class="stat-strip-item">
-        <div class="stat-strip-ico indigo"><i class="bi bi-calendar-check"></i></div>
-        <div>
-            <div class="stat-strip-label">İşə Başlama</div>
-            <div class="stat-strip-val">@Model.IsheQebulTarixi.ToString("dd.MM.yyyy")</div>
+    <!-- ── Stat strip ────────────────────────────── -->
+    <div class="isci-stat-strip">
+        <div class="isci-stat-card">
+            <div class="isci-stat-icon isci-stat-icon--indigo">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3" />
+                    <path d="M2 6h12M6 2v2M10 2v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                </svg>
+            </div>
+            <div>
+                <div class="isci-stat-label">İşə Başlama</div>
+                <div class="isci-stat-val">@Model.IsheQebulTarixi.ToString("dd.MM.yyyy")</div>
+            </div>
         </div>
-    </div>
-    <div class="stat-strip-item">
-        <div class="stat-strip-ico emerald"><i class="bi bi-cash-stack"></i></div>
-        <div>
-            <div class="stat-strip-label">Cari Maaş</div>
-            <div class="stat-strip-val">@Model.CariMaas.ToString("N2") ₼</div>
+        <div class="isci-stat-card">
+            <div class="isci-stat-icon isci-stat-icon--green">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3" />
+                    <path d="M8 4v4M5.5 6.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                </svg>
+            </div>
+            <div>
+                <div class="isci-stat-label">Cari Maaş</div>
+                <div class="isci-stat-val">@Model.CariMaas.ToString("N2") ₼</div>
+            </div>
         </div>
-    </div>
-    <div class="stat-strip-item">
-        <div class="stat-strip-ico blue"><i class="bi bi-clock-history"></i></div>
-        <div>
-            <div class="stat-strip-label">Staj</div>
-            <div class="stat-strip-val">
+        <div class="isci-stat-card">
+            <div class="isci-stat-icon isci-stat-icon--blue">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3" />
+                    <path d="M8 5v3.5l2.5 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                </svg>
+            </div>
+            <div>
                 @{
                     var staj = DateTime.Today - Model.IsheQebulTarixi;
                     var il = (int)(staj.TotalDays / 365);
                     var ay = (int)((staj.TotalDays % 365) / 30);
                 }
-                @il il @ay ay
+                <div class="isci-stat-label">Staj</div>
+                <div class="isci-stat-val">@il il @ay ay</div>
+            </div>
+        </div>
+        <div class="isci-stat-card">
+            <div class="isci-stat-icon isci-stat-icon--amber">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3" />
+                    <path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                </svg>
+            </div>
+            <div>
+                <div class="isci-stat-label">Şəxsiyyət</div>
+                <div class="isci-stat-val" style="font-size:12px;font-family:monospace;">@Model.SeriyaNomre</div>
             </div>
         </div>
     </div>
-    <div class="stat-strip-item">
-        <div class="stat-strip-ico amber"><i class="bi bi-person-badge"></i></div>
-        <div>
-            <div class="stat-strip-label">Şəxsiyyət</div>
-            <div class="stat-strip-val">@Model.SeriyaNomre</div>
-        </div>
+
+    <!-- ── Tabs ──────────────────────────────────── -->
+    <div class="isci-detail-tabs">
+        <button class="isci-detail-tab active" data-tab="info">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <circle cx="6.5" cy="4" r="2" stroke="currentColor" stroke-width="1.2" />
+                <path d="M1.5 12c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+            </svg>
+            Şəxsi Məlumat
+        </button>
+        <button class="isci-detail-tab" data-tab="teyinat">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M1 4h11M8.5 1.5l3 2.5-3 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M12 9H1M4.5 6.5l-3 2.5 3 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            Təyinat Tarixçəsi
+            <span class="isci-tab-count">@Model.TeyinatTarixcesi.Count</span>
+        </button>
+        <button class="isci-detail-tab" data-tab="maas">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.2" />
+                <path d="M6.5 3.5v6M5 5h3a1 1 0 010 2H5.5a1 1 0 000 2H8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+            </svg>
+            Maaş Tarixçəsi
+            <span class="isci-tab-count">@Model.MaasTarixcesi.Count</span>
+        </button>
     </div>
-</div>
 
-<!-- Tabs -->
-<div class="detail-tabs">
-    <button class="detail-tab active" data-tab="info">
-        <i class="bi bi-person-lines-fill"></i> Şəxsi Məlumat
-    </button>
-    <button class="detail-tab" data-tab="teyinat">
-        <i class="bi bi-diagram-3"></i> Təyinat Tarixçəsi
-        <span class="tab-count">@Model.TeyinatTarixcesi.Count</span>
-    </button>
-    <button class="detail-tab" data-tab="maas">
-        <i class="bi bi-graph-up-arrow"></i> Maaş Tarixçəsi
-        <span class="tab-count">@Model.MaasTarixcesi.Count</span>
-    </button>
-</div>
-
-<!-- Tab: Şəxsi Məlumat -->
-<div class="tab-panel active" id="tab-info">
-    <div class="info-grid">
-        <div class="info-card">
-            <div class="info-card-title"><i class="bi bi-person-fill"></i> Şəxsi Məlumatlar</div>
-            <div class="info-rows">
-                <div class="info-row">
-                    <span class="info-key">Ad Soyad</span>
-                    <span class="info-val">@Model.TamAd</span>
+    <!-- ── Tab: Şəxsi Məlumat ────────────────────── -->
+    <div class="isci-tab-panel active" id="tab-info">
+        <div class="isci-info-grid">
+            <div class="isci-info-card">
+                <div class="isci-info-card-title">Şəxsi Məlumatlar</div>
+                <div class="isci-info-row">
+                    <span class="isci-info-key">Ad Soyad</span>
+                    <span class="isci-info-val">@Model.TamAd</span>
                 </div>
-                <div class="info-row">
-                    <span class="info-key">FIN Kod</span>
-                    <span class="info-val info-mono">@Model.FIN</span>
+                <div class="isci-info-row">
+                    <span class="isci-info-key">FIN Kod</span>
+                    <span class="isci-info-val isci-info-val--mono">@Model.FIN</span>
                 </div>
-                <div class="info-row">
-                    <span class="info-key">Şəxsiyyət Vəsiqəsi</span>
-                    <span class="info-val info-mono">@Model.SeriyaNomre</span>
+                <div class="isci-info-row">
+                    <span class="isci-info-key">Şəxsiyyət Vəsiqəsi</span>
+                    <span class="isci-info-val isci-info-val--mono">@Model.SeriyaNomre</span>
                 </div>
-                <div class="info-row">
-                    <span class="info-key">Doğum Tarixi</span>
-                    <span class="info-val">@Model.DogumTarixi.ToString("dd MMMM yyyy")</span>
+                <div class="isci-info-row">
+                    <span class="isci-info-key">Doğum Tarixi</span>
+                    <span class="isci-info-val">@Model.DogumTarixi.ToString("dd MMMM yyyy")</span>
                 </div>
-                <div class="info-row">
-                    <span class="info-key">Cins</span>
-                    <span class="info-val">@Model.CinsAd</span>
+                <div class="isci-info-row">
+                    <span class="isci-info-key">Cins</span>
+                    <span class="isci-info-val">@Model.CinsAd</span>
                 </div>
                 @if (!string.IsNullOrEmpty(Model.Unvan))
                 {
-                    <div class="info-row">
-                        <span class="info-key">Ünvan</span>
-                        <span class="info-val">@Model.Unvan</span>
+                    <div class="isci-info-row">
+                        <span class="isci-info-key">Ünvan</span>
+                        <span class="isci-info-val">@Model.Unvan</span>
                     </div>
                 }
             </div>
-        </div>
 
-        <div class="info-card">
-            <div class="info-card-title"><i class="bi bi-telephone-fill"></i> Əlaqə Məlumatları</div>
-            <div class="info-rows">
+            <div class="isci-info-card">
+                <div class="isci-info-card-title">Əlaqə Məlumatları</div>
                 @if (!string.IsNullOrEmpty(Model.Telefon))
                 {
-                    <div class="info-row">
-                        <span class="info-key">Telefon</span>
-                        <span class="info-val">
-                            <a href="tel:@Model.Telefon" class="info-link">@Model.Telefon</a>
+                    <div class="isci-info-row">
+                        <span class="isci-info-key">Telefon</span>
+                        <span class="isci-info-val">
+                            <a href="tel:@Model.Telefon" class="isci-info-link">@Model.Telefon</a>
                         </span>
                     </div>
                 }
                 @if (!string.IsNullOrEmpty(Model.Email))
                 {
-                    <div class="info-row">
-                        <span class="info-key">Email</span>
-                        <span class="info-val">
-                            <a href="mailto:@Model.Email" class="info-link">@Model.Email</a>
+                    <div class="isci-info-row">
+                        <span class="isci-info-key">Email</span>
+                        <span class="isci-info-val">
+                            <a href="mailto:@Model.Email" class="isci-info-link">@Model.Email</a>
                         </span>
                     </div>
                 }
-            </div>
-            <div class="info-card-title mt-16"><i class="bi bi-building-fill"></i> İş Məlumatları</div>
-            <div class="info-rows">
-                <div class="info-row">
-                    <span class="info-key">Departament</span>
-                    <span class="info-val">@(Model.CariDepartament ?? "—")</span>
+                <div class="isci-info-card-title" style="margin-top:16px;">İş Məlumatları</div>
+                <div class="isci-info-row">
+                    <span class="isci-info-key">Departament</span>
+                    <span class="isci-info-val">@(Model.CariDepartament ?? "—")</span>
                 </div>
-                <div class="info-row">
-                    <span class="info-key">Vəzifə</span>
-                    <span class="info-val">@(Model.CariVezife ?? "—")</span>
+                <div class="isci-info-row">
+                    <span class="isci-info-key">Vəzifə</span>
+                    <span class="isci-info-val">@(Model.CariVezife ?? "—")</span>
                 </div>
-                <div class="info-row">
-                    <span class="info-key">İşə başlama</span>
-                    <span class="info-val">@Model.IsheQebulTarixi.ToString("dd.MM.yyyy")</span>
+                <div class="isci-info-row">
+                    <span class="isci-info-key">İşə başlama</span>
+                    <span class="isci-info-val">@Model.IsheQebulTarixi.ToString("dd.MM.yyyy")</span>
                 </div>
                 @if (Model.IsdenAyrilmaTarixi.HasValue)
                 {
-                    <div class="info-row">
-                        <span class="info-key">İşdən ayrılma</span>
-                        <span class="info-val text-rose">@Model.IsdenAyrilmaTarixi.Value.ToString("dd.MM.yyyy")</span>
+                    <div class="isci-info-row">
+                        <span class="isci-info-key">İşdən ayrılma</span>
+                        <span class="isci-info-val" style="color:#dc2626;">@Model.IsdenAyrilmaTarixi.Value.ToString("dd.MM.yyyy")</span>
                     </div>
                 }
-                <div class="info-row">
-                    <span class="info-key">Sistem Girişi</span>
-                    <span class="info-val">
+                <div class="isci-info-row">
+                    <span class="isci-info-key">Sistem Girişi</span>
+                    <span class="isci-info-val">
                         @if (Model.LoginVar)
                         {
-                            <span class="badge-yes"><i class="bi bi-check-circle-fill"></i> Var</span>
+                            <span class="isci-badge-yes">✓ Var</span>
                         }
                         else
                         {
-                            <span class="badge-no"><i class="bi bi-x-circle-fill"></i> Yoxdur</span>
+                            <span class="isci-badge-no">✗ Yoxdur</span>
                         }
                     </span>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Tab: Teyinat Tarixçəsi -->
-<div class="tab-panel" id="tab-teyinat">
-    @if (!Model.TeyinatTarixcesi.Any())
-    {
-        <div class="empty-state">
-            <div class="empty-icon"><i class="bi bi-diagram-3"></i></div>
-            <div class="empty-title">Təyinat tarixçəsi yoxdur</div>
-        </div>
-    }
-    else
-    {
-        <div class="timeline">
-            @foreach (var t in Model.TeyinatTarixcesi.OrderByDescending(x => x.BaslamaTarixi))
-            {
-                <div class="timeline-item @(t.Aktivdir ? "tl-active" : "")">
-                    <div class="tl-dot @(t.Aktivdir ? "dot-active" : "dot-past")"></div>
-                    <div class="tl-body">
-                        <div class="tl-head">
-                            <div class="tl-title">@t.DepartamentAd</div>
-                            @if (t.Aktivdir)
-                            {
-                                <span class="tl-badge-aktiv">Aktiv</span>
-                            }
-                        </div>
-                        <div class="tl-sub">@t.VezifeAd</div>
-                        <div class="tl-dates">
-                            <i class="bi bi-calendar3"></i>
-                            @t.BaslamaTarixi.ToString("dd.MM.yyyy")
-                            @if (t.BitmeTarixi.HasValue)
-                            {
-                                <span> — @t.BitmeTarixi.Value.ToString("dd.MM.yyyy")</span>
-                            }
-                            else
-                            {
-                                <span> — davam edir</span>
-                            }
+    <!-- ── Tab: Təyinat Tarixçəsi ────────────────── -->
+    <div class="isci-tab-panel" id="tab-teyinat">
+        @if (!Model.TeyinatTarixcesi.Any())
+        {
+            <div class="fn-empty-state">
+                <div class="fn-empty-title">Təyinat tarixçəsi yoxdur</div>
+            </div>
+        }
+        else
+        {
+            <div class="isci-timeline">
+                @foreach (var t in Model.TeyinatTarixcesi.OrderByDescending(x => x.BaslamaTarixi))
+                {
+                    <div class="isci-tl-item">
+                        <div class="isci-tl-dot @(t.Aktivdir ? "isci-tl-dot--active" : "isci-tl-dot--past")"></div>
+                        <div>
+                            <div class="isci-tl-title">
+                                @t.DepartamentAd
+                                @if (t.Aktivdir)
+                                {
+                                    <span class="isci-tl-badge">Aktiv</span>
+                                }
+                            </div>
+                            <div class="isci-tl-sub">@t.VezifeAd</div>
+                            <div class="isci-tl-date">
+                                @t.BaslamaTarixi.ToString("dd.MM.yyyy")
+                                @if (t.BitmeTarixi.HasValue)
+                                {
+                                    <text> — @t.BitmeTarixi.Value.ToString("dd.MM.yyyy")</text>
+                                }
+                                else
+                                {
+                                    <text> — davam edir</text>
+                                }
+                            </div>
                         </div>
                     </div>
-                </div>
-            }
-        </div>
-    }
-</div>
+                }
+            </div>
+        }
+    </div>
 
-<!-- Tab: Maaş Tarixçəsi -->
-<div class="tab-panel" id="tab-maas">
-    @if (!Model.MaasTarixcesi.Any())
-    {
-        <div class="empty-state">
-            <div class="empty-icon"><i class="bi bi-cash-coin"></i></div>
-            <div class="empty-title">Maaş dəyişiklik tarixçəsi yoxdur</div>
-        </div>
-    }
-    else
-    {
-        <div class="maas-table-wrap">
-            <table class="maas-table">
+    <!-- ── Tab: Maaş Tarixçəsi ───────────────────── -->
+    <div class="isci-tab-panel" id="tab-maas">
+        @if (!Model.MaasTarixcesi.Any())
+        {
+            <div class="fn-empty-state">
+                <div class="fn-empty-title">Maaş dəyişiklik tarixçəsi yoxdur</div>
+            </div>
+        }
+        else
+        {
+            <table class="isci-maas-table">
                 <thead>
                     <tr>
                         <th>Tarix</th>
@@ -275,34 +314,32 @@
                         var ferg = m.YeniMaas - m.KohneMaas;
                         <tr>
                             <td>@m.DeyismeTarixi.ToString("dd.MM.yyyy")</td>
-                            <td class="maas-val">@m.KohneMaas.ToString("N2") ₼</td>
-                            <td class="maas-val new">@m.YeniMaas.ToString("N2") ₼</td>
+                            <td class="isci-maas-val">@m.KohneMaas.ToString("N2") ₼</td>
+                            <td class="isci-maas-val isci-maas-val--new">@m.YeniMaas.ToString("N2") ₼</td>
                             <td>
-                                <span class="maas-diff @(ferg >= 0 ? "diff-up" : "diff-down")">
-                                    <i class="bi @(ferg >= 0 ? "bi-arrow-up" : "bi-arrow-down")"></i>
-                                    @Math.Abs(ferg).ToString("N2") ₼
+                                <span class="isci-maas-diff @(ferg >= 0 ? "isci-maas-diff--up" : "isci-maas-diff--down")">
+                                    @(ferg >= 0 ? "↑" : "↓") @Math.Abs(ferg).ToString("N2") ₼
                                 </span>
                             </td>
-                            <td class="maas-emr">@(m.EmrinNomresi ?? "—")</td>
+                            <td style="color:#8a93a8;font-size:12px;">@(m.EmrinNomresi ?? "—")</td>
                         </tr>
                     }
                 </tbody>
             </table>
-        </div>
-    }
-</div>
+        }
+    </div>
 
-<!-- Back link -->
-<div class="back-row">
-    <a asp-action="Index" class="back-link">
-        <i class="bi bi-arrow-left"></i> İşçilər siyahısına qayıt
-    </a>
 </div>
-
-@section Styles {
-    <link rel="stylesheet" href="~/css/hr/isci-detail.css" asp-append-version="true" />
-}
 
 @section Scripts {
-    <script src="~/js/hr/isci-detail.js" asp-append-version="true"></script>
+    <script>
+        document.querySelectorAll('.isci-detail-tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.isci-detail-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.isci-tab-panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+    </script>
 }

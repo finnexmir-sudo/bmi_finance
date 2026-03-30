@@ -2,61 +2,78 @@
 @model DepartmentCreateDto
 @{
     ViewData["Title"] = "Yeni Departament";
-    Layout = "_HRLayout";
 }
 
-<div class="create-wrapper">
-    <div class="create-card">
-        <div class="card-header">
-            <div class="header-icon">
-                <i class="bi bi-briefcase-fill"></i>
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/struktur.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hr/isci.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+    <div class="isci-form-wrap">
+
+        <a asp-action="Index" class="isci-form-back">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M9 11L5 7l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            Departamentlərə qayıt
+        </a>
+
+        <div class="isci-form-card">
+            <div class="isci-form-header">
+                <div class="isci-form-header-icon isci-form-header-icon--indigo">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <rect x="2" y="3" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M2 8h16M7 3V1M13 3V1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="isci-form-header-title">Yeni Departament</div>
+                    <div class="isci-form-header-sub">Departament məlumatlarını daxil edin</div>
+                </div>
             </div>
-            <div>
-                <h2 class="card-title">Yeni Departament Əlavə Et</h2>
-                <p class="card-subtitle">Departament məlumatlarını daxil edin</p>
-            </div>
+
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="isci-form-body">
+                    <div class="isci-field">
+                        <label class="isci-label">
+                            Departament Adı <span class="isci-required">*</span>
+                        </label>
+                        <input asp-for="Ad" class="isci-input" placeholder="Məsələn: Kredit, Kassa, IT" />
+                        <span asp-validation-for="Ad" class="isci-error"></span>
+                    </div>
+
+                    <div class="isci-field">
+                        <label class="isci-label">Açıqlama</label>
+                        <textarea asp-for="Aciqlama" class="isci-input str-modal-textarea"
+                                  rows="4"
+                                  placeholder="Departamentin funksiyası haqqında qısa məlumat..."></textarea>
+                        <span asp-validation-for="Aciqlama" class="isci-error"></span>
+                    </div>
+                </div>
+
+                <div class="isci-form-footer">
+                    <div class="isci-form-footer-note">* olan sahələr məcburidir</div>
+                    <div class="isci-form-footer-actions">
+                        <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+                        <button type="submit" class="fn-btn fn-btn--primary">
+                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                <path d="M2 7l3.5 3.5 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            Yadda saxla
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
 
-        <form asp-action="Create" method="post" id="vezifeForm">
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
-
-            <div class="form-grid">
-                <!-- Departament Adı -->
-                <div class="form-field full-width">
-                    <label asp-for="Ad">Departament Adı <span class="req">*</span></label>
-                    <input asp-for="Ad" class="form-input" placeholder="Məsələn: Kredit, Kassa" />
-                    <span asp-validation-for="Ad" class="error-text"></span>
-                </div>
-                <!-- Açıqlama -->
-                <div class="form-field full-width">
-                    <label asp-for="Aciqlama">Açıqlama</label>
-                    <textarea asp-for="Aciqlama"
-                              class="form-textarea"
-                              rows="4"
-                              placeholder="Departamentin funksiyası və məsuliyyət sahəsi haqqında qısa məlumat..."></textarea>
-                    <span asp-validation-for="Aciqlama" class="error-text"></span>
-                </div>
-
-                
-            </div>
-
-            <div class="form-actions">
-                <button type="submit" class="btn-primary">
-                    <i class="bi bi-check-lg"></i> Yadda Saxla
-                </button>
-                <a asp-action="Index" class="btn-secondary">
-                    <i class="bi bi-x-lg"></i> Ləğv Et
-                </a>
-            </div>
-        </form>
     </div>
 </div>
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/hr/vezife-create.css" />
-}
-
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-    <script src="~/js/hr/vezife-create.js"></script>
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

@@ -331,6 +331,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "ClosedXML": {
+              "target": "Package",
+              "version": "[0.105.0, )"
+            },
             "DocumentFormat.OpenXml": {
               "target": "Package",
               "version": "[3.2.0, )"

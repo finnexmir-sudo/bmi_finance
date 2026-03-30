@@ -31,9 +31,13 @@ namespace FinNex.Application.Services
                     .HamisiniGetirAsync(
                         x => x.IsciId == isciId,
                         include: q => q
-                            .Include(i => i.Isci)
-    .ThenInclude(i => i.IsciTeyinatlari)
-                            .Include(i => i.EvezEdenIsci),
+    .Include(m => m.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Departament)
+    .Include(m => m.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Vezife)
+    .Include(m => m.EvezEdenIsci),
                         izlemeden: true);
 
                 var dtos = list
@@ -65,7 +69,7 @@ namespace FinNex.Application.Services
                     BaslamaSaati = dto.BaslamaSaati,
                     BitisSaati = dto.BitisSaati,
                     Sebeb = dto.Sebeb,
-                    Status = IcazeStatus.Gozlemede
+                    Status = IcazeStatus.SobeReisiTesdiqinde
                 };
 
                 await _unitOfWork.Repository<Icaze>().YaratAsync(entity);
@@ -196,9 +200,13 @@ namespace FinNex.Application.Services
                     .HamisiniGetirAsync(
                         predicate: x => x.Status == IcazeStatus.Gozlemede,
                         include: q => q
-                            .Include(i => i.Isci)
-                                .ThenInclude(i => i.IsciTeyinatlari)
-                            .Include(i => i.EvezEdenIsci),
+    .Include(i => i.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Departament)
+    .Include(i => i.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Vezife)
+    .Include(i => i.EvezEdenIsci),
                         izlemeden: true);
 
                 var dtos = list
@@ -222,9 +230,13 @@ namespace FinNex.Application.Services
                     .HamisiniGetirAsync(
                         predicate: x => x.Status == IcazeStatus.RehberTesdiqinde,
                         include: q => q
-                            .Include(i => i.Isci)
-                                .ThenInclude(i => i.IsciTeyinatlari)
-                            .Include(i => i.EvezEdenIsci),
+    .Include(i => i.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Departament)
+    .Include(i => i.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Vezife)
+    .Include(i => i.EvezEdenIsci),
                         izlemeden: true);
 
                 var dtos = list
@@ -248,9 +260,13 @@ namespace FinNex.Application.Services
                     .HamisiniGetirAsync(
                         predicate: x => x.Status == IcazeStatus.HrTesdiqinde,
                         include: q => q
-                            .Include(i => i.Isci)
-                                .ThenInclude(i => i.IsciTeyinatlari)
-                            .Include(i => i.EvezEdenIsci),
+    .Include(i => i.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Departament)
+    .Include(i => i.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Vezife)
+    .Include(i => i.EvezEdenIsci),
                         izlemeden: true);
 
                 var dtos = list
@@ -266,70 +282,57 @@ namespace FinNex.Application.Services
             }
         }
 
-        public async Task<Result> SobeReisiTesdiqAsync(int id, bool status, string? qeyd)
+        // IcazeService.cs — 3 metodu belə yeniləyin:
+
+        public async Task<Result> SobeReisiTesdiqAsync(int id, bool status, string? qeyd, int sobeReisiId = 0)
         {
-            try
-            {
-                var icaze = await _unitOfWork.Repository<Icaze>().IdIleGetirAsync(id);
-                if (icaze == null) return Result.Fail("İcazə tapılmadı.");
+            var icaze = await _unitOfWork.Repository<Icaze>()
+                .GetirAsync(x => x.Id == id);
+            if (icaze == null) return Result.Fail("İcazə tapılmadı.");
 
-                icaze.SobeReisiTesdiq = status;
-                icaze.SobeReisiTesdiqTarixi = DateTime.Now;
-                icaze.Status = status ? IcazeStatus.RehberTesdiqinde : IcazeStatus.ImtinaEdildi;
+            icaze.SobeReisiTesdiq = status;
+            icaze.SobeReisiId = sobeReisiId > 0 ? sobeReisiId : icaze.SobeReisiId;
+            icaze.SobeReisiTesdiqTarixi = DateTime.Now;
+            icaze.Status = status ? IcazeStatus.RehberTesdiqinde : IcazeStatus.ImtinaEdildi;
+            if (!status) icaze.ImtinaSebebi = qeyd;
 
-                if (!status) icaze.ImtinaSebebi = qeyd;
-
-                await _unitOfWork.YaddaSaxlaAsync();
-                return Result.Ok("Şöbə rəisi qərarı qeydə alındı.");
-            }
-            catch (Exception ex)
-            {
-                return Result.Fail($"Xəta: {ex.Message}");
-            }
+            await _unitOfWork.Repository<Icaze>().YenileAsync(icaze);
+            await _unitOfWork.YaddaSaxlaAsync();
+            return Result.Ok("Şöbə rəisi qərarı qeydə alındı.");
         }
 
-        public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd)
+        public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0)
         {
-            try
-            {
-                var icaze = await _unitOfWork.Repository<Icaze>().IdIleGetirAsync(id);
-                if (icaze == null) return Result.Fail("İcazə tapılmadı.");
+            var icaze = await _unitOfWork.Repository<Icaze>()
+                .GetirAsync(x => x.Id == id);
+            if (icaze == null) return Result.Fail("İcazə tapılmadı.");
 
-                icaze.RehberTesdiq = status;
-                icaze.RehberTesdiqTarixi = DateTime.Now;
-                icaze.Status = status ? IcazeStatus.HrTesdiqinde : IcazeStatus.ImtinaEdildi;
+            icaze.RehberTesdiq = status;
+            icaze.RehberId = rehberId > 0 ? rehberId : icaze.RehberId;
+            icaze.RehberTesdiqTarixi = DateTime.Now;
+            icaze.Status = status ? IcazeStatus.HrTesdiqinde : IcazeStatus.ImtinaEdildi;
+            if (!status) icaze.ImtinaSebebi = qeyd;
 
-                if (!status) icaze.ImtinaSebebi = qeyd;
-
-                await _unitOfWork.YaddaSaxlaAsync();
-                return Result.Ok("Rəhbər qərarı qeydə alındı.");
-            }
-            catch (Exception ex)
-            {
-                return Result.Fail($"Xəta: {ex.Message}");
-            }
+            await _unitOfWork.Repository<Icaze>().YenileAsync(icaze);
+            await _unitOfWork.YaddaSaxlaAsync();
+            return Result.Ok("Rəhbər qərarı qeydə alındı.");
         }
 
-        public async Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd)
+        public async Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd, int hrId = 0)
         {
-            try
-            {
-                var icaze = await _unitOfWork.Repository<Icaze>().IdIleGetirAsync(id);
-                if (icaze == null) return Result.Fail("İcazə tapılmadı.");
+            var icaze = await _unitOfWork.Repository<Icaze>()
+                .GetirAsync(x => x.Id == id);
+            if (icaze == null) return Result.Fail("İcazə tapılmadı.");
 
-                icaze.HrTesdiq = status;
-                icaze.HrTesdiqTarixi = DateTime.Now;
-                icaze.Status = status ? IcazeStatus.Tesdiqlenib : IcazeStatus.ImtinaEdildi;
+            icaze.HrTesdiq = status;
+            icaze.HrId = hrId > 0 ? hrId : icaze.HrId;
+            icaze.HrTesdiqTarixi = DateTime.Now;
+            icaze.Status = status ? IcazeStatus.Tesdiqlenib : IcazeStatus.ImtinaEdildi;
+            if (!status) icaze.ImtinaSebebi = qeyd;
 
-                if (!status) icaze.ImtinaSebebi = qeyd;
-
-                await _unitOfWork.YaddaSaxlaAsync();
-                return Result.Ok("HR qərarı qeydə alındı.");
-            }
-            catch (Exception ex)
-            {
-                return Result.Fail($"Xəta: {ex.Message}");
-            }
+            await _unitOfWork.Repository<Icaze>().YenileAsync(icaze);
+            await _unitOfWork.YaddaSaxlaAsync();
+            return Result.Ok("HR qərarı qeydə alındı.");
         }
 
         private static IcazeListDto MapToListDto(Icaze icaze) => new()
@@ -348,5 +351,73 @@ namespace FinNex.Application.Services
             Sebeb = icaze.Sebeb,
             Status = icaze.Status,
         };
+        public async Task<Result<IList<IcazeListDto>>> GetFiltrliAsync(
+    DateTime? tarixFrom,
+    DateTime? tarixTo,
+    int? departamentId,
+    int? status,
+    string? axtaris)
+        {
+            try
+            {
+                var list = await _unitOfWork.Repository<Icaze>()
+                    .HamisiniGetirAsync(
+                        predicate: x =>
+                            (tarixFrom == null || x.IcazeTarixi >= tarixFrom) &&
+                            (tarixTo == null || x.IcazeTarixi <= tarixTo) &&
+                            (status == null || (int)x.Status == status) &&
+                            (departamentId == null || x.Isci.IsciTeyinatlari
+                                .Any(t => t.Aktivdir && t.DepartamentId == departamentId)) &&
+                            (axtaris == null || x.Isci.Ad.Contains(axtaris) ||
+                                x.Isci.Soyad.Contains(axtaris)),
+                        include: q => q
+                            .Include(i => i.Isci)
+                                .ThenInclude(i => i.IsciTeyinatlari)
+                                    .ThenInclude(t => t.Departament)
+                            .Include(i => i.Isci)
+                                .ThenInclude(i => i.IsciTeyinatlari)
+                                    .ThenInclude(t => t.Vezife)
+                            .Include(i => i.EvezEdenIsci)
+                            .Include(i => i.SobeReisi)
+                            .Include(i => i.Rehber)
+                            .Include(i => i.HrTesdiqleyen),
+                        izlemeden: true);
+
+                var dtos = list
+                    .OrderByDescending(x => x.IcazeTarixi)
+                    .Select(ic => new IcazeListDto
+                    {
+                        Id = ic.Id,
+                        IsciAdSoyad = ic.Isci.TamAd,
+                        SobeAdi = ic.Isci.IsciTeyinatlari
+                            .Where(t => t.Aktivdir)
+                            .Select(t => t.Departament.Ad)
+                            .FirstOrDefault() ?? "-",
+                        EvezEdenAdSoyad = ic.EvezEdenIsci.TamAd,
+                        IcazeTarixi = ic.IcazeTarixi,
+                        BaslamaSaati = ic.BaslamaSaati,
+                        BitisSaati = ic.BitisSaati,
+                        IcazeSaati = ic.IcazeSaati,
+                        Sebeb = ic.Sebeb,
+                        Status = ic.Status,
+                        ImtinaSebebi = ic.ImtinaSebebi,
+                        SobeReisiTesdiq = ic.SobeReisiTesdiq,
+                        SobeReisiAdSoyad = ic.SobeReisi?.TamAd,
+                        SobeReisiTesdiqTarixi = ic.SobeReisiTesdiqTarixi,
+                        RehberTesdiq = ic.RehberTesdiq,
+                        RehberAdSoyad = ic.Rehber?.TamAd,
+                        RehberTesdiqTarixi = ic.RehberTesdiqTarixi,
+                        HrTesdiq = ic.HrTesdiq,
+                        HrAdSoyad = ic.HrTesdiqleyen?.TamAd,
+                        HrTesdiqTarixi = ic.HrTesdiqTarixi,
+                    }).ToList();
+
+                return Result<IList<IcazeListDto>>.Ok(dtos);
+            }
+            catch (Exception ex)
+            {
+                return Result<IList<IcazeListDto>>.Fail($"Xəta: {ex.Message}");
+            }
+        }
     }
 }

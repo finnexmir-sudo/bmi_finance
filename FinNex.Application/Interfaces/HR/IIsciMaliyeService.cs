@@ -1,5 +1,4 @@
 ﻿using FinNex.Application.Common.Results;
-using FinNex.Application.DTOs.HR.IsciMaliyeDtos;
 using FinNex.Domain.Entities.HR;
 
 namespace FinNex.Application.Interfaces.HR

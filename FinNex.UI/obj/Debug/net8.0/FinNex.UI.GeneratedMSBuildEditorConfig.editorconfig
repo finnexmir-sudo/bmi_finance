@@ -74,6 +74,14 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQWRtaW5cVmlld3NcVXNlck1hbmFnZW1lbnRcUmVzZXRQYXNzd29yZC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/Admin/Views/UserPermissions/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQWRtaW5cVmlld3NcVXNlclBlcm1pc3Npb25zXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/Admin/Views/UserPermissions/Manage.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQWRtaW5cVmlld3NcVXNlclBlcm1pc3Npb25zXE1hbmFnZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/Admin/Views/_ViewImports.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQWRtaW5cVmlld3NcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
@@ -126,8 +134,24 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcSXNjaVxUZXlpbmF0RGV5aXMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/HR/Views/Maas/Detal.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcTWFhc1xEZXRhbC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/HR/Views/Maas/Hesabla.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcTWFhc1xIZXNhYmxhLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/HR/Views/Maas/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcTWFhc1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/HR/Views/Maas/IsciTarixce.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcTWFhc1xJc2NpVGFyaXhjZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/HR/Views/Maas/TopluHesabla.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcTWFhc1xUb3BsdUhlc2FibGEuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/HR/Views/Mezuniyyet/Create.cshtml]
@@ -144,6 +168,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/HR/Views/Mezuniyyet/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcTWV6dW5peXlldFxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/HR/Views/Mezuniyyet/TesdiqIndex.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcTWV6dW5peXlldFxUZXNkaXFJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/HR/Views/Mezuniyyet/_DeleteModal.cshtml]
@@ -166,116 +194,140 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/PR_Odenis_Tapsirigi/Views/Bank/Duzelis.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxQUl9PZGVuaXNfVGFwc2lyaWdpXFZpZXdzXEJhbmtcRHV6ZWxpcy5jc2h0bWw=
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/HR/Views/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcX1ZpZXdTdGFydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/PR_Odenis_Tapsirigi/Views/Bank/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxQUl9PZGVuaXNfVGFwc2lyaWdpXFZpZXdzXEJhbmtcSW5kZXguY3NodG1s
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/Bank/Duzelis.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xCYW5rXER1emVsaXMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/PR_Odenis_Tapsirigi/Views/Bank/Lookup.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxQUl9PZGVuaXNfVGFwc2lyaWdpXFZpZXdzXEJhbmtcTG9va3VwLmNzaHRtbA==
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/Bank/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xCYW5rXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/PR_Odenis_Tapsirigi/Views/Bank/Yarat.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxQUl9PZGVuaXNfVGFwc2lyaWdpXFZpZXdzXEJhbmtcWWFyYXQuY3NodG1s
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/Bank/Lookup.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xCYW5rXExvb2t1cC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/PR_Odenis_Tapsirigi/Views/Musteri/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxQUl9PZGVuaXNfVGFwc2lyaWdpXFZpZXdzXE11c3RlcmlcSW5kZXguY3NodG1s
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/Bank/Yarat.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xCYW5rXFlhcmF0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/PR_Odenis_Tapsirigi/Views/Musteri/Yarat.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxQUl9PZGVuaXNfVGFwc2lyaWdpXFZpZXdzXE11c3RlcmlcWWFyYXQuY3NodG1s
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/Musteri/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xNdXN0ZXJpXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/Create.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxQUl9PZGVuaXNfVGFwc2lyaWdpXFZpZXdzXE9kZW5pc1RhcHNpcmlnaVxDcmVhdGUuY3NodG1s
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/Musteri/Yarat.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xNdXN0ZXJpXFlhcmF0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/CreateKohne.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxQUl9PZGVuaXNfVGFwc2lyaWdpXFZpZXdzXE9kZW5pc1RhcHNpcmlnaVxDcmVhdGVLb2huZS5jc2h0bWw=
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xPZGVuaXNUYXBzaXJpZ2lcQ3JlYXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/Detail.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxQUl9PZGVuaXNfVGFwc2lyaWdpXFZpZXdzXE9kZW5pc1RhcHNpcmlnaVxEZXRhaWwuY3NodG1s
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/CreateKohne.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xPZGVuaXNUYXBzaXJpZ2lcQ3JlYXRlS29obmUuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxQUl9PZGVuaXNfVGFwc2lyaWdpXFZpZXdzXE9kZW5pc1RhcHNpcmlnaVxJbmRleC5jc2h0bWw=
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/Detail.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xPZGVuaXNUYXBzaXJpZ2lcRGV0YWlsLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/Siyahi.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxQUl9PZGVuaXNfVGFwc2lyaWdpXFZpZXdzXE9kZW5pc1RhcHNpcmlnaVxTaXlhaGkuY3NodG1s
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xPZGVuaXNUYXBzaXJpZ2lcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/Update.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxQUl9PZGVuaXNfVGFwc2lyaWdpXFZpZXdzXE9kZW5pc1RhcHNpcmlnaVxVcGRhdGUuY3NodG1s
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/Siyahi.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xPZGVuaXNUYXBzaXJpZ2lcU2l5YWhpLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/PR_Odenis_Tapsirigi/Views/Payment/Create.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxQUl9PZGVuaXNfVGFwc2lyaWdpXFZpZXdzXFBheW1lbnRcQ3JlYXRlLmNzaHRtbA==
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/OdenisTapsirigi/Update.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xPZGVuaXNUYXBzaXJpZ2lcVXBkYXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/PR_Odenis_Tapsirigi/Views/_ViewImports.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxQUl9PZGVuaXNfVGFwc2lyaWdpXFZpZXdzXF9WaWV3SW1wb3J0cy5jc2h0bWw=
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/Payment/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xQYXltZW50XENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/PR_Odenis_Tapsirigi/Views/_ViewStart.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxQUl9PZGVuaXNfVGFwc2lyaWdpXFZpZXdzXF9WaWV3U3RhcnQuY3NodG1s
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xfVmlld0ltcG9ydHMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/SenedDovriyyesi/Views/Dashboard/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxTZW5lZERvdnJpeXllc2lcVmlld3NcRGFzaGJvYXJkXEluZGV4LmNzaHRtbA==
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/PR_Odenis_Tapsirigi/Views/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUFJfT2RlbmlzX1RhcHNpcmlnaVxWaWV3c1xfVmlld1N0YXJ0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/SenedDovriyyesi/Views/Sened/Detal.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxTZW5lZERvdnJpeXllc2lcVmlld3NcU2VuZWRcRGV0YWwuY3NodG1s
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/SenedDovriyyesi/Views/Dashboard/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXERhc2hib2FyZFxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/SenedDovriyyesi/Views/Sened/DetalSilinmis.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxTZW5lZERvdnJpeXllc2lcVmlld3NcU2VuZWRcRGV0YWxTaWxpbm1pcy5jc2h0bWw=
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/SenedDovriyyesi/Views/Sened/Detal.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXFNlbmVkXERldGFsLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/SenedDovriyyesi/Views/Sened/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxTZW5lZERvdnJpeXllc2lcVmlld3NcU2VuZWRcSW5kZXguY3NodG1s
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/SenedDovriyyesi/Views/Sened/DetalSilinmis.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXFNlbmVkXERldGFsU2lsaW5taXMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/SenedDovriyyesi/Views/Sened/Redakte.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxTZW5lZERvdnJpeXllc2lcVmlld3NcU2VuZWRcUmVkYWt0ZS5jc2h0bWw=
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/SenedDovriyyesi/Views/Sened/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXFNlbmVkXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/SenedDovriyyesi/Views/Sened/SenedNovleri.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxTZW5lZERvdnJpeXllc2lcVmlld3NcU2VuZWRcU2VuZWROb3ZsZXJpLmNzaHRtbA==
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/SenedDovriyyesi/Views/Sened/Redakte.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXFNlbmVkXFJlZGFrdGUuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/SenedDovriyyesi/Views/Sened/Silinmisler.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxTZW5lZERvdnJpeXllc2lcVmlld3NcU2VuZWRcU2lsaW5taXNsZXIuY3NodG1s
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/SenedDovriyyesi/Views/Sened/SenedNovleri.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXFNlbmVkXFNlbmVkTm92bGVyaS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/SenedDovriyyesi/Views/Sened/SilTesdiq.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxTZW5lZERvdnJpeXllc2lcVmlld3NcU2VuZWRcU2lsVGVzZGlxLmNzaHRtbA==
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/SenedDovriyyesi/Views/Sened/Silinmisler.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXFNlbmVkXFNpbGlubWlzbGVyLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/SenedDovriyyesi/Views/Sened/Yarat.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxTZW5lZERvdnJpeXllc2lcVmlld3NcU2VuZWRcWWFyYXQuY3NodG1s
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/SenedDovriyyesi/Views/Sened/SilTesdiq.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXFNlbmVkXFNpbFRlc2RpcS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/SenedDovriyyesi/Views/Shared/_SenedLayout.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxTZW5lZERvdnJpeXllc2lcVmlld3NcU2hhcmVkXF9TZW5lZExheW91dC5jc2h0bWw=
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/SenedDovriyyesi/Views/Sened/Yarat.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXFNlbmVkXFlhcmF0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/SenedDovriyyesi/Views/_ViewImports.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxTZW5lZERvdnJpeXllc2lcVmlld3NcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/SenedDovriyyesi/Views/Shared/_SenedLayout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXFNoYXJlZFxfU2VuZWRMYXlvdXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/SenedDovriyyesi/Views/_ViewStart.cshtml]
-build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxTZW5lZERvdnJpeXllc2lcVmlld3NcX1ZpZXdTdGFydC5jc2h0bWw=
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/SenedDovriyyesi/Views/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXF9WaWV3SW1wb3J0cy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/SenedDovriyyesi/Views/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2VuZWREb3ZyaXl5ZXNpXFZpZXdzXF9WaWV3U3RhcnQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Dashboard/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xEYXNoYm9hcmRcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Gorush/Detay.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xHb3J1c2hcRGV0YXkuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Gorush/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xHb3J1c2hcRWRpdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Gorush/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xHb3J1c2hcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Gorush/Yarat.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xHb3J1c2hcWWFyYXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Hesabat/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xIZXNhYmF0XEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Icaze/Create.cshtml]
@@ -288,6 +340,14 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Icaze/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xJY2F6ZVxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Inbox/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xJbmJveFxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Inbox/YeniMesaj.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xJbmJveFxZZW5pTWVzYWouY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Mezuniyyet/Create.cshtml]
@@ -310,6 +370,22 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xTaGFyZWRcX1VzZXJMYXlvdXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Tapshiriq/Detay.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xUYXBzaGlyaXFcRGV0YXkuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Tapshiriq/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xUYXBzaGlyaXFcRWRpdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Tapshiriq/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xUYXBzaGlyaXFcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Tapshiriq/Yarat.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xUYXBzaGlyaXFcWWFyYXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Tesdiq/Hr.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xUZXNkaXFcSHIuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -328,6 +404,14 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Tesdiq/SobeReisi.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xUZXNkaXFcU29iZVJlaXNpLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Xatirlatma/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xYYXRpcmxhdG1hXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/Xatirlatma/Yarat.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xYYXRpcmxhdG1hXFlhcmF0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/Samir/source/repos/bmi_finance/FinNex.UI/Areas/User/Views/_ViewImports.cshtml]

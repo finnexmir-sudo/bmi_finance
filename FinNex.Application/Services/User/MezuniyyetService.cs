@@ -2,6 +2,7 @@
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
+using FinNex.Application.Interfaces.Communication;
 using FinNex.Application.Services;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
@@ -9,10 +10,13 @@ using Microsoft.EntityFrameworkCore;
 
 public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, MezuniyyetCreateDto, MezuniyyetUpdateDto>, IMezuniyyetService
 {
-    public MezuniyyetService(IUnitOfWork unitOfWork, IMapper mapper) : base(unitOfWork, mapper)
+    private readonly IEvezediciTesdiqService _evezediciTesdiqService;
+    public MezuniyyetService(IUnitOfWork unitOfWork, IMapper mapper,IEvezediciTesdiqService evezediciTesdiqService) : base(unitOfWork, mapper)
     {
+        _evezediciTesdiqService = evezediciTesdiqService;
     }
 
+    
     public async Task<Result<IList<MezuniyyetListDto>>> GetListAsync()
     {
         var entities = await _unitOfWork.Repository<Mezuniyyet>()
@@ -28,7 +32,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         {
             try
             {
-                // 1. İş günlərini hesablayan məntiq (Bayramları çıxmaqla)
+                // 1. İş günlərini hesabla
                 int isGunu = await HesablaIsGunuAsync(dto.BaslamaTarixi, dto.BitmeTarixi);
 
                 // 2. Balansı yoxla
@@ -38,13 +42,32 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 if (balans == null || balans.QaliqGun < isGunu)
                     return Result<MezuniyyetDto>.Fail("Kifayət qədər məzuniyyət balansınız yoxdur.");
 
-                // 3. Entity-ni yarat
+                // 3. İşçinin aktiv departamentini tap
+                var teyinat = await _unitOfWork.Repository<IsciTeyinat>()
+                    .GetirAsync(x => x.IsciId == dto.IsciId && x.Aktivdir);
+
+                // 4. Həmin departamentdə şöbə rəisi varmı yoxla
+                var sobeReisiVar = teyinat != null && await _unitOfWork.Repository<IsciStrukturRolu>()
+                    .MovcuddurmuAsync(x =>
+                        x.DepartamentId == teyinat.DepartamentId &&
+                        x.RolTipi == StrukturRolTipi.SobeReisi &&
+                        x.IsciId != dto.IsciId &&  // özü şöbə rəisidirsə keç
+                        x.Aktivdir);
+
+                // 5. Entity-ni yarat
                 var entity = _mapper.Map<Mezuniyyet>(dto);
                 entity.IsGunlerininSayi = isGunu;
-                entity.Status = MezuniyyetStatus.Gozlemede;
+                entity.Status = sobeReisiVar
+                    ? MezuniyyetStatus.SobeReisiTesdiqinde
+                    : MezuniyyetStatus.RehberTesdiqinde;
 
                 await _unitOfWork.Repository<Mezuniyyet>().YaratAsync(entity);
                 await _unitOfWork.YaddaSaxlaAsync();
+                // Əvəzedici varsa sorğu yarat
+                if (dto.EvezEdenIsciId.HasValue)
+                {
+                    await _evezediciTesdiqService.YaratAsync(entity.Id, dto.EvezEdenIsciId.Value);
+                }
                 await transaction.CommitAsync();
 
                 return Result<MezuniyyetDto>.Ok(_mapper.Map<MezuniyyetDto>(entity), "Müraciət uğurla göndərildi.");
@@ -58,19 +81,22 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
     }
 
     // Təsdiq Metodları (Workflow məntiqi)
-    public async Task<Result> SobeReisiTesdiqAsync(int id, bool status, string? qeyd)
+    public async Task<Result> SobeReisiTesdiqAsync(int id, bool status, string? qeyd, int sobeReisiId)
     {
-        var m = await _unitOfWork.Repository<Mezuniyyet>().IdIleGetirAsync(id);
+        var m = await _unitOfWork.Repository<Mezuniyyet>()
+            .GetirAsync(x => x.Id == id);
         if (m == null) return Result.Fail("Müraciət tapılmadı.");
 
         m.SobeReisiTesdiq = status;
+        m.SobeReisiId = sobeReisiId;
         m.SobeReisiTesdiqTarixi = DateTime.Now;
-
-        // Əgər rəis təsdiq etdisə, status "Rəhbər Təsdiqində" olur, etmədisə "İmtina"
-        m.Status = status ? MezuniyyetStatus.RehberTesdiqinde : MezuniyyetStatus.ImtinaEdildi;
+        m.Status = status
+            ? MezuniyyetStatus.RehberTesdiqinde
+            : MezuniyyetStatus.ImtinaEdildi;
 
         if (!status) m.ImtinaSebebi = qeyd;
 
+        await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(m);
         await _unitOfWork.YaddaSaxlaAsync();
         return Result.Ok("Şöbə rəisi qərarı qeydə alındı.");
     }
@@ -95,35 +121,44 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         return count;
     }
 
-    public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd)
+    public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId)
     {
-        var m = await _unitOfWork.Repository<Mezuniyyet>().IdIleGetirAsync(id);
+        var m = await _unitOfWork.Repository<Mezuniyyet>()
+            .GetirAsync(x => x.Id == id); // ← izlemeden olmadan, tracking ilə
+
         if (m == null) return Result.Fail("Müraciət tapılmadı.");
 
         m.RehberTesdiq = status;
+        m.RehberId = rehberId;
         m.RehberTesdiqTarixi = DateTime.Now;
-
-        // Rəhbər təsdiq etdisə, növbəti dayanacaq HR-dır
-        m.Status = status ? MezuniyyetStatus.HrTesdiqinde : MezuniyyetStatus.ImtinaEdildi;
+        m.Status = status
+            ? MezuniyyetStatus.HrTesdiqinde
+            : MezuniyyetStatus.ImtinaEdildi;
 
         if (!status) m.ImtinaSebebi = qeyd;
 
+        await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(m); // ← explicit update
         await _unitOfWork.YaddaSaxlaAsync();
         return Result.Ok("Rəhbər qərarı qeydə alındı.");
     }
     // HrTesdiqAsync metodu
-    public async Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd)
+    public async Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd, int hrId)
     {
-        var m = await _unitOfWork.Repository<Mezuniyyet>().IdIleGetirAsync(id);
+        var m = await _unitOfWork.Repository<Mezuniyyet>()
+            .GetirAsync(x => x.Id == id);
         if (m == null) return Result.Fail("Müraciət tapılmadı.");
 
         m.HrTesdiq = status;
+        m.HrId = hrId;
         m.HrTesdiqTarixi = DateTime.Now;
-        m.Status = status ? MezuniyyetStatus.Tesdiqlenib : MezuniyyetStatus.ImtinaEdildi;
+        m.Status = status
+            ? MezuniyyetStatus.Tesdiqlenib
+            : MezuniyyetStatus.ImtinaEdildi;
 
         if (!status) m.ImtinaSebebi = qeyd;
 
-        await _unitOfWork.YaddaSaxlaAsync(); // İndi await var, xəbərdarlıq itəcək
+        await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(m);
+        await _unitOfWork.YaddaSaxlaAsync();
         return Result.Ok("HR qərarı qeydə alındı.");
     }
     // ============================================================
@@ -139,9 +174,13 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             .HamisiniGetirAsync(
                 predicate: x => x.IsciId == isciId,
                 include: q => q
-                    .Include(m => m.Isci)
-                        .ThenInclude(i => i.IsciTeyinatlari)
-                    .Include(m => m.EvezEdenIsci),
+    .Include(m => m.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Departament)
+    .Include(m => m.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Vezife)
+    .Include(m => m.EvezEdenIsci),
                 izlemeden: true);
 
             var dtos = entities
@@ -182,9 +221,13 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 .HamisiniGetirAsync(
                     predicate: x => x.Status == MezuniyyetStatus.Gozlemede,
                     include: q => q
-                        .Include(m => m.Isci)
-                            .ThenInclude(i => i.IsciTeyinatlari)
-                        .Include(m => m.EvezEdenIsci),
+    .Include(m => m.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Departament)
+    .Include(m => m.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Vezife)
+    .Include(m => m.EvezEdenIsci),
                     izlemeden: true);
 
             var dtos = entities
@@ -225,9 +268,13 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 .HamisiniGetirAsync(
                     predicate: x => x.Status == MezuniyyetStatus.RehberTesdiqinde,
                     include: q => q
-                        .Include(m => m.Isci)
-                            .ThenInclude(i => i.IsciTeyinatlari)
-                        .Include(m => m.EvezEdenIsci),
+    .Include(m => m.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Departament)   // ← əlavə et
+    .Include(m => m.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Vezife)         // ← əlavə et
+    .Include(m => m.EvezEdenIsci),
                     izlemeden: true);
 
             var dtos = entities
@@ -268,9 +315,13 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 .HamisiniGetirAsync(
                     predicate: x => x.Status == MezuniyyetStatus.HrTesdiqinde,
                     include: q => q
-                        .Include(m => m.Isci)
-                            .ThenInclude(i => i.IsciTeyinatlari)
-                        .Include(m => m.EvezEdenIsci),
+    .Include(m => m.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Departament)
+    .Include(m => m.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Vezife)
+    .Include(m => m.EvezEdenIsci),
                     izlemeden: true);
 
             var dtos = entities
@@ -321,5 +372,177 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         await _unitOfWork.YaddaSaxlaAsync();
 
         return Result.Ok("Müraciət ləğv edildi.");
+    }
+    // İşçinin departament ID-sinə görə SobeReisiTesdiqinde statuslu müraciətlər
+    public async Task<Result<IList<MezuniyyetListDto>>> GetSobeyeGoreMezuniyyetlerAsync(int departamentId, int sobeReisiIsciId)
+    {
+        try
+        {
+            var entities = await _unitOfWork.Repository<Mezuniyyet>()
+                .HamisiniGetirAsync(
+                    predicate: x => x.Status == MezuniyyetStatus.SobeReisiTesdiqinde &&
+                    x.IsciId != sobeReisiIsciId &&  // ← özünü görməsin
+                    x.Isci.IsciTeyinatlari
+                        .Any(t => t.Aktivdir && t.DepartamentId == departamentId),
+                    include: q => q
+                        .Include(m => m.Isci)
+                            .ThenInclude(i => i.IsciTeyinatlari)
+                                .ThenInclude(t => t.Departament)
+                        .Include(m => m.Isci)
+                            .ThenInclude(i => i.IsciTeyinatlari)
+                                .ThenInclude(t => t.Vezife)
+                        .Include(m => m.EvezEdenIsci),
+                    izlemeden: true);
+
+            var dtos = entities
+                .OrderByDescending(x => x.BaslamaTarixi)
+                .Select(m => new MezuniyyetListDto
+                {
+                    Id = m.Id,
+                    IsciAdSoyad = m.Isci.TamAd,
+                    SobeAdi = m.Isci.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => t.Departament.Ad)
+                        .FirstOrDefault() ?? "-",
+                    VezifeAdi = m.Isci.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => t.Vezife.Ad)
+                        .FirstOrDefault() ?? "-",
+                    EvezEdenIsciAdSoyad = m.EvezEdenIsci?.TamAd,
+                    Nov = m.Nov,
+                    Status = m.Status,
+                    BaslamaTarixi = m.BaslamaTarixi,
+                    BitmeTarixi = m.BitmeTarixi,
+                    IsGunlerininSayi = m.IsGunlerininSayi,
+                }).ToList();
+
+            return Result<IList<MezuniyyetListDto>>.Ok(dtos);
+        }
+        catch (Exception ex)
+        {
+            return Result<IList<MezuniyyetListDto>>.Fail($"Xəta: {ex.Message}");
+        }
+    }
+    public override async Task<Result<MezuniyyetDto>> IdIleGetirAsync(int id)
+    {
+        var entity = await _unitOfWork.Repository<Mezuniyyet>()
+            .GetirAsync(
+                predicate: x => x.Id == id,
+                include: q => q
+                    .Include(m => m.Isci)
+                        .ThenInclude(i => i.IsciTeyinatlari)
+                            .ThenInclude(t => t.Departament)
+                    .Include(m => m.Isci)
+                        .ThenInclude(i => i.IsciTeyinatlari)
+                            .ThenInclude(t => t.Vezife)
+                    .Include(m => m.EvezEdenIsci),
+                izlemeden: true);
+
+        if (entity == null)
+            return Result<MezuniyyetDto>.Fail("Tapılmadı.");
+
+        var dto = new MezuniyyetDto
+        {
+            Id = entity.Id,
+            IsciId = entity.IsciId,
+            IsciAdSoyad = entity.Isci.TamAd,
+            SobeAdi = entity.Isci.IsciTeyinatlari
+                .Where(t => t.Aktivdir)
+                .Select(t => t.Departament.Ad)
+                .FirstOrDefault() ?? "-",
+            VezifeAdi = entity.Isci.IsciTeyinatlari
+                .Where(t => t.Aktivdir)
+                .Select(t => t.Vezife.Ad)
+                .FirstOrDefault() ?? "-",
+            EvezEdenIsciId = entity.EvezEdenIsciId,
+            EvezEdenIsciAdSoyad = entity.EvezEdenIsci?.TamAd,
+            Nov = entity.Nov,
+            Status = entity.Status,
+            BaslamaTarixi = entity.BaslamaTarixi,
+            BitmeTarixi = entity.BitmeTarixi,
+            IsGunlerininSayi = entity.IsGunlerininSayi,
+            Qeyd = entity.Qeyd,
+            ImtinaSebebi = entity.ImtinaSebebi,
+            SobeReisiTesdiq = entity.SobeReisiTesdiq,
+            SobeReisiTesdiqTarixi = entity.SobeReisiTesdiqTarixi,
+            RehberTesdiq = entity.RehberTesdiq,
+            RehberTesdiqTarixi = entity.RehberTesdiqTarixi,
+            HrTesdiq = entity.HrTesdiq,
+            HrTesdiqTarixi = entity.HrTesdiqTarixi,
+        };
+
+        return Result<MezuniyyetDto>.Ok(dto);
+    }
+    public async Task<Result<IList<MezuniyyetListDto>>> GetFiltrliAsync(
+    DateTime? baslaTarixFrom,
+    DateTime? baslaTarixTo,
+    int? departamentId,
+    int? status,
+    string? axtaris)
+    {
+        try
+        {
+            var entities = await _unitOfWork.Repository<Mezuniyyet>()
+                .HamisiniGetirAsync(
+                    predicate: x =>
+                        (baslaTarixFrom == null || x.BaslamaTarixi >= baslaTarixFrom) &&
+                        (baslaTarixTo == null || x.BaslamaTarixi <= baslaTarixTo) &&
+                        (status == null || (int)x.Status == status) &&
+                        (departamentId == null || x.Isci.IsciTeyinatlari
+                            .Any(t => t.Aktivdir && t.DepartamentId == departamentId)) &&
+                        (axtaris == null || x.Isci.Ad.Contains(axtaris) ||
+                            x.Isci.Soyad.Contains(axtaris)),
+                    include: q => q
+                        .Include(m => m.Isci)
+                            .ThenInclude(i => i.IsciTeyinatlari)
+                                .ThenInclude(t => t.Departament)
+                        .Include(m => m.Isci)
+                            .ThenInclude(i => i.IsciTeyinatlari)
+                                .ThenInclude(t => t.Vezife)
+                        .Include(m => m.EvezEdenIsci)
+                        .Include(m => m.SobeReisiIsci)   // ← navigation property
+                        .Include(m => m.RehberIsci)       // ← navigation property
+                        .Include(m => m.HrIsci),          // ← navigation property
+                    izlemeden: true);
+
+            var dtos = entities
+                .OrderByDescending(x => x.BaslamaTarixi)
+                .Select(m => new MezuniyyetListDto
+                {
+                    Id = m.Id,
+                    IsciAdSoyad = m.Isci.TamAd,
+                    SobeAdi = m.Isci.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => t.Departament.Ad)
+                        .FirstOrDefault() ?? "-",
+                    VezifeAdi = m.Isci.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => t.Vezife.Ad)
+                        .FirstOrDefault() ?? "-",
+                    EvezEdenIsciAdSoyad = m.EvezEdenIsci?.TamAd,
+                    Nov = m.Nov,
+                    Status = m.Status,
+                    BaslamaTarixi = m.BaslamaTarixi,
+                    BitmeTarixi = m.BitmeTarixi,
+                    IsGunlerininSayi = m.IsGunlerininSayi,
+                    SobeReisiAdSoyad = m.SobeReisiIsci?.TamAd,
+                    SobeReisiTesdiq = m.SobeReisiTesdiq,
+                    SobeReisiTesdiqTarixi = m.SobeReisiTesdiqTarixi,
+                    RehberAdSoyad = m.RehberIsci?.TamAd,
+                    RehberTesdiq = m.RehberTesdiq,
+                    RehberTesdiqTarixi = m.RehberTesdiqTarixi,
+                    HrAdSoyad = m.HrIsci?.TamAd,
+                    HrTesdiq = m.HrTesdiq,
+                    HrTesdiqTarixi = m.HrTesdiqTarixi,
+                    ImtinaSebebi = m.ImtinaSebebi,
+                    YaradilmaTarixi = m.YaradilmaTarixi,
+                }).ToList();
+
+            return Result<IList<MezuniyyetListDto>>.Ok(dtos);
+        }
+        catch (Exception ex)
+        {
+            return Result<IList<MezuniyyetListDto>>.Fail($"Xəta: {ex.Message}");
+        }
     }
 }

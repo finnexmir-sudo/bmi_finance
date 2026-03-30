@@ -1,0 +1,65 @@
+﻿@model List<UserListVM>
+
+@if (TempData["StatusMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@TempData["StatusMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="admin-table-card">
+    <div class="card-header">
+        <h5><i class="bi bi-shield-lock-fill me-2"></i>Document Permissions (@Model.Count)</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table admin-table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th>Roles</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">@user.UserName</td>
+                        <td>@user.FullName</td>
+                        <td>@user.Email</td>
+                        <td>
+                            @foreach (var role in user.Roles)
+                            {
+                                <span class="badge bg-primary bg-opacity-10 text-primary admin-badge me-1">@role</span>
+                            }
+                        </td>
+                        <td>
+                            @if (user.IsLockedOut)
+                            {
+                                <span class="badge bg-warning bg-opacity-10 text-warning admin-badge">Locked</span>
+                            }
+                            else if (user.IsActive)
+                            {
+                                <span class="badge bg-success bg-opacity-10 text-success admin-badge">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger bg-opacity-10 text-danger admin-badge">Inactive</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <a asp-action="Manage" asp-route-id="@user.Id"
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-shield-lock me-1"></i>Manage Permissions
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

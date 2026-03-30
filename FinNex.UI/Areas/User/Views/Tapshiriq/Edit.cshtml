@@ -1,0 +1,74 @@
+﻿@model FinNex.UI.Areas.User.ViewModels.Tapshiriq.TapshiriqEditVM
+@using FinNex.Domain.Entities.Communication
+@{
+    ViewData["Title"] = "Tapşırığı Redaktə Et";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/tapshiriq.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+    <div class="tsk-form-wrap">
+        <div class="tsk-form-header">
+            <a asp-action="Detay" asp-route-id="@Model.Id" class="tsk-back">← Geri</a>
+            <div class="tsk-form-title">Tapşırığı Redaktə Et</div>
+        </div>
+
+        <form asp-action="Edit" method="post" class="tsk-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+
+            <div class="tsk-field">
+                <label class="tsk-label">Başlıq <span class="tsk-required">*</span></label>
+                <input asp-for="Bashliq" class="tsk-input" />
+                <span asp-validation-for="Bashliq" class="tsk-error"></span>
+            </div>
+
+            <div class="tsk-field">
+                <label class="tsk-label">Təsvir</label>
+                <textarea asp-for="Tesvir" class="tsk-textarea" rows="4"></textarea>
+            </div>
+
+            <div class="tsk-form-row">
+                <div class="tsk-field">
+                    <label class="tsk-label">Kim üçün <span class="tsk-required">*</span></label>
+                    <select asp-for="TeyinOlunanIsciId" asp-items="Model.IsciList"
+                            class="tsk-input">
+                        <option value="">İşçi seçin...</option>
+                    </select>
+                    <span asp-validation-for="TeyinOlunanIsciId" class="tsk-error"></span>
+                </div>
+
+                <div class="tsk-field">
+                    <label class="tsk-label">Prioritet</label>
+                    <select asp-for="Prioritet" class="tsk-input">
+                        <option value="1">Aşağı</option>
+                        <option value="2">Orta</option>
+                        <option value="3">Yüksək</option>
+                        <option value="4">Kritik</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="tsk-field">
+                <label class="tsk-label">Son tarix</label>
+                <input asp-for="SonTarix" type="date" class="tsk-input" />
+            </div>
+
+            <div class="tsk-field">
+                <label class="tsk-label">Qeyd</label>
+                <textarea asp-for="Qeyd" class="tsk-textarea" rows="2"></textarea>
+            </div>
+
+            <div class="tsk-form-footer">
+                <a asp-action="Detay" asp-route-id="@Model.Id"
+                   class="tsk-btn tsk-btn--ghost">Ləğv et</a>
+                <button type="submit" class="tsk-btn tsk-btn--primary">
+                    Yadda saxla
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

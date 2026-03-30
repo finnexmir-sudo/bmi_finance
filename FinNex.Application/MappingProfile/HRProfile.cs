@@ -108,7 +108,7 @@ public class HRProfile : Profile
         // =========================
 
         CreateMap<Maas, MaasListDto>()
-            .ForMember(dest => dest.IsciTamAd,
+            .ForMember(dest => dest.IsciAdSoyad,
                 opt => opt.MapFrom(src => src.Isci.Ad + " " + src.Isci.Soyad));
 
         CreateMap<Maas, MaasDetailDto>()

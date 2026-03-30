@@ -1,13 +1,15 @@
-﻿using FinNex.Application.DTOs.HR.Vezife;
+﻿// Areas/HR/Controllers/VezifeController.cs
+using FinNex.Application.DTOs.HR.Vezife;
 using FinNex.Application.Interfaces.Structur;
-using FinNex.Application.Services.Structur;
 using FinNex.UI.Areas.HR.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace FinNex.UI.Areas.HR.Controllers
 {
     [Area("HR")]
+    [Authorize(Roles = "HR,Admin")]
     public class VezifeController : Controller
     {
         private readonly IVezifeService _vezifeService;
@@ -19,53 +21,37 @@ namespace FinNex.UI.Areas.HR.Controllers
             _departmentService = departmentService;
         }
 
+        // ── GET: /HR/Vezife ──────────────────────────────
         public async Task<IActionResult> Index()
         {
             var result = await _vezifeService.HamisiniGetirAsync();
 
-            if (!result.Success)
-            {
-                TempData["Error"] = result.Message;
-                return View(new List<VezifeListDto>());
-            }
+            var deptResult = await _departmentService.HamisiniGetirAsync();
+            ViewBag.Departamentlar = deptResult.Success && deptResult.Data != null
+                ? deptResult.Data.Select(d => new SelectListItem(d.Ad, d.Id.ToString())).ToList()
+                : new List<SelectListItem>();
 
-            return View(result.Data);
+            ViewData["Title"] = "Vəzifələr";
+            return View(result.Success ? result.Data : new List<VezifeListDto>());
         }
 
+        // ── GET: /HR/Vezife/Create ───────────────────────
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            var result = await _departmentService.HamisiniGetirAsync();
-
-            var vm = new VezifeCreateVM
-            {
-                Departamentlar = result.Success && result.Data != null
-                    ? result.Data.Select(d => new SelectListItem
-                    {
-                        Value = d.Id.ToString(),
-                        Text = d.Ad
-                    }).ToList()
-                    : new List<SelectListItem>()
-            };
-
+            var vm = await BuildCreateVM();
+            ViewData["Title"] = "Yeni Vəzifə";
             return View(vm);
         }
 
+        // ── POST: /HR/Vezife/Create ──────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(VezifeCreateVM vm)
         {
             if (!ModelState.IsValid)
             {
-                var deptResult = await _departmentService.HamisiniGetirAsync();
-                vm.Departamentlar = deptResult.Success && deptResult.Data != null
-                    ? deptResult.Data.Select(d => new SelectListItem
-                    {
-                        Value = d.Id.ToString(),
-                        Text = d.Ad
-                    }).ToList()
-                    : new List<SelectListItem>();
-
+                await FillDepartamentlar(vm);
                 return View(vm);
             }
 
@@ -73,42 +59,104 @@ namespace FinNex.UI.Areas.HR.Controllers
             {
                 Ad = vm.Ad,
                 DepartamentId = vm.DepartamentId,
-                Tesvir = vm.Tesvir,
+                Tesvir = vm.Tesvir
             };
 
             var result = await _vezifeService.YaratAsync(dto);
 
             if (!result.Success)
             {
-                TempData["Error"] = result.Message;
-
-                var deptResult = await _departmentService.HamisiniGetirAsync();
-                vm.Departamentlar = deptResult.Success && deptResult.Data != null
-                    ? deptResult.Data.Select(d => new SelectListItem
-                    {
-                        Value = d.Id.ToString(),
-                        Text = d.Ad
-                    }).ToList()
-                    : new List<SelectListItem>();
-
+                ModelState.AddModelError("", result.Message ?? "boş");
+                await FillDepartamentlar(vm);
                 return View(vm);
+                //// Bərpa təklifi — Create view-unda göstər
+                //if (result.Message?.StartsWith("BERPA_TELEB:") == true)
+                //{
+                //    var parts = result.Message.Split(':', 3);
+                //    TempData["BerpaId"] = int.Parse(parts[1]);
+                //    TempData["BerpaMsg"] = parts[2];
+                //    return RedirectToAction(nameof(Create)); // ← Create-ə qayıt
+                //}
+
+                //ModelState.AddModelError("", result.Message ?? "Xəta baş verdi");
+                //await FillDepartamentlar(vm);
+                //return View(vm);
             }
 
-            TempData["Success"] = "Vəzifə uğurla əlavə edildi!";
-            return RedirectToAction("Index");
+            TempData["Success"] = "Vəzifə uğurla yaradıldı.";
+            return RedirectToAction(nameof(Index));
         }
 
+        // ── POST: /HR/Vezife/BerpaEt ─────────────────────
         [HttpPost]
-        public async Task<IActionResult> Delete(int id)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BerpaEt(int id)
         {
-            var result = await _vezifeService.SilAsync(id);
+            var result = await _vezifeService.BerpaEtAsync(id);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Index));
+        }
 
-            if (!result.Success)
+        // ── POST: /HR/Vezife/Edit ────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, string Ad, int DepartamentId, string? Tesvir, bool Aktivdir)
+        {
+            if (string.IsNullOrWhiteSpace(Ad))
             {
-                return Json(new { success = false, message = result.Message });
+                TempData["Error"] = "Vəzifə adı boş ola bilməz.";
+                return RedirectToAction(nameof(Index));
             }
 
-            return Json(new { success = true });
+            var dto = new VezifeUpdateDto
+            {
+                Id = id,
+                Ad = Ad.Trim(),
+                DepartamentId = DepartamentId,
+                Tesvir = Tesvir?.Trim(),
+                Aktivdir = Aktivdir
+            };
+
+            var result = await _vezifeService.YenileAsync(dto);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ── POST: /HR/Vezife/Delete ──────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var listResult = await _vezifeService.HamisiniGetirAsync();
+            if (listResult.Success && listResult.Data != null)
+            {
+                var vezife = listResult.Data.FirstOrDefault(x => x.Id == id);
+                if (vezife != null && vezife.IsciSayi > 0)
+                {
+                    TempData["Error"] = $"\"{vezife.Ad}\" vəzifəsinə bağlı {vezife.IsciSayi} işçi var. Əvvəlcə işçiləri köçürün.";
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+
+            var result = await _vezifeService.SilAsync(id);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ── Köməkçi metodlar ─────────────────────────────
+        private async Task<VezifeCreateVM> BuildCreateVM()
+        {
+            var vm = new VezifeCreateVM();
+            await FillDepartamentlar(vm);
+            return vm;
+        }
+
+        private async Task FillDepartamentlar(VezifeCreateVM vm)
+        {
+            var deptResult = await _departmentService.HamisiniGetirAsync();
+            vm.Departamentlar = deptResult.Success && deptResult.Data != null
+                ? deptResult.Data.Select(d => new SelectListItem(d.Ad, d.Id.ToString())).ToList()
+                : new List<SelectListItem>();
         }
     }
 }

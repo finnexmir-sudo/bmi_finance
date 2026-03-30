@@ -1,0 +1,239 @@
+﻿@model FinNex.UI.Areas.PR_Odenis_Tapsirigi.ViewModels.OdenisTapsirigiSiyahiVM
+
+<div class="payment-list-page">
+	<!-- HEADER -->
+	<div class="list-header">
+		<div>
+			<h3><i class="bi bi-list-ul me-2"></i>Odenis Tapsirilari Siyahisi</h3>
+			<p class="text-muted mb-0">Butun odenis tapsiriglarinin tarixcesi</p>
+		</div>
+		<div class="d-flex gap-2">
+			<a asp-action="Create" class="btn btn-primary rounded-pill px-4 shadow-sm">
+				<i class="bi bi-plus-lg me-1"></i> Yeni Odenis
+			</a>
+			<a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
+				<i class="bi bi-arrow-left me-1"></i> Geri
+			</a>
+		</div>
+	</div>
+
+	<!-- AXTARIŞ PANELİ -->
+	<div class="search-panel">
+		<form method="get" asp-action="Siyahi" class="search-form">
+			<div class="search-grid">
+				<div class="search-field">
+					<label>Nomre</label>
+					<input type="text" name="nomre" value="@Model.Filter.Nomre"
+						   class="form-control" placeholder="000001">
+				</div>
+				<div class="search-field">
+					<label>Odeyen Musteri</label>
+					<input type="text" name="oduyenMusteri" value="@Model.Filter.OduyenMusteri"
+						   class="form-control" placeholder="Ad ile axtar...">
+				</div>
+				<div class="search-field">
+					<label>Alan Musteri</label>
+					<input type="text" name="alanMusteri" value="@Model.Filter.AlanMusteri"
+						   class="form-control" placeholder="Ad ile axtar...">
+				</div>
+				<div class="search-field">
+					<label>Valyuta</label>
+					<select name="valyuta" class="form-control">
+						<option value="">Hamisi</option>
+						<option value="AZN" selected="@(Model.Filter.Valyuta == "AZN")">AZN</option>
+						<option value="USD" selected="@(Model.Filter.Valyuta == "USD")">USD</option>
+						<option value="EUR" selected="@(Model.Filter.Valyuta == "EUR")">EUR</option>
+					</select>
+				</div>
+				<div class="search-field">
+					<label>Tarixden</label>
+					<input type="date" name="tarixden" value="@Model.Filter.Tarixden?.ToString("yyyy-MM-dd")"
+						   class="form-control">
+				</div>
+				<div class="search-field">
+					<label>Tarixe qeder</label>
+					<input type="date" name="tarixe" value="@Model.Filter.TarixeQeder?.ToString("yyyy-MM-dd")"
+						   class="form-control">
+				</div>
+			</div>
+			<div class="search-actions">
+				<button type="submit" class="btn btn-primary px-4">
+					<i class="bi bi-search me-1"></i> Axtar
+				</button>
+				<a asp-action="Siyahi" class="btn btn-outline-secondary px-4">
+					<i class="bi bi-x-lg me-1"></i> Temizle
+				</a>
+				<span class="search-result-count">
+					<i class="bi bi-funnel me-1"></i>
+					@Model.UmumiSay nəticə tapıldı
+				</span>
+			</div>
+		</form>
+	</div>
+
+	<!-- TABLE -->
+	<div class="list-table-card">
+		<div class="table-responsive">
+			<table class="table table-hover align-middle mb-0">
+				<thead>
+					<tr>
+						<th class="ps-4">Nomre</th>
+						<th>Tarix</th>
+						<th>Odeyen Musteri</th>
+						<th>Alan Musteri</th>
+						<th>Mebleg</th>
+						<th>Valyuta</th>
+						<th class="text-center">Emeliyyatlar</th>
+					</tr>
+				</thead>
+				<tbody>
+					@if (Model.Melumtlar.Any())
+					{
+						@foreach (var item in Model.Melumtlar)
+						{
+							<tr>
+								<td class="ps-4">
+									<span class="fw-bold text-primary">@item.Nomre</span>
+								</td>
+								<td>@item.Tarix.ToString("dd.MM.yyyy")</td>
+								<td>@item.OduyenMusteri?.Ad</td>
+								<td>@item.AlanMusteri?.Ad</td>
+								<td class="fw-bold">@item.Mebleg.ToString("N2")</td>
+								<td><span class="badge bg-light text-dark border">@item.Valyuta?.Ad</span></td>
+								<td class="text-center">
+									<a asp-action="Detail" asp-route-id="@item.Id"
+									   class="btn btn-sm btn-outline-primary action-btn-sm">
+										<i class="bi bi-eye"></i>
+									</a>
+								</td>
+							</tr>
+						}
+					}
+					else
+					{
+						<tr>
+							<td colspan="7" class="text-center py-5 text-muted">
+								<i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
+								Netice tapilmadi
+							</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+
+		<!-- SEHİFELEME -->
+		@if (Model.SehifeSayi > 1)
+		{
+			<div class="pagination-bar">
+				<div class="pagination-info">
+					Gosterilen: @((Model.CariSehife - 1) * Model.SehifeOlcusu + 1)–@(Math.Min(Model.CariSehife * Model.SehifeOlcusu, Model.UmumiSay)) / @Model.UmumiSay
+				</div>
+				<ul class="pagination mb-0">
+
+					<!-- Əvvəl düyməsi -->
+					<li class="page-item @(Model.CariSehife == 1 ? "disabled" : "")">
+						<a class="page-link" asp-action="Siyahi"
+						   asp-route-sehife="@(Model.CariSehife - 1)"
+						   asp-route-nomre="@Model.Filter.Nomre"
+						   asp-route-oduyenMusteri="@Model.Filter.OduyenMusteri"
+						   asp-route-alanMusteri="@Model.Filter.AlanMusteri"
+						   asp-route-valyuta="@Model.Filter.Valyuta"
+						   asp-route-tarixden="@Model.Filter.Tarixden?.ToString("yyyy-MM-dd")"
+						   asp-route-tarixe="@Model.Filter.TarixeQeder?.ToString("yyyy-MM-dd")">
+							<i class="bi bi-chevron-left"></i>
+						</a>
+					</li>
+
+					@{
+						// Həmişə max 5 düymə göstər: [1] ... [4][5][6] ... [10]
+						int cur = Model.CariSehife;
+						int total = Model.SehifeSayi;
+
+						int baslangic = Math.Max(1, cur - 2);
+						int son = Math.Min(total, cur + 2);
+
+						// Sağ tərəfdən 5-lik pəncərəni tamamla
+						if (son - baslangic < 4)
+						{
+							if (baslangic == 1) son = Math.Min(total, 5);
+							else baslangic = Math.Max(1, son - 4);
+						}
+					}
+
+					@* İlk səhifə + ... *@
+					@if (baslangic > 1)
+					{
+						<li class="page-item">
+							<a class="page-link" asp-action="Siyahi" asp-route-sehife="1"
+							   asp-route-nomre="@Model.Filter.Nomre"
+							   asp-route-oduyenMusteri="@Model.Filter.OduyenMusteri"
+							   asp-route-alanMusteri="@Model.Filter.AlanMusteri"
+							   asp-route-valyuta="@Model.Filter.Valyuta"
+							   asp-route-tarixden="@Model.Filter.Tarixden?.ToString("yyyy-MM-dd")"
+							   asp-route-tarixe="@Model.Filter.TarixeQeder?.ToString("yyyy-MM-dd")">1</a>
+						</li>
+						@if (baslangic > 2)
+						{
+							<li class="page-item disabled"><span class="page-link">…</span></li>
+						}
+					}
+
+					@* Əsas 5 düymə *@
+					@for (int i = baslangic; i <= son; i++)
+					{
+						<li class="page-item @(i == cur ? "active" : "")">
+							<a class="page-link" asp-action="Siyahi" asp-route-sehife="@i"
+							   asp-route-nomre="@Model.Filter.Nomre"
+							   asp-route-oduyenMusteri="@Model.Filter.OduyenMusteri"
+							   asp-route-alanMusteri="@Model.Filter.AlanMusteri"
+							   asp-route-valyuta="@Model.Filter.Valyuta"
+							   asp-route-tarixden="@Model.Filter.Tarixden?.ToString("yyyy-MM-dd")"
+							   asp-route-tarixe="@Model.Filter.TarixeQeder?.ToString("yyyy-MM-dd")">@i</a>
+						</li>
+					}
+
+					@* ... + Son səhifə *@
+					@if (son < total)
+					{
+						@if (son < total - 1)
+						{
+							<li class="page-item disabled"><span class="page-link">…</span></li>
+						}
+						<li class="page-item">
+							<a class="page-link" asp-action="Siyahi" asp-route-sehife="@total"
+							   asp-route-nomre="@Model.Filter.Nomre"
+							   asp-route-oduyenMusteri="@Model.Filter.OduyenMusteri"
+							   asp-route-alanMusteri="@Model.Filter.AlanMusteri"
+							   asp-route-valyuta="@Model.Filter.Valyuta"
+							   asp-route-tarixden="@Model.Filter.Tarixden?.ToString("yyyy-MM-dd")"
+							   asp-route-tarixe="@Model.Filter.TarixeQeder?.ToString("yyyy-MM-dd")">@total</a>
+						</li>
+					}
+
+					<!-- Sonra düyməsi -->
+					<li class="page-item @(Model.CariSehife == Model.SehifeSayi ? "disabled" : "")">
+						<a class="page-link" asp-action="Siyahi"
+						   asp-route-sehife="@(Model.CariSehife + 1)"
+						   asp-route-nomre="@Model.Filter.Nomre"
+						   asp-route-oduyenMusteri="@Model.Filter.OduyenMusteri"
+						   asp-route-alanMusteri="@Model.Filter.AlanMusteri"
+						   asp-route-valyuta="@Model.Filter.Valyuta"
+						   asp-route-tarixden="@Model.Filter.Tarixden?.ToString("yyyy-MM-dd")"
+						   asp-route-tarixe="@Model.Filter.TarixeQeder?.ToString("yyyy-MM-dd")">
+							<i class="bi bi-chevron-right"></i>
+						</a>
+					</li>
+
+				</ul>
+			</div>
+		}
+		
+
+		
+	</div>
+</div>
+
+@section Styles {
+	<link rel="stylesheet" href="~/css/PR_Odenis_Tapsirigi/payment-list.css" asp-append-version="true" />
+}

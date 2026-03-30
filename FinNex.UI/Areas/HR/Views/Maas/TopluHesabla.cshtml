@@ -1,0 +1,543 @@
+@model IEnumerable<FinNex.Domain.Entities.HR.Isci>
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = "Toplu Maaş Hesablaması";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    var il           = (int)ViewBag.Il;
+    var ay           = (int)ViewBag.Ay;
+    var hesablanmis  = (List<int>)ViewBag.Hesablanmis;
+    var isciList     = Model.ToList();
+
+    var ayAdlar = new[]{"","Yanvar","Fevral","Mart","Aprel","May","İyun","İyul","Avqust","Sentyabr","Oktyabr","Noyabr","Dekabr"};
+
+    int doneSayi  = isciList.Count(x => hesablanmis.Contains(x.Id));
+    int yeniSayi  = isciList.Count(x => !hesablanmis.Contains(x.Id));
+    int ibanYox   = isciList.Count(x => string.IsNullOrEmpty(x.Maliye?.BankHesabNo));
+
+    string Fmt(decimal v) => v > 0 ? v.ToString("N2") + " ₼" : "—";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/maas-toplu.css" asp-append-version="true" />
+}
+
+<div class="mth-page">
+
+    @* ── Alerts ──────────────────────────────────────────────── *@
+    @if (TempData["Success"] != null)
+    {
+        <div class="mth-alert mth-alert--success">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="7" stroke="#1e9b6b" stroke-width="1.4"/>
+                <path d="M5 8l2.5 2.5L11 6" stroke="#1e9b6b" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            @TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="mth-alert mth-alert--error">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="7" stroke="#d85a30" stroke-width="1.4"/>
+                <path d="M8 5v4M8 10.5v.5" stroke="#d85a30" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            @TempData["Error"]
+        </div>
+    }
+
+    @* ── Header ──────────────────────────────────────────────── *@
+    <div class="mth-header">
+        <div>
+            <div class="mth-breadcrumb">
+                <a asp-area="HR" asp-controller="Dashboard" asp-action="Index">HR İdarəetmə</a>
+                <span class="mth-breadcrumb-sep">›</span>
+                <a asp-area="HR" asp-controller="Maas" asp-action="Index"
+                   asp-route-il="@il" asp-route-ay="@ay">Əmək Haqqı</a>
+                <span class="mth-breadcrumb-sep">›</span>
+                <span>Toplu Hesablama</span>
+            </div>
+            <div class="mth-title">Toplu Maaş Hesablaması</div>
+            <div class="mth-subtitle">Bonus / cərimə daxil edib kütləvi hesablama aparın — @ayAdlar[ay] @il</div>
+        </div>
+        <div class="mth-header-right">
+            <a asp-area="HR" asp-controller="Maas" asp-action="Index"
+               asp-route-il="@il" asp-route-ay="@ay"
+               class="mth-btn mth-btn--outline">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path d="M8 2L3 6.5 8 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Maaş Siyahısı
+            </a>
+            <a asp-area="HR" asp-controller="Maas" asp-action="BankFayliYukle"
+               asp-route-il="@il" asp-route-ay="@ay"
+               class="mth-btn mth-btn--outline">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path d="M6.5 2v6M4 6l2.5 2.5L9 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M1.5 9.5v1a.5.5 0 00.5.5h9a.5.5 0 00.5-.5v-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+                Bank Faylı
+            </a>
+        </div>
+    </div>
+
+    @* ── Period bar ───────────────────────────────────────────── *@
+    <div class="mth-period-bar">
+        <span class="mth-period-label">Dövr</span>
+        <div class="mth-period-selects">
+            <select class="mth-select" id="mthIlSec" onchange="mthPeriodChange()">
+                @foreach (var item in ViewBag.Iller as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                {
+                    if (item.Selected)
+                    {
+                        <option value="@item.Value" selected>@item.Text</option>
+                    }
+                    else
+                    {
+                        <option value="@item.Value">@item.Text</option>
+                    }
+                }
+            </select>
+
+            <select class="mth-select" id="mthAySec" onchange="mthPeriodChange()">
+                @foreach (var item in ViewBag.Aylar as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                {
+                    if (item.Selected)
+                    {
+                        <option value="@item.Value" selected>@item.Text</option>
+                    }
+                    else
+                    {
+                        <option value="@item.Value">@item.Text</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="mth-period-div"></div>
+        <div class="mth-period-badge">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <rect x="1" y="1.5" width="10" height="9" rx="1.5" stroke="#c9900a" stroke-width="1.2"/>
+                <path d="M1 4h10M4 1.5v2M8 1.5v2" stroke="#c9900a" stroke-width="1" stroke-linecap="round"/>
+            </svg>
+            @ayAdlar[ay] @il
+        </div>
+        <div class="mth-period-div"></div>
+        <div style="display:flex;align-items:center;gap:14px;margin-left:auto;">
+            <span style="font-size:12px;font-weight:600;color:#1e9b6b;display:flex;align-items:center;gap:5px;">
+                <span style="width:7px;height:7px;border-radius:50%;background:#1e9b6b;display:inline-block;"></span>
+                @doneSayi hesablanıb
+            </span>
+            <span style="font-size:12px;font-weight:600;color:#2d6cdf;display:flex;align-items:center;gap:5px;">
+                <span style="width:7px;height:7px;border-radius:50%;background:#2d6cdf;display:inline-block;"></span>
+                @yeniSayi yeni
+            </span>
+            @if (ibanYox > 0)
+            {
+                <span style="font-size:12px;font-weight:600;color:#b45309;display:flex;align-items:center;gap:5px;">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M6 1.5L11 10.5H1L6 1.5z" stroke="#b45309" stroke-width="1.1" stroke-linejoin="round"/>
+                        <path d="M6 5v2.5M6 9v.3" stroke="#b45309" stroke-width="1.1" stroke-linecap="round"/>
+                    </svg>
+                    @ibanYox IBAN yoxdur
+                </span>
+            }
+        </div>
+    </div>
+
+    @* ── Vergi dərəcələri ─────────────────────────────────────── *@
+    <div class="mth-rates">
+        @{
+            var rates = new[]
+            {
+                new{Lbl="Gəlir vergisi", Val="14%",  Clr="#2d6cdf"},
+                new{Lbl="DSMF (işçi)",  Val="3%",   Clr="#7c5cbf"},
+                new{Lbl="İşsizlik",      Val="0.5%", Clr="#d85a30"},
+                new{Lbl="İTSS",          Val="2%",   Clr="#1e9b6b"},
+                new{Lbl="DSMF (işv.)",   Val="22%",  Clr="#e8b84b"},
+                new{Lbl="İşsizlik (işv.)",Val="0.5%",Clr="#8a93a8"},
+            };
+        }
+        @foreach (var r in rates)
+        {
+            <div class="mth-rate-card">
+                <div class="mth-rate-bar" style="background:@r.Clr"></div>
+                <div>
+                    <div class="mth-rate-lbl">@r.Lbl</div>
+                    <div class="mth-rate-val">@r.Val</div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @* ── Main form + table ────────────────────────────────────── *@
+    @if (!isciList.Any())
+    {
+        <div class="mth-card">
+            <div class="mth-empty">
+                <div class="mth-empty-ico">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="mth-empty-title">Aktiv işçi tapılmadı</div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <form id="mthForm" asp-area="HR" asp-controller="Maas" asp-action="TopluHesablaEt" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="il" value="@il"/>
+            <input type="hidden" name="ay" value="@ay"/>
+
+            <div class="mth-card">
+
+                @* Toolbar *@
+                <div class="mth-toolbar">
+                    <div class="mth-toolbar-left">
+                        <label class="mth-chk-wrap">
+                            <input type="checkbox" class="mth-checkbox" id="mthChkAll"/>
+                            <span class="mth-chk-label">Hamısını seç</span>
+                        </label>
+                        <div class="mth-sel-chip" id="mthSelChip"></div>
+                    </div>
+                    <div class="mth-toolbar-right">
+                        <span style="font-size:12px;color:#8a93a8;font-weight:500;">@isciList.Count işçi</span>
+                        <button type="button" id="mthBtnCalc" disabled class="mth-btn mth-btn--gold">
+                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                <rect x="1" y="1" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/>
+                                <path d="M6.5 4v5M4 6.5h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                            </svg>
+                            Seçilənləri Hesabla
+                        </button>
+                    </div>
+                </div>
+
+                @* ── Wide table ────────────────────────────────────── *@
+                <div class="mth-scroll">
+                    <table class="mth-table">
+                        <thead>
+                            @* Group headers *@
+                            <tr class="tr-grp">
+                                <th colspan="1" class="grp-isci">İşçi</th>
+                                <th colspan="2" class="grp-isci center">Status / Dövr</th>
+                                <th colspan="2" class="grp-gelir cs">Əlavələr (daxil edilir)</th>
+                                <th colspan="1" class="grp-gelir cs">Əsas Maaş</th>
+                                <th colspan="2" class="grp-gelir cs">Məzuniyyət</th>
+                                <th colspan="1" class="grp-kesinti cs">Kəsinti</th>
+                                <th colspan="1" class="grp-gelir cs">Brüt</th>
+                                <th colspan="1" class="grp-vergi">Vergi güzəşti</th>
+                                <th colspan="4" class="grp-vergi cs">Tutulmalar — İşçi payı</th>
+                                <th colspan="1" class="grp-vergi cs">Cəmi tutulma</th>
+                                <th colspan="1" class="grp-net cs">NET Maaş</th>
+                                <th colspan="2" class="grp-sirket cs">Şirkət xərcləri</th>
+                                <th colspan="1" class="grp-sirket cs">Ümumi şirkət xərci</th>
+                                <th colspan="1" class="grp-act cs">Əməliyyat</th>
+                            </tr>
+                            @* Col headers *@
+                            <tr class="tr-cols">
+                                <th class="left" style="min-width:180px;">Ad Soyad</th>
+                                <th class="left" style="min-width:110px;">Departament</th>
+                                <th class="left cs" style="min-width:95px;">Status</th>
+
+                                <th style="min-width:130px;">+ Bonus</th>
+                                <th class="cs" style="min-width:130px;">− Cərimə</th>
+
+                                <th style="min-width:110px;">Əsas Maaş</th>
+
+                                <th style="min-width:90px;">Gün sayı</th>
+                                <th class="cs" style="min-width:110px;">Ödəniş</th>
+
+                                <th class="cs" style="min-width:110px;">Məz. Kəsintisi</th>
+
+                                <th class="cs" style="min-width:110px; background:rgba(30,155,107,.04);">
+                                    <span style="color:#1e9b6b;">BRÜT</span>
+                                </th>
+
+                                <th style="min-width:100px;">Güzəşt (₼)</th>
+
+                                <th style="min-width:105px;">Gəlir V.<br><span style="font-size:8px;font-weight:500;color:#aab0bf;">14%</span></th>
+                                <th style="min-width:90px;">DSMF<br><span style="font-size:8px;font-weight:500;color:#aab0bf;">3%</span></th>
+                                <th style="min-width:90px;">İşsizlik<br><span style="font-size:8px;font-weight:500;color:#aab0bf;">0.5%</span></th>
+                                <th class="cs" style="min-width:80px;">İTSS<br><span style="font-size:8px;font-weight:500;color:#aab0bf;">2%</span></th>
+
+                                <th class="cs" style="min-width:110px;">Cəmi Tutulma</th>
+
+                                <th class="cs" style="min-width:120px; background:rgba(232,184,75,.06);">
+                                    <span style="color:#c9900a;">NET MAAŞ</span>
+                                </th>
+
+                                <th style="min-width:105px;">DSMF (işv.)<br><span style="font-size:8px;font-weight:500;color:#aab0bf;">22%</span></th>
+                                <th class="cs" style="min-width:105px;">İşsizlik (işv.)<br><span style="font-size:8px;font-weight:500;color:#aab0bf;">0.5%</span></th>
+
+                                <th class="cs" style="min-width:120px;">Şirkət cəmi</th>
+
+                                <th class="center cs" style="min-width:90px;">Detal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < isciList.Count; i++)
+                            {
+                                var isci    = isciList[i];
+                                var teyin   = isci.IsciTeyinatlari.FirstOrDefault();
+                                var dept    = teyin?.Departament?.Ad ?? "—";
+                                var esas    = isci.Maliye?.CariMaas ?? 0m;
+                                var isDone  = hesablanmis.Contains(isci.Id);
+                                var hasIban = !string.IsNullOrEmpty(isci.Maliye?.BankHesabNo);
+
+                                // Şirkət hesabı (preview üçün statik)
+                                // Real hesab backend tərəfdə aparılır
+                                decimal brutPreview   = esas; // bonus/cerime input-dan gəlir
+                                decimal dsmfIsv       = brutPreview * 0.22m;
+                                decimal issizlikIsv   = brutPreview * 0.005m;
+                                decimal sirketCemi    = dsmfIsv + issizlikIsv;
+
+                                <tr data-isci="@isci.Id"
+                                    data-esas="@esas.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                                    class="@(isDone ? "done" : "")">
+
+                                    @* ── İşçi adı ─────────────────────────────────── *@
+                                    <td class="left">
+                                        <div style="font-size:13px;font-weight:600;color:#0f1a2e;">@isci.Ad @isci.Soyad</div>
+                                        @if (!hasIban)
+                                        {
+                                            <div class="mth-iban">
+                                                <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+                                                    <path d="M4.5 1L8.5 8H.5L4.5 1z" stroke="#b45309" stroke-width=".9" stroke-linejoin="round"/>
+                                                    <path d="M4.5 3.5v2M4.5 6.5v.2" stroke="#b45309" stroke-width=".9" stroke-linecap="round"/>
+                                                </svg>
+                                                IBAN yoxdur
+                                            </div>
+                                        }
+                                        <input type="hidden" name="ferdiElaveler[@i].IsciId" value="@isci.Id"/>
+                                    </td>
+
+                                    @* Departament *@
+                                    <td class="left"><span style="font-size:11.5px;color:#8a93a8;font-weight:500;">@dept</span></td>
+
+                                    @* Status *@
+                                    <td class="left cs">
+                                        @if (isDone)
+                                        {
+                                            <span class="mth-badge mth-badge--done">Hesablanıb</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="mth-badge mth-badge--new">Yeni</span>
+                                        }
+                                    </td>
+
+                                    @* + Bonus input *@
+                                    <td>
+                                        <div class="mth-inp-wrap">
+                                            <span class="mth-inp-pfx mth-inp-pfx--plus">+</span>
+                                            <input type="number" class="mth-inp mth-inp--b"
+                                                   name="ferdiElaveler[@i].BonusMeblegi"
+                                                   min="0" step="0.01" placeholder="0.00"
+                                                   @(isDone?"readonly":"")/>
+                                        </div>
+                                    </td>
+
+                                    @* − Cərimə input *@
+                                    <td class="cs">
+                                        <div class="mth-inp-wrap">
+                                            <span class="mth-inp-pfx mth-inp-pfx--minus">−</span>
+                                            <input type="number" class="mth-inp mth-inp--c"
+                                                   name="ferdiElaveler[@i].CerimeMeblegi"
+                                                   min="0" step="0.01" placeholder="0.00"
+                                                   @(isDone?"readonly":"")/>
+                                        </div>
+                                    </td>
+
+                                    @* Əsas maaş *@
+                                    <td><span class="n">@Fmt(esas)</span></td>
+
+                                    @* Məzuniyyət gün sayı (backend hesablayır, burada — göstərilir) *@
+                                    <td><span class="n n--d">—</span></td>
+
+                                    @* Məzuniyyət ödənişi *@
+                                    <td class="cs"><span class="n n--b" data-p="mez">—</span></td>
+
+                                    @* Məzuniyyət kəsintisi *@
+                                    <td class="cs"><span class="n n--r" data-p="mezkes">—</span></td>
+
+                                    @* BRÜT (real-time) *@
+                                    <td class="cs" style="background:rgba(30,155,107,.03);">
+                                        <span data-p="brut" class="n">—</span>
+                                    </td>
+
+                                    @* Vergi güzəşti (backend-dən gəlir) *@
+                                    <td><span class="n n--d">200.00 ₼</span></td>
+
+                                    @* Gəlir vergisi (real-time) *@
+                                    <td><span data-p="gelirv" class="n n--r">—</span></td>
+
+                                    @* DSMF işçi (real-time) *@
+                                    <td><span data-p="dsmf" class="n n--p">—</span></td>
+
+                                    @* İşsizlik işçi (real-time) *@
+                                    <td><span data-p="issizlik" class="n">—</span></td>
+
+                                    @* İTSS (real-time) *@
+                                    <td class="cs"><span data-p="itss" class="n">—</span></td>
+
+                                    @* Cəmi tutulma (real-time) *@
+                                    <td class="cs"><span data-p="tutulma" class="n n--r">—</span></td>
+
+                                    @* NET (real-time) *@
+                                    <td class="cs" style="background:rgba(232,184,75,.04);">
+                                        <span data-p="net" class="n n--au">—</span>
+                                    </td>
+
+                                    @* DSMF işəgötürən (statik preview, backend hesablayır) *@
+                                    <td><span class="n n--p">@Fmt(esas * 0.22m)</span><span class="n--s">≈ 22%</span></td>
+
+                                    @* İşsizlik işəgötürən *@
+                                    <td class="cs"><span class="n">@Fmt(esas * 0.005m)</span><span class="n--s">≈ 0.5%</span></td>
+
+                                    @* Şirkət cəmi *@
+                                    <td class="cs"><span class="n n--p">@Fmt(esas * 0.225m)</span></td>
+
+                                    @* Detal linki *@
+                                    <td class="center cs">
+                                        <a asp-area="HR" asp-controller="Maas" asp-action="Hesabla"
+                                           asp-route-isciId="@isci.Id"
+                                           class="mth-act mth-act--b" data-tip="Fərdi hesabla">
+                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                                <path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                        </a>
+                                    </td>
+
+                                </tr>
+                            }
+                        </tbody>
+
+                        @* ── Cəmi sətri ────────────────────────────────── *@
+                        <tfoot>
+                            <tr style="background:#f7f9fc;border-top:2px solid #eaecf3;">
+                                <td class="left" colspan="5" style="font-weight:700;font-size:12px;color:#3d4557;padding:11px 10px;">
+                                    CƏMİ — @isciList.Count işçi
+                                </td>
+                                <td><span class="n">@Fmt(isciList.Sum(x=>x.Maliye?.CariMaas??0m))</span></td>
+                                <td colspan="7"></td>
+                                <td class="cs" style="font-size:13px;">
+                                    <span style="font-weight:700;color:#c9900a;" id="mthFootNet">— ₼</span>
+                                </td>
+                                <td><span class="n n--p">@Fmt(isciList.Sum(x=>(x.Maliye?.CariMaas??0m)*0.22m))</span></td>
+                                <td class="cs"><span class="n">@Fmt(isciList.Sum(x=>(x.Maliye?.CariMaas??0m)*0.005m))</span></td>
+                                <td class="cs"><span class="n n--p">@Fmt(isciList.Sum(x=>(x.Maliye?.CariMaas??0m)*0.225m))</span></td>
+                                <td class="cs"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                @* ── Footer ───────────────────────────────────────── *@
+                <div class="mth-footer">
+                    <div class="mth-footer-left">
+                        <strong id="mthFootSayi">0</strong> işçi seçilib ·
+                        <span style="color:#1e9b6b;">@doneSayi hesablanıb</span> ·
+                        <span style="color:#2d6cdf;">@yeniSayi yeni</span>
+                    </div>
+                    <div class="mth-footer-totals">
+                        <div class="mth-ftotal">
+                            <span class="mth-ftotal-lbl">Seçilənlərin Brütü</span>
+                            <span class="mth-ftotal-val" id="mthFootBrut">— ₼</span>
+                        </div>
+                        <div class="mth-footer-div"></div>
+                        <div class="mth-ftotal">
+                            <span class="mth-ftotal-lbl">Tutulmalar</span>
+                            <span class="mth-ftotal-val" style="color:#d85a30;" id="mthFootTutulma">— ₼</span>
+                        </div>
+                        <div class="mth-footer-div"></div>
+                        <div class="mth-ftotal">
+                            <span class="mth-ftotal-lbl">Ümumi NET</span>
+                            <span class="mth-ftotal-val mth-ftotal-val--net" id="mthFootNet2">— ₼</span>
+                        </div>
+                        <div class="mth-footer-div"></div>
+                        <div class="mth-footer-actions">
+                            <a asp-area="HR" asp-controller="Maas" asp-action="Index"
+                               asp-route-il="@il" asp-route-ay="@ay"
+                               class="mth-btn mth-btn--outline">Ləğv et</a>
+                            <button type="button" id="mthBtnCalc2" disabled class="mth-btn mth-btn--gold"
+                                    onclick="document.getElementById('mthBtnCalc').click()">
+                                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                    <path d="M6.5 1.5v10M1.5 6.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                                Hamısını Hesabla
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </form>
+    }
+
+</div>
+
+@* ── Confirm modal ────────────────────────────────────────────── *@
+<div class="mth-overlay" id="mthOverlay">
+    <div class="mth-modal">
+        <div class="mth-modal-head">
+            <div class="mth-modal-ico">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                    <rect x="2" y="2" width="18" height="18" rx="3" stroke="#c9900a" stroke-width="1.5"/>
+                    <path d="M11 7v5M11 14v.5" stroke="#c9900a" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div>
+                <div class="mth-modal-title">Toplu hesablamanı təsdiqlə</div>
+                <div class="mth-modal-sub">Seçilmiş işçilər üçün maaş hesablanacaq. Davam edirsiniz?</div>
+            </div>
+        </div>
+        <div class="mth-modal-body">
+            <div class="mth-modal-grid">
+                <div class="mth-modal-item">
+                    <span class="mth-modal-lbl">İşçi sayı</span>
+                    <span class="mth-modal-val" id="mthMIsci">—</span>
+                </div>
+                <div class="mth-modal-item">
+                    <span class="mth-modal-lbl">Ümumi Brüt</span>
+                    <span class="mth-modal-val mth-modal-val--au" id="mthMBrut">—</span>
+                </div>
+                <div class="mth-modal-item">
+                    <span class="mth-modal-lbl">Ümumi NET</span>
+                    <span class="mth-modal-val mth-modal-val--g" id="mthMNet">—</span>
+                </div>
+                <div class="mth-modal-item">
+                    <span class="mth-modal-lbl">Bonus cəmi</span>
+                    <span class="mth-modal-val" id="mthMBonus">—</span>
+                </div>
+            </div>
+        </div>
+        <div class="mth-modal-foot">
+            <button type="button" id="mthBtnNo"  class="mth-btn mth-btn--outline">Ləğv et</button>
+            <button type="button" id="mthBtnOk"  class="mth-btn mth-btn--gold">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 6l2.5 2.5 5.5-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Hesablamanı Başlat
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function mthNav() {
+            const il = document.getElementById('mthIl').value;
+            const ay = document.getElementById('mthAy').value;
+            location.href = '@Url.Action("TopluHesabla","Maas",new{area="HR"})?il=' + il + '&ay=' + ay;
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const b1 = document.getElementById('mthBtnCalc');
+            const b2 = document.getElementById('mthBtnCalc2');
+            if (b1 && b2) new MutationObserver(() => b2.disabled = b1.disabled)
+                            .observe(b1, {attributes:true, attributeFilter:['disabled']});
+        });
+    </script>
+    <script src="~/js/maas-toplu.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,1122 @@
+/* ================================================================
+   FinNex — Toplu Maaş Hesablaması  |  maas-toplu.css
+   Corporate Premium — MaasHesablaNeticesiDto tam cədvəl
+   ================================================================ */
+
+.mth-page {
+    padding: 28px 32px 60px;
+    animation: mth-in .3s ease both;
+}
+
+@keyframes mth-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px)
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0)
+    }
+}
+
+/* ── Alert ───────────────────────────────────────────────────── */
+.mth-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 11px 15px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 16px;
+    border: 1px solid transparent;
+    line-height: 1.5;
+}
+
+    .mth-alert svg {
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+.mth-alert--success {
+    background: rgba(30,155,107,.08);
+    border-color: rgba(30,155,107,.2);
+    color: #0b5c37;
+}
+
+.mth-alert--error {
+    background: rgba(216,90,48,.08);
+    border-color: rgba(216,90,48,.2);
+    color: #8c2c0d;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.mth-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.mth-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    color: #8a93a8;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+    .mth-breadcrumb a {
+        color: #8a93a8;
+        text-decoration: none;
+        transition: color .15s;
+    }
+
+        .mth-breadcrumb a:hover {
+            color: #2d6cdf;
+        }
+
+.mth-breadcrumb-sep {
+    color: #c8cdd8;
+    font-size: 10px;
+}
+
+.mth-title {
+    font-size: 21px;
+    font-weight: 700;
+    color: #0f1a2e;
+    letter-spacing: -.4px;
+    line-height: 1.2;
+}
+
+.mth-subtitle {
+    font-size: 12.5px;
+    color: #6b7589;
+    margin-top: 2px;
+}
+
+.mth-header-right {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex-shrink: 0;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.mth-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    text-decoration: none;
+    border: none;
+    font-family: inherit;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.mth-btn--outline {
+    background: #fff;
+    border: 1px solid #dde1eb;
+    color: #3d4557;
+}
+
+    .mth-btn--outline:hover {
+        background: #f5f7fb;
+        border-color: #c8d0e0;
+        color: #1a2332;
+    }
+
+.mth-btn--primary {
+    background: #2d6cdf;
+    color: #fff;
+    border: 1px solid #2d6cdf;
+}
+
+    .mth-btn--primary:hover {
+        background: #2559c7;
+    }
+
+.mth-btn--gold {
+    background: linear-gradient(135deg,#e8b84b,#c9900a);
+    color: #1a1200;
+    border: 1px solid transparent;
+    box-shadow: 0 2px 8px rgba(232,184,75,.25);
+}
+
+    .mth-btn--gold:hover {
+        background: linear-gradient(135deg,#f0c45a,#d9a015);
+        box-shadow: 0 4px 14px rgba(232,184,75,.35);
+        transform: translateY(-1px);
+    }
+
+    .mth-btn--gold:disabled {
+        background: #d4c48a;
+        box-shadow: none;
+        cursor: not-allowed;
+        transform: none;
+        opacity: .7;
+    }
+
+.mth-btn--sm {
+    padding: 6px 11px;
+    font-size: 11.5px;
+}
+
+/* ── Period bar ──────────────────────────────────────────────── */
+.mth-period-bar {
+    background: #fff;
+    border: 1px solid #e2e6ef;
+    border-radius: 11px;
+    padding: 13px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(15,26,46,.04);
+    flex-wrap: wrap;
+}
+
+.mth-period-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #8a93a8;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.mth-period-selects {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mth-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: #f5f7fb url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a93a8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+    border: 1px solid #dde1eb;
+    border-radius: 7px;
+    padding: 7px 28px 7px 10px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #1a2332;
+    cursor: pointer;
+    transition: border-color .15s,box-shadow .15s;
+    font-family: inherit;
+}
+
+    .mth-select:focus {
+        outline: none;
+        border-color: #2d6cdf;
+        box-shadow: 0 0 0 3px rgba(45,108,223,.1);
+    }
+
+.mth-period-div {
+    width: 1px;
+    height: 24px;
+    background: #e2e6ef;
+    flex-shrink: 0;
+}
+
+.mth-period-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(232,184,75,.1);
+    border: 1px solid rgba(232,184,75,.25);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #9a6f00;
+}
+
+/* ── Rate chips ──────────────────────────────────────────────── */
+.mth-rates {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.mth-rate-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid #e2e6ef;
+    border-radius: 9px;
+    padding: 8px 13px;
+    box-shadow: 0 1px 3px rgba(15,26,46,.04);
+}
+
+.mth-rate-bar {
+    width: 3px;
+    height: 24px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.mth-rate-lbl {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #8a93a8;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+}
+
+.mth-rate-val {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f1a2e;
+    letter-spacing: -.3px;
+    line-height: 1.1;
+}
+
+/* ── Table card ──────────────────────────────────────────────── */
+/* overflow:hidden kənarlaşdırıldı — sticky sütunlar üçün lazımdır */
+.mth-card {
+    background: #fff;
+    border: 1px solid #e2e6ef;
+    border-radius: 13px;
+    box-shadow: 0 2px 8px rgba(15,26,46,.05);
+    overflow: visible;
+}
+
+/* Toolbar — sticky + z-index yüksək ki scroll edəndə üstdə qalsın */
+.mth-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 18px;
+    border-bottom: 1px solid #f0f2f7;
+    background: #fafbfd;
+    gap: 10px;
+    flex-wrap: wrap;
+    position: sticky;
+    left: 0; /* horizontal scroll-da sabit qalır */
+    z-index: 20;
+    border-radius: 13px 13px 0 0;
+}
+
+.mth-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mth-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Checkbox FIX ─────────────────────────────────────────────
+   label üçün position:relative + z-index — başqa element üstə
+   gəlib klikin qarşısını almır                                  */
+.mth-chk-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    z-index: 2;
+}
+
+.mth-chk-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #3d4557;
+    cursor: pointer;
+}
+
+.mth-checkbox {
+    width: 17px;
+    height: 17px;
+    border: 2px solid #c8d0e0;
+    border-radius: 4px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: #fff;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    transition: all .15s;
+    flex-shrink: 0;
+    /* pointer-events açıq — başqa element üstünü örtməsin */
+    pointer-events: auto;
+}
+
+    .mth-checkbox:checked {
+        background: #2d6cdf;
+        border-color: #2d6cdf;
+    }
+
+        .mth-checkbox:checked::after {
+            content: '';
+            position: absolute;
+            left: 3px;
+            top: 0px;
+            width: 5px;
+            height: 9px;
+            border: 2px solid #fff;
+            border-top: none;
+            border-left: none;
+            transform: rotate(45deg);
+        }
+
+    .mth-checkbox:indeterminate {
+        background: #2d6cdf;
+        border-color: #2d6cdf;
+    }
+
+        .mth-checkbox:indeterminate::after {
+            content: '';
+            position: absolute;
+            left: 2px;
+            top: 6px;
+            width: 9px;
+            height: 2px;
+            background: #fff;
+            border-radius: 1px;
+        }
+
+.mth-sel-chip {
+    font-size: 12px;
+    font-weight: 600;
+    color: #2d6cdf;
+    background: rgba(45,108,223,.07);
+    border-radius: 6px;
+    padding: 3px 9px;
+    display: none;
+}
+
+    .mth-sel-chip.on {
+        display: block;
+    }
+
+/* ── Scroll ──────────────────────────────────────────────────── */
+.mth-scroll {
+    overflow-x: auto;
+    overflow-y: visible;
+    border-radius: 0 0 13px 13px;
+}
+
+    .mth-scroll::-webkit-scrollbar {
+        height: 5px;
+    }
+
+    .mth-scroll::-webkit-scrollbar-track {
+        background: #f5f7fb;
+    }
+
+    .mth-scroll::-webkit-scrollbar-thumb {
+        background: #c8d0e0;
+        border-radius: 3px;
+    }
+
+        .mth-scroll::-webkit-scrollbar-thumb:hover {
+            background: #aab0bf;
+        }
+
+/* ── Table ───────────────────────────────────────────────────── */
+.mth-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 2400px;
+}
+
+    /* Group row */
+    .mth-table .tr-grp th {
+        padding: 5px 10px;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        text-align: center;
+        border-right: 2px solid #e2e6ef;
+        white-space: nowrap;
+    }
+
+        .mth-table .tr-grp th:last-child {
+            border-right: none;
+        }
+
+.grp-isci {
+    background: #f0f2f7;
+    color: #6b7589;
+    text-align: left !important;
+}
+
+.grp-gelir {
+    background: rgba(30,155,107,.07);
+    color: #0e6b47;
+}
+
+.grp-kesinti {
+    background: rgba(216,90,48,.06);
+    color: #a83a12;
+}
+
+.grp-vergi {
+    background: rgba(45,108,223,.06);
+    color: #1a4fa8;
+}
+
+.grp-sirket {
+    background: rgba(124,92,191,.06);
+    color: #5a3d9c;
+}
+
+.grp-net {
+    background: rgba(232,184,75,.1);
+    color: #8a6200;
+}
+
+.grp-act {
+    background: #f0f2f7;
+    color: #6b7589;
+}
+
+/* Col header row */
+.mth-table .tr-cols th {
+    padding: 9px 10px;
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #8a93a8;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    background: #f7f9fc;
+    border-bottom: 2px solid #eaecf3;
+    border-right: 1px solid #eaecf3;
+    text-align: right;
+    white-space: nowrap;
+}
+
+    .mth-table .tr-cols th:last-child {
+        border-right: none;
+    }
+
+    .mth-table .tr-cols th.left {
+        text-align: left;
+    }
+
+    .mth-table .tr-cols th.center {
+        text-align: center;
+    }
+
+/* col group separator */
+.cs {
+    border-right: 2px solid #dde1eb !important;
+}
+
+/* ── STICKY SOL SÜTUNLAR ─────────────────────────────────────
+   Horizontal scroll edəndə ilk 3 sütun (Ad, Dept, Status)
+   sol tərəfdə sabit qalır                                      */
+
+/* Ad Soyad — 1-ci sütun */
+.mth-table thead tr th:nth-child(1),
+.mth-table tbody tr td:nth-child(1),
+.mth-table tfoot tr td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    background: inherit;
+}
+
+.mth-table thead tr th:nth-child(1) {
+    background: #f7f9fc;
+}
+
+.mth-table thead .tr-grp th:nth-child(1) {
+    background: #f0f2f7;
+}
+
+.mth-table tbody tr:hover td:nth-child(1) {
+    background: #fafbfd;
+}
+
+.mth-table tbody tr.selected td:nth-child(1) {
+    background: rgba(45,108,223,.03);
+}
+
+.mth-table tbody tr.done td:nth-child(1) {
+    background: rgba(30,155,107,.02);
+}
+
+.mth-table tfoot tr td:nth-child(1) {
+    background: #f7f9fc;
+}
+
+/* Departament — 2-ci sütun */
+.mth-table thead tr th:nth-child(2),
+.mth-table tbody tr td:nth-child(2),
+.mth-table tfoot tr td:nth-child(2) {
+    position: sticky;
+    left: 180px; /* 1-ci sütunun min-width-i */
+    z-index: 3;
+    background: inherit;
+}
+
+.mth-table thead tr th:nth-child(2) {
+    background: #f7f9fc;
+}
+
+.mth-table thead .tr-grp th:nth-child(1) {
+    left: 0;
+    background: #f0f2f7;
+}
+
+.mth-table tbody tr:hover td:nth-child(2) {
+    background: #fafbfd;
+}
+
+.mth-table tbody tr.selected td:nth-child(2) {
+    background: rgba(45,108,223,.03);
+}
+
+.mth-table tbody tr.done td:nth-child(2) {
+    background: rgba(30,155,107,.02);
+}
+
+.mth-table tfoot tr td:nth-child(2) {
+    background: #f7f9fc;
+}
+
+/* Status — 3-cü sütun */
+.mth-table thead tr th:nth-child(3),
+.mth-table tbody tr td:nth-child(3) {
+    position: sticky;
+    left: 290px; /* 180 + 110 */
+    z-index: 3;
+    background: inherit;
+    box-shadow: 2px 0 6px rgba(15,26,46,.07); /* sağ kölgə — ayrılma effekti */
+}
+
+.mth-table thead tr th:nth-child(3) {
+    background: #f7f9fc;
+}
+
+.mth-table thead .tr-grp th:nth-child(1) {
+    background: #f0f2f7;
+}
+
+.mth-table tbody tr:hover td:nth-child(3) {
+    background: #fafbfd;
+}
+
+.mth-table tbody tr.selected td:nth-child(3) {
+    background: rgba(45,108,223,.03);
+}
+
+.mth-table tbody tr.done td:nth-child(3) {
+    background: rgba(30,155,107,.02);
+}
+
+/* Body */
+.mth-table tbody tr {
+    border-bottom: 1px solid #f0f2f7;
+    transition: background .1s;
+}
+
+    .mth-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .mth-table tbody tr:hover {
+        background: #fafbfd;
+    }
+
+    .mth-table tbody tr.selected {
+        background: rgba(45,108,223,.03);
+    }
+
+    .mth-table tbody tr.done {
+        background: rgba(30,155,107,.02);
+    }
+
+.mth-table tbody td {
+    padding: 10px 10px;
+    font-size: 12.5px;
+    color: #1a2332;
+    white-space: nowrap;
+    vertical-align: middle;
+    border-right: 1px solid #f5f7fb;
+    border-bottom: 1px solid #f0f2f7;
+    text-align: right;
+}
+
+    .mth-table tbody td:last-child {
+        border-right: none;
+    }
+
+    .mth-table tbody td.left {
+        text-align: left;
+    }
+
+    .mth-table tbody td.center {
+        text-align: center;
+    }
+
+    .mth-table tbody td.cs {
+        border-right: 2px solid #eaecf3 !important;
+    }
+
+/* Input cells */
+.mth-inp-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.mth-inp-pfx {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    pointer-events: none;
+    border-radius: 7px 0 0 7px;
+    z-index: 1;
+}
+
+.mth-inp-pfx--plus {
+    color: #1e9b6b;
+    background: rgba(30,155,107,.08);
+}
+
+.mth-inp-pfx--minus {
+    color: #d85a30;
+    background: rgba(216,90,48,.08);
+}
+
+.mth-inp {
+    width: 120px;
+    border: 1.5px solid #e2e6ef;
+    border-radius: 7px;
+    padding: 7px 8px 7px 32px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #1a2332;
+    background: #fafbfd;
+    transition: border-color .15s,box-shadow .15s;
+    font-family: inherit;
+    -moz-appearance: textfield;
+}
+
+    .mth-inp::-webkit-outer-spin-button, .mth-inp::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .mth-inp:focus {
+        outline: none;
+        border-color: #2d6cdf;
+        box-shadow: 0 0 0 3px rgba(45,108,223,.09);
+        background: #fff;
+    }
+
+.mth-inp--b:focus {
+    border-color: #1e9b6b;
+    box-shadow: 0 0 0 3px rgba(30,155,107,.09);
+}
+
+.mth-inp--c:focus {
+    border-color: #d85a30;
+    box-shadow: 0 0 0 3px rgba(216,90,48,.09);
+}
+
+.mth-inp[readonly] {
+    background: #f0fdf8;
+    border-color: #b7e8d5;
+    color: #1e9b6b;
+    cursor: not-allowed;
+}
+
+/* Number helpers */
+.n {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.n--g {
+    color: #1e9b6b;
+}
+
+.n--r {
+    color: #d85a30;
+}
+
+.n--au {
+    color: #c9900a;
+    font-size: 14px;
+}
+
+.n--p {
+    color: #7c5cbf;
+}
+
+.n--b {
+    color: #2d6cdf;
+}
+
+.n--d {
+    color: #aab0bf;
+    font-weight: 400;
+    font-size: 11.5px;
+}
+
+.n--s {
+    font-size: 10px;
+    color: #aab0bf;
+    font-weight: 400;
+    display: block;
+    margin-top: 1px;
+}
+
+/* Status badge */
+.mth-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 10.5px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+    .mth-badge::before {
+        content: '';
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+.mth-badge--done {
+    background: rgba(30,155,107,.1);
+    color: #0e6b47;
+    border: 1px solid rgba(30,155,107,.2);
+}
+
+    .mth-badge--done::before {
+        background: #1e9b6b;
+    }
+
+.mth-badge--new {
+    background: rgba(45,108,223,.08);
+    color: #1a4fa8;
+    border: 1px solid rgba(45,108,223,.18);
+}
+
+    .mth-badge--new::before {
+        background: #2d6cdf;
+    }
+
+.mth-iban {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #b45309;
+    background: rgba(232,184,75,.1);
+    border: 1px solid rgba(232,184,75,.25);
+    border-radius: 5px;
+    padding: 1px 6px;
+    margin-top: 3px;
+}
+
+/* Action btn */
+.mth-act {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    border: 1px solid #e2e6ef;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #8a93a8;
+    cursor: pointer;
+    transition: all .15s;
+    text-decoration: none;
+}
+
+    .mth-act:hover {
+        background: #f0f2f7;
+        border-color: #c8d0e0;
+        color: #3d4557;
+    }
+
+.mth-act--b:hover {
+    background: rgba(45,108,223,.08);
+    border-color: rgba(45,108,223,.25);
+    color: #2d6cdf;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.mth-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 18px;
+    border-top: 2px solid #eaecf3;
+    background: #f7f9fc;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.mth-footer-left {
+    font-size: 12px;
+    color: #6b7589;
+    font-weight: 500;
+}
+
+    .mth-footer-left strong {
+        color: #0f1a2e;
+        font-weight: 700;
+    }
+
+.mth-footer-totals {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.mth-ftotal {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+}
+
+.mth-ftotal-lbl {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #8a93a8;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+}
+
+.mth-ftotal-val {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a2332;
+    letter-spacing: -.2px;
+}
+
+.mth-ftotal-val--net {
+    font-size: 17px;
+    color: #1e9b6b;
+}
+
+.mth-footer-div {
+    width: 1px;
+    height: 28px;
+    background: #e2e6ef;
+}
+
+.mth-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Empty ───────────────────────────────────────────────────── */
+.mth-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 20px;
+    gap: 12px;
+}
+
+.mth-empty-ico {
+    width: 50px;
+    height: 50px;
+    background: #f5f7fb;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #c8d0e0;
+}
+
+.mth-empty-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #6b7589;
+}
+
+/* ── Confirm modal ───────────────────────────────────────────── */
+.mth-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,26,46,.48);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+}
+
+    .mth-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+.mth-modal {
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 24px 80px rgba(15,26,46,.22);
+    width: 420px;
+    max-width: calc(100vw - 32px);
+    overflow: hidden;
+    transform: translateY(10px) scale(.98);
+    transition: transform .25s cubic-bezier(.16,1,.3,1);
+}
+
+.mth-overlay.open .mth-modal {
+    transform: translateY(0) scale(1);
+}
+
+.mth-modal-head {
+    padding: 22px 22px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.mth-modal-ico {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(232,184,75,.12);
+    color: #c9900a;
+}
+
+.mth-modal-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f1a2e;
+    letter-spacing: -.2px;
+    margin-bottom: 3px;
+}
+
+.mth-modal-sub {
+    font-size: 12.5px;
+    color: #6b7589;
+    line-height: 1.5;
+}
+
+.mth-modal-body {
+    padding: 14px 22px 18px;
+}
+
+.mth-modal-grid {
+    background: #f5f7fb;
+    border: 1px solid #e2e6ef;
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.mth-modal-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mth-modal-lbl {
+    font-size: 10px;
+    font-weight: 700;
+    color: #8a93a8;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+}
+
+.mth-modal-val {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f1a2e;
+    letter-spacing: -.3px;
+}
+
+.mth-modal-val--g {
+    color: #1e9b6b;
+}
+
+.mth-modal-val--au {
+    color: #c9900a;
+}
+
+.mth-modal-foot {
+    padding: 0 22px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+/* ── Tooltip ─────────────────────────────────────────────────── */
+[data-tip] {
+    position: relative;
+}
+
+    [data-tip]::after {
+        content: attr(data-tip);
+        position: absolute;
+        bottom: calc(100% + 6px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1a2332;
+        color: #fff;
+        font-size: 10.5px;
+        font-weight: 500;
+        padding: 4px 8px;
+        border-radius: 5px;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity .15s;
+        z-index: 100;
+    }
+
+    [data-tip]:hover::after {
+        opacity: 1;
+    }
+
+@media(max-width:700px) {
+    .mth-page {
+        padding: 16px 12px 40px
+    }
+}

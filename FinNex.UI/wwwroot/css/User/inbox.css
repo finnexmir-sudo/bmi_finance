@@ -1,0 +1,542 @@
+﻿/* ── Inbox Layout ── */
+.ibx-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.ibx-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1a2332;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ibx-badge-count {
+    background: #ef4444;
+    color: #fff;
+    font-size: .7rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 20px;
+}
+
+.ibx-sub {
+    font-size: .82rem;
+    color: #8a93a8;
+    margin-top: 2px;
+}
+
+/* ── Tabs ── */
+.ibx-tabs {
+    display: flex;
+    gap: 4px;
+    background: #f0f2f5;
+    padding: 4px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+}
+
+.ibx-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 7px;
+    border: none;
+    background: none;
+    font-size: .82rem;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all .2s;
+}
+
+    .ibx-tab.active {
+        background: #fff;
+        color: #1a2332;
+        font-weight: 600;
+        box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+
+.ibx-tab-dot {
+    background: #ef4444;
+    color: #fff;
+    font-size: .65rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 10px;
+    min-width: 16px;
+    text-align: center;
+}
+
+.ibx-tab-dot--amber {
+    background: #f59e0b;
+}
+
+/* ── Panel ── */
+.ibx-panel {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #e3e6ea;
+    overflow: hidden;
+}
+
+.ibx-hidden {
+    display: none;
+}
+
+.ibx-panel-actions {
+    padding: 10px 16px;
+    border-bottom: 1px solid #f0f2f5;
+    text-align: right;
+}
+
+/* ── List ── */
+.ibx-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.ibx-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0f2f5;
+    transition: background .15s;
+    position: relative;
+    text-decoration: none;
+    color: inherit;
+}
+
+    .ibx-item:last-child {
+        border-bottom: none;
+    }
+
+    .ibx-item:hover {
+        background: #f8f9fa;
+    }
+
+.ibx-item--unread {
+    background: #f0f5ff;
+}
+
+    .ibx-item--unread:hover {
+        background: #e8effd;
+    }
+
+.ibx-item--link {
+    cursor: pointer;
+}
+
+.ibx-item-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.ibx-icon--green {
+    background: #d1fae5;
+}
+
+.ibx-icon--red {
+    background: #fee2e2;
+}
+
+.ibx-icon--amber {
+    background: #fef3c7;
+}
+
+.ibx-icon--blue {
+    background: #dbeafe;
+}
+
+.ibx-icon--gray {
+    background: #f3f4f6;
+}
+
+.ibx-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #3b82f6;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .9rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.ibx-avatar--sent {
+    background: #8b5cf6;
+}
+
+.ibx-item-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.ibx-item-title {
+    font-size: .85rem;
+    font-weight: 600;
+    color: #1a2332;
+    margin-bottom: 2px;
+}
+
+.ibx-item-movzu {
+    font-size: .82rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.ibx-item-sub {
+    font-size: .78rem;
+    color: #8a93a8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ibx-item-time {
+    font-size: .72rem;
+    color: #9ca3af;
+    margin-top: 4px;
+}
+
+.ibx-item-link {
+    font-size: .78rem;
+    color: #3b82f6;
+    white-space: nowrap;
+    align-self: center;
+}
+
+.ibx-unread-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #3b82f6;
+    flex-shrink: 0;
+    align-self: center;
+}
+
+.ibx-new-label {
+    background: #dbeafe;
+    color: #1e40af;
+    font-size: .65rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+}
+
+.ibx-read-check {
+    color: #3b82f6;
+    margin-left: 6px;
+    font-size: .8rem;
+}
+
+.ibx-unread-check {
+    color: #9ca3af;
+    margin-left: 6px;
+    font-size: .8rem;
+}
+
+/* ── Sorğu Card ── */
+.ibx-sorgu-card {
+    padding: 16px;
+    border-bottom: 1px solid #f0f2f5;
+}
+
+    .ibx-sorgu-card:last-child {
+        border-bottom: none;
+    }
+
+.ibx-sorgu-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.ibx-sorgu-icon {
+    font-size: 1.2rem;
+}
+
+.ibx-sorgu-title {
+    font-size: .85rem;
+    font-weight: 700;
+    color: #1a2332;
+}
+
+.ibx-sorgu-isci {
+    font-size: .78rem;
+    color: #6b7280;
+}
+
+.ibx-sorgu-status {
+    margin-left: auto;
+    padding: 3px 10px;
+    border-radius: 5px;
+    font-size: .72rem;
+    font-weight: 600;
+}
+
+.ibx-status--wait {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.ibx-sorgu-info {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    font-size: .78rem;
+    color: #6b7280;
+}
+
+.ibx-sorgu-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* ── Buttons ── */
+.ibx-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-size: .82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: all .2s;
+}
+
+.ibx-btn--primary {
+    background: #3b82f6;
+    color: #fff;
+}
+
+    .ibx-btn--primary:hover {
+        background: #2563eb;
+        color: #fff;
+    }
+
+.ibx-btn--success {
+    background: #10b981;
+    color: #fff;
+}
+
+    .ibx-btn--success:hover {
+        background: #059669;
+    }
+
+.ibx-btn--danger {
+    background: #ef4444;
+    color: #fff;
+}
+
+    .ibx-btn--danger:hover {
+        background: #dc2626;
+    }
+
+.ibx-btn--ghost {
+    background: #f0f2f5;
+    color: #4b5563;
+}
+
+    .ibx-btn--ghost:hover {
+        background: #e5e7eb;
+    }
+
+.ibx-link {
+    background: none;
+    border: none;
+    color: #3b82f6;
+    font-size: .8rem;
+    cursor: pointer;
+    padding: 0;
+}
+
+/* ── Empty ── */
+.ibx-empty {
+    padding: 48px;
+    text-align: center;
+    color: #9ca3af;
+}
+
+.ibx-empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 8px;
+}
+
+.ibx-empty-title {
+    font-size: .9rem;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+/* ── Compose ── */
+.ibx-compose-wrap {
+    max-width: 700px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #e3e6ea;
+    overflow: hidden;
+}
+
+.ibx-compose-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f0f2f5;
+}
+
+.ibx-compose-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a2332;
+}
+
+.ibx-back {
+    font-size: .82rem;
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+.ibx-compose-form {
+    padding: 20px;
+}
+
+.ibx-field {
+    margin-bottom: 16px;
+}
+
+.ibx-label {
+    display: block;
+    font-size: .75rem;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 6px;
+}
+
+.ibx-input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #e3e6ea;
+    border-radius: 7px;
+    font-size: .85rem;
+    color: #1a2332;
+    outline: none;
+    transition: border-color .2s;
+}
+
+    .ibx-input:focus {
+        border-color: #3b82f6;
+    }
+
+.ibx-textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #e3e6ea;
+    border-radius: 7px;
+    font-size: .85rem;
+    color: #1a2332;
+    outline: none;
+    resize: vertical;
+}
+
+.ibx-textarea--lg {
+    min-height: 180px;
+}
+
+.ibx-error {
+    font-size: .75rem;
+    color: #ef4444;
+}
+
+.ibx-compose-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 8px;
+}
+
+/* ── Modal ── */
+.ibx-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.ibx-modal {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    width: 400px;
+    max-width: 90vw;
+}
+
+.ibx-modal-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a2332;
+    margin-bottom: 14px;
+}
+
+.ibx-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+/* ── Notif topbar ── */
+.fn-notif-count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #ef4444;
+    color: #fff;
+    font-size: .6rem;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 10px;
+    min-width: 14px;
+    text-align: center;
+}
+
+.fn-notif-btn {
+    position: relative;
+}
+
+/* inbox.css-ə əlavə edin: */
+.ibx-modal-overlay {
+    display: none;
+}
+
+    .ibx-modal-overlay.open {
+        display: flex;
+    }

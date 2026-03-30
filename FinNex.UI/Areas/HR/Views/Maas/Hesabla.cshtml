@@ -1,0 +1,184 @@
+@model FinNex.Application.DTOs.HR.Maas.FerdiHesablaInputDto
+@{
+    ViewData["Title"] = "Maaş Hesabla";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Fərdi Maaş Hesabla</div>
+            <div class="fn-page-sub">İşçi seçin, bonus/cərimə daxil edin, hesablayın</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">← Siyahıya qayıt</a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="fn-alert fn-alert--danger">@TempData["Error"]</div>
+    }
+
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;">
+
+        @* ── Sol: Form ── *@
+        <form asp-action="Hesabla" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="fn-card fn-card--form">
+                <div class="fn-card-head" style="margin-bottom:4px;">
+                    <div class="fn-card-title">Hesablama məlumatları</div>
+                </div>
+
+                @* İşçi + İl/Ay *@
+                <div class="fn-form-row">
+                    <div class="fn-form-group" style="grid-column:1/-1;">
+                        <label asp-for="IsciId" class="fn-label">İşçi *</label>
+                        <select asp-for="IsciId" asp-items="ViewBag.Isciler"
+                                class="fn-select" id="isciSelect">
+                            <option value="">— İşçi seçin —</option>
+                        </select>
+                        <span asp-validation-for="IsciId" class="fn-val-msg"></span>
+                    </div>
+                    <div class="fn-form-group">
+                        <label asp-for="Il" class="fn-label">İl *</label>
+                        <select asp-for="Il" asp-items="ViewBag.Iller" class="fn-select"></select>
+                    </div>
+                    <div class="fn-form-group">
+                        <label asp-for="Ay" class="fn-label">Ay *</label>
+                        <select asp-for="Ay" asp-items="ViewBag.Aylar" class="fn-select"></select>
+                    </div>
+                </div>
+
+                <hr style="border:none;border-top:1px solid #f2f4f7;">
+
+                @* Bonus *@
+                <div class="fn-form-row">
+                    <div class="fn-form-group">
+                        <label asp-for="BonusMeblegi" class="fn-label">
+                            Bonus / Mükafat
+                            <span class="fn-label-hint">AZN, istəğə bağlı</span>
+                        </label>
+                        <div class="fn-input-pfx">
+                            <span class="fn-input-pfx-icon">₼</span>
+                            <input asp-for="BonusMeblegi" type="number" step="0.01" min="0"
+                                   class="fn-input fn-input--pfx" placeholder="0.00"/>
+                        </div>
+                    </div>
+                    <div class="fn-form-group">
+                        <label asp-for="BonusAciqlama" class="fn-label">Bonus izahı</label>
+                        <input asp-for="BonusAciqlama" class="fn-input" placeholder="məs: Kvartallıq mükafat"/>
+                    </div>
+                </div>
+
+                @* Cərimə *@
+                <div class="fn-form-row">
+                    <div class="fn-form-group">
+                        <label asp-for="CerimeMeblegi" class="fn-label">
+                            Cərimə / Kəsinti
+                            <span class="fn-label-hint">AZN, istəğə bağlı</span>
+                        </label>
+                        <div class="fn-input-pfx">
+                            <span class="fn-input-pfx-icon">₼</span>
+                            <input asp-for="CerimeMeblegi" type="number" step="0.01" min="0"
+                                   class="fn-input fn-input--pfx" placeholder="0.00"/>
+                        </div>
+                    </div>
+                    <div class="fn-form-group">
+                        <label asp-for="CerimeAciqlama" class="fn-label">Kəsinti izahı</label>
+                        <input asp-for="CerimeAciqlama" class="fn-input" placeholder="məs: Gecikdirmə"/>
+                    </div>
+                </div>
+
+                <div class="fn-form-actions">
+                    <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+                    <button type="submit" class="fn-btn fn-btn--primary">
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                            <path d="M6.5 1.5v5.5L9 4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M6.5 7 4 4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                            <path d="M2 9.5a4.5 4.5 0 0 0 9 0" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+                        </svg>
+                        Hesabla
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        @* ── Sağ: İzah paneli ── *@
+        <div class="fn-card" style="position:sticky;top:20px;">
+            <div class="fn-card-head">
+                <div class="fn-card-title">Hesablama qaydası</div>
+            </div>
+            <div class="hesab-qayda">
+                <div class="hq-item hq-gelir">
+                    <div class="hq-icon">+</div>
+                    <div>
+                        <div class="hq-ad">Əsas əməkhaqqı</div>
+                        <div class="hq-izah">Müqavilə üzrə ştat maaşı</div>
+                    </div>
+                </div>
+                <div class="hq-item hq-gelir">
+                    <div class="hq-icon">+</div>
+                    <div>
+                        <div class="hq-ad">Məzuniyyət ödənişi</div>
+                        <div class="hq-izah">2026 qaydası · Max(orta, cari) ÷ 30 × gün</div>
+                    </div>
+                </div>
+                <div class="hq-item hq-gelir">
+                    <div class="hq-icon">+</div>
+                    <div>
+                        <div class="hq-ad">Bonus / Mükafat</div>
+                        <div class="hq-izah">İstəğə bağlı əlavə</div>
+                    </div>
+                </div>
+                <div class="hq-item hq-kesinti">
+                    <div class="hq-icon">−</div>
+                    <div>
+                        <div class="hq-ad">Məzuniyyət kəsintisi</div>
+                        <div class="hq-izah">Maaş ÷ iş günü × məz. günü</div>
+                    </div>
+                </div>
+                <div class="hq-item hq-kesinti">
+                    <div class="hq-icon">−</div>
+                    <div>
+                        <div class="hq-ad">Cərimə</div>
+                        <div class="hq-izah">İstəğə bağlı kəsinti</div>
+                    </div>
+                </div>
+                <div class="hq-sep">= BRÜT</div>
+                <div class="hq-item hq-vergi">
+                    <div class="hq-icon">%</div>
+                    <div>
+                        <div class="hq-ad">Gəlir vergisi</div>
+                        <div class="hq-izah">14% · güzəşt: 200 AZN</div>
+                    </div>
+                </div>
+                <div class="hq-item hq-vergi">
+                    <div class="hq-icon">%</div>
+                    <div>
+                        <div class="hq-ad">DSMF (işçi)</div>
+                        <div class="hq-izah">3%</div>
+                    </div>
+                </div>
+                <div class="hq-item hq-vergi">
+                    <div class="hq-icon">%</div>
+                    <div>
+                        <div class="hq-ad">İşsizlik sığortası</div>
+                        <div class="hq-izah">0.5%</div>
+                    </div>
+                </div>
+                <div class="hq-item hq-vergi">
+                    <div class="hq-icon">%</div>
+                    <div>
+                        <div class="hq-ad">İTSS</div>
+                        <div class="hq-izah">2%</div>
+                    </div>
+                </div>
+                <div class="hq-sep hq-sep--net">= NET MAAŞ</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/maas-hesabla.css" />
+}

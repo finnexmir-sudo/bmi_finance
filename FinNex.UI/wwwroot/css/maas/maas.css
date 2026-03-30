@@ -1,0 +1,636 @@
+﻿/* ═══════════════════════════════════════════════════════════════
+   MAAS MODULE — Premium CSS
+   Font: Instrument Serif (başlıqlar) + DM Sans (mətn)
+   Rəng paleti: Tünd teal + qızılı aksent
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap');
+
+:root {
+    --maas-teal: #0d3d3a;
+    --maas-teal-mid: #1a5c57;
+    --maas-teal-light: #e8f4f3;
+    --maas-gold: #c9a84c;
+    --maas-gold-light: #fdf6e3;
+    --maas-red: #c0392b;
+    --maas-red-light: #fdf0ef;
+    --maas-green: #1d6b45;
+    --maas-green-light: #edf7f1;
+    --maas-gray: #64748b;
+    --maas-gray-light: #f8fafc;
+    --maas-border: #e2e8f0;
+    --maas-white: #ffffff;
+    --maas-shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+    --maas-shadow-lg: 0 4px 24px rgba(0,0,0,.12);
+    --radius: 12px;
+    --radius-sm: 8px;
+}
+
+/* ── Ümumi ─────────────────────────────────────────────────── */
+.maas-modul {
+    font-family: 'DM Sans', sans-serif;
+    color: #1e293b;
+}
+
+/* ── Səhifə başlığı ────────────────────────────────────────── */
+.maas-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--maas-border);
+}
+
+    .maas-header h1 {
+        font-family: 'Instrument Serif', serif;
+        font-size: 2rem;
+        font-weight: 400;
+        color: var(--maas-teal);
+        margin: 0;
+        line-height: 1.1;
+    }
+
+    .maas-header .subtitle {
+        font-size: .85rem;
+        color: var(--maas-gray);
+        margin-top: 4px;
+    }
+
+/* ── Statistika kartları ───────────────────────────────────── */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.stat-card {
+    background: var(--maas-white);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    box-shadow: var(--maas-shadow);
+    border-left: 4px solid transparent;
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--maas-shadow-lg);
+    }
+
+    .stat-card.teal {
+        border-left-color: var(--maas-teal);
+    }
+
+    .stat-card.gold {
+        border-left-color: var(--maas-gold);
+    }
+
+    .stat-card.green {
+        border-left-color: var(--maas-green);
+    }
+
+    .stat-card.gray {
+        border-left-color: var(--maas-gray);
+    }
+
+.stat-label {
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--maas-gray);
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.75rem;
+    color: var(--maas-teal);
+    line-height: 1;
+}
+
+.stat-sub {
+    font-size: .8rem;
+    color: var(--maas-gray);
+    margin-top: 4px;
+}
+
+/* ── Filter panel ──────────────────────────────────────────── */
+.filter-panel {
+    background: var(--maas-white);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    box-shadow: var(--maas-shadow);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+    .filter-panel .filter-label {
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--maas-gray);
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        white-space: nowrap;
+    }
+
+    .filter-panel select,
+    .filter-panel input {
+        border: 1.5px solid var(--maas-border);
+        border-radius: var(--radius-sm);
+        padding: 8px 14px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: .9rem;
+        color: #1e293b;
+        background: var(--maas-gray-light);
+        transition: border-color .2s ease, background .2s ease;
+        outline: none;
+    }
+
+        .filter-panel select:focus,
+        .filter-panel input:focus {
+            border-color: var(--maas-teal-mid);
+            background: var(--maas-white);
+        }
+
+/* ── Əsas cədvəl ───────────────────────────────────────────── */
+.maas-table-wrap {
+    background: var(--maas-white);
+    border-radius: var(--radius);
+    box-shadow: var(--maas-shadow);
+    overflow: hidden;
+}
+
+.maas-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .875rem;
+}
+
+    .maas-table thead th {
+        background: var(--maas-teal);
+        color: rgba(255,255,255,.9);
+        font-weight: 600;
+        font-size: .75rem;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        padding: 14px 18px;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+        .maas-table thead th:first-child {
+            border-radius: 0;
+        }
+
+    .maas-table tbody tr {
+        border-bottom: 1px solid var(--maas-border);
+        transition: background .15s ease;
+    }
+
+        .maas-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .maas-table tbody tr:hover {
+            background: var(--maas-teal-light);
+        }
+
+    .maas-table td {
+        padding: 14px 18px;
+        color: #334155;
+        vertical-align: middle;
+    }
+
+        .maas-table td .isci-ad {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .maas-table td .isci-vezife {
+            font-size: .78rem;
+            color: var(--maas-gray);
+            margin-top: 2px;
+        }
+
+        .maas-table td .net-mebleg {
+            font-family: 'Instrument Serif', serif;
+            font-size: 1.1rem;
+            color: var(--maas-teal);
+            font-weight: 400;
+        }
+
+/* ── Status badge-ləri ─────────────────────────────────────── */
+.badge-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .03em;
+}
+
+    .badge-status::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+.badge-layihe {
+    background: #fef9c3;
+    color: #854d0e;
+}
+
+.badge-tesdiq {
+    background: var(--maas-teal-light);
+    color: var(--maas-teal);
+}
+
+.badge-odenis {
+    background: var(--maas-green-light);
+    color: var(--maas-green);
+}
+
+.badge-legv {
+    background: var(--maas-red-light);
+    color: var(--maas-red);
+}
+
+/* ── Düymələr ──────────────────────────────────────────────── */
+.btn-maas {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .875rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: all .2s ease;
+}
+
+.btn-maas-primary {
+    background: var(--maas-teal);
+    color: white;
+}
+
+    .btn-maas-primary:hover {
+        background: var(--maas-teal-mid);
+        color: white;
+        transform: translateY(-1px);
+    }
+
+.btn-maas-gold {
+    background: var(--maas-gold);
+    color: var(--maas-teal);
+}
+
+    .btn-maas-gold:hover {
+        filter: brightness(1.08);
+        transform: translateY(-1px);
+    }
+
+.btn-maas-outline {
+    background: transparent;
+    border: 1.5px solid var(--maas-teal);
+    color: var(--maas-teal);
+}
+
+    .btn-maas-outline:hover {
+        background: var(--maas-teal-light);
+    }
+
+.btn-maas-danger {
+    background: var(--maas-red-light);
+    color: var(--maas-red);
+    border: 1.5px solid #fca5a5;
+}
+
+    .btn-maas-danger:hover {
+        background: var(--maas-red);
+        color: white;
+    }
+
+.btn-maas-sm {
+    padding: 6px 12px;
+    font-size: .8rem;
+}
+
+/* ── Hesablama formu ───────────────────────────────────────── */
+.hesabla-kart {
+    background: var(--maas-white);
+    border-radius: var(--radius);
+    box-shadow: var(--maas-shadow);
+    overflow: hidden;
+}
+
+.hesabla-kart-bashliq {
+    background: var(--maas-teal);
+    color: white;
+    padding: 20px 28px;
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.2rem;
+}
+
+.hesabla-kart-govde {
+    padding: 28px;
+}
+
+.form-qrup {
+    margin-bottom: 20px;
+}
+
+    .form-qrup label {
+        display: block;
+        font-size: .8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        color: var(--maas-gray);
+        margin-bottom: 8px;
+    }
+
+    .form-qrup .form-control,
+    .form-qrup .form-select {
+        border: 1.5px solid var(--maas-border);
+        border-radius: var(--radius-sm);
+        padding: 10px 16px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: .9rem;
+        width: 100%;
+        transition: border-color .2s, box-shadow .2s;
+        background: var(--maas-gray-light);
+    }
+
+        .form-qrup .form-control:focus,
+        .form-qrup .form-select:focus {
+            border-color: var(--maas-teal-mid);
+            box-shadow: 0 0 0 3px rgba(13,61,58,.1);
+            background: white;
+            outline: none;
+        }
+
+.bolme-ayrac {
+    border: none;
+    border-top: 2px dashed var(--maas-border);
+    margin: 24px 0;
+}
+
+/* ── Breakdown kartı (detal) ───────────────────────────────── */
+.breakdown-wrap {
+    background: var(--maas-white);
+    border-radius: var(--radius);
+    box-shadow: var(--maas-shadow);
+    overflow: hidden;
+}
+
+.breakdown-bashliq {
+    background: linear-gradient(135deg, var(--maas-teal), var(--maas-teal-mid));
+    color: white;
+    padding: 24px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+    .breakdown-bashliq h2 {
+        font-family: 'Instrument Serif', serif;
+        font-size: 1.4rem;
+        font-weight: 400;
+        margin: 0;
+    }
+
+.breakdown-net {
+    text-align: right;
+}
+
+    .breakdown-net .etiket {
+        font-size: .75rem;
+        opacity: .8;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+    }
+
+    .breakdown-net .mebleg {
+        font-family: 'Instrument Serif', serif;
+        font-size: 2rem;
+        line-height: 1;
+    }
+
+.breakdown-satir {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 28px;
+    border-bottom: 1px solid var(--maas-border);
+    transition: background .15s;
+}
+
+    .breakdown-satir:last-child {
+        border-bottom: none;
+    }
+
+    .breakdown-satir:hover {
+        background: var(--maas-gray-light);
+    }
+
+    .breakdown-satir.gelir .mebleg-col {
+        color: var(--maas-green);
+    }
+
+    .breakdown-satir.tutulma .mebleg-col {
+        color: var(--maas-red);
+    }
+
+    .breakdown-satir.isegoturen .mebleg-col {
+        color: var(--maas-gold);
+    }
+
+    .breakdown-satir.umumi {
+        background: var(--maas-teal-light);
+        font-weight: 700;
+    }
+
+    .breakdown-satir .ad-col {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: .9rem;
+    }
+
+    .breakdown-satir .tip-niqab {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+.tip-niqab.gelir {
+    background: var(--maas-green);
+}
+
+.tip-niqab.tutulma {
+    background: var(--maas-red);
+}
+
+.tip-niqab.isegoturen {
+    background: var(--maas-gold);
+}
+
+.breakdown-satir .aciqlama {
+    font-size: .75rem;
+    color: var(--maas-gray);
+    margin-top: 2px;
+}
+
+.breakdown-satir .mebleg-col {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: .95rem;
+    white-space: nowrap;
+}
+
+/* ── Məzuniyyət kalkulyatoru (inline) ─────────────────────── */
+.mezuniyyet-kalkulyator {
+    background: var(--maas-gold-light);
+    border: 1.5px solid #e8d5a3;
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    margin-top: 8px;
+}
+
+.mezuniyyet-netice {
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.5rem;
+    color: var(--maas-teal);
+}
+
+/* ── Parametrlər cədvəli ───────────────────────────────────── */
+.parametr-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.parametr-kart {
+    background: var(--maas-white);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--maas-shadow);
+    border-top: 3px solid var(--maas-teal);
+    transition: transform .2s;
+}
+
+    .parametr-kart:hover {
+        transform: translateY(-2px);
+    }
+
+    .parametr-kart .nov-ad {
+        font-size: .78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        color: var(--maas-gray);
+        margin-bottom: 8px;
+    }
+
+    .parametr-kart .deyer {
+        font-family: 'Instrument Serif', serif;
+        font-size: 2rem;
+        color: var(--maas-teal);
+        line-height: 1;
+    }
+
+        .parametr-kart .deyer span {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 1rem;
+            color: var(--maas-gray);
+        }
+
+/* ── Alert mesajları ───────────────────────────────────────── */
+.maas-alert {
+    border-radius: var(--radius-sm);
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    font-size: .875rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border-left: 4px solid;
+}
+
+.maas-alert-success {
+    background: var(--maas-green-light);
+    color: var(--maas-green);
+    border-left-color: var(--maas-green);
+}
+
+.maas-alert-error {
+    background: var(--maas-red-light);
+    color: var(--maas-red);
+    border-left-color: var(--maas-red);
+}
+
+/* ── Print stili ───────────────────────────────────────────── */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .breakdown-wrap {
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+
+    .maas-header .btn-maas {
+        display: none;
+    }
+
+    body {
+        font-size: 12px;
+    }
+}
+
+/* ── Responsiv ─────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .stat-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .parametr-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .stat-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .parametr-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-panel {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .maas-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+}

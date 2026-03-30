@@ -1,0 +1,108 @@
+﻿@model FinNex.UI.Areas.User.ViewModels.Gorush.GorushYaratVM
+@using FinNex.Domain.Entities.Communication
+@{
+    ViewData["Title"] = "Görüş Yarat";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/gorush.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+    <div class="grsh-form-wrap">
+        <div class="grsh-form-header">
+            <a asp-action="Index" class="grsh-back">← Geri</a>
+            <div class="grsh-form-title">Yeni Görüş</div>
+        </div>
+
+        <form asp-action="Yarat" method="post" class="grsh-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="TeshkilatciIsciId" />
+
+            <div class="grsh-field">
+                <label class="grsh-label">Başlıq <span class="grsh-required">*</span></label>
+                <input asp-for="Bashliq" class="grsh-input" placeholder="Görüşün mövzusu..." />
+                <span asp-validation-for="Bashliq" class="grsh-error"></span>
+            </div>
+
+            <div class="grsh-field">
+                <label class="grsh-label">Gündəm (Agenda)</label>
+                <textarea asp-for="Agenda" class="grsh-textarea" rows="3"
+                          placeholder="Müzakirə olunacaq mövzular..."></textarea>
+            </div>
+
+            <div class="grsh-form-row">
+                <div class="grsh-field">
+                    <label class="grsh-label">Tarix <span class="grsh-required">*</span></label>
+                    <input asp-for="Tarix" type="date" class="grsh-input"
+                           min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="grsh-field">
+                    <label class="grsh-label">Növ</label>
+                    <select asp-for="Nov" class="grsh-input">
+                        <option value="1">Offline</option>
+                        <option value="2">Online</option>
+                        <option value="3">Hibrid</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grsh-form-row">
+                <div class="grsh-field">
+                    <label class="grsh-label">Başlama saatı</label>
+                    <input asp-for="BaslamaSaati" type="time" class="grsh-input" />
+                </div>
+                <div class="grsh-field">
+                    <label class="grsh-label">Bitmə saatı</label>
+                    <input asp-for="BitisSaati" type="time" class="grsh-input" />
+                </div>
+            </div>
+
+            <div class="grsh-field" id="yerField">
+                <label class="grsh-label">Yer</label>
+                <input asp-for="Yer" class="grsh-input" placeholder="Otaq nömrəsi, ünvan..." />
+            </div>
+
+            <div class="grsh-field" id="linkField" style="display:none">
+                <label class="grsh-label">Online link</label>
+                <input asp-for="OnlineLink" class="grsh-input" placeholder="https://..." />
+            </div>
+
+            @* İştirakçı seçimi *@
+            <div class="grsh-field">
+                <label class="grsh-label">İştirakçılar</label>
+                <div class="grsh-ishtirakci-list">
+                    @foreach (var item in Model.IsciList)
+                    {
+                        <label class="grsh-ishtirakci-item">
+                            <input type="checkbox"
+                                   name="SecilmisIshtirakcilar"
+                                   value="@item.Value"
+                                   class="grsh-checkbox" />
+                            <span>@item.Text</span>
+                        </label>
+                    }
+                </div>
+            </div>
+
+            <div class="grsh-form-footer">
+                <a asp-action="Index" class="grsh-btn grsh-btn--ghost">Ləğv et</a>
+                <button type="submit" class="grsh-btn grsh-btn--primary">
+                    Görüş yarat
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Nov dəyişdikdə yer/link göstər
+        document.querySelector('select[name="Nov"]').addEventListener('change', function () {
+            const v = parseInt(this.value);
+            document.getElementById('yerField').style.display = v === 2 ? 'none' : '';
+            document.getElementById('linkField').style.display = v === 1 ? 'none' : '';
+        });
+    </script>
+}

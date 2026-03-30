@@ -1,4 +1,5 @@
 using FinNex.Application.Common.Results;
+using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
@@ -31,6 +32,8 @@ namespace FinNex.UI.Areas.User.Controllers
         }
 
         // GET /User/Tesdiq/SobeReisi
+        // TesdiqController.SobeReisi() — belə olmalıdır:
+        // TesdiqController.SobeReisi() — belə olmalıdır:
         public async Task<IActionResult> SobeReisi()
         {
             if (!await HasRolAsync(StrukturRolTipi.SobeReisi))
@@ -39,8 +42,27 @@ namespace FinNex.UI.Areas.User.Controllers
                 return RedirectToAction("Index", "Dashboard");
             }
 
-            var mezResult = await _mezuniyyetService.GetGozlemededeAsync();
-            var icazeResult = await _icazeService.GetGozlemededeAsync();
+            var appUser = await _userManager.GetUserAsync(User);
+            var isciId = appUser?.IsciId;
+            if (isciId == null) return Forbid();
+
+            // İşçinin departament ID-sini al
+            var strukturResult = await _strukturRoluService.GetByIsciIdAsync(isciId.Value);
+            var departamentId = strukturResult.Success
+                ? strukturResult.Data?
+                    .FirstOrDefault(r => r.RolTipi == StrukturRolTipi.SobeReisi && r.Aktivdir)
+                    ?.DepartamentId
+                : null;
+
+            // Departamentə görə filtrləyib çək
+            Task<Result<IList<MezuniyyetListDto>>> mezTask = departamentId.HasValue
+                ? _mezuniyyetService.GetSobeyeGoreMezuniyyetlerAsync(departamentId.Value, isciId.Value)
+                : _mezuniyyetService.GetGozlemededeAsync(); // fallback
+
+            var mezResult = await mezTask;
+
+            // İcazə üçün də eyni filtr lazımdır (aşağıda qeyd)
+            var icazeResult = await _icazeService.GetGozlemededeAsync(); // ← icazə üçün də departament filtri əlavə etmək lazımdır
 
             var vm = new TesdiqIndexVM
             {
@@ -209,22 +231,25 @@ namespace FinNex.UI.Areas.User.Controllers
             return View(vm);
         }
 
-        // POST /User/Tesdiq/MezuniyyetTesdiq
+        // TesdiqController.cs — MezuniyyetTesdiq metodu, DƏYİŞ:
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MezuniyyetTesdiq(int id, bool status, string? qeyd, string rol)
         {
+            var appUser = await _userManager.GetUserAsync(User);
+            var isciId = appUser?.IsciId ?? 0;
+
             Result result;
             switch (rol)
             {
                 case "SobeReisi":
-                    result = await _mezuniyyetService.SobeReisiTesdiqAsync(id, status, qeyd);
+                    result = await _mezuniyyetService.SobeReisiTesdiqAsync(id, status, qeyd, isciId); // ← isciId əlavə et
                     break;
                 case "Rehber":
-                    result = await _mezuniyyetService.RehberTesdiqAsync(id, status, qeyd);
+                    result = await _mezuniyyetService.RehberTesdiqAsync(id, status, qeyd, isciId);    // ← isciId əlavə et
                     break;
                 case "Hr":
-                    result = await _mezuniyyetService.HrTesdiqAsync(id, status, qeyd);
+                    result = await _mezuniyyetService.HrTesdiqAsync(id, status, qeyd, isciId);        // ← isciId əlavə et
                     break;
                 default:
                     TempData["Error"] = "Naməlum rol.";

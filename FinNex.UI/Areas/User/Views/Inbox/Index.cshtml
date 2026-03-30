@@ -1,0 +1,310 @@
+﻿@model FinNex.UI.Areas.User.ViewModels.Inbox.InboxIndexVM
+@using FinNex.Domain.Entities.Communication
+@{
+    ViewData["Title"] = "Gələn Qutusu";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/inbox.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    @* ── Header ── *@
+    <div class="ibx-header">
+        <div>
+            <div class="ibx-title">
+                Gələn Qutusu
+                @if (Model.CemiOxunmamis > 0)
+                {
+                    <span class="ibx-badge-count">@Model.CemiOxunmamis</span>
+                }
+            </div>
+            <div class="ibx-sub">Bildirişlər, mesajlar və sorğular</div>
+        </div>
+        <a asp-action="YeniMesaj" class="ibx-btn ibx-btn--primary">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            Yeni Mesaj
+        </a>
+    </div>
+
+    @* ── Tabs ── *@
+    <div class="ibx-tabs">
+        <button class="ibx-tab @(Model.AktivTab == "bildirisler" ? "active" : "")"
+                data-tab="bildirisler">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M6.5 1a4 4 0 014 4c0 3.5 1 4.5 1 4.5H1.5s1-1 1-4.5a4 4 0 014-4zM5 10.5a1.5 1.5 0 003 0"
+                      stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+            </svg>
+            Bildirişlər
+            @if (Model.OxunmamisBildiris > 0)
+            {
+                <span class="ibx-tab-dot">@Model.OxunmamisBildiris</span>
+            }
+        </button>
+        <button class="ibx-tab @(Model.AktivTab == "mesajlar" ? "active" : "")"
+                data-tab="mesajlar">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <rect x="1" y="2" width="11" height="8" rx="1.5" stroke="currentColor" stroke-width="1.1" />
+                <path d="M3 5h7M3 7.5h4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+            </svg>
+            Mesajlar
+            @if (Model.OxunmamisMesaj > 0)
+            {
+                <span class="ibx-tab-dot">@Model.OxunmamisMesaj</span>
+            }
+        </button>
+        <button class="ibx-tab @(Model.AktivTab == "sorgular" ? "active" : "")"
+                data-tab="sorgular">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.1" />
+                <path d="M4.5 6.5l1.5 1.5 2.5-3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            Sorğular
+            @if (Model.GozleyenSorgu > 0)
+            {
+                <span class="ibx-tab-dot ibx-tab-dot--amber">@Model.GozleyenSorgu</span>
+            }
+        </button>
+        <button class="ibx-tab @(Model.AktivTab == "gonderilenler" ? "active" : "")"
+                data-tab="gonderilenler">
+            Göndərilənlər
+        </button>
+    </div>
+
+    @* ── Bildirişlər Paneli ── *@
+    <div class="ibx-panel @(Model.AktivTab == "bildirisler" ? "" : "ibx-hidden")"
+         data-panel="bildirisler">
+
+        @if (Model.OxunmamisBildiris > 0)
+        {
+            <div class="ibx-panel-actions">
+                <button class="ibx-link" id="hamisiniOxuBtn">Hamısını oxundu işarələ</button>
+            </div>
+        }
+
+        @if (!Model.Bildirisler.Any())
+        {
+            <div class="ibx-empty">
+                <div class="ibx-empty-icon">🔔</div>
+                <div class="ibx-empty-title">Bildiriş yoxdur</div>
+            </div>
+        }
+        else
+        {
+            <div class="ibx-list">
+                @foreach (var b in Model.Bildirisler)
+                {
+                    <div class="ibx-item @(b.Oxunub ? "" : "ibx-item--unread")"
+                         data-bildiris-id="@b.Id">
+                        <div class="ibx-item-icon @GetBildirisIconClass(b.Nov)">
+                            @GetBildirisIcon(b.Nov)
+                        </div>
+                        <div class="ibx-item-body">
+                            <div class="ibx-item-title">@b.Bashliq</div>
+                            <div class="ibx-item-sub">@b.Metn</div>
+                            <div class="ibx-item-time">@b.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</div>
+                        </div>
+                        @if (!b.Oxunub)
+                        {
+                            <div class="ibx-unread-dot"></div>
+                        }
+                        @if (!string.IsNullOrEmpty(b.RedirectUrl))
+                        {
+                            <a href="@b.RedirectUrl" class="ibx-item-link" data-bildiris-id="@b.Id">Bax →</a>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    @* ── Mesajlar Paneli ── *@
+    <div class="ibx-panel @(Model.AktivTab == "mesajlar" ? "" : "ibx-hidden")"
+         data-panel="mesajlar">
+
+        @if (!Model.GelenMesajlar.Any())
+        {
+            <div class="ibx-empty">
+                <div class="ibx-empty-icon">✉️</div>
+                <div class="ibx-empty-title">Gələn mesaj yoxdur</div>
+                <a asp-action="YeniMesaj" class="ibx-btn ibx-btn--ghost" style="margin-top:12px">
+                    Mesaj göndər
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="ibx-list">
+                @foreach (var m in Model.GelenMesajlar)
+                {
+                    <a asp-action="Mesaj" asp-route-id="@m.Id"
+                       class="ibx-item ibx-item--link @(m.Oxunub ? "" : "ibx-item--unread")">
+                        <div class="ibx-avatar">@m.GonderenAd.Substring(0, 1)</div>
+                        <div class="ibx-item-body">
+                            <div class="ibx-item-title">
+                                @m.GonderenAd
+                                @if (!m.Oxunub)
+                                {
+                                    <span class="ibx-new-label">Yeni</span>
+                                }
+                            </div>
+                            <div class="ibx-item-movzu">@m.Movzu</div>
+                            <div class="ibx-item-sub">@m.MetnOnizleme</div>
+                            <div class="ibx-item-time">@m.YaradilmaTarixi.ToString("dd.MM HH:mm")</div>
+                        </div>
+                        @if (!m.Oxunub)
+                        {
+                            <div class="ibx-unread-dot"></div>
+                        }
+                    </a>
+                }
+            </div>
+        }
+    </div>
+
+    @* ── Sorğular Paneli ── *@
+    <div class="ibx-panel @(Model.AktivTab == "sorgular" ? "" : "ibx-hidden")"
+         data-panel="sorgular">
+
+        @if (!Model.EvezediciSorgular.Any())
+        {
+            <div class="ibx-empty">
+                <div class="ibx-empty-icon">✅</div>
+                <div class="ibx-empty-title">Gözləyən sorğu yoxdur</div>
+            </div>
+        }
+        else
+        {
+            <div class="ibx-list">
+                @foreach (var s in Model.EvezediciSorgular)
+                {
+                    <div class="ibx-sorgu-card">
+                        <div class="ibx-sorgu-header">
+                            <div class="ibx-sorgu-icon">🔄</div>
+                            <div>
+                                <div class="ibx-sorgu-title">Əvəzedici Sorğusu</div>
+                                <div class="ibx-sorgu-isci">@s.MezuniyyetIsciAd</div>
+                            </div>
+                            <span class="ibx-sorgu-status ibx-status--wait">Gözləyir</span>
+                        </div>
+                        <div class="ibx-sorgu-info">
+                            <span>📅 @s.BaslamaTarixi.ToString("dd.MM.yyyy") — @s.BitmeTarixi.ToString("dd.MM.yyyy")</span>
+                            <span>⏱ @s.IsGunu iş günü</span>
+                            <span>📋 @s.MezuniyyetNov</span>
+                        </div>
+                        <div class="ibx-sorgu-actions">
+                            <form asp-action="EvezediciQebul" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@s.Id" />
+                                <button type="submit" class="ibx-btn ibx-btn--success"
+                                        onclick="return confirm('Əvəzedici sorğusunu qəbul edirsiniz?')">
+                                    ✓ Qəbul et
+                                </button>
+                            </form>
+
+                            <button type="button" class="ibx-btn ibx-btn--danger"
+                                    onclick="openReddModal(@s.Id.ToString())">
+                                ✕ Rədd et
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    @* ── Göndərilənlər Paneli ── *@
+    <div class="ibx-panel @(Model.AktivTab == "gonderilenler" ? "" : "ibx-hidden")"
+         data-panel="gonderilenler">
+
+        @if (!Model.GonderilenMesajlar.Any())
+        {
+            <div class="ibx-empty">
+                <div class="ibx-empty-icon">📤</div>
+                <div class="ibx-empty-title">Göndərilən mesaj yoxdur</div>
+            </div>
+        }
+        else
+        {
+            <div class="ibx-list">
+                @foreach (var m in Model.GonderilenMesajlar)
+                {
+                    <a asp-action="Mesaj" asp-route-id="@m.Id"
+                       class="ibx-item ibx-item--link">
+                        <div class="ibx-avatar ibx-avatar--sent">@m.AlanAd.Substring(0, 1)</div>
+                        <div class="ibx-item-body">
+                            <div class="ibx-item-title">→ @m.AlanAd</div>
+                            <div class="ibx-item-movzu">@m.Movzu</div>
+                            <div class="ibx-item-sub">@m.MetnOnizleme</div>
+                            <div class="ibx-item-time">
+                                @m.YaradilmaTarixi.ToString("dd.MM HH:mm")
+                                @if (m.Oxunub)
+                                {
+                                    <span class="ibx-read-check" title="@m.OxunmaTarixi?.ToString("dd.MM HH:mm") tarixində oxundu">✓✓</span>
+                                }
+                                else
+                                {
+                                    <span class="ibx-unread-check">✓</span>
+                                }
+                            </div>
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+
+</div>
+
+@* Rədd Modal *@
+<div class="ibx-modal-overlay" id="reddModal" @* style="display:none" *@>
+    <div class="ibx-modal">
+        <div class="ibx-modal-title">Rədd etmə səbəbi</div>
+        <form asp-action="EvezediciRedd" method="post" id="reddForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="reddSorguId" />
+            <textarea name="qeyd" class="ibx-textarea"
+                      placeholder="Səbəbi qeyd edin (ixtiyari)..." rows="3"></textarea>
+            <div class="ibx-modal-footer">
+                <button type="button" class="ibx-btn ibx-btn--ghost"
+                        onclick="closeReddModal()">
+                    Ləğv et
+                </button>
+                <button type="submit" class="ibx-btn ibx-btn--danger">Rədd et</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@functions {
+    string GetBildirisIconClass(BildirisNovu nov) => nov switch
+    {
+        BildirisNovu.MezuniyyetTesdiq => "ibx-icon--green",
+        BildirisNovu.MezuniyyetImtina => "ibx-icon--red",
+        BildirisNovu.EvezediciSorgu => "ibx-icon--amber",
+        BildirisNovu.EvezediciQebul => "ibx-icon--green",
+        BildirisNovu.EvezediciRedd => "ibx-icon--red",
+        BildirisNovu.YeniMesaj => "ibx-icon--blue",
+        _ => "ibx-icon--gray"
+    };
+
+    string GetBildirisIcon(BildirisNovu nov) => nov switch
+    {
+        BildirisNovu.MezuniyyetTesdiq => "✅",
+        BildirisNovu.MezuniyyetImtina => "❌",
+        BildirisNovu.EvezediciSorgu => "🔄",
+        BildirisNovu.EvezediciQebul => "✅",
+        BildirisNovu.EvezediciRedd => "❌",
+        BildirisNovu.YeniMesaj => "✉️",
+        BildirisNovu.MezuniyyetMuraciet => "📋",
+        _ => "🔔"
+    };
+}
+
+@section Scripts {
+    <script src="~/js/User/InboxIndex.js" asp-append-version="true"></script>
+}

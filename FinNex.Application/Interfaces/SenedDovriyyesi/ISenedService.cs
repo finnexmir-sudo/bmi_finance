@@ -39,15 +39,35 @@ namespace FinNex.Application.Interfaces.SenedDovriyyesi
 
         // --- Oxuma/Listələmə Əməliyyatları ---
         Task<Result<PagedResult<SenedListDto>>> GetPagedAsync(
-            PagedRequest req, int? sobeId, int? senedNovuId, SenedStatusu? status, string? search);
+    PagedRequest req,
+    List<int> icazeliSobeIdleri,
+    int? sobeId,
+    int? senedNovuId,
+    SenedStatusu? status,
+    string? search);
+
         Task<Result<PagedResult<SenedListDto>>> GetSilinmisPagedAsync(
-            PagedRequest req, int? sobeId, int? senedNovuId, SenedStatusu? status, string? search);
+            PagedRequest req,
+            List<int> icazeliSobeIdleri,
+            int? sobeId,
+            int? senedNovuId,
+            SenedStatusu? status,
+            string? search);
 
+        Task<Result<SenedDetailDto>> GetDetailAsync(
+            int senedId,
+            List<int> icazeliSobeIdleri,
+            bool isAdmin);
 
+        Task<Result<SenedDetailDto>> GetDetailSilinmisAsync(
+            int senedId,
+            List<int> icazeliSobeIdleri,
+            bool isAdmin);
 
-        Task<Result<SenedDetailDto>> GetDetailAsync(int senedId, int userId, bool isAdmin);
-        Task<Result<SenedDetailDto>> GetDetailSilinmisAsync(int senedId, int userId, bool isAdmin);
-        Task<Result<SenedDetailDto>> silmeİCazeSorgusuAsync(int senedId, int userId, bool isAdmin);
+        Task<Result<SenedDetailDto>> silmeİCazeSorgusuAsync(
+            int senedId,
+            List<int> icazeliSobeIdleri,
+            bool isAdmin);
 
         Task<Result<SenedDashboardDto>> GetDashboardAsync();
 

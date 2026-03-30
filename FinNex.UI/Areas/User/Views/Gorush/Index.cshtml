@@ -1,0 +1,204 @@
+﻿@model FinNex.UI.Areas.User.ViewModels.Gorush.GorushIndexVM
+@using FinNex.Domain.Entities.Communication
+@{
+    ViewData["Title"] = "Görüşlər";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/gorush.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="grsh-header">
+        <div>
+            <div class="grsh-title">Görüşlər</div>
+            <div class="grsh-sub">Planlanmış görüşlər və toplantılar</div>
+        </div>
+        <a asp-action="Yarat" class="grsh-btn grsh-btn--primary">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            Görüş yarat
+        </a>
+    </div>
+
+    @* Yaxınlaşan görüşlər *@
+    @if (Model.YaxinlashanGorushler.Any())
+    {
+        <div class="grsh-upcoming">
+            <div class="grsh-upcoming-title">
+                🔔 Bu həftə (@Model.YaxinlashanGorushler.Count görüş)
+            </div>
+            <div class="grsh-upcoming-list">
+                @foreach (var g in Model.YaxinlashanGorushler)
+                {
+                    <a asp-action="Detay" asp-route-id="@g.Id" class="grsh-upcoming-card">
+                        <div class="grsh-upcoming-date">
+                            <div class="grsh-udate-day">@g.Tarix.ToString("dd")</div>
+                            <div class="grsh-udate-mon">@g.Tarix.ToString("MMM")</div>
+                        </div>
+                        <div class="grsh-upcoming-info">
+                            <div class="grsh-upcoming-name">@g.Bashliq</div>
+                            <div class="grsh-upcoming-time">
+                                @g.BaslamaSaati.ToString(@"hh\:mm") — @g.BitisSaati.ToString(@"hh\:mm")
+                                @if (!string.IsNullOrEmpty(g.Yer))
+                                {
+                                    <span> · @g.Yer</span>
+                                }
+                            </div>
+                        </div>
+                        <span class="grsh-nov-badge @(g.Nov == GorushNovu.Online ? "grsh-nov--online" : "grsh-nov--offline")">
+                            @g.NovText
+                        </span>
+                    </a>
+                }
+            </div>
+        </div>
+    }
+
+    @* Tabs *@
+    <div class="grsh-tabs">
+        <button class="grsh-tab @(Model.AktivTab == "menim" ? "active" : "")"
+                data-tab="menim">
+            İştirak etdiklərim
+            <span class="grsh-tab-count">@Model.MenimGorushler.Count</span>
+        </button>
+        <button class="grsh-tab @(Model.AktivTab == "teshkil" ? "active" : "")"
+                data-tab="teshkil">
+            Təşkil etdiklərim
+            <span class="grsh-tab-count">@Model.TeshkilEtdiklerim.Count</span>
+        </button>
+    </div>
+
+    @* İştirak etdiklərim *@
+    <div class="grsh-panel @(Model.AktivTab == "menim" ? "" : "grsh-hidden")"
+         data-panel="menim">
+        @if (!Model.MenimGorushler.Any())
+        {
+            <div class="grsh-empty">
+                <div class="grsh-empty-icon">📅</div>
+                <div class="grsh-empty-title">Görüş yoxdur</div>
+            </div>
+        }
+        else
+        {
+            <div class="grsh-list">
+                @foreach (var g in Model.MenimGorushler.OrderBy(x => x.Tarix))
+                {
+                    <a asp-action="Detay" asp-route-id="@g.Id" class="grsh-card">
+                        <div class="grsh-card-date">
+                            <div class="grsh-date-day">@g.Tarix.ToString("dd")</div>
+                            <div class="grsh-date-mon">@g.Tarix.ToString("MMM")</div>
+                        </div>
+                        <div class="grsh-card-info">
+                            <div class="grsh-card-title">@g.Bashliq</div>
+                            <div class="grsh-card-meta">
+                                <span>@g.TeshkilatciAd</span>
+                                <span>@g.BaslamaSaati.ToString(@"hh\:mm") — @g.BitisSaati.ToString(@"hh\:mm")</span>
+                                @if (!string.IsNullOrEmpty(g.Yer))
+                                {
+                                    <span>📍 @g.Yer</span>
+                                }
+                                <span>👥 @g.IshtirakciSayi nəfər</span>
+                            </div>
+                        </div>
+                        <div class="grsh-card-badges">
+                            <span class="grsh-status @GetStatusClass(g.Status)">@g.StatusText</span>
+                            @if (g.MenimStatusum.HasValue)
+                            {
+                                <span class="grsh-ishtirak @GetIshtirakClass(g.MenimStatusum.Value)">
+                                    @GetIshtirakText(g.MenimStatusum.Value)
+                                </span>
+                            }
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+
+    @* Təşkil etdiklərim *@
+    <div class="grsh-panel @(Model.AktivTab == "teshkil" ? "" : "grsh-hidden")"
+         data-panel="teshkil">
+        @if (!Model.TeshkilEtdiklerim.Any())
+        {
+            <div class="grsh-empty">
+                <div class="grsh-empty-icon">📋</div>
+                <div class="grsh-empty-title">Təşkil etdiyiniz görüş yoxdur</div>
+                <a asp-action="Yarat" class="grsh-btn grsh-btn--ghost" style="margin-top:12px">
+                    Görüş yarat
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="grsh-list">
+                @foreach (var g in Model.TeshkilEtdiklerim.OrderBy(x => x.Tarix))
+                {
+                    <a asp-action="Detay" asp-route-id="@g.Id" class="grsh-card">
+                        <div class="grsh-card-date">
+                            <div class="grsh-date-day">@g.Tarix.ToString("dd")</div>
+                            <div class="grsh-date-mon">@g.Tarix.ToString("MMM")</div>
+                        </div>
+                        <div class="grsh-card-info">
+                            <div class="grsh-card-title">@g.Bashliq</div>
+                            <div class="grsh-card-meta">
+                                <span>@g.BaslamaSaati.ToString(@"hh\:mm") — @g.BitisSaati.ToString(@"hh\:mm")</span>
+                                @if (!string.IsNullOrEmpty(g.Yer))
+                                {
+                                    <span>📍 @g.Yer</span>
+                                }
+                                <span>👥 @g.IshtirakciSayi nəfər</span>
+                            </div>
+                        </div>
+                        <span class="grsh-status @GetStatusClass(g.Status)">@g.StatusText</span>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+
+</div>
+
+@functions {
+    string GetStatusClass(GorushStatus s) => s switch
+    {
+        GorushStatus.Planlanib => "grsh-status--plan",
+        GorushStatus.Bashladi => "grsh-status--active",
+        GorushStatus.Bitdi => "grsh-status--done",
+        GorushStatus.LegvEdildi => "grsh-status--cancel",
+        _ => ""
+    };
+    string GetIshtirakClass(IshtirakciStatus s) => s switch
+    {
+        IshtirakciStatus.Qebul => "grsh-ishtirak--yes",
+        IshtirakciStatus.Redd => "grsh-ishtirak--no",
+        IshtirakciStatus.Gozleyir => "grsh-ishtirak--wait",
+        _ => ""
+    };
+    string GetIshtirakText(IshtirakciStatus s) => s switch
+    {
+        IshtirakciStatus.Qebul => "✓ Qəbul",
+        IshtirakciStatus.Redd => "✕ Rədd",
+        IshtirakciStatus.Gozleyir => "⏳ Gözləyir",
+        _ => ""
+    };
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.grsh-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = btn.dataset.tab;
+                document.querySelectorAll('.grsh-tab').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.grsh-panel').forEach(p => {
+                    p.classList.toggle('grsh-hidden', p.dataset.panel !== target);
+                });
+                history.replaceState(null, '', `?tab=${target}`);
+            });
+        });
+    </script>
+}

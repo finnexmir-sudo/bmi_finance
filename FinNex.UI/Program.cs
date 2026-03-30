@@ -1,13 +1,14 @@
-﻿using FinNex.DataAccess;
+﻿using FinNex.Application;
+using FinNex.DataAccess;
+using FinNex.DataAccess.Contexts;
 using FinNex.DataAccess.Seed;
+using FinNex.UI.Configurations;
 using FinNex.UI.Middleware;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using System.Threading.RateLimiting;
-using FinNex.Application;
-using FinNex.DataAccess.Contexts;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.RateLimiting;
 
 namespace FinNex.UI
 {
@@ -50,6 +51,8 @@ namespace FinNex.UI
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.Lax;
     });
+
+            builder.Services.AddAppAuthorization();
 
             // ==================================================
             // 3. Rate Limiting (Login protection)

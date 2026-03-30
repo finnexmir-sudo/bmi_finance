@@ -1,0 +1,128 @@
+﻿@model FinNex.UI.Areas.User.ViewModels.Xatirlatma.XatirlatmaYaratVM
+@{
+    ViewData["Title"] = "Xatırlatma Yarat";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/xatirlatma-yarat.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+    <div class="xat-create-wrap">
+
+        <!-- Geri düyməsi -->
+        <a asp-action="Index" class="xat-create-back">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M9 11L5 7l4-4" stroke="currentColor" stroke-width="1.5"
+                      stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            Xatırlatmalara qayıt
+        </a>
+
+        <!-- Kart -->
+        <div class="xat-create-card">
+
+            <!-- Header -->
+            <div class="xat-create-header">
+                <div class="xat-create-header-icon">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <circle cx="10" cy="10" r="8" stroke="#c9900a" stroke-width="1.5" />
+                        <path d="M10 6.5V10l3 1.8" stroke="#c9900a" stroke-width="1.5"
+                              stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="xat-create-header-title">Yeni Xatırlatma</div>
+                    <div class="xat-create-header-sub">Özünüzə qeyd və vaxt təyin edin</div>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form asp-action="Yarat" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="xat-create-body">
+
+                    <!-- Başlıq -->
+                    <div class="xat-field">
+                        <label class="xat-label">
+                            Başlıq
+                            <span class="xat-required">*</span>
+                        </label>
+                        <input asp-for="Bashliq"
+                               class="xat-input"
+                               placeholder="Nəyi xatırlatmaq istəyirsiniz?" />
+                        <span asp-validation-for="Bashliq" class="xat-error"></span>
+                    </div>
+
+                    <!-- Qeyd -->
+                    <div class="xat-field">
+                        <label class="xat-label">
+                            Əlavə qeyd
+                            <span style="font-size:10px;color:#aab0bf;font-weight:400;margin-left:4px;">(istəyə bağlı)</span>
+                        </label>
+                        <textarea asp-for="Qeyd"
+                                  class="xat-textarea"
+                                  rows="4"
+                                  placeholder="Ətraflı məlumat, link və ya qeyd əlavə edin..."></textarea>
+                    </div>
+
+                    <!-- Tarix & Saat -->
+                    <div class="xat-field">
+                        <label class="xat-label">
+                            Xatırlatma tarixi və saatı
+                            <span class="xat-required">*</span>
+                        </label>
+                        <input asp-for="XatirlatmaTarixi"
+                               type="datetime-local"
+                               class="xat-input" />
+                        <span asp-validation-for="XatirlatmaTarixi" class="xat-error"></span>
+
+                        <div class="xat-hint">
+                            <span class="xat-hint-icon">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <circle cx="7" cy="7" r="6" stroke="#c9900a" stroke-width="1.3" />
+                                    <path d="M7 4.5v3M7 9.5v.5" stroke="#c9900a"
+                                          stroke-width="1.3" stroke-linecap="round" />
+                                </svg>
+                            </span>
+                            Seçilmiş vaxtda sistem tərəfindən bildiriş avtomatik göndəriləcək.
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Footer -->
+                <div class="xat-create-footer">
+                    <div class="xat-create-footer-left">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M6 1a5 5 0 100 10A5 5 0 006 1zM6 5v3M6 9v.5"
+                                  stroke="#c8cdd8" stroke-width="1.2" stroke-linecap="round" />
+                        </svg>
+                        * olan sahələr məcburidir
+                    </div>
+                    <div class="xat-create-footer-actions">
+                        <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+                        <button type="submit" class="fn-btn fn-btn--primary">
+                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.3" />
+                                <path d="M6.5 4V6.5l2 1.2" stroke="currentColor"
+                                      stroke-width="1.3" stroke-linecap="round" />
+                            </svg>
+                            Xatırlatma yarat
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

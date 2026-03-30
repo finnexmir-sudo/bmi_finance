@@ -8,11 +8,11 @@ namespace FinNex.Domain.Entities.HR
         public string? Tesvir { get; set; }
         public bool Aktivdir { get; set; } = true;
 
-        // --- ƏLAVƏ EDİLMƏLİ OLAN HİSSƏ ---
-        public int DepartamentId { get; set; } // Foreign Key
-        public Departament Departament { get; set; } = null!; // Navigation Property
-                                                              // --------------------------------
+        public int DepartamentId { get; set; }
+        public Departament Departament { get; set; } = null!;
 
+        public ICollection<IsciTeyinat> IsciTeyinatlar { get; set; }
+            = new List<IsciTeyinat>();
     }
 
 }

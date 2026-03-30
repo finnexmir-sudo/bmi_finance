@@ -1,0 +1,17 @@
+.fn-label-hint { font-weight:400; color:#8a93a8; margin-left:4px; }
+.fn-input-pfx { position:relative; }
+.fn-input-pfx-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:13px; color:#8a93a8; pointer-events:none; }
+.fn-input--pfx { padding-left:26px; }
+.fn-val-msg { font-size:11px; color:#c0392b; }
+.fn-alert { padding:10px 14px; border-radius:8px; font-size:12px; }
+.fn-alert--danger { background:#fef0f0; color:#a32d2d; border:1px solid #f5c0c0; }
+.hesab-qayda { display:flex; flex-direction:column; gap:6px; }
+.hq-item { display:flex; align-items:flex-start; gap:10px; padding:6px 0; }
+.hq-icon { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; margin-top:1px; }
+.hq-gelir .hq-icon   { background:#edf8f4; color:#1a7a50; }
+.hq-kesinti .hq-icon  { background:#fef0f0; color:#a32d2d; }
+.hq-vergi .hq-icon   { background:#fef9ec; color:#9a6800; }
+.hq-ad   { font-size:12px; font-weight:500; color:#1a2332; }
+.hq-izah { font-size:10px; color:#8a93a8; margin-top:1px; }
+.hq-sep { font-size:11px; font-weight:700; color:#1a2332; padding:6px 0 4px 30px; border-top:1px dashed #e4e8f0; margin-top:4px; }
+.hq-sep--net { color:#1a4fa0; border-top:2px solid #d0dcf5; margin-top:4px; }

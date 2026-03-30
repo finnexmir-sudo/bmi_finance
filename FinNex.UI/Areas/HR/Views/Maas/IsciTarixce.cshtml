@@ -1,0 +1,111 @@
+@model IList<FinNex.Application.DTOs.HR.Maas.MaasListDto>
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = $"Maaş Tarixi — {ViewBag.IsciAdSoyad}";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    string StatusClass(MaasStatus s) => s switch {
+        MaasStatus.Odenildi     => "fn-badge--done",
+        MaasStatus.Tesdiqlendi  => "fn-badge--review",
+        MaasStatus.Layihe       => "fn-badge--wait",
+        MaasStatus.LegvEdildi   => "fn-badge--rejected",
+        _ => "fn-badge--wait"
+    };
+    string StatusText(MaasStatus s) => s switch {
+        MaasStatus.Odenildi     => "Ödənildi",
+        MaasStatus.Tesdiqlendi  => "Təsdiqləndi",
+        MaasStatus.Layihe       => "Layihə",
+        MaasStatus.LegvEdildi   => "Ləğv edildi",
+        _ => "—"
+    };
+    string AyAdi(int ay) => new DateTime(2000, ay, 1).ToString("MMMM");
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">@ViewBag.IsciAdSoyad</div>
+            <div class="fn-page-sub">@ViewBag.VezifeAd · Maaş tarixi · @Model.Count qeyd</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">← Siyahıya qayıt</a>
+    </div>
+
+    <div class="fn-card" style="padding:0;overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table class="maas-table">
+                <thead>
+                    <tr>
+                        <th>Dövr</th>
+                        <th>Əsas maaş</th>
+                        <th>Məzuniyyət</th>
+                        <th>Bonus</th>
+                        <th>Vergi</th>
+                        <th>DSMF</th>
+                        <th>İşsiz.</th>
+                        <th>İTSS</th>
+                        <th class="maas-net-col">NET ₼</th>
+                        <th>Status</th>
+                        <th>Tarix</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="12" class="maas-empty">Maaş tarixi yoxdur</td></tr>
+                    }
+                    @foreach (var m in Model)
+                    {
+                        <tr class="maas-row">
+                            <td>
+                                <div style="font-weight:600;color:#1a2332;">@AyAdi(m.Ay) @m.Il</div>
+                            </td>
+                            <td class="maas-num">@m.EsasMaas.ToString("N2")</td>
+                            <td class="maas-num @(m.MezuniyyetOdenisi > 0 ? "maas-pos" : "")">
+                                @(m.MezuniyyetOdenisi > 0 ? m.MezuniyyetOdenisi.ToString("N2") : "—")
+                            </td>
+                            <td class="maas-num @(m.BonusMeblegi > 0 ? "maas-pos" : "")">
+                                @(m.BonusMeblegi > 0 ? m.BonusMeblegi.ToString("N2") : "—")
+                            </td>
+                            <td class="maas-num maas-neg">@m.GelirVergisi.ToString("N2")</td>
+                            <td class="maas-num maas-neg">@m.DsmfIsci.ToString("N2")</td>
+                            <td class="maas-num maas-neg">@m.IssizlikIsci.ToString("N2")</td>
+                            <td class="maas-num maas-neg">@m.Itss.ToString("N2")</td>
+                            <td class="maas-net-col">
+                                <span class="maas-net-val">@m.NetMebleg.ToString("N2")</span>
+                            </td>
+                            <td><span class="fn-badge @StatusClass(m.Status)">@StatusText(m.Status)</span></td>
+                            <td style="font-size:11px;color:#8a93a8;">@m.HesablanmaTarixi.ToString("dd.MM.yy")</td>
+                            <td>
+                                <a asp-action="Detal" asp-route-id="@m.Id"
+                                   class="fn-btn fn-btn--outline fn-btn--sm">Detal</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                @if (Model.Any())
+                {
+                    <tfoot>
+                        <tr style="background:#f8f9fc;font-weight:600;">
+                            <td style="padding:10px 12px;font-size:12px;">Cəmi (@Model.Count ay)</td>
+                            <td class="maas-num" style="padding:10px 12px;font-size:12px;">@Model.Sum(m => m.EsasMaas).ToString("N2")</td>
+                            <td class="maas-num" style="padding:10px 12px;font-size:12px;color:#1a7a50;">@Model.Sum(m => m.MezuniyyetOdenisi).ToString("N2")</td>
+                            <td class="maas-num" style="padding:10px 12px;font-size:12px;color:#1a7a50;">@Model.Sum(m => m.BonusMeblegi).ToString("N2")</td>
+                            <td class="maas-num" style="padding:10px 12px;font-size:12px;color:#a32d2d;">@Model.Sum(m => m.GelirVergisi).ToString("N2")</td>
+                            <td class="maas-num" style="padding:10px 12px;font-size:12px;color:#a32d2d;">@Model.Sum(m => m.DsmfIsci).ToString("N2")</td>
+                            <td class="maas-num" style="padding:10px 12px;font-size:12px;color:#a32d2d;">@Model.Sum(m => m.IssizlikIsci).ToString("N2")</td>
+                            <td class="maas-num" style="padding:10px 12px;font-size:12px;color:#a32d2d;">@Model.Sum(m => m.Itss).ToString("N2")</td>
+                            <td class="maas-net-col" style="padding:10px 12px;">
+                                <span class="maas-net-val">@Model.Sum(m => m.NetMebleg).ToString("N2")</span>
+                            </td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/maas-tarixce.css" />
+}

@@ -1,0 +1,164 @@
+﻿@model FinNex.UI.Areas.HR.ViewModels.Mezuniyyet.HrMezuniyyetIndexVM
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="admin-table-card">
+    <div class="card-header">
+        <h5><i class="bi bi-calendar-check me-2"></i>@Model.PageTitle</h5>
+        <span class="badge bg-primary">@Model.Mezuniyyetler.Count müraciət</span>
+    </div>
+
+    @if (!Model.Mezuniyyetler.Any())
+    {
+        <div class="p-5 text-center text-muted">
+            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+            Gözləyən müraciət yoxdur.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>İşçi</th>
+                        <th>Şöbə / Vəzifə</th>
+                        <th>Növ</th>
+                        <th>Başlama</th>
+                        <th>Bitmə</th>
+                        <th class="text-center">İş Günü</th>
+                        <th>Status</th>
+                        <th class="text-end">Əməliyyat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in Model.Mezuniyyetler)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@m.IsciAdSoyad</td>
+                            <td>
+                                <div>@m.SobeAdi</div>
+                                <div class="text-muted small">@m.VezifeAdi</div>
+                            </td>
+                            <td>
+                                @switch (m.Nov)
+                                {
+                                    case FinNex.Domain.Entities.HR.MezuniyyetNovu.Illik:
+                                        <span class="badge bg-primary bg-opacity-10 text-primary admin-badge">İllik</span>
+                                        break;
+                                    case FinNex.Domain.Entities.HR.MezuniyyetNovu.Xestelik:
+                                        <span class="badge bg-warning bg-opacity-10 text-warning admin-badge">Xəstəlik</span>
+                                        break;
+                                    case FinNex.Domain.Entities.HR.MezuniyyetNovu.Ezamiyyet:
+                                        <span class="badge bg-info bg-opacity-10 text-info admin-badge">Ezamiyyət</span>
+                                        break;
+                                }
+                            </td>
+                            <td>@m.BaslamaTarixi.ToString("dd MMM yyyy")</td>
+                            <td>@m.BitmeTarixi.ToString("dd MMM yyyy")</td>
+                            <td class="text-center fw-semibold">@m.IsGunlerininSayi</td>
+                            <td>
+                                <span class="badge bg-warning bg-opacity-10 text-warning admin-badge">
+                                    Gözləyir
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex gap-1 justify-content-end">
+                                    <!-- Detal -->
+                                    <a asp-action="Detal"
+                                       asp-route-id="@m.Id"
+                                       asp-route-returnAction="@Model.TesdiqAction"
+                                       class="btn btn-sm btn-outline-secondary"
+                                       title="Detala bax">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+
+                                    @if (!string.IsNullOrEmpty(Model.TesdiqAction))
+                                    {
+                                        <!-- Təsdiq et -->
+                                        <form asp-action="@Model.TesdiqAction" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@m.Id" />
+                                            <input type="hidden" name="status" value="true" />
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-outline-success"
+                                                    title="Təsdiq et"
+                                                    onclick="return confirm('Müraciəti təsdiq etmək istəyirsiniz?')">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                        </form>
+
+                                        <!-- İmtina et -->
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger"
+                                                title="İmtina et"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#imtinaModal"
+                                                data-id="@m.Id"
+                                                data-action="@Model.TesdiqAction">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- İmtina Modal -->
+<div class="modal fade" id="imtinaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="imtinaForm" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="imtinaId" />
+                <input type="hidden" name="status" value="false" />
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-x-circle me-2 text-danger"></i>İmtina səbəbi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label fw-semibold">Səbəb <span class="text-danger">*</span></label>
+                    <textarea name="qeyd" class="form-control" rows="3"
+                              placeholder="İmtina səbəbini qeyd edin..." required></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Ləğv et</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-lg me-1"></i>İmtina et
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // İmtina modalına id və action set et
+        document.getElementById('imtinaModal').addEventListener('show.bs.modal', function (e) {
+            const btn = e.relatedTarget;
+            const id = btn.getAttribute('data-id');
+            const action = btn.getAttribute('data-action');
+            document.getElementById('imtinaId').value = id;
+            document.getElementById('imtinaForm').action = '@Url.Action("__placeholder__", "Mezuniyyet", new { area = "HR" })'.replace('__placeholder__', action);
+        });
+    </script>
+}

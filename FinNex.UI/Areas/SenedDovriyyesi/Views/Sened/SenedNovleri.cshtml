@@ -1,0 +1,169 @@
+@model SenedNovleriVM
+@{
+    ViewData["Title"] = "Sənəd Növləri";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/sened-dovriyyesi-fn.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hr/struktur.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Sənəd Növləri</div>
+            <div class="fn-page-sub">Cəmi <strong>@Model.Novler.Count</strong> növ</div>
+        </div>
+        <button type="button" class="fn-btn fn-btn--primary" id="openNovBtn">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+            Yeni Sənəd Növü
+        </button>
+    </div>
+
+    <!-- Filter -->
+    <div class="sd-filter-bar">
+        <select id="sobeFilter" class="sd-select" data-action="nov-filter">
+            <option value="">Bütün şöbələr</option>
+            @foreach (var s in Model.Sobeler)
+            {
+                <option value="@s.Id">@s.Ad</option>
+            }
+        </select>
+        <input type="text" id="searchInput" class="sd-search-input"
+               placeholder="Kod və ya ad ilə axtar..."
+               data-action="nov-search" />
+    </div>
+
+    <!-- Cədvəl -->
+    <div class="sd-table-wrap">
+        <table class="sd-table" id="novTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Kod</th>
+                    <th>Ad</th>
+                    <th>Şöbə</th>
+                    <th>Status</th>
+                    <th>Tarix</th>
+                    <th class="isci-th-right">Əməliyyat</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Novler.Any())
+                {
+                    @foreach (var n in Model.Novler)
+                    {
+                        <tr data-sobe="@n.SobeId" data-kod="@n.Kod.ToLower()" data-ad="@n.Ad.ToLower()">
+                            <td><span class="sd-table-id">#@n.Id</span></td>
+                            <td>
+                                <span class="str-dept-tag">@n.Kod</span>
+                            </td>
+                            <td><div class="sd-table-title">@n.Ad</div></td>
+                            <td><span style="font-size:12px;color:#5a647a;">@n.DepartmentAd</span></td>
+                            <td>
+                                @if (n.Aktiv)
+                                {
+                                    <span class="fn-badge fn-badge--done">Aktiv</span>
+                                }
+                                else
+                                {
+                                    <span class="fn-badge fn-badge--rejected">Deaktiv</span>
+                                }
+                            </td>
+                            <td style="font-size:12px;color:#8a93a8;">@n.YaradilmaTarixi.ToString("dd.MM.yyyy")</td>
+                            <td class="isci-td-actions">
+                                <form asp-area="SenedDovriyyesi" asp-controller="Sened"
+                                      asp-action="SenedNovuAktivDeyis" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@n.Id" />
+                                    <button type="submit" class="isci-action-btn"
+                                            title="@(n.Aktiv ? "Deaktiv et" : "Aktivləşdir")">
+                                        @if (n.Aktiv)
+                                        {
+                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                <circle cx="7" cy="7" r="5.5" stroke="#e8b84b" stroke-width="1.3" />
+                                                <path d="M5 7h4" stroke="#e8b84b" stroke-width="1.3" stroke-linecap="round" />
+                                            </svg>
+                                        }
+                                        else
+                                        {
+                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                <circle cx="7" cy="7" r="5.5" stroke="#16a34a" stroke-width="1.3" />
+                                                <path d="M5 7l2 2 3-3" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                            </svg>
+                                        }
+                                    </button>
+                                </form>
+                                <form asp-area="SenedDovriyyesi" asp-controller="Sened"
+                                      asp-action="SenedNovuSil" method="post"
+                                      data-action="nov-delete-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@n.Id" />
+                                    <button type="submit" class="isci-action-btn str-action-btn--red"
+                                            title="Sil">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                            <path d="M2 3.5h10M5 3.5V2.5h4v1M4.5 3.5l.5 8M9.5 3.5l-.5 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr id="emptyRow">
+                        <td colspan="7" class="sd-table-empty">Hələ sənəd növü əlavə edilməyib</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Yeni Növ Modal -->
+<div class="str-modal-overlay str-modal-hidden" id="novModal">
+    <div class="str-modal">
+        <div class="str-modal-header">
+            <div class="str-modal-title">Yeni Sənəd Növü</div>
+            <button type="button" class="str-modal-close" data-close-modal="novModal">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+        <div class="str-modal-body">
+            <p id="novError" class="sd-alert-error" hidden></p>
+            <div class="isci-field str-field-mb">
+                <label class="isci-label">Şöbə <span class="isci-required">*</span></label>
+                <select id="novSobe" class="isci-input">
+                    <option value="">Şöbə seçin...</option>
+                    @foreach (var s in Model.Sobeler)
+                    {
+                        <option value="@s.Id">@s.Ad</option>
+                    }
+                </select>
+            </div>
+            <div class="isci-field str-field-mb">
+                <label class="isci-label">Kod <span class="isci-required">*</span></label>
+                <input type="text" id="novKod" class="isci-input" placeholder="MUQAVILE, ERIZE..." />
+            </div>
+            <div class="isci-field">
+                <label class="isci-label">Ad <span class="isci-required">*</span></label>
+                <input type="text" id="novAd" class="isci-input" placeholder="Müqavilə, Ərizə..." />
+            </div>
+        </div>
+        <div class="str-modal-footer">
+            <button type="button" class="fn-btn fn-btn--outline" data-close-modal="novModal">Ləğv et</button>
+            <button type="button" class="fn-btn fn-btn--primary" id="saveBtn">Saxla</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/sened-yarat.js" asp-append-version="true"></script>
+    <script src="~/js/sened-novleri.js" asp-append-version="true"></script>
+}

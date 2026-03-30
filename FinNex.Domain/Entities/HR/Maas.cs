@@ -11,7 +11,10 @@
         public DateTime HesablanmaTarixi { get; set; } = DateTime.UtcNow;
         public DateTime? TesdiqTarixi { get; set; }
         public DateTime? OdenisTarixi { get; set; }
-        public decimal NetMebleg { get; set; } // O ay işçinin kartına yatan son məbləğ
+
+        public decimal BrutMebleg { get; set; } // Tutulmalardan evvel mebleg
+        public decimal NetMebleg { get; set; } // Iscinin kartina yatan son mebleg
+
         public MaasStatus Status { get; set; } = MaasStatus.Layihe;
 
         public ICollection<MaasDetay> Detallar { get; set; } = new List<MaasDetay>();

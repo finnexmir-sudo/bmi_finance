@@ -1,0 +1,109 @@
+﻿@model FinNex.UI.Areas.User.ViewModels.Gorush.GorushEditVM
+@using FinNex.Domain.Entities.Communication
+@{
+    ViewData["Title"] = "Görüşü Redaktə Et";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/gorush.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+    <div class="grsh-form-wrap">
+        <div class="grsh-form-header">
+            <a asp-action="Detay" asp-route-id="@Model.Id" class="grsh-back">← Geri</a>
+            <div class="grsh-form-title">Görüşü Redaktə Et</div>
+        </div>
+
+        <form asp-action="Edit" method="post" class="grsh-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+
+            <div class="grsh-field">
+                <label class="grsh-label">Başlıq <span class="grsh-required">*</span></label>
+                <input asp-for="Bashliq" class="grsh-input" />
+                <span asp-validation-for="Bashliq" class="grsh-error"></span>
+            </div>
+
+            <div class="grsh-field">
+                <label class="grsh-label">Gündəm</label>
+                <textarea asp-for="Agenda" class="grsh-textarea" rows="3"></textarea>
+            </div>
+
+            <div class="grsh-form-row">
+                <div class="grsh-field">
+                    <label class="grsh-label">Tarix</label>
+                    <input asp-for="Tarix" type="date" class="grsh-input" />
+                </div>
+                <div class="grsh-field">
+                    <label class="grsh-label">Növ</label>
+                    <select asp-for="Nov" class="grsh-input" id="novSelect">
+                        <option value="1">Offline</option>
+                        <option value="2">Online</option>
+                        <option value="3">Hibrid</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grsh-form-row">
+                <div class="grsh-field">
+                    <label class="grsh-label">Başlama</label>
+                    <input asp-for="BaslamaSaati" type="time" class="grsh-input" />
+                </div>
+                <div class="grsh-field">
+                    <label class="grsh-label">Bitmə</label>
+                    <input asp-for="BitisSaati" type="time" class="grsh-input" />
+                </div>
+            </div>
+
+            <div class="grsh-field" id="yerField">
+                <label class="grsh-label">Yer</label>
+                <input asp-for="Yer" class="grsh-input" />
+            </div>
+
+            <div class="grsh-field" id="linkField">
+                <label class="grsh-label">Online link</label>
+                <input asp-for="OnlineLink" class="grsh-input" />
+            </div>
+
+            <div class="grsh-field">
+                <label class="grsh-label">İştirakçılar</label>
+                <div class="grsh-ishtirakci-list">
+                    @foreach (var item in Model.IsciList)
+                    {
+                        <label class="grsh-ishtirakci-item">
+                            <input type="checkbox"
+                                   name="SecilmisIshtirakcilar"
+                                   value="@item.Value"
+                                   class="grsh-checkbox"
+                                   @(Model.SecilmisIshtirakcilar.Contains(int.Parse(item.Value))
+                                                                  ? "checked" : "") />
+                            <span>@item.Text</span>
+                        </label>
+                    }
+                </div>
+            </div>
+
+            <div class="grsh-form-footer">
+                <a asp-action="Detay" asp-route-id="@Model.Id"
+                   class="grsh-btn grsh-btn--ghost">Ləğv et</a>
+                <button type="submit" class="grsh-btn grsh-btn--primary">
+                    Yadda saxla
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function updateFields() {
+            const v = parseInt(document.getElementById('novSelect').value);
+            document.getElementById('yerField').style.display = v === 2 ? 'none' : '';
+            document.getElementById('linkField').style.display = v === 1 ? 'none' : '';
+        }
+        document.getElementById('novSelect').addEventListener('change', updateFields);
+        updateFields();
+    </script>
+}

@@ -1,0 +1,293 @@
+﻿/* =============================================
+   FinNex — HR Struktur (Departament + Vezife)
+   wwwroot/css/hr/struktur.css
+   ============================================= */
+
+/* ── Departament kart grid ────────────────────── */
+.str-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+.str-card {
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 14px;
+    padding: 18px 18px 14px;
+    transition: box-shadow .15s, border-color .15s;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+    .str-card:hover {
+        border-color: #d0d6e4;
+        box-shadow: 0 3px 14px rgba(0,0,0,0.06);
+    }
+
+.str-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.str-card-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(99,102,241,0.11);
+    color: #6366f1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.str-card-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.str-action-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: #f4f6fb;
+    border: 1px solid #e4e8f0;
+    color: #5a647a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .13s;
+}
+
+    .str-action-btn:hover {
+        background: #e8eaf0;
+        color: #1a2332;
+    }
+
+.str-action-btn--red {
+    color: #dc2626;
+}
+
+    .str-action-btn--red:hover {
+        background: rgba(239,68,68,0.08);
+        border-color: rgba(239,68,68,0.3);
+    }
+
+.str-card-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a2332;
+    letter-spacing: -.2px;
+}
+
+.str-card-desc {
+    font-size: 12px;
+    color: #8a93a8;
+    line-height: 1.5;
+}
+
+.str-card-footer {
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px solid #f0f2f7;
+}
+
+.str-card-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #5a647a;
+    background: #f4f6fb;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+/* ── Vəzifə cədvəli teqləri ───────────────────── */
+.str-dept-tag {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 6px;
+    background: rgba(99,102,241,0.10);
+    color: #5b60d8;
+    border: 1px solid rgba(99,102,241,0.18);
+}
+
+.str-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 6px;
+    background: #f4f6fb;
+    color: #5a647a;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid #e4e8f0;
+}
+
+/* ── Modal ────────────────────────────────────── */
+.str-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+}
+
+.str-modal {
+    background: #fff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 460px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+    overflow: hidden;
+    animation: strModalIn .18s ease;
+}
+
+.str-modal--sm {
+    max-width: 380px;
+}
+
+@keyframes strModalIn {
+    from {
+        opacity: 0;
+        transform: scale(.96) translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.str-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f0f2f7;
+}
+
+.str-modal-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a2332;
+}
+
+.str-modal-close {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: #f4f6fb;
+    border: 1px solid #e4e8f0;
+    color: #8a93a8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .13s;
+}
+
+    .str-modal-close:hover {
+        background: #e8eaf0;
+        color: #1a2332;
+    }
+
+.str-modal-body {
+    padding: 20px;
+}
+
+.str-modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid #f0f2f7;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    background: #fafbfd;
+}
+
+/* ── Form köməkçi class-lar ───────────────────── */
+.str-field-mb {
+    margin-bottom: 14px;
+}
+
+.str-field-mt {
+    margin-top: 14px;
+}
+
+.str-modal-textarea {
+    resize: vertical;
+    min-height: 70px;
+}
+
+.str-btn-danger {
+    background: #dc2626;
+    color: #fff;
+}
+
+    .str-btn-danger:hover {
+        background: #b91c1c;
+    }
+
+/* ── Delete warn / confirm ────────────────────── */
+.str-delete-blocked,
+.str-delete-confirm {
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.6;
+    min-height: 50px;
+}
+
+.str-delete-blocked {
+    background: rgba(239,68,68,0.07);
+    border: 1px solid rgba(239,68,68,0.18);
+    color: #7a1c1c;
+}
+
+.str-delete-confirm {
+    background: rgba(232,184,75,0.09);
+    border: 1px solid rgba(232,184,75,0.3);
+    color: #5a3e00;
+}
+#deptWarnBlockedText,
+#deptWarnConfirmText,
+#vezWarnBlockedText,
+#vezWarnConfirmText {
+    font-size: 13px;
+    line-height: 1.6;
+    color: inherit;
+    display: block;
+}
+.str-form-alert {
+    margin: 16px 24px 0;
+}
+
+.str-form-textarea {
+    resize: vertical;
+    min-height: 90px;
+    line-height: 1.6;
+}
+
+.str-label-hint {
+    font-size: 10px;
+    color: #aab0bf;
+    font-weight: 400;
+}

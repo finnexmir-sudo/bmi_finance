@@ -1,0 +1,225 @@
+﻿@model FinNex.Application.DTOs.Communication.TapshiriqDetailDto
+@using FinNex.Domain.Entities.Communication
+@{
+    ViewData["Title"] = Model.Bashliq;
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var isciId = (int)(ViewBag.IsciId ?? 0);
+    var menimDir = Model.TeyinOlunanIsciId == isciId;
+    var menYaratmisham = Model.YaradanIsciId == isciId;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/tapshiriq.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div style="margin-bottom:16px">
+        @{
+    var returnUrl = Context.Request.Query["returnUrl"].ToString();
+    var geriUrl   = string.IsNullOrEmpty(returnUrl) 
+                    ? Url.Action("Index", "Tapshiriq", new { area = "User" }) 
+                    : returnUrl;
+}
+<a href="@geriUrl" class="tsk-btn tsk-btn--ghost">← Geri</a>
+    </div>
+
+    <div class="tsk-detay-grid">
+
+        @* ── Sol: Məlumatlar ── *@
+        <div>
+            @* Başlıq kartı *@
+            <div class="tsk-detay-card">
+                <div class="tsk-detay-head">
+                    <div>
+                        <span class="tsk-priority-badge @GetPrioritetClass(Model.Prioritet)">
+                            @Model.PrioritetText
+                        </span>
+                        <div class="tsk-detay-title">@Model.Bashliq</div>
+                    </div>
+                    <span class="tsk-status @GetStatusClass(Model.Status)">@Model.StatusText</span>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.Tesvir))
+                {
+                    <div class="tsk-detay-tesvir">@Model.Tesvir</div>
+                }
+
+                @* Progress bar *@
+                <div style="margin-top:16px">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                        <span style="font-size:.78rem;color:#6b7280">Tamamlanma</span>
+                        <span style="font-size:.78rem;font-weight:600;color:#1a2332">@Model.TamamlanmaFaizi%</span>
+                    </div>
+                    <div class="tsk-progress-bar tsk-progress-bar--lg">
+                        <div class="tsk-progress-fill" style="width:@Model.TamamlanmaFaizi%"></div>
+                    </div>
+                </div>
+
+                <div class="tsk-detay-meta">
+                    <div class="tsk-meta-row">
+                        <span class="tsk-meta-lbl">Yaradan</span>
+                        <span class="tsk-meta-val">@Model.YaradanAd</span>
+                    </div>
+                    <div class="tsk-meta-row">
+                        <span class="tsk-meta-lbl">Tapşırılan</span>
+                        <span class="tsk-meta-val">@Model.TeyinOlunanAd</span>
+                    </div>
+                    @if (Model.SonTarix.HasValue)
+                    {
+                        <div class="tsk-meta-row">
+                            <span class="tsk-meta-lbl">Son tarix</span>
+                            <span class="tsk-meta-val @(Model.Gecikibmi ? "tsk-late-text" : "")">
+                                @Model.SonTarix.Value.ToString("dd MMMM yyyy")
+                                @if (Model.Gecikibmi) { <text> ⚠️ Gecikib</text> }
+                            </span>
+                        </div>
+                    }
+                    <div class="tsk-meta-row">
+                        <span class="tsk-meta-lbl">Yaradılıb</span>
+                        <span class="tsk-meta-val">@Model.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Qeyd))
+                    {
+                        <div class="tsk-meta-row">
+                            <span class="tsk-meta-lbl">Qeyd</span>
+                            <span class="tsk-meta-val">@Model.Qeyd</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @* Şərhlər *@
+            <div class="tsk-detay-card">
+                <div class="tsk-sherh-title">
+                    Şərhlər
+                    <span class="tsk-sherh-count">@Model.Sherhler.Count</span>
+                </div>
+
+                @if (Model.Sherhler.Any())
+                {
+                    <div class="tsk-sherh-list">
+                        @foreach (var s in Model.Sherhler)
+                        {
+                            <div class="tsk-sherh @(s.MuellifIsciId == isciId ? "tsk-sherh--mine" : "")">
+                                <div class="tsk-sherh-avatar">@s.MuellifAd.Substring(0,1)</div>
+                                <div class="tsk-sherh-body">
+                                    <div class="tsk-sherh-author">@s.MuellifAd</div>
+                                    <div class="tsk-sherh-metn">@s.Metn</div>
+                                    <div class="tsk-sherh-time">@s.YaradilmaTarixi.ToString("dd.MM HH:mm")</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (Model.Status != TapshiriqStatus.Tamamlandi &&
+                     Model.Status != TapshiriqStatus.LegvEdildi)
+                {
+                    <form asp-action="SherhEleveEt" method="post" class="tsk-sherh-form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="tapshiriqId" value="@Model.Id" />
+                        <textarea name="metn" class="tsk-sherh-input"
+                                  placeholder="Şərh yazın..." rows="3" required></textarea>
+                        <button type="submit" class="tsk-btn tsk-btn--primary">Göndər</button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        @* ── Sağ: Əməliyyatlar ── *@
+        <div>
+            @if (menimDir && Model.Status != TapshiriqStatus.Tamamlandi
+                          && Model.Status != TapshiriqStatus.LegvEdildi)
+            {
+                <div class="tsk-detay-card">
+                    <div class="tsk-action-title">Status yenilə</div>
+                    <form asp-action="StatusYenile" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="Id" value="@Model.Id" />
+
+                        <div class="tsk-field">
+                            <label class="tsk-label">Status</label>
+                            <select name="Status" class="tsk-input">
+                                @foreach (var s in Enum.GetValues<TapshiriqStatus>())
+                                {
+                                    <option value="@((int)s)"
+                                            selected="@(s == Model.Status ? "selected" : null)">
+                                        @(s switch {
+                                            TapshiriqStatus.Yeni => "Yeni",
+                                            TapshiriqStatus.DavamEdir => "Davam edir",
+                                            TapshiriqStatus.Tamamlandi => "Tamamlandı",
+                                            TapshiriqStatus.LegvEdildi => "Ləğv edildi",
+                                            _ => s.ToString()
+                                        })
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="tsk-field">
+                            <label class="tsk-label">Tamamlanma %</label>
+                            <input type="range" name="TamamlanmaFaizi"
+                                   min="0" max="100" step="5"
+                                   value="@Model.TamamlanmaFaizi"
+                                   class="tsk-range"
+                                   oninput="document.getElementById('pctDisplay').textContent=this.value+'%'" />
+                            <span id="pctDisplay" class="tsk-range-val">@Model.TamamlanmaFaizi%</span>
+                        </div>
+
+                        <button type="submit" class="tsk-btn tsk-btn--primary" style="width:100%">
+                            Yenilə
+                        </button>
+                    </form>
+                </div>
+            }
+
+            @* Edit düyməsi — 171-ci sətrdən əvvəl *@
+@if (menYaratmisham &&
+     Model.Status != TapshiriqStatus.Tamamlandi &&
+     Model.Status != TapshiriqStatus.LegvEdildi)
+{
+    <div class="tsk-detay-card" style="margin-top:12px">
+        <a asp-action="Edit" asp-route-id="@Model.Id"
+           class="tsk-btn tsk-btn--ghost" style="width:100%;justify-content:center">
+            ✏️ Redaktə et
+        </a>
+    </div>
+}
+
+            @if (menYaratmisham && Model.Status == TapshiriqStatus.Yeni)
+            {
+                <div class="tsk-detay-card" style="margin-top:12px">
+                    <form asp-action="Sil" method="post"
+                          onsubmit="return confirm('Tapşırığı silmək istəyirsiniz?')">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <button type="submit" class="tsk-btn tsk-btn--danger" style="width:100%">
+                            Sil
+                        </button>
+                    </form>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    string GetPrioritetClass(TapshiriqPrioritet p) => p switch
+    {
+        TapshiriqPrioritet.Ashagi => "tsk-priority--low",
+        TapshiriqPrioritet.Orta => "tsk-priority--mid",
+        TapshiriqPrioritet.Yuksek => "tsk-priority--high",
+        TapshiriqPrioritet.Kritik => "tsk-priority--kritik",
+        _ => ""
+    };
+    string GetStatusClass(TapshiriqStatus s) => s switch
+    {
+        TapshiriqStatus.Yeni => "tsk-status--new",
+        TapshiriqStatus.DavamEdir => "tsk-status--progress",
+        TapshiriqStatus.Tamamlandi => "tsk-status--done",
+        TapshiriqStatus.LegvEdildi => "tsk-status--cancel",
+        TapshiriqStatus.Gecikdi => "tsk-status--late",
+        _ => ""
+    };
+}

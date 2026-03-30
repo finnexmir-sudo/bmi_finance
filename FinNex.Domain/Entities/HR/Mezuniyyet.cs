@@ -35,5 +35,10 @@
         public bool? HrTesdiq { get; set; }
         public int? HrId { get; set; }
         public DateTime? HrTesdiqTarixi { get; set; }
+
+        // Mezuniyyet.cs-ə əlavə:
+        public Isci? SobeReisiIsci { get; set; }
+        public Isci? RehberIsci { get; set; }
+        public Isci? HrIsci { get; set; }
     }
 }

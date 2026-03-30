@@ -1,6 +1,6 @@
-﻿using System.Reflection.Emit;
-using FinNex.Domain;
+﻿using FinNex.Domain;
 using FinNex.Domain.Entities;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
 using FinNex.Domain.Entities.SenedDovriyyesi;
@@ -8,6 +8,7 @@ using FinNex.Domain.Entities.Structure;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using System.Reflection.Emit;
 
 namespace FinNex.DataAccess.Contexts;
 
@@ -30,6 +31,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<Sened> Senedler { get; set; }
     public DbSet<SenedFayl> SenedFayllar { get; set; }
     public DbSet<SenedNovu> SenedNovleri { get; set; }
+    public DbSet<SenedDovriyyesiIstifadeciIcazesi> senedDovriyyesiIstifadeciIcazeleri { get; set; }
     public DbSet<Departament> Departamentler { get; set; }
     public DbSet<Tag> Tagler { get; set; }
     public DbSet<SenedTagMap> SenedTagMaps { get; set; }
@@ -62,6 +64,15 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<MaasNovu> MaasNovleri { get; set; }
     public DbSet<IsciMaasTarixcesi> IsciMaasTarixceleri { get; set; }
     public DbSet<MaasParametri> MaasParametrleri { get; set; }
+
+    public DbSet<Mesaj> Mesajlar { get; set; }
+    public DbSet<Bildiris> Bildirisler { get; set; }
+    public DbSet<EvezediciTesdiq> EvezediciTesdiqler { get; set; }
+    public DbSet<Tapshiriq> Tapshiriqlar { get; set; }
+    public DbSet<TapshiriqSherh> TapshiriqSherhler { get; set; }
+    public DbSet<Gorush> Gorushler { get; set; }
+    public DbSet<GorushIshtirakci> GorushIshtirakcilar { get; set; }
+    public DbSet<Xatirlatma> Xatirlatmalar { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -126,7 +137,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasForeignKey(x => x.TagId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        
+
         // -------------------------
         // SenedFayl Unique Version
         // -------------------------
@@ -149,6 +160,88 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasForeignKey(x => x.SenedNovuId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Mesaj
+        builder.Entity<Mesaj>()
+            .HasOne(m => m.GonderenIsci)
+            .WithMany()
+            .HasForeignKey(m => m.GonderenIsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Mesaj>()
+            .HasOne(m => m.AlanIsci)
+            .WithMany()
+            .HasForeignKey(m => m.AlanIsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Mesaj>()
+            .HasOne(m => m.CavabVerdigiMesaj)
+            .WithMany(m => m.Cavablar)
+            .HasForeignKey(m => m.CavabVerdigiMesajId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Bildiris
+        builder.Entity<Bildiris>()
+            .HasOne(b => b.Isci)
+            .WithMany()
+            .HasForeignKey(b => b.IsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // EvezediciTesdiq
+        builder.Entity<EvezediciTesdiq>()
+            .HasOne(e => e.EvezediciIsci)
+            .WithMany()
+            .HasForeignKey(e => e.EvezediciIsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<EvezediciTesdiq>()
+            .HasOne(e => e.Mezuniyyet)
+            .WithMany()
+            .HasForeignKey(e => e.MezuniyyetId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // OnModelCreating-ə:
+        builder.Entity<Tapshiriq>()
+            .HasOne(t => t.YaradanIsci)
+            .WithMany()
+            .HasForeignKey(t => t.YaradanIsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Tapshiriq>()
+            .HasOne(t => t.TeyinOlunanIsci)
+            .WithMany()
+            .HasForeignKey(t => t.TeyinOlunanIsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<TapshiriqSherh>()
+            .HasOne(s => s.MuellifIsci)
+            .WithMany()
+            .HasForeignKey(s => s.MuellifIsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<TapshiriqSherh>()
+            .HasOne(s => s.Tapshiriq)
+            .WithMany(t => t.Sherhler)
+            .HasForeignKey(s => s.TapshiriqId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Gorush>()
+            .HasOne(g => g.TeshkilatciIsci)
+            .WithMany()
+            .HasForeignKey(g => g.TeshkilatciIsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<GorushIshtirakci>()
+            .HasOne(gi => gi.Isci)
+            .WithMany()
+            .HasForeignKey(gi => gi.IsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<GorushIshtirakci>()
+            .HasOne(gi => gi.Gorush)
+            .WithMany(g => g.Ishtirakcılar)
+            .HasForeignKey(gi => gi.GorushId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // -------------------------
         // SenedAccess
         // -------------------------
@@ -161,7 +254,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         builder.Entity<Vezife>()
     .HasIndex(x => x.Ad)
     .IsUnique();
-        
+
         builder.Entity<Isci>()
             .HasOne(x => x.AppUser)
             .WithOne()
@@ -297,6 +390,25 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasForeignKey(x => x.IsciId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // AppDbContext.cs-də OnModelCreating-ə əlavə:
+        builder.Entity<Mezuniyyet>()
+            .HasOne(m => m.SobeReisiIsci)
+            .WithMany()
+            .HasForeignKey(m => m.SobeReisiId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Mezuniyyet>()
+            .HasOne(m => m.RehberIsci)
+            .WithMany()
+            .HasForeignKey(m => m.RehberId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Mezuniyyet>()
+            .HasOne(m => m.HrIsci)
+            .WithMany()
+            .HasForeignKey(m => m.HrId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // İcazə cədvəlində Isci və digər işçi əlaqələri
         builder.Entity<Icaze>()
     .HasOne(x => x.Isci)
@@ -359,14 +471,14 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     .OnDelete(DeleteBehavior.NoAction);
 
         builder.Entity<IsciTeyinat>()
-            .HasOne(x => x.Departament)
-            .WithMany()
-            .HasForeignKey(x => x.DepartamentId)
-            .OnDelete(DeleteBehavior.NoAction);
+     .HasOne(x => x.Departament)
+     .WithMany(d => d.IsciTeyinatlar)  // ← əlavə et
+     .HasForeignKey(x => x.DepartamentId)
+     .OnDelete(DeleteBehavior.NoAction);
 
         builder.Entity<IsciTeyinat>()
             .HasOne(x => x.Vezife)
-            .WithMany()
+            .WithMany(v => v.IsciTeyinatlar)  // ← əlavə et
             .HasForeignKey(x => x.VezifeId)
             .OnDelete(DeleteBehavior.NoAction);
 
@@ -406,6 +518,30 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
      .HasIndex(x => new { x.MusteriId, x.Iban })
      .IsUnique();
 
+        // ── MaasNovu Seed Data ────────────────────────────────────
+        builder.Entity<MaasNovu>().HasData(
+            new MaasNovu { Id = 1, Ad = "Əsas Əməkhaqqı", Tip = MaasDetayTipi.Gelir, Aktivdir = true },
+            new MaasNovu { Id = 2, Ad = "Bonus/Mükafat", Tip = MaasDetayTipi.Gelir, Aktivdir = true },
+            new MaasNovu { Id = 3, Ad = "Məzuniyyət Ödənişi", Tip = MaasDetayTipi.Gelir, Aktivdir = true },
+            new MaasNovu { Id = 4, Ad = "Davamiyyət Kəsintisi", Tip = MaasDetayTipi.Tutulma, Aktivdir = true },
+            new MaasNovu { Id = 5, Ad = "Gecikdirmə Cəriməsi", Tip = MaasDetayTipi.Tutulma, Aktivdir = true },
+            new MaasNovu { Id = 6, Ad = "Gəlir Vergisi", Tip = MaasDetayTipi.Tutulma, Aktivdir = true },
+            new MaasNovu { Id = 7, Ad = "DSMF (İşçi)", Tip = MaasDetayTipi.Tutulma, Aktivdir = true },
+            new MaasNovu { Id = 8, Ad = "İşsizlik Sığortası (İşçi)", Tip = MaasDetayTipi.Tutulma, Aktivdir = true },
+            new MaasNovu { Id = 9, Ad = "İTSS", Tip = MaasDetayTipi.Tutulma, Aktivdir = true },
+            new MaasNovu { Id = 10, Ad = "DSMF (İşəgötürən)", Tip = MaasDetayTipi.IsegoturenXerci, Aktivdir = true },
+            new MaasNovu { Id = 11, Ad = "İşsizlik Sığortası (İşəgötürən)", Tip = MaasDetayTipi.IsegoturenXerci, Aktivdir = true }
+        );
+
+        // ── MaasParametri Seed Data ───────────────────────────────
+        builder.Entity<MaasParametri>().HasData(
+            new MaasParametri { Id = 1, Nov = MaasParametrNovu.GelirVergisiFaizi, Tip = MaasParametrTipi.Faiz, Deyer = 14m, Aciqlama = "2026", BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+            new MaasParametri { Id = 2, Nov = MaasParametrNovu.DsmfFaizi, Tip = MaasParametrTipi.Faiz, Deyer = 3m, Aciqlama = "2026", BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+            new MaasParametri { Id = 3, Nov = MaasParametrNovu.IssizlikSigortasiFaizi, Tip = MaasParametrTipi.Faiz, Deyer = 0.5m, Aciqlama = "2026", BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+            new MaasParametri { Id = 4, Nov = MaasParametrNovu.IcbariTibbiSigortaFaizi, Tip = MaasParametrTipi.Faiz, Deyer = 2m, Aciqlama = "2026", BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+            new MaasParametri { Id = 5, Nov = MaasParametrNovu.MinimumEmekHaqqi, Tip = MaasParametrTipi.Mebleg, Deyer = 345m, Aciqlama = "2026", BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+            new MaasParametri { Id = 6, Nov = MaasParametrNovu.VergiGuzestiMeblegi, Tip = MaasParametrTipi.Mebleg, Deyer = 200m, Aciqlama = "2026", BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true }
+        );
 
     }
 

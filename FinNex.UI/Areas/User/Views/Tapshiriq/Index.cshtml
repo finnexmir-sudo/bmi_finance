@@ -1,0 +1,184 @@
+﻿@model FinNex.UI.Areas.User.ViewModels.Tapshiriq.TapshiriqIndexVM
+@using FinNex.Domain.Entities.Communication
+@{
+    ViewData["Title"] = "Tapşırıqlar";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/tapshiriq.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    @* ── Header ── *@
+    <div class="tsk-header">
+        <div>
+            <div class="tsk-title">Tapşırıqlar</div>
+            <div class="tsk-sub">Şəxsi iş siyahınız</div>
+        </div>
+        <a asp-action="Yarat" class="tsk-btn tsk-btn--primary">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            Tapşırıq ver
+        </a>
+    </div>
+
+    @* ── Stat kartları ── *@
+    <div class="tsk-stats">
+        <div class="tsk-stat tsk-stat--blue">
+            <div class="tsk-stat-num">@Model.MenimTapshiriqlar.Count(x => x.Status == TapshiriqStatus.Yeni)</div>
+            <div class="tsk-stat-lbl">Yeni</div>
+        </div>
+        <div class="tsk-stat tsk-stat--amber">
+            <div class="tsk-stat-num">@Model.MenimTapshiriqlar.Count(x => x.Status == TapshiriqStatus.DavamEdir)</div>
+            <div class="tsk-stat-lbl">Davam edir</div>
+        </div>
+        <div class="tsk-stat tsk-stat--green">
+            <div class="tsk-stat-num">@Model.MenimTapshiriqlar.Count(x => x.Status == TapshiriqStatus.Tamamlandi)</div>
+            <div class="tsk-stat-lbl">Tamamlandı</div>
+        </div>
+        <div class="tsk-stat tsk-stat--red">
+            <div class="tsk-stat-num">@Model.GecikmishSayi</div>
+            <div class="tsk-stat-lbl">Gecikdi</div>
+        </div>
+    </div>
+
+    @* ── Tabs ── *@
+    <div class="tsk-tabs">
+        <button class="tsk-tab @(Model.AktivTab == "menim" ? "active" : "")"
+                data-tab="menim">
+            Mənim tapşırıqlarım
+            <span class="tsk-tab-count">@Model.MenimTapshiriqlar.Count</span>
+        </button>
+        <button class="tsk-tab @(Model.AktivTab == "verdiklerim" ? "active" : "")"
+                data-tab="verdiklerim">
+            Verdiklərim
+            <span class="tsk-tab-count">@Model.VerdiklerimTapshiriqlar.Count</span>
+        </button>
+    </div>
+
+    @* ── Mənim tapşırıqlarım ── *@
+    <div class="tsk-panel @(Model.AktivTab == "menim" ? "" : "tsk-hidden")"
+         data-panel="menim">
+        @if (!Model.MenimTapshiriqlar.Any())
+        {
+            <div class="tsk-empty">
+                <div class="tsk-empty-icon">✅</div>
+                <div class="tsk-empty-title">Tapşırıq yoxdur</div>
+            </div>
+        }
+        else
+        {
+            <div class="tsk-list">
+                @foreach (var t in Model.MenimTapshiriqlar.OrderBy(x => x.SonTarix))
+                {
+                    <a asp-action="Detay" asp-route-id="@t.Id" class="tsk-card @(t.Gecikibmi ? "tsk-card--late" : "")">
+                        <div class="tsk-card-left">
+                            <div class="tsk-priority @GetPrioritetClass(t.Prioritet)"></div>
+                            <div>
+                                <div class="tsk-card-title">@t.Bashliq</div>
+                                <div class="tsk-card-meta">
+                                    <span>@t.YaradanAd</span>
+                                    @if (t.SonTarix.HasValue)
+                                    {
+                                        <span class="@(t.Gecikibmi ? "tsk-late-text" : "")">
+                                            📅 @t.SonTarix.Value.ToString("dd.MM.yyyy")
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tsk-card-right">
+                            <span class="tsk-status @GetStatusClass(t.Status)">@t.StatusText</span>
+                            <div class="tsk-progress-wrap">
+                                <div class="tsk-progress-bar">
+                                    <div class="tsk-progress-fill" style="width:@t.TamamlanmaFaizi%"></div>
+                                </div>
+                                <span class="tsk-progress-pct">@t.TamamlanmaFaizi%</span>
+                            </div>
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+
+    @* ── Verdiklərim ── *@
+    <div class="tsk-panel @(Model.AktivTab == "verdiklerim" ? "" : "tsk-hidden")"
+         data-panel="verdiklerim">
+        @if (!Model.VerdiklerimTapshiriqlar.Any())
+        {
+            <div class="tsk-empty">
+                <div class="tsk-empty-icon">📋</div>
+                <div class="tsk-empty-title">Verdiyiniz tapşırıq yoxdur</div>
+                <a asp-action="Yarat" class="tsk-btn tsk-btn--ghost" style="margin-top:12px">
+                    Tapşırıq ver
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="tsk-list">
+                @foreach (var t in Model.VerdiklerimTapshiriqlar.OrderBy(x => x.SonTarix))
+                {
+                    <a asp-action="Detay" asp-route-id="@t.Id"
+                       class="tsk-card @(t.Gecikibmi ? "tsk-card--late" : "")">
+                        <div class="tsk-card-left">
+                            <div class="tsk-priority @GetPrioritetClass(t.Prioritet)"></div>
+                            <div>
+                                <div class="tsk-card-title">@t.Bashliq</div>
+                                <div class="tsk-card-meta">
+                                    <span>→ @t.TeyinOlunanAd</span>
+                                    @if (t.SonTarix.HasValue)
+                                    {
+                                        <span class="@(t.Gecikibmi ? "tsk-late-text" : "")">
+                                            📅 @t.SonTarix.Value.ToString("dd.MM.yyyy")
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tsk-card-right">
+                            <span class="tsk-status @GetStatusClass(t.Status)">@t.StatusText</span>
+                            <div class="tsk-progress-wrap">
+                                <div class="tsk-progress-bar">
+                                    <div class="tsk-progress-fill" style="width:@t.TamamlanmaFaizi%"></div>
+                                </div>
+                                <span class="tsk-progress-pct">@t.TamamlanmaFaizi%</span>
+                            </div>
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+
+</div>
+
+@functions {
+    string GetPrioritetClass(TapshiriqPrioritet p) => p switch
+    {
+        TapshiriqPrioritet.Ashagi => "tsk-priority--low",
+        TapshiriqPrioritet.Orta => "tsk-priority--mid",
+        TapshiriqPrioritet.Yuksek => "tsk-priority--high",
+        TapshiriqPrioritet.Kritik => "tsk-priority--kritik",
+        _ => ""
+    };
+
+    string GetStatusClass(TapshiriqStatus s) => s switch
+    {
+        TapshiriqStatus.Yeni => "tsk-status--new",
+        TapshiriqStatus.DavamEdir => "tsk-status--progress",
+        TapshiriqStatus.Tamamlandi => "tsk-status--done",
+        TapshiriqStatus.LegvEdildi => "tsk-status--cancel",
+        TapshiriqStatus.Gecikdi => "tsk-status--late",
+        _ => ""
+    };
+}
+
+@section Scripts {
+    <script src="~/js/User/TapsiriqIndex.js" asp-append-version="true"></script>
+   
+}

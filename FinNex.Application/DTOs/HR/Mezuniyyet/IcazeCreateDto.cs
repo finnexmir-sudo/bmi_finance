@@ -51,6 +51,16 @@ namespace FinNex.Application.DTOs.HR.Icaze
             IcazeStatus.ImtinaEdildi => "İmtina edildi",
             _ => "Naməlum"
         };
+        public string? SobeReisiAdSoyad { get; set; }
+        public bool? SobeReisiTesdiq { get; set; }
+        public DateTime? SobeReisiTesdiqTarixi { get; set; }
+        public string? RehberAdSoyad { get; set; }
+        public bool? RehberTesdiq { get; set; }
+        public DateTime? RehberTesdiqTarixi { get; set; }
+        public string? HrAdSoyad { get; set; }
+        public bool? HrTesdiq { get; set; }
+        public DateTime? HrTesdiqTarixi { get; set; }
+        public string? ImtinaSebebi { get; set; }
     }
 
     // ── Detallı baxış üçün ──────────────────────────────

@@ -1,0 +1,391 @@
+﻿/* =============================================
+   FinNex — HR Dashboard
+   wwwroot/css/HR/hr-dashboard.css
+   ============================================= */
+
+/* ── Greeting ─────────────────────────────────── */
+.hr-greeting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.hr-greeting-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a2332;
+    letter-spacing: -.3px;
+}
+
+.hr-greeting-sub {
+    font-size: 12px;
+    color: #8a93a8;
+    margin-top: 3px;
+}
+
+.hr-greeting-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* ── KPI Grid ─────────────────────────────────── */
+.hr-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.hr-kpi-card {
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 14px;
+    padding: 16px 18px;
+    transition: box-shadow .15s, border-color .15s;
+}
+
+    .hr-kpi-card:hover {
+        border-color: #d0d6e4;
+        box-shadow: 0 3px 14px rgba(0,0,0,0.06);
+    }
+
+.hr-kpi-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.hr-kpi-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #8a93a8;
+}
+
+.hr-kpi-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.hr-kpi-icon--indigo {
+    background: rgba(99,102,241,0.12);
+    color: #6366f1;
+}
+
+.hr-kpi-icon--green {
+    background: rgba(34,197,94,0.12);
+    color: #16a34a;
+}
+
+.hr-kpi-icon--amber {
+    background: rgba(232,184,75,0.14);
+    color: #c9900a;
+}
+
+.hr-kpi-icon--red {
+    background: rgba(239,68,68,0.11);
+    color: #dc2626;
+}
+
+.hr-kpi-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a2332;
+    line-height: 1.1;
+    margin-bottom: 8px;
+    letter-spacing: -.5px;
+}
+
+.hr-kpi-sub {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.hr-kpi-trend {
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.hr-kpi-trend--up {
+    color: #16a34a;
+}
+
+.hr-kpi-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+}
+
+.hr-kpi-badge--green {
+    background: rgba(34,197,94,0.12);
+    color: #16a34a;
+}
+
+.hr-kpi-badge--amber {
+    background: rgba(232,184,75,0.14);
+    color: #b8860b;
+}
+
+.hr-kpi-badge--red {
+    background: rgba(239,68,68,0.10);
+    color: #dc2626;
+}
+
+/* ── Section title ────────────────────────────── */
+.hr-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #8a93a8;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin-bottom: 10px;
+}
+
+/* ── Action cards ─────────────────────────────── */
+.hr-action-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.hr-action-card {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    text-decoration: none;
+    transition: all .15s;
+    cursor: pointer;
+}
+
+    .hr-action-card:hover {
+        border-color: #c8cdd8;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+        text-decoration: none;
+        transform: translateY(-1px);
+    }
+
+.hr-action-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.hr-action-icon--indigo {
+    background: rgba(99,102,241,0.12);
+    color: #6366f1;
+}
+
+.hr-action-icon--blue {
+    background: rgba(59,130,246,0.12);
+    color: #2563eb;
+}
+
+.hr-action-icon--amber {
+    background: rgba(232,184,75,0.14);
+    color: #c9900a;
+}
+
+.hr-action-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.hr-action-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a2332;
+}
+
+.hr-action-sub {
+    font-size: 11px;
+    color: #8a93a8;
+    margin-top: 2px;
+}
+
+.hr-action-arrow {
+    color: #c8cdd8;
+    flex-shrink: 0;
+    transition: transform .15s, color .15s;
+}
+
+.hr-action-card:hover .hr-action-arrow {
+    color: #8a93a8;
+    transform: translateX(3px);
+}
+
+/* ── Bottom grid ──────────────────────────────── */
+.hr-bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* ── İşçi list ────────────────────────────────── */
+.hr-isci-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.hr-isci-row {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 4px;
+    border-bottom: 1px solid #f4f6fb;
+    transition: background .13s;
+    border-radius: 8px;
+}
+
+    .hr-isci-row:last-child {
+        border-bottom: none;
+    }
+
+    .hr-isci-row:hover {
+        background: #fafbfd;
+    }
+
+.hr-isci-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #e8b84b, #c9900a);
+    color: #1a1200;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.hr-isci-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.hr-isci-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1a2332;
+}
+
+.hr-isci-meta {
+    font-size: 11px;
+    color: #8a93a8;
+    margin-top: 1px;
+}
+
+.hr-isci-date {
+    font-size: 11px;
+    color: #aab0bf;
+    white-space: nowrap;
+    background: #f4f6fb;
+    padding: 3px 9px;
+    border-radius: 6px;
+}
+
+/* ── Summary ──────────────────────────────────── */
+.hr-live-badge {
+    font-size: 10px;
+    font-weight: 600;
+    color: #16a34a;
+    background: rgba(34,197,94,0.10);
+    padding: 3px 9px;
+    border-radius: 20px;
+}
+
+.hr-summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 14px;
+}
+
+.hr-summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 4px;
+    border-bottom: 1px solid #f4f6fb;
+    font-size: 13px;
+    color: #3a4560;
+}
+
+    .hr-summary-row:last-child {
+        border-bottom: none;
+    }
+
+    .hr-summary-row strong {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1a2332;
+    }
+
+.hr-summary-left {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.hr-summary-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.hr-summary-dot--green {
+    background: #22c55e;
+}
+
+.hr-summary-dot--red {
+    background: #ef4444;
+}
+
+.hr-summary-dot--amber {
+    background: #e8b84b;
+}
+
+.hr-summary-dot--gray {
+    background: #c8cdd8;
+}
+
+.hr-summary-footer {
+    padding-top: 12px;
+    border-top: 1px solid #f0f2f7;
+}
+
+/* ── Responsive ───────────────────────────────── */
+@media (max-width: 1200px) {
+    .hr-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .hr-action-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hr-bottom-grid {
+        grid-template-columns: 1fr;
+    }
+}

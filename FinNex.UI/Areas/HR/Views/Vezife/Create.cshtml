@@ -1,83 +1,110 @@
 ﻿@using FinNex.UI.Areas.HR.ViewModels
-
 @model VezifeCreateVM
 @{
     ViewData["Title"] = "Yeni Vəzifə";
-    Layout = "_HRLayout";
 }
 
-<div class="create-wrapper">
-    <div class="create-card">
-        <div class="card-header">
-            <div class="header-icon">
-                <i class="bi bi-briefcase-fill"></i>
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/struktur.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hr/isci.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+    <div class="isci-form-wrap">
+
+        <a asp-action="Index" class="isci-form-back">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M9 11L5 7l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            Vəzifələrə qayıt
+        </a>
+
+        @* ── Bərpa xəbərdarlığı ── *@
+        @if (TempData["BerpaMsg"] != null)
+        {
+            <div class="fn-alert fn-alert--warning" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                <span>@TempData["BerpaMsg"]</span>
+                <form asp-action="BerpaEt" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@TempData["BerpaId"]" />
+                    <button type="submit" class="fn-btn fn-btn--primary" style="height:30px;font-size:11px;padding:0 12px;">
+                        Bərpa et
+                    </button>
+                </form>
             </div>
-            <div>
-                <h2 class="card-title">Yeni Vəzifə Əlavə Et</h2>
-                <p class="card-subtitle">Vəzifə məlumatlarını daxil edin</p>
+        }
+
+        <div class="isci-form-card">
+            <div class="isci-form-header">
+                <div class="isci-form-header-icon isci-form-header-icon--blue">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <rect x="3" y="5" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M7 5V3a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="isci-form-header-title">Yeni Vəzifə</div>
+                    <div class="isci-form-header-sub">Vəzifə məlumatlarını daxil edin</div>
+                </div>
             </div>
+
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="fn-alert fn-alert--error str-form-alert"></div>
+
+                <div class="isci-form-body">
+                    <div class="isci-field">
+                        <label class="isci-label">Vəzifə Adı <span class="isci-required">*</span></label>
+                        <input asp-for="Ad" class="isci-input" placeholder="Məsələn: Proqramçı, Mühasib, Menecer" />
+                        <span asp-validation-for="Ad" class="isci-error"></span>
+                    </div>
+
+                    <div class="isci-field">
+                        <label class="isci-label">Departament <span class="isci-required">*</span></label>
+                        <select asp-for="DepartamentId" asp-items="Model.Departamentlar" class="isci-input">
+                            <option value="">Departament seçin</option>
+                        </select>
+                        <span asp-validation-for="DepartamentId" class="isci-error"></span>
+                    </div>
+
+                    <div class="isci-field">
+                        <label class="isci-label">
+                            Təsvir
+                            <span class="str-label-hint">(istəyə bağlı)</span>
+                        </label>
+                        <textarea asp-for="Tesvir" class="isci-input str-modal-textarea"
+                                  placeholder="Vəzifə haqqında qısa məlumat..."></textarea>
+                        <span asp-validation-for="Tesvir" class="isci-error"></span>
+                    </div>
+
+                    <div class="isci-field">
+                        <label class="str-checkbox-label">
+                            <input asp-for="IsActive" type="checkbox" class="str-checkbox" />
+                            Aktiv vəzifə
+                        </label>
+                    </div>
+                </div>
+
+                <div class="isci-form-footer">
+                    <div class="isci-form-footer-note">* olan sahələr məcburidir</div>
+                    <div class="isci-form-footer-actions">
+                        <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+                        <button type="submit" class="fn-btn fn-btn--primary">
+                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                <path d="M2 7l3.5 3.5 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            Yadda saxla
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
 
-        <form asp-action="Create" method="post" id="vezifeForm">
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
-
-            <div class="form-grid">
-                <!-- Vəzifə Adı -->
-                <div class="form-field full-width">
-                    <label asp-for="Ad">Vəzifə Adı <span class="req">*</span></label>
-                    <input asp-for="Ad" class="form-input" placeholder="Məsələn: Proqramçı, Mühasib, Menecer" />
-                    <span asp-validation-for="Ad" class="error-text"></span>
-                </div>
-
-                <!-- Departament -->
-                <div class="form-field">
-                    <label asp-for="DepartamentId">Departament <span class="req">*</span></label>
-                    <select asp-for="DepartamentId" asp-items="Model.Departamentlar" class="form-select">
-                        <option value="">Departament seçin</option>
-                    </select>
-                    <span asp-validation-for="DepartamentId" class="error-text"></span>
-                </div>
-
-               @*  <!-- Maaş -->
-                <div class="form-field">
-                    <label asp-for="Maas">Əsas Maaş (AZN)</label>
-                    <input asp-for="Maas" type="number" step="0.01" class="form-input" placeholder="0.00" />
-                    <span asp-validation-for="Maas" class="error-text"></span>
-                </div> *@
-
-                <!-- Təsvir -->
-                <div class="form-field full-width">
-                    <label asp-for="Tesvir">Təsvir</label>
-                    <textarea asp-for="Tesvir" class="form-textarea" rows="4" placeholder="Vəzifə haqqında qısa məlumat..."></textarea>
-                    <span asp-validation-for="Tesvir" class="error-text"></span>
-                </div>
-
-                <!-- Status -->
-                <div class="form-field">
-                    <label class="checkbox-label">
-                        <input asp-for="IsActive" type="checkbox" class="form-checkbox" checked />
-                        <span>Aktiv vəzifə</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="form-actions">
-                <button type="submit" class="btn-primary">
-                    <i class="bi bi-check-lg"></i> Yadda Saxla
-                </button>
-                <a asp-action="Index" class="btn-secondary">
-                    <i class="bi bi-x-lg"></i> Ləğv Et
-                </a>
-            </div>
-        </form>
     </div>
 </div>
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/hr/vezife-create.css" />
-}
-
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-    <script src="~/js/hr/vezife-create.js"></script>
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

@@ -1,0 +1,936 @@
+﻿/* =============================================
+   FinNex — HR İşçilər Modulu
+   wwwroot/css/HR/isci.css
+   ============================================= */
+
+/* ── Cədvəl ───────────────────────────────────── */
+.isci-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+    .isci-table thead tr {
+        border-bottom: 1px solid #e4e8f0;
+        background: #fafbfd;
+    }
+
+    .isci-table th {
+        padding: 11px 16px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #8a93a8;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        text-align: left;
+    }
+
+.isci-th-right {
+    text-align: right;
+}
+
+.isci-table tbody tr {
+    border-bottom: 1px solid #f0f2f7;
+    transition: background .13s;
+}
+
+    .isci-table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .isci-table tbody tr:hover {
+        background: #fafbfd;
+    }
+
+.isci-table td {
+    padding: 12px 16px;
+    vertical-align: middle;
+}
+
+/* İşçi info */
+.isci-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.isci-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #e8b84b, #c9900a);
+    color: #1a1200;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.isci-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a2332;
+}
+
+.isci-email {
+    font-size: 11px;
+    color: #8a93a8;
+    margin-top: 1px;
+}
+
+.isci-td-meta {
+    color: #5a647a;
+    font-size: 13px;
+}
+
+/* Əməliyyat düymələri */
+.isci-td-actions {
+    text-align: right;
+}
+
+.isci-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    background: #f4f6fb;
+    border: 1px solid #e4e8f0;
+    color: #5a647a;
+    text-decoration: none;
+    margin-left: 4px;
+    transition: all .15s;
+}
+
+    .isci-action-btn:hover {
+        background: #e8eaf0;
+        color: #1a2332;
+        text-decoration: none;
+    }
+
+.isci-action-btn--blue {
+    color: #3a5bcf;
+}
+
+    .isci-action-btn--blue:hover {
+        background: rgba(99,130,246,0.12);
+        border-color: rgba(99,130,246,0.3);
+    }
+
+.isci-action-btn--green {
+    color: #1a7a50;
+}
+
+    .isci-action-btn--green:hover {
+        background: rgba(30,155,107,0.10);
+        border-color: rgba(30,155,107,0.3);
+    }
+
+/* ── Form (Create, Edit, MaasDeyis, TeyinatDeyis) ── */
+.isci-form-wrap {
+    max-width: 700px;
+}
+
+.isci-form-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #8a93a8;
+    text-decoration: none;
+    margin-bottom: 18px;
+    padding: 6px 10px 6px 8px;
+    border-radius: 7px;
+    transition: all .15s;
+}
+
+    .isci-form-back:hover {
+        color: #1a2332;
+        background: #f0f2f7;
+        text-decoration: none;
+    }
+
+.isci-form-card {
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+}
+
+.isci-form-header {
+    padding: 18px 24px 16px;
+    border-bottom: 1px solid #f0f2f7;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+}
+
+.isci-form-header-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.isci-form-header-icon--indigo {
+    background: rgba(99,102,241,0.12);
+    color: #6366f1;
+}
+
+.isci-form-header-icon--blue {
+    background: rgba(59,130,246,0.12);
+    color: #2563eb;
+}
+
+.isci-form-header-icon--green {
+    background: rgba(30,155,107,0.10);
+    color: #1a7a50;
+}
+
+.isci-form-header-icon--amber {
+    background: rgba(232,184,75,0.13);
+    color: #c9900a;
+}
+
+.isci-form-header-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a2332;
+}
+
+.isci-form-header-sub {
+    font-size: 12px;
+    color: #8a93a8;
+    margin-top: 2px;
+}
+
+.isci-form-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.isci-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #8a93a8;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f2f7;
+    margin-bottom: 4px;
+}
+
+.isci-form-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+}
+
+.isci-form-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+
+.isci-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.isci-field--full {
+    grid-column: 1 / -1;
+}
+
+.isci-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #3a4560;
+}
+
+.isci-required {
+    color: #e74c3c;
+}
+
+.isci-input,
+.isci-select,
+.isci-textarea {
+    padding: 10px 13px;
+    border: 1.5px solid #e4e8f0;
+    border-radius: 9px;
+    font-size: 13px;
+    color: #1a2332;
+    background: #fafbfd;
+    width: 100%;
+    font-family: inherit;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+    outline: none;
+}
+
+    .isci-input:hover, .isci-select:hover {
+        border-color: #d0d6e4;
+        background: #fff;
+    }
+
+    .isci-input:focus, .isci-select:focus {
+        border-color: #e8b84b;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(232,184,75,.12);
+    }
+
+.isci-input--mono {
+    font-family: monospace;
+    letter-spacing: .5px;
+}
+
+.isci-error {
+    font-size: 11px;
+    color: #c0392b;
+}
+
+.isci-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #fef9ec;
+    border: 1px solid rgba(232,184,75,0.35);
+    border-radius: 9px;
+    padding: 10px 13px;
+    font-size: 12px;
+    color: #7a5c00;
+    line-height: 1.55;
+}
+
+.isci-form-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #f0f2f7;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fafbfd;
+}
+
+.isci-form-footer-note {
+    font-size: 11px;
+    color: #aab0bf;
+}
+
+.isci-form-footer-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* ── Detail səhifəsi ──────────────────────────── */
+.isci-detail-hero {
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 14px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.isci-hero-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.isci-hero-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #e8b84b, #c9900a);
+    color: #1a1200;
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.isci-hero-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a2332;
+    letter-spacing: -.2px;
+}
+
+.isci-hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 5px;
+    flex-wrap: wrap;
+}
+
+.isci-hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 6px;
+    background: #f4f6fb;
+    color: #5a647a;
+    border: 1px solid #e4e8f0;
+}
+
+.isci-hero-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Stat strip */
+.isci-stat-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.isci-stat-card {
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.isci-stat-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.isci-stat-icon--indigo {
+    background: rgba(99,102,241,0.12);
+    color: #6366f1;
+}
+
+.isci-stat-icon--green {
+    background: rgba(30,155,107,0.10);
+    color: #1a7a50;
+}
+
+.isci-stat-icon--blue {
+    background: rgba(59,130,246,0.12);
+    color: #2563eb;
+}
+
+.isci-stat-icon--amber {
+    background: rgba(232,184,75,0.13);
+    color: #c9900a;
+}
+
+.isci-stat-label {
+    font-size: 11px;
+    color: #8a93a8;
+    margin-bottom: 2px;
+}
+
+.isci-stat-val {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a2332;
+}
+
+/* Detail tabs */
+.isci-detail-tabs {
+    display: flex;
+    gap: 2px;
+    background: #f4f6fb;
+    border-radius: 10px;
+    padding: 3px;
+    margin-bottom: 14px;
+    width: fit-content;
+}
+
+.isci-detail-tab {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #8a93a8;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all .15s;
+}
+
+    .isci-detail-tab:hover {
+        color: #1a2332;
+    }
+
+    .isci-detail-tab.active {
+        background: #fff;
+        color: #1a2332;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+.isci-tab-count {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(232,184,75,0.15);
+    color: #c9900a;
+    padding: 1px 7px;
+    border-radius: 20px;
+}
+
+.isci-tab-panel {
+    display: none;
+}
+
+    .isci-tab-panel.active {
+        display: block;
+    }
+
+/* Info grid */
+.isci-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.isci-info-card {
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 12px;
+    padding: 16px 18px;
+}
+
+.isci-info-card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #8a93a8;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f2f7;
+}
+
+.isci-info-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f8f9fd;
+    gap: 12px;
+}
+
+    .isci-info-row:last-child {
+        border-bottom: none;
+    }
+
+.isci-info-key {
+    font-size: 12px;
+    color: #8a93a8;
+    flex-shrink: 0;
+    min-width: 120px;
+}
+
+.isci-info-val {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1a2332;
+    text-align: right;
+}
+
+.isci-info-val--mono {
+    font-family: monospace;
+    letter-spacing: .5px;
+}
+
+.isci-info-link {
+    color: #3a5bcf;
+    text-decoration: none;
+}
+
+    .isci-info-link:hover {
+        text-decoration: underline;
+    }
+
+/* Timeline */
+.isci-timeline {
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.isci-tl-item {
+    display: flex;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f2f7;
+    position: relative;
+}
+
+    .isci-tl-item:last-child {
+        border-bottom: none;
+    }
+
+.isci-tl-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+    border: 2px solid;
+}
+
+.isci-tl-dot--active {
+    background: #e8b84b;
+    border-color: #e8b84b;
+}
+
+.isci-tl-dot--past {
+    background: #fff;
+    border-color: #c8cdd8;
+}
+
+.isci-tl-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a2332;
+}
+
+.isci-tl-sub {
+    font-size: 12px;
+    color: #5a647a;
+    margin-top: 2px;
+}
+
+.isci-tl-date {
+    font-size: 11px;
+    color: #aab0bf;
+    margin-top: 4px;
+}
+
+.isci-tl-badge {
+    font-size: 10px;
+    font-weight: 600;
+    background: rgba(232,184,75,0.15);
+    color: #b8860b;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-left: 8px;
+}
+
+/* Maaş cədvəli */
+.isci-maas-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+    .isci-maas-table th {
+        padding: 10px 14px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #8a93a8;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        background: #fafbfd;
+        border-bottom: 1px solid #e4e8f0;
+        text-align: left;
+    }
+
+    .isci-maas-table td {
+        padding: 11px 14px;
+        border-bottom: 1px solid #f0f2f7;
+        color: #3a4560;
+    }
+
+    .isci-maas-table tr:last-child td {
+        border-bottom: none;
+    }
+
+.isci-maas-val {
+    font-weight: 600;
+    color: #1a2332;
+}
+
+.isci-maas-val--new {
+    color: #1a7a50;
+}
+
+.isci-maas-diff {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+}
+
+.isci-maas-diff--up {
+    background: rgba(30,155,107,0.10);
+    color: #1a7a50;
+}
+
+.isci-maas-diff--down {
+    background: rgba(239,68,68,0.10);
+    color: #dc2626;
+}
+
+/* MaasDeyis xüsusi */
+.isci-maas-current {
+    background: linear-gradient(135deg, #1a2332, #2d3f56);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    color: #fff;
+}
+
+.isci-maas-current-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    margin-bottom: 8px;
+}
+
+.isci-maas-current-amount {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -.5px;
+}
+
+    .isci-maas-current-amount span {
+        font-size: 18px;
+        opacity: .6;
+        margin-left: 4px;
+    }
+
+.isci-maas-current-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 4px;
+}
+
+.isci-maas-current-who {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 5px 11px;
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+/* Diff preview */
+.isci-diff-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #f4f6fb;
+    border: 1px solid #e4e8f0;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 4px 0;
+}
+
+.isci-diff-from {
+    font-size: 14px;
+    color: #8a93a8;
+    font-weight: 500;
+}
+
+.isci-diff-arrow {
+    color: #c8cdd8;
+}
+
+.isci-diff-to {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a7a50;
+}
+
+.isci-diff-amount {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: rgba(30,155,107,0.10);
+    color: #1a7a50;
+}
+
+/* Input prefix */
+.isci-input-prefix-wrap {
+    position: relative;
+}
+
+.isci-input-prefix {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    font-weight: 600;
+    color: #8a93a8;
+    pointer-events: none;
+}
+
+.isci-input--has-prefix {
+    padding-left: 28px;
+}
+
+/* Teyinat current card */
+.isci-teyinat-current {
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+}
+
+.isci-teyinat-current-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #8a93a8;
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    margin-bottom: 14px;
+}
+
+.isci-teyinat-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f2f7;
+}
+
+    .isci-teyinat-row:last-child {
+        border-bottom: none;
+    }
+
+.isci-teyinat-ico {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.isci-teyinat-ico--dept {
+    background: rgba(99,102,241,0.12);
+    color: #6366f1;
+}
+
+.isci-teyinat-ico--role {
+    background: rgba(59,130,246,0.12);
+    color: #2563eb;
+}
+
+.isci-teyinat-key {
+    font-size: 11px;
+    color: #8a93a8;
+}
+
+.isci-teyinat-val {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a2332;
+    margin-top: 1px;
+}
+
+/* Login badge */
+.isci-badge-yes {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(30,155,107,0.10);
+    color: #1a7a50;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 6px;
+}
+
+.isci-badge-no {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(239,68,68,0.10);
+    color: #dc2626;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 6px;
+}
+/* =============================================
+   Bu class-ları isci.css faylının SONUNA əlavə edin
+   ============================================= */
+
+.isci-action-btn--red-text {
+    color: #dc2626;
+}
+
+    .isci-action-btn--red-text:hover {
+        background: rgba(239,68,68,0.08);
+        border-color: rgba(239,68,68,0.3);
+    }
+
+.isci-table-empty {
+    text-align: center;
+    padding: 40px;
+    color: #aab0bf;
+    font-size: 13px;
+}
+
+.str-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: #3a4560;
+}
+
+.str-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: #e8b84b;
+}

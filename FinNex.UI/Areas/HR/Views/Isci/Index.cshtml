@@ -1,38 +1,37 @@
 ﻿@model List<IsciListDto>
 @using FinNex.Domain.Entities.HR
-
-
 @{
-    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
     ViewData["Title"] = "İşçilər";
 }
 
-<div class="page-header">
-    <div>
-        <h2 class="page-title">İşçilər</h2>
-        <div class="page-sub">Bütün işçilərin idarəsi</div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/HR/isci.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">İşçilər</div>
+            <div class="fn-page-sub">Bütün işçilərin idarəsi</div>
+        </div>
+        <a asp-area="HR" asp-controller="Isci" asp-action="Create" class="fn-btn fn-btn--primary">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+            Yeni işçi
+        </a>
     </div>
 
-    <a asp-area="HR"
-       asp-controller="Isci"
-       asp-action="Create"
-       class="btn btn-primary hr-btn-add">
-        <i class="bi bi-plus-lg"></i> Yeni işçi
-    </a>
-
-</div>
-
-<div class="card-soft">
-
-    <div class="table-responsive">
-        <table class="table table-hover align-middle custom-table">
+    <div class="fn-card" style="padding:0;overflow:hidden;">
+        <table class="isci-table">
             <thead>
                 <tr>
                     <th>Ad Soyad</th>
-                    <th>Departamnet</th>
+                    <th>Şöbə</th>
                     <th>Vəzifə</th>
                     <th>Status</th>
-                    <th class="text-end">Əməliyyat</th>
+                    <th class="isci-th-right">Əməliyyat</th>
                 </tr>
             </thead>
             <tbody>
@@ -40,36 +39,48 @@
                 {
                     <tr>
                         <td>
-                            <div class="emp-info">
-                                <div class="emp-avatar">
-                                    @item.TamAd.Substring(0, 1)
-                                </div>
+                            <div class="isci-info">
+                                <div class="isci-avatar">@item.TamAd.Substring(0, 1)</div>
                                 <div>
-                                    <div class="emp-name">@item.TamAd</div>
-                                    <div class="emp-email">@item.Email</div>
+                                    <div class="isci-name">@item.TamAd</div>
+                                    <div class="isci-email">@item.Email</div>
                                 </div>
                             </div>
                         </td>
-                        <td>@item.SobeAdi</td>
-                        <td>@item.VezifeAdi</td>
+                        <td class="isci-td-meta">@(item.SobeAdi ?? "—")</td>
+                        <td class="isci-td-meta">@(item.VezifeAdi ?? "—")</td>
                         <td>
-                            <span class="status-pill @(item.Status == IsciStatus.Aktiv ? "status-active" : "status-passiv")">
-                                @(item.Status == IsciStatus.Aktiv ? "Aktiv" : "Qeyri-aktiv")
-                            </span>
-
+                            @if (item.Status == IsciStatus.Aktiv)
+                            {
+                                <span class="fn-badge fn-badge--done">Aktiv</span>
+                            }
+                            else
+                            {
+                                <span class="fn-badge fn-badge--rejected">Qeyri-aktiv</span>
+                            }
                         </td>
-                        <td class="text-end">
-                            <a asp-action="Detail" asp-route-id="@item.Id" class="action-icon" title="Bax">
-                                <i class="bi bi-eye"></i>
+                        <td class="isci-td-actions">
+                            <a asp-action="Detail" asp-route-id="@item.Id" class="isci-action-btn" title="Bax">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <ellipse cx="7" cy="7" rx="6" ry="4" stroke="currentColor" stroke-width="1.2" />
+                                    <circle cx="7" cy="7" r="1.8" stroke="currentColor" stroke-width="1.2" />
+                                </svg>
                             </a>
-                            <a asp-action="Edit" asp-route-id="@item.Id" class="action-icon" title="Redaktə">
-                                <i class="bi bi-pencil"></i>
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="isci-action-btn" title="Redaktə">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
+                                </svg>
                             </a>
-                            <a asp-action="TeyinatDeyis" asp-route-id="@item.Id" class="action-icon text-blue" title="Təyinat Dəyiş">
-                                <i class="bi bi-arrow-left-right"></i>
+                            <a asp-action="TeyinatDeyis" asp-route-id="@item.Id" class="isci-action-btn isci-action-btn--blue" title="Təyinat Dəyiş">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <path d="M2 5h10M9 2l3 3-3 3M12 9H2M5 6l-3 3 3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
                             </a>
-                            <a asp-action="MaasDeyis" asp-route-id="@item.Id" class="action-icon text-emerald" title="Maaş Dəyiş">
-                                <i class="bi bi-currency-dollar"></i>
+                            <a asp-action="MaasDeyis" asp-route-id="@item.Id" class="isci-action-btn isci-action-btn--green" title="Maaş Dəyiş">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2" />
+                                    <path d="M7 4v6M5 5.5h3a1 1 0 010 2H6a1 1 0 000 2h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                </svg>
                             </a>
                         </td>
                     </tr>

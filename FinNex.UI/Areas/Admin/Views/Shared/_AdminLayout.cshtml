@@ -64,6 +64,12 @@
                 Departments
             </a>
 
+            <a class="nav-link @(currentController == "UserPermissions" ? "active" : "")"
+               asp-area="Admin" asp-controller="UserPermissions" asp-action="Index">
+                <i class="bi bi-shield-lock-fill"></i>
+                Permissions
+            </a>
+
             <div class="nav-section">System</div>
 
             <a class="nav-link @(currentController == "SystemLogs" ? "active" : "")"

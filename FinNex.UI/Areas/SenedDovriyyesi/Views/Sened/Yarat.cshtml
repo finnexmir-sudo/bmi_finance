@@ -1,0 +1,198 @@
+@model SenedCreateVM
+@{
+    ViewData["Title"] = "Yeni Sənəd";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/sened-dovriyyesi-fn.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+    <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
+       class="sd-back">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M9 11L5 7l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        Siyahıya qayıt
+    </a>
+
+    
+        <div class="sd-form-card">
+            <div class="sd-form-hdr">
+                <div class="sd-form-hdr-icon">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M4 3h8l4 4v10H4V3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                        <path d="M12 3v4h4" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                        <path d="M7 10h6M7 13h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="sd-form-hdr-title">Yeni Sənəd Yarat</div>
+                    <div class="sd-form-hdr-sub">Bütün məcburi sahələri doldurun</div>
+                </div>
+            </div>
+
+            <form asp-area="SenedDovriyyesi"
+                  asp-controller="Sened"
+                  asp-action="Yarat"
+                  method="post"
+                  enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+
+                <div class="sd-form-body">
+
+                    <div asp-validation-summary="All" class="sd-alert-error"></div>
+
+                    <!-- 1. Kateqoriya -->
+                    <div>
+                        <div class="sd-form-hdr-sub" style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:#e8b84b;margin-bottom:12px;">
+                            1 · Kateqoriya Seçimi
+                        </div>
+                        <div class="sd-form-row">
+                            <div>
+                                <label class="sd-label">Şöbə <span class="sd-required">*</span></label>
+                                <select asp-for="SobeId" class="sd-select-full" id="sobeSelect">
+                                    <option value="">Şöbə seçin...</option>
+                                    @foreach (var s in Model.Sobeler)
+                                    {
+                                        <option value="@s.Id">@s.Ad</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="SobeId" class="sd-error"></span>
+                            </div>
+                            <div>
+                                <label class="sd-label">Sənəd Növü <span class="sd-required">*</span></label>
+                                <div style="display:flex;gap:8px;">
+                                    <select asp-for="SenedNovuId" class="sd-select-full" id="senedNovuSelect">
+                                        <option value="">Əvvəlcə şöbə seçin...</option>
+                                    </select>
+                                    <button type="button" class="fn-btn fn-btn--outline" id="openNovBtn"
+                                            style="flex-shrink:0;padding:0 12px;">
+                                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                            <path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <span asp-validation-for="SenedNovuId" class="sd-error"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Məlumatlar -->
+                    <div>
+                        <div class="sd-form-hdr-sub" style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:#e8b84b;margin-bottom:12px;">
+                            2 · Sənəd Məlumatları
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:12px;">
+                            <div>
+                                <label class="sd-label">Başlıq <span class="sd-required">*</span></label>
+                                <input asp-for="Basliq" class="sd-input" placeholder="Sənədin başlığını daxil edin..." />
+                                <span asp-validation-for="Basliq" class="sd-error"></span>
+                            </div>
+                            <div>
+                                <label class="sd-label">Açar Söz <span class="sd-required">*</span></label>
+                                <input asp-for="AcarSoz" class="sd-input" placeholder="Vergüllə ayırın..." />
+                                <span asp-validation-for="AcarSoz" class="sd-error"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                <!-- 3. Fayl -->
+                <div>
+                    <div class="sd-form-hdr-sub" style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:#e8b84b;margin-bottom:12px;">
+                        3 · Fayl Yükləmə
+                    </div>
+                    <div class="sd-file-zone" id="faylZone">
+                        <div id="faylDefault">
+                            <div class="sd-file-zone-icon">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M10 13V5M7 8l3-3 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+                                    <path d="M4 15h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                            <div class="sd-file-zone-title">Faylı buraya sürükləyin və ya klikləyin</div>
+                            <div class="sd-file-zone-sub">PDF, Word, Excel, şəkil — maks. 25MB</div>
+                        </div>
+                        <div id="faylInfo" hidden style="display:flex;align-items:center;gap:10px;justify-content:center;padding:4px 0;">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M4 3h8l4 4v10H4V3z" stroke="#6366f1" stroke-width="1.4" stroke-linejoin="round" />
+                                <path d="M12 3v4h4" stroke="#6366f1" stroke-width="1.4" stroke-linejoin="round" />
+                            </svg>
+                            <div>
+                                <div id="faylAd" style="font-size:13px;font-weight:600;color:#1a2332;"></div>
+                                <div id="faylOlcu" style="font-size:11px;color:#8a93a8;"></div>
+                            </div>
+                        </div>
+                        <input asp-for="Fayl" type="file" id="Fayl"
+                               style="display:none;"
+                               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt,.zip,.rar" />
+                        <span asp-validation-for="Fayl" class="sd-error"></span>
+                    </div>
+                </div>
+
+                </div>
+
+                <div class="sd-form-footer">
+                    <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
+                       class="fn-btn fn-btn--outline">Ləğv et</a>
+                    <button type="submit" class="fn-btn fn-btn--primary">
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                            <path d="M2 7l3.5 3.5 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        Sənədi Yarat
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+
+<!-- Yeni Sənəd Növü Modal -->
+<div class="str-modal-overlay str-modal-hidden" id="novModal">
+    <div class="str-modal">
+        <div class="str-modal-header">
+            <div class="str-modal-title">Yeni Sənəd Növü</div>
+            <button type="button" class="str-modal-close" data-close-modal="novModal">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+        <div class="str-modal-body">
+            <p id="novError" class="sd-alert-error" hidden></p>
+            <p id="novSuccess" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px 14px;font-size:13px;color:#166534;" hidden></p>
+            <div class="isci-field str-field-mb">
+                <label class="isci-label">Şöbə <span class="isci-required">*</span></label>
+                <select id="novSobe" class="isci-input">
+                    <option value="">Şöbə seçin...</option>
+                    @foreach (var s in Model.Sobeler)
+                    {
+                        <option value="@s.Id">@s.Ad</option>
+                    }
+                </select>
+            </div>
+            <div class="isci-field str-field-mb">
+                <label class="isci-label">Kod <span class="isci-required">*</span></label>
+                <input type="text" id="novKod" class="isci-input" placeholder="Məs: MUQAVILE, ERIZE..." />
+            </div>
+            <div class="isci-field">
+                <label class="isci-label">Ad <span class="isci-required">*</span></label>
+                <input type="text" id="novAd" class="isci-input" placeholder="Məs: Müqavilə, Ərizə..." />
+            </div>
+        </div>
+        <div class="str-modal-footer">
+            <button type="button" class="fn-btn fn-btn--outline" data-close-modal="novModal">Ləğv et</button>
+            <button type="button" class="fn-btn fn-btn--primary" id="saveBtn">Saxla</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script src="~/js/sened-yarat.js" asp-append-version="true"></script>
+    <script src="~/js/hr/struktur-modal.js" asp-append-version="true"></script>
+    <script src="~/js/sened-fayl-drop.js" asp-append-version="true"></script>
+}

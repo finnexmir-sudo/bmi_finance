@@ -15,8 +15,9 @@ namespace FinNex.Application.Interfaces
         Task<Result<IList<IcazeListDto>>> GetGozlemededeAsync();
         Task<Result<IList<IcazeListDto>>> GetRehberTesdiqindeAsync();
         Task<Result<IList<IcazeListDto>>> GetHrTesdiqindeAsync();
-        Task<Result> SobeReisiTesdiqAsync(int id, bool status, string? qeyd);
-        Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd);
-        Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd);
+        Task<Result> SobeReisiTesdiqAsync(int id, bool status, string? qeyd, int sobeReisiId = 0);
+        Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0);
+        Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd, int hrId = 0);
+        Task<Result<IList<IcazeListDto>>> GetFiltrliAsync(DateTime? tarixFrom,DateTime? tarixTo,int? departamentId,int? status,string? axtaris);
     }
 }

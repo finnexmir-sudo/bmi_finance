@@ -18,5 +18,6 @@ namespace FinNex.Application.DTOs.HR.Isci
         public decimal CariMaas { get; set; }
 
         public IsciStatus Status { get; set; }
+        public Cins Cins { get; set; }
     }
 }

@@ -1,0 +1,262 @@
+﻿@* Areas/User/Views/Gorush/Detay.cshtml *@
+@model FinNex.Application.DTOs.Communication.GorushDetailDto
+@using FinNex.Domain.Entities.Communication
+@{
+    ViewData["Title"] = Model.Bashliq;
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var isciId = (int)(ViewBag.IsciId ?? 0);
+    var menTeshkilatci = Model.TeshkilatciIsciId == isciId;
+    var menimIshtirakci = Model.Ishtirakcılar.Any(x => x.IsciId == isciId);
+    var menimStatus = Model.Ishtirakcılar.FirstOrDefault(x => x.IsciId == isciId)?.Status;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/gorush.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div style="margin-bottom:16px">
+        <a asp-action="Index" class="grsh-btn grsh-btn--ghost">← Geri</a>
+    </div>
+
+    <div class="tsk-detay-grid">
+
+        @* ── Sol ── *@
+        <div>
+            @* Başlıq kartı *@
+            <div class="tsk-detay-card">
+                <div class="tsk-detay-head">
+                    <div>
+                        <span class="grsh-nov-badge @(Model.Nov == GorushNovu.Online ? "grsh-nbadge--online" : Model.Nov == GorushNovu.Hibrid ? "grsh-nbadge--hibrid" : "grsh-nbadge--offline")">
+                            @Model.NovText
+                        </span>
+                        <div class="tsk-detay-title">@Model.Bashliq</div>
+                    </div>
+                    <span class="grsh-status @GetStatusClass(Model.Status)">@Model.StatusText</span>
+                </div>
+
+                <div class="tsk-detay-meta">
+                    <div class="tsk-meta-row">
+                        <span class="tsk-meta-lbl">Təşkilatçı</span>
+                        <span class="tsk-meta-val">@Model.TeshkilatciAd</span>
+                    </div>
+                    <div class="tsk-meta-row">
+                        <span class="tsk-meta-lbl">Tarix</span>
+                        <span class="tsk-meta-val">@Model.Tarix.ToString("dd MMMM yyyy, dddd")</span>
+                    </div>
+                    <div class="tsk-meta-row">
+                        <span class="tsk-meta-lbl">Saat</span>
+                        <span class="tsk-meta-val">
+                            @Model.BaslamaSaati.ToString(@"hh\:mm") — @Model.BitisSaati.ToString(@"hh\:mm")
+                        </span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Yer))
+                    {
+                        <div class="tsk-meta-row">
+                            <span class="tsk-meta-lbl">Yer</span>
+                            <span class="tsk-meta-val">📍 @Model.Yer</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.OnlineLink))
+                    {
+                        <div class="tsk-meta-row">
+                            <span class="tsk-meta-lbl">Link</span>
+                            <span class="tsk-meta-val">
+                                <a href="@Model.OnlineLink" target="_blank" class="grsh-link">
+                                    🔗 Qoşul
+                                </a>
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @* Gündəm *@
+            @if (!string.IsNullOrEmpty(Model.Agenda))
+            {
+                <div class="tsk-detay-card">
+                    <div class="tsk-sherh-title">Gündəm</div>
+                    <div style="font-size:.85rem;color:#374151;line-height:1.7;white-space:pre-wrap">@Model.Agenda</div>
+                </div>
+            }
+
+            @* Görüş qeydləri *@
+            @if (!string.IsNullOrEmpty(Model.Qeydler))
+            {
+                <div class="tsk-detay-card">
+                    <div class="tsk-sherh-title">Görüş Qeydləri</div>
+                    <div style="font-size:.85rem;color:#374151;line-height:1.7;white-space:pre-wrap">@Model.Qeydler</div>
+                </div>
+            }
+
+            @* Qeyd əlavə et (təşkilatçı, bitmiş görüş üçün) *@
+            @if (menTeshkilatci && Model.Status == GorushStatus.Bitdi
+                        && string.IsNullOrEmpty(Model.Qeydler))
+            {
+                <div class="tsk-detay-card">
+                    <div class="tsk-sherh-title">Qeyd əlavə et</div>
+                    <form asp-action="QeydEleveEt" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="gorushId" value="@Model.Id" />
+                        <textarea name="qeydler" class="grsh-textarea" rows="4"
+                              placeholder="Görüşdə qərara alınanlar, növbəti addımlar..."></textarea>
+                        <button type="submit" class="grsh-btn grsh-btn--primary"
+                                style="margin-top:8px">
+                            Saxla
+                        </button>
+                    </form>
+                </div>
+            }
+
+            @* İştirakçılar *@
+            <div class="tsk-detay-card">
+                <div class="tsk-sherh-title">
+                    İştirakçılar
+                    <span class="tsk-sherh-count">@Model.IshtirakciSayi</span>
+                </div>
+                <div class="grsh-ishtirakci-cards">
+                    @foreach (var i in Model.Ishtirakcılar)
+                    {
+                        <div class="grsh-ishtirakci-card">
+                            <div class="grsh-ic-avatar">@i.IsciAd.Substring(0, 1)</div>
+                            <div class="grsh-ic-info">
+                                <div class="grsh-ic-name">@i.IsciAd</div>
+                                <div class="grsh-ic-vezife">@i.IsciVezife</div>
+                            </div>
+                            <span class="grsh-ishtirak @GetIshtirakClass(i.Status)">
+                                @GetIshtirakText(i.Status)
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* ── Sağ ── *@
+        <div>
+            @* İştirak cavabı *@
+            @if (menimIshtirakci && Model.Status == GorushStatus.Planlanib)
+            {
+                <div class="tsk-detay-card">
+                    <div class="tsk-action-title">Cavabınız</div>
+                    @if (menimStatus == IshtirakciStatus.Gozleyir)
+                    {
+                        <form asp-action="IshtirakciCavab" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="gorushId" value="@Model.Id" />
+                            <div style="display:flex;flex-direction:column;gap:8px">
+                                <button type="submit" name="status" value="2"
+                                        class="grsh-btn grsh-btn--primary"
+                                        style="justify-content:center">
+                                    ✓ İştirak edəcəyəm
+                                </button>
+                                <button type="submit" name="status" value="3"
+                                        class="grsh-btn grsh-btn--ghost"
+                                        style="justify-content:center">
+                                    ✕ İştirak etməyəcəyəm
+                                </button>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <div style="text-align:center;padding:12px">
+                            <span class="grsh-ishtirak @GetIshtirakClass(menimStatus!.Value)" style="font-size:.85rem;padding:6px 16px">
+                                @GetIshtirakText(menimStatus!.Value)
+                            </span>
+                            <div style="margin-top:10px">
+                                <form asp-action="IshtirakciCavab" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="gorushId" value="@Model.Id" />
+                                    <button type="submit" name="status" value="1"
+                                            class="grsh-btn grsh-btn--ghost" style="font-size:.75rem">
+                                        Dəyiş
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            @* Təşkilatçı əməliyyatları *@
+            @if (menTeshkilatci)
+            {
+                <div class="tsk-detay-card">
+                    <div class="tsk-action-title">Əməliyyatlar</div>
+                    <div style="display:flex;flex-direction:column;gap:8px">
+
+                        @if (Model.Status == GorushStatus.Planlanib)
+                        {
+                            <a asp-action="Edit" asp-route-id="@Model.Id"
+                               class="grsh-btn grsh-btn--ghost"
+                               style="justify-content:center">
+                                ✏️ Redaktə et
+                            </a>
+
+                            <form asp-action="StatusYenile" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <input type="hidden" name="status" value="2" />
+                                <button type="submit" class="grsh-btn grsh-btn--primary"
+                                        style="width:100%;justify-content:center">
+                                    ▶ Başlat
+                                </button>
+                            </form>
+
+                            <form asp-action="StatusYenile" method="post"
+                                  onsubmit="return confirm('Görüşü ləğv etmək istəyirsiniz?')">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <input type="hidden" name="status" value="4" />
+                                <button type="submit" class="grsh-btn tsk-btn--danger"
+                                        style="width:100%;justify-content:center">
+                                    ✕ Ləğv et
+                                </button>
+                            </form>
+                        }
+
+                        @if (Model.Status == GorushStatus.Bashladi)
+                        {
+                            <form asp-action="StatusYenile" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <input type="hidden" name="status" value="3" />
+                                <button type="submit" class="grsh-btn grsh-btn--primary"
+                                        style="width:100%;justify-content:center">
+                                    ✓ Bitir
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    string GetStatusClass(GorushStatus s) => s switch
+    {
+        GorushStatus.Planlanib => "grsh-status--plan",
+        GorushStatus.Bashladi => "grsh-status--active",
+        GorushStatus.Bitdi => "grsh-status--done",
+        GorushStatus.LegvEdildi => "grsh-status--cancel",
+        _ => ""
+    };
+    string GetIshtirakClass(IshtirakciStatus s) => s switch
+    {
+        IshtirakciStatus.Qebul => "grsh-ishtirak--yes",
+        IshtirakciStatus.Redd => "grsh-ishtirak--no",
+        IshtirakciStatus.Gozleyir => "grsh-ishtirak--wait",
+        _ => ""
+    };
+    string GetIshtirakText(IshtirakciStatus s) => s switch
+    {
+        IshtirakciStatus.Qebul => "✓ İştirak edəcək",
+        IshtirakciStatus.Redd => "✕ İştirak etməyəcək",
+        IshtirakciStatus.Gozleyir => "⏳ Cavab gözlənilir",
+        _ => ""
+    };
+}

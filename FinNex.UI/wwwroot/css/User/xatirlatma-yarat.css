@@ -1,0 +1,258 @@
+﻿/* =============================================
+   FinNex — Xatırlatma Yarat Page
+   wwwroot/css/User/xatirlatma-yarat.css
+   ============================================= */
+
+/* ── Wrapper ──────────────────────────────────── */
+.xat-create-wrap {
+    max-width: 600px;
+}
+
+/* ── Back link ────────────────────────────────── */
+.xat-create-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #8a93a8;
+    text-decoration: none;
+    margin-bottom: 18px;
+    padding: 6px 10px 6px 8px;
+    border-radius: 7px;
+    transition: all .15s;
+}
+
+    .xat-create-back:hover {
+        color: #1a2332;
+        background: #f0f2f7;
+        text-decoration: none;
+    }
+
+/* ── Card ─────────────────────────────────────── */
+.xat-create-card {
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+}
+
+/* ── Card header ──────────────────────────────── */
+.xat-create-header {
+    padding: 20px 24px 18px;
+    border-bottom: 1px solid #f0f2f7;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(to right, #fffdf5, #fff);
+}
+
+.xat-create-header-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: rgba(232,184,75,0.13);
+    border: 1px solid rgba(232,184,75,0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.xat-create-header-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a2332;
+    letter-spacing: -.2px;
+}
+
+.xat-create-header-sub {
+    font-size: 12px;
+    color: #8a93a8;
+    margin-top: 3px;
+}
+
+/* ── Card body ────────────────────────────────── */
+.xat-create-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ── Field ────────────────────────────────────── */
+.xat-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.xat-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #3a4560;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    letter-spacing: .1px;
+}
+
+.xat-required {
+    color: #e74c3c;
+    font-size: 14px;
+    line-height: 1;
+}
+
+/* ── Inputs ───────────────────────────────────── */
+.xat-input,
+.xat-textarea {
+    padding: 10px 14px;
+    border: 1.5px solid #e4e8f0;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #1a2332;
+    background: #fafbfd;
+    width: 100%;
+    font-family: inherit;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+    outline: none;
+}
+
+    .xat-input:hover,
+    .xat-textarea:hover {
+        border-color: #d0d6e4;
+        background: #fff;
+    }
+
+    .xat-input:focus,
+    .xat-textarea:focus {
+        border-color: #e8b84b;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(232,184,75,0.13);
+    }
+
+    .xat-input::placeholder,
+    .xat-textarea::placeholder {
+        color: #c0c6d4;
+    }
+
+.xat-textarea {
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.65;
+}
+
+/* datetime-local ikonun rəngi */
+.xat-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    opacity: .5;
+    cursor: pointer;
+}
+
+/* ── Validation error ─────────────────────────── */
+.xat-error {
+    font-size: 11px;
+    color: #c0392b;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ── Hint box ─────────────────────────────────── */
+.xat-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #fef9ec;
+    border: 1px solid rgba(232,184,75,0.35);
+    border-radius: 9px;
+    padding: 10px 13px;
+    font-size: 12px;
+    color: #7a5c00;
+    line-height: 1.55;
+    margin-top: 2px;
+}
+
+.xat-hint-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* ── Divider ──────────────────────────────────── */
+.xat-create-divider {
+    height: 1px;
+    background: #f0f2f7;
+    margin: 0 -24px;
+}
+
+/* ── Footer ───────────────────────────────────── */
+.xat-create-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #f0f2f7;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fafbfd;
+}
+
+.xat-create-footer-left {
+    font-size: 11px;
+    color: #aab0bf;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.xat-create-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Progress steps (dekorasiya) ──────────────── */
+.xat-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 22px;
+}
+
+.xat-step {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: #aab0bf;
+    font-weight: 500;
+}
+
+.xat-step--active {
+    color: #1a2332;
+}
+
+.xat-step-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #f0f2f7;
+    color: #8a93a8;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.xat-step--active .xat-step-num {
+    background: #1a2332;
+    color: #e8b84b;
+}
+
+.xat-step-line {
+    flex: 1;
+    height: 1px;
+    background: #e4e8f0;
+    margin: 0 10px;
+    min-width: 24px;
+}

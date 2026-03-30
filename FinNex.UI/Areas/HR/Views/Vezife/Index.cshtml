@@ -1,71 +1,82 @@
 ﻿@using FinNex.Application.DTOs.HR.Vezife
+@using FinNex.UI.Areas.HR.ViewModels
 @model IEnumerable<VezifeListDto>
 @{
     ViewData["Title"] = "Vəzifələr";
-    Layout = "_HRLayout";
 }
 
-<div class="page-container">
-    <!-- Header -->
-    <div class="page-header">
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/struktur.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hr/isci.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
         <div>
-            <h1 class="page-title">Vəzifələr</h1>
-            <p class="page-subtitle">Bütün vəzifələrin idarəsi</p>
+            <div class="fn-page-title">Vəzifələr</div>
+            <div class="fn-page-sub">Bütün vəzifələrin idarəsi</div>
         </div>
-        <a asp-action="Create" class="btn-add">
-            <i class="bi bi-plus-lg"></i> Yeni Vəzifə
+        <a asp-action="Create" class="fn-btn fn-btn--primary">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+            Yeni Vəzifə
         </a>
     </div>
 
-    <!-- Table Card -->
-    <div class="table-card">
-        <table class="data-table">
+    <div class="fn-card" style="padding:0;overflow:hidden;">
+        <table class="isci-table">
             <thead>
                 <tr>
                     <th>Vəzifə Adı</th>
                     <th>Departament</th>
                     <th>İşçi Sayı</th>
                     <th>Status</th>
-                    <th class="text-end">Əməliyyatlar</th>
+                    <th class="isci-th-right">Əməliyyat</th>
                 </tr>
             </thead>
             <tbody>
-                @if (Model != null && Model.Any())
+                @if (Model.Any())
                 {
                     @foreach (var item in Model)
                     {
                         <tr>
-                            <td>
-                                <div class="cell-main">@item.Ad</div>
-                            </td>
-                            <td>
-                                <span class="badge-dept">@item.DepartamentAd</span>
-                            </td>
-                            <td>
-                                <span class="badge-count">@item.IsciSayi</span>
-                            </td>
+                            <td><div class="isci-name">@item.Ad</div></td>
+                            <td><span class="str-dept-tag">@item.DepartamentAd</span></td>
+                            <td><span class="str-count-badge">@item.IsciSayi</span></td>
                             <td>
                                 @if (item.IsActive)
                                 {
-                                    <span class="badge-active">Aktiv</span>
+                                    <span class="fn-badge fn-badge--done">Aktiv</span>
                                 }
                                 else
                                 {
-                                    <span class="badge-inactive">Deaktiv</span>
+                                    <span class="fn-badge fn-badge--rejected">Deaktiv</span>
                                 }
                             </td>
-                            <td class="text-end">
-                                <div class="action-btns">
-                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn-icon" title="Bax">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn-icon" title="Redaktə">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <button type="button" class="btn-icon btn-delete" onclick="deleteVezife(@item.Id)" title="Sil">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
+                            <td class="isci-td-actions">
+                                <button class="isci-action-btn"
+                                        title="Redaktə"
+                                        data-action="vezife-edit"
+                                        data-id="@item.Id"
+                                        data-ad="@item.Ad"
+                                        data-deptid="@item.DepartamentId"
+                                        data-active="@item.IsActive.ToString().ToLower()">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
+                                    </svg>
+                                </button>
+                                <button class="isci-action-btn isci-action-btn--red-text"
+                                        title="Sil"
+                                        data-action="vezife-delete"
+                                        data-id="@item.Id"
+                                        data-ad="@item.Ad"
+                                        data-sayi="@item.IsciSayi">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <path d="M2 3.5h10M5 3.5V2.5h4v1M4.5 3.5l.5 8M9.5 3.5l-.5 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                    </svg>
+                                </button>
                             </td>
                         </tr>
                     }
@@ -73,21 +84,107 @@
                 else
                 {
                     <tr>
-                        <td colspan="5" class="text-center empty-state">
-                            <i class="bi bi-inbox"></i>
-                            <p>Heç bir vəzifə tapılmadı</p>
-                        </td>
+                        <td colspan="5" class="isci-table-empty">Heç bir vəzifə tapılmadı</td>
                     </tr>
                 }
             </tbody>
         </table>
     </div>
+
 </div>
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/hr/vezife-list.css" />
-}
+<!-- ── Edit Modal ───────────────────────────────── -->
+<div class="str-modal-overlay" id="vezifeEditModal" style="display:none;">
+    <div class="str-modal">
+        <div class="str-modal-header">
+            <div class="str-modal-title">Vəzifəni Redaktə Et</div>
+            <button type="button" class="str-modal-close" data-close-modal="vezifeEditModal">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="vezifeEditId" />
+            <div class="str-modal-body">
+                <div class="isci-field">
+                    <label class="isci-label">Vəzifə Adı <span class="isci-required">*</span></label>
+                    <input type="text" name="Ad" id="vezifeEditAd" class="isci-input" required />
+                </div>
+                <div class="isci-field str-field-mt">
+                    <label class="isci-label">Departament <span class="isci-required">*</span></label>
+                    <select name="DepartamentId" id="vezifeEditDept" class="isci-input">
+                        @if (ViewBag.Departamentlar != null)
+                        {
+                            @foreach (var d in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Departamentlar)
+                            {
+                                <option value="@d.Value">@d.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="isci-field str-field-mt">
+                    <label class="isci-label">Təsvir</label>
+                    <textarea name="Tesvir" id="vezifeEditTesvir"
+                              class="isci-input str-modal-textarea"></textarea>
+                </div>
+                <div class="isci-field str-field-mt">
+                    <label class="str-checkbox-label">
+                        <input type="checkbox" name="Aktivdir" id="vezifeEditAktiv"
+                               value="true" class="str-checkbox" />
+                        Aktiv vəzifə
+                    </label>
+                </div>
+            </div>
+            <div class="str-modal-footer">
+                <button type="button" class="fn-btn fn-btn--outline" data-close-modal="vezifeEditModal">Ləğv et</button>
+                <button type="submit" class="fn-btn fn-btn--primary">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Yadda saxla
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ── Delete Modal ─────────────────────────────── -->
+<div class="str-modal-overlay" id="vezifeDeleteModal" style="display:none;">
+    <div class="str-modal str-modal--sm">
+        <div class="str-modal-header">
+            <div class="str-modal-title">Vəzifəni Sil</div>
+            <button type="button" class="str-modal-close" data-close-modal="vezifeDeleteModal">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+        <div class="str-modal-body">
+            <div class="str-delete-blocked" id="vezWarnBlocked" style="display:none;">
+                <div id="vezWarnBlockedText"></div>
+            </div>
+            <div class="str-delete-confirm" id="vezWarnConfirm" style="display:none;">
+                <div id="vezWarnConfirmText"></div>
+            </div>
+        </div>
+        <form asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="vezifeDeleteId" />
+            <div class="str-modal-footer">
+                <button type="button" class="fn-btn fn-btn--outline" data-close-modal="vezifeDeleteModal">Ləğv et</button>
+                <button type="submit" id="vezifeDeleteBtn" class="fn-btn str-btn-danger">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 3h8M4.5 3V2h3v1M4 3l.5 6.5M8 3l-.5 6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                    </svg>
+                    Sil
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 @section Scripts {
-    <script src="~/js/hr/vezife-list.js"></script>
+    <script src="~/js/hr/vezife-index.js" asp-append-version="true"></script>
 }

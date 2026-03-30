@@ -1,0 +1,426 @@
+﻿/* =============================================
+   FinNex — Xatırlatmalar Page
+   wwwroot/css/User/xatirlatma.css
+   ============================================= */
+
+/* ── Page toolbar ─────────────────────────────── */
+.xat-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.xat-stats-row {
+    display: flex;
+    gap: 10px;
+}
+
+.xat-stat-pill {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #5a647a;
+    transition: border-color .15s;
+}
+
+.xat-stat-pill-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.xat-stat-pill-dot--today {
+    background: #e8b84b;
+}
+
+.xat-stat-pill-dot--wait {
+    background: #6382f6;
+}
+
+.xat-stat-pill-dot--past {
+    background: #ef4444;
+}
+
+.xat-stat-pill-dot--done {
+    background: #1e9b6b;
+}
+
+.xat-stat-pill strong {
+    font-weight: 700;
+    color: #1a2332;
+}
+
+.xat-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Section ──────────────────────────────────── */
+.xat-section {
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.xat-section-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    border-bottom: 1px solid #f0f2f7;
+    cursor: pointer;
+    user-select: none;
+    transition: background .13s;
+}
+
+    .xat-section-head:hover {
+        background: #fafbfd;
+    }
+
+.xat-section-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.xat-section-icon--today {
+    background: rgba(232,184,75,0.13);
+}
+
+.xat-section-icon--wait {
+    background: rgba(99,130,246,0.12);
+}
+
+.xat-section-icon--past {
+    background: rgba(239,68,68,0.10);
+}
+
+.xat-section-icon--done {
+    background: rgba(30,155,107,0.10);
+}
+
+.xat-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a2332;
+    flex: 1;
+}
+
+.xat-section-count {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+
+.xat-section-count--today {
+    background: rgba(232,184,75,0.15);
+    color: #b8860b;
+}
+
+.xat-section-count--wait {
+    background: rgba(99,130,246,0.13);
+    color: #3a5bcf;
+}
+
+.xat-section-count--past {
+    background: rgba(239,68,68,0.12);
+    color: #b91c1c;
+}
+
+.xat-section-count--done {
+    background: rgba(30,155,107,0.11);
+    color: #1a7a50;
+}
+
+.xat-section-chevron {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: .35;
+    transition: transform .22s ease, opacity .15s;
+    flex-shrink: 0;
+}
+
+.xat-section.open .xat-section-chevron {
+    transform: rotate(180deg);
+    opacity: .65;
+}
+
+/* ── Section body (collapsible) ───────────────── */
+.xat-section-body {
+    display: none;
+    padding: 10px 14px 14px;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.xat-section.open .xat-section-body {
+    display: flex;
+}
+
+/* ── Empty state ──────────────────────────────── */
+.xat-empty {
+    padding: 28px 0;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+}
+
+.xat-empty-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #f4f6fb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2px;
+}
+
+.xat-empty-text {
+    font-size: 12px;
+    color: #aab0bf;
+}
+
+/* ── Item card ────────────────────────────────── */
+.xat-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 13px 14px;
+    border-radius: 10px;
+    border: 1px solid #f0f2f7;
+    background: #fafbfd;
+    transition: box-shadow .15s, border-color .15s, background .15s;
+    position: relative;
+}
+
+    .xat-item:hover {
+        border-color: #dde1ea;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        background: #fff;
+    }
+
+/* Unread — sarı sol çizgi + açıq sarı arxa fon */
+.xat-item--unread {
+    background: #fffef5;
+    border-color: #f5e8b0;
+    border-left: 3px solid #e8b84b;
+}
+
+    .xat-item--unread:hover {
+        border-left-color: #e8b84b;
+        border-color: #e8b84b;
+        box-shadow: 0 3px 14px rgba(232,184,75,0.12);
+    }
+
+/* Past — qırmızı sol çizgi */
+.xat-item--past {
+    border-left: 3px solid #fca5a5;
+}
+
+/* Read — solğun */
+.xat-item--read {
+    opacity: .68;
+}
+
+    .xat-item--read:hover {
+        opacity: .9;
+    }
+
+/* ── Item icon ────────────────────────────────── */
+.xat-item-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.xat-item-icon--today {
+    background: rgba(232,184,75,0.14);
+}
+
+.xat-item-icon--wait {
+    background: rgba(99,130,246,0.12);
+}
+
+.xat-item-icon--past {
+    background: rgba(239,68,68,0.10);
+}
+
+.xat-item-icon--done {
+    background: rgba(30,155,107,0.10);
+}
+
+/* ── Item content ─────────────────────────────── */
+.xat-item-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.xat-item-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.xat-item-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a2332;
+    line-height: 1.4;
+}
+
+.xat-item--read .xat-item-title {
+    font-weight: 500;
+    color: #6a7590;
+    text-decoration: line-through;
+    text-decoration-color: #c8cdd8;
+}
+
+.xat-item-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10.5px;
+    color: #aab0bf;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 2px;
+    background: #f4f6fb;
+    border-radius: 6px;
+    padding: 3px 8px;
+}
+
+.xat-item--unread .xat-item-time {
+    background: rgba(232,184,75,0.12);
+    color: #b8860b;
+}
+
+.xat-item--past .xat-item-time {
+    background: rgba(239,68,68,0.08);
+    color: #b91c1c;
+}
+
+.xat-item-note {
+    font-size: 12px;
+    color: #6a7590;
+    margin-top: 6px;
+    line-height: 1.6;
+    padding: 7px 10px;
+    background: rgba(0,0,0,0.02);
+    border-radius: 7px;
+    border-left: 2px solid #e4e8f0;
+}
+
+/* ── Item actions ─────────────────────────────── */
+.xat-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.xat-btn-read {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(232,184,75,0.10);
+    border: 1px solid rgba(232,184,75,0.35);
+    color: #b8860b;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all .15s;
+}
+
+    .xat-btn-read:hover {
+        background: rgba(232,184,75,0.22);
+        border-color: #e8b84b;
+    }
+
+.xat-btn-del {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: transparent;
+    border: 1px solid #f5c0c0;
+    color: #c0392b;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all .15s;
+}
+
+    .xat-btn-del:hover {
+        background: #fef0f0;
+        border-color: #e88888;
+    }
+
+/* ── Mark-all button ──────────────────────────── */
+.xat-btn-markall {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    color: #5a647a;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all .15s;
+}
+
+    .xat-btn-markall:hover {
+        background: #f4f6fb;
+        border-color: #c8cdd8;
+        color: #1a2332;
+    }
+
+/* ── Unread count badge (toolbar) ─────────────── */
+.xat-unread-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(232,184,75,0.12);
+    border: 1px solid rgba(232,184,75,0.3);
+    color: #b8860b;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 8px;
+}

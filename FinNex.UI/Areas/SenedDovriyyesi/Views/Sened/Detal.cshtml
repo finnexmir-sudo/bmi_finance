@@ -1,0 +1,360 @@
+@model SenedDetailVM
+@{
+    ViewData["Title"] = "Sənəd Detalı";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/sened-dovriyyesi-fn.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hr/struktur.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
+       class="sd-back">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M9 11L5 7l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        Siyahıya qayıt
+    </a>
+
+    <!-- Başlıq paneli -->
+    <div class="sd-detail-card" style="margin-bottom:14px;">
+        <div class="sd-detail-body" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div class="sd-kpi-icon sd-kpi-icon--blue" style="width:48px;height:48px;border-radius:13px;flex-shrink:0;">
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                        <path d="M5 3h9l4 4v12H5V3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                        <path d="M14 3v4h4" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                        <path d="M8 11h6M8 14h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div>
+                    <div style="font-size:17px;font-weight:800;color:#1a2332;letter-spacing:-.3px;">@Model.Basliq</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center;">
+                        @{
+                            var bc = Model.Status switch
+                            {
+                                SenedStatusu.Yeni => "sd-badge--yeni",
+                                SenedStatusu.Yoxlanilir => "sd-badge--yoxlanilir",
+                                SenedStatusu.Tesdiq => "sd-badge--tesdiq",
+                                SenedStatusu.Arxiv => "sd-badge--arxiv",
+                                _ => "sd-badge--arxiv"
+                            };
+                            var bt = Model.Status switch
+                            {
+                                SenedStatusu.Yeni => "Yeni",
+                                SenedStatusu.Yoxlanilir => "Yoxlanılır",
+                                SenedStatusu.Tesdiq => "Təsdiqlənmiş",
+                                SenedStatusu.Arxiv => "Arxiv",
+                                _ => "—"
+                            };
+                        }
+                        <span class="sd-badge @bc">@bt</span>
+                        <span style="font-size:12px;color:#8a93a8;">@Model.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</span>
+                        <span class="str-dept-tag">@Model.Sobe</span>
+                        <span style="font-size:12px;color:#5a647a;font-weight:500;">@Model.SenedNovu</span>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;">
+                <a asp-area="SenedDovriyyesi" asp-controller="Sened"
+                   asp-action="Redakte" asp-route-id="@Model.Id"
+                   class="fn-btn fn-btn--outline">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <path d="M9 2l2 2-6.5 6.5H2.5v-2L9 2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
+                    </svg>
+                    Redaktə
+                </a>
+                <a asp-area="SenedDovriyyesi" asp-controller="Sened"
+                   asp-action="SilTesdiq" asp-route-id="@Model.Id"
+                   class="fn-btn str-btn-danger">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <path d="M2 3h9M5 3V2h3v1M4 3l.5 8M9 3l-.5 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                    </svg>
+                    Sil
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status dəyişdirmə paneli -->
+    @if (Model.Status != SenedStatusu.Arxiv)
+    {
+        <div class="sd-detail-card" style="margin-bottom:14px;border-color:rgba(232,184,75,0.3);background:rgba(232,184,75,0.03);">
+            <div class="sd-detail-body" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <div style="font-size:12px;font-weight:700;color:#b45309;flex-shrink:0;">
+                    Status dəyiş:
+                </div>
+                @if (Model.Status == SenedStatusu.Yeni)
+                {
+                    <form asp-action="StatusDeyis" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="status" value="@SenedStatusu.Yoxlanilir" />
+                        <button type="submit" class="fn-btn fn-btn--outline" style="font-size:11px;height:32px;padding:0 12px;">
+                            → Yoxlanılıra göndər
+                        </button>
+                    </form>
+                }
+                @if (Model.Status == SenedStatusu.Yoxlanilir)
+                {
+                    <form asp-action="StatusDeyis" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="status" value="@SenedStatusu.Tesdiq" />
+                        <button type="submit" class="fn-btn fn-btn--primary" style="font-size:11px;height:32px;padding:0 12px;background:#16a34a;border-color:#16a34a;">
+                            ✓ Təsdiqlə
+                        </button>
+                    </form>
+                    <form asp-action="StatusDeyis" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="status" value="@SenedStatusu.Yeni" />
+                        <button type="submit" class="fn-btn fn-btn--outline" style="font-size:11px;height:32px;padding:0 12px;">
+                            ← Geri qaytar
+                        </button>
+                    </form>
+                }
+                @if (Model.Status == SenedStatusu.Tesdiq)
+                {
+                    <form asp-action="StatusDeyis" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="status" value="@SenedStatusu.Arxiv" />
+                        <button type="submit" class="fn-btn fn-btn--outline" style="font-size:11px;height:32px;padding:0 12px;">
+                            Arxivə göndər
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="sd-detail-grid">
+
+        <!-- Sol sütun -->
+        <div>
+
+            <!-- Metadata -->
+            <div class="sd-detail-card" style="margin-bottom:14px;">
+                <div class="sd-detail-card-hdr">
+                    <div class="sd-detail-card-title">Sənəd Məlumatları</div>
+                </div>
+                <div class="sd-detail-body">
+                    <div class="sd-meta-row">
+                        <div class="sd-meta-key">ID</div>
+                        <div class="sd-meta-val"><span class="sd-table-id">#@Model.Id</span></div>
+                    </div>
+                    <div class="sd-meta-row">
+                        <div class="sd-meta-key">Şöbə</div>
+                        <div class="sd-meta-val">@Model.Sobe</div>
+                    </div>
+                    <div class="sd-meta-row">
+                        <div class="sd-meta-key">Sənəd Növü</div>
+                        <div class="sd-meta-val"><span class="str-dept-tag">@Model.SenedNovu</span></div>
+                    </div>
+                    <div class="sd-meta-row">
+                        <div class="sd-meta-key">Status</div>
+                        <div class="sd-meta-val"><span class="sd-badge @bc">@bt</span></div>
+                    </div>
+                    <div class="sd-meta-row">
+                        <div class="sd-meta-key">Yaradılma</div>
+                        <div class="sd-meta-val">@Model.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</div>
+                    </div>
+                    @if (Model.YenilenmeTarixi.HasValue)
+                    {
+                        <div class="sd-meta-row">
+                            <div class="sd-meta-key">Son yenilənmə</div>
+                            <div class="sd-meta-val">@Model.YenilenmeTarixi.Value.ToString("dd.MM.yyyy HH:mm")</div>
+                        </div>
+                    }
+                    <div class="sd-meta-row">
+                        <div class="sd-meta-key">Açar söz</div>
+                        <div class="sd-meta-val">@Model.AcarSoz</div>
+                    </div>
+                    @if (Model.Tags.Any())
+                    {
+                        <div class="sd-meta-row">
+                            <div class="sd-meta-key">Tag-lər</div>
+                            <div class="sd-meta-val" style="display:flex;gap:5px;flex-wrap:wrap;">
+                                @foreach (var tag in Model.Tags)
+                                {
+                                    <span class="str-dept-tag">@tag</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Fayllar -->
+            <div class="sd-detail-card">
+                <div class="sd-detail-card-hdr">
+                    <div class="sd-detail-card-title">Fayl Versiyaları (@Model.Fayllar.Count)</div>
+                </div>
+                <div>
+                    @if (Model.Fayllar.Any())
+                    {
+                        <table class="sd-table">
+                            <thead>
+                                <tr>
+                                    <th>Versiya</th>
+                                    <th>Fayl Adı</th>
+                                    <th>Ölçü</th>
+                                    <th>Tarix</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var f in Model.Fayllar)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span style="font-weight:700;font-size:12px;">v@(f.VersiyaNo)</span>
+                                            @if (f.AktivVersiya)
+                                            {
+                                                <span class="fn-badge fn-badge--done" style="margin-left:4px;font-size:9px;">Aktiv</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div style="display:flex;align-items:center;gap:6px;">
+                                                <div class="sd-file-row-icon" style="width:24px;height:24px;border-radius:6px;">
+                                                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                                        <path d="M2 1h5l2 2v7H2V1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" />
+                                                    </svg>
+                                                </div>
+                                                <span style="font-size:12px;color:#1a2332;font-weight:500;">@f.OriginalAd</span>
+                                            </div>
+                                        </td>
+                                        <td style="font-size:11px;color:#8a93a8;">@f.FormattedSize</td>
+                                        <td style="font-size:11px;color:#8a93a8;">@f.YaradilmaTarixi.ToString("dd.MM.yy")</td>
+                                        <td>
+                                            <div style="display:flex;gap:4px;">
+                                                <button type="button"
+                                                        class="isci-action-btn btn-preview"
+                                                        data-id="@f.Id"
+                                                        data-name="@f.OriginalAd"
+                                                        data-mime="@f.ContentType"
+                                                        data-size="@f.FormattedSize"
+                                                        data-date="@f.YaradilmaTarixi.ToString("dd.MM.yyyy")"
+                                                        data-version="v@(f.VersiyaNo)"
+                                                        data-active="@f.AktivVersiya.ToString().ToLower()"
+                                                        title="Ön izlə">
+                                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                        <ellipse cx="7" cy="7" rx="5.5" ry="3.5" stroke="currentColor" stroke-width="1.2" />
+                                                        <circle cx="7" cy="7" r="1.5" fill="currentColor" />
+                                                    </svg>
+                                                </button>
+                                                <a asp-area="SenedDovriyyesi" asp-controller="Sened"
+                                                   asp-action="Download" asp-route-id="@f.Id"
+                                                   class="isci-action-btn" title="Yüklə">
+                                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                        <path d="M7 2v7M4.5 6.5L7 9l2.5-2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                                                        <path d="M2 11h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <div class="sd-table-empty">Hələ fayl yüklənməyib</div>
+                    }
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Sağ sütun — Tarixçə -->
+        <div class="sd-detail-card">
+            <div class="sd-detail-card-hdr">
+                <div class="sd-detail-card-title">Əməliyyat Tarixçəsi</div>
+            </div>
+            <div class="sd-detail-body">
+                @if (Model.AuditLogs.Any())
+                {
+                    @foreach (var log in Model.AuditLogs)
+                    {
+                        var actionText = log.Action switch
+                        {
+                                        "Create" => "Sənəd yaradıldı",
+                                        "Upload" => "Yeni versiya yükləndi",
+                                        "Status" => "Status dəyişdirildi",
+                                        "SoftDelete" => "Sənəd silindi",
+                                        "Restore" => "Sənəd bərpa edildi",
+                            _ => log.Action
+                        };
+                        var dotColor = log.Action switch
+                        {
+                                        "Create" => "#6366f1",
+                                        "Upload" => "#0ea5e9",
+                                        "Status" => "#e8b84b",
+                                        "SoftDelete" => "#dc2626",
+                                        "Restore" => "#16a34a",
+                            _ => "#aab0bf"
+                        };
+
+                        <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #f4f6fb;">
+                            <div style="width:8px;height:8px;border-radius:50%;background:@dotColor;flex-shrink:0;margin-top:5px;"></div>
+                            <div>
+                                <div style="font-size:12px;font-weight:600;color:#1a2332;">@actionText</div>
+                                <div style="font-size:11px;color:#8a93a8;margin-top:2px;">
+                                    @log.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")
+                                    · @log.UserName
+                                    @if (!string.IsNullOrEmpty(log.Ip))
+                                    {
+                                        <text>· @log.Ip</text>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(log.DetailsJson))
+                                {
+                                    <div style="font-size:10px;color:#aab0bf;margin-top:3px;font-family:monospace;">@log.DetailsJson</div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="sd-table-empty" style="padding:24px 0;">Tarixçə boşdur</div>
+                }
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Fayl önizləmə modal -->
+<div class="str-modal-overlay str-modal-hidden" id="filePreviewModal">
+    <div class="str-modal" style="max-width:900px;height:90vh;display:flex;flex-direction:column;">
+        <div class="str-modal-header">
+            <div class="str-modal-title" id="pvModalTitle">Fayl önizləmə</div>
+            <button type="button" class="str-modal-close" data-close-modal="filePreviewModal">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+        <div id="pvModalBody" style="flex:1;overflow:hidden;background:#1a1a2e;"></div>
+        <div class="str-modal-footer">
+            <span id="pvModalVersion" style="font-size:11px;color:#8a93a8;"></span>
+            <a id="pvDownloadBtn" class="fn-btn fn-btn--primary" href="#">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M6 2v6M3.5 5.5L6 8l2.5-2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M1 10h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                </svg>
+                Yüklə
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/sened-detal.js" asp-append-version="true"></script>
+    <script src="~/js/modal-close.js" asp-append-version="true"></script>
+}

@@ -180,8 +180,11 @@ C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\AutoMapper.dl
 C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\AutoMapper.Extensions.Microsoft.DependencyInjection.dll
 C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\Azure.Core.dll
 C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\Azure.Identity.dll
+C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\ClosedXML.dll
+C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\ClosedXML.Parser.dll
 C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\DocumentFormat.OpenXml.dll
 C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\DocumentFormat.OpenXml.Framework.dll
+C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\ExcelNumberFormat.dll
 C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\FluentValidation.dll
 C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\FluentValidation.AspNetCore.dll
 C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\FluentValidation.DependencyInjectionExtensions.dll
@@ -220,6 +223,8 @@ C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\Microsoft.Ide
 C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\Microsoft.SqlServer.Server.dll
 C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\Microsoft.Win32.SystemEvents.dll
 C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\Mono.TextTemplating.dll
+C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\RBush.dll
+C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\SixLabors.Fonts.dll
 C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\System.ClientModel.dll
 C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\System.CodeDom.dll
 C:\Users\Samir\source\repos\bmi_finance\FinNex.UI\bin\Debug\net8.0\System.Composition.AttributedModel.dll

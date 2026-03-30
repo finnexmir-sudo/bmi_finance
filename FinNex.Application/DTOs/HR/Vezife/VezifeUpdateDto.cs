@@ -4,6 +4,7 @@
     {
         public int Id { get; set; }
         public string Ad { get; set; } = null!;
+        public int DepartamentId { get; set; }
         public string? Tesvir { get; set; }
         public bool Aktivdir { get; set; }
     }

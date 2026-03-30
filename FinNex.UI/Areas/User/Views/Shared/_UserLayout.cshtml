@@ -1,12 +1,23 @@
-﻿<!DOCTYPE html>
+﻿@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentTab = Context.Request.Query["tab"].ToString();
+
+    var notifActive = currentController == "Inbox" && currentTab == "bildirisler";
+}   
+
+<!DOCTYPE html>
 <html lang="az">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] — FinNex</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/css/User/user-area.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/User/dashboard.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/User/createmezuniyyet.css" asp-append-version="true" />
+    
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
@@ -15,105 +26,324 @@
 
         <aside class="fn-sidebar">
             <div class="fn-sidebar-top">
-                <div class="fn-sidebar-logo">Fin<span>Nex</span></div>
+                <div class="fn-sidebar-logo-wrap">
+                    <div class="fn-sidebar-logo-icon">FN</div>
+                    <div class="fn-sidebar-logo">Fin<span>Nex</span></div>
+                </div>
                 <div class="fn-sidebar-tagline">Bank İdarəetmə Sistemi</div>
             </div>
 
             <nav class="fn-nav">
+
                 <div class="fn-nav-label">Əsas</div>
+
                 <a asp-area="User" asp-controller="Dashboard" asp-action="Index"
                    class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <rect x="1" y="1" width="5" height="5" rx="1" fill="currentColor" />
-                        <rect x="8" y="1" width="5" height="5" rx="1" fill="currentColor" />
-                        <rect x="1" y="8" width="5" height="5" rx="1" fill="currentColor" />
-                        <rect x="8" y="8" width="5" height="5" rx="1" fill="currentColor" />
-                    </svg>
+                    <div class="fn-nav-icon">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <rect x="1" y="1" width="5" height="5" rx="1.5" fill="currentColor" />
+                            <rect x="8" y="1" width="5" height="5" rx="1.5" fill="currentColor" />
+                            <rect x="1" y="8" width="5" height="5" rx="1.5" fill="currentColor" />
+                            <rect x="8" y="8" width="5" height="5" rx="1.5" fill="currentColor" />
+                        </svg>
+                    </div>
                     Dashboard
                 </a>
+
                 <a asp-area="User" asp-controller="Profile" asp-action="Index"
                    class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Profile" ? "active" : "")">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <circle cx="7" cy="4.5" r="2.5" stroke="currentColor" stroke-width="1.2" />
-                        <path d="M1.5 12c0-3 2.5-4.5 5.5-4.5S12 9 12 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
-                    </svg>
+                    <div class="fn-nav-icon">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <circle cx="7" cy="4.5" r="2.5" stroke="currentColor" stroke-width="1.3" />
+                            <path d="M1.5 12c0-3 2.5-4.5 5.5-4.5S12 9 12 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                        </svg>
+                    </div>
                     Profil
                 </a>
 
-                <div class="fn-nav-label">Maliyyə</div>
-                <a asp-area="User" asp-controller="Odenis" asp-action="Index"
-                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Odenis" ? "active" : "")">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <rect x="1" y="2.5" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2" />
-                        <path d="M1 5.5h12" stroke="currentColor" stroke-width="1.2" />
-                        <path d="M4 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
-                    </svg>
-                    Ödənişlər
-                </a>
-                <a asp-area="User" asp-controller="Sened" asp-action="Index"
-                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Sened" ? "active" : "")">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <path d="M2 1.5h8l2 2v9H2v-11z" stroke="currentColor" stroke-width="1.2" />
-                        <path d="M4 6h6M4 8.5h4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
-                    </svg>
-                    Sənədlər
+                <div class="fn-nav-label">Menu</div>
+
+                @* <a asp-area="User" asp-controller="Inbox" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Inbox" ? "active" : "")">
+                    <div class="fn-nav-icon">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" />
+                            <path d="M1 6l5 3.5L13 6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    Gələn Qutusu
+                    <span id="sidebarNotifCount" class="fn-nav-badge"></span>
                 </a>
 
-                <div class="fn-nav-label">İnsan Resursları</div>
-                <a asp-area="User" asp-controller="Davamiyyet" asp-action="Index"
-                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Davamiyyet" ? "active" : "")">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" />
-                        <path d="M1 5h12M5 2v2M9 2v2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
-                    </svg>
-                    Davamiyyət
-                </a>
-                <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Index"
-                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Mezuniyyet" ? "active" : "")">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2" />
-                        <path d="M7 4v3.5l2 1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
-                    </svg>
-                    Məzuniyyət
-                </a>
-                <a asp-area="User" asp-controller="Muraciet" asp-action="Index"
-                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Muraciet" ? "active" : "")">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <path d="M2 11l3-3 2 2 5-6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    Müraciətlər
-                </a>
-                <a asp-area="User" asp-controller="Hesabat" asp-action="Index"
-                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Hesabat" ? "active" : "")">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <path d="M1.5 10L5 6.5l3 3 4.5-5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    Hesabatlar
-                </a>
+                <a asp-area="User" asp-controller="Xatirlatma" asp-action="Index"
+                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Xatirlatma" ? "active" : "")">
+                    <div class="fn-nav-icon">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.3" />
+                            <path d="M7 4.5V7l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    Xatırlatmalar
+                    <span id="sidebarXatCount" class="fn-nav-badge" style="display:none"></span>
+                </a> *@
 
-                <div class="fn-nav-label">Təsdiq Paneli</div>
-                <a asp-area="User" asp-controller="Tesdiq" asp-action="SobeReisi"
-                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tesdiq" && ViewContext.RouteData.Values["action"]?.ToString() == "SobeReisi" ? "active" : "")">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <circle cx="7" cy="4.5" r="2.5" stroke="currentColor" stroke-width="1.2" />
-                        <path d="M1.5 12c0-3 2.5-4.5 5.5-4.5S12 9 12 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
-                    </svg>
-                    Şöbə Rəhbəri
+                <!-- İnsan Resursları -->
+                <div class="fn-nav-group @(ViewContext.RouteData.Values["controller"]?.ToString() is "Davamiyyet" or "Mezuniyyet" or "Muraciet" ? "open" : "")">
+                    <button type="button" class="fn-nav-group-toggle">
+                        <div class="fn-nav-group-left">
+                            <div class="fn-nav-icon">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" />
+                                    <path d="M1 5h12M5 2v2M9 2v2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                            Əməkdaş Portalı
+                        </div>
+                        <div class="fn-nav-arrow">
+                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
+                        </div>
+                    </button>
+                    <div class="fn-nav-submenu">
+                        <a asp-area="User" asp-controller="Davamiyyet" asp-action="Index"
+                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Davamiyyet" ? "active" : "")">
+                            <div class="fn-sub-dot"></div> Davamiyyət
+                        </a>
+                        <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Index"
+                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Mezuniyyet" ? "active" : "")">
+                            <div class="fn-sub-dot"></div> Məzuniyyət
+                        </a>
+                        <a asp-area="User" asp-controller="Muraciet" asp-action="Index"
+                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Muraciet" ? "active" : "")">
+                            <div class="fn-sub-dot"></div> Müraciətlər
+                        </a>
+                        <a asp-area="User" asp-controller="Tapshiriq" asp-action="Index"
+                           class="fn-nav-subitem @(currentController == "Tapshiriq" ? "active" : "")">
+                            <div class="fn-sub-dot"></div> Tapşırıqlar
+                        </a>
+                        <a asp-area="User" asp-controller="Gorush" asp-action="Index"
+                           class="fn-nav-subitem @(currentController == "Gorush" ? "active" : "")">
+                            <div class="fn-sub-dot"></div> Görüşlər
+                        </a>
+
+                    </div>
+                </div>
+
+                <!-- Maliyyə -->
+                <div class="fn-nav-group @(ViewContext.RouteData.Values["controller"]?.ToString() is "Odenis" or "Sened" ? "open" : "")">
+                    <button type="button" class="fn-nav-group-toggle">
+                        <div class="fn-nav-group-left">
+                            <div class="fn-nav-icon">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <rect x="1" y="2.5" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2" />
+                                    <path d="M1 5.5h12M4 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                            Maliyyə
+                        </div>
+                        <div class="fn-nav-arrow">
+                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
+                        </div>
+                    </button>
+                    <div class="fn-nav-submenu">
+                        <a asp-area="User" asp-controller="Odenis" asp-action="Index"
+                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Odenis" ? "active" : "")">
+                            <div class="fn-sub-dot"></div> Ödənişlər
+                        </a>
+                        @* <a asp-area="User" asp-controller="Sened" asp-action="Index"
+                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Sened" ? "active" : "")">
+                            <div class="fn-sub-dot"></div> Sənədlər
+                        </a> *@
+                    </div>
+                </div>
+
+                <!-- Təsdiq Paneli -->
+                <div class="fn-nav-group @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tesdiq" ? "open" : "")">
+                    <button type="button" class="fn-nav-group-toggle">
+                        <div class="fn-nav-group-left">
+                            <div class="fn-nav-icon">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <path d="M2 11l3-3 2 2 5-6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </div>
+                            Təsdiq Paneli
+                        </div>
+                        <div class="fn-nav-arrow">
+                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
+                        </div>
+                    </button>
+                    <div class="fn-nav-submenu">
+                        <a asp-area="User" asp-controller="Tesdiq" asp-action="SobeReisi"
+                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tesdiq" && ViewContext.RouteData.Values["action"]?.ToString() == "SobeReisi" ? "active" : "")">
+                            <div class="fn-sub-dot"></div> Şöbə Rəhbəri
+                        </a>
+                        <a asp-area="User" asp-controller="Tesdiq" asp-action="Rehber"
+                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tesdiq" && ViewContext.RouteData.Values["action"]?.ToString() == "Rehber" ? "active" : "")">
+                            <div class="fn-sub-dot"></div> Rəhbər
+                        </a>
+                        <a asp-area="User" asp-controller="Tesdiq" asp-action="Hr"
+                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tesdiq" && ViewContext.RouteData.Values["action"]?.ToString() == "Hr" ? "active" : "")">
+                            <div class="fn-sub-dot"></div> HR
+                        </a>
+                    </div>
+                </div>
+                <!-- Hesabatlar -->
+                <div class="fn-nav-group @(currentController == "Hesabat" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "open" : "")">
+                    <button type="button" class="fn-nav-group-toggle">
+                        <div class="fn-nav-group-left">
+                            <div class="fn-nav-icon">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <rect x="1" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" />
+                                    <path d="M4 3V1.5M10 3V1.5M1 6h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                            Hesabatlar
+                        </div>
+                        <div class="fn-nav-arrow">
+                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
+                        </div>
+                    </button>
+
+                    <div class="fn-nav-submenu">
+                        <a asp-area="User" asp-controller="Hesabat" asp-action="Index"
+                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Hesabat" ? "active" : "")">
+                            <div class="fn-sub-dot"></div> Məzuniyyət / İcazə
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Programlar — 3 mərhələli accordion -->
+                <div class="fn-nav-group">
+                    <button type="button" class="fn-nav-group-toggle">
+                        <div class="fn-nav-group-left">
+                            <div class="fn-nav-icon">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <rect x="1" y="1" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.2" />
+                                    <rect x="7.5" y="1" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.2" />
+                                    <rect x="1" y="7.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.2" />
+                                    <rect x="7.5" y="7.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.2" />
+                                </svg>
+                            </div>
+                            Programlar
+                        </div>
+                        <div class="fn-nav-arrow">
+                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
+                        </div>
+                    </button>
+
+                    <div class="fn-nav-submenu">
+
+                        <!-- Umumi -->
+                        <div class="fn-nav-group">
+                            <button type="button" class="fn-nav-group-toggle">
+                                <div class="fn-nav-group-left">
+                                    <div class="fn-nav-subgroup-icon" style="background:rgba(232,184,75,0.14);">⚡</div>
+                                    Ümumi
+                                </div>
+                                <div class="fn-nav-arrow">
+                                    <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
+                                </div>
+                            </button>
+                            <div class="fn-nav-submenu">
+                                <a asp-area="SenedDovriyyesi"
+                                   asp-controller="Dashboard"
+                                   asp-action="Index"
+                                   class="fn-nav-subitem">
+                                    <div class="fn-sub-dot"></div> Sənəd Dövriyyəsi
+                                </a>
+
+                            </div>
+                        </div>
+
+                        <!-- Swift -->
+                        <div class="fn-nav-group">
+                            <button type="button" class="fn-nav-group-toggle">
+                                <div class="fn-nav-group-left">
+                                    <div class="fn-nav-subgroup-icon" style="background:rgba(232,184,75,0.14);">⚡</div>
+                                    Swift
+                                </div>
+                                <div class="fn-nav-arrow">
+                                    <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
+                                </div>
+                            </button>
+                            <div class="fn-nav-submenu">
+                                <a asp-area="PR_Odenis_Tapsirigi"
+                                   asp-controller="OdenisTapsirigi"
+                                   asp-action="Index"
+                                   class="fn-nav-subitem">
+                                    <div class="fn-sub-dot"></div> Ödəniş tapşırığı
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Kredit -->
+                        <div class="fn-nav-group">
+                            <button type="button" class="fn-nav-group-toggle">
+                                <div class="fn-nav-group-left">
+                                    <div class="fn-nav-subgroup-icon" style="background:rgba(99,130,246,0.14);">💳</div>
+                                    Kredit
+                                </div>
+                                <div class="fn-nav-arrow">
+                                    <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
+                                </div>
+                            </button>
+                            <div class="fn-nav-submenu">
+                                <a href="#" class="fn-nav-subitem"><div class="fn-sub-dot"></div> Layihə 1</a>
+                                <a href="#" class="fn-nav-subitem"><div class="fn-sub-dot"></div> Layihə 2</a>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                @* Sidebar-da digər nav-group-lardan sonra *@
+                @if (User.IsInRole("HR"))
+                {
+                    <div class="fn-nav-label">HR İdarəetmə</div>
+
+                    <div class="fn-nav-group @(ViewContext.RouteData.Values["area"]?.ToString() == "HR" ? "open" : "")">
+                        <button type="button" class="fn-nav-group-toggle">
+                            <div class="fn-nav-group-left">
+                                <div class="fn-nav-icon">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <circle cx="5" cy="4" r="2" stroke="currentColor" stroke-width="1.2" />
+                                        <path d="M1 12c0-2.5 1.8-4 4-4s4 1.5 4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                        <path d="M10 6v4M12 8h-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                    </svg>
+                                </div>
+                                HR İdarəetmə
+                            </div>
+                            <div class="fn-nav-arrow">
+                                <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
+                            </div>
+                        </button>
+                        <div class="fn-nav-submenu">
+                            <a asp-area="HR" asp-controller="Dashboard" asp-action="Index"
+                               class="fn-nav-subitem @(ViewContext.RouteData.Values["area"]?.ToString() == "HR" && currentController == "Dashboard" ? "active" : "")">
+                                <div class="fn-sub-dot"></div> HR Dashboard
+                            </a>
+                            <a asp-area="HR" asp-controller="Isci" asp-action="Index"
+                               class="fn-nav-subitem @(currentController == "Isci" ? "active" : "")">
+                                <div class="fn-sub-dot"></div> İşçilər
+                            </a>
+                            <a asp-area="HR" asp-controller="Departament" asp-action="Index"
+                               class="fn-nav-subitem @(currentController == "Sobe" ? "active" : "")">
+                                <div class="fn-sub-dot"></div> Departamentlər
+                            </a>
+                            <a asp-area="HR" asp-controller="Vezife" asp-action="Index"
+                               class="fn-nav-subitem @(currentController == "Vezife" ? "active" : "")">
+                                <div class="fn-sub-dot"></div> Vəzifələr
+                            </a>
+                        </div>
+                    </div>
+                }
+
+                <!-- MAAS -->
+                <a asp-area="HR" asp-controller="Maas" asp-action="Index"
+                   class="fn-nav-subitem @(currentController == "Maas" ? "active" : "")">
+                    <div class="fn-sub-dot"></div> Əmək Haqqı
                 </a>
-                <a asp-area="User" asp-controller="Tesdiq" asp-action="Rehber"
-                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tesdiq" && ViewContext.RouteData.Values["action"]?.ToString() == "Rehber" ? "active" : "")">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <path d="M7 1l1.8 3.7 4.2.6-3 2.9.7 4.2L7 10.3l-3.7 2.1.7-4.2-3-2.9 4.2-.6L7 1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" />
-                    </svg>
-                    Rəhbər
-                </a>
-                <a asp-area="User" asp-controller="Tesdiq" asp-action="Hr"
-                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tesdiq" && ViewContext.RouteData.Values["action"]?.ToString() == "Hr" ? "active" : "")">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <rect x="1.5" y="1.5" width="11" height="11" rx="2.5" stroke="currentColor" stroke-width="1.2" />
-                        <path d="M5 7h4M7 5v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
-                    </svg>
-                    HR
+                <a asp-area="HR" asp-controller="MaasParametri" asp-action="Index"
+                   class="fn-nav-subitem @(currentController == "MaasParametri" ? "active" : "")">
+                    <div class="fn-sub-dot"></div> Vergi Parametrləri
                 </a>
             </nav>
 
@@ -137,7 +367,7 @@
                     <button type="submit" class="fn-logout-btn">
                         <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                             <path d="M5 2H2a1 1 0 00-1 1v7a1 1 0 001 1h3M9 9l3-2.5L9 4M5 6.5h7"
-                                  stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                                  stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
                         Çıxış
                     </button>
@@ -146,19 +376,35 @@
         </aside>
 
         <main class="fn-main">
+
             <div class="fn-topbar-wrap">
                 <div>
                     <div class="fn-topbar-title">@ViewData["Title"]</div>
                     <div class="fn-topbar-sub">@DateTime.Now.ToString("dd MMMM yyyy") · @ViewData["UserRole"]</div>
                 </div>
                 <div class="fn-topbar-right">
-                    <div class="fn-notif-btn">
+
+                    <!-- Xatırlatma ikonu -->
+                    <a asp-area="User" asp-controller="Xatirlatma" asp-action="Index"
+                       class="fn-notif-btn" id="xatirlatmaBtn" title="Xatırlatmalar">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <circle cx="7" cy="7" r="5.5" stroke="#5a647a" stroke-width="1.3" />
+                            <path d="M7 4.5V7l2 1.5" stroke="#5a647a" stroke-width="1.3" stroke-linecap="round" />
+                        </svg>
+                        <span class="fn-notif-count" id="xatirlatmaCount" style="display:none">0</span>
+                    </a>
+
+                    <!-- Bildiriş (zəng) ikonu -->
+                    <a asp-area="User" asp-controller="Inbox" asp-action="Index"
+                       asp-route-tab="bildirisler"
+                       class="fn-notif-btn" id="notifBtn" title="Bildirişlər">
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                             <path d="M7 1a4 4 0 014 4c0 4 1.5 5 1.5 5H1.5S3 9 3 5a4 4 0 014-4zM5.5 10.5a1.5 1.5 0 003 0"
                                   stroke="#5a647a" stroke-width="1.2" stroke-linecap="round" />
                         </svg>
-                        <div class="fn-notif-dot"></div>
-                    </div>
+                        <span class="fn-notif-count" id="notifCount" style="display:none">0</span>
+                    </a>
+
                     <div class="fn-topbar-av">@initials</div>
                 </div>
             </div>
@@ -180,6 +426,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/User/user-area.js" asp-append-version="true"></script>
+    <script src="~/js/User/Bildiris.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
 </body>

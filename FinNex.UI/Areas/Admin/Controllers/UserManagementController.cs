@@ -157,11 +157,10 @@ public class UserManagementController : Controller
             UserName = user.UserName ?? "",
             FullName = $"{user.Ad} {user.Soyad}",
             CurrentRoles = currentRoles,
-            SelectedRole = currentRoles.FirstOrDefault() ?? "",
+            SelectedRoles = currentRoles.ToList(),
             AvailableRoles = allRoles
         };
 
-        ViewData["Title"] = "Change User Role";
         return View(vm);
     }
 
@@ -169,24 +168,26 @@ public class UserManagementController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ChangeRole(ChangeUserRoleVM vm)
     {
-        if (!ModelState.IsValid)
-        {
-            var allRoles = await _roleManager.Roles.Select(r => r.Name!).ToListAsync();
-            vm.AvailableRoles = allRoles;
-            ViewData["Title"] = "Change User Role";
-            return View(vm);
-        }
+        var allRoles = await _roleManager.Roles.Select(r => r.Name!).ToListAsync();
+        vm.AvailableRoles = allRoles;
 
         var user = await _userManager.FindByIdAsync(vm.UserId.ToString());
         if (user == null)
             return NotFound();
 
+        if (vm.SelectedRoles == null || !vm.SelectedRoles.Any())
+        {
+            ModelState.AddModelError("SelectedRoles", "Ən azı 1 rol seçilməlidir.");
+            vm.CurrentRoles = await _userManager.GetRolesAsync(user);
+            return View(vm);
+        }
+
         var currentRoles = await _userManager.GetRolesAsync(user);
 
         await _userManager.RemoveFromRolesAsync(user, currentRoles);
-        await _userManager.AddToRoleAsync(user, vm.SelectedRole);
+        await _userManager.AddToRolesAsync(user, vm.SelectedRoles);
 
-        TempData["StatusMessage"] = $"Role for '{user.UserName}' changed to '{vm.SelectedRole}'.";
+        TempData["StatusMessage"] = $"'{user.UserName}' üçün rollar yeniləndi.";
         return RedirectToAction(nameof(Index));
     }
 

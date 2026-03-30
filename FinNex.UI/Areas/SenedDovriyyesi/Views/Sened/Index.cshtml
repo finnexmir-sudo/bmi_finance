@@ -1,0 +1,205 @@
+@model SenedListVM
+@{
+    ViewData["Title"] = "Sənədlər";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/sened-dovriyyesi-fn.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hr/struktur.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Sənədlər</div>
+            <div class="fn-page-sub">Cəmi <strong>@Model.TotalCount</strong> sənəd</div>
+        </div>
+        <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Yarat"
+           class="fn-btn fn-btn--primary">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+            Yeni Sənəd
+        </a>
+    </div>
+
+    <!-- Filter -->
+    <form method="get" asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index">
+        <div class="sd-filter-bar">
+            <select asp-for="SobeId" class="sd-select" id="sobeSelect">
+                <option value="">Bütün şöbələr</option>
+                @foreach (var s in Model.Sobeler)
+                {
+                    <option value="@s.Id">@s.Ad</option>
+                }
+            </select>
+            <select asp-for="SenedNovuId" class="sd-select" id="senedNovuSelect">
+                <option value="">Bütün növlər</option>
+            </select>
+            <input type="text" name="q" value="@Model.AxtarisKelimesi"
+                   class="sd-search-input" placeholder="Başlıq və ya açar söz..." />
+            <button type="submit" class="fn-btn fn-btn--primary" style="padding:0 14px;height:36px;">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3" />
+                    <path d="M10 10l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                </svg>
+                Axtar
+            </button>
+            <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
+               class="fn-btn fn-btn--outline" style="padding:0 12px;height:36px;">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                </svg>
+            </a>
+        </div>
+    </form>
+
+    <!-- Cədvəl -->
+    <div class="sd-table-wrap">
+        <table class="sd-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Başlıq</th>
+                    <th>Şöbə</th>
+                    <th>Növ</th>
+                    <th>Status</th>
+                    <th>Fayl</th>
+                    <th>Tarix</th>
+                    <th class="isci-th-right">Əməliyyat</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Senedler.Any())
+                {
+                    @foreach (var s in Model.Senedler)
+                    {
+                        <tr>
+                            <td><span class="sd-table-id">#@s.Id</span></td>
+                            <td>
+                                <div class="sd-table-title">
+                                    <a asp-area="SenedDovriyyesi" asp-controller="Sened"
+                                       asp-action="Detal" asp-route-id="@s.Id"
+                                       style="color:inherit;text-decoration:none;">
+                                        @s.Basliq
+                                    </a>
+                                </div>
+                                @if (!string.IsNullOrEmpty(s.AcarSoz))
+                                {
+                                    <div class="sd-table-sub">
+                                        @(s.AcarSoz.Length > 45 ? s.AcarSoz.Substring(0, 45) + "..." : s.AcarSoz)
+                                    </div>
+                                }
+                            </td>
+                            <td><span class="str-dept-tag">@s.Sobe</span></td>
+                            <td><span style="font-size:12px;color:#5a647a;font-weight:500;">@s.SenedNovu</span></td>
+                            <td>
+                                @{
+                                    var bc = s.Status switch
+                                    {
+                                        SenedStatusu.Yeni => "sd-badge--yeni",
+                                        SenedStatusu.Yoxlanilir => "sd-badge--yoxlanilir",
+                                        SenedStatusu.Tesdiq => "sd-badge--tesdiq",
+                                        SenedStatusu.Arxiv => "sd-badge--arxiv",
+                                        _ => "sd-badge--arxiv"
+                                    };
+                                    var bt = s.Status switch
+                                    {
+                                        SenedStatusu.Yeni => "Yeni",
+                                        SenedStatusu.Yoxlanilir => "Yoxlanılır",
+                                        SenedStatusu.Tesdiq => "Təsdiqlənmiş",
+                                        SenedStatusu.Arxiv => "Arxiv",
+                                        _ => "—"
+                                    };
+                                }
+                                <span class="sd-badge @bc">@bt</span>
+                            </td>
+                            <td>
+                                <span class="sd-file-badge">
+                                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                        <path d="M2 1h5l2 2v7H2V1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" />
+                                    </svg>
+                                    @s.FaylSayi
+                                </span>
+                            </td>
+                            <td style="font-size:12px;color:#8a93a8;">@s.YaradilmaTarixi.ToString("dd.MM.yyyy")</td>
+                            <td class="isci-td-actions">
+                                <a asp-area="SenedDovriyyesi" asp-controller="Sened"
+                                   asp-action="Detal" asp-route-id="@s.Id"
+                                   class="isci-action-btn" title="Bax">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <ellipse cx="7" cy="7" rx="5.5" ry="3.5" stroke="currentColor" stroke-width="1.2" />
+                                        <circle cx="7" cy="7" r="1.5" fill="currentColor" />
+                                    </svg>
+                                </a>
+                                <a asp-area="SenedDovriyyesi" asp-controller="Sened"
+                                   asp-action="Redakte" asp-route-id="@s.Id"
+                                   class="isci-action-btn" title="Redaktə">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
+                                    </svg>
+                                </a>
+                                <a asp-area="SenedDovriyyesi" asp-controller="Sened"
+                                   asp-action="SilTesdiq" asp-route-id="@s.Id"
+                                   class="isci-action-btn str-action-btn--red" title="Sil">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <path d="M2 3.5h10M5 3.5V2.5h4v1M4.5 3.5l.5 8M9.5 3.5l-.5 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                    </svg>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="sd-table-empty">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style="margin:0 auto 8px;display:block;opacity:.25;">
+                                <rect x="4" y="4" width="24" height="24" rx="4" stroke="#1a2332" stroke-width="1.5" />
+                                <path d="M10 16h12M10 11h12M10 21h7" stroke="#1a2332" stroke-width="1.5" stroke-linecap="round" />
+                            </svg>
+                            Nəticə tapılmadı
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        @if (Model.TotalPages > 1)
+        {
+            <div class="sd-pagination">
+                @if (Model.Page > 1)
+                {
+                    <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
+                       asp-route-page="@(Model.Page - 1)"
+                       asp-route-sobeId="@Model.SobeId" asp-route-q="@Model.AxtarisKelimesi"
+                       class="sd-page-btn">←</a>
+                }
+                @{
+                    var sp = Math.Max(1, Model.Page - 2);
+                    var ep = Math.Min(Model.TotalPages, Model.Page + 2);
+                }
+                @for (int i = sp; i <= ep; i++)
+                {
+                    <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
+                       asp-route-page="@i"
+                       asp-route-sobeId="@Model.SobeId" asp-route-q="@Model.AxtarisKelimesi"
+                       class="sd-page-btn @(i == Model.Page ? "sd-page-btn--active" : "")">@i</a>
+                }
+                @if (Model.Page < Model.TotalPages)
+                {
+                    <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
+                       asp-route-page="@(Model.Page + 1)"
+                       asp-route-sobeId="@Model.SobeId" asp-route-q="@Model.AxtarisKelimesi"
+                       class="sd-page-btn">→</a>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/sened-yarat.js" asp-append-version="true"></script>
+}

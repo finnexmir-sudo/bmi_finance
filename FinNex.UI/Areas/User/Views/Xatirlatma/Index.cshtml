@@ -1,0 +1,391 @@
+@model FinNex.UI.Areas.User.ViewModels.Xatirlatma.XatirlatmaIndexVM
+@{
+    ViewData["Title"] = "Xatırlatmalar";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    var bugun = Model.Bugunkular ?? new();
+    var gozleyen = Model.Gozleyenler ?? new();
+    var kecmis = Model.Kecmisler ?? new();
+    var oxunmus = Model.Oxunmuslar ?? new();
+
+    var oxunmamis = bugun.Count(x => !x.OxunubMu)
+                  + gozleyen.Count(x => !x.OxunubMu)
+                  + kecmis.Count(x => !x.OxunubMu);
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/xatirlatma.css" asp-append-version="true" />
+}
+
+<div class="fn-page"
+     id="xatirlatmaContainer"
+     data-oxu-url="@Url.Action("Oxu", "Xatirlatma", new { area = "User" })"
+     data-hamisini-oxu-url="@Url.Action("HamisiniOxu", "Xatirlatma", new { area = "User" })">
+
+    <!-- ── Toolbar ──────────────────────────────────── -->
+    <div class="xat-toolbar">
+        <div class="xat-stats-row">
+            <div class="xat-stat-pill">
+                <span class="xat-stat-pill-dot xat-stat-pill-dot--today"></span>
+                Bugün <strong>@bugun.Count</strong>
+            </div>
+            <div class="xat-stat-pill">
+                <span class="xat-stat-pill-dot xat-stat-pill-dot--wait"></span>
+                Gözləyən <strong>@gozleyen.Count</strong>
+            </div>
+            <div class="xat-stat-pill">
+                <span class="xat-stat-pill-dot xat-stat-pill-dot--past"></span>
+                Keçmiş <strong>@kecmis.Count</strong>
+            </div>
+            <div class="xat-stat-pill">
+                <span class="xat-stat-pill-dot xat-stat-pill-dot--done"></span>
+                Oxunmuş <strong>@oxunmus.Count</strong>
+            </div>
+        </div>
+
+        <div class="xat-toolbar-actions">
+            @if (oxunmamis > 0)
+            {
+                <span class="xat-unread-badge" id="xatUnreadBadge">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.3" />
+                        <path d="M6 3.5V6l1.5 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                    </svg>
+                    @oxunmamis oxunmamış
+                </span>
+                <button id="markAllBtn" class="xat-btn-markall">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M1.5 6.5l3 3 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Hamısını oxundu et
+                </button>
+            }
+            <a asp-action="Yarat" class="fn-btn fn-btn--primary">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+                Yeni xatırlatma
+            </a>
+        </div>
+    </div>
+
+    <!-- ══ BUGÜN ══════════════════════════════════════ -->
+    <div class="xat-section open">
+        <div class="xat-section-head">
+            <div class="xat-section-icon xat-section-icon--today">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                    <circle cx="7.5" cy="7.5" r="6" stroke="#c9900a" stroke-width="1.3" />
+                    <path d="M7.5 4.5V7.5l2.5 1.5" stroke="#c9900a" stroke-width="1.3" stroke-linecap="round" />
+                </svg>
+            </div>
+            <span class="xat-section-title">Bugün</span>
+            <span class="xat-section-count xat-section-count--today">@bugun.Count</span>
+            <span class="xat-section-chevron">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M3 5l4 4 4-4" stroke="#5a647a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </span>
+        </div>
+        <div class="xat-section-body">
+            @if (!bugun.Any())
+            {
+                <div class="xat-empty">
+                    <div class="xat-empty-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <circle cx="9" cy="9" r="7" stroke="#c8cdd8" stroke-width="1.3" />
+                            <path d="M9 6v4M9 12v.5" stroke="#c8cdd8" stroke-width="1.3" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <span class="xat-empty-text">Bugün üçün xatırlatma yoxdur.</span>
+                </div>
+            }
+            @foreach (var it in bugun)
+            {
+                <div class="xat-item @(it.OxunubMu ? "xat-item--read" : "xat-item--unread")" data-id="@it.Id">
+                    <div class="xat-item-icon xat-item-icon--today">
+                        <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+                            <circle cx="8.5" cy="8.5" r="6.5" stroke="#c9900a" stroke-width="1.3" />
+                            <path d="M8.5 5.5V8.5l2.5 1.5" stroke="#c9900a" stroke-width="1.3" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <div class="xat-item-body">
+                        <div class="xat-item-top">
+                            <div class="xat-item-title">@it.Bashliq</div>
+                            <div class="xat-item-time">
+                                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                    <circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.1" />
+                                    <path d="M5 3v2l1.5 1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+                                </svg>
+                                @it.XatirlatmaTarixi.ToString("HH:mm")
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(it.Qeyd))
+                        {
+                            <div class="xat-item-note">@it.Qeyd</div>
+                        }
+                        <div class="xat-item-actions">
+                            @if (!it.OxunubMu)
+                            {
+                                <button class="xat-btn-read" data-id="@it.Id">
+                                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                        <path d="M1.5 5.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                    Oxundu
+                                </button>
+                            }
+                            <form asp-action="Sil" method="post" style="display:inline" onsubmit="return confirm('Bu xatırlatma silinsin?')">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@it.Id" />
+                                <button type="submit" class="xat-btn-del">
+                                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                        <path d="M2 3h7M4.5 3V2h2v1M4 3l.5 6M7 3l-.5 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                    </svg>
+                                    Sil
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ══ GÖZLƏYƏNLƏr ══════════════════════════════ -->
+    <div class="xat-section open">
+        <div class="xat-section-head">
+            <div class="xat-section-icon xat-section-icon--wait">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                    <rect x="2" y="2" width="11" height="11" rx="2.5" stroke="#3a5bcf" stroke-width="1.3" />
+                    <path d="M7.5 5v2.5l2 1" stroke="#3a5bcf" stroke-width="1.3" stroke-linecap="round" />
+                </svg>
+            </div>
+            <span class="xat-section-title">Gözləyənlər</span>
+            <span class="xat-section-count xat-section-count--wait">@gozleyen.Count</span>
+            <span class="xat-section-chevron">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M3 5l4 4 4-4" stroke="#5a647a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </span>
+        </div>
+        <div class="xat-section-body">
+            @if (!gozleyen.Any())
+            {
+                <div class="xat-empty">
+                    <div class="xat-empty-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <rect x="2.5" y="2.5" width="13" height="13" rx="3" stroke="#c8cdd8" stroke-width="1.3" />
+                            <path d="M9 6v4M9 12v.5" stroke="#c8cdd8" stroke-width="1.3" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <span class="xat-empty-text">Gözləyən xatırlatma yoxdur.</span>
+                </div>
+            }
+            @foreach (var it in gozleyen)
+            {
+                <div class="xat-item @(it.OxunubMu ? "xat-item--read" : "xat-item--unread")" data-id="@it.Id">
+                    <div class="xat-item-icon xat-item-icon--wait">
+                        <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+                            <rect x="2.5" y="2.5" width="12" height="12" rx="2.5" stroke="#3a5bcf" stroke-width="1.3" />
+                            <path d="M8.5 5.5V8.5l2.5 1.5" stroke="#3a5bcf" stroke-width="1.3" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <div class="xat-item-body">
+                        <div class="xat-item-top">
+                            <div class="xat-item-title">@it.Bashliq</div>
+                            <div class="xat-item-time">
+                                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                    <circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.1" />
+                                    <path d="M5 3v2l1.5 1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+                                </svg>
+                                @it.XatirlatmaTarixi.ToString("dd.MM.yyyy HH:mm")
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(it.Qeyd))
+                        {
+                            <div class="xat-item-note">@it.Qeyd</div>
+                        }
+                        <div class="xat-item-actions">
+                            @if (!it.OxunubMu)
+                            {
+                                <button class="xat-btn-read" data-id="@it.Id">
+                                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                        <path d="M1.5 5.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                    Oxundu
+                                </button>
+                            }
+                            <form asp-action="Sil" method="post" style="display:inline" onsubmit="return confirm('Bu xatırlatma silinsin?')">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@it.Id" />
+                                <button type="submit" class="xat-btn-del">
+                                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                        <path d="M2 3h7M4.5 3V2h2v1M4 3l.5 6M7 3l-.5 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                    </svg>
+                                    Sil
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ══ KEÇMİŞ ════════════════════════════════════ -->
+    <div class="xat-section">
+        <div class="xat-section-head">
+            <div class="xat-section-icon xat-section-icon--past">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                    <circle cx="7.5" cy="7.5" r="6" stroke="#ef4444" stroke-width="1.3" />
+                    <path d="M5 5l5 5M10 5l-5 5" stroke="#ef4444" stroke-width="1.3" stroke-linecap="round" />
+                </svg>
+            </div>
+            <span class="xat-section-title">Keçmiş</span>
+            <span class="xat-section-count xat-section-count--past">@kecmis.Count</span>
+            <span class="xat-section-chevron">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M3 5l4 4 4-4" stroke="#5a647a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </span>
+        </div>
+        <div class="xat-section-body">
+            @if (!kecmis.Any())
+            {
+                <div class="xat-empty">
+                    <div class="xat-empty-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <circle cx="9" cy="9" r="7" stroke="#c8cdd8" stroke-width="1.3" />
+                            <path d="M6 6l6 6M12 6l-6 6" stroke="#c8cdd8" stroke-width="1.3" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <span class="xat-empty-text">Keçmiş xatırlatma yoxdur.</span>
+                </div>
+            }
+            @foreach (var it in kecmis)
+            {
+                <div class="xat-item xat-item--past @(it.OxunubMu ? "xat-item--read" : "")" data-id="@it.Id">
+                    <div class="xat-item-icon xat-item-icon--past">
+                        <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+                            <circle cx="8.5" cy="8.5" r="6.5" stroke="#ef4444" stroke-width="1.3" />
+                            <path d="M6 6l5 5M11 6l-5 5" stroke="#ef4444" stroke-width="1.3" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <div class="xat-item-body">
+                        <div class="xat-item-top">
+                            <div class="xat-item-title">@it.Bashliq</div>
+                            <div class="xat-item-time">
+                                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                    <circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.1" />
+                                    <path d="M5 3v2l1.5 1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+                                </svg>
+                                @it.XatirlatmaTarixi.ToString("dd.MM.yyyy HH:mm")
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(it.Qeyd))
+                        {
+                            <div class="xat-item-note">@it.Qeyd</div>
+                        }
+                        <div class="xat-item-actions">
+                            @if (!it.OxunubMu)
+                            {
+                                <button class="xat-btn-read" data-id="@it.Id">
+                                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                        <path d="M1.5 5.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                    Oxundu
+                                </button>
+                            }
+                            <form asp-action="Sil" method="post" style="display:inline" onsubmit="return confirm('Bu xatırlatma silinsin?')">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@it.Id" />
+                                <button type="submit" class="xat-btn-del">
+                                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                        <path d="M2 3h7M4.5 3V2h2v1M4 3l.5 6M7 3l-.5 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                    </svg>
+                                    Sil
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ══ OXUNMUŞLAR ════════════════════════════════ -->
+    <div class="xat-section">
+        <div class="xat-section-head">
+            <div class="xat-section-icon xat-section-icon--done">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                    <circle cx="7.5" cy="7.5" r="6" stroke="#1e9b6b" stroke-width="1.3" />
+                    <path d="M4.5 7.5l2.5 2.5 4-4" stroke="#1e9b6b" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </div>
+            <span class="xat-section-title">Oxunmuşlar</span>
+            <span class="xat-section-count xat-section-count--done">@oxunmus.Count</span>
+            <span class="xat-section-chevron">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M3 5l4 4 4-4" stroke="#5a647a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </span>
+        </div>
+        <div class="xat-section-body">
+            @if (!oxunmus.Any())
+            {
+                <div class="xat-empty">
+                    <div class="xat-empty-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <circle cx="9" cy="9" r="7" stroke="#c8cdd8" stroke-width="1.3" />
+                            <path d="M5.5 9l2.5 2.5 4.5-4.5" stroke="#c8cdd8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <span class="xat-empty-text">Oxunmuş xatırlatma yoxdur.</span>
+                </div>
+            }
+            @foreach (var it in oxunmus)
+            {
+                <div class="xat-item xat-item--read" data-id="@it.Id">
+                    <div class="xat-item-icon xat-item-icon--done">
+                        <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+                            <circle cx="8.5" cy="8.5" r="6.5" stroke="#1e9b6b" stroke-width="1.3" />
+                            <path d="M5.5 8.5l2.5 2.5 4-4" stroke="#1e9b6b" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div class="xat-item-body">
+                        <div class="xat-item-top">
+                            <div class="xat-item-title">@it.Bashliq</div>
+                            <div class="xat-item-time">
+                                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                    <circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.1" />
+                                    <path d="M5 3v2l1.5 1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+                                </svg>
+                                @it.XatirlatmaTarixi.ToString("dd.MM.yyyy HH:mm")
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(it.Qeyd))
+                        {
+                            <div class="xat-item-note">@it.Qeyd</div>
+                        }
+                        <div class="xat-item-actions">
+                            <form asp-action="Sil" method="post" style="display:inline" onsubmit="return confirm('Bu xatırlatma silinsin?')">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@it.Id" />
+                                <button type="submit" class="xat-btn-del">
+                                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                        <path d="M2 3h7M4.5 3V2h2v1M4 3l.5 6M7 3l-.5 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                    </svg>
+                                    Sil
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="~/js/User/xatirlatma.js" asp-append-version="true"></script>
+}

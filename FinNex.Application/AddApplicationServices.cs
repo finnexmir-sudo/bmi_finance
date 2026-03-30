@@ -1,11 +1,14 @@
 ﻿
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
+using FinNex.Application.Interfaces.Communication;
 using FinNex.Application.Interfaces.HR;
+using FinNex.Application.Interfaces.Maas_If;
 using FinNex.Application.Interfaces.PR_Odenis_Tapsirigi;
 using FinNex.Application.Interfaces.SenedDovriyyesi;
 using FinNex.Application.Interfaces.Structur;
 using FinNex.Application.Services;
+using FinNex.Application.Services.Communication;
 using FinNex.Application.Services.HR;
 using FinNex.Application.Services.PR_Odenis_Tapsirigi;
 using FinNex.Application.Services.SenedDovriyyesi;
@@ -40,6 +43,7 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         // Sened dovriyyesi
         services.AddScoped<ISenedService, SenedService>();
         services.AddScoped<ISenedNovuService, SenedNovuService>();
+        services.AddScoped<ISenedDovriyyesiIstifadeciIcazesiService, SenedDovriyyesiIstifadeciIcazesiService>();
 
         services.AddScoped<IOdenisTapsirigiNomreService, OdenisTapsirigiNomreService>();
 
@@ -77,6 +81,24 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IMaasParametriService, MaasParametriService>();
         services.AddScoped<IMaasDetayService, MaasDetayService>();
         services.AddScoped<IIsciMaasTarixcesiService, IsciMaasTarixcesiService>();
+
+        services.AddScoped<IBildirisService, BildirisService>();
+        services.AddScoped<IMesajService, MesajService>();
+        services.AddScoped<IEvezediciTesdiqService, EvezediciTesdiqService>();
+
+        services.AddScoped<ITapshiriqService, TapshiriqService>();
+        services.AddScoped<IGorushService, GorushService>();
+        services.AddScoped<IXatirlatmaService, XatirlatmaService>();
+
+        // AddApplicationServices.cs — yeni servis əlavələri
+        // Mövcud qeydiyyatlara əlavə edin:
+
+        // ── Maaş Hesablama Engine ───────────────────────────────────
+        services.AddScoped<IMaasHesablamaService, MaasHesablamaService>();
+
+
+        // ── Parametri servisini yenilə (artıq var, sadəcə yoxla) ──
+        // services.AddScoped<IMaasParametriService, MaasParametriService>();
 
 
         // Əgər BayramGunu və Balans üçün xüsusi məntiq yazmamısansa, 

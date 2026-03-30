@@ -71,7 +71,7 @@
                                 </a>
                             </li> *@
 
-                            <li class="nav-item">
+                           @*  <li class="nav-item">
                                 <a class="nav-link"
                                    asp-area="PR_Odenis_Tapsirigi"
                                    asp-controller="OdenisTapsirigi"
@@ -98,14 +98,14 @@
                                     <i class="bi bi-file-earmark-text"></i>
                                     Sənəd Dövriyyəsi
                                 </a>
-                            </li>
+                            </li> *@
 
                             <!-- LOGOUT -->
                             <li class="nav-item ms-2">
-                                <form asp-controller="Account" asp-action="Logout" method="post">
+                                <form asp-area="User" asp-controller="Dashboard" asp-action="Index">
                                     @Html.AntiForgeryToken()
                                     <button class="btn btn-sm btn-outline-light">
-                                        Çıxış
+                                        Ana Səhifəyə Qayıt
                                     </button>
                                 </form>
                             </li>

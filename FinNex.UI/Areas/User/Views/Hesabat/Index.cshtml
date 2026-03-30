@@ -1,0 +1,281 @@
+﻿@model FinNex.UI.Areas.User.ViewModels.Hesabat.HesabatIndexVM
+@{
+    ViewData["Title"] = "Hesabat";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/hesabat.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    @* ── Statistika Kartları ── *@
+    <div class="hsb-stats">
+        <div class="hsb-stat-card hsb-stat--blue">
+            <div class="hsb-stat-val">@Model.CemiMezuniyyet</div>
+            <div class="hsb-stat-lbl">Məzuniyyət</div>
+        </div>
+        <div class="hsb-stat-card hsb-stat--purple">
+            <div class="hsb-stat-val">@Model.CemiIcaze</div>
+            <div class="hsb-stat-lbl">İcazə</div>
+        </div>
+        <div class="hsb-stat-card hsb-stat--amber">
+            <div class="hsb-stat-val">@Model.Gozleyen</div>
+            <div class="hsb-stat-lbl">Gözləyən</div>
+        </div>
+        <div class="hsb-stat-card hsb-stat--green">
+            <div class="hsb-stat-val">@Model.Tesdiqlenib</div>
+            <div class="hsb-stat-lbl">Təsdiqlənib</div>
+        </div>
+        <div class="hsb-stat-card hsb-stat--red">
+            <div class="hsb-stat-val">@Model.ImtinaEdildi</div>
+            <div class="hsb-stat-lbl">İmtina</div>
+        </div>
+        <div class="hsb-stat-card hsb-stat--teal">
+            <div class="hsb-stat-val">@Model.BuAyMezuniyyet</div>
+            <div class="hsb-stat-lbl">Bu ay məzuniyyət</div>
+        </div>
+        <div class="hsb-stat-card hsb-stat--indigo">
+            <div class="hsb-stat-val">@Model.BuAyIcaze</div>
+            <div class="hsb-stat-lbl">Bu ay icazə</div>
+        </div>
+    </div>
+
+    @* ── Qrafik ── *@
+    <div class="hsb-chart-card">
+        <div class="hsb-chart-title">Status Paylanması</div>
+        <canvas id="statusChart" height="80"></canvas>
+    </div>
+
+    @* ── Filtr ── *@
+    <div class="hsb-filter-card">
+        <form method="get" asp-action="Index" id="filterForm">
+            <div class="hsb-filter-grid">
+                <div class="hsb-filter-item">
+                    <label class="hsb-filter-lbl">Başlama tarixi (dan)</label>
+                    <input type="date" name="BaslamaTarixFrom"
+                           value="@Model.Filter.BaslamaTarixFrom?.ToString("yyyy-MM-dd")"
+                           class="hsb-input" />
+                </div>
+                <div class="hsb-filter-item">
+                    <label class="hsb-filter-lbl">Başlama tarixi (a qədər)</label>
+                    <input type="date" name="BaslamaTarixTo"
+                           value="@Model.Filter.BaslamaTarixTo?.ToString("yyyy-MM-dd")"
+                           class="hsb-input" />
+                </div>
+                <div class="hsb-filter-item">
+                    <label class="hsb-filter-lbl">Şöbə</label>
+                    <select name="DepartamentId" class="hsb-input">
+                        @foreach (var d in Model.Departamentler)
+                        {
+                            <option value="@d.Value"
+                                    selected="@(d.Value == Model.Filter.DepartamentId?.ToString() ? "selected" : null)">
+                                @d.Text
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="hsb-filter-item">
+                    <label class="hsb-filter-lbl">Növ</label>
+                    <select name="Nov" class="hsb-input">
+                        <option value="">Hamısı</option>
+                        <option value="Mezuniyyet" selected="@(Model.Filter.Nov == "Mezuniyyet" ? "selected" : null)">Məzuniyyət</option>
+                        <option value="Icaze" selected="@(Model.Filter.Nov == "Icaze" ? "selected" : null)">İcazə</option>
+                    </select>
+                </div>
+                <div class="hsb-filter-item">
+                    <label class="hsb-filter-lbl">Status</label>
+                    <select name="Status" class="hsb-input">
+                        <option value="">Hamısı</option>
+                        <option value="1" selected="@(Model.Filter.Status == 1 ? "selected" : null)">Gözləmədə</option>
+                        <option value="2" selected="@(Model.Filter.Status == 2 ? "selected" : null)">Şöbə rəisi təsdiqində</option>
+                        <option value="3" selected="@(Model.Filter.Status == 3 ? "selected" : null)">Rəhbər təsdiqində</option>
+                        <option value="4" selected="@(Model.Filter.Status == 4 ? "selected" : null)">HR təsdiqində</option>
+                        <option value="5" selected="@(Model.Filter.Status == 5 ? "selected" : null)">Təsdiqlənib</option>
+                        <option value="6" selected="@(Model.Filter.Status == 6 ? "selected" : null)">İmtina edildi</option>
+                    </select>
+                </div>
+                <div class="hsb-filter-item">
+                    <label class="hsb-filter-lbl">İşçi adı</label>
+                    <input type="text" name="Axtaris"
+                           value="@Model.Filter.Axtaris"
+                           placeholder="Ad, soyad axtar..."
+                           class="hsb-input" />
+                </div>
+            </div>
+            <div class="hsb-filter-actions">
+                <button type="submit" class="hsb-btn hsb-btn--primary">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.3"/>
+                        <path d="M9 9l2.5 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                    </svg>
+                    Axtar
+                </button>
+                <a href="@Url.Action("Index")" class="hsb-btn hsb-btn--ghost">Sıfırla</a>
+                <a href="@Url.Action("ExportExcel", new { Model.Filter.BaslamaTarixFrom, Model.Filter.BaslamaTarixTo, Model.Filter.DepartamentId, Model.Filter.Nov, Model.Filter.Status, Model.Filter.Axtaris })"
+                   class="hsb-btn hsb-btn--green">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <rect x="1" y="1" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.2"/>
+                        <path d="M4 6.5h5M6.5 4v5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                    </svg>
+                    Excel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    @* ── Cədvəl ── *@
+    <div class="hsb-table-card">
+        <div class="hsb-table-header">
+            <span class="hsb-table-count">@Model.Satirlar.Count nəticə</span>
+        </div>
+
+        @if (!Model.Satirlar.Any())
+        {
+            <div class="hsb-empty">
+                <div class="hsb-empty-icon">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <rect x="4" y="5" width="24" height="22" rx="3" stroke="#c8cdd8" stroke-width="1.5"/>
+                        <path d="M4 11h24M10 5v5M22 5v5" stroke="#c8cdd8" stroke-width="1.4" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="hsb-empty-title">Nəticə tapılmadı</div>
+                <div class="hsb-empty-sub">Filtr parametrlərini dəyişdirməyə cəhd edin</div>
+            </div>
+        }
+        else
+        {
+            <div class="hsb-table-wrap">
+                <table class="hsb-table">
+                    <thead>
+                        <tr>
+                            <th>Növ</th>
+                            <th>İşçi</th>
+                            <th>Şöbə / Vəzifə</th>
+                            <th>Tarix / Müddət</th>
+                            <th>Status</th>
+                            <th>Əvəzedici</th>
+                            <th>Təsdiq Zənciri</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model.Satirlar)
+                        {
+                            <tr class="hsb-row" data-id="@s.Id" data-nov="@s.Nov">
+                                <td>
+                                    @if (s.Nov == "Məzuniyyət")
+                                    {
+                                        <span class="hsb-nov-badge hsb-nov--mez">
+                                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                                <rect x="1" y="1.5" width="9" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.1"/>
+                                                <path d="M1 4h9M3.5 1.5v2M7.5 1.5v2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+                                            </svg>
+                                            Məzuniyyət
+                                        </span>
+                                        <div class="hsb-sub">@s.MezuniyyetNov</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="hsb-nov-badge hsb-nov--icaze">
+                                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                                <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" stroke-width="1.1"/>
+                                                <path d="M5.5 3.5v2.5l1.5 1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+                                            </svg>
+                                            İcazə
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="hsb-isci-name">@s.IsciAdSoyad</div>
+                                </td>
+                                <td>
+                                    <div class="hsb-sobe">@s.SobeAdi</div>
+                                    <div class="hsb-sub">@s.VezifeAdi</div>
+                                </td>
+                                <td>
+                                    @if (s.Nov == "Məzuniyyət")
+                                    {
+                                        <div>@s.BaslamaTarixi?.ToString("dd.MM.yyyy") — @s.BitmeTarixi?.ToString("dd.MM.yyyy")</div>
+                                        <div class="hsb-sub">@s.IsGunlerininSayi iş günü</div>
+                                    }
+                                    else
+                                    {
+                                        <div>@s.IcazeTarixi?.ToString("dd.MM.yyyy")</div>
+                                        <div class="hsb-sub">@s.BaslamaSaati?.ToString(@"hh\:mm") — @s.BitisSaati?.ToString(@"hh\:mm") · @s.IcazeSaati?.ToString("0.##") saat</div>
+                                    }
+                                </td>
+                                <td>
+                                    @{
+                                        var statusClass = s.StatusValue switch {
+                                            5 => "hsb-status--ok",
+                                            6 => "hsb-status--reject",
+                                            _ => "hsb-status--wait"
+                                        };
+                                    }
+                                    <span class="hsb-status @statusClass">@s.StatusText</span>
+                                    @if (!string.IsNullOrEmpty(s.ImtinaSebebi))
+                                    {
+                                        <div class="hsb-sub hsb-imtina">@s.ImtinaSebebi</div>
+                                    }
+                                </td>
+                                <td class="hsb-sub">@s.EvezEden</td>
+                                <td>
+                                    <div class="hsb-chain">
+                                        @{ void RenderStep(string label, bool? tesdiq, string? ad, DateTime? tarix) { }  }
+                                        <div class="hsb-chain-step @(s.SobeReisiTesdiq == true ? "ok" : s.SobeReisiTesdiq == false ? "reject" : "wait")">
+                                            <span class="hsb-chain-dot"></span>
+                                            <div class="hsb-chain-info">
+                                                <span class="hsb-chain-role">Şöbə Rəisi</span>
+                                                @if (!string.IsNullOrEmpty(s.SobeReisiAd))
+                                                {
+                                                    <span class="hsb-chain-ad">@s.SobeReisiAd</span>
+                                                }
+                                                @if (s.SobeReisiTesdiqTarixi.HasValue)
+                                                {
+                                                    <span class="hsb-chain-tarix">@s.SobeReisiTesdiqTarixi.Value.ToString("dd.MM HH:mm")</span>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="hsb-chain-step @(s.RehberTesdiq == true ? "ok" : s.RehberTesdiq == false ? "reject" : "wait")">
+                                            <span class="hsb-chain-dot"></span>
+                                            <div class="hsb-chain-info">
+                                                <span class="hsb-chain-role">Rəhbər</span>
+                                                @if (!string.IsNullOrEmpty(s.RehberAd))
+                                                {
+                                                    <span class="hsb-chain-ad">@s.RehberAd</span>
+                                                }
+                                                @if (s.RehberTesdiqTarixi.HasValue)
+                                                {
+                                                    <span class="hsb-chain-tarix">@s.RehberTesdiqTarixi.Value.ToString("dd.MM HH:mm")</span>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="hsb-chain-step @(s.HrTesdiq == true ? "ok" : s.HrTesdiq == false ? "reject" : "wait")">
+                                            <span class="hsb-chain-dot"></span>
+                                            <div class="hsb-chain-info">
+                                                <span class="hsb-chain-role">HR</span>
+                                                @if (!string.IsNullOrEmpty(s.HrAd))
+                                                {
+                                                    <span class="hsb-chain-ad">@s.HrAd</span>
+                                                }
+                                                @if (s.HrTesdiqTarixi.HasValue)
+                                                {
+                                                    <span class="hsb-chain-tarix">@s.HrTesdiqTarixi.Value.ToString("dd.MM HH:mm")</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/User/MezIcaze.js" asp-append-version="true"></script>
+}

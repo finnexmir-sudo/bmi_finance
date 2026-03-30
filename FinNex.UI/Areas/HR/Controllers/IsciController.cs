@@ -4,6 +4,7 @@ using FinNex.Application.Interfaces.Structur;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.UI.Areas.HR.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace FinNex.UI.Areas.HR.Controllers
 {
     [Area("HR")]
+    [Authorize(Policy = Configurations.PolicyNames.HR_View)]
     public class IsciController : Controller
     {
         private readonly IIsciService _isciService;
@@ -89,6 +91,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // ─────────── CREATE GET ───────────
         [HttpGet]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
         public async Task<IActionResult> Create()
         {
             var vm = new IsciCreateVM();
@@ -99,6 +102,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // ─────────── CREATE POST ───────────
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
         public async Task<IActionResult> Create(IsciCreateVM vm)
         {
             if (!ModelState.IsValid)
@@ -177,6 +181,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // ─────────── EDIT GET ───────────
         [HttpGet]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
         public async Task<IActionResult> Edit(int id)
         {
             var isci = await _isciService.GetIsciDetailsAsync(id);
@@ -210,6 +215,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // ─────────── EDIT POST ───────────
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
         public async Task<IActionResult> Edit(IsciEditVM vm)
         {
             if (!ModelState.IsValid)
@@ -247,6 +253,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // ─────────── TEYINAT DEYIS GET ───────────
         [HttpGet]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
         public async Task<IActionResult> TeyinatDeyis(int id)
         {
             var isci = await _isciService.GetIsciDetailsAsync(id);
@@ -274,6 +281,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // ─────────── TEYINAT DEYIS POST ───────────
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
         public async Task<IActionResult> TeyinatDeyis(TeyinatDeyisVM vm)
         {
             if (!ModelState.IsValid)
@@ -305,6 +313,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // ─────────── MAAS DEYIS GET ───────────
         [HttpGet]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
         public async Task<IActionResult> MaasDeyis(int id)
         {
             var listResult = await _isciService.HamisiniGetirAsync();
@@ -330,6 +339,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // ─────────── MAAS DEYIS POST ───────────
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
         public async Task<IActionResult> MaasDeyis(MaasDeyisVM vm)
         {
             if (!ModelState.IsValid)

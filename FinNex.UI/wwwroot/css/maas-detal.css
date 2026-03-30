@@ -1,0 +1,25 @@
+.dt-sec-head { display:flex; align-items:center; gap:7px; padding:10px 16px; font-size:11px; font-weight:600; letter-spacing:.3px; border-bottom:1px solid #f2f4f7; }
+.dt-sec-head--gelir   { background:#f5fbf8; color:#1a7a50; }
+.dt-sec-head--kesinti { background:#fef8f0; color:#9a5a00; }
+.dt-sec-head--sirket  { background:#f4f7fd; color:#1a4fa0; }
+.dt-table { width:100%; border-collapse:collapse; }
+.dt-table tr:last-child td { border-bottom:none; }
+.dt-table td { padding:9px 16px; border-bottom:1px solid #f7f8fb; font-size:12px; vertical-align:middle; }
+.dt-ad   { color:#1a2332; font-weight:500; width:40%; }
+.dt-izah { color:#8a93a8; font-size:11px; }
+.dt-mebleg { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap; }
+.dt-gelir   { color:#1a7a50; }
+.dt-kesinti { color:#a32d2d; }
+.dt-sirket  { color:#1a4fa0; }
+.dt-net-card { text-align:center; background:linear-gradient(135deg,#1e2a3b,#2d3f55); color:#fff; }
+.dt-net-ay  { font-size:11px; opacity:.6; margin-bottom:4px; }
+.dt-net-val { font-size:28px; font-weight:700; color:#e8b84b; letter-spacing:-1px; }
+.dt-net-lbl { font-size:10px; opacity:.5; letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+.dt-iban { font-size:10px; font-family:monospace; opacity:.6; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,.1); }
+.dt-iban--missing { color:#ffc; opacity:.7; font-family:inherit; }
+.dt-sum-row { display:flex; justify-content:space-between; font-size:12px; color:#4a5568; padding:4px 0; }
+.dt-sum-sep { padding-top:8px; margin-top:4px; border-top:1px solid #e4e8f0; color:#1a2332; font-weight:500; }
+.dt-sum-net { padding-top:8px; margin-top:4px; border-top:2px solid #1a2332; font-size:14px; font-weight:700; color:#1a2332; }
+.dt-tarix-row { display:flex; justify-content:space-between; font-size:11px; color:#4a5568; padding:4px 0; border-bottom:1px solid #f7f8fb; }
+.dt-tarix-row:last-child { border-bottom:none; }
+.fn-alert--success { background:#edf8f4; color:#1a7a50; border:1px solid #b2e0cc; padding:10px 14px; border-radius:8px; font-size:12px; }

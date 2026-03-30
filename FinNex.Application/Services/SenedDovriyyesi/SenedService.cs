@@ -174,16 +174,22 @@ namespace FinNex.Application.Services.SenedDovriyyesi
 
 
         public async Task<Result<PagedResult<SenedListDto>>> GetPagedAsync(
-            PagedRequest req, int? sobeId, int? senedNovuId, SenedStatusu? status, string? search)
+    PagedRequest req,
+    List<int> icazeliSobeIdleri,
+    int? sobeId,
+    int? senedNovuId,
+    SenedStatusu? status,
+    string? search)
         {
             var query = _uow.Repository<Sened>().Query();
 
             query = query
-                 .Where(x => !x.Silinib)
+                 .Where(x => !x.Silinib )
                  .Include(x => x.Department)
                  .Include(x => x.SenedNovu)
                  .Include(x => x.Fayllar);
 
+            query = query.Where(x => icazeliSobeIdleri.Contains(x.DepartmentId));
 
             if (sobeId.HasValue) query = query.Where(x => x.DepartmentId == sobeId);
             if (senedNovuId.HasValue) query = query.Where(x => x.SenedNovuId == senedNovuId);
@@ -214,7 +220,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
         }
 
         public async Task<Result<PagedResult<SenedListDto>>> GetSilinmisPagedAsync(
-                PagedRequest req, int? sobeId, int? senedNovuId, SenedStatusu? status, string? search)
+                PagedRequest req, List<int> icazeliSobeIdleri, int? sobeId, int? senedNovuId, SenedStatusu? status, string? search)
         {
             var query = _uow.Repository<Sened>().QueryDeleted();
 
@@ -224,6 +230,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                  .Include(x => x.SenedNovu)
                  .Include(x => x.Fayllar);
 
+            query = query.Where(x => icazeliSobeIdleri.Contains(x.DepartmentId));
 
             if (sobeId.HasValue) query = query.Where(x => x.DepartmentId == sobeId);
             if (senedNovuId.HasValue) query = query.Where(x => x.SenedNovuId == senedNovuId);
@@ -254,7 +261,10 @@ namespace FinNex.Application.Services.SenedDovriyyesi
         }
 
 
-        public async Task<Result<SenedDetailDto>> GetDetailAsync(int senedId, int userId, bool isAdmin)
+        public async Task<Result<SenedDetailDto>> GetDetailAsync(
+    int senedId,
+    List<int> icazeliSobeIdleri,
+    bool isAdmin)
         {
             var query = _uow.Repository<Sened>()
                 .Query()
@@ -263,34 +273,28 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 .AsQueryable();
 
             if (!isAdmin)
-            {
-                var userDepartments = await _uow.Repository<UserDepartment>()
-                    .Query()
-                    .Where(x => x.UserId == userId)
-                    .Select(x => x.DepartmentId)
-                    .ToListAsync();
-
-                query = query.Where(x => userDepartments.Contains(x.DepartmentId));
-            }
+                query = query.Where(x => icazeliSobeIdleri.Contains(x.DepartmentId));
 
             var sened = await query.FirstOrDefaultAsync(x => x.Id == senedId);
 
             if (sened == null)
                 return Result<SenedDetailDto>.Fail("Sənəd tapılmadı və ya icazəniz yoxdur.");
 
-            // --- LOGLARI BURADA ÇƏKİRİK ---
             var logs = await _uow.Repository<AuditLog>().Query()
-                .Include(x => x.User) // Əgər AuditLog entity-də User əlaqəsi varsa
+                .Include(x => x.User)
                 .Where(x => x.SenedId == senedId)
-                .OrderByDescending(x => x.YaradilmaTarixi) // Son hərəkət ən başda
+                .OrderByDescending(x => x.YaradilmaTarixi)
                 .ToListAsync();
 
             var dto = _mapper.Map<SenedDetailDto>(sened);
-            dto.AuditLogs = _mapper.Map<List<AuditLogDto>>(logs); // Logları DTO-ya mapplirik
+            dto.AuditLogs = _mapper.Map<List<AuditLogDto>>(logs);
 
             return Result<SenedDetailDto>.Ok(dto);
         }
-        public async Task<Result<SenedDetailDto>> GetDetailSilinmisAsync(int senedId, int userId, bool isAdmin)
+        public async Task<Result<SenedDetailDto>> GetDetailSilinmisAsync(
+    int senedId,
+    List<int> icazeliSobeIdleri,
+    bool isAdmin)
         {
             var query = _uow.Repository<Sened>()
                 .QueryDeleted()
@@ -299,35 +303,29 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 .AsQueryable();
 
             if (!isAdmin)
-            {
-                var userDepartments = await _uow.Repository<UserDepartment>()
-                    .Query()
-                    .Where(x => x.UserId == userId)
-                    .Select(x => x.DepartmentId)
-                    .ToListAsync();
-
-                query = query.Where(x => userDepartments.Contains(x.DepartmentId));
-            }
+                query = query.Where(x => icazeliSobeIdleri.Contains(x.DepartmentId));
 
             var sened = await query.FirstOrDefaultAsync(x => x.Id == senedId);
 
             if (sened == null)
                 return Result<SenedDetailDto>.Fail("Sənəd tapılmadı və ya icazəniz yoxdur.");
 
-            // --- LOGLARI BURADA ÇƏKİRİK ---
             var logs = await _uow.Repository<AuditLog>().Query()
-                .Include(x => x.User) // Əgər AuditLog entity-də User əlaqəsi varsa
+                .Include(x => x.User)
                 .Where(x => x.SenedId == senedId)
-                .OrderByDescending(x => x.YaradilmaTarixi) // Son hərəkət ən başda
+                .OrderByDescending(x => x.YaradilmaTarixi)
                 .ToListAsync();
 
             var dto = _mapper.Map<SenedDetailDto>(sened);
-            dto.AuditLogs = _mapper.Map<List<AuditLogDto>>(logs); // Logları DTO-ya mapplirik
+            dto.AuditLogs = _mapper.Map<List<AuditLogDto>>(logs);
 
             return Result<SenedDetailDto>.Ok(dto);
         }
 
-        public async Task<Result<SenedDetailDto>> silmeİCazeSorgusuAsync(int senedId, int userId, bool isAdmin)
+        public async Task<Result<SenedDetailDto>> silmeİCazeSorgusuAsync(
+    int senedId,
+    List<int> icazeliSobeIdleri,
+    bool isAdmin)
         {
             var query = _uow.Repository<Sened>()
                 .Query()
@@ -336,15 +334,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 .AsQueryable();
 
             if (!isAdmin)
-            {
-                var userDepartments = await _uow.Repository<UserDepartment>()
-                    .Query()
-                    .Where(x => x.UserId == userId)
-                    .Select(x => x.DepartmentId)
-                    .ToListAsync();
-
-                query = query.Where(x => userDepartments.Contains(x.DepartmentId));
-            }
+                query = query.Where(x => icazeliSobeIdleri.Contains(x.DepartmentId));
 
             var sened = await query.FirstOrDefaultAsync(x => x.Id == senedId);
 

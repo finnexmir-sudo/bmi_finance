@@ -1,0 +1,245 @@
+@model FinNex.Application.DTOs.HR.Maas.MaasDto
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = $"Maaş Detalı — {Model.IsciAdSoyad}";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    string AyAdi(int ay) => new DateTime(2000, ay, 1).ToString("MMMM");
+    string StatusClass(MaasStatus s) => s switch {
+        MaasStatus.Odenildi     => "fn-badge--done",
+        MaasStatus.Tesdiqlendi  => "fn-badge--review",
+        MaasStatus.Layihe       => "fn-badge--wait",
+        MaasStatus.LegvEdildi   => "fn-badge--rejected",
+        _ => "fn-badge--wait"
+    };
+    string StatusText(MaasStatus s) => s switch {
+        MaasStatus.Odenildi     => "Ödənildi",
+        MaasStatus.Tesdiqlendi  => "Təsdiqləndi",
+        MaasStatus.Layihe       => "Layihə",
+        MaasStatus.LegvEdildi   => "Ləğv edildi",
+        _ => "—"
+    };
+
+    var gelirlər  = Model.Detallar.Where(d => d.Tip == MaasDetayTipi.Gelir).ToList();
+    var tutulmalar = Model.Detallar.Where(d => d.Tip == MaasDetayTipi.Tutulma).ToList();
+    var sirket    = Model.Detallar.Where(d => d.Tip == MaasDetayTipi.IsegoturenXerci).ToList();
+    decimal brutMaas = gelirlər.Sum(d => d.Mebleg) - tutulmalar.Where(d => d.MaasNovuAd == "Məzuniyyət Kəsintisi" || d.MaasNovuAd == "Gecikdirmə Cəriməsi").Sum(d => d.Mebleg);
+    decimal umumiTutulma = tutulmalar.Where(d => d.MaasNovuAd != "Məzuniyyət Kəsintisi" && d.MaasNovuAd != "Gecikdirmə Cəriməsi").Sum(d => d.Mebleg);
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">@Model.IsciAdSoyad</div>
+            <div class="fn-page-sub">
+                @Model.DepartamentAd · @Model.VezifeAd ·
+                @AyAdi(Model.Ay) @Model.Il ·
+                <span class="fn-badge @StatusClass(Model.Status)">@StatusText(Model.Status)</span>
+            </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <a asp-action="IsciTarixce" asp-route-isciId="@Model.IsciId"
+               class="fn-btn fn-btn--outline fn-btn--sm">Tarixçə</a>
+            <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">← Siyahı</a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
+    }
+
+    <div style="display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:start;">
+
+        @* ── Sol: Hesablama cədvəli ── *@
+        <div style="display:flex;flex-direction:column;gap:12px;">
+
+            @* Gəlirlər *@
+            <div class="fn-card" style="padding:0;overflow:hidden;">
+                <div class="dt-sec-head dt-sec-head--gelir">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <path d="M6.5 2v9M3 5.5l3.5-3.5L10 5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Gəlirlər
+                </div>
+                <table class="dt-table">
+                    @foreach (var d in gelirlər)
+                    {
+                        <tr>
+                            <td class="dt-ad">@d.MaasNovuAd</td>
+                            <td class="dt-izah">@d.Aciqlama</td>
+                            <td class="dt-mebleg dt-gelir">+@d.Mebleg.ToString("N2") ₼</td>
+                        </tr>
+                    }
+                </table>
+            </div>
+
+            @* Kəsintilər / Tutulmalar *@
+            <div class="fn-card" style="padding:0;overflow:hidden;">
+                <div class="dt-sec-head dt-sec-head--kesinti">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <path d="M6.5 11V2M3 7.5l3.5 3.5L10 7.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Tutulmalar və kəsintilər
+                </div>
+                <table class="dt-table">
+                    @foreach (var d in tutulmalar)
+                    {
+                        <tr>
+                            <td class="dt-ad">@d.MaasNovuAd</td>
+                            <td class="dt-izah">@d.Aciqlama</td>
+                            <td class="dt-mebleg dt-kesinti">−@d.Mebleg.ToString("N2") ₼</td>
+                        </tr>
+                    }
+                </table>
+            </div>
+
+            @* Şirkət xərcləri *@
+            @if (sirket.Any())
+            {
+                <div class="fn-card" style="padding:0;overflow:hidden;">
+                    <div class="dt-sec-head dt-sec-head--sirket">
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                            <rect x="1.5" y="5" width="10" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.1"/>
+                            <path d="M4.5 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" stroke-width="1.1"/>
+                        </svg>
+                        Şirkət xərcləri <span style="font-weight:400;opacity:.6;font-size:10px;">(işçidən tutulmur)</span>
+                    </div>
+                    <table class="dt-table">
+                        @foreach (var d in sirket)
+                        {
+                            <tr>
+                                <td class="dt-ad">@d.MaasNovuAd</td>
+                                <td class="dt-izah">@d.Aciqlama</td>
+                                <td class="dt-mebleg dt-sirket">@d.Mebleg.ToString("N2") ₼</td>
+                            </tr>
+                        }
+                    </table>
+                </div>
+            }
+        </div>
+
+        @* ── Sağ: Xülasə ── *@
+        <div style="display:flex;flex-direction:column;gap:12px;position:sticky;top:20px;">
+
+            @* NET kart *@
+            <div class="fn-card dt-net-card">
+                <div class="dt-net-ay">@AyAdi(Model.Ay) @Model.Il</div>
+                <div class="dt-net-val">@Model.NetMebleg.ToString("N2") ₼</div>
+                <div class="dt-net-lbl">NET MAAŞ</div>
+
+                @if (!string.IsNullOrEmpty(Model.BankHesabNo))
+                {
+                    <div class="dt-iban">
+                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                            <rect x="1" y="2.5" width="9" height="6" rx="1.5" stroke="currentColor" stroke-width="1"/>
+                            <path d="M1 5h9" stroke="currentColor" stroke-width=".9"/>
+                        </svg>
+                        @Model.BankHesabNo
+                    </div>
+                }
+                else
+                {
+                    <div class="dt-iban dt-iban--missing">⚠ IBAN qeydiyyatda yoxdur</div>
+                }
+            </div>
+
+            @* Xülasə sətirləri *@
+            <div class="fn-card" style="padding:14px 16px;">
+                <div class="fn-card-title" style="margin-bottom:10px;">Xülasə</div>
+                <div class="dt-sum-row">
+                    <span>Ümumi gəlirlər</span>
+                    <span class="dt-gelir">@gelirlər.Sum(d => d.Mebleg).ToString("N2") ₼</span>
+                </div>
+                <div class="dt-sum-row">
+                    <span>Kəsintilər</span>
+                    <span class="dt-kesinti">−@tutulmalar.Where(d => d.MaasNovuAd is "Məzuniyyət Kəsintisi" or "Gecikdirmə Cəriməsi").Sum(d => d.Mebleg).ToString("N2") ₼</span>
+                </div>
+                <div class="dt-sum-row dt-sum-sep">
+                    <span>Brüt maaş</span>
+                    <span style="font-weight:600;">@brutMaas.ToString("N2") ₼</span>
+                </div>
+                <div class="dt-sum-row">
+                    <span>Vergi tutulmaları</span>
+                    <span class="dt-kesinti">−@umumiTutulma.ToString("N2") ₼</span>
+                </div>
+                <div class="dt-sum-row dt-sum-net">
+                    <span>NET maaş</span>
+                    <span>@Model.NetMebleg.ToString("N2") ₼</span>
+                </div>
+                @if (sirket.Any())
+                {
+                    <div class="dt-sum-row" style="margin-top:8px;padding-top:8px;border-top:1px dashed #e4e8f0;color:#8a93a8;font-size:10px;">
+                        <span>Şirkət xərcləri</span>
+                        <span>@sirket.Sum(d => d.Mebleg).ToString("N2") ₼</span>
+                    </div>
+                }
+            </div>
+
+            @* Tarix məlumatları *@
+            <div class="fn-card" style="padding:14px 16px;">
+                <div class="fn-card-title" style="margin-bottom:10px;">Tarix məlumatları</div>
+                <div class="dt-tarix-row">
+                    <span>Hesablandı</span>
+                    <span>@Model.HesablanmaTarixi.ToString("dd.MM.yyyy HH:mm")</span>
+                </div>
+                @if (Model.TesdiqTarixi.HasValue)
+                {
+                    <div class="dt-tarix-row">
+                        <span>Təsdiqləndi</span>
+                        <span style="color:#1a4fa0;">@Model.TesdiqTarixi.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                    </div>
+                }
+                @if (Model.OdenisTarixi.HasValue)
+                {
+                    <div class="dt-tarix-row">
+                        <span>Ödənildi</span>
+                        <span style="color:#1a7a50;">@Model.OdenisTarixi.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                    </div>
+                }
+            </div>
+
+            @* Əməliyyatlar *@
+            <div class="fn-card" style="padding:14px 16px;">
+                <div class="fn-card-title" style="margin-bottom:10px;">Əməliyyatlar</div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    @if (Model.Status == MaasStatus.Layihe)
+                    {
+                        <form asp-action="StatusDeyis" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id"/>
+                            <input type="hidden" name="yeniStatus" value="@((int)MaasStatus.Tesdiqlendi)"/>
+                            <input type="hidden" name="il" value="@Model.Il"/>
+                            <input type="hidden" name="ay" value="@Model.Ay"/>
+                            <button type="submit" class="fn-btn fn-btn--primary" style="width:100%;justify-content:center;">
+                                Rəhbər təsdiqləyir
+                            </button>
+                        </form>
+                    }
+                    @if (Model.Status == MaasStatus.Tesdiqlendi)
+                    {
+                        <form asp-action="StatusDeyis" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id"/>
+                            <input type="hidden" name="yeniStatus" value="@((int)MaasStatus.Odenildi)"/>
+                            <input type="hidden" name="il" value="@Model.Il"/>
+                            <input type="hidden" name="ay" value="@Model.Ay"/>
+                            <button type="submit" class="fn-btn" style="width:100%;justify-content:center;background:#edf8f4;color:#1a7a50;border:1px solid #b2e0cc;">
+                                Mühasib bazaya vurur → Ödənildi
+                            </button>
+                        </form>
+                    }
+                    <a asp-action="Index" asp-route-il="@Model.Il" asp-route-ay="@Model.Ay"
+                       class="fn-btn fn-btn--outline" style="width:100%;justify-content:center;">
+                        Siyahıya qayıt
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/maas-detal.css" />
+}

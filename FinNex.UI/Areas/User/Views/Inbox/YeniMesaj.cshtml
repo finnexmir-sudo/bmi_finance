@@ -1,0 +1,57 @@
+﻿@model FinNex.UI.Areas.User.ViewModels.Inbox.YeniMesajVM
+@{
+    ViewData["Title"] = "Yeni Mesaj";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/inbox.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+    <div class="ibx-compose-wrap">
+        <div class="ibx-compose-header">
+            <a asp-action="Index" class="ibx-back">← Geri</a>
+            <div class="ibx-compose-title">Yeni Mesaj</div>
+        </div>
+
+        <form asp-action="YeniMesaj" method="post" class="ibx-compose-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="GonderenIsciId" />
+
+            <div class="ibx-field">
+                <label class="ibx-label">Kimə</label>
+                <select asp-for="AlanIsciId" asp-items="Model.IsciList"
+                        class="ibx-input">
+                    <option value="">İşçi seçin...</option>
+                </select>
+                <span asp-validation-for="AlanIsciId" class="ibx-error"></span>
+            </div>
+
+            <div class="ibx-field">
+                <label class="ibx-label">Mövzu</label>
+                <input asp-for="Movzu" class="ibx-input"
+                       placeholder="Mesajın mövzusu..." />
+                <span asp-validation-for="Movzu" class="ibx-error"></span>
+            </div>
+
+            <div class="ibx-field">
+                <label class="ibx-label">Mətn</label>
+                <textarea asp-for="Metn" class="ibx-textarea ibx-textarea--lg"
+                          placeholder="Mesajınızı yazın..." rows="8"></textarea>
+                <span asp-validation-for="Metn" class="ibx-error"></span>
+            </div>
+
+            <div class="ibx-compose-footer">
+                <a asp-action="Index" class="ibx-btn ibx-btn--ghost">Ləğv et</a>
+                <button type="submit" class="ibx-btn ibx-btn--primary">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <path d="M1 6.5l10-5-5 10-.5-4.5L1 6.5z" stroke="currentColor"
+                              stroke-width="1.2" stroke-linejoin="round" />
+                    </svg>
+                    Göndər
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

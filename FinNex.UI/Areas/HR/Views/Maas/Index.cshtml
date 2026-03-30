@@ -1,1 +1,488 @@
-﻿
+@model IEnumerable<FinNex.Application.DTOs.HR.Maas.MaasListDto>
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = $"Əmək Haqqı — {ViewBag.SecilmisIl}/{ViewBag.SecilmisAy:D2}";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    var il   = (int)ViewBag.SecilmisIl;
+    var ay   = (int)ViewBag.SecilmisAy;
+    var list = Model.ToList();
+
+    decimal umumiNet      = list.Sum(x => x.NetMebleg);
+    decimal umumiBrut     = list.Sum(x => x.BrutMaas);
+    decimal umumiGelirV   = list.Sum(x => x.GelirVergisi);
+    decimal umumiDsmf     = list.Sum(x => x.DsmfIsci);
+    decimal umumiIssizlik = list.Sum(x => x.IssizlikIsci);
+    decimal umumiItss     = list.Sum(x => x.Itss);
+    decimal umumiBonus    = list.Sum(x => x.BonusMeblegi);
+    decimal umumiCerime   = list.Sum(x => x.CerimeMeblegi);
+    decimal umumiTutulma  = umumiGelirV + umumiDsmf + umumiIssizlik + umumiItss;
+
+    int layiheSayi  = list.Count(x => x.Status == MaasStatus.Layihe);
+    int tesdiqSayi  = list.Count(x => x.Status == MaasStatus.Tesdiqlendi);
+    int odenisSayi  = list.Count(x => x.Status == MaasStatus.Odenildi);
+
+    var ayAdlar = new[]{"","Yanvar","Fevral","Mart","Aprel","May","İyun","İyul","Avqust","Sentyabr","Oktyabr","Noyabr","Dekabr"};
+
+    string BadgeClass(MaasStatus s) => s switch {
+        MaasStatus.Layihe      => "mi-badge--wait",
+        MaasStatus.Tesdiqlendi => "mi-badge--review",
+        MaasStatus.Odenildi    => "mi-badge--done",
+        MaasStatus.LegvEdildi  => "mi-badge--rejected",
+        _ => "mi-badge--wait"
+    };
+    string BadgeText(MaasStatus s) => s switch {
+        MaasStatus.Layihe      => "Layihə",
+        MaasStatus.Tesdiqlendi => "Təsdiqləndi",
+        MaasStatus.Odenildi    => "Ödənildi",
+        MaasStatus.LegvEdildi  => "Ləğv edildi",
+        _ => "Layihə"
+    };
+    string Fmt(decimal v) => v > 0 ? v.ToString("N2") : "—";
+    string FmtC(decimal v, string prefix = "") =>
+        v > 0 ? $"{prefix}{v:N2} ₼" : "—";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/maas-index.css" asp-append-version="true" />
+}
+
+<div class="mi-page">
+
+    @* ── Alerts ──────────────────────────────────────────────── *@
+    @if (TempData["Success"] != null)
+    {
+        <div class="mi-alert mi-alert--success">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="7" stroke="#1e9b6b" stroke-width="1.4"/>
+                <path d="M5 8l2.5 2.5L11 6" stroke="#1e9b6b" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            @TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="mi-alert mi-alert--error">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="7" stroke="#d85a30" stroke-width="1.4"/>
+                <path d="M8 5v4M8 10.5v.5" stroke="#d85a30" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            @TempData["Error"]
+        </div>
+    }
+    @if (TempData["Xetalar"] != null)
+    {
+        foreach (var x in TempData["Xetalar"]!.ToString()!.Split('|'))
+        {
+            <div class="mi-alert mi-alert--error">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <circle cx="8" cy="8" r="7" stroke="#d85a30" stroke-width="1.4"/>
+                    <path d="M8 5v4M8 10.5v.5" stroke="#d85a30" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+                @x
+            </div>
+        }
+    }
+
+    @* ── Header ──────────────────────────────────────────────── *@
+    <div class="mi-header">
+        <div>
+            <div class="mi-breadcrumb">
+                <a asp-area="HR" asp-controller="Dashboard" asp-action="Index">HR İdarəetmə</a>
+                <span class="mi-breadcrumb-sep">›</span>
+                <span>Əmək Haqqı</span>
+            </div>
+            <div class="mi-title">Əmək Haqqı — @ayAdlar[ay] @il</div>
+            <div class="mi-subtitle">
+                @list.Count işçi &nbsp;·&nbsp;
+                <span style="color:#e8b84b;font-weight:600;">@layiheSayi layihə</span> &nbsp;·&nbsp;
+                <span style="color:#2d6cdf;font-weight:600;">@tesdiqSayi təsdiqləndi</span> &nbsp;·&nbsp;
+                <span style="color:#1e9b6b;font-weight:600;">@odenisSayi ödənildi</span>
+            </div>
+        </div>
+        <div class="mi-header-actions">
+            <a asp-area="HR" asp-controller="Maas" asp-action="BankFayliYukle"
+               asp-route-il="@il" asp-route-ay="@ay"
+               class="mi-btn mi-btn--outline">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path d="M6.5 2v6M4 6l2.5 2.5L9 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M1.5 9.5v1a.5.5 0 00.5.5h9a.5.5 0 00.5-.5v-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+                Bank Faylı (CSV)
+            </a>
+            <a asp-area="HR" asp-controller="Maas" asp-action="TopluHesabla"
+               asp-route-il="@il" asp-route-ay="@ay"
+               class="mi-btn mi-btn--outline">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <rect x="1" y="1" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/>
+                    <path d="M6.5 4v5M4 6.5h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                </svg>
+                Toplu Hesabla
+            </a>
+            <a asp-area="HR" asp-controller="Maas" asp-action="Hesabla"
+               class="mi-btn mi-btn--gold">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path d="M6.5 1.5v10M1.5 6.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                Fərdi Hesabla
+            </a>
+        </div>
+    </div>
+
+    @* ── Stats ────────────────────────────────────────────────── *@
+    <div class="mi-stats">
+        <div class="mi-stat mi-stat--blue">
+            <div class="mi-stat-label">Ümumi İşçi</div>
+            <div class="mi-stat-value">@list.Count</div>
+            <div class="mi-stat-sub">@ayAdlar[ay] @il</div>
+        </div>
+        <div class="mi-stat mi-stat--gold">
+            <div class="mi-stat-label">Ümumi Brüt</div>
+            <div class="mi-stat-value">@umumiBrut.ToString("N0") ₼</div>
+            <div class="mi-stat-sub">Bonus daxil</div>
+        </div>
+        <div class="mi-stat mi-stat--orange">
+            <div class="mi-stat-label">Ümumi Tutulma</div>
+            <div class="mi-stat-value">@umumiTutulma.ToString("N0") ₼</div>
+            <div class="mi-stat-sub">Vergi + DSMF + İTSS</div>
+        </div>
+        <div class="mi-stat mi-stat--green">
+            <div class="mi-stat-label">Ümumi NET</div>
+            <div class="mi-stat-value">@umumiNet.ToString("N0") ₼</div>
+            <div class="mi-stat-sub">Əldə edilən</div>
+        </div>
+        <div class="mi-stat mi-stat--purple">
+            <div class="mi-stat-label">Ödənildi</div>
+            <div class="mi-stat-value">@odenisSayi / @list.Count</div>
+            <div class="mi-stat-sub">İşçi</div>
+        </div>
+    </div>
+
+    @* ── Filter Bar ───────────────────────────────────────────── *@
+    <form id="miFilterForm" asp-area="HR" asp-controller="Maas" asp-action="Index" method="get">
+        <div class="mi-filter-bar">
+            <span class="mi-filter-label">Filtr</span>
+            <select name="il" class="mi-select mi-auto-filter">
+                @foreach (var item in ViewBag.Iller as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                {
+                    if (item.Selected)
+                    {
+                        <option value="@item.Value" selected>@item.Text</option>
+                    }
+                    else
+                    {
+                        <option value="@item.Value">@item.Text</option>
+                    }
+                }
+            </select>
+
+            <select name="ay" class="mi-select mi-auto-filter">
+                @foreach (var item in ViewBag.Aylar as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                {
+                    if (item.Selected)
+                    {
+                        <option value="@item.Value" selected>@item.Text</option>
+                    }
+                    else
+                    {
+                        <option value="@item.Value">@item.Text</option>
+                    }
+                }
+            </select>
+
+            <div class="mi-filter-sep"></div>
+
+            <select name="isciId" class="mi-select mi-select--wide mi-auto-filter">
+                <option value="">— Bütün işçilər</option>
+                @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                {
+                    if (item.Selected)
+                    {
+                        <option value="@item.Value" selected>@item.Text</option>
+                    }
+                    else
+                    {
+                        <option value="@item.Value">@item.Text</option>
+                    }
+                }
+            </select>
+
+            <select name="departamentId" class="mi-select mi-select--wide mi-auto-filter">
+                <option value="">— Bütün departamentlər</option>
+                @foreach (var item in ViewBag.Departamentler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                {
+                    if (item.Selected)
+                    {
+                        <option value="@item.Value" selected>@item.Text</option>
+                    }
+                    else
+                    {
+                        <option value="@item.Value">@item.Text</option>
+                    }
+                }
+            </select>
+            <div class="mi-filter-actions">
+                <a asp-area="HR" asp-controller="Maas" asp-action="Index"
+                   class="mi-btn mi-btn--outline mi-btn--sm">Sıfırla</a>
+            </div>
+        </div>
+    </form>
+
+    @* ── Table Card ───────────────────────────────────────────── *@
+    <div class="mi-table-card">
+
+        <div class="mi-toolbar">
+            <div class="mi-toolbar-left">
+                <div class="mi-result-count"><span>@list.Count</span> nəticə</div>
+            </div>
+            <div class="mi-toolbar-right">
+                @if (list.Any(x => x.Status == MaasStatus.Tesdiqlendi))
+                {
+                    <a asp-area="HR" asp-controller="Maas" asp-action="BankFayliYukle"
+                       asp-route-il="@il" asp-route-ay="@ay"
+                       class="mi-btn mi-btn--outline mi-btn--sm">CSV İxrac</a>
+                }
+                <a asp-area="HR" asp-controller="Maas" asp-action="TopluHesabla"
+                   asp-route-il="@il" asp-route-ay="@ay"
+                   class="mi-btn mi-btn--gold mi-btn--sm">Toplu Hesabla</a>
+            </div>
+        </div>
+
+        @if (!list.Any())
+        {
+            <div class="mi-empty">
+                <div class="mi-empty-ico">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="mi-empty-title">Bu dövr üçün maaş tapılmadı</div>
+                <div class="mi-empty-sub">Toplu hesablama aparın</div>
+                <a asp-area="HR" asp-controller="Maas" asp-action="TopluHesabla"
+                   asp-route-il="@il" asp-route-ay="@ay"
+                   class="mi-btn mi-btn--gold" style="margin-top:4px;">Toplu Hesabla</a>
+            </div>
+        }
+        else
+        {
+            <div class="mi-scroll">
+                <table class="mi-table">
+                    <thead>
+                        @* ── Qrup başlıqları ───────────────────────────────── *@
+                        <tr class="tr-group">
+                            <th colspan="3" class="grp-isci left">İşçi</th>
+                            <th colspan="3" class="grp-gelir">Gəlirlər</th>
+                            <th colspan="1" class="grp-kesinti">Kəsinti</th>
+                            <th colspan="4" class="grp-vergi">Tutulmalar (İşçi)</th>
+                            <th colspan="1" class="grp-net">NET</th>
+                            <th colspan="1" class="grp-sts center">Status</th>
+                            <th colspan="1" class="grp-sts center">Əməliyyat</th>
+                        </tr>
+                        @* ── Sütun başlıqları ──────────────────────────────── *@
+                        <tr class="tr-cols">
+                            <th class="left" style="min-width:200px;">Ad Soyad</th>
+                            <th class="left" style="min-width:120px;">Departament</th>
+                            <th class="left col-sep" style="min-width:110px;">Vəzifə</th>
+
+                            <th style="min-width:110px;">Əsas Maaş</th>
+                            <th style="min-width:90px;">Bonus</th>
+                            <th class="col-sep" style="min-width:110px;">Məzuniyyət Öd.</th>
+
+                            <th class="col-sep" style="min-width:100px;">Cərimə</th>
+
+                            <th style="min-width:110px;">Gəlir Vergisi<br><span style="font-size:8.5px;font-weight:500;color:#aab0bf;">14%</span></th>
+                            <th style="min-width:90px;">DSMF<br><span style="font-size:8.5px;font-weight:500;color:#aab0bf;">3%</span></th>
+                            <th style="min-width:100px;">İşsizlik<br><span style="font-size:8.5px;font-weight:500;color:#aab0bf;">0.5%</span></th>
+                            <th class="col-sep" style="min-width:90px;">İTSS<br><span style="font-size:8.5px;font-weight:500;color:#aab0bf;">2%</span></th>
+
+                            <th class="col-sep" style="min-width:120px;">NET Maaş</th>
+
+                            <th class="center" style="min-width:110px;">Status</th>
+                            <th class="center" style="min-width:120px;">Əməliyyat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in list)
+                        {
+                            var hasIban = !string.IsNullOrEmpty(m.BankHesabNo);
+                            var tutulma = m.GelirVergisi + m.DsmfIsci + m.IssizlikIsci + m.Itss;
+                            <tr>
+                                @* İşçi adı *@
+                                <td class="left">
+                                    <div class="mi-emp-name">@m.IsciAdSoyad</div>
+                                    @if (!hasIban)
+                                    {
+                                        <div class="mi-iban-chip">
+                                            <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+                                                <path d="M4.5 1L8.5 8H.5L4.5 1z" stroke="#b45309" stroke-width=".9" stroke-linejoin="round"/>
+                                                <path d="M4.5 3.5v2M4.5 6.5v.2" stroke="#b45309" stroke-width=".9" stroke-linecap="round"/>
+                                            </svg>
+                                            IBAN yoxdur
+                                        </div>
+                                    }
+                                </td>
+                                <td class="left"><span class="mi-emp-dept">@m.DepartamentAd</span></td>
+                                <td class="left col-sep"><span class="mi-emp-dept">@m.VezifeAd</span></td>
+
+                                @* Gəlirlər *@
+                                <td><span class="n">@Fmt(m.EsasMaas) ₼</span></td>
+                                <td>
+                                    @if (m.BonusMeblegi > 0)
+                                    { <span class="n n--green">+@m.BonusMeblegi.ToString("N2") ₼</span> }
+                                    else
+                                    { <span class="n n--dim">—</span> }
+                                </td>
+                                <td class="col-sep">
+                                    @if (m.MezuniyyetOdenisi > 0)
+                                    { <span class="n n--blue">@m.MezuniyyetOdenisi.ToString("N2") ₼</span> }
+                                    else
+                                    { <span class="n n--dim">—</span> }
+                                </td>
+
+                                @* Kəsinti *@
+                                <td class="col-sep">
+                                    @if (m.CerimeMeblegi > 0)
+                                    { <span class="n n--red">−@m.CerimeMeblegi.ToString("N2") ₼</span> }
+                                    else
+                                    { <span class="n n--dim">—</span> }
+                                </td>
+
+                                @* Tutulmalar *@
+                                <td><span class="n n--red">@Fmt(m.GelirVergisi) ₼</span></td>
+                                <td><span class="n n--purple">@Fmt(m.DsmfIsci) ₼</span></td>
+                                <td><span class="n">@Fmt(m.IssizlikIsci) ₼</span></td>
+                                <td class="col-sep"><span class="n">@Fmt(m.Itss) ₼</span></td>
+
+                                @* NET *@
+                                <td class="col-sep">
+                                    <span class="n n--gold">@m.NetMebleg.ToString("N2") ₼</span>
+                                    @if (m.OdenisTarixi.HasValue)
+                                    {
+                                        <span class="n--sub">@m.OdenisTarixi.Value.ToString("dd.MM.yy")</span>
+                                    }
+                                </td>
+
+                                @* Status *@
+                                <td class="center">
+                                    <span class="mi-badge @BadgeClass(m.Status)">@BadgeText(m.Status)</span>
+                                </td>
+
+                                @* Əməliyyatlar *@
+                                <td class="center">
+                                    <div class="mi-actions">
+                                        <a asp-area="HR" asp-controller="Maas" asp-action="Detal"
+                                           asp-route-id="@m.Id"
+                                           class="mi-act-btn mi-act-btn--blue" data-tip="Detal">
+                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                                <path d="M1.5 6h9M7 3l3 3-3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                        </a>
+                                        <a asp-area="HR" asp-controller="Maas" asp-action="IsciTarixce"
+                                           asp-route-isciId="@m.IsciId"
+                                           class="mi-act-btn" data-tip="Tarixçə">
+                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                                <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2"/>
+                                                <path d="M6 3.5v3l1.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                            </svg>
+                                        </a>
+                                        @if (m.Status == MaasStatus.Layihe)
+                                        {
+                                            <button type="button" class="mi-act-btn mi-act-btn--green"
+                                                    data-status-trigger
+                                                    data-maas-id="@m.Id" data-yeni-status="Tesdiqlendi"
+                                                    data-il="@il" data-ay="@ay" data-tip="Təsdiqlə">
+                                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                                    <path d="M2 6l2.5 2.5 5.5-5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                            </button>
+                                        }
+                                        @if (m.Status == MaasStatus.Tesdiqlendi)
+                                        {
+                                            <button type="button" class="mi-act-btn mi-act-btn--green"
+                                                    data-status-trigger
+                                                    data-maas-id="@m.Id" data-yeni-status="Odenildi"
+                                                    data-il="@il" data-ay="@ay" data-tip="Ödənildi">
+                                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                                    <rect x="1" y="2.5" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+                                                    <path d="M1 5.5h10" stroke="currentColor" stroke-width="1.2"/>
+                                                    <circle cx="4" cy="8" r="1" fill="currentColor"/>
+                                                </svg>
+                                            </button>
+                                        }
+                                        @if (m.Status == MaasStatus.Layihe)
+                                        {
+                                            <form asp-area="HR" asp-controller="Maas" asp-action="Sil"
+                                                  method="post" style="display:inline;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id"  value="@m.Id"/>
+                                                <input type="hidden" name="il"  value="@il"/>
+                                                <input type="hidden" name="ay"  value="@ay"/>
+                                                <button type="submit" class="mi-act-btn mi-act-btn--red"
+                                                        data-delete-trigger data-ad="@m.IsciAdSoyad" data-tip="Sil">
+                                                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                                        <path d="M2 3h8M4.5 3V2h3v1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        <path d="M3 3l.5 7h5L9 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                                    </svg>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+
+                    @* ── Cəmi sətri ────────────────────────────────────── *@
+                    <tfoot>
+                        <tr style="background:#f7f9fc;border-top:2px solid #eaecf3;">
+                            <td class="left" colspan="3" style="font-weight:700;font-size:12px;color:#3d4557;padding:11px 12px;">
+                                CƏMİ — @list.Count işçi
+                            </td>
+                            <td><span class="n">@umumiBrut.ToString("N2") ₼</span></td>
+                            <td><span class="n n--green">@FmtC(umumiBonus,"+")</span></td>
+                            <td class="col-sep"><span class="n n--blue">@FmtC(list.Sum(x=>x.MezuniyyetOdenisi))</span></td>
+                            <td class="col-sep"><span class="n n--red">@FmtC(umumiCerime,"−")</span></td>
+                            <td><span class="n n--red">@umumiGelirV.ToString("N2") ₼</span></td>
+                            <td><span class="n n--purple">@umumiDsmf.ToString("N2") ₼</span></td>
+                            <td><span class="n">@umumiIssizlik.ToString("N2") ₼</span></td>
+                            <td class="col-sep"><span class="n">@umumiItss.ToString("N2") ₼</span></td>
+                            <td class="col-sep"><span class="n n--gold" style="font-size:14px;">@umumiNet.ToString("N2") ₼</span></td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+    </div>
+
+</div>
+
+@* ── Status Modal ─────────────────────────────────────────────── *@
+<div class="mi-overlay" id="miOverlay">
+    <div class="mi-modal">
+        <div class="mi-modal-head">
+            <div class="mi-modal-icon mi-modal-icon--green" id="miModalIcon"></div>
+            <div>
+                <div class="mi-modal-title" id="miModalTitle">Status dəyişikliyi</div>
+                <div class="mi-modal-sub"   id="miModalSub">Əmin misiniz?</div>
+            </div>
+        </div>
+        <div class="mi-modal-foot" style="padding-top:20px;">
+            <button type="button" id="miModalCancel" class="mi-btn mi-btn--outline">Ləğv et</button>
+            <form asp-area="HR" asp-controller="Maas" asp-action="StatusDeyis"
+                  method="post" style="display:inline;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="miStatusId"  name="id"/>
+                <input type="hidden" id="miStatusVal" name="yeniStatus"/>
+                <input type="hidden" id="miStatusIl"  name="il"/>
+                <input type="hidden" id="miStatusAy"  name="ay"/>
+                <button type="submit" class="mi-btn mi-btn--primary">Təsdiqlə</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/HR/maas-index.js" asp-append-version="true"></script>
+}
