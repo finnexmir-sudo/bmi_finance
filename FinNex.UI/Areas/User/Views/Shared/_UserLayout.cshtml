@@ -345,6 +345,10 @@
                                class="fn-nav-subitem @(currentController == "Vezife" ? "active" : "")">
                                 <div class="fn-sub-dot"></div> Vəzifələr
                             </a>
+                            <a asp-area="HR" asp-controller="Davamiyyet" asp-action="Index"
+                               class="fn-nav-subitem @(ViewContext.RouteData.Values["area"]?.ToString() == "HR" && currentController == "Davamiyyet" ? "active" : "")">
+                                <div class="fn-sub-dot"></div> Davamiyyət
+                            </a>
                         </div>
                     </div>
                 }
