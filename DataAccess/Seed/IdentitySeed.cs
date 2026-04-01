@@ -1,6 +1,7 @@
 ﻿using FinNex.DataAccess.Contexts;
 using FinNex.Domain;
 using FinNex.Domain.Entities;
+using FinNex.Domain.Entities.HR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,10 +16,8 @@ namespace FinNex.DataAccess.Seed
 
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<AppRole>>();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            // ======================
-            // 1. Rollar
-            // ======================
             string[] roles = { "Admin", "Operator", "Viewer" };
 
             foreach (var role in roles)
@@ -29,9 +28,6 @@ namespace FinNex.DataAccess.Seed
                 }
             }
 
-            // ======================
-            // 2. Admin user
-            // ======================
             var adminEmail = "admin@finnex.local";
             var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
@@ -42,40 +38,57 @@ namespace FinNex.DataAccess.Seed
                     UserName = "admin",
                     Email = adminEmail,
                     EmailConfirmed = true,
-
                     Ad = "System",
                     Soyad = "Administrator",
                     Aktivdir = true,
                     QeydiyyatTarixi = DateTime.Now
                 };
 
-
                 var result = await userManager.CreateAsync(adminUser, "Admin@123");
 
-                if (result.Succeeded)
-                {
-                    await userManager.AddToRoleAsync(adminUser, "Admin");
-                }
+                if (!result.Succeeded)
+                    return;
             }
 
-            // ======================
-            // 3. Valyutalar
-            // ======================
+            if (!await userManager.IsInRoleAsync(adminUser, "Admin"))
+            {
+                await userManager.AddToRoleAsync(adminUser, "Admin");
+            }
 
-            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
+            // Valyutalar
             if (!await context.Set<Valyuta>().AnyAsync())
             {
                 var valyutalar = new List<Valyuta>
-    {
-        new Valyuta { Kod = "AZN", Ad = "AZN", Silinib = true },
-        new Valyuta { Kod = "USD", Ad = "USD", Silinib = true },
-        new Valyuta { Kod = "EUR", Ad = "EUR", Silinib = true }
-    };
+                {
+                    new Valyuta { Kod = "AZN", Ad = "AZN", Silinib = true },
+                    new Valyuta { Kod = "USD", Ad = "USD", Silinib = true },
+                    new Valyuta { Kod = "EUR", Ad = "EUR", Silinib = true }
+                };
 
                 context.AddRange(valyutalar);
                 await context.SaveChangesAsync();
             }
+
+            // Admin üçün bütün permission-lar
+            var allPermissions = await context.Permissions.ToListAsync();
+
+            foreach (var permission in allPermissions)
+            {
+                bool exists = await context.UserPermissions
+                    .AnyAsync(x => x.UserId == adminUser.Id && x.PermissionId == permission.Id);
+
+                if (!exists)
+                {
+                    context.UserPermissions.Add(new UserPermission
+                    {
+                        UserId = adminUser.Id,
+                        PermissionId = permission.Id,
+                        Allowed = true
+                    });
+                }
+            }
+
+            await context.SaveChangesAsync();
         }
     }
 }

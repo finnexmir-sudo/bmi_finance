@@ -40,4 +40,14 @@ public class DavamiyyetService
         return await _unitOfWork.Repository<Davamiyyet>()
             .MovcuddurmuAsync(x => x.IsciId == isciId && x.Tarix.Date == tarix.Date);
     }
+    public async Task<IList<DavamiyyetListDto>> AraliqUzreAsync(DateTime baslangic, DateTime son)
+    {
+        var entities = await _unitOfWork.Repository<Davamiyyet>()
+            .HamisiniGetirAsync(
+                x => x.Tarix.Date >= baslangic.Date && x.Tarix.Date <= son.Date,
+                include: q => q.Include(x => x.Isci),
+                izlemeden: true);
+
+        return _mapper.Map<IList<DavamiyyetListDto>>(entities);
+    }
 }

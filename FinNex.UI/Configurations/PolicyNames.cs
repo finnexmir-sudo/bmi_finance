@@ -4,5 +4,6 @@
     {
         public const string HR_View = "HR_View";
         public const string HR_Full = "HR_Full";
+        public const string Admin_Full = "Admin_Full";
     }
 }

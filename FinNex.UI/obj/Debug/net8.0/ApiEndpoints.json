@@ -1,1 +1,71 @@
-[]
+[
+  {
+    "ContainingType": "FinNex.UI.Areas.HR.Controllers.ADMSController",
+    "Method": "Handshake",
+    "RelativePath": "iclock/cdata",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "SN",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FinNex.UI.Areas.HR.Controllers.ADMSController",
+    "Method": "ReceiveAttendance",
+    "RelativePath": "iclock/cdata",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "SN",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "table",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FinNex.UI.Areas.HR.Controllers.ADMSController",
+    "Method": "DeviceCmd",
+    "RelativePath": "iclock/devicecmd",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "SN",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FinNex.UI.Areas.HR.Controllers.ADMSController",
+    "Method": "GetRequest",
+    "RelativePath": "iclock/getrequest",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "SN",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  }
+]

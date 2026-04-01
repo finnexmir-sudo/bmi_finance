@@ -17,6 +17,13 @@
     <link rel="stylesheet" href="~/css/User/user-area.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/User/dashboard.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/User/createmezuniyyet.css" asp-append-version="true" />
+
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <!-- Icons -->
+
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
     
     @await RenderSectionAsync("Styles", required: false)
 </head>
@@ -294,8 +301,14 @@
 
                     </div>
                 </div>
+                @* GIRIS CIXIS *@
+                <a asp-area="HR" asp-controller="ADMS" asp-action="Test"
+                   class="fn-nav-subitem">
+                    <div class="fn-sub-dot"></div> Cihaz Testi
+                </a>
+
                 @* Sidebar-da digər nav-group-lardan sonra *@
-                @if (User.IsInRole("HR"))
+                @if (User.IsInRole("HR") || User.IsInRole("Admin"))
                 {
                     <div class="fn-nav-label">HR İdarəetmə</div>
 

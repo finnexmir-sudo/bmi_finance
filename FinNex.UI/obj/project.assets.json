@@ -4651,23 +4651,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Samir\\.nuget\\packages\\": {},
+    "C:\\Users\\samir_hu\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Samir\\source\\repos\\bmi_finance\\FinNex.UI\\FinNex.UI.csproj",
+      "projectUniqueName": "C:\\bmi_finans\\FinNex.UI\\FinNex.UI.csproj",
       "projectName": "FinNex.UI",
-      "projectPath": "C:\\Users\\Samir\\source\\repos\\bmi_finance\\FinNex.UI\\FinNex.UI.csproj",
-      "packagesPath": "C:\\Users\\Samir\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Samir\\source\\repos\\bmi_finance\\FinNex.UI\\obj\\",
+      "projectPath": "C:\\bmi_finans\\FinNex.UI\\FinNex.UI.csproj",
+      "packagesPath": "C:\\Users\\samir_hu\\.nuget\\packages\\",
+      "outputPath": "C:\\bmi_finans\\FinNex.UI\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Samir\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\samir_hu\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -4683,14 +4683,14 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\Samir\\source\\repos\\bmi_finance\\DataAccess\\FinNex.DataAccess.csproj": {
-              "projectPath": "C:\\Users\\Samir\\source\\repos\\bmi_finance\\DataAccess\\FinNex.DataAccess.csproj"
+            "C:\\bmi_finans\\DataAccess\\FinNex.DataAccess.csproj": {
+              "projectPath": "C:\\bmi_finans\\DataAccess\\FinNex.DataAccess.csproj"
             },
-            "C:\\Users\\Samir\\source\\repos\\bmi_finance\\FinNex.Application\\FinNex.Application.csproj": {
-              "projectPath": "C:\\Users\\Samir\\source\\repos\\bmi_finance\\FinNex.Application\\FinNex.Application.csproj"
+            "C:\\bmi_finans\\FinNex.Application\\FinNex.Application.csproj": {
+              "projectPath": "C:\\bmi_finans\\FinNex.Application\\FinNex.Application.csproj"
             },
-            "C:\\Users\\Samir\\source\\repos\\bmi_finance\\FinNex.Domain\\FinNex.Domain.csproj": {
-              "projectPath": "C:\\Users\\Samir\\source\\repos\\bmi_finance\\FinNex.Domain\\FinNex.Domain.csproj"
+            "C:\\bmi_finans\\FinNex.Domain\\FinNex.Domain.csproj": {
+              "projectPath": "C:\\bmi_finans\\FinNex.Domain\\FinNex.Domain.csproj"
             }
           }
         }
@@ -4705,7 +4705,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "10.0.100"
+      "SdkAnalysisLevel": "9.0.100"
     },
     "frameworks": {
       "net8.0": {
@@ -4745,7 +4745,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.102/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

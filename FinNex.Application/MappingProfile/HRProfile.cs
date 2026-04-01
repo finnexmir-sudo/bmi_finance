@@ -137,7 +137,13 @@ public class HRProfile : Profile
 
         CreateMap<Davamiyyet, DavamiyyetListDto>()
             .ForMember(dest => dest.IsciTamAd,
-                opt => opt.MapFrom(src => src.Isci.Ad + " " + src.Isci.Soyad));
+                opt => opt.MapFrom(src => src.Isci.Ad + " " + src.Isci.Soyad))
+            .ForMember(d => d.DepartamentAd,
+    opt => opt.MapFrom(s => s.Isci.IsciTeyinatlari
+        .Where(t => !t.Silinib)
+        .OrderByDescending(t => t.YaradilmaTarixi)
+        .Select(t => t.Departament.Ad)
+        .FirstOrDefault()));
 
         CreateMap<Davamiyyet, DavamiyyetDetailDto>()
             .ForMember(dest => dest.IsciTamAd,

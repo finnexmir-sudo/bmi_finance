@@ -1,0 +1,133 @@
+﻿@{
+    ViewData["Title"] = "ADMS Cihaz Testi";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/HR/adms-test.css" asp-append-version="true" />
+}
+
+<div class="adms-grid">
+
+    <!-- SOL: Cihaz Status Kartı -->
+    <div>
+        <div class="fn-card">
+            <div class="fn-card-title">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.3" />
+                    <path d="M7 4v3.5l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                </svg>
+                Cihaz Statusu
+            </div>
+
+            <div class="adms-status-wrap">
+                <div class="adms-pulse-ring" id="pulseRing">
+                    <div class="adms-status-icon" id="statusIcon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                            <rect x="5" y="2" width="14" height="20" rx="2" stroke="white" stroke-width="1.5" />
+                            <circle cx="12" cy="5" r="1" fill="white" />
+                            <circle cx="10" cy="8" r="1" fill="white" />
+                            <circle cx="14" cy="8" r="1" fill="white" />
+                            <path d="M9 13h6M9 16h4" stroke="white" stroke-width="1.2" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="adms-status-label" id="statusLabel">Yoxlanılır...</div>
+
+                <div class="adms-badge" id="statusBadge">
+                    <span class="adms-badge-dot"></span>
+                    <span id="statusBadgeText">—</span>
+                </div>
+            </div>
+
+            <div class="adms-info-list">
+                <div class="adms-info-row">
+                    <span class="adms-info-label">Cihaz adı</span>
+                    <span class="adms-info-value">FA6000</span>
+                </div>
+                <div class="adms-info-row">
+                    <span class="adms-info-label">Serial nömrə</span>
+                    <span class="adms-info-value">5430242300098</span>
+                </div>
+                <div class="adms-info-row">
+                    <span class="adms-info-label">Cihaz IP</span>
+                    <span class="adms-info-value">192.168.1.202</span>
+                </div>
+                <div class="adms-info-row">
+                    <span class="adms-info-label">Protokol</span>
+                    <span class="adms-info-value">ADMS / HTTP</span>
+                </div>
+                <div class="adms-info-row">
+                    <span class="adms-info-label">Son əlaqə</span>
+                    <span class="adms-info-value" id="lastContact">—</span>
+                </div>
+                <div class="adms-info-row">
+                    <span class="adms-info-label">Bu gün qeyd</span>
+                    <span class="adms-info-value" id="todayCount">—</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SAĞ: Son Davamiyyət Qeydləri -->
+    <div>
+        <div class="fn-card">
+            <div class="adms-log-header">
+                <div class="fn-card-title" style="margin-bottom:0">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" />
+                        <path d="M1 5h12M4 2v2M10 2v2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+                    </svg>
+                    Son Davamiyyət Qeydləri
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <span class="adms-log-count" id="logCount">0 qeyd</span>
+                    <button class="fn-refresh-btn" id="refreshBtn">
+                        <svg id="refreshIcon" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M10.5 6a4.5 4.5 0 11-1.2-3M10.5 2v3h-3"
+                                  stroke="currentColor" stroke-width="1.4"
+                                  stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        Yenilə
+                    </button>
+                </div>
+            </div>
+
+            <table class="adms-table">
+                <thead>
+                    <tr>
+                        <th>PIN</th>
+                        <th>İşçi</th>
+                        <th>Tarix</th>
+                        <th>Giriş</th>
+                        <th>Çıxış</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="logTbody">
+                    <tr>
+                        <td colspan="6">
+                            <div class="adms-empty">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="9" stroke="#ccc" stroke-width="1.5" />
+                                    <path d="M12 7v5l3 3" stroke="#ccc" stroke-width="1.5" stroke-linecap="round" />
+                                </svg>
+                                Məlumat yüklənir...
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="adms-last-update">
+                Son yenilənmə: <span id="lastUpdate">—</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="~/js/HR/adms-test.js" asp-append-version="true"></script>
+}

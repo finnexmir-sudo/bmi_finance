@@ -3,231 +3,256 @@
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/HR/hr-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hr/hr-dashboard.css" asp-append-version="true" />
 }
 
-<div class="fn-page">
+@{
+    var faiz = ViewBag.DavamiyyetFaizi as int? ?? 0;
+    var faizCls = faiz >= 90 ? "#16a34a" : faiz >= 75 ? "#d97706" : "#dc2626";
+}
 
-    <!-- ── Greeting ──────────────────────────────────── -->
-    <div class="hr-greeting">
-        <div>
-            <div class="hr-greeting-title">HR Dashboard</div>
-            <div class="hr-greeting-sub">İşçi idarəetmə və analitika paneli</div>
+<div class="hr-db">
+
+    <!-- ── Top Bar ── -->
+    <div class="hr-topbar">
+        <div class="hr-topbar-left">
+            <h1>HR Dashboard</h1>
+            <p>@DateTime.Today.ToString("dd MMMM yyyy") · İşçi idarəetmə paneli</p>
         </div>
-        <div class="hr-greeting-actions">
-            <a asp-area="HR" asp-controller="Isci" asp-action="Create" class="fn-btn fn-btn--primary">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                </svg>
-                Yeni işçi
-            </a>
-        </div>
+        <a asp-area="HR" asp-controller="Isci" asp-action="Create" class="hr-topbar-btn">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                <path d="M5.5 1v9M1 5.5h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+            Yeni işçi
+        </a>
     </div>
 
-    <!-- ── KPI kartlar ───────────────────────────────── -->
-    <div class="hr-kpi-grid">
+    <!-- ── 4 KPI Kart ── -->
+    <div class="hr-kpi-row">
 
-        <div class="hr-kpi-card">
-            <div class="hr-kpi-top">
-                <span class="hr-kpi-label">Ümumi işçi</span>
-                <div class="hr-kpi-icon hr-kpi-icon--indigo">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3" />
-                        <path d="M1 14c0-3 2.2-5 5-5s5 2 5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-                        <path d="M12 7c1.5 0 3 .8 3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-                        <circle cx="12" cy="4.5" r="1.8" stroke="currentColor" stroke-width="1.3" />
-                    </svg>
-                </div>
-            </div>
-            <div class="hr-kpi-value">@(ViewBag.UmumiIsci ?? 0)</div>
-            <div class="hr-kpi-sub">
-                <span class="hr-kpi-trend hr-kpi-trend--up">↑ Son 30 gün</span>
-            </div>
+        <div class="hr-kpi k-total">
+            <div class="hr-kpi-lbl">Ümumi işçi</div>
+            <div class="hr-kpi-num">@(ViewBag.UmumiIsci ?? 0)</div>
+            <div class="hr-kpi-sub">@(ViewBag.AktivIsci ?? 0) aktiv</div>
         </div>
 
-        <div class="hr-kpi-card">
-            <div class="hr-kpi-top">
-                <span class="hr-kpi-label">Aktiv işçi</span>
-                <div class="hr-kpi-icon hr-kpi-icon--green">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <circle cx="7" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3" />
-                        <path d="M2 14c0-3 2.2-5 5-5s5 2 5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-                        <path d="M10.5 9l1.5 1.5 2.5-2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                </div>
-            </div>
-            <div class="hr-kpi-value">@(ViewBag.AktivIsci ?? 0)</div>
-            <div class="hr-kpi-sub">
-                <span class="hr-kpi-badge hr-kpi-badge--green">Stabil</span>
-            </div>
+        <div class="hr-kpi k-active">
+            <div class="hr-kpi-lbl">Bu ay gəlmə</div>
+            <div class="hr-kpi-num">@(ViewBag.Gelenler ?? 0)</div>
+            <div class="hr-kpi-sub">@(ViewBag.Gecikenler ?? 0) gecikmiş</div>
         </div>
 
-        <div class="hr-kpi-card">
-            <div class="hr-kpi-top">
-                <span class="hr-kpi-label">Məzuniyyətdə</span>
-                <div class="hr-kpi-icon hr-kpi-icon--amber">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M8 2C5.8 2 4 3.8 4 6c0 3.5 4 8 4 8s4-4.5 4-8c0-2.2-1.8-4-4-4z" stroke="currentColor" stroke-width="1.3" />
-                        <circle cx="8" cy="6" r="1.5" stroke="currentColor" stroke-width="1.3" />
-                    </svg>
-                </div>
-            </div>
-            <div class="hr-kpi-value">@(ViewBag.Mezuniyyetde ?? 0)</div>
-            <div class="hr-kpi-sub">
-                <span class="hr-kpi-badge hr-kpi-badge--amber">Bu həftə: @(ViewBag.MezuniyyetBitir ?? 0) bitir</span>
-            </div>
+        <div class="hr-kpi k-leave">
+            <div class="hr-kpi-lbl">Məzuniyyətdə</div>
+            <div class="hr-kpi-num">@(ViewBag.Mezuniyyetde ?? 0)</div>
+            <div class="hr-kpi-sub">Bu həftə @(ViewBag.MezuniyyetBitir ?? 0) bitir</div>
         </div>
 
-        <div class="hr-kpi-card">
-            <div class="hr-kpi-top">
-                <span class="hr-kpi-label">Bu ay gecikmə</span>
-                <div class="hr-kpi-icon hr-kpi-icon--red">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3" />
-                        <path d="M8 5v3.5M8 10.5v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-                    </svg>
-                </div>
-            </div>
-            <div class="hr-kpi-value">@(ViewBag.Gecikme ?? 0)</div>
-            <div class="hr-kpi-sub">
-                <span class="hr-kpi-badge hr-kpi-badge--red">Diqqət tələb edir</span>
+        <div class="hr-kpi k-attend">
+            <div class="hr-kpi-lbl">Bu ay davamiyyət</div>
+            <div class="hr-kpi-num">@faiz<sup>%</sup></div>
+            <div class="hr-kpi-bar">
+                <div class="hr-kpi-bar-fill" style="width:@faiz%; background:@faizCls"></div>
             </div>
         </div>
 
     </div>
 
-    <!-- ── Sürətli əməliyyatlar ──────────────────────── -->
-    <div class="hr-section-title">Sürətli əməliyyatlar</div>
-    <div class="hr-action-grid">
-
-        <a asp-area="HR" asp-controller="Isci" asp-action="Create" class="hr-action-card">
-            <div class="hr-action-icon hr-action-icon--indigo">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                    <circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.3" />
-                    <path d="M2 16c0-3.5 2.7-6 6-6s6 2.5 6 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-                    <path d="M13.5 4v5M16 6.5h-5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-                </svg>
-            </div>
-            <div class="hr-action-body">
-                <div class="hr-action-title">Yeni işçi əlavə et</div>
-                <div class="hr-action-sub">İşçi qeydiyyatını başlat</div>
-            </div>
-            <svg class="hr-action-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-        </a>
-
-        <a asp-area="HR" asp-controller="Davamiyyet" asp-action="Index" class="hr-action-card">
-            <div class="hr-action-icon hr-action-icon--blue">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                    <rect x="2" y="3" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.3" />
-                    <path d="M2 7h14M6 3V1M12 3V1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-                    <path d="M6 11l2 2 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-            </div>
-            <div class="hr-action-body">
-                <div class="hr-action-title">Davamiyyət</div>
-                <div class="hr-action-sub">Giriş/çıxış qeydiyyatı</div>
-            </div>
-            <svg class="hr-action-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-        </a>
-
-        <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Hr" class="hr-action-card">
-            <div class="hr-action-icon hr-action-icon--amber">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                    <path d="M9 2l2 4 4.5.7-3.2 3.1.8 4.5L9 12l-4 2.3.8-4.5L2.5 6.7 7 6z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" />
-                </svg>
-            </div>
-            <div class="hr-action-body">
-                <div class="hr-action-title">Məzuniyyət təsdiq</div>
-                <div class="hr-action-sub">Gözləyən müraciətlər</div>
-            </div>
-            <svg class="hr-action-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-        </a>
-
+    <!-- ── Bugün label ── -->
+    <div class="hr-today-label">
+        <span class="hr-live-dot"></span>
+        Bu günün davamiyyəti
     </div>
 
-    <!-- ── Alt panel: Son işçilər + Bugünün xülasəsi ── -->
-    <div class="hr-bottom-grid">
+    <!-- ── 5 Today stat ── -->
+    <div class="hr-today-row">
+        <div class="hr-td t-green">
+            <div class="hr-td-num">@(ViewBag.Gelenler ?? 0)</div>
+            <div class="hr-td-lbl">Gələnlər</div>
+        </div>
+        <div class="hr-td t-orange">
+            <div class="hr-td-num">@(ViewBag.Gecikenler ?? 0)</div>
+            <div class="hr-td-lbl">Gecikənlər</div>
+        </div>
+        <div class="hr-td t-red">
+            <div class="hr-td-num">@(ViewBag.Gelmeyen ?? 0)</div>
+            <div class="hr-td-lbl">Gəlməyən</div>
+        </div>
+        <div class="hr-td t-blue">
+            <div class="hr-td-num">@(ViewBag.Mezuniyyetdebugun ?? 0)</div>
+            <div class="hr-td-lbl">Məzuniyyətdə</div>
+        </div>
+        <div class="hr-td t-gray">
+            <div class="hr-td-num">@(ViewBag.CixisEden ?? 0)</div>
+            <div class="hr-td-lbl">Çıxış edib</div>
+        </div>
+    </div>
 
-        <!-- Son əlavə olunan işçilər -->
-        <div class="fn-card">
-            <div class="fn-card-head">
-                <span class="fn-card-title">Son əlavə olunan işçilər</span>
-                <a asp-area="HR" asp-controller="Isci" asp-action="Index"
-                   class="fn-card-link">Hamısı →</a>
+    <!-- ── Alt 3 sütun ── -->
+    <div class="hr-bottom">
+
+        <!-- SOL: Son girişlər -->
+        <div class="hd-card">
+            <div class="hd-card-head">
+                <span class="hd-card-title">Son girişlər</span>
+                <a asp-area="HR" asp-controller="Davamiyyet" asp-action="Index" class="hd-card-link">Tam cədvəl →</a>
             </div>
-
-            @if (ViewBag.SonIsciler != null && ((IEnumerable<dynamic>)ViewBag.SonIsciler).Any())
-            {
-                <div class="hr-isci-list">
-                    @foreach (var isci in ViewBag.SonIsciler)
+            <div class="hd-giris-list">
+                @if (ViewBag.SonGirisler != null && ((IEnumerable<dynamic>)ViewBag.SonGirisler).Any())
+                {
+                    foreach (var g in ViewBag.SonGirisler)
                     {
-                        <div class="hr-isci-row">
-                            <div class="hr-isci-avatar">@isci.TamAd.Substring(0, 1)</div>
-                            <div class="hr-isci-info">
-                                <div class="hr-isci-name">@isci.TamAd</div>
-                                <div class="hr-isci-meta">@isci.Departament • @isci.Vezife</div>
+                        var chipCls = g.Status == 1 ? "c-isde" :
+                        g.Status == 2 ? "c-gecikme" :
+                        g.Status == 3 ? "c-qayib" : "c-icazeli";
+                        var chipAd = g.Status == 1 ? "İşdə" :
+                        g.Status == 2 ? "Gecikmiş" :
+                        g.Status == 3 ? "Qayib" : "İcazəli";
+                        <div class="hd-giris-item">
+                            <div class="hd-av">@g.Ad[0]@g.Soyad[0]</div>
+                            <div class="hd-giris-body">
+                                <div class="hd-giris-name">@g.Ad @g.Soyad</div>
+                                <div class="hd-giris-times">
+                                    @if (g.GirisVaxti != null)
+                                    {
+                                        <span class="hd-time in">↑ @g.GirisVaxti</span>
+                                    }
+                                    @if (g.CixisVaxti != null)
+                                    {
+                                        <span class="hd-time out">↓ @g.CixisVaxti</span>
+                                    }
+                                </div>
                             </div>
-                            <div class="hr-isci-date">@isci.ElaveTarixi</div>
+                            <span class="hd-chip @chipCls">@chipAd</span>
                         </div>
                     }
-                </div>
-            }
-            else
-            {
-                <div class="fn-empty">Məlumat yoxdur</div>
-            }
+                }
+                else
+                {
+                    <div class="hd-empty">Bugün hələ qeyd yoxdur</div>
+                }
+            </div>
         </div>
 
-        <!-- Bu günün xülasəsi -->
-        <div class="fn-card">
-            <div class="fn-card-head">
-                <span class="fn-card-title">Bu günün xülasəsi</span>
-                <span class="hr-live-badge">● Live</span>
+        <!-- ORTA: Son işçilər -->
+        <div class="hd-card">
+            <div class="hd-card-head">
+                <span class="hd-card-title">Son əlavə olunan işçilər</span>
+                <a asp-area="HR" asp-controller="Isci" asp-action="Index" class="hd-card-link">Hamısı →</a>
+            </div>
+            <div class="hd-isci-list">
+                @if (ViewBag.SonIsciler != null && ((IEnumerable<dynamic>)ViewBag.SonIsciler).Any())
+                {
+                    foreach (var isci in ViewBag.SonIsciler)
+                    {
+                        <div class="hd-isci-item">
+                            <div class="hd-isci-av">@isci.TamAd.Substring(0, 1)</div>
+                            <div>
+                                <div class="hd-isci-name">@isci.TamAd</div>
+                                <div class="hd-isci-meta">@isci.Departament · @isci.Vezife</div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="hd-empty">Məlumat yoxdur</div>
+                }
+            </div>
+        </div>
+
+        <!-- SAĞ: Actions + Məzuniyyət -->
+        <div class="hd-right">
+
+            <div class="hd-card">
+                <div class="hd-card-head">
+                    <span class="hd-card-title">Əməliyyatlar</span>
+                </div>
+                <div class="hd-action-list">
+                    <a asp-area="HR" asp-controller="Isci" asp-action="Create" class="hd-action-item">
+                        <div class="hd-action-ico ico-dark">
+                            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                                <circle cx="6.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3" />
+                                <path d="M1.5 13.5c0-3 2.2-5 5-5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                                <path d="M11 8v5M8.5 10.5h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                        <div class="hd-action-body">
+                            <div class="hd-action-name">Yeni işçi</div>
+                            <div class="hd-action-sub">Qeydiyyat başlat</div>
+                        </div>
+                        <svg class="hd-action-arr" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </a>
+                    <div class="hd-divider"></div>
+                    <a asp-area="HR" asp-controller="Davamiyyet" asp-action="Index" class="hd-action-item">
+                        <div class="hd-action-ico ico-blue">
+                            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                                <rect x="1.5" y="2" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.3" />
+                                <path d="M1.5 5.5h12M5 2v2M10 2v2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                <path d="M5 9l1.5 1.5 3.5-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <div class="hd-action-body">
+                            <div class="hd-action-name">Davamiyyət</div>
+                            <div class="hd-action-sub">Aylıq cədvəl</div>
+                        </div>
+                        <svg class="hd-action-arr" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </a>
+                    <div class="hd-divider"></div>
+                    <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Hr" class="hd-action-item">
+                        <div class="hd-action-ico ico-amber">
+                            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                                <path d="M7.5 1.5l1.6 3.3 3.6.5-2.6 2.5.6 3.7L7.5 10l-3.2 1.5.6-3.7L2.3 5.3l3.6-.5z"
+                                      stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <div class="hd-action-body">
+                            <div class="hd-action-name">Məzuniyyət</div>
+                            <div class="hd-action-sub">Müraciətlər</div>
+                        </div>
+                        <svg class="hd-action-arr" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </a>
+                    <div class="hd-divider"></div>
+                    <a asp-area="HR" asp-controller="ADMSTest" asp-action="Test" class="hd-action-item">
+                        <div class="hd-action-ico ico-teal">
+                            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                                <rect x="3.5" y="1" width="8" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3" />
+                                <path d="M6 5h3M6 7.5h2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+                                <circle cx="7.5" cy="11" r="0.8" fill="currentColor" />
+                            </svg>
+                        </div>
+                        <div class="hd-action-body">
+                            <div class="hd-action-name">Cihaz testi</div>
+                            <div class="hd-action-sub">FA6000 statusu</div>
+                        </div>
+                        <svg class="hd-action-arr" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </a>
+                </div>
             </div>
 
-            <div class="hr-summary-list">
-                <div class="hr-summary-row">
-                    <div class="hr-summary-left">
-                        <div class="hr-summary-dot hr-summary-dot--green"></div>
-                        <span>Gələnlər</span>
-                    </div>
-                    <strong>@(ViewBag.Gelenler ?? 0)</strong>
+            <div class="hd-card">
+                <div class="hd-card-head">
+                    <span class="hd-card-title">Məzuniyyət</span>
+                    <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Hr" class="hd-card-link">Bax →</a>
                 </div>
-                <div class="hr-summary-row">
-                    <div class="hr-summary-left">
-                        <div class="hr-summary-dot hr-summary-dot--red"></div>
-                        <span>Gecikənlər</span>
-                    </div>
-                    <strong>@(ViewBag.Gecikenler ?? 0)</strong>
+                <div class="hd-mez-row">
+                    <span class="hd-mez-lbl">Hazırda məzuniyyətdə</span>
+                    <span class="hd-mez-val">@(ViewBag.Mezuniyyetde ?? 0)</span>
                 </div>
-                <div class="hr-summary-row">
-                    <div class="hr-summary-left">
-                        <div class="hr-summary-dot hr-summary-dot--amber"></div>
-                        <span>Məzuniyyətdə</span>
-                    </div>
-                    <strong>@(ViewBag.Mezuniyyetdebugun ?? 0)</strong>
-                </div>
-                <div class="hr-summary-row">
-                    <div class="hr-summary-left">
-                        <div class="hr-summary-dot hr-summary-dot--gray"></div>
-                        <span>Gəlməyən</span>
-                    </div>
-                    <strong>@(ViewBag.Gelmeyen ?? 0)</strong>
+                <div class="hd-mez-row">
+                    <span class="hd-mez-lbl">Bu həftə bitəcək</span>
+                    <span class="hd-mez-val">@(ViewBag.MezuniyyetBitir ?? 0)</span>
                 </div>
             </div>
 
-            <div class="hr-summary-footer">
-                <a asp-area="HR" asp-controller="Davamiyyet" asp-action="Index"
-                   class="fn-btn fn-btn--outline fn-btn--sm" style="width:100%;justify-content:center">
-                    Davamiyyətə bax
-                </a>
-            </div>
         </div>
 
     </div>

@@ -14,6 +14,7 @@ namespace FinNex.Application.DTOs.HR.Davamiyyet
         public DateTime? CixisVaxti { get; set; }
 
         public DavamiyyetStatus Status { get; set; }
+        public string? DepartamentAd { get; set; }
     }
 
 }

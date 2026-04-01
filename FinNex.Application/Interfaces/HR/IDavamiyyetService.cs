@@ -10,5 +10,6 @@ public interface IDavamiyyetService
     Task<IList<DavamiyyetListDto>> IsciUzreAsync(int isciId);
 
     Task<bool> BuGunMovcuddurmuAsync(int isciId, DateTime tarix);
+    Task<IList<DavamiyyetListDto>> AraliqUzreAsync(DateTime baslangic, DateTime son);
 }
 
