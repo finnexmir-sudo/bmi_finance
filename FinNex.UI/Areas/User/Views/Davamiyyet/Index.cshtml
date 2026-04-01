@@ -1,0 +1,210 @@
+@using FinNex.Application.DTOs.HR.Davamiyyet
+@using FinNex.Domain.Entities.HR
+@model IList<DavamiyyetListDto>
+@{
+    ViewData["Title"] = "Davamiyyət";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    var list = Model ?? new List<DavamiyyetListDto>();
+
+    var isdeSayi = list.Count(x => x.Status == DavamiyyetStatus.Isde);
+    var gecikmeSayi = list.Count(x => x.Status == DavamiyyetStatus.Gecikme);
+    var qayibSayi = list.Count(x => x.Status == DavamiyyetStatus.Qayib);
+    var icazeliSayi = list.Count(x => x.Status == DavamiyyetStatus.Icazeli);
+    var cemi = list.Count;
+}
+
+<div class="ud-page">
+
+    <div class="ud-head">
+        <div>
+            <h2 class="ud-title">Davamiyyətim</h2>
+            <p class="ud-sub">Giriş-çıxış qeydləriniz və davamiyyət statistikanız</p>
+        </div>
+    </div>
+
+    <div class="ud-kpi-row">
+        <div class="ud-kpi">
+            <div class="ud-kpi-icon ud-kpi-icon--green">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <div class="ud-kpi-body">
+                <div class="ud-kpi-val" id="kpiIsde">@isdeSayi</div>
+                <div class="ud-kpi-lbl">İşdə</div>
+            </div>
+        </div>
+        <div class="ud-kpi">
+            <div class="ud-kpi-icon ud-kpi-icon--amber">
+                <i class="bi bi-clock-fill"></i>
+            </div>
+            <div class="ud-kpi-body">
+                <div class="ud-kpi-val" id="kpiGecikme">@gecikmeSayi</div>
+                <div class="ud-kpi-lbl">Gecikmə</div>
+            </div>
+        </div>
+        <div class="ud-kpi">
+            <div class="ud-kpi-icon ud-kpi-icon--red">
+                <i class="bi bi-x-circle-fill"></i>
+            </div>
+            <div class="ud-kpi-body">
+                <div class="ud-kpi-val" id="kpiQayib">@qayibSayi</div>
+                <div class="ud-kpi-lbl">Qayıb</div>
+            </div>
+        </div>
+        <div class="ud-kpi">
+            <div class="ud-kpi-icon ud-kpi-icon--blue">
+                <i class="bi bi-card-checklist"></i>
+            </div>
+            <div class="ud-kpi-body">
+                <div class="ud-kpi-val" id="kpiIcazeli">@icazeliSayi</div>
+                <div class="ud-kpi-lbl">İcazəli</div>
+            </div>
+        </div>
+        <div class="ud-kpi ud-kpi--total">
+            <div class="ud-kpi-icon ud-kpi-icon--indigo">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div class="ud-kpi-body">
+                <div class="ud-kpi-val" id="kpiCemi">@cemi</div>
+                <div class="ud-kpi-lbl">Cəmi qeyd</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ud-filter-panel">
+        <div class="ud-filter-row">
+            <div class="ud-filter-group">
+                <label class="ud-filter-lbl">Başlanğıc</label>
+                <input type="date" id="udBaslangic" class="ud-input" />
+            </div>
+            <div class="ud-filter-group">
+                <label class="ud-filter-lbl">Son</label>
+                <input type="date" id="udSon" class="ud-input" />
+            </div>
+            <div class="ud-filter-group">
+                <label class="ud-filter-lbl">Status</label>
+                <select id="udStatus" class="ud-select">
+                    <option value="">Hamısı</option>
+                    <option value="1">İşdə</option>
+                    <option value="2">Gecikmə</option>
+                    <option value="3">Qayıb</option>
+                    <option value="4">İcazəli</option>
+                </select>
+            </div>
+            <button id="udAxtar" class="ud-btn ud-btn--primary">
+                <i class="bi bi-search"></i> Axtar
+            </button>
+        </div>
+    </div>
+
+    <div class="ud-table-card">
+        <div class="ud-table-head">
+            <div class="ud-table-title">
+                <i class="bi bi-table"></i> Davamiyyət tarixçəsi
+            </div>
+            <div class="ud-table-meta">
+                <span class="ud-record-count" id="udRecordCount">@cemi qeyd</span>
+            </div>
+        </div>
+
+        <div class="ud-table-wrap">
+            <table class="ud-table">
+                <thead>
+                    <tr>
+                        <th>Tarix</th>
+                        <th>Giriş</th>
+                        <th>Çıxış</th>
+                        <th>İş saatı</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="udTableBody">
+                    @if (list.Any())
+                    {
+                        @foreach (var item in list.OrderByDescending(x => x.Tarix))
+                        {
+                            var isLate = item.GirisVaxti.HasValue &&
+                                (item.GirisVaxti.Value.Hour > 9 || (item.GirisVaxti.Value.Hour == 9 && item.GirisVaxti.Value.Minute > 5));
+                            <tr>
+                                <td>
+                                    <div class="ud-date">@item.Tarix.ToString("dd.MM.yyyy")</div>
+                                </td>
+                                <td>
+                                    @if (item.GirisVaxti.HasValue)
+                                    {
+                                        <span class="ud-time @(isLate ? "ud-time--late" : "")">
+                                            @item.GirisVaxti.Value.ToString("HH:mm")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="ud-nodata">--:--</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.CixisVaxti.HasValue)
+                                    {
+                                        <span class="ud-time">@item.CixisVaxti.Value.ToString("HH:mm")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="ud-nodata">--:--</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.GirisVaxti.HasValue && item.CixisVaxti.HasValue)
+                                    {
+                                        var dur = item.CixisVaxti.Value - item.GirisVaxti.Value;
+                                        var cls = dur.TotalHours < 8 ? "ud-dur--short" : "ud-dur--ok";
+                                        <span class="ud-dur @cls">@dur.Hours s @dur.Minutes d</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="ud-nodata">---</span>
+                                    }
+                                </td>
+                                <td>
+                                    @switch (item.Status)
+                                    {
+                                        case DavamiyyetStatus.Isde:
+                                            <span class="ud-badge ud-badge--isde"><span class="ud-badge-dot"></span>İşdə</span>
+                                            break;
+                                        case DavamiyyetStatus.Gecikme:
+                                            <span class="ud-badge ud-badge--gecikme"><span class="ud-badge-dot"></span>Gecikmə</span>
+                                            break;
+                                        case DavamiyyetStatus.Qayib:
+                                            <span class="ud-badge ud-badge--qayib"><span class="ud-badge-dot"></span>Qayıb</span>
+                                            break;
+                                        case DavamiyyetStatus.Icazeli:
+                                            <span class="ud-badge ud-badge--icazeli"><span class="ud-badge-dot"></span>İcazəli</span>
+                                            break;
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5">
+                                <div class="ud-empty">
+                                    <i class="bi bi-inbox"></i>
+                                    <div>Hələ davamiyyət qeydiniz yoxdur</div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/user-davamiyyet.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/User/user-davamiyyet.js" asp-append-version="true"></script>
+}
