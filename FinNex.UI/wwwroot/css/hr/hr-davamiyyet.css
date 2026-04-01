@@ -177,6 +177,9 @@
 /* ── Filter Panel ── */
 .hrd-filter-panel {
     margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .hrd-filter-row {
