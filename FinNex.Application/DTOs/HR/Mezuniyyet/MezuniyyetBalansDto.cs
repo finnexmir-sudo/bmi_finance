@@ -7,6 +7,8 @@
             public int IsciId { get; set; }
             public string IsciAdSoyad { get; set; } = null!;
             public int Il { get; set; }
+            public int Nov { get; set; }
+            public string NovAd { get; set; } = null!;
             public int ToplamGun { get; set; }
             public int IstifadeOlunanGun { get; set; }
             public int QaliqGun { get; set; }

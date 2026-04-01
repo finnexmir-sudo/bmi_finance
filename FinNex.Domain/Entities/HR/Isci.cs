@@ -25,7 +25,7 @@
 
         // Əlaqələr
         public IsciMaliye? Maliye { get; set; }
-        public MezuniyyetBalans? MezuniyyetBalans { get; set; }
+        public ICollection<MezuniyyetBalans> MezuniyyetBalanslari { get; set; } = new List<MezuniyyetBalans>();
 
         public ICollection<Maas> Maaslar { get; set; } = new List<Maas>();
         public ICollection<IsciMaasTarixcesi> MaasTarixcesi { get; set; } = new List<IsciMaasTarixcesi>();

@@ -37,7 +37,7 @@ public class HRProfile : Profile
         CreateMap<IsciCreateDto, Isci>()
             .ForMember(dest => dest.AppUserId, opt => opt.MapFrom(src => src.UserId))
             .ForMember(dest => dest.Maliye, opt => opt.Ignore())
-            .ForMember(dest => dest.MezuniyyetBalans, opt => opt.Ignore())
+            .ForMember(dest => dest.MezuniyyetBalanslari, opt => opt.Ignore())
             .ForMember(dest => dest.Maaslar, opt => opt.Ignore())
             .ForMember(dest => dest.MaasTarixcesi, opt => opt.Ignore())
             .ForMember(dest => dest.IsciTeyinatlari, opt => opt.Ignore());
@@ -45,7 +45,7 @@ public class HRProfile : Profile
         CreateMap<IsciUpdateDto, Isci>()
             .ForMember(dest => dest.AppUserId, opt => opt.MapFrom(src => src.UserId))
             .ForMember(dest => dest.Maliye, opt => opt.Ignore())
-            .ForMember(dest => dest.MezuniyyetBalans, opt => opt.Ignore())
+            .ForMember(dest => dest.MezuniyyetBalanslari, opt => opt.Ignore())
             .ForMember(dest => dest.Maaslar, opt => opt.Ignore())
             .ForMember(dest => dest.MaasTarixcesi, opt => opt.Ignore())
             .ForMember(dest => dest.IsciTeyinatlari, opt => opt.Ignore());

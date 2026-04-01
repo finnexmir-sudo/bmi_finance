@@ -38,7 +38,7 @@ namespace FinNex.Application.Services
     .Include(i => i.IsciTeyinatlari.Where(t => t.Aktivdir))
         .ThenInclude(t => t.Vezife)
     .Include(i => i.Maliye)
-    .Include(i => i.MezuniyyetBalans),
+    .Include(i => i.MezuniyyetBalanslari),
                         izlemeden: true);
 
                 if (isci == null)
@@ -100,30 +100,30 @@ namespace FinNex.Application.Services
                     };
                 }).ToList();
 
-                // ── 4. Məzuniyyət balansı ────────────────────────────────
-                // İllik — MezuniyyetBalans-dan
-                var balans = isci.MezuniyyetBalans;
-                if (balans != null && balans.Il == buIl)
+                // ── 4. Məzuniyyət balansı (hər növ üçün MezuniyyetBalans-dan) ─
+                var balanslari = isci.MezuniyyetBalanslari?.Where(b => b.Il == buIl).ToList()
+                    ?? new List<MezuniyyetBalans>();
+
+                var illikBalans = balanslari.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Illik);
+                if (illikBalans != null)
                 {
-                    dto.IllikToplamGun = balans.ToplamGun;
-                    dto.IllikIstifadeGun = balans.IstifadeOlunanGun;
+                    dto.IllikToplamGun = illikBalans.ToplamGun;
+                    dto.IllikIstifadeGun = illikBalans.IstifadeOlunanGun;
                 }
 
-                // Xəstəlik və Ezamiyyət — Mezuniyyet cədvəlindən hesabla
-                var tesdiqlenmisMezuniyyetler = await _unitOfWork.Repository<Mezuniyyet>()
-                    .HamisiniGetirAsync(
-                        x => x.IsciId == isci.Id
-                          && x.Status == MezuniyyetStatus.Tesdiqlenib
-                          && x.BaslamaTarixi.Year == buIl,
-                        izlemeden: true);
+                var xestelikBalans = balanslari.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Xestelik);
+                if (xestelikBalans != null)
+                {
+                    dto.XestelikToplamGun = xestelikBalans.ToplamGun;
+                    dto.XestelikIstifadeGun = xestelikBalans.IstifadeOlunanGun;
+                }
 
-                dto.XestelikIstifadeGun = tesdiqlenmisMezuniyyetler
-                    .Where(x => x.Nov == MezuniyyetNovu.Xestelik)
-                    .Sum(x => x.IsGunlerininSayi);
-
-                dto.EzamiyyetIstifadeGun = tesdiqlenmisMezuniyyetler
-                    .Where(x => x.Nov == MezuniyyetNovu.Ezamiyyet)
-                    .Sum(x => x.IsGunlerininSayi);
+                var ezamiyyetBalans = balanslari.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Ezamiyyet);
+                if (ezamiyyetBalans != null)
+                {
+                    dto.EzamiyyetToplamGun = ezamiyyetBalans.ToplamGun;
+                    dto.EzamiyyetIstifadeGun = ezamiyyetBalans.IstifadeOlunanGun;
+                }
 
                 // ── 5. Son ödənişlər (son 3 ay) ──────────────────────────
                 var sonMaaslar = await _unitOfWork.Repository<Maas>()

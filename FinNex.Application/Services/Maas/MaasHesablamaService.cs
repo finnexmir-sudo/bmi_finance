@@ -150,8 +150,24 @@ namespace FinNex.Application.Services.HR
                 Tip = "gelir"
             });
 
-            // 5. Mezuniyyet gunleri ve odenisi
+            // 5. Qayıb (icazəsiz) günləri hesabla və kəsintini tətbiq et
             int ayIsGunu = await AyinIsGunleriniHesablaAsync(input.Il, input.Ay);
+            int qayibGun = await QayibGunleriniSayAsync(input.IsciId, input.Il, input.Ay);
+
+            decimal qayibKesinti = 0;
+            if (qayibGun > 0)
+            {
+                qayibKesinti = Math.Round(esasMaas / ayIsGunu * qayibGun, 2);
+                izahatlar.Add(new HesablamaIzahiDto
+                {
+                    Addim = "Qayıb Gün Kesintisi",
+                    Izah = $"{esasMaas:N2} / {ayIsGunu} iş günü x {qayibGun} qayıb gün",
+                    Mebleg = qayibKesinti,
+                    Tip = "kesinti"
+                });
+            }
+
+            // 6. Mezuniyyet gunleri ve odenisi
             int mezGun = await MezuniyyetGunleriniSayAsync(input.IsciId, input.Il, input.Ay);
 
             decimal mezOdenis = 0;
@@ -205,6 +221,7 @@ namespace FinNex.Application.Services.HR
             decimal brutMaas = esasMaas
                 - mezKesinti
                 + mezOdenis
+                - qayibKesinti
                 + input.BonusMeblegi
                 - input.CerimeMeblegi;
 
@@ -213,7 +230,7 @@ namespace FinNex.Application.Services.HR
             izahatlar.Add(new HesablamaIzahiDto
             {
                 Addim = "Brut Mebleg",
-                Izah = $"Esas ({esasMaas:N2}) - MezKes ({mezKesinti:N2}) + MezOd ({mezOdenis:N2}) + Bonus ({input.BonusMeblegi:N2}) - Cerime ({input.CerimeMeblegi:N2})",
+                Izah = $"Esas ({esasMaas:N2}) - MezKes ({mezKesinti:N2}) + MezOd ({mezOdenis:N2}) - Qayıb ({qayibKesinti:N2}) + Bonus ({input.BonusMeblegi:N2}) - Cerime ({input.CerimeMeblegi:N2})",
                 Mebleg = brutMaas,
                 Tip = "melumati"
             });
@@ -242,6 +259,18 @@ namespace FinNex.Application.Services.HR
             // 11. NET maas
             decimal umumiTutulma = gelirVergisi + dsmfIsci + issizlikIsci + itss;
             decimal netMaas = brutMaas - umumiTutulma;
+
+            // Minimum əmək haqqı yoxlaması
+            if (netMaas < p.MinimumEmekHaqqi && qayibGun == 0 && mezGun == 0)
+            {
+                izahatlar.Add(new HesablamaIzahiDto
+                {
+                    Addim = "XƏBƏRDARLIQ",
+                    Izah = $"Net maaş ({netMaas:N2}) minimum əmək haqqından ({p.MinimumEmekHaqqi:N2}) aşağıdır!",
+                    Mebleg = p.MinimumEmekHaqqi,
+                    Tip = "melumati"
+                });
+            }
 
             izahatlar.Add(new HesablamaIzahiDto
             {
@@ -293,6 +322,7 @@ namespace FinNex.Application.Services.HR
                 DetayEkle("Mezuniyyet Odenisi",       MaasDetayTipi.Gelir,           mezOdenis,          mezGun > 0 ? $"{mezGun} gun" : null),
                 DetayEkle("Bonus/Mukafat",            MaasDetayTipi.Gelir,           input.BonusMeblegi, input.BonusAciqlama),
                 // Kesintiler
+                DetayEkle("Davamiyyət Kəsintisi",     MaasDetayTipi.Tutulma,         qayibKesinti,       qayibGun > 0 ? $"{qayibGun} qayıb gün / {ayIsGunu} iş günü" : null),
                 DetayEkle("Mezuniyyet Kesintisi",     MaasDetayTipi.Tutulma,         mezKesinti,         mezGun > 0 ? $"{mezGun} gun / {ayIsGunu} is gunu" : null),
                 DetayEkle("Gecikdirme Cerimesi",      MaasDetayTipi.Tutulma,         input.CerimeMeblegi, input.CerimeAciqlama),
                 // Vergiler
@@ -325,6 +355,8 @@ namespace FinNex.Application.Services.HR
                 Ay = input.Ay,
                 EsasMaas = esasMaas,
                 BonusMeblegi = input.BonusMeblegi,
+                QayibGunSayi = qayibGun,
+                QayibKesintisi = qayibKesinti,
                 MezuniyyetGunSayi = mezGun,
                 MezuniyyetOdenisi = mezOdenis,
                 MezuniyyetEsasMaasKesintisi = mezKesinti,
@@ -341,6 +373,27 @@ namespace FinNex.Application.Services.HR
                 UmumiSirketXerci = brutMaas + dsmfIsegoturen + issizlikIsegoturen,
                 Izahatlar = izahatlar
             });
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // QAYIB GUNLERINI SAY (icazesiz ishe gelmemeler)
+        // ─────────────────────────────────────────────────────────
+        public async Task<int> QayibGunleriniSayAsync(int isciId, int il, int ay)
+        {
+            var ayBaslangic = new DateTime(il, ay, 1);
+            var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
+
+            var qayibSayi = await _unitOfWork.Repository<Davamiyyet>()
+                .Query()
+                .Where(x =>
+                    x.IsciId == isciId &&
+                    !x.Silinib &&
+                    x.Status == DavamiyyetStatus.Qayib &&
+                    x.Tarix >= ayBaslangic &&
+                    x.Tarix <= ayBitis)
+                .CountAsync();
+
+            return qayibSayi;
         }
 
         // ─────────────────────────────────────────────────────────
