@@ -214,66 +214,24 @@
                     </div>
                 </div>
 
-                @* ── Wide table ────────────────────────────────────── *@
-                <div class="mth-scroll">
+                @* ── Compact table with expandable details ────────── *@
+                <div class="mth-table-wrap">
                     <table class="mth-table">
                         <thead>
-                            @* Group headers *@
-                            <tr class="tr-grp">
-                                <th colspan="1" class="grp-isci">İşçi</th>
-                                <th colspan="2" class="grp-isci center">Status / Dövr</th>
-                                <th colspan="2" class="grp-gelir cs">Əlavələr (daxil edilir)</th>
-                                <th colspan="1" class="grp-gelir cs">Əsas Maaş</th>
-                                <th colspan="2" class="grp-gelir cs">Məzuniyyət</th>
-                                <th colspan="1" class="grp-kesinti cs">Kəsinti</th>
-                                <th colspan="1" class="grp-gelir cs">Brüt</th>
-                                <th colspan="1" class="grp-vergi">Vergi güzəşti</th>
-                                <th colspan="4" class="grp-vergi cs">Tutulmalar — İşçi payı</th>
-                                <th colspan="1" class="grp-vergi cs">Cəmi tutulma</th>
-                                <th colspan="1" class="grp-net cs">NET Maaş</th>
-                                <th colspan="2" class="grp-sirket cs">Şirkət xərcləri</th>
-                                <th colspan="1" class="grp-sirket cs">Ümumi şirkət xərci</th>
-                                <th colspan="1" class="grp-act cs">Əməliyyat</th>
-                            </tr>
-                            @* Col headers *@
                             <tr class="tr-cols">
-                                <th class="left" style="min-width:180px;">Ad Soyad</th>
-                                <th class="left" style="min-width:110px;">Departament</th>
-                                <th class="left cs" style="min-width:95px;">Status</th>
-
-                                <th style="min-width:130px;">+ Bonus</th>
-                                <th class="cs" style="min-width:130px;">− Cərimə</th>
-
-                                <th style="min-width:110px;">Əsas Maaş</th>
-
-                                <th style="min-width:90px;">Gün sayı</th>
-                                <th class="cs" style="min-width:110px;">Ödəniş</th>
-
-                                <th class="cs" style="min-width:110px;">Məz. Kəsintisi</th>
-
-                                <th class="cs" style="min-width:110px; background:rgba(30,155,107,.04);">
+                                <th class="col-chk"></th>
+                                <th class="col-name left">Ad Soyad</th>
+                                <th class="col-status center">Status</th>
+                                <th class="col-bonus">+ Bonus</th>
+                                <th class="col-cerime">− Cərimə</th>
+                                <th class="col-esas">Əsas Maaş</th>
+                                <th class="col-brut">
                                     <span style="color:#1e9b6b;">BRÜT</span>
                                 </th>
-
-                                <th style="min-width:100px;">Güzəşt (₼)</th>
-
-                                <th style="min-width:105px;">Gəlir V.<br><span style="font-size:8px;font-weight:500;color:#aab0bf;">14%</span></th>
-                                <th style="min-width:90px;">DSMF<br><span style="font-size:8px;font-weight:500;color:#aab0bf;">3%</span></th>
-                                <th style="min-width:90px;">İşsizlik<br><span style="font-size:8px;font-weight:500;color:#aab0bf;">0.5%</span></th>
-                                <th class="cs" style="min-width:80px;">İTSS<br><span style="font-size:8px;font-weight:500;color:#aab0bf;">2%</span></th>
-
-                                <th class="cs" style="min-width:110px;">Cəmi Tutulma</th>
-
-                                <th class="cs" style="min-width:120px; background:rgba(232,184,75,.06);">
+                                <th class="col-net">
                                     <span style="color:#c9900a;">NET MAAŞ</span>
                                 </th>
-
-                                <th style="min-width:105px;">DSMF (işv.)<br><span style="font-size:8px;font-weight:500;color:#aab0bf;">22%</span></th>
-                                <th class="cs" style="min-width:105px;">İşsizlik (işv.)<br><span style="font-size:8px;font-weight:500;color:#aab0bf;">0.5%</span></th>
-
-                                <th class="cs" style="min-width:120px;">Şirkət cəmi</th>
-
-                                <th class="center cs" style="min-width:90px;">Detal</th>
+                                <th class="col-expand center"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -286,20 +244,24 @@
                                 var isDone  = hesablanmis.Contains(isci.Id);
                                 var hasIban = !string.IsNullOrEmpty(isci.Maliye?.BankHesabNo);
 
-                                // Şirkət hesabı (preview üçün statik)
-                                // Real hesab backend tərəfdə aparılır
-                                decimal brutPreview   = esas; // bonus/cerime input-dan gəlir
-                                decimal dsmfIsv       = brutPreview * 0.22m;
-                                decimal issizlikIsv   = brutPreview * 0.005m;
-                                decimal sirketCemi    = dsmfIsv + issizlikIsv;
-
+                                @* ── Main row ──────────────────────────────── *@
                                 <tr data-isci="@isci.Id"
                                     data-esas="@esas.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
-                                    class="@(isDone ? "done" : "")">
+                                    class="mth-row @(isDone ? "done" : "")">
 
-                                    @* ── İşçi adı ─────────────────────────────────── *@
-                                    <td class="left">
-                                        <div style="font-size:13px;font-weight:600;color:#0f1a2e;">@isci.Ad @isci.Soyad</div>
+                                    @* Checkbox *@
+                                    <td class="col-chk center">
+                                        <input type="checkbox" class="mth-checkbox"
+                                               @(isDone ? "disabled" : "")/>
+                                        <input type="hidden" name="ferdiElaveler[@i].IsciId" value="@isci.Id"/>
+                                    </td>
+
+                                    @* Ad Soyad + Dept *@
+                                    <td class="col-name left">
+                                        <div class="mth-name-cell">
+                                            <div class="mth-name-primary">@isci.Ad @isci.Soyad</div>
+                                            <div class="mth-name-dept">@dept</div>
+                                        </div>
                                         @if (!hasIban)
                                         {
                                             <div class="mth-iban">
@@ -310,14 +272,10 @@
                                                 IBAN yoxdur
                                             </div>
                                         }
-                                        <input type="hidden" name="ferdiElaveler[@i].IsciId" value="@isci.Id"/>
                                     </td>
 
-                                    @* Departament *@
-                                    <td class="left"><span style="font-size:11.5px;color:#8a93a8;font-weight:500;">@dept</span></td>
-
                                     @* Status *@
-                                    <td class="left cs">
+                                    <td class="col-status center">
                                         @if (isDone)
                                         {
                                             <span class="mth-badge mth-badge--done">Hesablanıb</span>
@@ -328,8 +286,8 @@
                                         }
                                     </td>
 
-                                    @* + Bonus input *@
-                                    <td>
+                                    @* + Bonus *@
+                                    <td class="col-bonus">
                                         <div class="mth-inp-wrap">
                                             <span class="mth-inp-pfx mth-inp-pfx--plus">+</span>
                                             <input type="number" class="mth-inp mth-inp--b"
@@ -339,8 +297,8 @@
                                         </div>
                                     </td>
 
-                                    @* − Cərimə input *@
-                                    <td class="cs">
+                                    @* − Cərimə *@
+                                    <td class="col-cerime">
                                         <div class="mth-inp-wrap">
                                             <span class="mth-inp-pfx mth-inp-pfx--minus">−</span>
                                             <input type="number" class="mth-inp mth-inp--c"
@@ -350,85 +308,165 @@
                                         </div>
                                     </td>
 
-                                    @* Əsas maaş *@
-                                    <td><span class="n">@Fmt(esas)</span></td>
-
-                                    @* Məzuniyyət gün sayı (backend hesablayır, burada — göstərilir) *@
-                                    <td><span class="n n--d">—</span></td>
-
-                                    @* Məzuniyyət ödənişi *@
-                                    <td class="cs"><span class="n n--b" data-p="mez">—</span></td>
-
-                                    @* Məzuniyyət kəsintisi *@
-                                    <td class="cs"><span class="n n--r" data-p="mezkes">—</span></td>
+                                    @* Əsas Maaş *@
+                                    <td class="col-esas"><span class="n">@Fmt(esas)</span></td>
 
                                     @* BRÜT (real-time) *@
-                                    <td class="cs" style="background:rgba(30,155,107,.03);">
+                                    <td class="col-brut">
                                         <span data-p="brut" class="n">—</span>
                                     </td>
 
-                                    @* Vergi güzəşti (backend-dən gəlir) *@
-                                    <td><span class="n n--d">200.00 ₼</span></td>
-
-                                    @* Gəlir vergisi (real-time) *@
-                                    <td><span data-p="gelirv" class="n n--r">—</span></td>
-
-                                    @* DSMF işçi (real-time) *@
-                                    <td><span data-p="dsmf" class="n n--p">—</span></td>
-
-                                    @* İşsizlik işçi (real-time) *@
-                                    <td><span data-p="issizlik" class="n">—</span></td>
-
-                                    @* İTSS (real-time) *@
-                                    <td class="cs"><span data-p="itss" class="n">—</span></td>
-
-                                    @* Cəmi tutulma (real-time) *@
-                                    <td class="cs"><span data-p="tutulma" class="n n--r">—</span></td>
-
-                                    @* NET (real-time) *@
-                                    <td class="cs" style="background:rgba(232,184,75,.04);">
+                                    @* NET MAAŞ (real-time) *@
+                                    <td class="col-net">
                                         <span data-p="net" class="n n--au">—</span>
                                     </td>
 
-                                    @* DSMF işəgötürən (statik preview, backend hesablayır) *@
-                                    <td><span class="n n--p">@Fmt(esas * 0.22m)</span><span class="n--s">≈ 22%</span></td>
-
-                                    @* İşsizlik işəgötürən *@
-                                    <td class="cs"><span class="n">@Fmt(esas * 0.005m)</span><span class="n--s">≈ 0.5%</span></td>
-
-                                    @* Şirkət cəmi *@
-                                    <td class="cs"><span class="n n--p">@Fmt(esas * 0.225m)</span></td>
-
-                                    @* Detal linki *@
-                                    <td class="center cs">
-                                        <a asp-area="HR" asp-controller="Maas" asp-action="Hesabla"
-                                           asp-route-isciId="@isci.Id"
-                                           class="mth-act mth-act--b" data-tip="Fərdi hesabla">
+                                    @* Expand button *@
+                                    <td class="col-expand center">
+                                        <button type="button" class="mth-expand-btn" data-tip="Ətraflı məlumat">
                                             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                                                <path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
                                             </svg>
-                                        </a>
+                                        </button>
                                     </td>
+                                </tr>
 
+                                @* ── Expandable detail panel ───────────────── *@
+                                <tr class="mth-detail-row" data-detail-for="@isci.Id">
+                                    <td colspan="9">
+                                        <div class="mth-detail-panel">
+                                            <div class="mth-detail-grid">
+
+                                                @* Məzuniyyət *@
+                                                <div class="mth-detail-card">
+                                                    <div class="mth-detail-card-head">
+                                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                            <rect x="1.5" y="2" width="11" height="10" rx="1.5" stroke="#2d6cdf" stroke-width="1.2"/>
+                                                            <path d="M1.5 5h11M4.5 2v2M9.5 2v2" stroke="#2d6cdf" stroke-width="1" stroke-linecap="round"/>
+                                                        </svg>
+                                                        <span>Məzuniyyət</span>
+                                                    </div>
+                                                    <div class="mth-detail-card-body">
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">Gün sayı</span>
+                                                            <span class="n n--d" data-p="mezgun">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">Ödəniş</span>
+                                                            <span class="n n--b" data-p="mez">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">Kəsinti</span>
+                                                            <span class="n n--r" data-p="mezkes">—</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                @* Vergi güzəşti *@
+                                                <div class="mth-detail-card">
+                                                    <div class="mth-detail-card-head">
+                                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                            <path d="M7 1.5v11M4 5l3-3.5L10 5" stroke="#1e9b6b" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        </svg>
+                                                        <span>Vergi güzəşti</span>
+                                                    </div>
+                                                    <div class="mth-detail-card-body">
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">Güzəşt məbləği</span>
+                                                            <span class="n n--g">200.00 ₼</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                @* İşçi tutulmaları *@
+                                                <div class="mth-detail-card mth-detail-card--wide">
+                                                    <div class="mth-detail-card-head">
+                                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                            <circle cx="7" cy="7" r="5.5" stroke="#d85a30" stroke-width="1.2"/>
+                                                            <path d="M7 4.5v3M7 9v.5" stroke="#d85a30" stroke-width="1.2" stroke-linecap="round"/>
+                                                        </svg>
+                                                        <span>İşçi tutulmaları</span>
+                                                    </div>
+                                                    <div class="mth-detail-card-body mth-detail-card-body--row">
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">Gəlir V. <span class="mth-rate-hint">14%</span></span>
+                                                            <span class="n n--r" data-p="gelirv">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">DSMF <span class="mth-rate-hint">3%</span></span>
+                                                            <span class="n n--p" data-p="dsmf">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">İşsizlik <span class="mth-rate-hint">0.5%</span></span>
+                                                            <span class="n" data-p="issizlik">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">İTSS <span class="mth-rate-hint">2%</span></span>
+                                                            <span class="n" data-p="itss">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-sep"></div>
+                                                        <div class="mth-detail-item mth-detail-item--total">
+                                                            <span class="mth-detail-lbl">Cəmi tutulma</span>
+                                                            <span class="n n--r" data-p="tutulma">—</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                @* Şirkət xərcləri *@
+                                                <div class="mth-detail-card">
+                                                    <div class="mth-detail-card-head mth-detail-card-head--purple">
+                                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                            <rect x="2" y="5" width="10" height="7" rx="1" stroke="#7c5cbf" stroke-width="1.2"/>
+                                                            <path d="M4.5 5V3.5a2.5 2.5 0 015 0V5" stroke="#7c5cbf" stroke-width="1.2" stroke-linecap="round"/>
+                                                        </svg>
+                                                        <span>Şirkət xərcləri</span>
+                                                    </div>
+                                                    <div class="mth-detail-card-body">
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">DSMF işv. <span class="mth-rate-hint">22%</span></span>
+                                                            <span class="n n--p" data-p="dsmfisv">@Fmt(esas * 0.22m)</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">İşsizlik işv. <span class="mth-rate-hint">0.5%</span></span>
+                                                            <span class="n" data-p="issizlikisv">@Fmt(esas * 0.005m)</span>
+                                                        </div>
+                                                        <div class="mth-detail-sep"></div>
+                                                        <div class="mth-detail-item mth-detail-item--total">
+                                                            <span class="mth-detail-lbl">Ümumi</span>
+                                                            <span class="n n--p" data-p="sirketcemi">@Fmt(esas * 0.225m)</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                @* Fərdi hesabla link *@
+                                                <div class="mth-detail-card mth-detail-card--action">
+                                                    <a asp-area="HR" asp-controller="Maas" asp-action="Hesabla"
+                                                       asp-route-isciId="@isci.Id"
+                                                       class="mth-btn mth-btn--outline mth-btn--detail-link">
+                                                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                                            <path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        </svg>
+                                                        Fərdi hesabla
+                                                    </a>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </td>
                                 </tr>
                             }
                         </tbody>
 
                         @* ── Cəmi sətri ────────────────────────────────── *@
                         <tfoot>
-                            <tr style="background:#f7f9fc;border-top:2px solid #eaecf3;">
+                            <tr>
                                 <td class="left" colspan="5" style="font-weight:700;font-size:12px;color:#3d4557;padding:11px 10px;">
                                     CƏMİ — @isciList.Count işçi
                                 </td>
                                 <td><span class="n">@Fmt(isciList.Sum(x=>x.Maliye?.CariMaas??0m))</span></td>
-                                <td colspan="7"></td>
-                                <td class="cs" style="font-size:13px;">
-                                    <span style="font-weight:700;color:#c9900a;" id="mthFootNet">— ₼</span>
-                                </td>
-                                <td><span class="n n--p">@Fmt(isciList.Sum(x=>(x.Maliye?.CariMaas??0m)*0.22m))</span></td>
-                                <td class="cs"><span class="n">@Fmt(isciList.Sum(x=>(x.Maliye?.CariMaas??0m)*0.005m))</span></td>
-                                <td class="cs"><span class="n n--p">@Fmt(isciList.Sum(x=>(x.Maliye?.CariMaas??0m)*0.225m))</span></td>
-                                <td class="cs"></td>
+                                <td><span class="n" id="mthFootBrutTable">—</span></td>
+                                <td><span class="n n--au" id="mthFootNet">— ₼</span></td>
+                                <td></td>
                             </tr>
                         </tfoot>
                     </table>

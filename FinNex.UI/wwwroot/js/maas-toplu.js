@@ -1,15 +1,14 @@
 /**
  * FinNex — Toplu Maaş Hesablaması
- * maas-toplu.js
+ * maas-toplu.js — Compact table with expandable detail rows
  */
 (function () {
     'use strict';
 
     const RATES = { gelirV: 0.14, dsmfIsci: 0.03, issizlik: 0.005, itss: 0.02 };
+    const RATES_ISV = { dsmf: 0.22, issizlik: 0.005 };
 
-    // checkbox elementini birbaşa tap, label üzərindən deyil
     const chkAll = document.getElementById('mthChkAll');
-    // label-ın özündə click event blokladığı halda birbaşa checkbox-a event ver
     if (chkAll) chkAll.style.pointerEvents = 'auto';
     const selChip = document.getElementById('mthSelChip');
     const btnCalc = document.getElementById('mthBtnCalc');
@@ -18,7 +17,7 @@
     const btnNo = document.getElementById('mthBtnNo');
     const mainForm = document.getElementById('mthForm');
 
-    const rows = Array.from(document.querySelectorAll('tr[data-isci]'));
+    const rows = Array.from(document.querySelectorAll('tr.mth-row[data-isci]'));
 
     /* ── Row data ─────────────────────────────────────────────── */
     function rd(row) {
@@ -38,8 +37,14 @@
         const tutulma = gelirV + dsmf + iss + itss;
         const net = Math.max(brut - tutulma, 0);
 
+        // Employer costs
+        const dsmfIsv = brut * RATES_ISV.dsmf;
+        const issIsv = brut * RATES_ISV.issizlik;
+        const sirketCemi = dsmfIsv + issIsv;
+
         return {
             esas, bonus, cerime, brut, gelirV, dsmf, iss, itss, tutulma, net,
+            dsmfIsv, issIsv, sirketCemi,
             checked: !!chk?.checked && !done, done
         };
     }
@@ -47,22 +52,50 @@
     /* ── Format ───────────────────────────────────────────────── */
     const fmt = v => v > 0 ? v.toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₼' : '—';
 
-    /* ── Update preview cells for one row ────────────────────── */
+    /* ── Get the detail row for a main row ────────────────────── */
+    function getDetailRow(row) {
+        const isciId = row.dataset.isci;
+        return document.querySelector('tr.mth-detail-row[data-detail-for="' + isciId + '"]');
+    }
+
+    /* ── Update preview cells for one row (main + detail) ────── */
     function updateRow(row) {
         const d = rd(row);
+        const detailRow = getDetailRow(row);
+
+        // Helper: set text in main row or detail row
         const set = (sel, val, cls) => {
+            // Search in main row
             const el = row.querySelector(sel);
-            if (!el) return;
-            el.textContent = val;
-            if (cls) el.className = cls;
+            if (el) {
+                el.textContent = val;
+                if (cls) el.className = cls;
+            }
+            // Also search in detail row
+            if (detailRow) {
+                const el2 = detailRow.querySelector(sel);
+                if (el2) {
+                    el2.textContent = val;
+                    if (cls) el2.className = cls;
+                }
+            }
         };
+
+        // Main row cells
         set('[data-p="brut"]', fmt(d.brut), d.brut > 0 ? 'n' : 'n n--d');
+        set('[data-p="net"]', fmt(d.net), d.net > 0 ? 'n n--au' : 'n n--d');
+
+        // Detail row cells
         set('[data-p="gelirv"]', fmt(d.gelirV), d.gelirV > 0 ? 'n n--r' : 'n n--d');
         set('[data-p="dsmf"]', fmt(d.dsmf), d.dsmf > 0 ? 'n n--p' : 'n n--d');
         set('[data-p="issizlik"]', fmt(d.iss), d.iss > 0 ? 'n' : 'n n--d');
         set('[data-p="itss"]', fmt(d.itss), d.itss > 0 ? 'n' : 'n n--d');
         set('[data-p="tutulma"]', fmt(d.tutulma), d.tutulma > 0 ? 'n n--r' : 'n n--d');
-        set('[data-p="net"]', fmt(d.net), d.net > 0 ? 'n n--au' : 'n n--d');
+
+        // Employer costs in detail (update dynamically based on brut)
+        set('[data-p="dsmfisv"]', fmt(d.dsmfIsv), d.dsmfIsv > 0 ? 'n n--p' : 'n n--d');
+        set('[data-p="issizlikisv"]', fmt(d.issIsv), d.issIsv > 0 ? 'n' : 'n n--d');
+        set('[data-p="sirketcemi"]', fmt(d.sirketCemi), d.sirketCemi > 0 ? 'n n--p' : 'n n--d');
     }
 
     /* ── Footer totals ────────────────────────────────────────── */
@@ -81,6 +114,7 @@
         s('mthFootBrut', fmt(t.brut));
         s('mthFootTutulma', fmt(t.tutulma));
         s('mthFootNet', fmt(t.net));
+        s('mthFootNet2', fmt(t.net));
 
         if (selChip) {
             selChip.textContent = sel.length + ' işçi seçilib';
@@ -119,6 +153,23 @@
 
         [row.querySelector('.mth-inp--b'), row.querySelector('.mth-inp--c')].forEach(inp => {
             inp?.addEventListener('input', () => { updateRow(row); updateFooter(); });
+        });
+
+        // Expand/collapse toggle
+        const expandBtn = row.querySelector('.mth-expand-btn');
+        expandBtn?.addEventListener('click', () => {
+            const detailRow = getDetailRow(row);
+            if (!detailRow) return;
+            const isOpen = detailRow.classList.contains('open');
+            if (isOpen) {
+                detailRow.classList.remove('open');
+                expandBtn.classList.remove('open');
+                row.classList.remove('expanded');
+            } else {
+                detailRow.classList.add('open');
+                expandBtn.classList.add('open');
+                row.classList.add('expanded');
+            }
         });
 
         updateRow(row);
