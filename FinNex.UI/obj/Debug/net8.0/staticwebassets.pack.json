@@ -109,6 +109,10 @@
       "PackagePath": "staticwebassets\\css\\hr\\hr-dashboard.css"
     },
     {
+      "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\hr\\hr-davamiyyet.css",
+      "PackagePath": "staticwebassets\\css\\hr\\hr-davamiyyet.css"
+    },
+    {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\hr\\hr-premium.css",
       "PackagePath": "staticwebassets\\css\\hr\\hr-premium.css"
     },
@@ -283,6 +287,10 @@
     {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\hr\\departament-list.js",
       "PackagePath": "staticwebassets\\js\\hr\\departament-list.js"
+    },
+    {
+      "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\hr\\hr-davamiyyet.js",
+      "PackagePath": "staticwebassets\\js\\hr\\hr-davamiyyet.js"
     },
     {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\hr\\isci-detail.js",

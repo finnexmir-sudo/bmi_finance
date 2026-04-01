@@ -108,6 +108,18 @@
       <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"jbvzq8arzo"},{"Name":"integrity","Value":"sha256-sZyMwP4t\u002BKqRWaGnxo3oNc\u002BzA/fiTAAdhsLj0NFX8SA="},{"Name":"label","Value":"_content/FinNex.UI/css/hr/hr-dashboard.css"}]]]></EndpointProperties>
       <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"9690"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022sZyMwP4t\u002BKqRWaGnxo3oNc\u002BzA/fiTAAdhsLj0NFX8SA=\u0022"},{"Name":"Last-Modified","Value":"Tue, 31 Mar 2026 10:13:43 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
+    <StaticWebAssetEndpoint Include="_content/FinNex.UI/css/hr/hr-davamiyyet.css">
+      <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\hr\hr-davamiyyet.css'))</AssetFile>
+      <Selectors><![CDATA[[]]]></Selectors>
+      <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-RyRjWetk08D3N9YU4boh2SisrubVETvkbBcbi0fwXww="}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"13091"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022RyRjWetk08D3N9YU4boh2SisrubVETvkbBcbi0fwXww=\u0022"},{"Name":"Last-Modified","Value":"Wed, 01 Apr 2026 10:51:36 GMT"}]]]></ResponseHeaders>
+    </StaticWebAssetEndpoint>
+    <StaticWebAssetEndpoint Include="_content/FinNex.UI/css/hr/hr-davamiyyet.tfwest9qu6.css">
+      <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\hr\hr-davamiyyet.css'))</AssetFile>
+      <Selectors><![CDATA[[]]]></Selectors>
+      <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"tfwest9qu6"},{"Name":"integrity","Value":"sha256-RyRjWetk08D3N9YU4boh2SisrubVETvkbBcbi0fwXww="},{"Name":"label","Value":"_content/FinNex.UI/css/hr/hr-davamiyyet.css"}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"13091"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022RyRjWetk08D3N9YU4boh2SisrubVETvkbBcbi0fwXww=\u0022"},{"Name":"Last-Modified","Value":"Wed, 01 Apr 2026 10:51:36 GMT"}]]]></ResponseHeaders>
+    </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/FinNex.UI/css/hr/hr-premium.css">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\hr\hr-premium.css'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
@@ -695,6 +707,18 @@
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"unc9gor2nd"},{"Name":"integrity","Value":"sha256-WkhejMe8I21OaE33dW\u002BuDC24U9KmRaOGC3UDSrzpeZk="},{"Name":"label","Value":"_content/FinNex.UI/js/hr/departament-list.js"}]]]></EndpointProperties>
       <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"894"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022WkhejMe8I21OaE33dW\u002BuDC24U9KmRaOGC3UDSrzpeZk=\u0022"},{"Name":"Last-Modified","Value":"Tue, 31 Mar 2026 04:56:02 GMT"}]]]></ResponseHeaders>
+    </StaticWebAssetEndpoint>
+    <StaticWebAssetEndpoint Include="_content/FinNex.UI/js/hr/hr-davamiyyet.jqcj88dlze.js">
+      <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\hr\hr-davamiyyet.js'))</AssetFile>
+      <Selectors><![CDATA[[]]]></Selectors>
+      <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"jqcj88dlze"},{"Name":"integrity","Value":"sha256-O/8JB/HMWkUt35Qk3bw35uYqKh6GbnBhERq2bmUi2UY="},{"Name":"label","Value":"_content/FinNex.UI/js/hr/hr-davamiyyet.js"}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"11371"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022O/8JB/HMWkUt35Qk3bw35uYqKh6GbnBhERq2bmUi2UY=\u0022"},{"Name":"Last-Modified","Value":"Wed, 01 Apr 2026 10:51:36 GMT"}]]]></ResponseHeaders>
+    </StaticWebAssetEndpoint>
+    <StaticWebAssetEndpoint Include="_content/FinNex.UI/js/hr/hr-davamiyyet.js">
+      <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\hr\hr-davamiyyet.js'))</AssetFile>
+      <Selectors><![CDATA[[]]]></Selectors>
+      <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-O/8JB/HMWkUt35Qk3bw35uYqKh6GbnBhERq2bmUi2UY="}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"11371"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022O/8JB/HMWkUt35Qk3bw35uYqKh6GbnBhERq2bmUi2UY=\u0022"},{"Name":"Last-Modified","Value":"Wed, 01 Apr 2026 10:51:36 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/FinNex.UI/js/hr/isci-detail.3wf83rrggk.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\hr\isci-detail.js'))</AssetFile>

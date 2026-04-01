@@ -7,6 +7,7 @@ wwwroot\css\hr\adms-test.css
 wwwroot\css\hr\davamiyyet-list.css
 wwwroot\css\hr\departament-list.css
 wwwroot\css\hr\hr-dashboard.css
+wwwroot\css\hr\hr-davamiyyet.css
 wwwroot\css\hr\hr-premium.css
 wwwroot\css\hr\hr-pro - Copy.css
 wwwroot\css\hr\isci.css
@@ -55,6 +56,7 @@ wwwroot\js\hr\adms-test.js
 wwwroot\js\hr\davamiyyet-list.js
 wwwroot\js\hr\departament-index.js
 wwwroot\js\hr\departament-list.js
+wwwroot\js\hr\hr-davamiyyet.js
 wwwroot\js\hr\isci-detail.js
 wwwroot\js\hr\isci-teyinat.js
 wwwroot\js\hr\maas-deyis.js

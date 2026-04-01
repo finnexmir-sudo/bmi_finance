@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "7AK5GeVyvnuSqE1teW5zhQuXGYFsjJd0vafN08FX/1g=",
+  "Hash": "uupCKGRxvD/TLWIlzWq//wr20ovXpKi1Zrimmy9wS+c=",
   "Source": "FinNex.UI",
   "BasePath": "_content/FinNex.UI",
   "Mode": "Default",
@@ -246,6 +246,27 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\css\\hr\\hr-dashboard.css"
+    },
+    {
+      "Identity": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\hr\\hr-davamiyyet.css",
+      "SourceId": "FinNex.UI",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\",
+      "BasePath": "_content/FinNex.UI",
+      "RelativePath": "css/hr/hr-davamiyyet#[.{fingerprint}]?.css",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "tfwest9qu6",
+      "Integrity": "RyRjWetk08D3N9YU4boh2SisrubVETvkbBcbi0fwXww=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\css\\hr\\hr-davamiyyet.css"
     },
     {
       "Identity": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\hr\\hr-premium.css",
@@ -1254,6 +1275,27 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\js\\hr\\departament-list.js"
+    },
+    {
+      "Identity": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\hr\\hr-davamiyyet.js",
+      "SourceId": "FinNex.UI",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\",
+      "BasePath": "_content/FinNex.UI",
+      "RelativePath": "js/hr/hr-davamiyyet#[.{fingerprint}]?.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "jqcj88dlze",
+      "Integrity": "O/8JB/HMWkUt35Qk3bw35uYqKh6GbnBhERq2bmUi2UY=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\js\\hr\\hr-davamiyyet.js"
     },
     {
       "Identity": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\hr\\isci-detail.js",
@@ -3924,6 +3966,88 @@
         {
           "Name": "integrity",
           "Value": "sha256-sZyMwP4t+KqRWaGnxo3oNc+zA/fiTAAdhsLj0NFX8SA="
+        }
+      ]
+    },
+    {
+      "Route": "css/hr/hr-davamiyyet.css",
+      "AssetFile": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\hr\\hr-davamiyyet.css",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "13091"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/css"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"RyRjWetk08D3N9YU4boh2SisrubVETvkbBcbi0fwXww=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 01 Apr 2026 10:51:36 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-RyRjWetk08D3N9YU4boh2SisrubVETvkbBcbi0fwXww="
+        }
+      ]
+    },
+    {
+      "Route": "css/hr/hr-davamiyyet.tfwest9qu6.css",
+      "AssetFile": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\hr\\hr-davamiyyet.css",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "13091"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/css"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"RyRjWetk08D3N9YU4boh2SisrubVETvkbBcbi0fwXww=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 01 Apr 2026 10:51:36 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "tfwest9qu6"
+        },
+        {
+          "Name": "label",
+          "Value": "css/hr/hr-davamiyyet.css"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-RyRjWetk08D3N9YU4boh2SisrubVETvkbBcbi0fwXww="
         }
       ]
     },
@@ -8024,6 +8148,88 @@
         {
           "Name": "integrity",
           "Value": "sha256-WkhejMe8I21OaE33dW+uDC24U9KmRaOGC3UDSrzpeZk="
+        }
+      ]
+    },
+    {
+      "Route": "js/hr/hr-davamiyyet.jqcj88dlze.js",
+      "AssetFile": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\hr\\hr-davamiyyet.js",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "11371"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/javascript"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"O/8JB/HMWkUt35Qk3bw35uYqKh6GbnBhERq2bmUi2UY=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 01 Apr 2026 10:51:36 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "jqcj88dlze"
+        },
+        {
+          "Name": "label",
+          "Value": "js/hr/hr-davamiyyet.js"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-O/8JB/HMWkUt35Qk3bw35uYqKh6GbnBhERq2bmUi2UY="
+        }
+      ]
+    },
+    {
+      "Route": "js/hr/hr-davamiyyet.js",
+      "AssetFile": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\hr\\hr-davamiyyet.js",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "11371"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/javascript"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"O/8JB/HMWkUt35Qk3bw35uYqKh6GbnBhERq2bmUi2UY=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 01 Apr 2026 10:51:36 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-O/8JB/HMWkUt35Qk3bw35uYqKh6GbnBhERq2bmUi2UY="
         }
       ]
     },
