@@ -63,14 +63,32 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             };
             await _unitOfWork.Repository<IsciMaliye>().YaratAsync(maliye);
 
-            var mezuniyyetBalans = new MezuniyyetBalans
+            // 3 növ məzuniyyət balansı yarat: İllik, Xəstəlik, Ezamiyyət
+            var illikBalans = new MezuniyyetBalans
             {
                 IsciId = isci.Id,
                 Il = DateTime.Now.Year,
-                ToplamGun = dto.BaslangicMezuniyyet ?? 0
+                Nov = MezuniyyetNovu.Illik,
+                ToplamGun = dto.BaslangicMezuniyyet ?? 21
+            };
+            var xestelikBalans = new MezuniyyetBalans
+            {
+                IsciId = isci.Id,
+                Il = DateTime.Now.Year,
+                Nov = MezuniyyetNovu.Xestelik,
+                ToplamGun = 10
+            };
+            var ezamiyyetBalans = new MezuniyyetBalans
+            {
+                IsciId = isci.Id,
+                Il = DateTime.Now.Year,
+                Nov = MezuniyyetNovu.Ezamiyyet,
+                ToplamGun = 30
             };
 
-            await _unitOfWork.Repository<MezuniyyetBalans>().YaratAsync(mezuniyyetBalans);
+            await _unitOfWork.Repository<MezuniyyetBalans>().YaratAsync(illikBalans);
+            await _unitOfWork.Repository<MezuniyyetBalans>().YaratAsync(xestelikBalans);
+            await _unitOfWork.Repository<MezuniyyetBalans>().YaratAsync(ezamiyyetBalans);
 
             await _unitOfWork.YaddaSaxlaAsync();
 

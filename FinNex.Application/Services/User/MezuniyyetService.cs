@@ -35,12 +35,12 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 // 1. İş günlərini hesabla
                 int isGunu = await HesablaIsGunuAsync(dto.BaslamaTarixi, dto.BitmeTarixi);
 
-                // 2. Balansı yoxla
+                // 2. Balansı növə görə yoxla
                 var balans = await _unitOfWork.Repository<MezuniyyetBalans>()
-                    .GetirAsync(x => x.IsciId == dto.IsciId && x.Il == dto.BaslamaTarixi.Year);
+                    .GetirAsync(x => x.IsciId == dto.IsciId && x.Il == dto.BaslamaTarixi.Year && x.Nov == dto.Nov);
 
                 if (balans == null || balans.QaliqGun < isGunu)
-                    return Result<MezuniyyetDto>.Fail("Kifayət qədər məzuniyyət balansınız yoxdur.");
+                    return Result<MezuniyyetDto>.Fail($"Kifayət qədər {dto.Nov} məzuniyyət balansınız yoxdur.");
 
                 // 3. İşçinin aktiv departamentini tap
                 var teyinat = await _unitOfWork.Repository<IsciTeyinat>()
@@ -158,6 +158,46 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         if (!status) m.ImtinaSebebi = qeyd;
 
         await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(m);
+
+        // Təsdiqlənibsə: balansı yenilə + davamiyyətdə icazəli qeydlər yarat
+        if (status)
+        {
+            // Balansı yenilə
+            var balans = await _unitOfWork.Repository<MezuniyyetBalans>()
+                .GetirAsync(x => x.IsciId == m.IsciId && x.Il == m.BaslamaTarixi.Year && x.Nov == m.Nov);
+
+            if (balans != null)
+            {
+                balans.IstifadeOlunanGun += m.IsGunlerininSayi;
+                await _unitOfWork.Repository<MezuniyyetBalans>().YenileAsync(balans);
+            }
+
+            // Davamiyyətdə İcazəli qeydlər yarat (hər iş günü üçün)
+            var bayramlar = await _unitOfWork.Repository<BayramGunu>()
+                .HamisiniGetirAsync(x => x.Tarix >= m.BaslamaTarixi && x.Tarix <= m.BitmeTarixi);
+
+            for (var gun = m.BaslamaTarixi; gun <= m.BitmeTarixi; gun = gun.AddDays(1))
+            {
+                if (gun.DayOfWeek == DayOfWeek.Saturday || gun.DayOfWeek == DayOfWeek.Sunday)
+                    continue;
+                if (bayramlar.Any(b => b.Tarix.Date == gun.Date))
+                    continue;
+
+                // Artıq qeyd varsa yaratma
+                var movcud = await _unitOfWork.Repository<Davamiyyet>()
+                    .MovcuddurmuAsync(x => x.IsciId == m.IsciId && x.Tarix.Date == gun.Date);
+                if (movcud) continue;
+
+                var dav = new Davamiyyet
+                {
+                    IsciId = m.IsciId,
+                    Tarix = gun,
+                    Status = DavamiyyetStatus.Icazeli
+                };
+                await _unitOfWork.Repository<Davamiyyet>().YaratAsync(dav);
+            }
+        }
+
         await _unitOfWork.YaddaSaxlaAsync();
         return Result.Ok("HR qərarı qeydə alındı.");
     }
@@ -365,8 +405,33 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             return Result.Fail("Bu müraciət sizə aid deyil.");
 
         if (m.Status != MezuniyyetStatus.Gozlemede &&
-            m.Status != MezuniyyetStatus.SobeReisiTesdiqinde)
-            return Result.Fail("Yalnız 'Gözləmədə' və ya 'Şöbə rəisi təsdiqində' statusunda ləğv etmək olar.");
+            m.Status != MezuniyyetStatus.SobeReisiTesdiqinde &&
+            m.Status != MezuniyyetStatus.Tesdiqlenib)
+            return Result.Fail("Bu statusda ləğv etmək mümkün deyil.");
+
+        // Təsdiqlənmiş məzuniyyəti ləğv edəndə balansı geri qaytar
+        if (m.Status == MezuniyyetStatus.Tesdiqlenib)
+        {
+            var balans = await _unitOfWork.Repository<MezuniyyetBalans>()
+                .GetirAsync(x => x.IsciId == m.IsciId && x.Il == m.BaslamaTarixi.Year && x.Nov == m.Nov);
+
+            if (balans != null)
+            {
+                balans.IstifadeOlunanGun = Math.Max(0, balans.IstifadeOlunanGun - m.IsGunlerininSayi);
+                await _unitOfWork.Repository<MezuniyyetBalans>().YenileAsync(balans);
+            }
+
+            // Davamiyyətdəki İcazəli qeydləri sil
+            var davQeydleri = await _unitOfWork.Repository<Davamiyyet>()
+                .HamisiniGetirAsync(x =>
+                    x.IsciId == m.IsciId &&
+                    x.Status == DavamiyyetStatus.Icazeli &&
+                    x.Tarix >= m.BaslamaTarixi &&
+                    x.Tarix <= m.BitmeTarixi);
+
+            foreach (var dav in davQeydleri)
+                await _unitOfWork.Repository<Davamiyyet>().YumshakSilAsync(dav.Id);
+        }
 
         await _unitOfWork.Repository<Mezuniyyet>().YumshakSilAsync(id);
         await _unitOfWork.YaddaSaxlaAsync();

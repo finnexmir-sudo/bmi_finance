@@ -446,9 +446,9 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     .HasForeignKey<Isci>(x => x.AppUserId)
     .OnDelete(DeleteBehavior.SetNull);
 
-        // Məzuniyyət balansı üçün unikal indeks (Bir işçinin bir ildə yalnız bir balansı ola bilər)
+        // Məzuniyyət balansı üçün unikal indeks (Bir işçinin bir ildə hər növ üçün bir balansı ola bilər)
         builder.Entity<MezuniyyetBalans>()
-            .HasIndex(x => new { x.IsciId, x.Il })
+            .HasIndex(x => new { x.IsciId, x.Il, x.Nov })
             .IsUnique();
 
         // Məzuniyyət cədvəlində Isci və EvezEdenIsci əlaqələri
