@@ -3,7 +3,7 @@
 @model IList<DavamiyyetListDto>
 @{
     ViewData["Title"] = "Davamiyyət";
-    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 
     var list = Model ?? new List<DavamiyyetListDto>();
     var bugun = DateTime.Today;
