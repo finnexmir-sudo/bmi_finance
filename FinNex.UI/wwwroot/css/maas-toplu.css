@@ -1,6 +1,6 @@
 /* ================================================================
    FinNex — Toplu Maaş Hesablaması  |  maas-toplu.css
-   Corporate Premium — MaasHesablaNeticesiDto tam cədvəl
+   Compact table with expandable detail rows
    ================================================================ */
 
 .mth-page {
@@ -285,16 +285,15 @@
 }
 
 /* ── Table card ──────────────────────────────────────────────── */
-/* overflow:hidden kənarlaşdırıldı — sticky sütunlar üçün lazımdır */
 .mth-card {
     background: #fff;
     border: 1px solid #e2e6ef;
     border-radius: 13px;
     box-shadow: 0 2px 8px rgba(15,26,46,.05);
-    overflow: visible;
+    overflow: hidden;
 }
 
-/* Toolbar — sticky + z-index yüksək ki scroll edəndə üstdə qalsın */
+/* Toolbar */
 .mth-toolbar {
     display: flex;
     align-items: center;
@@ -304,9 +303,6 @@
     background: #fafbfd;
     gap: 10px;
     flex-wrap: wrap;
-    position: sticky;
-    left: 0; /* horizontal scroll-da sabit qalır */
-    z-index: 20;
     border-radius: 13px 13px 0 0;
 }
 
@@ -322,9 +318,7 @@
     gap: 8px;
 }
 
-/* ── Checkbox FIX ─────────────────────────────────────────────
-   label üçün position:relative + z-index — başqa element üstə
-   gəlib klikin qarşısını almır                                  */
+/* ── Checkbox ────────────────────────────────────────────────── */
 .mth-chk-wrap {
     display: flex;
     align-items: center;
@@ -355,7 +349,6 @@
     z-index: 2;
     transition: all .15s;
     flex-shrink: 0;
-    /* pointer-events açıq — başqa element üstünü örtməsin */
     pointer-events: auto;
 }
 
@@ -393,6 +386,11 @@
             border-radius: 1px;
         }
 
+    .mth-checkbox:disabled {
+        opacity: .5;
+        cursor: not-allowed;
+    }
+
 .mth-sel-chip {
     font-size: 12px;
     font-weight: 600;
@@ -407,93 +405,32 @@
         display: block;
     }
 
-/* ── Scroll ──────────────────────────────────────────────────── */
-.mth-scroll {
-    overflow-x: auto;
-    overflow-y: visible;
-    border-radius: 0 0 13px 13px;
+/* ── Table wrapper — no horizontal scroll needed ─────────────── */
+.mth-table-wrap {
+    overflow: visible;
 }
 
-    .mth-scroll::-webkit-scrollbar {
-        height: 5px;
-    }
-
-    .mth-scroll::-webkit-scrollbar-track {
-        background: #f5f7fb;
-    }
-
-    .mth-scroll::-webkit-scrollbar-thumb {
-        background: #c8d0e0;
-        border-radius: 3px;
-    }
-
-        .mth-scroll::-webkit-scrollbar-thumb:hover {
-            background: #aab0bf;
-        }
-
-/* ── Table ───────────────────────────────────────────────────── */
+/* ── Compact table ───────────────────────────────────────────── */
 .mth-table {
     width: 100%;
-    border-collapse: separate;
+    border-collapse: collapse;
     border-spacing: 0;
-    min-width: 2400px;
 }
 
-    /* Group row */
-    .mth-table .tr-grp th {
-        padding: 5px 10px;
-        font-size: 9px;
-        font-weight: 800;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        text-align: center;
-        border-right: 2px solid #e2e6ef;
-        white-space: nowrap;
-    }
+/* Column widths */
+.col-chk     { width: 44px; }
+.col-name    { width: auto; min-width: 200px; }
+.col-status  { width: 100px; }
+.col-bonus   { width: 130px; }
+.col-cerime  { width: 130px; }
+.col-esas    { width: 110px; }
+.col-brut    { width: 110px; }
+.col-net     { width: 120px; }
+.col-expand  { width: 48px; }
 
-        .mth-table .tr-grp th:last-child {
-            border-right: none;
-        }
-
-.grp-isci {
-    background: #f0f2f7;
-    color: #6b7589;
-    text-align: left !important;
-}
-
-.grp-gelir {
-    background: rgba(30,155,107,.07);
-    color: #0e6b47;
-}
-
-.grp-kesinti {
-    background: rgba(216,90,48,.06);
-    color: #a83a12;
-}
-
-.grp-vergi {
-    background: rgba(45,108,223,.06);
-    color: #1a4fa8;
-}
-
-.grp-sirket {
-    background: rgba(124,92,191,.06);
-    color: #5a3d9c;
-}
-
-.grp-net {
-    background: rgba(232,184,75,.1);
-    color: #8a6200;
-}
-
-.grp-act {
-    background: #f0f2f7;
-    color: #6b7589;
-}
-
-/* Col header row */
+/* Header */
 .mth-table .tr-cols th {
-    padding: 9px 10px;
+    padding: 10px 12px;
     font-size: 9.5px;
     font-weight: 700;
     color: #8a93a8;
@@ -501,14 +438,9 @@
     text-transform: uppercase;
     background: #f7f9fc;
     border-bottom: 2px solid #eaecf3;
-    border-right: 1px solid #eaecf3;
     text-align: right;
     white-space: nowrap;
 }
-
-    .mth-table .tr-cols th:last-child {
-        border-right: none;
-    }
 
     .mth-table .tr-cols th.left {
         text-align: left;
@@ -518,150 +450,38 @@
         text-align: center;
     }
 
-/* col group separator */
-.cs {
-    border-right: 2px solid #dde1eb !important;
-}
-
-/* ── STICKY SOL SÜTUNLAR ─────────────────────────────────────
-   Horizontal scroll edəndə ilk 3 sütun (Ad, Dept, Status)
-   sol tərəfdə sabit qalır                                      */
-
-/* Ad Soyad — 1-ci sütun */
-.mth-table thead tr th:nth-child(1),
-.mth-table tbody tr td:nth-child(1),
-.mth-table tfoot tr td:nth-child(1) {
-    position: sticky;
-    left: 0;
-    z-index: 3;
-    background: inherit;
-}
-
-.mth-table thead tr th:nth-child(1) {
-    background: #f7f9fc;
-}
-
-.mth-table thead .tr-grp th:nth-child(1) {
-    background: #f0f2f7;
-}
-
-.mth-table tbody tr:hover td:nth-child(1) {
-    background: #fafbfd;
-}
-
-.mth-table tbody tr.selected td:nth-child(1) {
-    background: rgba(45,108,223,.03);
-}
-
-.mth-table tbody tr.done td:nth-child(1) {
-    background: rgba(30,155,107,.02);
-}
-
-.mth-table tfoot tr td:nth-child(1) {
-    background: #f7f9fc;
-}
-
-/* Departament — 2-ci sütun */
-.mth-table thead tr th:nth-child(2),
-.mth-table tbody tr td:nth-child(2),
-.mth-table tfoot tr td:nth-child(2) {
-    position: sticky;
-    left: 180px; /* 1-ci sütunun min-width-i */
-    z-index: 3;
-    background: inherit;
-}
-
-.mth-table thead tr th:nth-child(2) {
-    background: #f7f9fc;
-}
-
-.mth-table thead .tr-grp th:nth-child(1) {
-    left: 0;
-    background: #f0f2f7;
-}
-
-.mth-table tbody tr:hover td:nth-child(2) {
-    background: #fafbfd;
-}
-
-.mth-table tbody tr.selected td:nth-child(2) {
-    background: rgba(45,108,223,.03);
-}
-
-.mth-table tbody tr.done td:nth-child(2) {
-    background: rgba(30,155,107,.02);
-}
-
-.mth-table tfoot tr td:nth-child(2) {
-    background: #f7f9fc;
-}
-
-/* Status — 3-cü sütun */
-.mth-table thead tr th:nth-child(3),
-.mth-table tbody tr td:nth-child(3) {
-    position: sticky;
-    left: 290px; /* 180 + 110 */
-    z-index: 3;
-    background: inherit;
-    box-shadow: 2px 0 6px rgba(15,26,46,.07); /* sağ kölgə — ayrılma effekti */
-}
-
-.mth-table thead tr th:nth-child(3) {
-    background: #f7f9fc;
-}
-
-.mth-table thead .tr-grp th:nth-child(1) {
-    background: #f0f2f7;
-}
-
-.mth-table tbody tr:hover td:nth-child(3) {
-    background: #fafbfd;
-}
-
-.mth-table tbody tr.selected td:nth-child(3) {
-    background: rgba(45,108,223,.03);
-}
-
-.mth-table tbody tr.done td:nth-child(3) {
-    background: rgba(30,155,107,.02);
-}
-
-/* Body */
-.mth-table tbody tr {
+/* ── Main data rows ──────────────────────────────────────────── */
+.mth-table tbody tr.mth-row {
     border-bottom: 1px solid #f0f2f7;
     transition: background .1s;
+    cursor: default;
 }
 
-    .mth-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-
-    .mth-table tbody tr:hover {
+    .mth-table tbody tr.mth-row:hover {
         background: #fafbfd;
     }
 
-    .mth-table tbody tr.selected {
+    .mth-table tbody tr.mth-row.selected {
         background: rgba(45,108,223,.03);
     }
 
-    .mth-table tbody tr.done {
+    .mth-table tbody tr.mth-row.done {
         background: rgba(30,155,107,.02);
     }
 
+    .mth-table tbody tr.mth-row.expanded {
+        background: #f8f9fd;
+        border-bottom-color: transparent;
+    }
+
 .mth-table tbody td {
-    padding: 10px 10px;
+    padding: 10px 12px;
     font-size: 12.5px;
     color: #1a2332;
     white-space: nowrap;
     vertical-align: middle;
-    border-right: 1px solid #f5f7fb;
-    border-bottom: 1px solid #f0f2f7;
     text-align: right;
 }
-
-    .mth-table tbody td:last-child {
-        border-right: none;
-    }
 
     .mth-table tbody td.left {
         text-align: left;
@@ -671,9 +491,38 @@
         text-align: center;
     }
 
-    .mth-table tbody td.cs {
-        border-right: 2px solid #eaecf3 !important;
-    }
+/* Name cell */
+.mth-name-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.mth-name-primary {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f1a2e;
+}
+
+.mth-name-dept {
+    font-size: 11.5px;
+    color: #8a93a8;
+    font-weight: 500;
+}
+
+.mth-iban {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #b45309;
+    background: rgba(232,184,75,.1);
+    border: 1px solid rgba(232,184,75,.25);
+    border-radius: 5px;
+    padding: 1px 6px;
+    margin-top: 3px;
+}
 
 /* Input cells */
 .mth-inp-wrap {
@@ -709,7 +558,7 @@
 }
 
 .mth-inp {
-    width: 120px;
+    width: 110px;
     border: 1.5px solid #e2e6ef;
     border-radius: 7px;
     padding: 7px 8px 7px 32px;
@@ -832,49 +681,210 @@
         background: #2d6cdf;
     }
 
-.mth-iban {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    font-size: 10px;
-    font-weight: 600;
-    color: #b45309;
-    background: rgba(232,184,75,.1);
-    border: 1px solid rgba(232,184,75,.25);
-    border-radius: 5px;
-    padding: 1px 6px;
-    margin-top: 3px;
-}
-
-/* Action btn */
-.mth-act {
-    width: 28px;
-    height: 28px;
-    border-radius: 7px;
+/* ── Expand button ───────────────────────────────────────────── */
+.mth-expand-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
     border: 1px solid #e2e6ef;
-    background: transparent;
+    background: #fff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     color: #8a93a8;
     cursor: pointer;
-    transition: all .15s;
-    text-decoration: none;
+    transition: all .2s;
 }
 
-    .mth-act:hover {
+    .mth-expand-btn:hover {
         background: #f0f2f7;
         border-color: #c8d0e0;
         color: #3d4557;
     }
 
-.mth-act--b:hover {
-    background: rgba(45,108,223,.08);
-    border-color: rgba(45,108,223,.25);
-    color: #2d6cdf;
+    .mth-expand-btn svg {
+        transition: transform .2s ease;
+    }
+
+    .mth-expand-btn.open {
+        background: rgba(45,108,223,.08);
+        border-color: rgba(45,108,223,.25);
+        color: #2d6cdf;
+    }
+
+        .mth-expand-btn.open svg {
+            transform: rotate(180deg);
+        }
+
+/* ── Detail (expandable) row ─────────────────────────────────── */
+.mth-detail-row {
+    display: none;
 }
 
-/* ── Footer ──────────────────────────────────────────────────── */
+    .mth-detail-row.open {
+        display: table-row;
+    }
+
+    .mth-detail-row > td {
+        padding: 0 !important;
+        border-bottom: 2px solid #e2e6ef;
+    }
+
+.mth-detail-panel {
+    background: #f8f9fd;
+    padding: 16px 20px 18px;
+    animation: mth-detail-in .2s ease both;
+}
+
+@keyframes mth-detail-in {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mth-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 2fr 1fr auto;
+    gap: 12px;
+    align-items: start;
+}
+
+/* Detail cards */
+.mth-detail-card {
+    background: #fff;
+    border: 1px solid #e2e6ef;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(15,26,46,.04);
+}
+
+.mth-detail-card--wide {
+    /* spans wider in grid */
+}
+
+.mth-detail-card--action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 8px 0;
+}
+
+.mth-detail-card-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: rgba(45,108,223,.04);
+    border-bottom: 1px solid #eef0f6;
+    font-size: 11px;
+    font-weight: 700;
+    color: #2d6cdf;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+}
+
+.mth-detail-card-head--purple {
+    background: rgba(124,92,191,.04);
+    color: #7c5cbf;
+}
+
+.mth-detail-card-body {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mth-detail-card-body--row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.mth-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.mth-detail-card-body--row .mth-detail-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 70px;
+}
+
+.mth-detail-item--total {
+    padding-top: 4px;
+}
+
+.mth-detail-card-body--row .mth-detail-item--total {
+    padding-top: 0;
+    padding-left: 4px;
+}
+
+.mth-detail-sep {
+    width: 1px;
+    height: 32px;
+    background: #e2e6ef;
+    flex-shrink: 0;
+    align-self: center;
+}
+
+.mth-detail-card-body .mth-detail-sep {
+    width: 100%;
+    height: 1px;
+    background: #eef0f6;
+}
+
+.mth-detail-lbl {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #8a93a8;
+    white-space: nowrap;
+}
+
+.mth-rate-hint {
+    font-size: 9px;
+    font-weight: 500;
+    color: #aab0bf;
+}
+
+.mth-btn--detail-link {
+    font-size: 11.5px;
+    padding: 7px 12px;
+}
+
+/* ── Footer (tfoot) ──────────────────────────────────────────── */
+.mth-table tfoot tr {
+    background: #f7f9fc;
+    border-top: 2px solid #eaecf3;
+}
+
+.mth-table tfoot td {
+    padding: 11px 12px;
+    font-size: 12.5px;
+    color: #1a2332;
+    white-space: nowrap;
+    text-align: right;
+}
+
+    .mth-table tfoot td.left {
+        text-align: left;
+    }
+
+/* ── Footer bar ──────────────────────────────────────────────── */
 .mth-footer {
     display: flex;
     align-items: center;
@@ -884,6 +894,7 @@
     background: #f7f9fc;
     gap: 14px;
     flex-wrap: wrap;
+    border-radius: 0 0 13px 13px;
 }
 
 .mth-footer-left {
@@ -1115,8 +1126,31 @@
         opacity: 1;
     }
 
-@media(max-width:700px) {
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .mth-detail-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .mth-detail-card--wide {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 700px) {
     .mth-page {
-        padding: 16px 12px 40px
+        padding: 16px 12px 40px;
+    }
+
+    .mth-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mth-table .col-status {
+        display: none;
+    }
+
+    .mth-table .tr-cols th.col-status {
+        display: none;
     }
 }
