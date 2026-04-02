@@ -72,8 +72,8 @@
 
     const novDefaults = [
         { nov: 1, ad: 'İllik məzuniyyət', defaultGun: 21 },
-        { nov: 2, ad: 'Xəstəlik məzuniyyəti', defaultGun: 10 },
-        { nov: 3, ad: 'Ezamiyyət', defaultGun: 30 }
+        { nov: 2, ad: 'Xəstəlik məzuniyyəti', defaultGun: 14 },
+        { nov: 3, ad: 'Ezamiyyət (limitsiz)', defaultGun: 365 }
     ];
 
     function openModal(isciId, isciAd, il, balanslar) {

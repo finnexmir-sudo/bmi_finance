@@ -35,12 +35,15 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 // 1. İş günlərini hesabla
                 int isGunu = await HesablaIsGunuAsync(dto.BaslamaTarixi, dto.BitmeTarixi);
 
-                // 2. Balansı növə görə yoxla
-                var balans = await _unitOfWork.Repository<MezuniyyetBalans>()
-                    .GetirAsync(x => x.IsciId == dto.IsciId && x.Il == dto.BaslamaTarixi.Year && x.Nov == dto.Nov);
+                // 2. Balansı növə görə yoxla (Ezamiyyət limitsizdir)
+                if (dto.Nov != MezuniyyetNovu.Ezamiyyet)
+                {
+                    var balans = await _unitOfWork.Repository<MezuniyyetBalans>()
+                        .GetirAsync(x => x.IsciId == dto.IsciId && x.Il == dto.BaslamaTarixi.Year && x.Nov == dto.Nov);
 
-                if (balans == null || balans.QaliqGun < isGunu)
-                    return Result<MezuniyyetDto>.Fail($"Kifayət qədər {dto.Nov} məzuniyyət balansınız yoxdur.");
+                    if (balans == null || balans.QaliqGun < isGunu)
+                        return Result<MezuniyyetDto>.Fail($"Kifayət qədər {dto.Nov} məzuniyyət balansınız yoxdur.");
+                }
 
                 // 3. İşçinin aktiv departamentini tap
                 var teyinat = await _unitOfWork.Repository<IsciTeyinat>()

@@ -189,23 +189,23 @@ namespace FinNex.UI.Areas.HR.Controllers
                         IstifadeOlunanGun = 0
                     });
 
-                    // Xəstəlik
+                    // Xəstəlik (14 gün)
                     await repo.YaratAsync(new MezuniyyetBalans
                     {
                         IsciId = isci.Id,
                         Il = il,
                         Nov = MezuniyyetNovu.Xestelik,
-                        ToplamGun = 10,
+                        ToplamGun = 14,
                         IstifadeOlunanGun = 0
                     });
 
-                    // Ezamiyyət
+                    // Ezamiyyət (limitsiz — 365 gün)
                     await repo.YaratAsync(new MezuniyyetBalans
                     {
                         IsciId = isci.Id,
                         Il = il,
                         Nov = MezuniyyetNovu.Ezamiyyet,
-                        ToplamGun = 30,
+                        ToplamGun = 365,
                         IstifadeOlunanGun = 0
                     });
                 }
