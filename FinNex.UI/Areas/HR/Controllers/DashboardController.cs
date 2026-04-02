@@ -156,7 +156,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 // HR rollu işçiləri tap (bildirişi onlara göndərəcəyik)
                 var hrIsciler = await _unitOfWork.Repository<IsciStrukturRolu>()
                     .Query()
-                    .Where(x => x.Aktivdir && x.RolTipi == StrukturRolTipi.HR)
+                    .Where(x => x.Aktivdir && x.RolTipi == StrukturRolTipi.Hr)
                     .Select(x => x.IsciId)
                     .ToListAsync();
 
