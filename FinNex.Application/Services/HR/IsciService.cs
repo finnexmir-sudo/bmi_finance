@@ -148,7 +148,7 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
         return Result<List<IsciListDto>>.Ok(_mapper.Map<List<IsciListDto>>(entities));
     }
 
-    public async Task<Result> UpdateSalaryWithHistoryAsync(int isciId, decimal yeniMaas, string emrNo, string? sebeb = null)
+    public async Task<Result> UpdateSalaryWithHistoryAsync(int isciId, decimal yeniMaas, string emrNo)
     {
         var isci = await _unitOfWork.Repository<Isci>().GetirAsync(
             x => x.Id == isciId,
@@ -161,8 +161,7 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             KohneMaas = isci.Maliye != null ? isci.Maliye.CariMaas : 0,
             YeniMaas = yeniMaas,
             DeyismeTarixi = DateTime.Now,
-            EmrinNomresi = emrNo,
-            Sebeb = sebeb
+            EmrinNomresi = emrNo
         };
 
         if (isci.Maliye != null)
