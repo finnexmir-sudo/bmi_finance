@@ -1,0 +1,46 @@
+@model FinNex.Domain.Entities.HR.MaasParametri
+@{
+    var novAd = ViewData["NovAd"] as string;
+    var deyerStr = ViewData["DeyerStr"] as string;
+    var suffix = ViewData["Suffix"] as string;
+}
+
+<div class="mp-card">
+    <div class="mp-card-actions">
+        <button class="mp-btn-icon" title="Redaktə et" onclick="MaasParametri.openEdit(@Model.Id)">
+            <i class="fas fa-pen"></i>
+        </button>
+        <button class="mp-btn-icon mp-btn-icon--danger" title="Sil" onclick="MaasParametri.remove(@Model.Id)">
+            <i class="fas fa-trash-alt"></i>
+        </button>
+    </div>
+    <div class="mp-card-title">@novAd</div>
+    <div class="mp-card-value">
+        @deyerStr<span class="mp-suffix">@suffix</span>
+    </div>
+    <div class="mp-card-meta">
+        <span>
+            <i class="fas fa-calendar-alt"></i>
+            @Model.BaslamaTarixi.ToString("dd.MM.yyyy")
+            @if (Model.BitmeTarixi.HasValue)
+            {
+                <text> — @Model.BitmeTarixi.Value.ToString("dd.MM.yyyy")</text>
+            }
+        </span>
+        <span>
+            <i class="fas fa-circle" style="font-size:.5rem;"></i>
+            @if (Model.Aktivdir)
+            {
+                <span class="mp-badge mp-badge--active">Aktiv</span>
+            }
+            else
+            {
+                <span class="mp-badge mp-badge--inactive">Deaktiv</span>
+            }
+        </span>
+        @if (!string.IsNullOrEmpty(Model.Aciqlama))
+        {
+            <span><i class="fas fa-info-circle"></i> @Model.Aciqlama</span>
+        }
+    </div>
+</div>
