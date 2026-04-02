@@ -112,29 +112,32 @@
                     </div>
                 </div>
 
-                @* User Hesabatları — öz müraciətlərini izləmək *@
-                <div class="fn-nav-group @(currentController == "Hesabat" && currentArea == "User" ? "open" : "")">
-                    <button type="button" class="fn-nav-group-toggle">
-                        <div class="fn-nav-group-left">
-                            <div class="fn-nav-icon">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                    <rect x="1" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" />
-                                    <path d="M4 3V1.5M10 3V1.5M1 6h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
-                                </svg>
+                @* User Hesabatları — yalnız rəhbərlər görür *@
+                @if (isRehber)
+                {
+                    <div class="fn-nav-group @(currentController == "Hesabat" && currentArea == "User" ? "open" : "")">
+                        <button type="button" class="fn-nav-group-toggle">
+                            <div class="fn-nav-group-left">
+                                <div class="fn-nav-icon">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <rect x="1" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" />
+                                        <path d="M4 3V1.5M10 3V1.5M1 6h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                    </svg>
+                                </div>
+                                Hesabatlar
                             </div>
-                            Hesabatlarım
+                            <div class="fn-nav-arrow">
+                                <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
+                            </div>
+                        </button>
+                        <div class="fn-nav-submenu">
+                            <a asp-area="User" asp-controller="Hesabat" asp-action="Index"
+                               class="fn-nav-subitem @(currentController == "Hesabat" && currentArea == "User" ? "active" : "")">
+                                <div class="fn-sub-dot"></div> Məzuniyyət / İcazə
+                            </a>
                         </div>
-                        <div class="fn-nav-arrow">
-                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                        </div>
-                    </button>
-                    <div class="fn-nav-submenu">
-                        <a asp-area="User" asp-controller="Hesabat" asp-action="Index"
-                           class="fn-nav-subitem @(currentController == "Hesabat" && currentArea == "User" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Məzuniyyət / İcazə
-                        </a>
                     </div>
-                </div>
+                }
 
                 @* Programlar *@
                 <div class="fn-nav-group">
