@@ -1,0 +1,384 @@
+/* ═══════════════════════════════════════════════════
+   User Profile – up- prefix
+   ═══════════════════════════════════════════════════ */
+
+.up-page {
+    padding: 24px 0;
+}
+
+/* ── Header Card ─────────────────────────────────── */
+
+.up-header-card {
+    background: #fff;
+    border: 1px solid #e8ecf1;
+    border-radius: 14px;
+    padding: 32px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+}
+
+.up-avatar {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2d6cdf 0%, #1b4fa0 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+}
+
+.up-header-info {
+    flex: 1;
+    min-width: 200px;
+}
+
+.up-header-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a2233;
+    margin-bottom: 4px;
+}
+
+.up-header-position {
+    font-size: 14px;
+    color: #5a6a85;
+    margin-bottom: 10px;
+}
+
+.up-header-meta {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.up-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.up-badge-aktiv {
+    background: #e6f7ef;
+    color: #1e9b6b;
+}
+
+.up-badge-deaktiv {
+    background: #fde8e8;
+    color: #c0392b;
+}
+
+.up-badge-mezuniyyetde {
+    background: #fff8e1;
+    color: #c9900a;
+}
+
+.up-header-stat {
+    font-size: 13px;
+    color: #5a6a85;
+}
+
+.up-header-stat strong {
+    color: #1a2233;
+}
+
+/* ── Grid Layout ─────────────────────────────────── */
+
+.up-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+/* ── Card ────────────────────────────────────────── */
+
+.up-card {
+    background: #fff;
+    border: 1px solid #e8ecf1;
+    border-radius: 14px;
+    padding: 24px;
+}
+
+.up-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a2233;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.up-card-title i {
+    font-size: 18px;
+    color: #2d6cdf;
+}
+
+/* ── Data Rows ───────────────────────────────────── */
+
+.up-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f2f5;
+}
+
+.up-row:last-child {
+    border-bottom: none;
+}
+
+.up-row-label {
+    font-size: 13px;
+    color: #5a6a85;
+    font-weight: 500;
+    min-width: 140px;
+}
+
+.up-row-value {
+    font-size: 14px;
+    color: #1a2233;
+    font-weight: 500;
+    text-align: right;
+}
+
+/* ── Editable Fields ─────────────────────────────── */
+
+.up-editable-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.up-editable-display {
+    font-size: 14px;
+    color: #1a2233;
+    font-weight: 500;
+}
+
+.up-editable-display.up-empty {
+    color: #aab0bc;
+    font-style: italic;
+}
+
+.up-edit-btn {
+    background: none;
+    border: none;
+    color: #2d6cdf;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    transition: background 0.15s;
+}
+
+.up-edit-btn:hover {
+    background: #edf2fc;
+}
+
+.up-edit-input {
+    display: none;
+    font-size: 14px;
+    padding: 6px 10px;
+    border: 1px solid #d0d7e2;
+    border-radius: 8px;
+    width: 200px;
+    color: #1a2233;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.up-edit-input:focus {
+    border-color: #2d6cdf;
+}
+
+.up-edit-input.up-visible {
+    display: block;
+}
+
+.up-editable-display.up-hidden,
+.up-edit-btn.up-hidden {
+    display: none;
+}
+
+.up-save-row {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f2f5;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.up-save-btn {
+    background: #2d6cdf;
+    color: #fff;
+    border: none;
+    padding: 9px 22px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: none;
+}
+
+.up-save-btn:hover {
+    background: #1b54b8;
+}
+
+.up-save-btn.up-visible {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.up-save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ── Progress Bars (Leave balances) ──────────────── */
+
+.up-leave-item {
+    margin-bottom: 18px;
+}
+
+.up-leave-item:last-child {
+    margin-bottom: 0;
+}
+
+.up-leave-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.up-leave-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a2233;
+}
+
+.up-leave-numbers {
+    font-size: 12px;
+    color: #5a6a85;
+}
+
+.up-leave-numbers strong {
+    color: #1a2233;
+}
+
+.up-progress-track {
+    width: 100%;
+    height: 8px;
+    background: #f0f2f5;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.up-progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+.up-progress-fill.up-fill-blue {
+    background: #2d6cdf;
+}
+
+.up-progress-fill.up-fill-green {
+    background: #1e9b6b;
+}
+
+.up-progress-fill.up-fill-gold {
+    background: #c9900a;
+}
+
+.up-leave-detail {
+    display: flex;
+    gap: 16px;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #5a6a85;
+}
+
+/* ── Toast ───────────────────────────────────────── */
+
+.up-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 14px 22px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+}
+
+.up-toast.up-toast-show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.up-toast-success {
+    background: #1e9b6b;
+}
+
+.up-toast-error {
+    background: #c0392b;
+}
+
+/* ── Responsive ──────────────────────────────────── */
+
+@media (max-width: 900px) {
+    .up-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .up-header-card {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 20px;
+        gap: 16px;
+    }
+
+    .up-avatar {
+        width: 64px;
+        height: 64px;
+        font-size: 24px;
+    }
+
+    .up-header-name {
+        font-size: 18px;
+    }
+
+    .up-card {
+        padding: 18px;
+    }
+
+    .up-edit-input {
+        width: 100%;
+    }
+}
