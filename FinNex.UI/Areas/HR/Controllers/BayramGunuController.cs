@@ -51,29 +51,38 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([FromForm] string ad, [FromForm] DateTime tarix, [FromForm] bool herIlTeyinOlunur)
+        public async Task<IActionResult> Create([FromForm] string ad, [FromForm] DateTime baslangicTarix, [FromForm] DateTime? bitisTarix, [FromForm] bool herIlTeyinOlunur)
         {
             if (string.IsNullOrWhiteSpace(ad))
                 return Json(new { success = false, message = "Bayram adini daxil edin." });
 
+            var son = bitisTarix ?? baslangicTarix;
+            if (son < baslangicTarix)
+                return Json(new { success = false, message = "Bitis tarixi baslangicdan evvel ola bilmez." });
+
             var repo = _unitOfWork.Repository<BayramGunu>();
+            int sayi = 0;
 
-            var entity = new BayramGunu
+            for (var gun = baslangicTarix; gun <= son; gun = gun.AddDays(1))
             {
-                Ad = ad.Trim(),
-                Tarix = tarix,
-                HerIlTeyinOlunur = herIlTeyinOlunur
-            };
+                var entity = new BayramGunu
+                {
+                    Ad = ad.Trim(),
+                    Tarix = gun,
+                    HerIlTeyinOlunur = herIlTeyinOlunur
+                };
+                await repo.YaratAsync(entity);
+                sayi++;
+            }
 
-            await repo.YaratAsync(entity);
             await _unitOfWork.YaddaSaxlaAsync();
-
-            return Json(new { success = true, message = "Bayram ugurla elave edildi." });
+            var msg = sayi == 1 ? "Bayram ugurla elave edildi." : $"{sayi} gun bayram ugurla elave edildi.";
+            return Json(new { success = true, message = msg });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit([FromForm] int id, [FromForm] string ad, [FromForm] DateTime tarix, [FromForm] bool herIlTeyinOlunur)
+        public async Task<IActionResult> Edit([FromForm] int id, [FromForm] string ad, [FromForm] DateTime baslangicTarix, [FromForm] bool herIlTeyinOlunur)
         {
             if (string.IsNullOrWhiteSpace(ad))
                 return Json(new { success = false, message = "Bayram adini daxil edin." });
@@ -85,7 +94,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return Json(new { success = false, message = "Bayram tapilmadi." });
 
             entity.Ad = ad.Trim();
-            entity.Tarix = tarix;
+            entity.Tarix = baslangicTarix;
             entity.HerIlTeyinOlunur = herIlTeyinOlunur;
             entity.YenilenmeTarixi = DateTime.Now;
 

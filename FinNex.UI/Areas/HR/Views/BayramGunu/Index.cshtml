@@ -110,10 +110,18 @@
                     <input type="text" class="bg-input" id="bgAd" name="ad" required placeholder="Meselen: Novruz Bayrami" />
                     <span class="bg-error" id="bgAdError"></span>
                 </div>
-                <div class="bg-form-group">
-                    <label class="bg-label" for="bgTarix">Tarix *</label>
-                    <input type="date" class="bg-input" id="bgTarix" name="tarix" required />
-                    <span class="bg-error" id="bgTarixError"></span>
+                <div class="bg-form-row">
+                    <div class="bg-form-group bg-form-half">
+                        <label class="bg-label" for="bgBaslangicTarix">Baslangic tarix *</label>
+                        <input type="date" class="bg-input" id="bgBaslangicTarix" name="baslangicTarix" required />
+                        <span class="bg-error" id="bgTarixError"></span>
+                    </div>
+                    <div class="bg-form-group bg-form-half">
+                        <label class="bg-label" for="bgBitisTarix">Bitis tarix</label>
+                        <input type="date" class="bg-input" id="bgBitisTarix" name="bitisTarix" />
+                        <span class="bg-error" id="bgBitisTarixError"></span>
+                        <span class="bg-hint">Bos buraxsan tek gun elave olunur</span>
+                    </div>
                 </div>
                 <div class="bg-form-group bg-form-check">
                     <label class="bg-checkbox-label">
