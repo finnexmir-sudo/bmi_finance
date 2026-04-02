@@ -29,6 +29,7 @@ namespace FinNex.UI
             // ==================================================
             // 1. DataAccess + Identity
             // ==================================================
+            builder.Services.AddHttpContextAccessor();
             builder.Services.AddDataAccessServices(builder.Configuration);
             builder.Services.AddApplicationServices();
 
@@ -128,16 +129,16 @@ namespace FinNex.UI
             // 6. Middleware pipeline (ORDER IS CRITICAL)
             // ==================================================
 
-            // 🔥 Global exception handler (ən yuxarı)
-            //app.UseMiddleware<GlobalExceptionMiddleware>();
-            app.UseDeveloperExceptionPage();
-
-            if (!app.Environment.IsDevelopment())
+            // 🔥 Global exception handler
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            else
             {
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
             }
-            //mehemmed gormesi ucun bunu kommente alarsa
 
             app.UseHttpsRedirection();
 

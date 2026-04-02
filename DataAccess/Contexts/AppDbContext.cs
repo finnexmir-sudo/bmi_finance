@@ -5,18 +5,24 @@ using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
 using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Entities.Structure;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System.Reflection.Emit;
+using System.Security.Claims;
 
 namespace FinNex.DataAccess.Contexts;
 
 // IdentityDbContext-dən miras alırıq ki, AppUser və AppRole (int ID ilə) işləsin
 public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    private readonly IHttpContextAccessor? _httpContextAccessor;
+
+    public AppDbContext(DbContextOptions<AppDbContext> options,
+        IHttpContextAccessor? httpContextAccessor = null) : base(options)
     {
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public DbSet<Bank> Banklar { get; set; }
@@ -548,31 +554,42 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     // ƏN VACİB HİSSƏ: SaveChanges zamanı avtomatik Audit məlumatlarının doldurulması
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        // BaseEntity-dən miras alan və dəyişiklik edilən bütün obyektləri tapırıq
         var entries = ChangeTracker.Entries<BaseEntity>();
+        var userId = GetCurrentUserId();
 
         foreach (var entry in entries)
         {
             switch (entry.State)
             {
-                // Yeni məlumat əlavə olunanda
                 case EntityState.Added:
                     entry.Entity.YaradilmaTarixi = DateTime.Now;
                     entry.Entity.Silinib = false;
-                    // YaradanIcraciId-ni Program.cs-də UserAccessor qurandan sonra bura bağlayacağıq
+                    entry.Entity.YaradanIcraciId = userId;
                     break;
 
-                // Məlumat yenilənəndə
                 case EntityState.Modified:
-                    // Əgər obyekt silinməyibsə, yenilənmə tarixini qoy
-                    if (!entry.Entity.Silinib)
+                    if (entry.Entity.Silinib && entry.Entity.SilinmeTarixi == null)
+                    {
+                        // Soft delete
+                        entry.Entity.SilinmeTarixi = DateTime.Now;
+                        entry.Entity.SilenIcraciId = userId;
+                    }
+                    else if (!entry.Entity.Silinib)
                     {
                         entry.Entity.YenilenmeTarixi = DateTime.Now;
+                        entry.Entity.YenileyenIcraciId = userId;
                     }
                     break;
             }
         }
 
         return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private int? GetCurrentUserId()
+    {
+        var userIdStr = _httpContextAccessor?.HttpContext?.User
+            ?.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(userIdStr, out int id) ? id : null;
     }
 }
