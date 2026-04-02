@@ -6,7 +6,8 @@ const bgModal = {
     titleEl: null,
     idField: null,
     adField: null,
-    tarixField: null,
+    baslangicField: null,
+    bitisField: null,
     herIlField: null,
     submitBtn: null,
     isEdit: false,
@@ -17,7 +18,8 @@ const bgModal = {
         this.titleEl = document.getElementById('bgModalTitle');
         this.idField = document.getElementById('bgId');
         this.adField = document.getElementById('bgAd');
-        this.tarixField = document.getElementById('bgTarix');
+        this.baslangicField = document.getElementById('bgBaslangicTarix');
+        this.bitisField = document.getElementById('bgBitisTarix');
         this.herIlField = document.getElementById('bgHerIl');
         this.submitBtn = document.getElementById('bgSubmitBtn');
 
@@ -40,6 +42,7 @@ const bgModal = {
         this.titleEl.textContent = 'Yeni Bayram';
         this.submitBtn.textContent = 'Yadda saxla';
         this.resetForm();
+        this.bitisField.closest('.bg-form-half').style.display = '';
         this.overlay.classList.add('bg-active');
         setTimeout(() => this.adField.focus(), 100);
     },
@@ -49,13 +52,14 @@ const bgModal = {
         this.titleEl.textContent = 'Bayram Duzelisi';
         this.submitBtn.textContent = 'Yenile';
         this.resetForm();
+        this.bitisField.closest('.bg-form-half').style.display = 'none';
 
         fetch(`/HR/BayramGunu/Get?id=${id}`)
             .then(r => r.json())
             .then(data => {
                 this.idField.value = data.id;
                 this.adField.value = data.ad;
-                this.tarixField.value = data.tarix;
+                this.baslangicField.value = data.tarix;
                 this.herIlField.checked = data.herIlTeyinOlunur;
                 this.overlay.classList.add('bg-active');
                 setTimeout(() => this.adField.focus(), 100);
@@ -77,8 +81,10 @@ const bgModal = {
     clearErrors() {
         document.getElementById('bgAdError').textContent = '';
         document.getElementById('bgTarixError').textContent = '';
+        document.getElementById('bgBitisTarixError').textContent = '';
         this.adField.classList.remove('bg-input-error');
-        this.tarixField.classList.remove('bg-input-error');
+        this.baslangicField.classList.remove('bg-input-error');
+        this.bitisField.classList.remove('bg-input-error');
     },
 
     validate() {
@@ -91,9 +97,15 @@ const bgModal = {
             valid = false;
         }
 
-        if (!this.tarixField.value) {
-            document.getElementById('bgTarixError').textContent = 'Tarix secin.';
-            this.tarixField.classList.add('bg-input-error');
+        if (!this.baslangicField.value) {
+            document.getElementById('bgTarixError').textContent = 'Baslangic tarix secin.';
+            this.baslangicField.classList.add('bg-input-error');
+            valid = false;
+        }
+
+        if (this.bitisField.value && this.baslangicField.value && this.bitisField.value < this.baslangicField.value) {
+            document.getElementById('bgBitisTarixError').textContent = 'Bitis tarixi baslangicdan evvel ola bilmez.';
+            this.bitisField.classList.add('bg-input-error');
             valid = false;
         }
 
