@@ -133,7 +133,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Aktivdir = true,
             };
 
-            var resultUser = await _userManager.CreateAsync(user, "user123");
+            // TODO: İstifadəçi ilk girişdə bu şifrəni dəyişdirməlidir
+            var resultUser = await _userManager.CreateAsync(user, "FinNex2026!");
 
             if (!resultUser.Succeeded)
             {
@@ -346,13 +347,21 @@ namespace FinNex.UI.Areas.HR.Controllers
         [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
         public async Task<IActionResult> MaasDeyis(MaasDeyisVM vm)
         {
+            if (vm.YeniMaas <= 0)
+                ModelState.AddModelError(nameof(vm.YeniMaas), "Yeni maaş 0-dan böyük olmalıdır.");
+            if (string.IsNullOrWhiteSpace(vm.Sebeb))
+                ModelState.AddModelError(nameof(vm.Sebeb), "Səbəb daxil edilməlidir.");
+            if (string.IsNullOrWhiteSpace(vm.EmrNomresi))
+                ModelState.AddModelError(nameof(vm.EmrNomresi), "Əmr nömrəsi daxil edilməlidir.");
+
             if (!ModelState.IsValid)
                 return View(vm);
 
             var result = await _isciService.UpdateSalaryWithHistoryAsync(
                 vm.IsciId,
                 vm.YeniMaas,
-                vm.EmrNomresi);
+                vm.EmrNomresi,
+                vm.Sebeb);
 
             if (!result.Success)
             {

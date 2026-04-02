@@ -112,15 +112,28 @@ namespace FinNex.UI.Areas.HR.Controllers
 
                 var repo = _unitOfWork.Repository<MezuniyyetBalans>();
 
+                // Əvvəlki ilin İllik balanslarını gətir (carry-over üçün)
+                var evvelkiIlBalanslari = await repo.Query()
+                    .Where(b => b.Il == il - 1 && !b.Silinib && b.Nov == MezuniyyetNovu.Illik)
+                    .ToListAsync();
+                var evvelkiBalansDict = evvelkiIlBalanslari.ToDictionary(b => b.IsciId, b => b);
+
                 foreach (var isci in aktivIsciler)
                 {
-                    // İllik məzuniyyət
+                    // İllik məzuniyyət (əvvəlki ildən maks 5 gün köçürmə ilə)
+                    int kecirilecekGun = 0;
+                    if (evvelkiBalansDict.TryGetValue(isci.Id, out var evvelkiBalans))
+                    {
+                        int qaliq = evvelkiBalans.ToplamGun - evvelkiBalans.IstifadeOlunanGun;
+                        kecirilecekGun = Math.Min(Math.Max(qaliq, 0), 5);
+                    }
+
                     await repo.YaratAsync(new MezuniyyetBalans
                     {
                         IsciId = isci.Id,
                         Il = il,
                         Nov = MezuniyyetNovu.Illik,
-                        ToplamGun = 21,
+                        ToplamGun = 21 + kecirilecekGun,
                         IstifadeOlunanGun = 0
                     });
 
