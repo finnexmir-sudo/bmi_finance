@@ -21,6 +21,7 @@ namespace FinNex.Domain.Entities.Communication
         TapshiriqTamamlandi = 15,
         YeniGorush = 16,
         GorushXatirlama = 17,
-        GorushLegv = 18
+        GorushLegv = 18,
+        MuqavileYenilenme = 19
     }
 }
