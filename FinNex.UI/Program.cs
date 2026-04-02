@@ -93,7 +93,10 @@ namespace FinNex.UI
             builder.Logging.AddConsole();
             builder.Logging.AddDebug();
 
-
+            // ==================================================
+            // 6. Background Services
+            // ==================================================
+            builder.Services.AddHostedService<FinNex.Application.BackgroundJobs.ZkTecoSdkService>();
 
             var app = builder.Build();
 
