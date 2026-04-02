@@ -66,29 +66,47 @@
     const overlay = document.getElementById('mbModalOverlay');
     const modal = overlay ? overlay.querySelector('.mb-modal') : null;
 
-    // Store current edit data
-    let editData = [];
+    // Store current edit context
+    let currentIsciId = null;
+    let currentIl = null;
 
-    function openModal(isciId, isciAd, balanslar) {
+    const novDefaults = [
+        { nov: 1, ad: 'İllik məzuniyyət', defaultGun: 21 },
+        { nov: 2, ad: 'Xəstəlik məzuniyyəti', defaultGun: 10 },
+        { nov: 3, ad: 'Ezamiyyət', defaultGun: 30 }
+    ];
+
+    function openModal(isciId, isciAd, il, balanslar) {
         if (!overlay) return;
 
+        currentIsciId = isciId;
+        currentIl = il;
         document.getElementById('mbModalIsciAd').textContent = isciAd;
-        editData = balanslar;
 
         const tbody = document.getElementById('mbEditTableBody');
         tbody.innerHTML = '';
 
-        const novAdlari = { 1: 'Illik', 2: 'Xestelik', 3: 'Ezamiyyet' };
-        const novLabels = { 1: 'Illik', 2: 'Xestelik', 3: 'Ezamiyyet' };
+        novDefaults.forEach(function (nd) {
+            var existing = balanslar.find(function (b) { return b.nov === nd.nov; });
+            var toplam = existing ? existing.toplamGun : nd.defaultGun;
+            var istifade = existing ? existing.istifade : 0;
+            var qaliq = toplam - istifade;
 
-        balanslar.forEach(function (b) {
-            const tr = document.createElement('tr');
+            var tr = document.createElement('tr');
             tr.innerHTML =
-                '<td>' + (novLabels[b.nov] || b.nov) + '</td>' +
-                '<td><input type="number" class="mb-edit-input" min="0" value="' + b.toplamGun + '" data-id="' + b.id + '" data-original="' + b.toplamGun + '"></td>' +
-                '<td>' + b.istifade + '</td>' +
-                '<td>' + b.qaliq + '</td>';
+                '<td><strong>' + nd.ad + '</strong></td>' +
+                '<td><input type="number" class="mb-edit-input" min="0" value="' + toplam + '" data-nov="' + nd.nov + '"></td>' +
+                '<td>' + istifade + '</td>' +
+                '<td class="mb-edit-qaliq">' + qaliq + '</td>';
             tbody.appendChild(tr);
+
+            // Real-time qalıq hesablama
+            var input = tr.querySelector('input');
+            var qaliqTd = tr.querySelector('.mb-edit-qaliq');
+            input.addEventListener('input', function () {
+                var newToplam = parseInt(this.value) || 0;
+                qaliqTd.textContent = newToplam - istifade;
+            });
         });
 
         overlay.classList.add('mb-modal-overlay--active');
@@ -107,12 +125,13 @@
 
         const isciId = btn.dataset.isciId;
         const isciAd = btn.dataset.isciAd;
+        const il = btn.dataset.il || yearSelect.value;
         let balanslar = [];
         try {
             balanslar = JSON.parse(btn.dataset.balanslar);
         } catch (err) { }
 
-        openModal(isciId, isciAd, balanslar);
+        openModal(isciId, isciAd, il, balanslar);
     });
 
     // Close modal
@@ -137,54 +156,47 @@
     const saveBtn = document.getElementById('mbModalSave');
     if (saveBtn) {
         saveBtn.addEventListener('click', async function () {
-            const inputs = document.querySelectorAll('#mbEditTableBody .mb-edit-input');
-            const updates = [];
+            var inputs = document.querySelectorAll('#mbEditTableBody .mb-edit-input');
+            var illikGun = 0, xestelikGun = 0, ezamiyyetGun = 0;
 
             inputs.forEach(function (input) {
-                const newVal = parseInt(input.value);
-                const original = parseInt(input.dataset.original);
-                if (newVal !== original) {
-                    updates.push({ id: parseInt(input.dataset.id), toplamGun: newVal });
-                }
+                var nov = parseInt(input.dataset.nov);
+                var val = parseInt(input.value) || 0;
+                if (nov === 1) illikGun = val;
+                if (nov === 2) xestelikGun = val;
+                if (nov === 3) ezamiyyetGun = val;
             });
 
-            if (updates.length === 0) {
-                closeModal();
-                return;
-            }
-
             saveBtn.disabled = true;
-            saveBtn.textContent = 'Saxlanilir...';
+            saveBtn.textContent = 'Saxlanılır...';
 
-            let allOk = true;
-            for (const u of updates) {
-                try {
-                    const resp = await fetch('/HR/MezuniyyetBalans/Update', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: 'id=' + u.id + '&toplamGun=' + u.toplamGun
-                    });
-                    const result = await resp.json();
-                    if (!result.success) {
-                        showToast(result.message, 'error');
-                        allOk = false;
-                        break;
-                    }
-                } catch (err) {
-                    showToast('Server xetasi bas verdi.', 'error');
-                    allOk = false;
-                    break;
+            try {
+                var body = 'isciId=' + currentIsciId +
+                    '&il=' + currentIl +
+                    '&illikGun=' + illikGun +
+                    '&xestelikGun=' + xestelikGun +
+                    '&ezamiyyetGun=' + ezamiyyetGun;
+
+                var resp = await fetch('/HR/MezuniyyetBalans/CreateOrUpdate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body
+                });
+                var result = await resp.json();
+
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    closeModal();
+                    setTimeout(function () { location.reload(); }, 800);
+                } else {
+                    showToast(result.message, 'error');
                 }
+            } catch (err) {
+                showToast('Server xətası baş verdi.', 'error');
             }
 
             saveBtn.disabled = false;
             saveBtn.textContent = 'Yadda saxla';
-
-            if (allOk) {
-                showToast('Balanslar yenilendi.', 'success');
-                closeModal();
-                setTimeout(function () { location.reload(); }, 800);
-            }
         });
     }
 

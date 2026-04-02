@@ -84,19 +84,13 @@
                                 @{ await RenderBalanceCell(ezamiyyet); }
 
                                 <td>
-                                    @if (balanslar.Any())
-                                    {
-                                        <button class="mb-btn-edit"
-                                                data-isci-id="@isci.Id"
-                                                data-isci-ad="@isci.Ad @isci.Soyad"
-                                                data-balanslar="@Html.Raw(System.Net.WebUtility.HtmlEncode(balansJson))">
-                                            <i class="bi bi-pencil"></i> Redaktə
-                                        </button>
-                                    }
-                                    else
-                                    {
-                                        <span class="mb-dept">Balans yoxdur</span>
-                                    }
+                                    <button class="mb-btn-edit"
+                                            data-isci-id="@isci.Id"
+                                            data-isci-ad="@isci.Ad @isci.Soyad"
+                                            data-il="@secilmisIl"
+                                            data-balanslar="@Html.Raw(System.Net.WebUtility.HtmlEncode(balansJson))">
+                                        <i class="bi bi-pencil"></i> Redaktə
+                                    </button>
                                 </td>
                             </tr>
                         }

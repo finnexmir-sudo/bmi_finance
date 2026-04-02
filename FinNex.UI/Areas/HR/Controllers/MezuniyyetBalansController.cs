@@ -88,6 +88,58 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
         }
 
+        // POST /HR/MezuniyyetBalans/CreateOrUpdate — fərdi işçi üçün balans yarat/yenilə
+        [HttpPost]
+        public async Task<IActionResult> CreateOrUpdate(int isciId, int il, int illikGun, int xestelikGun, int ezamiyyetGun)
+        {
+            try
+            {
+                var repo = _unitOfWork.Repository<MezuniyyetBalans>();
+                var novler = new[]
+                {
+                    (nov: MezuniyyetNovu.Illik, gun: illikGun),
+                    (nov: MezuniyyetNovu.Xestelik, gun: xestelikGun),
+                    (nov: MezuniyyetNovu.Ezamiyyet, gun: ezamiyyetGun)
+                };
+
+                foreach (var (nov, gun) in novler)
+                {
+                    if (gun < 0) continue;
+
+                    var movcud = await repo.GetirAsync(x =>
+                        x.IsciId == isciId && x.Il == il && x.Nov == nov && !x.Silinib);
+
+                    if (movcud != null)
+                    {
+                        if (gun < movcud.IstifadeOlunanGun)
+                            return Json(new { success = false, message = $"{nov} üçün toplam gün istifadə olunandan az ola bilməz." });
+
+                        movcud.ToplamGun = gun;
+                        movcud.YenilenmeTarixi = DateTime.Now;
+                        await repo.YenileAsync(movcud);
+                    }
+                    else
+                    {
+                        await repo.YaratAsync(new MezuniyyetBalans
+                        {
+                            IsciId = isciId,
+                            Il = il,
+                            Nov = nov,
+                            ToplamGun = gun,
+                            IstifadeOlunanGun = 0
+                        });
+                    }
+                }
+
+                await _unitOfWork.YaddaSaxlaAsync();
+                return Json(new { success = true, message = "Balans yeniləndi." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Xəta: {ex.Message}" });
+            }
+        }
+
         // POST /HR/MezuniyyetBalans/YeniIlBalansYarat
         [HttpPost]
         public async Task<IActionResult> YeniIlBalansYarat(int il)
