@@ -1,0 +1,289 @@
+@model FinNex.Domain.Entities.HR.Isci
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = "Profil";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    var aktivTeyinat = Model.IsciTeyinatlari?.FirstOrDefault(t => t.Aktivdir);
+    var departament = aktivTeyinat?.Departament?.Ad ?? "—";
+    var vezife = aktivTeyinat?.Vezife?.Ad ?? "—";
+
+    var initials = "";
+    if (!string.IsNullOrEmpty(Model.Ad)) initials += Model.Ad[0];
+    if (!string.IsNullOrEmpty(Model.Soyad)) initials += Model.Soyad[0];
+
+    // Status badge
+    var statusText = Model.Status switch
+    {
+        IsciStatus.Aktiv => "Aktiv",
+        IsciStatus.Mezuniyyetde => "Məzuniyyətdə",
+        IsciStatus.IshtenCixib => "İşdən çıxıb",
+        _ => "—"
+    };
+    var statusClass = Model.Status switch
+    {
+        IsciStatus.Aktiv => "up-badge-aktiv",
+        IsciStatus.Mezuniyyetde => "up-badge-mezuniyyetde",
+        _ => "up-badge-deaktiv"
+    };
+
+    // Staj calculation
+    var stajStart = Model.IsheQebulTarixi;
+    var stajEnd = Model.IsdenAyrilmaTarixi ?? DateTime.Today;
+    var stajTotalMonths = ((stajEnd.Year - stajStart.Year) * 12) + stajEnd.Month - stajStart.Month;
+    var stajYears = stajTotalMonths / 12;
+    var stajMonths = stajTotalMonths % 12;
+
+    // Mezuniyyet balances for current year
+    var currentYear = DateTime.Now.Year;
+    var balances = Model.MezuniyyetBalanslari?.Where(b => b.Il == currentYear).ToList()
+                   ?? new List<MezuniyyetBalans>();
+    var illik = balances.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Illik);
+    var xestelik = balances.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Xestelik);
+    var ezamiyyet = balances.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Ezamiyyet);
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/user-profile.css" asp-append-version="true" />
+}
+
+<div class="up-page">
+
+    <!-- ═══ A. Profile Header ═══ -->
+    <div class="up-header-card">
+        <div class="up-avatar">@initials</div>
+        <div class="up-header-info">
+            <div class="up-header-name">@Model.TamAd</div>
+            <div class="up-header-position">@departament &mdash; @vezife</div>
+            <div class="up-header-meta">
+                <span class="up-badge @statusClass">
+                    <i class="bi bi-circle-fill" style="font-size:7px"></i>
+                    @statusText
+                </span>
+                <span class="up-header-stat">
+                    <i class="bi bi-calendar3"></i>
+                    İşə qəbul: <strong>@Model.IsheQebulTarixi.ToString("dd.MM.yyyy")</strong>
+                </span>
+                <span class="up-header-stat">
+                    <i class="bi bi-clock-history"></i>
+                    Staj: <strong>@stajYears il @stajMonths ay</strong>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="up-grid">
+
+        <!-- ═══ B. Sexsi Melumatlar ═══ -->
+        <div class="up-card">
+            <div class="up-card-title">
+                <i class="bi bi-person-vcard"></i>
+                Şəxsi Məlumatlar
+            </div>
+
+            <div class="up-row">
+                <span class="up-row-label">FIN</span>
+                <span class="up-row-value">@Model.FIN</span>
+            </div>
+            <div class="up-row">
+                <span class="up-row-label">Seriya / Nömrə</span>
+                <span class="up-row-value">@Model.SeriyaNomre</span>
+            </div>
+            <div class="up-row">
+                <span class="up-row-label">Doğum tarixi</span>
+                <span class="up-row-value">@Model.DogumTarixi.ToString("dd.MM.yyyy")</span>
+            </div>
+            <div class="up-row">
+                <span class="up-row-label">Cins</span>
+                <span class="up-row-value">@(Model.Cins == Cins.Kisi ? "Kişi" : "Qadın")</span>
+            </div>
+
+            <!-- Editable: Telefon -->
+            <div class="up-row">
+                <span class="up-row-label">Telefon</span>
+                <div class="up-editable-wrap">
+                    <span class="up-editable-display @(string.IsNullOrEmpty(Model.Telefon) ? "up-empty" : "")"
+                          data-display="telefon"
+                          data-value="@(Model.Telefon ?? "")">
+                        @(string.IsNullOrEmpty(Model.Telefon) ? "Daxil edilməyib" : Model.Telefon)
+                    </span>
+                    <input type="text" class="up-edit-input" data-input="telefon"
+                           placeholder="Telefon nömrəsi" />
+                    <button type="button" class="up-edit-btn" data-edit-btn="telefon"
+                            title="Redaktə et">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Editable: Email -->
+            <div class="up-row">
+                <span class="up-row-label">Email</span>
+                <div class="up-editable-wrap">
+                    <span class="up-editable-display @(string.IsNullOrEmpty(Model.Email) ? "up-empty" : "")"
+                          data-display="email"
+                          data-value="@(Model.Email ?? "")">
+                        @(string.IsNullOrEmpty(Model.Email) ? "Daxil edilməyib" : Model.Email)
+                    </span>
+                    <input type="email" class="up-edit-input" data-input="email"
+                           placeholder="E-poçt ünvanı" />
+                    <button type="button" class="up-edit-btn" data-edit-btn="email"
+                            title="Redaktə et">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Editable: Unvan -->
+            <div class="up-row">
+                <span class="up-row-label">Ünvan</span>
+                <div class="up-editable-wrap">
+                    <span class="up-editable-display @(string.IsNullOrEmpty(Model.Unvan) ? "up-empty" : "")"
+                          data-display="unvan"
+                          data-value="@(Model.Unvan ?? "")">
+                        @(string.IsNullOrEmpty(Model.Unvan) ? "Daxil edilməyib" : Model.Unvan)
+                    </span>
+                    <input type="text" class="up-edit-input" data-input="unvan"
+                           placeholder="Yaşayış ünvanı" />
+                    <button type="button" class="up-edit-btn" data-edit-btn="unvan"
+                            title="Redaktə et">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="up-save-row">
+                <button type="button" class="up-save-btn" id="upSaveBtn">
+                    <i class="bi bi-check-lg"></i>
+                    Yadda saxla
+                </button>
+            </div>
+        </div>
+
+        <!-- ═══ C. Is Melumatlari ═══ -->
+        <div class="up-card">
+            <div class="up-card-title">
+                <i class="bi bi-briefcase"></i>
+                İş Məlumatları
+            </div>
+
+            <div class="up-row">
+                <span class="up-row-label">Departament</span>
+                <span class="up-row-value">@departament</span>
+            </div>
+            <div class="up-row">
+                <span class="up-row-label">Vəzifə</span>
+                <span class="up-row-value">@vezife</span>
+            </div>
+            <div class="up-row">
+                <span class="up-row-label">İşə qəbul tarixi</span>
+                <span class="up-row-value">@Model.IsheQebulTarixi.ToString("dd.MM.yyyy")</span>
+            </div>
+            <div class="up-row">
+                <span class="up-row-label">Status</span>
+                <span class="up-row-value">
+                    <span class="up-badge @statusClass">@statusText</span>
+                </span>
+            </div>
+            <div class="up-row">
+                <span class="up-row-label">İş stajı</span>
+                <span class="up-row-value">@stajYears il @stajMonths ay</span>
+            </div>
+        </div>
+
+        <!-- ═══ D. Maliyye Melumatlari ═══ -->
+        <div class="up-card">
+            <div class="up-card-title">
+                <i class="bi bi-cash-stack"></i>
+                Maliyyə Məlumatları
+            </div>
+
+            @if (Model.Maliye != null)
+            {
+                <div class="up-row">
+                    <span class="up-row-label">Cari maaş</span>
+                    <span class="up-row-value">@Model.Maliye.CariMaas.ToString("N2") AZN</span>
+                </div>
+                <div class="up-row">
+                    <span class="up-row-label">IBAN / Bank hesab</span>
+                    <span class="up-row-value">
+                        @if (!string.IsNullOrEmpty(Model.Maliye.BankHesabNo))
+                        {
+                            @Model.Maliye.BankHesabNo
+                        }
+                        else
+                        {
+                            <span class="up-empty">Daxil edilməyib</span>
+                        }
+                    </span>
+                </div>
+                <div class="up-row">
+                    <span class="up-row-label">Sosial sığorta nömrəsi</span>
+                    <span class="up-row-value">
+                        @if (!string.IsNullOrEmpty(Model.Maliye.SosialSigortaNo))
+                        {
+                            @Model.Maliye.SosialSigortaNo
+                        }
+                        else
+                        {
+                            <span class="up-empty">Daxil edilməyib</span>
+                        }
+                    </span>
+                </div>
+            }
+            else
+            {
+                <div class="up-row">
+                    <span class="up-row-label">Məlumat</span>
+                    <span class="up-row-value up-empty">Maliyyə məlumatları mövcud deyil</span>
+                </div>
+            }
+        </div>
+
+        <!-- ═══ E. Mezuniyyet Balansi ═══ -->
+        <div class="up-card">
+            <div class="up-card-title">
+                <i class="bi bi-calendar2-check"></i>
+                Məzuniyyət Balansı — @currentYear
+            </div>
+
+            @{
+                void RenderLeaveItem(string label, MezuniyyetBalans? balance, string fillClass)
+                {
+                    var toplam = balance?.ToplamGun ?? 0;
+                    var istifade = balance?.IstifadeOlunanGun ?? 0;
+                    var qaliq = toplam - istifade;
+                    var pct = toplam > 0 ? (int)Math.Round((double)istifade / toplam * 100) : 0;
+
+                    <div class="up-leave-item">
+                        <div class="up-leave-header">
+                            <span class="up-leave-label">@label</span>
+                            <span class="up-leave-numbers">
+                                <strong>@qaliq</strong> / @toplam gün qalıb
+                            </span>
+                        </div>
+                        <div class="up-progress-track">
+                            <div class="up-progress-fill @fillClass" style="width: @(pct)%"></div>
+                        </div>
+                        <div class="up-leave-detail">
+                            <span>Toplam: @toplam gün</span>
+                            <span>İstifadə: @istifade gün</span>
+                            <span>Qalıq: @qaliq gün</span>
+                        </div>
+                    </div>
+                }
+            }
+
+            @{ RenderLeaveItem("İllik məzuniyyət", illik, "up-fill-blue"); }
+            @{ RenderLeaveItem("Xəstəlik məzuniyyəti", xestelik, "up-fill-green"); }
+            @{ RenderLeaveItem("Ezamiyyət", ezamiyyet, "up-fill-gold"); }
+        </div>
+
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script src="~/js/User/user-profile.js" asp-append-version="true"></script>
+}
