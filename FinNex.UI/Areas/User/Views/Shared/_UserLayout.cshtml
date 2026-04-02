@@ -1,9 +1,12 @@
-﻿@{
+@{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentArea = ViewContext.RouteData.Values["area"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
     var currentTab = Context.Request.Query["tab"].ToString();
 
-    var notifActive = currentController == "Inbox" && currentTab == "bildirisler";
-}   
+    var isHR = User.IsInRole("HR") || User.IsInRole("Admin");
+    var isRehber = User.IsInRole("Rehber") || User.IsInRole("SobeReisi") || isHR;
+}
 
 <!DOCTYPE html>
 <html lang="az">
@@ -17,14 +20,8 @@
     <link rel="stylesheet" href="~/css/User/user-area.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/User/dashboard.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/User/createmezuniyyet.css" asp-append-version="true" />
-
-
-    <!-- Bootstrap -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <!-- Icons -->
-
     <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
-    
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
@@ -42,10 +39,13 @@
 
             <nav class="fn-nav">
 
+                @* ═══════════════════════════════════════════════════
+                   ƏSAS — Bütün istifadəçilər görür
+                   ═══════════════════════════════════════════════════ *@
                 <div class="fn-nav-label">Əsas</div>
 
                 <a asp-area="User" asp-controller="Dashboard" asp-action="Index"
-                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")">
+                   class="fn-nav-item @(currentController == "Dashboard" && currentArea == "User" ? "active" : "")">
                     <div class="fn-nav-icon">
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                             <rect x="1" y="1" width="5" height="5" rx="1.5" fill="currentColor" />
@@ -58,7 +58,7 @@
                 </a>
 
                 <a asp-area="User" asp-controller="Profile" asp-action="Index"
-                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Profile" ? "active" : "")">
+                   class="fn-nav-item @(currentController == "Profile" ? "active" : "")">
                     <div class="fn-nav-icon">
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                             <circle cx="7" cy="4.5" r="2.5" stroke="currentColor" stroke-width="1.3" />
@@ -68,34 +68,12 @@
                     Profil
                 </a>
 
-                <div class="fn-nav-label">Menu</div>
+                @* ═══════════════════════════════════════════════════
+                   ƏMƏKDAŞ PORTALI — Bütün istifadəçilər görür
+                   ═══════════════════════════════════════════════════ *@
+                <div class="fn-nav-label">Əməkdaş</div>
 
-                @* <a asp-area="User" asp-controller="Inbox" asp-action="Index"
-                   class="fn-nav-item @(currentController == "Inbox" ? "active" : "")">
-                    <div class="fn-nav-icon">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" />
-                            <path d="M1 6l5 3.5L13 6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
-                        </svg>
-                    </div>
-                    Gələn Qutusu
-                    <span id="sidebarNotifCount" class="fn-nav-badge"></span>
-                </a>
-
-                <a asp-area="User" asp-controller="Xatirlatma" asp-action="Index"
-                   class="fn-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Xatirlatma" ? "active" : "")">
-                    <div class="fn-nav-icon">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.3" />
-                            <path d="M7 4.5V7l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-                        </svg>
-                    </div>
-                    Xatırlatmalar
-                    <span id="sidebarXatCount" class="fn-nav-badge" style="display:none"></span>
-                </a> *@
-
-                <!-- İnsan Resursları -->
-                <div class="fn-nav-group @(ViewContext.RouteData.Values["controller"]?.ToString() is "Davamiyyet" or "Mezuniyyet" or "Muraciet" ? "open" : "")">
+                <div class="fn-nav-group @(currentController is "Davamiyyet" or "Mezuniyyet" or "Muraciet" or "Tapshiriq" or "Gorush" or "Icaze" ? "open" : "")">
                     <button type="button" class="fn-nav-group-toggle">
                         <div class="fn-nav-group-left">
                             <div class="fn-nav-icon">
@@ -112,15 +90,15 @@
                     </button>
                     <div class="fn-nav-submenu">
                         <a asp-area="User" asp-controller="Davamiyyet" asp-action="Index"
-                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Davamiyyet" ? "active" : "")">
+                           class="fn-nav-subitem @(currentController == "Davamiyyet" ? "active" : "")">
                             <div class="fn-sub-dot"></div> Davamiyyət
                         </a>
                         <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Index"
-                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Mezuniyyet" ? "active" : "")">
+                           class="fn-nav-subitem @(currentController == "Mezuniyyet" ? "active" : "")">
                             <div class="fn-sub-dot"></div> Məzuniyyət
                         </a>
                         <a asp-area="User" asp-controller="Muraciet" asp-action="Index"
-                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Muraciet" ? "active" : "")">
+                           class="fn-nav-subitem @(currentController == "Muraciet" ? "active" : "")">
                             <div class="fn-sub-dot"></div> Müraciətlər
                         </a>
                         <a asp-area="User" asp-controller="Tapshiriq" asp-action="Index"
@@ -131,70 +109,11 @@
                            class="fn-nav-subitem @(currentController == "Gorush" ? "active" : "")">
                             <div class="fn-sub-dot"></div> Görüşlər
                         </a>
-
                     </div>
                 </div>
 
-                <!-- Maliyyə -->
-                <div class="fn-nav-group @(ViewContext.RouteData.Values["controller"]?.ToString() is "Odenis" or "Sened" ? "open" : "")">
-                    <button type="button" class="fn-nav-group-toggle">
-                        <div class="fn-nav-group-left">
-                            <div class="fn-nav-icon">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                    <rect x="1" y="2.5" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2" />
-                                    <path d="M1 5.5h12M4 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
-                                </svg>
-                            </div>
-                            Maliyyə
-                        </div>
-                        <div class="fn-nav-arrow">
-                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                        </div>
-                    </button>
-                    <div class="fn-nav-submenu">
-                        <a asp-area="User" asp-controller="Odenis" asp-action="Index"
-                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Odenis" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Ödənişlər
-                        </a>
-                        @* <a asp-area="User" asp-controller="Sened" asp-action="Index"
-                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Sened" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Sənədlər
-                        </a> *@
-                    </div>
-                </div>
-
-                <!-- Təsdiq Paneli -->
-                <div class="fn-nav-group @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tesdiq" ? "open" : "")">
-                    <button type="button" class="fn-nav-group-toggle">
-                        <div class="fn-nav-group-left">
-                            <div class="fn-nav-icon">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                    <path d="M2 11l3-3 2 2 5-6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
-                            </div>
-                            Təsdiq Paneli
-                        </div>
-                        <div class="fn-nav-arrow">
-                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                        </div>
-                    </button>
-                    <div class="fn-nav-submenu">
-                        <a asp-area="User" asp-controller="Tesdiq" asp-action="SobeReisi"
-                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tesdiq" && ViewContext.RouteData.Values["action"]?.ToString() == "SobeReisi" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Şöbə Rəhbəri
-                        </a>
-                        <a asp-area="User" asp-controller="Tesdiq" asp-action="Rehber"
-                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tesdiq" && ViewContext.RouteData.Values["action"]?.ToString() == "Rehber" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Rəhbər
-                        </a>
-                        <a asp-area="User" asp-controller="Tesdiq" asp-action="Hr"
-                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tesdiq" && ViewContext.RouteData.Values["action"]?.ToString() == "Hr" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> HR
-                        </a>
-                    </div>
-                </div>
-                <!-- Hesabatlar -->
-                <div class="fn-nav-group @(currentController == "Hesabat" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "open" : "")">
+                @* User Hesabatları — öz müraciətlərini izləmək *@
+                <div class="fn-nav-group @(currentController == "Hesabat" && currentArea == "User" ? "open" : "")">
                     <button type="button" class="fn-nav-group-toggle">
                         <div class="fn-nav-group-left">
                             <div class="fn-nav-icon">
@@ -203,22 +122,21 @@
                                     <path d="M4 3V1.5M10 3V1.5M1 6h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
                                 </svg>
                             </div>
-                            Hesabatlar
+                            Hesabatlarım
                         </div>
                         <div class="fn-nav-arrow">
                             <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
                         </div>
                     </button>
-
                     <div class="fn-nav-submenu">
                         <a asp-area="User" asp-controller="Hesabat" asp-action="Index"
-                           class="fn-nav-subitem @(ViewContext.RouteData.Values["controller"]?.ToString() == "Hesabat" ? "active" : "")">
+                           class="fn-nav-subitem @(currentController == "Hesabat" && currentArea == "User" ? "active" : "")">
                             <div class="fn-sub-dot"></div> Məzuniyyət / İcazə
                         </a>
                     </div>
                 </div>
 
-                <!-- Programlar — 3 mərhələli accordion -->
+                @* Programlar *@
                 <div class="fn-nav-group">
                     <button type="button" class="fn-nav-group-toggle">
                         <div class="fn-nav-group-left">
@@ -236,10 +154,7 @@
                             <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
                         </div>
                     </button>
-
                     <div class="fn-nav-submenu">
-
-                        <!-- Umumi -->
                         <div class="fn-nav-group">
                             <button type="button" class="fn-nav-group-toggle">
                                 <div class="fn-nav-group-left">
@@ -251,17 +166,11 @@
                                 </div>
                             </button>
                             <div class="fn-nav-submenu">
-                                <a asp-area="SenedDovriyyesi"
-                                   asp-controller="Dashboard"
-                                   asp-action="Index"
-                                   class="fn-nav-subitem">
+                                <a asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index" class="fn-nav-subitem">
                                     <div class="fn-sub-dot"></div> Sənəd Dövriyyəsi
                                 </a>
-
                             </div>
                         </div>
-
-                        <!-- Swift -->
                         <div class="fn-nav-group">
                             <button type="button" class="fn-nav-group-toggle">
                                 <div class="fn-nav-group-left">
@@ -273,16 +182,11 @@
                                 </div>
                             </button>
                             <div class="fn-nav-submenu">
-                                <a asp-area="PR_Odenis_Tapsirigi"
-                                   asp-controller="OdenisTapsirigi"
-                                   asp-action="Index"
-                                   class="fn-nav-subitem">
+                                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Index" class="fn-nav-subitem">
                                     <div class="fn-sub-dot"></div> Ödəniş tapşırığı
                                 </a>
                             </div>
                         </div>
-
-                        <!-- Kredit -->
                         <div class="fn-nav-group">
                             <button type="button" class="fn-nav-group-toggle">
                                 <div class="fn-nav-group-left">
@@ -298,21 +202,68 @@
                                 <a href="#" class="fn-nav-subitem"><div class="fn-sub-dot"></div> Layihə 2</a>
                             </div>
                         </div>
-
                     </div>
                 </div>
-                @* GIRIS CIXIS *@
-                <a asp-area="HR" asp-controller="ADMS" asp-action="Test"
-                   class="fn-nav-subitem">
+
+                <a asp-area="HR" asp-controller="ADMS" asp-action="Test" class="fn-nav-subitem">
                     <div class="fn-sub-dot"></div> Cihaz Testi
                 </a>
 
-                @* Sidebar-da digər nav-group-lardan sonra *@
-                @if (User.IsInRole("HR") || User.IsInRole("Admin"))
+                @* ═══════════════════════════════════════════════════
+                   TƏSDİQ PANELİ — Yalnız Rəhbər/ŞöbəReisi/HR/Admin
+                   ═══════════════════════════════════════════════════ *@
+                @if (isRehber)
+                {
+                    <div class="fn-nav-label">Təsdiq və İdarəetmə</div>
+
+                    <div class="fn-nav-group @(currentController == "Tesdiq" ? "open" : "")">
+                        <button type="button" class="fn-nav-group-toggle">
+                            <div class="fn-nav-group-left">
+                                <div class="fn-nav-icon">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <path d="M2 11l3-3 2 2 5-6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </div>
+                                Təsdiq Paneli
+                            </div>
+                            <div class="fn-nav-arrow">
+                                <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
+                            </div>
+                        </button>
+                        <div class="fn-nav-submenu">
+                            @if (User.IsInRole("SobeReisi") || isHR)
+                            {
+                                <a asp-area="User" asp-controller="Tesdiq" asp-action="SobeReisi"
+                                   class="fn-nav-subitem @(currentController == "Tesdiq" && currentAction == "SobeReisi" ? "active" : "")">
+                                    <div class="fn-sub-dot"></div> Şöbə Rəhbəri
+                                </a>
+                            }
+                            @if (User.IsInRole("Rehber") || isHR)
+                            {
+                                <a asp-area="User" asp-controller="Tesdiq" asp-action="Rehber"
+                                   class="fn-nav-subitem @(currentController == "Tesdiq" && currentAction == "Rehber" ? "active" : "")">
+                                    <div class="fn-sub-dot"></div> Rəhbər
+                                </a>
+                            }
+                            @if (isHR)
+                            {
+                                <a asp-area="User" asp-controller="Tesdiq" asp-action="Hr"
+                                   class="fn-nav-subitem @(currentController == "Tesdiq" && currentAction == "Hr" ? "active" : "")">
+                                    <div class="fn-sub-dot"></div> HR
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @* ═══════════════════════════════════════════════════
+                   HR İDARƏETMƏ — Yalnız HR/Admin
+                   ═══════════════════════════════════════════════════ *@
+                @if (isHR)
                 {
                     <div class="fn-nav-label">HR İdarəetmə</div>
 
-                    <div class="fn-nav-group @(ViewContext.RouteData.Values["area"]?.ToString() == "HR" ? "open" : "")">
+                    <div class="fn-nav-group @(currentArea == "HR" ? "open" : "")">
                         <button type="button" class="fn-nav-group-toggle">
                             <div class="fn-nav-group-left">
                                 <div class="fn-nav-icon">
@@ -330,7 +281,7 @@
                         </button>
                         <div class="fn-nav-submenu">
                             <a asp-area="HR" asp-controller="Dashboard" asp-action="Index"
-                               class="fn-nav-subitem @(ViewContext.RouteData.Values["area"]?.ToString() == "HR" && currentController == "Dashboard" ? "active" : "")">
+                               class="fn-nav-subitem @(currentArea == "HR" && currentController == "Dashboard" ? "active" : "")">
                                 <div class="fn-sub-dot"></div> HR Dashboard
                             </a>
                             <a asp-area="HR" asp-controller="Isci" asp-action="Index"
@@ -338,7 +289,7 @@
                                 <div class="fn-sub-dot"></div> İşçilər
                             </a>
                             <a asp-area="HR" asp-controller="Departament" asp-action="Index"
-                               class="fn-nav-subitem @(currentController == "Sobe" ? "active" : "")">
+                               class="fn-nav-subitem @(currentController == "Departament" ? "active" : "")">
                                 <div class="fn-sub-dot"></div> Departamentlər
                             </a>
                             <a asp-area="HR" asp-controller="Vezife" asp-action="Index"
@@ -346,52 +297,53 @@
                                 <div class="fn-sub-dot"></div> Vəzifələr
                             </a>
                             <a asp-area="HR" asp-controller="Davamiyyet" asp-action="Index"
-                               class="fn-nav-subitem @(ViewContext.RouteData.Values["area"]?.ToString() == "HR" && currentController == "Davamiyyet" ? "active" : "")">
+                               class="fn-nav-subitem @(currentArea == "HR" && currentController == "Davamiyyet" ? "active" : "")">
                                 <div class="fn-sub-dot"></div> Davamiyyət
                             </a>
                             <a asp-area="HR" asp-controller="BayramGunu" asp-action="Index"
-                               class="fn-nav-subitem @(ViewContext.RouteData.Values["area"]?.ToString() == "HR" && currentController == "BayramGunu" ? "active" : "")">
+                               class="fn-nav-subitem @(currentArea == "HR" && currentController == "BayramGunu" ? "active" : "")">
                                 <div class="fn-sub-dot"></div> Bayram Günləri
                             </a>
                             <a asp-area="HR" asp-controller="MezuniyyetBalans" asp-action="Index"
-                               class="fn-nav-subitem @(ViewContext.RouteData.Values["area"]?.ToString() == "HR" && currentController == "MezuniyyetBalans" ? "active" : "")">
+                               class="fn-nav-subitem @(currentArea == "HR" && currentController == "MezuniyyetBalans" ? "active" : "")">
                                 <div class="fn-sub-dot"></div> Məzuniyyət Balansı
                             </a>
                             <a asp-area="HR" asp-controller="Hesabat" asp-action="Index"
-                               class="fn-nav-subitem @(ViewContext.RouteData.Values["area"]?.ToString() == "HR" && currentController == "Hesabat" ? "active" : "")">
-                                <div class="fn-sub-dot"></div> Hesabatlar
+                               class="fn-nav-subitem @(currentArea == "HR" && currentController == "Hesabat" ? "active" : "")">
+                                <div class="fn-sub-dot"></div> HR Hesabatları
+                            </a>
+                        </div>
+                    </div>
+
+                    @* Mühasibatlıq — HR/Admin *@
+                    <div class="fn-nav-group @(currentController is "Maas" or "MaasParametri" ? "open" : "")">
+                        <button type="button" class="fn-nav-group-toggle">
+                            <div class="fn-nav-group-left">
+                                <div class="fn-nav-icon">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <rect x="1" y="2.5" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+                                        <path d="M1 5.5h12M4 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                    </svg>
+                                </div>
+                                Mühasibatlıq
+                            </div>
+                            <div class="fn-nav-arrow">
+                                <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8"/></svg>
+                            </div>
+                        </button>
+                        <div class="fn-nav-submenu">
+                            <a asp-area="HR" asp-controller="Maas" asp-action="Index"
+                               class="fn-nav-subitem @(currentController == "Maas" ? "active" : "")">
+                                <div class="fn-sub-dot"></div> Əmək Haqqı
+                            </a>
+                            <a asp-area="HR" asp-controller="MaasParametri" asp-action="Index"
+                               class="fn-nav-subitem @(currentController == "MaasParametri" ? "active" : "")">
+                                <div class="fn-sub-dot"></div> Əmək haqqı parametrləri
                             </a>
                         </div>
                     </div>
                 }
 
-                <!-- Mühasibatlıq -->
-                <div class="fn-nav-group @(currentController is "Maas" or "MaasParametri" ? "open" : "")">
-                    <button type="button" class="fn-nav-group-toggle">
-                        <div class="fn-nav-group-left">
-                            <div class="fn-nav-icon">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                    <rect x="1" y="2.5" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
-                                    <path d="M1 5.5h12M4 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                                </svg>
-                            </div>
-                            Mühasibatlıq
-                        </div>
-                        <div class="fn-nav-arrow">
-                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8"/></svg>
-                        </div>
-                    </button>
-                    <div class="fn-nav-submenu">
-                        <a asp-area="HR" asp-controller="Maas" asp-action="Index"
-                           class="fn-nav-subitem @(currentController == "Maas" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Əmək Haqqı
-                        </a>
-                        <a asp-area="HR" asp-controller="MaasParametri" asp-action="Index"
-                           class="fn-nav-subitem @(currentController == "MaasParametri" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Əmək haqqı parametrləri
-                        </a>
-                    </div>
-                </div>
             </nav>
 
             <div class="fn-sidebar-footer">
@@ -430,8 +382,6 @@
                     <div class="fn-topbar-sub">@DateTime.Now.ToString("dd MMMM yyyy") · @ViewData["UserRole"]</div>
                 </div>
                 <div class="fn-topbar-right">
-
-                    <!-- Xatırlatma ikonu -->
                     <a asp-area="User" asp-controller="Xatirlatma" asp-action="Index"
                        class="fn-notif-btn" id="xatirlatmaBtn" title="Xatırlatmalar">
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -440,8 +390,6 @@
                         </svg>
                         <span class="fn-notif-count" id="xatirlatmaCount" style="display:none">0</span>
                     </a>
-
-                    <!-- Bildiriş (zəng) ikonu -->
                     <a asp-area="User" asp-controller="Inbox" asp-action="Index"
                        asp-route-tab="bildirisler"
                        class="fn-notif-btn" id="notifBtn" title="Bildirişlər">
@@ -451,7 +399,6 @@
                         </svg>
                         <span class="fn-notif-count" id="notifCount" style="display:none">0</span>
                     </a>
-
                     <div class="fn-topbar-av">@initials</div>
                 </div>
             </div>
