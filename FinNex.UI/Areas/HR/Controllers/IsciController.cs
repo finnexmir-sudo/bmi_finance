@@ -247,6 +247,17 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return View(vm);
             }
 
+            // AppUser-dəki Ad/Soyad/Email-i də yenilə
+            var users = _userManager.Users.Where(u => u.IsciId == vm.Id).ToList();
+            foreach (var appUser in users)
+            {
+                appUser.Ad = vm.Ad;
+                appUser.Soyad = vm.Soyad;
+                if (!string.IsNullOrEmpty(vm.Email))
+                    appUser.Email = vm.Email;
+                await _userManager.UpdateAsync(appUser);
+            }
+
             TempData["Success"] = "İşçi məlumatları uğurla yeniləndi.";
             return RedirectToAction(nameof(Detail), new { id = vm.Id });
         }

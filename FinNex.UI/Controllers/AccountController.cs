@@ -45,13 +45,14 @@ namespace FinNex.UI.Controllers
                 return View(dto);
 
             var user = await _userManager.FindByNameAsync(dto.UserName);
-            var roles = await _userManager.GetRolesAsync(user);
 
             if (user == null || !user.Aktivdir)
             {
                 ModelState.AddModelError("", "İstifadəçi adı və ya şifrə yanlışdır");
                 return View(dto);
             }
+
+            var roles = await _userManager.GetRolesAsync(user);
 
             var result = await _signInManager.PasswordSignInAsync(
                 user.UserName!,
