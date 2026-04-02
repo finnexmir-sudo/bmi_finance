@@ -129,7 +129,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Aktivdir = true,
             };
 
-            var resultUser = await _userManager.CreateAsync(user, "user123");
+            var resultUser = await _userManager.CreateAsync(user, "FinNex2026!");
 
             if (!resultUser.Succeeded)
             {
@@ -138,6 +138,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                 await ReloadDepartments(vm);
                 return View(vm);
             }
+
+            // Operator rolunu əlavə et (default rol)
+            await _userManager.AddToRoleAsync(user, "Operator");
 
             var dto = new IsciCreateDto
             {
