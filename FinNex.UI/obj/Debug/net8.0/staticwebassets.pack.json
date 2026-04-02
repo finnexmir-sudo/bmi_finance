@@ -65,6 +65,10 @@
       "PackagePath": "staticwebassets\\css\\User\\user-area.css"
     },
     {
+      "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\User\\user-davamiyyet.css",
+      "PackagePath": "staticwebassets\\css\\User\\user-davamiyyet.css"
+    },
+    {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\User\\xatirlatma-yarat.css",
       "PackagePath": "staticwebassets\\css\\User\\xatirlatma-yarat.css"
     },
@@ -251,6 +255,10 @@
     {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\User\\user-area.js",
       "PackagePath": "staticwebassets\\js\\User\\user-area.js"
+    },
+    {
+      "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\User\\user-davamiyyet.js",
+      "PackagePath": "staticwebassets\\js\\User\\user-davamiyyet.js"
     },
     {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\User\\user_create_icaze.js",

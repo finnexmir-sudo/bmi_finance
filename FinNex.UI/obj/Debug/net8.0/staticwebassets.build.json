@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "uupCKGRxvD/TLWIlzWq//wr20ovXpKi1Zrimmy9wS+c=",
+  "Hash": "8ZYyf6A1K7uIDUISxy9hBrPJFj1HEZDgROhH9uSSh7w=",
   "Source": "FinNex.UI",
   "BasePath": "_content/FinNex.UI",
   "Mode": "Default",
@@ -262,8 +262,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "tfwest9qu6",
-      "Integrity": "RyRjWetk08D3N9YU4boh2SisrubVETvkbBcbi0fwXww=",
+      "Fingerprint": "iq8yqo5enn",
+      "Integrity": "uup3s/vPPCF1LEyiZKOw3fix7PempX2/1dIti+oKozM=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\css\\hr\\hr-davamiyyet.css"
@@ -661,8 +661,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "n00mfj0zfm",
-      "Integrity": "lwQUDCd3iwVTiN9mZUmjSHcOHX/SjvFOMj8JbvubHdY=",
+      "Fingerprint": "xaimj8p1ws",
+      "Integrity": "1xZdUJ1xZ0HIeZ86o6wvh701Sd0wDn3VQGALuNVAu9U=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\css\\maas-toplu.css"
@@ -1039,11 +1039,32 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "1ufaa8d5q4",
-      "Integrity": "VxduS155Q5uHcdU8USoaQwF72ZopKXaTIwMrc1bpol4=",
+      "Fingerprint": "vs0mauspeo",
+      "Integrity": "cdDoSh3KgBzJvFgB8//a6R7NnCbSfZE/6oHGND9uruA=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\css\\User\\user-area.css"
+    },
+    {
+      "Identity": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\User\\user-davamiyyet.css",
+      "SourceId": "FinNex.UI",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\",
+      "BasePath": "_content/FinNex.UI",
+      "RelativePath": "css/User/user-davamiyyet#[.{fingerprint}]?.css",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "zn94b6ese3",
+      "Integrity": "76w4vUwmP2A55KsOW2n7uanc6D2pmQ9kzEDx3wFrnkE=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\css\\User\\user-davamiyyet.css"
     },
     {
       "Identity": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\User\\xatirlatma.css",
@@ -1606,8 +1627,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "65ehbbvhb0",
-      "Integrity": "2ohb5LEz1Gh2z7HjncrtSQrySWY3ic+SG57U2+4lVps=",
+      "Fingerprint": "85rfrdbc0p",
+      "Integrity": "1MkRzwiBA4OxZDdG8NIqUqPxTt5KXdyX+fGNd7x9Iis=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\js\\maas-toplu.js"
@@ -1947,6 +1968,27 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\js\\User\\user-area.js"
+    },
+    {
+      "Identity": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\User\\user-davamiyyet.js",
+      "SourceId": "FinNex.UI",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\",
+      "BasePath": "_content/FinNex.UI",
+      "RelativePath": "js/User/user-davamiyyet#[.{fingerprint}]?.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "9mjtg301rp",
+      "Integrity": "kUSMleRk/RpPY0WwYNzbZrOc3mOQqQBWSP8JeRS/k+4=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\js\\User\\user-davamiyyet.js"
     },
     {
       "Identity": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\User\\xatirlatma.js",
@@ -3980,7 +4022,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "13091"
+          "Value": "12792"
         },
         {
           "Name": "Content-Type",
@@ -3988,11 +4030,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"RyRjWetk08D3N9YU4boh2SisrubVETvkbBcbi0fwXww=\""
+          "Value": "\"uup3s/vPPCF1LEyiZKOw3fix7PempX2/1dIti+oKozM=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Wed, 01 Apr 2026 10:51:36 GMT"
+          "Value": "Wed, 01 Apr 2026 11:49:52 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -4002,12 +4044,12 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-RyRjWetk08D3N9YU4boh2SisrubVETvkbBcbi0fwXww="
+          "Value": "sha256-uup3s/vPPCF1LEyiZKOw3fix7PempX2/1dIti+oKozM="
         }
       ]
     },
     {
-      "Route": "css/hr/hr-davamiyyet.tfwest9qu6.css",
+      "Route": "css/hr/hr-davamiyyet.iq8yqo5enn.css",
       "AssetFile": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\hr\\hr-davamiyyet.css",
       "Selectors": [],
       "ResponseHeaders": [
@@ -4017,7 +4059,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "13091"
+          "Value": "12792"
         },
         {
           "Name": "Content-Type",
@@ -4025,11 +4067,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"RyRjWetk08D3N9YU4boh2SisrubVETvkbBcbi0fwXww=\""
+          "Value": "\"uup3s/vPPCF1LEyiZKOw3fix7PempX2/1dIti+oKozM=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Wed, 01 Apr 2026 10:51:36 GMT"
+          "Value": "Wed, 01 Apr 2026 11:49:52 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -4039,7 +4081,7 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "tfwest9qu6"
+          "Value": "iq8yqo5enn"
         },
         {
           "Name": "label",
@@ -4047,7 +4089,7 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-RyRjWetk08D3N9YU4boh2SisrubVETvkbBcbi0fwXww="
+          "Value": "sha256-uup3s/vPPCF1LEyiZKOw3fix7PempX2/1dIti+oKozM="
         }
       ]
     },
@@ -5538,7 +5580,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "24778"
+          "Value": "25135"
         },
         {
           "Name": "Content-Type",
@@ -5546,11 +5588,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"lwQUDCd3iwVTiN9mZUmjSHcOHX/SjvFOMj8JbvubHdY=\""
+          "Value": "\"1xZdUJ1xZ0HIeZ86o6wvh701Sd0wDn3VQGALuNVAu9U=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Tue, 31 Mar 2026 04:56:02 GMT"
+          "Value": "Wed, 01 Apr 2026 13:07:54 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -5560,12 +5602,12 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-lwQUDCd3iwVTiN9mZUmjSHcOHX/SjvFOMj8JbvubHdY="
+          "Value": "sha256-1xZdUJ1xZ0HIeZ86o6wvh701Sd0wDn3VQGALuNVAu9U="
         }
       ]
     },
     {
-      "Route": "css/maas-toplu.n00mfj0zfm.css",
+      "Route": "css/maas-toplu.xaimj8p1ws.css",
       "AssetFile": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\maas-toplu.css",
       "Selectors": [],
       "ResponseHeaders": [
@@ -5575,7 +5617,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "24778"
+          "Value": "25135"
         },
         {
           "Name": "Content-Type",
@@ -5583,11 +5625,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"lwQUDCd3iwVTiN9mZUmjSHcOHX/SjvFOMj8JbvubHdY=\""
+          "Value": "\"1xZdUJ1xZ0HIeZ86o6wvh701Sd0wDn3VQGALuNVAu9U=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Tue, 31 Mar 2026 04:56:02 GMT"
+          "Value": "Wed, 01 Apr 2026 13:07:54 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -5597,7 +5639,7 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "n00mfj0zfm"
+          "Value": "xaimj8p1ws"
         },
         {
           "Name": "label",
@@ -5605,7 +5647,7 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-lwQUDCd3iwVTiN9mZUmjSHcOHX/SjvFOMj8JbvubHdY="
+          "Value": "sha256-1xZdUJ1xZ0HIeZ86o6wvh701Sd0wDn3VQGALuNVAu9U="
         }
       ]
     },
@@ -7004,51 +7046,6 @@
       ]
     },
     {
-      "Route": "css/User/user-area.1ufaa8d5q4.css",
-      "AssetFile": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\User\\user-area.css",
-      "Selectors": [],
-      "ResponseHeaders": [
-        {
-          "Name": "Accept-Ranges",
-          "Value": "bytes"
-        },
-        {
-          "Name": "Content-Length",
-          "Value": "26671"
-        },
-        {
-          "Name": "Content-Type",
-          "Value": "text/css"
-        },
-        {
-          "Name": "ETag",
-          "Value": "\"VxduS155Q5uHcdU8USoaQwF72ZopKXaTIwMrc1bpol4=\""
-        },
-        {
-          "Name": "Last-Modified",
-          "Value": "Tue, 31 Mar 2026 04:56:02 GMT"
-        },
-        {
-          "Name": "Cache-Control",
-          "Value": "max-age=31536000, immutable"
-        }
-      ],
-      "EndpointProperties": [
-        {
-          "Name": "fingerprint",
-          "Value": "1ufaa8d5q4"
-        },
-        {
-          "Name": "label",
-          "Value": "css/User/user-area.css"
-        },
-        {
-          "Name": "integrity",
-          "Value": "sha256-VxduS155Q5uHcdU8USoaQwF72ZopKXaTIwMrc1bpol4="
-        }
-      ]
-    },
-    {
       "Route": "css/User/user-area.css",
       "AssetFile": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\User\\user-area.css",
       "Selectors": [],
@@ -7059,7 +7056,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "26671"
+          "Value": "26698"
         },
         {
           "Name": "Content-Type",
@@ -7067,11 +7064,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"VxduS155Q5uHcdU8USoaQwF72ZopKXaTIwMrc1bpol4=\""
+          "Value": "\"cdDoSh3KgBzJvFgB8//a6R7NnCbSfZE/6oHGND9uruA=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Tue, 31 Mar 2026 04:56:02 GMT"
+          "Value": "Wed, 01 Apr 2026 11:49:52 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -7081,7 +7078,134 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-VxduS155Q5uHcdU8USoaQwF72ZopKXaTIwMrc1bpol4="
+          "Value": "sha256-cdDoSh3KgBzJvFgB8//a6R7NnCbSfZE/6oHGND9uruA="
+        }
+      ]
+    },
+    {
+      "Route": "css/User/user-area.vs0mauspeo.css",
+      "AssetFile": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\User\\user-area.css",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "26698"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/css"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"cdDoSh3KgBzJvFgB8//a6R7NnCbSfZE/6oHGND9uruA=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 01 Apr 2026 11:49:52 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "vs0mauspeo"
+        },
+        {
+          "Name": "label",
+          "Value": "css/User/user-area.css"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-cdDoSh3KgBzJvFgB8//a6R7NnCbSfZE/6oHGND9uruA="
+        }
+      ]
+    },
+    {
+      "Route": "css/User/user-davamiyyet.css",
+      "AssetFile": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\User\\user-davamiyyet.css",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "8025"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/css"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"76w4vUwmP2A55KsOW2n7uanc6D2pmQ9kzEDx3wFrnkE=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 01 Apr 2026 11:27:34 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-76w4vUwmP2A55KsOW2n7uanc6D2pmQ9kzEDx3wFrnkE="
+        }
+      ]
+    },
+    {
+      "Route": "css/User/user-davamiyyet.zn94b6ese3.css",
+      "AssetFile": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\User\\user-davamiyyet.css",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "8025"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/css"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"76w4vUwmP2A55KsOW2n7uanc6D2pmQ9kzEDx3wFrnkE=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 01 Apr 2026 11:27:34 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "zn94b6ese3"
+        },
+        {
+          "Name": "label",
+          "Value": "css/User/user-davamiyyet.css"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-76w4vUwmP2A55KsOW2n7uanc6D2pmQ9kzEDx3wFrnkE="
         }
       ]
     },
@@ -7436,7 +7560,7 @@
         },
         {
           "Name": "Last-Modified",
-          "Value": "Tue, 31 Mar 2026 07:17:35 GMT"
+          "Value": "Wed, 01 Apr 2026 11:43:19 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -7473,7 +7597,7 @@
         },
         {
           "Name": "Last-Modified",
-          "Value": "Tue, 31 Mar 2026 07:17:35 GMT"
+          "Value": "Wed, 01 Apr 2026 11:43:19 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -7518,7 +7642,7 @@
         },
         {
           "Name": "Last-Modified",
-          "Value": "Tue, 31 Mar 2026 07:17:35 GMT"
+          "Value": "Wed, 01 Apr 2026 11:43:19 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -7563,7 +7687,7 @@
         },
         {
           "Name": "Last-Modified",
-          "Value": "Tue, 31 Mar 2026 07:17:35 GMT"
+          "Value": "Wed, 01 Apr 2026 11:43:19 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -9382,7 +9506,7 @@
       ]
     },
     {
-      "Route": "js/maas-toplu.65ehbbvhb0.js",
+      "Route": "js/maas-toplu.85rfrdbc0p.js",
       "AssetFile": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\maas-toplu.js",
       "Selectors": [],
       "ResponseHeaders": [
@@ -9392,7 +9516,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "8030"
+          "Value": "10047"
         },
         {
           "Name": "Content-Type",
@@ -9400,11 +9524,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"2ohb5LEz1Gh2z7HjncrtSQrySWY3ic+SG57U2+4lVps=\""
+          "Value": "\"1MkRzwiBA4OxZDdG8NIqUqPxTt5KXdyX+fGNd7x9Iis=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Tue, 31 Mar 2026 04:56:02 GMT"
+          "Value": "Wed, 01 Apr 2026 13:07:54 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -9414,7 +9538,7 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "65ehbbvhb0"
+          "Value": "85rfrdbc0p"
         },
         {
           "Name": "label",
@@ -9422,7 +9546,7 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-2ohb5LEz1Gh2z7HjncrtSQrySWY3ic+SG57U2+4lVps="
+          "Value": "sha256-1MkRzwiBA4OxZDdG8NIqUqPxTt5KXdyX+fGNd7x9Iis="
         }
       ]
     },
@@ -9437,7 +9561,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "8030"
+          "Value": "10047"
         },
         {
           "Name": "Content-Type",
@@ -9445,11 +9569,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"2ohb5LEz1Gh2z7HjncrtSQrySWY3ic+SG57U2+4lVps=\""
+          "Value": "\"1MkRzwiBA4OxZDdG8NIqUqPxTt5KXdyX+fGNd7x9Iis=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Tue, 31 Mar 2026 04:56:02 GMT"
+          "Value": "Wed, 01 Apr 2026 13:07:54 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -9459,7 +9583,7 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-2ohb5LEz1Gh2z7HjncrtSQrySWY3ic+SG57U2+4lVps="
+          "Value": "sha256-1MkRzwiBA4OxZDdG8NIqUqPxTt5KXdyX+fGNd7x9Iis="
         }
       ]
     },
@@ -10772,6 +10896,88 @@
         {
           "Name": "integrity",
           "Value": "sha256-KBsLCB3q17NUExUJyx8fjxHWYnQuOiGKlE4iGB7y1FQ="
+        }
+      ]
+    },
+    {
+      "Route": "js/User/user-davamiyyet.9mjtg301rp.js",
+      "AssetFile": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\User\\user-davamiyyet.js",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "5112"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/javascript"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"kUSMleRk/RpPY0WwYNzbZrOc3mOQqQBWSP8JeRS/k+4=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 01 Apr 2026 11:27:34 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "9mjtg301rp"
+        },
+        {
+          "Name": "label",
+          "Value": "js/User/user-davamiyyet.js"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-kUSMleRk/RpPY0WwYNzbZrOc3mOQqQBWSP8JeRS/k+4="
+        }
+      ]
+    },
+    {
+      "Route": "js/User/user-davamiyyet.js",
+      "AssetFile": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\User\\user-davamiyyet.js",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "5112"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/javascript"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"kUSMleRk/RpPY0WwYNzbZrOc3mOQqQBWSP8JeRS/k+4=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 01 Apr 2026 11:27:34 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-kUSMleRk/RpPY0WwYNzbZrOc3mOQqQBWSP8JeRS/k+4="
         }
       ]
     },

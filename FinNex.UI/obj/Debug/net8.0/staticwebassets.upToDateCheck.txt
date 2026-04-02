@@ -45,6 +45,7 @@ wwwroot\css\User\MezDetail.css
 wwwroot\css\User\tapshiriq.css
 wwwroot\css\User\tesdiq.css
 wwwroot\css\User\user-area.css
+wwwroot\css\User\user-davamiyyet.css
 wwwroot\css\User\xatirlatma.css
 wwwroot\css\User\xatirlatma-yarat.css
 wwwroot\favicon.ico
@@ -88,6 +89,7 @@ wwwroot\js\User\tesdiq.js
 wwwroot\js\User\user_create_icaze.js
 wwwroot\js\User\user_create_mezuniyyet.js
 wwwroot\js\User\user-area.js
+wwwroot\js\User\user-davamiyyet.js
 wwwroot\js\User\xatirlatma.js
 wwwroot\lib\bootstrap\dist\css\bootstrap.css
 wwwroot\lib\bootstrap\dist\css\bootstrap.css.map

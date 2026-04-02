@@ -174,8 +174,8 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>tfwest9qu6</Fingerprint>
-      <Integrity>RyRjWetk08D3N9YU4boh2SisrubVETvkbBcbi0fwXww=</Integrity>
+      <Fingerprint>iq8yqo5enn</Fingerprint>
+      <Integrity>uup3s/vPPCF1LEyiZKOw3fix7PempX2/1dIti+oKozM=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\hr\hr-davamiyyet.css'))</OriginalItemSpec>
@@ -498,8 +498,8 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>n00mfj0zfm</Fingerprint>
-      <Integrity>lwQUDCd3iwVTiN9mZUmjSHcOHX/SjvFOMj8JbvubHdY=</Integrity>
+      <Fingerprint>xaimj8p1ws</Fingerprint>
+      <Integrity>1xZdUJ1xZ0HIeZ86o6wvh701Sd0wDn3VQGALuNVAu9U=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\maas-toplu.css'))</OriginalItemSpec>
@@ -840,11 +840,29 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>1ufaa8d5q4</Fingerprint>
-      <Integrity>VxduS155Q5uHcdU8USoaQwF72ZopKXaTIwMrc1bpol4=</Integrity>
+      <Fingerprint>vs0mauspeo</Fingerprint>
+      <Integrity>cdDoSh3KgBzJvFgB8//a6R7NnCbSfZE/6oHGND9uruA=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\User\user-area.css'))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\User\user-davamiyyet.css'))">
+      <SourceType>Package</SourceType>
+      <SourceId>FinNex.UI</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/FinNex.UI</BasePath>
+      <RelativePath>css/User/user-davamiyyet.css</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>zn94b6ese3</Fingerprint>
+      <Integrity>76w4vUwmP2A55KsOW2n7uanc6D2pmQ9kzEDx3wFrnkE=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\User\user-davamiyyet.css'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\User\xatirlatma.css'))">
       <SourceType>Package</SourceType>
@@ -1308,8 +1326,8 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>65ehbbvhb0</Fingerprint>
-      <Integrity>2ohb5LEz1Gh2z7HjncrtSQrySWY3ic+SG57U2+4lVps=</Integrity>
+      <Fingerprint>85rfrdbc0p</Fingerprint>
+      <Integrity>1MkRzwiBA4OxZDdG8NIqUqPxTt5KXdyX+fGNd7x9Iis=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\maas-toplu.js'))</OriginalItemSpec>
@@ -1601,6 +1619,24 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\User\user-area.js'))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\User\user-davamiyyet.js'))">
+      <SourceType>Package</SourceType>
+      <SourceId>FinNex.UI</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/FinNex.UI</BasePath>
+      <RelativePath>js/User/user-davamiyyet.js</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>9mjtg301rp</Fingerprint>
+      <Integrity>kUSMleRk/RpPY0WwYNzbZrOc3mOQqQBWSP8JeRS/k+4=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\User\user-davamiyyet.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\User\user_create_icaze.js'))">
       <SourceType>Package</SourceType>
