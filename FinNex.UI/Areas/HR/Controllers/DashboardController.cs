@@ -1,8 +1,12 @@
 ﻿// Areas/HR/Controllers/DashboardController.cs
 using FinNex.Application.Interfaces;
+using FinNex.Application.Interfaces.Communication;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.UI.Areas.HR.Controllers
 {
@@ -13,15 +17,21 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IIsciService _isciService;
         private readonly IMezuniyyetService _mezuniyyetService;
         private readonly IDavamiyyetService _davamiyyetService;
+        private readonly IBildirisService _bildirisService;
+        private readonly IUnitOfWork _unitOfWork;
 
         public DashboardController(
             IIsciService isciService,
             IMezuniyyetService mezuniyyetService,
-            IDavamiyyetService davamiyyetService)
+            IDavamiyyetService davamiyyetService,
+            IBildirisService bildirisService,
+            IUnitOfWork unitOfWork)
         {
             _isciService = isciService;
             _mezuniyyetService = mezuniyyetService;
             _davamiyyetService = davamiyyetService;
+            _bildirisService = bildirisService;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<IActionResult> Index()
@@ -119,8 +129,82 @@ namespace FinNex.UI.Areas.HR.Controllers
                 })
                 .ToList();
 
+            // ── Müqavilə yenilənmə bildirişi (5 gün qalmış) ────
+            await MuqavileYenilenmeYoxlaAsync();
+
             ViewData["Title"] = "HR Dashboard";
             return View();
+        }
+
+        /// <summary>
+        /// İşə qəbul tarixinin il dönümünə 5 gün qalmış HR-a bildiriş yaradır.
+        /// Hər işçi üçün ildə yalnız 1 dəfə bildiriş yaranır (dublikat qoruması).
+        /// </summary>
+        private async Task MuqavileYenilenmeYoxlaAsync()
+        {
+            try
+            {
+                var bugun = DateTime.Today;
+                var hedeftarix = bugun.AddDays(5); // 5 gün sonra
+
+                // Aktiv işçiləri gətir
+                var isciler = await _unitOfWork.Repository<Isci>()
+                    .Query()
+                    .Where(x => !x.Silinib && x.Status == IsciStatus.Aktiv)
+                    .ToListAsync();
+
+                // HR rollu işçiləri tap (bildirişi onlara göndərəcəyik)
+                var hrIsciler = await _unitOfWork.Repository<IsciStrukturRolu>()
+                    .Query()
+                    .Where(x => x.Aktivdir && x.RolTipi == StrukturRolTipi.HR)
+                    .Select(x => x.IsciId)
+                    .ToListAsync();
+
+                // HR işçi yoxdursa, bildiriş göndərə bilmərik
+                if (!hrIsciler.Any()) return;
+
+                foreach (var isci in isciler)
+                {
+                    // İl dönümü tarixini hesabla (bu il və ya növbəti il)
+                    var ilDonumu = new DateTime(bugun.Year, isci.IsheQebulTarixi.Month, isci.IsheQebulTarixi.Day);
+                    if (ilDonumu < bugun)
+                        ilDonumu = ilDonumu.AddYears(1);
+
+                    // 5 gün ərzindədirsə
+                    var qalangGun = (ilDonumu - bugun).Days;
+                    if (qalangGun < 0 || qalangGun > 5) continue;
+
+                    // Bu il üçün artıq bildiriş yaradılıbmı?
+                    var artiqVar = await _unitOfWork.Repository<Bildiris>()
+                        .MovcuddurmuAsync(x =>
+                            x.Nov == BildirisNovu.MuqavileYenilenme &&
+                            x.Metn.Contains(isci.Ad) &&
+                            x.Metn.Contains(isci.Soyad) &&
+                            x.YaradilmaTarixi.Year == bugun.Year);
+
+                    if (artiqVar) continue;
+
+                    var staj = ilDonumu.Year - isci.IsheQebulTarixi.Year;
+                    var metn = qalangGun == 0
+                        ? $"{isci.Ad} {isci.Soyad} — müqavilə yenilənmə tarixi bu gündür! ({staj} il staj)"
+                        : $"{isci.Ad} {isci.Soyad} — müqavilə yenilənməsinə {qalangGun} gün qalıb ({ilDonumu:dd.MM.yyyy}, {staj} il staj)";
+
+                    // Hər HR işçisinə bildiriş göndər
+                    foreach (var hrIsciId in hrIsciler)
+                    {
+                        await _bildirisService.YaratAsync(
+                            hrIsciId,
+                            BildirisNovu.MuqavileYenilenme,
+                            "Müqavilə yenilənməsi",
+                            metn,
+                            $"/HR/Isci/Detail/{isci.Id}");
+                    }
+                }
+            }
+            catch
+            {
+                // Bildiriş xətası dashboard-ı bloklamamalıdır
+            }
         }
     }
 }
