@@ -93,14 +93,35 @@ namespace FinNex.UI
             builder.Logging.AddConsole();
             builder.Logging.AddDebug();
 
-
+            // ==================================================
+            // 6. Background Services
+            // ==================================================
+            builder.Services.AddHostedService<FinNex.Application.BackgroundJobs.ZkTecoSdkService>();
 
             var app = builder.Build();
 
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                db.Database.Migrate();
+                var pendingMigrations = db.Database.GetPendingMigrations().ToList();
+                if (pendingMigrations.Any())
+                {
+                    try
+                    {
+                        db.Database.Migrate();
+                    }
+                    catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 2714)
+                    {
+                        // Cədvəllər artıq mövcuddur - migration tarixçəsinə əlavə et
+                        var productVersion = typeof(DbContext).Assembly.GetName().Version?.ToString() ?? "9.0.0";
+                        foreach (var migration in pendingMigrations)
+                        {
+                            db.Database.ExecuteSqlRaw(
+                                "IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory] WHERE [MigrationId] = {0}) INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES ({0}, {1})",
+                                migration, productVersion);
+                        }
+                    }
+                }
             }
 
             // ==================================================
