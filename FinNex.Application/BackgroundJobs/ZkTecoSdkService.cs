@@ -4,13 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
 namespace FinNex.Application.BackgroundJobs;
 
 /// <summary>
-/// ZKTeco/Datalab cihazına SDK (TCP port 4370) ilə qoşulub
+/// ZKTeco/Datalab cihazına SDK (UDP port 4370) ilə qoşulub
 /// davamiyyət məlumatlarını çəkən background servis.
 /// </summary>
 public class ZkTecoSdkService : BackgroundService
@@ -18,25 +19,26 @@ public class ZkTecoSdkService : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ZkTecoSdkService> _logger;
 
-    // Cihaz ayarları — gələcəkdə appsettings-dən oxuna bilər
     private const string DeviceIp = "192.168.0.95";
     private const int DevicePort = 4370;
     private static readonly TimeSpan _interval = TimeSpan.FromSeconds(30);
 
-    // Cihaz statusu — ADMSController kimi static paylaşılır
+    // Cihaz statusu
     public static DateTime? SonElaqa { get; private set; }
     public static bool IsOnline { get; private set; }
     public static string? DeviceSN { get; private set; }
 
-    // ZKTeco protocol constants
-    private const int CMD_CONNECT = 1000;
-    private const int CMD_EXIT = 1001;
-    private const int CMD_ATTLOG_RRQ = 13;
-    private const int CMD_CLEAR_ATTLOG = 14;
-    private const int CMD_ACK_OK = 2000;
-    private const int CMD_ACK_DATA = 2002;
-    private const int CMD_PREPARE_DATA = 1500;
-    private const int CMD_DATA = 1501;
+    // ZKTeco UDP protocol constants
+    private const ushort CMD_CONNECT = 1000;
+    private const ushort CMD_EXIT = 1001;
+    private const ushort CMD_ATTLOG_RRQ = 13;
+    private const ushort CMD_CLEAR_ATTLOG = 14;
+    private const ushort CMD_ACK_OK = 2000;
+    private const ushort CMD_ACK_DATA = 2002;
+    private const ushort CMD_ACK_UNAUTH = 2005;
+    private const ushort CMD_PREPARE_DATA = 1500;
+    private const ushort CMD_DATA = 1501;
+    private const ushort CMD_FREE_DATA = 1502;
 
     private ushort _sessionId;
     private ushort _replyNumber;
@@ -51,16 +53,15 @@ public class ZkTecoSdkService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("ZkTecoSdkService başladı. Cihaz: {Ip}:{Port}", DeviceIp, DevicePort);
+        _logger.LogInformation("ZkTecoSdkService başladı. Cihaz: {Ip}:{Port} (UDP)", DeviceIp, DevicePort);
 
-        // İlk başlamada bir az gözlə ki app tam yüklənsin
         await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                await PullAttendanceAsync();
+                await PullAttendanceAsync(stoppingToken);
             }
             catch (Exception ex)
             {
@@ -72,15 +73,16 @@ public class ZkTecoSdkService : BackgroundService
         }
     }
 
-    private async Task PullAttendanceAsync()
+    private async Task PullAttendanceAsync(CancellationToken ct)
     {
-        using var client = new TcpClient();
-        client.ReceiveTimeout = 5000;
-        client.SendTimeout = 5000;
+        var endpoint = new IPEndPoint(IPAddress.Parse(DeviceIp), DevicePort);
+        using var udp = new UdpClient();
+        udp.Client.ReceiveTimeout = 5000;
+        udp.Client.SendTimeout = 5000;
 
         try
         {
-            await client.ConnectAsync(DeviceIp, DevicePort);
+            udp.Connect(endpoint);
         }
         catch (Exception ex)
         {
@@ -89,22 +91,25 @@ public class ZkTecoSdkService : BackgroundService
             return;
         }
 
-        using var stream = client.GetStream();
         _replyNumber = 0;
         _sessionId = 0;
 
         // 1. Connect
-        if (!await SendCommandAsync(stream, CMD_CONNECT, Array.Empty<byte>()))
+        var connectReply = await SendAndReceiveAsync(udp, CMD_CONNECT, Array.Empty<byte>());
+        if (connectReply == null)
         {
-            _logger.LogWarning("Cihaza CMD_CONNECT göndərilə bilmədi.");
+            _logger.LogWarning("Cihaz CMD_CONNECT-ə cavab vermədi.");
             IsOnline = false;
             return;
         }
 
-        var connectReply = await ReceiveAsync(stream);
-        if (connectReply == null || GetCommandId(connectReply) != CMD_ACK_OK)
+        var replyCmd = GetCommandId(connectReply);
+        _logger.LogInformation("CMD_CONNECT cavabı: {Cmd} (gözlənilən: {Expected}), data uzunluğu: {Len}",
+            replyCmd, CMD_ACK_OK, connectReply.Length);
+
+        if (replyCmd != CMD_ACK_OK)
         {
-            _logger.LogWarning("Cihaz CMD_CONNECT-ə cavab vermədi.");
+            _logger.LogWarning("Cihaz CMD_CONNECT rədd etdi. Cavab kodu: {Cmd}", replyCmd);
             IsOnline = false;
             return;
         }
@@ -112,10 +117,10 @@ public class ZkTecoSdkService : BackgroundService
         _sessionId = GetSessionId(connectReply);
         IsOnline = true;
         SonElaqa = DateTime.Now;
-        _logger.LogInformation("Cihaza qoşuldu. SessionId: {SessionId}", _sessionId);
+        _logger.LogInformation("Cihaza qoşuldu! SessionId: {SessionId}", _sessionId);
 
         // 2. Get attendance logs
-        var attendanceLogs = await GetAttendanceLogsAsync(stream);
+        var attendanceLogs = await GetAttendanceLogsAsync(udp);
 
         if (attendanceLogs.Count > 0)
         {
@@ -123,8 +128,7 @@ public class ZkTecoSdkService : BackgroundService
             await SaveAttendanceAsync(attendanceLogs);
 
             // 3. Clear logs from device after saving
-            await SendCommandAsync(stream, CMD_CLEAR_ATTLOG, Array.Empty<byte>());
-            var clearReply = await ReceiveAsync(stream);
+            var clearReply = await SendAndReceiveAsync(udp, CMD_CLEAR_ATTLOG, Array.Empty<byte>());
             if (clearReply != null && GetCommandId(clearReply) == CMD_ACK_OK)
             {
                 _logger.LogInformation("Cihaz logları təmizləndi.");
@@ -132,58 +136,57 @@ public class ZkTecoSdkService : BackgroundService
         }
         else
         {
-            _logger.LogDebug("Yeni davamiyyət qeydi yoxdur.");
+            _logger.LogInformation("Yeni davamiyyət qeydi yoxdur.");
         }
 
         // 4. Disconnect
-        await SendCommandAsync(stream, CMD_EXIT, Array.Empty<byte>());
+        await SendAsync(udp, CMD_EXIT, Array.Empty<byte>());
 
         SonElaqa = DateTime.Now;
     }
 
-    private async Task<List<AttendanceRecord>> GetAttendanceLogsAsync(NetworkStream stream)
+    private async Task<List<AttendanceRecord>> GetAttendanceLogsAsync(UdpClient udp)
     {
         var records = new List<AttendanceRecord>();
 
-        if (!await SendCommandAsync(stream, CMD_ATTLOG_RRQ, Array.Empty<byte>()))
+        var reply = await SendAndReceiveAsync(udp, CMD_ATTLOG_RRQ, Array.Empty<byte>());
+        if (reply == null)
+        {
+            _logger.LogWarning("CMD_ATTLOG_RRQ cavab gəlmədi.");
             return records;
-
-        var reply = await ReceiveAsync(stream);
-        if (reply == null) return records;
+        }
 
         var cmdId = GetCommandId(reply);
+        _logger.LogInformation("ATTLOG cavabı: CMD={Cmd}, Len={Len}", cmdId, reply.Length);
 
         if (cmdId == CMD_PREPARE_DATA)
         {
-            // Böyük data — hissə-hissə gələcək
-            int totalSize = BitConverter.ToInt32(reply, 8 + 1);
+            // Böyük data gələcək
+            int totalSize = 0;
+            if (reply.Length >= 12)
+                totalSize = BitConverter.ToInt32(reply, 8);
+
+            _logger.LogInformation("Böyük data gözlənilir: {Size} bytes", totalSize);
+
             var allData = new List<byte>();
 
             while (allData.Count < totalSize)
             {
-                var dataPacket = await ReceiveAsync(stream);
+                var dataPacket = await ReceiveAsync(udp);
                 if (dataPacket == null) break;
 
-                var packetCmd = GetCommandId(dataPacket);
-                if (packetCmd == CMD_DATA)
-                {
-                    // Data header-dən sonra actual data
-                    if (dataPacket.Length > 8)
-                    {
-                        allData.AddRange(dataPacket.Skip(8));
-                    }
-                }
-                else if (packetCmd == CMD_ACK_OK)
-                {
-                    break;
-                }
+                // Data paketlərinin payload hissəsini əlavə et
+                allData.AddRange(dataPacket);
             }
+
+            // Free data buffer
+            await SendAndReceiveAsync(udp, CMD_FREE_DATA, Array.Empty<byte>());
 
             records = ParseAttendanceLogs(allData.ToArray());
         }
         else if (cmdId == CMD_ACK_DATA)
         {
-            // Kiçik data — tək paketdə gəldi
+            // Kiçik data tək paketdə
             if (reply.Length > 8)
             {
                 records = ParseAttendanceLogs(reply.Skip(8).ToArray());
@@ -196,38 +199,37 @@ public class ZkTecoSdkService : BackgroundService
     private List<AttendanceRecord> ParseAttendanceLogs(byte[] data)
     {
         var records = new List<AttendanceRecord>();
-        const int recordSize = 40; // Standard ZKTeco attendance record size
 
-        for (int i = 0; i + recordSize <= data.Length; i += recordSize)
+        // Əvvəlcə binary format (ZKTeco standart)
+        const int recordSize = 40;
+        if (data.Length >= recordSize)
         {
-            try
+            for (int i = 0; i + recordSize <= data.Length; i += recordSize)
             {
-                int userId = BitConverter.ToUInt16(data, i);
-
-                // Timestamp: offset 24, 4 bytes (seconds since 2000-01-01)
-                uint timestamp = BitConverter.ToUInt32(data, i + 24);
-                var dateTime = new DateTime(2000, 1, 1).AddSeconds(timestamp);
-
-                // Verify date is reasonable
-                if (dateTime.Year < 2020 || dateTime.Year > 2030) continue;
-
-                // Status: offset 28
-                int status = data[i + 28];
-
-                records.Add(new AttendanceRecord
+                try
                 {
-                    UserId = userId,
-                    DateTime = dateTime,
-                    Status = status
-                });
-            }
-            catch
-            {
-                continue;
+                    int userId = BitConverter.ToUInt16(data, i);
+
+                    // ZKTeco encoded timestamp: offset 24, 4 bytes
+                    uint encoded = BitConverter.ToUInt32(data, i + 24);
+                    var dateTime = DecodeZkTime(encoded);
+
+                    if (dateTime.Year < 2020 || dateTime.Year > 2030) continue;
+
+                    int status = data[i + 28];
+
+                    records.Add(new AttendanceRecord
+                    {
+                        UserId = userId,
+                        DateTime = dateTime,
+                        Status = status
+                    });
+                }
+                catch { continue; }
             }
         }
 
-        // Fallback: try parsing as text-based format
+        // Fallback: text format
         if (records.Count == 0 && data.Length > 10)
         {
             try
@@ -257,7 +259,29 @@ public class ZkTecoSdkService : BackgroundService
             catch { }
         }
 
+        _logger.LogInformation("Parse nəticəsi: {Count} qeyd, data uzunluğu: {Len}", records.Count, data.Length);
         return records;
+    }
+
+    /// <summary>
+    /// ZKTeco encoded time: ((year-2000)*12*31+month*31+day)*24*60*60 + hour*60*60 + minute*60 + second
+    /// </summary>
+    private static DateTime DecodeZkTime(uint encoded)
+    {
+        int second = (int)(encoded % 60);
+        encoded /= 60;
+        int minute = (int)(encoded % 60);
+        encoded /= 60;
+        int hour = (int)(encoded % 24);
+        encoded /= 24;
+        int day = (int)(encoded % 31) + 1;
+        encoded /= 31;
+        int month = (int)(encoded % 12) + 1;
+        encoded /= 12;
+        int year = (int)encoded + 2000;
+
+        try { return new DateTime(year, month, day, hour, minute, second); }
+        catch { return DateTime.MinValue; }
     }
 
     private async Task SaveAttendanceAsync(List<AttendanceRecord> records)
@@ -330,42 +354,47 @@ public class ZkTecoSdkService : BackgroundService
             : DavamiyyetStatus.Isde;
     }
 
-    #region ZKTeco TCP Protocol Helpers
+    #region ZKTeco UDP Protocol Helpers
 
-    private async Task<bool> SendCommandAsync(NetworkStream stream, int command, byte[] data)
+    private async Task<byte[]?> SendAndReceiveAsync(UdpClient udp, ushort command, byte[] data)
+    {
+        await SendAsync(udp, command, data);
+        return await ReceiveAsync(udp);
+    }
+
+    private async Task SendAsync(UdpClient udp, ushort command, byte[] data)
     {
         try
         {
-            var packet = BuildPacket(command, data);
-            await stream.WriteAsync(packet);
+            var packet = BuildUdpPacket(command, data);
+            await udp.SendAsync(packet, packet.Length);
             _replyNumber++;
-            return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Paket göndərmə xətası: CMD={Cmd}", command);
-            return false;
+            _logger.LogError(ex, "UDP paket göndərmə xətası: CMD={Cmd}", command);
         }
     }
 
-    private byte[] BuildPacket(int command, byte[] data)
+    private byte[] BuildUdpPacket(ushort command, byte[] data)
     {
+        // UDP payload: [CMD 2B][Checksum 2B][SessionID 2B][ReplyNo 2B][Data ...]
         int payloadSize = 8 + data.Length;
         var payload = new byte[payloadSize];
 
-        // Command ID (2 bytes, little-endian)
+        // Command ID
         payload[0] = (byte)(command & 0xFF);
         payload[1] = (byte)((command >> 8) & 0xFF);
 
-        // Checksum placeholder (2 bytes) — will be filled after
+        // Checksum placeholder
         payload[2] = 0;
         payload[3] = 0;
 
-        // Session ID (2 bytes)
+        // Session ID
         payload[4] = (byte)(_sessionId & 0xFF);
         payload[5] = (byte)((_sessionId >> 8) & 0xFF);
 
-        // Reply Number (2 bytes)
+        // Reply Number
         payload[6] = (byte)(_replyNumber & 0xFF);
         payload[7] = (byte)((_replyNumber >> 8) & 0xFF);
 
@@ -378,28 +407,11 @@ public class ZkTecoSdkService : BackgroundService
         payload[2] = (byte)(checksum & 0xFF);
         payload[3] = (byte)((checksum >> 8) & 0xFF);
 
-        // Build full packet with header
-        var packet = new byte[8 + payloadSize];
-
-        // Start marker: 0x5050827D
-        packet[0] = 0x50;
-        packet[1] = 0x50;
-        packet[2] = 0x82;
-        packet[3] = 0x7D;
-
-        // Payload size (4 bytes, little-endian)
-        var sizeBytes = BitConverter.GetBytes(payloadSize);
-        Array.Copy(sizeBytes, 0, packet, 4, 4);
-
-        // Payload
-        Array.Copy(payload, 0, packet, 8, payloadSize);
-
-        return packet;
+        return payload;
     }
 
     private static ushort CalculateChecksum(byte[] payload)
     {
-        // Reset checksum bytes to 0 for calculation
         var temp = (byte[])payload.Clone();
         temp[2] = 0;
         temp[3] = 0;
@@ -419,56 +431,35 @@ public class ZkTecoSdkService : BackgroundService
         return (ushort)(~sum & 0xFFFF);
     }
 
-    private async Task<byte[]?> ReceiveAsync(NetworkStream stream)
+    private async Task<byte[]?> ReceiveAsync(UdpClient udp)
     {
         try
         {
-            var header = new byte[8];
-            int headerRead = 0;
-
-            while (headerRead < 8)
-            {
-                int read = await stream.ReadAsync(header.AsMemory(headerRead, 8 - headerRead));
-                if (read == 0) return null;
-                headerRead += read;
-            }
-
-            // Verify start marker
-            if (header[0] != 0x50 || header[1] != 0x50 || header[2] != 0x82 || header[3] != 0x7D)
-            {
-                _logger.LogWarning("Yanlış paket başlığı");
-                return null;
-            }
-
-            int payloadSize = BitConverter.ToInt32(header, 4);
-            if (payloadSize <= 0 || payloadSize > 1024 * 1024) return null;
-
-            var payload = new byte[payloadSize];
-            int totalRead = 0;
-
-            while (totalRead < payloadSize)
-            {
-                int read = await stream.ReadAsync(payload.AsMemory(totalRead, payloadSize - totalRead));
-                if (read == 0) return null;
-                totalRead += read;
-            }
-
-            return payload;
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            var result = await udp.ReceiveAsync(cts.Token);
+            return result.Buffer;
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("UDP cavab timeout (5 san).");
+            return null;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("Paket alma xətası: {Msg}", ex.Message);
+            _logger.LogWarning("UDP alma xətası: {Msg}", ex.Message);
             return null;
         }
     }
 
     private static ushort GetCommandId(byte[] payload)
     {
+        if (payload.Length < 2) return 0;
         return BitConverter.ToUInt16(payload, 0);
     }
 
     private static ushort GetSessionId(byte[] payload)
     {
+        if (payload.Length < 6) return 0;
         return BitConverter.ToUInt16(payload, 4);
     }
 
