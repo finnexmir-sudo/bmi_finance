@@ -29,11 +29,11 @@ namespace FinNex.Application.DTOs.HR.Dashboard
         public int IllikQaligGun => IllikToplamGun - IllikIstifadeGun;
 
         public int XestelikIstifadeGun { get; set; } // Nov==Xestelik olan təsdiqlənmiş günlər
-        public int XestelikToplamGun { get; set; } = 10; // Qanuni haqq (konfiqurasiyadan gələ bilər)
+        public int XestelikToplamGun { get; set; } = 14;
         public int XestelikQaligGun => XestelikToplamGun - XestelikIstifadeGun;
 
-        public int EzamiyyetIstifadeGun { get; set; } // Nov==Ezamiyyet olan günlər
-        public int EzamiyyetToplamGun { get; set; } = 30;
+        public int EzamiyyetIstifadeGun { get; set; }
+        public int EzamiyyetToplamGun { get; set; } = 365; // limitsiz
         public int EzamiyyetQaligGun => EzamiyyetToplamGun - EzamiyyetIstifadeGun;
 
         // ── Davamiyyət təqvimi (cari ay günlər) ──────────────
