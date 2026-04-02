@@ -100,7 +100,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var repo = _unitOfWork.Repository<BayramGunu>();
-            var result = await repo.YumshaqSilAsync(id);
+            var result = await repo.YumshakSilAsync(id);
             await _unitOfWork.YaddaSaxlaAsync();
 
             if (!result)
