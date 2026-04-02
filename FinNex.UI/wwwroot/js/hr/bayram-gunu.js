@@ -203,10 +203,10 @@ function refreshTable() {
                     : '<span class="bg-badge bg-badge--no"><i class="bi bi-x-circle"></i> Xeyr</span>'}
                     </td>
                     <td>
-                        <button class="bg-btn-icon bg-btn-icon--edit" onclick="bgModal.openEdit(${r.id})" title="Duzelis et">
+                        <button class="bg-btn-icon bg-btn-icon--edit" data-edit-id="${r.id}" title="Duzelis et">
                             <i class="bi bi-pencil-square"></i>
                         </button>
-                        <button class="bg-btn-icon bg-btn-icon--delete" onclick="bgDelete(${r.id})" title="Sil">
+                        <button class="bg-btn-icon bg-btn-icon--delete" data-delete-id="${r.id}" title="Sil">
                             <i class="bi bi-trash3"></i>
                         </button>
                     </td>
@@ -241,4 +241,23 @@ function bgToast(message, success) {
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
     bgModal.init();
+
+    // Event delegation for buttons (CSP-safe, no inline onclick)
+    document.getElementById('bgOpenCreateBtn').addEventListener('click', () => bgModal.open());
+    document.getElementById('bgCloseModalBtn').addEventListener('click', () => bgModal.close());
+    document.getElementById('bgCancelBtn').addEventListener('click', () => bgModal.close());
+
+    // Table button delegation
+    document.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('[data-edit-id]');
+        if (editBtn) {
+            bgModal.openEdit(parseInt(editBtn.getAttribute('data-edit-id')));
+            return;
+        }
+        const deleteBtn = e.target.closest('[data-delete-id]');
+        if (deleteBtn) {
+            bgDelete(parseInt(deleteBtn.getAttribute('data-delete-id')));
+            return;
+        }
+    });
 });
