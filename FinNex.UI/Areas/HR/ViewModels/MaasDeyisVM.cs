@@ -16,5 +16,9 @@ namespace FinNex.UI.Areas.HR.ViewModels
         [Required(ErrorMessage = "Əmr nömrəsi mütləqdir")]
         [Display(Name = "Əmr Nömrəsi")]
         public string EmrNomresi { get; set; } = null!;
+
+        [Required(ErrorMessage = "Səbəb mütləqdir")]
+        [Display(Name = "Səbəb")]
+        public string Sebeb { get; set; } = null!;
     }
 }

@@ -3,6 +3,7 @@ using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Structur;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Interfaces;
 using FinNex.UI.Areas.HR.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -20,19 +21,22 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IVezifeService _vezifeService;
         private readonly IIsciTeyinatService _teyinatService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IUnitOfWork _unitOfWork;
 
         public IsciController(
             IIsciService isciService,
             IDepartmentService departmentService,
             IVezifeService vezifeService,
             IIsciTeyinatService teyinatService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IUnitOfWork unitOfWork)
         {
             _isciService = isciService;
             _departmentService = departmentService;
             _vezifeService = vezifeService;
             _teyinatService = teyinatService;
             _userManager = userManager;
+            _unitOfWork = unitOfWork;
         }
 
         // ─────────── INDEX ───────────
@@ -129,7 +133,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Aktivdir = true,
             };
 
-            var resultUser = await _userManager.CreateAsync(user, "user123");
+            // TODO: İstifadəçi ilk girişdə bu şifrəni dəyişdirməlidir
+            var resultUser = await _userManager.CreateAsync(user, "FinNex2026!");
 
             if (!resultUser.Succeeded)
             {
@@ -342,13 +347,21 @@ namespace FinNex.UI.Areas.HR.Controllers
         [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
         public async Task<IActionResult> MaasDeyis(MaasDeyisVM vm)
         {
+            if (vm.YeniMaas <= 0)
+                ModelState.AddModelError(nameof(vm.YeniMaas), "Yeni maaş 0-dan böyük olmalıdır.");
+            if (string.IsNullOrWhiteSpace(vm.Sebeb))
+                ModelState.AddModelError(nameof(vm.Sebeb), "Səbəb daxil edilməlidir.");
+            if (string.IsNullOrWhiteSpace(vm.EmrNomresi))
+                ModelState.AddModelError(nameof(vm.EmrNomresi), "Əmr nömrəsi daxil edilməlidir.");
+
             if (!ModelState.IsValid)
                 return View(vm);
 
             var result = await _isciService.UpdateSalaryWithHistoryAsync(
                 vm.IsciId,
                 vm.YeniMaas,
-                vm.EmrNomresi);
+                vm.EmrNomresi,
+                vm.Sebeb);
 
             if (!result.Success)
             {
@@ -410,6 +423,31 @@ namespace FinNex.UI.Areas.HR.Controllers
                         .ToList();
                 }
             }
+        }
+
+        // ─────────── MALIYE (IBAN/Bank) ───────────
+        [HttpGet]
+        public async Task<IActionResult> GetMaliye(int isciId)
+        {
+            var maliye = await _unitOfWork.Repository<IsciMaliye>()
+                .GetirAsync(x => x.IsciId == isciId, izlemeden: true);
+            if (maliye == null) return NotFound();
+            return Json(new { maliye.Id, maliye.IsciId, maliye.BankHesabNo, maliye.SosialSigortaNo, maliye.CariMaas });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateMaliye(int isciId, string? bankHesabNo, string? sosialSigortaNo)
+        {
+            var maliye = await _unitOfWork.Repository<IsciMaliye>()
+                .GetirAsync(x => x.IsciId == isciId);
+            if (maliye == null) return Json(new { success = false, message = "Maliyyə məlumatı tapılmadı." });
+
+            maliye.BankHesabNo = bankHesabNo;
+            maliye.SosialSigortaNo = sosialSigortaNo;
+            await _unitOfWork.Repository<IsciMaliye>().YenileAsync(maliye);
+            await _unitOfWork.YaddaSaxlaAsync();
+            return Json(new { success = true, message = "Bank məlumatları yeniləndi." });
         }
     }
 }
