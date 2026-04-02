@@ -1,24 +1,21 @@
 @model IEnumerable<FinNex.Domain.Entities.HR.MaasParametri>
 @using FinNex.Domain.Entities.HR
 @{
-    ViewData["Title"] = "Vergi Parametrləri";
+    ViewData["Title"] = "Əmək haqqı parametrləri";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 
     var all = Model.ToList();
 
-    // İşçi Tutulmaları
     var tutulmalar = all.Where(x =>
         x.Nov == MaasParametrNovu.GelirVergisiFaizi ||
         x.Nov == MaasParametrNovu.DsmfFaizi ||
         x.Nov == MaasParametrNovu.IssizlikSigortasiFaizi ||
         x.Nov == MaasParametrNovu.IcbariTibbiSigortaFaizi).ToList();
 
-    // Güzəştlər
     var guzeshtler = all.Where(x =>
         x.Nov == MaasParametrNovu.VergiGuzestiMeblegi ||
         x.Nov == MaasParametrNovu.MinimumEmekHaqqi).ToList();
 
-    // İşəgötürən Payı
     var isegoturenler = all.Where(x =>
         x.Nov == MaasParametrNovu.DsmfIsegoturenFaizi ||
         x.Nov == MaasParametrNovu.IssizlikIsegoturenFaizi).ToList();
@@ -50,77 +47,83 @@
 <div class="mp-page">
     @Html.AntiForgeryToken()
 
-    <!-- Header -->
     <div class="mp-header">
-        <h1><i class="fas fa-sliders-h"></i> Vergi Parametrləri</h1>
-        <button class="mp-btn-primary" onclick="MaasParametri.openCreate()">
-            <i class="fas fa-plus"></i> Yeni parametr
+        <div>
+            <h1 class="mp-title">Əmək haqqı parametrləri</h1>
+            <p class="mp-subtitle">Vergi, sığorta və güzəşt dərəcələrinin idarəsi</p>
+        </div>
+        <button class="mp-btn-primary" id="mpOpenCreate">
+            <i class="bi bi-plus-lg"></i> Yeni parametr
         </button>
     </div>
 
-    <!-- İşçi Tutulmaları -->
-    <div class="mp-group mp-group--tutulma">
-        <div class="mp-group-header">
-            <i class="fas fa-hand-holding-usd"></i>
-            <h2>İşçi Tutulmaları</h2>
-        </div>
-        <div class="mp-cards">
-            @if (!tutulmalar.Any())
-            {
-                <div class="mp-empty"><i class="fas fa-inbox"></i> Bu qrupda parametr yoxdur.</div>
-            }
-            @foreach (var p in tutulmalar)
-            {
-                @await Html.PartialAsync("_ParametrCard", p, new ViewDataDictionary(ViewData) { { "NovAd", NovAd(p.Nov) }, { "DeyerStr", DeyerFormat(p) }, { "Suffix", Suffix(p) } })
-            }
-        </div>
-    </div>
+    @{
+        void RenderGroup(string title, string icon, string colorClass, List<MaasParametri> items)
+        {
+            <div class="mp-group mp-group--@colorClass">
+                <div class="mp-group-header">
+                    <i class="bi @icon"></i>
+                    <h2>@title</h2>
+                    <span class="mp-group-count">@items.Count parametr</span>
+                </div>
+                <div class="mp-cards">
+                    @if (!items.Any())
+                    {
+                        <div class="mp-empty"><i class="bi bi-inbox"></i> Bu qrupda parametr yoxdur.</div>
+                    }
+                    @foreach (var p in items)
+                    {
+                        <div class="mp-card" data-id="@p.Id">
+                            <div class="mp-card-top">
+                                <div class="mp-card-name">@NovAd(p.Nov)</div>
+                                <div class="mp-card-actions">
+                                    <button class="mp-card-btn mp-card-btn--edit" data-edit-id="@p.Id" title="Redaktə et">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <button class="mp-card-btn mp-card-btn--delete" data-delete-id="@p.Id" title="Sil">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mp-card-value">
+                                <span class="mp-card-num">@DeyerFormat(p)</span>
+                                <span class="mp-card-suffix">@Suffix(p)</span>
+                            </div>
+                            <div class="mp-card-meta">
+                                <span><i class="bi bi-calendar3"></i> @p.BaslamaTarixi.ToString("dd.MM.yyyy")</span>
+                                @if (p.Aktivdir)
+                                {
+                                    <span class="mp-badge mp-badge--aktiv">Aktiv</span>
+                                }
+                                else
+                                {
+                                    <span class="mp-badge mp-badge--deaktiv">Deaktiv</span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(p.Aciqlama))
+                            {
+                                <div class="mp-card-desc">@p.Aciqlama</div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
 
-    <!-- Güzəştlər -->
-    <div class="mp-group mp-group--guzesht">
-        <div class="mp-group-header">
-            <i class="fas fa-gift"></i>
-            <h2>Güzəştlər</h2>
-        </div>
-        <div class="mp-cards">
-            @if (!guzeshtler.Any())
-            {
-                <div class="mp-empty"><i class="fas fa-inbox"></i> Bu qrupda parametr yoxdur.</div>
-            }
-            @foreach (var p in guzeshtler)
-            {
-                @await Html.PartialAsync("_ParametrCard", p, new ViewDataDictionary(ViewData) { { "NovAd", NovAd(p.Nov) }, { "DeyerStr", DeyerFormat(p) }, { "Suffix", Suffix(p) } })
-            }
-        </div>
-    </div>
-
-    <!-- İşəgötürən Payı -->
-    <div class="mp-group mp-group--isegoturen">
-        <div class="mp-group-header">
-            <i class="fas fa-building"></i>
-            <h2>İşəgötürən Payı</h2>
-        </div>
-        <div class="mp-cards">
-            @if (!isegoturenler.Any())
-            {
-                <div class="mp-empty"><i class="fas fa-inbox"></i> Bu qrupda parametr yoxdur.</div>
-            }
-            @foreach (var p in isegoturenler)
-            {
-                @await Html.PartialAsync("_ParametrCard", p, new ViewDataDictionary(ViewData) { { "NovAd", NovAd(p.Nov) }, { "DeyerStr", DeyerFormat(p) }, { "Suffix", Suffix(p) } })
-            }
-        </div>
-    </div>
+        RenderGroup("İşçi Tutulmaları", "bi-person-dash", "blue", tutulmalar);
+        RenderGroup("Güzəştlər", "bi-gift", "gold", guzeshtler);
+        RenderGroup("İşəgötürən Payı", "bi-building", "purple", isegoturenler);
+    }
 
     <!-- Modal -->
     <div id="mpModalOverlay" class="mp-modal-overlay">
         <div class="mp-modal">
             <div class="mp-modal-header">
                 <h3 id="mpModalTitle">Yeni Parametr</h3>
-                <button class="mp-modal-close" onclick="MaasParametri.closeModal()">&times;</button>
+                <button class="mp-modal-close" id="mpCloseBtn">&times;</button>
             </div>
             <div class="mp-modal-body">
-                <form id="mpForm" onsubmit="return false;">
+                <form id="mpForm">
                     <input type="hidden" id="mpId" />
 
                     <div class="mp-form-group">
@@ -178,13 +181,15 @@
                 </form>
             </div>
             <div class="mp-modal-footer">
-                <button class="mp-btn-secondary" onclick="MaasParametri.closeModal()">Ləğv et</button>
-                <button id="mpSaveBtn" class="mp-btn-save" onclick="MaasParametri.save()">
-                    <i class="fas fa-check"></i> Yadda saxla
+                <button class="mp-btn-secondary" id="mpCancelBtn">Ləğv et</button>
+                <button id="mpSaveBtn" class="mp-btn-save">
+                    <i class="bi bi-check-lg"></i> Yadda saxla
                 </button>
             </div>
         </div>
     </div>
+
+    <div class="mp-toast" id="mpToast"><span id="mpToastMsg"></span></div>
 </div>
 
 @section Scripts {

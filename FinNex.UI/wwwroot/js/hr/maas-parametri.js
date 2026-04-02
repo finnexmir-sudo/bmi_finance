@@ -24,7 +24,7 @@ const MaasParametri = (() => {
         document.getElementById('mpAktivdirWrap').style.display = 'none';
         title().textContent = 'Yeni Parametr';
         updateSuffix();
-        overlay().classList.add('mp-show');
+        overlay().classList.add('mp-active');
     }
 
     function openEdit(id) {
@@ -44,13 +44,13 @@ const MaasParametri = (() => {
                 document.getElementById('mpAktivdirWrap').style.display = 'flex';
                 title().textContent = 'Parametri Redaktə Et';
                 updateSuffix();
-                overlay().classList.add('mp-show');
+                overlay().classList.add('mp-active');
             })
             .catch(() => toast('Məlumat yüklənərkən xəta baş verdi.', 'error'));
     }
 
     function closeModal() {
-        overlay().classList.remove('mp-show');
+        overlay().classList.remove('mp-active');
     }
 
     function save() {
@@ -180,7 +180,22 @@ const MaasParametri = (() => {
         document.getElementById('mpTip').addEventListener('change', updateSuffix);
     }
 
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', () => {
+        init();
+
+        // Event delegation (CSP-safe)
+        document.getElementById('mpOpenCreate').addEventListener('click', openCreate);
+        document.getElementById('mpCloseBtn').addEventListener('click', closeModal);
+        document.getElementById('mpCancelBtn').addEventListener('click', closeModal);
+        document.getElementById('mpSaveBtn').addEventListener('click', save);
+
+        document.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('[data-edit-id]');
+            if (editBtn) { openEdit(parseInt(editBtn.getAttribute('data-edit-id'))); return; }
+            const deleteBtn = e.target.closest('[data-delete-id]');
+            if (deleteBtn) { remove(parseInt(deleteBtn.getAttribute('data-delete-id'))); return; }
+        });
+    });
 
     return { openCreate, openEdit, closeModal, save, remove };
 })();
