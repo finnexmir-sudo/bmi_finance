@@ -4,10 +4,12 @@ wwwroot\css\bank-form.css
 wwwroot\css\bank-index.css
 wwwroot\css\change-password.css
 wwwroot\css\hr\adms-test.css
+wwwroot\css\hr\bayram-gunu.css
 wwwroot\css\hr\davamiyyet-list.css
 wwwroot\css\hr\departament-list.css
 wwwroot\css\hr\hr-dashboard.css
 wwwroot\css\hr\hr-davamiyyet.css
+wwwroot\css\hr\hr-hesabat.css
 wwwroot\css\hr\hr-premium.css
 wwwroot\css\hr\hr-pro - Copy.css
 wwwroot\css\hr\isci.css
@@ -16,7 +18,9 @@ wwwroot\css\hr\isci-detail.css
 wwwroot\css\hr\isci-edit.css
 wwwroot\css\hr\isci-teyinat.css
 wwwroot\css\hr\maas-list.css
+wwwroot\css\hr\maas-parametri.css
 wwwroot\css\hr\mezuniyyet.css
+wwwroot\css\hr\mezuniyyet-balans.css
 wwwroot\css\hr\premium-form.css
 wwwroot\css\hr\struktur.css
 wwwroot\css\hr\vezife-create.css
@@ -46,6 +50,7 @@ wwwroot\css\User\tapshiriq.css
 wwwroot\css\User\tesdiq.css
 wwwroot\css\User\user-area.css
 wwwroot\css\User\user-davamiyyet.css
+wwwroot\css\User\user-profile.css
 wwwroot\css\User\xatirlatma.css
 wwwroot\css\User\xatirlatma-yarat.css
 wwwroot\favicon.ico
@@ -54,15 +59,19 @@ wwwroot\images\Logobank.jpg
 wwwroot\js\admin-sidebar.js
 wwwroot\js\change-password.js
 wwwroot\js\hr\adms-test.js
+wwwroot\js\hr\bayram-gunu.js
 wwwroot\js\hr\davamiyyet-list.js
 wwwroot\js\hr\departament-index.js
 wwwroot\js\hr\departament-list.js
 wwwroot\js\hr\hr-davamiyyet.js
+wwwroot\js\hr\hr-hesabat.js
 wwwroot\js\hr\isci-detail.js
 wwwroot\js\hr\isci-teyinat.js
 wwwroot\js\hr\maas-deyis.js
 wwwroot\js\hr\maas-list.js
+wwwroot\js\hr\maas-parametri.js
 wwwroot\js\hr\mezuniyyet.js
+wwwroot\js\hr\mezuniyyet-balans.js
 wwwroot\js\hr\sidebar.js
 wwwroot\js\hr\vezife-create.js
 wwwroot\js\hr\vezife-index.js
@@ -90,6 +99,7 @@ wwwroot\js\User\user_create_icaze.js
 wwwroot\js\User\user_create_mezuniyyet.js
 wwwroot\js\User\user-area.js
 wwwroot\js\User\user-davamiyyet.js
+wwwroot\js\User\user-profile.js
 wwwroot\js\User\xatirlatma.js
 wwwroot\lib\bootstrap\dist\css\bootstrap.css
 wwwroot\lib\bootstrap\dist\css\bootstrap.css.map

@@ -69,6 +69,10 @@
       "PackagePath": "staticwebassets\\css\\User\\user-davamiyyet.css"
     },
     {
+      "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\User\\user-profile.css",
+      "PackagePath": "staticwebassets\\css\\User\\user-profile.css"
+    },
+    {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\User\\xatirlatma-yarat.css",
       "PackagePath": "staticwebassets\\css\\User\\xatirlatma-yarat.css"
     },
@@ -101,6 +105,10 @@
       "PackagePath": "staticwebassets\\css\\hr\\adms-test.css"
     },
     {
+      "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\hr\\bayram-gunu.css",
+      "PackagePath": "staticwebassets\\css\\hr\\bayram-gunu.css"
+    },
+    {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\hr\\davamiyyet-list.css",
       "PackagePath": "staticwebassets\\css\\hr\\davamiyyet-list.css"
     },
@@ -115,6 +123,10 @@
     {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\hr\\hr-davamiyyet.css",
       "PackagePath": "staticwebassets\\css\\hr\\hr-davamiyyet.css"
+    },
+    {
+      "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\hr\\hr-hesabat.css",
+      "PackagePath": "staticwebassets\\css\\hr\\hr-hesabat.css"
     },
     {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\hr\\hr-premium.css",
@@ -147,6 +159,14 @@
     {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\hr\\maas-list.css",
       "PackagePath": "staticwebassets\\css\\hr\\maas-list.css"
+    },
+    {
+      "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\hr\\maas-parametri.css",
+      "PackagePath": "staticwebassets\\css\\hr\\maas-parametri.css"
+    },
+    {
+      "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\hr\\mezuniyyet-balans.css",
+      "PackagePath": "staticwebassets\\css\\hr\\mezuniyyet-balans.css"
     },
     {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\css\\hr\\mezuniyyet.css",
@@ -261,6 +281,10 @@
       "PackagePath": "staticwebassets\\js\\User\\user-davamiyyet.js"
     },
     {
+      "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\User\\user-profile.js",
+      "PackagePath": "staticwebassets\\js\\User\\user-profile.js"
+    },
+    {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\User\\user_create_icaze.js",
       "PackagePath": "staticwebassets\\js\\User\\user_create_icaze.js"
     },
@@ -285,6 +309,10 @@
       "PackagePath": "staticwebassets\\js\\hr\\adms-test.js"
     },
     {
+      "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\hr\\bayram-gunu.js",
+      "PackagePath": "staticwebassets\\js\\hr\\bayram-gunu.js"
+    },
+    {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\hr\\davamiyyet-list.js",
       "PackagePath": "staticwebassets\\js\\hr\\davamiyyet-list.js"
     },
@@ -301,6 +329,10 @@
       "PackagePath": "staticwebassets\\js\\hr\\hr-davamiyyet.js"
     },
     {
+      "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\hr\\hr-hesabat.js",
+      "PackagePath": "staticwebassets\\js\\hr\\hr-hesabat.js"
+    },
+    {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\hr\\isci-detail.js",
       "PackagePath": "staticwebassets\\js\\hr\\isci-detail.js"
     },
@@ -315,6 +347,14 @@
     {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\hr\\maas-list.js",
       "PackagePath": "staticwebassets\\js\\hr\\maas-list.js"
+    },
+    {
+      "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\hr\\maas-parametri.js",
+      "PackagePath": "staticwebassets\\js\\hr\\maas-parametri.js"
+    },
+    {
+      "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\hr\\mezuniyyet-balans.js",
+      "PackagePath": "staticwebassets\\js\\hr\\mezuniyyet-balans.js"
     },
     {
       "Id": "C:\\bmi_finans\\FinNex.UI\\wwwroot\\js\\hr\\mezuniyyet.js",

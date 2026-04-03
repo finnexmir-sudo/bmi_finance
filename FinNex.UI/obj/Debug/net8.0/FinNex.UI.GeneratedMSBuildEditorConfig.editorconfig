@@ -92,6 +92,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcQURNU1Rlc3RcVGVzdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/bmi_finans/FinNex.UI/Areas/HR/Views/BayramGunu/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcQmF5cmFtR3VudVxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/bmi_finans/FinNex.UI/Areas/HR/Views/Dashboard/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcRGFzaGJvYXJkXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
@@ -106,6 +110,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/bmi_finans/FinNex.UI/Areas/HR/Views/Departament/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcRGVwYXJ0YW1lbnRcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/bmi_finans/FinNex.UI/Areas/HR/Views/Hesabat/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcSGVzYWJhdFxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/bmi_finans/FinNex.UI/Areas/HR/Views/HR/Index.cshtml]
@@ -136,6 +144,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcSXNjaVxUZXlpbmF0RGV5aXMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/bmi_finans/FinNex.UI/Areas/HR/Views/MaasParametri/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcTWFhc1BhcmFtZXRyaVxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/bmi_finans/FinNex.UI/Areas/HR/Views/Maas/Detal.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcTWFhc1xEZXRhbC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
@@ -154,6 +166,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/bmi_finans/FinNex.UI/Areas/HR/Views/Maas/TopluHesabla.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcTWFhc1xUb3BsdUhlc2FibGEuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/bmi_finans/FinNex.UI/Areas/HR/Views/MezuniyyetBalans/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcSFJcVmlld3NcTWV6dW5peXlldEJhbGFuc1xJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/bmi_finans/FinNex.UI/Areas/HR/Views/Mezuniyyet/Create.cshtml]
@@ -370,6 +386,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/bmi_finans/FinNex.UI/Areas/User/Views/Muraciet/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xNdXJhY2lldFxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/bmi_finans/FinNex.UI/Areas/User/Views/Profile/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcVXNlclxWaWV3c1xQcm9maWxlXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/bmi_finans/FinNex.UI/Areas/User/Views/Shared/_UserLayout.cshtml]
