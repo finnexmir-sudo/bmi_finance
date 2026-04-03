@@ -1,4 +1,4 @@
-﻿using FinNex.DataAccess.Contexts;
+using FinNex.DataAccess.Contexts;
 using FinNex.Domain.Entities.HR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -6,13 +6,11 @@ using Microsoft.EntityFrameworkCore;
 namespace FinNex.UI.Areas.HR.Controllers;
 
 [Route("iclock")]
-[ApiController]
-public class ADMSController : ControllerBase
+public class ADMSController : Controller
 {
     private readonly AppDbContext _db;
     private readonly ILogger<ADMSController> _logger;
 
-    // Cihazın son əlaqə vaxtı — static ki bütün requestlər paylaşsın
     public static DateTime? SonElaqa { get; private set; }
     public static string? SonSN { get; private set; }
 
@@ -22,22 +20,28 @@ public class ADMSController : ControllerBase
         _logger = logger;
     }
 
+    // Bütün /iclock/* sorğularını loqlayır — cihazın nə göndərdiyini görmək üçün
     [HttpGet("cdata")]
-    public IActionResult Handshake([FromQuery] string SN)
+    public IActionResult Handshake(string? SN)
     {
-        SonElaqa = DateTime.Now;
-        SonSN = SN;
-        _logger.LogInformation("ADMS Handshake: Cihaz {SN} qoşuldu.", SN);
+        // Bütün query parametrlərini logla
+        var allParams = string.Join("&", Request.Query.Select(q => $"{q.Key}={q.Value}"));
+        _logger.LogWarning("=== ADMS GET /iclock/cdata === IP: {IP}, Query: {Query}, SN: {SN}",
+            HttpContext.Connection.RemoteIpAddress, allParams, SN ?? "NULL");
 
-        var response = $"GET OPTION FROM: {SN}\n" +
-                       "ATTLOGStamp=0\n" +
-                       "OPERLOGStamp=0\n" +
-                       "ATTPHOTOStamp=0\n" +
+        SonElaqa = DateTime.Now;
+        SonSN = SN ?? "unknown";
+
+        var sn = SN ?? "unknown";
+        var response = $"GET OPTION FROM: {sn}\n" +
+                       "ATTLOGStamp=None\n" +
+                       "OPERLOGStamp=None\n" +
+                       "ATTPHOTOStamp=None\n" +
                        "ErrorDelay=30\n" +
                        "Delay=10\n" +
                        "TransTimes=00:00;14:05\n" +
                        "TransInterval=1\n" +
-                       "TransFlag=1111000000\n" +
+                       "TransFlag=TransData AttLog\tOpLog\tEnrollUser\tChgUser\tEnrollFP\tChgFP\tFACE\tUserPic\n" +
                        "TimeZone=4\n" +
                        "Realtime=1\n" +
                        "Encrypt=None\n";
@@ -46,17 +50,17 @@ public class ADMSController : ControllerBase
     }
 
     [HttpPost("cdata")]
-    public async Task<IActionResult> ReceiveAttendance(
-        [FromQuery] string SN,
-        [FromQuery] string? table)
+    public async Task<IActionResult> ReceiveAttendance(string? SN, string? table)
     {
-        SonElaqa = DateTime.Now;
-        SonSN = SN;
-
         using var reader = new StreamReader(Request.Body);
         string body = await reader.ReadToEndAsync();
 
-        _logger.LogInformation("ADMS Data [{Table}] from {SN}:\n{Body}", table, SN, body);
+        var allParams = string.Join("&", Request.Query.Select(q => $"{q.Key}={q.Value}"));
+        _logger.LogWarning("=== ADMS POST /iclock/cdata === IP: {IP}, Query: {Query}, Table: {Table}, Body: {Body}",
+            HttpContext.Connection.RemoteIpAddress, allParams, table, body);
+
+        SonElaqa = DateTime.Now;
+        SonSN = SN ?? "unknown";
 
         if (string.IsNullOrWhiteSpace(body) || table != "ATTLOG")
             return Content("OK", "text/plain");
@@ -72,17 +76,34 @@ public class ADMSController : ControllerBase
     }
 
     [HttpGet("getrequest")]
-    public IActionResult GetRequest([FromQuery] string SN)
+    public IActionResult GetRequest(string? SN)
     {
+        _logger.LogWarning("=== ADMS GET /iclock/getrequest === IP: {IP}, SN: {SN}",
+            HttpContext.Connection.RemoteIpAddress, SN ?? "NULL");
+
         SonElaqa = DateTime.Now;
-        SonSN = SN;
-        _logger.LogInformation("ADMS GetRequest: Cihaz {SN}", SN);
+        SonSN = SN ?? "unknown";
         return Content("OK", "text/plain");
     }
 
     [HttpPost("devicecmd")]
-    public IActionResult DeviceCmd([FromQuery] string SN)
+    public IActionResult DeviceCmd(string? SN)
     {
+        _logger.LogWarning("=== ADMS POST /iclock/devicecmd === IP: {IP}, SN: {SN}",
+            HttpContext.Connection.RemoteIpAddress, SN ?? "NULL");
+        return Content("OK", "text/plain");
+    }
+
+    // Catch-all: hər hansı tanınmayan /iclock/* sorğularını tutur
+    [HttpGet("{**path}")]
+    [HttpPost("{**path}")]
+    public IActionResult CatchAll(string? path)
+    {
+        var allParams = string.Join("&", Request.Query.Select(q => $"{q.Key}={q.Value}"));
+        _logger.LogWarning("=== ADMS CATCH-ALL === Method: {Method}, Path: /iclock/{Path}, IP: {IP}, Query: {Query}",
+            Request.Method, path, HttpContext.Connection.RemoteIpAddress, allParams);
+
+        SonElaqa = DateTime.Now;
         return Content("OK", "text/plain");
     }
 
