@@ -35,21 +35,29 @@
 
             if (depId) {
                 fetch(`/HR/Isci/GetVezifeler?departamentId=${depId}`)
-                    .then(res => res.json())
+                    .then(res => {
+                        if (!res.ok) throw new Error('Server xətası: ' + res.status);
+                        return res.json();
+                    })
                     .then(data => {
-                        data.forEach(v => {
-                            // Həm 'id', həm 'Id' ehtimalını yoxlayırıq
-                            const optionValue = v.id || v.Id || v.ID;
-                            const optionText = v.ad || v.Ad;
+                        if (data && data.length > 0) {
+                            data.forEach(v => {
+                                const optionValue = v.id || v.Id || v.ID;
+                                const optionText = v.ad || v.Ad;
 
-                            if (optionValue !== undefined) {
-                                const option = new Option(optionText, optionValue);
-                                vezSelect.add(option);
-                            }
-                        });
+                                if (optionValue !== undefined) {
+                                    const option = new Option(optionText, optionValue);
+                                    vezSelect.add(option);
+                                }
+                            });
+                        }
                         vezSelect.disabled = false;
                     })
-                    .catch(err => console.error("Vəzifələr yüklənmədi:", err));
+                    .catch(err => {
+                        console.error("Vəzifələr yüklənmədi:", err);
+                        vezSelect.innerHTML = '<option value="">Xəta baş verdi</option>';
+                        vezSelect.disabled = false;
+                    });
             }
         });
     }
