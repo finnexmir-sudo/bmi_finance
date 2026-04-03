@@ -10,4 +10,5 @@ public interface IVezifeService
     Task<bool> AdMovcuddurmuAsync(string ad, int departamentId);
     Task<Vezife?> SilinmisAdIleGetirAsync(string ad, int departamentId);
     Task<Result> BerpaEtAsync(int id);
+    Task<IList<VezifeListDto>> DepartamentUzreGetirAsync(int departamentId);
 }
