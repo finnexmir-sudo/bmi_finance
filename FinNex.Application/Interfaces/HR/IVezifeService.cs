@@ -7,8 +7,7 @@ public interface IVezifeService
     : IServiceAsync<Vezife, VezifeListDto, VezifeCreateDto, VezifeUpdateDto>
 {
     Task<IList<VezifeListDto>> AktivOlanlarAsync();
-    Task<bool> AdMovcuddurmuAsync(string ad, int departamentId);
-    Task<Vezife?> SilinmisAdIleGetirAsync(string ad, int departamentId);
+    Task<bool> AdMovcuddurmuAsync(string ad);
+    Task<Vezife?> SilinmisAdIleGetirAsync(string ad);
     Task<Result> BerpaEtAsync(int id);
-    Task<IList<VezifeListDto>> DepartamentUzreGetirAsync(int departamentId);
 }

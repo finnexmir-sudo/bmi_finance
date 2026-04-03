@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Isci;
 using FinNex.Application.DTOs.HR.Vezife;
@@ -23,38 +23,18 @@ public class VezifeService
         return _mapper.Map<IList<VezifeListDto>>(entities);
     }
 
-    // Departament üzrə aktiv vəzifələri gətirir (dropdown üçün)
-    public async Task<IList<VezifeListDto>> DepartamentUzreGetirAsync(int departamentId)
-    {
-        var data = await _unitOfWork
-            .Repository<Vezife>()
-            .Query()
-            .Where(v => v.DepartamentId == departamentId && !v.Silinib && v.Aktivdir)
-            .Select(v => new VezifeListDto
-            {
-                Id = v.Id,
-                Ad = v.Ad,
-                DepartamentId = v.DepartamentId,
-                DepartamentAd = v.Departament != null ? v.Departament.Ad : "—",
-                IsActive = v.Aktivdir
-            })
-            .ToListAsync();
-
-        return data;
-    }
-
-    // Yalnız aktiv (silinməmiş) qeydlər arasında eyni departamentdə yoxlayır
-    public async Task<bool> AdMovcuddurmuAsync(string ad, int departamentId)
+    // Interface üçün — bütün aktiv qeydlər arasında yoxlayır
+    public async Task<bool> AdMovcuddurmuAsync(string ad)
     {
         return await _unitOfWork.Repository<Vezife>()
-            .MovcuddurmuAsync(x => x.Ad == ad && x.DepartamentId == departamentId && !x.Silinib);
+            .MovcuddurmuAsync(x => x.Ad == ad && !x.Silinib);
     }
 
-    // Silinmiş qeydlər arasında eyni departamentdə eyni adlı tapır
-    public async Task<Vezife?> SilinmisAdIleGetirAsync(string ad, int departamentId)
+    // Interface üçün — silinmiş qeydlər arasında tapır
+    public async Task<Vezife?> SilinmisAdIleGetirAsync(string ad)
     {
         return await _unitOfWork.Repository<Vezife>()
-            .GetirAsync(x => x.Ad == ad && x.DepartamentId == departamentId && x.Silinib);
+            .GetirAsync(x => x.Ad == ad && x.Silinib);
     }
 
     // Silinmiş vəzifəni bərpa edir
@@ -75,28 +55,31 @@ public class VezifeService
         return Result.Ok("Vəzifə uğurla bərpa edildi.");
     }
 
-    // Override — base Result<VezifeListDto> qaytarır, biz də eyni tipi saxlayırıq
+    // Yaratma — eyni departamentdə eyni ad yoxlanılır
     public override async Task<Result<VezifeListDto>> YaratAsync(VezifeCreateDto dto)
     {
-        // 1. Eyni departamentdə aktiv qeyddə eyni ad var?
-        if (await AdMovcuddurmuAsync(dto.Ad, dto.DepartamentId))
+        // Eyni departamentdə aktiv qeyddə eyni ad var?
+        var movcud = await _unitOfWork.Repository<Vezife>()
+            .MovcuddurmuAsync(x => x.Ad == dto.Ad && x.DepartamentId == dto.DepartamentId && !x.Silinib);
+
+        if (movcud)
             return Result<VezifeListDto>.Fail("Bu departamentdə eyni adda aktiv vəzifə artıq mövcuddur.");
 
-        // 2. Eyni departamentdə silinmiş qeyddə eyni ad var?
-        var silinmis = await SilinmisAdIleGetirAsync(dto.Ad, dto.DepartamentId);
+        // Eyni departamentdə silinmiş qeyddə eyni ad var?
+        var silinmis = await _unitOfWork.Repository<Vezife>()
+            .GetirAsync(x => x.Ad == dto.Ad && x.DepartamentId == dto.DepartamentId && x.Silinib);
+
         if (silinmis != null)
             return Result<VezifeListDto>.Fail(
                 $"BERPA_TELEB:{silinmis.Id}:" +
                 "Bu departamentdə eyni adda silinmiş vəzifə mövcuddur. Bərpa etmək istəyirsiniz?");
 
-        // 3. Base-i çağır
         return await base.YaratAsync(dto);
     }
 
-    // Update zamanı da eyni departamentdə ad təkrarlığını yoxla
-    public async Task<Result> YenileAsync(VezifeUpdateDto dto)
+    // Yeniləmə — eyni departamentdə ad təkrarlığını yoxla
+    public new async Task<Result> YenileAsync(VezifeUpdateDto dto)
     {
-        // Eyni departamentdə eyni adda başqa aktiv vəzifə var?
         var movcud = await _unitOfWork.Repository<Vezife>()
             .MovcuddurmuAsync(x => x.Ad == dto.Ad
                 && x.DepartamentId == dto.DepartamentId
@@ -109,6 +92,7 @@ public class VezifeService
         return await base.YenileAsync(dto);
     }
 
+    // Hamısını gətir — EF projection ilə (Include lazım deyil)
     public override async Task<Result<IList<VezifeListDto>>> HamisiniGetirAsync()
     {
         var data = await _unitOfWork

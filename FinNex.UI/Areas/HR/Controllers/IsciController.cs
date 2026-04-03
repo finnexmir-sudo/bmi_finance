@@ -387,15 +387,15 @@ namespace FinNex.UI.Areas.HR.Controllers
         [HttpGet]
         public async Task<IActionResult> GetVezifeler(int departamentId)
         {
-            try
+            var result = await _vezifeService.HamisiniGetirAsync();
+            if (result.Success && result.Data != null)
             {
-                var data = await _vezifeService.DepartamentUzreGetirAsync(departamentId);
-                return Json(data.Select(v => new { id = v.Id, ad = v.Ad }));
+                var filtered = result.Data
+                    .Where(v => v.DepartamentId == departamentId && v.IsActive)
+                    .Select(v => new { id = v.Id, ad = v.Ad });
+                return Json(filtered);
             }
-            catch
-            {
-                return Json(Array.Empty<object>());
-            }
+            return Json(Array.Empty<object>());
         }
 
         // ─────────── Helpers ───────────
