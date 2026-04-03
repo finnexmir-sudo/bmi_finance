@@ -17,7 +17,7 @@ public class ZkTecoSdkService : BackgroundService
     private readonly ILogger<ZkTecoSdkService> _logger;
     private readonly HttpClient _httpClient;
 
-    private const string DeviceIp = "192.168.0.94";
+    private const string DeviceIp = "192.168.0.95";
     private const int DevicePort = 4370;
     private const string DeviceSN = "test";
     private static readonly TimeSpan _interval = TimeSpan.FromSeconds(30);
