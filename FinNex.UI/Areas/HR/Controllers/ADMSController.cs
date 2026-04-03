@@ -127,27 +127,26 @@ public class ADMSController : Controller
 
             if (movcud == null)
             {
+                // İlk barmaq basan həmişə GİRİŞ-dir (cihaz nə göndərsə göndərsin)
                 var yeni = new Davamiyyet
                 {
                     IsciId = isciId,
                     Tarix = tarix,
-                    GirisVaxti = girisdir ? vaxt : null,
-                    CixisVaxti = girisdir ? null : vaxt,
-                    Status = HesablaStatus(vaxt, girisdir)
+                    GirisVaxti = vaxt,
+                    CixisVaxti = null,
+                    Status = HesablaStatus(vaxt, true)
                 };
                 await _db.Davamiyyetler.AddAsync(yeni);
             }
             else
             {
-                if (girisdir)
+                // Artıq giriş varsa, sonrakı barmaq basma çıxışdır
+                if (movcud.GirisVaxti == null || vaxt < movcud.GirisVaxti)
                 {
-                    if (movcud.GirisVaxti == null || vaxt < movcud.GirisVaxti)
-                    {
-                        movcud.GirisVaxti = vaxt;
-                        movcud.Status = HesablaStatus(vaxt, true);
-                    }
+                    movcud.GirisVaxti = vaxt;
+                    movcud.Status = HesablaStatus(vaxt, true);
                 }
-                else
+                else if (vaxt > movcud.GirisVaxti)
                 {
                     if (movcud.CixisVaxti == null || vaxt > movcud.CixisVaxti)
                     {
