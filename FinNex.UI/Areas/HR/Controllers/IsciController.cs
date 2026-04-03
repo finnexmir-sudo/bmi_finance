@@ -387,8 +387,8 @@ namespace FinNex.UI.Areas.HR.Controllers
         [HttpGet]
         public async Task<IActionResult> GetVezifeler(int departamentId)
         {
-            var result = await _vezifeService.HamisiniGetirAsync(x => x.DepartamentId == departamentId && !x.Silinib);
-            return Json(result.Data?.Select(v => new { id = v.Id, ad = v.Ad }));
+            var data = await _vezifeService.DepartamentUzreGetirAsync(departamentId);
+            return Json(data.Select(v => new { id = v.Id, ad = v.Ad }));
         }
 
         // ─────────── Helpers ───────────

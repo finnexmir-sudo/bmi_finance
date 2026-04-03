@@ -23,6 +23,26 @@ public class VezifeService
         return _mapper.Map<IList<VezifeListDto>>(entities);
     }
 
+    // Departament üzrə aktiv vəzifələri gətirir (dropdown üçün)
+    public async Task<IList<VezifeListDto>> DepartamentUzreGetirAsync(int departamentId)
+    {
+        var data = await _unitOfWork
+            .Repository<Vezife>()
+            .Query()
+            .Where(v => v.DepartamentId == departamentId && !v.Silinib && v.Aktivdir)
+            .Select(v => new VezifeListDto
+            {
+                Id = v.Id,
+                Ad = v.Ad,
+                DepartamentId = v.DepartamentId,
+                DepartamentAd = v.Departament != null ? v.Departament.Ad : "—",
+                IsActive = v.Aktivdir
+            })
+            .ToListAsync();
+
+        return data;
+    }
+
     // Yalnız aktiv (silinməmiş) qeydlər arasında eyni departamentdə yoxlayır
     public async Task<bool> AdMovcuddurmuAsync(string ad, int departamentId)
     {
