@@ -16,19 +16,25 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         fetch(getVezifelerUrl + '?departamentId=' + deptId)
-            .then(function (r) { return r.json(); })
+            .then(function (r) {
+                if (!r.ok) throw new Error('Server xətası: ' + r.status);
+                return r.json();
+            })
             .then(function (data) {
                 vezifeSelect.innerHTML = '<option value="">Vəzifə seçin</option>';
-                data.forEach(function (v) {
-                    var opt = document.createElement('option');
-                    opt.value = v.id;
-                    opt.textContent = v.ad;
-                    if (selectedId && v.id == selectedId) opt.selected = true;
-                    vezifeSelect.appendChild(opt);
-                });
+                if (data && data.length > 0) {
+                    data.forEach(function (v) {
+                        var opt = document.createElement('option');
+                        opt.value = v.id;
+                        opt.textContent = v.ad;
+                        if (selectedId && v.id == selectedId) opt.selected = true;
+                        vezifeSelect.appendChild(opt);
+                    });
+                }
                 vezifeSelect.disabled = false;
             })
-            .catch(function () {
+            .catch(function (err) {
+                console.error('Vəzifə yüklənmə xətası:', err);
                 vezifeSelect.innerHTML = '<option value="">Xəta baş verdi</option>';
                 vezifeSelect.disabled = false;
             });
