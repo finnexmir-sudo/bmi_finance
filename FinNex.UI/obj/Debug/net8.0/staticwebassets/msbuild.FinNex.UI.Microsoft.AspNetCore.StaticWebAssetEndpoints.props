@@ -688,13 +688,13 @@
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\FinNex.UI.hu9x948bql.bundle.scp.css'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-GSnM0MFNFeUw4MgTGrWi3qrO\u002B1KfMqYTBdA29xMQyx8="}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"1127"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022GSnM0MFNFeUw4MgTGrWi3qrO\u002B1KfMqYTBdA29xMQyx8=\u0022"},{"Name":"Last-Modified","Value":"Thu, 02 Apr 2026 08:26:24 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"1127"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022GSnM0MFNFeUw4MgTGrWi3qrO\u002B1KfMqYTBdA29xMQyx8=\u0022"},{"Name":"Last-Modified","Value":"Fri, 03 Apr 2026 10:08:55 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/FinNex.UI/FinNex.UI.hu9x948bql.bundle.scp.css">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\FinNex.UI.hu9x948bql.bundle.scp.css'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"hu9x948bql"},{"Name":"integrity","Value":"sha256-GSnM0MFNFeUw4MgTGrWi3qrO\u002B1KfMqYTBdA29xMQyx8="},{"Name":"label","Value":"_content/FinNex.UI/FinNex.UI.bundle.scp.css"}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"1127"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022GSnM0MFNFeUw4MgTGrWi3qrO\u002B1KfMqYTBdA29xMQyx8=\u0022"},{"Name":"Last-Modified","Value":"Thu, 02 Apr 2026 08:26:24 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"1127"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022GSnM0MFNFeUw4MgTGrWi3qrO\u002B1KfMqYTBdA29xMQyx8=\u0022"},{"Name":"Last-Modified","Value":"Fri, 03 Apr 2026 10:08:55 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/FinNex.UI/images/Logobank.jpg">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\images\Logobank.jpg'))</AssetFile>
