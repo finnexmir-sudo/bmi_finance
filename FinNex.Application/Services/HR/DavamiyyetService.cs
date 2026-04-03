@@ -18,7 +18,9 @@ public class DavamiyyetService
         var entities = await _unitOfWork.Repository<Davamiyyet>()
             .HamisiniGetirAsync(
                 x => x.Tarix.Date == tarix.Date,
-                include: q => q.Include(x => x.Isci),
+                include: q => q.Include(x => x.Isci)
+                    .ThenInclude(i => i.IsciTeyinatlari.Where(t => !t.Silinib))
+                    .ThenInclude(t => t.Departament),
                 izlemeden: true);
 
         return _mapper.Map<IList<DavamiyyetListDto>>(entities);
@@ -29,7 +31,9 @@ public class DavamiyyetService
         var entities = await _unitOfWork.Repository<Davamiyyet>()
             .HamisiniGetirAsync(
                 x => x.IsciId == isciId,
-                include: q => q.Include(x => x.Isci),
+                include: q => q.Include(x => x.Isci)
+                    .ThenInclude(i => i.IsciTeyinatlari.Where(t => !t.Silinib))
+                    .ThenInclude(t => t.Departament),
                 izlemeden: true);
 
         return _mapper.Map<IList<DavamiyyetListDto>>(entities);
@@ -45,7 +49,9 @@ public class DavamiyyetService
         var entities = await _unitOfWork.Repository<Davamiyyet>()
             .HamisiniGetirAsync(
                 x => x.Tarix.Date >= baslangic.Date && x.Tarix.Date <= son.Date,
-                include: q => q.Include(x => x.Isci),
+                include: q => q.Include(x => x.Isci)
+                    .ThenInclude(i => i.IsciTeyinatlari.Where(t => !t.Silinib))
+                    .ThenInclude(t => t.Departament),
                 izlemeden: true);
 
         return _mapper.Map<IList<DavamiyyetListDto>>(entities);
