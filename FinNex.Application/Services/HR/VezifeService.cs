@@ -23,18 +23,18 @@ public class VezifeService
         return _mapper.Map<IList<VezifeListDto>>(entities);
     }
 
-    // Yalnız aktiv (silinməmiş) qeydlər arasında yoxlayır
-    public async Task<bool> AdMovcuddurmuAsync(string ad)
+    // Yalnız aktiv (silinməmiş) qeydlər arasında eyni departamentdə yoxlayır
+    public async Task<bool> AdMovcuddurmuAsync(string ad, int departamentId)
     {
         return await _unitOfWork.Repository<Vezife>()
-            .MovcuddurmuAsync(x => x.Ad == ad && !x.Silinib);
+            .MovcuddurmuAsync(x => x.Ad == ad && x.DepartamentId == departamentId && !x.Silinib);
     }
 
-    // Silinmiş qeydlər arasında eyni adlı tapır
-    public async Task<Vezife?> SilinmisAdIleGetirAsync(string ad)
+    // Silinmiş qeydlər arasında eyni departamentdə eyni adlı tapır
+    public async Task<Vezife?> SilinmisAdIleGetirAsync(string ad, int departamentId)
     {
         return await _unitOfWork.Repository<Vezife>()
-            .GetirAsync(x => x.Ad == ad && x.Silinib);
+            .GetirAsync(x => x.Ad == ad && x.DepartamentId == departamentId && x.Silinib);
     }
 
     // Silinmiş vəzifəni bərpa edir
@@ -58,19 +58,35 @@ public class VezifeService
     // Override — base Result<VezifeListDto> qaytarır, biz də eyni tipi saxlayırıq
     public override async Task<Result<VezifeListDto>> YaratAsync(VezifeCreateDto dto)
     {
-        // 1. Aktiv qeyddə eyni ad var?
-        if (await AdMovcuddurmuAsync(dto.Ad))
-            return Result<VezifeListDto>.Fail("Bu adda aktiv vəzifə artıq mövcuddur.");
+        // 1. Eyni departamentdə aktiv qeyddə eyni ad var?
+        if (await AdMovcuddurmuAsync(dto.Ad, dto.DepartamentId))
+            return Result<VezifeListDto>.Fail("Bu departamentdə eyni adda aktiv vəzifə artıq mövcuddur.");
 
-        // 2. Silinmiş qeyddə eyni ad var?
-        var silinmis = await SilinmisAdIleGetirAsync(dto.Ad);
+        // 2. Eyni departamentdə silinmiş qeyddə eyni ad var?
+        var silinmis = await SilinmisAdIleGetirAsync(dto.Ad, dto.DepartamentId);
         if (silinmis != null)
             return Result<VezifeListDto>.Fail(
                 $"BERPA_TELEB:{silinmis.Id}:" +
-                "Bu adda silinmiş vəzifə mövcuddur. Bərpa etmək istəyirsiniz?");
+                "Bu departamentdə eyni adda silinmiş vəzifə mövcuddur. Bərpa etmək istəyirsiniz?");
 
         // 3. Base-i çağır
         return await base.YaratAsync(dto);
+    }
+
+    // Update zamanı da eyni departamentdə ad təkrarlığını yoxla
+    public async Task<Result> YenileAsync(VezifeUpdateDto dto)
+    {
+        // Eyni departamentdə eyni adda başqa aktiv vəzifə var?
+        var movcud = await _unitOfWork.Repository<Vezife>()
+            .MovcuddurmuAsync(x => x.Ad == dto.Ad
+                && x.DepartamentId == dto.DepartamentId
+                && x.Id != dto.Id
+                && !x.Silinib);
+
+        if (movcud)
+            return Result.Fail("Bu departamentdə eyni adda aktiv vəzifə artıq mövcuddur.");
+
+        return await base.YenileAsync(dto);
     }
 
     public override async Task<Result<IList<VezifeListDto>>> HamisiniGetirAsync()
