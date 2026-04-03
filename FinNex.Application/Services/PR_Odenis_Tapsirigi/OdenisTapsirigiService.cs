@@ -23,7 +23,7 @@ namespace FinNex.Application.Services.PR_Odenis_Tapsirigi
         public async Task<DateTime> DbTarixiniGetirAsync()
         {
             return await _appDbContext.Database
-                .SqlQuery<DateTime>($"SELECT CAST(GETDATE() AS DATE) AS Value")
+                .SqlQueryRaw<DateTime>("SELECT CAST(GETDATE() AS DATE) AS Value")
                 .FirstAsync();
         }
     }

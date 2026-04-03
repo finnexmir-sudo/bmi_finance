@@ -21,11 +21,13 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
         private readonly IUnitOfWork _uow;
         private readonly IOdenisTapsirigiNomreService _odenisNomreService;
         private readonly IOdenisTapsirigiService _odenisService;
-        public OdenisTapsirigiController(IUnitOfWork uow, IOdenisTapsirigiNomreService odenisNomreService, IOdenisTapsirigiService odenisTapsirigiService)
+        private readonly FinNex.DataAccess.Contexts.AppDbContext _db;
+        public OdenisTapsirigiController(IUnitOfWork uow, IOdenisTapsirigiNomreService odenisNomreService, IOdenisTapsirigiService odenisTapsirigiService, FinNex.DataAccess.Contexts.AppDbContext db)
         {
             _uow = uow;
             _odenisNomreService = odenisNomreService;
             _odenisService = odenisTapsirigiService;
+            _db = db;
         }
 
         // Ana hub sehifesi
@@ -43,19 +45,14 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
         {
             const int sehifeOlcusu = 15;
 
-            var hamisi = await _uow
-                .Repository<OdenisTapsirigi>()
-                .HamisiniGetirAsync(
-                    include: q => q
-                        .Include(x => x.OduyenMusteri)
-                        .Include(x => x.AlanMusteri)
-                        .Include(x => x.Valyuta)
-                );
-
-            // ── Filterleme ──
-            var sorgu = hamisi.AsQueryable();
-
-
+            // Bazada filtrlə — memory-ə hamısını yükləmə
+            var sorgu = _db.OdenisTapsiriqlari
+                .AsNoTracking()
+                .Where(x => !x.Silinib)
+                .Include(x => x.OduyenMusteri)
+                .Include(x => x.AlanMusteri)
+                .Include(x => x.Valyuta)
+                .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(nomre))
                 sorgu = sorgu.Where(x => x.Nomre.Contains(nomre.Trim()));
@@ -63,14 +60,12 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
             if (!string.IsNullOrWhiteSpace(oduyenMusteri))
                 sorgu = sorgu.Where(x =>
                     x.OduyenMusteri != null &&
-                    x.OduyenMusteri.Ad.Contains(oduyenMusteri.Trim(),
-                        StringComparison.OrdinalIgnoreCase));
+                    x.OduyenMusteri.Ad.Contains(oduyenMusteri.Trim()));
 
             if (!string.IsNullOrWhiteSpace(alanMusteri))
                 sorgu = sorgu.Where(x =>
                     x.AlanMusteri != null &&
-                    x.AlanMusteri.Ad.Contains(alanMusteri.Trim(),
-                        StringComparison.OrdinalIgnoreCase));
+                    x.AlanMusteri.Ad.Contains(alanMusteri.Trim()));
 
             if (!string.IsNullOrWhiteSpace(valyuta))
                 sorgu = sorgu.Where(x => x.Valyuta.Ad == valyuta);
@@ -81,20 +76,18 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
             if (tarixe.HasValue)
                 sorgu = sorgu.Where(x => x.Tarix <= tarixe.Value.Date.AddDays(1).AddTicks(-1));
 
-            // ── Sıralama + Səhifələmə ──
-            var umumiSay = sorgu.Count();
+            // ── Sıralama + Səhifələmə (bazada) ──
+            var umumiSay = await sorgu.CountAsync();
             var sehifeSayi = (int)Math.Ceiling((double)umumiSay / sehifeOlcusu);
 
-            // Səhifə nömrəsini düzəlt
             if (sehife < 1) sehife = 1;
             if (sehife > sehifeSayi && sehifeSayi > 0) sehife = sehifeSayi;
 
-
-            var melumtlar = sorgu
+            var melumtlar = await sorgu
                 .OrderByDescending(x => x.Tarix)
                 .Skip((sehife - 1) * sehifeOlcusu)
                 .Take(sehifeOlcusu)
-                .ToList();
+                .ToListAsync();
 
             var vm = new OdenisTapsirigiSiyahiVM
             {

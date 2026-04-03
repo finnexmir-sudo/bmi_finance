@@ -6,10 +6,15 @@ using FinNex.Application.Services;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 public class MaasService : ServiceAsync<Maas, MaasListDto, MaasCreateDto, MaasUpdateDto>, IMaasService
 {
-    public MaasService(IUnitOfWork unitOfWork, IMapper mapper) : base(unitOfWork, mapper) { }
+    private readonly ILogger<MaasService> _logger;
+    public MaasService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<MaasService> logger) : base(unitOfWork, mapper)
+    {
+        _logger = logger;
+    }
 
     public async Task<Result<IList<MaasDto>>> IsciyeGoreGetirAsync(int isciId)
     {
@@ -24,8 +29,9 @@ public class MaasService : ServiceAsync<Maas, MaasListDto, MaasCreateDto, MaasUp
             var dtos = _mapper.Map<IList<MaasDto>>(entities);
             return Result<IList<MaasDto>>.Ok(dtos);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "İşçi maaş məlumatları gətirilirkən xəta: IsciId={IsciId}", isciId);
             return Result<IList<MaasDto>>.Fail("Isci maas melumatları getirilirken xeta bas verdi.");
         }
     }
@@ -46,8 +52,9 @@ public class MaasService : ServiceAsync<Maas, MaasListDto, MaasCreateDto, MaasUp
             var dto = _mapper.Map<MaasDto>(entity);
             return Result<MaasDto?>.Ok(dto);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Maaş məlumatı gətirilirkən xəta: IsciId={IsciId}, İl={Il}, Ay={Ay}", isciId, il, ay);
             return Result<MaasDto?>.Fail("Maas melumatı getirilirken xeta bas verdi.");
         }
     }
@@ -83,8 +90,9 @@ public class MaasService : ServiceAsync<Maas, MaasListDto, MaasCreateDto, MaasUp
 
             return Result.Ok("Maas statusu ugurla deyisdirildi.");
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Maaş status dəyişdirmə xətası: MaasId={MaasId}, YeniStatus={Status}", maasId, yeniStatus);
             return Result.Fail("Status deyisdiriilirken xeta bas verdi.");
         }
     }
