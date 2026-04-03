@@ -258,8 +258,8 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<Vezife>()
-    .HasIndex(x => x.Ad)
-    .IsUnique();
+            .HasIndex(x => new { x.Ad, x.DepartamentId })
+            .IsUnique();
 
         builder.Entity<Isci>()
             .HasOne(x => x.AppUser)
