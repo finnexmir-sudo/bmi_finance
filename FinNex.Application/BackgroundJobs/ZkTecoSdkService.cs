@@ -20,7 +20,7 @@ public class ZkTecoSdkService : BackgroundService
     private readonly ILogger<ZkTecoSdkService> _logger;
 
     // Cihaz ayarları — gələcəkdə appsettings-dən oxuna bilər
-    private const string DeviceIp = "192.168.0.94";
+    private const string DeviceIp = "192.168.0.95";
     private const int DevicePort = 4370;
     private static readonly TimeSpan _interval = TimeSpan.FromSeconds(30);
     private const int ReceiveTimeoutMs = 5000;

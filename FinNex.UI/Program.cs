@@ -96,7 +96,9 @@ namespace FinNex.UI
             // ==================================================
             // 6. Background Services
             // ==================================================
-            builder.Services.AddHostedService<FinNex.Application.BackgroundJobs.ZkTecoSdkService>();
+            // SDK (PULL) rejimi deaktivdir — cihaz ADMS (PUSH) rejimində işləyir
+            // Cihaz özü /iclock/cdata endpoint-inə data göndərir
+            // builder.Services.AddHostedService<FinNex.Application.BackgroundJobs.ZkTecoSdkService>();
 
             var app = builder.Build();
 

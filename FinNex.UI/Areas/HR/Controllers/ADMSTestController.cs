@@ -49,13 +49,10 @@ public class ADMSTestController : Controller
         var todayCount = await _db.Davamiyyetler
             .CountAsync(x => x.Tarix == bugun);
 
-        // Cihazın son əlaqə vaxtını SDK servisindən və ya ADMSController-dən götürürük
-        var sdkElaqa = FinNex.Application.BackgroundJobs.ZkTecoSdkService.SonElaqa;
+        // Cihazın son əlaqə vaxtını ADMS controller-dən götürürük
         var admsElaqa = ADMSController.SonElaqa;
-        var sonElaqa = sdkElaqa > admsElaqa ? sdkElaqa : (admsElaqa ?? sdkElaqa);
-        var isOnline = FinNex.Application.BackgroundJobs.ZkTecoSdkService.IsOnline
-                       || (admsElaqa.HasValue && (DateTime.Now - admsElaqa.Value).TotalSeconds < 60);
-        var lastContact = sonElaqa?.ToString("dd.MM.yyyy HH:mm");
+        var isOnline = admsElaqa.HasValue && (DateTime.Now - admsElaqa.Value).TotalSeconds < 120;
+        var lastContact = admsElaqa?.ToString("dd.MM.yyyy HH:mm");
 
         return Json(new { isOnline, lastContact, todayCount, logs });
     }
