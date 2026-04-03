@@ -20,11 +20,9 @@ public class ADMSController : Controller
         _logger = logger;
     }
 
-    // Bütün /iclock/* sorğularını loqlayır — cihazın nə göndərdiyini görmək üçün
     [HttpGet("cdata")]
     public IActionResult Handshake(string? SN)
     {
-        // Bütün query parametrlərini logla
         var allParams = string.Join("&", Request.Query.Select(q => $"{q.Key}={q.Value}"));
         _logger.LogWarning("=== ADMS GET /iclock/cdata === IP: {IP}, Query: {Query}, SN: {SN}",
             HttpContext.Connection.RemoteIpAddress, allParams, SN ?? "NULL");
@@ -94,7 +92,6 @@ public class ADMSController : Controller
         return Content("OK", "text/plain");
     }
 
-    // Catch-all: hər hansı tanınmayan /iclock/* sorğularını tutur
     [HttpGet("{**path}")]
     [HttpPost("{**path}")]
     public IActionResult CatchAll(string? path)
@@ -127,7 +124,6 @@ public class ADMSController : Controller
 
             if (movcud == null)
             {
-                // İlk barmaq basan həmişə GİRİŞ-dir (cihaz nə göndərsə göndərsin)
                 var yeni = new Davamiyyet
                 {
                     IsciId = isciId,
@@ -140,7 +136,6 @@ public class ADMSController : Controller
             }
             else
             {
-                // Artıq giriş varsa, sonrakı barmaq basma çıxışdır
                 if (movcud.GirisVaxti == null || vaxt < movcud.GirisVaxti)
                 {
                     movcud.GirisVaxti = vaxt;

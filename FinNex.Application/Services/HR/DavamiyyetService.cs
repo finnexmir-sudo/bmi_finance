@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FinNex.Application.DTOs.HR.Davamiyyet;
 using FinNex.Application.Services;
 using FinNex.Domain.Entities.HR;
