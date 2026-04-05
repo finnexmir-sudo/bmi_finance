@@ -29,8 +29,8 @@ namespace FinNex.UI.Middleware
             // 5️⃣ Content Security Policy (sadə, təhlükəsiz)
             headers["Content-Security-Policy"] =
                 "default-src 'self'; " +
-                "script-src 'self'; " +
-                "style-src 'self'; " +
+                "script-src 'self' 'unsafe-inline'; " +
+                "style-src 'self' 'unsafe-inline'; " +
                 "img-src 'self' data:; " +
                 "font-src 'self'; " +
                 "object-src 'none'; " +
