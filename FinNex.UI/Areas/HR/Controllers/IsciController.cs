@@ -379,7 +379,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return View(vm);
             }
 
-            TempData["Success"] = "Təyinat uğurla redaktə edildi.";
+            TempData["Success"] = result.Message ?? "Təyinat uğurla redaktə edildi.";
             return RedirectToAction(nameof(Detail), new { id = vm.IsciId });
         }
 
