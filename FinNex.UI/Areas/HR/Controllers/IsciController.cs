@@ -325,6 +325,69 @@ namespace FinNex.UI.Areas.HR.Controllers
             return RedirectToAction(nameof(Detail), new { id = vm.IsciId });
         }
 
+        // ─────────── TEYINAT REDAKTE GET ───────────
+        [HttpGet]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
+        public async Task<IActionResult> TeyinatRedakte(int id)
+        {
+            var isci = await _isciService.GetIsciDetailsAsync(id);
+            if (isci == null)
+            {
+                TempData["Error"] = "İşçi tapılmadı.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var aktivTeyinat = await _teyinatService.GetAktivTeyinatAsync(id);
+            if (!aktivTeyinat.Success || aktivTeyinat.Data == null)
+            {
+                TempData["Error"] = "Aktiv təyinat tapılmadı.";
+                return RedirectToAction(nameof(Detail), new { id });
+            }
+
+            var vm = new TeyinatRedakteVM
+            {
+                IsciId = id,
+                IsciTamAd = isci.TamAd,
+                DepartamentId = aktivTeyinat.Data.DepartamentId,
+                VezifeId = aktivTeyinat.Data.VezifeId
+            };
+
+            await ReloadTeyinatRedakteLists(vm);
+            return View(vm);
+        }
+
+        // ─────────── TEYINAT REDAKTE POST ───────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
+        public async Task<IActionResult> TeyinatRedakte(TeyinatRedakteVM vm)
+        {
+            if (!ModelState.IsValid)
+            {
+                var isciCheck = await _isciService.GetIsciDetailsAsync(vm.IsciId);
+                if (isciCheck != null) vm.IsciTamAd = isciCheck.TamAd;
+                await ReloadTeyinatRedakteLists(vm);
+                return View(vm);
+            }
+
+            var result = await _isciService.TeyinatRedakteEtAsync(
+                vm.IsciId,
+                vm.DepartamentId,
+                vm.VezifeId);
+
+            if (!result.Success)
+            {
+                ModelState.AddModelError("", result.Message ?? "Redaktə zamanı xəta baş verdi.");
+                var isciCheck = await _isciService.GetIsciDetailsAsync(vm.IsciId);
+                if (isciCheck != null) vm.IsciTamAd = isciCheck.TamAd;
+                await ReloadTeyinatRedakteLists(vm);
+                return View(vm);
+            }
+
+            TempData["Success"] = "Təyinat uğurla redaktə edildi.";
+            return RedirectToAction(nameof(Detail), new { id = vm.IsciId });
+        }
+
         // ─────────── MAAS DEYIS GET ───────────
         [HttpGet]
         [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
@@ -424,6 +487,29 @@ namespace FinNex.UI.Areas.HR.Controllers
             {
                 var vezResult = await _vezifeService.HamisiniGetirAsync(
                     x => x.DepartamentId == vm.YeniDepartamentId && !x.Silinib);
+                if (vezResult.Success && vezResult.Data != null)
+                {
+                    vm.Vezifeler = vezResult.Data
+                        .Select(v => new SelectListItem { Value = v.Id.ToString(), Text = v.Ad })
+                        .ToList();
+                }
+            }
+        }
+
+        private async Task ReloadTeyinatRedakteLists(TeyinatRedakteVM vm)
+        {
+            var deptResult = await _departmentService.HamisiniGetirAsync(x => !x.Silinib);
+            if (deptResult.Success && deptResult.Data != null)
+            {
+                vm.Departamentler = deptResult.Data
+                    .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Ad })
+                    .ToList();
+            }
+
+            if (vm.DepartamentId > 0)
+            {
+                var vezResult = await _vezifeService.HamisiniGetirAsync(
+                    x => x.DepartamentId == vm.DepartamentId && !x.Silinib);
                 if (vezResult.Success && vezResult.Data != null)
                 {
                     vm.Vezifeler = vezResult.Data

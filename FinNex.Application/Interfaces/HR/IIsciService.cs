@@ -12,5 +12,6 @@ public interface IIsciService : IServiceAsync<Isci, IsciListDto, IsciCreateDto, 
     Task<Result> UpdateSalaryWithHistoryAsync(int isciId, decimal yeniMaas, string emrNo);
     Task<Result<IList<IsciMaasTarixcesiDto>>> GetMaasTarixcesiAsync(int isciId);
     Task<Result> TeyinatDeyisAsync(int isciId, int departamentId, int vezifeId, DateTime baslamaTarixi);
+    Task<Result> TeyinatRedakteEtAsync(int isciId, int departamentId, int vezifeId);
     Task<Result<int?>> GetAktivDepartamentIdAsync(int isciId);
 }
