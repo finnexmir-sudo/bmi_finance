@@ -6,7 +6,7 @@ namespace FinNex.UI.Areas.HR.ViewModels
     public class TeyinatRedakteVM
     {
         public int IsciId { get; set; }
-        public string IsciTamAd { get; set; } = null!;
+        public string? IsciTamAd { get; set; }
 
         [Required(ErrorMessage = "Departament seçilməlidir")]
         [Display(Name = "Departament")]
