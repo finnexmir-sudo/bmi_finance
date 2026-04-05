@@ -77,6 +77,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 IsdenAyrilmaTarixi = isci.IsdenAyrilmaTarixi,
                 Status = isci.Status,
                 LoginVar = isci.LoginVar,
+                IstifadeciAd = _userManager.Users.FirstOrDefault(u => u.IsciId == id)?.UserName,
                 CariDepartament = aktivTeyinat.Success ? aktivTeyinat.Data?.DepartamentAd : isci.SobeAdi,
                 CariVezife = aktivTeyinat.Success ? aktivTeyinat.Data?.VezifeAd : isci.VezifeAdi,
                 CariMaas = cariMaas,
