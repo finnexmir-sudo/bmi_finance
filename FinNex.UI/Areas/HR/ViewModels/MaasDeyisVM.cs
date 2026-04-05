@@ -5,7 +5,7 @@ namespace FinNex.UI.Areas.HR.ViewModels
     public class MaasDeyisVM
     {
         public int IsciId { get; set; }
-        public string IsciTamAd { get; set; } = null!;
+        public string? IsciTamAd { get; set; }
         public decimal KohneMaas { get; set; }
 
         [Required(ErrorMessage = "Yeni maaş mütləqdir")]
@@ -13,8 +13,7 @@ namespace FinNex.UI.Areas.HR.ViewModels
         [Range(0.01, double.MaxValue, ErrorMessage = "Maaş 0-dan böyük olmalıdır")]
         public decimal YeniMaas { get; set; }
 
-        [Required(ErrorMessage = "Əmr nömrəsi mütləqdir")]
         [Display(Name = "Əmr Nömrəsi")]
-        public string EmrNomresi { get; set; } = null!;
+        public string? EmrNomresi { get; set; }
     }
 }

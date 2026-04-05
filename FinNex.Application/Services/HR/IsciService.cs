@@ -148,31 +148,44 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
         return Result<List<IsciListDto>>.Ok(_mapper.Map<List<IsciListDto>>(entities));
     }
 
-    public async Task<Result> UpdateSalaryWithHistoryAsync(int isciId, decimal yeniMaas, string emrNo)
+    public async Task<Result> UpdateSalaryWithHistoryAsync(int isciId, decimal yeniMaas, string? emrNo)
     {
-        var isci = await _unitOfWork.Repository<Isci>().GetirAsync(
-            x => x.Id == isciId,
-            include: q => q.Include(x => x.Maliye));
+        var isci = await _unitOfWork.Repository<Isci>().IdIleGetirAsync(isciId);
         if (isci == null) return Result.Fail("İşçi tapılmadı.");
+
+        // Maliye-ni navigation property əvəzinə ayrıca yüklə (Include bug-dan qaçınmaq üçün)
+        var maliye = await _unitOfWork.Repository<IsciMaliye>()
+            .GetirAsync(x => x.IsciId == isciId);
+
+        var kohneMaas = maliye?.CariMaas ?? 0;
+
+        // Əmr nömrəsini avtomatik yarat
+        if (string.IsNullOrWhiteSpace(emrNo))
+        {
+            var il = DateTime.Now.Year;
+            var sayi = await _unitOfWork.Repository<IsciMaasTarixcesi>()
+                .SayAsync(x => x.IsciId == isciId);
+            emrNo = $"EMR-{il}/{(sayi + 1):D3}";
+        }
 
         var tarixce = new IsciMaasTarixcesi
         {
             IsciId = isciId,
-            KohneMaas = isci.Maliye != null ? isci.Maliye.CariMaas : 0,
+            KohneMaas = kohneMaas,
             YeniMaas = yeniMaas,
             DeyismeTarixi = DateTime.Now,
             EmrinNomresi = emrNo
         };
 
-        if (isci.Maliye != null)
+        if (maliye != null)
         {
-            isci.Maliye.CariMaas = yeniMaas;
-            await _unitOfWork.Repository<IsciMaliye>().YenileAsync(isci.Maliye);
+            maliye.CariMaas = yeniMaas;
+            await _unitOfWork.Repository<IsciMaliye>().YenileAsync(maliye);
         }
         else
         {
-            var maliye = new IsciMaliye { IsciId = isciId, CariMaas = yeniMaas };
-            await _unitOfWork.Repository<IsciMaliye>().YaratAsync(maliye);
+            var yeniMaliye = new IsciMaliye { IsciId = isciId, CariMaas = yeniMaas };
+            await _unitOfWork.Repository<IsciMaliye>().YaratAsync(yeniMaliye);
         }
 
         await _unitOfWork.Repository<IsciMaasTarixcesi>().YaratAsync(tarixce);
