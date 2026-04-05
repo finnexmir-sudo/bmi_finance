@@ -116,6 +116,7 @@ namespace FinNex.UI
             // 6. Background Services
             // ==================================================
             builder.Services.AddHostedService<FinNex.Application.BackgroundJobs.ZkTecoSdkService>();
+            builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.XatirlatmaBackgroundService>();
 
             var app = builder.Build();
 
