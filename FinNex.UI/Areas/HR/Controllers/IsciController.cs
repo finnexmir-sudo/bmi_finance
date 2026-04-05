@@ -359,6 +359,8 @@ namespace FinNex.UI.Areas.HR.Controllers
         {
             if (!ModelState.IsValid)
             {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                TempData["Error"] = $"Validation: {string.Join("; ", errors)} | IsciId={vm.IsciId} DeptId={vm.DepartamentId} VezId={vm.VezifeId}";
                 var isciCheck = await _isciService.GetIsciDetailsAsync(vm.IsciId);
                 if (isciCheck != null) vm.IsciTamAd = isciCheck.TamAd;
                 await ReloadTeyinatRedakteLists(vm);
@@ -372,14 +374,14 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             if (!result.Success)
             {
-                ModelState.AddModelError("", result.Message ?? "Redaktə zamanı xəta baş verdi.");
+                TempData["Error"] = $"FAIL: {result.Message} | IsciId={vm.IsciId} DeptId={vm.DepartamentId} VezId={vm.VezifeId}";
                 var isciCheck = await _isciService.GetIsciDetailsAsync(vm.IsciId);
                 if (isciCheck != null) vm.IsciTamAd = isciCheck.TamAd;
                 await ReloadTeyinatRedakteLists(vm);
                 return View(vm);
             }
 
-            TempData["Success"] = result.Message ?? "Təyinat uğurla redaktə edildi.";
+            TempData["Success"] = $"OK: {result.Message} | IsciId={vm.IsciId} DeptId={vm.DepartamentId} VezId={vm.VezifeId}";
             return RedirectToAction(nameof(Detail), new { id = vm.IsciId });
         }
 
