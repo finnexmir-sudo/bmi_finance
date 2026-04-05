@@ -150,47 +150,56 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
 
     public async Task<Result> UpdateSalaryWithHistoryAsync(int isciId, decimal yeniMaas, string? emrNo)
     {
-        var isci = await _unitOfWork.Repository<Isci>().IdIleGetirAsync(isciId);
-        if (isci == null) return Result.Fail("İşçi tapılmadı.");
-
-        // Maliye-ni navigation property əvəzinə ayrıca yüklə (Include bug-dan qaçınmaq üçün)
-        var maliye = await _unitOfWork.Repository<IsciMaliye>()
-            .GetirAsync(x => x.IsciId == isciId);
-
-        var kohneMaas = maliye?.CariMaas ?? 0;
-
-        // Əmr nömrəsini avtomatik yarat
-        if (string.IsNullOrWhiteSpace(emrNo))
+        try
         {
-            var il = DateTime.Now.Year;
-            var sayi = await _unitOfWork.Repository<IsciMaasTarixcesi>()
-                .SayAsync(x => x.IsciId == isciId);
-            emrNo = $"EMR-{il}/{(sayi + 1):D3}";
+            var isci = await _unitOfWork.Repository<Isci>().IdIleGetirAsync(isciId);
+            if (isci == null) return Result.Fail("İşçi tapılmadı.");
+
+            // Əmr nömrəsini avtomatik yarat
+            if (string.IsNullOrWhiteSpace(emrNo))
+            {
+                var il = DateTime.Now.Year;
+                var sayi = await _unitOfWork.Repository<IsciMaasTarixcesi>()
+                    .SayAsync(x => x.IsciId == isciId);
+                emrNo = $"EMR-{il}/{(sayi + 1):D3}";
+            }
+
+            // Maliye-ni yüklə
+            var maliye = await _unitOfWork.Repository<IsciMaliye>()
+                .GetirAsync(x => x.IsciId == isciId);
+
+            var kohneMaas = maliye?.CariMaas ?? 0;
+
+            // Tarixçə yarat
+            var tarixce = new IsciMaasTarixcesi
+            {
+                IsciId = isciId,
+                KohneMaas = kohneMaas,
+                YeniMaas = yeniMaas,
+                DeyismeTarixi = DateTime.Now,
+                EmrinNomresi = emrNo
+            };
+            await _unitOfWork.Repository<IsciMaasTarixcesi>().YaratAsync(tarixce);
+
+            // Maliye yenilə — YenileAsync (Update) istifadə et
+            if (maliye != null)
+            {
+                maliye.CariMaas = yeniMaas;
+                maliye.YenilenmeTarixi = DateTime.Now;
+            }
+            else
+            {
+                var yeniMaliye = new IsciMaliye { IsciId = isciId, CariMaas = yeniMaas };
+                await _unitOfWork.Repository<IsciMaliye>().YaratAsync(yeniMaliye);
+            }
+
+            await _unitOfWork.YaddaSaxlaAsync();
+            return Result.Ok("Maaş uğurla yeniləndi.");
         }
-
-        var tarixce = new IsciMaasTarixcesi
+        catch (Exception ex)
         {
-            IsciId = isciId,
-            KohneMaas = kohneMaas,
-            YeniMaas = yeniMaas,
-            DeyismeTarixi = DateTime.Now,
-            EmrinNomresi = emrNo
-        };
-
-        if (maliye != null)
-        {
-            // Change tracker ilə yeniləyirik (Update() çağırmırıq)
-            maliye.CariMaas = yeniMaas;
+            return Result.Fail($"Maaş yenilənmədi: {ex.Message}");
         }
-        else
-        {
-            var yeniMaliye = new IsciMaliye { IsciId = isciId, CariMaas = yeniMaas };
-            await _unitOfWork.Repository<IsciMaliye>().YaratAsync(yeniMaliye);
-        }
-
-        await _unitOfWork.Repository<IsciMaasTarixcesi>().YaratAsync(tarixce);
-        var saved = await _unitOfWork.YaddaSaxlaAsync();
-        return saved > 0 ? Result.Ok() : Result.Fail("Xəta!");
     }
 
     public async Task<Result<IList<IsciMaasTarixcesiDto>>> GetMaasTarixcesiAsync(int isciId)
@@ -288,6 +297,7 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
 
             entity.DepartamentId = departamentId;
             entity.VezifeId = vezifeId;
+            entity.YenilenmeTarixi = DateTime.Now;
 
             var saved = await _unitOfWork.YaddaSaxlaAsync();
             return saved > 0
