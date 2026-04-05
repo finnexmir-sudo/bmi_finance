@@ -8,6 +8,9 @@ namespace FinNex.UI.Areas.HR.ViewModels
     {
         public int Id { get; set; }
 
+        [Display(Name = "İstifadəçi Adı")]
+        public string? IstifadeciAd { get; set; }
+
         [Required(ErrorMessage = "Ad mütləqdir")]
         [Display(Name = "Ad")]
         public string Ad { get; set; } = null!;

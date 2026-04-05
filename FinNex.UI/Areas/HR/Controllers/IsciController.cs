@@ -200,9 +200,12 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var appUser = _userManager.Users.FirstOrDefault(u => u.IsciId == id);
+
             var vm = new IsciEditVM
             {
                 Id = isci.Id,
+                IstifadeciAd = appUser?.UserName,
                 Ad = isci.Ad,
                 Soyad = isci.Soyad,
                 AtaAdi = isci.AtaAdi,
@@ -256,7 +259,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return View(vm);
             }
 
-            // AppUser-dəki Ad/Soyad/Email-i də yenilə
+            // AppUser-dəki Ad/Soyad/Email/UserName-i də yenilə
             var users = _userManager.Users.Where(u => u.IsciId == vm.Id).ToList();
             foreach (var appUser in users)
             {
@@ -264,6 +267,17 @@ namespace FinNex.UI.Areas.HR.Controllers
                 appUser.Soyad = vm.Soyad;
                 if (!string.IsNullOrEmpty(vm.Email))
                     appUser.Email = vm.Email;
+                if (!string.IsNullOrEmpty(vm.IstifadeciAd) && appUser.UserName != vm.IstifadeciAd)
+                {
+                    var existingUser = await _userManager.FindByNameAsync(vm.IstifadeciAd);
+                    if (existingUser != null && existingUser.Id != appUser.Id)
+                    {
+                        ModelState.AddModelError("IstifadeciAd", "Bu istifadəçi adı artıq mövcuddur");
+                        return View(vm);
+                    }
+                    appUser.UserName = vm.IstifadeciAd;
+                    appUser.NormalizedUserName = vm.IstifadeciAd.ToUpperInvariant();
+                }
                 await _userManager.UpdateAsync(appUser);
             }
 
