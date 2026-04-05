@@ -57,7 +57,6 @@ namespace FinNex.UI.Areas.HR.Controllers
             var maasResult = await _isciService.GetMaasTarixcesiAsync(id);
             var aktivTeyinat = await _teyinatService.GetAktivTeyinatAsync(id);
 
-            var maliyeResult = await _isciService.IdIleGetirAsync(id);
             var listResult = await _isciService.HamisiniGetirAsync();
             var listItem = listResult.Data?.FirstOrDefault(x => x.Id == id);
 
@@ -81,7 +80,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 LoginVar = isci.LoginVar,
                 CariDepartament = aktivTeyinat.Success ? aktivTeyinat.Data?.DepartamentAd : isci.SobeAdi,
                 CariVezife = aktivTeyinat.Success ? aktivTeyinat.Data?.VezifeAd : isci.VezifeAdi,
-                CariMaas = listItem?.CariMaas ?? 0,
+                CariMaas = isci.CariMaas ?? listItem?.CariMaas ?? 0,
                 TeyinatTarixcesi = teyinatResult.Success ? teyinatResult.Data ?? new List<FinNex.Application.DTOs.HR.IsciTeyinat.IsciTeyinatDto>() : new List<FinNex.Application.DTOs.HR.IsciTeyinat.IsciTeyinatDto>(),
                 MaasTarixcesi = maasResult.Success ? maasResult.Data ?? new List<IsciMaasTarixcesiDto>() : new List<IsciMaasTarixcesiDto>()
             };
