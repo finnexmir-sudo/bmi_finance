@@ -80,7 +80,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 LoginVar = isci.LoginVar,
                 CariDepartament = aktivTeyinat.Success ? aktivTeyinat.Data?.DepartamentAd : isci.SobeAdi,
                 CariVezife = aktivTeyinat.Success ? aktivTeyinat.Data?.VezifeAd : isci.VezifeAdi,
-                CariMaas = isci.CariMaas ?? listItem?.CariMaas ?? 0,
+                CariMaas = isci.CariMaas > 0 ? isci.CariMaas : listItem?.CariMaas ?? 0,
                 TeyinatTarixcesi = teyinatResult.Success ? teyinatResult.Data ?? new List<FinNex.Application.DTOs.HR.IsciTeyinat.IsciTeyinatDto>() : new List<FinNex.Application.DTOs.HR.IsciTeyinat.IsciTeyinatDto>(),
                 MaasTarixcesi = maasResult.Success ? maasResult.Data ?? new List<IsciMaasTarixcesiDto>() : new List<IsciMaasTarixcesiDto>()
             };
