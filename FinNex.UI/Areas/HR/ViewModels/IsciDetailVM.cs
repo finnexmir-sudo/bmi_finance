@@ -22,6 +22,7 @@ namespace FinNex.UI.Areas.HR.ViewModels
         public DateTime? IsdenAyrilmaTarixi { get; set; }
         public IsciStatus Status { get; set; }
         public bool LoginVar { get; set; }
+        public string? IstifadeciAd { get; set; }
 
         // Aktiv teyinat məlumatları
         public string? CariDepartament { get; set; }

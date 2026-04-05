@@ -236,11 +236,11 @@
                     </div>
                 }
                 <div class="isci-info-row">
-                    <span class="isci-info-key">Sistem Girişi</span>
+                    <span class="isci-info-key">İstifadəçi Adı</span>
                     <span class="isci-info-val">
-                        @if (Model.LoginVar)
+                        @if (!string.IsNullOrEmpty(Model.IstifadeciAd))
                         {
-                            <span class="isci-badge-yes">✓ Var</span>
+                            <span class="isci-info-val--mono">@Model.IstifadeciAd</span>
                         }
                         else
                         {
