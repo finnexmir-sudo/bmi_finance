@@ -10,6 +10,8 @@ using System.Globalization;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.RateLimiting;
+using Serilog;
+using Serilog.Events;
 
 namespace FinNex.UI
 {
@@ -94,11 +96,21 @@ namespace FinNex.UI
             builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
             // ==================================================
-            // 5. Logging (basic – Console + Debug)
+            // 5. Logging (Serilog – Console + File)
             // ==================================================
-            builder.Logging.ClearProviders();
-            builder.Logging.AddConsole();
-            builder.Logging.AddDebug();
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+                .WriteTo.Console()
+                .WriteTo.File(
+                    path: Path.Combine(builder.Environment.ContentRootPath, "Logs", "log-.txt"),
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 30,
+                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+                .CreateLogger();
+
+            builder.Host.UseSerilog();
 
             // ==================================================
             // 6. Background Services
@@ -136,6 +148,8 @@ namespace FinNex.UI
             // ==================================================
 
             // 🔥 Global exception handler
+            app.UseMiddleware<GlobalExceptionMiddleware>();
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();

@@ -72,6 +72,12 @@
 
             <div class="nav-section">System</div>
 
+            <a class="nav-link @(currentController == "LoginLogs" ? "active" : "")"
+               asp-area="Admin" asp-controller="LoginLogs" asp-action="Index">
+                <i class="bi bi-door-open"></i>
+                Login Logs
+            </a>
+
             <a class="nav-link @(currentController == "SystemLogs" ? "active" : "")"
                asp-area="Admin" asp-controller="SystemLogs" asp-action="Index">
                 <i class="bi bi-journal-text"></i>

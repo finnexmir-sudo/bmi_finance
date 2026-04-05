@@ -79,6 +79,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<Gorush> Gorushler { get; set; }
     public DbSet<GorushIshtirakci> GorushIshtirakcilar { get; set; }
     public DbSet<Xatirlatma> Xatirlatmalar { get; set; }
+    public DbSet<LoginLog> LoginLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -520,6 +521,19 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             entity.Property(x => x.Esasdir)
                   .HasDefaultValue(false);
         });
+        // ── LoginLog ──────────────────────────────────────────
+        builder.Entity<LoginLog>(entity =>
+        {
+            entity.ToTable("LoginLogs");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.UserName).HasMaxLength(256);
+            entity.Property(x => x.FullName).HasMaxLength(200);
+            entity.Property(x => x.IpAddress).HasMaxLength(50);
+            entity.Property(x => x.UserAgent).HasMaxLength(500);
+            entity.Property(x => x.FailReason).HasMaxLength(300);
+            entity.HasIndex(x => x.LoginTime);
+        });
+
         builder.Entity<MusteriHesabi>()
      .HasIndex(x => new { x.MusteriId, x.Iban })
      .IsUnique();
