@@ -242,8 +242,9 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
     {
         try
         {
-            var aktiv = await _unitOfWork.Repository<IsciTeyinat>()
-                .GetirAsync(x => x.IsciId == isciId && x.Aktivdir);
+            // Aktiv təyinatı tap
+            var repo = _unitOfWork.Repository<IsciTeyinat>();
+            var aktiv = await repo.GetirAsync(x => x.IsciId == isciId && x.Aktivdir);
 
             if (aktiv == null)
             {
@@ -257,17 +258,27 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
                     Esasdir = true,
                     Aktivdir = true
                 };
-                await _unitOfWork.Repository<IsciTeyinat>().YaratAsync(yeni);
-            }
-            else
-            {
-                aktiv.DepartamentId = departamentId;
-                aktiv.VezifeId = vezifeId;
-                await _unitOfWork.Repository<IsciTeyinat>().YenileAsync(aktiv);
+                await repo.YaratAsync(yeni);
+                await _unitOfWork.YaddaSaxlaAsync();
+                return Result.Ok("Yeni təyinat yaradıldı.");
             }
 
-            await _unitOfWork.YaddaSaxlaAsync();
-            return Result.Ok("Təyinat uğurla redaktə edildi.");
+            // Dəyişiklik varmı yoxla
+            if (aktiv.DepartamentId == departamentId && aktiv.VezifeId == vezifeId)
+                return Result.Ok("Dəyişiklik yoxdur.");
+
+            // Entity-ni ID ilə yenidən yüklə və yenilə
+            var entity = await repo.IdIleGetirAsync(aktiv.Id);
+            if (entity == null)
+                return Result.Fail("Təyinat tapılmadı.");
+
+            entity.DepartamentId = departamentId;
+            entity.VezifeId = vezifeId;
+
+            var saved = await _unitOfWork.YaddaSaxlaAsync();
+            return saved > 0
+                ? Result.Ok("Təyinat uğurla redaktə edildi.")
+                : Result.Fail($"Bazaya yazılmadı. (saved={saved})");
         }
         catch (Exception ex)
         {
