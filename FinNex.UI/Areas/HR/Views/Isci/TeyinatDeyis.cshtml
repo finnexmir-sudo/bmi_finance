@@ -71,7 +71,10 @@
                         <label class="isci-label">Yeni Departament <span class="isci-required">*</span></label>
                         <select asp-for="YeniDepartamentId" id="departamentSec"
                                 asp-items="@(new SelectList(Model.Departamentler, "Value", "Text"))"
-                                class="isci-select">
+                                class="isci-select"
+                                data-vezifeler-url="@Url.Action("GetVezifeler", "Isci", new { area = "HR" })"
+                                data-initial-dept="@Model.YeniDepartamentId"
+                                data-initial-vezife="@Model.YeniVezifeId">
                             <option value="">Departament seçin</option>
                         </select>
                         <span asp-validation-for="YeniDepartamentId" class="isci-error"></span>
