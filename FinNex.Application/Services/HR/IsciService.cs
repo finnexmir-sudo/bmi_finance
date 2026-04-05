@@ -246,15 +246,28 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
                 .GetirAsync(x => x.IsciId == isciId && x.Aktivdir);
 
             if (aktiv == null)
-                return Result.Fail("Aktiv təyinat tapılmadı.");
+            {
+                // Aktiv təyinat yoxdur - yeni yaradaq
+                var yeni = new IsciTeyinat
+                {
+                    IsciId = isciId,
+                    DepartamentId = departamentId,
+                    VezifeId = vezifeId,
+                    BaslamaTarixi = DateTime.Today,
+                    Esasdir = true,
+                    Aktivdir = true
+                };
+                await _unitOfWork.Repository<IsciTeyinat>().YaratAsync(yeni);
+            }
+            else
+            {
+                aktiv.DepartamentId = departamentId;
+                aktiv.VezifeId = vezifeId;
+                _unitOfWork.Repository<IsciTeyinat>().Query().Where(x => x.Id == aktiv.Id);
+            }
 
-            aktiv.DepartamentId = departamentId;
-            aktiv.VezifeId = vezifeId;
-            await _unitOfWork.Repository<IsciTeyinat>().YenileAsync(aktiv);
-
-            return await _unitOfWork.YaddaSaxlaAsync() > 0
-                ? Result.Ok("Təyinat uğurla redaktə edildi.")
-                : Result.Fail("Dəyişiklik saxlanarkən xəta baş verdi.");
+            await _unitOfWork.YaddaSaxlaAsync();
+            return Result.Ok("Təyinat uğurla redaktə edildi.");
         }
         catch (Exception ex)
         {
