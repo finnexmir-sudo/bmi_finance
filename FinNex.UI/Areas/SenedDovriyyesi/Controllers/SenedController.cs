@@ -4,6 +4,7 @@ using FinNex.Application.DTOs.SenedDovriyyesi.Sened;
 using FinNex.Application.DTOs.SenedDovriyyesi.SenedNovu;
 using FinNex.Application.Interfaces.SenedDovriyyesi;
 using FinNex.Application.Interfaces.Structur;
+using FinNex.Domain;
 using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Interfaces;
 using FinNex.UI.Areas.SenedDovriyyesi.ViewModels;
