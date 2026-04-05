@@ -73,7 +73,7 @@
                    ═══════════════════════════════════════════════════ *@
                 <div class="fn-nav-label">Əməkdaş</div>
 
-                <div class="fn-nav-group @(currentController is "Davamiyyet" or "Mezuniyyet" or "Muraciet" or "Tapshiriq" or "Gorush" or "Icaze" ? "open" : "")">
+                <div class="fn-nav-group @(currentArea != "HR" && currentController is "Davamiyyet" or "Mezuniyyet" or "Muraciet" or "Tapshiriq" or "Gorush" or "Icaze" ? "open" : "")">
                     <button type="button" class="fn-nav-group-toggle">
                         <div class="fn-nav-group-left">
                             <div class="fn-nav-icon">
