@@ -263,7 +263,7 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             {
                 aktiv.DepartamentId = departamentId;
                 aktiv.VezifeId = vezifeId;
-                _unitOfWork.Repository<IsciTeyinat>().Query().Where(x => x.Id == aktiv.Id);
+                await _unitOfWork.Repository<IsciTeyinat>().YenileAsync(aktiv);
             }
 
             await _unitOfWork.YaddaSaxlaAsync();
