@@ -6,6 +6,7 @@ using FinNex.UI.Configurations;
 using FinNex.UI.Middleware;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using System.Globalization;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.RateLimiting;
@@ -17,6 +18,11 @@ namespace FinNex.UI
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            // Tarix formatı: dd.MM.yyyy (Azərbaycan)
+            var azCulture = new CultureInfo("az-Latn-AZ");
+            CultureInfo.DefaultThreadCurrentCulture = azCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = azCulture;
 
             //bunu sileceyik
             //builder.WebHost.ConfigureKestrel(options =>
@@ -141,6 +147,14 @@ namespace FinNex.UI
             }
 
             app.UseHttpsRedirection();
+
+            // Tarix/rəqəm formatı Azərbaycan
+            app.UseRequestLocalization(new RequestLocalizationOptions
+            {
+                DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture("az-Latn-AZ"),
+                SupportedCultures = new[] { new CultureInfo("az-Latn-AZ") },
+                SupportedUICultures = new[] { new CultureInfo("az-Latn-AZ") }
+            });
 
             // 🔐 Security headers
             app.UseMiddleware<SecurityHeadersMiddleware>();
