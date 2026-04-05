@@ -54,7 +54,7 @@ public class SystemLogsController : Controller
 
         foreach (var file in logFiles)
         {
-            var lines = System.IO.File.ReadAllLines(file);
+            var lines = ReadFileShared(file);
             SystemLogVM? current = null;
 
             foreach (var line in lines)
@@ -112,5 +112,12 @@ public class SystemLogsController : Controller
 
         ViewData["Title"] = "System Logs";
         return View(vm);
+    }
+
+    private static string[] ReadFileShared(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd().Split(Environment.NewLine);
     }
 }
