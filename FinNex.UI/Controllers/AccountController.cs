@@ -1,7 +1,6 @@
 using FinNex.DataAccess.Contexts;
 using FinNex.Domain;
 using FinNex.Domain.Entities;
-using static FinNex.Domain.RoleNames;
 using FinNex.UI.DTO;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;

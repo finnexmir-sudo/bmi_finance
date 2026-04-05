@@ -1,7 +1,6 @@
 ﻿
 using FinNex.Application.Interfaces;
 using FinNex.Domain;
-using static FinNex.Domain.RoleNames;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using FinNex.UI.Areas.User.Models;
@@ -12,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FinNex.UI.Areas.User.Controllers
 {
     [Area("User")]
-    [Authorize(Roles = Operator)]
+    [Authorize(Roles = RoleNames.Operator)]
     public class MuracietController : Controller
     {
         private readonly IMezuniyyetService _mezuniyyetService;
