@@ -59,7 +59,6 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             {
                 IsciId = isci.Id,
                 CariMaas = dto.BaslangicMaas ?? 0
-
             };
             await _unitOfWork.Repository<IsciMaliye>().YaratAsync(maliye);
 
@@ -92,15 +91,16 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
 
             await _unitOfWork.YaddaSaxlaAsync();
 
+            // Yaradılmış işçini əlaqələri ilə yüklə
             var createdIsci = await _unitOfWork.Repository<Isci>().GetirAsync(
-            x => x.Id == isci.Id,
-            include: q => q
-                .Include(x => x.IsciTeyinatlari).ThenInclude(t => t.Departament)
-                .Include(x => x.IsciTeyinatlari).ThenInclude(t => t.Vezife)
-                .Include(x => x.Maliye)
-        );
+                x => x.Id == isci.Id,
+                include: q => q
+                    .Include(x => x.IsciTeyinatlari).ThenInclude(t => t.Departament)
+                    .Include(x => x.IsciTeyinatlari).ThenInclude(t => t.Vezife)
+                    .Include(x => x.Maliye)
+            );
 
-            return Result<IsciListDto>.Ok(_mapper.Map<IsciListDto>(isci));
+            return Result<IsciListDto>.Ok(_mapper.Map<IsciListDto>(createdIsci ?? isci));
         }
         catch (Exception ex)
         {
