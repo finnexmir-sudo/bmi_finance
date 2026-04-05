@@ -26,13 +26,14 @@ namespace FinNex.UI.Middleware
             // 4️⃣ XSS qorunması (legacy browsers üçün)
             headers["X-XSS-Protection"] = "1; mode=block";
 
-            // 5️⃣ Content Security Policy (sadə, təhlükəsiz)
+            // 5️⃣ Content Security Policy
             headers["Content-Security-Policy"] =
                 "default-src 'self'; " +
                 "script-src 'self' 'unsafe-inline'; " +
-                "style-src 'self' 'unsafe-inline'; " +
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+                "font-src 'self' https://fonts.gstatic.com; " +
                 "img-src 'self' data:; " +
-                "font-src 'self'; " +
+                "connect-src 'self' ws: wss:; " +
                 "object-src 'none'; " +
                 "frame-ancestors 'none';";
 
