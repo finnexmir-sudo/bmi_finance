@@ -73,7 +73,7 @@
                             <div class="isci-field">
                                 <label class="isci-label">Doğum Tarixi <span class="isci-required">*</span></label>
                                 <input asp-for="DogumTarixi" type="date" class="isci-input" />
-                                <small style="color:#888;font-size:11px;">Format: Ay/Gün/İl (MM/DD/YYYY)</small>
+                                <small class="date-format-hint" style="color:#888;font-size:11px;"></small>
                                 <span asp-validation-for="DogumTarixi" class="isci-error"></span>
                             </div>
                         </div>
@@ -137,7 +137,7 @@
                             <div class="isci-field">
                                 <label class="isci-label">İşə Qəbul Tarixi <span class="isci-required">*</span></label>
                                 <input asp-for="IseQebulTarixi" type="date" class="isci-input" />
-                                <small style="color:#888;font-size:11px;">Format: Ay/Gün/İl (MM/DD/YYYY)</small>
+                                <small class="date-format-hint" style="color:#888;font-size:11px;"></small>
                                 <span asp-validation-for="IseQebulTarixi" class="isci-error"></span>
                             </div>
                         </div>
