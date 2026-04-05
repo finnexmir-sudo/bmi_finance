@@ -45,8 +45,8 @@
                             <th>İşçi</th>
                             <th>Departament</th>
                             <th class="mb-table__th-center">İllik (T/İ/Q)</th>
-                            <th class="mb-table__th-center">Xəstəlik (T/İ/Q)</th>
-                            <th class="mb-table__th-center">Ezamiyyət (T/İ/Q)</th>
+                            <th class="mb-table__th-center">Xəstəlik (gün)</th>
+                            <th class="mb-table__th-center">Ezamiyyət (gün)</th>
                             <th>Əməliyyat</th>
                         </tr>
                     </thead>
@@ -80,8 +80,8 @@
                                 </td>
 
                                 @{ await RenderBalanceCell(illik); }
-                                @{ await RenderBalanceCell(xestelik); }
-                                @{ await RenderBalanceCell(ezamiyyet); }
+                                @{ await RenderUsedOnlyCell(xestelik); }
+                                @{ await RenderUsedOnlyCell(ezamiyyet); }
 
                                 <td>
                                     <button class="mb-btn-edit"
@@ -144,6 +144,22 @@
 }
 
 @functions {
+    async Task RenderUsedOnlyCell(MezuniyyetBalans? b)
+    {
+        if (b == null)
+        {
+            WriteLiteral("<td class=\"mb-balance-cell\"><span class=\"mb-dept\">—</span></td>");
+            return;
+        }
+
+        var istifade = b.IstifadeOlunanGun;
+        WriteLiteral($@"<td class=""mb-balance-cell"">
+            <div class=""mb-balance-nums"">
+                <span class=""mb-qaliq mb-qaliq--green"">{istifade} gün</span>
+            </div>
+        </td>");
+    }
+
     async Task RenderBalanceCell(MezuniyyetBalans? b)
     {
         if (b == null)
