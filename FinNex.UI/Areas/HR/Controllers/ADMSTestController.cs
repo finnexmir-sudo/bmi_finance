@@ -1,4 +1,5 @@
 ﻿using FinNex.DataAccess.Contexts;
+using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FinNex.UI.Areas.HR.Controllers;
 
 [Area("HR")]
-[Authorize(Roles = "HR,Admin")]
+[Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
 public class ADMSTestController : Controller
 {
     private readonly AppDbContext _db;

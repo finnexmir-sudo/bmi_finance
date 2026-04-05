@@ -1,4 +1,5 @@
 ﻿// Areas/HR/Controllers/DashboardController.cs
+using FinNex.Domain;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain.Entities.Communication;
@@ -11,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FinNex.UI.Areas.HR.Controllers
 {
     [Area("HR")]
-    [Authorize(Roles = "HR,Admin")]
+    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
     public class DashboardController : Controller
     {
         private readonly IIsciService _isciService;

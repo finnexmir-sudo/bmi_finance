@@ -32,7 +32,7 @@
             }
             public static bool IsAdmin(this ClaimsPrincipal user)
             {
-                return user.IsInRole("Admin");
+                return user.IsInRole(Domain.RoleNames.Admin);
             }
         }
     }

@@ -18,7 +18,7 @@ namespace FinNex.DataAccess.Seed
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            string[] roles = { "Admin", "Operator", "Viewer" };
+            string[] roles = { RoleNames.Admin, RoleNames.Operator, RoleNames.Viewer };
 
             foreach (var role in roles)
             {
@@ -50,9 +50,9 @@ namespace FinNex.DataAccess.Seed
                     return;
             }
 
-            if (!await userManager.IsInRoleAsync(adminUser, "Admin"))
+            if (!await userManager.IsInRoleAsync(adminUser, RoleNames.Admin))
             {
-                await userManager.AddToRoleAsync(adminUser, "Admin");
+                await userManager.AddToRoleAsync(adminUser, RoleNames.Admin);
             }
 
             // Valyutalar

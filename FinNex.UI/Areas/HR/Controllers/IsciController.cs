@@ -147,7 +147,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             // Operator rolunu əlavə et (default rol)
-            await _userManager.AddToRoleAsync(user, "Operator");
+            await _userManager.AddToRoleAsync(user, RoleNames.Operator);
 
             var dto = new IsciCreateDto
             {
