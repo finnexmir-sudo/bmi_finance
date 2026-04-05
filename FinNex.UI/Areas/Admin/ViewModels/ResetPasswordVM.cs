@@ -10,10 +10,9 @@ public class ResetPasswordVM
 
     public string FullName { get; set; } = null!;
 
-    [Required(ErrorMessage = "New password is required.")]
-    [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters.")]
+    [Required(ErrorMessage = "Şifrə mütləqdir.")]
     [DataType(DataType.Password)]
-    [Display(Name = "New Password")]
+    [Display(Name = "Yeni Şifrə")]
     public string NewPassword { get; set; } = null!;
 
     [Required(ErrorMessage = "Please confirm the new password.")]
