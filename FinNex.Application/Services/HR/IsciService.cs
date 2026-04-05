@@ -237,6 +237,31 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             return Result.Fail($"Təyinat dəyişikliyi zamanı xəta: {ex.Message}");
         }
     }
+
+    public async Task<Result> TeyinatRedakteEtAsync(int isciId, int departamentId, int vezifeId)
+    {
+        try
+        {
+            var aktiv = await _unitOfWork.Repository<IsciTeyinat>()
+                .GetirAsync(x => x.IsciId == isciId && x.Aktivdir);
+
+            if (aktiv == null)
+                return Result.Fail("Aktiv təyinat tapılmadı.");
+
+            aktiv.DepartamentId = departamentId;
+            aktiv.VezifeId = vezifeId;
+            await _unitOfWork.Repository<IsciTeyinat>().YenileAsync(aktiv);
+
+            return await _unitOfWork.YaddaSaxlaAsync() > 0
+                ? Result.Ok("Təyinat uğurla redaktə edildi.")
+                : Result.Fail("Dəyişiklik saxlanarkən xəta baş verdi.");
+        }
+        catch (Exception ex)
+        {
+            return Result.Fail($"Təyinat redaktəsi zamanı xəta: {ex.Message}");
+        }
+    }
+
     public async Task<Result<int?>> GetAktivDepartamentIdAsync(int isciId)
     {
         try
