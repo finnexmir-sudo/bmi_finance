@@ -57,8 +57,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var maasResult = await _isciService.GetMaasTarixcesiAsync(id);
             var aktivTeyinat = await _teyinatService.GetAktivTeyinatAsync(id);
 
-            var listResult = await _isciService.HamisiniGetirAsync();
-            var listItem = listResult.Data?.FirstOrDefault(x => x.Id == id);
+            var cariMaas = await _isciService.GetCariMaasAsync(id);
 
             var vm = new IsciDetailVM
             {
@@ -80,7 +79,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 LoginVar = isci.LoginVar,
                 CariDepartament = aktivTeyinat.Success ? aktivTeyinat.Data?.DepartamentAd : isci.SobeAdi,
                 CariVezife = aktivTeyinat.Success ? aktivTeyinat.Data?.VezifeAd : isci.VezifeAdi,
-                CariMaas = isci.CariMaas > 0 ? isci.CariMaas : listItem?.CariMaas ?? 0,
+                CariMaas = cariMaas,
                 TeyinatTarixcesi = teyinatResult.Success ? teyinatResult.Data ?? new List<FinNex.Application.DTOs.HR.IsciTeyinat.IsciTeyinatDto>() : new List<FinNex.Application.DTOs.HR.IsciTeyinat.IsciTeyinatDto>(),
                 MaasTarixcesi = maasResult.Success ? maasResult.Data ?? new List<IsciMaasTarixcesiDto>() : new List<IsciMaasTarixcesiDto>()
             };
@@ -395,8 +394,6 @@ namespace FinNex.UI.Areas.HR.Controllers
         [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
         public async Task<IActionResult> MaasDeyis(int id)
         {
-            var listResult = await _isciService.HamisiniGetirAsync();
-            var isci = listResult.Data?.FirstOrDefault(x => x.Id == id);
             var isciDetail = await _isciService.GetIsciDetailsAsync(id);
 
             if (isciDetail == null)
@@ -405,11 +402,13 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var kohneMaas = await _isciService.GetCariMaasAsync(id);
+
             var vm = new MaasDeyisVM
             {
                 IsciId = id,
                 IsciTamAd = isciDetail.TamAd,
-                KohneMaas = isci?.CariMaas ?? 0
+                KohneMaas = kohneMaas
             };
 
             return View(vm);
