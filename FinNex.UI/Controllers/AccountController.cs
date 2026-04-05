@@ -1,4 +1,6 @@
-﻿using FinNex.Domain;
+using FinNex.DataAccess.Contexts;
+using FinNex.Domain;
+using FinNex.Domain.Entities;
 using static FinNex.Domain.RoleNames;
 using FinNex.UI.DTO;
 using Microsoft.AspNetCore.Authorization;
@@ -14,15 +16,18 @@ namespace FinNex.UI.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
         private readonly ILogger<AccountController> _logger;
+        private readonly AppDbContext _db;
 
         public AccountController(
             UserManager<AppUser> userManager,
             SignInManager<AppUser> signInManager,
-            ILogger<AccountController> logger)
+            ILogger<AccountController> logger,
+            AppDbContext db)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _logger = logger;
+            _db = db;
         }
 
         // ======================
@@ -45,15 +50,21 @@ namespace FinNex.UI.Controllers
             if (!ModelState.IsValid)
                 return View(dto);
 
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = Request.Headers.UserAgent.ToString();
+            if (userAgent.Length > 500) userAgent = userAgent[..500];
+
             var user = await _userManager.FindByNameAsync(dto.UserName);
 
             if (user == null || !user.Aktivdir)
             {
+                // Uğursuz giriş — istifadəçi tapılmadı / deaktiv
+                await LogLoginAttempt(dto.UserName, null, ip, userAgent, false,
+                    user == null ? "İstifadəçi tapılmadı" : "İstifadəçi deaktivdir");
+
                 ModelState.AddModelError("", "İstifadəçi adı və ya şifrə yanlışdır");
                 return View(dto);
             }
-
-            var roles = await _userManager.GetRolesAsync(user);
 
             var result = await _signInManager.PasswordSignInAsync(
                 user.UserName!,
@@ -63,23 +74,33 @@ namespace FinNex.UI.Controllers
 
             if (!result.Succeeded)
             {
+                // Uğursuz giriş — şifrə yanlış / kilidlənib
+                var reason = result.IsLockedOut ? "Hesab kilidlənib" : "Yanlış şifrə";
+                await LogLoginAttempt(dto.UserName, $"{user.Ad} {user.Soyad}", ip, userAgent, false, reason);
+
                 ModelState.AddModelError("", "İstifadəçi adı və ya şifrə yanlışdır");
                 return View(dto);
             }
 
-            //if (roles.Contains("Admin"))
-            //{
-            //    return RedirectToAction("Index", "Home");
-            //}
-            ////return RedirectToAction("Index", "Home");
+            // Uğurlu giriş
+            await LogLoginAttempt(dto.UserName, $"{user.Ad} {user.Soyad}", ip, userAgent, true, null);
 
-            //// "Index" action-ı, "Home" controller-i, "User" area-sı
-            //else
-            //{
-            //    return RedirectToAction("Index", "Dashboard", new { area = "User" });
-            //}
             return RedirectToAction("Index", "Dashboard", new { area = "User" });
+        }
 
+        private async Task LogLoginAttempt(string userName, string? fullName, string? ip, string? userAgent, bool success, string? failReason)
+        {
+            _db.LoginLogs.Add(new LoginLog
+            {
+                UserName = userName,
+                FullName = fullName,
+                IpAddress = ip,
+                UserAgent = userAgent,
+                IsSuccess = success,
+                FailReason = failReason,
+                LoginTime = DateTime.Now
+            });
+            await _db.SaveChangesAsync();
         }
 
 
@@ -102,7 +123,7 @@ namespace FinNex.UI.Controllers
             if (!ModelState.IsValid)
                 return View(dto);
 
-            // 🔴 Username təkrarı YOXLA
+            // Username təkrarı YOXLA
             var exists = await _userManager.FindByNameAsync(dto.UserName);
             if (exists != null)
             {
@@ -112,7 +133,7 @@ namespace FinNex.UI.Controllers
 
             var user = new AppUser
             {
-                UserName = dto.UserName, // 🔥 LOGIN BUNUNLA OLACAQ
+                UserName = dto.UserName,
                 Ad = dto.Ad,
                 Soyad = dto.Soyad,
                 Email = dto.Email,
@@ -155,46 +176,46 @@ namespace FinNex.UI.Controllers
         }
 
         // GET
-[HttpGet]
-[Authorize]
-public IActionResult ChangePassword()
-{
-    return View(new UI.DTO.ChangePasswordDto());
-}
+        [HttpGet]
+        [Authorize]
+        public IActionResult ChangePassword()
+        {
+            return View(new UI.DTO.ChangePasswordDto());
+        }
 
-// POST
-[HttpPost]
-[Authorize]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> ChangePassword(Application.DTOs.Auth.ChangePasswordDto dto)
-{
-    if (!ModelState.IsValid)
-        return View(dto);
+        // POST
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(Application.DTOs.Auth.ChangePasswordDto dto)
+        {
+            if (!ModelState.IsValid)
+                return View(dto);
 
-    if (dto.NewPassword != dto.ConfirmNewPassword)
-    {
-        ModelState.AddModelError(nameof(dto.ConfirmNewPassword), "Yeni şifrələr uyğun deyil.");
-        return View(dto);
-    }
+            if (dto.NewPassword != dto.ConfirmNewPassword)
+            {
+                ModelState.AddModelError(nameof(dto.ConfirmNewPassword), "Yeni şifrələr uyğun deyil.");
+                return View(dto);
+            }
 
-    var user = await _userManager.GetUserAsync(User);
-    if (user == null)
-        return RedirectToAction("Login");
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return RedirectToAction("Login");
 
-    var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+            var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
 
-    if (result.Succeeded)
-    {
-        await _signInManager.RefreshSignInAsync(user);
-        TempData["SuccessMessage"] = "Şifrəniz uğurla yeniləndi.";
-        return RedirectToAction(nameof(ChangePassword));
-    }
+            if (result.Succeeded)
+            {
+                await _signInManager.RefreshSignInAsync(user);
+                TempData["SuccessMessage"] = "Şifrəniz uğurla yeniləndi.";
+                return RedirectToAction(nameof(ChangePassword));
+            }
 
-    foreach (var error in result.Errors)
-        ModelState.AddModelError(string.Empty, error.Description);
+            foreach (var error in result.Errors)
+                ModelState.AddModelError(string.Empty, error.Description);
 
-    TempData["ErrorMessage"] = "Şifrə dəyişdirilə bilmədi. Cari şifrənizi yoxlayın.";
-    return View(dto);
-}
+            TempData["ErrorMessage"] = "Şifrə dəyişdirilə bilmədi. Cari şifrənizi yoxlayın.";
+            return View(dto);
+        }
     }
 }
