@@ -334,4 +334,11 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             return Result<int?>.Fail("Xəta baş verdi.");
         }
     }
+
+    public async Task<decimal> GetCariMaasAsync(int isciId)
+    {
+        var maliye = await _unitOfWork.Repository<IsciMaliye>()
+            .GetirAsync(x => x.IsciId == isciId, izlemeden: true);
+        return maliye?.CariMaas ?? 0;
+    }
 }

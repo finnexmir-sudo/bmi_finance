@@ -14,4 +14,5 @@ public interface IIsciService : IServiceAsync<Isci, IsciListDto, IsciCreateDto, 
     Task<Result> TeyinatDeyisAsync(int isciId, int departamentId, int vezifeId, DateTime baslamaTarixi);
     Task<Result> TeyinatRedakteEtAsync(int isciId, int departamentId, int vezifeId);
     Task<Result<int?>> GetAktivDepartamentIdAsync(int isciId);
+    Task<decimal> GetCariMaasAsync(int isciId);
 }
