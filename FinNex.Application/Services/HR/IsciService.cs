@@ -179,8 +179,8 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
 
         if (maliye != null)
         {
+            // Change tracker ilə yeniləyirik (Update() çağırmırıq)
             maliye.CariMaas = yeniMaas;
-            await _unitOfWork.Repository<IsciMaliye>().YenileAsync(maliye);
         }
         else
         {
@@ -189,7 +189,8 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
         }
 
         await _unitOfWork.Repository<IsciMaasTarixcesi>().YaratAsync(tarixce);
-        return await _unitOfWork.YaddaSaxlaAsync() > 0 ? Result.Ok() : Result.Fail("Xəta!");
+        var saved = await _unitOfWork.YaddaSaxlaAsync();
+        return saved > 0 ? Result.Ok() : Result.Fail("Xəta!");
     }
 
     public async Task<Result<IList<IsciMaasTarixcesiDto>>> GetMaasTarixcesiAsync(int isciId)
