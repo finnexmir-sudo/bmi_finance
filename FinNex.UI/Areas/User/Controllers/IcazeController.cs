@@ -1,7 +1,6 @@
 using FinNex.Application.DTOs.HR.Icaze;
 using FinNex.Application.Interfaces;
 using FinNex.Domain;
-using static FinNex.Domain.RoleNames;
 using FinNex.Domain.Entities.HR;
 using FinNex.UI.Areas.User.ViewModels.Icaze;
 using Microsoft.AspNetCore.Authorization;
@@ -12,7 +11,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace FinNex.UI.Areas.User.Controllers
 {
     [Area("User")]
-    [Authorize(Roles = Operator)]
+    [Authorize(Roles = RoleNames.Operator)]
     public class IcazeController : Controller
     {
         private readonly IIcazeService _icazeService;

@@ -2,7 +2,6 @@
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Structur;
 using FinNex.Domain;
-using static FinNex.Domain.RoleNames;
 using FinNex.UI.Areas.User.ViewModels.Hesabat;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -13,7 +12,7 @@ using System.IO.Packaging;
 namespace FinNex.UI.Areas.User.Controllers;
 
 [Area("User")]
-[Authorize(Roles = SobeReisi + "," + Rehber + "," + HR + "," + Admin)]
+[Authorize(Roles = RoleNames.SobeReisi + "," + RoleNames.Rehber + "," + RoleNames.HR + "," + RoleNames.Admin)]
 public class HesabatController : Controller
 {
     private readonly IMezuniyyetService _mezuniyyetService;
