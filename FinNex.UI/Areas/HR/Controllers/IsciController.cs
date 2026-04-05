@@ -338,18 +338,13 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             var aktivTeyinat = await _teyinatService.GetAktivTeyinatAsync(id);
-            if (!aktivTeyinat.Success || aktivTeyinat.Data == null)
-            {
-                TempData["Error"] = "Aktiv təyinat tapılmadı.";
-                return RedirectToAction(nameof(Detail), new { id });
-            }
 
             var vm = new TeyinatRedakteVM
             {
                 IsciId = id,
                 IsciTamAd = isci.TamAd,
-                DepartamentId = aktivTeyinat.Data.DepartamentId,
-                VezifeId = aktivTeyinat.Data.VezifeId
+                DepartamentId = aktivTeyinat.Success && aktivTeyinat.Data != null ? aktivTeyinat.Data.DepartamentId : 0,
+                VezifeId = aktivTeyinat.Success && aktivTeyinat.Data != null ? aktivTeyinat.Data.VezifeId : 0
             };
 
             await ReloadTeyinatRedakteLists(vm);
