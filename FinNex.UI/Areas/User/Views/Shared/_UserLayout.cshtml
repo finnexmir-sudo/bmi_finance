@@ -4,8 +4,8 @@
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
     var currentTab = Context.Request.Query["tab"].ToString();
 
-    var isHR = User.IsInRole("HR") || User.IsInRole("Admin");
-    var isRehber = User.IsInRole("Rehber") || User.IsInRole("SobeReisi") || isHR;
+    var isHR = User.IsInRole(RoleNames.HR) || User.IsInRole(RoleNames.Admin);
+    var isRehber = User.IsInRole(RoleNames.Rehber) || User.IsInRole(RoleNames.SobeReisi) || isHR;
 }
 
 <!DOCTYPE html>
@@ -234,14 +234,14 @@
                             </div>
                         </button>
                         <div class="fn-nav-submenu">
-                            @if (User.IsInRole("SobeReisi") || isHR)
+                            @if (User.IsInRole(RoleNames.SobeReisi) || isHR)
                             {
                                 <a asp-area="User" asp-controller="Tesdiq" asp-action="SobeReisi"
                                    class="fn-nav-subitem @(currentController == "Tesdiq" && currentAction == "SobeReisi" ? "active" : "")">
                                     <div class="fn-sub-dot"></div> Şöbə Rəhbəri
                                 </a>
                             }
-                            @if (User.IsInRole("Rehber") || isHR)
+                            @if (User.IsInRole(RoleNames.Rehber) || isHR)
                             {
                                 <a asp-area="User" asp-controller="Tesdiq" asp-action="Rehber"
                                    class="fn-nav-subitem @(currentController == "Tesdiq" && currentAction == "Rehber" ? "active" : "")">

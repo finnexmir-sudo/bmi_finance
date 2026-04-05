@@ -1,4 +1,5 @@
 using FinNex.Application.Interfaces;
+using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FinNex.UI.Areas.HR.Controllers
 {
     [Area("HR")]
-    [Authorize(Roles = "HR,Admin")]
+    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
     public class DavamiyyetController : Controller
     {
         private readonly IDavamiyyetService _davamiyyetService;

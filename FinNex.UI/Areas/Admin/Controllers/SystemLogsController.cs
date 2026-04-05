@@ -1,3 +1,4 @@
+using FinNex.Domain;
 using FinNex.UI.Areas.Admin.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +7,7 @@ using System.Text.RegularExpressions;
 namespace FinNex.UI.Areas.Admin.Controllers;
 
 [Area("Admin")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = RoleNames.Admin)]
 public class SystemLogsController : Controller
 {
     private readonly IWebHostEnvironment _env;

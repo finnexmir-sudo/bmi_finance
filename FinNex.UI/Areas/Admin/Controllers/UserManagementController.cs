@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FinNex.UI.Areas.Admin.Controllers;
 
 [Area("Admin")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = RoleNames.Admin)]
 public class UserManagementController : Controller
 {
     private readonly UserManager<AppUser> _userManager;

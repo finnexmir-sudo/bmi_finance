@@ -1,3 +1,4 @@
+using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.Structure;
 using FinNex.Domain.Interfaces;
@@ -8,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FinNex.UI.Areas.HR.Controllers;
 
 [Area("HR")]
-[Authorize(Roles = "HR,Admin")]
+[Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
 public class HesabatController : Controller
 {
     private readonly IUnitOfWork _unitOfWork;

@@ -1,4 +1,5 @@
 ﻿using FinNex.Domain;
+using static FinNex.Domain.RoleNames;
 using FinNex.UI.DTO;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -129,7 +130,7 @@ namespace FinNex.UI.Controllers
                 return View(dto);
             }
 
-            await _userManager.AddToRoleAsync(user, "Viewer");
+            await _userManager.AddToRoleAsync(user, RoleNames.Viewer);
 
             return RedirectToAction("Login");
         }

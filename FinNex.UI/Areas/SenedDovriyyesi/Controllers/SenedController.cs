@@ -53,7 +53,7 @@ public class SenedController : Controller
         HttpContext.Connection.RemoteIpAddress?.ToString();
 
     private bool IsAdmin() =>
-        User.IsInRole("Admin");
+        User.IsInRole(RoleNames.Admin);
 
     private async Task<List<int>> GetIcazeliSobeIdleriAsync()
     {

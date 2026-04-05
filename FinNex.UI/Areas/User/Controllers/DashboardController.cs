@@ -4,6 +4,7 @@ using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.Application.Services.Communication;
 using FinNex.Domain;
+using static FinNex.Domain.RoleNames;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.UI.Areas.User.Models;
@@ -14,7 +15,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FinNex.UI.Areas.User.Controllers
 {
     [Area("User")]
-    [Authorize(Roles = "Operator,Admin")]
+    [Authorize(Roles = Operator + "," + Admin)]
     public class DashboardController : Controller
     {
         private readonly IDashboardService _dashboardService;

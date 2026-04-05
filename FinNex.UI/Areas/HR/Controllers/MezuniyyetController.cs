@@ -1,6 +1,7 @@
 ﻿using FinNex.Application.DTOs.HR.Isci;
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
+using static FinNex.Domain.RoleNames;
 using FinNex.Domain;
 using FinNex.UI.Areas.HR.ViewModels.Mezuniyyet;
 using FinNex.UI.Areas.User.ViewModels.Mezuniyyet;
@@ -75,7 +76,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // Rol: "Rehber"
         // ══════════════════════════════════════════════════════
 
-        [Authorize(Roles = "Rehber,Admin")]
+        [Authorize(Roles = Rehber + "," + Admin)]
         public async Task<IActionResult> Rehber()
         {
             var result = await _mezuniyyetService.GetRehberTesdiqindeAsync();
@@ -96,7 +97,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // Rol: "HR"
         // ══════════════════════════════════════════════════════
 
-        [Authorize(Roles = "HR,Admin")]
+        [Authorize(Roles = HR + "," + Admin)]
         public async Task<IActionResult> Hr()
         {
             var result = await _mezuniyyetService.GetHrTesdiqindeAsync();
@@ -116,7 +117,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // DETAL SƏHİFƏSİ (3 rol üçün ortaq)
         // ══════════════════════════════════════════════════════
 
-        [Authorize(Roles = "SobeReisi,Rehber,HR,Admin")]
+        [Authorize(Roles = SobeReisi + "," + Rehber + "," + HR + "," + Admin)]
         public async Task<IActionResult> Detal(int id, string returnAction = "Hr")
         {
             var result = await _mezuniyyetService.IdIleGetirAsync(id);
@@ -160,7 +161,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Rehber,Admin")]
+        [Authorize(Roles = Rehber + "," + Admin)]
         public async Task<IActionResult> RehberTesdiq(int id, bool status, string? qeyd)
         {
             var isciId = await GetCurrentIsciIdAsync();
@@ -178,7 +179,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "HR,Admin")]
+        [Authorize(Roles = HR + "," + Admin)]
         public async Task<IActionResult> HrTesdiq(int id, bool status, string? qeyd)
         {
             var isciId = await GetCurrentIsciIdAsync();
@@ -194,7 +195,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // ADMIN — hamısını görür
         // ══════════════════════════════════════════════════════
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = Admin)]
         public async Task<IActionResult> Index()
         {
             var result = await _mezuniyyetService.GetListAsync();

@@ -1,13 +1,14 @@
 ﻿// Areas/HR/Controllers/DepartamentController.cs
 using FinNex.Application.DTOs.Structur;
 using FinNex.Application.Interfaces.Structur;
+using FinNex.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FinNex.UI.Areas.HR.Controllers
 {
     [Area("HR")]
-    [Authorize(Roles = "HR,Admin")]
+    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
     public class DepartamentController : Controller
     {
         private readonly IDepartmentService _departamentService;

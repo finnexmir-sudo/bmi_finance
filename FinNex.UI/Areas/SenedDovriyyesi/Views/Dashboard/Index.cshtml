@@ -87,7 +87,7 @@
                 <div class="sd-action-sub">Siyahıda axtarış edin</div>
             </div>
         </a>
-        @if (User.IsInRole("Admin"))
+        @if (User.IsInRole(RoleNames.Admin))
         {
             <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Silinmisler"
                class="sd-action-card">
