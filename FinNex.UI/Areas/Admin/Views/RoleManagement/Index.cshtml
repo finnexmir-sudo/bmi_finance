@@ -1,5 +1,27 @@
 @model List<RoleListVM>
 
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-1"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div></div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRoleModal">
+        <i class="bi bi-plus-circle me-1"></i>Add Role
+    </button>
+</div>
+
 <div class="row g-3 mb-4">
     @foreach (var role in Model)
     {
@@ -21,6 +43,21 @@
                        class="btn btn-sm btn-outline-primary">
                         <i class="bi bi-eye me-1"></i>View Users
                     </a>
+                    <button class="btn btn-sm btn-outline-warning"
+                            data-bs-toggle="modal"
+                            data-bs-target="#editRoleModal"
+                            data-role-id="@role.Id"
+                            data-role-name="@role.Name">
+                        <i class="bi bi-pencil me-1"></i>Edit
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger"
+                            data-bs-toggle="modal"
+                            data-bs-target="#deleteRoleModal"
+                            data-role-id="@role.Id"
+                            data-role-name="@role.Name"
+                            data-role-users="@role.UserCount">
+                        <i class="bi bi-trash me-1"></i>Delete
+                    </button>
                 </div>
             </div>
         </div>
@@ -57,6 +94,23 @@
                                class="btn btn-sm btn-outline-primary" title="View Users">
                                 <i class="bi bi-eye me-1"></i>View Users
                             </a>
+                            <button class="btn btn-sm btn-outline-warning"
+                                    title="Edit Role"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editRoleModal"
+                                    data-role-id="@role.Id"
+                                    data-role-name="@role.Name">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    title="Delete Role"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#deleteRoleModal"
+                                    data-role-id="@role.Id"
+                                    data-role-name="@role.Name"
+                                    data-role-users="@role.UserCount">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </td>
                     </tr>
                 }
@@ -64,3 +118,129 @@
         </table>
     </div>
 </div>
+
+<!-- Add Role Modal -->
+<div class="modal fade" id="addRoleModal" tabindex="-1" aria-labelledby="addRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addRoleModalLabel">
+                        <i class="bi bi-plus-circle me-2"></i>Add New Role
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="roleName" class="form-label">Role Name</label>
+                        <input type="text" class="form-control" id="roleName" name="roleName"
+                               placeholder="Enter role name" required maxlength="256" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>Create Role
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Role Modal -->
+<div class="modal fade" id="editRoleModal" tabindex="-1" aria-labelledby="editRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editRoleId" />
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editRoleModalLabel">
+                        <i class="bi bi-pencil me-2"></i>Edit Role
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editRoleName" class="form-label">Role Name</label>
+                        <input type="text" class="form-control" id="editRoleName" name="roleName"
+                               required maxlength="256" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-check-circle me-1"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Role Modal -->
+<div class="modal fade" id="deleteRoleModal" tabindex="-1" aria-labelledby="deleteRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="Delete" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="deleteRoleId" />
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger" id="deleteRoleModalLabel">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Delete Role
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the role <strong id="deleteRoleNameText"></strong>?</p>
+                    <div class="alert alert-warning d-none" id="deleteRoleWarning">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        This role has <strong id="deleteRoleUserCount"></strong> user(s) assigned and cannot be deleted.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger" id="deleteRoleSubmitBtn">
+                        <i class="bi bi-trash me-1"></i>Delete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Edit Role Modal - populate fields
+        document.getElementById('editRoleModal').addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            document.getElementById('editRoleId').value = button.getAttribute('data-role-id');
+            document.getElementById('editRoleName').value = button.getAttribute('data-role-name');
+        });
+
+        // Delete Role Modal - populate fields and handle user check
+        document.getElementById('deleteRoleModal').addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var roleId = button.getAttribute('data-role-id');
+            var roleName = button.getAttribute('data-role-name');
+            var userCount = parseInt(button.getAttribute('data-role-users'));
+
+            document.getElementById('deleteRoleId').value = roleId;
+            document.getElementById('deleteRoleNameText').textContent = roleName;
+
+            var warning = document.getElementById('deleteRoleWarning');
+            var submitBtn = document.getElementById('deleteRoleSubmitBtn');
+
+            if (userCount > 0) {
+                warning.classList.remove('d-none');
+                document.getElementById('deleteRoleUserCount').textContent = userCount;
+                submitBtn.disabled = true;
+            } else {
+                warning.classList.add('d-none');
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+}
