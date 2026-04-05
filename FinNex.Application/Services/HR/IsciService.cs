@@ -159,9 +159,9 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             if (string.IsNullOrWhiteSpace(emrNo))
             {
                 var il = DateTime.Now.Year;
-                var sayi = await _unitOfWork.Repository<IsciMaasTarixcesi>()
-                    .SayAsync(x => x.IsciId == isciId);
-                emrNo = $"EMR-{il}/{(sayi + 1):D3}";
+                var umumiSayi = await _unitOfWork.Repository<IsciMaasTarixcesi>()
+                    .SayAsync(x => x.DeyismeTarixi.Year == il);
+                emrNo = $"EMR-{il}/{(umumiSayi + 1):D3}";
             }
 
             // Maliye-ni yüklə
