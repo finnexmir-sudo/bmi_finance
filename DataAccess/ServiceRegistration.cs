@@ -40,6 +40,8 @@ namespace FinNex.DataAccess
 
                 // 👤 User ayarları
                 options.User.RequireUniqueEmail = true;
+                // Azərbaycan hərfləri daxil bütün Unicode hərflərə icazə
+                options.User.AllowedUserNameCharacters = null!;
             })
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
