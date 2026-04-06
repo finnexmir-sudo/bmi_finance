@@ -40,6 +40,9 @@ namespace FinNex.DataAccess
 
                 // 👤 User ayarları
                 options.User.RequireUniqueEmail = true;
+                options.User.AllowedUserNameCharacters =
+                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+" +
+                    "əüöşçğıƏÜÖŞÇĞI";
             })
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
