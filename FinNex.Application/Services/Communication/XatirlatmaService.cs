@@ -176,7 +176,7 @@ namespace FinNex.Application.Services.Communication
                 if (entity.Nov == XatirlatmaNov.Sistem)
                     return Result.Fail("Sistem xatırlatmaları silinə bilməz.");
 
-                _unitOfWork.Repository<Xatirlatma>().DeleteAsync(entity.Id);
+                await _unitOfWork.Repository<Xatirlatma>().YumshakSilAsync(entity.Id);
                 await _unitOfWork.YaddaSaxlaAsync();
 
                 return Result.Ok("Silindi.");
