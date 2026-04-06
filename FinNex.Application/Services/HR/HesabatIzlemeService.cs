@@ -80,7 +80,7 @@ namespace FinNex.Application.Services.HR
 
         public async Task<Result> SablonSilAsync(int id)
         {
-            await _uow.Repository<HesabatSablonu>().YumshaqSilAsync(id);
+            await _uow.Repository<HesabatSablonu>().YumshakSilAsync(id);
             await _uow.YaddaSaxlaAsync();
             return Result.Ok("Şablon silindi.");
         }
