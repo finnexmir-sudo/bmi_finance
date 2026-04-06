@@ -1,3 +1,5 @@
+@inject Microsoft.AspNetCore.Identity.UserManager<FinNex.Domain.AppUser> _layoutUserManager
+@inject FinNex.Domain.Interfaces.IUnitOfWork _layoutUow
 @{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     var currentArea = ViewContext.RouteData.Values["area"]?.ToString();
@@ -7,6 +9,23 @@
     var isHR = User.IsInRole(RoleNames.HR) || User.IsInRole(RoleNames.Admin);
     var isRehber = User.IsInRole(RoleNames.Rehber) || User.IsInRole(RoleNames.SobeReisi) || isHR;
     var isMuhasib = User.IsInRole(RoleNames.Muhasib) || isHR;
+
+    // Vəzifəni bazadan al (rol deyil, vəzifə)
+    var _layoutVezife = ViewData["UserRole"] as string;
+    if (string.IsNullOrWhiteSpace(_layoutVezife) || _layoutVezife == "Operator" || _layoutVezife == "Mühasib" || _layoutVezife == "Rəhbər" || _layoutVezife == "HR")
+    {
+        var _appUser = await _layoutUserManager.GetUserAsync(User);
+        if (_appUser?.IsciId != null)
+        {
+            var _teyinat = _layoutUow.Repository<FinNex.Domain.Entities.HR.IsciTeyinat>()
+                .Query()
+                .Where(x => x.IsciId == _appUser.IsciId && x.Aktivdir && !x.Silinib)
+                .Select(x => x.Vezife.Ad)
+                .FirstOrDefault();
+            if (!string.IsNullOrEmpty(_teyinat))
+                _layoutVezife = _teyinat;
+        }
+    }
 }
 
 <!DOCTYPE html>
@@ -406,7 +425,7 @@
                     <div class="fn-sidebar-avatar">@initials</div>
                     <div class="fn-sidebar-info">
                         <div class="fn-sidebar-username">@userName</div>
-                        <div class="fn-sidebar-role">@ViewData["UserRole"]</div>
+                        <div class="fn-sidebar-role">@_layoutVezife</div>
                     </div>
                 </div>
                 <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
@@ -427,7 +446,7 @@
             <div class="fn-topbar-wrap">
                 <div>
                     <div class="fn-topbar-title">@ViewData["Title"]</div>
-                    <div class="fn-topbar-sub">@DateTime.Now.ToString("dd MMMM yyyy") · @ViewData["UserRole"]</div>
+                    <div class="fn-topbar-sub">@DateTime.Now.ToString("dd MMMM yyyy") · @_layoutVezife</div>
                 </div>
                 <div class="fn-topbar-right">
                     <a asp-area="User" asp-controller="Xatirlatma" asp-action="Index"

@@ -410,6 +410,32 @@
     gap: 12px;
 }
 
+/* ── Kateqoriya list ── */
+.hi-kat-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px 18px;
+}
+
+.hi-kat-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f0f2f5;
+    border-radius: 8px;
+    padding: 6px 10px 6px 14px;
+    transition: background .15s;
+}
+
+.hi-kat-item:hover { background: #e4e8f0; }
+
+.hi-kat-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1a2332;
+}
+
 /* ── Responsive ── */
 @media (max-width: 1000px) {
     .hi-kpi-row { grid-template-columns: repeat(3, 1fr); }
