@@ -48,7 +48,7 @@ namespace FinNex.Application.Services.HR
                 .AnyAsync(x => x.KateqoriyaId == id && !x.Silinib);
             if (sablonVar) return Result.Fail("Bu kateqoriyaya bağlı şablonlar var, silinə bilməz.");
 
-            await _uow.Repository<HesabatKateqoriyasi>().YumshaqSilAsync(id);
+            await _uow.Repository<HesabatKateqoriyasi>().YumshakSilAsync(id);
             await _uow.YaddaSaxlaAsync();
             return Result.Ok("Kateqoriya silindi.");
         }
