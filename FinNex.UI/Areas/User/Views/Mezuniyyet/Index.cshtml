@@ -76,14 +76,10 @@
                 </svg>
             </div>
             <div class="fn-bc-body">
-                <div class="fn-bc-title">Xəstəlik məzuniyyəti</div>
+                <div class="fn-bc-title">Xəstəlik</div>
                 <div class="fn-bc-nums">
-                    <span class="fn-bc-big" style="color:#2d6cdf">@Model.XestelikQaligGun</span>
-                    <span class="fn-bc-slash">/</span>
-                    <span class="fn-bc-total">@Model.XestelikToplamGun gün qalıb</span>
-                </div>
-                <div class="fn-lb-track" style="margin-top:6px">
-                    <div class="fn-lb-fill" style="width:@(Model.XestelikToplamGun > 0 ? (int)((double)Model.XestelikQaligGun / Model.XestelikToplamGun * 100) : 0)%;background:#2d6cdf"></div>
+                    <span class="fn-bc-big" style="color:#2d6cdf">@(Model.XestelikToplamGun - Model.XestelikQaligGun)</span>
+                    <span class="fn-bc-total">gün istifadə olunub</span>
                 </div>
             </div>
         </div>
@@ -98,12 +94,8 @@
             <div class="fn-bc-body">
                 <div class="fn-bc-title">Ezamiyyət</div>
                 <div class="fn-bc-nums">
-                    <span class="fn-bc-big" style="color:#e8b84b">@Model.EzamiyyetQaligGun</span>
-                    <span class="fn-bc-slash">/</span>
-                    <span class="fn-bc-total">@Model.EzamiyyetToplamGun gün qalıb</span>
-                </div>
-                <div class="fn-lb-track" style="margin-top:6px">
-                    <div class="fn-lb-fill" style="width:@(Model.EzamiyyetToplamGun > 0 ? (int)((double)Model.EzamiyyetQaligGun / Model.EzamiyyetToplamGun * 100) : 0)%;background:#e8b84b"></div>
+                    <span class="fn-bc-big" style="color:#e8b84b">@(Model.EzamiyyetToplamGun - Model.EzamiyyetQaligGun)</span>
+                    <span class="fn-bc-total">gün istifadə olunub</span>
                 </div>
             </div>
         </div>
@@ -269,7 +261,7 @@
                                asp-route-id="@m.Id" class="fn-btn fn-btn--ghost-sm" style="margin-top:6px">
                                 Detay
                             </a>
-                            @if (m.WorkflowMerhele == "Gözləmədə" || m.WorkflowMerhele == "Şöbə rəisi təsdiqində")
+                            @if (m.WorkflowMerhele == "Gözləmədə" || m.WorkflowMerhele == "Şöbə rəisi təsdiqində" || m.WorkflowMerhele == "Rəhbər təsdiqində")
                             {
                                 <form asp-area="User" asp-controller="Mezuniyyet"
                                       asp-action="Legv" method="post" style="margin-top:4px"
