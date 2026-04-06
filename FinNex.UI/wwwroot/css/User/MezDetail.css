@@ -136,6 +136,7 @@
 
 .fn-info-list-card {
     padding: 20px;
+    overflow: hidden;
 }
 
 .fn-info-row {
@@ -168,6 +169,9 @@
     color: #3d4557;
     font-weight: 500;
     text-align: right;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 180px;
 }
 
 .fn-info-row--full .fn-ir-val {
