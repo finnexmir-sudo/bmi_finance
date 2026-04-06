@@ -1,0 +1,365 @@
+@model FinNex.Application.DTOs.HR.HesabatIzleme.HesabatIzlemeDashboardDto
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = "Hesabat İzləmə";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var depts = ViewBag.Departamentler as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var isciler = ViewBag.Isciler as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/hesabat-izleme.css" asp-append-version="true" />
+}
+
+<div class="fn-dashboard hi">
+
+    <!-- ═══ KPI ═══ -->
+    <div class="hi-kpi-row">
+        <div class="hi-kpi hi-kpi--total">
+            <div class="hi-kpi-num">@Model.Umumi</div>
+            <div class="hi-kpi-lbl">Bu ay ümumi</div>
+        </div>
+        <div class="hi-kpi hi-kpi--done">
+            <div class="hi-kpi-num">@Model.Tamamlanan</div>
+            <div class="hi-kpi-lbl">Tamamlanıb</div>
+        </div>
+        <div class="hi-kpi hi-kpi--wait">
+            <div class="hi-kpi-num">@Model.Gozleyen</div>
+            <div class="hi-kpi-lbl">Gözləyir</div>
+        </div>
+        <div class="hi-kpi hi-kpi--late">
+            <div class="hi-kpi-num">@Model.Geciken</div>
+            <div class="hi-kpi-lbl">Gecikib</div>
+        </div>
+        <div class="hi-kpi hi-kpi--pct">
+            <div class="hi-kpi-num">@Model.TamamlanmaFaizi<sup>%</sup></div>
+            <div class="hi-progress"><div class="hi-progress-fill" style="width:@Model.TamamlanmaFaizi%"></div></div>
+            <div class="hi-kpi-lbl">İcra faizi</div>
+        </div>
+    </div>
+
+    <!-- ═══ GECİKƏNLƏR ═══ -->
+    @if (Model.GecikenTapshiriqlar.Any())
+    {
+        <div class="hi-section-head hi-section-head--alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> Gecikən hesabatlar (@Model.GecikenTapshiriqlar.Count)
+        </div>
+        <div class="fn-card">
+            <div class="hi-task-list">
+                @foreach (var t in Model.GecikenTapshiriqlar)
+                {
+                    var gecikGun = (DateTime.Now - t.Deadline).Days;
+                    var gecikSaat = (int)(DateTime.Now - t.Deadline).TotalHours % 24;
+                    <div class="hi-task hi-task--late">
+                        <div class="hi-task-left">
+                            <div class="hi-task-icon hi-ico--late"><i class="bi bi-exclamation-circle-fill"></i></div>
+                            <div>
+                                <div class="hi-task-name">@t.SablonAd</div>
+                                <div class="hi-task-meta">@t.DepartamentAd · @t.MesulIsciAd · @t.DovrText</div>
+                            </div>
+                        </div>
+                        <div class="hi-task-right">
+                            <span class="hi-late-badge">@(gecikGun > 0 ? $"{gecikGun} gün" : $"{gecikSaat} saat") gecikib</span>
+                            <form asp-action="Tamamla" method="post" class="hi-inline-form">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="tapshiriqId" value="@t.Id" />
+                                <button type="submit" class="hi-btn hi-btn--done" title="Tamamla"><i class="bi bi-check-lg"></i></button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- ═══ BU GÜNÜN HESABATLARI ═══ -->
+    <div class="hi-section-head">
+        <span class="hi-live-dot"></span> Bugünkü hesabatlar
+    </div>
+    <div class="fn-card">
+        @if (Model.BugunkuTapshiriqlar.Any())
+        {
+            <div class="hi-task-list">
+                @foreach (var t in Model.BugunkuTapshiriqlar)
+                {
+                    var iconCls = t.Status switch
+                    {
+                        HesabatTapshiriqStatus.Tamamlandi => "hi-ico--done",
+                        HesabatTapshiriqStatus.Icrada => "hi-ico--progress",
+                        HesabatTapshiriqStatus.Gecikib => "hi-ico--late",
+                        _ => "hi-ico--wait"
+                    };
+                    var icon = t.Status switch
+                    {
+                        HesabatTapshiriqStatus.Tamamlandi => "bi-check-circle-fill",
+                        HesabatTapshiriqStatus.Icrada => "bi-arrow-repeat",
+                        HesabatTapshiriqStatus.Gecikib => "bi-exclamation-circle-fill",
+                        _ => "bi-clock"
+                    };
+                    <div class="hi-task">
+                        <div class="hi-task-left">
+                            <div class="hi-task-icon @iconCls"><i class="bi @icon"></i></div>
+                            <div>
+                                <div class="hi-task-name">@t.SablonAd</div>
+                                <div class="hi-task-meta">
+                                    @t.MesulIsciAd · @t.KateqoriyaText ·
+                                    <span class="hi-deadline">Son: @t.Deadline.ToString("HH:mm")</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="hi-task-right">
+                            @if (t.Status == HesabatTapshiriqStatus.Tamamlandi)
+                            {
+                                <span class="fn-badge fn-badge--done">Tamamlandı</span>
+                                <span class="hi-time">@t.IcraTarixi?.ToString("HH:mm")</span>
+                            }
+                            else if (t.Status == HesabatTapshiriqStatus.Icrada)
+                            {
+                                <span class="fn-badge fn-badge--review">İcrada</span>
+                                <form asp-action="Tamamla" method="post" class="hi-inline-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="tapshiriqId" value="@t.Id" />
+                                    <button type="submit" class="hi-btn hi-btn--done" title="Tamamla"><i class="bi bi-check-lg"></i></button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="fn-badge fn-badge--wait">Gözləyir</span>
+                                <form asp-action="IcrayaBasla" method="post" class="hi-inline-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="tapshiriqId" value="@t.Id" />
+                                    <button type="submit" class="hi-btn hi-btn--start" title="Başla"><i class="bi bi-play-fill"></i></button>
+                                </form>
+                                <form asp-action="Tamamla" method="post" class="hi-inline-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="tapshiriqId" value="@t.Id" />
+                                    <button type="submit" class="hi-btn hi-btn--done" title="Tamamla"><i class="bi bi-check-lg"></i></button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="hi-empty">Bugünkü hesabat tapşırığı yoxdur</div>
+        }
+    </div>
+
+    <!-- ═══ BU AYIN HESABATLARI ═══ -->
+    <div class="hi-section-head">
+        <i class="bi bi-calendar3"></i> Bu ayın hesabatları
+    </div>
+    <div class="fn-card">
+        @if (Model.BuAyTapshiriqlar.Any())
+        {
+            <div class="hi-task-list hi-scroll">
+                @foreach (var t in Model.BuAyTapshiriqlar)
+                {
+                    var iconCls = t.Status switch
+                    {
+                        HesabatTapshiriqStatus.Tamamlandi => "hi-ico--done",
+                        HesabatTapshiriqStatus.Icrada => "hi-ico--progress",
+                        HesabatTapshiriqStatus.Gecikib => "hi-ico--late",
+                        _ => "hi-ico--wait"
+                    };
+                    var icon = t.Status switch
+                    {
+                        HesabatTapshiriqStatus.Tamamlandi => "bi-check-circle-fill",
+                        HesabatTapshiriqStatus.Icrada => "bi-arrow-repeat",
+                        HesabatTapshiriqStatus.Gecikib => "bi-exclamation-circle-fill",
+                        _ => "bi-clock"
+                    };
+                    <div class="hi-task @(t.Gecikibmi ? "hi-task--late" : "")">
+                        <div class="hi-task-left">
+                            <div class="hi-task-icon @iconCls"><i class="bi @icon"></i></div>
+                            <div>
+                                <div class="hi-task-name">@t.SablonAd</div>
+                                <div class="hi-task-meta">
+                                    @t.MesulIsciAd · @t.KateqoriyaText · @t.TezlikText ·
+                                    <span class="hi-deadline">Son: @t.Deadline.ToString("dd.MM HH:mm")</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="hi-task-right">
+                            <span class="hi-pri hi-pri--@t.Prioritet.ToString().ToLower()">@t.PrioritetText</span>
+                            @if (t.Status == HesabatTapshiriqStatus.Tamamlandi)
+                            {
+                                <span class="fn-badge fn-badge--done">Tamamlandı</span>
+                                @if (t.IcraEdenAd != null)
+                                {
+                                    <span class="hi-by">@t.IcraEdenAd</span>
+                                }
+                            }
+                            else
+                            {
+                                var badgeCls = t.Gecikibmi ? "fn-badge--rejected" : t.Status == HesabatTapshiriqStatus.Icrada ? "fn-badge--review" : "fn-badge--wait";
+                                var badgeText = t.Gecikibmi ? "Gecikib" : t.StatusText;
+                                <span class="fn-badge @badgeCls">@badgeText</span>
+                                <form asp-action="Tamamla" method="post" class="hi-inline-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="tapshiriqId" value="@t.Id" />
+                                    <button type="submit" class="hi-btn hi-btn--done" title="Tamamla"><i class="bi bi-check-lg"></i></button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="hi-empty">Bu ay üçün hesabat tapşırığı yoxdur</div>
+        }
+    </div>
+
+    <!-- ═══ ŞABLONLAR + YENİ ŞABLON ═══ -->
+    <div class="hi-section-head">
+        <i class="bi bi-journal-text"></i> Hesabat şablonları
+        <button type="button" class="hi-add-btn" onclick="document.getElementById('sablonModal').classList.add('hi-modal--open')">
+            <i class="bi bi-plus-lg"></i> Yeni şablon
+        </button>
+    </div>
+
+    @if (Model.Sablonlar.Any())
+    {
+        <div class="fn-card">
+            <table class="hi-table">
+                <thead>
+                    <tr>
+                        <th>Hesabat adı</th>
+                        <th>Tezlik</th>
+                        <th>Kateqoriya</th>
+                        <th>Prioritet</th>
+                        <th>Məsul</th>
+                        <th>Departament</th>
+                        <th>Deadline</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.Sablonlar)
+                    {
+                        <tr>
+                            <td class="hi-t-bold">@s.Ad</td>
+                            <td><span class="hi-tag">@s.TezlikText</span></td>
+                            <td>@s.KateqoriyaText</td>
+                            <td><span class="hi-pri hi-pri--@s.Prioritet.ToString().ToLower()">@s.PrioritetText</span></td>
+                            <td>@s.MesulIsciAd</td>
+                            <td>@s.DepartamentAd</td>
+                            <td>@(s.SonTarixGunu > 0 ? $"{s.SonTarixGunu}-ci gün" : "") @s.SonTarixSaati.ToString(@"hh\:mm")</td>
+                            <td>
+                                <form asp-action="SablonSil" method="post" class="hi-inline-form" onsubmit="return confirm('Silmək istədiyinizə əminsiniz?')">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@s.Id" />
+                                    <button type="submit" class="hi-btn hi-btn--del" title="Sil"><i class="bi bi-trash3"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="fn-card">
+            <div class="hi-empty">
+                Hələ hesabat şablonu yaradılmayıb. <strong>"Yeni şablon"</strong> düyməsini basın.
+            </div>
+        </div>
+    }
+</div>
+
+<!-- ═══ YENİ ŞABLON MODAL ═══ -->
+<div class="hi-modal" id="sablonModal">
+    <div class="hi-modal-overlay" onclick="this.parentElement.classList.remove('hi-modal--open')"></div>
+    <div class="hi-modal-card">
+        <div class="hi-modal-head">
+            <h3>Yeni hesabat şablonu</h3>
+            <button type="button" class="hi-modal-close" onclick="this.closest('.hi-modal').classList.remove('hi-modal--open')">&times;</button>
+        </div>
+        <form asp-action="SablonYarat" method="post">
+            @Html.AntiForgeryToken()
+            <div class="hi-modal-body">
+                <div class="hi-form-group">
+                    <label>Hesabat adı *</label>
+                    <input name="Ad" class="hi-input" required placeholder="Məs: Gündəlik kassa hesabatı" />
+                </div>
+                <div class="hi-form-group">
+                    <label>Təsvir</label>
+                    <input name="Tesvir" class="hi-input" placeholder="Qısa izah" />
+                </div>
+                <div class="hi-form-row">
+                    <div class="hi-form-group">
+                        <label>Tezlik *</label>
+                        <select name="Tezlik" class="hi-input" required>
+                            <option value="1">Günlük</option>
+                            <option value="2">Həftəlik</option>
+                            <option value="3">Aylıq</option>
+                            <option value="4">Rüblük</option>
+                            <option value="5">İllik</option>
+                        </select>
+                    </div>
+                    <div class="hi-form-group">
+                        <label>Kateqoriya *</label>
+                        <select name="Kateqoriya" class="hi-input" required>
+                            <option value="1">Vergi</option>
+                            <option value="2">Maaş</option>
+                            <option value="3">Bank</option>
+                            <option value="4">Kassa</option>
+                            <option value="5">Dövlət</option>
+                            <option value="6">Daxili</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="hi-form-row">
+                    <div class="hi-form-group">
+                        <label>Prioritet</label>
+                        <select name="Prioritet" class="hi-input">
+                            <option value="1">Aşağı</option>
+                            <option value="2" selected>Orta</option>
+                            <option value="3">Yüksək</option>
+                        </select>
+                    </div>
+                    <div class="hi-form-group">
+                        <label>Son tarix günü</label>
+                        <input name="SonTarixGunu" type="number" class="hi-input" value="0" min="0" max="31"
+                               placeholder="Aylıq: ayın günü, Həftəlik: 1-7" />
+                    </div>
+                </div>
+                <div class="hi-form-row">
+                    <div class="hi-form-group">
+                        <label>Son tarix saatı</label>
+                        <input name="SonTarixSaati" type="time" class="hi-input" value="17:00" />
+                    </div>
+                    <div class="hi-form-group">
+                        <label>Departament *</label>
+                        <select name="DepartamentId" class="hi-input" required>
+                            <option value="">Seçin</option>
+                            @foreach (var d in depts)
+                            {
+                                <option value="@d.Id">@d.Ad</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="hi-form-group">
+                    <label>Məsul şəxs *</label>
+                    <select name="MesulIsciId" class="hi-input" required>
+                        <option value="">Seçin</option>
+                        @foreach (var i in isciler)
+                        {
+                            <option value="@i.Id">@i.TamAd</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="hi-modal-foot">
+                <button type="button" class="hi-btn hi-btn--cancel" onclick="this.closest('.hi-modal').classList.remove('hi-modal--open')">Ləğv et</button>
+                <button type="submit" class="hi-btn hi-btn--submit">Yarat</button>
+            </div>
+        </form>
+    </div>
+</div>

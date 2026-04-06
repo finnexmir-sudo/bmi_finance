@@ -96,6 +96,9 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         // ── Maaş Hesablama Engine ───────────────────────────────────
         services.AddScoped<IMaasHesablamaService, MaasHesablamaService>();
 
+        // ── Hesabat İzləmə ────────────────────────────────────
+        services.AddScoped<IHesabatIzlemeService, HesabatIzlemeService>();
+
 
         // ── Parametri servisini yenilə (artıq var, sadəcə yoxla) ──
         // services.AddScoped<IMaasParametriService, MaasParametriService>();
