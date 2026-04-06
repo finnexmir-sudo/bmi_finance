@@ -140,6 +140,23 @@
                     </div>
                 }
 
+                @* Rehber Dashboard — yalnız Rehber rolu *@
+                @if (User.IsInRole(RoleNames.Rehber))
+                {
+                    <a asp-area="HR" asp-controller="RehberDashboard" asp-action="Index"
+                       class="fn-nav-item @(currentController == "RehberDashboard" ? "active" : "")">
+                        <div class="fn-nav-icon">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2" />
+                                <rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2" />
+                                <rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2" />
+                                <rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2" />
+                            </svg>
+                        </div>
+                        Rehber Dashboard
+                    </a>
+                }
+
                 @* Programlar *@
                 <div class="fn-nav-group">
                     <button type="button" class="fn-nav-group-toggle">
