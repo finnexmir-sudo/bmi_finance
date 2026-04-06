@@ -206,6 +206,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var vm = new IsciEditVM
             {
                 Id = isci.Id,
+                AppUserId = appUser?.Id,
                 IstifadeciAd = appUser?.UserName,
                 Ad = isci.Ad,
                 Soyad = isci.Soyad,
@@ -237,6 +238,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var dto = new IsciUpdateDto
             {
                 Id = vm.Id,
+                UserId = vm.AppUserId,
                 Ad = vm.Ad,
                 Soyad = vm.Soyad,
                 AtaAdi = vm.AtaAdi,
