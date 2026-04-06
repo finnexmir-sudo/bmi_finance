@@ -220,17 +220,10 @@
 
                     <div class="fn-lb">
                         <div class="fn-lb-top">
-                            <span class="fn-lb-name">Xəstəlik məzuniyyəti</span>
+                            <span class="fn-lb-name">Xəstəlik</span>
                             <span class="fn-lb-val">
-                                @Model.XestelikQaligGun / @Model.XestelikToplamGun gün
+                                @Model.XestelikIstifadeGun gün istifadə olunub
                             </span>
-                        </div>
-                        <div class="fn-lb-track">
-                            <div class="fn-lb-fill"
-                                 style="width:@(Model.XestelikToplamGun > 0
-                                                                  ? (int)((double)Model.XestelikQaligGun / Model.XestelikToplamGun * 100)
-                                                                  : 0)%;background:#2d6cdf">
-                            </div>
                         </div>
                     </div>
 
@@ -238,15 +231,8 @@
                         <div class="fn-lb-top">
                             <span class="fn-lb-name">Ezamiyyət</span>
                             <span class="fn-lb-val">
-                                @Model.EzamiyyetQaligGun / @Model.EzamiyyetToplamGun gün
+                                @Model.EzamiyyetIstifadeGun gün istifadə olunub
                             </span>
-                        </div>
-                        <div class="fn-lb-track">
-                            <div class="fn-lb-fill"
-                                 style="width:@(Model.EzamiyyetToplamGun > 0
-                                                                  ? (int)((double)Model.EzamiyyetQaligGun / Model.EzamiyyetToplamGun * 100)
-                                                                  : 0)%;background:#e8b84b">
-                            </div>
                         </div>
                     </div>
                 </div>
