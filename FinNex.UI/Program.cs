@@ -124,22 +124,21 @@ namespace FinNex.UI
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 var pendingMigrations = db.Database.GetPendingMigrations().ToList();
-                if (pendingMigrations.Any())
+                var productVersion = typeof(DbContext).Assembly.GetName().Version?.ToString() ?? "9.0.0";
+
+                foreach (var migration in pendingMigrations)
                 {
                     try
                     {
                         db.Database.Migrate();
+                        break; // uğurlu olsa, hamısını tətbiq edib — çıx
                     }
                     catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 2714 or 3701 or 1913)
                     {
-                        // Cədvəllər artıq mövcuddur - migration tarixçəsinə əlavə et
-                        var productVersion = typeof(DbContext).Assembly.GetName().Version?.ToString() ?? "9.0.0";
-                        foreach (var migration in pendingMigrations)
-                        {
-                            db.Database.ExecuteSqlRaw(
-                                "IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory] WHERE [MigrationId] = {0}) INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES ({0}, {1})",
-                                migration, productVersion);
-                        }
+                        // Bu migration artıq tətbiq olunub və ya indeks yoxdur — qeyd et və növbətiyə keç
+                        db.Database.ExecuteSqlRaw(
+                            "IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory] WHERE [MigrationId] = {0}) INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES ({0}, {1})",
+                            migration, productVersion);
                     }
                 }
             }
