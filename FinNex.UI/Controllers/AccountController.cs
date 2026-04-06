@@ -177,8 +177,11 @@ namespace FinNex.UI.Controllers
         // GET
         [HttpGet]
         [Authorize]
-        public IActionResult ChangePassword()
+        public async Task<IActionResult> ChangePassword()
         {
+            var user = await _userManager.GetUserAsync(User);
+            ViewBag.UserName = user?.UserName;
+            ViewBag.FullName = $"{user?.Ad} {user?.Soyad}";
             return View(new UI.DTO.ChangePasswordDto());
         }
 
@@ -188,6 +191,13 @@ namespace FinNex.UI.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangePassword(Application.DTOs.Auth.ChangePasswordDto dto)
         {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return RedirectToAction("Login");
+
+            ViewBag.UserName = user.UserName;
+            ViewBag.FullName = $"{user.Ad} {user.Soyad}";
+
             if (!ModelState.IsValid)
                 return View(dto);
 
@@ -196,10 +206,6 @@ namespace FinNex.UI.Controllers
                 ModelState.AddModelError(nameof(dto.ConfirmNewPassword), "Yeni şifrələr uyğun deyil.");
                 return View(dto);
             }
-
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-                return RedirectToAction("Login");
 
             var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
 
