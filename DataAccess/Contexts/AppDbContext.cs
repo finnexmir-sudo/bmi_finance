@@ -82,6 +82,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<LoginLog> LoginLogs { get; set; }
 
     // Hesabat İzləmə
+    public DbSet<HesabatKateqoriyasi> HesabatKateqoriyalari { get; set; }
     public DbSet<HesabatSablonu> HesabatSablonlari { get; set; }
     public DbSet<HesabatTapshiriq> HesabatTapshiriqlari { get; set; }
 
@@ -543,6 +544,12 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
      .IsUnique();
 
         // ── Hesabat İzləmə ──────────────────────────────────
+        builder.Entity<HesabatSablonu>()
+            .HasOne(x => x.Kateqoriya)
+            .WithMany(k => k.Sablonlar)
+            .HasForeignKey(x => x.KateqoriyaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Entity<HesabatSablonu>()
             .HasOne(x => x.MesulIsci)
             .WithMany()

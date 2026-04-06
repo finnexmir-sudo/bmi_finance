@@ -66,6 +66,32 @@ namespace FinNex.UI.Areas.User.Controllers
             return View(result.Data);
         }
 
+        // ── Kateqoriya Yarat ──
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> KateqoriyaYarat(string kateqoriyaAd)
+        {
+            if (string.IsNullOrWhiteSpace(kateqoriyaAd))
+            {
+                TempData["Error"] = "Kateqoriya adı boş ola bilməz.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var result = await _service.KateqoriyaYaratAsync(kateqoriyaAd.Trim());
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ── Kateqoriya Sil ──
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> KateqoriyaSil(int id)
+        {
+            var result = await _service.KateqoriyaSilAsync(id);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Index));
+        }
+
         // ── Şablon Yarat ──
         [HttpPost]
         [ValidateAntiForgeryToken]

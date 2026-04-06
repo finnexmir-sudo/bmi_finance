@@ -102,7 +102,7 @@
                             <div>
                                 <div class="hi-task-name">@t.SablonAd</div>
                                 <div class="hi-task-meta">
-                                    @t.MesulIsciAd · @t.KateqoriyaText ·
+                                    @t.MesulIsciAd · @t.KateqoriyaAd ·
                                     <span class="hi-deadline">Son: @t.Deadline.ToString("HH:mm")</span>
                                 </div>
                             </div>
@@ -177,7 +177,7 @@
                             <div>
                                 <div class="hi-task-name">@t.SablonAd</div>
                                 <div class="hi-task-meta">
-                                    @t.MesulIsciAd · @t.KateqoriyaText · @t.TezlikText ·
+                                    @t.MesulIsciAd · @t.KateqoriyaAd · @t.TezlikText ·
                                     <span class="hi-deadline">Son: @t.Deadline.ToString("dd.MM HH:mm")</span>
                                 </div>
                             </div>
@@ -214,6 +214,36 @@
         }
     </div>
 
+    <!-- ═══ KATEQORİYALAR ═══ -->
+    <div class="hi-section-head">
+        <i class="bi bi-tags"></i> Kateqoriyalar
+        <button type="button" class="hi-add-btn" onclick="document.getElementById('katModal').classList.add('hi-modal--open')">
+            <i class="bi bi-plus-lg"></i> Yeni kateqoriya
+        </button>
+    </div>
+    <div class="fn-card">
+        @if (Model.Kateqoriyalar.Any())
+        {
+            <div class="hi-kat-list">
+                @foreach (var k in Model.Kateqoriyalar)
+                {
+                    <div class="hi-kat-item">
+                        <span class="hi-kat-name">@k.Ad</span>
+                        <form asp-action="KateqoriyaSil" method="post" class="hi-inline-form" onsubmit="return confirm('Bu kateqoriyanı silmək istəyirsiniz?')">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@k.Id" />
+                            <button type="submit" class="hi-btn hi-btn--del" title="Sil"><i class="bi bi-x-lg"></i></button>
+                        </form>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="hi-empty">Hələ kateqoriya yaradılmayıb.</div>
+        }
+    </div>
+
     <!-- ═══ ŞABLONLAR + YENİ ŞABLON ═══ -->
     <div class="hi-section-head">
         <i class="bi bi-journal-text"></i> Hesabat şablonları
@@ -244,7 +274,7 @@
                         <tr>
                             <td class="hi-t-bold">@s.Ad</td>
                             <td><span class="hi-tag">@s.TezlikText</span></td>
-                            <td>@s.KateqoriyaText</td>
+                            <td>@s.KateqoriyaAd</td>
                             <td><span class="hi-pri hi-pri--@s.Prioritet.ToString().ToLower()">@s.PrioritetText</span></td>
                             <td>@s.MesulIsciAd</td>
                             <td>@s.DepartamentAd</td>
@@ -270,6 +300,30 @@
             </div>
         </div>
     }
+</div>
+
+<!-- ═══ YENİ KATEQORİYA MODAL ═══ -->
+<div class="hi-modal" id="katModal">
+    <div class="hi-modal-overlay" onclick="this.parentElement.classList.remove('hi-modal--open')"></div>
+    <div class="hi-modal-card" style="width:380px">
+        <div class="hi-modal-head">
+            <h3>Yeni kateqoriya</h3>
+            <button type="button" class="hi-modal-close" onclick="this.closest('.hi-modal').classList.remove('hi-modal--open')">&times;</button>
+        </div>
+        <form asp-action="KateqoriyaYarat" method="post">
+            @Html.AntiForgeryToken()
+            <div class="hi-modal-body">
+                <div class="hi-form-group">
+                    <label>Kateqoriya adı *</label>
+                    <input name="kateqoriyaAd" class="hi-input" required placeholder="Məs: Vergi, Bank, Kassa..." />
+                </div>
+            </div>
+            <div class="hi-modal-foot">
+                <button type="button" class="hi-btn hi-btn--cancel" onclick="this.closest('.hi-modal').classList.remove('hi-modal--open')">Ləğv et</button>
+                <button type="submit" class="hi-btn hi-btn--submit">Yarat</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <!-- ═══ YENİ ŞABLON MODAL ═══ -->
@@ -304,13 +358,12 @@
                     </div>
                     <div class="hi-form-group">
                         <label>Kateqoriya *</label>
-                        <select name="Kateqoriya" class="hi-input" required>
-                            <option value="1">Vergi</option>
-                            <option value="2">Maaş</option>
-                            <option value="3">Bank</option>
-                            <option value="4">Kassa</option>
-                            <option value="5">Dövlət</option>
-                            <option value="6">Daxili</option>
+                        <select name="KateqoriyaId" class="hi-input" required>
+                            <option value="">Seçin</option>
+                            @foreach (var k in Model.Kateqoriyalar)
+                            {
+                                <option value="@k.Id">@k.Ad</option>
+                            }
                         </select>
                     </div>
                 </div>

@@ -2,6 +2,13 @@ using FinNex.Domain.Entities.HR;
 
 namespace FinNex.Application.DTOs.HR.HesabatIzleme
 {
+    // ── Kateqoriya DTO ──
+    public class HesabatKateqoriyaDto
+    {
+        public int Id { get; set; }
+        public string Ad { get; set; } = null!;
+    }
+
     // ── Şablon DTOs ──
     public class HesabatSablonListDto
     {
@@ -9,7 +16,8 @@ namespace FinNex.Application.DTOs.HR.HesabatIzleme
         public string Ad { get; set; } = null!;
         public string? Tesvir { get; set; }
         public HesabatTezlik Tezlik { get; set; }
-        public HesabatKateqoriya Kateqoriya { get; set; }
+        public int KateqoriyaId { get; set; }
+        public string KateqoriyaAd { get; set; } = null!;
         public HesabatPrioritet Prioritet { get; set; }
         public int SonTarixGunu { get; set; }
         public TimeSpan SonTarixSaati { get; set; }
@@ -29,17 +37,6 @@ namespace FinNex.Application.DTOs.HR.HesabatIzleme
             _ => "-"
         };
 
-        public string KateqoriyaText => Kateqoriya switch
-        {
-            HesabatKateqoriya.Vergi => "Vergi",
-            HesabatKateqoriya.Maas => "Maaş",
-            HesabatKateqoriya.Bank => "Bank",
-            HesabatKateqoriya.Kassa => "Kassa",
-            HesabatKateqoriya.Dovlet => "Dövlət",
-            HesabatKateqoriya.Daxili => "Daxili",
-            _ => "-"
-        };
-
         public string PrioritetText => Prioritet switch
         {
             HesabatPrioritet.Yuksek => "Yüksək",
@@ -54,7 +51,7 @@ namespace FinNex.Application.DTOs.HR.HesabatIzleme
         public string Ad { get; set; } = null!;
         public string? Tesvir { get; set; }
         public HesabatTezlik Tezlik { get; set; }
-        public HesabatKateqoriya Kateqoriya { get; set; }
+        public int KateqoriyaId { get; set; }
         public HesabatPrioritet Prioritet { get; set; } = HesabatPrioritet.Orta;
         public int SonTarixGunu { get; set; }
         public TimeSpan SonTarixSaati { get; set; }
@@ -70,7 +67,8 @@ namespace FinNex.Application.DTOs.HR.HesabatIzleme
         public string SablonAd { get; set; } = null!;
         public string? SablonTesvir { get; set; }
         public HesabatTezlik Tezlik { get; set; }
-        public HesabatKateqoriya Kateqoriya { get; set; }
+        public string KateqoriyaAd { get; set; } = null!;
+        public int KateqoriyaId { get; set; }
         public HesabatPrioritet Prioritet { get; set; }
         public string MesulIsciAd { get; set; } = null!;
         public string DepartamentAd { get; set; } = null!;
@@ -101,17 +99,6 @@ namespace FinNex.Application.DTOs.HR.HesabatIzleme
             HesabatTezlik.Aylik => "Aylıq",
             HesabatTezlik.Rubluk => "Rüblük",
             HesabatTezlik.Illik => "İllik",
-            _ => "-"
-        };
-
-        public string KateqoriyaText => Kateqoriya switch
-        {
-            HesabatKateqoriya.Vergi => "Vergi",
-            HesabatKateqoriya.Maas => "Maaş",
-            HesabatKateqoriya.Bank => "Bank",
-            HesabatKateqoriya.Kassa => "Kassa",
-            HesabatKateqoriya.Dovlet => "Dövlət",
-            HesabatKateqoriya.Daxili => "Daxili",
             _ => "-"
         };
 
@@ -149,5 +136,6 @@ namespace FinNex.Application.DTOs.HR.HesabatIzleme
         public List<HesabatTapshiriqListDto> BuAyTapshiriqlar { get; set; } = new();
         public List<HesabatTapshiriqListDto> GecikenTapshiriqlar { get; set; } = new();
         public List<HesabatSablonListDto> Sablonlar { get; set; } = new();
+        public List<HesabatKateqoriyaDto> Kateqoriyalar { get; set; } = new();
     }
 }

@@ -8,12 +8,16 @@ namespace FinNex.Domain.Entities.HR
         public string? Tesvir { get; set; }
 
         public HesabatTezlik Tezlik { get; set; }
-        public HesabatKateqoriya Kateqoriya { get; set; }
+
+        // Dinamik kateqoriya (FK)
+        public int KateqoriyaId { get; set; }
+        public HesabatKateqoriyasi Kateqoriya { get; set; } = null!;
+
         public HesabatPrioritet Prioritet { get; set; } = HesabatPrioritet.Orta;
 
         // Deadline — gün/saat
-        public int SonTarixGunu { get; set; } // Aylıq: ayın neçənci günü, Həftəlik: həftənin günü (1-7), Günlük: 0
-        public TimeSpan SonTarixSaati { get; set; } = new TimeSpan(17, 0, 0); // Default: 17:00
+        public int SonTarixGunu { get; set; }
+        public TimeSpan SonTarixSaati { get; set; } = new TimeSpan(17, 0, 0);
 
         // Məsul şəxs
         public int MesulIsciId { get; set; }
@@ -36,16 +40,6 @@ namespace FinNex.Domain.Entities.HR
         Aylik = 3,
         Rubluk = 4,
         Illik = 5
-    }
-
-    public enum HesabatKateqoriya
-    {
-        Vergi = 1,
-        Maas = 2,
-        Bank = 3,
-        Kassa = 4,
-        Dovlet = 5,
-        Daxili = 6
     }
 
     public enum HesabatPrioritet
