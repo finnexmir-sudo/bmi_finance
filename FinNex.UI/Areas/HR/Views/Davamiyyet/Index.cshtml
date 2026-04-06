@@ -8,11 +8,17 @@
     var list = Model ?? new List<DavamiyyetListDto>();
     var bugun = DateTime.Today;
 
-    var isdeSayi = list.Count(x => x.Status == DavamiyyetStatus.Isde);
+    var gelibSayi = list.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
     var gecikmeSayi = list.Count(x => x.Status == DavamiyyetStatus.Gecikme);
     var qayibSayi = list.Count(x => x.Status == DavamiyyetStatus.Qayib);
     var icazeliSayi = list.Count(x => x.Status == DavamiyyetStatus.Icazeli);
     var cemi = list.Count;
+
+    var iseSaatleri = list
+        .Where(x => x.GirisVaxti.HasValue && x.CixisVaxti.HasValue)
+        .Select(x => (x.CixisVaxti!.Value - x.GirisVaxti!.Value).TotalHours)
+        .ToList();
+    var ortaIsSaati = iseSaatleri.Any() ? Math.Round(iseSaatleri.Average(), 1) : 0;
 }
 
 <div class="hrd-page">
@@ -20,10 +26,13 @@
     @* ── Başlıq ── *@
     <div class="hrd-head">
         <div>
-            <h2 class="hrd-title">Davamiyyət İdarəetməsi</h2>
-            <p class="hrd-sub">Bütün işçilərin giriş-çıxış qeydləri, gecikmə analizi və fərdi axtarış</p>
+            <h2 class="hrd-title">Davamiyyət</h2>
+            <p class="hrd-sub">Giriş-çıxış qeydləri, gecikmə analizi və fərdi axtarış</p>
         </div>
         <div class="hrd-head-right">
+            <button id="hrdExport" class="hrd-btn hrd-btn--export" title="Excel-ə ixrac et">
+                <i class="bi bi-file-earmark-excel"></i> Excel
+            </button>
             <div class="hrd-live-pill" id="hrdDeviceStatus">
                 <span class="hrd-live-dot"></span>
                 <span id="hrdDeviceText">Cihaz yoxlanılır...</span>
@@ -33,16 +42,16 @@
 
     @* ── KPI Kartlar ── *@
     <div class="hrd-kpi-row">
-        <div class="hrd-kpi">
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="1,2" title="Gəlib (İşdə + Gecikən)">
             <div class="hrd-kpi-icon hrd-kpi-icon--green">
                 <i class="bi bi-check-circle-fill"></i>
             </div>
             <div class="hrd-kpi-body">
-                <div class="hrd-kpi-val" id="kpiIsde">@isdeSayi</div>
-                <div class="hrd-kpi-lbl">İşdə</div>
+                <div class="hrd-kpi-val" id="kpiGelib">@gelibSayi</div>
+                <div class="hrd-kpi-lbl">Gəlib</div>
             </div>
         </div>
-        <div class="hrd-kpi">
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="2" title="Gecikənlər">
             <div class="hrd-kpi-icon hrd-kpi-icon--amber">
                 <i class="bi bi-clock-fill"></i>
             </div>
@@ -51,7 +60,7 @@
                 <div class="hrd-kpi-lbl">Gecikmə</div>
             </div>
         </div>
-        <div class="hrd-kpi">
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="3" title="Qayıblar">
             <div class="hrd-kpi-icon hrd-kpi-icon--red">
                 <i class="bi bi-x-circle-fill"></i>
             </div>
@@ -60,7 +69,7 @@
                 <div class="hrd-kpi-lbl">Qayıb</div>
             </div>
         </div>
-        <div class="hrd-kpi">
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="4" title="İcazəlilər">
             <div class="hrd-kpi-icon hrd-kpi-icon--blue">
                 <i class="bi bi-card-checklist"></i>
             </div>
@@ -69,13 +78,22 @@
                 <div class="hrd-kpi-lbl">İcazəli</div>
             </div>
         </div>
-        <div class="hrd-kpi hrd-kpi--total">
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="" title="Hamısı">
             <div class="hrd-kpi-icon hrd-kpi-icon--indigo">
                 <i class="bi bi-people-fill"></i>
             </div>
             <div class="hrd-kpi-body">
                 <div class="hrd-kpi-val" id="kpiCemi">@cemi</div>
                 <div class="hrd-kpi-lbl">Cəmi qeyd</div>
+            </div>
+        </div>
+        <div class="hrd-kpi hrd-kpi--stat">
+            <div class="hrd-kpi-icon hrd-kpi-icon--teal">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <div class="hrd-kpi-body">
+                <div class="hrd-kpi-val" id="kpiOrtaSaat">@ortaIsSaati</div>
+                <div class="hrd-kpi-lbl">Ort. iş saatı</div>
             </div>
         </div>
     </div>
@@ -144,11 +162,27 @@
                 </div>
             </div>
             <div class="hrd-filter-group">
-                <label class="hrd-filter-lbl">Seçilmiş işçi</label>
+                <label class="hrd-filter-lbl">Başlanğıc</label>
+                <input type="date" id="hrdIsciBaslangic" class="hrd-input" />
+            </div>
+            <div class="hrd-filter-group">
+                <label class="hrd-filter-lbl">Son</label>
+                <input type="date" id="hrdIsciSon" class="hrd-input" />
+            </div>
+            <div class="hrd-filter-group">
+                <label class="hrd-filter-lbl">Seçilmiş</label>
                 <div class="hrd-selected-isci" id="hrdSelectedIsci">
                     <span class="hrd-no-selection">Heç kim seçilməyib</span>
                 </div>
             </div>
+        </div>
+    </div>
+
+    @* ── Əlavə statistika ── *@
+    <div class="hrd-extra-stats" id="hrdExtraStats">
+        <div class="hrd-es-item">
+            <span class="hrd-es-lbl">Ən çox gecikən şöbə:</span>
+            <strong id="hrdEnCoxGeciken">—</strong>
         </div>
     </div>
 
@@ -191,30 +225,20 @@
                                     </div>
                                 </td>
                                 <td><span class="hrd-dept">@(item.DepartamentAd ?? "-")</span></td>
-                                <td>
-                                    <div class="hrd-date">@item.Tarix.ToString("dd.MM.yyyy")</div>
-                                </td>
+                                <td><div class="hrd-date">@item.Tarix.ToString("dd.MM.yyyy")</div></td>
                                 <td>
                                     @if (item.GirisVaxti.HasValue)
                                     {
-                                        <span class="hrd-time @(isLate ? "hrd-time--late" : "")">
-                                            @item.GirisVaxti.Value.ToString("HH:mm")
-                                        </span>
+                                        <span class="hrd-time @(isLate ? "hrd-time--late" : "")">@item.GirisVaxti.Value.ToString("HH:mm")</span>
                                     }
-                                    else
-                                    {
-                                        <span class="hrd-nodata">--:--</span>
-                                    }
+                                    else { <span class="hrd-nodata">--:--</span> }
                                 </td>
                                 <td>
                                     @if (item.CixisVaxti.HasValue)
                                     {
                                         <span class="hrd-time">@item.CixisVaxti.Value.ToString("HH:mm")</span>
                                     }
-                                    else
-                                    {
-                                        <span class="hrd-nodata">--:--</span>
-                                    }
+                                    else { <span class="hrd-nodata">--:--</span> }
                                 </td>
                                 <td>
                                     @if (item.GirisVaxti.HasValue && item.CixisVaxti.HasValue)
@@ -223,10 +247,7 @@
                                         var cls = dur.TotalHours < 8 ? "hrd-dur--short" : "hrd-dur--ok";
                                         <span class="hrd-dur @cls">@dur.Hours s @dur.Minutes d</span>
                                     }
-                                    else
-                                    {
-                                        <span class="hrd-nodata">---</span>
-                                    }
+                                    else { <span class="hrd-nodata">---</span> }
                                 </td>
                                 <td>
                                     @switch (item.Status)

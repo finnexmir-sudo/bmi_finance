@@ -18,38 +18,74 @@ document.addEventListener('DOMContentLoaded', function () {
     var inputIsciAxtar = document.getElementById('hrdIsciAxtar');
     var isciResults = document.getElementById('hrdIsciResults');
     var selectedIsciEl = document.getElementById('hrdSelectedIsci');
+    var inputIsciBaslangic = document.getElementById('hrdIsciBaslangic');
+    var inputIsciSon = document.getElementById('hrdIsciSon');
 
     var tableBody = document.getElementById('hrdTableBody');
     var recordCount = document.getElementById('hrdRecordCount');
+    var btnExport = document.getElementById('hrdExport');
+    var extraStats = document.getElementById('hrdExtraStats');
+    var enCoxGecikenEl = document.getElementById('hrdEnCoxGeciken');
 
-    // KPI elements
-    var kpiIsde = document.getElementById('kpiIsde');
+    var kpiGelib = document.getElementById('kpiGelib');
     var kpiGecikme = document.getElementById('kpiGecikme');
     var kpiQayib = document.getElementById('kpiQayib');
     var kpiIcazeli = document.getElementById('kpiIcazeli');
     var kpiCemi = document.getElementById('kpiCemi');
+    var kpiOrtaSaat = document.getElementById('kpiOrtaSaat');
 
     var deviceStatus = document.getElementById('hrdDeviceStatus');
     var deviceText = document.getElementById('hrdDeviceText');
 
     var selectedIsciId = null;
     var searchTimeout = null;
+    var currentParams = {};
+    var currentMode = 'tarix';
 
     // ── Tab switching ──
     tabs.forEach(function (tab) {
         tab.addEventListener('click', function () {
             tabs.forEach(function (t) { t.classList.remove('active'); });
             tab.classList.add('active');
+            currentMode = tab.getAttribute('data-mode');
+            filterTarix.style.display = currentMode === 'tarix' ? 'flex' : 'none';
+            filterAraliq.style.display = currentMode === 'araliq' ? 'flex' : 'none';
+            filterIsci.style.display = currentMode === 'isci' ? 'flex' : 'none';
+        });
+    });
 
-            var mode = tab.getAttribute('data-mode');
-            filterTarix.style.display = mode === 'tarix' ? 'flex' : 'none';
-            filterAraliq.style.display = mode === 'araliq' ? 'flex' : 'none';
-            filterIsci.style.display = mode === 'isci' ? 'flex' : 'none';
+    // ── KPI kart klik — filtr ──
+    document.querySelectorAll('.hrd-kpi--clickable').forEach(function (kpi) {
+        kpi.style.cursor = 'pointer';
+        kpi.addEventListener('click', function () {
+            var statusVal = kpi.getAttribute('data-status');
+            // Remove active from all
+            document.querySelectorAll('.hrd-kpi--clickable').forEach(function (k) { k.classList.remove('hrd-kpi--active'); });
+
+            if (statusVal === '') {
+                // "Cəmi" — hamısını göstər, filtr sil
+                selectStatus.value = '';
+                var p = getBaseParams();
+                loadData(p);
+            } else if (statusVal === '1,2') {
+                // "Gəlib" — İşdə + Gecikme
+                kpi.classList.add('hrd-kpi--active');
+                // Custom: load without status filter, then client-filter for 1,2
+                var p = getBaseParams();
+                loadData(p, [1, 2]);
+            } else {
+                kpi.classList.add('hrd-kpi--active');
+                selectStatus.value = statusVal;
+                var p = getBaseParams();
+                p.status = statusVal;
+                loadData(p);
+            }
         });
     });
 
     // ── Tarixə görə axtarış ──
     btnAxtar.addEventListener('click', function () {
+        document.querySelectorAll('.hrd-kpi--clickable').forEach(function (k) { k.classList.remove('hrd-kpi--active'); });
         var params = {};
         if (inputTarix.value) params.tarix = inputTarix.value;
         if (selectStatus.value) params.status = selectStatus.value;
@@ -58,6 +94,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Tarix aralığı axtarışı ──
     btnAraliqAxtar.addEventListener('click', function () {
+        document.querySelectorAll('.hrd-kpi--clickable').forEach(function (k) { k.classList.remove('hrd-kpi--active'); });
         var params = {};
         if (inputBaslangic.value) params.baslangic = inputBaslangic.value;
         if (inputSon.value) params.son = inputSon.value;
@@ -69,11 +106,7 @@ document.addEventListener('DOMContentLoaded', function () {
     inputIsciAxtar.addEventListener('input', function () {
         clearTimeout(searchTimeout);
         var q = inputIsciAxtar.value.trim();
-
-        if (q.length < 2) {
-            isciResults.style.display = 'none';
-            return;
-        }
+        if (q.length < 2) { isciResults.style.display = 'none'; return; }
 
         searchTimeout = setTimeout(function () {
             fetch('/HR/Davamiyyet/IsciAxtar?q=' + encodeURIComponent(q))
@@ -92,23 +125,22 @@ document.addEventListener('DOMContentLoaded', function () {
                         });
                         isciResults.innerHTML = html;
 
-                        // Click handlers
                         isciResults.querySelectorAll('.hrd-search-item').forEach(function (item) {
                             item.addEventListener('click', function () {
                                 selectedIsciId = parseInt(item.getAttribute('data-id'));
                                 var name = item.getAttribute('data-name');
-
                                 selectedIsciEl.innerHTML =
                                     '<span class="hrd-selected-name">' + name + '</span>' +
                                     '<button class="hrd-selected-clear" id="clearIsci">&times;</button>';
-
                                 document.getElementById('clearIsci').addEventListener('click', clearSelectedIsci);
-
                                 isciResults.style.display = 'none';
                                 inputIsciAxtar.value = '';
 
-                                // Load this employee's data
-                                loadData({ isciId: selectedIsciId });
+                                // Load with optional date range
+                                var params = { isciId: selectedIsciId };
+                                if (inputIsciBaslangic.value) params.baslangic = inputIsciBaslangic.value;
+                                if (inputIsciSon.value) params.son = inputIsciSon.value;
+                                loadData(params);
                             });
                         });
                     }
@@ -117,7 +149,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 300);
     });
 
-    // Close dropdown on outside click
     document.addEventListener('click', function (e) {
         if (!inputIsciAxtar.contains(e.target) && !isciResults.contains(e.target)) {
             isciResults.style.display = 'none';
@@ -130,18 +161,54 @@ document.addEventListener('DOMContentLoaded', function () {
         loadData({ tarix: inputTarix.value || new Date().toISOString().split('T')[0] });
     }
 
+    function getBaseParams() {
+        if (currentMode === 'araliq') {
+            var p = {};
+            if (inputBaslangic.value) p.baslangic = inputBaslangic.value;
+            if (inputSon.value) p.son = inputSon.value;
+            return p;
+        } else if (currentMode === 'isci' && selectedIsciId) {
+            var p = { isciId: selectedIsciId };
+            if (inputIsciBaslangic.value) p.baslangic = inputIsciBaslangic.value;
+            if (inputIsciSon.value) p.son = inputIsciSon.value;
+            return p;
+        }
+        return { tarix: inputTarix.value || new Date().toISOString().split('T')[0] };
+    }
+
+    // ── Excel Export ──
+    btnExport.addEventListener('click', function () {
+        var params = new URLSearchParams(currentParams).toString();
+        window.location.href = '/HR/Davamiyyet/ExportExcel?' + params;
+    });
+
     // ── Data loading ──
-    function loadData(params) {
+    function loadData(params, clientFilterStatuses) {
+        currentParams = params;
         var url = '/HR/Davamiyyet/GetByTarix?' + new URLSearchParams(params).toString();
 
-        tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><div class="spinner-border spinner-border-sm text-muted" role="status"></div><div style="margin-top:8px">Yüklənir...</div></div></td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><div class="spinner-border spinner-border-sm text-muted"></div><div style="margin-top:8px">Yüklənir...</div></div></td></tr>';
 
         fetch(url)
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 updateKPI(data.stats);
-                renderTable(data.records);
-                recordCount.textContent = data.records.length + ' qeyd';
+
+                var records = data.records;
+                if (clientFilterStatuses && clientFilterStatuses.length > 0) {
+                    records = records.filter(function (r) { return clientFilterStatuses.indexOf(r.status) >= 0; });
+                }
+
+                renderTable(records);
+                recordCount.textContent = records.length + ' qeyd';
+
+                // Extra stats
+                if (data.stats.enCoxGecikenDept && data.stats.enCoxGecikenDeptSay > 0) {
+                    enCoxGecikenEl.textContent = data.stats.enCoxGecikenDept + ' (' + data.stats.enCoxGecikenDeptSay + ' nəfər)';
+                    extraStats.style.display = 'flex';
+                } else {
+                    extraStats.style.display = 'none';
+                }
             })
             .catch(function () {
                 tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><i class="bi bi-exclamation-triangle"></i><div>Xəta baş verdi</div></div></td></tr>';
@@ -149,11 +216,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function updateKPI(stats) {
-        kpiIsde.textContent = stats.isde;
+        kpiGelib.textContent = stats.gelib;
         kpiGecikme.textContent = stats.gecikme;
         kpiQayib.textContent = stats.qayib;
         kpiIcazeli.textContent = stats.icazeli;
         kpiCemi.textContent = stats.cemi;
+        kpiOrtaSaat.textContent = stats.ortaIsSaati;
     }
 
     function renderTable(records) {
@@ -166,11 +234,9 @@ document.addEventListener('DOMContentLoaded', function () {
         records.forEach(function (r) {
             var initials = r.isciTamAd.substring(0, 2).toUpperCase();
             var tarix = formatDate(r.tarix);
-
             var giris = r.girisVaxti ? formatTime(r.girisVaxti) : '<span class="hrd-nodata">--:--</span>';
             var cixis = r.cixisVaxti ? formatTime(r.cixisVaxti) : '<span class="hrd-nodata">--:--</span>';
 
-            // Late check
             var girisClass = 'hrd-time';
             if (r.girisVaxti) {
                 var gt = new Date(r.girisVaxti);
@@ -179,7 +245,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
-            // Duration
             var duration = '<span class="hrd-nodata">---</span>';
             if (r.girisVaxti && r.cixisVaxti) {
                 var diff = new Date(r.cixisVaxti) - new Date(r.girisVaxti);
@@ -201,7 +266,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 '<td>' + badge + '</td>' +
                 '</tr>';
         });
-
         tableBody.innerHTML = html;
     }
 
@@ -225,9 +289,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return pad(d.getHours()) + ':' + pad(d.getMinutes());
     }
 
-    function pad(n) {
-        return n < 10 ? '0' + n : '' + n;
-    }
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
     // ── Device status check ──
     function checkDevice() {
@@ -250,5 +312,4 @@ document.addEventListener('DOMContentLoaded', function () {
 
     checkDevice();
     setInterval(checkDevice, 30000);
-
 });
