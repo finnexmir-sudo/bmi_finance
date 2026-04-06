@@ -6,6 +6,7 @@
 
     var isHR = User.IsInRole(RoleNames.HR) || User.IsInRole(RoleNames.Admin);
     var isRehber = User.IsInRole(RoleNames.Rehber) || User.IsInRole(RoleNames.SobeReisi) || isHR;
+    var isMuhasib = User.IsInRole(RoleNames.Muhasib) || isHR;
 }
 
 <!DOCTYPE html>
@@ -318,7 +319,11 @@
                         </div>
                     </div>
 
-                    @* Mühasibatlıq — HR/Admin *@
+                }
+
+                @if (isMuhasib)
+                {
+                    @* Mühasibatlıq — Muhasib/HR/Admin *@
                     <div class="fn-nav-group @(currentController is "Maas" or "MaasParametri" ? "open" : "")">
                         <button type="button" class="fn-nav-group-toggle">
                             <div class="fn-nav-group-left">
