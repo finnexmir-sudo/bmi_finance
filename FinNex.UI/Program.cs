@@ -130,7 +130,7 @@ namespace FinNex.UI
                     {
                         db.Database.Migrate();
                     }
-                    catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 2714)
+                    catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 2714 or 3701 or 1913)
                     {
                         // Cədvəllər artıq mövcuddur - migration tarixçəsinə əlavə et
                         var productVersion = typeof(DbContext).Assembly.GetName().Version?.ToString() ?? "9.0.0";
