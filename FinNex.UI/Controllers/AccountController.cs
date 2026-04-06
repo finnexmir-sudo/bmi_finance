@@ -176,37 +176,30 @@ namespace FinNex.UI.Controllers
 
         // GET
         [HttpGet]
-        [Authorize]
-        public async Task<IActionResult> ChangePassword()
+        public IActionResult ChangePassword()
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user != null)
-            {
-                ViewBag.UserName = user.UserName ?? User.Identity?.Name;
-                ViewBag.FullName = !string.IsNullOrWhiteSpace(user.Ad)
-                    ? $"{user.Ad} {user.Soyad}".Trim()
-                    : user.UserName;
-            }
             return View(new UI.DTO.ChangePasswordDto());
         }
 
         // POST
         [HttpPost]
-        [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ChangePassword(Application.DTOs.Auth.ChangePasswordDto dto)
+        public async Task<IActionResult> ChangePassword(UI.DTO.ChangePasswordDto dto)
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-                return RedirectToAction("Login");
+            if (!ModelState.IsValid)
+                return View(dto);
 
-            ViewBag.UserName = user.UserName ?? User.Identity?.Name;
+            // İstifadəçi adına görə user tap
+            var user = await _userManager.FindByNameAsync(dto.UserName);
+            if (user == null)
+            {
+                ModelState.AddModelError(nameof(dto.UserName), "Bu istifadəçi adı tapılmadı.");
+                return View(dto);
+            }
+
             ViewBag.FullName = !string.IsNullOrWhiteSpace(user.Ad)
                 ? $"{user.Ad} {user.Soyad}".Trim()
                 : user.UserName;
-
-            if (!ModelState.IsValid)
-                return View(dto);
 
             if (dto.NewPassword != dto.ConfirmNewPassword)
             {
@@ -218,9 +211,8 @@ namespace FinNex.UI.Controllers
 
             if (result.Succeeded)
             {
-                await _signInManager.RefreshSignInAsync(user);
-                TempData["SuccessMessage"] = "Şifrəniz uğurla yeniləndi.";
-                return RedirectToAction(nameof(ChangePassword));
+                TempData["SuccessMessage"] = "Şifrəniz uğurla yeniləndi. Yeni şifrə ilə daxil olun.";
+                return RedirectToAction("Login");
             }
 
             foreach (var error in result.Errors)
