@@ -12,7 +12,7 @@ using System.IO.Packaging;
 namespace FinNex.UI.Areas.User.Controllers;
 
 [Area("User")]
-[Authorize(Roles = "SobeReisi,Rehber,HR,Admin")]
+[Authorize(Roles = RoleNames.SobeReisi + "," + RoleNames.Rehber + "," + RoleNames.HR + "," + RoleNames.Admin)]
 public class HesabatController : Controller
 {
     private readonly IMezuniyyetService _mezuniyyetService;

@@ -1,4 +1,5 @@
-﻿using FinNex.Application.DTOs.HR.Maas;
+﻿using FinNex.Domain;
+using FinNex.Application.DTOs.HR.Maas;
 using FinNex.Application.Interfaces.HR;
 using FinNex.Application.Interfaces.Maas_If;
 using FinNex.Domain.Entities.HR;
@@ -12,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FinNex.UI.Areas.HR.Controllers
 {
     [Area("HR")]
-    [Authorize(Roles = "HR,Admin,Muhasib")]
+    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Muhasib)]
     public class MaasController : Controller
     {
         private readonly IMaasService _maasService;

@@ -1,3 +1,4 @@
+using FinNex.Domain;
 using FinNex.UI.Areas.Admin.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +7,7 @@ using System.Text.RegularExpressions;
 namespace FinNex.UI.Areas.Admin.Controllers;
 
 [Area("Admin")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = RoleNames.Admin)]
 public class SystemLogsController : Controller
 {
     private readonly IWebHostEnvironment _env;
@@ -53,7 +54,7 @@ public class SystemLogsController : Controller
 
         foreach (var file in logFiles)
         {
-            var lines = System.IO.File.ReadAllLines(file);
+            var lines = ReadFileShared(file);
             SystemLogVM? current = null;
 
             foreach (var line in lines)
@@ -111,5 +112,12 @@ public class SystemLogsController : Controller
 
         ViewData["Title"] = "System Logs";
         return View(vm);
+    }
+
+    private static string[] ReadFileShared(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd().Split(Environment.NewLine);
     }
 }

@@ -9,8 +9,10 @@ public interface IIsciService : IServiceAsync<Isci, IsciListDto, IsciCreateDto, 
     Task<IList<IsciListDto>> GetIscilerBySobeIdAsync(int sobeId);
     Task<bool> CheckFinExistsAsync(string fin);
     Task<Result<List<IsciListDto>>> SearchIscilerByFinAsync(string fin);
-    Task<Result> UpdateSalaryWithHistoryAsync(int isciId, decimal yeniMaas, string emrNo);
+    Task<Result> UpdateSalaryWithHistoryAsync(int isciId, decimal yeniMaas, string? emrNo);
     Task<Result<IList<IsciMaasTarixcesiDto>>> GetMaasTarixcesiAsync(int isciId);
     Task<Result> TeyinatDeyisAsync(int isciId, int departamentId, int vezifeId, DateTime baslamaTarixi);
+    Task<Result> TeyinatRedakteEtAsync(int isciId, int departamentId, int vezifeId);
     Task<Result<int?>> GetAktivDepartamentIdAsync(int isciId);
+    Task<decimal> GetCariMaasAsync(int isciId);
 }

@@ -4,6 +4,7 @@ using FinNex.Application.DTOs.SenedDovriyyesi.Sened;
 using FinNex.Application.DTOs.SenedDovriyyesi.SenedNovu;
 using FinNex.Application.Interfaces.SenedDovriyyesi;
 using FinNex.Application.Interfaces.Structur;
+using FinNex.Domain;
 using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Interfaces;
 using FinNex.UI.Areas.SenedDovriyyesi.ViewModels;
@@ -53,7 +54,7 @@ public class SenedController : Controller
         HttpContext.Connection.RemoteIpAddress?.ToString();
 
     private bool IsAdmin() =>
-        User.IsInRole("Admin");
+        User.IsInRole(RoleNames.Admin);
 
     private async Task<List<int>> GetIcazeliSobeIdleriAsync()
     {

@@ -25,12 +25,13 @@ namespace FinNex.DataAccess
             // =========================
             services.AddIdentity<AppUser, AppRole>(options =>
             {
-                // 🔐 Password qaydaları (minimum bank standardı)
-                options.Password.RequiredLength = 5;
-                options.Password.RequireDigit = true;
+                // 🔐 Password qaydaları — məhdudiyyətsiz
+                options.Password.RequiredLength = 1;
+                options.Password.RequireDigit = false;
                 options.Password.RequireUppercase = false;
                 options.Password.RequireLowercase = false;
                 options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequiredUniqueChars = 0;
 
                 // 🔒 Brute-force qorunması
                 options.Lockout.MaxFailedAccessAttempts = 5;

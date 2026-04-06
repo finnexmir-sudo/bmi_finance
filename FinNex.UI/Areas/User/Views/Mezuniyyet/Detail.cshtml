@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = "Müraciət Detayı";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-    ViewData["UserRole"] = User.IsInRole("Operator") ? "Operator" : "";
+    ViewData["UserRole"] = User.IsInRole(RoleNames.Operator) ? RoleNames.Operator : "";
 }
 
 <div class="fn-page">

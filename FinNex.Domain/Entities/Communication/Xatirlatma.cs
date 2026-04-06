@@ -33,6 +33,7 @@ namespace FinNex.Domain.Entities.Communication
         Tapshiriq = 1,
         Gorush = 2,
         Mezuniyyet = 3,
-        Icaze = 4
+        Icaze = 4,
+        Teyinat = 5       // İşçi təyinatı/müqavilə müddəti bitmə
     }
 }

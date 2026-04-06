@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace FinNex.UI.Areas.User.Controllers
 {
     [Area("User")]
-    [Authorize(Roles = "Operator")]
+    [Authorize(Roles = RoleNames.Operator)]
     public class IcazeController : Controller
     {
         private readonly IIcazeService _icazeService;

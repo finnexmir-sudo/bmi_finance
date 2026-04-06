@@ -59,7 +59,6 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             {
                 IsciId = isci.Id,
                 CariMaas = dto.BaslangicMaas ?? 0
-
             };
             await _unitOfWork.Repository<IsciMaliye>().YaratAsync(maliye);
 
@@ -92,15 +91,16 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
 
             await _unitOfWork.YaddaSaxlaAsync();
 
+            // Yaradılmış işçini əlaqələri ilə yüklə
             var createdIsci = await _unitOfWork.Repository<Isci>().GetirAsync(
-            x => x.Id == isci.Id,
-            include: q => q
-                .Include(x => x.IsciTeyinatlari).ThenInclude(t => t.Departament)
-                .Include(x => x.IsciTeyinatlari).ThenInclude(t => t.Vezife)
-                .Include(x => x.Maliye)
-        );
+                x => x.Id == isci.Id,
+                include: q => q
+                    .Include(x => x.IsciTeyinatlari).ThenInclude(t => t.Departament)
+                    .Include(x => x.IsciTeyinatlari).ThenInclude(t => t.Vezife)
+                    .Include(x => x.Maliye)
+            );
 
-            return Result<IsciListDto>.Ok(_mapper.Map<IsciListDto>(isci));
+            return Result<IsciListDto>.Ok(_mapper.Map<IsciListDto>(createdIsci ?? isci));
         }
         catch (Exception ex)
         {
@@ -148,35 +148,58 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
         return Result<List<IsciListDto>>.Ok(_mapper.Map<List<IsciListDto>>(entities));
     }
 
-    public async Task<Result> UpdateSalaryWithHistoryAsync(int isciId, decimal yeniMaas, string emrNo)
+    public async Task<Result> UpdateSalaryWithHistoryAsync(int isciId, decimal yeniMaas, string? emrNo)
     {
-        var isci = await _unitOfWork.Repository<Isci>().GetirAsync(
-            x => x.Id == isciId,
-            include: q => q.Include(x => x.Maliye));
-        if (isci == null) return Result.Fail("İşçi tapılmadı.");
-
-        var tarixce = new IsciMaasTarixcesi
+        try
         {
-            IsciId = isciId,
-            KohneMaas = isci.Maliye != null ? isci.Maliye.CariMaas : 0,
-            YeniMaas = yeniMaas,
-            DeyismeTarixi = DateTime.Now,
-            EmrinNomresi = emrNo
-        };
+            var isci = await _unitOfWork.Repository<Isci>().IdIleGetirAsync(isciId);
+            if (isci == null) return Result.Fail("İşçi tapılmadı.");
 
-        if (isci.Maliye != null)
-        {
-            isci.Maliye.CariMaas = yeniMaas;
-            await _unitOfWork.Repository<IsciMaliye>().YenileAsync(isci.Maliye);
+            // Əmr nömrəsini avtomatik yarat
+            if (string.IsNullOrWhiteSpace(emrNo))
+            {
+                var il = DateTime.Now.Year;
+                var umumiSayi = await _unitOfWork.Repository<IsciMaasTarixcesi>()
+                    .SayAsync(x => x.DeyismeTarixi.Year == il);
+                emrNo = $"EMR-{il}/{(umumiSayi + 1):D3}";
+            }
+
+            // Maliye-ni yüklə
+            var maliye = await _unitOfWork.Repository<IsciMaliye>()
+                .GetirAsync(x => x.IsciId == isciId);
+
+            var kohneMaas = maliye?.CariMaas ?? 0;
+
+            // Tarixçə yarat
+            var tarixce = new IsciMaasTarixcesi
+            {
+                IsciId = isciId,
+                KohneMaas = kohneMaas,
+                YeniMaas = yeniMaas,
+                DeyismeTarixi = DateTime.Now,
+                EmrinNomresi = emrNo
+            };
+            await _unitOfWork.Repository<IsciMaasTarixcesi>().YaratAsync(tarixce);
+
+            // Maliye yenilə — YenileAsync (Update) istifadə et
+            if (maliye != null)
+            {
+                maliye.CariMaas = yeniMaas;
+                maliye.YenilenmeTarixi = DateTime.Now;
+            }
+            else
+            {
+                var yeniMaliye = new IsciMaliye { IsciId = isciId, CariMaas = yeniMaas };
+                await _unitOfWork.Repository<IsciMaliye>().YaratAsync(yeniMaliye);
+            }
+
+            await _unitOfWork.YaddaSaxlaAsync();
+            return Result.Ok("Maaş uğurla yeniləndi.");
         }
-        else
+        catch (Exception ex)
         {
-            var maliye = new IsciMaliye { IsciId = isciId, CariMaas = yeniMaas };
-            await _unitOfWork.Repository<IsciMaliye>().YaratAsync(maliye);
+            return Result.Fail($"Maaş yenilənmədi: {ex.Message}");
         }
-
-        await _unitOfWork.Repository<IsciMaasTarixcesi>().YaratAsync(tarixce);
-        return await _unitOfWork.YaddaSaxlaAsync() > 0 ? Result.Ok() : Result.Fail("Xəta!");
     }
 
     public async Task<Result<IList<IsciMaasTarixcesiDto>>> GetMaasTarixcesiAsync(int isciId)
@@ -237,6 +260,56 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             return Result.Fail($"Təyinat dəyişikliyi zamanı xəta: {ex.Message}");
         }
     }
+
+    public async Task<Result> TeyinatRedakteEtAsync(int isciId, int departamentId, int vezifeId)
+    {
+        try
+        {
+            // Aktiv təyinatı tap
+            var repo = _unitOfWork.Repository<IsciTeyinat>();
+            var aktiv = await repo.GetirAsync(x => x.IsciId == isciId && x.Aktivdir);
+
+            if (aktiv == null)
+            {
+                // Aktiv təyinat yoxdur - yeni yaradaq
+                var yeni = new IsciTeyinat
+                {
+                    IsciId = isciId,
+                    DepartamentId = departamentId,
+                    VezifeId = vezifeId,
+                    BaslamaTarixi = DateTime.Today,
+                    Esasdir = true,
+                    Aktivdir = true
+                };
+                await repo.YaratAsync(yeni);
+                await _unitOfWork.YaddaSaxlaAsync();
+                return Result.Ok("Yeni təyinat yaradıldı.");
+            }
+
+            // Dəyişiklik varmı yoxla
+            if (aktiv.DepartamentId == departamentId && aktiv.VezifeId == vezifeId)
+                return Result.Ok("Dəyişiklik yoxdur.");
+
+            // Entity-ni ID ilə yenidən yüklə və yenilə
+            var entity = await repo.IdIleGetirAsync(aktiv.Id);
+            if (entity == null)
+                return Result.Fail("Təyinat tapılmadı.");
+
+            entity.DepartamentId = departamentId;
+            entity.VezifeId = vezifeId;
+            entity.YenilenmeTarixi = DateTime.Now;
+
+            var saved = await _unitOfWork.YaddaSaxlaAsync();
+            return saved > 0
+                ? Result.Ok("Təyinat uğurla redaktə edildi.")
+                : Result.Fail($"Bazaya yazılmadı. (saved={saved})");
+        }
+        catch (Exception ex)
+        {
+            return Result.Fail($"Təyinat redaktəsi zamanı xəta: {ex.Message}");
+        }
+    }
+
     public async Task<Result<int?>> GetAktivDepartamentIdAsync(int isciId)
     {
         try
@@ -260,5 +333,12 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
         {
             return Result<int?>.Fail("Xəta baş verdi.");
         }
+    }
+
+    public async Task<decimal> GetCariMaasAsync(int isciId)
+    {
+        var maliye = await _unitOfWork.Repository<IsciMaliye>()
+            .GetirAsync(x => x.IsciId == isciId, izlemeden: true);
+        return maliye?.CariMaas ?? 0;
     }
 }

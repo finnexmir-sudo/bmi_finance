@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FinNex.UI.Areas.User.Controllers
 {
     [Area("User")]
-    [Authorize(Roles = "Operator")]
+    [Authorize(Roles = RoleNames.Operator)]
     public class MuracietController : Controller
     {
         private readonly IMezuniyyetService _mezuniyyetService;

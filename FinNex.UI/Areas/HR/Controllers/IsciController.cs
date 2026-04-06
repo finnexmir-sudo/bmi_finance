@@ -57,9 +57,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var maasResult = await _isciService.GetMaasTarixcesiAsync(id);
             var aktivTeyinat = await _teyinatService.GetAktivTeyinatAsync(id);
 
-            var maliyeResult = await _isciService.IdIleGetirAsync(id);
-            var listResult = await _isciService.HamisiniGetirAsync();
-            var listItem = listResult.Data?.FirstOrDefault(x => x.Id == id);
+            var cariMaas = await _isciService.GetCariMaasAsync(id);
 
             var vm = new IsciDetailVM
             {
@@ -79,9 +77,10 @@ namespace FinNex.UI.Areas.HR.Controllers
                 IsdenAyrilmaTarixi = isci.IsdenAyrilmaTarixi,
                 Status = isci.Status,
                 LoginVar = isci.LoginVar,
+                IstifadeciAd = _userManager.Users.FirstOrDefault(u => u.IsciId == id)?.UserName,
                 CariDepartament = aktivTeyinat.Success ? aktivTeyinat.Data?.DepartamentAd : isci.SobeAdi,
                 CariVezife = aktivTeyinat.Success ? aktivTeyinat.Data?.VezifeAd : isci.VezifeAdi,
-                CariMaas = listItem?.CariMaas ?? 0,
+                CariMaas = cariMaas,
                 TeyinatTarixcesi = teyinatResult.Success ? teyinatResult.Data ?? new List<FinNex.Application.DTOs.HR.IsciTeyinat.IsciTeyinatDto>() : new List<FinNex.Application.DTOs.HR.IsciTeyinat.IsciTeyinatDto>(),
                 MaasTarixcesi = maasResult.Success ? maasResult.Data ?? new List<IsciMaasTarixcesiDto>() : new List<IsciMaasTarixcesiDto>()
             };
@@ -119,6 +118,14 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return View(vm);
             }
 
+            var finYoxla = await _isciService.CheckFinExistsAsync(vm.FIN);
+            if (finYoxla)
+            {
+                ModelState.AddModelError("FIN", "Bu FIN artıq mövcuddur");
+                await ReloadDepartments(vm);
+                return View(vm);
+            }
+
             var user = new AppUser
             {
                 UserName = vm.IstifadeciAd,
@@ -140,7 +147,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             // Operator rolunu əlavə et (default rol)
-            await _userManager.AddToRoleAsync(user, "Operator");
+            await _userManager.AddToRoleAsync(user, RoleNames.Operator);
 
             var dto = new IsciCreateDto
             {
@@ -194,9 +201,12 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var appUser = _userManager.Users.FirstOrDefault(u => u.IsciId == id);
+
             var vm = new IsciEditVM
             {
                 Id = isci.Id,
+                IstifadeciAd = appUser?.UserName,
                 Ad = isci.Ad,
                 Soyad = isci.Soyad,
                 AtaAdi = isci.AtaAdi,
@@ -250,7 +260,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return View(vm);
             }
 
-            // AppUser-dəki Ad/Soyad/Email-i də yenilə
+            // AppUser-dəki Ad/Soyad/Email/UserName-i də yenilə
             var users = _userManager.Users.Where(u => u.IsciId == vm.Id).ToList();
             foreach (var appUser in users)
             {
@@ -258,6 +268,17 @@ namespace FinNex.UI.Areas.HR.Controllers
                 appUser.Soyad = vm.Soyad;
                 if (!string.IsNullOrEmpty(vm.Email))
                     appUser.Email = vm.Email;
+                if (!string.IsNullOrEmpty(vm.IstifadeciAd) && appUser.UserName != vm.IstifadeciAd)
+                {
+                    var existingUser = await _userManager.FindByNameAsync(vm.IstifadeciAd);
+                    if (existingUser != null && existingUser.Id != appUser.Id)
+                    {
+                        ModelState.AddModelError("IstifadeciAd", "Bu istifadəçi adı artıq mövcuddur");
+                        return View(vm);
+                    }
+                    appUser.UserName = vm.IstifadeciAd;
+                    appUser.NormalizedUserName = vm.IstifadeciAd.ToUpperInvariant();
+                }
                 await _userManager.UpdateAsync(appUser);
             }
 
@@ -325,13 +346,69 @@ namespace FinNex.UI.Areas.HR.Controllers
             return RedirectToAction(nameof(Detail), new { id = vm.IsciId });
         }
 
+        // ─────────── TEYINAT REDAKTE GET ───────────
+        [HttpGet]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
+        public async Task<IActionResult> TeyinatRedakte(int id)
+        {
+            var isci = await _isciService.GetIsciDetailsAsync(id);
+            if (isci == null)
+            {
+                TempData["Error"] = "İşçi tapılmadı.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var aktivTeyinat = await _teyinatService.GetAktivTeyinatAsync(id);
+
+            var vm = new TeyinatRedakteVM
+            {
+                IsciId = id,
+                IsciTamAd = isci.TamAd,
+                DepartamentId = aktivTeyinat.Success && aktivTeyinat.Data != null ? aktivTeyinat.Data.DepartamentId : 0,
+                VezifeId = aktivTeyinat.Success && aktivTeyinat.Data != null ? aktivTeyinat.Data.VezifeId : 0
+            };
+
+            await ReloadTeyinatRedakteLists(vm);
+            return View(vm);
+        }
+
+        // ─────────── TEYINAT REDAKTE POST ───────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
+        public async Task<IActionResult> TeyinatRedakte(TeyinatRedakteVM vm)
+        {
+            if (!ModelState.IsValid)
+            {
+                var isciCheck = await _isciService.GetIsciDetailsAsync(vm.IsciId);
+                if (isciCheck != null) vm.IsciTamAd = isciCheck.TamAd;
+                await ReloadTeyinatRedakteLists(vm);
+                return View(vm);
+            }
+
+            var result = await _isciService.TeyinatRedakteEtAsync(
+                vm.IsciId,
+                vm.DepartamentId,
+                vm.VezifeId);
+
+            if (!result.Success)
+            {
+                ModelState.AddModelError("", result.Message ?? "Redaktə zamanı xəta baş verdi.");
+                var isciCheck = await _isciService.GetIsciDetailsAsync(vm.IsciId);
+                if (isciCheck != null) vm.IsciTamAd = isciCheck.TamAd;
+                await ReloadTeyinatRedakteLists(vm);
+                return View(vm);
+            }
+
+            TempData["Success"] = "Təyinat uğurla redaktə edildi.";
+            return RedirectToAction(nameof(Detail), new { id = vm.IsciId });
+        }
+
         // ─────────── MAAS DEYIS GET ───────────
         [HttpGet]
         [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
         public async Task<IActionResult> MaasDeyis(int id)
         {
-            var listResult = await _isciService.HamisiniGetirAsync();
-            var isci = listResult.Data?.FirstOrDefault(x => x.Id == id);
             var isciDetail = await _isciService.GetIsciDetailsAsync(id);
 
             if (isciDetail == null)
@@ -340,11 +417,13 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var kohneMaas = await _isciService.GetCariMaasAsync(id);
+
             var vm = new MaasDeyisVM
             {
                 IsciId = id,
                 IsciTamAd = isciDetail.TamAd,
-                KohneMaas = isci?.CariMaas ?? 0
+                KohneMaas = kohneMaas
             };
 
             return View(vm);
@@ -424,6 +503,29 @@ namespace FinNex.UI.Areas.HR.Controllers
             {
                 var vezResult = await _vezifeService.HamisiniGetirAsync(
                     x => x.DepartamentId == vm.YeniDepartamentId && !x.Silinib);
+                if (vezResult.Success && vezResult.Data != null)
+                {
+                    vm.Vezifeler = vezResult.Data
+                        .Select(v => new SelectListItem { Value = v.Id.ToString(), Text = v.Ad })
+                        .ToList();
+                }
+            }
+        }
+
+        private async Task ReloadTeyinatRedakteLists(TeyinatRedakteVM vm)
+        {
+            var deptResult = await _departmentService.HamisiniGetirAsync(x => !x.Silinib);
+            if (deptResult.Success && deptResult.Data != null)
+            {
+                vm.Departamentler = deptResult.Data
+                    .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Ad })
+                    .ToList();
+            }
+
+            if (vm.DepartamentId > 0)
+            {
+                var vezResult = await _vezifeService.HamisiniGetirAsync(
+                    x => x.DepartamentId == vm.DepartamentId && !x.Silinib);
                 if (vezResult.Success && vezResult.Data != null)
                 {
                     vm.Vezifeler = vezResult.Data

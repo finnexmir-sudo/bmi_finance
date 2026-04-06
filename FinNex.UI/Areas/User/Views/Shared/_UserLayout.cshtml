@@ -4,8 +4,8 @@
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
     var currentTab = Context.Request.Query["tab"].ToString();
 
-    var isHR = User.IsInRole("HR") || User.IsInRole("Admin");
-    var isRehber = User.IsInRole("Rehber") || User.IsInRole("SobeReisi") || isHR;
+    var isHR = User.IsInRole(RoleNames.HR) || User.IsInRole(RoleNames.Admin);
+    var isRehber = User.IsInRole(RoleNames.Rehber) || User.IsInRole(RoleNames.SobeReisi) || isHR;
 }
 
 <!DOCTYPE html>
@@ -73,7 +73,7 @@
                    ═══════════════════════════════════════════════════ *@
                 <div class="fn-nav-label">Əməkdaş</div>
 
-                <div class="fn-nav-group @(currentController is "Davamiyyet" or "Mezuniyyet" or "Muraciet" or "Tapshiriq" or "Gorush" or "Icaze" ? "open" : "")">
+                <div class="fn-nav-group @(currentArea != "HR" && currentController is "Davamiyyet" or "Mezuniyyet" or "Muraciet" or "Tapshiriq" or "Gorush" or "Icaze" ? "open" : "")">
                     <button type="button" class="fn-nav-group-toggle">
                         <div class="fn-nav-group-left">
                             <div class="fn-nav-icon">
@@ -234,14 +234,14 @@
                             </div>
                         </button>
                         <div class="fn-nav-submenu">
-                            @if (User.IsInRole("SobeReisi") || isHR)
+                            @if (User.IsInRole(RoleNames.SobeReisi) || isHR)
                             {
                                 <a asp-area="User" asp-controller="Tesdiq" asp-action="SobeReisi"
                                    class="fn-nav-subitem @(currentController == "Tesdiq" && currentAction == "SobeReisi" ? "active" : "")">
                                     <div class="fn-sub-dot"></div> Şöbə Rəhbəri
                                 </a>
                             }
-                            @if (User.IsInRole("Rehber") || isHR)
+                            @if (User.IsInRole(RoleNames.Rehber) || isHR)
                             {
                                 <a asp-area="User" asp-controller="Tesdiq" asp-action="Rehber"
                                    class="fn-nav-subitem @(currentController == "Tesdiq" && currentAction == "Rehber" ? "active" : "")">
@@ -424,6 +424,7 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/User/user-area.js" asp-append-version="true"></script>
     <script src="~/js/User/Bildiris.js" asp-append-version="true"></script>
+    <script src="~/js/date-format-hint.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
 </body>

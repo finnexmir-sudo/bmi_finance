@@ -39,6 +39,18 @@
 
                 <div class="isci-form-body">
 
+                    <!-- Sistem Məlumatları -->
+                    <div>
+                        <div class="isci-section-label">Sistem Məlumatları</div>
+                        <div class="isci-form-grid-3" style="margin-top:12px;">
+                            <div class="isci-field">
+                                <label class="isci-label">İstifadəçi Adı</label>
+                                <input asp-for="IstifadeciAd" class="isci-input" placeholder="İstifadəçi adı" />
+                                <span asp-validation-for="IstifadeciAd" class="isci-error"></span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Şəxsi Məlumatlar -->
                     <div>
                         <div class="isci-section-label">Şəxsi Məlumatlar</div>
@@ -72,6 +84,7 @@
                             <div class="isci-field">
                                 <label class="isci-label">Doğum Tarixi <span class="isci-required">*</span></label>
                                 <input asp-for="DogumTarixi" type="date" class="isci-input" />
+                                <small class="date-format-hint" style="color:#888;font-size:11px;"></small>
                                 <span asp-validation-for="DogumTarixi" class="isci-error"></span>
                             </div>
                         </div>
@@ -108,6 +121,7 @@
                             <div class="isci-field">
                                 <label class="isci-label">İşə Qəbul Tarixi <span class="isci-required">*</span></label>
                                 <input asp-for="IsheQebulTarixi" type="date" class="isci-input" />
+                                <small class="date-format-hint" style="color:#888;font-size:11px;"></small>
                                 <span asp-validation-for="IsheQebulTarixi" class="isci-error"></span>
                             </div>
                             <div class="isci-field">

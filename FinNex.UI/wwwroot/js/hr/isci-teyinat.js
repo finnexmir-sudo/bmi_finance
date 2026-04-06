@@ -5,6 +5,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!deptSelect || !vezifeSelect) return;
 
+    // data-* atributlarından oxu, inline script-dən asılılığı aradan qaldır
+    var vezifelerUrl = deptSelect.getAttribute('data-vezifeler-url')
+        || (typeof getVezifelerUrl !== 'undefined' ? getVezifelerUrl : '/HR/Isci/GetVezifeler');
+    var initDeptId = parseInt(deptSelect.getAttribute('data-initial-dept'), 10) || 0;
+    var initVezifeId = parseInt(deptSelect.getAttribute('data-initial-vezife'), 10) || 0;
+
     function loadVezifeler(deptId, selectedId) {
         vezifeSelect.innerHTML = '<option value="">Yüklənir...</option>';
         vezifeSelect.disabled = true;
@@ -15,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        fetch(getVezifelerUrl + '?departamentId=' + deptId)
+        fetch(vezifelerUrl + '?departamentId=' + deptId)
             .then(function (r) {
                 if (!r.ok) throw new Error('Server xətası: ' + r.status);
                 return r.json();
@@ -45,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // İlkin yüklənmə
-    if (typeof initialDeptId !== 'undefined' && initialDeptId > 0) {
-        loadVezifeler(initialDeptId, null);
+    if (initDeptId > 0) {
+        loadVezifeler(initDeptId, initVezifeId);
     }
 });

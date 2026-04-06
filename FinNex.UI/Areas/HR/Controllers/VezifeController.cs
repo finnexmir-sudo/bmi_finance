@@ -1,4 +1,5 @@
 ﻿// Areas/HR/Controllers/VezifeController.cs
+using FinNex.Domain;
 using FinNex.Application.DTOs.HR.Vezife;
 using FinNex.Application.Interfaces.Structur;
 using FinNex.UI.Areas.HR.ViewModels;
@@ -9,7 +10,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace FinNex.UI.Areas.HR.Controllers
 {
     [Area("HR")]
-    [Authorize(Roles = "HR,Admin")]
+    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
     public class VezifeController : Controller
     {
         private readonly IVezifeService _vezifeService;

@@ -72,6 +72,12 @@
 
             <div class="nav-section">System</div>
 
+            <a class="nav-link @(currentController == "LoginLogs" ? "active" : "")"
+               asp-area="Admin" asp-controller="LoginLogs" asp-action="Index">
+                <i class="bi bi-door-open"></i>
+                Login Logs
+            </a>
+
             <a class="nav-link @(currentController == "SystemLogs" ? "active" : "")"
                asp-area="Admin" asp-controller="SystemLogs" asp-action="Index">
                 <i class="bi bi-journal-text"></i>
@@ -79,9 +85,9 @@
             </a>
         </nav>
 
-        <a class="admin-back-link" asp-controller="Home" asp-action="Index" asp-area="">
+        <a class="admin-back-link" asp-area="User" asp-controller="Dashboard" asp-action="Index">
             <i class="bi bi-arrow-left"></i>
-            Back to Main Application
+            Əsas Səhifəyə Qayıt
         </a>
 
         <div class="admin-sidebar-footer">

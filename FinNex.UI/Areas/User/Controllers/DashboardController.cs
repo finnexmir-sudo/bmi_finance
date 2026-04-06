@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FinNex.UI.Areas.User.Controllers
 {
     [Area("User")]
-    [Authorize(Roles = "Operator,Admin")]
+    [Authorize(Roles = RoleNames.Operator + "," + RoleNames.Admin)]
     public class DashboardController : Controller
     {
         private readonly IDashboardService _dashboardService;
