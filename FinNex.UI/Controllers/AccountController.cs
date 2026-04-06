@@ -180,8 +180,13 @@ namespace FinNex.UI.Controllers
         public async Task<IActionResult> ChangePassword()
         {
             var user = await _userManager.GetUserAsync(User);
-            ViewBag.UserName = user?.UserName;
-            ViewBag.FullName = $"{user?.Ad} {user?.Soyad}";
+            if (user != null)
+            {
+                ViewBag.UserName = user.UserName ?? User.Identity?.Name;
+                ViewBag.FullName = !string.IsNullOrWhiteSpace(user.Ad)
+                    ? $"{user.Ad} {user.Soyad}".Trim()
+                    : user.UserName;
+            }
             return View(new UI.DTO.ChangePasswordDto());
         }
 
@@ -195,8 +200,10 @@ namespace FinNex.UI.Controllers
             if (user == null)
                 return RedirectToAction("Login");
 
-            ViewBag.UserName = user.UserName;
-            ViewBag.FullName = $"{user.Ad} {user.Soyad}";
+            ViewBag.UserName = user.UserName ?? User.Identity?.Name;
+            ViewBag.FullName = !string.IsNullOrWhiteSpace(user.Ad)
+                ? $"{user.Ad} {user.Soyad}".Trim()
+                : user.UserName;
 
             if (!ModelState.IsValid)
                 return View(dto);
