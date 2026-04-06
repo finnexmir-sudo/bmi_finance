@@ -272,11 +272,25 @@
                         </div>
                     </div>
                 }
+
+                void RenderUsedOnlyItem(string label, MezuniyyetBalans? balance, string fillClass)
+                {
+                    var istifade = balance?.IstifadeOlunanGun ?? 0;
+
+                    <div class="up-leave-item">
+                        <div class="up-leave-header">
+                            <span class="up-leave-label">@label</span>
+                            <span class="up-leave-numbers">
+                                <strong>@istifade</strong> gün istifadə olunub
+                            </span>
+                        </div>
+                    </div>
+                }
             }
 
             @{ RenderLeaveItem("İllik məzuniyyət", illik, "up-fill-blue"); }
-            @{ RenderLeaveItem("Xəstəlik məzuniyyəti", xestelik, "up-fill-green"); }
-            @{ RenderLeaveItem("Ezamiyyət", ezamiyyet, "up-fill-gold"); }
+            @{ RenderUsedOnlyItem("Xəstəlik", xestelik, "up-fill-green"); }
+            @{ RenderUsedOnlyItem("Ezamiyyət", ezamiyyet, "up-fill-gold"); }
         </div>
 
     </div>
