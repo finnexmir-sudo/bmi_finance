@@ -81,6 +81,10 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<Xatirlatma> Xatirlatmalar { get; set; }
     public DbSet<LoginLog> LoginLogs { get; set; }
 
+    // Hesabat İzləmə
+    public DbSet<HesabatSablonu> HesabatSablonlari { get; set; }
+    public DbSet<HesabatTapshiriq> HesabatTapshiriqlari { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -537,6 +541,31 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         builder.Entity<MusteriHesabi>()
      .HasIndex(x => new { x.MusteriId, x.Iban })
      .IsUnique();
+
+        // ── Hesabat İzləmə ──────────────────────────────────
+        builder.Entity<HesabatSablonu>()
+            .HasOne(x => x.MesulIsci)
+            .WithMany()
+            .HasForeignKey(x => x.MesulIsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<HesabatSablonu>()
+            .HasOne(x => x.Departament)
+            .WithMany()
+            .HasForeignKey(x => x.DepartamentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<HesabatTapshiriq>()
+            .HasOne(x => x.Sablon)
+            .WithMany(s => s.Tapshiriqlar)
+            .HasForeignKey(x => x.SablonId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<HesabatTapshiriq>()
+            .HasOne(x => x.IcraEdenIsci)
+            .WithMany()
+            .HasForeignKey(x => x.IcraEdenIsciId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // ── MaasNovu Seed Data ────────────────────────────────────
         builder.Entity<MaasNovu>().HasData(

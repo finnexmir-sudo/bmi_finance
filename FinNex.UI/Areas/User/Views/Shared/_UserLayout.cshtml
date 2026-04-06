@@ -158,6 +158,22 @@
                     </a>
                 }
 
+                @* Hesabat İzləmə — Mühasib/HR/Admin *@
+                @if (isMuhasib)
+                {
+                    <a asp-area="User" asp-controller="HesabatIzleme" asp-action="Index"
+                       class="fn-nav-item @(currentController == "HesabatIzleme" ? "active" : "")">
+                        <div class="fn-nav-icon">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M2 10V4a1 1 0 011-1h8a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1z" stroke="currentColor" stroke-width="1.2"/>
+                                <path d="M5 7l1.5 1.5L9 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M4 3V2M10 3V2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        Hesabat İzləmə
+                    </a>
+                }
+
                 @* Programlar *@
                 <div class="fn-nav-group">
                     <button type="button" class="fn-nav-group-toggle">
