@@ -214,9 +214,15 @@
                 </a>
 
                 @* ═══════════════════════════════════════════════════
-                   TƏSDİQ PANELİ — Yalnız Rəhbər/ŞöbəReisi/HR/Admin
+                   TƏSDİQ PANELİ — Yalnız SobeReisi/Rehber/HR
                    ═══════════════════════════════════════════════════ *@
-                @if (isRehber)
+                @{
+                    var isSobeReisi = User.IsInRole(RoleNames.SobeReisi);
+                    var isRehberRol = User.IsInRole(RoleNames.Rehber);
+                    var isHrRol = User.IsInRole(RoleNames.HR);
+                    var tesdiqGorunur = isSobeReisi || isRehberRol || isHrRol;
+                }
+                @if (tesdiqGorunur)
                 {
                     <div class="fn-nav-label">Təsdiq və İdarəetmə</div>
 
@@ -235,21 +241,21 @@
                             </div>
                         </button>
                         <div class="fn-nav-submenu">
-                            @if (User.IsInRole(RoleNames.SobeReisi) || isHR)
+                            @if (isSobeReisi)
                             {
                                 <a asp-area="User" asp-controller="Tesdiq" asp-action="SobeReisi"
                                    class="fn-nav-subitem @(currentController == "Tesdiq" && currentAction == "SobeReisi" ? "active" : "")">
                                     <div class="fn-sub-dot"></div> Şöbə Rəhbəri
                                 </a>
                             }
-                            @if (User.IsInRole(RoleNames.Rehber) || isHR)
+                            @if (isRehberRol)
                             {
                                 <a asp-area="User" asp-controller="Tesdiq" asp-action="Rehber"
                                    class="fn-nav-subitem @(currentController == "Tesdiq" && currentAction == "Rehber" ? "active" : "")">
                                     <div class="fn-sub-dot"></div> Rəhbər
                                 </a>
                             }
-                            @if (isHR)
+                            @if (isHrRol)
                             {
                                 <a asp-area="User" asp-controller="Tesdiq" asp-action="Hr"
                                    class="fn-nav-subitem @(currentController == "Tesdiq" && currentAction == "Hr" ? "active" : "")">
