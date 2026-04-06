@@ -289,6 +289,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .ToList();
 
             ViewData["Title"] = "Rəhbər Dashboard";
+            ViewData["UserRole"] = "Rəhbər";
             return View(vm);
         }
     }
