@@ -69,6 +69,14 @@ body {
     box-shadow: 0 3px 10px rgba(232,184,75,0.3);
 }
 
+.fn-sidebar-logo-img {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
 .fn-sidebar-logo {
     font-size: 16px;
     font-weight: 700;
