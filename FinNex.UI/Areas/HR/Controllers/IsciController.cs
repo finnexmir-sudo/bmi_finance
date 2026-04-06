@@ -136,7 +136,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Aktivdir = true,
             };
 
-            var resultUser = await _userManager.CreateAsync(user, "FinNex2026!");
+            var resultUser = await _userManager.CreateAsync(user, "user123");
 
             if (!resultUser.Succeeded)
             {
