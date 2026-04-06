@@ -7,6 +7,7 @@ namespace FinNex.UI.Areas.HR.ViewModels
     public class IsciEditVM
     {
         public int Id { get; set; }
+        public int? AppUserId { get; set; }
 
         [Display(Name = "İstifadəçi Adı")]
         public string? IstifadeciAd { get; set; }

@@ -35,6 +35,7 @@
             <form asp-action="Edit" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="AppUserId" />
                 <div asp-validation-summary="ModelOnly" class="fn-alert fn-alert--error" style="margin:16px 24px 0;"></div>
 
                 <div class="isci-form-body">
