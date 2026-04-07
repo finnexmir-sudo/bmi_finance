@@ -36,9 +36,18 @@ namespace FinNex.UI.Areas.User.Controllers
 
             var result = await _icazeService.GetIsciIcazeleriAsync(isciId.Value);
 
+            var rehberdirmi = User.IsInRole(RoleNames.Rehber);
+            var sobeReisidirmi = User.IsInRole(RoleNames.SobeReisi);
+            var icazeList = result.Success ? result.Data!.ToList() : new();
+            foreach (var ic in icazeList)
+            {
+                ic.MuracietSahibiRehberdirmi = rehberdirmi;
+                ic.MuracietSahibiSobeReisidirmi = sobeReisidirmi;
+            }
+
             var vm = new IcazeIndexVM
             {
-                Icazeler = result.Success ? result.Data!.ToList() : new()
+                Icazeler = icazeList
             };
 
             if (!result.Success)

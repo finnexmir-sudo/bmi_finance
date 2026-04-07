@@ -40,11 +40,18 @@ namespace FinNex.UI.Areas.User.Controllers
             var mezResult = await _mezuniyyetService.GetIsciMezuniyyetleriAsync(isci.Id);
             var icazeResult = await _icazeService.GetIsciIcazeleriAsync(isci.Id);
 
+            var rehberdirmi = User.IsInRole(RoleNames.Rehber);
+            var sobeReisidirmi = User.IsInRole(RoleNames.SobeReisi);
+            var mezList = mezResult.Success ? mezResult.Data!.ToList() : new();
+            var icazeList = icazeResult.Success ? icazeResult.Data!.ToList() : new();
+            foreach (var m in mezList) { m.MuracietSahibiRehberdirmi = rehberdirmi; m.MuracietSahibiSobeReisidirmi = sobeReisidirmi; }
+            foreach (var ic in icazeList) { ic.MuracietSahibiRehberdirmi = rehberdirmi; ic.MuracietSahibiSobeReisidirmi = sobeReisidirmi; }
+
             var model = new MuracietPortalViewModel
             {
                 AktivTab = tab,
-                Mezuniyyetler = mezResult.Success ? mezResult.Data!.ToList() : new(),
-                Icazeler = icazeResult.Success ? icazeResult.Data!.ToList() : new(),
+                Mezuniyyetler = mezList,
+                Icazeler = icazeList,
             };
 
             return View(model);

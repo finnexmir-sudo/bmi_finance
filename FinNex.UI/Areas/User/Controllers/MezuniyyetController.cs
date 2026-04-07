@@ -40,9 +40,18 @@ namespace FinNex.UI.Areas.User.Controllers
             var mezResult = await _mezuniyyetService.GetIsciMezuniyyetleriAsync(isciId.Value);
             var dashResult = await _dashboardService.GetDashboardAsync(User.Identity!.Name!);
 
+            var rehberdirmi = User.IsInRole(RoleNames.Rehber);
+            var sobeReisidirmi = User.IsInRole(RoleNames.SobeReisi);
+            var mezList = mezResult.Success ? mezResult.Data!.ToList() : new();
+            foreach (var m in mezList)
+            {
+                m.MuracietSahibiRehberdirmi = rehberdirmi;
+                m.MuracietSahibiSobeReisidirmi = sobeReisidirmi;
+            }
+
             var vm = new MezuniyyetIndexVM
             {
-                Mezuniyyetler = mezResult.Success ? mezResult.Data!.ToList() : new(),
+                Mezuniyyetler = mezList,
                 FilterNov = nov,
                 FilterStatus = status,
             };
