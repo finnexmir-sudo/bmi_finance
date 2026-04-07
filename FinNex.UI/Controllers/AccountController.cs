@@ -35,8 +35,8 @@ namespace FinNex.UI.Controllers
         [HttpGet]
         public IActionResult Login()
         {
-
-            return View(new LoginDto());
+            var lastUser = Request.Cookies["LastUserName"] ?? "";
+            return View(new LoginDto { UserName = lastUser });
         }
 
         // ======================
@@ -83,6 +83,15 @@ namespace FinNex.UI.Controllers
 
             // Uğurlu giriş
             await LogLoginAttempt(dto.UserName, $"{user.Ad} {user.Soyad}", ip, userAgent, true, null);
+
+            // İstifadəçi adını yadda saxla (yalnız ad, şifrə yox)
+            Response.Cookies.Append("LastUserName", dto.UserName, new CookieOptions
+            {
+                Expires = DateTimeOffset.UtcNow.AddDays(30),
+                HttpOnly = true,
+                IsEssential = false,
+                SameSite = SameSiteMode.Lax
+            });
 
             return RedirectToAction("Index", "Dashboard", new { area = "User" });
         }
