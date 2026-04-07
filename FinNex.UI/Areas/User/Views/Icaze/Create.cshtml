@@ -41,16 +41,28 @@
                         <label asp-for="BaslamaSaati" class="fn-label">
                             Başlama saatı <span class="fn-required">*</span>
                         </label>
-                        <input asp-for="BaslamaSaati" type="time"
-                               class="fn-input" id="baslamaSaati" />
+                        <select asp-for="BaslamaSaati" class="fn-select" id="baslamaSaati">
+                            @for (int h = 8; h <= 17; h++)
+                            {
+                                var val = $"{h:D2}:00:00";
+                                var txt = $"{h:D2}:00";
+                                <option value="@val" selected="@(Model.BaslamaSaati.Hours == h)">@txt</option>
+                            }
+                        </select>
                         <span asp-validation-for="BaslamaSaati" class="fn-val-msg"></span>
                     </div>
                     <div class="fn-form-group">
                         <label asp-for="BitisSaati" class="fn-label">
                             Bitmə saatı <span class="fn-required">*</span>
                         </label>
-                        <input asp-for="BitisSaati" type="time"
-                               class="fn-input" id="bitisSaati" />
+                        <select asp-for="BitisSaati" class="fn-select" id="bitisSaati">
+                            @for (int h = 9; h <= 18; h++)
+                            {
+                                var val = $"{h:D2}:00:00";
+                                var txt = $"{h:D2}:00";
+                                <option value="@val" selected="@(Model.BitisSaati.Hours == h)">@txt</option>
+                            }
+                        </select>
                         <span asp-validation-for="BitisSaati" class="fn-val-msg"></span>
                     </div>
                 </div>
