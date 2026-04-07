@@ -87,7 +87,7 @@ namespace FinNex.UI.Areas.User.Controllers
             var createDto = new IcazeCreateDto
             {
                 IsciId = isciId.Value,
-                EvezEdenIsciId = vm.EvezEdenIsciId ?? vm.IsciId,
+                EvezEdenIsciId = vm.EvezEdenIsciId,
                 IcazeTarixi = vm.IcazeTarixi,
                 BaslamaSaati = vm.BaslamaSaati,
                 BitisSaati = vm.BitisSaati,

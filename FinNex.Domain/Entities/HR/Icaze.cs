@@ -5,8 +5,8 @@
         public int IsciId { get; set; }
         public Isci Isci { get; set; } = null!;
 
-        public int EvezEdenIsciId { get; set; }
-        public Isci EvezEdenIsci { get; set; } = null!;
+        public int? EvezEdenIsciId { get; set; }
+        public Isci? EvezEdenIsci { get; set; }
 
         public DateTime IcazeTarixi { get; set; }
         public TimeSpan BaslamaSaati { get; set; }
