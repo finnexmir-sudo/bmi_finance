@@ -296,8 +296,10 @@ namespace FinNex.UI.Areas.HR.Controllers
           }
           catch (Exception ex)
           {
-            TempData["Error"] = "Dashboard yüklənmədi: " + ex.Message;
-            return View(new RehberDashboardVM());
+            ViewData["Title"] = "Rəhbər Dashboard";
+            ViewData["UserRole"] = "Rəhbər";
+            ViewBag.ErrorMessage = "Dashboard yüklənmədi: " + ex.Message;
+            return View("~/Areas/HR/Views/RehberDashboard/Index.cshtml", new RehberDashboardVM());
           }
         }
     }
