@@ -182,8 +182,8 @@ namespace FinNex.UI.Areas.User.Controllers
                 x => x.Id != isciId.Value && x.Status == IsciStatus.Aktiv);
 
             ViewBag.Isciler = iscilerResult.Success
-                ? iscilerResult.Data!.Select(x => new { x.Id, TamAd = x.TamAd, Sobe = x.SobeAdi ?? "-" }).ToList()
-                : new List<object>();
+                ? iscilerResult.Data!.Select(x => new SelectListItem($"{x.TamAd} ({x.SobeAdi ?? "-"})", x.Id.ToString())).ToList()
+                : new List<SelectListItem>();
 
             ViewData["Title"] = "Toplu Mesaj";
             return View();

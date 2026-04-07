@@ -1,7 +1,8 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
 @{
     ViewData["Title"] = "Toplu Mesaj";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-    var isciler = ViewBag.Isciler as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var isciler = ViewBag.Isciler as List<SelectListItem> ?? new List<SelectListItem>();
 }
 
 @section Styles {
@@ -44,11 +45,10 @@
                 <div class="tm-recipient-grid" id="tmGrid">
                     @foreach (var isci in isciler)
                     {
-                        <div class="tm-recipient-item" data-name="@isci.TamAd">
-                            <input type="checkbox" name="alanIsciIds" value="@isci.Id" id="isci_@isci.Id" />
-                            <label for="isci_@isci.Id">
-                                <div class="tm-recipient-name">@isci.TamAd</div>
-                                <div class="tm-recipient-dept">@isci.Sobe</div>
+                        <div class="tm-recipient-item" data-name="@isci.Text">
+                            <input type="checkbox" name="alanIsciIds" value="@isci.Value" id="isci_@isci.Value" />
+                            <label for="isci_@isci.Value">
+                                <div class="tm-recipient-name">@isci.Text</div>
                             </label>
                         </div>
                     }
