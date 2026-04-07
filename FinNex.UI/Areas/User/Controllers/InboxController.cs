@@ -171,6 +171,43 @@ namespace FinNex.UI.Areas.User.Controllers
             return RedirectToAction(nameof(Mesaj), new { id = dto.CavabVerdigiMesajId });
         }
 
+        // ── GET /User/Inbox/TopluMesaj ────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> TopluMesaj()
+        {
+            var isciId = await GetIsciIdAsync();
+            if (isciId == null) return RedirectToLogin();
+
+            var iscilerResult = await _isciService.HamisiniGetirAsync(
+                x => x.Id != isciId.Value && x.Status == IsciStatus.Aktiv);
+
+            ViewBag.Isciler = iscilerResult.Success
+                ? iscilerResult.Data!.Select(x => new { x.Id, TamAd = x.TamAd, Sobe = x.SobeAdi ?? "-" }).ToList()
+                : new List<object>();
+
+            ViewData["Title"] = "Toplu Mesaj";
+            return View();
+        }
+
+        // ── POST /User/Inbox/TopluMesaj ───────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> TopluMesaj(string movzu, string metn, List<int> alanIsciIds)
+        {
+            var isciId = await GetIsciIdAsync();
+            if (isciId == null) return RedirectToLogin();
+
+            if (string.IsNullOrWhiteSpace(movzu) || string.IsNullOrWhiteSpace(metn))
+            {
+                TempData["Error"] = "Mövzu və mətn boş ola bilməz.";
+                return RedirectToAction(nameof(TopluMesaj));
+            }
+
+            var result = await _mesajService.TopluGonderAsync(isciId.Value, alanIsciIds, movzu, metn);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Index), new { tab = "gonderilenler" });
+        }
+
         // ── POST /User/Inbox/BildirisOxu ─────────────────────
         [HttpPost]
         public async Task<IActionResult> BildirisOxu(int id)

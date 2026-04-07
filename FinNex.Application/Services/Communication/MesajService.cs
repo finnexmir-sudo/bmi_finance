@@ -134,19 +134,38 @@ namespace FinNex.Application.Services.Communication
                 await _unitOfWork.Repository<Mesaj>().YaratAsync(entity);
                 await _unitOfWork.YaddaSaxlaAsync();
 
-                // Alan işçiyə bildiriş göndər
-                var gonderenIsci = await _unitOfWork.Repository<FinNex.Domain.Entities.HR.Isci>()
-                    .IdIleGetirAsync(dto.GonderenIsciId);
-
-                await _bildirisService.YaratAsync(
-                    isciId: dto.AlanIsciId,
-                    nov: BildirisNovu.YeniMesaj,
-                    bashliq: "Yeni mesaj",
-                    metn: $"{gonderenIsci?.TamAd ?? "Biri"} sizə mesaj göndərdi: {dto.Movzu}",
-                    redirectUrl: $"/User/Inbox/Mesaj/{entity.Id}",
-                    mesajId: entity.Id);
-
                 return Result.Ok("Mesaj göndərildi.");
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail($"Xəta: {ex.Message}");
+            }
+        }
+
+        public async Task<Result> TopluGonderAsync(int gonderenIsciId, List<int> alanIsciIds, string movzu, string metn)
+        {
+            try
+            {
+                if (alanIsciIds == null || !alanIsciIds.Any())
+                    return Result.Fail("Ən azı bir alıcı seçilməlidir.");
+
+                foreach (var alanId in alanIsciIds.Distinct())
+                {
+                    if (alanId == gonderenIsciId) continue;
+
+                    var entity = new Mesaj
+                    {
+                        GonderenIsciId = gonderenIsciId,
+                        AlanIsciId = alanId,
+                        Movzu = movzu,
+                        Metn = metn
+                    };
+
+                    await _unitOfWork.Repository<Mesaj>().YaratAsync(entity);
+                }
+
+                await _unitOfWork.YaddaSaxlaAsync();
+                return Result.Ok($"{alanIsciIds.Distinct().Count(x => x != gonderenIsciId)} nəfərə mesaj göndərildi.");
             }
             catch (Exception ex)
             {
