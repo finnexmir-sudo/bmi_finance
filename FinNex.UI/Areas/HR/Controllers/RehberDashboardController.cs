@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace FinNex.UI.Areas.HR.Controllers
 {
@@ -21,19 +22,22 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IMezuniyyetService _mezuniyyetService;
         private readonly IIcazeService _icazeService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly ILogger<RehberDashboardController> _logger;
 
         public RehberDashboardController(
             IUnitOfWork uow,
             IDavamiyyetService davamiyyetService,
             IMezuniyyetService mezuniyyetService,
             IIcazeService icazeService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            ILogger<RehberDashboardController> logger)
         {
             _uow = uow;
             _davamiyyetService = davamiyyetService;
             _mezuniyyetService = mezuniyyetService;
             _icazeService = icazeService;
             _userManager = userManager;
+            _logger = logger;
         }
 
         public async Task<IActionResult> Index()
@@ -161,9 +165,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Take(10)
                 .Select(x => new MezuniyyetdeOlanDto
                 {
-                    AdSoyad = x.IsciAdSoyad,
-                    Departament = x.SobeAdi,
-                    Nov = x.NovText,
+                    AdSoyad = x.IsciAdSoyad ?? "—",
+                    Departament = x.SobeAdi ?? "—",
+                    Nov = x.NovText ?? "—",
                     BitmeTarixi = x.BitmeTarixi
                 })
                 .ToList();
@@ -183,8 +187,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Select(x => new GozleyenTesdiqDto
                 {
                     Id = x.Id,
-                    AdSoyad = x.IsciAdSoyad,
-                    Departament = x.SobeAdi,
+                    AdSoyad = x.IsciAdSoyad ?? "—",
+                    Departament = x.SobeAdi ?? "—",
                     Tarix = $"{x.BaslamaTarixi:dd.MM} - {x.BitmeTarixi:dd.MM.yyyy}"
                 })
                 .ToList();
@@ -206,8 +210,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                     .Select(x => new GozleyenTesdiqDto
                     {
                         Id = x.Id,
-                        AdSoyad = x.IsciAdSoyad,
-                        Departament = x.SobeAdi,
+                        AdSoyad = x.IsciAdSoyad ?? "—",
+                        Departament = x.SobeAdi ?? "—",
                         Tarix = $"{x.IcazeTarixi:dd.MM.yyyy} ({x.BaslamaSaati:hh\\:mm}-{x.BitisSaati:hh\\:mm})"
                     })
                     .ToList();
@@ -226,13 +230,14 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .ToListAsync();
 
             vm.DepartamentStat = teyinatlar
-                .GroupBy(x => x.Departament.Ad)
+                .Where(x => x.Departament != null)
+                .GroupBy(x => x.Departament.Ad ?? "—")
                 .Select(g => new DepartamentStatDto
                 {
                     Ad = g.Key,
                     IsciSayi = g.Count(),
-                    KisiSayi = g.Count(x => x.Isci.Cins == Cins.Kisi),
-                    QadinSayi = g.Count(x => x.Isci.Cins == Cins.Qadin)
+                    KisiSayi = g.Count(x => x.Isci != null && x.Isci.Cins == Cins.Kisi),
+                    QadinSayi = g.Count(x => x.Isci != null && x.Isci.Cins == Cins.Qadin)
                 })
                 .OrderByDescending(x => x.IsciSayi)
                 .ToList();
@@ -274,10 +279,10 @@ namespace FinNex.UI.Areas.HR.Controllers
             // Son maaş dəyişiklikləri
             var sonDeyisiklikler = await _uow.Repository<IsciMaasTarixcesi>()
                 .Query()
+                .Include(x => x.Isci)
                 .Where(x => !x.Silinib)
                 .OrderByDescending(x => x.DeyismeTarixi)
                 .Take(8)
-                .Include(x => x.Isci)
                 .ToListAsync();
 
             vm.SonMaasDeyisiklikleri = sonDeyisiklikler
@@ -296,6 +301,7 @@ namespace FinNex.UI.Areas.HR.Controllers
           }
           catch (Exception ex)
           {
+            _logger.LogError(ex, "RehberDashboard Index xətası");
             ViewData["Title"] = "Rəhbər Dashboard";
             ViewData["UserRole"] = "Rəhbər";
             ViewBag.ErrorMessage = "Dashboard yüklənmədi: " + ex.Message;
