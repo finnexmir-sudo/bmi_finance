@@ -98,7 +98,10 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 }
                 await transaction.CommitAsync();
 
-                return Result<MezuniyyetDto>.Ok(_mapper.Map<MezuniyyetDto>(entity), "Müraciət uğurla göndərildi.");
+                var rolSayi = isciRollari.Count;
+                var rollar = string.Join(", ", isciRollari.Select(r => r.RolTipi.ToString()));
+                return Result<MezuniyyetDto>.Ok(_mapper.Map<MezuniyyetDto>(entity),
+                    $"Müraciət uğurla göndərildi. (Status: {ilkinStatus}, Rollar: {(rolSayi > 0 ? rollar : "yoxdur")})");
             }
             catch
             {
