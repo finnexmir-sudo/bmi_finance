@@ -109,8 +109,8 @@ namespace FinNex.Application.Services
                 if (icaze.IsciId != isciId)
                     return Result.Fail("Bu icaze size aid deyil.");
 
-                if (icaze.Status != IcazeStatus.Gozlemede)
-                    return Result.Fail("Yalniz 'Gozlemede' statusundaki icaze legv edile biler.");
+                if (icaze.Status != IcazeStatus.Gozlemede && icaze.Status != IcazeStatus.SobeReisiTesdiqinde)
+                    return Result.Fail("Yalnız 'Gözləmədə' və ya 'Şöbə rəisi təsdiqində' statusundakı icazə ləğv edilə bilər.");
 
                 await _unitOfWork.Repository<Icaze>().YumshakSilAsync(icazeId);
                 await _unitOfWork.YaddaSaxlaAsync();
