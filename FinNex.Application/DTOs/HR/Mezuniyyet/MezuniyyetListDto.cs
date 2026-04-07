@@ -52,8 +52,14 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         public string? ImtinaSebebi { get; set; }
         public DateTime YaradilmaTarixi { get; set; }
 
+        // Müraciət sahibinin rolu — workflow göstəricisi üçün
+        public bool MuracietSahibiRehberdirmi { get; set; }
+        public bool MuracietSahibiSobeReisidirmi { get; set; }
+
         // Keçilmiş addımlar — rol əsaslı workflow üçün
-        public bool SobeReisiKecildi => SobeReisiTesdiq == null && (int)Status >= 3;
-        public bool RehberKecildi => RehberTesdiq == null && (int)Status >= 4;
+        public bool SobeReisiKecildi => MuracietSahibiRehberdirmi || MuracietSahibiSobeReisidirmi
+            || (SobeReisiTesdiq == null && (int)Status >= 3);
+        public bool RehberKecildi => MuracietSahibiRehberdirmi
+            || (RehberTesdiq == null && (int)Status >= 4);
     }
 }
