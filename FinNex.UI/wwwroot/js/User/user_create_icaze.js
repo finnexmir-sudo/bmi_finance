@@ -1,11 +1,18 @@
-// ── Yalnız rəqəm və ":" icazə ver, avtomatik ":" əlavə et ──
-function formatSaat(e) {
+// ── Saat mask: istifadəçi yalnız rəqəm yazır, ":" avtomatik qoyulur ──
+function maskSaat(e) {
     var input = e.target;
-    var val = input.value.replace(/[^\d]/g, '');
-    if (val.length >= 3) {
-        val = val.substring(0, 2) + ':' + val.substring(2, 4);
+    var raw = input.value.replace(/[^\d]/g, '');
+
+    // Maksimum 4 rəqəm (HHmm)
+    if (raw.length > 4) raw = raw.substring(0, 4);
+
+    // Avtomatik ":" əlavə et (3+ rəqəm olduqda)
+    if (raw.length >= 3) {
+        input.value = raw.substring(0, 2) + ':' + raw.substring(2);
+    } else {
+        input.value = raw;
     }
-    input.value = val.substring(0, 5);
+
     hesabla();
 }
 
@@ -56,8 +63,6 @@ function hesabla() {
 var basEl = document.getElementById('baslamaSaati');
 var bitisEl = document.getElementById('bitisSaati');
 
-basEl.addEventListener('input', formatSaat);
-bitisEl.addEventListener('input', formatSaat);
-basEl.addEventListener('change', hesabla);
-bitisEl.addEventListener('change', hesabla);
+basEl.addEventListener('input', maskSaat);
+bitisEl.addEventListener('input', maskSaat);
 hesabla();

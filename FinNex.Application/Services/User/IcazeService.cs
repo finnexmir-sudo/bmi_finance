@@ -81,7 +81,11 @@ namespace FinNex.Application.Services
                         x => x.Id == entity.Id,
                         include: q => q
                             .Include(i => i.Isci)
-    .ThenInclude(i => i.IsciTeyinatlari)
+                                .ThenInclude(i => i.IsciTeyinatlari)
+                                    .ThenInclude(t => t.Departament)
+                            .Include(i => i.Isci)
+                                .ThenInclude(i => i.IsciTeyinatlari)
+                                    .ThenInclude(t => t.Vezife)
                             .Include(i => i.EvezEdenIsci),
                         izlemeden: true);
 
