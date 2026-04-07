@@ -107,10 +107,10 @@
                 @foreach (var m in Model.GozleyenMezuniyyetler)
                 {
                     <div class="rd-list-item">
-                        <div class="rd-avatar">@m.AdSoyad[0]</div>
+                        <div class="rd-avatar">@(m.AdSoyad?.Length > 0 ? m.AdSoyad[0] : '?')</div>
                         <div class="rd-list-info">
-                            <div class="rd-list-name">@m.AdSoyad</div>
-                            <div class="rd-list-meta">@m.Departament · @m.Tarix</div>
+                            <div class="rd-list-name">@(m.AdSoyad ?? "—")</div>
+                            <div class="rd-list-meta">@(m.Departament ?? "—") · @(m.Tarix ?? "—")</div>
                         </div>
                         <span class="fn-badge fn-badge--wait">Məz.</span>
                     </div>
@@ -122,10 +122,10 @@
                 @foreach (var ic in Model.GozleyenIcazeler)
                 {
                     <div class="rd-list-item">
-                        <div class="rd-avatar">@ic.AdSoyad[0]</div>
+                        <div class="rd-avatar">@(ic.AdSoyad?.Length > 0 ? ic.AdSoyad[0] : '?')</div>
                         <div class="rd-list-info">
-                            <div class="rd-list-name">@ic.AdSoyad</div>
-                            <div class="rd-list-meta">@ic.Departament · @ic.Tarix</div>
+                            <div class="rd-list-name">@(ic.AdSoyad ?? "—")</div>
+                            <div class="rd-list-meta">@(ic.Departament ?? "—") · @(ic.Tarix ?? "—")</div>
                         </div>
                         <span class="fn-badge fn-badge--review">İcazə</span>
                     </div>
@@ -148,10 +148,10 @@
                 @foreach (var m in Model.MezuniyyetdeOlanlar)
                 {
                     <div class="rd-list-item">
-                        <div class="rd-avatar rd-avatar--amber">@m.AdSoyad[0]</div>
+                        <div class="rd-avatar rd-avatar--amber">@(m.AdSoyad?.Length > 0 ? m.AdSoyad[0] : '?')</div>
                         <div class="rd-list-info">
-                            <div class="rd-list-name">@m.AdSoyad</div>
-                            <div class="rd-list-meta">@m.Departament · @m.Nov</div>
+                            <div class="rd-list-name">@(m.AdSoyad ?? "—")</div>
+                            <div class="rd-list-meta">@(m.Departament ?? "—") · @(m.Nov ?? "—")</div>
                         </div>
                         <div class="rd-date-tag">@m.BitmeTarixi.ToString("dd.MM")</div>
                     </div>
@@ -186,10 +186,10 @@
                                   g.Status == 2 ? "Gecikdi" :
                                   g.Status == 3 ? "Qayıb" : "İcazəli";
                         <div class="rd-list-item">
-                            <div class="rd-avatar rd-avatar--blue">@g.Ad[0]</div>
+                            <div class="rd-avatar rd-avatar--blue">@(g.Ad?.Length > 0 ? g.Ad[0] : '?')</div>
                             <div class="rd-list-info">
-                                <div class="rd-list-name">@g.Ad</div>
-                                <div class="rd-list-meta">@g.Departament</div>
+                                <div class="rd-list-name">@(g.Ad ?? "—")</div>
+                                <div class="rd-list-meta">@(g.Departament ?? "—")</div>
                             </div>
                             <div class="rd-time-group">
                                 @if (g.GirisVaxti != null) { <span class="rd-time rd-time--in">@g.GirisVaxti</span> }
