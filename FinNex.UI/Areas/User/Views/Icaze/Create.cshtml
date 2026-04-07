@@ -41,8 +41,9 @@
                         <label asp-for="BaslamaSaati" class="fn-label">
                             Başlama saatı <span class="fn-required">*</span>
                         </label>
-                        <input asp-for="BaslamaSaati" type="time"
-                               min="08:00" max="18:00"
+                        <input asp-for="BaslamaSaati" type="text"
+                               pattern="^([01]?\d|2[0-3]):[0-5]\d$"
+                               placeholder="09:00" maxlength="5"
                                class="fn-input" id="baslamaSaati" />
                         <span asp-validation-for="BaslamaSaati" class="fn-val-msg"></span>
                     </div>
@@ -50,8 +51,9 @@
                         <label asp-for="BitisSaati" class="fn-label">
                             Bitmə saatı <span class="fn-required">*</span>
                         </label>
-                        <input asp-for="BitisSaati" type="time"
-                               min="08:00" max="18:00"
+                        <input asp-for="BitisSaati" type="text"
+                               pattern="^([01]?\d|2[0-3]):[0-5]\d$"
+                               placeholder="12:00" maxlength="5"
                                class="fn-input" id="bitisSaati" />
                         <span asp-validation-for="BitisSaati" class="fn-val-msg"></span>
                     </div>
