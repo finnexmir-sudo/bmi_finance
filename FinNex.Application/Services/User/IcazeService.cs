@@ -393,6 +393,12 @@ namespace FinNex.Application.Services
             IcazeSaati = icaze.IcazeSaati,
             Sebeb = icaze.Sebeb,
             Status = icaze.Status,
+            SobeReisiTesdiq = icaze.SobeReisiTesdiq,
+            SobeReisiTesdiqTarixi = icaze.SobeReisiTesdiqTarixi,
+            RehberTesdiq = icaze.RehberTesdiq,
+            RehberTesdiqTarixi = icaze.RehberTesdiqTarixi,
+            HrTesdiq = icaze.HrTesdiq,
+            HrTesdiqTarixi = icaze.HrTesdiqTarixi,
         };
         public async Task<Result<IList<IcazeListDto>>> GetFiltrliAsync(
     DateTime? tarixFrom,

@@ -61,6 +61,8 @@
                             </div>
                         </div>
 
+                        @if (Model.SobeReisiTesdiq != null || Model.WorkflowAddim <= 1)
+                        {
                         <div class="fn-wt-connector @(Model.WorkflowAddim >= 1 ? "fn-wt-connector--done" : "")"></div>
 
                         @* Addım 1: Şöbə rəisi *@
@@ -83,7 +85,10 @@
                                 </div>
                             </div>
                         </div>
+                        }
 
+                        @if (Model.RehberTesdiq != null || Model.WorkflowAddim <= 2)
+                        {
                         <div class="fn-wt-connector @(Model.WorkflowAddim >= 2 ? "fn-wt-connector--done" : "")"></div>
 
                         @* Addım 2: Rəhbər *@
@@ -106,6 +111,7 @@
                                 </div>
                             </div>
                         </div>
+                        }
 
                         <div class="fn-wt-connector @(Model.WorkflowAddim >= 3 ? "fn-wt-connector--done" : "")"></div>
 

@@ -51,5 +51,9 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
 
         public string? ImtinaSebebi { get; set; }
         public DateTime YaradilmaTarixi { get; set; }
+
+        // Keçilmiş addımlar — rol əsaslı workflow üçün
+        public bool SobeReisiKecildi => SobeReisiTesdiq == null && (int)Status >= 3;
+        public bool RehberKecildi => RehberTesdiq == null && (int)Status >= 4;
     }
 }

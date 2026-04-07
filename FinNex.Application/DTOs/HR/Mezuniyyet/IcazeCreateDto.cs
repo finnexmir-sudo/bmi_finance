@@ -60,6 +60,10 @@ namespace FinNex.Application.DTOs.HR.Icaze
         public bool? HrTesdiq { get; set; }
         public DateTime? HrTesdiqTarixi { get; set; }
         public string? ImtinaSebebi { get; set; }
+
+        // Keçilmiş addımlar — rol əsaslı workflow üçün
+        public bool SobeReisiKecildi => SobeReisiTesdiq == null && (int)Status >= 3;
+        public bool RehberKecildi => RehberTesdiq == null && (int)Status >= 4;
     }
 
     // ── Detallı baxış üçün ──────────────────────────────
