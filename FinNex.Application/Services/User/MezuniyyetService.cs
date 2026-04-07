@@ -432,6 +432,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         if (m.Status != MezuniyyetStatus.Gozlemede &&
             m.Status != MezuniyyetStatus.SobeReisiTesdiqinde &&
             m.Status != MezuniyyetStatus.RehberTesdiqinde &&
+            m.Status != MezuniyyetStatus.HrTesdiqinde &&
             m.Status != MezuniyyetStatus.Tesdiqlenib)
             return Result.Fail("Bu statusda ləğv etmək mümkün deyil.");
 

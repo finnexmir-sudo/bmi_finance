@@ -267,7 +267,7 @@
                                asp-route-id="@m.Id" class="fn-btn fn-btn--ghost-sm" style="margin-top:6px">
                                 Detay
                             </a>
-                            @if (m.WorkflowMerhele == "Gözləmədə" || m.WorkflowMerhele == "Şöbə rəisi təsdiqində" || m.WorkflowMerhele == "Rəhbər təsdiqində")
+                            @if (m.WorkflowMerhele != "Təsdiqlənib" && m.WorkflowMerhele != "İmtina edildi")
                             {
                                 <form asp-area="User" asp-controller="Mezuniyyet"
                                       asp-action="Legv" method="post" style="margin-top:4px"

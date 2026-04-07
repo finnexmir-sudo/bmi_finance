@@ -100,7 +100,7 @@ namespace FinNex.UI.Areas.User.ViewModels.Mezuniyyet
             HrTesdiq = dto.HrTesdiq,
             HrTesdiqTarixi = dto.HrTesdiqTarixi,
 
-            LegvEdeBiler = (int)dto.Status <= 3,  // Gozlemede(1), SobeReisiTesdiqinde(2), RehberTesdiqinde(3)
+            LegvEdeBiler = (int)dto.Status <= 4,  // Gozlemede(1), SobeReisiTesdiqinde(2), RehberTesdiqinde(3), HrTesdiqinde(4)
         };
     }
 }
