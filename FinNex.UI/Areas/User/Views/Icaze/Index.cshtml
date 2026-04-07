@@ -123,16 +123,22 @@
                                 <div class="fn-ws-dot"></div>
                                 <div class="fn-ws-lbl">Müraciət</div>
                             </div>
-                            <div class="fn-ws-line @(step >= 2 ? "fn-ws-line--done" : "")"></div>
-                            <div class="fn-ws @(step >= 2 ? "fn-ws--done" : step == 1 ? "fn-ws--active" : "")">
-                                <div class="fn-ws-dot"></div>
-                                <div class="fn-ws-lbl">Şöbə rəisi</div>
-                            </div>
-                            <div class="fn-ws-line @(step >= 3 ? "fn-ws-line--done" : "")"></div>
-                            <div class="fn-ws @(step >= 3 ? "fn-ws--done" : step == 2 ? "fn-ws--active" : "")">
-                                <div class="fn-ws-dot"></div>
-                                <div class="fn-ws-lbl">Rəhbər</div>
-                            </div>
+                            @if (!icaze.SobeReisiKecildi)
+                            {
+                                <div class="fn-ws-line @(step >= 2 ? "fn-ws-line--done" : "")"></div>
+                                <div class="fn-ws @(step >= 2 ? "fn-ws--done" : step == 1 ? "fn-ws--active" : "")">
+                                    <div class="fn-ws-dot"></div>
+                                    <div class="fn-ws-lbl">Şöbə rəisi</div>
+                                </div>
+                            }
+                            @if (!icaze.RehberKecildi)
+                            {
+                                <div class="fn-ws-line @(step >= 3 ? "fn-ws-line--done" : "")"></div>
+                                <div class="fn-ws @(step >= 3 ? "fn-ws--done" : step == 2 ? "fn-ws--active" : "")">
+                                    <div class="fn-ws-dot"></div>
+                                    <div class="fn-ws-lbl">Rəhbər</div>
+                                </div>
+                            }
                             <div class="fn-ws-line @(step >= 4 ? "fn-ws-line--done" : "")"></div>
                             <div class="fn-ws @(step >= 4 ? "fn-ws--done" : step == 3 ? "fn-ws--active" : "")">
                                 <div class="fn-ws-dot"></div>

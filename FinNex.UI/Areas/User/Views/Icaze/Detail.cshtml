@@ -78,6 +78,8 @@
                             </div>
                         </div>
 
+                        @if (Model.SobeReisiTesdiq != null || Step <= 1)
+                        {
                         <div class="fn-wt-connector @(Step >= 1 ? "fn-wt-connector--done" : "")"></div>
 
                         <div class="fn-wt-step @(Step >= 2 ? "fn-wt-step--done" : "")
@@ -99,7 +101,10 @@
                                 </div>
                             </div>
                         </div>
+                        }
 
+                        @if (Model.RehberTesdiq != null || Step <= 2)
+                        {
                         <div class="fn-wt-connector @(Step >= 2 ? "fn-wt-connector--done" : "")"></div>
 
                         <div class="fn-wt-step @(Step >= 3 ? "fn-wt-step--done" : "")
@@ -121,6 +126,7 @@
                                 </div>
                             </div>
                         </div>
+                        }
 
                         <div class="fn-wt-connector @(Step >= 3 ? "fn-wt-connector--done" : "")"></div>
 
