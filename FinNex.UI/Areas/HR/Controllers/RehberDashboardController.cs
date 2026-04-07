@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FinNex.UI.Areas.HR.Controllers
 {
     [Area("HR")]
-    [Authorize(Roles = RoleNames.Rehber)]
+    [Authorize(Roles = RoleNames.Rehber + "," + RoleNames.Admin)]
     public class RehberDashboardController : Controller
     {
         private readonly IUnitOfWork _uow;
@@ -38,6 +38,8 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         public async Task<IActionResult> Index()
         {
+          try
+          {
             var bugun = DateTime.Today;
             var buAyBaslangic = new DateTime(bugun.Year, bugun.Month, 1);
             var vm = new RehberDashboardVM();
@@ -291,6 +293,12 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewData["Title"] = "Rəhbər Dashboard";
             ViewData["UserRole"] = "Rəhbər";
             return View(vm);
+          }
+          catch (Exception ex)
+          {
+            TempData["Error"] = "Dashboard yüklənmədi: " + ex.Message;
+            return View(new RehberDashboardVM());
+          }
         }
     }
 }
