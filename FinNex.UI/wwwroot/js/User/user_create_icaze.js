@@ -1,14 +1,14 @@
 function hesabla() {
-    var basVal = document.getElementById('baslamaSaati').value;
-    var bitisVal = document.getElementById('bitisSaati').value;
+    var bas = document.getElementById('baslamaSaati').value;
+    var bitis = document.getElementById('bitisSaati').value;
     var box = document.getElementById('durationBox');
     var txt = document.getElementById('durationText');
 
-    if (!basVal || !bitisVal) { box.style.display = 'none'; return; }
+    if (!bas || !bitis) { box.style.display = 'none'; return; }
 
-    var bP = basVal.split(':');
-    var eP = bitisVal.split(':');
-    var diff = ((+eP[0]) * 60 + (+eP[1])) - ((+bP[0]) * 60 + (+bP[1]));
+    var bP = bas.split(':').map(Number);
+    var eP = bitis.split(':').map(Number);
+    var diff = (eP[0] * 60 + (eP[1] || 0)) - (bP[0] * 60 + (bP[1] || 0));
 
     if (diff <= 0) { box.style.display = 'none'; return; }
 
