@@ -10,7 +10,7 @@ namespace FinNex.UI.Configurations
             services.AddAuthorization(options =>
             {
                 options.AddPolicy(PolicyNames.HR_View, policy =>
-                    policy.RequireRole(RoleNames.Admin, RoleNames.HR, RoleNames.HR_View));
+                    policy.RequireRole(RoleNames.Admin, RoleNames.HR, RoleNames.HR_View, RoleNames.Rehber));
 
                 options.AddPolicy(PolicyNames.HR_Full, policy =>
                     policy.RequireRole(RoleNames.HR, RoleNames.Admin));

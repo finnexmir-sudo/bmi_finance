@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FinNex.UI.Areas.HR.Controllers
 {
     [Area("HR")]
-    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Rehber)]
     public class DavamiyyetController : Controller
     {
         private readonly IDavamiyyetService _davamiyyetService;
