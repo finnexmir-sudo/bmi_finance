@@ -14,6 +14,10 @@ namespace FinNex.UI.Areas.User.ViewModels.Mezuniyyet
         public string SobeAdi { get; set; } = null!;
         public string VezifeAdi { get; set; } = null!;
         public string? EvezEdenIsciAdSoyad { get; set; }
+        public bool EvezediciSecildi { get; set; }
+        public bool? EvezediciTesdiqlenib { get; set; }
+        public bool MuracietSahibiRehberdirmi { get; set; }
+        public bool MuracietSahibiSobeReisidirmi { get; set; }
 
         // ── Məzuniyyət məlumatları ─────────────────────────────
         public string NovText { get; set; } = null!;
@@ -51,6 +55,7 @@ namespace FinNex.UI.Areas.User.ViewModels.Mezuniyyet
             SobeAdi = dto.SobeAdi,
             VezifeAdi = dto.VezifeAdi,
             EvezEdenIsciAdSoyad = dto.EvezEdenIsciAdSoyad,
+            EvezediciSecildi = !string.IsNullOrEmpty(dto.EvezEdenIsciAdSoyad),
 
             NovText = (int)dto.Nov switch
             {

@@ -35,6 +35,8 @@ namespace FinNex.Application.DTOs.HR.Icaze
         public string SobeAdi { get; set; } = null!;
 
         public string? EvezEdenAdSoyad { get; set; }
+        public bool EvezediciSecildi => !string.IsNullOrEmpty(EvezEdenAdSoyad) && EvezEdenAdSoyad != "—";
+        public bool? EvezediciTesdiqlenib { get; set; }
 
         public DateTime IcazeTarixi { get; set; }
         public TimeSpan BaslamaSaati { get; set; }

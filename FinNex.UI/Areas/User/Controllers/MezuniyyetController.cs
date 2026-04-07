@@ -1,5 +1,6 @@
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
+using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.UI.Areas.User.ViewModels.Mezuniyyet;
@@ -18,17 +19,20 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly IDashboardService _dashboardService;
         private readonly IIsciService _isciService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IEvezediciTesdiqService _evezediciTesdiqService;
 
         public MezuniyyetController(
             IMezuniyyetService mezuniyyetService,
             IDashboardService dashboardService,
             IIsciService isciService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IEvezediciTesdiqService evezediciTesdiqService)
         {
             _mezuniyyetService = mezuniyyetService;
             _dashboardService = dashboardService;
             _isciService = isciService;
             _userManager = userManager;
+            _evezediciTesdiqService = evezediciTesdiqService;
         }
 
         // ── GET /User/Mezuniyyet ────────────────────────────────
@@ -148,6 +152,21 @@ namespace FinNex.UI.Areas.User.Controllers
             }
 
             var vm = MezuniyyetDetailVM.FromDto(dto);
+            vm.MuracietSahibiRehberdirmi = User.IsInRole(RoleNames.Rehber);
+            vm.MuracietSahibiSobeReisidirmi = User.IsInRole(RoleNames.SobeReisi);
+
+            // Əvəzedici statusunu yoxla
+            var evezResult = await _evezediciTesdiqService.GetByMezuniyyetAsync(id);
+            if (evezResult.Success && evezResult.Data != null)
+            {
+                vm.EvezediciSecildi = true;
+                vm.EvezediciTesdiqlenib = evezResult.Data.Status == FinNex.Domain.Entities.Communication.EvezediciTesdiqStatus.Qebul
+                    ? true
+                    : evezResult.Data.Status == FinNex.Domain.Entities.Communication.EvezediciTesdiqStatus.Redd
+                        ? false
+                        : null;
+            }
+
             return View(vm);
         }
 
