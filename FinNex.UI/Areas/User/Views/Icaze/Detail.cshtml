@@ -213,7 +213,7 @@
                 }
             </div>
 
-            @if (Model.WorkflowMerhele == "Gözləmədə" || Model.WorkflowMerhele == "Şöbə rəisi təsdiqində" || Model.WorkflowMerhele == "Rəhbər təsdiqində")
+            @if (Model.WorkflowMerhele != "Təsdiqlənib" && Model.WorkflowMerhele != "İmtina edildi")
             {
                 <div class="fn-card" style="margin-top:14px">
                     <div class="fn-card-title" style="margin-bottom:10px">Əməliyyatlar</div>

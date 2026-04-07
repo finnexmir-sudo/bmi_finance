@@ -142,7 +142,8 @@ namespace FinNex.Application.Services
 
                 if (icaze.Status != IcazeStatus.Gozlemede &&
                     icaze.Status != IcazeStatus.SobeReisiTesdiqinde &&
-                    icaze.Status != IcazeStatus.RehberTesdiqinde)
+                    icaze.Status != IcazeStatus.RehberTesdiqinde &&
+                    icaze.Status != IcazeStatus.HrTesdiqinde)
                     return Result.Fail("Hələ təsdiq olunmamış icazə ləğv edilə bilər.");
 
                 await _unitOfWork.Repository<Icaze>().YumshakSilAsync(icazeId);
