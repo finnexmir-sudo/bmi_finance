@@ -75,12 +75,15 @@ namespace FinNex.UI.Areas.User.Controllers
 
             vm.IsciId = isciId.Value;
 
-            if (!TimeSpan.TryParse(vm.BaslamaSaati, out var basTs))
+            var basOk = TimeSpan.TryParse(vm.BaslamaSaati, out var basTs);
+            var bitisOk = TimeSpan.TryParse(vm.BitisSaati, out var bitisTs);
+
+            if (!basOk)
                 ModelState.AddModelError("BaslamaSaati", "Düzgün saat formatı daxil edin.");
-            if (!TimeSpan.TryParse(vm.BitisSaati, out var bitisTs))
+            if (!bitisOk)
                 ModelState.AddModelError("BitisSaati", "Düzgün saat formatı daxil edin.");
 
-            if (basTs >= bitisTs)
+            if (basOk && bitisOk && basTs >= bitisTs)
                 ModelState.AddModelError("BitisSaati", "Bitmə saatı başlama saatından sonra olmalıdır.");
 
             if (!ModelState.IsValid)
