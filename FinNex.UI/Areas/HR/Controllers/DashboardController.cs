@@ -37,6 +37,8 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         public async Task<IActionResult> Index()
         {
+            try
+            {
             var bugun = DateTime.Today;
             var buAyBaslangic = new DateTime(bugun.Year, bugun.Month, 1);
 
@@ -135,6 +137,18 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             ViewData["Title"] = "HR Dashboard";
             return View();
+            }
+            catch (Exception ex)
+            {
+                ViewBag.UmumiIsci = 0; ViewBag.AktivIsci = 0; ViewBag.SonIsciler = new List<object>();
+                ViewBag.Mezuniyyetde = 0; ViewBag.MezuniyyetBitir = 0;
+                ViewBag.Gelenler = 0; ViewBag.Gecikenler = 0; ViewBag.Gecikme = 0;
+                ViewBag.Mezuniyyetdebugun = 0; ViewBag.CixisEden = 0; ViewBag.Gelmeyen = 0;
+                ViewBag.DavamiyyetFaizi = 0; ViewBag.SonGirisler = new List<object>();
+                TempData["Error"] = $"Məlumat yüklənərkən xəta: {ex.Message}";
+                ViewData["Title"] = "HR Dashboard";
+                return View();
+            }
         }
 
         /// <summary>
