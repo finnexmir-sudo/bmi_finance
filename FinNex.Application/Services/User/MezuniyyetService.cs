@@ -49,20 +49,45 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 var teyinat = await _unitOfWork.Repository<IsciTeyinat>()
                     .GetirAsync(x => x.IsciId == dto.IsciId && x.Aktivdir);
 
-                // 4. Həmin departamentdə şöbə rəisi varmı yoxla
-                var sobeReisiVar = teyinat != null && await _unitOfWork.Repository<IsciStrukturRolu>()
-                    .MovcuddurmuAsync(x =>
-                        x.DepartamentId == teyinat.DepartamentId &&
-                        x.RolTipi == StrukturRolTipi.SobeReisi &&
-                        x.IsciId != dto.IsciId &&  // özü şöbə rəisidirsə keç
-                        x.Aktivdir);
+                // 4. İşçinin öz rolunu yoxla
+                var isciRollari = await _unitOfWork.Repository<IsciStrukturRolu>()
+                    .HamisiniGetirAsync(x => x.IsciId == dto.IsciId && x.Aktivdir, izlemeden: true);
 
-                // 5. Entity-ni yarat
+                var rehberdirmi = isciRollari.Any(r => r.RolTipi == StrukturRolTipi.Rehber);
+                var sobeReisidirmi = isciRollari.Any(r => r.RolTipi == StrukturRolTipi.SobeReisi);
+
+                // 5. Status müəyyən et
+                MezuniyyetStatus ilkinStatus;
+
+                if (rehberdirmi)
+                {
+                    // Rəhbər birbaşa HR-a gedir
+                    ilkinStatus = MezuniyyetStatus.HrTesdiqinde;
+                }
+                else if (sobeReisidirmi)
+                {
+                    // Şöbə rəisi öz addımını keçir, rəhbərə gedir
+                    ilkinStatus = MezuniyyetStatus.RehberTesdiqinde;
+                }
+                else
+                {
+                    // Adi işçi — departamentdə şöbə rəisi varsa ona, yoxsa rəhbərə
+                    var sobeReisiVar = teyinat != null && await _unitOfWork.Repository<IsciStrukturRolu>()
+                        .MovcuddurmuAsync(x =>
+                            x.DepartamentId == teyinat.DepartamentId &&
+                            x.RolTipi == StrukturRolTipi.SobeReisi &&
+                            x.IsciId != dto.IsciId &&
+                            x.Aktivdir);
+
+                    ilkinStatus = sobeReisiVar
+                        ? MezuniyyetStatus.SobeReisiTesdiqinde
+                        : MezuniyyetStatus.RehberTesdiqinde;
+                }
+
+                // 6. Entity-ni yarat
                 var entity = _mapper.Map<Mezuniyyet>(dto);
                 entity.IsGunlerininSayi = isGunu;
-                entity.Status = sobeReisiVar
-                    ? MezuniyyetStatus.SobeReisiTesdiqinde
-                    : MezuniyyetStatus.RehberTesdiqinde;
+                entity.Status = ilkinStatus;
 
                 await _unitOfWork.Repository<Mezuniyyet>().YaratAsync(entity);
                 await _unitOfWork.YaddaSaxlaAsync();
@@ -409,6 +434,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
         if (m.Status != MezuniyyetStatus.Gozlemede &&
             m.Status != MezuniyyetStatus.SobeReisiTesdiqinde &&
+            m.Status != MezuniyyetStatus.RehberTesdiqinde &&
             m.Status != MezuniyyetStatus.Tesdiqlenib)
             return Result.Fail("Bu statusda ləğv etmək mümkün deyil.");
 

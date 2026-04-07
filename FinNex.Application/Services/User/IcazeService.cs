@@ -61,6 +61,43 @@ namespace FinNex.Application.Services
                 if (dto.BitisSaati <= dto.BaslamaSaati)
                     return Result<IcazeListDto>.Fail("Bitme saati baslama saatindan sonra olmalidir.");
 
+                // İşçinin rolunu yoxla
+                var isciRollari = await _unitOfWork.Repository<IsciStrukturRolu>()
+                    .HamisiniGetirAsync(x => x.IsciId == dto.IsciId && x.Aktivdir, izlemeden: true);
+
+                var rehberdirmi = isciRollari.Any(r => r.RolTipi == StrukturRolTipi.Rehber);
+                var sobeReisidirmi = isciRollari.Any(r => r.RolTipi == StrukturRolTipi.SobeReisi);
+
+                IcazeStatus ilkinStatus;
+
+                if (rehberdirmi)
+                {
+                    // Rəhbər birbaşa HR-a gedir
+                    ilkinStatus = IcazeStatus.HrTesdiqinde;
+                }
+                else if (sobeReisidirmi)
+                {
+                    // Şöbə rəisi öz addımını keçir, rəhbərə gedir
+                    ilkinStatus = IcazeStatus.RehberTesdiqinde;
+                }
+                else
+                {
+                    // Adi işçi — şöbə rəisinə gedir
+                    var teyinat = await _unitOfWork.Repository<IsciTeyinat>()
+                        .GetirAsync(x => x.IsciId == dto.IsciId && x.Aktivdir);
+
+                    var sobeReisiVar = teyinat != null && await _unitOfWork.Repository<IsciStrukturRolu>()
+                        .MovcuddurmuAsync(x =>
+                            x.DepartamentId == teyinat.DepartamentId &&
+                            x.RolTipi == StrukturRolTipi.SobeReisi &&
+                            x.IsciId != dto.IsciId &&
+                            x.Aktivdir);
+
+                    ilkinStatus = sobeReisiVar
+                        ? IcazeStatus.SobeReisiTesdiqinde
+                        : IcazeStatus.RehberTesdiqinde;
+                }
+
                 var entity = new Icaze
                 {
                     IsciId = dto.IsciId,
@@ -69,7 +106,7 @@ namespace FinNex.Application.Services
                     BaslamaSaati = dto.BaslamaSaati,
                     BitisSaati = dto.BitisSaati,
                     Sebeb = dto.Sebeb,
-                    Status = IcazeStatus.Gozlemede
+                    Status = ilkinStatus
                 };
 
                 await _unitOfWork.Repository<Icaze>().YaratAsync(entity);
@@ -109,8 +146,10 @@ namespace FinNex.Application.Services
                 if (icaze.IsciId != isciId)
                     return Result.Fail("Bu icaze size aid deyil.");
 
-                if (icaze.Status != IcazeStatus.Gozlemede && icaze.Status != IcazeStatus.SobeReisiTesdiqinde)
-                    return Result.Fail("Yalnız 'Gözləmədə' və ya 'Şöbə rəisi təsdiqində' statusundakı icazə ləğv edilə bilər.");
+                if (icaze.Status != IcazeStatus.Gozlemede &&
+                    icaze.Status != IcazeStatus.SobeReisiTesdiqinde &&
+                    icaze.Status != IcazeStatus.RehberTesdiqinde)
+                    return Result.Fail("Hələ təsdiq olunmamış icazə ləğv edilə bilər.");
 
                 await _unitOfWork.Repository<Icaze>().YumshakSilAsync(icazeId);
                 await _unitOfWork.YaddaSaxlaAsync();
