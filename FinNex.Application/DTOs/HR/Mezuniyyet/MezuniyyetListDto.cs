@@ -9,7 +9,9 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         public string SobeAdi { get; set; } = null!;
         public string VezifeAdi { get; set; } = null!;
 
-        public string? EvezEdenIsciAdSoyad { get; set; }  // əlavə edildi
+        public string? EvezEdenIsciAdSoyad { get; set; }
+        public bool EvezediciSecildi => !string.IsNullOrEmpty(EvezEdenIsciAdSoyad);
+        public bool? EvezediciTesdiqlenib { get; set; } // null=gözlənilir, true=qəbul, false=rədd
 
         public string NovText => Nov switch
         {

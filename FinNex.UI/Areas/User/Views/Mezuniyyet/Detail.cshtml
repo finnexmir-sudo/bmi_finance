@@ -61,7 +61,30 @@
                             </div>
                         </div>
 
-                        @if (Model.SobeReisiTesdiq != null || Model.WorkflowAddim <= 1)
+                        @if (Model.EvezediciSecildi)
+                        {
+                        <div class="fn-wt-connector @(Model.WorkflowAddim >= 1 ? "fn-wt-connector--done" : "")"></div>
+                        <div class="fn-wt-step @(Model.EvezediciTesdiqlenib == true ? "fn-wt-step--done" : "")
+                                               @(Model.WorkflowAddim == 0 && Model.EvezediciTesdiqlenib == null ? "fn-wt-step--active" : "")">
+                            <div class="fn-wt-circle">
+                                @if (Model.EvezediciTesdiqlenib == true) { <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg> }
+                                else { <span>2</span> }
+                            </div>
+                            <div class="fn-wt-info">
+                                <div class="fn-wt-label">Əvəzedici</div>
+                                <div class="fn-wt-sub">
+                                    @if (Model.EvezediciTesdiqlenib == true)
+                                    { <span style="color:#1e9b6b">Qəbul edildi</span> }
+                                    else if (Model.EvezediciTesdiqlenib == false)
+                                    { <span style="color:#c0392b">Rədd edildi</span> }
+                                    else
+                                    { <span style="color:#c9900a">Gözlənilir...</span> }
+                                </div>
+                            </div>
+                        </div>
+                        }
+
+                        @if ((!Model.MuracietSahibiRehberdirmi && !Model.MuracietSahibiSobeReisidirmi) && (Model.SobeReisiTesdiq != null || Model.WorkflowAddim <= 1))
                         {
                         <div class="fn-wt-connector @(Model.WorkflowAddim >= 1 ? "fn-wt-connector--done" : "")"></div>
 
@@ -87,7 +110,7 @@
                         </div>
                         }
 
-                        @if (Model.RehberTesdiq != null || Model.WorkflowAddim <= 2)
+                        @if (!Model.MuracietSahibiRehberdirmi && (Model.RehberTesdiq != null || Model.WorkflowAddim <= 2))
                         {
                         <div class="fn-wt-connector @(Model.WorkflowAddim >= 2 ? "fn-wt-connector--done" : "")"></div>
 
