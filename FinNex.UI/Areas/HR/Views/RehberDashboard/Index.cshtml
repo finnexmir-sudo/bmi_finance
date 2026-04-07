@@ -12,6 +12,13 @@
     <link rel="stylesheet" href="~/css/User/rehber-dashboard.css" asp-append-version="true" />
 }
 
+@if (ViewBag.ErrorMessage != null)
+{
+    <div style="background:#fef0f0;border:1px solid #f5c6c2;padding:16px;border-radius:8px;margin-bottom:16px;color:#c83838;font-size:13px">
+        <strong>Xəta:</strong> @ViewBag.ErrorMessage
+    </div>
+}
+
 <div class="fn-dashboard rd">
 
     <!-- ═══ KPI KARTLARI ═══ -->
