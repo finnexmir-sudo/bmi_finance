@@ -69,7 +69,7 @@ namespace FinNex.Application.Services
                     BaslamaSaati = dto.BaslamaSaati,
                     BitisSaati = dto.BitisSaati,
                     Sebeb = dto.Sebeb,
-                    Status = IcazeStatus.SobeReisiTesdiqinde
+                    Status = IcazeStatus.Gozlemede
                 };
 
                 await _unitOfWork.Repository<Icaze>().YaratAsync(entity);
