@@ -42,6 +42,7 @@
                             Başlama saatı <span class="fn-required">*</span>
                         </label>
                         <input asp-for="BaslamaSaati" type="time"
+                               min="08:00" max="18:00"
                                class="fn-input" id="baslamaSaati" />
                         <span asp-validation-for="BaslamaSaati" class="fn-val-msg"></span>
                     </div>
@@ -50,6 +51,7 @@
                             Bitmə saatı <span class="fn-required">*</span>
                         </label>
                         <input asp-for="BitisSaati" type="time"
+                               min="08:00" max="18:00"
                                class="fn-input" id="bitisSaati" />
                         <span asp-validation-for="BitisSaati" class="fn-val-msg"></span>
                     </div>
@@ -62,6 +64,11 @@
                         <path d="M7 4v3.5l2 1.5" stroke="#1e9b6b" stroke-width="1.1" stroke-linecap="round" />
                     </svg>
                     İcazə müddəti: <strong id="durationText"></strong>
+                </div>
+
+                @* ── Saat xətası (client-side) ── *@
+                <div class="fn-duration-box" id="timeErrorBox"
+                     style="display:none; background:#fff3cd; color:#856404; border-color:#ffc107;">
                 </div>
 
                 @* ── Əvəzedici işçi ── *@
