@@ -57,8 +57,8 @@ namespace FinNex.UI.Areas.User.Controllers
             {
                 IsciId = isciId.Value,
                 IcazeTarixi = DateTime.Today,
-                BaslamaSaati = new TimeSpan(9, 0, 0),
-                BitisSaati = new TimeSpan(11, 0, 0),
+                BaslamaSaati = "09:00",
+                BitisSaati = "11:00",
                 EvezEdenList = await BuildEvezEdenListAsync(isciId.Value),
             };
 
