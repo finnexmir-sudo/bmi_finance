@@ -8,8 +8,7 @@ namespace FinNex.Application.DTOs.HR.Icaze
     {
         public int IsciId { get; set; }  // Sistem avtomatik doldurur
 
-        [Required(ErrorMessage = "Əvəzedici işçi seçilməlidir")]
-        public int EvezEdenIsciId { get; set; }
+        public int? EvezEdenIsciId { get; set; }
 
         [Required(ErrorMessage = "İcazə tarixi seçilməlidir")]
         public DateTime IcazeTarixi { get; set; }
@@ -31,7 +30,7 @@ namespace FinNex.Application.DTOs.HR.Icaze
         public string IsciAdSoyad { get; set; } = null!;
         public string SobeAdi { get; set; } = null!;
 
-        public string EvezEdenAdSoyad { get; set; } = null!;
+        public string? EvezEdenAdSoyad { get; set; }
 
         public DateTime IcazeTarixi { get; set; }
         public TimeSpan BaslamaSaati { get; set; }

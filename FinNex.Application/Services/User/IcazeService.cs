@@ -64,7 +64,7 @@ namespace FinNex.Application.Services
                 var entity = new Icaze
                 {
                     IsciId = dto.IsciId,
-                    EvezEdenIsciId = dto.EvezEdenIsciId,
+                    EvezEdenIsciId = dto.EvezEdenIsciId.HasValue ? dto.EvezEdenIsciId.Value : null,
                     IcazeTarixi = dto.IcazeTarixi,
                     BaslamaSaati = dto.BaslamaSaati,
                     BitisSaati = dto.BitisSaati,
@@ -143,7 +143,7 @@ namespace FinNex.Application.Services
                     .Where(t => t.Aktivdir)
                     .Select(t => t.Departament.Ad)
                     .FirstOrDefault() ?? "-",
-                    EvezEdenAdSoyad = icaze.EvezEdenIsci.TamAd,
+                    EvezEdenAdSoyad = icaze.EvezEdenIsci?.TamAd ?? "—",
                     IcazeTarixi = icaze.IcazeTarixi,
                     BaslamaSaati = icaze.BaslamaSaati,
                     BitisSaati = icaze.BitisSaati,
@@ -343,7 +343,7 @@ namespace FinNex.Application.Services
     .Where(t => t.Aktivdir)
     .Select(t => t.Departament.Ad)
     .FirstOrDefault() ?? "-",
-            EvezEdenAdSoyad = icaze.EvezEdenIsci.TamAd,
+            EvezEdenAdSoyad = icaze.EvezEdenIsci?.TamAd ?? "—",
             IcazeTarixi = icaze.IcazeTarixi,
             BaslamaSaati = icaze.BaslamaSaati,
             BitisSaati = icaze.BitisSaati,
@@ -393,7 +393,7 @@ namespace FinNex.Application.Services
                             .Where(t => t.Aktivdir)
                             .Select(t => t.Departament.Ad)
                             .FirstOrDefault() ?? "-",
-                        EvezEdenAdSoyad = ic.EvezEdenIsci.TamAd,
+                        EvezEdenAdSoyad = ic.EvezEdenIsci?.TamAd ?? "—",
                         IcazeTarixi = ic.IcazeTarixi,
                         BaslamaSaati = ic.BaslamaSaati,
                         BitisSaati = ic.BitisSaati,

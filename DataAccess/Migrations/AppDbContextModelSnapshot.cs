@@ -859,7 +859,7 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<TimeSpan>("BitisSaati")
                         .HasColumnType("time");
 
-                    b.Property<int>("EvezEdenIsciId")
+                    b.Property<int?>("EvezEdenIsciId")
                         .HasColumnType("int");
 
                     b.Property<int?>("HrId")
@@ -3178,8 +3178,7 @@ namespace FinNex.DataAccess.Migrations
                     b.HasOne("FinNex.Domain.Entities.HR.Isci", "EvezEdenIsci")
                         .WithMany()
                         .HasForeignKey("EvezEdenIsciId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("FinNex.Domain.Entities.HR.Isci", "HrTesdiqleyen")
                         .WithMany()

@@ -123,6 +123,27 @@ namespace FinNex.UI
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                // Icaze.EvezEdenIsciId nullable etmə (əvəzedici işçi artıq məcburi deyil)
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF EXISTS (
+                            SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                            WHERE TABLE_NAME = 'Icazeler'
+                              AND COLUMN_NAME = 'EvezEdenIsciId'
+                              AND IS_NULLABLE = 'NO'
+                        )
+                        BEGIN
+                            ALTER TABLE [Icazeler] DROP CONSTRAINT IF EXISTS [FK_Icazeler_Isciler_EvezEdenIsciId];
+                            ALTER TABLE [Icazeler] ALTER COLUMN [EvezEdenIsciId] INT NULL;
+                            ALTER TABLE [Icazeler] ADD CONSTRAINT [FK_Icazeler_Isciler_EvezEdenIsciId]
+                                FOREIGN KEY ([EvezEdenIsciId]) REFERENCES [Isciler]([Id]);
+                        END
+                    ");
+                }
+                catch { /* artıq tətbiq olunub */ }
+
                 var pendingMigrations = db.Database.GetPendingMigrations().ToList();
                 var productVersion = typeof(DbContext).Assembly.GetName().Version?.ToString() ?? "9.0.0";
 
