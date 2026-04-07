@@ -2,9 +2,11 @@
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.Communication;
 using FinNex.Application.Interfaces.Communication;
+using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.Application.Services.Communication
@@ -13,11 +15,13 @@ namespace FinNex.Application.Services.Communication
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IBildirisService _bildirisService;
+        private readonly UserManager<AppUser> _userManager;
 
-        public EvezediciTesdiqService(IUnitOfWork unitOfWork, IBildirisService bildirisService)
+        public EvezediciTesdiqService(IUnitOfWork unitOfWork, IBildirisService bildirisService, UserManager<AppUser> userManager)
         {
             _unitOfWork = unitOfWork;
             _bildirisService = bildirisService;
+            _userManager = userManager;
         }
 
         public async Task<Result<IList<EvezediciTesdiqDto>>> GetGozleyenlerAsync(int evezediciIsciId)
@@ -48,7 +52,9 @@ namespace FinNex.Application.Services.Communication
             var e = await _unitOfWork.Repository<EvezediciTesdiq>()
                 .GetirAsync(
                     predicate: x => x.Id == tesdiqId && x.EvezediciIsciId == isciId,
-                    include: q => q.Include(x => x.Mezuniyyet).ThenInclude(m => m.Isci));
+                    include: q => q.Include(x => x.Mezuniyyet).ThenInclude(m => m.Isci)
+                                    .Include(x => x.Mezuniyyet).ThenInclude(m => m.Isci)
+                                        .ThenInclude(i => i.IsciTeyinatlari));
 
             if (e == null) return Result.Fail("Tapılmadı.");
 
@@ -56,6 +62,45 @@ namespace FinNex.Application.Services.Communication
             e.CavabTarixi = DateTime.Now;
 
             await _unitOfWork.Repository<EvezediciTesdiq>().YenileAsync(e);
+
+            // Məzuniyyət statusunu əvəzedici gözləmədən sonrakı addıma keçir
+            var mezuniyyet = e.Mezuniyyet;
+            if (mezuniyyet.Status == MezuniyyetStatus.Gozlemede)
+            {
+                // Müraciət sahibinin rolunu yoxla
+                var appUser = await _userManager.Users
+                    .FirstOrDefaultAsync(u => u.IsciId == mezuniyyet.IsciId);
+
+                MezuniyyetStatus sonrakiStatus;
+
+                if (appUser != null && await _userManager.IsInRoleAsync(appUser, RoleNames.Rehber))
+                {
+                    sonrakiStatus = MezuniyyetStatus.HrTesdiqinde;
+                }
+                else if (appUser != null && await _userManager.IsInRoleAsync(appUser, RoleNames.SobeReisi))
+                {
+                    sonrakiStatus = MezuniyyetStatus.RehberTesdiqinde;
+                }
+                else
+                {
+                    // Adi işçi — şöbə rəisi varsa ona, yoxsa rəhbərə
+                    var teyinat = mezuniyyet.Isci.IsciTeyinatlari?.FirstOrDefault(t => t.Aktivdir);
+                    var sobeReisiVar = teyinat != null && await _unitOfWork.Repository<IsciStrukturRolu>()
+                        .MovcuddurmuAsync(x =>
+                            x.DepartamentId == teyinat.DepartamentId &&
+                            x.RolTipi == StrukturRolTipi.SobeReisi &&
+                            x.IsciId != mezuniyyet.IsciId &&
+                            x.Aktivdir);
+
+                    sonrakiStatus = sobeReisiVar
+                        ? MezuniyyetStatus.SobeReisiTesdiqinde
+                        : MezuniyyetStatus.RehberTesdiqinde;
+                }
+
+                mezuniyyet.Status = sonrakiStatus;
+                await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(mezuniyyet);
+            }
+
             await _unitOfWork.YaddaSaxlaAsync();
 
             // Müraciət göndərən işçiyə bildiriş
@@ -127,7 +172,7 @@ namespace FinNex.Application.Services.Communication
                         metn: $"{mezuniyyet.Isci.TamAd} sizi əvəzedici seçib " +
                               $"({mezuniyyet.BaslamaTarixi:dd.MM.yyyy} — {mezuniyyet.BitmeTarixi:dd.MM.yyyy}). " +
                               $"Qəbul və ya rədd edin.",
-                        redirectUrl: $"/User/Inbox",
+                        redirectUrl: $"/User/Inbox?tab=sorgular",
                         mezuniyyetId: mezuniyyetId);
                 }
 

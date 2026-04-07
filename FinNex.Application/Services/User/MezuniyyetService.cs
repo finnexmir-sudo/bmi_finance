@@ -80,7 +80,11 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 // 6. Entity-ni yarat
                 var entity = _mapper.Map<Mezuniyyet>(dto);
                 entity.IsGunlerininSayi = isGunu;
-                entity.Status = ilkinStatus;
+
+                // Əvəzedici seçilibsə əvvəlcə onun cavabını gözlə
+                entity.Status = dto.EvezEdenIsciId.HasValue
+                    ? MezuniyyetStatus.Gozlemede
+                    : ilkinStatus;
 
                 await _unitOfWork.Repository<Mezuniyyet>().YaratAsync(entity);
                 await _unitOfWork.YaddaSaxlaAsync();
