@@ -61,21 +61,15 @@ namespace FinNex.Application.Services
                 if (dto.BitisSaati <= dto.BaslamaSaati)
                     return Result<IcazeListDto>.Fail("Bitme saati baslama saatindan sonra olmalidir.");
 
-                // İşçinin rolunu yoxla
-                var isciRollari = await _unitOfWork.Repository<IsciStrukturRolu>()
-                    .HamisiniGetirAsync(x => x.IsciId == dto.IsciId && x.Aktivdir, izlemeden: true);
-
-                var rehberdirmi = isciRollari.Any(r => r.RolTipi == StrukturRolTipi.Rehber);
-                var sobeReisidirmi = isciRollari.Any(r => r.RolTipi == StrukturRolTipi.SobeReisi);
-
+                // İşçinin roluna görə status müəyyən et
                 IcazeStatus ilkinStatus;
 
-                if (rehberdirmi)
+                if (dto.MuracietSahibiRehberdirmi)
                 {
                     // Rəhbər birbaşa HR-a gedir
                     ilkinStatus = IcazeStatus.HrTesdiqinde;
                 }
-                else if (sobeReisidirmi)
+                else if (dto.MuracietSahibiSobeReisidirmi)
                 {
                     // Şöbə rəisi öz addımını keçir, rəhbərə gedir
                     ilkinStatus = IcazeStatus.RehberTesdiqinde;

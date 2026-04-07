@@ -11,5 +11,9 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         public DateTime BaslamaTarixi { get; set; }
         public DateTime BitmeTarixi { get; set; }
         public string? Qeyd { get; set; }
+
+        // Rol əsaslı workflow — controller tərəfindən doldurulur
+        public bool MuracietSahibiRehberdirmi { get; set; }
+        public bool MuracietSahibiSobeReisidirmi { get; set; }
     }
 }

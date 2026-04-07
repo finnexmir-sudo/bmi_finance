@@ -108,6 +108,8 @@ namespace FinNex.UI.Areas.User.Controllers
                 BaslamaSaati = basTs,
                 BitisSaati = bitisTs,
                 Sebeb = vm.Sebeb,
+                MuracietSahibiRehberdirmi = User.IsInRole(RoleNames.Rehber),
+                MuracietSahibiSobeReisidirmi = User.IsInRole(RoleNames.SobeReisi),
             };
 
             var result = await _icazeService.YaratAsync(createDto);
