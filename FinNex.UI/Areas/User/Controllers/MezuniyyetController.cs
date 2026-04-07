@@ -99,6 +99,8 @@ namespace FinNex.UI.Areas.User.Controllers
                 BaslamaTarixi = vm.BaslamaTarixi,
                 BitmeTarixi = vm.BitmeTarixi,
                 Qeyd = vm.Qeyd,
+                MuracietSahibiRehberdirmi = User.IsInRole(RoleNames.Rehber),
+                MuracietSahibiSobeReisidirmi = User.IsInRole(RoleNames.SobeReisi),
             };
 
             var result = await _mezuniyyetService.YaratAsync(createDto);

@@ -21,6 +21,10 @@ namespace FinNex.Application.DTOs.HR.Icaze
 
         [MaxLength(500, ErrorMessage = "Səbəb 500 simvoldan çox ola bilməz")]
         public string? Sebeb { get; set; }
+
+        // Rol əsaslı workflow — controller tərəfindən doldurulur
+        public bool MuracietSahibiRehberdirmi { get; set; }
+        public bool MuracietSahibiSobeReisidirmi { get; set; }
     }
 
     // ── Siyahı üçün ─────────────────────────────────────

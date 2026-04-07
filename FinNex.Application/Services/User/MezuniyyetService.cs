@@ -49,22 +49,15 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 var teyinat = await _unitOfWork.Repository<IsciTeyinat>()
                     .GetirAsync(x => x.IsciId == dto.IsciId && x.Aktivdir);
 
-                // 4. İşçinin öz rolunu yoxla
-                var isciRollari = await _unitOfWork.Repository<IsciStrukturRolu>()
-                    .HamisiniGetirAsync(x => x.IsciId == dto.IsciId && x.Aktivdir, izlemeden: true);
-
-                var rehberdirmi = isciRollari.Any(r => r.RolTipi == StrukturRolTipi.Rehber);
-                var sobeReisidirmi = isciRollari.Any(r => r.RolTipi == StrukturRolTipi.SobeReisi);
-
-                // 5. Status müəyyən et
+                // 4. İşçinin roluna görə status müəyyən et
                 MezuniyyetStatus ilkinStatus;
 
-                if (rehberdirmi)
+                if (dto.MuracietSahibiRehberdirmi)
                 {
                     // Rəhbər birbaşa HR-a gedir
                     ilkinStatus = MezuniyyetStatus.HrTesdiqinde;
                 }
-                else if (sobeReisidirmi)
+                else if (dto.MuracietSahibiSobeReisidirmi)
                 {
                     // Şöbə rəisi öz addımını keçir, rəhbərə gedir
                     ilkinStatus = MezuniyyetStatus.RehberTesdiqinde;
@@ -98,10 +91,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 }
                 await transaction.CommitAsync();
 
-                var rolSayi = isciRollari.Count;
-                var rollar = string.Join(", ", isciRollari.Select(r => r.RolTipi.ToString()));
-                return Result<MezuniyyetDto>.Ok(_mapper.Map<MezuniyyetDto>(entity),
-                    $"Müraciət uğurla göndərildi. (Status: {ilkinStatus}, Rollar: {(rolSayi > 0 ? rollar : "yoxdur")})");
+                return Result<MezuniyyetDto>.Ok(_mapper.Map<MezuniyyetDto>(entity), "Müraciət uğurla göndərildi.");
             }
             catch
             {
