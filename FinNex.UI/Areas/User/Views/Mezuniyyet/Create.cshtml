@@ -45,8 +45,16 @@
                                 };
                                 <label class="fn-nov-card @(isActive ? "fn-nov-card--active" : "")"
                                        id="novCard_@item.Value">
-                                    <input type="radio" asp-for="Nov" value="@item.Value"
-                                           class="fn-nov-radio" @(isActive ? "checked" : "") />
+                                    @if (isActive)
+                                    {
+                                        <input type="radio" name="Nov" value="@item.Value"
+                                               class="fn-nov-radio" checked="checked" />
+                                    }
+                                    else
+                                    {
+                                        <input type="radio" name="Nov" value="@item.Value"
+                                               class="fn-nov-radio" />
+                                    }
                                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                                         <rect x="2" y="3" width="16" height="15" rx="2.5" stroke="#2d6cdf" stroke-width="1.4" />
                                         <path d="M2 7.5h16M7 3v3.5M13 3v3.5" stroke="#2d6cdf" stroke-width="1.3" stroke-linecap="round" />
