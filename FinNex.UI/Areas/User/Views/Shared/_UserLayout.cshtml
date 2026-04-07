@@ -1,6 +1,3 @@
-@using Microsoft.EntityFrameworkCore
-@inject Microsoft.AspNetCore.Identity.UserManager<FinNex.Domain.AppUser> _layoutUserManager
-@inject FinNex.Domain.Interfaces.IUnitOfWork _layoutUow
 @{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     var currentArea = ViewContext.RouteData.Values["area"]?.ToString();
@@ -11,27 +8,7 @@
     var isRehber = User.IsInRole(RoleNames.Rehber) || User.IsInRole(RoleNames.SobeReisi) || isHR;
     var isMuhasib = User.IsInRole(RoleNames.Muhasib) || isHR;
 
-    // Vəzifəni bazadan al (rol deyil, vəzifə)
-    var _layoutVezife = ViewData["UserRole"] as string;
-    try
-    {
-        if (string.IsNullOrWhiteSpace(_layoutVezife) || _layoutVezife == "Operator" || _layoutVezife == "Mühasib" || _layoutVezife == "Rəhbər" || _layoutVezife == "HR")
-        {
-            var _appUser = await _layoutUserManager.GetUserAsync(User);
-            if (_appUser?.IsciId != null)
-            {
-                var _teyinat = _layoutUow.Repository<FinNex.Domain.Entities.HR.IsciTeyinat>()
-                    .Query()
-                    .Include(t => t.Vezife)
-                    .Where(x => x.IsciId == _appUser.IsciId && x.Aktivdir && !x.Silinib)
-                    .Select(x => x.Vezife != null ? x.Vezife.Ad : null)
-                    .FirstOrDefault();
-                if (!string.IsNullOrEmpty(_teyinat))
-                    _layoutVezife = _teyinat;
-            }
-        }
-    }
-    catch { /* Layout xətası səhifəni bloklamasın */ }
+    var _layoutVezife = ViewData["UserRole"] as string ?? "";
 }
 
 <!DOCTYPE html>
