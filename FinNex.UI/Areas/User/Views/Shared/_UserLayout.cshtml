@@ -6,6 +6,7 @@
 
     var isHR = User.IsInRole(RoleNames.HR) || User.IsInRole(RoleNames.Admin);
     var isRehber = User.IsInRole(RoleNames.Rehber) || User.IsInRole(RoleNames.SobeReisi) || isHR;
+    var isHRGorunur = isHR || User.IsInRole(RoleNames.Rehber);
     var isMuhasib = User.IsInRole(RoleNames.Muhasib) || isHR;
 
     var _layoutVezife = ViewData["UserRole"] as string ?? "";
@@ -301,7 +302,7 @@
                 @* ═══════════════════════════════════════════════════
                    HR İDARƏETMƏ — Yalnız HR/Admin
                    ═══════════════════════════════════════════════════ *@
-                @if (isHR)
+                @if (isHRGorunur)
                 {
                     <div class="fn-nav-label">HR İdarəetmə</div>
 

@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FinNex.UI.Areas.HR.Controllers
 {
     [Area("HR")]
-    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Rehber)]
     public class DashboardController : Controller
     {
         private readonly IIsciService _isciService;

@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace FinNex.UI.Areas.HR.Controllers
 {
     [Area("HR")]
-    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Rehber)]
     public class VezifeController : Controller
     {
         private readonly IVezifeService _vezifeService;
