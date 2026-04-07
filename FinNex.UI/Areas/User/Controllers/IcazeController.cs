@@ -83,6 +83,14 @@ namespace FinNex.UI.Areas.User.Controllers
             if (!bitisOk)
                 ModelState.AddModelError("BitisSaati", "Düzgün saat formatı daxil edin.");
 
+            var minSaat = new TimeSpan(8, 0, 0);
+            var maxSaat = new TimeSpan(18, 0, 0);
+
+            if (basOk && (basTs < minSaat || basTs > maxSaat))
+                ModelState.AddModelError("BaslamaSaati", "Saat 08:00 – 18:00 aralığında olmalıdır.");
+            if (bitisOk && (bitisTs < minSaat || bitisTs > maxSaat))
+                ModelState.AddModelError("BitisSaati", "Saat 08:00 – 18:00 aralığında olmalıdır.");
+
             if (basOk && bitisOk && basTs >= bitisTs)
                 ModelState.AddModelError("BitisSaati", "Bitmə saatı başlama saatından sonra olmalıdır.");
 

@@ -42,6 +42,7 @@
                             Başlama saatı <span class="fn-required">*</span>
                         </label>
                         <input asp-for="BaslamaSaati" type="time"
+                               min="08:00" max="18:00"
                                class="fn-input" id="baslamaSaati" />
                         <span asp-validation-for="BaslamaSaati" class="fn-val-msg"></span>
                     </div>
@@ -50,6 +51,7 @@
                             Bitmə saatı <span class="fn-required">*</span>
                         </label>
                         <input asp-for="BitisSaati" type="time"
+                               min="08:00" max="18:00"
                                class="fn-input" id="bitisSaati" />
                         <span asp-validation-for="BitisSaati" class="fn-val-msg"></span>
                     </div>
