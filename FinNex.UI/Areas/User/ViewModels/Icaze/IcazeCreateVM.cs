@@ -19,10 +19,10 @@ namespace FinNex.UI.Areas.User.ViewModels.Icaze
         public DateTime IcazeTarixi { get; set; } = DateTime.Today;
 
         [Required(ErrorMessage = "Başlama saatı seçilməlidir")]
-        public TimeSpan BaslamaSaati { get; set; } = new TimeSpan(9, 0, 0);
+        public string BaslamaSaati { get; set; } = "09:00";
 
         [Required(ErrorMessage = "Bitmə saatı seçilməlidir")]
-        public TimeSpan BitisSaati { get; set; } = new TimeSpan(11, 0, 0);
+        public string BitisSaati { get; set; } = "11:00";
 
         [MaxLength(500, ErrorMessage = "Səbəb 500 simvoldan çox ola bilməz")]
         public string? Sebeb { get; set; }

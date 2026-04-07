@@ -36,53 +36,21 @@
                 </div>
 
                 @* ── Saat aralığı ── *@
-                @{
-                    var saatlar = new List<(string val, string txt)>();
-                    for (int h = 8; h <= 18; h++)
-                    {
-                        saatlar.Add(($"{h:D2}:00:00", $"{h:D2}:00"));
-                        if (h < 18) saatlar.Add(($"{h:D2}:30:00", $"{h:D2}:30"));
-                    }
-                    var basVal = Model.BaslamaSaati.ToString(@"hh\:mm\:ss");
-                    var bitisVal = Model.BitisSaati.ToString(@"hh\:mm\:ss");
-                }
                 <div class="fn-form-row">
                     <div class="fn-form-group">
-                        <label class="fn-label">
+                        <label asp-for="BaslamaSaati" class="fn-label">
                             Başlama saatı <span class="fn-required">*</span>
                         </label>
-                        <select name="BaslamaSaati" class="fn-select" id="baslamaSaati">
-                            @foreach (var s in saatlar)
-                            {
-                                if (s.val == basVal)
-                                {
-                                    <option value="@s.val" selected="selected">@s.txt</option>
-                                }
-                                else
-                                {
-                                    <option value="@s.val">@s.txt</option>
-                                }
-                            }
-                        </select>
+                        <input asp-for="BaslamaSaati" type="time"
+                               class="fn-input" id="baslamaSaati" />
                         <span asp-validation-for="BaslamaSaati" class="fn-val-msg"></span>
                     </div>
                     <div class="fn-form-group">
-                        <label class="fn-label">
+                        <label asp-for="BitisSaati" class="fn-label">
                             Bitmə saatı <span class="fn-required">*</span>
                         </label>
-                        <select name="BitisSaati" class="fn-select" id="bitisSaati">
-                            @foreach (var s in saatlar)
-                            {
-                                if (s.val == bitisVal)
-                                {
-                                    <option value="@s.val" selected="selected">@s.txt</option>
-                                }
-                                else
-                                {
-                                    <option value="@s.val">@s.txt</option>
-                                }
-                            }
-                        </select>
+                        <input asp-for="BitisSaati" type="time"
+                               class="fn-input" id="bitisSaati" />
                         <span asp-validation-for="BitisSaati" class="fn-val-msg"></span>
                     </div>
                 </div>
