@@ -51,9 +51,9 @@ namespace FinNex.UI
         options.LogoutPath = "/Account/Logout";
         options.AccessDeniedPath = "/Account/AccessDenied";
 
-        // 🔥 RememberMe üçün
-        options.ExpireTimeSpan = TimeSpan.FromDays(14);
-        options.SlidingExpiration = false; // 🔥 VACİB
+        // Sessiya müddəti: 30 dəqiqə, aktiv istifadədə uzanır
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+        options.SlidingExpiration = true;
 
         options.Cookie.HttpOnly = true;
         options.Cookie.IsEssential = true;

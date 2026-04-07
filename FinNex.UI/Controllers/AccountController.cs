@@ -68,7 +68,7 @@ namespace FinNex.UI.Controllers
             var result = await _signInManager.PasswordSignInAsync(
                 user.UserName!,
                 dto.Password,
-                dto.RememberMe,
+                isPersistent: false,
                 lockoutOnFailure: true);
 
             if (!result.Succeeded)
