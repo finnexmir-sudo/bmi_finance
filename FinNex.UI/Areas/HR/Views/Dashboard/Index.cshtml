@@ -109,9 +109,9 @@
                         g.Status == 2 ? "Gecikmiş" :
                         g.Status == 3 ? "Qayib" : "İcazəli";
                         <div class="hd-giris-item">
-                            <div class="hd-av">@g.Ad[0]@g.Soyad[0]</div>
+                            <div class="hd-av">@(g.Ad?.Length > 0 ? g.Ad[0].ToString() : "?")</div>
                             <div class="hd-giris-body">
-                                <div class="hd-giris-name">@g.Ad @g.Soyad</div>
+                                <div class="hd-giris-name">@g.Ad</div>
                                 <div class="hd-giris-times">
                                     @if (g.GirisVaxti != null)
                                     {
@@ -146,7 +146,7 @@
                     foreach (var isci in ViewBag.SonIsciler)
                     {
                         <div class="hd-isci-item">
-                            <div class="hd-isci-av">@isci.TamAd.Substring(0, 1)</div>
+                            <div class="hd-isci-av">@(isci.TamAd?.Length > 0 ? isci.TamAd[0].ToString() : "?")</div>
                             <div>
                                 <div class="hd-isci-name">@isci.TamAd</div>
                                 <div class="hd-isci-meta">@isci.Departament · @isci.Vezife</div>
