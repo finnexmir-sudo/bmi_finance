@@ -79,6 +79,7 @@ namespace FinNex.UI.Areas.User.Controllers
             if (isciId == null) return RedirectToLogin();
 
             vm.IsciId = isciId.Value;
+            vm.Nov = 1; // İşçi yalnız İllik məzuniyyət müraciəti edə bilər
 
             if (vm.BitmeTarixi < vm.BaslamaTarixi)
                 ModelState.AddModelError("BitmeTarixi", "Bitmə tarixi başlama tarixindən əvvəl ola bilməz.");

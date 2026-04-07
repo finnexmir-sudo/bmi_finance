@@ -13,9 +13,7 @@ namespace FinNex.UI.Areas.User.ViewModels.Mezuniyyet
         public int IsciId { get; set; }
 
         // ── Form sahələri ─────────────────────────────────────
-        [Required(ErrorMessage = "Məzuniyyət növü seçilməlidir")]
-        [Range(1, 3, ErrorMessage = "Düzgün məzuniyyət növü seçin")]
-        public int Nov { get; set; } = 1;
+        public int Nov { get; set; } = 1; // İşçi yalnız İllik (1) müraciət edə bilər
 
         [Required(ErrorMessage = "Başlama tarixi seçilməlidir")]
         public DateTime BaslamaTarixi { get; set; } = DateTime.Today;

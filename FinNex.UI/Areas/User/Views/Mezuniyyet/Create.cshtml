@@ -27,51 +27,14 @@
 
                 <div class="fn-card fn-card--form">
 
-                    @* ── Məzuniyyət növü ── *@
-                    <div class="fn-form-group">
-                        <label class="fn-label">
-                            Məzuniyyət növü <span class="fn-required">*</span>
-                        </label>
-                        <div class="fn-nov-grid" id="novGrid">
-                            @foreach (var item in Model.NovList)
-                            {
-                                var isActive = item.Value == Model.Nov.ToString();
-                                var qalig = item.Value switch
-                                {
-                                    "1" => Model.IllikQaligGun,
-                                    "2" => Model.XestelikQaligGun,
-                                    "3" => Model.EzamiyyetQaligGun,
-                                    _ => 0
-                                };
-                                <label class="fn-nov-card @(isActive ? "fn-nov-card--active" : "")"
-                                       id="novCard_@item.Value">
-                                    @if (isActive)
-                                    {
-                                        <input type="radio" name="Nov" value="@item.Value"
-                                               class="fn-nov-radio" checked="checked" />
-                                    }
-                                    else
-                                    {
-                                        <input type="radio" name="Nov" value="@item.Value"
-                                               class="fn-nov-radio" />
-                                    }
-                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                        <rect x="2" y="3" width="16" height="15" rx="2.5" stroke="#2d6cdf" stroke-width="1.4" />
-                                        <path d="M2 7.5h16M7 3v3.5M13 3v3.5" stroke="#2d6cdf" stroke-width="1.3" stroke-linecap="round" />
-                                    </svg>
-                                    <span>@item.Text</span>
-                                    @if (item.Value == "3")
-                                    {
-                                        <small>Limitsiz</small>
-                                    }
-                                    else
-                                    {
-                                        <small>Qalıq: @qalig gün</small>
-                                    }
-                                </label>
-                            }
-                        </div>
-                        <span asp-validation-for="Nov" class="fn-val-msg"></span>
+                    @* ── Məzuniyyət növü (İşçi yalnız İllik seçə bilər) ── *@
+                    <input type="hidden" name="Nov" value="1" />
+                    <div class="fn-info-box" style="background:#f0f7ff;border-color:#d0e2ff;margin-bottom:16px">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <rect x="1" y="1.5" width="12" height="11" rx="2" stroke="#2d6cdf" stroke-width="1.2" />
+                            <path d="M1 5h12" stroke="#2d6cdf" stroke-width="1.2" />
+                        </svg>
+                        <strong>İllik məzuniyyət</strong> — Qalıq: <strong>@Model.IllikQaligGun</strong> / @Model.IllikToplamGun gün
                     </div>
 
                     @* ── Tarixlər ── *@
@@ -158,29 +121,22 @@
         @* ── Sağ panel: qalıq info ── *@
         <div class="fn-side-info">
             <div class="fn-card">
-                <div class="fn-card-title" style="margin-bottom:12px">Qalıq balans</div>
+                <div class="fn-card-title" style="margin-bottom:12px">İllik məzuniyyət balansı</div>
 
                 <div class="fn-side-balance-item">
-                    <div class="fn-sbi-label">İllik məzuniyyət</div>
+                    <div class="fn-sbi-label">Qalıq</div>
                     <div class="fn-sbi-bar">
                         <div class="fn-lb-track">
                             <div class="fn-lb-fill" style="width:@(Model.IllikToplamGun > 0 ? (int)((double)Model.IllikQaligGun / Model.IllikToplamGun * 100) : 0)%;background:#1e9b6b"></div>
                         </div>
-                        <span class="fn-sbi-val" style="color:#1e9b6b">@Model.IllikQaligGun / @Model.IllikToplamGun</span>
+                        <span class="fn-sbi-val" style="color:#1e9b6b">@Model.IllikQaligGun / @Model.IllikToplamGun gün</span>
                     </div>
                 </div>
 
                 <div class="fn-side-balance-item">
-                    <div class="fn-sbi-label">Xəstəlik</div>
+                    <div class="fn-sbi-label">İstifadə olunub</div>
                     <div class="fn-sbi-bar">
-                        <span class="fn-sbi-val" style="color:#2d6cdf">@(Model.XestelikToplamGun - Model.XestelikQaligGun) gün istifadə olunub</span>
-                    </div>
-                </div>
-
-                <div class="fn-side-balance-item">
-                    <div class="fn-sbi-label">Ezamiyyət</div>
-                    <div class="fn-sbi-bar">
-                        <span class="fn-sbi-val" style="color:#e8b84b">@(Model.EzamiyyetToplamGun - Model.EzamiyyetQaligGun) gün istifadə olunub</span>
+                        <span class="fn-sbi-val" style="color:#5a647a">@Model.IllikIstifadeGun gün</span>
                     </div>
                 </div>
             </div>
