@@ -248,7 +248,7 @@
 
                             <div class="fn-icaze-actions">
                                 <span class="fn-badge @BadgeClass(i.WorkflowMerhele)">@i.WorkflowMerhele</span>
-                                @if (i.WorkflowMerhele == "Gözləmədə")
+                                @if (i.WorkflowMerhele == "Gözləmədə" || i.WorkflowMerhele == "Şöbə rəisi təsdiqində")
                                 {
                                     <form asp-area="User" asp-controller="Icaze"
                                           asp-action="Legv" method="post" style="margin-top:8px"
