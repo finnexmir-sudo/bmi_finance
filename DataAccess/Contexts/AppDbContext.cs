@@ -43,6 +43,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<SenedTagMap> SenedTagMaps { get; set; }
     public DbSet<SenedAccess> SenedAccessler { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<SenedSablon> SenedSablonlar { get; set; }
 
     public DbSet<UserDepartment> UserDepartments { get; set; }
 
@@ -572,6 +573,15 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasOne(x => x.IcraEdenIsci)
             .WithMany()
             .HasForeignKey(x => x.IcraEdenIsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // -------------------------
+        // SenedSablon
+        // -------------------------
+        builder.Entity<SenedSablon>()
+            .HasOne(x => x.SenedNovu)
+            .WithMany()
+            .HasForeignKey(x => x.SenedNovuId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // ── MaasNovu Seed Data ────────────────────────────────────

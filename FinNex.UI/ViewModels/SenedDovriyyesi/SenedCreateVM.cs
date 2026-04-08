@@ -22,10 +22,10 @@ public class SenedCreateVM
     [StringLength(500, ErrorMessage = "Açar söz maksimum 500 simvol ola bilər")]
     public string AcarSoz { get; set; } = null!;
 
-    //public List<int> TagIds { get; set; } = new();
+    public List<int> TagIds { get; set; } = new();
 
     // Dropdowns
     public List<DropdownItemVM> Sobeler { get; set; } = new();
     public List<DropdownItemVM> SenedNovleri { get; set; } = new();
-    //  public List<DropdownItemVM> Tagler { get; set; } = new();
+    public List<DropdownItemVM> Tagler { get; set; } = new();
 }

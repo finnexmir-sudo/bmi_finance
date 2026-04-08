@@ -48,6 +48,7 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IOdenisTapsirigiNomreService, OdenisTapsirigiNomreService>();
 
         services.AddScoped<IAuditLogService, AuditLogService>();
+        services.AddScoped<ISenedSablonService, SenedSablonService>();
 
         // Storage
         services.AddScoped<IFileStorageService, LocalFileStorageService>();

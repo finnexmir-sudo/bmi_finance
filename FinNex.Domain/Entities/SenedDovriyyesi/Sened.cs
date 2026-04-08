@@ -15,6 +15,8 @@ namespace FinNex.Domain.Entities.SenedDovriyyesi
         // Axtarış üçün indekslənəcək
         public string AcarSoz { get; set; } = null!;
 
+        public string? SenedNomresi { get; set; }
+
         public SenedStatusu Status { get; set; } = SenedStatusu.Yeni;
 
         public MexfilikSeviyesi Mexfilik { get; set; } = MexfilikSeviyesi.Internal;

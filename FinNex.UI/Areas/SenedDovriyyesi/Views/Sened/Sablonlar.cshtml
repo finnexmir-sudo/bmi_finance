@@ -1,0 +1,125 @@
+@model SenedSablonlarVM
+@{
+    ViewData["Title"] = "Sənəd Şablonları";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/sened-dovriyyesi-fn.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hr/struktur.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Sənəd Şablonları</div>
+            <div class="fn-page-sub">Cəmi <strong>@Model.Sablonlar.Count</strong> şablon</div>
+        </div>
+        <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="SablonYarat"
+           class="fn-btn fn-btn--primary">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+            Yeni Şablon
+        </a>
+    </div>
+
+    <!-- Filter -->
+    <div class="sd-filter-bar">
+        <form method="get" asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Sablonlar"
+              style="display:flex;gap:10px;align-items:center;">
+            <select name="senedNovuId" class="sd-select" onchange="this.form.submit()">
+                <option value="">Bütün sənəd növləri</option>
+                @foreach (var n in Model.SenedNovleri)
+                {
+                    <option value="@n.Id" selected="@(Model.SenedNovuId == n.Id)">@n.Ad</option>
+                }
+            </select>
+        </form>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="sd-alert-success" style="margin-bottom:16px;">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="sd-alert-error" style="margin-bottom:16px;">@TempData["Error"]</div>
+    }
+
+    <!-- Cədvəl -->
+    <div class="sd-table-wrap">
+        <table class="sd-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Şablon Adı</th>
+                    <th>Sənəd Növü</th>
+                    <th>Fayl</th>
+                    <th>Status</th>
+                    <th>Tarix</th>
+                    <th class="isci-th-right">Əməliyyat</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Sablonlar.Any())
+                {
+                    @foreach (var s in Model.Sablonlar)
+                    {
+                        <tr>
+                            <td><span class="sd-table-id">#@s.Id</span></td>
+                            <td>
+                                <div class="sd-table-title">@s.Ad</div>
+                                @if (!string.IsNullOrEmpty(s.Tesvir))
+                                {
+                                    <div style="font-size:11px;color:#8a93a8;margin-top:2px;">@s.Tesvir</div>
+                                }
+                            </td>
+                            <td><span class="str-dept-tag">@s.SenedNovuAd</span></td>
+                            <td style="font-size:12px;color:#5a647a;">@s.FaylAdi</td>
+                            <td>
+                                @if (s.Aktiv)
+                                {
+                                    <span class="fn-badge fn-badge--done">Aktiv</span>
+                                }
+                                else
+                                {
+                                    <span class="fn-badge fn-badge--rejected">Deaktiv</span>
+                                }
+                            </td>
+                            <td style="font-size:12px;color:#8a93a8;">@s.YaradilmaTarixi.ToString("dd.MM.yyyy")</td>
+                            <td class="isci-td-actions">
+                                <a asp-area="SenedDovriyyesi" asp-controller="Sened"
+                                   asp-action="SablonEndir" asp-route-id="@s.Id"
+                                   class="isci-action-btn" title="Endir">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <path d="M7 2v8M4 7l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                        <path d="M2 12h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                                    </svg>
+                                </a>
+                                <form asp-area="SenedDovriyyesi" asp-controller="Sened"
+                                      asp-action="SablonSil" method="post"
+                                      onsubmit="return confirm('Bu şablonu silmək istədiyinizə əminsiniz?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@s.Id" />
+                                    <button type="submit" class="isci-action-btn str-action-btn--red"
+                                            title="Sil">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                            <path d="M2 3.5h10M5 3.5V2.5h4v1M4.5 3.5l.5 8M9.5 3.5l-.5 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="sd-table-empty">Hələ şablon əlavə edilməyib</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

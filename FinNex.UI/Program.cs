@@ -144,6 +144,56 @@ namespace FinNex.UI
                 }
                 catch { /* artıq tətbiq olunub */ }
 
+                // Senedler.SenedNomresi sütununu əlavə etmə (avtomatik sənəd nömrələməsi)
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (
+                            SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                            WHERE TABLE_NAME = 'Senedler'
+                              AND COLUMN_NAME = 'SenedNomresi'
+                        )
+                        BEGIN
+                            ALTER TABLE [Senedler] ADD [SenedNomresi] NVARCHAR(MAX) NULL;
+                        END
+                    ");
+                }
+                catch { /* artıq tətbiq olunub */ }
+
+                // SenedSablonlar cədvəlini yaratmaq (şablon sistemi)
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (
+                            SELECT 1 FROM INFORMATION_SCHEMA.TABLES
+                            WHERE TABLE_NAME = 'SenedSablonlar'
+                        )
+                        BEGIN
+                            CREATE TABLE [SenedSablonlar] (
+                                [Id] INT IDENTITY(1,1) NOT NULL,
+                                [Ad] NVARCHAR(300) NOT NULL,
+                                [Tesvir] NVARCHAR(1000) NULL,
+                                [SenedNovuId] INT NOT NULL,
+                                [FaylYolu] NVARCHAR(500) NOT NULL,
+                                [FaylAdi] NVARCHAR(500) NOT NULL,
+                                [Aktiv] BIT NOT NULL DEFAULT(1),
+                                [YaradilmaTarixi] DATETIME2 NOT NULL DEFAULT(GETDATE()),
+                                [YaradanIcraciId] INT NULL,
+                                [YenileyenIcraciId] INT NULL,
+                                [SilenIcraciId] INT NULL,
+                                [YenilenmeTarixi] DATETIME2 NULL,
+                                [Silinib] BIT NOT NULL DEFAULT(0),
+                                [SilinmeTarixi] DATETIME2 NULL,
+                                CONSTRAINT [PK_SenedSablonlar] PRIMARY KEY ([Id]),
+                                CONSTRAINT [FK_SenedSablonlar_SenedNovleri_SenedNovuId]
+                                    FOREIGN KEY ([SenedNovuId]) REFERENCES [SenedNovleri]([Id])
+                                    ON DELETE NO ACTION
+                            );
+                        END
+                    ");
+                }
+                catch { /* artıq tətbiq olunub */ }
+
                 var pendingMigrations = db.Database.GetPendingMigrations().ToList();
                 var productVersion = typeof(DbContext).Assembly.GetName().Version?.ToString() ?? "9.0.0";
 

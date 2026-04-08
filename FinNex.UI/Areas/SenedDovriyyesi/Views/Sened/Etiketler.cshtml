@@ -1,0 +1,199 @@
+@model EtiketlerVM
+@{
+    ViewData["Title"] = "Etiketler";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/sened-dovriyyesi-fn.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hr/struktur.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
+       class="sd-back">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M9 11L5 7l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        Siyahiya qayit
+    </a>
+
+    @if (TempData["Success"] != null)
+    {
+        <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px 14px;font-size:13px;color:#166534;margin-bottom:14px;">
+            @TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="sd-alert-error" style="margin-bottom:14px;">@TempData["Error"]</div>
+    }
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Etiketler</div>
+            <div class="fn-page-sub">Cemi <strong>@Model.Etiketler.Count</strong> etiket</div>
+        </div>
+        <button type="button" class="fn-btn fn-btn--primary" id="openEtiketBtn">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+            Yeni Etiket
+        </button>
+    </div>
+
+    <!-- Cedvel -->
+    <div class="sd-table-wrap">
+        <table class="sd-table" id="etiketTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Ad</th>
+                    <th>Sened sayi</th>
+                    <th>Tarix</th>
+                    <th class="isci-th-right">Emeliyyat</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Etiketler.Any())
+                {
+                    @foreach (var t in Model.Etiketler)
+                    {
+                        <tr>
+                            <td><span class="sd-table-id">#@t.Id</span></td>
+                            <td>
+                                <span class="str-dept-tag">@t.Ad</span>
+                            </td>
+                            <td>
+                                <span class="sd-file-badge">
+                                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                        <path d="M2 1h5l2 2v7H2V1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" />
+                                    </svg>
+                                    @t.SenedSayi
+                                </span>
+                            </td>
+                            <td style="font-size:12px;color:#8a93a8;">@t.YaradilmaTarixi.ToString("dd.MM.yyyy")</td>
+                            <td class="isci-td-actions">
+                                <form asp-area="SenedDovriyyesi" asp-controller="Sened"
+                                      asp-action="EtiketSil" method="post"
+                                      onsubmit="return confirm('Bu etiketi silmek isteyirsiniz?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@t.Id" />
+                                    <button type="submit" class="isci-action-btn str-action-btn--red"
+                                            title="Sil">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                            <path d="M2 3.5h10M5 3.5V2.5h4v1M4.5 3.5l.5 8M9.5 3.5l-.5 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr id="emptyRow">
+                        <td colspan="5" class="sd-table-empty">Hele etiket elave edilmeyib</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Yeni Etiket Modal -->
+<div class="str-modal-overlay str-modal-hidden" id="etiketModal">
+    <div class="str-modal">
+        <div class="str-modal-header">
+            <div class="str-modal-title">Yeni Etiket</div>
+            <button type="button" class="str-modal-close" data-close-modal="etiketModal">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+        <div class="str-modal-body">
+            <p id="etiketError" class="sd-alert-error" hidden></p>
+            <p id="etiketSuccess" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px 14px;font-size:13px;color:#166534;" hidden></p>
+            <div class="isci-field">
+                <label class="isci-label">Etiket Adi <span class="isci-required">*</span></label>
+                <input type="text" id="etiketAd" class="isci-input" placeholder="Mes: Muhum, Gizli, 2024..." />
+            </div>
+        </div>
+        <div class="str-modal-footer">
+            <button type="button" class="fn-btn fn-btn--outline" data-close-modal="etiketModal">Legv et</button>
+            <button type="button" class="fn-btn fn-btn--primary" id="etiketSaveBtn">Saxla</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/modal-close.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            var openBtn = document.getElementById('openEtiketBtn');
+            var modal = document.getElementById('etiketModal');
+            var saveBtn = document.getElementById('etiketSaveBtn');
+            var adInput = document.getElementById('etiketAd');
+            var errEl = document.getElementById('etiketError');
+            var succEl = document.getElementById('etiketSuccess');
+
+            openBtn.addEventListener('click', function () {
+                modal.classList.remove('str-modal-hidden');
+                adInput.value = '';
+                errEl.hidden = true;
+                succEl.hidden = true;
+                adInput.focus();
+            });
+
+            // Close modal helper
+            document.querySelectorAll('[data-close-modal="etiketModal"]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    modal.classList.add('str-modal-hidden');
+                });
+            });
+
+            saveBtn.addEventListener('click', function () {
+                var ad = adInput.value.trim();
+                if (!ad) {
+                    errEl.textContent = 'Etiket adi bos ola bilmez.';
+                    errEl.hidden = false;
+                    return;
+                }
+
+                errEl.hidden = true;
+                succEl.hidden = true;
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Saxlanilir...';
+
+                fetch('@Url.Action("EtiketYarat", "Sened", new { area = "SenedDovriyyesi" })', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({ ad: ad })
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        succEl.textContent = data.message;
+                        succEl.hidden = false;
+                        setTimeout(function () { location.reload(); }, 800);
+                    } else {
+                        errEl.textContent = data.message;
+                        errEl.hidden = false;
+                    }
+                })
+                .catch(function () {
+                    errEl.textContent = 'Xeta bas verdi.';
+                    errEl.hidden = false;
+                })
+                .finally(function () {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Saxla';
+                });
+            });
+        })();
+    </script>
+}

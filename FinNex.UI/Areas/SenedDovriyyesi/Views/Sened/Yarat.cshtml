@@ -78,6 +78,27 @@
                         </div>
                     </div>
 
+                    <!-- Şablondan Yarat -->
+                    <div id="sablonSection" style="display:none;">
+                        <div class="sd-form-hdr-sub" style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:#e8b84b;margin-bottom:12px;">
+                            Şablondan Yarat
+                            <span style="font-size:10px;color:#aab0bf;font-weight:400;">(istəyə bağlı)</span>
+                        </div>
+                        <div>
+                            <label class="sd-label">Şablon Seçin</label>
+                            <select id="sablonSelect" class="sd-select-full">
+                                <option value="">Şablon seçin (fayl avtomatik əlavə olunacaq)...</option>
+                            </select>
+                            <div id="sablonInfo" hidden style="margin-top:8px;padding:10px 14px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);border-radius:8px;display:flex;align-items:center;gap:10px;">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 2h7l3 3v9H3V2z" stroke="#6366f1" stroke-width="1.2" stroke-linejoin="round" />
+                                    <path d="M10 2v3h3" stroke="#6366f1" stroke-width="1.2" stroke-linejoin="round" />
+                                </svg>
+                                <span id="sablonFaylAdi" style="font-size:12px;color:#4338ca;font-weight:600;"></span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 2. Məlumatlar -->
                     <div>
                         <div class="sd-form-hdr-sub" style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:#e8b84b;margin-bottom:12px;">
@@ -97,10 +118,32 @@
                         </div>
                     </div>
 
-                <!-- 3. Fayl -->
+                <!-- 3. Teqlər -->
+                @if (Model.Tagler.Any())
+                {
+                    <div>
+                        <div class="sd-form-hdr-sub" style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:#e8b84b;margin-bottom:12px;">
+                            3 · Teqlər
+                            <span style="font-size:10px;color:#aab0bf;font-weight:400;">(istəyə bağlı)</span>
+                        </div>
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                            @foreach (var tag in Model.Tagler)
+                            {
+                                var isChecked = Model.TagIds != null && Model.TagIds.Contains(tag.Id);
+                                <label class="str-checkbox-label" style="cursor:pointer;">
+                                    <input type="checkbox" name="TagIds" value="@tag.Id"
+                                           class="str-checkbox" @(isChecked ? "checked" : "") />
+                                    @tag.Ad
+                                </label>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- 4. Fayl -->
                 <div>
                     <div class="sd-form-hdr-sub" style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:#e8b84b;margin-bottom:12px;">
-                        3 · Fayl Yükləmə
+                        4 · Fayl Yükləmə
                     </div>
                     <div class="sd-file-zone" id="faylZone">
                         <div id="faylDefault">
@@ -195,4 +238,86 @@
     <script src="~/js/sened-yarat.js" asp-append-version="true"></script>
     <script src="~/js/hr/struktur-modal.js" asp-append-version="true"></script>
     <script src="~/js/sened-fayl-drop.js" asp-append-version="true"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var senedNovuSelect = document.getElementById("senedNovuSelect");
+            var sablonSection = document.getElementById("sablonSection");
+            var sablonSelect = document.getElementById("sablonSelect");
+            var sablonInfo = document.getElementById("sablonInfo");
+            var sablonFaylAdi = document.getElementById("sablonFaylAdi");
+            var faylInput = document.getElementById("Fayl");
+            var faylZone = document.getElementById("faylZone");
+            var faylDefault = document.getElementById("faylDefault");
+            var faylInfoDiv = document.getElementById("faylInfo");
+            var faylAdDiv = document.getElementById("faylAd");
+            var faylOlcuDiv = document.getElementById("faylOlcu");
+
+            if (!senedNovuSelect || !sablonSelect) return;
+
+            // Sənəd növü dəyişəndə şablonları yüklə
+            // MutationObserver istifadə edirik çünki senedNovuSelect-in optionları JS ilə doldurulur
+            var observer = new MutationObserver(function () {
+                loadSablonlar();
+            });
+            observer.observe(senedNovuSelect, { childList: true });
+
+            senedNovuSelect.addEventListener("change", function () {
+                loadSablonlar();
+            });
+
+            function loadSablonlar() {
+                var novId = senedNovuSelect.value;
+                if (!novId) {
+                    sablonSection.style.display = "none";
+                    sablonSelect.innerHTML = '<option value="">Şablon seçin (fayl avtomatik əlavə olunacaq)...</option>';
+                    sablonInfo.hidden = true;
+                    return;
+                }
+
+                fetch("/SenedDovriyyesi/Sened/SablonlarByNov?senedNovuId=" + novId)
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        sablonSelect.innerHTML = '<option value="">Şablon seçin (fayl avtomatik əlavə olunacaq)...</option>';
+                        if (data && data.length > 0) {
+                            sablonSection.style.display = "";
+                            data.forEach(function (x) {
+                                var opt = document.createElement("option");
+                                opt.value = x.id;
+                                opt.textContent = x.ad;
+                                opt.setAttribute("data-fayl-adi", x.faylAdi);
+                                sablonSelect.appendChild(opt);
+                            });
+                        } else {
+                            sablonSection.style.display = "none";
+                        }
+                        sablonInfo.hidden = true;
+                    })
+                    .catch(function () {
+                        sablonSection.style.display = "none";
+                    });
+            }
+
+            // Şablon seçildikdə fayl məlumatını göstər
+            sablonSelect.addEventListener("change", function () {
+                var selectedOpt = sablonSelect.options[sablonSelect.selectedIndex];
+                if (!this.value) {
+                    sablonInfo.hidden = true;
+                    return;
+                }
+
+                var faylAdi = selectedOpt.getAttribute("data-fayl-adi") || "";
+                sablonFaylAdi.textContent = faylAdi + " (şablondan)";
+                sablonInfo.hidden = false;
+
+                // Fayl zone-da şablon məlumatını göstər
+                if (faylDefault && faylInfoDiv && faylAdDiv && faylOlcuDiv) {
+                    faylDefault.hidden = true;
+                    faylInfoDiv.hidden = false;
+                    faylAdDiv.textContent = faylAdi;
+                    faylOlcuDiv.textContent = "Şablondan avtomatik əlavə olunacaq";
+                }
+            });
+        });
+    </script>
 }

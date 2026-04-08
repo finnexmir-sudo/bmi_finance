@@ -5,6 +5,7 @@ namespace FinNex.UI.ViewModels.SenedDovriyyesi;
 public class SenedDetailVM
 {
     public int Id { get; set; }
+    public string? SenedNomresi { get; set; }
     public string Basliq { get; set; } = null!;
     public string AcarSoz { get; set; } = null!;
     public SenedStatusu Status { get; set; }

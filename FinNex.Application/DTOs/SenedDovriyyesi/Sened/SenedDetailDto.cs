@@ -6,6 +6,7 @@ namespace FinNex.Application.DTOs.SenedDovriyyesi.Sened
     public class SenedDetailDto
     {
         public int Id { get; set; }
+        public string? SenedNomresi { get; set; }
         public int DepartmentId { get; set; }
         public int SenedNovuId { get; set; }
         public string Basliq { get; set; } = null!;

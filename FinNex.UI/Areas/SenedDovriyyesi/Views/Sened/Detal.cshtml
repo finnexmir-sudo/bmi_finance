@@ -31,6 +31,10 @@
                 </div>
                 <div>
                     <div style="font-size:17px;font-weight:800;color:#1a2332;letter-spacing:-.3px;">@Model.Basliq</div>
+                    @if (!string.IsNullOrEmpty(Model.SenedNomresi))
+                    {
+                        <div style="font-size:13px;font-weight:700;color:#6366f1;margin-top:2px;">@Model.SenedNomresi</div>
+                    }
                     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center;">
                         @{
                             var bc = Model.Status switch
@@ -146,6 +150,13 @@
                         <div class="sd-meta-key">ID</div>
                         <div class="sd-meta-val"><span class="sd-table-id">#@Model.Id</span></div>
                     </div>
+                    @if (!string.IsNullOrEmpty(Model.SenedNomresi))
+                    {
+                        <div class="sd-meta-row">
+                            <div class="sd-meta-key">Sənəd Nömrəsi</div>
+                            <div class="sd-meta-val"><span style="font-weight:700;color:#6366f1;">@Model.SenedNomresi</span></div>
+                        </div>
+                    }
                     <div class="sd-meta-row">
                         <div class="sd-meta-key">Şöbə</div>
                         <div class="sd-meta-val">@Model.Sobe</div>
@@ -190,8 +201,15 @@
 
             <!-- Fayllar -->
             <div class="sd-detail-card">
-                <div class="sd-detail-card-hdr">
+                <div class="sd-detail-card-hdr" style="display:flex;align-items:center;justify-content:space-between;">
                     <div class="sd-detail-card-title">Fayl Versiyaları (@Model.Fayllar.Count)</div>
+                    <button type="button" class="fn-btn fn-btn--primary" style="font-size:11px;height:32px;padding:0 14px;"
+                            onclick="document.getElementById('yeniVersiyaModal').classList.remove('str-modal-hidden');">
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                            <path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        </svg>
+                        Yeni versiya yukle
+                    </button>
                 </div>
                 <div>
                     @if (Model.Fayllar.Any())
@@ -207,14 +225,18 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var f in Model.Fayllar)
+                                @foreach (var f in Model.Fayllar.OrderByDescending(x => x.VersiyaNo))
                                 {
-                                    <tr>
+                                    <tr style="@(f.AktivVersiya ? "" : "opacity:0.55;")">
                                         <td>
                                             <span style="font-weight:700;font-size:12px;">v@(f.VersiyaNo)</span>
                                             @if (f.AktivVersiya)
                                             {
                                                 <span class="fn-badge fn-badge--done" style="margin-left:4px;font-size:9px;">Aktiv</span>
+                                            }
+                                            else
+                                            {
+                                                <span style="margin-left:4px;font-size:9px;color:#aab0bf;font-weight:500;">Kohne</span>
                                             }
                                         </td>
                                         <td>
@@ -282,26 +304,41 @@
                     {
                         var actionText = log.Action switch
                         {
-                                        "Create" => "Sənəd yaradıldı",
-                                        "Upload" => "Yeni versiya yükləndi",
-                                        "Status" => "Status dəyişdirildi",
-                                        "SoftDelete" => "Sənəd silindi",
-                                        "Restore" => "Sənəd bərpa edildi",
+                            "Create" => "Sened yaradildi",
+                            "CreateWithFile" => "Sened ve fayl yaradildi",
+                            "Upload" => "Yeni versiya yuklendi",
+                            "Update" => "Sened yenilendi",
+                            "Status" => "Status deyisdirildi",
+                            "SoftDelete" => "Sened silindi",
+                            "Restore" => "Sened berpa edildi",
                             _ => log.Action
                         };
                         var dotColor = log.Action switch
                         {
-                                        "Create" => "#6366f1",
-                                        "Upload" => "#0ea5e9",
-                                        "Status" => "#e8b84b",
-                                        "SoftDelete" => "#dc2626",
-                                        "Restore" => "#16a34a",
+                            "Create" => "#6366f1",
+                            "CreateWithFile" => "#6366f1",
+                            "Upload" => "#0ea5e9",
+                            "Update" => "#f59e0b",
+                            "Status" => "#e8b84b",
+                            "SoftDelete" => "#dc2626",
+                            "Restore" => "#16a34a",
                             _ => "#aab0bf"
                         };
 
+                        // DetailsJson-u parse edirik
+                        System.Text.Json.JsonElement? detailsParsed = null;
+                        if (!string.IsNullOrEmpty(log.DetailsJson))
+                        {
+                            try
+                            {
+                                detailsParsed = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(log.DetailsJson);
+                            }
+                            catch { }
+                        }
+
                         <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #f4f6fb;">
                             <div style="width:8px;height:8px;border-radius:50%;background:@dotColor;flex-shrink:0;margin-top:5px;"></div>
-                            <div>
+                            <div style="flex:1;min-width:0;">
                                 <div style="font-size:12px;font-weight:600;color:#1a2332;">@actionText</div>
                                 <div style="font-size:11px;color:#8a93a8;margin-top:2px;">
                                     @log.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")
@@ -311,9 +348,55 @@
                                         <text>· @log.Ip</text>
                                     }
                                 </div>
-                                @if (!string.IsNullOrEmpty(log.DetailsJson))
+
+                                @if (detailsParsed.HasValue)
                                 {
-                                    <div style="font-size:10px;color:#aab0bf;margin-top:3px;font-family:monospace;">@log.DetailsJson</div>
+                                    var det = detailsParsed.Value;
+
+                                    @* --- Update: old vs new comparison --- *@
+                                    if (det.TryGetProperty("old", out var oldObj) && det.TryGetProperty("new", out var newObj))
+                                    {
+                                        <div style="margin-top:6px;padding:8px 10px;background:#f8f9fc;border-radius:8px;border:1px solid #e2e6ef;">
+                                            @foreach (var prop in newObj.EnumerateObject())
+                                            {
+                                                var newVal = prop.Value.ToString();
+                                                var oldVal = oldObj.TryGetProperty(prop.Name, out var ov) ? ov.ToString() : "-";
+                                                var changed = !string.Equals(oldVal, newVal, StringComparison.Ordinal);
+
+                                                <div style="display:flex;align-items:baseline;gap:6px;padding:2px 0;font-size:11px;@(changed ? "" : "opacity:0.5;")">
+                                                    <span style="font-weight:600;color:#5a647a;min-width:90px;">@prop.Name</span>
+                                                    @if (changed)
+                                                    {
+                                                        <span style="color:#dc2626;text-decoration:line-through;">@oldVal</span>
+                                                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="flex-shrink:0;">
+                                                            <path d="M2 5h6M6 3l2 2-2 2" stroke="#16a34a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        </svg>
+                                                        <span style="color:#16a34a;font-weight:600;">@newVal</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span style="color:#8a93a8;">@newVal</span>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    @* --- Non-diff details (Create, Delete, Upload, Restore, etc.) --- *@
+                                    else
+                                    {
+                                        <div style="margin-top:6px;padding:8px 10px;background:#f8f9fc;border-radius:8px;border:1px solid #e2e6ef;">
+                                            @foreach (var prop in det.EnumerateObject())
+                                            {
+                                                @if (prop.Name != "action")
+                                                {
+                                                    <div style="display:flex;gap:6px;padding:2px 0;font-size:11px;">
+                                                        <span style="font-weight:600;color:#5a647a;min-width:90px;">@prop.Name</span>
+                                                        <span style="color:#1a2332;">@prop.Value</span>
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+                                    }
                                 }
                             </div>
                         </div>
@@ -331,7 +414,7 @@
 
 <!-- Fayl önizləmə modal -->
 <div class="str-modal-overlay str-modal-hidden" id="filePreviewModal">
-    <div class="str-modal" style="max-width:900px;height:90vh;display:flex;flex-direction:column;">
+    <div class="str-modal" style="max-width:95vw;height:85vh;display:flex;flex-direction:column;">
         <div class="str-modal-header">
             <div class="str-modal-title" id="pvModalTitle">Fayl önizləmə</div>
             <button type="button" class="str-modal-close" data-close-modal="filePreviewModal">
@@ -341,7 +424,7 @@
             </button>
         </div>
         <div id="pvModalBody" style="flex:1;overflow:hidden;background:#1a1a2e;"></div>
-        <div class="str-modal-footer">
+        <div class="str-modal-footer" style="display:flex;align-items:center;justify-content:space-between;">
             <span id="pvModalVersion" style="font-size:11px;color:#8a93a8;"></span>
             <a id="pvDownloadBtn" class="fn-btn fn-btn--primary" href="#">
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -354,7 +437,83 @@
     </div>
 </div>
 
+<!-- Yeni versiya yukle modal -->
+<div class="str-modal-overlay str-modal-hidden" id="yeniVersiyaModal">
+    <div class="str-modal" style="max-width:520px;">
+        <div class="str-modal-header">
+            <div class="str-modal-title">Yeni versiya yukle</div>
+            <button type="button" class="str-modal-close" data-close-modal="yeniVersiyaModal">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+        <form asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="YeniVersiya"
+              method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="senedId" value="@Model.Id" />
+            <div style="padding:20px 24px;">
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:12px;font-weight:600;color:#1a2332;display:block;margin-bottom:6px;">
+                        Fayl sec
+                    </label>
+                    <input type="file" name="fayl" id="yeniVersiyaFayl" required
+                           style="width:100%;font-size:13px;padding:8px;border:1px solid #e2e6ef;border-radius:8px;background:#f8f9fc;" />
+                </div>
+                <div id="yvFaylInfo" style="display:none;padding:12px;background:#f0f4ff;border-radius:8px;margin-bottom:16px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M4 2h6l3 3v9H4V2z" stroke="#6366f1" stroke-width="1.2" stroke-linejoin="round" />
+                            <path d="M10 2v3h3" stroke="#6366f1" stroke-width="1.2" stroke-linejoin="round" />
+                        </svg>
+                        <span id="yvFaylAd" style="font-size:12px;font-weight:600;color:#1a2332;"></span>
+                        <span id="yvFaylOlcu" style="font-size:11px;color:#8a93a8;margin-left:auto;"></span>
+                    </div>
+                </div>
+                <div style="font-size:11px;color:#8a93a8;line-height:1.5;">
+                    Yeni versiya yuklendikde kohne versiya avtomatik deaktiv edilecek.
+                    Kohne versiyalari yeniden yuklemek mumkundur.
+                </div>
+            </div>
+            <div class="str-modal-footer" style="display:flex;justify-content:flex-end;gap:8px;">
+                <button type="button" class="fn-btn fn-btn--outline"
+                        onclick="document.getElementById('yeniVersiyaModal').classList.add('str-modal-hidden');">
+                    Legv et
+                </button>
+                <button type="submit" class="fn-btn fn-btn--primary" id="yvSubmitBtn">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <path d="M6.5 9V2M4 4.5L6.5 2 9 4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M1.5 10h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                    </svg>
+                    Yukle
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @section Scripts {
     <script src="~/js/sened-detal.js" asp-append-version="true"></script>
     <script src="~/js/modal-close.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            var input = document.getElementById('yeniVersiyaFayl');
+            var info = document.getElementById('yvFaylInfo');
+            var ad = document.getElementById('yvFaylAd');
+            var olcu = document.getElementById('yvFaylOlcu');
+            if (input) {
+                input.addEventListener('change', function () {
+                    if (this.files && this.files.length > 0) {
+                        var f = this.files[0];
+                        ad.textContent = f.name;
+                        var kb = f.size / 1024;
+                        olcu.textContent = kb < 1024 ? kb.toFixed(1) + ' KB' : (kb / 1024).toFixed(1) + ' MB';
+                        info.style.display = 'block';
+                    } else {
+                        info.style.display = 'none';
+                    }
+                });
+            }
+        })();
+    </script>
 }
