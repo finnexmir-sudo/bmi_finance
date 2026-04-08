@@ -165,10 +165,12 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 ip,
                 new
                 {
-                    dto.SobeId,
-                    dto.SenedNovuId,
-                    dto.AcarSoz,
-                    Fayl = uploadDto.Fayl.FileName,
+                    action = "Create",
+                    SobeId = dto.SobeId,
+                    SenedNovuId = dto.SenedNovuId,
+                    Basliq = dto.Basliq,
+                    AcarSoz = dto.AcarSoz,
+                    FaylAdi = uploadDto.Fayl.FileName,
                     Versiya = 1
                 });
 
@@ -429,7 +431,13 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             await _uow.Repository<SenedFayl>().YaratAsync(entity);
             await _uow.YaddaSaxlaAsync();
 
-            await _audit.WriteAsync(userId, "Upload", dto.SenedId, ip, new { nextVersiya, dto.OriginalAd, dto.OlcuBytes });
+            await _audit.WriteAsync(userId, "Upload", dto.SenedId, ip, new
+            {
+                action = "UploadNewVersion",
+                Versiya = nextVersiya,
+                FaylAdi = dto.OriginalAd,
+                Olcu = dto.OlcuBytes
+            });
 
             return Result<int>.Ok(entity.Id, "Fayl yükləndi (yeni versiya).");
         }
@@ -439,14 +447,21 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             var sened = await _uow.Repository<Sened>().GetirAsync(x => x.Id == senedId && !x.Silinib);
             if (sened is null) return Result.Fail("Sənəd tapılmadı.");
 
+            var oldStatus = sened.Status;
+
             sened.Status = status;
             sened.YenileyenIcraciId = userId;
-            sened.YenilenmeTarixi = DateTime.Now;
+            sened.YenilenmeTarixi = DateTime.UtcNow;
 
             await _uow.Repository<Sened>().YenileAsync(sened);
             await _uow.YaddaSaxlaAsync();
 
-            await _audit.WriteAsync(userId, "Status", senedId, ip, new { status });
+            await _audit.WriteAsync(userId, "Status", senedId, ip, new
+            {
+                action = "StatusChange",
+                old = new { Status = oldStatus.ToString() },
+                @new = new { Status = status.ToString() }
+            });
 
             return Result.Ok("Status yeniləndi.");
         }
@@ -462,14 +477,17 @@ namespace FinNex.Application.Services.SenedDovriyyesi
 
             await _uow.Repository<Sened>().YenileAsync(sened);
 
-            // Audit loquna silinən sənədin başlığını da əlavə edək ki, 
-            // gələcəkdə "Sənəd #5 silindi" yox, "Sənəd: 'Müqavilə.pdf' silindi" görünsün.
             await _audit.WriteAsync(
                 userId,
                 "SoftDelete",
                 senedId,
                 ip,
-                new { Basliq = sened.Basliq, Mesaj = "Sənəd arxivə göndərildi" }
+                new
+                {
+                    action = "SoftDelete",
+                    Basliq = sened.Basliq,
+                    Mesaj = "Sənəd arxivə göndərildi"
+                }
             );
 
             await _uow.YaddaSaxlaAsync();
@@ -491,7 +509,12 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             await _uow.Repository<Sened>().YenileAsync(sened);
             await _uow.YaddaSaxlaAsync();
 
-            await _audit.WriteAsync(userId, "Restore", senedId, ip);
+            await _audit.WriteAsync(userId, "Restore", senedId, ip, new
+            {
+                action = "Restore",
+                Basliq = sened.Basliq,
+                Mesaj = "Sənəd bərpa edildi"
+            });
 
             return Result.Ok("Sənəd bərpa edildi.");
         }
@@ -600,11 +623,13 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 await _audit.WriteAsync(userId, "CreateWithFile", sened.Id, ip,
                     new
                     {
-                        dto.SobeId,
-                        dto.SenedNovuId,
-                        dto.AcarSoz,
-                        originalName,
-                        size
+                        action = "Create",
+                        SobeId = dto.SobeId,
+                        SenedNovuId = dto.SenedNovuId,
+                        Basliq = dto.Basliq,
+                        AcarSoz = dto.AcarSoz,
+                        FaylAdi = originalName,
+                        Olcu = size
                     });
 
                 await transaction.CommitAsync();
@@ -636,34 +661,46 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             if (sobe == null)
                 return Result.Fail("Şöbə tapılmadı.");
 
-            // 4. Məlumatları mapiyirik (və ya əllə mənimsədirik)
+            // 4. Köhnə dəyərləri yadda saxlayırıq (audit üçün)
+            var oldValues = new
+            {
+                sened.Basliq,
+                SobeId = sened.DepartmentId,
+                sened.SenedNovuId,
+                sened.AcarSoz
+            };
+
+            // 5. Məlumatları mapiyirik (və ya əllə mənimsədirik)
             sened.Basliq = dto.Basliq;
             sened.DepartmentId = dto.SobeId;
             sened.SenedNovuId = dto.SenedNovuId;
             sened.AcarSoz = dto.AcarSoz;
-            // sened.UpdateDate = DateTime.Now; // Lazımdırsa audit məlumatları
+            sened.YenileyenIcraciId = userId;
+            sened.YenilenmeTarixi = DateTime.UtcNow;
 
-            // 5. Yadda saxlayırıq
+            // 6. Yadda saxlayırıq
             _uow.Repository<Sened>().YenileAsync(sened);
 
-            // 6. AUDIT (Bunu əlavə edin)
+            // 7. AUDIT — köhnə vs yeni dəyərləri JSON olaraq yazırıq
             await _audit.WriteAsync(
                 userId,
-                "Update", // Əməliyyatın adı
+                "Update",
                 sened.Id,
                 ip,
                 new
                 {
-                    Basliq = dto.Basliq,
-                    SobeId = dto.SobeId,
-                    SenedNovuId = dto.SenedNovuId,
-                    AcarSoz = dto.AcarSoz,
-                    YenilenmeTarixi = DateTime.Now
+                    action = "Update",
+                    old = oldValues,
+                    @new = new
+                    {
+                        Basliq = dto.Basliq,
+                        SobeId = dto.SobeId,
+                        SenedNovuId = dto.SenedNovuId,
+                        AcarSoz = dto.AcarSoz
+                    }
                 });
 
-            // 7. Bazaya yazırıq
-            await _uow.YaddaSaxlaAsync();
-
+            // 8. Bazaya yazırıq
             await _uow.YaddaSaxlaAsync();
 
             return Result.Ok();
