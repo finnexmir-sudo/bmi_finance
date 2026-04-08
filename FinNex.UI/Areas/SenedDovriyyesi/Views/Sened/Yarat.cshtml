@@ -192,17 +192,14 @@
 
 
 <!-- Yeni Sənəd Növü Modal -->
-<div class="str-modal-overlay str-modal-hidden" id="novModal">
-    <div class="str-modal">
-        <div class="str-modal-header">
-            <div class="str-modal-title">Yeni Sənəd Növü</div>
-            <button type="button" class="str-modal-close" data-close-modal="novModal">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                </svg>
-            </button>
-        </div>
-        <div class="str-modal-body">
+<div class="modal fade" id="novModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Yeni Sənəd Növü</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
             <p id="novError" class="sd-alert-error" hidden></p>
             <p id="novSuccess" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px 14px;font-size:13px;color:#166534;" hidden></p>
             <div class="isci-field str-field-mb">
@@ -224,9 +221,10 @@
                 <input type="text" id="novAd" class="isci-input" placeholder="Məs: Müqavilə, Ərizə..." />
             </div>
         </div>
-        <div class="str-modal-footer">
-            <button type="button" class="fn-btn fn-btn--outline" data-close-modal="novModal">Ləğv et</button>
-            <button type="button" class="fn-btn fn-btn--primary" id="saveBtn">Saxla</button>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Ləğv et</button>
+                <button type="button" class="btn btn-primary" id="saveBtn">Saxla</button>
+            </div>
         </div>
     </div>
 </div>
