@@ -37,6 +37,13 @@
             <select asp-for="SenedNovuId" class="sd-select" id="senedNovuSelect">
                 <option value="">Bütün növlər</option>
             </select>
+            <select asp-for="TagId" class="sd-select">
+                <option value="">Bütün etiketlər</option>
+                @foreach (var t in Model.Tagler)
+                {
+                    <option value="@t.Id">@t.Ad</option>
+                }
+            </select>
             <input type="text" name="q" value="@Model.AxtarisKelimesi"
                    class="sd-search-input" placeholder="Başlıq və ya açar söz..." />
             <button type="submit" class="fn-btn fn-btn--primary" style="padding:0 14px;height:36px;">

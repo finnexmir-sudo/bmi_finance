@@ -1,0 +1,158 @@
+@model IcazelerVM
+@{
+    ViewData["Title"] = "İcazə İdarəetməsi";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/sened-dovriyyesi-fn.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hr/struktur.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">İcazə İdarəetməsi</div>
+            <div class="fn-page-sub">Cəmi <strong>@Model.Icazeler.Count</strong> icazə</div>
+        </div>
+        <button type="button" class="fn-btn fn-btn--primary" id="openIcazeBtn">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+            Yeni İcazə
+        </button>
+    </div>
+
+    <!-- Cədvəl -->
+    <div class="sd-table-wrap">
+        <table class="sd-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>İstifadəçi adı</th>
+                    <th>Şöbə</th>
+                    <th>İcazə növü</th>
+                    <th class="isci-th-right">Əməliyyat</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Icazeler.Any())
+                {
+                    @foreach (var ic in Model.Icazeler)
+                    {
+                        <tr>
+                            <td><span class="sd-table-id">#@ic.Id</span></td>
+                            <td>
+                                <div class="sd-table-title">@ic.IstifadeciAd</div>
+                            </td>
+                            <td><span class="str-dept-tag">@ic.SobeAd</span></td>
+                            <td>
+                                @if (ic.IcazeNovu == 2)
+                                {
+                                    <span class="fn-badge fn-badge--done">Tam</span>
+                                }
+                                else
+                                {
+                                    <span class="fn-badge fn-badge--pending">Baxış</span>
+                                }
+                            </td>
+                            <td class="isci-td-actions">
+                                <form asp-area="SenedDovriyyesi" asp-controller="Sened"
+                                      asp-action="IcazeSil" method="post"
+                                      onsubmit="return confirm('Bu icazəni silmək istədiyinizə əminsiniz?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@ic.Id" />
+                                    <button type="submit" class="isci-action-btn str-action-btn--red"
+                                            title="Sil">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                            <path d="M2 3.5h10M5 3.5V2.5h4v1M4.5 3.5l.5 8M9.5 3.5l-.5 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="sd-table-empty">Hələ icazə əlavə edilməyib</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Yeni İcazə Modal -->
+<div class="str-modal-overlay str-modal-hidden" id="icazeModal">
+    <div class="str-modal" style="max-width:520px;">
+        <div class="str-modal-header">
+            <div class="str-modal-title">Yeni İcazə Əlavə Et</div>
+            <button type="button" class="str-modal-close" data-close-modal="icazeModal">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+        <form asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="IcazeEkle" method="post">
+            @Html.AntiForgeryToken()
+            <div class="str-modal-body">
+                <div class="isci-field str-field-mb">
+                    <label class="isci-label">İstifadəçi <span class="isci-required">*</span></label>
+                    <select name="istifadeciId" class="isci-input" required>
+                        <option value="">İstifadəçi seçin...</option>
+                        @foreach (var u in Model.Istifadeciler)
+                        {
+                            <option value="@u.Id">@u.Ad</option>
+                        }
+                    </select>
+                </div>
+                <div class="isci-field str-field-mb">
+                    <label class="isci-label">Şöbə <span class="isci-required">*</span></label>
+                    <select name="sobeId" class="isci-input" required>
+                        <option value="">Şöbə seçin...</option>
+                        @foreach (var s in Model.Sobeler)
+                        {
+                            <option value="@s.Id">@s.Ad</option>
+                        }
+                    </select>
+                </div>
+                <div class="isci-field">
+                    <label class="isci-label">İcazə növü <span class="isci-required">*</span></label>
+                    <div style="display:flex;gap:16px;padding:8px 0;">
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#1a2332;cursor:pointer;">
+                            <input type="radio" name="icazeNovu" value="1" checked
+                                   style="accent-color:#6366f1;" />
+                            Baxış
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#1a2332;cursor:pointer;">
+                            <input type="radio" name="icazeNovu" value="2"
+                                   style="accent-color:#6366f1;" />
+                            Tam
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="str-modal-footer">
+                <button type="button" class="fn-btn fn-btn--outline" data-close-modal="icazeModal">Ləğv et</button>
+                <button type="submit" class="fn-btn fn-btn--primary">Əlavə et</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/modal-close.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            var openBtn = document.getElementById('openIcazeBtn');
+            var modal = document.getElementById('icazeModal');
+            if (openBtn && modal) {
+                openBtn.addEventListener('click', function () {
+                    modal.classList.remove('str-modal-hidden');
+                });
+            }
+        })();
+    </script>
+}

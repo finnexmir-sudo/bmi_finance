@@ -10,4 +10,9 @@ namespace FinNex.UI.Areas.SenedDovriyyesi.ViewModels
     {
         public List<int> Ids { get; set; } = new();
     }
+
+    public class EtiketYaratRequest
+    {
+        public string Ad { get; set; } = null!;
+    }
 }

@@ -1,8 +1,10 @@
 using FinNex.Application.Common.Paged;
 using FinNex.Application.DTOs.SenedDovriyyesi;
 using FinNex.Application.DTOs.SenedDovriyyesi.Fayl;
+using FinNex.Application.DTOs.SenedDovriyyesi.Icaze;
 using FinNex.Application.DTOs.SenedDovriyyesi.Sened;
 using FinNex.Application.DTOs.SenedDovriyyesi.SenedNovu;
+using FinNex.Application.DTOs.SenedDovriyyesi.SenedSablon;
 using FinNex.Application.Interfaces.SenedDovriyyesi;
 using FinNex.Application.Interfaces.Structur;
 using FinNex.Domain;
@@ -11,6 +13,7 @@ using FinNex.Domain.Interfaces;
 using FinNex.UI.Areas.SenedDovriyyesi.ViewModels;
 using FinNex.UI.ViewModels.SenedDovriyyesi;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -27,8 +30,10 @@ public class SenedController : Controller
     private readonly IDepartmentService _departmentService;
     private readonly IUserDepartmentService _userDepartmentService;
     private readonly ISenedDovriyyesiIstifadeciIcazesiService _icazeService;
+    private readonly ISenedSablonService _sablonService;
     private readonly IUnitOfWork _unitOf;
     private readonly IWebHostEnvironment _environment;
+    private readonly UserManager<AppUser> _userManager;
 
     public SenedController(
         ISenedService senedService,
@@ -36,16 +41,20 @@ public class SenedController : Controller
         IDepartmentService departmentService,
         IUserDepartmentService userDepartmentService,
         ISenedDovriyyesiIstifadeciIcazesiService icazeService,
+        ISenedSablonService sablonService,
         IUnitOfWork unitOf,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        UserManager<AppUser> userManager)
     {
         _senedService = senedService;
         _novuService = novuService;
         _departmentService = departmentService;
         _userDepartmentService = userDepartmentService;
         _icazeService = icazeService;
+        _sablonService = sablonService;
         _unitOf = unitOf;
         _environment = environment;
+        _userManager = userManager;
     }
 
     // ── Köməkçi metodlar ─────────────────────────────────────────
@@ -278,7 +287,8 @@ public class SenedController : Controller
             SobeId = vm.SobeId,
             SenedNovuId = vm.SenedNovuId,
             Basliq = vm.Basliq,
-            AcarSoz = vm.AcarSoz
+            AcarSoz = vm.AcarSoz,
+            TagIds = vm.TagIds ?? new List<int>()
         };
 
         var uploadDto = new SenedUploadDto
@@ -675,13 +685,18 @@ public class SenedController : Controller
             return RedirectToAction(nameof(Detal), new { id });
         }
 
+        // Sənədin mövcud tag-lərini yüklə
+        var senedTagMaps = await _unitOf.Repository<SenedTagMap>()
+            .HamisiniGetirAsync(x => x.SenedId == id && !x.Silinib);
+
         var vm = new SenedUpdateVM
         {
             Id = sened.Data.Id,
             SobeId = sened.Data.DepartmentId,
             SenedNovuId = sened.Data.SenedNovuId,
             Basliq = sened.Data.Basliq,
-            AcarSoz = sened.Data.AcarSoz
+            AcarSoz = sened.Data.AcarSoz,
+            TagIds = senedTagMaps.Select(x => x.TagId).ToList()
         };
 
         var aktivFayl = sened.Data?.Fayllar?.FirstOrDefault(x => x.AktivVersiya);
@@ -747,6 +762,12 @@ public class SenedController : Controller
                 .Select(x => new DropdownItemVM { Id = x.Id, Ad = x.Ad })
                 .ToList() ?? new();
         }
+
+        var tags = await _unitOf.Repository<Tag>()
+            .HamisiniGetirAsync(x => !x.Silinib);
+        vm.Tagler = tags
+            .Select(x => new DropdownItemVM { Id = x.Id, Ad = x.Ad })
+            .ToList();
     }
 
     private async Task LoadCreateDropdowns(SenedCreateVM vm)
@@ -768,6 +789,12 @@ public class SenedController : Controller
             vm.SenedNovleri = novler.Data
                 .Select(n => new DropdownItemVM { Id = n.Id, Ad = n.Ad })
                 .ToList();
+
+        var tags = await _unitOf.Repository<Tag>()
+            .HamisiniGetirAsync(x => !x.Silinib);
+        vm.Tagler = tags
+            .Select(x => new DropdownItemVM { Id = x.Id, Ad = x.Ad })
+            .ToList();
     }
 
     private async Task LoadUpdateDropdowns(SenedUpdateVM vm)
@@ -777,6 +804,12 @@ public class SenedController : Controller
 
         ViewBag.Sobeler = new SelectList(sobeler.Data, "Id", "Ad", vm.SobeId);
         ViewBag.SenedNovleri = new SelectList(senedNovleri.Data, "Id", "Ad", vm.SenedNovuId);
+
+        var tags = await _unitOf.Repository<Tag>()
+            .HamisiniGetirAsync(x => !x.Silinib);
+        ViewBag.Tags = tags
+            .Select(x => new { Id = x.Id, Ad = x.Ad })
+            .ToList<dynamic>();
     }
 
     // ── MAP HELPER ────────────────────────────────────────────────
@@ -814,4 +847,217 @@ public class SenedController : Controller
             YaradilmaTarixi = l.YaradilmaTarixi
         }).ToList()
     };
+
+    // ── İCAZƏLƏR (Admin only) ────────────────────────────────────
+    [Authorize(Roles = RoleNames.Admin)]
+    public async Task<IActionResult> Icazeler()
+    {
+        var icazelerResult = await _icazeService.HamisiniGetirAsync(
+            x => !x.Silinib,
+            include: q => q
+                .Include(i => i.Istifadeci!)
+                .Include(i => i.Departament!));
+
+        var sobelerResult = await _departmentService.HamisiniGetirAsync(x => !x.Silinib);
+
+        var users = await _userManager.Users
+            .Where(u => u.Aktivdir)
+            .OrderBy(u => u.Ad)
+            .ToListAsync();
+
+        var vm = new IcazelerVM
+        {
+            Icazeler = icazelerResult.Success && icazelerResult.Data != null
+                ? icazelerResult.Data.Select(x => new IcazeItemVM
+                {
+                    Id = x.Id,
+                    IstifadeciId = x.IstifadeciId,
+                    IstifadeciAd = x.IstifadeciAd,
+                    SobeId = x.SobeId,
+                    SobeAd = x.SobeAd,
+                    IcazeNovu = x.IcazeNovu
+                }).ToList()
+                : new(),
+            Istifadeciler = users
+                .Select(u => new DropdownItemVM { Id = u.Id, Ad = $"{u.Ad} {u.Soyad}" })
+                .ToList(),
+            Sobeler = sobelerResult.Success && sobelerResult.Data != null
+                ? sobelerResult.Data.Select(s => new DropdownItemVM { Id = s.Id, Ad = s.Ad }).ToList()
+                : new()
+        };
+
+        return View(vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
+    public async Task<IActionResult> IcazeEkle(int istifadeciId, int sobeId, int icazeNovu)
+    {
+        if (istifadeciId == 0 || sobeId == 0 || (icazeNovu != 1 && icazeNovu != 2))
+        {
+            TempData["Error"] = "Bütün sahələr doldurulmalıdır.";
+            return RedirectToAction(nameof(Icazeler));
+        }
+
+        // Eyni istifadeci + sobe ucun movcud icaze yoxla
+        var movcud = await _icazeService.MovcuddurmuAsync(
+            x => x.IstifadeciId == istifadeciId && x.SobeId == sobeId && !x.Silinib);
+
+        if (movcud.Success && movcud.Data)
+        {
+            TempData["Error"] = "Bu istifadəçinin bu şöbə üçün artıq icazəsi var.";
+            return RedirectToAction(nameof(Icazeler));
+        }
+
+        var dto = new SenedDovriyyesiIstifadeciIcazesiCreateDto
+        {
+            IstifadeciId = istifadeciId,
+            SobeId = sobeId,
+            IcazeNovu = icazeNovu
+        };
+
+        var result = await _icazeService.YaratAsync(dto);
+        TempData[result.Success ? "Success" : "Error"] =
+            result.Success ? "İcazə uğurla əlavə edildi." : (result.Message ?? "Xəta baş verdi.");
+
+        return RedirectToAction(nameof(Icazeler));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
+    public async Task<IActionResult> IcazeSil(int id)
+    {
+        var result = await _icazeService.SilAsync(id);
+        TempData[result.Success ? "Success" : "Error"] =
+            result.Success ? "İcazə silindi." : (result.Message ?? "Xəta baş verdi.");
+
+        return RedirectToAction(nameof(Icazeler));
+    }
+
+    // ── ŞABLONLAR ─────────────────────────────────────────────────
+    [HttpGet]
+    public async Task<IActionResult> Sablonlar(int? senedNovuId)
+    {
+        var result = await _sablonService.GetListAsync(senedNovuId);
+        var novlerResult = await _novuService.HamisiniGetirAsync(x => x.Aktiv);
+
+        var vm = new SenedSablonlarVM
+        {
+            SenedNovuId = senedNovuId,
+            Sablonlar = result.Success && result.Data != null
+                ? result.Data.Select(x => new SenedSablonItemVM
+                {
+                    Id = x.Id,
+                    Ad = x.Ad,
+                    Tesvir = x.Tesvir,
+                    SenedNovuId = x.SenedNovuId,
+                    SenedNovuAd = x.SenedNovuAd,
+                    FaylAdi = x.FaylAdi,
+                    Aktiv = x.Aktiv,
+                    YaradilmaTarixi = x.YaradilmaTarixi
+                }).ToList()
+                : new(),
+            SenedNovleri = novlerResult.Success && novlerResult.Data != null
+                ? novlerResult.Data.Select(x => new DropdownItemVM { Id = x.Id, Ad = x.Ad }).ToList()
+                : new()
+        };
+
+        return View(vm);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> SablonYarat()
+    {
+        var vm = new SenedSablonCreateVM();
+        var novlerResult = await _novuService.HamisiniGetirAsync(x => x.Aktiv);
+        if (novlerResult.Success && novlerResult.Data != null)
+            vm.SenedNovleri = novlerResult.Data
+                .Select(x => new DropdownItemVM { Id = x.Id, Ad = x.Ad })
+                .ToList();
+        return View(vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SablonYarat(SenedSablonCreateVM vm)
+    {
+        if (!ModelState.IsValid)
+        {
+            var novlerResult = await _novuService.HamisiniGetirAsync(x => x.Aktiv);
+            if (novlerResult.Success && novlerResult.Data != null)
+                vm.SenedNovleri = novlerResult.Data
+                    .Select(x => new DropdownItemVM { Id = x.Id, Ad = x.Ad })
+                    .ToList();
+            return View(vm);
+        }
+
+        var dto = new SenedSablonCreateDto
+        {
+            Ad = vm.Ad,
+            Tesvir = vm.Tesvir,
+            SenedNovuId = vm.SenedNovuId
+        };
+
+        using var stream = vm.Fayl.OpenReadStream();
+        var result = await _sablonService.CreateAsync(
+            dto, stream, vm.Fayl.FileName, vm.Fayl.ContentType, GetUserId());
+
+        if (!result.Success)
+        {
+            ModelState.AddModelError("", result.Message ?? "Xəta baş verdi");
+            var novlerResult = await _novuService.HamisiniGetirAsync(x => x.Aktiv);
+            if (novlerResult.Success && novlerResult.Data != null)
+                vm.SenedNovleri = novlerResult.Data
+                    .Select(x => new DropdownItemVM { Id = x.Id, Ad = x.Ad })
+                    .ToList();
+            return View(vm);
+        }
+
+        TempData["Success"] = "Şablon yaradıldı";
+        return RedirectToAction(nameof(Sablonlar));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SablonSil(int id)
+    {
+        var result = await _sablonService.DeleteAsync(id, GetUserId());
+        TempData[result.Success ? "Success" : "Error"] = result.Message;
+        return RedirectToAction(nameof(Sablonlar));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> SablonEndir(int id)
+    {
+        var result = await _sablonService.GetFaylAsync(id);
+        if (!result.Success || result.Data.faylYolu == null)
+        {
+            TempData["Error"] = result.Message ?? "Fayl tapılmadı.";
+            return RedirectToAction(nameof(Sablonlar));
+        }
+
+        var rootPath = @"C:\FinNex_DMS";
+        var fullPath = Path.Combine(rootPath,
+            result.Data.faylYolu.Replace("/", Path.DirectorySeparatorChar.ToString())
+                    .Replace("\\", Path.DirectorySeparatorChar.ToString()));
+
+        if (!System.IO.File.Exists(fullPath))
+            return NotFound("Fayl tapılmadı.");
+
+        var bytes = await System.IO.File.ReadAllBytesAsync(fullPath);
+        var contentType = "application/octet-stream";
+        return File(bytes, contentType, result.Data.faylAdi);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> SablonlarByNov(int senedNovuId)
+    {
+        var result = await _sablonService.GetListAsync(senedNovuId);
+        if (!result.Success || result.Data == null)
+            return Json(new List<object>());
+
+        return Json(result.Data.Select(x => new { id = x.Id, ad = x.Ad, faylAdi = x.FaylAdi }));
+    }
 }

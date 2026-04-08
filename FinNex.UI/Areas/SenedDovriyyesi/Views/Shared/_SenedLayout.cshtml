@@ -69,6 +69,12 @@
             
             @if (User.IsInRole(RoleNames.Admin))
             {
+                <a class="nav-link @(activePage == "Icazeler" ? "active" : "")"
+                   asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Icazeler">
+                    <i class="bi bi-shield-lock-fill"></i>
+                    İcazələr
+                </a>
+
                 <div class="nav-section">Arxiv</div>
 
                 <a class="nav-link @(activePage == "Silinmisler" ? "active" : "")"
