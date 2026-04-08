@@ -253,6 +253,12 @@
                                         <td style="font-size:11px;color:#8a93a8;">@f.YaradilmaTarixi.ToString("dd.MM.yy")</td>
                                         <td>
                                             <div style="display:flex;gap:4px;">
+                                                @{
+                                                    var ext = System.IO.Path.GetExtension(f.OriginalAd)?.ToLower();
+                                                    var previewOlur = ext is ".pdf" or ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" or ".bmp";
+                                                }
+                                                @if (previewOlur)
+                                                {
                                                 <button type="button"
                                                         class="isci-action-btn btn-preview"
                                                         data-id="@f.Id"
@@ -268,6 +274,7 @@
                                                         <circle cx="7" cy="7" r="1.5" fill="currentColor" />
                                                     </svg>
                                                 </button>
+                                                }
                                                 <a asp-area="SenedDovriyyesi" asp-controller="Sened"
                                                    asp-action="Download" asp-route-id="@f.Id"
                                                    class="isci-action-btn" title="Yüklə">
