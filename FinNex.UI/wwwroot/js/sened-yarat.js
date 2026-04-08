@@ -119,8 +119,10 @@
 
     if (novModal) {
         novModal.addEventListener('show.bs.modal', function () {
-            document.getElementById('novKod').value = '';
-            document.getElementById('novAd').value = '';
+            var kodEl = document.getElementById('novKod');
+            if (kodEl) kodEl.value = '';
+            var adEl = document.getElementById('novAd');
+            if (adEl) adEl.value = '';
 
             // Şöbəni ana formadan avtomatik seç
             var novSobe = document.getElementById('novSobe');
@@ -248,24 +250,21 @@ document.addEventListener("DOMContentLoaded", function () {
     saveBtn.addEventListener("click", function () {
 
         const sobeSelect = document.getElementById("sobeSelect");
-        const kodInput = document.getElementById("novKod");
         const adInput = document.getElementById("novAd");
         const errorDiv = document.getElementById("novError");
 
-        errorDiv.classList.add("d-none");
+        if (errorDiv) errorDiv.hidden = true;
 
         const sobeId = parseInt(sobeSelect.value);
-        const ad = adInput.value.trim();
+        const ad = adInput ? adInput.value.trim() : '';
 
         if (!sobeId || isNaN(sobeId)) {
-            errorDiv.textContent = "Əvvəlcə şöbə seçilməlidir.";
-            errorDiv.classList.remove("d-none");
+            if (errorDiv) { errorDiv.textContent = "Əvvəlcə şöbə seçilməlidir."; errorDiv.hidden = false; }
             return;
         }
 
         if (!ad) {
-            errorDiv.textContent = "Ad boş ola bilməz.";
-            errorDiv.classList.remove("d-none");
+            if (errorDiv) { errorDiv.textContent = "Ad boş ola bilməz."; errorDiv.hidden = false; }
             return;
         }
 
@@ -283,17 +282,15 @@ document.addEventListener("DOMContentLoaded", function () {
             .then(data => {
 
                 if (!data.success) {
-                    errorDiv.textContent = data.message;
-                    errorDiv.classList.remove("d-none");
+                    if (errorDiv) { errorDiv.textContent = data.message; errorDiv.hidden = false; }
                     return;
                 }
 
-                location.reload(); // sadə və təmiz həll
+                location.reload();
 
             })
             .catch(() => {
-                errorDiv.textContent = "Server xətası baş verdi.";
-                errorDiv.classList.remove("d-none");
+                if (errorDiv) { errorDiv.textContent = "Server xətası baş verdi."; errorDiv.hidden = false; }
             });
 
     });
