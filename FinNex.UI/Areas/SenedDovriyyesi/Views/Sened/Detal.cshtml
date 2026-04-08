@@ -204,7 +204,7 @@
                 <div class="sd-detail-card-hdr" style="display:flex;align-items:center;justify-content:space-between;">
                     <div class="sd-detail-card-title">Fayl Versiyaları (@Model.Fayllar.Count)</div>
                     <button type="button" class="fn-btn fn-btn--primary" style="font-size:11px;height:32px;padding:0 14px;"
-                            onclick="document.getElementById('yeniVersiyaModal').classList.remove('str-modal-hidden');">
+                            id="openYeniVersiyaBtn">
                         <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                             <path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                         </svg>
@@ -253,6 +253,12 @@
                                         <td style="font-size:11px;color:#8a93a8;">@f.YaradilmaTarixi.ToString("dd.MM.yy")</td>
                                         <td>
                                             <div style="display:flex;gap:4px;">
+                                                @{
+                                                    var ext = System.IO.Path.GetExtension(f.OriginalAd)?.ToLower();
+                                                    var previewOlur = ext is ".pdf" or ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" or ".bmp";
+                                                }
+                                                @if (previewOlur)
+                                                {
                                                 <button type="button"
                                                         class="isci-action-btn btn-preview"
                                                         data-id="@f.Id"
@@ -268,6 +274,7 @@
                                                         <circle cx="7" cy="7" r="1.5" fill="currentColor" />
                                                     </svg>
                                                 </button>
+                                                }
                                                 <a asp-area="SenedDovriyyesi" asp-controller="Sened"
                                                    asp-action="Download" asp-route-id="@f.Id"
                                                    class="isci-action-btn" title="Yüklə">
@@ -495,6 +502,11 @@
 @section Scripts {
     <script src="~/js/sened-detal.js" asp-append-version="true"></script>
     <script src="~/js/modal-close.js" asp-append-version="true"></script>
+    <script>
+        document.getElementById('openYeniVersiyaBtn')?.addEventListener('click', function() {
+            document.getElementById('yeniVersiyaModal').classList.remove('str-modal-hidden');
+        });
+    </script>
     <script>
         (function () {
             var input = document.getElementById('yeniVersiyaFayl');
