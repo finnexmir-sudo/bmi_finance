@@ -48,6 +48,8 @@
                 </div>
             </div>
             <div style="display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;">
+                @if (Model.Status != SenedStatusu.Arxiv)
+                {
                 <a asp-area="SenedDovriyyesi" asp-controller="Sened"
                    asp-action="Redakte" asp-route-id="@Model.Id"
                    class="fn-btn fn-btn--outline">
@@ -56,6 +58,7 @@
                     </svg>
                     Redaktə
                 </a>
+                }
                 @if (User.IsInRole(RoleNames.Admin) && Model.Status != SenedStatusu.Arxiv)
                 {
                     <form asp-action="StatusDeyis" method="post" style="display:inline;">
@@ -76,7 +79,7 @@
                     var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
                     var canDelete = User.IsInRole(RoleNames.Admin) || Model.YaradanIcraciId == currentUserId;
                 }
-                @if (canDelete)
+                @if (canDelete && Model.Status != SenedStatusu.Arxiv)
                 {
                     <a asp-area="SenedDovriyyesi" asp-controller="Sened"
                        asp-action="SilTesdiq" asp-route-id="@Model.Id"
@@ -159,6 +162,8 @@
             <div class="sd-detail-card">
                 <div class="sd-detail-card-hdr" style="display:flex;align-items:center;justify-content:space-between;">
                     <div class="sd-detail-card-title">Fayl Versiyaları (@Model.Fayllar.Count)</div>
+                    @if (Model.Status != SenedStatusu.Arxiv)
+                    {
                     <button type="button" class="fn-btn fn-btn--primary" style="font-size:11px;height:32px;padding:0 14px;"
                             id="openYeniVersiyaBtn">
                         <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
@@ -166,6 +171,7 @@
                         </svg>
                         Yeni versiya yukle
                     </button>
+                    }
                 </div>
                 <div>
                     @if (Model.Fayllar.Any())
