@@ -255,7 +255,6 @@ document.addEventListener("DOMContentLoaded", function () {
         errorDiv.classList.add("d-none");
 
         const sobeId = parseInt(sobeSelect.value);
-        const kod = kodInput.value.trim();
         const ad = adInput.value.trim();
 
         if (!sobeId || isNaN(sobeId)) {
@@ -264,8 +263,8 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        if (!kod || !ad) {
-            errorDiv.textContent = "Kod və Ad boş ola bilməz.";
+        if (!ad) {
+            errorDiv.textContent = "Ad boş ola bilməz.";
             errorDiv.classList.remove("d-none");
             return;
         }
@@ -277,7 +276,6 @@ document.addEventListener("DOMContentLoaded", function () {
             },
             body: JSON.stringify({
                 departmentId: sobeId,
-                kod: kod.toUpperCase(),
                 ad: ad
             })
         })

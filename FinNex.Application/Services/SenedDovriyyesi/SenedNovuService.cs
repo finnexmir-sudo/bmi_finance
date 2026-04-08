@@ -37,20 +37,38 @@ public class SenedNovuService
     // ================================
     // Yarat (userId ilə)
     // ================================
+    /// <summary>
+    /// Ad-dan avtomatik kod generasiya edir: "Müqavilə" → "MUQ"
+    /// </summary>
+    private string GenerateKod(string ad)
+    {
+        if (string.IsNullOrWhiteSpace(ad)) return "SND";
+        // Azərbaycan hərflərini latın əvəzləyicilərinə çevir
+        var clean = ad.Trim().ToUpper()
+            .Replace("Ə", "E").Replace("Ü", "U").Replace("Ö", "O")
+            .Replace("Ş", "S").Replace("Ç", "C").Replace("Ğ", "G")
+            .Replace("I", "I").Replace("İ", "I");
+        // Yalnız hərfləri saxla
+        var letters = new string(clean.Where(char.IsLetter).ToArray());
+        return letters.Length >= 3 ? letters.Substring(0, 3) : letters.PadRight(3, 'X');
+    }
+
     public async Task<Result<int>> CreateAsync(SenedNovuCreateDto dto, int userId)
     {
-        var exists = await _unitOfWork.Repository<SenedNovu>()
-            .MovcuddurmuAsync(x =>
-                x.DepartmentId == dto.DepartmentId &&
-                x.Kod == dto.Kod.ToUpper() &&
-                !x.Silinib);
+        var kod = string.IsNullOrWhiteSpace(dto.Kod) ? GenerateKod(dto.Ad) : dto.Kod.Trim().ToUpper();
 
-        if (exists)
-            return Result<int>.Fail("Bu kod artıq mövcuddur.");
+        // Eyni kod varsa sonuna rəqəm əlavə et
+        var baseKod = kod;
+        int suffix = 1;
+        while (await _unitOfWork.Repository<SenedNovu>()
+            .MovcuddurmuAsync(x => x.DepartmentId == dto.DepartmentId && x.Kod == kod && !x.Silinib))
+        {
+            suffix++;
+            kod = baseKod + suffix;
+        }
 
         var entity = _mapper.Map<SenedNovu>(dto);
-
-        entity.Kod = dto.Kod.Trim().ToUpper();
+        entity.Kod = kod;
         entity.Ad = dto.Ad.Trim();
         entity.Aktiv = true;
         entity.YaradanIcraciId = userId;
@@ -59,6 +77,23 @@ public class SenedNovuService
         await _unitOfWork.YaddaSaxlaAsync();
 
         return Result<int>.Ok(entity.Id, "Sənəd növü yaradıldı.");
+    }
+
+    // ================================
+    // Redaktə
+    // ================================
+    public async Task<Result> UpdateNovAsync(int id, string ad, int userId)
+    {
+        var entity = await _unitOfWork.Repository<SenedNovu>().IdIleGetirAsync(id);
+        if (entity == null || entity.Silinib)
+            return Result.Fail("Sənəd növü tapılmadı.");
+
+        entity.Ad = ad.Trim();
+        entity.YenileyenIcraciId = userId;
+        entity.YenilenmeTarixi = DateTime.Now;
+
+        await _unitOfWork.YaddaSaxlaAsync();
+        return Result.Ok("Sənəd növü yeniləndi.");
     }
 
     // ================================

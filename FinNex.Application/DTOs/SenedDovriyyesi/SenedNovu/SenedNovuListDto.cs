@@ -35,9 +35,8 @@ namespace FinNex.Application.DTOs.SenedDovriyyesi.SenedNovu
         [Required]
         public int DepartmentId { get; set; }
 
-        [Required]
         [MaxLength(50)]
-        public string Kod { get; set; } = null!;
+        public string? Kod { get; set; } // Avtomatik yaranır, boş buraxıla bilər
 
         [Required]
         [MaxLength(150)]

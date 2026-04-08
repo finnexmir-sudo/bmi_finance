@@ -17,5 +17,6 @@ namespace FinNex.Application.Interfaces.SenedDovriyyesi
         Task<Result<int>> CreateAsync(SenedNovuCreateDto dto, int userId);
         Task<Result> SoftDeleteAsync(int id, int userId);
         Task<Result> ToggleAktivAsync(int id, int userId);
+        Task<Result> UpdateNovAsync(int id, string ad, int userId);
     }
 }

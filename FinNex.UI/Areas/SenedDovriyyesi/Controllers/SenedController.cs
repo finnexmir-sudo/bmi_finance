@@ -260,6 +260,15 @@ public class SenedController : Controller
     {
         var vm = new SenedCreateVM();
         await LoadCreateDropdowns(vm);
+
+        // Admin/Rehber xaricində istifadəçinin şöbəsini avtomatik seç
+        if (!IsAdmin() && !User.IsInRole(RoleNames.Rehber))
+        {
+            var sobeIds = await GetIcazeliSobeIdleriAsync();
+            if (sobeIds.Count == 1)
+                vm.SobeId = sobeIds.First();
+        }
+
         return View(vm);
     }
 
@@ -670,6 +679,16 @@ public class SenedController : Controller
         var result = await _novuService.SoftDeleteAsync(id, GetUserId());
         TempData[result.Success ? "Success" : "Error"] = result.Message;
         return RedirectToAction(nameof(SenedNovleri));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SenedNovuRedakte([FromBody] SenedNovuRedakteRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.Ad))
+            return Json(new { success = false, message = "Ad boş ola bilməz." });
+
+        var result = await _novuService.UpdateNovAsync(req.Id, req.Ad, GetUserId());
+        return Json(new { success = result.Success, message = result.Message });
     }
 
     [HttpPost]
