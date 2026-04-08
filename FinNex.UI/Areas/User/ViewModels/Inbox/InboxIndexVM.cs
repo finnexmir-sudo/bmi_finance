@@ -30,7 +30,6 @@ namespace FinNex.UI.Areas.User.ViewModels.Inbox
         [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Alan seçilməlidir")]
         public int AlanIsciId { get; set; }
 
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Mövzu yazılmalıdır")]
         [System.ComponentModel.DataAnnotations.MaxLength(200)]
         public string Movzu { get; set; } = "";
 

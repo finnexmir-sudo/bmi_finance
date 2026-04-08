@@ -1,4 +1,4 @@
-﻿@model FinNex.UI.Areas.User.ViewModels.Inbox.YeniMesajVM
+@model FinNex.UI.Areas.User.ViewModels.Inbox.YeniMesajVM
 @{
     ViewData["Title"] = "Yeni Mesaj";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
@@ -6,6 +6,41 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/User/inbox.css" asp-append-version="true" />
+    <style>
+        .fn-search-select { position: relative; }
+        .fn-search-select input[type="text"] {
+            width: 100%; padding: 10px 14px; border: 1px solid #dce0e8; border-radius: 8px;
+            font-size: 14px; outline: none; transition: border .2s;
+        }
+        .fn-search-select input[type="text"]:focus { border-color: #2d6cdf; }
+        .fn-search-list {
+            position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+            background: #fff; border: 1px solid #dce0e8; border-radius: 8px;
+            max-height: 240px; overflow-y: auto; display: none; margin-top: 4px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.1);
+        }
+        .fn-search-list.open { display: block; }
+        .fn-search-item {
+            padding: 10px 14px; cursor: pointer; font-size: 13px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .fn-search-item:hover { background: #f0f4ff; }
+        .fn-search-item .av {
+            width: 30px; height: 30px; border-radius: 50%; background: #1e2a3b;
+            color: #fff; display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 600; flex-shrink: 0;
+        }
+        .fn-search-empty { padding: 14px; text-align: center; color: #8b95a5; font-size: 13px; }
+        .fn-selected-badge {
+            display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+            background: #eef2ff; border-radius: 20px; font-size: 13px; color: #2d6cdf;
+            font-weight: 500; margin-top: 6px;
+        }
+        .fn-selected-badge button {
+            background: none; border: none; color: #c83838; cursor: pointer;
+            font-size: 16px; line-height: 1; padding: 0;
+        }
+    </style>
 }
 
 <div class="fn-page">
@@ -18,25 +53,34 @@
         <form asp-action="YeniMesaj" method="post" class="ibx-compose-form">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="GonderenIsciId" />
+            <input type="hidden" asp-for="AlanIsciId" id="alanIsciId" />
 
             <div class="ibx-field">
-                <label class="ibx-label">Kimə</label>
-                <select asp-for="AlanIsciId" asp-items="Model.IsciList"
-                        class="ibx-input">
-                    <option value="">İşçi seçin...</option>
-                </select>
+                <label class="ibx-label">Kimə <span style="color:#c83838">*</span></label>
+                <div class="fn-search-select" id="isciSearchWrap">
+                    <input type="text" id="isciSearch" placeholder="İşçi axtar..." autocomplete="off" />
+                    <div class="fn-search-list" id="isciList">
+                        @foreach (var item in Model.IsciList)
+                        {
+                            <div class="fn-search-item" data-id="@item.Value" data-name="@item.Text">
+                                <div class="av">@(item.Text?.Length > 0 ? item.Text[0].ToString() : "?")</div>
+                                <span>@item.Text</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div id="selectedIsci" style="display:none"></div>
                 <span asp-validation-for="AlanIsciId" class="ibx-error"></span>
             </div>
 
             <div class="ibx-field">
-                <label class="ibx-label">Mövzu</label>
+                <label class="ibx-label">Mövzu <span style="color:#8b95a5;font-weight:400">(isteğe bağlı)</span></label>
                 <input asp-for="Movzu" class="ibx-input"
                        placeholder="Mesajın mövzusu..." />
-                <span asp-validation-for="Movzu" class="ibx-error"></span>
             </div>
 
             <div class="ibx-field">
-                <label class="ibx-label">Mətn</label>
+                <label class="ibx-label">Mətn <span style="color:#c83838">*</span></label>
                 <textarea asp-for="Metn" class="ibx-textarea ibx-textarea--lg"
                           placeholder="Mesajınızı yazın..." rows="8"></textarea>
                 <span asp-validation-for="Metn" class="ibx-error"></span>
@@ -55,3 +99,72 @@
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+    (function() {
+        var searchInput = document.getElementById('isciSearch');
+        var list = document.getElementById('isciList');
+        var hiddenInput = document.getElementById('alanIsciId');
+        var selectedDiv = document.getElementById('selectedIsci');
+        var searchWrap = document.getElementById('isciSearchWrap');
+        var items = list.querySelectorAll('.fn-search-item');
+
+        searchInput.addEventListener('focus', function() { list.classList.add('open'); filter(); });
+        searchInput.addEventListener('input', filter);
+
+        document.addEventListener('click', function(e) {
+            if (!searchWrap.contains(e.target)) list.classList.remove('open');
+        });
+
+        function filter() {
+            var q = searchInput.value.toLowerCase();
+            var found = 0;
+            items.forEach(function(el) {
+                var name = el.getAttribute('data-name').toLowerCase();
+                var show = name.indexOf(q) !== -1;
+                el.style.display = show ? 'flex' : 'none';
+                if (show) found++;
+            });
+            var empty = list.querySelector('.fn-search-empty');
+            if (empty) empty.remove();
+            if (found === 0) {
+                var div = document.createElement('div');
+                div.className = 'fn-search-empty';
+                div.textContent = 'Nəticə tapılmadı';
+                list.appendChild(div);
+            }
+        }
+
+        items.forEach(function(el) {
+            el.addEventListener('click', function() {
+                var id = this.getAttribute('data-id');
+                var name = this.getAttribute('data-name');
+                hiddenInput.value = id;
+                searchInput.style.display = 'none';
+                list.classList.remove('open');
+                selectedDiv.style.display = 'block';
+                selectedDiv.innerHTML = '<div class="fn-selected-badge">' + name +
+                    ' <button type="button" id="clearIsci">&times;</button></div>';
+                document.getElementById('clearIsci').addEventListener('click', clear);
+            });
+        });
+
+        function clear() {
+            hiddenInput.value = '';
+            searchInput.value = '';
+            searchInput.style.display = '';
+            selectedDiv.style.display = 'none';
+            selectedDiv.innerHTML = '';
+            searchInput.focus();
+        }
+
+        // Əgər artıq seçilmiş varsa (validation error sonrası)
+        if (hiddenInput.value && hiddenInput.value !== '0') {
+            var sel = list.querySelector('[data-id="' + hiddenInput.value + '"]');
+            if (sel) sel.click();
+        }
+    })();
+    </script>
+}
