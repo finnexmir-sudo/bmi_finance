@@ -25,17 +25,18 @@
 }
 
 <div class="fn-page">
-    <div class="ibx-compose-wrap" style="max-width:860px">
-        <div class="ibx-compose-header">
-            <a asp-action="Index" class="ibx-back">← Geri</a>
-            <div class="ibx-compose-title">Toplu Mesaj</div>
-        </div>
+    <div class="msg-compose" style="width:100%">
+        <div class="msg-card" style="background:#fff;border-radius:12px;border:1px solid #e8ebf0;padding:28px 32px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+                <div style="font-size:18px;font-weight:700;color:#1e2a3b">Toplu Mesaj</div>
+                <a asp-action="Index" class="fn-btn fn-btn--outline" style="font-size:13px">← Geri</a>
+            </div>
 
-        <form asp-action="TopluMesaj" method="post" class="ibx-compose-form">
+        <form asp-action="TopluMesaj" method="post">
             @Html.AntiForgeryToken()
 
-            <div class="ibx-field">
-                <label class="ibx-label">Alıcılar <span style="color:#c83838">*</span></label>
+            <div style="margin-bottom:20px">
+                <label style="font-size:13px;font-weight:600;color:#3c4555;margin-bottom:6px;display:block">Alıcılar <span style="color:#c83838">*</span></label>
                 <input type="text" class="tm-search" id="tmSearch" placeholder="İşçi axtar..." />
                 <div class="tm-toolbar">
                     <button type="button" id="tmSelectAll">Hamısını seç</button>
@@ -55,20 +56,20 @@
                 </div>
             </div>
 
-            <div class="ibx-field">
-                <label class="ibx-label">Mövzu <span style="color:#8b95a5;font-weight:400">(isteğe bağlı)</span></label>
-                <input name="movzu" class="ibx-input" placeholder="Mesajın mövzusu..." maxlength="200" />
+            <div style="margin-bottom:20px">
+                <label style="font-size:13px;font-weight:600;color:#3c4555;margin-bottom:6px;display:block">Mövzu <span style="color:#8b95a5;font-weight:400">(isteğe bağlı)</span></label>
+                <input name="movzu" style="width:100%;padding:10px 14px;border:1px solid #dce0e8;border-radius:8px;font-size:14px;outline:none" placeholder="Mesajın mövzusu..." maxlength="200" />
             </div>
 
-            <div class="ibx-field">
-                <label class="ibx-label">Mətn <span style="color:#c83838">*</span></label>
-                <textarea name="metn" class="ibx-textarea ibx-textarea--lg" required
+            <div style="margin-bottom:20px">
+                <label style="font-size:13px;font-weight:600;color:#3c4555;margin-bottom:6px;display:block">Mətn <span style="color:#c83838">*</span></label>
+                <textarea name="metn" style="width:100%;padding:12px 14px;border:1px solid #dce0e8;border-radius:8px;font-size:14px;outline:none;resize:vertical;min-height:140px;font-family:inherit" required
                           placeholder="Mesajınızı yazın..." rows="8"></textarea>
             </div>
 
-            <div class="ibx-compose-footer">
-                <a asp-action="Index" class="ibx-btn ibx-btn--ghost">Ləğv et</a>
-                <button type="submit" class="ibx-btn ibx-btn--primary">
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid #f0f2f5">
+                <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+                <button type="submit" class="fn-btn fn-btn--primary">
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                         <path d="M1 6.5l10-5-5 10-.5-4.5L1 6.5z" stroke="currentColor"
                               stroke-width="1.2" stroke-linejoin="round" />
@@ -77,6 +78,7 @@
                 </button>
             </div>
         </form>
+        </div>
     </div>
 </div>
 
