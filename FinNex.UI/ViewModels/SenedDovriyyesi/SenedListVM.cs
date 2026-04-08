@@ -7,6 +7,7 @@ public class SenedListVM
     // Filter values
     public int? SobeId { get; set; }
     public int? SenedNovuId { get; set; }
+    public int? TagId { get; set; }
     public SenedStatusu? Status { get; set; }
     public string? AxtarisKelimesi { get; set; }
     public bool Silinmisler { get; set; }
@@ -23,6 +24,7 @@ public class SenedListVM
     // Dropdowns
     public List<DropdownItemVM> Sobeler { get; set; } = new();
     public List<DropdownItemVM> SenedNovleri { get; set; } = new();
+    public List<DropdownItemVM> Tagler { get; set; } = new();
 }
 
 public class SenedListItemVM

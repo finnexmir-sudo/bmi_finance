@@ -13,6 +13,7 @@ using FinNex.UI.ViewModels.SenedDovriyyesi;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace FinNex.UI.Areas.SenedDovriyyesi.Controllers;
@@ -156,7 +157,7 @@ public class SenedController : Controller
 
     // ── INDEX ─────────────────────────────────────────────────────
     public async Task<IActionResult> Index(
-        int? sobeId, int? senedNovuId, SenedStatusu? status,
+        int? sobeId, int? senedNovuId, int? tagId, SenedStatusu? status,
         string? q, int page = 1, int pageSize = 20)
     {
         var icazeliSobeIdleri = await GetIcazeliSobeIdleriAsync();
@@ -166,7 +167,7 @@ public class SenedController : Controller
 
         var result = await _senedService.GetPagedAsync(
             new PagedRequest { Page = page, PageSize = pageSize },
-            icazeliSobeIdleri, sobeId, senedNovuId, status, q);
+            icazeliSobeIdleri, sobeId, senedNovuId, status, q, tagId);
 
         var vm = new SenedListVM
         {
@@ -174,6 +175,7 @@ public class SenedController : Controller
             PageSize = pageSize,
             SobeId = sobeId,
             SenedNovuId = senedNovuId,
+            TagId = tagId,
             Status = status,
             AxtarisKelimesi = q
         };
@@ -426,6 +428,74 @@ public class SenedController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    // ── TOPLU STATUS DƏYİŞ ─────────────────────────────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> TopluStatusDeyis([FromBody] TopluStatusDeyisRequest request)
+    {
+        if (request?.Ids == null || request.Ids.Count == 0)
+            return Json(new { success = false, message = "Heç bir sənəd seçilməyib." });
+
+        var tamIcazeliSobeler = await GetTamIcazeliSobeIdleriAsync();
+        var ugurlu = 0;
+        var icazesiz = 0;
+
+        foreach (var id in request.Ids)
+        {
+            var sened = await _senedService.IdIleGetirAsync(id);
+            if (!sened.Success || sened.Data == null) continue;
+
+            if (!IsAdmin() && !tamIcazeliSobeler.Contains(sened.Data.DepartmentId))
+            {
+                icazesiz++;
+                continue;
+            }
+
+            var result = await _senedService.UpdateStatusAsync(id, (SenedStatusu)request.NewStatus, GetUserId(), GetIp());
+            if (result.Success) ugurlu++;
+        }
+
+        var message = $"{ugurlu} sənədin statusu dəyişdirildi.";
+        if (icazesiz > 0)
+            message += $" {icazesiz} sənəd üçün icazə yoxdur.";
+
+        return Json(new { success = ugurlu > 0, message });
+    }
+
+    // ── TOPLU SİL ────────────────────────────────────────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> TopluSil([FromBody] TopluSilRequest request)
+    {
+        if (request?.Ids == null || request.Ids.Count == 0)
+            return Json(new { success = false, message = "Heç bir sənəd seçilməyib." });
+
+        var tamIcazeliSobeler = await GetTamIcazeliSobeIdleriAsync();
+        var ugurlu = 0;
+        var icazesiz = 0;
+
+        foreach (var id in request.Ids)
+        {
+            var sened = await _senedService.IdIleGetirAsync(id);
+            if (!sened.Success || sened.Data == null) continue;
+
+            if (!IsAdmin() && !tamIcazeliSobeler.Contains(sened.Data.DepartmentId))
+            {
+                icazesiz++;
+                continue;
+            }
+
+            var result = await _senedService.SoftDeleteAsync(id, GetUserId(), GetIp());
+            if (result.Success) ugurlu++;
+        }
+
+        var message = $"{ugurlu} sənəd silindi.";
+        if (icazesiz > 0)
+            message += $" {icazesiz} sənəd üçün icazə yoxdur.";
+
+        return Json(new { success = ugurlu > 0, message });
+    }
+
     // ── BƏRPA ET (GET + POST) ─────────────────────────────────────
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -451,6 +521,75 @@ public class SenedController : Controller
         var result = await _senedService.RestoreAsync(id, GetUserId(), GetIp());
         TempData[result.Success ? "Success" : "Error"] = result.Message;
         return RedirectToAction(nameof(Index));
+    }
+
+    // ── ETİKETLƏR (TAG İDARƏSİ) ─────────────────────────────────
+    public async Task<IActionResult> Etiketler()
+    {
+        var tags = await _unitOf.Repository<Tag>()
+            .HamisiniGetirAsync(x => !x.Silinib,
+                include: q => q.Include(t => t.SenedTagMaps));
+
+        var vm = new EtiketlerVM
+        {
+            Etiketler = tags.Select(t => new EtiketItemVM
+            {
+                Id = t.Id,
+                Ad = t.Ad,
+                SenedSayi = t.SenedTagMaps?.Count(m => !m.Silinib) ?? 0,
+                YaradilmaTarixi = t.YaradilmaTarixi
+            }).ToList()
+        };
+
+        return View(vm);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> EtiketYarat([FromBody] EtiketYaratRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req?.Ad))
+            return Json(new { success = false, message = "Etiket adi bos ola bilmez." });
+
+        var ad = req.Ad.Trim();
+
+        var movcud = await _unitOf.Repository<Tag>()
+            .AnyAsync(x => x.Ad == ad && !x.Silinib);
+
+        if (movcud)
+            return Json(new { success = false, message = "Bu adda etiket artiq movcuddur." });
+
+        var tag = new Tag
+        {
+            Ad = ad,
+            YaradanIcraciId = GetUserId()
+        };
+
+        await _unitOf.Repository<Tag>().YaratAsync(tag);
+        await _unitOf.YaddaSaxlaAsync();
+
+        return Json(new { success = true, message = "Etiket yaradildi.", id = tag.Id, ad = tag.Ad });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EtiketSil(int id)
+    {
+        var tag = await _unitOf.Repository<Tag>().GetirAsync(x => x.Id == id && !x.Silinib);
+        if (tag == null)
+        {
+            TempData["Error"] = "Etiket tapilmadi.";
+            return RedirectToAction(nameof(Etiketler));
+        }
+
+        tag.Silinib = true;
+        tag.SilenIcraciId = GetUserId();
+        tag.SilinmeTarixi = DateTime.UtcNow;
+
+        await _unitOf.Repository<Tag>().YenileAsync(tag);
+        await _unitOf.YaddaSaxlaAsync();
+
+        TempData["Success"] = "Etiket silindi.";
+        return RedirectToAction(nameof(Etiketler));
     }
 
     // ── SƏNƏD NÖVLƏRİ ────────────────────────────────────────────
