@@ -122,8 +122,16 @@
             document.getElementById('novKod').value = '';
             document.getElementById('novAd').value = '';
 
-            const errorDiv = document.getElementById('novError');
-            if (errorDiv) errorDiv.classList.add('d-none');
+            // Şöbəni ana formadan avtomatik seç
+            var novSobe = document.getElementById('novSobe');
+            if (novSobe && sobeSelect && sobeSelect.value) {
+                novSobe.value = sobeSelect.value;
+            }
+
+            var errorDiv = document.getElementById('novError');
+            if (errorDiv) { errorDiv.hidden = true; errorDiv.classList.add('d-none'); }
+            var successDiv = document.getElementById('novSuccess');
+            if (successDiv) successDiv.hidden = true;
         });
     }
 
