@@ -304,26 +304,41 @@
                     {
                         var actionText = log.Action switch
                         {
-                                        "Create" => "Sənəd yaradıldı",
-                                        "Upload" => "Yeni versiya yükləndi",
-                                        "Status" => "Status dəyişdirildi",
-                                        "SoftDelete" => "Sənəd silindi",
-                                        "Restore" => "Sənəd bərpa edildi",
+                            "Create" => "Sened yaradildi",
+                            "CreateWithFile" => "Sened ve fayl yaradildi",
+                            "Upload" => "Yeni versiya yuklendi",
+                            "Update" => "Sened yenilendi",
+                            "Status" => "Status deyisdirildi",
+                            "SoftDelete" => "Sened silindi",
+                            "Restore" => "Sened berpa edildi",
                             _ => log.Action
                         };
                         var dotColor = log.Action switch
                         {
-                                        "Create" => "#6366f1",
-                                        "Upload" => "#0ea5e9",
-                                        "Status" => "#e8b84b",
-                                        "SoftDelete" => "#dc2626",
-                                        "Restore" => "#16a34a",
+                            "Create" => "#6366f1",
+                            "CreateWithFile" => "#6366f1",
+                            "Upload" => "#0ea5e9",
+                            "Update" => "#f59e0b",
+                            "Status" => "#e8b84b",
+                            "SoftDelete" => "#dc2626",
+                            "Restore" => "#16a34a",
                             _ => "#aab0bf"
                         };
 
+                        // DetailsJson-u parse edirik
+                        System.Text.Json.JsonElement? detailsParsed = null;
+                        if (!string.IsNullOrEmpty(log.DetailsJson))
+                        {
+                            try
+                            {
+                                detailsParsed = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(log.DetailsJson);
+                            }
+                            catch { }
+                        }
+
                         <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #f4f6fb;">
                             <div style="width:8px;height:8px;border-radius:50%;background:@dotColor;flex-shrink:0;margin-top:5px;"></div>
-                            <div>
+                            <div style="flex:1;min-width:0;">
                                 <div style="font-size:12px;font-weight:600;color:#1a2332;">@actionText</div>
                                 <div style="font-size:11px;color:#8a93a8;margin-top:2px;">
                                     @log.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")
@@ -333,9 +348,55 @@
                                         <text>· @log.Ip</text>
                                     }
                                 </div>
-                                @if (!string.IsNullOrEmpty(log.DetailsJson))
+
+                                @if (detailsParsed.HasValue)
                                 {
-                                    <div style="font-size:10px;color:#aab0bf;margin-top:3px;font-family:monospace;">@log.DetailsJson</div>
+                                    var det = detailsParsed.Value;
+
+                                    @* --- Update: old vs new comparison --- *@
+                                    if (det.TryGetProperty("old", out var oldObj) && det.TryGetProperty("new", out var newObj))
+                                    {
+                                        <div style="margin-top:6px;padding:8px 10px;background:#f8f9fc;border-radius:8px;border:1px solid #e2e6ef;">
+                                            @foreach (var prop in newObj.EnumerateObject())
+                                            {
+                                                var newVal = prop.Value.ToString();
+                                                var oldVal = oldObj.TryGetProperty(prop.Name, out var ov) ? ov.ToString() : "-";
+                                                var changed = !string.Equals(oldVal, newVal, StringComparison.Ordinal);
+
+                                                <div style="display:flex;align-items:baseline;gap:6px;padding:2px 0;font-size:11px;@(changed ? "" : "opacity:0.5;")">
+                                                    <span style="font-weight:600;color:#5a647a;min-width:90px;">@prop.Name</span>
+                                                    @if (changed)
+                                                    {
+                                                        <span style="color:#dc2626;text-decoration:line-through;">@oldVal</span>
+                                                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="flex-shrink:0;">
+                                                            <path d="M2 5h6M6 3l2 2-2 2" stroke="#16a34a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        </svg>
+                                                        <span style="color:#16a34a;font-weight:600;">@newVal</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span style="color:#8a93a8;">@newVal</span>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    @* --- Non-diff details (Create, Delete, Upload, Restore, etc.) --- *@
+                                    else
+                                    {
+                                        <div style="margin-top:6px;padding:8px 10px;background:#f8f9fc;border-radius:8px;border:1px solid #e2e6ef;">
+                                            @foreach (var prop in det.EnumerateObject())
+                                            {
+                                                @if (prop.Name != "action")
+                                                {
+                                                    <div style="display:flex;gap:6px;padding:2px 0;font-size:11px;">
+                                                        <span style="font-weight:600;color:#5a647a;min-width:90px;">@prop.Name</span>
+                                                        <span style="color:#1a2332;">@prop.Value</span>
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+                                    }
                                 }
                             </div>
                         </div>
