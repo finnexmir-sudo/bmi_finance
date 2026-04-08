@@ -61,6 +61,7 @@
             <thead>
                 <tr>
                     <th>#</th>
+                    <th>Sənəd No</th>
                     <th>Başlıq</th>
                     <th>Şöbə</th>
                     <th>Növ</th>
@@ -77,6 +78,7 @@
                     {
                         <tr>
                             <td><span class="sd-table-id">#@s.Id</span></td>
+                            <td><span style="font-size:12px;font-weight:600;color:#6366f1;">@(s.SenedNomresi ?? "—")</span></td>
                             <td>
                                 <div class="sd-table-title">
                                     <a asp-area="SenedDovriyyesi" asp-controller="Sened"
@@ -154,7 +156,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="8" class="sd-table-empty">
+                        <td colspan="9" class="sd-table-empty">
                             <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style="margin:0 auto 8px;display:block;opacity:.25;">
                                 <rect x="4" y="4" width="24" height="24" rx="4" stroke="#1a2332" stroke-width="1.5" />
                                 <path d="M10 16h12M10 11h12M10 21h7" stroke="#1a2332" stroke-width="1.5" stroke-linecap="round" />

@@ -74,12 +74,21 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             // =========================
             // 2️⃣ SENED CREATE
             // =========================
+
+            // Sənəd nömrəsi yaradılır: {SenedNovu.Kod}-{İl}-{SıraNo:D3}
+            var currentYear = DateTime.UtcNow.Year;
+            var existingCount = await _uow.Repository<Sened>().Query()
+                .CountAsync(x => x.SenedNovuId == dto.SenedNovuId
+                    && x.YaradilmaTarixi.Year == currentYear);
+            var senedNomresi = $"{nov.Kod}-{currentYear}-{(existingCount + 1):D3}";
+
             var sened = new Sened
             {
                 DepartmentId = dto.SobeId,
                 SenedNovuId = dto.SenedNovuId,
                 Basliq = dto.Basliq.Trim(),
                 AcarSoz = dto.AcarSoz.Trim(),
+                SenedNomresi = senedNomresi,
                 Status = SenedStatusu.Yeni,
                 Mexfilik = MexfilikSeviyesi.Internal,
                 YaradanIcraciId = userId,
@@ -525,12 +534,20 @@ namespace FinNex.Application.Services.SenedDovriyyesi
 
                 // ===== 2️⃣ SENED YARAT =====
 
+                // Sənəd nömrəsi yaradılır: {SenedNovu.Kod}-{İl}-{SıraNo:D3}
+                var currentYear = DateTime.UtcNow.Year;
+                var existingCount = await _uow.Repository<Sened>().Query()
+                    .CountAsync(x => x.SenedNovuId == dto.SenedNovuId
+                        && x.YaradilmaTarixi.Year == currentYear);
+                var senedNomresi = $"{nov.Kod}-{currentYear}-{(existingCount + 1):D3}";
+
                 var sened = new Sened
                 {
                     DepartmentId = dto.SobeId,
                     SenedNovuId = dto.SenedNovuId,
                     Basliq = dto.Basliq.Trim(),
                     AcarSoz = dto.AcarSoz.Trim(),
+                    SenedNomresi = senedNomresi,
                     Status = SenedStatusu.Yeni,
                     YaradanIcraciId = userId
                 };

@@ -184,6 +184,7 @@ public class SenedController : Controller
             vm.Senedler = result.Data.Items.Select(x => new SenedListItemVM
             {
                 Id = x.Id,
+                SenedNomresi = x.SenedNomresi,
                 Basliq = x.Basliq,
                 AcarSoz = x.AcarSoz,
                 Status = x.Status,
@@ -228,6 +229,7 @@ public class SenedController : Controller
             vm.Senedler = result.Data.Items.Select(x => new SenedListItemVM
             {
                 Id = x.Id,
+                SenedNomresi = x.SenedNomresi,
                 Basliq = x.Basliq,
                 AcarSoz = x.AcarSoz,
                 Status = x.Status,
@@ -642,6 +644,7 @@ public class SenedController : Controller
     private static SenedDetailVM MapToDetailVM(SenedDetailDto dto) => new()
     {
         Id = dto.Id,
+        SenedNomresi = dto.SenedNomresi,
         Basliq = dto.Basliq,
         AcarSoz = dto.AcarSoz,
         Status = dto.Status,

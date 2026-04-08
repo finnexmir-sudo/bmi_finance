@@ -28,6 +28,7 @@ public class SenedListVM
 public class SenedListItemVM
 {
     public int Id { get; set; }
+    public string? SenedNomresi { get; set; }
     public string Basliq { get; set; } = null!;
     public string AcarSoz { get; set; } = null!;
     public SenedStatusu Status { get; set; }
