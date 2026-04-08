@@ -190,7 +190,8 @@ namespace FinNex.Application.Services.SenedDovriyyesi
     int? sobeId,
     int? senedNovuId,
     SenedStatusu? status,
-    string? search)
+    string? search,
+    int? tagId = null)
         {
             var query = _uow.Repository<Sened>().Query();
 
@@ -205,6 +206,8 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             if (sobeId.HasValue) query = query.Where(x => x.DepartmentId == sobeId);
             if (senedNovuId.HasValue) query = query.Where(x => x.SenedNovuId == senedNovuId);
             if (status.HasValue) query = query.Where(x => x.Status == status);
+            if (tagId.HasValue)
+                query = query.Where(x => x.SenedTagMaps.Any(m => m.TagId == tagId.Value && !m.Silinib));
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim();
@@ -281,6 +284,8 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 .Query()
                 .Include(x => x.Department)
                 .Include(x => x.Fayllar)
+                .Include(x => x.SenedTagMaps.Where(m => !m.Silinib))
+                    .ThenInclude(m => m.Tag)
                 .AsQueryable();
 
             if (!isAdmin)
@@ -680,6 +685,33 @@ namespace FinNex.Application.Services.SenedDovriyyesi
 
             // 6. Yadda saxlayırıq
             _uow.Repository<Sened>().YenileAsync(sened);
+
+            // 6.5 Tag-ləri yenilə (köhnələri sil, yenilərini əlavə et)
+            var existingMaps = await _uow.Repository<SenedTagMap>()
+                .HamisiniGetirAsync(x => x.SenedId == dto.Id && !x.Silinib);
+
+            var existingTagIds = existingMaps.Select(x => x.TagId).ToHashSet();
+            var newTagIds = (dto.TagIds ?? new List<int>()).ToHashSet();
+
+            // Silinəcək tag-lər
+            foreach (var map in existingMaps.Where(m => !newTagIds.Contains(m.TagId)))
+            {
+                map.Silinib = true;
+                map.SilenIcraciId = userId;
+                map.SilinmeTarixi = DateTime.UtcNow;
+                await _uow.Repository<SenedTagMap>().YenileAsync(map);
+            }
+
+            // Əlavə olunacaq tag-lər
+            foreach (var tagId in newTagIds.Where(t => !existingTagIds.Contains(t)))
+            {
+                await _uow.Repository<SenedTagMap>().YaratAsync(new SenedTagMap
+                {
+                    SenedId = dto.Id,
+                    TagId = tagId,
+                    YaradanIcraciId = userId
+                });
+            }
 
             // 7. AUDIT — köhnə vs yeni dəyərləri JSON olaraq yazırıq
             await _audit.WriteAsync(
