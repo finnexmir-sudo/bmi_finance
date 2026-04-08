@@ -113,22 +113,8 @@
                             <td><span style="font-size:12px;color:#5a647a;font-weight:500;">@s.SenedNovu</span></td>
                             <td>
                                 @{
-                                    var bc = s.Status switch
-                                    {
-                                        SenedStatusu.Yeni => "sd-badge--yeni",
-                                        SenedStatusu.Yoxlanilir => "sd-badge--yoxlanilir",
-                                        SenedStatusu.Tesdiq => "sd-badge--tesdiq",
-                                        SenedStatusu.Arxiv => "sd-badge--arxiv",
-                                        _ => "sd-badge--arxiv"
-                                    };
-                                    var bt = s.Status switch
-                                    {
-                                        SenedStatusu.Yeni => "Yeni",
-                                        SenedStatusu.Yoxlanilir => "Yoxlanılır",
-                                        SenedStatusu.Tesdiq => "Təsdiqlənmiş",
-                                        SenedStatusu.Arxiv => "Arxiv",
-                                        _ => "—"
-                                    };
+                                    var bc = s.Status == SenedStatusu.Arxiv ? "sd-badge--arxiv" : "sd-badge--yeni";
+                                    var bt = s.Status == SenedStatusu.Arxiv ? "Arxiv" : "Aktiv";
                                 }
                                 <span class="sd-badge @bc">@bt</span>
                             </td>
@@ -230,10 +216,7 @@
             <select id="bulkStatusSelect" style="height:34px;padding:0 10px;border-radius:6px;border:1px solid #475569;
                 background:#334155;color:#fff;font-size:12px;font-weight:500;cursor:pointer;">
                 <option value="">Status dəyiş...</option>
-                <option value="1">Yeni</option>
-                <option value="2">Yoxlanılır</option>
-                <option value="3">Təsdiqlənib</option>
-                <option value="4">Arxiv</option>
+                <option value="4">Arxivə göndər</option>
             </select>
             <button id="bulkStatusBtn" type="button" disabled
                     style="height:34px;padding:0 14px;border-radius:6px;border:none;
