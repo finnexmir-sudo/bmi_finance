@@ -3,6 +3,7 @@ using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.Communication;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain.Entities.Communication;
+using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -133,6 +134,19 @@ namespace FinNex.Application.Services.Communication
 
                 await _unitOfWork.Repository<Mesaj>().YaratAsync(entity);
                 await _unitOfWork.YaddaSaxlaAsync();
+
+                // Alıcıya bildiriş göndər
+                var gonderen = await _unitOfWork.Repository<Isci>()
+                    .GetirAsync(x => x.Id == dto.GonderenIsciId, izlemeden: true);
+                var gonderenAd = gonderen != null ? $"{gonderen.Ad} {gonderen.Soyad}" : "Naməlum";
+
+                await _bildirisService.YaratAsync(
+                    dto.AlanIsciId,
+                    BildirisNovu.YeniMesaj,
+                    "Yeni mesaj",
+                    $"{gonderenAd} sizə mesaj göndərdi",
+                    $"/User/Inbox/Mesaj/{entity.Id}",
+                    mesajId: entity.Id);
 
                 return Result.Ok("Mesaj göndərildi.");
             }

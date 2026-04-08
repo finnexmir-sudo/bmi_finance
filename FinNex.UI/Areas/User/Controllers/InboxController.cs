@@ -197,9 +197,9 @@ namespace FinNex.UI.Areas.User.Controllers
             var isciId = await GetIsciIdAsync();
             if (isciId == null) return RedirectToLogin();
 
-            if (string.IsNullOrWhiteSpace(movzu) || string.IsNullOrWhiteSpace(metn))
+            if (string.IsNullOrWhiteSpace(metn))
             {
-                TempData["Error"] = "Mövzu və mətn boş ola bilməz.";
+                TempData["Error"] = "Mətn boş ola bilməz.";
                 return RedirectToAction(nameof(TopluMesaj));
             }
 
