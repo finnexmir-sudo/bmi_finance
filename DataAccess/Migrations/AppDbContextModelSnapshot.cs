@@ -2357,6 +2357,9 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<string>("ReferenceType")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("SenedNomresi")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("SenedNovuId")
                         .HasColumnType("int");
 

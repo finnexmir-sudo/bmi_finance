@@ -144,6 +144,22 @@ namespace FinNex.UI
                 }
                 catch { /* artıq tətbiq olunub */ }
 
+                // Senedler.SenedNomresi sütununu əlavə etmə (avtomatik sənəd nömrələməsi)
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (
+                            SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                            WHERE TABLE_NAME = 'Senedler'
+                              AND COLUMN_NAME = 'SenedNomresi'
+                        )
+                        BEGIN
+                            ALTER TABLE [Senedler] ADD [SenedNomresi] NVARCHAR(MAX) NULL;
+                        END
+                    ");
+                }
+                catch { /* artıq tətbiq olunub */ }
+
                 var pendingMigrations = db.Database.GetPendingMigrations().ToList();
                 var productVersion = typeof(DbContext).Assembly.GetName().Version?.ToString() ?? "9.0.0";
 
