@@ -371,23 +371,30 @@ public class SenedController : Controller
         return RedirectToAction(nameof(Detal), new { id = senedId });
     }
 
-    // ── STATUS DƏYİŞDİR ──────────────────────────────────────────
+    // ── STATUS DƏYİŞDİR (yalnız Admin → Arxiv) ────────────────────
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> StatusDeyis(int id, SenedStatusu status)
     {
-        // Tam icazə yoxla
+        // Yalnız Admin arxivə göndərə bilər
+        if (!IsAdmin())
+        {
+            TempData["Error"] = "Status dəyişdirmə yalnız Admin tərəfindən icra edilə bilər.";
+            return RedirectToAction(nameof(Detal), new { id });
+        }
+
+        // Yalnız Arxiv statusuna keçid icazəlidir
+        if (status != SenedStatusu.Arxiv)
+        {
+            TempData["Error"] = "Yalnız Arxiv statusuna keçid mümkündür.";
+            return RedirectToAction(nameof(Detal), new { id });
+        }
+
         var sened = await _senedService.IdIleGetirAsync(id);
         if (!sened.Success || sened.Data == null)
         {
             TempData["Error"] = "Sənəd tapılmadı.";
             return RedirectToAction(nameof(Index));
-        }
-
-        if (!await TamIcazeVarAsync(sened.Data.DepartmentId))
-        {
-            TempData["Error"] = "Bu əməliyyat üçün icazəniz yoxdur.";
-            return RedirectToAction(nameof(Detal), new { id });
         }
 
         var result = await _senedService.UpdateStatusAsync(id, status, GetUserId(), GetIp());
@@ -424,21 +431,28 @@ public class SenedController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Sil(int id)
     {
-        var icazeliSobeIdleri = await GetTamIcazeliSobeIdleriAsync();
-        var icazeYoxlamasi = await _senedService.silmeİCazeSorgusuAsync(id, icazeliSobeIdleri, IsAdmin());
-
-        if (!icazeYoxlamasi.Success || icazeYoxlamasi.Data == null)
+        // Sənədi yoxla
+        var sened = await _senedService.IdIleGetirAsync(id);
+        if (!sened.Success || sened.Data == null)
         {
-            TempData["Error"] = icazeYoxlamasi.Message ?? "Tapılmadı";
+            TempData["Error"] = "Sənəd tapılmadı.";
             return RedirectToAction(nameof(Index));
         }
 
-        var result = await _senedService.SoftDeleteAsync(id, GetUserId(), GetIp());
+        // Admin hər sənədi silə bilər, yaradan istifadəçi öz sənədini silə bilər
+        var userId = GetUserId();
+        if (!IsAdmin() && sened.Data.YaradanIcraciId != userId)
+        {
+            TempData["Error"] = "Bu sənədi silmək icazəniz yoxdur. Yalnız sənədi yaradan və ya Admin silə bilər.";
+            return RedirectToAction(nameof(Detal), new { id });
+        }
+
+        var result = await _senedService.SoftDeleteAsync(id, userId, GetIp());
         TempData[result.Success ? "Success" : "Error"] = result.Message;
         return RedirectToAction(nameof(Index));
     }
 
-    // ── TOPLU STATUS DƏYİŞ ─────────────────────────────────────────
+    // ── TOPLU STATUS DƏYİŞ (yalnız Admin → Arxiv) ─────────────────
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> TopluStatusDeyis([FromBody] TopluStatusDeyisRequest request)
@@ -446,29 +460,26 @@ public class SenedController : Controller
         if (request?.Ids == null || request.Ids.Count == 0)
             return Json(new { success = false, message = "Heç bir sənəd seçilməyib." });
 
-        var tamIcazeliSobeler = await GetTamIcazeliSobeIdleriAsync();
+        // Yalnız Admin toplu status dəyişə bilər
+        if (!IsAdmin())
+            return Json(new { success = false, message = "Status dəyişdirmə yalnız Admin tərəfindən icra edilə bilər." });
+
+        // Yalnız Arxiv statusuna keçid icazəlidir
+        if (request.NewStatus != (int)SenedStatusu.Arxiv)
+            return Json(new { success = false, message = "Yalnız Arxiv statusuna keçid mümkündür." });
+
         var ugurlu = 0;
-        var icazesiz = 0;
 
         foreach (var id in request.Ids)
         {
             var sened = await _senedService.IdIleGetirAsync(id);
             if (!sened.Success || sened.Data == null) continue;
 
-            if (!IsAdmin() && !tamIcazeliSobeler.Contains(sened.Data.DepartmentId))
-            {
-                icazesiz++;
-                continue;
-            }
-
-            var result = await _senedService.UpdateStatusAsync(id, (SenedStatusu)request.NewStatus, GetUserId(), GetIp());
+            var result = await _senedService.UpdateStatusAsync(id, SenedStatusu.Arxiv, GetUserId(), GetIp());
             if (result.Success) ugurlu++;
         }
 
-        var message = $"{ugurlu} sənədin statusu dəyişdirildi.";
-        if (icazesiz > 0)
-            message += $" {icazesiz} sənəd üçün icazə yoxdur.";
-
+        var message = $"{ugurlu} sənəd arxivə göndərildi.";
         return Json(new { success = ugurlu > 0, message });
     }
 
@@ -822,6 +833,7 @@ public class SenedController : Controller
         Status = dto.Status,
         Sobe = dto.Sobe,
         SenedNovu = dto.SenedNovu,
+        YaradanIcraciId = dto.YaradanIcraciId,
         YaradilmaTarixi = dto.YaradilmaTarixi,
         YenilenmeTarixi = dto.YenilenmeTarixi,
         Tags = dto.Tags,

@@ -12,6 +12,7 @@ public class SenedDetailVM
     public string Sobe { get; set; } = null!;
     public string SenedNovu { get; set; } = null!;
     public DateTime YaradilmaTarixi { get; set; }
+    public int? YaradanIcraciId { get; set; }
     public DateTime? YenilenmeTarixi { get; set; }
     public List<string> Tags { get; set; } = new();
     public List<SenedFaylItemVM> Fayllar { get; set; } = new();
