@@ -44,8 +44,7 @@ namespace FinNex.Application.Interfaces.SenedDovriyyesi
     int? sobeId,
     int? senedNovuId,
     SenedStatusu? status,
-    string? search,
-    int? tagId = null);
+    string? search);
 
         Task<Result<PagedResult<SenedListDto>>> GetSilinmisPagedAsync(
             PagedRequest req,

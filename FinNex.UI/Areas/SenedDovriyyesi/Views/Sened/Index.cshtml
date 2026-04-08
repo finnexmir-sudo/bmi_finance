@@ -191,7 +191,7 @@
                 {
                     <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
                        asp-route-page="@(Model.Page - 1)"
-                       asp-route-sobeId="@Model.SobeId" asp-route-q="@Model.AxtarisKelimesi"
+                       asp-route-sobeId="@Model.SobeId" asp-route-tagId="@Model.TagId" asp-route-q="@Model.AxtarisKelimesi"
                        class="sd-page-btn">←</a>
                 }
                 @{
@@ -202,14 +202,14 @@
                 {
                     <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
                        asp-route-page="@i"
-                       asp-route-sobeId="@Model.SobeId" asp-route-q="@Model.AxtarisKelimesi"
+                       asp-route-sobeId="@Model.SobeId" asp-route-tagId="@Model.TagId" asp-route-q="@Model.AxtarisKelimesi"
                        class="sd-page-btn @(i == Model.Page ? "sd-page-btn--active" : "")">@i</a>
                 }
                 @if (Model.Page < Model.TotalPages)
                 {
                     <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
                        asp-route-page="@(Model.Page + 1)"
-                       asp-route-sobeId="@Model.SobeId" asp-route-q="@Model.AxtarisKelimesi"
+                       asp-route-sobeId="@Model.SobeId" asp-route-tagId="@Model.TagId" asp-route-q="@Model.AxtarisKelimesi"
                        class="sd-page-btn">→</a>
                 }
             </div>

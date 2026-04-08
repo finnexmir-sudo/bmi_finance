@@ -166,7 +166,7 @@ public class SenedController : Controller
 
     // ── INDEX ─────────────────────────────────────────────────────
     public async Task<IActionResult> Index(
-        int? sobeId, int? senedNovuId, int? tagId, SenedStatusu? status,
+        int? sobeId, int? senedNovuId, SenedStatusu? status,
         string? q, int page = 1, int pageSize = 20)
     {
         var icazeliSobeIdleri = await GetIcazeliSobeIdleriAsync();
@@ -176,7 +176,7 @@ public class SenedController : Controller
 
         var result = await _senedService.GetPagedAsync(
             new PagedRequest { Page = page, PageSize = pageSize },
-            icazeliSobeIdleri, sobeId, senedNovuId, status, q, tagId);
+            icazeliSobeIdleri, sobeId, senedNovuId, status, q);
 
         var vm = new SenedListVM
         {
@@ -184,7 +184,6 @@ public class SenedController : Controller
             PageSize = pageSize,
             SobeId = sobeId,
             SenedNovuId = senedNovuId,
-            TagId = tagId,
             Status = status,
             AxtarisKelimesi = q
         };
