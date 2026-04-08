@@ -1,5 +1,6 @@
 using FinNex.Application.Common.Paged;
 using FinNex.Application.DTOs.SenedDovriyyesi;
+using FinNex.Application.DTOs.SenedDovriyyesi.Fayl;
 using FinNex.Application.DTOs.SenedDovriyyesi.Sened;
 using FinNex.Application.DTOs.SenedDovriyyesi.SenedNovu;
 using FinNex.Application.Interfaces.SenedDovriyyesi;
@@ -313,6 +314,47 @@ public class SenedController : Controller
         var dto = result.Data;
         var vm = MapToDetailVM(dto);
         return View(vm);
+    }
+
+    // ── YENİ VERSİYA YÜKLƏ ─────────────────────────────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> YeniVersiya(int senedId, IFormFile fayl)
+    {
+        if (fayl == null || fayl.Length == 0)
+        {
+            TempData["Error"] = "Fayl seçilməlidir.";
+            return RedirectToAction(nameof(Detal), new { id = senedId });
+        }
+
+        // Sənədi tapıb icazəni yoxla
+        var sened = await _senedService.IdIleGetirAsync(senedId);
+        if (!sened.Success || sened.Data == null)
+        {
+            TempData["Error"] = "Sənəd tapılmadı.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        if (!await TamIcazeVarAsync(sened.Data.DepartmentId))
+        {
+            TempData["Error"] = "Bu sənədə fayl yükləmək icazəniz yoxdur.";
+            return RedirectToAction(nameof(Detal), new { id = senedId });
+        }
+
+        using var stream = fayl.OpenReadStream();
+        var uploadDto = new SenedFaylUploadDto
+        {
+            SenedId = senedId,
+            OriginalAd = fayl.FileName,
+            ContentType = fayl.ContentType,
+            OlcuBytes = fayl.Length,
+            Stream = stream
+        };
+
+        var result = await _senedService.UploadNewVersionAsync(uploadDto, GetUserId(), GetIp());
+
+        TempData[result.Success ? "Success" : "Error"] = result.Message;
+        return RedirectToAction(nameof(Detal), new { id = senedId });
     }
 
     // ── STATUS DƏYİŞDİR ──────────────────────────────────────────

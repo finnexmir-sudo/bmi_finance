@@ -190,8 +190,15 @@
 
             <!-- Fayllar -->
             <div class="sd-detail-card">
-                <div class="sd-detail-card-hdr">
+                <div class="sd-detail-card-hdr" style="display:flex;align-items:center;justify-content:space-between;">
                     <div class="sd-detail-card-title">Fayl Versiyaları (@Model.Fayllar.Count)</div>
+                    <button type="button" class="fn-btn fn-btn--primary" style="font-size:11px;height:32px;padding:0 14px;"
+                            onclick="document.getElementById('yeniVersiyaModal').classList.remove('str-modal-hidden');">
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                            <path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        </svg>
+                        Yeni versiya yukle
+                    </button>
                 </div>
                 <div>
                     @if (Model.Fayllar.Any())
@@ -207,14 +214,18 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var f in Model.Fayllar)
+                                @foreach (var f in Model.Fayllar.OrderByDescending(x => x.VersiyaNo))
                                 {
-                                    <tr>
+                                    <tr style="@(f.AktivVersiya ? "" : "opacity:0.55;")">
                                         <td>
                                             <span style="font-weight:700;font-size:12px;">v@(f.VersiyaNo)</span>
                                             @if (f.AktivVersiya)
                                             {
                                                 <span class="fn-badge fn-badge--done" style="margin-left:4px;font-size:9px;">Aktiv</span>
+                                            }
+                                            else
+                                            {
+                                                <span style="margin-left:4px;font-size:9px;color:#aab0bf;font-weight:500;">Kohne</span>
                                             }
                                         </td>
                                         <td>
@@ -354,7 +365,83 @@
     </div>
 </div>
 
+<!-- Yeni versiya yukle modal -->
+<div class="str-modal-overlay str-modal-hidden" id="yeniVersiyaModal">
+    <div class="str-modal" style="max-width:520px;">
+        <div class="str-modal-header">
+            <div class="str-modal-title">Yeni versiya yukle</div>
+            <button type="button" class="str-modal-close" data-close-modal="yeniVersiyaModal">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+        <form asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="YeniVersiya"
+              method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="senedId" value="@Model.Id" />
+            <div style="padding:20px 24px;">
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:12px;font-weight:600;color:#1a2332;display:block;margin-bottom:6px;">
+                        Fayl sec
+                    </label>
+                    <input type="file" name="fayl" id="yeniVersiyaFayl" required
+                           style="width:100%;font-size:13px;padding:8px;border:1px solid #e2e6ef;border-radius:8px;background:#f8f9fc;" />
+                </div>
+                <div id="yvFaylInfo" style="display:none;padding:12px;background:#f0f4ff;border-radius:8px;margin-bottom:16px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M4 2h6l3 3v9H4V2z" stroke="#6366f1" stroke-width="1.2" stroke-linejoin="round" />
+                            <path d="M10 2v3h3" stroke="#6366f1" stroke-width="1.2" stroke-linejoin="round" />
+                        </svg>
+                        <span id="yvFaylAd" style="font-size:12px;font-weight:600;color:#1a2332;"></span>
+                        <span id="yvFaylOlcu" style="font-size:11px;color:#8a93a8;margin-left:auto;"></span>
+                    </div>
+                </div>
+                <div style="font-size:11px;color:#8a93a8;line-height:1.5;">
+                    Yeni versiya yuklendikde kohne versiya avtomatik deaktiv edilecek.
+                    Kohne versiyalari yeniden yuklemek mumkundur.
+                </div>
+            </div>
+            <div class="str-modal-footer" style="display:flex;justify-content:flex-end;gap:8px;">
+                <button type="button" class="fn-btn fn-btn--outline"
+                        onclick="document.getElementById('yeniVersiyaModal').classList.add('str-modal-hidden');">
+                    Legv et
+                </button>
+                <button type="submit" class="fn-btn fn-btn--primary" id="yvSubmitBtn">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <path d="M6.5 9V2M4 4.5L6.5 2 9 4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M1.5 10h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                    </svg>
+                    Yukle
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @section Scripts {
     <script src="~/js/sened-detal.js" asp-append-version="true"></script>
     <script src="~/js/modal-close.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            var input = document.getElementById('yeniVersiyaFayl');
+            var info = document.getElementById('yvFaylInfo');
+            var ad = document.getElementById('yvFaylAd');
+            var olcu = document.getElementById('yvFaylOlcu');
+            if (input) {
+                input.addEventListener('change', function () {
+                    if (this.files && this.files.length > 0) {
+                        var f = this.files[0];
+                        ad.textContent = f.name;
+                        var kb = f.size / 1024;
+                        olcu.textContent = kb < 1024 ? kb.toFixed(1) + ' KB' : (kb / 1024).toFixed(1) + ' MB';
+                        info.style.display = 'block';
+                    } else {
+                        info.style.display = 'none';
+                    }
+                });
+            }
+        })();
+    </script>
 }
