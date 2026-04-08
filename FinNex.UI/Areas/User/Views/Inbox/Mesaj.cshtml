@@ -1,0 +1,76 @@
+@model FinNex.UI.Areas.User.ViewModels.Inbox.MesajDetailPageVM
+@{
+    ViewData["Title"] = "Mesaj Detalı";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/inbox.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">@Model.Mesaj.Movzu</div>
+            <div class="fn-page-sub">Mesaj detalı</div>
+        </div>
+        <a asp-area="User" asp-controller="Inbox" asp-action="Index" asp-route-tab="mesajlar"
+           class="fn-btn fn-btn--outline">← Geri</a>
+    </div>
+
+    <div class="fn-card" style="padding:24px;margin-bottom:16px">
+
+        @* ── Əsas mesaj ── *@
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <div style="width:40px;height:40px;border-radius:50%;background:#1e2a3b;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px">
+                @(Model.Mesaj.GonderenAd?.Length > 0 ? Model.Mesaj.GonderenAd[0].ToString() : "?")
+            </div>
+            <div>
+                <div style="font-weight:600;font-size:14px">@Model.Mesaj.GonderenAd</div>
+                <div style="font-size:12px;color:#8b95a5">@Model.Mesaj.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm") · Alıcı: @Model.Mesaj.AlanAd</div>
+            </div>
+        </div>
+
+        <div style="font-size:14px;line-height:1.7;color:#2c3344;white-space:pre-wrap;padding:16px 0;border-top:1px solid #f0f2f5">@Model.Mesaj.Metn</div>
+
+        @* ── Cavablar ── *@
+        @if (Model.Mesaj.Cavablar != null && Model.Mesaj.Cavablar.Any())
+        {
+            <div style="margin-top:16px;border-top:1px solid #f0f2f5;padding-top:16px">
+                <div style="font-weight:600;font-size:13px;color:#5a647a;margin-bottom:12px">Cavablar</div>
+                @foreach (var cavab in Model.Mesaj.Cavablar)
+                {
+                    <div style="background:#f8f9fb;border-radius:8px;padding:12px 16px;margin-bottom:8px">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                            <span style="font-weight:600;font-size:13px">@cavab.GonderenAd</span>
+                            <span style="font-size:11px;color:#8b95a5">@cavab.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</span>
+                        </div>
+                        <div style="font-size:13px;color:#2c3344">@cavab.MetnOnizleme</div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    @* ── Cavab formu ── *@
+    <div class="fn-card" style="padding:24px">
+        <div style="font-weight:600;font-size:14px;margin-bottom:12px">Cavab yaz</div>
+        <form asp-area="User" asp-controller="Inbox" asp-action="Cavabla" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="GonderenIsciId" value="@Model.CavabDto.GonderenIsciId" />
+            <input type="hidden" name="AlanIsciId" value="@Model.CavabDto.AlanIsciId" />
+            <input type="hidden" name="CavabVerdigiMesajId" value="@Model.CavabDto.CavabVerdigiMesajId" />
+            <input type="hidden" name="Movzu" value="Re: @Model.Mesaj.Movzu" />
+
+            <div class="fn-form-group">
+                <textarea name="Metn" rows="3" class="fn-textarea"
+                          placeholder="Cavabınızı yazın..." required></textarea>
+            </div>
+            <div style="margin-top:12px;text-align:right">
+                <button type="submit" class="fn-btn fn-btn--primary">Göndər</button>
+            </div>
+        </form>
+    </div>
+
+</div>
