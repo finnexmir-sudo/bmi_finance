@@ -1,0 +1,137 @@
+@model SenedSablonCreateVM
+@{
+    ViewData["Title"] = "Yeni Şablon";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/sened-dovriyyesi-fn.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+    <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Sablonlar"
+       class="sd-back">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M9 11L5 7l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        Şablonlara qayıt
+    </a>
+
+    <div class="sd-form-card">
+        <div class="sd-form-hdr">
+            <div class="sd-form-hdr-icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M4 3h8l4 4v10H4V3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                    <path d="M12 3v4h4" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                    <path d="M7 10h6M7 13h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                </svg>
+            </div>
+            <div>
+                <div class="sd-form-hdr-title">Yeni Şablon Yarat</div>
+                <div class="sd-form-hdr-sub">Şablon faylını yükləyin və məlumatları doldurun</div>
+            </div>
+        </div>
+
+        <form asp-area="SenedDovriyyesi"
+              asp-controller="Sened"
+              asp-action="SablonYarat"
+              method="post"
+              enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+
+            <div class="sd-form-body">
+
+                <div asp-validation-summary="All" class="sd-alert-error"></div>
+
+                <!-- 1. Sənəd Növü -->
+                <div>
+                    <div class="sd-form-hdr-sub" style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:#e8b84b;margin-bottom:12px;">
+                        1 · Sənəd Növü
+                    </div>
+                    <div>
+                        <label class="sd-label">Sənəd Növü <span class="sd-required">*</span></label>
+                        <select asp-for="SenedNovuId" class="sd-select-full">
+                            <option value="">Sənəd növü seçin...</option>
+                            @foreach (var n in Model.SenedNovleri)
+                            {
+                                <option value="@n.Id">@n.Ad</option>
+                            }
+                        </select>
+                        <span asp-validation-for="SenedNovuId" class="sd-error"></span>
+                    </div>
+                </div>
+
+                <!-- 2. Məlumatlar -->
+                <div>
+                    <div class="sd-form-hdr-sub" style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:#e8b84b;margin-bottom:12px;">
+                        2 · Şablon Məlumatları
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <div>
+                            <label class="sd-label">Şablon Adı <span class="sd-required">*</span></label>
+                            <input asp-for="Ad" class="sd-input" placeholder="Şablonun adını daxil edin..." />
+                            <span asp-validation-for="Ad" class="sd-error"></span>
+                        </div>
+                        <div>
+                            <label class="sd-label">Təsvir</label>
+                            <input asp-for="Tesvir" class="sd-input" placeholder="Qısa təsvir (ixtiyari)..." />
+                            <span asp-validation-for="Tesvir" class="sd-error"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Fayl -->
+                <div>
+                    <div class="sd-form-hdr-sub" style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:#e8b84b;margin-bottom:12px;">
+                        3 · Şablon Faylı
+                    </div>
+                    <div class="sd-file-zone" id="faylZone">
+                        <div id="faylDefault">
+                            <div class="sd-file-zone-icon">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M10 13V5M7 8l3-3 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+                                    <path d="M4 15h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                            <div class="sd-file-zone-title">Şablon faylını buraya sürükləyin və ya klikləyin</div>
+                            <div class="sd-file-zone-sub">PDF, Word, Excel, şəkil - maks. 25MB</div>
+                        </div>
+                        <div id="faylInfo" hidden style="display:flex;align-items:center;gap:10px;justify-content:center;padding:4px 0;">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M4 3h8l4 4v10H4V3z" stroke="#6366f1" stroke-width="1.4" stroke-linejoin="round" />
+                                <path d="M12 3v4h4" stroke="#6366f1" stroke-width="1.4" stroke-linejoin="round" />
+                            </svg>
+                            <div>
+                                <div id="faylAd" style="font-size:13px;font-weight:600;color:#1a2332;"></div>
+                                <div id="faylOlcu" style="font-size:11px;color:#8a93a8;"></div>
+                            </div>
+                        </div>
+                        <input asp-for="Fayl" type="file" id="Fayl"
+                               style="display:none;"
+                               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt,.zip,.rar" />
+                        <span asp-validation-for="Fayl" class="sd-error"></span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="sd-form-footer">
+                <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Sablonlar"
+                   class="fn-btn fn-btn--outline">Ləğv et</a>
+                <button type="submit" class="fn-btn fn-btn--primary">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <path d="M2 7l3.5 3.5 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Şablonu Yarat
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script src="~/js/sened-fayl-drop.js" asp-append-version="true"></script>
+}
