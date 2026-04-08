@@ -15,4 +15,10 @@ namespace FinNex.UI.Areas.SenedDovriyyesi.ViewModels
     {
         public string Ad { get; set; } = null!;
     }
+
+    public class SenedNovuRedakteRequest
+    {
+        public int Id { get; set; }
+        public string Ad { get; set; } = null!;
+    }
 }

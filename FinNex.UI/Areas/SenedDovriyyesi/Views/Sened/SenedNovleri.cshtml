@@ -75,6 +75,13 @@
                             </td>
                             <td style="font-size:12px;color:#8a93a8;">@n.YaradilmaTarixi.ToString("dd.MM.yyyy")</td>
                             <td class="isci-td-actions">
+                                <button type="button" class="isci-action-btn"
+                                        title="Redaktə et"
+                                        onclick="openEditNov(@n.Id, '@n.Ad.Replace("'", "\\'")') ">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <path d="M9 2l2 2-6.5 6.5H2.5v-2L9 2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
+                                    </svg>
+                                </button>
                                 <form asp-area="SenedDovriyyesi" asp-controller="Sened"
                                       asp-action="SenedNovuAktivDeyis" method="post">
                                     @Html.AntiForgeryToken()
@@ -124,46 +131,135 @@
     </div>
 </div>
 
-<!-- Yeni Növ Modal -->
-<div class="str-modal-overlay str-modal-hidden" id="novModal">
-    <div class="str-modal">
-        <div class="str-modal-header">
-            <div class="str-modal-title">Yeni Sənəd Növü</div>
-            <button type="button" class="str-modal-close" data-close-modal="novModal">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                </svg>
-            </button>
+<!-- Yeni Növ Modal (Bootstrap) -->
+<div class="modal fade" id="novModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Yeni Sənəd Növü</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="novError" class="alert alert-danger" hidden></p>
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Şöbə *</label>
+                    <select id="novSobe" class="form-select">
+                        <option value="">Şöbə seçin...</option>
+                        @foreach (var s in Model.Sobeler)
+                        {
+                            <option value="@s.Id">@s.Ad</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Ad *</label>
+                    <input type="text" id="novAd" class="form-control" placeholder="Məs: Müqavilə, Ərizə..." />
+                    <small style="color:#8b95a5">Kod avtomatik yaranacaq</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Ləğv et</button>
+                <button type="button" class="btn btn-primary" id="saveBtn">Saxla</button>
+            </div>
         </div>
-        <div class="str-modal-body">
-            <p id="novError" class="sd-alert-error" hidden></p>
-            <div class="isci-field str-field-mb">
-                <label class="isci-label">Şöbə <span class="isci-required">*</span></label>
-                <select id="novSobe" class="isci-input">
-                    <option value="">Şöbə seçin...</option>
-                    @foreach (var s in Model.Sobeler)
-                    {
-                        <option value="@s.Id">@s.Ad</option>
-                    }
-                </select>
+    </div>
+</div>
+
+<!-- Redaktə Modal (Bootstrap) -->
+<div class="modal fade" id="editNovModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Sənəd Növünü Redaktə Et</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="isci-field str-field-mb">
-                <label class="isci-label">Kod <span class="isci-required">*</span></label>
-                <input type="text" id="novKod" class="isci-input" placeholder="MUQAVILE, ERIZE..." />
+            <div class="modal-body">
+                <p id="editError" class="alert alert-danger" hidden></p>
+                <input type="hidden" id="editNovId" />
+                <div>
+                    <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Ad *</label>
+                    <input type="text" id="editNovAd" class="form-control" />
+                </div>
             </div>
-            <div class="isci-field">
-                <label class="isci-label">Ad <span class="isci-required">*</span></label>
-                <input type="text" id="novAd" class="isci-input" placeholder="Müqavilə, Ərizə..." />
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Ləğv et</button>
+                <button type="button" class="btn btn-primary" id="editSaveBtn">Yadda saxla</button>
             </div>
-        </div>
-        <div class="str-modal-footer">
-            <button type="button" class="fn-btn fn-btn--outline" data-close-modal="novModal">Ləğv et</button>
-            <button type="button" class="fn-btn fn-btn--primary" id="saveBtn">Saxla</button>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script src="~/js/sened-yarat.js" asp-append-version="true"></script>
-    <script src="~/js/sened-novleri.js" asp-append-version="true"></script>
+    <script>
+    // Yeni növ modalı aç
+    document.getElementById('openNovBtn')?.addEventListener('click', function() {
+        document.getElementById('novAd').value = '';
+        document.getElementById('novError').hidden = true;
+        new bootstrap.Modal(document.getElementById('novModal')).show();
+    });
+
+    // Yeni növ yarat
+    document.getElementById('saveBtn')?.addEventListener('click', function() {
+        var sobe = document.getElementById('novSobe').value;
+        var ad = document.getElementById('novAd').value.trim();
+        var err = document.getElementById('novError');
+        err.hidden = true;
+
+        if (!sobe) { err.textContent = 'Şöbə seçin.'; err.hidden = false; return; }
+        if (!ad) { err.textContent = 'Ad yazın.'; err.hidden = false; return; }
+
+        fetch('/SenedDovriyyesi/Sened/YeniSenedNovu', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ departmentId: parseInt(sobe), ad: ad })
+        }).then(r => r.json()).then(d => {
+            if (!d.success) { err.textContent = d.message; err.hidden = false; return; }
+            location.reload();
+        });
+    });
+
+    // Redaktə modal aç
+    function openEditNov(id, ad) {
+        document.getElementById('editNovId').value = id;
+        document.getElementById('editNovAd').value = ad;
+        document.getElementById('editError').hidden = true;
+        new bootstrap.Modal(document.getElementById('editNovModal')).show();
+    }
+
+    // Redaktə yadda saxla
+    document.getElementById('editSaveBtn')?.addEventListener('click', function() {
+        var id = parseInt(document.getElementById('editNovId').value);
+        var ad = document.getElementById('editNovAd').value.trim();
+        var err = document.getElementById('editError');
+        err.hidden = true;
+
+        if (!ad) { err.textContent = 'Ad boş ola bilməz.'; err.hidden = false; return; }
+
+        fetch('/SenedDovriyyesi/Sened/SenedNovuRedakte', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, ad: ad })
+        }).then(r => r.json()).then(d => {
+            if (!d.success) { err.textContent = d.message; err.hidden = false; return; }
+            location.reload();
+        });
+    });
+
+    // Filter JS
+    var sobeFilter = document.getElementById('sobeFilter');
+    var searchInput = document.getElementById('searchInput');
+    var rows = document.querySelectorAll('#novTable tbody tr[data-sobe]');
+
+    function filterRows() {
+        var sobe = sobeFilter.value;
+        var q = searchInput.value.toLowerCase();
+        rows.forEach(function(r) {
+            var matchSobe = !sobe || r.dataset.sobe === sobe;
+            var matchSearch = !q || r.dataset.kod.indexOf(q) >= 0 || r.dataset.ad.indexOf(q) >= 0;
+            r.style.display = matchSobe && matchSearch ? '' : 'none';
+        });
+    }
+    sobeFilter?.addEventListener('change', filterRows);
+    searchInput?.addEventListener('input', filterRows);
+    </script>
 }
