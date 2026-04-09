@@ -202,44 +202,24 @@
     //    });
     //}
 });
+// openNovBtn — tək bir handler, tək bir modal instance
 document.addEventListener("DOMContentLoaded", function () {
+    var novModalEl = document.getElementById('novModal');
+    if (!novModalEl) return;
 
-    const sobeSelect = document.getElementById('sobeSelect');
-    const openNovBtn = document.getElementById('openNovBtn');
-    const novModal = new bootstrap.Modal(document.getElementById('novModal'));
+    var novModalInstance = bootstrap.Modal.getOrCreateInstance(novModalEl);
+    var openNovBtn = document.getElementById('openNovBtn');
+    var sobeSelect = document.getElementById('sobeSelect');
 
     if (openNovBtn) {
-
         openNovBtn.addEventListener('click', function () {
-
-            const sobeId = sobeSelect.value;
-
-            if (!sobeId) {
+            if (sobeSelect && !sobeSelect.value) {
                 alert("Əvvəlcə şöbə seçilməlidir.");
                 return;
             }
-
-            novModal.show();
-        });
-
-    }
-
-});
-
-document.addEventListener("DOMContentLoaded", function () {
-
-    const openNovBtn = document.getElementById("openNovBtn");
-
-    if (openNovBtn) {
-        openNovBtn.addEventListener("click", function () {
-
-            const modalElement = document.getElementById("novModal");
-            const modal = new bootstrap.Modal(modalElement);
-
-            modal.show();
+            novModalInstance.show();
         });
     }
-
 });
 document.addEventListener("DOMContentLoaded", function () {
 
