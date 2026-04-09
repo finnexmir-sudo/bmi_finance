@@ -49,6 +49,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             var gecikme = result.Count(x => x.Status == DavamiyyetStatus.Gecikme);
             var qayib = result.Count(x => x.Status == DavamiyyetStatus.Qayib);
             var icazeli = result.Count(x => x.Status == DavamiyyetStatus.Icazeli);
+            var xestelik = result.Count(x => x.Status == DavamiyyetStatus.Xestelik);
+            var ezamiyyet = result.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
 
             // Orta iş saatı
             var iseSaatleri = result
@@ -74,6 +76,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                     gecikme,
                     qayib,
                     icazeli,
+                    xestelik,
+                    ezamiyyet,
                     cemi = result.Count,
                     ortaIsSaati,
                     enCoxGecikenDept = enCoxGecikenDept?.ad ?? "-",
@@ -130,6 +134,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                     DavamiyyetStatus.Gecikme => "Gecikmə",
                     DavamiyyetStatus.Qayib => "Qayıb",
                     DavamiyyetStatus.Icazeli => "İcazəli",
+                    DavamiyyetStatus.Xestelik => "Xəstəlik",
+                    DavamiyyetStatus.Ezamiyyet => "Ezamiyyət",
                     _ => "-"
                 };
             }

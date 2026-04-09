@@ -74,7 +74,9 @@ namespace FinNex.Application.Services
                 dto.IslenanGun = davamiyyetler.Count(x => x.Status == DavamiyyetStatus.Isde
                                                           || x.Status == DavamiyyetStatus.Gecikme);
                 dto.QaibGun = davamiyyetler.Count(x => x.Status == DavamiyyetStatus.Qayib);
-                dto.IcazeliGun = davamiyyetler.Count(x => x.Status == DavamiyyetStatus.Icazeli);
+                dto.IcazeliGun = davamiyyetler.Count(x => x.Status == DavamiyyetStatus.Icazeli
+                                                          || x.Status == DavamiyyetStatus.Xestelik
+                                                          || x.Status == DavamiyyetStatus.Ezamiyyet);
 
                 // Hələ qeydə alınmamış iş günləri (gələcək)
                 var isGunleri = GetAyinIsGunleri(buIl, buAy);

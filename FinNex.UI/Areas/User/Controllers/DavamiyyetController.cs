@@ -74,11 +74,13 @@ namespace FinNex.UI.Areas.User.Controllers
             var gecikme = result.Count(x => x.Status == DavamiyyetStatus.Gecikme);
             var qayib = result.Count(x => x.Status == DavamiyyetStatus.Qayib);
             var icazeli = result.Count(x => x.Status == DavamiyyetStatus.Icazeli);
+            var xestelik = result.Count(x => x.Status == DavamiyyetStatus.Xestelik);
+            var ezamiyyet = result.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
 
             return Json(new
             {
                 records,
-                stats = new { isde, gecikme, qayib, icazeli, cemi = result.Count }
+                stats = new { isde, gecikme, qayib, icazeli, xestelik, ezamiyyet, cemi = result.Count }
             });
         }
 

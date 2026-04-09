@@ -84,7 +84,9 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             var gelenSayi = davlar.Count(x => x.Status == DavamiyyetStatus.Isde ||
                                                  x.Status == DavamiyyetStatus.Gecikme ||
-                                                 x.Status == DavamiyyetStatus.Icazeli);
+                                                 x.Status == DavamiyyetStatus.Icazeli ||
+                                                 x.Status == DavamiyyetStatus.Xestelik ||
+                                                 x.Status == DavamiyyetStatus.Ezamiyyet);
             var gecikenSayi = davlar.Count(x => x.Status == DavamiyyetStatus.Gecikme);
             var cixisEden = davlar.Count(x => x.CixisVaxti != null);
 

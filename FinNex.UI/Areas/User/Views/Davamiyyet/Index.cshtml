@@ -10,7 +10,9 @@
     var isdeSayi = list.Count(x => x.Status == DavamiyyetStatus.Isde);
     var gecikmeSayi = list.Count(x => x.Status == DavamiyyetStatus.Gecikme);
     var qayibSayi = list.Count(x => x.Status == DavamiyyetStatus.Qayib);
-    var icazeliSayi = list.Count(x => x.Status == DavamiyyetStatus.Icazeli);
+    var icazeliSayi = list.Count(x => x.Status == DavamiyyetStatus.Icazeli
+                                      || x.Status == DavamiyyetStatus.Xestelik
+                                      || x.Status == DavamiyyetStatus.Ezamiyyet);
     var cemi = list.Count;
 }
 
@@ -177,6 +179,12 @@
                                             break;
                                         case DavamiyyetStatus.Icazeli:
                                             <span class="ud-badge ud-badge--icazeli"><span class="ud-badge-dot"></span>İcazəli</span>
+                                            break;
+                                        case DavamiyyetStatus.Xestelik:
+                                            <span class="ud-badge ud-badge--xestelik" style="background:rgba(168,85,247,.1);color:#a855f7;"><span class="ud-badge-dot" style="background:#a855f7;"></span>Xəstəlik</span>
+                                            break;
+                                        case DavamiyyetStatus.Ezamiyyet:
+                                            <span class="ud-badge ud-badge--ezamiyyet" style="background:rgba(249,115,22,.1);color:#f97316;"><span class="ud-badge-dot" style="background:#f97316;"></span>Ezamiyyət</span>
                                             break;
                                     }
                                 </td>

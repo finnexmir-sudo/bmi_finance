@@ -236,7 +236,14 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 await _unitOfWork.Repository<MezuniyyetBalans>().YenileAsync(balans);
             }
 
-            // Davamiyyətdə İcazəli qeydlər yarat (hər iş günü üçün)
+            // Davamiyyətdə növə görə qeydlər yarat (hər iş günü üçün)
+            var davamiyyetStatusu = m.Nov switch
+            {
+                MezuniyyetNovu.Xestelik => DavamiyyetStatus.Xestelik,
+                MezuniyyetNovu.Ezamiyyet => DavamiyyetStatus.Ezamiyyet,
+                _ => DavamiyyetStatus.Icazeli
+            };
+
             var bayramlar = await _unitOfWork.Repository<BayramGunu>()
                 .HamisiniGetirAsync(x => x.Tarix >= m.BaslamaTarixi && x.Tarix <= m.BitmeTarixi);
 
@@ -256,7 +263,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 {
                     IsciId = m.IsciId,
                     Tarix = gun,
-                    Status = DavamiyyetStatus.Icazeli
+                    Status = davamiyyetStatusu
                 };
                 await _unitOfWork.Repository<Davamiyyet>().YaratAsync(dav);
             }
@@ -487,11 +494,13 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 await _unitOfWork.Repository<MezuniyyetBalans>().YenileAsync(balans);
             }
 
-            // Davamiyyətdəki İcazəli qeydləri sil
+            // Davamiyyətdəki icazəli/xəstəlik/ezamiyyət qeydlərini sil
             var davQeydleri = await _unitOfWork.Repository<Davamiyyet>()
                 .HamisiniGetirAsync(x =>
                     x.IsciId == m.IsciId &&
-                    x.Status == DavamiyyetStatus.Icazeli &&
+                    (x.Status == DavamiyyetStatus.Icazeli ||
+                     x.Status == DavamiyyetStatus.Xestelik ||
+                     x.Status == DavamiyyetStatus.Ezamiyyet) &&
                     x.Tarix >= m.BaslamaTarixi &&
                     x.Tarix <= m.BitmeTarixi);
 
