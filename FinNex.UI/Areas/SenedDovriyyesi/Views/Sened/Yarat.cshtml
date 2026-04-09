@@ -51,13 +51,25 @@
                         <div class="sd-form-row">
                             <div>
                                 <label class="sd-label">Şöbə <span class="sd-required">*</span></label>
-                                <select asp-for="SobeId" class="sd-select-full" id="sobeSelect">
-                                    <option value="">Şöbə seçin...</option>
-                                    @foreach (var s in Model.Sobeler)
-                                    {
-                                        <option value="@s.Id">@s.Ad</option>
-                                    }
-                                </select>
+                                @if (Model.Sobeler.Count == 1)
+                                {
+                                    <input type="hidden" asp-for="SobeId" value="@Model.Sobeler[0].Id" />
+                                    <input type="text" class="sd-select-full" value="@Model.Sobeler[0].Ad" disabled
+                                           style="background:#f3f4f6;cursor:not-allowed;" />
+                                    <select id="sobeSelect" style="display:none">
+                                        <option value="@Model.Sobeler[0].Id" selected>@Model.Sobeler[0].Ad</option>
+                                    </select>
+                                }
+                                else
+                                {
+                                    <select asp-for="SobeId" class="sd-select-full" id="sobeSelect">
+                                        <option value="">Şöbə seçin...</option>
+                                        @foreach (var s in Model.Sobeler)
+                                        {
+                                            <option value="@s.Id">@s.Ad</option>
+                                        }
+                                    </select>
+                                }
                                 <span asp-validation-for="SobeId" class="sd-error"></span>
                             </div>
                             <div>
@@ -201,16 +213,27 @@
             </div>
             <div class="modal-body">
             <p id="novError" class="sd-alert-error" hidden></p>
-            <div class="isci-field str-field-mb">
-                <label class="isci-label">Şöbə <span class="isci-required">*</span></label>
-                <select id="novSobe" class="isci-input">
-                    <option value="">Şöbə seçin...</option>
-                    @foreach (var s in Model.Sobeler)
-                    {
-                        <option value="@s.Id">@s.Ad</option>
-                    }
-                </select>
-            </div>
+            @if (Model.Sobeler.Count == 1)
+            {
+                <input type="hidden" id="novSobe" value="@Model.Sobeler[0].Id" />
+                <div class="isci-field str-field-mb">
+                    <label class="isci-label">Şöbə</label>
+                    <input type="text" class="isci-input" value="@Model.Sobeler[0].Ad" disabled style="background:#f3f4f6;" />
+                </div>
+            }
+            else
+            {
+                <div class="isci-field str-field-mb">
+                    <label class="isci-label">Şöbə <span class="isci-required">*</span></label>
+                    <select id="novSobe" class="isci-input">
+                        <option value="">Şöbə seçin...</option>
+                        @foreach (var s in Model.Sobeler)
+                        {
+                            <option value="@s.Id">@s.Ad</option>
+                        }
+                    </select>
+                </div>
+            }
             <div class="isci-field">
                 <label class="isci-label">Ad <span class="isci-required">*</span></label>
                 <input type="text" id="novAd" class="isci-input" placeholder="Məs: Müqavilə, Ərizə..." />
