@@ -95,7 +95,19 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 }
                 await transaction.CommitAsync();
 
-                return Result<MezuniyyetDto>.Ok(_mapper.Map<MezuniyyetDto>(entity), "Müraciət uğurla göndərildi.");
+                // Navigation property-lər yüklənməyib, manual DTO yaradılır
+                var resultDto = new MezuniyyetDto
+                {
+                    Id = entity.Id,
+                    IsciId = entity.IsciId,
+                    Nov = entity.Nov,
+                    Status = entity.Status,
+                    BaslamaTarixi = entity.BaslamaTarixi,
+                    BitmeTarixi = entity.BitmeTarixi,
+                    IsGunlerininSayi = entity.IsGunlerininSayi,
+                    Qeyd = entity.Qeyd
+                };
+                return Result<MezuniyyetDto>.Ok(resultDto, "Müraciət uğurla göndərildi.");
             }
             catch
             {

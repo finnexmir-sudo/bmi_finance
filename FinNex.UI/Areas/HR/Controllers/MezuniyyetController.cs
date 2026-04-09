@@ -130,7 +130,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             };
 
             ViewData["Title"] = "Müraciət Detalı";
-            return View(vm);
+            return View("Detail", vm);
         }
 
         // ══════════════════════════════════════════════════════
