@@ -250,17 +250,29 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
                 var bytes = OdenisTapsirigiWordService.GenerateFromTemplate(templatePath, dto);
                 var fileName = $"OdenisTapsirigi_{DateTime.Now:yyyyMMdd_HHmmss}.docx";
 
+                // ID validasiyası
+                if (!int.TryParse(dto.OduyenBankId, out int obId) || obId <= 0 ||
+                    !int.TryParse(dto.AlanBankId, out int abId) || abId <= 0 ||
+                    !int.TryParse(dto.OduyenMusteriId, out int omId) || omId <= 0 ||
+                    !int.TryParse(dto.OduyenHesabId, out int ohId) || ohId <= 0 ||
+                    !int.TryParse(dto.AlanMusteriId, out int amId) || amId <= 0 ||
+                    !int.TryParse(dto.AlanHesabId, out int ahId) || ahId <= 0 ||
+                    !int.TryParse(dto.ValyutaId, out int vId) || vId <= 0)
+                {
+                    return BadRequest("Bank, müştəri və ya hesab məlumatları natamam. Formu yenidən doldurun.");
+                }
+
                 var odenis = new OdenisTapsirigi
                 {
                     Nomre = dto.Nomre,
                     Tarix = DateTime.Now,
-                    OduyenBankId = int.TryParse(dto.OduyenBankId, out int obId) && obId > 0 ? obId : 1,
-                    AlanBankId = int.TryParse(dto.AlanBankId, out int abId) && abId > 0 ? abId : 1,
-                    OduyenMusteriId = int.TryParse(dto.OduyenMusteriId, out int omId) && omId > 0 ? omId : 1,
-                    OduyenHesabId = int.TryParse(dto.OduyenHesabId, out int ohId) && ohId > 0 ? ohId : 1,
-                    AlanMusteriId = int.TryParse(dto.AlanMusteriId, out int amId) && amId > 0 ? amId : 1,
-                    AlanHesabId = int.TryParse(dto.AlanHesabId, out int ahId) && ahId > 0 ? ahId : 1,
-                    ValyutaId = int.TryParse(dto.ValyutaId, out int vId) && vId > 0 ? vId : 1,
+                    OduyenBankId = obId,
+                    AlanBankId = abId,
+                    OduyenMusteriId = omId,
+                    OduyenHesabId = ohId,
+                    AlanMusteriId = amId,
+                    AlanHesabId = ahId,
+                    ValyutaId = vId,
                     Mebleg = decimal.Parse(dto.Mebleg, System.Globalization.CultureInfo.InvariantCulture),
                     MeblegYazi = dto.MeblegYazi,
                     Teyinat = dto.Teyinat,
@@ -278,7 +290,7 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message + " | " + ex.InnerException?.Message);
+                return StatusCode(500, "Word sənədi yaradılarkən xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.");
             }
         }
 
@@ -355,7 +367,7 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
                 {
                     BankId = bank.Id,
                     Iban = dto.MuxHesab,
-                    ValyutaId = 1
+                    ValyutaId = 1 // AZN default
                 };
                 await _uow.Repository<BankHesabi>().YaratAsync(hesab);
                 await _uow.YaddaSaxlaAsync();
@@ -480,7 +492,7 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
             odenis.BudceTesnifatininKodu = dto.BudceTesnifatininKodu;
             odenis.BudceSeviyyesininKodu = dto.BudceSeviyyesininKodu;
 
-            _uow.Repository<OdenisTapsirigi>().YenileAsync(odenis);
+            await _uow.Repository<OdenisTapsirigi>().YenileAsync(odenis);
             await _uow.YaddaSaxlaAsync();
 
             return Json(new { ugurlu = true });
@@ -756,7 +768,7 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
             odenis.BudceTesnifatininKodu = dto.BudceTesnifatininKodu;
             odenis.BudceSeviyyesininKodu = dto.BudceSeviyyesininKodu;
 
-            _uow.Repository<OdenisTapsirigi>().YenileAsync(odenis);
+            await _uow.Repository<OdenisTapsirigi>().YenileAsync(odenis);
             await _uow.YaddaSaxlaAsync();
 
             // Word hazırla
