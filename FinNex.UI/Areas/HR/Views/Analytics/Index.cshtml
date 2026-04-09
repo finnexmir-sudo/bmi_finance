@@ -11,13 +11,13 @@
     <div class="fn-page-head">
         <div>
             <div class="fn-page-title">HR Analitika</div>
-            <div class="fn-page-sub">\u0130\u015f\u00e7i statistikas\u0131 v\u0259 HR analitika paneli</div>
+            <div class="fn-page-sub">İşçi statistikası və HR analitika paneli</div>
         </div>
     </div>
 
     <div id="anlLoading" class="anl-loading">
         <div class="anl-loading-spinner"></div>
-        M\u0259lumatlar y\u00fckl\u0259nir...
+        Məlumatlar yüklənir...
     </div>
 
     @* ── KPI Kartlari ─────────────────────────────────────── *@
@@ -31,7 +31,7 @@
             </div>
             <div class="anl-kpi-data">
                 <div class="anl-kpi-value" id="kpiAktiv">0</div>
-                <div class="anl-kpi-label">Aktiv \u0130\u015f\u00e7i</div>
+                <div class="anl-kpi-label">Aktiv İşçi</div>
             </div>
             <div class="anl-kpi-sub" id="kpiPassiv">0 passiv</div>
         </div>
@@ -45,7 +45,7 @@
             </div>
             <div class="anl-kpi-data">
                 <div class="anl-kpi-value" id="kpiGender">0 / 0</div>
-                <div class="anl-kpi-label">Ki\u015fi / Qad\u0131n</div>
+                <div class="anl-kpi-label">Kişi / Qadın</div>
             </div>
             <div class="anl-kpi-sub" id="kpiGenderPct">0%</div>
         </div>
@@ -58,9 +58,9 @@
             </div>
             <div class="anl-kpi-data">
                 <div class="anl-kpi-value" id="kpiOrtaMuddet">0</div>
-                <div class="anl-kpi-label">Orta \u0130\u015f M\u00fcdd\u0259ti (ay)</div>
+                <div class="anl-kpi-label">Orta İş Müddəti (ay)</div>
             </div>
-            <div class="anl-kpi-sub">Aktiv i\u015f\u00e7il\u0259r \u00fczr\u0259</div>
+            <div class="anl-kpi-sub">Aktiv işçilər üzrə</div>
         </div>
         <div class="anl-kpi anl-kpi--orange">
             <div class="anl-kpi-icon">
@@ -70,27 +70,27 @@
             </div>
             <div class="anl-kpi-data">
                 <div class="anl-kpi-value" id="kpiDonusum">0%</div>
-                <div class="anl-kpi-label">\u0130\u015f\u00e7i D\u00f6n\u00fc\u015f\u00fcm Faizi</div>
+                <div class="anl-kpi-label">İşçi Dönüşüm Faizi</div>
             </div>
-            <div class="anl-kpi-sub" id="kpiCixanlar">Son 12 ayda 0 \u00e7\u0131x\u0131\u015f</div>
+            <div class="anl-kpi-sub" id="kpiCixanlar">Son 12 ayda 0 çıxış</div>
         </div>
     </div>
 
     @* ── Charts ───────────────────────────────────────────── *@
     <div class="anl-charts" id="anlCharts" style="display:none;">
         <div class="fn-card anl-chart-card">
-            <div class="fn-card-title">Departament \u00fczr\u0259 \u0130\u015f\u00e7i Say\u0131</div>
+            <div class="fn-card-title">Departament üzrə İşçi Sayı</div>
             <canvas id="chartDepartament" height="280"></canvas>
         </div>
         <div class="fn-card anl-chart-card">
-            <div class="fn-card-title">Gender B\u00f6lg\u00fcs\u00fc</div>
+            <div class="fn-card-title">Gender Bölgüsü</div>
             <canvas id="chartGender" height="280"></canvas>
         </div>
     </div>
 
     <div class="anl-charts-full" id="anlChartsFull" style="display:none;">
         <div class="fn-card anl-chart-card">
-            <div class="fn-card-title">Ayl\u0131q \u0130\u015f\u0259 Q\u0259bul / \u00c7\u0131x\u0131\u015f Trendi (Son 12 Ay)</div>
+            <div class="fn-card-title">Aylıq İşə Qəbul / Çıxış Trendi (Son 12 Ay)</div>
             <canvas id="chartTrend" height="300"></canvas>
         </div>
     </div>

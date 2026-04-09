@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "Yeni T\u0259lim";
+    ViewData["Title"] = "Yeni Təlim";
 }
 
 @section Styles {
@@ -10,10 +10,10 @@
 
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">Yeni T\u0259lim</div>
-            <div class="fn-page-sub">T\u0259lim m\u0259lumatlar\u0131n\u0131 daxil edin</div>
+            <div class="fn-page-title">Yeni Təlim</div>
+            <div class="fn-page-sub">Təlim məlumatlarını daxil edin</div>
         </div>
-        <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">\u2190 Siyah\u0131</a>
+        <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">← Siyahı</a>
     </div>
 
     <div class="fn-card" style="max-width:720px;">
@@ -21,57 +21,57 @@
             @Html.AntiForgeryToken()
 
             <div class="fn-form-row">
-                <label class="fn-label">T\u0259lim Ad\u0131 <span style="color:#d85a30;">*</span></label>
-                <input type="text" name="ad" class="fn-input" required placeholder="T\u0259lim ad\u0131..." />
+                <label class="fn-label">Təlim Adı <span style="color:#d85a30;">*</span></label>
+                <input type="text" name="ad" class="fn-input" required placeholder="Təlim adı..." />
             </div>
 
             <div class="fn-form-row">
-                <label class="fn-label">T\u0259svir</label>
-                <textarea name="tesvir" class="fn-input" rows="3" placeholder="T\u0259limin m\u0259zmunu..."></textarea>
+                <label class="fn-label">Təsvir</label>
+                <textarea name="tesvir" class="fn-input" rows="3" placeholder="Təlimin məzmunu..."></textarea>
             </div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div class="fn-form-row">
-                    <label class="fn-label">T\u0259lim\u00e7i</label>
-                    <input type="text" name="tesviqci" class="fn-input" placeholder="T\u0259lim\u00e7i ad\u0131..." />
+                    <label class="fn-label">Təlimçi</label>
+                    <input type="text" name="tesviqci" class="fn-input" placeholder="Təlimçi adı..." />
                 </div>
                 <div class="fn-form-row">
-                    <label class="fn-label">M\u0259kan</label>
-                    <input type="text" name="mekan" class="fn-input" placeholder="T\u0259lim m\u0259kan\u0131..." />
+                    <label class="fn-label">Məkan</label>
+                    <input type="text" name="mekan" class="fn-input" placeholder="Təlim məkanı..." />
                 </div>
             </div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
                 <div class="fn-form-row">
-                    <label class="fn-label">Ba\u015flama Tarixi <span style="color:#d85a30;">*</span></label>
+                    <label class="fn-label">Başlama Tarixi <span style="color:#d85a30;">*</span></label>
                     <input type="date" name="baslamaTarixi" class="fn-input" required />
                 </div>
                 <div class="fn-form-row">
-                    <label class="fn-label">Bitm\u0259 Tarixi</label>
+                    <label class="fn-label">Bitmə Tarixi</label>
                     <input type="date" name="bitmeTarixi" class="fn-input" />
                 </div>
                 <div class="fn-form-row">
-                    <label class="fn-label">M\u00fcdd\u0259t (saat) <span style="color:#d85a30;">*</span></label>
-                    <input type="number" name="muddetSaat" class="fn-input" required min="1" placeholder="Saat say\u0131..." />
+                    <label class="fn-label">Müddət (saat) <span style="color:#d85a30;">*</span></label>
+                    <input type="number" name="muddetSaat" class="fn-input" required min="1" placeholder="Saat sayı..." />
                 </div>
             </div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div class="fn-form-row">
-                    <label class="fn-label">T\u0259lim N\u00f6v\u00fc</label>
+                    <label class="fn-label">Təlim Növü</label>
                     <select name="daxiliTelimdir" class="fn-input">
-                        <option value="true">Daxili T\u0259lim</option>
-                        <option value="false">Xarici T\u0259lim</option>
+                        <option value="true">Daxili Təlim</option>
+                        <option value="false">Xarici Təlim</option>
                     </select>
                 </div>
                 <div class="fn-form-row">
-                    <label class="fn-label">X\u0259rc (AZN)</label>
-                    <input type="number" name="xerc" class="fn-input" step="0.01" min="0" placeholder="X\u0259rc m\u0259bl\u0259\u011fi..." />
+                    <label class="fn-label">Xərc (AZN)</label>
+                    <input type="number" name="xerc" class="fn-input" step="0.01" min="0" placeholder="Xərc məbləği..." />
                 </div>
             </div>
 
             <div class="fn-form-row">
-                <label class="fn-label">\u0130\u015ftirak\u00e7\u0131lar</label>
+                <label class="fn-label">İştirakçılar</label>
                 <div class="tlm-participant-select">
                     <select id="ishtirakciSelect" class="fn-input" multiple size="6">
                         @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
@@ -79,13 +79,13 @@
                             <option value="@item.Value">@item.Text</option>
                         }
                     </select>
-                    <div class="tlm-select-hint">Ctrl/Cmd basaraq bir ne\u00e7\u0259 i\u015f\u00e7i se\u00e7\u0259 bil\u0259rsiniz</div>
+                    <div class="tlm-select-hint">Ctrl/Cmd basaraq bir neçə işçi seçə bilərsiniz</div>
                 </div>
                 <div id="selectedParticipants"></div>
             </div>
 
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;">
-                <a asp-action="Index" class="fn-btn fn-btn--outline">L\u0259\u011fv et</a>
+                <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
                 <button type="submit" class="fn-btn fn-btn--primary">
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                         <path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
