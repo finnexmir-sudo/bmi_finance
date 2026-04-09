@@ -35,8 +35,8 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 // 1. İş günlərini hesabla
                 int isGunu = await HesablaIsGunuAsync(dto.BaslamaTarixi, dto.BitmeTarixi);
 
-                // 2. Balansı növə görə yoxla (Ezamiyyət limitsizdir)
-                if (dto.Nov != MezuniyyetNovu.Ezamiyyet)
+                // 2. Balansı növə görə yoxla (Xəstəlik və Ezamiyyət limitsizdir)
+                if (dto.Nov == MezuniyyetNovu.Illik)
                 {
                     var balans = await _unitOfWork.Repository<MezuniyyetBalans>()
                         .GetirAsync(x => x.IsciId == dto.IsciId && x.Il == dto.BaslamaTarixi.Year && x.Nov == dto.Nov);
