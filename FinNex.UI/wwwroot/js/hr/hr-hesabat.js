@@ -228,8 +228,8 @@
         html += '<thead><tr>';
         html += '<th>İşçi</th>';
         html += '<th class="rp-th-center">İllik (T/İ/Q)</th>';
-        html += '<th class="rp-th-center">Xəstəlik (T/İ/Q)</th>';
-        html += '<th class="rp-th-center">Ezamiyyət (T/İ/Q)</th>';
+        html += '<th class="rp-th-center">Xəstəlik</th>';
+        html += '<th class="rp-th-center">Ezamiyyət</th>';
         html += '</tr></thead><tbody>';
 
         data.departamentlar.forEach(dept => {
@@ -243,14 +243,18 @@
                 html += '<tr>';
                 html += '<td>' + isci.isciAdSoyad + '</td>';
                 html += '<td class="rp-td-center rp-balans-group">' + balansCell(isci.illikToplam, isci.illikIstifade, isci.illikQaliq) + '</td>';
-                html += '<td class="rp-td-center rp-balans-group">' + balansCell(isci.xestelikToplam, isci.xestelikIstifade, isci.xestelikQaliq) + '</td>';
-                html += '<td class="rp-td-center rp-balans-group">' + balansCell(isci.ezamiyyetToplam, isci.ezamiyyetIstifade, isci.ezamiyyetQaliq) + '</td>';
+                html += '<td class="rp-td-center rp-balans-group">' + limitsizBalansCell(isci.xestelikIstifade) + '</td>';
+                html += '<td class="rp-td-center rp-balans-group">' + limitsizBalansCell(isci.ezamiyyetIstifade) + '</td>';
                 html += '</tr>';
             });
         });
 
         html += '</tbody></table>';
         wrap.innerHTML = html;
+    }
+
+    function limitsizBalansCell(istifade) {
+        return '<span class="rp-balans-val">' + istifade + ' gün istifadə</span>';
     }
 
     function balansCell(toplam, istifade, qaliq) {
