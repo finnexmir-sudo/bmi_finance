@@ -124,6 +124,8 @@ public class HesabatController : Controller
                     gecikme = g.Count(x => x.Status == DavamiyyetStatus.Gecikme),
                     qayib = g.Count(x => x.Status == DavamiyyetStatus.Qayib),
                     icazeli = g.Count(x => x.Status == DavamiyyetStatus.Icazeli),
+                    xestelik = g.Count(x => x.Status == DavamiyyetStatus.Xestelik),
+                    ezamiyyet = g.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet),
                     cemiGun = g.Count()
                 };
             })
@@ -136,6 +138,8 @@ public class HesabatController : Controller
                 cemiGecikme = g.Sum(x => x.gecikme),
                 cemiQayib = g.Sum(x => x.qayib),
                 cemiIcazeli = g.Sum(x => x.icazeli),
+                cemiXestelik = g.Sum(x => x.xestelik),
+                cemiEzamiyyet = g.Sum(x => x.ezamiyyet),
                 cemiGun = g.Sum(x => x.cemiGun)
             })
             .OrderBy(x => x.departament)

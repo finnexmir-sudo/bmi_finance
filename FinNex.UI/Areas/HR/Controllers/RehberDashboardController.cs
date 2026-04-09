@@ -112,7 +112,9 @@ namespace FinNex.UI.Areas.HR.Controllers
             vm.BugunIshde = davlar.Count(x => x.Status == DavamiyyetStatus.Isde);
             vm.BugunGeciken = davlar.Count(x => x.Status == DavamiyyetStatus.Gecikme);
             vm.BugunQayib = davlar.Count(x => x.Status == DavamiyyetStatus.Qayib);
-            vm.BugunIcazeli = davlar.Count(x => x.Status == DavamiyyetStatus.Icazeli);
+            vm.BugunIcazeli = davlar.Count(x => x.Status == DavamiyyetStatus.Icazeli
+                                              || x.Status == DavamiyyetStatus.Xestelik
+                                              || x.Status == DavamiyyetStatus.Ezamiyyet);
 
             // Davamiyyət faizi (bu ay)
             var isGunleriSayi = 0;

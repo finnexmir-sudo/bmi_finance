@@ -494,11 +494,13 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 await _unitOfWork.Repository<MezuniyyetBalans>().YenileAsync(balans);
             }
 
-            // Davamiyyətdəki İcazəli qeydləri sil
+            // Davamiyyətdəki icazəli/xəstəlik/ezamiyyət qeydlərini sil
             var davQeydleri = await _unitOfWork.Repository<Davamiyyet>()
                 .HamisiniGetirAsync(x =>
                     x.IsciId == m.IsciId &&
-                    x.Status == DavamiyyetStatus.Icazeli &&
+                    (x.Status == DavamiyyetStatus.Icazeli ||
+                     x.Status == DavamiyyetStatus.Xestelik ||
+                     x.Status == DavamiyyetStatus.Ezamiyyet) &&
                     x.Tarix >= m.BaslamaTarixi &&
                     x.Tarix <= m.BitmeTarixi);
 
