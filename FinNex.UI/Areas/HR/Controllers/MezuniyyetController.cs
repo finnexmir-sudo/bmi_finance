@@ -212,7 +212,26 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         // ══════════════════════════════════════════════════════
-        // HR — YENİ MƏZUNİYYƏT YARATMA (Xəstəlik / Ezamiyyət / İllik)
+        // HR — XƏSTƏLİK / EZAMİYYƏT SİYAHISI
+        // ══════════════════════════════════════════════════════
+
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> HrSiyahi()
+        {
+            var result = await _mezuniyyetService.GetListAsync();
+            var list = result.Success
+                ? result.Data!
+                    .Where(x => x.Nov == MezuniyyetNovu.Xestelik || x.Nov == MezuniyyetNovu.Ezamiyyet)
+                    .OrderByDescending(x => x.BaslamaTarixi)
+                    .ToList()
+                : new();
+
+            ViewData["Title"] = "Xəstəlik / Ezamiyyət";
+            return View(list);
+        }
+
+        // ══════════════════════════════════════════════════════
+        // HR — YENİ MƏZUNİYYƏT YARATMA (Xəstəlik / Ezamiyyət)
         // ══════════════════════════════════════════════════════
 
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
@@ -261,7 +280,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 ? "Məzuniyyət uğurla yaradıldı və təsdiqləndi."
                 : approveResult.Message;
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(HrSiyahi));
         }
 
         // ══════════════════════════════════════════════════════
@@ -311,7 +330,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var result = await _mezuniyyetService.YenileAsync(dto);
 
             TempData[result.Success ? "Success" : "Error"] = result.Message;
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(HrSiyahi));
         }
 
         // ══════════════════════════════════════════════════════
@@ -326,7 +345,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var result = await _mezuniyyetService.SilAsync(id);
 
             TempData[result.Success ? "Success" : "Error"] = result.Message;
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(HrSiyahi));
         }
 
         // ══════════════════════════════════════════════════════
