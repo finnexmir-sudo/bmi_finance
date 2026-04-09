@@ -9,7 +9,7 @@ namespace FinNex.Domain.Entities.HR
 
         public DateTime BaslamaTarixi { get; set; }
         public DateTime? BitmeTarixi { get; set; }
-        public int MuddетSaat { get; set; }
+        public int MuddetSaat { get; set; }
 
         public TelimStatus Status { get; set; } = TelimStatus.Planlanib;
         public bool DaxiliTelimdir { get; set; } = true;
