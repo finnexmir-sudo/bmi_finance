@@ -1,0 +1,127 @@
+/* =============================================
+   FinNex — HR Analytics Dashboard
+   ============================================= */
+
+/* ── Loading ──────────────────────────────── */
+.anl-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 60px 20px;
+    color: #8a93a8;
+    font-size: 13px;
+}
+
+.anl-loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #e8eaef;
+    border-top-color: #2d6cdf;
+    border-radius: 50%;
+    animation: anl-spin 0.7s linear infinite;
+}
+
+@keyframes anl-spin { to { transform: rotate(360deg); } }
+
+/* ── KPI Grid ─────────────────────────────── */
+.anl-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.anl-kpi {
+    background: #fff;
+    border: 1px solid #e8eaef;
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+    overflow: hidden;
+}
+
+.anl-kpi::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+}
+
+.anl-kpi--blue::before { background: #2d6cdf; }
+.anl-kpi--purple::before { background: #7c3aed; }
+.anl-kpi--green::before { background: #1e9b6b; }
+.anl-kpi--orange::before { background: #d88a30; }
+
+.anl-kpi-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.anl-kpi--blue .anl-kpi-icon { background: #eff6ff; color: #2d6cdf; }
+.anl-kpi--purple .anl-kpi-icon { background: #f5f3ff; color: #7c3aed; }
+.anl-kpi--green .anl-kpi-icon { background: #ecfdf5; color: #1e9b6b; }
+.anl-kpi--orange .anl-kpi-icon { background: #fff7ed; color: #d88a30; }
+
+.anl-kpi-data {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.anl-kpi-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #0f1623;
+}
+
+.anl-kpi-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #8a93a8;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.anl-kpi-sub {
+    font-size: 11px;
+    color: #aab0bf;
+}
+
+/* ── Charts ───────────────────────────────── */
+.anl-charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.anl-charts-full {
+    margin-bottom: 16px;
+}
+
+.anl-chart-card {
+    padding: 20px;
+}
+
+.anl-chart-card canvas {
+    max-height: 300px;
+}
+
+@media (max-width: 1024px) {
+    .anl-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .anl-charts { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+    .anl-kpi-grid { grid-template-columns: 1fr; }
+}

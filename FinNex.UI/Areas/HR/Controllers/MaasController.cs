@@ -402,6 +402,40 @@ namespace FinNex.UI.Areas.HR.Controllers
             return File(bytes, "text/csv", $"maas_{il}_{ay:D2}.csv");
         }
 
+        // ── GET /HR/Maas/BankKocurme ─────────────────────────────
+        // IBAN;FullName;NetAmount;Currency;Description formatında bank köçürmə faylı
+        [HttpGet]
+        public async Task<IActionResult> BankKocurme(int il, int ay)
+        {
+            var maaslar = await _unitOfWork.Repository<Maas>()
+                .Query()
+                .Where(x => !x.Silinib && x.Il == il && x.Ay == ay &&
+                            x.Status == MaasStatus.Tesdiqlendi)
+                .Include(x => x.Isci).ThenInclude(i => i.Maliye)
+                .OrderBy(x => x.Isci.Soyad)
+                .ThenBy(x => x.Isci.Ad)
+                .ToListAsync();
+
+            if (!maaslar.Any())
+            {
+                TempData["Error"] = "Təsdiqlənmiş maaş tapılmadı.";
+                return RedirectToAction(nameof(Index), new { il, ay });
+            }
+
+            var satirlar = new List<string> { "IBAN;Ad Soyad;Məbləğ;Valyuta;İzah" };
+            foreach (var m in maaslar)
+            {
+                var iban = m.Isci.Maliye?.BankHesabNo ?? "";
+                var adSoyad = $"{m.Isci.Ad} {m.Isci.Soyad}";
+                satirlar.Add(
+                    $"{iban};{adSoyad};{m.NetMebleg:F2};AZN;" +
+                    $"{il}/{ay:D2} əmək haqqı köçürməsi");
+            }
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(string.Join("\n", satirlar));
+            return File(bytes, "text/csv", $"bank_kocurme_{il}_{ay:D2}.csv");
+        }
+
         // ── Köməkçilər ───────────────────────────────────────────
         private async Task FilterSiyahilariniDoldur(
             int cIl, int cAy, int? isciId, int? deptId)

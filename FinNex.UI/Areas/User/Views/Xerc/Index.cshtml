@@ -1,0 +1,56 @@
+@{
+    ViewData["Title"] = "Xerclerim";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Xerclerim</div>
+            <div class="fn-page-sub">Xerc muracietleriniz ve onlarin statusu</div>
+        </div>
+        <a asp-area="User" asp-controller="Xerc" asp-action="Create"
+           class="fn-btn fn-btn--primary">+ Yeni xerc</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
+    }
+
+    @* ── Stats ── *@
+    <div class="xerc-stats" id="xercStats" style="display:none">
+        <div class="fn-stat">
+            <div class="fn-stat-val" id="statCemi">0</div>
+            <div class="fn-stat-lbl">Cemi</div>
+        </div>
+        <div class="fn-stat">
+            <div class="fn-stat-val xerc-stat-wait" id="statMuraciet">0</div>
+            <div class="fn-stat-lbl">Muraciet</div>
+        </div>
+        <div class="fn-stat">
+            <div class="fn-stat-val xerc-stat-ok" id="statOdenildi">0</div>
+            <div class="fn-stat-lbl">Odenildi</div>
+        </div>
+        <div class="fn-stat">
+            <div class="fn-stat-val xerc-stat-rej" id="statImtina">0</div>
+            <div class="fn-stat-lbl">Imtina</div>
+        </div>
+    </div>
+
+    @* ── Expense List ── *@
+    <div class="fn-card">
+        <div id="xercList" class="xerc-list">
+            <div class="xerc-loading">Yukl&#601;nir...</div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/xerc.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/User/xerc.js" asp-append-version="true"></script>
+}
