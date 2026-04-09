@@ -69,7 +69,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 x.Mekan,
                 BaslamaTarixi = x.BaslamaTarixi.ToString("dd.MM.yyyy"),
                 BitmeTarixi = x.BitmeTarixi?.ToString("dd.MM.yyyy") ?? "\u2014",
-                MuddetSaat = x.Mudd\u0435\u0442Saat,
+                MuddetSaat = x.MuddетSaat,
                 Status = (int)x.Status,
                 StatusAd = StatusAdi(x.Status),
                 x.DaxiliTelimdir,
@@ -111,7 +111,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Mekan = mekan?.Trim(),
                 BaslamaTarixi = baslamaTarixi,
                 BitmeTarixi = bitmeTarixi,
-                Mudd\u0435\u0442Saat = muddetSaat,
+                MuddетSaat = muddetSaat,
                 DaxiliTelimdir = daxiliTelimdir,
                 Xerc = xerc,
                 Status = TelimStatus.Planlanib
