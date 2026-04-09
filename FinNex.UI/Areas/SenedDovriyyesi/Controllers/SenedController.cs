@@ -77,13 +77,28 @@ public class SenedController : Controller
         }
 
         var netice = new List<int>();
+
+        // 1. UserDepartments cədvəlindən
         var userDepts = await _userDepartmentService.GetUserDepartmentsAsync(userId);
         if (userDepts != null)
             netice.AddRange(userDepts.Select(x => x.DepartmentId));
 
+        // 2. Əlavə icazələrdən (SenedDovriyyesiIstifadeciIcazesi)
         var elaveIcazeler = await _icazeService.IstifadeciyeGoreGetirAsync(userId);
         if (elaveIcazeler.Success && elaveIcazeler.Data != null)
             netice.AddRange(elaveIcazeler.Data.Select(x => x.SobeId));
+
+        // 3. İşçi təyinatından (IsciTeyinat) — HR modulundan departament
+        if (!netice.Any())
+        {
+            var appUser = await _userManager.FindByIdAsync(userId.ToString());
+            if (appUser?.IsciId != null)
+            {
+                var teyinatlar = await _unitOf.Repository<FinNex.Domain.Entities.HR.IsciTeyinat>()
+                    .HamisiniGetirAsync(x => x.IsciId == appUser.IsciId && x.Aktivdir && !x.Silinib);
+                netice.AddRange(teyinatlar.Select(x => x.DepartamentId));
+            }
+        }
 
         return netice.Distinct().ToList();
     }
