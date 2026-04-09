@@ -4,6 +4,7 @@
     var title = (ViewData["Title"] ?? "HR").ToString();
 
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
 
     var isStructureOpen =
         currentController == "Departament" ||
@@ -111,11 +112,18 @@
                             Davamiyyət
                         </a>
 
-                        <a class="hr-nav-sub-item @(currentController == "Mezuniyyet" ? "active" : "")"
+                        <a class="hr-nav-sub-item @(currentController == "Mezuniyyet" && currentAction == "Index" ? "active" : "")"
                            asp-area="HR"
                            asp-controller="Mezuniyyet"
                            asp-action="Index">
                             Məzuniyyət
+                        </a>
+
+                        <a class="hr-nav-sub-item @(currentController == "Mezuniyyet" && currentAction == "Create" ? "active" : "")"
+                           asp-area="HR"
+                           asp-controller="Mezuniyyet"
+                           asp-action="Create">
+                            Məzuniyyət Yazmaq
                         </a>
 
                         <a class="hr-nav-sub-item @(currentController == "Maas" ? "active" : "")"
