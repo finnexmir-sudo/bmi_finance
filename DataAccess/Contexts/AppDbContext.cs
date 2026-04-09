@@ -87,6 +87,28 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<HesabatSablonu> HesabatSablonlari { get; set; }
     public DbSet<HesabatTapshiriq> HesabatTapshiriqlari { get; set; }
 
+    // Performans
+    public DbSet<PerformansQiymetlendirme> PerformansQiymetlendirmeler { get; set; }
+    public DbSet<PerformansKriteriya> PerformansKriteriyalar { get; set; }
+
+    // Təlim
+    public DbSet<Telim> Telimler { get; set; }
+    public DbSet<TelimIshtiraki> TelimIshtiraklar { get; set; }
+    public DbSet<Sertifikat> Sertifikatlar { get; set; }
+
+    // Xərc
+    public DbSet<XercKateqoriyasi> XercKateqoriyalari { get; set; }
+    public DbSet<Xerc> Xercler { get; set; }
+
+    // Büdcə
+    public DbSet<Budce> Budceler { get; set; }
+
+    // Elan
+    public DbSet<Elan> Elanlar { get; set; }
+
+    // Chat
+    public DbSet<ChatMesaj> ChatMesajlar { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -583,6 +605,134 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .WithMany()
             .HasForeignKey(x => x.SenedNovuId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // ── Performans ─────────────────────────────────────────
+        builder.Entity<PerformansQiymetlendirme>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<PerformansQiymetlendirme>()
+            .HasOne(x => x.QiymetlendirenIsci)
+            .WithMany()
+            .HasForeignKey(x => x.QiymetlendirenIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<PerformansQiymetlendirme>()
+            .Property(x => x.IsciOrtalamaQiymet).HasPrecision(5, 2);
+        builder.Entity<PerformansQiymetlendirme>()
+            .Property(x => x.MudirOrtalamaQiymet).HasPrecision(5, 2);
+        builder.Entity<PerformansQiymetlendirme>()
+            .Property(x => x.YekunQiymet).HasPrecision(5, 2);
+
+        builder.Entity<PerformansKriteriya>()
+            .HasOne(x => x.Performans)
+            .WithMany(p => p.Kriteriyalar)
+            .HasForeignKey(x => x.PerformansId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<PerformansKriteriya>()
+            .Property(x => x.Ceki).HasPrecision(5, 2);
+        builder.Entity<PerformansKriteriya>()
+            .Property(x => x.IsciQiymeti).HasPrecision(5, 2);
+        builder.Entity<PerformansKriteriya>()
+            .Property(x => x.MudirQiymeti).HasPrecision(5, 2);
+
+        // ── Təlim ─────────────────────────────────────────────
+        builder.Entity<TelimIshtiraki>()
+            .HasOne(x => x.Telim)
+            .WithMany(t => t.Ishtirakcilar)
+            .HasForeignKey(x => x.TelimId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<TelimIshtiraki>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<TelimIshtiraki>()
+            .Property(x => x.Qiymet).HasPrecision(5, 2);
+
+        builder.Entity<Telim>()
+            .Property(x => x.Xerc).HasPrecision(18, 2);
+
+        builder.Entity<Sertifikat>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        // ── Xərc ──────────────────────────────────────────────
+        builder.Entity<Xerc>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<Xerc>()
+            .HasOne(x => x.Kateqoriya)
+            .WithMany(k => k.Xercler)
+            .HasForeignKey(x => x.KateqoriyaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Xerc>()
+            .HasOne(x => x.TesdiqleyenIsci)
+            .WithMany()
+            .HasForeignKey(x => x.TesdiqleyenIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<Xerc>()
+            .Property(x => x.Mebleg).HasPrecision(18, 2);
+
+        builder.Entity<XercKateqoriyasi>()
+            .HasIndex(x => x.Ad).IsUnique();
+
+        // ── Büdcə ─────────────────────────────────────────────
+        builder.Entity<Budce>()
+            .HasOne(x => x.Departament)
+            .WithMany()
+            .HasForeignKey(x => x.DepartamentId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<Budce>()
+            .HasIndex(x => new { x.DepartamentId, x.Il, x.Ay })
+            .IsUnique();
+
+        builder.Entity<Budce>()
+            .Property(x => x.PlanMebleg).HasPrecision(18, 2);
+        builder.Entity<Budce>()
+            .Property(x => x.FaktikiMebleg).HasPrecision(18, 2);
+
+        // ── Elan ──────────────────────────────────────────────
+        builder.Entity<Elan>()
+            .HasOne(x => x.GonderenIsci)
+            .WithMany()
+            .HasForeignKey(x => x.GonderenIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        // ── Chat ──────────────────────────────────────────────
+        builder.Entity<ChatMesaj>()
+            .HasOne(x => x.GonderenIsci)
+            .WithMany()
+            .HasForeignKey(x => x.GonderenIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<ChatMesaj>()
+            .HasOne(x => x.AlanIsci)
+            .WithMany()
+            .HasForeignKey(x => x.AlanIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        // ── XercKateqoriyasi Seed Data ────────────────────────
+        builder.Entity<XercKateqoriyasi>().HasData(
+            new XercKateqoriyasi { Id = 1, Ad = "Taksi", Ikon = "bi-taxi-front", Aktivdir = true },
+            new XercKateqoriyasi { Id = 2, Ad = "Yemək", Ikon = "bi-cup-hot", Aktivdir = true },
+            new XercKateqoriyasi { Id = 3, Ad = "Ofis ləvazimatı", Ikon = "bi-printer", Aktivdir = true },
+            new XercKateqoriyasi { Id = 4, Ad = "Səfər xərcləri", Ikon = "bi-airplane", Aktivdir = true },
+            new XercKateqoriyasi { Id = 5, Ad = "Digər", Ikon = "bi-three-dots", Aktivdir = true }
+        );
 
         // ── MaasNovu Seed Data ────────────────────────────────────
         builder.Entity<MaasNovu>().HasData(
