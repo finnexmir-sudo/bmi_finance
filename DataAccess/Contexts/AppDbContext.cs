@@ -74,6 +74,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
 
     public DbSet<Mesaj> Mesajlar { get; set; }
     public DbSet<Bildiris> Bildirisler { get; set; }
+    public DbSet<PushAbonelik> PushAbonelikler { get; set; }
     public DbSet<EvezediciTesdiq> EvezediciTesdiqler { get; set; }
     public DbSet<Tapshiriq> Tapshiriqlar { get; set; }
     public DbSet<TapshiriqSherh> TapshiriqSherhler { get; set; }

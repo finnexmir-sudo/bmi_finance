@@ -1,6 +1,7 @@
 ﻿// Areas/User/Controllers/InboxController.cs
 using FinNex.Application.DTOs.Communication;
 using FinNex.Application.Interfaces.Communication;
+using Microsoft.Extensions.Configuration;
 using FinNex.Application.Interfaces;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
@@ -23,6 +24,8 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly IIsciService _isciService;
         private readonly UserManager<AppUser> _userManager;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IWebPushService _webPushService;
+        private readonly IConfiguration _configuration;
 
         public InboxController(
             IMesajService mesajService,
@@ -30,7 +33,9 @@ namespace FinNex.UI.Areas.User.Controllers
             IEvezediciTesdiqService evezediciTesdiqService,
             IIsciService isciService,
             UserManager<AppUser> userManager,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IWebPushService webPushService,
+            IConfiguration configuration)
         {
             _mesajService = mesajService;
             _bildirisService = bildirisService;
@@ -38,6 +43,8 @@ namespace FinNex.UI.Areas.User.Controllers
             _isciService = isciService;
             _userManager = userManager;
             _unitOfWork = unitOfWork;
+            _webPushService = webPushService;
+            _configuration = configuration;
         }
 
         // ── GET /User/Inbox ──────────────────────────────────
@@ -271,6 +278,38 @@ namespace FinNex.UI.Areas.User.Controllers
             int m = mesaj.Success ? mesaj.Data : 0;
 
             return Json(new { bildiris = b, mesaj = m, cemi = b + m });
+        }
+
+        // ── POST /User/Inbox/PushAboneOl ─────────────────────
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> PushAboneOl([FromBody] PushAbonelikDto dto)
+        {
+            var isciId = await GetIsciIdAsync();
+            if (isciId == null) return Unauthorized();
+
+            await _webPushService.AboneOlAsync(isciId.Value, dto.Endpoint, dto.P256dh, dto.Auth);
+            return Ok();
+        }
+
+        // ── POST /User/Inbox/PushAbonelikSil ────────────────
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> PushAbonelikSil([FromBody] PushAbonelikSilDto dto)
+        {
+            var isciId = await GetIsciIdAsync();
+            if (isciId == null) return Unauthorized();
+
+            await _webPushService.AbonelikSilAsync(isciId.Value, dto.Endpoint);
+            return Ok();
+        }
+
+        // ── GET /User/Inbox/VapidPublicKey ──────────────────
+        [HttpGet]
+        public IActionResult VapidPublicKey()
+        {
+            var key = _configuration["Vapid:PublicKey"] ?? "";
+            return Json(new { key });
         }
 
         private async Task<int?> GetIsciIdAsync()
