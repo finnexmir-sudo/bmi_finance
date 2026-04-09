@@ -28,9 +28,11 @@
         // Confirmation of sent message - already appended locally
     });
 
-    connection.start().catch(function (err) {
-        console.error('SignalR baglanti xetasi:', err);
-    });
+    connection.start()
+        .then(function () { console.log('SignalR bağlandı'); })
+        .catch(function (err) {
+            console.error('SignalR bağlantı xətası:', err);
+        });
 
     // ── Load Contacts ───────────────────────────────────
     function loadContacts() {
