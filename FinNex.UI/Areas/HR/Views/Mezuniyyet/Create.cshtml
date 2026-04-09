@@ -5,185 +5,214 @@
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 }
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/hr/mezuniyyet.css" asp-append-version="true" />
-}
+<div class="fn-page fn-mez-create">
 
-<div class="container-fluid py-4">
-
-    <!-- Page Header -->
-    <div class="mez-page-header d-flex align-items-center gap-3 mez-animate">
-        <div class="header-icon">
-            <i class="bi bi-file-earmark-medical-fill"></i>
-        </div>
-        <div class="flex-grow-1">
-            <h1 class="page-title">Xəstəlik / Ezamiyyət Yazmaq</h1>
-            <p class="page-subtitle">İşçi üçün xəstəlik və ya ezamiyyət qeydi yaradın</p>
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Xəstəlik / Ezamiyyət yazmaq</div>
+            <div class="fn-page-sub">İşçi üçün xəstəlik və ya ezamiyyət qeydi yaradın</div>
         </div>
     </div>
 
-    <div class="row g-4">
+    <div class="fn-create-layout">
 
-        <!-- Form Column -->
-        <div class="col-lg-8 mez-animate mez-animate-delay-1">
+        @* ── Forma ── *@
+        <div class="fn-form-wrap fn-form-wrap--wide">
             <form asp-area="HR" asp-controller="Mezuniyyet" asp-action="Create"
-                  method="post" class="mez-validated-form" novalidate>
+                  method="post" id="mezForm">
                 @Html.AntiForgeryToken()
 
-                <!-- İşçi Seçimi -->
-                <div class="mez-card mb-4">
-                    <div class="mez-card-header">
-                        <i class="bi bi-person-badge text-primary"></i>
-                        <h5 class="card-header-title">İşçi Məlumatları</h5>
+                <div class="fn-card fn-card--form">
+
+                    @* ── İşçi seçimi ── *@
+                    <div class="fn-form-group">
+                        <label asp-for="IsciId" class="fn-label">
+                            İşçi <span class="fn-required">*</span>
+                        </label>
+                        <select asp-for="IsciId"
+                                asp-items="ViewBag.IsciList"
+                                class="fn-select"
+                                required>
+                            <option value="">-- İşçi seçin --</option>
+                        </select>
+                        <span asp-validation-for="IsciId" class="fn-val-msg"></span>
                     </div>
-                    <div class="mez-card-body">
-                        <div class="mez-form-group">
-                            <label asp-for="IsciId" class="mez-form-label">
-                                İşçi <span class="required">*</span>
+
+                    @* ── Növ seçimi: Xəstəlik / Ezamiyyət ── *@
+                    <div class="fn-form-group">
+                        <label class="fn-label">Qeyd növü <span class="fn-required">*</span></label>
+                        <div class="fn-nov-grid" style="grid-template-columns: repeat(2, 1fr);">
+                            <label class="fn-nov-card" id="card-xestelik">
+                                <input type="radio" name="Nov" value="@((int)MezuniyyetNovu.Xestelik)"
+                                       class="fn-nov-radio" id="type-xestelik" />
+                                <i class="bi bi-hospital" style="font-size:20px;color:#a855f7;"></i>
+                                Xəstəlik
+                                <small>Xəstəlik vərəqəsi</small>
                             </label>
-                            <select asp-for="IsciId"
-                                    asp-items="ViewBag.IsciList"
-                                    class="mez-form-control"
-                                    required>
-                                <option value="">-- İşçi seçin --</option>
-                            </select>
-                            <span asp-validation-for="IsciId" class="invalid-feedback"></span>
+                            <label class="fn-nov-card" id="card-ezamiyyet">
+                                <input type="radio" name="Nov" value="@((int)MezuniyyetNovu.Ezamiyyet)"
+                                       class="fn-nov-radio" id="type-ezamiyyet" />
+                                <i class="bi bi-briefcase" style="font-size:20px;color:#f97316;"></i>
+                                Ezamiyyət
+                                <small>Xidməti ezamiyyət</small>
+                            </label>
+                        </div>
+                        <span asp-validation-for="Nov" class="fn-val-msg"></span>
+                    </div>
+
+                    @* ── Tarixlər ── *@
+                    <div class="fn-form-row">
+                        <div class="fn-form-group">
+                            <label asp-for="BaslamaTarixi" class="fn-label">
+                                Başlama tarixi <span class="fn-required">*</span>
+                            </label>
+                            <input asp-for="BaslamaTarixi" type="date"
+                                   class="fn-input" id="baslamaTarixi" required />
+                            <span asp-validation-for="BaslamaTarixi" class="fn-val-msg"></span>
+                        </div>
+                        <div class="fn-form-group">
+                            <label asp-for="BitmeTarixi" class="fn-label">
+                                Bitmə tarixi <span class="fn-required">*</span>
+                            </label>
+                            <input asp-for="BitmeTarixi" type="date"
+                                   class="fn-input" id="bitmeTarixi" required />
+                            <span asp-validation-for="BitmeTarixi" class="fn-val-msg"></span>
                         </div>
                     </div>
-                </div>
 
-                <!-- Növ Seçimi: Yalnız Xəstəlik və Ezamiyyət -->
-                <div class="mez-card mb-4">
-                    <div class="mez-card-header">
-                        <i class="bi bi-tag text-primary"></i>
-                        <h5 class="card-header-title">Qeyd Növü</h5>
+                    @* ── Müddət göstəricisi ── *@
+                    <div class="fn-duration-box" id="durationBox" style="display:none">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <rect x="1" y="1.5" width="12" height="11" rx="2" stroke="#1e9b6b" stroke-width="1.2" />
+                            <path d="M1 5h12" stroke="#1e9b6b" stroke-width="1.2" />
+                        </svg>
+                        Hesablanmış iş günü: <strong id="durationText"></strong>
                     </div>
-                    <div class="mez-card-body">
-                        <div class="mez-type-selector">
-                            <div class="mez-type-option">
-                                <input type="radio"
-                                       asp-for="Nov"
-                                       id="type-xestelik"
-                                       value="@((int)MezuniyyetNovu.Xestelik)" />
-                                <label class="mez-type-label" for="type-xestelik">
-                                    <span class="type-icon"><i class="bi bi-hospital"></i></span>
-                                    <span class="type-name">Xəstəlik</span>
-                                </label>
-                            </div>
-                            <div class="mez-type-option">
-                                <input type="radio"
-                                       asp-for="Nov"
-                                       id="type-ezamiyyet"
-                                       value="@((int)MezuniyyetNovu.Ezamiyyet)" />
-                                <label class="mez-type-label" for="type-ezamiyyet">
-                                    <span class="type-icon"><i class="bi bi-briefcase"></i></span>
-                                    <span class="type-name">Ezamiyyət</span>
-                                </label>
-                            </div>
-                        </div>
-                        <span asp-validation-for="Nov" class="invalid-feedback d-block mt-2"></span>
+
+                    @* ── Qeyd ── *@
+                    <div class="fn-form-group">
+                        <label asp-for="Qeyd" class="fn-label">
+                            Qeyd
+                            <span class="fn-label-hint">(isteğe bağlı)</span>
+                        </label>
+                        <textarea asp-for="Qeyd" rows="3"
+                                  class="fn-textarea"
+                                  placeholder="Xəstəlik vərəqəsi nömrəsi, ezamiyyət məqsədi və s."></textarea>
+                        <span asp-validation-for="Qeyd" class="fn-val-msg"></span>
                     </div>
-                </div>
 
-                <!-- Tarix Aralığı -->
-                <div class="mez-card mb-4">
-                    <div class="mez-card-header">
-                        <i class="bi bi-calendar-range text-primary"></i>
-                        <h5 class="card-header-title">Tarix Aralığı</h5>
+                    @* ── Məlumat qutusu ── *@
+                    <div class="fn-info-box">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <circle cx="7" cy="7" r="5.5" stroke="#c9900a" stroke-width="1.2" />
+                            <path d="M7 4.5v3.5M7 9.5v.5" stroke="#c9900a" stroke-width="1.2" stroke-linecap="round" />
+                        </svg>
+                        HR tərəfindən yaradılan qeydlər <strong>birbaşa təsdiqlənir</strong>.
+                        Xəstəlik qeydi üçün balans yoxlanılır. Ezamiyyət üçün limit yoxdur.
                     </div>
-                    <div class="mez-card-body">
-                        <div class="date-range-row">
-                            <div class="mez-form-group mb-0">
-                                <label asp-for="BaslamaTarixi" class="mez-form-label">
-                                    Başlama Tarixi <span class="required">*</span>
-                                </label>
-                                <input asp-for="BaslamaTarixi"
-                                       id="BaslamaTarixi"
-                                       type="date"
-                                       class="mez-form-control"
-                                       required />
-                                <span asp-validation-for="BaslamaTarixi" class="invalid-feedback"></span>
-                            </div>
 
-                            <div class="date-range-separator">
-                                <i class="bi bi-arrow-right"></i>
-                            </div>
-
-                            <div class="mez-form-group mb-0">
-                                <label asp-for="BitmeTarixi" class="mez-form-label">
-                                    Bitmə Tarixi <span class="required">*</span>
-                                </label>
-                                <input asp-for="BitmeTarixi"
-                                       id="BitmeTarixi"
-                                       type="date"
-                                       class="mez-form-control"
-                                       required />
-                                <span asp-validation-for="BitmeTarixi" class="invalid-feedback"></span>
-                                <span id="date-range-error" class="invalid-feedback"></span>
-                            </div>
-                        </div>
-
-                        <!-- İş Günü Hesablama -->
-                        <div class="d-flex align-items-center gap-2 mt-3 pt-3"
-                             style="border-top: 1px dashed var(--gray-200);">
-                            <i class="bi bi-info-circle text-primary"></i>
-                            <span style="font-size:0.82rem; color:var(--gray-500);">Hesablanmış iş günü:</span>
-                            <span id="mez-day-count"
-                                  style="font-family:var(--font-mono); font-weight:700; font-size:0.9rem; color:var(--primary-light);">
-                                —
-                            </span>
-                        </div>
+                    @* ── Düymələr ── *@
+                    <div class="fn-form-actions">
+                        <button type="submit" class="fn-btn fn-btn--primary">
+                            Yadda saxla
+                        </button>
                     </div>
-                </div>
 
-                <!-- Qeyd -->
-                <div class="mez-card mb-4">
-                    <div class="mez-card-header">
-                        <i class="bi bi-chat-text text-primary"></i>
-                        <h5 class="card-header-title">Qeyd</h5>
-                    </div>
-                    <div class="mez-card-body">
-                        <div class="mez-form-group mb-0">
-                            <label asp-for="Qeyd" class="mez-form-label">Əlavə Məlumat</label>
-                            <textarea asp-for="Qeyd"
-                                      class="mez-form-control"
-                                      rows="3"
-                                      placeholder="Xəstəlik vərəqəsi nömrəsi, ezamiyyət məqsədi və s."></textarea>
-                            <span asp-validation-for="Qeyd" class="invalid-feedback"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Form Actions -->
-                <div class="d-flex gap-3 justify-content-end">
-                    <button type="submit" class="btn-mez-primary">
-                        <i class="bi bi-check-lg"></i> Yadda Saxla
-                    </button>
                 </div>
             </form>
         </div>
 
-        <!-- Info Sidebar -->
-        <div class="col-lg-4 mez-animate mez-animate-delay-2">
-            <div class="mez-card">
-                <div class="mez-card-header">
-                    <i class="bi bi-lightbulb text-warning"></i>
-                    <h5 class="card-header-title">Məlumat</h5>
-                </div>
-                <div class="mez-card-body">
-                    <ul style="font-size:0.82rem; color:var(--gray-600); padding-left:1.2rem; line-height:1.8;">
-                        <li>Həftəsonu günlər iş günü sayılmır</li>
-                        <li>Bayram günləri avtomatik çıxılır</li>
-                        <li>Xəstəlik qeydi üçün balans yoxlanılır</li>
-                        <li>Ezamiyyət üçün balans limiti yoxdur</li>
-                    </ul>
+        @* ── Sağ panel ── *@
+        <div class="fn-side-info">
+            <div class="fn-card">
+                <div class="fn-card-title" style="margin-bottom:10px">Məlumat</div>
+                <div class="fn-workflow-info">
+                    <div class="fn-wi-step">
+                        <div class="fn-wi-num">
+                            <i class="bi bi-check2" style="font-size:11px;"></i>
+                        </div>
+                        <div class="fn-wi-text">
+                            <strong>Həftəsonu çıxılır</strong>
+                            <span>Şənbə-Bazar iş günü sayılmır</span>
+                        </div>
+                    </div>
+                    <div class="fn-wi-step">
+                        <div class="fn-wi-num">
+                            <i class="bi bi-check2" style="font-size:11px;"></i>
+                        </div>
+                        <div class="fn-wi-text">
+                            <strong>Bayramlar çıxılır</strong>
+                            <span>Rəsmi bayram günləri avtomatik</span>
+                        </div>
+                    </div>
+                    <div class="fn-wi-step">
+                        <div class="fn-wi-num">
+                            <i class="bi bi-check2" style="font-size:11px;"></i>
+                        </div>
+                        <div class="fn-wi-text">
+                            <strong>Xəstəlik balansı</strong>
+                            <span>14 gün illik limit yoxlanılır</span>
+                        </div>
+                    </div>
+                    <div class="fn-wi-step">
+                        <div class="fn-wi-num">
+                            <i class="bi bi-check2" style="font-size:11px;"></i>
+                        </div>
+                        <div class="fn-wi-text">
+                            <strong>Ezamiyyət limitsiz</strong>
+                            <span>Balans yoxlanılmır</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="~/js/hr/mezuniyyet.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Növ seçimi - kart aktiv etmə
+            var novCards = document.querySelectorAll('.fn-nov-card');
+            novCards.forEach(function (card) {
+                card.addEventListener('click', function () {
+                    novCards.forEach(function (c) { c.classList.remove('fn-nov-card--active'); });
+                    card.classList.add('fn-nov-card--active');
+                });
+            });
+
+            // Tarix dəyişəndə iş günü hesabla
+            var baslamaEl = document.getElementById('baslamaTarixi');
+            var bitmeEl = document.getElementById('bitmeTarixi');
+            var durationBox = document.getElementById('durationBox');
+            var durationText = document.getElementById('durationText');
+
+            function hesablaIsGunu() {
+                if (!baslamaEl.value || !bitmeEl.value) {
+                    durationBox.style.display = 'none';
+                    return;
+                }
+                var baslama = new Date(baslamaEl.value);
+                var bitme = new Date(bitmeEl.value);
+                if (bitme < baslama) {
+                    durationBox.style.display = 'none';
+                    return;
+                }
+                var count = 0;
+                var cur = new Date(baslama);
+                while (cur <= bitme) {
+                    var day = cur.getDay();
+                    if (day !== 0 && day !== 6) count++;
+                    cur.setDate(cur.getDate() + 1);
+                }
+                durationText.textContent = count + ' iş günü';
+                durationBox.style.display = 'flex';
+            }
+
+            baslamaEl.addEventListener('change', hesablaIsGunu);
+            bitmeEl.addEventListener('change', hesablaIsGunu);
+        });
+    </script>
 }
