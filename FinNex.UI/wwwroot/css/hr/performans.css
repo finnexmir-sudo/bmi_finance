@@ -501,6 +501,103 @@
 .prf-criteria-bar-fill--orange { background: #d88a30; }
 .prf-criteria-bar-fill--teal { background: #0d9488; }
 
+/* ── Kriteriya Editable Rows ─────────────── */
+.prf-kr-row {
+    margin-bottom: 8px;
+}
+.prf-kr-fields {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.prf-kr-ad {
+    flex: 1;
+    min-width: 0;
+}
+.prf-kr-ceki-wrap {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    width: 90px;
+    flex-shrink: 0;
+}
+.prf-kr-ceki {
+    width: 60px !important;
+    text-align: center;
+    padding: 9px 6px !important;
+}
+.prf-kr-pct {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7385;
+}
+.prf-kr-sil {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 6px;
+    font-size: 16px;
+    color: #9ca3af;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all .15s;
+}
+.prf-kr-sil:hover {
+    color: #dc2626;
+    border-color: #dc2626;
+    background: #fef2f2;
+}
+.prf-kr-elave {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    margin-top: 8px;
+    border: 1px dashed #d0d5dd;
+    background: #fafbfc;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all .15s;
+}
+.prf-kr-elave:hover {
+    border-color: #e8b84b;
+    color: #c9900a;
+    background: #fffdf5;
+}
+.prf-ceki-total {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 700;
+    color: #059669;
+}
+.prf-ceki-error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #dc2626;
+}
+.prf-mudir-hint {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 4px;
+    font-size: 11px;
+    color: #059669;
+}
+
 @media (max-width: 900px) {
     .prf-stats { grid-template-columns: repeat(3, 1fr); }
     .prf-score-cards { grid-template-columns: 1fr; }
