@@ -1,8 +1,8 @@
-﻿@model FinNex.Application.DTOs.HR.Mezuniyyet.MezuniyyetUpdateDto
+@model FinNex.Application.DTOs.HR.Mezuniyyet.MezuniyyetUpdateDto
 @using FinNex.Domain.Entities.HR
 @{
-    ViewData["Title"] = "Məzuniyyəti Redaktə Et";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Qeydi Redaktə Et";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 
     static string StatusLabel(MezuniyyetStatus s) => s switch
     {
@@ -28,12 +28,9 @@
             <i class="bi bi-pencil-square"></i>
         </div>
         <div class="flex-grow-1">
-            <h1 class="page-title">Məzuniyyəti Redaktə Et</h1>
-            <p class="page-subtitle">Müraciət #@Model?.Id · Status: @StatusLabel(Model?.Status ?? MezuniyyetStatus.Gozlemede)</p>
+            <h1 class="page-title">Qeydi Redaktə Et</h1>
+            <p class="page-subtitle">Qeyd #@Model?.Id · Status: @StatusLabel(Model?.Status ?? MezuniyyetStatus.Gozlemede)</p>
         </div>
-        <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Index" class="btn-mez-secondary">
-            <i class="bi bi-arrow-left"></i> Geri
-        </a>
     </div>
 
     <div class="row g-4">
@@ -43,31 +40,21 @@
                 @Html.AntiForgeryToken()
                 <input asp-for="Id" type="hidden" />
 
-                <!-- Leave Type -->
+                <!-- Növ Seçimi: Yalnız Xəstəlik və Ezamiyyət -->
                 <div class="mez-card mb-4">
                     <div class="mez-card-header">
                         <i class="bi bi-tag text-primary"></i>
-                        <h5 class="card-header-title">Məzuniyyət Növü</h5>
+                        <h5 class="card-header-title">Qeyd Növü</h5>
                     </div>
                     <div class="mez-card-body">
                         <div class="mez-type-selector">
                             <div class="mez-type-option">
                                 <input type="radio"
                                        asp-for="Nov"
-                                       id="type-illik"
-                                       value="@((int)MezuniyyetNovu.Illik)" />
-                                <label class="mez-type-label" for="type-illik">
-                                    <span class="type-icon">☀️</span>
-                                    <span class="type-name">İllik Məzuniyyət</span>
-                                </label>
-                            </div>
-                            <div class="mez-type-option">
-                                <input type="radio"
-                                       asp-for="Nov"
                                        id="type-xestelik"
                                        value="@((int)MezuniyyetNovu.Xestelik)" />
                                 <label class="mez-type-label" for="type-xestelik">
-                                    <span class="type-icon">💊</span>
+                                    <span class="type-icon"><i class="bi bi-hospital"></i></span>
                                     <span class="type-name">Xəstəlik</span>
                                 </label>
                             </div>
@@ -77,7 +64,7 @@
                                        id="type-ezamiyyet"
                                        value="@((int)MezuniyyetNovu.Ezamiyyet)" />
                                 <label class="mez-type-label" for="type-ezamiyyet">
-                                    <span class="type-icon">✈️</span>
+                                    <span class="type-icon"><i class="bi bi-briefcase"></i></span>
                                     <span class="type-name">Ezamiyyət</span>
                                 </label>
                             </div>
@@ -86,7 +73,7 @@
                     </div>
                 </div>
 
-                <!-- Dates -->
+                <!-- Tarix Aralığı -->
                 <div class="mez-card mb-4">
                     <div class="mez-card-header">
                         <i class="bi bi-calendar-range text-primary"></i>
@@ -136,53 +123,7 @@
                     </div>
                 </div>
 
-                <!-- Substitute & Status -->
-                <div class="mez-card mb-4">
-                    <div class="mez-card-header">
-                        <i class="bi bi-people text-primary"></i>
-                        <h5 class="card-header-title">Əvəzedici və Status</h5>
-                    </div>
-                    <div class="mez-card-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <div class="mez-form-group">
-                                    <label asp-for="EvezEdenIsciId" class="mez-form-label">Əvəzedici İşçi</label>
-                                    <select asp-for="EvezEdenIsciId"
-                                            asp-items="ViewBag.EvezEdenIsciList"
-                                            class="mez-form-control">
-                                        <option value="">— Seçin (könüllü) —</option>
-                                    </select>
-                                    <span asp-validation-for="EvezEdenIsciId" class="invalid-feedback"></span>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mez-form-group">
-                                    <label asp-for="Status" class="mez-form-label">Status <span class="required">*</span></label>
-                                    <select asp-for="Status"
-                                            asp-items="Html.GetEnumSelectList<MezuniyyetStatus>()"
-                                            class="mez-form-control"
-                                            required>
-                                    </select>
-                                    <span asp-validation-for="Status" class="invalid-feedback"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mez-form-group mb-0" id="imtina-group"
-                             style="@(Model?.Status == MezuniyyetStatus.ImtinaEdildi ? "" : "display:none;")">
-                            <label asp-for="ImtinaSebebi" class="mez-form-label">
-                                İmtina Səbəbi <span class="required">*</span>
-                            </label>
-                            <textarea asp-for="ImtinaSebebi"
-                                      class="mez-form-control"
-                                      rows="2"
-                                      placeholder="Rədd etmə səbəbini qeyd edin..."></textarea>
-                            <span asp-validation-for="ImtinaSebebi" class="invalid-feedback"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Notes -->
+                <!-- Qeyd -->
                 <div class="mez-card mb-4">
                     <div class="mez-card-header">
                         <i class="bi bi-chat-text text-primary"></i>
@@ -194,21 +135,18 @@
                             <textarea asp-for="Qeyd"
                                       class="mez-form-control"
                                       rows="3"
-                                      placeholder="Müraciətlə bağlı qeydlər..."></textarea>
+                                      placeholder="Xəstəlik vərəqəsi nömrəsi, ezamiyyət məqsədi və s."></textarea>
                             <span asp-validation-for="Qeyd" class="invalid-feedback"></span>
                         </div>
                     </div>
                 </div>
 
+                <!-- Gizli sahələr -->
+                <input type="hidden" asp-for="Status" />
+                <input type="hidden" asp-for="ImtinaSebebi" />
+                <input type="hidden" asp-for="EvezEdenIsciId" />
+
                 <div class="d-flex gap-3 justify-content-end">
-                    <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Index"
-                       class="btn-mez-secondary">
-                        <i class="bi bi-x-lg"></i> Ləğv Et
-                    </a>
-                    <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Detail" asp-route-id="@Model?.Id"
-                       class="btn-mez-secondary">
-                        <i class="bi bi-eye"></i> Bax
-                    </a>
                     <button type="submit" class="btn-mez-primary">
                         <i class="bi bi-floppy"></i> Yadda Saxla
                     </button>
@@ -216,19 +154,20 @@
             </form>
         </div>
 
-        <!-- Sidebar -->
+        <!-- Info Sidebar -->
         <div class="col-lg-4 mez-animate mez-animate-delay-2">
             <div class="mez-card">
                 <div class="mez-card-header">
-                    <i class="bi bi-shield-exclamation text-warning"></i>
-                    <h5 class="card-header-title">Diqqət</h5>
+                    <i class="bi bi-lightbulb text-warning"></i>
+                    <h5 class="card-header-title">Məlumat</h5>
                 </div>
                 <div class="mez-card-body">
-                    <p style="font-size:0.85rem; color:var(--gray-600); line-height:1.7; margin:0;">
-                        Statusu <strong>Təsdiqlənib</strong> olaraq dəyişdirdikdə məzuniyyət balansı avtomatik yenilənəcəkdir.
-                        <br><br>
-                        <strong>İmtina</strong> statusu seçildikdə səbəb qeyd etmək məcburidir.
-                    </p>
+                    <ul style="font-size:0.82rem; color:var(--gray-600); padding-left:1.2rem; line-height:1.8;">
+                        <li>Yalnız tarix və növ dəyişdirilə bilər</li>
+                        <li>Tarix dəyişdikdə iş günləri yenidən hesablanır</li>
+                        <li>Xəstəlik qeydi üçün balans yoxlanılır</li>
+                        <li>Ezamiyyət üçün balans limiti yoxdur</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -237,16 +176,5 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="~/js/mezuniyyet.js" asp-append-version="true"></script>
-    <script>
-        // Show/hide imtina field
-        document.addEventListener('DOMContentLoaded', function () {
-            var statusSel = document.querySelector('select[name="Status"]');
-            var imtinaGroup = document.getElementById('imtina-group');
-            if (!statusSel || !imtinaGroup) return;
-            statusSel.addEventListener('change', function () {
-                imtinaGroup.style.display = this.value === '6' ? '' : 'none';
-            });
-        });
-    </script>
+    <script src="~/js/hr/mezuniyyet.js" asp-append-version="true"></script>
 }
