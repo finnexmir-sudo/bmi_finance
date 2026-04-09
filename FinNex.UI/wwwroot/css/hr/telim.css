@@ -253,17 +253,17 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 18px 24px;
-    background: linear-gradient(135deg, #f7f9fc 0%, #f0f4fa 100%);
-    border-bottom: 1px solid #e8eaef;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #1e2a3b 0%, #263548 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
 .tlm-create-header-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: #ecfdf5;
-    color: #1e9b6b;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba(232,184,75,0.2);
+    color: #e8b84b;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -273,12 +273,12 @@
 .tlm-create-header-title {
     font-size: 14px;
     font-weight: 700;
-    color: #0f1623;
+    color: #fff;
 }
 
 .tlm-create-header-sub {
     font-size: 11px;
-    color: #8a93a8;
+    color: rgba(255,255,255,0.45);
     margin-top: 1px;
 }
 
