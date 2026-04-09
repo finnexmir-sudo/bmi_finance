@@ -53,7 +53,7 @@ namespace FinNex.Application.Services.Communication
 
             if (abonelik != null)
             {
-                await _unitOfWork.Repository<PushAbonelik>().YumshaqSilAsync(abonelik.Id);
+                await _unitOfWork.Repository<PushAbonelik>().YumshakSilAsync(abonelik.Id);
                 await _unitOfWork.YaddaSaxlaAsync();
             }
         }
@@ -119,7 +119,7 @@ namespace FinNex.Application.Services.Communication
                     response.StatusCode == HttpStatusCode.NotFound)
                 {
                     // Abonelik keçərsizdir - sil
-                    await _unitOfWork.Repository<PushAbonelik>().YumshaqSilAsync(ab.Id);
+                    await _unitOfWork.Repository<PushAbonelik>().YumshakSilAsync(ab.Id);
                     await _unitOfWork.YaddaSaxlaAsync();
                     _logger.LogInformation("Keçərsiz push abonelik silindi: {Endpoint}", ab.Endpoint);
                 }
