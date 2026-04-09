@@ -112,3 +112,60 @@ checkNotifs();
 checkXatirlatma();
 setInterval(checkNotifs, 30000);
 setInterval(checkXatirlatma, 30000);
+
+// ══════════════════════════════════════════════════════
+// WEB PUSH NOTIFICATION - Service Worker + Subscription
+// ══════════════════════════════════════════════════════
+
+(function initPushNotifications() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    navigator.serviceWorker.register('/sw.js')
+        .then(function (reg) {
+            // VAPID public key-i al
+            return fetch('/User/Inbox/VapidPublicKey')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data.key) return;
+
+                    // Artıq abonə olubmu?
+                    return reg.pushManager.getSubscription().then(function (sub) {
+                        if (sub) return; // artıq abonədir
+
+                        // İcazə sor və abonə ol
+                        return reg.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: urlBase64ToUint8Array(data.key)
+                        }).then(function (subscription) {
+                            // Subscription-u serverə göndər
+                            var key = subscription.getKey('p256dh');
+                            var auth = subscription.getKey('auth');
+
+                            return fetch('/User/Inbox/PushAboneOl', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    endpoint: subscription.endpoint,
+                                    p256dh: btoa(String.fromCharCode.apply(null, new Uint8Array(key))),
+                                    auth: btoa(String.fromCharCode.apply(null, new Uint8Array(auth)))
+                                })
+                            });
+                        });
+                    });
+                });
+        })
+        .catch(function (err) {
+            console.log('Push notification qeydiyyatı uğursuz:', err);
+        });
+
+    function urlBase64ToUint8Array(base64String) {
+        var padding = '='.repeat((4 - base64String.length % 4) % 4);
+        var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        var rawData = atob(base64);
+        var outputArray = new Uint8Array(rawData.length);
+        for (var i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+})();

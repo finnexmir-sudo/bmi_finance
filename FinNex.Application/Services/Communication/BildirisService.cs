@@ -9,10 +9,12 @@ namespace FinNex.Application.Services.Communication
     public class BildirisService : IBildirisService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IWebPushService _webPushService;
 
-        public BildirisService(IUnitOfWork unitOfWork)
+        public BildirisService(IUnitOfWork unitOfWork, IWebPushService webPushService)
         {
             _unitOfWork = unitOfWork;
+            _webPushService = webPushService;
         }
 
         public async Task<Result<IList<BildirisDto>>> GetIscibildirisleriAsync(int isciId)
@@ -109,6 +111,14 @@ namespace FinNex.Application.Services.Communication
 
                 await _unitOfWork.Repository<Bildiris>().YaratAsync(entity);
                 await _unitOfWork.YaddaSaxlaAsync();
+
+                // Web Push bildirişi göndər
+                try
+                {
+                    await _webPushService.BildirisSonderAsync(isciId, bashliq, metn, redirectUrl);
+                }
+                catch { /* Push xətası əsas axını dayandırmamalıdır */ }
+
                 return Result.Ok();
             }
             catch (Exception ex)
