@@ -66,7 +66,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 {
                     Id = t.IsciId,
                     Ad = $"{t.Isci.Ad} {t.Isci.Soyad}",
-                    Vezife = t.Vezife?.Ad ?? "\u2014",
+                    Vezife = t.Vezife?.Ad ?? "—",
                     IsSobeReisi = sobeReisi != null && sobeReisi.IsciId == t.IsciId,
                     RolTipi = deptRollar.FirstOrDefault(r => r.IsciId == t.IsciId)?.RolTipi.ToString()
                 })

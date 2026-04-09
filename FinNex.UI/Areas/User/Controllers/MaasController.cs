@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FinNex.UI.Areas.User.Controllers
 {
     [Area("User")]
-    [Authorize(Roles = RoleNames.Operator + "," + RoleNames.Admin)]
+    [Authorize]
     public class MaasController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -41,12 +41,14 @@ namespace FinNex.UI.Areas.User.Controllers
             // Son 12 ay
             var now = DateTime.Now;
             var son12Ay = new DateTime(now.Year, now.Month, 1).AddMonths(-11);
+            var sonIl = son12Ay.Year;
+            var sonAy = son12Ay.Month;
 
             var maaslar = await _unitOfWork.Repository<Maas>()
                 .Query()
                 .Where(x => !x.Silinib &&
                             x.IsciId == isciId &&
-                            new DateTime(x.Il, x.Ay, 1) >= son12Ay)
+                            (x.Il > sonIl || (x.Il == sonIl && x.Ay >= sonAy)))
                 .OrderBy(x => x.Il)
                 .ThenBy(x => x.Ay)
                 .ToListAsync();

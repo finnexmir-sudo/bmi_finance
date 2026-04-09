@@ -37,7 +37,7 @@
             html += '  <div class="org-rehber-avatar">' + initials + '</div>';
             html += '  <div class="org-rehber-info">';
             html += '    <div class="org-rehber-name">' + escHtml(r.ad) + '</div>';
-            html += '    <div class="org-rehber-role">R\u0259hb\u0259r</div>';
+            html += '    <div class="org-rehber-role">Rəhbər</div>';
             html += '  </div>';
             html += '</div>';
         });
@@ -62,7 +62,7 @@
             html += '    </div>';
             html += '    <div>';
             html += '      <div class="org-dept-name">' + escHtml(dept.ad) + '</div>';
-            html += '      <div class="org-dept-count">' + dept.isciSayi + ' i\u015f\u00e7i</div>';
+            html += '      <div class="org-dept-count">' + dept.isciSayi + ' işçi</div>';
             html += '    </div>';
             html += '  </div>';
             html += '  <div class="org-dept-toggle">';
@@ -80,7 +80,7 @@
                 html += '  <div class="org-reisi-avatar">' + reisiInitials + '</div>';
                 html += '  <div class="org-reisi-info">';
                 html += '    <div class="org-reisi-name">' + escHtml(dept.sobeReisi) + '</div>';
-                html += '    <div class="org-reisi-role">\u015e\u00f6b\u0259 R\u0259isi</div>';
+                html += '    <div class="org-reisi-role">Şöbə Rəisi</div>';
                 html += '  </div>';
                 html += '</div>';
             }
@@ -101,7 +101,7 @@
                 });
                 html += '</div>';
             } else if (!dept.sobeReisi) {
-                html += '<div class="org-dept-empty">\u0130\u015f\u00e7i yoxdur</div>';
+                html += '<div class="org-dept-empty">İşçi yoxdur</div>';
             }
 
             html += '</div>'; // body
@@ -119,7 +119,7 @@
     }
 
     function escHtml(str) {
-        if (!str) return '\u2014';
+        if (!str) return '—';
         var d = document.createElement('div');
         d.textContent = str;
         return d.innerHTML;

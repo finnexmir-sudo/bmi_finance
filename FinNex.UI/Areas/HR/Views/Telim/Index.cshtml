@@ -1,6 +1,6 @@
 @using FinNex.Domain.Entities.HR
 @{
-    ViewData["Title"] = "T\u0259lim v\u0259 \u0130nki\u015faf";
+    ViewData["Title"] = "Təlim və İnkişaf";
     var activeTab = ViewBag.ActiveTab as string ?? "telimler";
     var sertifikatlar = ViewBag.Sertifikatlar as List<Sertifikat> ?? new List<Sertifikat>();
 }
@@ -13,15 +13,15 @@
 
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">T\u0259lim v\u0259 \u0130nki\u015faf</div>
-            <div class="fn-page-sub">T\u0259liml\u0259r, sertifikatlar v\u0259 pe\u015f\u0259kar inki\u015faf</div>
+            <div class="fn-page-title">Təlim və İnkişaf</div>
+            <div class="fn-page-sub">Təlimlər, sertifikatlar və peşəkar inkişaf</div>
         </div>
         <div style="display:flex;gap:8px;">
             <a asp-action="Create" class="fn-btn fn-btn--primary">
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                     <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
                 </svg>
-                Yeni T\u0259lim
+                Yeni Təlim
             </a>
         </div>
     </div>
@@ -29,7 +29,7 @@
     @* ── Tabs ─────────────────────────────────────────────── *@
     <div class="tlm-tabs">
         <button class="tlm-tab @(activeTab == "telimler" ? "active" : "")" data-tab="telimler">
-            T\u0259liml\u0259r
+            Təlimlər
         </button>
         <button class="tlm-tab @(activeTab == "sertifikatlar" ? "active" : "")" data-tab="sertifikatlar">
             Sertifikatlar <span class="tlm-tab-count">@sertifikatlar.Count</span>
@@ -40,26 +40,26 @@
     <div class="tlm-tab-content @(activeTab == "telimler" ? "active" : "")" id="tab-telimler">
         <div class="fn-card" style="padding:0;overflow:hidden;">
             <div class="tlm-toolbar">
-                <div class="tlm-result-count"><span id="tlmResultCount">0</span> t\u0259lim</div>
+                <div class="tlm-result-count"><span id="tlmResultCount">0</span> təlim</div>
             </div>
             <div class="tlm-table-wrap">
                 <table class="tlm-table" id="tlmTable">
                     <thead>
                         <tr>
-                            <th class="left">T\u0259lim ad\u0131</th>
-                            <th>T\u0259lim\u00e7i</th>
-                            <th>M\u0259kan</th>
-                            <th>Ba\u015flama</th>
-                            <th>Bitm\u0259</th>
-                            <th>M\u00fcdd\u0259t</th>
-                            <th>N\u00f6v</th>
+                            <th class="left">Təlim adı</th>
+                            <th>Təlimçi</th>
+                            <th>Məkan</th>
+                            <th>Başlama</th>
+                            <th>Bitmə</th>
+                            <th>Müddət</th>
+                            <th>Növ</th>
                             <th>Status</th>
-                            <th>\u0130\u015ftirak\u00e7\u0131</th>
-                            <th class="center">\u018fm\u0259liyyat</th>
+                            <th>İştirakçı</th>
+                            <th class="center">Əməliyyat</th>
                         </tr>
                     </thead>
                     <tbody id="tlmTableBody">
-                        <tr><td colspan="10" class="tlm-loading">Y\u00fckl\u0259nir...</td></tr>
+                        <tr><td colspan="10" class="tlm-loading">Yüklənir...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -71,14 +71,14 @@
 
         @* Yeni sertifikat formu *@
         <div class="fn-card" style="margin-bottom:12px;">
-            <div class="fn-card-title">Yeni Sertifikat \u018flav\u0259 Et</div>
+            <div class="fn-card-title">Yeni Sertifikat Əlavə Et</div>
             <form asp-action="SertifikatCreate" method="post">
                 @Html.AntiForgeryToken()
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
                     <div class="fn-form-row">
-                        <label class="fn-label">\u0130\u015f\u00e7i <span style="color:#d85a30;">*</span></label>
+                        <label class="fn-label">İşçi <span style="color:#d85a30;">*</span></label>
                         <select name="isciId" class="fn-input" required>
-                            <option value="">\u0130\u015f\u00e7i se\u00e7in...</option>
+                            <option value="">İşçi seçin...</option>
                             @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
                             {
                                 <option value="@item.Value">@item.Text</option>
@@ -86,21 +86,21 @@
                         </select>
                     </div>
                     <div class="fn-form-row">
-                        <label class="fn-label">Sertifikat Ad\u0131 <span style="color:#d85a30;">*</span></label>
-                        <input type="text" name="ad" class="fn-input" required placeholder="Sertifikat ad\u0131..." />
+                        <label class="fn-label">Sertifikat Adı <span style="color:#d85a30;">*</span></label>
+                        <input type="text" name="ad" class="fn-input" required placeholder="Sertifikat adı..." />
                     </div>
                     <div class="fn-form-row">
-                        <label class="fn-label">Ver\u0259n Qurum</label>
-                        <input type="text" name="verenQurum" class="fn-input" placeholder="Qurum ad\u0131..." />
+                        <label class="fn-label">Verən Qurum</label>
+                        <input type="text" name="verenQurum" class="fn-input" placeholder="Qurum adı..." />
                     </div>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
                     <div class="fn-form-row">
-                        <label class="fn-label">Verilm\u0259 Tarixi <span style="color:#d85a30;">*</span></label>
+                        <label class="fn-label">Verilmə Tarixi <span style="color:#d85a30;">*</span></label>
                         <input type="date" name="verilmeTarixi" class="fn-input" required />
                     </div>
                     <div class="fn-form-row">
-                        <label class="fn-label">Bitm\u0259 Tarixi</label>
+                        <label class="fn-label">Bitmə Tarixi</label>
                         <input type="date" name="bitirmeTarixi" class="fn-input" />
                     </div>
                     <div class="fn-form-row" style="display:flex;align-items:flex-end;">
@@ -108,7 +108,7 @@
                             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                                 <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
                             </svg>
-                            \u018flav\u0259 Et
+                            Əlavə Et
                         </button>
                     </div>
                 </div>
@@ -121,18 +121,18 @@
                 <table class="tlm-table">
                     <thead>
                         <tr>
-                            <th class="left">\u0130\u015f\u00e7i</th>
-                            <th class="left">Sertifikat Ad\u0131</th>
-                            <th>Ver\u0259n Qurum</th>
-                            <th>Verilm\u0259 Tarixi</th>
-                            <th>Bitm\u0259 Tarixi</th>
+                            <th class="left">İşçi</th>
+                            <th class="left">Sertifikat Adı</th>
+                            <th>Verən Qurum</th>
+                            <th>Verilmə Tarixi</th>
+                            <th>Bitmə Tarixi</th>
                             <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         @if (!sertifikatlar.Any())
                         {
-                            <tr><td colspan="6" class="tlm-loading">Sertifikat tap\u0131lmad\u0131</td></tr>
+                            <tr><td colspan="6" class="tlm-loading">Sertifikat tapılmadı</td></tr>
                         }
                         else
                         {
@@ -142,7 +142,7 @@
                                 <tr>
                                     <td class="left"><strong>@s.Isci.Ad @s.Isci.Soyad</strong></td>
                                     <td class="left">@s.Ad</td>
-                                    <td>@(s.VerenQurum ?? "\u2014")</td>
+                                    <td>@(s.VerenQurum ?? "—")</td>
                                     <td>@s.VerilmeTarixi.ToString("dd.MM.yyyy")</td>
                                     <td>
                                         @if (s.BitirmeTarixi.HasValue)
@@ -151,7 +151,7 @@
                                         }
                                         else
                                         {
-                                            <span class="tlm-unlimited">M\u00fcdd\u0259tsiz</span>
+                                            <span class="tlm-unlimited">Müddətsiz</span>
                                         }
                                     </td>
                                     <td>

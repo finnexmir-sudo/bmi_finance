@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "Yeni Performans Qiym\u0259tl\u0259ndirm\u0259";
+    ViewData["Title"] = "Yeni Performans Qiymətləndirmə";
 }
 
 @section Styles {
@@ -10,10 +10,10 @@
 
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">Yeni Performans Qiym\u0259tl\u0259ndirm\u0259</div>
-            <div class="fn-page-sub">\u0130\u015f\u00e7i se\u00e7in v\u0259 qiym\u0259tl\u0259ndirm\u0259 yarad\u0131n</div>
+            <div class="fn-page-title">Yeni Performans Qiymətləndirmə</div>
+            <div class="fn-page-sub">İşçi seçin və qiymətləndirmə yaradın</div>
         </div>
-        <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">\u2190 Siyah\u0131</a>
+        <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">← Siyahı</a>
     </div>
 
     <div class="fn-card" style="max-width:640px;">
@@ -21,9 +21,9 @@
             @Html.AntiForgeryToken()
 
             <div class="fn-form-row">
-                <label class="fn-label">\u0130\u015f\u00e7i <span style="color:#d85a30;">*</span></label>
+                <label class="fn-label">İşçi <span style="color:#d85a30;">*</span></label>
                 <select name="isciId" class="fn-input" required>
-                    <option value="">\u0130\u015f\u00e7i se\u00e7in...</option>
+                    <option value="">İşçi seçin...</option>
                     @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
                     {
                         <option value="@item.Value">@item.Text</option>
@@ -32,9 +32,9 @@
             </div>
 
             <div class="fn-form-row">
-                <label class="fn-label">Qiym\u0259tl\u0259ndir\u0259n (M\u00fcdir) <span style="color:#d85a30;">*</span></label>
+                <label class="fn-label">Qiymətləndirən (Müdir) <span style="color:#d85a30;">*</span></label>
                 <select name="qiymetlendirenIsciId" class="fn-input" required>
-                    <option value="">M\u00fcdir se\u00e7in...</option>
+                    <option value="">Müdir seçin...</option>
                     @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
                     {
                         <option value="@item.Value">@item.Text</option>
@@ -44,14 +44,14 @@
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div class="fn-form-row">
-                    <label class="fn-label">D\u00f6vr Tipi <span style="color:#d85a30;">*</span></label>
+                    <label class="fn-label">Dövr Tipi <span style="color:#d85a30;">*</span></label>
                     <select name="dovrTipi" id="dovrTipi" class="fn-input" required>
-                        <option value="1">R\u00fcbl\u00fck</option>
-                        <option value="2">\u0130llik</option>
+                        <option value="1">Rüblük</option>
+                        <option value="2">İllik</option>
                     </select>
                 </div>
                 <div class="fn-form-row">
-                    <label class="fn-label">\u0130l <span style="color:#d85a30;">*</span></label>
+                    <label class="fn-label">İl <span style="color:#d85a30;">*</span></label>
                     <select name="il" class="fn-input" required>
                         @foreach (var item in ViewBag.Iller as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
                         {
@@ -65,12 +65,12 @@
             </div>
 
             <div class="fn-form-row" id="rubuRow">
-                <label class="fn-label">R\u00fcb</label>
+                <label class="fn-label">Rüb</label>
                 <select name="rubu" class="fn-input">
-                    <option value="1">R\u00fcb 1</option>
-                    <option value="2">R\u00fcb 2</option>
-                    <option value="3">R\u00fcb 3</option>
-                    <option value="4">R\u00fcb 4</option>
+                    <option value="1">Rüb 1</option>
+                    <option value="2">Rüb 2</option>
+                    <option value="3">Rüb 3</option>
+                    <option value="4">Rüb 4</option>
                 </select>
             </div>
 
@@ -79,16 +79,16 @@
                     <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
                     <path d="M7 5v4M7 10.2v.3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                 </svg>
-                Yarad\u0131landan sonra a\u015fa\u011f\u0131dak\u0131 defolt kriteriyalar \u0259lav\u0259 edilir:
-                <strong>\u0130\u015f keyfiyy\u0259ti</strong> (30%),
-                <strong>Vaxt\u0131nda icra</strong> (20%),
-                <strong>Komanda i\u015fi</strong> (20%),
-                <strong>T\u0259\u015f\u0259bb\u00fcskarl\u0131q</strong> (15%),
-                <strong>Pe\u015f\u0259kar inki\u015faf</strong> (15%)
+                Yaradılandan sonra aşağıdakı defolt kriteriyalar əlavə edilir:
+                <strong>İş keyfiyyəti</strong> (30%),
+                <strong>Vaxtında icra</strong> (20%),
+                <strong>Komanda işi</strong> (20%),
+                <strong>Təşəbbüskarlıq</strong> (15%),
+                <strong>Peşəkar inkişaf</strong> (15%)
             </div>
 
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;">
-                <a asp-action="Index" class="fn-btn fn-btn--outline">L\u0259\u011fv et</a>
+                <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
                 <button type="submit" class="fn-btn fn-btn--primary">
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                         <path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />

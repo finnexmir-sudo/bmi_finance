@@ -1,7 +1,7 @@
 @model FinNex.Domain.Entities.HR.Telim
 @using FinNex.Domain.Entities.HR
 @{
-    ViewData["Title"] = $"T\u0259lim \u2014 {Model.Ad}";
+    ViewData["Title"] = $"Təlim — {Model.Ad}";
 
     string StatusClass(TelimStatus s) => s switch {
         TelimStatus.Planlanib => "tlm-badge--wait",
@@ -11,11 +11,11 @@
         _ => "tlm-badge--wait"
     };
     string StatusText(TelimStatus s) => s switch {
-        TelimStatus.Planlanib => "Planlan\u0131b",
+        TelimStatus.Planlanib => "Planlanıb",
         TelimStatus.Davam => "Davam edir",
-        TelimStatus.Tamamlandi => "Tamamland\u0131",
-        TelimStatus.LegvEdildi => "L\u0259\u011fv edildi",
-        _ => "\u2014"
+        TelimStatus.Tamamlandi => "Tamamlandı",
+        TelimStatus.LegvEdildi => "Ləğv edildi",
+        _ => "—"
     };
 }
 
@@ -30,39 +30,39 @@
             <div class="fn-page-title">@Model.Ad</div>
             <div class="fn-page-sub">
                 <span class="tlm-badge @StatusClass(Model.Status)">@StatusText(Model.Status)</span>
-                \u00b7 @Model.BaslamaTarixi.ToString("dd.MM.yyyy")
+                · @Model.BaslamaTarixi.ToString("dd.MM.yyyy")
                 @if (Model.BitmeTarixi.HasValue)
-                { <text> \u2014 @Model.BitmeTarixi.Value.ToString("dd.MM.yyyy")</text> }
-                \u00b7 @Model.MuddetSaat saat
+                { <text> — @Model.BitmeTarixi.Value.ToString("dd.MM.yyyy")</text> }
+                · @Model.MuddetSaat saat
             </div>
         </div>
-        <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">\u2190 Siyah\u0131</a>
+        <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">← Siyahı</a>
     </div>
 
     @* ── Melumat kartlari ─────────────────────────────────── *@
     <div class="tlm-info-grid">
         <div class="fn-card">
-            <div class="fn-card-title">T\u0259lim M\u0259lumatlar\u0131</div>
+            <div class="fn-card-title">Təlim Məlumatları</div>
             <div class="tlm-info-row">
-                <span>T\u0259lim\u00e7i</span>
-                <strong>@(Model.Tesviqci ?? "\u2014")</strong>
+                <span>Təlimçi</span>
+                <strong>@(Model.Tesviqci ?? "—")</strong>
             </div>
             <div class="tlm-info-row">
-                <span>M\u0259kan</span>
-                <strong>@(Model.Mekan ?? "\u2014")</strong>
+                <span>Məkan</span>
+                <strong>@(Model.Mekan ?? "—")</strong>
             </div>
             <div class="tlm-info-row">
-                <span>N\u00f6v</span>
-                <strong>@(Model.DaxiliTelimdir ? "Daxili t\u0259lim" : "Xarici t\u0259lim")</strong>
+                <span>Növ</span>
+                <strong>@(Model.DaxiliTelimdir ? "Daxili təlim" : "Xarici təlim")</strong>
             </div>
             <div class="tlm-info-row">
-                <span>X\u0259rc</span>
-                <strong>@(Model.Xerc.HasValue ? $"{Model.Xerc.Value:N2} AZN" : "\u2014")</strong>
+                <span>Xərc</span>
+                <strong>@(Model.Xerc.HasValue ? $"{Model.Xerc.Value:N2} AZN" : "—")</strong>
             </div>
             @if (!string.IsNullOrEmpty(Model.Tesvir))
             {
                 <div class="tlm-info-row" style="flex-direction:column;gap:4px;">
-                    <span>T\u0259svir</span>
+                    <span>Təsvir</span>
                     <div class="tlm-tesvir">@Model.Tesvir</div>
                 </div>
             }
@@ -73,11 +73,11 @@
             <div class="tlm-stat-grid">
                 <div class="tlm-stat-item">
                     <div class="tlm-stat-val">@Model.Ishtirakcilar.Count</div>
-                    <div class="tlm-stat-lbl">\u0130\u015ftirak\u00e7\u0131</div>
+                    <div class="tlm-stat-lbl">İştirakçı</div>
                 </div>
                 <div class="tlm-stat-item">
                     <div class="tlm-stat-val">@Model.Ishtirakcilar.Count(x => x.Istirakdir)</div>
-                    <div class="tlm-stat-lbl">\u0130\u015ftirak etdi</div>
+                    <div class="tlm-stat-lbl">İştirak etdi</div>
                 </div>
                 <div class="tlm-stat-item">
                     <div class="tlm-stat-val">
@@ -85,11 +85,11 @@
                             var qiymetliIshtirakcilar = Model.Ishtirakcilar.Where(x => x.Qiymet.HasValue).ToList();
                             var ortaQiymet = qiymetliIshtirakcilar.Any()
                                 ? qiymetliIshtirakcilar.Average(x => x.Qiymet!.Value).ToString("N1")
-                                : "\u2014";
+                                : "—";
                         }
                         @ortaQiymet
                     </div>
-                    <div class="tlm-stat-lbl">Ort. Qiym\u0259t</div>
+                    <div class="tlm-stat-lbl">Ort. Qiymət</div>
                 </div>
                 <div class="tlm-stat-item">
                     <div class="tlm-stat-val">@Model.MuddetSaat</div>
@@ -101,7 +101,7 @@
 
     @* ── Ishtirakcilar cedveli ────────────────────────────── *@
     <div class="fn-card" style="padding:0;overflow:hidden;margin-top:12px;">
-        <div class="tlm-section-head">\u0130\u015ftirak\u00e7\u0131lar</div>
+        <div class="tlm-section-head">İştirakçılar</div>
         <div class="tlm-table-wrap">
             <table class="tlm-table">
                 <thead>
@@ -109,15 +109,15 @@
                         <th class="left">#</th>
                         <th class="left">Ad Soyad</th>
                         <th>Departament</th>
-                        <th>\u0130\u015ftirak</th>
-                        <th>Qiym\u0259t</th>
+                        <th>İştirak</th>
+                        <th>Qiymət</th>
                         <th>Qeyd</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (!Model.Ishtirakcilar.Any())
                     {
-                        <tr><td colspan="6" class="tlm-loading">\u0130\u015ftirak\u00e7\u0131 yoxdur</td></tr>
+                        <tr><td colspan="6" class="tlm-loading">İştirakçı yoxdur</td></tr>
                     }
                     else
                     {
@@ -125,14 +125,14 @@
                         @foreach (var ish in Model.Ishtirakcilar.OrderBy(x => x.Isci.Soyad))
                         {
                             idx++;
-                            var dept = ish.Isci.IsciTeyinatlari.FirstOrDefault()?.Departament?.Ad ?? "\u2014";
+                            var dept = ish.Isci.IsciTeyinatlari.FirstOrDefault()?.Departament?.Ad ?? "—";
                             <tr>
                                 <td class="left">@idx</td>
                                 <td class="left"><strong>@ish.Isci.Ad @ish.Isci.Soyad</strong></td>
                                 <td>@dept</td>
                                 <td>
                                     @if (ish.Istirakdir)
-                                    { <span class="tlm-badge tlm-badge--done">B\u0259li</span> }
+                                    { <span class="tlm-badge tlm-badge--done">Bəli</span> }
                                     else
                                     { <span class="tlm-badge tlm-badge--wait">Xeyr</span> }
                                 </td>
@@ -140,9 +140,9 @@
                                     @if (ish.Qiymet.HasValue)
                                     { <span class="tlm-qiymet">@ish.Qiymet.Value.ToString("N1")</span> }
                                     else
-                                    { <span>\u2014</span> }
+                                    { <span>—</span> }
                                 </td>
-                                <td>@(ish.Qeyd ?? "\u2014")</td>
+                                <td>@(ish.Qeyd ?? "—")</td>
                             </tr>
                         }
                     }
