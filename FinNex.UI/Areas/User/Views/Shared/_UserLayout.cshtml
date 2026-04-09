@@ -77,7 +77,7 @@
                    ═══════════════════════════════════════════════════ *@
                 <div class="fn-nav-label">Əməkdaş</div>
 
-                <div class="fn-nav-group @(currentArea != "HR" && currentController is "Davamiyyet" or "Mezuniyyet" or "Muraciet" or "Tapshiriq" or "Gorush" or "Icaze" ? "open" : "")">
+                <div class="fn-nav-group @(currentArea != "HR" && currentController is "Davamiyyet" or "Mezuniyyet" or "Muraciet" or "Tapshiriq" or "Gorush" or "Icaze" or "Maas" ? "open" : "")">
                     <button type="button" class="fn-nav-group-toggle">
                         <div class="fn-nav-group-left">
                             <div class="fn-nav-icon">
@@ -112,6 +112,10 @@
                         <a asp-area="User" asp-controller="Gorush" asp-action="Index"
                            class="fn-nav-subitem @(currentController == "Gorush" ? "active" : "")">
                             <div class="fn-sub-dot"></div> Görüşlər
+                        </a>
+                        <a asp-area="User" asp-controller="Maas" asp-action="Tarixce"
+                           class="fn-nav-subitem @(currentController == "Maas" && currentArea == "User" ? "active" : "")">
+                            <div class="fn-sub-dot"></div> Maaş Tarixçəsi
                         </a>
                     </div>
                 </div>

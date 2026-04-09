@@ -1,0 +1,109 @@
+@{
+    ViewData["Title"] = "Yeni Performans Qiym\u0259tl\u0259ndirm\u0259";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/performans.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Yeni Performans Qiym\u0259tl\u0259ndirm\u0259</div>
+            <div class="fn-page-sub">\u0130\u015f\u00e7i se\u00e7in v\u0259 qiym\u0259tl\u0259ndirm\u0259 yarad\u0131n</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">\u2190 Siyah\u0131</a>
+    </div>
+
+    <div class="fn-card" style="max-width:640px;">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="fn-form-row">
+                <label class="fn-label">\u0130\u015f\u00e7i <span style="color:#d85a30;">*</span></label>
+                <select name="isciId" class="fn-input" required>
+                    <option value="">\u0130\u015f\u00e7i se\u00e7in...</option>
+                    @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                    {
+                        <option value="@item.Value">@item.Text</option>
+                    }
+                </select>
+            </div>
+
+            <div class="fn-form-row">
+                <label class="fn-label">Qiym\u0259tl\u0259ndir\u0259n (M\u00fcdir) <span style="color:#d85a30;">*</span></label>
+                <select name="qiymetlendirenIsciId" class="fn-input" required>
+                    <option value="">M\u00fcdir se\u00e7in...</option>
+                    @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                    {
+                        <option value="@item.Value">@item.Text</option>
+                    }
+                </select>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="fn-form-row">
+                    <label class="fn-label">D\u00f6vr Tipi <span style="color:#d85a30;">*</span></label>
+                    <select name="dovrTipi" id="dovrTipi" class="fn-input" required>
+                        <option value="1">R\u00fcbl\u00fck</option>
+                        <option value="2">\u0130llik</option>
+                    </select>
+                </div>
+                <div class="fn-form-row">
+                    <label class="fn-label">\u0130l <span style="color:#d85a30;">*</span></label>
+                    <select name="il" class="fn-input" required>
+                        @foreach (var item in ViewBag.Iller as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                        {
+                            if (item.Selected)
+                            { <option value="@item.Value" selected>@item.Text</option> }
+                            else
+                            { <option value="@item.Value">@item.Text</option> }
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="fn-form-row" id="rubuRow">
+                <label class="fn-label">R\u00fcb</label>
+                <select name="rubu" class="fn-input">
+                    <option value="1">R\u00fcb 1</option>
+                    <option value="2">R\u00fcb 2</option>
+                    <option value="3">R\u00fcb 3</option>
+                    <option value="4">R\u00fcb 4</option>
+                </select>
+            </div>
+
+            <div class="prf-info-box">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
+                    <path d="M7 5v4M7 10.2v.3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+                Yarad\u0131landan sonra a\u015fa\u011f\u0131dak\u0131 defolt kriteriyalar \u0259lav\u0259 edilir:
+                <strong>\u0130\u015f keyfiyy\u0259ti</strong> (30%),
+                <strong>Vaxt\u0131nda icra</strong> (20%),
+                <strong>Komanda i\u015fi</strong> (20%),
+                <strong>T\u0259\u015f\u0259bb\u00fcskarl\u0131q</strong> (15%),
+                <strong>Pe\u015f\u0259kar inki\u015faf</strong> (15%)
+            </div>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;">
+                <a asp-action="Index" class="fn-btn fn-btn--outline">L\u0259\u011fv et</a>
+                <button type="submit" class="fn-btn fn-btn--primary">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Yarat
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('dovrTipi').addEventListener('change', function () {
+            document.getElementById('rubuRow').style.display = this.value === '2' ? 'none' : '';
+        });
+    </script>
+}

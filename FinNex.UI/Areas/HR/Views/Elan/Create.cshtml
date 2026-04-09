@@ -1,0 +1,74 @@
+@{
+    ViewData["Title"] = "Yeni Elan";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Yeni elan yaradin</div>
+            <div class="fn-page-sub">Butun emekdashlara gosterilecek elan</div>
+        </div>
+        <a asp-area="HR" asp-controller="Elan" asp-action="Index"
+           class="fn-btn fn-btn--outline">&#8592; Geri</a>
+    </div>
+
+    <div class="fn-form-wrap">
+        <form asp-area="HR" asp-controller="Elan" asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="fn-card fn-card--form">
+
+                @* ── Bashliq ── *@
+                <div class="fn-form-group">
+                    <label class="fn-label">
+                        Bashliq <span class="fn-required">*</span>
+                    </label>
+                    <input type="text" name="Bashliq" class="fn-input" required
+                           placeholder="Elan bashligi..." />
+                </div>
+
+                @* ── Metn ── *@
+                <div class="fn-form-group">
+                    <label class="fn-label">
+                        Metn <span class="fn-required">*</span>
+                    </label>
+                    <textarea name="Metn" class="fn-input" rows="5" required
+                              placeholder="Elan metni..."></textarea>
+                </div>
+
+                @* ── Vacibdir + Bitirme tarixi ── *@
+                <div class="fn-form-row">
+                    <div class="fn-form-group">
+                        <label class="fn-label">Vacib elan</label>
+                        <div class="fn-checkbox-wrap">
+                            <input type="checkbox" name="Vacibdir" value="true" id="chkVacib" />
+                            <label for="chkVacib">Bu elan vacibdir</label>
+                        </div>
+                    </div>
+                    <div class="fn-form-group">
+                        <label class="fn-label">
+                            Bitirme tarixi
+                            <span class="fn-label-hint">(bosh = muddetsiz)</span>
+                        </label>
+                        <input type="date" name="BitirmeTarixi" class="fn-input" />
+                    </div>
+                </div>
+
+                @* ── Duymeler ── *@
+                <div class="fn-form-actions">
+                    <a asp-area="HR" asp-controller="Elan" asp-action="Index"
+                       class="fn-btn fn-btn--outline">Legv et</a>
+                    <button type="submit" class="fn-btn fn-btn--primary">
+                        Elan yarat
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/elan.css" asp-append-version="true" />
+}

@@ -1,0 +1,201 @@
+/* ── HR Xerc Idareetmesi ──────────────────────────────── */
+
+.xerc-hr-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.xerc-filters {
+    margin-bottom: 16px;
+}
+
+.xerc-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.xerc-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+}
+
+.xerc-table thead th {
+    background: #f8f9fb;
+    color: #4a5568;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.xerc-table tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+}
+
+.xerc-table tbody tr:hover td {
+    background: #f8fafc;
+}
+
+.xerc-table .xerc-amount {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Badges */
+.xerc-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.xerc-badge--muraciet {
+    background: #fff7e6;
+    color: #c9900a;
+}
+
+.xerc-badge--sobe {
+    background: #e8f4ff;
+    color: #2563eb;
+}
+
+.xerc-badge--hr {
+    background: #f3e8ff;
+    color: #7c3aed;
+}
+
+.xerc-badge--odenildi {
+    background: #ecfdf5;
+    color: #16a34a;
+}
+
+.xerc-badge--imtina {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+/* Action buttons */
+.xerc-action-btns {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.xerc-action-btns .fn-btn {
+    font-size: 11px;
+    padding: 4px 10px;
+}
+
+.fn-btn--success {
+    background: #16a34a;
+    color: #fff;
+}
+
+.fn-btn--success:hover {
+    background: #15803d;
+}
+
+.fn-btn--danger {
+    background: #dc2626;
+    color: #fff;
+}
+
+.fn-btn--danger:hover {
+    background: #b91c1c;
+}
+
+.fn-btn--info {
+    background: #2563eb;
+    color: #fff;
+}
+
+.fn-btn--info:hover {
+    background: #1d4ed8;
+}
+
+.xerc-empty {
+    text-align: center;
+    color: #94a3b8;
+    padding: 40px !important;
+    font-size: 14px;
+}
+
+.xerc-qebz-link {
+    font-size: 12px;
+    color: #2563eb;
+    text-decoration: none;
+}
+
+.xerc-qebz-link:hover {
+    text-decoration: underline;
+}
+
+/* ── Imtina Modal ── */
+.xerc-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.xerc-modal {
+    background: #fff;
+    border-radius: 12px;
+    width: 440px;
+    max-width: 95vw;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.xerc-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 0;
+}
+
+.xerc-modal-header h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1d21;
+    margin: 0;
+}
+
+.xerc-modal-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: #94a3b8;
+    cursor: pointer;
+}
+
+.xerc-modal-close:hover {
+    color: #475569;
+}
+
+.xerc-modal-body {
+    padding: 20px 24px;
+}
+
+.xerc-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 0 24px 20px;
+}
+
+@media (max-width: 768px) {
+    .xerc-hr-actions {
+        flex-wrap: wrap;
+    }
+}

@@ -1,0 +1,96 @@
+@{
+    ViewData["Title"] = "Xerc Idareetmesi";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Xerc Idareetmesi</div>
+            <div class="fn-page-sub">Butun xerc muracietleri ve onlarin statusu</div>
+        </div>
+        <div class="xerc-hr-actions">
+            <button id="btnExcel" class="fn-btn fn-btn--outline" type="button">
+                <i class="bi bi-file-earmark-excel"></i> Excel
+            </button>
+        </div>
+    </div>
+
+    @* ── Filters ── *@
+    <div class="fn-card xerc-filters">
+        <div class="fn-form-row">
+            <div class="fn-form-group">
+                <label class="fn-label">Status</label>
+                <select id="filterStatus" class="fn-input">
+                    <option value="-1">Hamisi</option>
+                    <option value="0">Muraciet</option>
+                    <option value="1">Sobe reisi tesdiq</option>
+                    <option value="2">HR tesdiq</option>
+                    <option value="3">Odenildi</option>
+                    <option value="4">Imtina edildi</option>
+                </select>
+            </div>
+            <div class="fn-form-group">
+                <label class="fn-label">Axtarish</label>
+                <input type="text" id="filterAxtaris" class="fn-input" placeholder="Isci adi ve ya tesvir..." />
+            </div>
+            <div class="fn-form-group" style="align-self:flex-end">
+                <button id="btnFilter" class="fn-btn fn-btn--primary" type="button">Axtar</button>
+            </div>
+        </div>
+    </div>
+
+    @* ── Table ── *@
+    <div class="fn-card">
+        <div class="xerc-table-wrap">
+            <table class="xerc-table" id="xercTable">
+                <thead>
+                    <tr>
+                        <th>Isci</th>
+                        <th>Kateqoriya</th>
+                        <th>Tesvir</th>
+                        <th>Mebleg</th>
+                        <th>Tarix</th>
+                        <th>Status</th>
+                        <th>Emeliyyat</th>
+                    </tr>
+                </thead>
+                <tbody id="xercBody">
+                    <tr>
+                        <td colspan="7" class="xerc-empty">Yuklenir...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @* ── Imtina Modal ── *@
+    <div class="xerc-modal-overlay" id="imtinaModal" style="display:none">
+        <div class="xerc-modal">
+            <div class="xerc-modal-header">
+                <h3>Imtina Sebebi</h3>
+                <button type="button" class="xerc-modal-close" id="btnImtinaClose">&times;</button>
+            </div>
+            <div class="xerc-modal-body">
+                <input type="hidden" id="imtinaXercId" />
+                <div class="fn-form-group">
+                    <label class="fn-label">Sebeb</label>
+                    <textarea id="imtinaSebeb" class="fn-input" rows="3" placeholder="Imtina sebebini qeyd edin..."></textarea>
+                </div>
+            </div>
+            <div class="xerc-modal-footer">
+                <button type="button" class="fn-btn fn-btn--outline" id="btnImtinaCancel">Legv</button>
+                <button type="button" class="fn-btn fn-btn--danger" id="btnImtinaConfirm">Imtina Et</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/xerc.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/hr/xerc.js" asp-append-version="true"></script>
+}

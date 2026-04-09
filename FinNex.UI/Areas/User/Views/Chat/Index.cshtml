@@ -1,0 +1,62 @@
+@{
+    ViewData["Title"] = "Daxili Chat";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="fn-page chat-page">
+    <div class="chat-container">
+
+        @* ── Left Panel: Contacts ── *@
+        <div class="chat-sidebar">
+            <div class="chat-sidebar-header">
+                <div class="chat-sidebar-title">Mesajlar</div>
+                <input type="text" id="contactSearch" class="fn-input chat-search"
+                       placeholder="Isci axtar..." />
+            </div>
+            <div class="chat-contact-list" id="contactList">
+                <div class="chat-loading">Yuklenir...</div>
+            </div>
+        </div>
+
+        @* ── Right Panel: Messages ── *@
+        <div class="chat-main">
+            <div class="chat-main-header" id="chatHeader" style="display:none">
+                <div class="chat-avatar" id="chatAvatar">--</div>
+                <div class="chat-header-info">
+                    <div class="chat-header-name" id="chatName">-</div>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-empty-state">
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                        <rect x="4" y="8" width="40" height="28" rx="4" stroke="#dde1ea" stroke-width="2" />
+                        <path d="M4 28l12-8 8 6 8-6 12 8" stroke="#dde1ea" stroke-width="2" />
+                    </svg>
+                    <div class="chat-empty-title">Sohbet sechin</div>
+                    <div class="chat-empty-sub">Mesajlasmaq uchun sol panelden kontakt sechin</div>
+                </div>
+            </div>
+
+            <div class="chat-input-area" id="chatInputArea" style="display:none">
+                <input type="text" id="chatInput" class="fn-input chat-input"
+                       placeholder="Mesaj yazin..." autocomplete="off" />
+                <button type="button" id="btnSend" class="fn-btn fn-btn--primary chat-send-btn">
+                    Gonder
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="menimIsciId" value="" />
+<input type="hidden" id="secilmisIsciId" value="" />
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/chat.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script src="~/js/User/chat.js" asp-append-version="true"></script>
+}

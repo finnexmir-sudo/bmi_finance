@@ -1,0 +1,53 @@
+@{
+    ViewData["Title"] = "Elan Idareetmesi";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Elan Idareetmesi</div>
+            <div class="fn-page-sub">Elanlar yaradin, redakte edin ve silin</div>
+        </div>
+        <a asp-area="HR" asp-controller="Elan" asp-action="Create"
+           class="fn-btn fn-btn--primary">+ Yeni elan</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
+    }
+
+    @* ── Elan list ── *@
+    <div class="fn-card">
+        <div class="elan-table-wrap">
+            <table class="elan-table" id="elanTable">
+                <thead>
+                    <tr>
+                        <th>Bashliq</th>
+                        <th>Gonderen</th>
+                        <th>Vacib</th>
+                        <th>Bitirme tarixi</th>
+                        <th>Aktiv</th>
+                        <th>Yaradilma</th>
+                        <th>Emeliyyat</th>
+                    </tr>
+                </thead>
+                <tbody id="elanBody">
+                    <tr>
+                        <td colspan="7" class="elan-empty">Yuklenir...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/elan.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/hr/elan.js" asp-append-version="true"></script>
+}

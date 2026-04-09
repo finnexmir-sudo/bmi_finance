@@ -1,0 +1,71 @@
+@model List<FinNex.Domain.Entities.Communication.Elan>
+@{
+    ViewData["Title"] = "Elanlar";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Elanlar</div>
+            <div class="fn-page-sub">Sirket daxili elan ve bildirishler</div>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="fn-empty-state">
+            <div class="fn-empty-icon">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                    <rect x="6" y="4" width="28" height="32" rx="4" stroke="#dde1ea" stroke-width="2" />
+                    <path d="M12 14h16M12 20h12M12 26h8" stroke="#dde1ea" stroke-width="2" stroke-linecap="round" />
+                </svg>
+            </div>
+            <div class="fn-empty-title">Hazirda elan yoxdur</div>
+            <div class="fn-empty-sub">Yeni elanlar burada gosterilecek</div>
+        </div>
+    }
+    else
+    {
+        <div class="elan-grid" id="elanGrid">
+            @foreach (var elan in Model)
+            {
+                <div class="elan-card @(elan.Vacibdir ? "elan-card--vacib" : "")">
+                    @if (elan.Vacibdir)
+                    {
+                        <div class="elan-vacib-badge">Vacib</div>
+                    }
+                    <div class="elan-card-header">
+                        <h3 class="elan-card-title">@elan.Bashliq</h3>
+                        @if (elan.BitirmeTarixi.HasValue)
+                        {
+                            <div class="elan-card-date">
+                                Son: @elan.BitirmeTarixi.Value.ToString("dd.MM.yyyy")
+                            </div>
+                        }
+                    </div>
+                    <div class="elan-card-body">
+                        <p>@elan.Metn</p>
+                    </div>
+                    <div class="elan-card-footer">
+                        <span class="elan-card-author">
+                            @(elan.GonderenIsci != null ? $"{elan.GonderenIsci.Ad} {elan.GonderenIsci.Soyad}" : "-")
+                        </span>
+                        <span class="elan-card-time">
+                            @elan.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")
+                        </span>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/elan.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/User/elan.js" asp-append-version="true"></script>
+}

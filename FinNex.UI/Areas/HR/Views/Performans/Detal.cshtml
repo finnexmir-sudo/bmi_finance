@@ -1,0 +1,239 @@
+@model FinNex.Domain.Entities.HR.PerformansQiymetlendirme
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = $"Performans \u2014 {Model.Isci.Ad} {Model.Isci.Soyad}";
+
+    var teyinat = Model.Isci.IsciTeyinatlari.FirstOrDefault();
+
+    string StatusClass(PerformansStatus s) => s switch {
+        PerformansStatus.Gozlemede => "prf-badge--wait",
+        PerformansStatus.IsciQiymetlendirdi => "prf-badge--progress",
+        PerformansStatus.MudirQiymetlendirdi => "prf-badge--review",
+        PerformansStatus.Tamamlandi => "prf-badge--done",
+        _ => "prf-badge--wait"
+    };
+    string StatusText(PerformansStatus s) => s switch {
+        PerformansStatus.Gozlemede => "G\u00f6zl\u0259m\u0259d\u0259",
+        PerformansStatus.IsciQiymetlendirdi => "\u0130\u015f\u00e7i qiym\u0259tl\u0259ndirdi",
+        PerformansStatus.MudirQiymetlendirdi => "M\u00fcdir qiym\u0259tl\u0259ndirdi",
+        PerformansStatus.Tamamlandi => "Tamamland\u0131",
+        _ => "\u2014"
+    };
+    string QiymetClass(decimal q) => q >= 4 ? "prf-q--high" : q >= 3 ? "prf-q--mid" : q > 0 ? "prf-q--low" : "";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/performans.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">@Model.Isci.Ad @Model.Isci.Soyad</div>
+            <div class="fn-page-sub">
+                @(teyinat?.Departament?.Ad ?? "\u2014") \u00b7
+                @(teyinat?.Vezife?.Ad ?? "\u2014") \u00b7
+                @(Model.DovrTipi == PerformansDovrTipi.Rublik ? $"R\u00fcb {Model.Rubu}" : "\u0130llik") @Model.Il \u00b7
+                <span class="prf-badge @StatusClass(Model.Status)">@StatusText(Model.Status)</span>
+            </div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">\u2190 Siyah\u0131</a>
+    </div>
+
+    @* ── Qiymet Kartlari ─────────────────────────────────── *@
+    <div class="prf-score-cards">
+        <div class="prf-score-card prf-score-card--isci">
+            <div class="prf-score-label">\u0130\u015f\u00e7i Ortalamas\u0131</div>
+            <div class="prf-score-value @QiymetClass(Model.IsciOrtalamaQiymet)">
+                @(Model.IsciOrtalamaQiymet > 0 ? Model.IsciOrtalamaQiymet.ToString("N2") : "\u2014")
+            </div>
+            @if (Model.IsciQiymetlendirmeTarixi.HasValue)
+            {
+                <div class="prf-score-date">@Model.IsciQiymetlendirmeTarixi.Value.ToString("dd.MM.yyyy HH:mm")</div>
+            }
+        </div>
+        <div class="prf-score-card prf-score-card--mudir">
+            <div class="prf-score-label">M\u00fcdir Ortalamas\u0131</div>
+            <div class="prf-score-value @QiymetClass(Model.MudirOrtalamaQiymet)">
+                @(Model.MudirOrtalamaQiymet > 0 ? Model.MudirOrtalamaQiymet.ToString("N2") : "\u2014")
+            </div>
+            @if (Model.MudirQiymetlendirmeTarixi.HasValue)
+            {
+                <div class="prf-score-date">@Model.MudirQiymetlendirmeTarixi.Value.ToString("dd.MM.yyyy HH:mm")</div>
+            }
+        </div>
+        <div class="prf-score-card prf-score-card--yekun">
+            <div class="prf-score-label">Yekun Qiym\u0259t</div>
+            <div class="prf-score-value @QiymetClass(Model.YekunQiymet)">
+                @(Model.YekunQiymet > 0 ? Model.YekunQiymet.ToString("N2") : "\u2014")
+            </div>
+            <div class="prf-score-date">5 \u00fczr\u0259 qiym\u0259t</div>
+        </div>
+    </div>
+
+    @* ── Kriteriya Cedveli ────────────────────────────────── *@
+    <div class="fn-card" style="padding:0;overflow:hidden;">
+        <div class="prf-section-head">Kriteriyalar</div>
+        <div class="prf-table-wrap">
+            <table class="prf-table prf-table--detail">
+                <thead>
+                    <tr>
+                        <th class="left">Kriteriya</th>
+                        <th>\u00c7\u0259ki (%)</th>
+                        <th>\u0130\u015f\u00e7i Qiym\u0259ti</th>
+                        <th>\u0130\u015f\u00e7i \u015e\u0259rhi</th>
+                        <th>M\u00fcdir Qiym\u0259ti</th>
+                        <th>M\u00fcdir \u015e\u0259rhi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var k in Model.Kriteriyalar.OrderByDescending(x => x.Ceki))
+                    {
+                        <tr>
+                            <td class="left"><strong>@k.KriteriyaAdi</strong></td>
+                            <td>@k.Ceki%</td>
+                            <td>
+                                @if (k.IsciQiymeti.HasValue)
+                                {
+                                    <span class="prf-q @QiymetClass(k.IsciQiymeti.Value)">@k.IsciQiymeti.Value.ToString("N1")</span>
+                                }
+                                else
+                                { <span class="prf-q--empty">\u2014</span> }
+                            </td>
+                            <td class="prf-sherh-cell">@(k.IsciSherhi ?? "\u2014")</td>
+                            <td>
+                                @if (k.MudirQiymeti.HasValue)
+                                {
+                                    <span class="prf-q @QiymetClass(k.MudirQiymeti.Value)">@k.MudirQiymeti.Value.ToString("N1")</span>
+                                }
+                                else
+                                { <span class="prf-q--empty">\u2014</span> }
+                            </td>
+                            <td class="prf-sherh-cell">@(k.MudirSherhi ?? "\u2014")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @* ── Sherhler ─────────────────────────────────────────── *@
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+        <div class="fn-card">
+            <div class="fn-card-title">\u0130\u015f\u00e7i \u015e\u0259rhi</div>
+            <div class="prf-sherh-text">@(Model.IsciSherhi ?? "H\u0259l\u0259 yaz\u0131lmay\u0131b")</div>
+        </div>
+        <div class="fn-card">
+            <div class="fn-card-title">M\u00fcdir \u015e\u0259rhi</div>
+            <div class="prf-sherh-text">@(Model.MudirSherhi ?? "H\u0259l\u0259 yaz\u0131lmay\u0131b")</div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.InkisafPlani))
+    {
+        <div class="fn-card" style="margin-top:12px;">
+            <div class="fn-card-title">\u0130nki\u015faf Plan\u0131</div>
+            <div class="prf-sherh-text">@Model.InkisafPlani</div>
+        </div>
+    }
+
+    @* ── Isci Qiymetlendirme Formu ───────────────────────── *@
+    @if (Model.Status == PerformansStatus.Gozlemede)
+    {
+        <div class="fn-card prf-form-card" style="margin-top:20px;">
+            <div class="fn-card-title">\u0130\u015f\u00e7i Qiym\u0259tl\u0259ndirm\u0259si</div>
+            <form asp-action="IsciQiymetlendir" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="performansId" value="@Model.Id" />
+
+                @foreach (var k in Model.Kriteriyalar.OrderByDescending(x => x.Ceki))
+                {
+                    <div class="prf-krit-form-row">
+                        <div class="prf-krit-name">@k.KriteriyaAdi <span class="prf-krit-ceki">(@k.Ceki%)</span></div>
+                        <input type="hidden" name="kriteriyaIds" value="@k.Id" />
+                        <div class="prf-krit-inputs">
+                            <select name="isciQiymetleri" class="fn-input fn-input--sm" required>
+                                <option value="">Qiym\u0259t...</option>
+                                <option value="1">1 - \u00c7ox z\u0259if</option>
+                                <option value="2">2 - Z\u0259if</option>
+                                <option value="3">3 - Orta</option>
+                                <option value="4">4 - Yax\u015f\u0131</option>
+                                <option value="5">5 - \u018fla</option>
+                            </select>
+                            <input type="text" name="isciSherhler" class="fn-input fn-input--sm" placeholder="\u015e\u0259rh..." />
+                        </div>
+                    </div>
+                }
+
+                <div class="fn-form-row" style="margin-top:12px;">
+                    <label class="fn-label">Qeyd / \u015e\u0259rh</label>
+                    <textarea name="isciSherhi" class="fn-input" rows="3" placeholder="\u00dcmumi qeyd\u0259..."></textarea>
+                </div>
+                <div class="fn-form-row">
+                    <label class="fn-label">\u0130nki\u015faf Plan\u0131</label>
+                    <textarea name="inkisafPlani" class="fn-input" rows="3" placeholder="\u0130nki\u015faf t\u0259klifl\u0259ri..."></textarea>
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+                    <button type="submit" class="fn-btn fn-btn--primary">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        Qiym\u0259tl\u0259ndir
+                    </button>
+                </div>
+            </form>
+        </div>
+    }
+
+    @* ── Mudir Qiymetlendirme Formu ──────────────────────── *@
+    @if (Model.Status == PerformansStatus.IsciQiymetlendirdi || Model.Status == PerformansStatus.Gozlemede)
+    {
+        <div class="fn-card prf-form-card" style="margin-top:16px;">
+            <div class="fn-card-title">M\u00fcdir Qiym\u0259tl\u0259ndirm\u0259si</div>
+            <form asp-action="MudirQiymetlendir" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="performansId" value="@Model.Id" />
+
+                @foreach (var k in Model.Kriteriyalar.OrderByDescending(x => x.Ceki))
+                {
+                    <div class="prf-krit-form-row">
+                        <div class="prf-krit-name">@k.KriteriyaAdi <span class="prf-krit-ceki">(@k.Ceki%)</span></div>
+                        <input type="hidden" name="kriteriyaIds" value="@k.Id" />
+                        <div class="prf-krit-inputs">
+                            <select name="mudirQiymetleri" class="fn-input fn-input--sm" required>
+                                <option value="">Qiym\u0259t...</option>
+                                <option value="1">1 - \u00c7ox z\u0259if</option>
+                                <option value="2">2 - Z\u0259if</option>
+                                <option value="3">3 - Orta</option>
+                                <option value="4">4 - Yax\u015f\u0131</option>
+                                <option value="5">5 - \u018fla</option>
+                            </select>
+                            <input type="text" name="mudirSherhler" class="fn-input fn-input--sm" placeholder="\u015e\u0259rh..." />
+                        </div>
+                    </div>
+                }
+
+                <div class="fn-form-row" style="margin-top:12px;">
+                    <label class="fn-label">M\u00fcdir \u015e\u0259rhi</label>
+                    <textarea name="mudirSherhi" class="fn-input" rows="3" placeholder="\u00dcmumi qiym\u0259tl\u0259ndirm\u0259..."></textarea>
+                </div>
+                <div class="fn-form-row">
+                    <label class="fn-label">\u0130nki\u015faf Plan\u0131</label>
+                    <textarea name="inkisafPlani" class="fn-input" rows="3" placeholder="\u0130nki\u015faf t\u0259klifl\u0259ri...">@Model.InkisafPlani</textarea>
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+                    <button type="submit" class="fn-btn fn-btn--primary">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        M\u00fcdir Qiym\u0259tl\u0259ndirm\u0259si
+                    </button>
+                </div>
+            </form>
+        </div>
+    }
+
+</div>
