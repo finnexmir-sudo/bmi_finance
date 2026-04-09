@@ -105,6 +105,45 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         }
     }
 
+    // ══════════════════════════════════════════════════════
+    // YENİLƏ — Mövcud entity-ni fetch edib yalnız redaktə olunan sahələri yeniləyir
+    // ══════════════════════════════════════════════════════
+
+    public new async Task<Result> YenileAsync(MezuniyyetUpdateDto dto)
+    {
+        try
+        {
+            var entity = await _unitOfWork.Repository<Mezuniyyet>()
+                .GetirAsync(x => x.Id == dto.Id);
+
+            if (entity == null)
+                return Result.Fail("Müraciət tapılmadı.");
+
+            // Tarixlər dəyişibsə iş günlərini yenidən hesabla
+            bool tarixDeyisib = entity.BaslamaTarixi != dto.BaslamaTarixi || entity.BitmeTarixi != dto.BitmeTarixi;
+
+            entity.BaslamaTarixi = dto.BaslamaTarixi;
+            entity.BitmeTarixi = dto.BitmeTarixi;
+            entity.Nov = dto.Nov;
+            entity.EvezEdenIsciId = dto.EvezEdenIsciId;
+            entity.Qeyd = dto.Qeyd;
+            entity.Status = dto.Status;
+            entity.ImtinaSebebi = dto.ImtinaSebebi;
+
+            if (tarixDeyisib)
+                entity.IsGunlerininSayi = await HesablaIsGunuAsync(dto.BaslamaTarixi, dto.BitmeTarixi);
+
+            await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(entity);
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            return Result.Ok("Məzuniyyət uğurla yeniləndi.");
+        }
+        catch
+        {
+            return Result.Fail("Yenilənmə zamanı xəta baş verdi.");
+        }
+    }
+
     // Təsdiq Metodları (Workflow məntiqi)
     public async Task<Result> SobeReisiTesdiqAsync(int id, bool status, string? qeyd, int sobeReisiId)
     {
