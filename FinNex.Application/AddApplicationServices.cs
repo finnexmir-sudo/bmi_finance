@@ -84,7 +84,6 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IIsciMaasTarixcesiService, IsciMaasTarixcesiService>();
 
         services.AddScoped<IBildirisService, BildirisService>();
-        services.AddScoped<IWebPushService, WebPushService>();
         services.AddScoped<IMesajService, MesajService>();
         services.AddScoped<IEvezediciTesdiqService, EvezediciTesdiqService>();
 
