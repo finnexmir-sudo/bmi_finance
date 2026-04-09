@@ -33,6 +33,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var kpiIcazeli = document.getElementById('kpiIcazeli');
     var kpiCemi = document.getElementById('kpiCemi');
     var kpiOrtaSaat = document.getElementById('kpiOrtaSaat');
+    var kpiXestelik = document.getElementById('kpiXestelik');
+    var kpiEzamiyyet = document.getElementById('kpiEzamiyyet');
 
     var deviceStatus = document.getElementById('hrdDeviceStatus');
     var deviceText = document.getElementById('hrdDeviceText');
@@ -222,6 +224,8 @@ document.addEventListener('DOMContentLoaded', function () {
         kpiIcazeli.textContent = stats.icazeli;
         kpiCemi.textContent = stats.cemi;
         kpiOrtaSaat.textContent = stats.ortaIsSaati;
+        if (kpiXestelik) kpiXestelik.textContent = stats.xestelik || 0;
+        if (kpiEzamiyyet) kpiEzamiyyet.textContent = stats.ezamiyyet || 0;
     }
 
     function renderTable(records) {
@@ -275,6 +279,8 @@ document.addEventListener('DOMContentLoaded', function () {
             case 2: return '<span class="hrd-badge hrd-badge--gecikme"><span class="hrd-badge-dot"></span>Gecikmə</span>';
             case 3: return '<span class="hrd-badge hrd-badge--qayib"><span class="hrd-badge-dot"></span>Qayıb</span>';
             case 4: return '<span class="hrd-badge hrd-badge--icazeli"><span class="hrd-badge-dot"></span>İcazəli</span>';
+            case 5: return '<span class="hrd-badge hrd-badge--xestelik" style="background:rgba(168,85,247,.1);color:#a855f7;"><span class="hrd-badge-dot" style="background:#a855f7;"></span>Xəstəlik</span>';
+            case 6: return '<span class="hrd-badge hrd-badge--ezamiyyet" style="background:rgba(249,115,22,.1);color:#f97316;"><span class="hrd-badge-dot" style="background:#f97316;"></span>Ezamiyyət</span>';
             default: return '<span class="hrd-badge">Naməlum</span>';
         }
     }

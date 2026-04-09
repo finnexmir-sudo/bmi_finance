@@ -12,6 +12,8 @@
     var gecikmeSayi = list.Count(x => x.Status == DavamiyyetStatus.Gecikme);
     var qayibSayi = list.Count(x => x.Status == DavamiyyetStatus.Qayib);
     var icazeliSayi = list.Count(x => x.Status == DavamiyyetStatus.Icazeli);
+    var xestelikSayi = list.Count(x => x.Status == DavamiyyetStatus.Xestelik);
+    var ezamiyyetSayi = list.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
     var cemi = list.Count;
 
     var iseSaatleri = list
@@ -78,6 +80,24 @@
                 <div class="hrd-kpi-lbl">İcazəli</div>
             </div>
         </div>
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="5" title="Xəstə">
+            <div class="hrd-kpi-icon hrd-kpi-icon--purple" style="background:rgba(168,85,247,.12);color:#a855f7;">
+                <i class="bi bi-hospital"></i>
+            </div>
+            <div class="hrd-kpi-body">
+                <div class="hrd-kpi-val" id="kpiXestelik">@xestelikSayi</div>
+                <div class="hrd-kpi-lbl">Xəstəlik</div>
+            </div>
+        </div>
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="6" title="Ezamiyyətdə">
+            <div class="hrd-kpi-icon hrd-kpi-icon--orange" style="background:rgba(249,115,22,.12);color:#f97316;">
+                <i class="bi bi-briefcase"></i>
+            </div>
+            <div class="hrd-kpi-body">
+                <div class="hrd-kpi-val" id="kpiEzamiyyet">@ezamiyyetSayi</div>
+                <div class="hrd-kpi-lbl">Ezamiyyət</div>
+            </div>
+        </div>
         <div class="hrd-kpi hrd-kpi--clickable" data-status="" title="Hamısı">
             <div class="hrd-kpi-icon hrd-kpi-icon--indigo">
                 <i class="bi bi-people-fill"></i>
@@ -124,6 +144,8 @@
                     <option value="2">Gecikmə</option>
                     <option value="3">Qayıb</option>
                     <option value="4">İcazəli</option>
+                    <option value="5">Xəstəlik</option>
+                    <option value="6">Ezamiyyət</option>
                 </select>
             </div>
             <button id="hrdAxtar" class="hrd-btn hrd-btn--primary"><i class="bi bi-search"></i> Axtar</button>
@@ -147,6 +169,8 @@
                     <option value="2">Gecikmə</option>
                     <option value="3">Qayıb</option>
                     <option value="4">İcazəli</option>
+                    <option value="5">Xəstəlik</option>
+                    <option value="6">Ezamiyyət</option>
                 </select>
             </div>
             <button id="hrdAraliqAxtar" class="hrd-btn hrd-btn--primary"><i class="bi bi-search"></i> Axtar</button>
@@ -263,6 +287,12 @@
                                             break;
                                         case DavamiyyetStatus.Icazeli:
                                             <span class="hrd-badge hrd-badge--icazeli"><span class="hrd-badge-dot"></span>İcazəli</span>
+                                            break;
+                                        case DavamiyyetStatus.Xestelik:
+                                            <span class="hrd-badge hrd-badge--xestelik" style="background:rgba(168,85,247,.1);color:#a855f7;"><span class="hrd-badge-dot" style="background:#a855f7;"></span>Xəstəlik</span>
+                                            break;
+                                        case DavamiyyetStatus.Ezamiyyet:
+                                            <span class="hrd-badge hrd-badge--ezamiyyet" style="background:rgba(249,115,22,.1);color:#f97316;"><span class="hrd-badge-dot" style="background:#f97316;"></span>Ezamiyyət</span>
                                             break;
                                     }
                                 </td>
