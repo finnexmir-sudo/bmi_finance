@@ -24,7 +24,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> Index(string? tab)
         {
             ViewBag.ActiveTab = tab ?? "telimler";
-            ViewData["Title"] = "T\u0259lim v\u0259 \u0130nki\u015faf";
+            ViewData["Title"] = "Təlim və İnkişaf";
 
             // Sertifikatlar tab ucun
             var sertifikatlar = await _unitOfWork.Repository<Sertifikat>()
@@ -68,12 +68,12 @@ namespace FinNex.UI.Areas.HR.Controllers
                 x.Tesviqci,
                 x.Mekan,
                 BaslamaTarixi = x.BaslamaTarixi.ToString("dd.MM.yyyy"),
-                BitmeTarixi = x.BitmeTarixi?.ToString("dd.MM.yyyy") ?? "\u2014",
+                BitmeTarixi = x.BitmeTarixi?.ToString("dd.MM.yyyy") ?? "—",
                 MuddetSaat = x.MuddetSaat,
                 Status = (int)x.Status,
                 StatusAd = StatusAdi(x.Status),
                 x.DaxiliTelimdir,
-                Xerc = x.Xerc?.ToString("N2") ?? "\u2014",
+                Xerc = x.Xerc?.ToString("N2") ?? "—",
                 IshtirakciSayi = x.Ishtirakcilar.Count
             });
 
@@ -85,7 +85,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> Create()
         {
             await TelimFormSiyahilariDoldur();
-            ViewData["Title"] = "Yeni T\u0259lim";
+            ViewData["Title"] = "Yeni Təlim";
             return View();
         }
 
@@ -98,7 +98,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         {
             if (string.IsNullOrWhiteSpace(ad))
             {
-                TempData["Error"] = "T\u0259lim ad\u0131 bo\u015f ola bilm\u0259z.";
+                TempData["Error"] = "Təlim adı boş ola bilməz.";
                 await TelimFormSiyahilariDoldur();
                 return View();
             }
@@ -136,7 +136,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 await _unitOfWork.YaddaSaxlaAsync();
             }
 
-            TempData["Success"] = "T\u0259lim u\u011furla yarad\u0131ld\u0131.";
+            TempData["Success"] = "Təlim uğurla yaradıldı.";
             return RedirectToAction(nameof(Detal), new { id = telim.Id });
         }
 
@@ -154,11 +154,11 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             if (telim == null)
             {
-                TempData["Error"] = "T\u0259lim tap\u0131lmad\u0131.";
+                TempData["Error"] = "Təlim tapılmadı.";
                 return RedirectToAction(nameof(Index));
             }
 
-            ViewData["Title"] = $"T\u0259lim \u2014 {telim.Ad}";
+            ViewData["Title"] = $"Təlim — {telim.Ad}";
             return View(telim);
         }
 
@@ -170,7 +170,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         {
             if (string.IsNullOrWhiteSpace(ad) || isciId <= 0)
             {
-                TempData["Error"] = "\u0130\u015f\u00e7i v\u0259 sertifikat ad\u0131 se\u00e7ilm\u0259lidir.";
+                TempData["Error"] = "İşçi və sertifikat adı seçilməlidir.";
                 return RedirectToAction(nameof(Index), new { tab = "sertifikatlar" });
             }
 
@@ -186,18 +186,18 @@ namespace FinNex.UI.Areas.HR.Controllers
             await _unitOfWork.Repository<Sertifikat>().YaratAsync(sertifikat);
             await _unitOfWork.YaddaSaxlaAsync();
 
-            TempData["Success"] = "Sertifikat u\u011furla \u0259lav\u0259 edildi.";
+            TempData["Success"] = "Sertifikat uğurla əlavə edildi.";
             return RedirectToAction(nameof(Index), new { tab = "sertifikatlar" });
         }
 
-        // ── K\u00f6m\u0259k\u00e7il\u0259r ──────────────────────────────────────
+        // ── Köməkçilər ──────────────────────────────────────
         private string StatusAdi(TelimStatus s) => s switch
         {
-            TelimStatus.Planlanib => "Planlan\u0131b",
+            TelimStatus.Planlanib => "Planlanıb",
             TelimStatus.Davam => "Davam edir",
-            TelimStatus.Tamamlandi => "Tamamland\u0131",
-            TelimStatus.LegvEdildi => "L\u0259\u011fv edildi",
-            _ => "\u2014"
+            TelimStatus.Tamamlandi => "Tamamlandı",
+            TelimStatus.LegvEdildi => "Ləğv edildi",
+            _ => "—"
         };
 
         private async Task TelimFormSiyahilariDoldur()

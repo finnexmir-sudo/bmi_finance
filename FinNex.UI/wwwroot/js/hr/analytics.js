@@ -33,13 +33,13 @@
         document.getElementById('kpiGender').textContent = data.kisiSayi + ' / ' + data.qadinSayi;
         var total = data.kisiSayi + data.qadinSayi;
         var pct = total > 0 ? Math.round(data.qadinSayi / total * 100) : 0;
-        document.getElementById('kpiGenderPct').textContent = pct + '% qad\u0131n';
+        document.getElementById('kpiGenderPct').textContent = pct + '% qadın';
 
         document.getElementById('kpiOrtaMuddet').textContent = data.ortaIsMuddeti;
 
         document.getElementById('kpiDonusum').textContent = data.donusumFaizi + '%';
         document.getElementById('kpiCixanlar').textContent =
-            'Son 12 ayda ' + data.sonOnIkiAydaCixanlar + ' \u00e7\u0131x\u0131\u015f';
+            'Son 12 ayda ' + data.sonOnIkiAydaCixanlar + ' çıxış';
     }
 
     function renderCharts(data) {
@@ -58,7 +58,7 @@
             data: {
                 labels: deptLabels,
                 datasets: [{
-                    label: '\u0130\u015f\u00e7i say\u0131',
+                    label: 'İşçi sayı',
                     data: deptValues,
                     backgroundColor: deptColors.slice(0, deptLabels.length),
                     borderRadius: 6,
@@ -96,7 +96,7 @@
         new Chart(document.getElementById('chartGender'), {
             type: 'doughnut',
             data: {
-                labels: ['Ki\u015fi', 'Qad\u0131n'],
+                labels: ['Kişi', 'Qadın'],
                 datasets: [{
                     data: [data.kisiSayi, data.qadinSayi],
                     backgroundColor: ['#2d6cdf', '#e8b84b'],
@@ -134,7 +134,7 @@
                 labels: trendLabels,
                 datasets: [
                     {
-                        label: '\u0130\u015f\u0259 q\u0259bul',
+                        label: 'İşə qəbul',
                         data: qebulValues,
                         borderColor: '#1e9b6b',
                         backgroundColor: 'rgba(30, 155, 107, 0.1)',
@@ -145,7 +145,7 @@
                         pointBackgroundColor: '#1e9b6b'
                     },
                     {
-                        label: '\u0130\u015fd\u0259n \u00e7\u0131x\u0131\u015f',
+                        label: 'İşdən çıxış',
                         data: cixisValues,
                         borderColor: '#dc2626',
                         backgroundColor: 'rgba(220, 38, 38, 0.1)',

@@ -96,13 +96,13 @@
     }
 
     function fmtQ(val) {
-        if (!val || val <= 0) return '<span class="prf-q--empty">\u2014</span>';
+        if (!val || val <= 0) return '<span class="prf-q--empty">—</span>';
         var cls = val >= 4 ? 'prf-q--high' : val >= 3 ? 'prf-q--mid' : 'prf-q--low';
         return '<span class="prf-q ' + cls + '">' + val.toFixed(2) + '</span>';
     }
 
     function escHtml(str) {
-        if (!str) return '\u2014';
+        if (!str) return '—';
         var d = document.createElement('div');
         d.textContent = str;
         return d.innerHTML;

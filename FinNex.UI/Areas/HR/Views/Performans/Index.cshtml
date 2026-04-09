@@ -1,6 +1,6 @@
 @using FinNex.Domain.Entities.HR
 @{
-    ViewData["Title"] = "Performans Qiym\u0259tl\u0259ndirm\u0259";
+    ViewData["Title"] = "Performans Qiymətləndirmə";
 
     var il = (int)ViewBag.SecilmisIl;
     var rubu = ViewBag.SecilmisRubu as int?;
@@ -15,14 +15,14 @@
 
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">Performans Qiym\u0259tl\u0259ndirm\u0259</div>
-            <div class="fn-page-sub">\u0130\u015f\u00e7il\u0259rin performans qiym\u0259tl\u0259ndirm\u0259 idar\u0259etm\u0259si</div>
+            <div class="fn-page-title">Performans Qiymətləndirmə</div>
+            <div class="fn-page-sub">İşçilərin performans qiymətləndirmə idarəetməsi</div>
         </div>
         <a asp-action="Create" class="fn-btn fn-btn--primary">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                 <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
             </svg>
-            Yeni Qiym\u0259tl\u0259ndirm\u0259
+            Yeni Qiymətləndirmə
         </a>
     </div>
 
@@ -40,7 +40,7 @@
                 }
             </select>
             <select name="rubu" class="prf-select prf-auto-filter">
-                <option value="">B\u00fct\u00fcn r\u00fcbl\u0259r</option>
+                <option value="">Bütün rüblər</option>
                 @foreach (var item in ViewBag.Rublar as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
                 {
                     if (item.Selected)
@@ -50,7 +50,7 @@
                 }
             </select>
             <select name="departamentId" class="prf-select prf-select--wide prf-auto-filter">
-                <option value="">B\u00fct\u00fcn departamentl\u0259r</option>
+                <option value="">Bütün departamentlər</option>
                 @foreach (var item in ViewBag.Departamentler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
                 {
                     if (item.Selected)
@@ -60,7 +60,7 @@
                 }
             </select>
             <div class="prf-filter-actions">
-                <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">S\u0131f\u0131rla</a>
+                <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">Sıfırla</a>
             </div>
         </div>
     </form>
@@ -68,11 +68,11 @@
     @* ── Stats ────────────────────────────────────────────── *@
     <div class="prf-stats" id="prfStats">
         <div class="prf-stat prf-stat--blue">
-            <div class="prf-stat-label">\u00dcmumi</div>
+            <div class="prf-stat-label">Ümumi</div>
             <div class="prf-stat-value" id="statUmumi">0</div>
         </div>
         <div class="prf-stat prf-stat--orange">
-            <div class="prf-stat-label">G\u00f6zl\u0259m\u0259d\u0259</div>
+            <div class="prf-stat-label">Gözləmədə</div>
             <div class="prf-stat-value" id="statGozlemede">0</div>
         </div>
         <div class="prf-stat prf-stat--gold">
@@ -80,11 +80,11 @@
             <div class="prf-stat-value" id="statDavam">0</div>
         </div>
         <div class="prf-stat prf-stat--green">
-            <div class="prf-stat-label">Tamamland\u0131</div>
+            <div class="prf-stat-label">Tamamlandı</div>
             <div class="prf-stat-value" id="statTamamlandi">0</div>
         </div>
         <div class="prf-stat prf-stat--purple">
-            <div class="prf-stat-label">Ort. Qiym\u0259t</div>
+            <div class="prf-stat-label">Ort. Qiymət</div>
             <div class="prf-stat-value" id="statOrtaQiymet">0</div>
         </div>
     </div>
@@ -92,7 +92,7 @@
     @* ── Table ────────────────────────────────────────────── *@
     <div class="fn-card" style="padding:0;overflow:hidden;">
         <div class="prf-toolbar">
-            <div class="prf-result-count"><span id="prfResultCount">0</span> n\u0259tic\u0259</div>
+            <div class="prf-result-count"><span id="prfResultCount">0</span> nəticə</div>
         </div>
 
         <div class="prf-table-wrap">
@@ -101,18 +101,18 @@
                     <tr>
                         <th class="left">Ad Soyad</th>
                         <th class="left">Departament</th>
-                        <th>D\u00f6vr</th>
-                        <th>\u0130l / R\u00fcb</th>
+                        <th>Dövr</th>
+                        <th>İl / Rüb</th>
                         <th>Status</th>
-                        <th>\u0130\u015f\u00e7i Qiym.</th>
-                        <th>M\u00fcdir Qiym.</th>
+                        <th>İşçi Qiym.</th>
+                        <th>Müdir Qiym.</th>
                         <th>Yekun</th>
-                        <th class="center">\u018fm\u0259liyyat</th>
+                        <th class="center">Əməliyyat</th>
                     </tr>
                 </thead>
                 <tbody id="prfTableBody">
                     <tr>
-                        <td colspan="9" class="prf-loading">Y\u00fckl\u0259nir...</td>
+                        <td colspan="9" class="prf-loading">Yüklənir...</td>
                     </tr>
                 </tbody>
             </table>

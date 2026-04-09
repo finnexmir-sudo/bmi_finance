@@ -30,7 +30,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.SecilmisIl = cIl;
             ViewBag.SecilmisRubu = rubu;
             ViewBag.SecilmisDepartamentId = departamentId;
-            ViewData["Title"] = "Performans Qiym\u0259tl\u0259ndirm\u0259";
+            ViewData["Title"] = "Performans Qiymətləndirmə";
             return View();
         }
 
@@ -71,9 +71,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                 {
                     x.Id,
                     IsciAd = $"{x.Isci.Ad} {x.Isci.Soyad}",
-                    Departament = teyinat?.Departament?.Ad ?? "\u2014",
-                    Vezife = teyinat?.Vezife?.Ad ?? "\u2014",
-                    DovrTipi = x.DovrTipi == PerformansDovrTipi.Rublik ? "R\u00fcbl\u00fck" : "\u0130llik",
+                    Departament = teyinat?.Departament?.Ad ?? "—",
+                    Vezife = teyinat?.Vezife?.Ad ?? "—",
+                    DovrTipi = x.DovrTipi == PerformansDovrTipi.Rublik ? "Rüblük" : "İllik",
                     x.Il,
                     x.Rubu,
                     Status = (int)x.Status,
@@ -93,7 +93,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> Create()
         {
             await YaratmaFormSiyahilariDoldur();
-            ViewData["Title"] = "Yeni Performans Qiym\u0259tl\u0259ndirm\u0259";
+            ViewData["Title"] = "Yeni Performans Qiymətləndirmə";
             return View();
         }
 
@@ -105,7 +105,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         {
             if (isciId <= 0 || qiymetlendirenIsciId <= 0)
             {
-                TempData["Error"] = "\u0130\u015f\u00e7i v\u0259 qiym\u0259tl\u0259ndir\u0259n se\u00e7ilm\u0259lidir.";
+                TempData["Error"] = "İşçi və qiymətləndirən seçilməlidir.";
                 await YaratmaFormSiyahilariDoldur();
                 return View();
             }
@@ -126,11 +126,11 @@ namespace FinNex.UI.Areas.HR.Controllers
             // Default kriteriyalar
             var defaultKriteriyalar = new List<(string ad, decimal ceki)>
             {
-                ("\u0130\u015f keyfiyy\u0259ti", 30),
-                ("Vaxt\u0131nda icra", 20),
-                ("Komanda i\u015fi", 20),
-                ("T\u0259\u015f\u0259bb\u00fcskarl\u0131q", 15),
-                ("Pe\u015f\u0259kar inki\u015faf", 15)
+                ("İş keyfiyyəti", 30),
+                ("Vaxtında icra", 20),
+                ("Komanda işi", 20),
+                ("Təşəbbüskarlıq", 15),
+                ("Peşəkar inkişaf", 15)
             };
 
             foreach (var (ad, ceki) in defaultKriteriyalar)
@@ -145,7 +145,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
             await _unitOfWork.YaddaSaxlaAsync();
 
-            TempData["Success"] = "Performans qiym\u0259tl\u0259ndirm\u0259 u\u011furla yarad\u0131ld\u0131.";
+            TempData["Success"] = "Performans qiymətləndirmə uğurla yaradıldı.";
             return RedirectToAction(nameof(Detal), new { id = performans.Id });
         }
 
@@ -167,11 +167,11 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             if (performans == null)
             {
-                TempData["Error"] = "Performans qiym\u0259tl\u0259ndirm\u0259 tap\u0131lmad\u0131.";
+                TempData["Error"] = "Performans qiymətləndirmə tapılmadı.";
                 return RedirectToAction(nameof(Index));
             }
 
-            ViewData["Title"] = $"Performans \u2014 {performans.Isci.Ad} {performans.Isci.Soyad}";
+            ViewData["Title"] = $"Performans — {performans.Isci.Ad} {performans.Isci.Soyad}";
             return View(performans);
         }
 
@@ -190,7 +190,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             if (performans == null)
             {
-                TempData["Error"] = "Qiym\u0259tl\u0259ndirm\u0259 tap\u0131lmad\u0131.";
+                TempData["Error"] = "Qiymətləndirmə tapılmadı.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -226,7 +226,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             await _unitOfWork.Repository<PerformansQiymetlendirme>().YenileAsync(performans);
             await _unitOfWork.YaddaSaxlaAsync();
 
-            TempData["Success"] = "\u0130\u015f\u00e7i qiym\u0259tl\u0259ndirm\u0259si u\u011furla qeyd\u0259 al\u0131nd\u0131.";
+            TempData["Success"] = "İşçi qiymətləndirməsi uğurla qeydə alındı.";
             return RedirectToAction(nameof(Detal), new { id = performansId });
         }
 
@@ -245,7 +245,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             if (performans == null)
             {
-                TempData["Error"] = "Qiym\u0259tl\u0259ndirm\u0259 tap\u0131lmad\u0131.";
+                TempData["Error"] = "Qiymətləndirmə tapılmadı.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -283,11 +283,11 @@ namespace FinNex.UI.Areas.HR.Controllers
             await _unitOfWork.Repository<PerformansQiymetlendirme>().YenileAsync(performans);
             await _unitOfWork.YaddaSaxlaAsync();
 
-            TempData["Success"] = "M\u00fcdir qiym\u0259tl\u0259ndirm\u0259si u\u011furla qeyd\u0259 al\u0131nd\u0131.";
+            TempData["Success"] = "Müdir qiymətləndirməsi uğurla qeydə alındı.";
             return RedirectToAction(nameof(Detal), new { id = performansId });
         }
 
-        // ── K\u00f6m\u0259k\u00e7il\u0259r ──────────────────────────────────────
+        // ── Köməkçilər ──────────────────────────────────────
         private void HesablaYekunQiymet(PerformansQiymetlendirme p)
         {
             if (p.IsciOrtalamaQiymet > 0 && p.MudirOrtalamaQiymet > 0)
@@ -300,11 +300,11 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         private string StatusAdi(PerformansStatus s) => s switch
         {
-            PerformansStatus.Gozlemede => "G\u00f6zl\u0259m\u0259d\u0259",
-            PerformansStatus.IsciQiymetlendirdi => "\u0130\u015f\u00e7i qiym\u0259tl\u0259ndirdi",
-            PerformansStatus.MudirQiymetlendirdi => "M\u00fcdir qiym\u0259tl\u0259ndirdi",
-            PerformansStatus.Tamamlandi => "Tamamland\u0131",
-            _ => "\u2014"
+            PerformansStatus.Gozlemede => "Gözləmədə",
+            PerformansStatus.IsciQiymetlendirdi => "İşçi qiymətləndirdi",
+            PerformansStatus.MudirQiymetlendirdi => "Müdir qiymətləndirdi",
+            PerformansStatus.Tamamlandi => "Tamamlandı",
+            _ => "—"
         };
 
         private async Task FilterSiyahilariniDoldur(int cIl, int? rubu, int? deptId)
@@ -314,7 +314,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .ToList();
 
             ViewBag.Rublar = Enumerable.Range(1, 4)
-                .Select(x => new SelectListItem($"R\u00fcb {x}", x.ToString(), x == rubu))
+                .Select(x => new SelectListItem($"Rüb {x}", x.ToString(), x == rubu))
                 .ToList();
 
             var deptler = await _unitOfWork.Repository<Departament>()

@@ -56,7 +56,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .ToListAsync();
 
             var departamentStat = teyinatlar
-                .GroupBy(x => x.Departament?.Ad ?? "Bilinm\u0259y\u0259n")
+                .GroupBy(x => x.Departament?.Ad ?? "Bilinməyən")
                 .Select(g => new { Ad = g.Key, Sayi = g.Count() })
                 .OrderByDescending(x => x.Sayi)
                 .ToList();

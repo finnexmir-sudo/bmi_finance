@@ -85,7 +85,7 @@
     }
 
     function escHtml(str) {
-        if (!str) return '\u2014';
+        if (!str) return '—';
         var d = document.createElement('div');
         d.textContent = str;
         return d.innerHTML;
