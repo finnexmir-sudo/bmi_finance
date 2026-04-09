@@ -97,11 +97,40 @@ namespace FinNex.UI.Areas.HR.Controllers
             return View();
         }
 
+        // ── GET /HR/Performans/GetMudir ──────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> GetMudir(int isciId)
+        {
+            // İşçinin aktiv təyinatından departamentı tap
+            var teyinat = await _unitOfWork.Repository<IsciTeyinat>()
+                .Query()
+                .Where(x => x.IsciId == isciId && x.BitmeTarixi == null && !x.Silinib)
+                .FirstOrDefaultAsync();
+
+            if (teyinat == null)
+                return Json(new { mudirId = (int?)null });
+
+            // Həmin departamentin şöbə rəisini tap
+            var sobeReisi = await _unitOfWork.Repository<IsciStrukturRolu>()
+                .Query()
+                .Where(x => x.DepartamentId == teyinat.DepartamentId
+                          && x.RolTipi == StrukturRolTipi.SobeReisi
+                          && x.Aktivdir && !x.Silinib)
+                .Include(x => x.Isci)
+                .FirstOrDefaultAsync();
+
+            if (sobeReisi != null)
+                return Json(new { mudirId = sobeReisi.IsciId, mudirAd = sobeReisi.Isci.TamAd });
+
+            return Json(new { mudirId = (int?)null });
+        }
+
         // ── POST /HR/Performans/Create ───────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(int isciId, int qiymetlendirenIsciId,
-            int dovrTipi, int il, int? rubu)
+            int dovrTipi, int il, int? rubu,
+            List<string> kriteriyaAdlari, List<int> kriteriyaCekileri)
         {
             if (isciId <= 0 || qiymetlendirenIsciId <= 0)
             {
@@ -123,23 +152,15 @@ namespace FinNex.UI.Areas.HR.Controllers
             await _unitOfWork.Repository<PerformansQiymetlendirme>().YaratAsync(performans);
             await _unitOfWork.YaddaSaxlaAsync();
 
-            // Default kriteriyalar
-            var defaultKriteriyalar = new List<(string ad, decimal ceki)>
+            // Formdan gələn kriteriyalar
+            for (int i = 0; i < kriteriyaAdlari.Count; i++)
             {
-                ("İş keyfiyyəti", 30),
-                ("Vaxtında icra", 20),
-                ("Komanda işi", 20),
-                ("Təşəbbüskarlıq", 15),
-                ("Peşəkar inkişaf", 15)
-            };
-
-            foreach (var (ad, ceki) in defaultKriteriyalar)
-            {
+                if (string.IsNullOrWhiteSpace(kriteriyaAdlari[i])) continue;
                 var kriteriya = new PerformansKriteriya
                 {
                     PerformansId = performans.Id,
-                    KriteriyaAdi = ad,
-                    Ceki = ceki
+                    KriteriyaAdi = kriteriyaAdlari[i].Trim(),
+                    Ceki = i < kriteriyaCekileri.Count ? kriteriyaCekileri[i] : 0
                 };
                 await _unitOfWork.Repository<PerformansKriteriya>().YaratAsync(kriteriya);
             }
