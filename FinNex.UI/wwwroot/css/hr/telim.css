@@ -242,7 +242,221 @@
 
 .tlm-act-btn:hover { background: #f0f2f7; color: #2d6cdf; border-color: #c5cad6; }
 
+/* ── Create Form ─────────────────────────── */
+.tlm-create-card {
+    max-width: 720px;
+    padding: 0;
+    overflow: hidden;
+}
+
+.tlm-create-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 24px;
+    background: linear-gradient(135deg, #f7f9fc 0%, #f0f4fa 100%);
+    border-bottom: 1px solid #e8eaef;
+}
+
+.tlm-create-header-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #ecfdf5;
+    color: #1e9b6b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.tlm-create-header-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f1623;
+}
+
+.tlm-create-header-sub {
+    font-size: 11px;
+    color: #8a93a8;
+    margin-top: 1px;
+}
+
+.tlm-create-section {
+    padding: 20px 24px;
+    border-bottom: 1px solid #f0f2f7;
+}
+
+.tlm-create-section:last-of-type {
+    border-bottom: none;
+}
+
+.tlm-create-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #3d4557;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 14px;
+}
+
+.tlm-create-section-title svg {
+    color: #8a93a8;
+}
+
+.tlm-create-grid {
+    display: grid;
+    gap: 14px;
+}
+
+.tlm-create-grid--2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+.tlm-create-grid--3 {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+.fn-required {
+    color: #d85a30;
+}
+
+.tlm-create-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding: 16px 24px;
+    background: #f7f9fc;
+    border-top: 1px solid #e8eaef;
+}
+
+/* ── Participant Checkbox List ───────────── */
+.tlm-participant-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.tlm-participant-search-icon {
+    position: absolute;
+    left: 10px;
+    color: #aab0bf;
+    pointer-events: none;
+}
+
+.tlm-participant-search {
+    padding-left: 32px !important;
+    flex: 1;
+}
+
+.tlm-selected-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: #8a93a8;
+    white-space: nowrap;
+    padding: 6px 12px;
+    background: #f7f9fc;
+    border-radius: 6px;
+    border: 1px solid #e8eaef;
+}
+
+.tlm-selected-count--active {
+    color: #1e9b6b;
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+}
+
+.tlm-participant-list {
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid #e8eaef;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.tlm-participant-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background .1s;
+    border-bottom: 1px solid #f5f6f8;
+    margin: 0;
+    font-weight: 400;
+}
+
+.tlm-participant-item:last-child {
+    border-bottom: none;
+}
+
+.tlm-participant-item:hover {
+    background: #f7f9fc;
+}
+
+.tlm-participant-cb {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.tlm-participant-check {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid #d0d5dd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all .15s;
+    color: transparent;
+    background: #fff;
+}
+
+.tlm-participant-cb:checked ~ .tlm-participant-check {
+    background: #2d6cdf;
+    border-color: #2d6cdf;
+    color: #fff;
+}
+
+.tlm-participant-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #eaecf3;
+    color: #6b7385;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.tlm-participant-cb:checked ~ .tlm-participant-avatar {
+    background: #dbeafe;
+    color: #2d6cdf;
+}
+
+.tlm-participant-name {
+    font-size: 13px;
+    color: #3d4557;
+}
+
 @media (max-width: 768px) {
     .tlm-info-grid { grid-template-columns: 1fr; }
     .tlm-stat-grid { grid-template-columns: 1fr 1fr; }
+    .tlm-create-grid--2,
+    .tlm-create-grid--3 { grid-template-columns: 1fr; }
+    .tlm-create-header { padding: 14px 16px; }
+    .tlm-create-section { padding: 16px; }
+    .tlm-create-actions { padding: 12px 16px; }
 }
