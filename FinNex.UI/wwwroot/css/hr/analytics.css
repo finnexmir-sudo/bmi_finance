@@ -28,18 +28,18 @@
 .anl-kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
+    gap: 10px;
+    margin-bottom: 16px;
 }
 
 .anl-kpi {
     background: #fff;
     border: 1px solid #e8eaef;
-    border-radius: 12px;
-    padding: 18px 20px;
+    border-radius: 10px;
+    padding: 12px 14px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     position: relative;
     overflow: hidden;
 }
@@ -59,9 +59,9 @@
 .anl-kpi--orange::before { background: #d88a30; }
 
 .anl-kpi-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -79,13 +79,13 @@
 }
 
 .anl-kpi-value {
-    font-size: 26px;
+    font-size: 20px;
     font-weight: 700;
     color: #0f1623;
 }
 
 .anl-kpi-label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     color: #8a93a8;
     text-transform: uppercase;
@@ -93,7 +93,7 @@
 }
 
 .anl-kpi-sub {
-    font-size: 11px;
+    font-size: 10px;
     color: #aab0bf;
 }
 
@@ -101,20 +101,24 @@
 .anl-charts {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
+    gap: 12px;
+    margin-bottom: 14px;
 }
 
 .anl-charts-full {
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 }
 
 .anl-chart-card {
-    padding: 20px;
+    padding: 14px 16px;
 }
 
 .anl-chart-card canvas {
-    max-height: 300px;
+    max-height: 220px;
+}
+
+.anl-charts-full .anl-chart-card canvas {
+    max-height: 260px;
 }
 
 @media (max-width: 1024px) {
