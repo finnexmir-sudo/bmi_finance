@@ -306,7 +306,7 @@
                 {
                     <div class="fn-nav-label">HR İdarəetmə</div>
 
-                    <div class="fn-nav-group @(currentArea == "HR" ? "open" : "")">
+                    <div class="fn-nav-group @(currentArea == "HR" || currentController == "Mezuniyyet" ? "open" : "")">
                         <button type="button" class="fn-nav-group-toggle">
                             <div class="fn-nav-group-left">
                                 <div class="fn-nav-icon">
@@ -353,7 +353,7 @@
                             </a>
                             <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Create"
                                class="fn-nav-subitem @(currentArea == "HR" && currentController == "Mezuniyyet" ? "active" : "")">
-                                <div class="fn-sub-dot"></div> Məzuniyyət Yazmaq
+                                <div class="fn-sub-dot"></div> Xəstəlik / Ezamiyyət
                             </a>
                             <a asp-area="HR" asp-controller="Hesabat" asp-action="Index"
                                class="fn-nav-subitem @(currentArea == "HR" && currentController == "Hesabat" ? "active" : "")">
