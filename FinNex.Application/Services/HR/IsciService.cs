@@ -75,14 +75,14 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
                 IsciId = isci.Id,
                 Il = DateTime.Now.Year,
                 Nov = MezuniyyetNovu.Xestelik,
-                ToplamGun = 14
+                ToplamGun = 0 // limitsiz
             };
             var ezamiyyetBalans = new MezuniyyetBalans
             {
                 IsciId = isci.Id,
                 Il = DateTime.Now.Year,
                 Nov = MezuniyyetNovu.Ezamiyyet,
-                ToplamGun = 365
+                ToplamGun = 0 // limitsiz
             };
 
             await _unitOfWork.Repository<MezuniyyetBalans>().YaratAsync(illikBalans);

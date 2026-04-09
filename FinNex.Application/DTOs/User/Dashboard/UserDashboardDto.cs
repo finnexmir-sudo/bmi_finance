@@ -29,12 +29,12 @@ namespace FinNex.Application.DTOs.HR.Dashboard
         public int IllikQaligGun => IllikToplamGun - IllikIstifadeGun;
 
         public int XestelikIstifadeGun { get; set; } // Nov==Xestelik olan təsdiqlənmiş günlər
-        public int XestelikToplamGun { get; set; } = 14;
-        public int XestelikQaligGun => XestelikToplamGun - XestelikIstifadeGun;
+        public int XestelikToplamGun { get; set; } = 0; // limitsiz
+        public int XestelikQaligGun => 0; // limitsiz — qalıq yoxdur
 
         public int EzamiyyetIstifadeGun { get; set; }
-        public int EzamiyyetToplamGun { get; set; } = 365; // limitsiz
-        public int EzamiyyetQaligGun => EzamiyyetToplamGun - EzamiyyetIstifadeGun;
+        public int EzamiyyetToplamGun { get; set; } = 0; // limitsiz
+        public int EzamiyyetQaligGun => 0; // limitsiz — qalıq yoxdur
 
         // ── Davamiyyət təqvimi (cari ay günlər) ──────────────
         public List<DashboardDavamiyyetGunDto> DavamiyyetTakvim { get; set; } = new();
