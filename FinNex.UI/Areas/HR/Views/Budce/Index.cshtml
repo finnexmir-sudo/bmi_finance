@@ -14,7 +14,14 @@
             <select id="budceIl" class="fn-input" style="width:120px;display:inline-block">
                 @for (int y = DateTime.Now.Year + 1; y >= 2022; y--)
                 {
-                    <option value="@y" @(y == DateTime.Now.Year ? "selected" : "")>@y</option>
+                    if (y == DateTime.Now.Year)
+                    {
+                        <option value="@y" selected="selected">@y</option>
+                    }
+                    else
+                    {
+                        <option value="@y">@y</option>
+                    }
                 }
             </select>
             <button id="btnYukle" class="fn-btn fn-btn--primary" type="button">Goster</button>
