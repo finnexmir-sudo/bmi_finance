@@ -33,7 +33,7 @@
                 \u00b7 @Model.BaslamaTarixi.ToString("dd.MM.yyyy")
                 @if (Model.BitmeTarixi.HasValue)
                 { <text> \u2014 @Model.BitmeTarixi.Value.ToString("dd.MM.yyyy")</text> }
-                \u00b7 @Model.MuddетSaat saat
+                \u00b7 @Model.MuddetSaat saat
             </div>
         </div>
         <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">\u2190 Siyah\u0131</a>
@@ -92,7 +92,7 @@
                     <div class="tlm-stat-lbl">Ort. Qiym\u0259t</div>
                 </div>
                 <div class="tlm-stat-item">
-                    <div class="tlm-stat-val">@Model.MuddетSaat</div>
+                    <div class="tlm-stat-val">@Model.MuddetSaat</div>
                     <div class="tlm-stat-lbl">Saat</div>
                 </div>
             </div>
