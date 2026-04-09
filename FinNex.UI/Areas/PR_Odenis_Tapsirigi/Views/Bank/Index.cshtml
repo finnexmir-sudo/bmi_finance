@@ -1,95 +1,66 @@
 @model IEnumerable<FinNex.Domain.Entities.PR_Odenis_Tapsirigi.Bank>
 
-<div class="bank-page">
+<div class="fn-page">
 
-    <!-- HEADER -->
-    <div class="bank-header">
-        <div class="bank-header-content">
-            <div class="bank-header-icon">
-                <i class="bi bi-bank"></i>
-            </div>
-            <div>
-                <h3>Banklar</h3>
-                <p>Sistemde olan butun banklarin siyahisi</p>
-            </div>
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Banklar</div>
+            <div class="fn-page-sub">Sistemdə olan bütün bankların siyahısı</div>
         </div>
+        <a asp-action="Yarat" class="fn-btn fn-btn--primary">+ Yeni bank</a>
     </div>
 
-    <!-- ACTIONS BAR -->
-    <div class="bank-actions-bar">
-        <a asp-action="Yarat" class="btn btn-primary rounded-pill px-4 shadow-sm">
-            <i class="bi bi-plus-lg me-1"></i> Yeni Bank
-        </a>
-        <a asp-controller="OdenisTapsirigi" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
-            <i class="bi bi-arrow-left me-1"></i> Odenis Tapsirigi
-        </a>
-    </div>
-
-    <!-- TABLE -->
-    <div class="bank-table-card">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th class="ps-4">Bankin Adi</th>
-                        <th>Kod</th>
-                        <th>VOEN</th>
-                        <th>SWIFT / BIC</th>
-                        <th class="text-center">Emeliyyatlar</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
+    <div class="fn-card" style="padding:0;overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead>
+                <tr style="background:#f8f9fb;border-bottom:1px solid #e4e8f0;">
+                    <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;">Bankın adı</th>
+                    <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;">Kod</th>
+                    <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;">VOEN</th>
+                    <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;">SWIFT / BIC</th>
+                    <th style="padding:10px 14px;text-align:right;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var bank in Model)
                     {
-                        @foreach (var bank in Model)
-                        {
-                            <tr>
-                                <td class="ps-4 fw-bold">@bank.Ad</td>
-                                <td><span class="badge bg-light text-dark border">@bank.Kod</span></td>
-                                <td>@bank.Voen</td>
-                                <td class="text-muted">@bank.SwiftBic</td>
-                                <td class="text-center">
-                                    <div class="d-flex justify-content-center gap-2">
-
-                                        <a asp-action="Duzelis" asp-route-id="@bank.Id"
-                                           class="btn btn-sm btn-outline-primary action-btn-sm"
-                                           title="Duzelis et">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-
-                                        <form asp-action="Sil" asp-route-id="@bank.Id"
-                                              method="post"
-                                              onsubmit="return confirm('Bu banki silmek isteyirsinizmi?')">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit"
-                                                    class="btn btn-sm btn-outline-danger action-btn-sm"
-                                                    title="Sil">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-
-                                    </div>
-                                </td>
-
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
-                                <i class="bi bi-bank fs-1 d-block mb-2 opacity-50"></i>
-                                Hele bank elave olunmayib
+                        <tr style="border-bottom:1px solid #f0f2f7;">
+                            <td style="padding:10px 14px;font-weight:500;color:#1a2332;">@bank.Ad</td>
+                            <td style="padding:10px 14px;">
+                                <span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#f0f2f7;color:#3d4557;">@bank.Kod</span>
+                            </td>
+                            <td style="padding:10px 14px;color:#3d4557;">@bank.Voen</td>
+                            <td style="padding:10px 14px;color:#8a93a8;font-family:monospace;font-size:12px;">@bank.SwiftBic</td>
+                            <td style="padding:10px 14px;text-align:right;">
+                                <div style="display:flex;gap:4px;justify-content:flex-end;">
+                                    <a asp-action="Duzelis" asp-route-id="@bank.Id"
+                                       style="padding:4px 8px;border:1px solid #e4e8f0;border-radius:6px;font-size:12px;color:#5a647a;text-decoration:none;">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form asp-action="Sil" asp-route-id="@bank.Id" method="post" style="display:inline;"
+                                          onsubmit="return confirm('Bu bankı silmək istəyirsiniz?')">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" style="padding:4px 8px;border:1px solid #f5c0c0;border-radius:6px;font-size:12px;color:#c0392b;background:none;cursor:pointer;">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     }
-                </tbody>
-            </table>
-        </div>
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" style="padding:40px 14px;text-align:center;color:#8a93a8;font-size:13px;">
+                            <i class="bi bi-bank" style="font-size:28px;display:block;margin-bottom:6px;color:#dde1ea;"></i>
+                            Hələ bank əlavə olunmayıb
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
     </div>
-
 </div>
-
-@section Styles {
-    <link rel="stylesheet" href="~/css/bank-index.css" asp-append-version="true" />
-}

@@ -1,271 +1,199 @@
 @model FinNex.UI.Areas.PR_Odenis_Tapsirigi.ViewModels.OdenisTapsirigiCreateVM
 
+<div class="fn-page">
 
-<div class="payment-page">
-
-    <!-- HEADER -->
-    <div class="payment-header">
-        <div class="payment-title">
-            <h2><i class="bi bi-file-earmark-text me-2"></i>"A" Formatli Odenis Tapshirigi Yeni</h2>
-            <span>A-format · Daxili bank kocurmesi</span>
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Yeni ödəniş tapşırığı</div>
+            <div class="fn-page-sub">A-format · SWIFT bank köçürməsi</div>
         </div>
-        <div class="payment-meta">
-            <a asp-action="Index" class="meta-chip meta-chip-link">
-                <i class="bi bi-arrow-left me-1"></i> Geri
-            </a>
-        </div>
+        <a asp-action="Siyahi" class="fn-btn fn-btn--outline">← Siyahı</a>
     </div>
 
-    <form method="post" class="payment-form" id="paymentForm">
+    <form method="post" id="paymentForm">
         @Html.AntiForgeryToken()
-        <!-- Hidden ID-lər -->
-        <input type="hidden" asp-for="Odenis.OduyenBankId"    id="OduyenBankIdHidden" />
-        <input type="hidden" asp-for="Odenis.AlanBankId"      id="AlanBankIdHidden" />
+        <input type="hidden" asp-for="Odenis.OduyenBankId" id="OduyenBankIdHidden" />
+        <input type="hidden" asp-for="Odenis.AlanBankId" id="AlanBankIdHidden" />
         <input type="hidden" asp-for="Odenis.OduyenMusteriId" id="OduyenMusteriIdHidden" />
-        <input type="hidden" asp-for="Odenis.OduyenHesabId"   id="OduyenHesabIdHidden" />
-        <input type="hidden" asp-for="Odenis.AlanMusteriId"   id="AlanMusteriIdHidden" />
-        <input type="hidden" asp-for="Odenis.AlanHesabId"     id="AlanHesabIdHidden" />
+        <input type="hidden" asp-for="Odenis.OduyenHesabId" id="OduyenHesabIdHidden" />
+        <input type="hidden" asp-for="Odenis.AlanMusteriId" id="AlanMusteriIdHidden" />
+        <input type="hidden" asp-for="Odenis.AlanHesabId" id="AlanHesabIdHidden" />
 
-        <!-- ═══ BANKLAR ═══════════════════════════════════════════ -->
-        <section class="payment-section">
-            <header class="section-header">
-                <i class="bi bi-bank2"></i>
-                <span>Bank Melumatlari</span>
-            </header>
-            <div class="section-body two-column">
+        @* ═══ BANKLAR ═══ *@
+        <div class="fn-card" style="margin-bottom:16px;">
+            <div class="fn-card-title" style="margin-bottom:14px;">
+                <i class="bi bi-bank2 me-1"></i> Bank məlumatları
+            </div>
+            <div class="fn-form-row">
 
-                <!-- A1 – Ödüyən bank -->
-                <div class="form-group-box">
-                    <div class="group-label">
-                        <span class="group-tag">A1</span>
-                        <span class="group-name">Oduyen bank</span>
+                @* A1 – Ödüyən bank *@
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                        <span style="background:#2d6cdf;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">A1</span>
+                        <span class="fn-label" style="margin:0;">Ödüyən bank</span>
                     </div>
-
-                    <div class="field-row">
-                        <input type="text" class="form-control" id="OduyenBankKodSearch"
-                                placeholder="Bank kodunu daxil edin...">
-                        <button type="button" class="btn btn-search" id="btnOduyenBankAxtar">
+                    <div style="display:flex;gap:6px;">
+                        <input type="text" class="fn-input" id="OduyenBankKodSearch" placeholder="Bank kodu..." style="flex:1;" />
+                        <button type="button" class="fn-btn fn-btn--primary" id="btnOduyenBankAxtar" style="white-space:nowrap;">
                             <i class="bi bi-search"></i> Axtar
                         </button>
                     </div>
-                    <div id="OduyenBankXeta" class="field-error" style="display:none"></div>
-
-                    <input class="form-control" id="OduyenBankAd" value="'Bank Melli Iran' Bakı filialı" placeholder="Bankin adi" readonly>
-                    <div class="two-field">
-                        <input class="form-control" id="OduyenBankKod" value="509761" placeholder="Kod" readonly>
-                        <input class="form-control" id="OduyenBankVoen" value="1300036291" placeholder="VOEN" readonly>
+                    <div id="OduyenBankXeta" class="fn-val-msg" style="display:none"></div>
+                    <input class="fn-input" id="OduyenBankAd" value="'Bank Melli Iran' Bakı filialı" placeholder="Bankın adı" readonly />
+                    <div class="fn-form-row">
+                        <input class="fn-input" id="OduyenBankKod" value="509761" placeholder="Kod" readonly />
+                        <input class="fn-input" id="OduyenBankVoen" value="1300036291" placeholder="VOEN" readonly />
                     </div>
-                    <input class="form-control" id="OduyenBankMuxbirHesab" value="AZ74NABZ01350100000000037944" placeholder="Muxbir hesab" readonly>
-                    <input class="form-control" id="OduyenBankSwift" value="MELIAZ22" placeholder="SWIFT / BIC" readonly>
+                    <input class="fn-input" id="OduyenBankMuxbirHesab" value="AZ74NABZ01350100000000037944" placeholder="Müxbir hesab" readonly />
+                    <input class="fn-input" id="OduyenBankSwift" value="MELIAZ22" placeholder="SWIFT / BIC" readonly />
                 </div>
 
-                <!-- B1 – Alan bank -->
-                <div class="form-group-box">
-                    <div class="group-label">
-                        <span class="group-tag">B1</span>
-                        <span class="group-name">Alan bank (Benefisiar)</span>
+                @* B1 – Alan bank *@
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                        <span style="background:#1e9b6b;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">B1</span>
+                        <span class="fn-label" style="margin:0;">Alan bank (Benefisiar)</span>
                     </div>
-
-                    <div class="field-row">
-                        <input type="text" class="form-control" id="AlanBankKodSearch"
-                               placeholder="Bank kodunu daxil edin...">
-                        <button type="button" class="btn btn-search" id="btnAlanBankAxtar">
+                    <div style="display:flex;gap:6px;">
+                        <input type="text" class="fn-input" id="AlanBankKodSearch" placeholder="Bank kodu..." style="flex:1;" />
+                        <button type="button" class="fn-btn fn-btn--primary" id="btnAlanBankAxtar" style="white-space:nowrap;">
                             <i class="bi bi-search"></i> Axtar
                         </button>
-                        
-
                     </div>
-                    <div id="AlanBankXeta" class="field-error" style="display:none"></div>
-
-                    <input class="form-control" id="AlanBankAd"            placeholder="Bankin adi"   >
-                    <div class="two-field">
-                        <input class="form-control" id="AlanBankKod"       placeholder="Kod"          >
-                        <input class="form-control" id="AlanBankVoen"      placeholder="VOEN"         >
+                    <div id="AlanBankXeta" class="fn-val-msg" style="display:none"></div>
+                    <input class="fn-input" id="AlanBankAd" placeholder="Bankın adı" />
+                    <div class="fn-form-row">
+                        <input class="fn-input" id="AlanBankKod" placeholder="Kod" />
+                        <input class="fn-input" id="AlanBankVoen" placeholder="VOEN" />
                     </div>
-                    <!-- Hesab - combo + manual -->
-                    <!-- Hesab - autocomplete style -->
-                    <div class="hesab-radio-wrapper" id="AlanBankHesabRadioWrapper" style="display:none">
-                        <div class="hesab-radio-label">Müxbir hesab seçin</div>
+                    <div class="hesab-radio-wrapper" id="AlanBankHesabRadioWrapper" style="display:none;background:#f8f9fb;border:1px solid #e4e8f0;border-radius:8px;padding:10px;">
+                        <div style="font-size:11px;color:#8a93a8;margin-bottom:6px;">Müxbir hesab seçin</div>
                         <div id="AlanBankHesabRadioList"></div>
                     </div>
-
-                    <!-- Hesab yoxdursa manual input -->
-                    <input class="form-control hesab-radio-manual"
-                           id="AlanBankMuxbirHesab"
-                           placeholder="Hesab (IBAN)"
-                           autocomplete="off"
-                           style="display:none">
-
-                    <input type="hidden" id="AlanHesabIdHidden" asp-for="Odenis.AlanHesabId" />
-
-                    <input class="form-control" id="AlanBankSwift"         placeholder="SWIFT / BIC"  >
+                    <input class="fn-input" id="AlanBankMuxbirHesab" placeholder="Hesab (IBAN)" autocomplete="off" style="display:none" />
+                    <input class="fn-input" id="AlanBankSwift" placeholder="SWIFT / BIC" />
                 </div>
 
             </div>
-        </section>
+        </div>
 
-        <!-- ═══ MÜŞTƏRİLƏR ═══════════════════════════════════════ -->
-        <section class="payment-section">
-            <header class="section-header">
-                <i class="bi bi-people-fill"></i>
-                <span>Mushteriler</span>
-            </header>
-            <div class="section-body two-column">
+        @* ═══ MÜŞTƏRİLƏR ═══ *@
+        <div class="fn-card" style="margin-bottom:16px;">
+            <div class="fn-card-title" style="margin-bottom:14px;">
+                <i class="bi bi-people-fill me-1"></i> Müştərilər
+            </div>
+            <div class="fn-form-row">
 
-                <!-- A2 – Ödüyən müştəri -->
-                <div class="form-group-box">
-                    <div class="group-label">
-                        <span class="group-tag">A2</span>
-                        <span class="group-name">Oduyen musteri</span>
+                @* A2 – Ödüyən müştəri *@
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                        <span style="background:#2d6cdf;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">A2</span>
+                        <span class="fn-label" style="margin:0;">Ödüyən müştəri</span>
                     </div>
-
-                    <div class="field-row">
-                        <input type="text" class="form-control" id="OduyenMusteriVoenSearch"
-                               placeholder="VOEN ile axtar...">
-                        <button type="button" class="btn btn-search" id="btnOduyenMusteriAxtar">
+                    <div style="display:flex;gap:6px;">
+                        <input type="text" class="fn-input" id="OduyenMusteriVoenSearch" placeholder="VOEN ilə axtar..." style="flex:1;" />
+                        <button type="button" class="fn-btn fn-btn--primary" id="btnOduyenMusteriAxtar" style="white-space:nowrap;">
                             <i class="bi bi-search"></i> Axtar
                         </button>
-                       
                     </div>
-                    <div id="OduyenMusteriXeta" class="field-error" style="display:none"></div>
-
-                    <input class="form-control" id="OduyenMusteriAd" value="'Bank Melli Iran' Bakı filialı" placeholder="Musterinin adi" readonly>
-                    <input class="form-control" id="OduyenMusteriHesab" value="AZ02MELI45019000000000400000" placeholder="Hesab (IBAN)" readonly>
-                    <input class="form-control" id="OduyenMusteriVoen" value="1300036291" placeholder="VOEN" readonly>
+                    <div id="OduyenMusteriXeta" class="fn-val-msg" style="display:none"></div>
+                    <input class="fn-input" id="OduyenMusteriAd" value="'Bank Melli Iran' Bakı filialı" placeholder="Müştərinin adı" readonly />
+                    <input class="fn-input" id="OduyenMusteriHesab" value="AZ02MELI45019000000000400000" placeholder="Hesab (IBAN)" readonly />
+                    <input class="fn-input" id="OduyenMusteriVoen" value="1300036291" placeholder="VOEN" readonly />
                 </div>
 
-                <!-- B2 – Alan müştəri -->
-                <div class="form-group-box">
-                    <div class="group-label">
-                        <span class="group-tag">B2</span>
-                        <span class="group-name">Alan musteri</span>
+                @* B2 – Alan müştəri *@
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                        <span style="background:#1e9b6b;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">B2</span>
+                        <span class="fn-label" style="margin:0;">Alan müştəri</span>
                     </div>
-
-                    <div class="field-row">
-                        <input type="text" class="form-control" id="AlanMusteriVoenSearch" placeholder="VOEN ile axtar...">
-
-                        <button type="button" class="btn btn-search" id="btnAlanMusteriAxtar">
+                    <div style="display:flex;gap:6px;">
+                        <input type="text" class="fn-input" id="AlanMusteriVoenSearch" placeholder="VOEN ilə axtar..." style="flex:1;" />
+                        <button type="button" class="fn-btn fn-btn--primary" id="btnAlanMusteriAxtar" style="white-space:nowrap;">
                             <i class="bi bi-search"></i> Axtar
                         </button>
-
-                        <!-- Köhnə (səhv): button ilə asp-controller/asp-action -->
-                        <!-- Yeni (düzgün): <a> ilə -->
-                        
                     </div>
-
-
-
-
-                    <div id="AlanMusteriXeta" class="field-error" style="display:none"></div>
-
-                    <input class="form-control" id="AlanMusteriAd"
-                           asp-for="@Model.MusteriCreateDto!.Ad"
-                           placeholder="Musterinin adi">
-
-                    <!-- Hesab - radio seçim style (C variant) -->
-                    <div class="hesab-radio-wrapper" id="AlanMusteriHesabRadioWrapper" style="display:none">
-                        <div class="hesab-radio-label">Hesab seçin</div>
+                    <div id="AlanMusteriXeta" class="fn-val-msg" style="display:none"></div>
+                    <input class="fn-input" id="AlanMusteriAd" asp-for="@Model.MusteriCreateDto!.Ad" placeholder="Müştərinin adı" />
+                    <div class="hesab-radio-wrapper" id="AlanMusteriHesabRadioWrapper" style="display:none;background:#f8f9fb;border:1px solid #e4e8f0;border-radius:8px;padding:10px;">
+                        <div style="font-size:11px;color:#8a93a8;margin-bottom:6px;">Hesab seçin</div>
                         <div id="AlanMusteriHesabRadioList"></div>
                     </div>
-
-                    <!-- Hesab yoxdursa manual input -->
-                    <input class="form-control hesab-radio-manual"
-                           id="AlanMusteriHesab"
-                           asp-for="@Model.MusteriCreateDto!.Hesab"
-                           placeholder="Hesab (IBAN)">
-
-                    <input type="hidden" id="AlanMusteriHesabId">
-
-                    <input class="form-control" id="AlanMusteriVoen"
-                           asp-for="@Model.MusteriCreateDto!.Voen"
-                           placeholder="VOEN">
-
-
-
-
+                    <input class="fn-input" id="AlanMusteriHesab" asp-for="@Model.MusteriCreateDto!.Hesab" placeholder="Hesab (IBAN)" />
+                    <input type="hidden" id="AlanMusteriHesabId" />
+                    <input class="fn-input" id="AlanMusteriVoen" asp-for="@Model.MusteriCreateDto!.Voen" placeholder="VOEN" />
                 </div>
 
             </div>
-        </section>
+        </div>
 
-        <!-- ═══ MƏBLƏĞ ════════════════════════════════════════════ -->
-        <section class="payment-section">
-            <header class="section-header">
-                <i class="bi bi-currency-exchange"></i>
-                <span>Mebleg</span>
-            </header>
-            <div class="section-body amount-row">
-                <div>
-                    <label class="field-label">C1. Valyuta</label>
-
-                    <select class="form-control" asp-for="Odenis.Valyuta" id="Odenis_Valyuta"
-                            onchange="document.getElementById('Odenis_ValyutaId').value = this.selectedIndex + 1">
-                        <option>AZN</option>
-                        <option>USD</option>
-                        <option>EUR</option>
+        @* ═══ MƏBLƏĞ ═══ *@
+        <div class="fn-card" style="margin-bottom:16px;">
+            <div class="fn-card-title" style="margin-bottom:14px;">
+                <i class="bi bi-currency-exchange me-1"></i> Məbləğ
+            </div>
+            <div style="display:grid;grid-template-columns:120px 1fr 1fr;gap:14px;">
+                <div class="fn-form-group">
+                    <label class="fn-label">Valyuta</label>
+                    <select class="fn-select" asp-for="Odenis.Valyuta" id="Odenis_Valyuta"
+                            onchange="document.getElementById('Odenis_ValyutaId').value = this.options[this.selectedIndex].dataset.id || (this.selectedIndex + 1)">
+                        <option data-id="1">AZN</option>
+                        <option data-id="2">USD</option>
+                        <option data-id="3">EUR</option>
                     </select>
                     <input type="hidden" id="Odenis_ValyutaId" value="1" />
                 </div>
-                <div>
-                    <label class="field-label">C2. Reqemle</label>
-                    <input class="form-control" asp-for="Odenis.Mebleg"
-                           id="Odenis_Mebleg" placeholder="0.00" step="0.01">
+                <div class="fn-form-group">
+                    <label class="fn-label">Rəqəmlə</label>
+                    <input class="fn-input" asp-for="Odenis.Mebleg" id="Odenis_Mebleg" placeholder="0.00" step="0.01" />
                 </div>
-                <div>
-                    <label class="field-label">C2. Yazi ile (avtomatik)</label>
-                    <input class="form-control" asp-for="Odenis.MeblegYazi"
-                           id="Odenis_MeblegYazi" placeholder="Avtomatik doldurulacaq..." readonly>
+                <div class="fn-form-group">
+                    <label class="fn-label">Yazı ilə <span class="fn-label-hint">(avtomatik)</span></label>
+                    <input class="fn-input" asp-for="Odenis.MeblegYazi" id="Odenis_MeblegYazi" placeholder="Avtomatik doldurulacaq..." readonly />
                 </div>
             </div>
-        </section>
-
-        <!-- ═══ TƏYİNAT ═══════════════════════════════════════════ -->
-        <section class="payment-section">
-            <header class="section-header">
-                <i class="bi bi-chat-left-text-fill"></i>
-                <span>Odenish Teyinati</span>
-            </header>
-            <div class="section-body">
-                <label class="field-label">D1. Teyinat ve esasi</label>
-                <textarea class="form-control" rows="3" asp-for="Odenis.Teyinat"
-                          id="Odenis_Teyinat" placeholder="Odenishin teyinati"></textarea>
-
-                <label class="field-label mt-3">D2. Elave informasiya</label>
-                <input class="form-control" asp-for="Odenis.ElaveInformasiya"
-                       id="Odenis_ElaveInformasiya" placeholder="Elave informasiya (istege bagi)">
-
-                <div class="two-field mt-3">
-                    <div>
-                        <label class="field-label">D3. Budce tesnifatinin kodu</label>
-                        <input class="form-control" asp-for="Odenis.BudceTesnifatininKodu"
-                               id="Odenis_BudceTesnifatininKodu" placeholder="111254">
-                    </div>
-                    <div>
-                        <label class="field-label">D4. Budce seviyyesinin kodu</label>
-                        <input class="form-control" asp-for="Odenis.BudceSeviyyesininKodu"
-                               id="Odenis_BudceSeviyyesininKodu" placeholder="1">
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Xəta paneli -->
-        <div id="formXetalar" class="alert alert-danger rounded-3" style="display:none">
-            <div class="d-flex align-items-center gap-2 mb-2">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <strong>Asagidaki xetalar duzeldilmelidir:</strong>
-            </div>
-            <ul id="formXetalarList" class="mb-0 ps-3"></ul>
         </div>
 
-        <!-- ACTIONS -->
-        <div class="form-actions">
-            <button type="button" class="btn btn-primary px-5" id="btnGenerateWord">
-                <i class="bi bi-file-earmark-word me-1"></i> ÖT hazırlanması
+        @* ═══ TƏYİNAT ═══ *@
+        <div class="fn-card" style="margin-bottom:16px;">
+            <div class="fn-card-title" style="margin-bottom:14px;">
+                <i class="bi bi-chat-left-text-fill me-1"></i> Ödəniş təyinatı
+            </div>
+            <div class="fn-form-group">
+                <label class="fn-label">D1. Təyinat və əsası <span class="fn-required">*</span></label>
+                <textarea class="fn-textarea" rows="3" asp-for="Odenis.Teyinat" id="Odenis_Teyinat" placeholder="Ödənişin təyinatı"></textarea>
+            </div>
+            <div class="fn-form-group">
+                <label class="fn-label">D2. Əlavə informasiya <span class="fn-label-hint">(isteğe bağlı)</span></label>
+                <input class="fn-input" asp-for="Odenis.ElaveInformasiya" id="Odenis_ElaveInformasiya" placeholder="Əlavə informasiya" />
+            </div>
+            <div class="fn-form-row">
+                <div class="fn-form-group">
+                    <label class="fn-label">D3. Büdcə təsnifatının kodu</label>
+                    <input class="fn-input" asp-for="Odenis.BudceTesnifatininKodu" id="Odenis_BudceTesnifatininKodu" placeholder="111254" />
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">D4. Büdcə səviyyəsinin kodu</label>
+                    <input class="fn-input" asp-for="Odenis.BudceSeviyyesininKodu" id="Odenis_BudceSeviyyesininKodu" placeholder="1" />
+                </div>
+            </div>
+        </div>
+
+        @* ═══ XƏTA PANELİ ═══ *@
+        <div id="formXetalar" style="display:none;background:#fee2e2;border:1px solid #fecaca;border-radius:8px;padding:12px 14px;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12px;font-weight:600;color:#c0392b;">
+                <i class="bi bi-exclamation-triangle-fill"></i> Aşağıdakı xətalar düzəldilməlidir:
+            </div>
+            <ul id="formXetalarList" style="margin:0;padding-left:16px;font-size:12px;color:#991b1b;"></ul>
+        </div>
+
+        @* ═══ DÜYMƏLƏR ═══ *@
+        <div class="fn-form-actions">
+            <a asp-action="Siyahi" class="fn-btn fn-btn--outline">Ləğv et</a>
+            <button type="button" class="fn-btn fn-btn--primary" id="btnGenerateWord">
+                <i class="bi bi-file-earmark-word me-1"></i> ÖT hazırla və yüklə
             </button>
-            <a asp-action="Index" class="btn btn-outline-secondary px-4">
-                <i class="bi bi-x-lg me-1"></i> Legv Et
-            </a>
         </div>
 
     </form>
@@ -282,15 +210,13 @@
     {
         <script>
             document.addEventListener('DOMContentLoaded', function () {
-                var adInput    = document.querySelector('input[name="MusteriCreateDto.Ad"]');
-                var voenInput  = document.querySelector('input[name="MusteriCreateDto.Voen"]');
+                var adInput = document.querySelector('input[name="MusteriCreateDto.Ad"]');
+                var voenInput = document.querySelector('input[name="MusteriCreateDto.Voen"]');
                 var hesabInput = document.querySelector('input[name="MusteriCreateDto.Hesab"]');
-
-                if (adInput)    adInput.value    = '@TempData["AlanMusteri_Ad"]';
-                if (voenInput)  voenInput.value  = '@TempData["AlanMusteri_Voen"]';
+                if (adInput) adInput.value = '@TempData["AlanMusteri_Ad"]';
+                if (voenInput) voenInput.value = '@TempData["AlanMusteri_Voen"]';
                 if (hesabInput) hesabInput.value = '@TempData["AlanMusteri_Hesab"]';
             });
         </script>
     }
-
 }
