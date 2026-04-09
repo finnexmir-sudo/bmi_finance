@@ -1,279 +1,175 @@
-﻿@model FinNex.UI.Areas.PR_Odenis_Tapsirigi.ViewModels.OdenisTapsirigiDetailVM
+@model FinNex.UI.Areas.PR_Odenis_Tapsirigi.ViewModels.OdenisTapsirigiDetailVM
 
-<div class="detail-page">
+<div class="fn-page">
 
-	<!-- HEADER -->
-	<div class="detail-header">
-		<div class="detail-header-left">
-			<div class="detail-nomre-badge">
-				<i class="bi bi-file-earmark-text me-2"></i>
-				Ödəniş Tapşırığı #@Model.Odenis.Nomre
-			</div>
-			<div class="detail-meta-chips">
-				<span class="meta-chip">
-					<i class="bi bi-calendar3 me-1"></i>
-					@Model.Odenis.Tarix.ToString("dd MMMM yyyy, HH:mm")
-				</span>
-				<span class="meta-chip meta-chip-valyuta">
-					@Model.Odenis.Valyuta?.Ad
-				</span>
-				@if (Model.BugunDuzeli)
-				{
-						<span class="meta-chip meta-chip-bugun">
-							<i class="bi bi-circle-fill me-1" style="font-size:7px"></i>
-							Bu gün yaradılıb
-						</span>
-				}
-			</div>
-		</div>
-		<div class="detail-header-actions">
-			@if (Model.BugunDuzeli)
-			{
-					<a asp-action="Update" asp-route-id="@Model.Odenis.Id"
-		   class="btn btn-warning px-4">
-			<i class="bi bi-pencil me-1"></i> Düzəliş Et
-		</a>
-			}
-			else
-			{
-			<button class="btn btn-warning px-4" disabled
-					title="Yalnız bu gün yaradılmış sənədlər dəyişdirilə bilər">
-				<i class="bi bi-lock me-1"></i> Düzəliş Bağlıdır
-			</button>
-			}
-			<!-- KÖHNƏ modal düyməsini SİL, bunu əlavə et -->
-			<a asp-area="PR_Odenis_Tapsirigi" asp-action="YenidenYazForm" asp-route-id="@Model.Odenis.Id"
-			   class="btn btn-primary px-4">
-				<i class="bi bi-arrow-repeat me-1"></i> Yenidən Yaz
-			</a>
-			<a asp-action="Siyahi" class="btn btn-outline-secondary px-3">
-				<i class="bi bi-arrow-left"></i>
-			</a>
-		</div>
-	</div>
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">ÖT #@Model.Odenis.Nomre</div>
+            <div class="fn-page-sub">@Model.Odenis.Tarix.ToString("dd.MM.yyyy HH:mm") · @Model.Odenis.Valyuta?.Ad · @Model.Odenis.Mebleg.ToString("N2")</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <a asp-action="Siyahi" class="fn-btn fn-btn--outline">← Siyahı</a>
+            @if (Model.BugunDuzeli)
+            {
+                <a asp-action="Update" asp-route-id="@Model.Odenis.Id" class="fn-btn fn-btn--primary">
+                    <i class="bi bi-pencil me-1"></i> Düzəliş et
+                </a>
+            }
+            <a asp-action="YenidenYazForm" asp-route-id="@Model.Odenis.Id" class="fn-btn fn-btn--outline">
+                <i class="bi bi-arrow-repeat me-1"></i> Yenidən yaz
+            </a>
+        </div>
+    </div>
 
-	<!-- MƏZMUN -->
-	<div class="detail-body">
+    @if (Model.BugunDuzeli)
+    {
+        <div class="fn-info-box" style="background:#f0f7ff;border-color:#d0e2ff;margin-bottom:16px;">
+            <i class="bi bi-info-circle" style="color:#2d6cdf;"></i>
+            Bu gün yaradılıb — düzəliş etmək və Word sənədi yükləmək mümkündür.
+        </div>
+    }
 
-		<!-- ── BANKLAR ── -->
-		<div class="detail-section-row">
+    @* ── Banklar ── *@
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="fn-card">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+                <span style="background:#2d6cdf;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">A1</span>
+                <span class="fn-card-title" style="margin:0;">Ödüyən bank</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <div><span class="fn-sbi-label">Adı</span><div style="font-size:13px;color:#1a2332;">@Model.Odenis.OduyenBank?.Ad</div></div>
+                <div class="fn-form-row">
+                    <div><span class="fn-sbi-label">Kod</span><div style="font-size:13px;color:#1a2332;">@Model.Odenis.OduyenBank?.Kod</div></div>
+                    <div><span class="fn-sbi-label">VOEN</span><div style="font-size:13px;color:#1a2332;">@Model.Odenis.OduyenBank?.Voen</div></div>
+                </div>
+                <div><span class="fn-sbi-label">Müxbir hesab</span><div style="font-size:12px;color:#1a2332;font-family:monospace;">@Model.Odenis.OduyenHesab?.Iban</div></div>
+                <div><span class="fn-sbi-label">SWIFT</span><div style="font-size:12px;color:#1a2332;font-family:monospace;">@Model.Odenis.OduyenBank?.SwiftBic</div></div>
+            </div>
+        </div>
 
-			<!-- A1 Ödüyən Bank -->
-			<div class="detail-card">
-				<div class="detail-card-header">
-					<span class="card-tag">A1</span>
-					<span>Ödüyən Bank</span>
-				</div>
-				<div class="detail-card-body">
-					<div class="detail-field">
-						<span class="field-label">Adı</span>
-						<span class="field-value">@Model.Odenis.OduyenBank?.Ad</span>
-					</div>
-					<div class="detail-field">
-						<span class="field-label">Kod</span>
-						<span class="field-value">@Model.Odenis.OduyenBank?.Kod</span>
-					</div>
-					<div class="detail-field">
-						<span class="field-label">VOEN</span>
-						<span class="field-value">@Model.Odenis.OduyenBank?.Voen</span>
-					</div>
-					<div class="detail-field">
-						<span class="field-label">Müxbir hesab</span>
-						<span class="field-value mono">@Model.Odenis.OduyenHesab?.Iban</span>
-					</div>
-					<div class="detail-field">
-						<span class="field-label">SWIFT</span>
-						<span class="field-value mono">@Model.Odenis.OduyenBank?.SwiftBic</span>
-					</div>
-				</div>
-			</div>
+        <div class="fn-card">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+                <span style="background:#1e9b6b;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">B1</span>
+                <span class="fn-card-title" style="margin:0;">Alan bank</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <div><span class="fn-sbi-label">Adı</span><div style="font-size:13px;color:#1a2332;">@Model.Odenis.AlanBank?.Ad</div></div>
+                <div class="fn-form-row">
+                    <div><span class="fn-sbi-label">Kod</span><div style="font-size:13px;color:#1a2332;">@Model.Odenis.AlanBank?.Kod</div></div>
+                    <div><span class="fn-sbi-label">VOEN</span><div style="font-size:13px;color:#1a2332;">@Model.Odenis.AlanBank?.Voen</div></div>
+                </div>
+                <div><span class="fn-sbi-label">Müxbir hesab</span><div style="font-size:12px;color:#1a2332;font-family:monospace;">@Model.Odenis.AlanHesab?.Iban</div></div>
+                <div><span class="fn-sbi-label">SWIFT</span><div style="font-size:12px;color:#1a2332;font-family:monospace;">@Model.Odenis.AlanBank?.SwiftBic</div></div>
+            </div>
+        </div>
+    </div>
 
-			<!-- B1 Alan Bank -->
-			<div class="detail-card">
-				<div class="detail-card-header">
-					<span class="card-tag card-tag-b">B1</span>
-					<span>Alan Bank</span>
-				</div>
-				<div class="detail-card-body">
-					<div class="detail-field">
-						<span class="field-label">Adı</span>
-						<span class="field-value">@Model.Odenis.AlanBank?.Ad</span>
-					</div>
-					<div class="detail-field">
-						<span class="field-label">Kod</span>
-						<span class="field-value">@Model.Odenis.AlanBank?.Kod</span>
-					</div>
-					<div class="detail-field">
-						<span class="field-label">VOEN</span>
-						<span class="field-value">@Model.Odenis.AlanBank?.Voen</span>
-					</div>
-					<div class="detail-field">
-						<span class="field-label">Müxbir hesab</span>
-						<span class="field-value mono">@Model.Odenis.AlanHesab?.Iban</span>
-					</div>
-					<div class="detail-field">
-						<span class="field-label">SWIFT</span>
-						<span class="field-value mono">@Model.Odenis.AlanBank?.SwiftBic</span>
-					</div>
-				</div>
-			</div>
+    @* ── Müştərilər ── *@
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="fn-card">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+                <span style="background:#2d6cdf;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">A2</span>
+                <span class="fn-card-title" style="margin:0;">Ödüyən müştəri</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <div><span class="fn-sbi-label">Adı</span><div style="font-size:13px;color:#1a2332;">@Model.Odenis.OduyenMusteri?.Ad</div></div>
+                <div><span class="fn-sbi-label">VOEN</span><div style="font-size:13px;color:#1a2332;">@Model.Odenis.OduyenMusteri?.Voen</div></div>
+                <div><span class="fn-sbi-label">Hesab</span><div style="font-size:12px;color:#1a2332;font-family:monospace;">@Model.Odenis.OduyenHesab?.Iban</div></div>
+            </div>
+        </div>
 
-		</div>
+        <div class="fn-card">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+                <span style="background:#1e9b6b;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">B2</span>
+                <span class="fn-card-title" style="margin:0;">Alan müştəri</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <div><span class="fn-sbi-label">Adı</span><div style="font-size:13px;color:#1a2332;">@Model.Odenis.AlanMusteri?.Ad</div></div>
+                <div><span class="fn-sbi-label">VOEN</span><div style="font-size:13px;color:#1a2332;">@Model.Odenis.AlanMusteri?.Voen</div></div>
+                <div><span class="fn-sbi-label">Hesab</span><div style="font-size:12px;color:#1a2332;font-family:monospace;">@Model.Odenis.AlanHesab?.Iban</div></div>
+            </div>
+        </div>
+    </div>
 
-		<!-- ── MÜŞTƏRİLƏR ── -->
-		<div class="detail-section-row">
+    @* ── Məbləğ ── *@
+    <div class="fn-card" style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+            <span style="background:#e8b84b;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">C</span>
+            <span class="fn-card-title" style="margin:0;">Məbləğ</span>
+        </div>
+        <div style="display:grid;grid-template-columns:100px 1fr 2fr;gap:14px;">
+            <div>
+                <span class="fn-sbi-label">Valyuta</span>
+                <div style="font-size:13px;color:#1a2332;font-weight:600;">@Model.Odenis.Valyuta?.Ad</div>
+            </div>
+            <div>
+                <span class="fn-sbi-label">Rəqəmlə</span>
+                <div style="font-size:17px;color:#1a2332;font-weight:700;" id="view_mebleg">@Model.Odenis.Mebleg.ToString("N2")</div>
+                <input class="fn-input" id="edit_mebleg" type="number" step="0.01" value="@Model.Odenis.Mebleg" style="display:none;" />
+            </div>
+            <div>
+                <span class="fn-sbi-label">Yazı ilə</span>
+                <div style="font-size:13px;color:#3d4557;" id="view_meblegYazi">@Model.Odenis.MeblegYazi</div>
+                <input class="fn-input" id="edit_meblegYazi" type="text" value="@Model.Odenis.MeblegYazi" style="display:none;" />
+            </div>
+        </div>
+    </div>
 
-			<!-- A2 Ödüyən Müştəri -->
-			<div class="detail-card">
-				<div class="detail-card-header">
-					<span class="card-tag">A2</span>
-					<span>Ödüyən Müştəri</span>
-				</div>
-				<div class="detail-card-body">
-					<div class="detail-field">
-						<span class="field-label">Adı</span>
-						<span class="field-value">@Model.Odenis.OduyenMusteri?.Ad</span>
-					</div>
-					<div class="detail-field">
-						<span class="field-label">VOEN</span>
-						<span class="field-value">@Model.Odenis.OduyenMusteri?.Voen</span>
-					</div>
-					<div class="detail-field">
-						<span class="field-label">Hesab (IBAN)</span>
-						<span class="field-value mono">@Model.Odenis.OduyenHesab?.Iban</span>
-					</div>
-				</div>
-			</div>
+    @* ── Təyinat ── *@
+    <div class="fn-card" style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+            <span style="background:#6366f1;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">D</span>
+            <span class="fn-card-title" style="margin:0;">Təyinat</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            <div>
+                <span class="fn-sbi-label">D1. Təyinat və əsası</span>
+                <div style="font-size:13px;color:#1a2332;line-height:1.6;" id="view_teyinat">@Model.Odenis.Teyinat</div>
+                <textarea class="fn-textarea" id="edit_teyinat" rows="3" style="display:none;">@Model.Odenis.Teyinat</textarea>
+            </div>
+            <div>
+                <span class="fn-sbi-label">D2. Əlavə informasiya</span>
+                <div style="font-size:13px;color:#3d4557;" id="view_elaveInformasiya">@(Model.Odenis.ElaveInformasiya ?? "—")</div>
+                <input class="fn-input" id="edit_elaveInformasiya" type="text" value="@Model.Odenis.ElaveInformasiya" style="display:none;" />
+            </div>
+            <div class="fn-form-row">
+                <div>
+                    <span class="fn-sbi-label">D3. Büdcə təsnifatının kodu</span>
+                    <div style="font-size:13px;color:#3d4557;" id="view_budceTesnifatininKodu">@(Model.Odenis.BudceTesnifatininKodu ?? "—")</div>
+                    <input class="fn-input" id="edit_budceTesnifatininKodu" type="text" value="@Model.Odenis.BudceTesnifatininKodu" style="display:none;" />
+                </div>
+                <div>
+                    <span class="fn-sbi-label">D4. Büdcə səviyyəsinin kodu</span>
+                    <div style="font-size:13px;color:#3d4557;" id="view_budceSeviyyesininKodu">@(Model.Odenis.BudceSeviyyesininKodu ?? "—")</div>
+                    <input class="fn-input" id="edit_budceSeviyyesininKodu" type="text" value="@Model.Odenis.BudceSeviyyesininKodu" style="display:none;" />
+                </div>
+            </div>
+        </div>
+    </div>
 
-			<!-- B2 Alan Müştəri -->
-			<div class="detail-card">
-				<div class="detail-card-header">
-					<span class="card-tag card-tag-b">B2</span>
-					<span>Alan Müştəri</span>
-				</div>
-				<div class="detail-card-body">
-					<div class="detail-field">
-						<span class="field-label">Adı</span>
-						<span class="field-value ">@Model.Odenis.AlanMusteri?.Ad</span>
-					</div>
-					<div class="detail-field">
-						<span class="field-label">VOEN</span>
-						<span class="field-value">@Model.Odenis.AlanMusteri?.Voen</span>
-					</div>
-					<div class="detail-field">
-						<span class="field-label">Hesab (IBAN)</span>
-						<span class="field-value mono">@Model.Odenis.AlanHesab?.Iban</span>
-					</div>
-				</div>
-			</div>
+    @* ── Edit düymələri (bu gün yaradılıbsa) ── *@
+    @if (Model.BugunDuzeli)
+    {
+        <div id="editActions" style="display:none;margin-bottom:16px;">
+            <div class="fn-form-actions">
+                <button type="button" class="fn-btn fn-btn--outline" id="btnEditLegv">Ləğv et</button>
+                <button type="button" class="fn-btn fn-btn--primary" id="btnSaxla">
+                    <i class="bi bi-floppy me-1"></i> Yadda saxla və Word yüklə
+                </button>
+            </div>
+        </div>
+    }
 
-		</div>
-
-		<!-- ── MƏBLƏĞ ── -->
-		<div class="detail-card detail-card-full">
-			<div class="detail-card-header">
-				<span class="card-tag card-tag-c">C</span>
-				<span>Məbləğ</span>
-			</div>
-			<div class="detail-card-body detail-amount-row">
-				<div class="detail-field">
-					<span class="field-label">Valyuta</span>
-					<span class="field-value">@Model.Odenis.Valyuta?.Ad</span>
-				</div>
-				<div class="detail-field">
-					<span class="field-label">Məbləğ (rəqəmlə)</span>
-					<span class="field-value editable-field"
-						  data-field="mebleg"
-						  id="view_mebleg">
-						@Model.Odenis.Mebleg.ToString("N2")
-					</span>
-					<input class="form-control edit-input d-none"
-						   id="edit_mebleg" type="number" step="0.01"
-						   value="@Model.Odenis.Mebleg" />
-				</div>
-				<div class="detail-field" style="flex:2">
-					<span class="field-label">Məbləğ (yazı ilə)</span>
-					<span class="field-value editable-field"
-						  data-field="meblegYazi"
-						  id="view_meblegYazi">
-						@Model.Odenis.MeblegYazi
-					</span>
-					<input class="form-control edit-input d-none"
-						   id="edit_meblegYazi" type="text"
-						   value="@Model.Odenis.MeblegYazi" />
-				</div>
-			</div>
-		</div>
-
-		<!-- ── TƏYİNAT ── -->
-		<div class="detail-card detail-card-full">
-			<div class="detail-card-header">
-				<span class="card-tag card-tag-d">D</span>
-				<span>Teyinat</span>
-			</div>
-			<div class="detail-card-body">
-				<div class="detail-field">
-					<span class="field-label">D1. Teyinat və əsası</span>
-					<span class="field-value editable-field"
-						  data-field="teyinat"
-						  id="view_teyinat">
-						@Model.Odenis.Teyinat
-					</span>
-					<textarea class="form-control edit-input d-none"
-							  id="edit_teyinat" rows="3">@Model.Odenis.Teyinat</textarea>
-				</div>
-				<div class="detail-field mt-3">
-					<span class="field-label">D2. Əlavə informasiya</span>
-					<span class="field-value editable-field"
-						  data-field="elaveInformasiya"
-						  id="view_elaveInformasiya">
-						@Model.Odenis.ElaveInformasiya
-					</span>
-					<input class="form-control edit-input d-none"
-						   id="edit_elaveInformasiya" type="text"
-						   value="@Model.Odenis.ElaveInformasiya" />
-				</div>
-				<div class="detail-two-field mt-3">
-					<div class="detail-field">
-						<span class="field-label">D3. Büdcə təsnifatının kodu</span>
-						<span class="field-value editable-field"
-							  data-field="budceTesnifatininKodu"
-							  id="view_budceTesnifatininKodu">
-							@Model.Odenis.BudceTesnifatininKodu
-						</span>
-						<input class="form-control edit-input d-none"
-							   id="edit_budceTesnifatininKodu" type="text"
-							   value="@Model.Odenis.BudceTesnifatininKodu" />
-					</div>
-					<div class="detail-field">
-						<span class="field-label">D4. Büdcə səviyyəsinin kodu</span>
-						<span class="field-value editable-field"
-							  data-field="budceSeviyyesininKodu"
-							  id="view_budceSeviyyesininKodu">
-							@Model.Odenis.BudceSeviyyesininKodu
-						</span>
-						<input class="form-control edit-input d-none"
-							   id="edit_budceSeviyyesininKodu" type="text"
-							   value="@Model.Odenis.BudceSeviyyesininKodu" />
-					</div>
-				</div>
-			</div>
-		</div>
-
-	</div><!-- /detail-body -->
-	<!-- Bildiriş -->
-	<div id="detailToast" class="detail-toast d-none"></div>
-
+    <div id="detailToast" style="display:none;position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;z-index:1000;"></div>
 </div>
 
-
 @section Styles {
-		<link rel="stylesheet" href="~/css/PR_Odenis_Tapsirigi/payment-detail.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/PR_Odenis_Tapsirigi/payment-detail.css" asp-append-version="true" />
 }
 @section Scripts {
-		<script>
-			const ODENIS_ID  = @Model.Odenis.Id;
-			const BUGUN_EDIT = @Model.BugunDuzeli.ToString().ToLower();
-		</script>
-		<script src="~/js/PR_Odenis_Tapsirigi/payment-detail.js" asp-append-version="true"></script>
+    <script>
+        const ODENIS_ID = @Model.Odenis.Id;
+        const BUGUN_EDIT = @Model.BugunDuzeli.ToString().ToLower();
+    </script>
+    <script src="~/js/PR_Odenis_Tapsirigi/payment-detail.js" asp-append-version="true"></script>
 }

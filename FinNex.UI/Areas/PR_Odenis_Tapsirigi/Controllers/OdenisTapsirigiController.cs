@@ -30,11 +30,10 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
             _db = db;
         }
 
-        // Ana hub sehifesi
+        // Hub artıq lazım deyil - birbaşa siyahıya yönləndirilir
         public IActionResult Index()
         {
-            return View();
-
+            return RedirectToAction(nameof(Siyahi));
         }
 
         // Odenis tapsiriglarinin siyahisi

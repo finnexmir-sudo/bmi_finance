@@ -223,8 +223,21 @@
                                 </div>
                             </button>
                             <div class="fn-nav-submenu">
-                                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Index" class="fn-nav-subitem">
-                                    <div class="fn-sub-dot"></div> Ödəniş tapşırığı
+                                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Siyahi"
+                                   class="fn-nav-subitem @(currentArea == "PR_Odenis_Tapsirigi" && currentController == "OdenisTapsirigi" && currentAction == "Siyahi" ? "active" : "")">
+                                    <div class="fn-sub-dot"></div> Ödəniş siyahısı
+                                </a>
+                                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Create"
+                                   class="fn-nav-subitem @(currentArea == "PR_Odenis_Tapsirigi" && currentController == "OdenisTapsirigi" && currentAction == "Create" ? "active" : "")">
+                                    <div class="fn-sub-dot"></div> Yeni ödəniş yaz
+                                </a>
+                                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="Bank" asp-action="Index"
+                                   class="fn-nav-subitem @(currentArea == "PR_Odenis_Tapsirigi" && currentController == "Bank" ? "active" : "")">
+                                    <div class="fn-sub-dot"></div> Banklar
+                                </a>
+                                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="Musteri" asp-action="Index"
+                                   class="fn-nav-subitem @(currentArea == "PR_Odenis_Tapsirigi" && currentController == "Musteri" ? "active" : "")">
+                                    <div class="fn-sub-dot"></div> Müştərilər
                                 </a>
                             </div>
                         </div>
