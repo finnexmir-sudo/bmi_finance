@@ -223,23 +223,34 @@
                                 </div>
                             </button>
                             <div class="fn-nav-submenu">
-                                <div style="font-size:10px;font-weight:600;color:#5a647a;padding:8px 12px 4px;text-transform:uppercase;letter-spacing:0.04em;">Ödəniş tapşırığı</div>
-                                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Siyahi"
-                                   class="fn-nav-subitem @(currentArea == "PR_Odenis_Tapsirigi" && currentController == "OdenisTapsirigi" && currentAction == "Siyahi" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> Ödəniş siyahısı
-                                </a>
-                                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Create"
-                                   class="fn-nav-subitem @(currentArea == "PR_Odenis_Tapsirigi" && currentController == "OdenisTapsirigi" && currentAction == "Create" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> Yeni ödəniş yaz
-                                </a>
-                                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="Bank" asp-action="Index"
-                                   class="fn-nav-subitem @(currentArea == "PR_Odenis_Tapsirigi" && currentController == "Bank" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> Banklar
-                                </a>
-                                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="Musteri" asp-action="Index"
-                                   class="fn-nav-subitem @(currentArea == "PR_Odenis_Tapsirigi" && currentController == "Musteri" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> Müştərilər
-                                </a>
+                                <div class="fn-nav-group @(currentArea == "PR_Odenis_Tapsirigi" ? "open" : "")">
+                                    <button type="button" class="fn-nav-group-toggle" style="padding-left:12px;">
+                                        <div class="fn-nav-group-left">
+                                            Ödəniş tapşırığı
+                                        </div>
+                                        <div class="fn-nav-arrow">
+                                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
+                                        </div>
+                                    </button>
+                                    <div class="fn-nav-submenu">
+                                        <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Siyahi"
+                                           class="fn-nav-subitem @(currentArea == "PR_Odenis_Tapsirigi" && currentController == "OdenisTapsirigi" && currentAction == "Siyahi" ? "active" : "")">
+                                            <div class="fn-sub-dot"></div> Ödəniş siyahısı
+                                        </a>
+                                        <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Create"
+                                           class="fn-nav-subitem @(currentArea == "PR_Odenis_Tapsirigi" && currentController == "OdenisTapsirigi" && currentAction == "Create" ? "active" : "")">
+                                            <div class="fn-sub-dot"></div> Yeni ödəniş yaz
+                                        </a>
+                                        <a asp-area="PR_Odenis_Tapsirigi" asp-controller="Bank" asp-action="Index"
+                                           class="fn-nav-subitem @(currentArea == "PR_Odenis_Tapsirigi" && currentController == "Bank" ? "active" : "")">
+                                            <div class="fn-sub-dot"></div> Banklar
+                                        </a>
+                                        <a asp-area="PR_Odenis_Tapsirigi" asp-controller="Musteri" asp-action="Index"
+                                           class="fn-nav-subitem @(currentArea == "PR_Odenis_Tapsirigi" && currentController == "Musteri" ? "active" : "")">
+                                            <div class="fn-sub-dot"></div> Müştərilər
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="fn-nav-group">
