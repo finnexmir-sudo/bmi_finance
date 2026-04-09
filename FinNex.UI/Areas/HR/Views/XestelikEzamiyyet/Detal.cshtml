@@ -1,0 +1,121 @@
+@model FinNex.UI.Areas.HR.ViewModels.Mezuniyyet.HrMezuniyyetDetalVM
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = "Qeyd Detalı";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    var m = Model.Mezuniyyet;
+
+    static string StatusText(MezuniyyetStatus s) => s switch
+    {
+        MezuniyyetStatus.Tesdiqlenib => "Təsdiqlənib",
+        MezuniyyetStatus.ImtinaEdildi => "İmtina Edildi",
+        MezuniyyetStatus.Gozlemede => "Gözləmədə",
+        _ => s.ToString()
+    };
+
+    static string StatusColor(MezuniyyetStatus s) => s switch
+    {
+        MezuniyyetStatus.Tesdiqlenib => "#1e9b6b",
+        MezuniyyetStatus.ImtinaEdildi => "#c0392b",
+        _ => "#e8b84b"
+    };
+
+    static string NovText(MezuniyyetNovu n) => n switch
+    {
+        MezuniyyetNovu.Xestelik => "Xəstəlik",
+        MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
+        MezuniyyetNovu.Illik => "İllik məzuniyyət",
+        _ => n.ToString()
+    };
+
+    static string NovColor(MezuniyyetNovu n) => n switch
+    {
+        MezuniyyetNovu.Xestelik => "#a855f7",
+        MezuniyyetNovu.Ezamiyyet => "#f97316",
+        _ => "#2d6cdf"
+    };
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Qeyd #@m.Id</div>
+            <div class="fn-page-sub">@m.IsciAdSoyad · @NovText(m.Nov)</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <a asp-area="HR" asp-controller="XestelikEzamiyyet" asp-action="Index"
+               class="fn-btn fn-btn--outline">← Siyahı</a>
+            <a asp-area="HR" asp-controller="XestelikEzamiyyet" asp-action="Edit" asp-route-id="@m.Id"
+               class="fn-btn fn-btn--primary">Redaktə et</a>
+        </div>
+    </div>
+
+    @* ── Status + Növ ── *@
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
+        <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:@(StatusColor(m.Status))1a;color:@(StatusColor(m.Status));">
+            <span style="width:7px;height:7px;border-radius:50%;background:@(StatusColor(m.Status));"></span>
+            @StatusText(m.Status)
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:@(NovColor(m.Nov))1a;color:@(NovColor(m.Nov));">
+            @NovText(m.Nov)
+        </span>
+    </div>
+
+    @* ── Məlumatlar ── *@
+    <div class="fn-card" style="max-width:860px;">
+        <div class="fn-card-title" style="margin-bottom:14px;">Qeyd məlumatları</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="fn-form-group">
+                <div class="fn-sbi-label">İşçi</div>
+                <div style="font-size:13px;color:#1a2332;font-weight:500;">@m.IsciAdSoyad</div>
+            </div>
+            <div class="fn-form-group">
+                <div class="fn-sbi-label">Şöbə / Vəzifə</div>
+                <div style="font-size:13px;color:#1a2332;">@m.SobeAdi · @m.VezifeAdi</div>
+            </div>
+            <div class="fn-form-group">
+                <div class="fn-sbi-label">Başlama tarixi</div>
+                <div style="font-size:13px;color:#1a2332;font-weight:500;">@m.BaslamaTarixi.ToString("dd.MM.yyyy")</div>
+            </div>
+            <div class="fn-form-group">
+                <div class="fn-sbi-label">Bitmə tarixi</div>
+                <div style="font-size:13px;color:#1a2332;font-weight:500;">@m.BitmeTarixi.ToString("dd.MM.yyyy")</div>
+            </div>
+            <div class="fn-form-group">
+                <div class="fn-sbi-label">İş günü</div>
+                <div style="font-size:13px;color:#1a2332;font-weight:600;">@m.IsGunlerininSayi gün</div>
+            </div>
+            <div class="fn-form-group">
+                <div class="fn-sbi-label">Əvəzedici</div>
+                <div style="font-size:13px;color:#1a2332;">@(string.IsNullOrEmpty(m.EvezEdenIsciAdSoyad) ? "—" : m.EvezEdenIsciAdSoyad)</div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(m.Qeyd))
+        {
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e4e8f0;">
+                <div class="fn-sbi-label">Qeyd</div>
+                <div style="font-size:13px;color:#3d4557;margin-top:4px;line-height:1.6;">@m.Qeyd</div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(m.ImtinaSebebi))
+        {
+            <div style="margin-top:14px;padding:10px 12px;background:#fef0f0;border:1px solid #f5c0c0;border-radius:8px;">
+                <div style="font-size:11px;font-weight:600;color:#c0392b;margin-bottom:4px;">İmtina səbəbi</div>
+                <div style="font-size:13px;color:#991b1b;line-height:1.5;">@m.ImtinaSebebi</div>
+            </div>
+        }
+
+        @if (m.HrTesdiqTarixi.HasValue)
+        {
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e4e8f0;">
+                <div class="fn-sbi-label">Təsdiq tarixi</div>
+                <div style="font-size:13px;color:#1a2332;">@m.HrTesdiqTarixi.Value.ToString("dd.MM.yyyy HH:mm")</div>
+            </div>
+        }
+    </div>
+
+</div>

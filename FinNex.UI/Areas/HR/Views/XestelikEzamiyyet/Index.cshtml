@@ -1,0 +1,158 @@
+@model IList<FinNex.Application.DTOs.HR.Mezuniyyet.MezuniyyetListDto>
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = "Xəstəlik / Ezamiyyət";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    var list = Model ?? new List<FinNex.Application.DTOs.HR.Mezuniyyet.MezuniyyetListDto>();
+    var xestelikSay = list.Count(x => x.Nov == MezuniyyetNovu.Xestelik);
+    var ezamiyyetSay = list.Count(x => x.Nov == MezuniyyetNovu.Ezamiyyet);
+    var tesdiqSay = list.Count(x => x.Status == MezuniyyetStatus.Tesdiqlenib);
+
+    string StatusText(MezuniyyetStatus s) => s switch
+    {
+        MezuniyyetStatus.Gozlemede => "Gözləmədə",
+        MezuniyyetStatus.SobeReisiTesdiqinde => "Şöbə Rəisi",
+        MezuniyyetStatus.RehberTesdiqinde => "Rəhbər",
+        MezuniyyetStatus.HrTesdiqinde => "HR Təsdiqi",
+        MezuniyyetStatus.Tesdiqlenib => "Təsdiqlənib",
+        MezuniyyetStatus.ImtinaEdildi => "İmtina",
+        _ => s.ToString()
+    };
+
+    string StatusColor(MezuniyyetStatus s) => s switch
+    {
+        MezuniyyetStatus.Tesdiqlenib => "#1e9b6b",
+        MezuniyyetStatus.ImtinaEdildi => "#c0392b",
+        _ => "#e8b84b"
+    };
+}
+
+@if (TempData["Success"] != null)
+{
+    <div style="background:#d1fae5;border:1px solid #a7f3d0;color:#065f46;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+        <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div style="background:#fee2e2;border:1px solid #fecaca;color:#991b1b;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+        <i class="bi bi-x-circle-fill"></i> @TempData["Error"]
+    </div>
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Xəstəlik / Ezamiyyət</div>
+            <div class="fn-page-sub">HR tərəfindən yaradılmış qeydlər</div>
+        </div>
+        <a asp-area="HR" asp-controller="XestelikEzamiyyet" asp-action="Create"
+           class="fn-btn fn-btn--primary">
+            + Yeni yaz
+        </a>
+    </div>
+
+    @* ── Statistika ── *@
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:#fff;border:1px solid #e4e8f0;border-radius:8px;">
+            <span style="font-size:18px;font-weight:700;color:#1a2332;">@list.Count</span>
+            <span style="font-size:12px;color:#8a93a8;">Cəmi qeyd</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:#fff;border:1px solid #e4e8f0;border-radius:8px;">
+            <span style="font-size:18px;font-weight:700;color:#a855f7;">@xestelikSay</span>
+            <span style="font-size:12px;color:#8a93a8;">Xəstəlik</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:#fff;border:1px solid #e4e8f0;border-radius:8px;">
+            <span style="font-size:18px;font-weight:700;color:#f97316;">@ezamiyyetSay</span>
+            <span style="font-size:12px;color:#8a93a8;">Ezamiyyət</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:#fff;border:1px solid #e4e8f0;border-radius:8px;">
+            <span style="font-size:18px;font-weight:700;color:#1e9b6b;">@tesdiqSay</span>
+            <span style="font-size:12px;color:#8a93a8;">Təsdiqlənib</span>
+        </div>
+    </div>
+
+    @* ── Cədvəl ── *@
+    @if (!list.Any())
+    {
+        <div class="fn-card" style="text-align:center;padding:40px 20px;">
+            <div style="font-size:32px;color:#dde1ea;margin-bottom:8px;">
+                <i class="bi bi-inbox"></i>
+            </div>
+            <div style="font-size:13px;color:#8a93a8;">Hələ heç bir qeyd yoxdur</div>
+            <a asp-area="HR" asp-controller="XestelikEzamiyyet" asp-action="Create"
+               style="font-size:13px;color:#e8b84b;margin-top:6px;display:inline-block;">
+                Yeni qeyd yarat →
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="fn-card" style="padding:0;overflow:hidden;">
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead>
+                    <tr style="background:#f8f9fb;border-bottom:1px solid #e4e8f0;">
+                        <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;letter-spacing:0.04em;">İşçi</th>
+                        <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;">Növ</th>
+                        <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;">Başlama</th>
+                        <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;">Bitmə</th>
+                        <th style="padding:10px 14px;text-align:center;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;">Gün</th>
+                        <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;">Status</th>
+                        <th style="padding:10px 14px;text-align:right;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in list)
+                    {
+                        <tr style="border-bottom:1px solid #f0f2f7;">
+                            <td style="padding:10px 14px;">
+                                <div style="font-weight:500;color:#1a2332;">@m.IsciAdSoyad</div>
+                                <div style="font-size:11px;color:#8a93a8;">@m.SobeAdi</div>
+                            </td>
+                            <td style="padding:10px 14px;">
+                                @if (m.Nov == MezuniyyetNovu.Xestelik)
+                                {
+                                    <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(168,85,247,.1);color:#a855f7;">
+                                        <i class="bi bi-hospital" style="font-size:10px;"></i> Xəstəlik
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(249,115,22,.1);color:#f97316;">
+                                        <i class="bi bi-briefcase" style="font-size:10px;"></i> Ezamiyyət
+                                    </span>
+                                }
+                            </td>
+                            <td style="padding:10px 14px;color:#3d4557;">@m.BaslamaTarixi.ToString("dd.MM.yyyy")</td>
+                            <td style="padding:10px 14px;color:#3d4557;">@m.BitmeTarixi.ToString("dd.MM.yyyy")</td>
+                            <td style="padding:10px 14px;text-align:center;font-weight:600;color:#1a2332;">@m.IsGunlerininSayi</td>
+                            <td style="padding:10px 14px;">
+                                <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:@(StatusColor(m.Status))1a;color:@(StatusColor(m.Status));">
+                                    <span style="width:6px;height:6px;border-radius:50%;background:@(StatusColor(m.Status));"></span>
+                                    @StatusText(m.Status)
+                                </span>
+                            </td>
+                            <td style="padding:10px 14px;text-align:right;">
+                                <div style="display:flex;gap:4px;justify-content:flex-end;">
+                                    <a asp-action="Detal" asp-route-id="@m.Id"
+                                       style="padding:4px 8px;border:1px solid #e4e8f0;border-radius:6px;font-size:12px;color:#5a647a;text-decoration:none;display:inline-flex;align-items:center;"
+                                       title="Detal">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@m.Id"
+                                       style="padding:4px 8px;border:1px solid #e4e8f0;border-radius:6px;font-size:12px;color:#5a647a;text-decoration:none;display:inline-flex;align-items:center;"
+                                       title="Redaktə">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+</div>
