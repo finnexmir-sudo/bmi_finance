@@ -40,6 +40,7 @@ namespace FinNex.UI
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddDataAccessServices(builder.Configuration);
             builder.Services.AddApplicationServices();
+            builder.Services.AddHttpClient("WebPush");
 
             // ==================================================
             // 2. Authentication (Cookie-based)
