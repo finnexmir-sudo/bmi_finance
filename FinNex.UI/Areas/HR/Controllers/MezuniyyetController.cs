@@ -2,6 +2,7 @@
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
 using FinNex.Domain;
+using FinNex.Domain.Entities.HR;
 using FinNex.UI.Areas.HR.ViewModels.Mezuniyyet;
 using FinNex.UI.Areas.User.ViewModels.Mezuniyyet;
 using Microsoft.AspNetCore.Authorization;
@@ -208,6 +209,159 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             ViewData["Title"] = "Bütün Məzuniyyət Müraciətləri";
             return View("TesdiqIndex", vm);
+        }
+
+        // ══════════════════════════════════════════════════════
+        // HR — YENİ MƏZUNİYYƏT YARATMA (Xəstəlik / Ezamiyyət / İllik)
+        // ══════════════════════════════════════════════════════
+
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> Create()
+        {
+            await FillCreateViewBagsAsync();
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> Create(MezuniyyetCreateDto dto)
+        {
+            var hrIsciId = await GetCurrentIsciIdAsync();
+            if (hrIsciId == null) return Forbid();
+
+            if (dto.BitmeTarixi < dto.BaslamaTarixi)
+                ModelState.AddModelError("BitmeTarixi", "Bitmə tarixi başlama tarixindən əvvəl ola bilməz.");
+
+            if (dto.IsciId <= 0)
+                ModelState.AddModelError("IsciId", "İşçi seçilməlidir.");
+
+            if (!ModelState.IsValid)
+            {
+                await FillCreateViewBagsAsync();
+                return View(dto);
+            }
+
+            // HR yaratdığı üçün əvəzedici tələb olunmur
+            dto.EvezEdenIsciId = null;
+
+            var result = await _mezuniyyetService.YaratAsync(dto);
+            if (!result.Success)
+            {
+                TempData["Error"] = result.Message;
+                await FillCreateViewBagsAsync();
+                return View(dto);
+            }
+
+            // HR yaratdığı üçün birbaşa təsdiqlə
+            var approveResult = await _mezuniyyetService.HrTesdiqAsync(
+                result.Data!.Id, true, "HR tərəfindən yaradılıb", hrIsciId.Value);
+
+            TempData[approveResult.Success ? "Success" : "Error"] = approveResult.Success
+                ? "Məzuniyyət uğurla yaradıldı və təsdiqləndi."
+                : approveResult.Message;
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ══════════════════════════════════════════════════════
+        // HR — MƏZUNİYYƏT REDAKTƏ
+        // ══════════════════════════════════════════════════════
+
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var result = await _mezuniyyetService.IdIleGetirAsync(id);
+            if (!result.Success || result.Data == null) return NotFound();
+
+            var dto = result.Data;
+            var updateDto = new MezuniyyetUpdateDto
+            {
+                Id = dto.Id,
+                BaslamaTarixi = dto.BaslamaTarixi,
+                BitmeTarixi = dto.BitmeTarixi,
+                EvezEdenIsciId = dto.EvezEdenIsciId,
+                Nov = dto.Nov,
+                Qeyd = dto.Qeyd,
+                Status = dto.Status,
+                ImtinaSebebi = dto.ImtinaSebebi
+            };
+
+            await FillEditViewBagsAsync(dto.IsciId);
+            return View(updateDto);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> Edit(MezuniyyetUpdateDto dto)
+        {
+            if (dto.BitmeTarixi < dto.BaslamaTarixi)
+                ModelState.AddModelError("BitmeTarixi", "Bitmə tarixi başlama tarixindən əvvəl ola bilməz.");
+
+            if (dto.Status == MezuniyyetStatus.ImtinaEdildi && string.IsNullOrWhiteSpace(dto.ImtinaSebebi))
+                ModelState.AddModelError("ImtinaSebebi", "İmtina səbəbi qeyd edilməlidir.");
+
+            if (!ModelState.IsValid)
+            {
+                await FillEditViewBagsAsync();
+                return View(dto);
+            }
+
+            var result = await _mezuniyyetService.YenileAsync(dto);
+
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ══════════════════════════════════════════════════════
+        // HR — MƏZUNİYYƏT SİLMƏ
+        // ══════════════════════════════════════════════════════
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var result = await _mezuniyyetService.SilAsync(id);
+
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ══════════════════════════════════════════════════════
+        // KÖMƏKÇİ METODLAR — ViewBag doldurma
+        // ══════════════════════════════════════════════════════
+
+        private async Task FillCreateViewBagsAsync()
+        {
+            var iscilerResult = await _isciService.HamisiniGetirAsync(
+                x => x.Status == IsciStatus.Aktiv, izlemeden: true);
+
+            var items = iscilerResult.Success
+                ? iscilerResult.Data!.OrderBy(x => x.TamAd)
+                    .Select(x => new SelectListItem(x.TamAd, x.Id.ToString()))
+                    .ToList()
+                : new List<SelectListItem>();
+
+            ViewBag.IsciList = items;
+            ViewBag.EvezEdenIsciList = items;
+        }
+
+        private async Task FillEditViewBagsAsync(int? isciId = null)
+        {
+            var iscilerResult = await _isciService.HamisiniGetirAsync(
+                x => x.Status == IsciStatus.Aktiv, izlemeden: true);
+
+            var items = iscilerResult.Success
+                ? iscilerResult.Data!
+                    .Where(x => isciId == null || x.Id != isciId)
+                    .OrderBy(x => x.TamAd)
+                    .Select(x => new SelectListItem(x.TamAd, x.Id.ToString()))
+                    .ToList()
+                : new List<SelectListItem>();
+
+            ViewBag.EvezEdenIsciList = items;
         }
     }
 }
