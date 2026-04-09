@@ -1,0 +1,248 @@
+/* =============================================
+   FinNex — Telim ve Inkisaf
+   ============================================= */
+
+/* ── Tabs ─────────────────────────────────── */
+.tlm-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid #e8eaef;
+    margin-bottom: 16px;
+}
+
+.tlm-tab {
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #8a93a8;
+    background: none;
+    border: none;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all .15s;
+}
+
+.tlm-tab:hover { color: #3d4557; }
+
+.tlm-tab.active {
+    color: #2d6cdf;
+    border-bottom-color: #2d6cdf;
+}
+
+.tlm-tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: #eaecf3;
+    font-size: 10px;
+    font-weight: 700;
+    color: #6b7385;
+    margin-left: 4px;
+}
+
+.tlm-tab.active .tlm-tab-count {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+/* ── Tab Content ──────────────────────────── */
+.tlm-tab-content { display: none; }
+.tlm-tab-content.active { display: block; }
+
+/* ── Toolbar ──────────────────────────────── */
+.tlm-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid #eaecf3;
+}
+
+.tlm-result-count {
+    font-size: 11px;
+    color: #8a93a8;
+}
+
+.tlm-result-count span {
+    font-weight: 700;
+    color: #3d4557;
+}
+
+/* ── Table ────────────────────────────────── */
+.tlm-table-wrap { overflow-x: auto; }
+
+.tlm-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.tlm-table th {
+    padding: 10px 12px;
+    background: #f7f9fc;
+    color: #6b7385;
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    text-align: center;
+    border-bottom: 1px solid #eaecf3;
+    white-space: nowrap;
+}
+
+.tlm-table th.left { text-align: left; }
+
+.tlm-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f0f2f7;
+    color: #3d4557;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.tlm-table td.left { text-align: left; }
+
+.tlm-table tbody tr:hover { background: #fafbfd; }
+
+.tlm-loading {
+    text-align: center;
+    padding: 40px 16px !important;
+    color: #aab0bf;
+    font-size: 13px;
+}
+
+/* ── Badges ───────────────────────────────── */
+.tlm-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+.tlm-badge--wait { background: #fef3c7; color: #92400e; }
+.tlm-badge--progress { background: #dbeafe; color: #1e40af; }
+.tlm-badge--done { background: #d1fae5; color: #065f46; }
+.tlm-badge--cancelled { background: #fee2e2; color: #991b1b; }
+.tlm-badge--active { background: #d1fae5; color: #065f46; }
+.tlm-badge--expired { background: #fee2e2; color: #991b1b; }
+
+/* ── Expired / Unlimited ──────────────────── */
+.tlm-expired { color: #dc2626; font-weight: 600; }
+.tlm-unlimited { color: #1e9b6b; font-size: 10px; font-weight: 600; }
+
+/* ── Detal Info Grid ──────────────────────── */
+.tlm-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.tlm-info-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f2f7;
+    font-size: 13px;
+}
+
+.tlm-info-row span { color: #8a93a8; }
+.tlm-info-row strong { color: #3d4557; }
+
+.tlm-tesvir {
+    font-size: 13px;
+    color: #4a5568;
+    line-height: 1.7;
+    white-space: pre-line;
+}
+
+/* ── Detal Stat Grid ──────────────────────── */
+.tlm-stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.tlm-stat-item { text-align: center; }
+
+.tlm-stat-val {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0f1623;
+}
+
+.tlm-stat-lbl {
+    font-size: 10px;
+    color: #8a93a8;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-top: 2px;
+}
+
+/* ── Section Head ─────────────────────────── */
+.tlm-section-head {
+    padding: 12px 16px;
+    background: #f7f9fc;
+    font-size: 12px;
+    font-weight: 700;
+    color: #3d4557;
+    border-bottom: 1px solid #eaecf3;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* ── Qiymet Badge ─────────────────────────── */
+.tlm-qiymet {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: #f0f7ff;
+    color: #2d6cdf;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+/* ── Participant Select ───────────────────── */
+.tlm-participant-select {
+    position: relative;
+}
+
+.tlm-select-hint {
+    font-size: 10px;
+    color: #8a93a8;
+    margin-top: 4px;
+}
+
+/* ── Action Buttons ──────────────────────── */
+.tlm-act-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid #e0e3ea;
+    background: #fff;
+    color: #6b7385;
+    cursor: pointer;
+    transition: all .15s;
+    text-decoration: none;
+}
+
+.tlm-act-btn:hover { background: #f0f2f7; color: #2d6cdf; border-color: #c5cad6; }
+
+@media (max-width: 768px) {
+    .tlm-info-grid { grid-template-columns: 1fr; }
+    .tlm-stat-grid { grid-template-columns: 1fr 1fr; }
+}

@@ -1,0 +1,257 @@
+/* =============================================
+   FinNex — Organizasiya Sxemi
+   ============================================= */
+
+/* ── Loading ──────────────────────────────── */
+.org-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 60px 20px;
+    color: #8a93a8;
+    font-size: 13px;
+}
+
+.org-loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #e8eaef;
+    border-top-color: #2d6cdf;
+    border-radius: 50%;
+    animation: org-spin 0.7s linear infinite;
+}
+
+@keyframes org-spin { to { transform: rotate(360deg); } }
+
+/* ── Rehberler (Top Level) ────────────────── */
+.org-rehberler {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.org-rehber-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #0f1623 0%, #1e2a40 100%);
+    border-radius: 12px;
+    color: #fff;
+    min-width: 200px;
+}
+
+.org-rehber-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.org-rehber-info { }
+
+.org-rehber-name {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.org-rehber-role {
+    font-size: 10px;
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+/* ── Connector Line from Rehber ───────────── */
+.org-rehberler::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -24px;
+    width: 2px;
+    height: 24px;
+    background: #d4d8e1;
+}
+
+.org-rehberler {
+    position: relative;
+    padding-bottom: 0;
+}
+
+/* ── Org Chart Grid ───────────────────────── */
+.org-chart {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+/* ── Department Card ──────────────────────── */
+.org-dept-card {
+    background: #fff;
+    border: 1px solid #e8eaef;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: box-shadow .2s;
+}
+
+.org-dept-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
+
+.org-dept-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: #f7f9fc;
+    border-bottom: 1px solid #eaecf3;
+    cursor: pointer;
+}
+
+.org-dept-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.org-dept-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #e0e7ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4338ca;
+}
+
+.org-dept-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f1623;
+}
+
+.org-dept-count {
+    font-size: 10px;
+    color: #8a93a8;
+}
+
+.org-dept-toggle {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: none;
+    background: #eaecf3;
+    color: #6b7385;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform .2s;
+}
+
+.org-dept-card.collapsed .org-dept-toggle {
+    transform: rotate(-90deg);
+}
+
+.org-dept-card.collapsed .org-dept-body {
+    display: none;
+}
+
+/* ── Sobe Reisi ───────────────────────────── */
+.org-reisi {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: #fffbeb;
+    border-bottom: 1px solid #fef3c7;
+}
+
+.org-reisi-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #fbbf24;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 11px;
+}
+
+.org-reisi-info { }
+
+.org-reisi-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #92400e;
+}
+
+.org-reisi-role {
+    font-size: 9px;
+    color: #b45309;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+/* ── Employee List ────────────────────────── */
+.org-employees {
+    padding: 4px 0;
+}
+
+.org-emp {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 16px;
+    transition: background .1s;
+}
+
+.org-emp:hover { background: #fafbfd; }
+
+.org-emp-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #e8eaef;
+    color: #6b7385;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 9px;
+    flex-shrink: 0;
+}
+
+.org-emp-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: #3d4557;
+}
+
+.org-emp-vezife {
+    font-size: 10px;
+    color: #8a93a8;
+}
+
+/* ── Empty State ──────────────────────────── */
+.org-dept-empty {
+    padding: 16px;
+    text-align: center;
+    font-size: 11px;
+    color: #aab0bf;
+}
+
+@media (max-width: 768px) {
+    .org-chart { grid-template-columns: 1fr; }
+}
