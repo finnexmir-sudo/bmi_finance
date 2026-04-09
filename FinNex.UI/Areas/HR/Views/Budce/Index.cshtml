@@ -1,0 +1,133 @@
+@{
+    ViewData["Title"] = "Budce Planlamasi";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Budce Planlamasi</div>
+            <div class="fn-page-sub">Departament budcelerinin illik plan ve faktiki gostericileri</div>
+        </div>
+        <div class="budce-actions">
+            <select id="budceIl" class="fn-input" style="width:120px;display:inline-block">
+                @for (int y = DateTime.Now.Year + 1; y >= 2022; y--)
+                {
+                    <option value="@y" @(y == DateTime.Now.Year ? "selected" : "")>@y</option>
+                }
+            </select>
+            <button id="btnYukle" class="fn-btn fn-btn--primary" type="button">Goster</button>
+            <button id="btnExcel" class="fn-btn fn-btn--outline" type="button">
+                <i class="bi bi-file-earmark-excel"></i> Excel
+            </button>
+        </div>
+    </div>
+
+    @* ── Summary Cards ── *@
+    <div class="budce-summary" id="summaryCards" style="display:none">
+        <div class="fn-card budce-sum-card">
+            <div class="budce-sum-label">Umumi Plan</div>
+            <div class="budce-sum-val" id="umumiPlan">0.00</div>
+        </div>
+        <div class="fn-card budce-sum-card">
+            <div class="budce-sum-label">Umumi Faktiki</div>
+            <div class="budce-sum-val" id="umumiFaktiki">0.00</div>
+        </div>
+        <div class="fn-card budce-sum-card">
+            <div class="budce-sum-label">Ferq</div>
+            <div class="budce-sum-val" id="umumiFerq">0.00</div>
+        </div>
+    </div>
+
+    @* ── Budget Grid ── *@
+    <div class="fn-card">
+        <div class="budce-table-wrap">
+            <table class="budce-table" id="budceTable">
+                <thead>
+                    <tr>
+                        <th class="budce-th-dept">Departament</th>
+                        <th colspan="2">Yan</th>
+                        <th colspan="2">Fev</th>
+                        <th colspan="2">Mar</th>
+                        <th colspan="2">Apr</th>
+                        <th colspan="2">May</th>
+                        <th colspan="2">Iyn</th>
+                        <th colspan="2">Iyl</th>
+                        <th colspan="2">Avq</th>
+                        <th colspan="2">Sen</th>
+                        <th colspan="2">Okt</th>
+                        <th colspan="2">Noy</th>
+                        <th colspan="2">Dek</th>
+                        <th>Toplam Plan</th>
+                        <th>Toplam Faktiki</th>
+                    </tr>
+                    <tr class="budce-sub-header">
+                        <th></th>
+                        @for (int i = 0; i < 12; i++)
+                        {
+                            <th class="budce-th-plan">P</th>
+                            <th class="budce-th-fakt">F</th>
+                        }
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="budceBody">
+                    <tr>
+                        <td colspan="27" class="budce-empty">Yuklemek uchun "Goster" duymesini basin</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @* ── Edit Modal ── *@
+    <div class="budce-modal-overlay" id="editModal" style="display:none">
+        <div class="budce-modal">
+            <div class="budce-modal-header">
+                <h3>Budce Redakte</h3>
+                <button type="button" class="budce-modal-close" id="btnModalClose">&times;</button>
+            </div>
+            <div class="budce-modal-body">
+                <input type="hidden" id="editDeptId" />
+                <input type="hidden" id="editAy" />
+
+                <div class="fn-form-group">
+                    <label class="fn-label">Departament</label>
+                    <input type="text" id="editDeptAd" class="fn-input" readonly />
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Ay</label>
+                    <input type="text" id="editAyAd" class="fn-input" readonly />
+                </div>
+                <div class="fn-form-row">
+                    <div class="fn-form-group">
+                        <label class="fn-label">Plan Mebleg</label>
+                        <input type="number" id="editPlan" class="fn-input" step="0.01" min="0" />
+                    </div>
+                    <div class="fn-form-group">
+                        <label class="fn-label">Faktiki Mebleg</label>
+                        <input type="number" id="editFaktiki" class="fn-input" step="0.01" min="0" />
+                    </div>
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Qeyd</label>
+                    <textarea id="editQeyd" class="fn-input" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="budce-modal-footer">
+                <button type="button" class="fn-btn fn-btn--outline" id="btnModalCancel">Legv</button>
+                <button type="button" class="fn-btn fn-btn--primary" id="btnModalSave">Yadda Saxla</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/budce.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/hr/budce.js" asp-append-version="true"></script>
+}

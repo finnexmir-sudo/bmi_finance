@@ -1,0 +1,40 @@
+@{
+    ViewData["Title"] = "Organizasiya Sxemi";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/organizasiya.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Organizasiya Sxemi</div>
+            <div class="fn-page-sub">\u015eirk\u0259tin struktur v\u0259 i\u015f\u00e7i iyerarxiyas\u0131</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <button class="fn-btn fn-btn--outline fn-btn--sm" id="orgCollapseAll">Y\u0131\u011f</button>
+            <button class="fn-btn fn-btn--outline fn-btn--sm" id="orgExpandAll">A\u00e7</button>
+        </div>
+    </div>
+
+    <div id="orgLoading" class="org-loading">
+        <div class="org-loading-spinner"></div>
+        Y\u00fckl\u0259nir...
+    </div>
+
+    @* ── Rehber seviyyesi ─────────────────────────────────── *@
+    <div id="orgRehberler" class="org-rehberler" style="display:none;"></div>
+
+    @* ── Departamentler grid ──────────────────────────────── *@
+    <div id="orgChart" class="org-chart" style="display:none;"></div>
+
+</div>
+
+@section Scripts {
+    <script>
+        var orgDataUrl = '@Url.Action("GetOrgData", "Organizasiya", new { area = "HR" })';
+    </script>
+    <script src="~/js/hr/organizasiya.js" asp-append-version="true"></script>
+}

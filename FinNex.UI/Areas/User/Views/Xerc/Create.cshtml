@@ -1,0 +1,104 @@
+@{
+    ViewData["Title"] = "Yeni Xerc Muraciet";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var kateqoriyalar = ViewBag.Kateqoriyalar as List<FinNex.Domain.Entities.HR.XercKateqoriyasi>;
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Yeni xerc muraciet</div>
+            <div class="fn-page-sub">Xerc muracietinizi gonderin</div>
+        </div>
+        <a asp-area="User" asp-controller="Xerc" asp-action="Index"
+           class="fn-btn fn-btn--outline">&#8592; Geri</a>
+    </div>
+
+    <div class="fn-form-wrap">
+        <form asp-area="User" asp-controller="Xerc" asp-action="Create"
+              method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+
+            <div class="fn-card fn-card--form">
+
+                @* ── Kateqoriya ── *@
+                <div class="fn-form-group">
+                    <label class="fn-label">
+                        Kateqoriya <span class="fn-required">*</span>
+                    </label>
+                    <select name="KateqoriyaId" class="fn-input" required>
+                        <option value="">&#8212; Sechin &#8212;</option>
+                        @if (kateqoriyalar != null)
+                        {
+                            foreach (var k in kateqoriyalar)
+                            {
+                                <option value="@k.Id">@k.Ad</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                @* ── Mebleg + Tarix ── *@
+                <div class="fn-form-row">
+                    <div class="fn-form-group">
+                        <label class="fn-label">
+                            Mebleg (AZN) <span class="fn-required">*</span>
+                        </label>
+                        <input type="number" name="Mebleg" class="fn-input"
+                               step="0.01" min="0.01" required placeholder="0.00" />
+                    </div>
+                    <div class="fn-form-group">
+                        <label class="fn-label">
+                            Xerc tarixi <span class="fn-required">*</span>
+                        </label>
+                        <input type="date" name="XercTarixi" class="fn-input"
+                               value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                    </div>
+                </div>
+
+                @* ── Tesvir ── *@
+                <div class="fn-form-group">
+                    <label class="fn-label">
+                        Tesvir <span class="fn-required">*</span>
+                    </label>
+                    <textarea name="Tesvir" class="fn-input" rows="3" required
+                              placeholder="Xercin tesville bagli qisa melumat..."></textarea>
+                </div>
+
+                @* ── Qebz fayl ── *@
+                <div class="fn-form-group">
+                    <label class="fn-label">
+                        Qebz / Fayl
+                        <span class="fn-label-hint">(isteye bagli)</span>
+                    </label>
+                    <input type="file" name="qebzFayl" class="fn-input"
+                           accept=".pdf,.jpg,.jpeg,.png" />
+                    <div class="fn-hint">PDF, JPG, PNG (max 5MB)</div>
+                </div>
+
+                @* ── Info ── *@
+                <div class="fn-info-box">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <circle cx="7" cy="7" r="5.5" stroke="#c9900a" stroke-width="1.2" />
+                        <path d="M7 4.5v3M7 9v.5" stroke="#c9900a" stroke-width="1.2" stroke-linecap="round" />
+                    </svg>
+                    Muracietiniz sobe reisi ve HR terafinden tesdiqlenecek.
+                </div>
+
+                @* ── Duymeler ── *@
+                <div class="fn-form-actions">
+                    <a asp-area="User" asp-controller="Xerc" asp-action="Index"
+                       class="fn-btn fn-btn--outline">Legv et</a>
+                    <button type="submit" class="fn-btn fn-btn--primary">
+                        Muraciet gonder
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/xerc.css" asp-append-version="true" />
+}

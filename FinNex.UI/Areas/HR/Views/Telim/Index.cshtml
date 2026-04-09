@@ -1,0 +1,184 @@
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = "T\u0259lim v\u0259 \u0130nki\u015faf";
+    var activeTab = ViewBag.ActiveTab as string ?? "telimler";
+    var sertifikatlar = ViewBag.Sertifikatlar as List<Sertifikat> ?? new List<Sertifikat>();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/telim.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">T\u0259lim v\u0259 \u0130nki\u015faf</div>
+            <div class="fn-page-sub">T\u0259liml\u0259r, sertifikatlar v\u0259 pe\u015f\u0259kar inki\u015faf</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <a asp-action="Create" class="fn-btn fn-btn--primary">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+                Yeni T\u0259lim
+            </a>
+        </div>
+    </div>
+
+    @* ── Tabs ─────────────────────────────────────────────── *@
+    <div class="tlm-tabs">
+        <button class="tlm-tab @(activeTab == "telimler" ? "active" : "")" data-tab="telimler">
+            T\u0259liml\u0259r
+        </button>
+        <button class="tlm-tab @(activeTab == "sertifikatlar" ? "active" : "")" data-tab="sertifikatlar">
+            Sertifikatlar <span class="tlm-tab-count">@sertifikatlar.Count</span>
+        </button>
+    </div>
+
+    @* ── Telimler Tab ─────────────────────────────────────── *@
+    <div class="tlm-tab-content @(activeTab == "telimler" ? "active" : "")" id="tab-telimler">
+        <div class="fn-card" style="padding:0;overflow:hidden;">
+            <div class="tlm-toolbar">
+                <div class="tlm-result-count"><span id="tlmResultCount">0</span> t\u0259lim</div>
+            </div>
+            <div class="tlm-table-wrap">
+                <table class="tlm-table" id="tlmTable">
+                    <thead>
+                        <tr>
+                            <th class="left">T\u0259lim ad\u0131</th>
+                            <th>T\u0259lim\u00e7i</th>
+                            <th>M\u0259kan</th>
+                            <th>Ba\u015flama</th>
+                            <th>Bitm\u0259</th>
+                            <th>M\u00fcdd\u0259t</th>
+                            <th>N\u00f6v</th>
+                            <th>Status</th>
+                            <th>\u0130\u015ftirak\u00e7\u0131</th>
+                            <th class="center">\u018fm\u0259liyyat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tlmTableBody">
+                        <tr><td colspan="10" class="tlm-loading">Y\u00fckl\u0259nir...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @* ── Sertifikatlar Tab ────────────────────────────────── *@
+    <div class="tlm-tab-content @(activeTab == "sertifikatlar" ? "active" : "")" id="tab-sertifikatlar">
+
+        @* Yeni sertifikat formu *@
+        <div class="fn-card" style="margin-bottom:12px;">
+            <div class="fn-card-title">Yeni Sertifikat \u018flav\u0259 Et</div>
+            <form asp-action="SertifikatCreate" method="post">
+                @Html.AntiForgeryToken()
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+                    <div class="fn-form-row">
+                        <label class="fn-label">\u0130\u015f\u00e7i <span style="color:#d85a30;">*</span></label>
+                        <select name="isciId" class="fn-input" required>
+                            <option value="">\u0130\u015f\u00e7i se\u00e7in...</option>
+                            @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="fn-form-row">
+                        <label class="fn-label">Sertifikat Ad\u0131 <span style="color:#d85a30;">*</span></label>
+                        <input type="text" name="ad" class="fn-input" required placeholder="Sertifikat ad\u0131..." />
+                    </div>
+                    <div class="fn-form-row">
+                        <label class="fn-label">Ver\u0259n Qurum</label>
+                        <input type="text" name="verenQurum" class="fn-input" placeholder="Qurum ad\u0131..." />
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+                    <div class="fn-form-row">
+                        <label class="fn-label">Verilm\u0259 Tarixi <span style="color:#d85a30;">*</span></label>
+                        <input type="date" name="verilmeTarixi" class="fn-input" required />
+                    </div>
+                    <div class="fn-form-row">
+                        <label class="fn-label">Bitm\u0259 Tarixi</label>
+                        <input type="date" name="bitirmeTarixi" class="fn-input" />
+                    </div>
+                    <div class="fn-form-row" style="display:flex;align-items:flex-end;">
+                        <button type="submit" class="fn-btn fn-btn--primary" style="width:100%;">
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                            </svg>
+                            \u018flav\u0259 Et
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        @* Sertifikatlar cedveli *@
+        <div class="fn-card" style="padding:0;overflow:hidden;">
+            <div class="tlm-table-wrap">
+                <table class="tlm-table">
+                    <thead>
+                        <tr>
+                            <th class="left">\u0130\u015f\u00e7i</th>
+                            <th class="left">Sertifikat Ad\u0131</th>
+                            <th>Ver\u0259n Qurum</th>
+                            <th>Verilm\u0259 Tarixi</th>
+                            <th>Bitm\u0259 Tarixi</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!sertifikatlar.Any())
+                        {
+                            <tr><td colspan="6" class="tlm-loading">Sertifikat tap\u0131lmad\u0131</td></tr>
+                        }
+                        else
+                        {
+                            @foreach (var s in sertifikatlar)
+                            {
+                                var expired = s.BitirmeTarixi.HasValue && s.BitirmeTarixi.Value < DateTime.Today;
+                                <tr>
+                                    <td class="left"><strong>@s.Isci.Ad @s.Isci.Soyad</strong></td>
+                                    <td class="left">@s.Ad</td>
+                                    <td>@(s.VerenQurum ?? "\u2014")</td>
+                                    <td>@s.VerilmeTarixi.ToString("dd.MM.yyyy")</td>
+                                    <td>
+                                        @if (s.BitirmeTarixi.HasValue)
+                                        {
+                                            <span class="@(expired ? "tlm-expired" : "")">@s.BitirmeTarixi.Value.ToString("dd.MM.yyyy")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="tlm-unlimited">M\u00fcdd\u0259tsiz</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (expired)
+                                        {
+                                            <span class="tlm-badge tlm-badge--expired">Bitib</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="tlm-badge tlm-badge--active">Aktiv</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        var telimDataUrl = '@Url.Action("GetData", "Telim", new { area = "HR" })';
+        var telimDetalUrl = '@Url.Action("Detal", "Telim", new { area = "HR" })';
+    </script>
+    <script src="~/js/hr/telim.js" asp-append-version="true"></script>
+}

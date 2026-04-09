@@ -113,6 +113,11 @@ namespace FinNex.UI
             builder.Host.UseSerilog();
 
             // ==================================================
+            // 5.5 SignalR
+            // ==================================================
+            builder.Services.AddSignalR();
+
+            // ==================================================
             // 6. Background Services
             // ==================================================
             builder.Services.AddHostedService<FinNex.Application.BackgroundJobs.ZkTecoSdkService>();
@@ -254,6 +259,8 @@ namespace FinNex.UI
             // 🔐 Authentication / Authorization
             app.UseAuthentication();
             app.UseAuthorization();
+
+            app.MapHub<FinNex.UI.Hubs.ChatHub>("/chatHub");
 
             app.MapControllerRoute(
                 name: "areas",

@@ -53,8 +53,50 @@
         return '<span class="rp-badge rp-badge--' + cls + '">' + (labels[status] || status) + '</span>';
     }
 
+    // ── PDF export via window.print ──────────────────────
+    function printTable(wrapId, title) {
+        var wrap = document.getElementById(wrapId);
+        if (!wrap) return;
+        var tableHtml = wrap.innerHTML;
+        var printWin = window.open('', '_blank', 'width=900,height=700');
+        printWin.document.write('<!DOCTYPE html><html><head><title>' + title + '</title>');
+        printWin.document.write('<style>');
+        printWin.document.write('body{font-family:"Plus Jakarta Sans",sans-serif;padding:20px;color:#334155;}');
+        printWin.document.write('h2{font-size:18px;margin-bottom:16px;color:#1a1d21;}');
+        printWin.document.write('table{width:100%;border-collapse:collapse;font-size:12px;}');
+        printWin.document.write('th{padding:8px 10px;background:#1e2a3b;color:#fff;text-align:left;font-weight:600;}');
+        printWin.document.write('th.rp-th-right{text-align:right;}th.rp-th-center{text-align:center;}');
+        printWin.document.write('td{padding:7px 10px;border-bottom:1px solid #e5e7eb;}');
+        printWin.document.write('td.rp-td-right{text-align:right;}td.rp-td-center{text-align:center;}');
+        printWin.document.write('.rp-dept-header td{background:#eef2ff;font-weight:700;color:#4338ca;}');
+        printWin.document.write('.rp-dept-total td{background:#f5f3ff;font-weight:600;color:#5b21b6;}');
+        printWin.document.write('.rp-grand-total td{background:#f0f0ff;font-weight:700;color:#1e1b4b;border-top:2px solid #667eea;}');
+        printWin.document.write('.rp-badge{padding:2px 8px;border-radius:10px;font-size:10px;}');
+        printWin.document.write('.rp-balans-val{display:inline-block;min-width:24px;text-align:center;}');
+        printWin.document.write('.rp-balans-sep{color:#cbd5e1;margin:0 2px;}');
+        printWin.document.write('.rp-balans-qaliq--low{color:#dc2626;font-weight:700;}');
+        printWin.document.write('.rp-balans-qaliq--ok{color:#16a34a;font-weight:700;}');
+        printWin.document.write('</style></head><body>');
+        printWin.document.write('<h2>' + title + '</h2>');
+        printWin.document.write(tableHtml);
+        printWin.document.write('</body></html>');
+        printWin.document.close();
+        printWin.focus();
+        setTimeout(function () { printWin.print(); }, 300);
+    }
+
     // ── Maaş Hesabatı ────────────────────────────────────
     document.getElementById('btnMaasGoster').addEventListener('click', loadMaasData);
+
+    document.getElementById('btnMaasExcel').addEventListener('click', function () {
+        var il = document.getElementById('maasIl').value;
+        var ay = document.getElementById('maasAy').value;
+        window.location.href = '/HR/Hesabat/ExportMaasExcel?il=' + il + '&ay=' + ay;
+    });
+
+    document.getElementById('btnMaasPdf').addEventListener('click', function () {
+        printTable('maasTableWrap', 'Maaş Hesabatı');
+    });
 
     function loadMaasData() {
         const il = document.getElementById('maasIl').value;
@@ -122,6 +164,16 @@
 
     // ── Davamiyyət Hesabatı ──────────────────────────────
     document.getElementById('btnDavamiyyetGoster').addEventListener('click', loadDavamiyyetData);
+
+    document.getElementById('btnDavamiyyetExcel').addEventListener('click', function () {
+        var il = document.getElementById('davamiyyetIl').value;
+        var ay = document.getElementById('davamiyyetAy').value;
+        window.location.href = '/HR/Hesabat/ExportDavamiyyetExcel?il=' + il + '&ay=' + ay;
+    });
+
+    document.getElementById('btnDavamiyyetPdf').addEventListener('click', function () {
+        printTable('davamiyyetTableWrap', 'Davamiyyət Hesabatı');
+    });
 
     function loadDavamiyyetData() {
         const il = document.getElementById('davamiyyetIl').value;
@@ -206,6 +258,15 @@
     // ── Balans Hesabatı ──────────────────────────────────
     document.getElementById('btnBalansGoster').addEventListener('click', loadBalansData);
 
+    document.getElementById('btnBalansExcel').addEventListener('click', function () {
+        var il = document.getElementById('balansIl').value;
+        window.location.href = '/HR/Hesabat/ExportBalansExcel?il=' + il;
+    });
+
+    document.getElementById('btnBalansPdf').addEventListener('click', function () {
+        printTable('balansTableWrap', 'Balans Hesabatı');
+    });
+
     function loadBalansData() {
         const il = document.getElementById('balansIl').value;
         const wrap = document.getElementById('balansTableWrap');
@@ -264,6 +325,89 @@
             '<span class="rp-balans-val">' + istifade + '</span>' +
             '<span class="rp-balans-sep">/</span>' +
             '<span class="rp-balans-val rp-balans-qaliq ' + qaliqCls + '">' + qaliq + '</span>';
+    }
+
+    // ── Vergi Hesabatı ──────────────────────────────────
+    document.getElementById('btnVergiGoster').addEventListener('click', loadVergiData);
+
+    document.getElementById('btnVergiExcel').addEventListener('click', function () {
+        var il = document.getElementById('vergiIl').value;
+        window.location.href = '/HR/Hesabat/ExportVergiExcel?il=' + il;
+    });
+
+    document.getElementById('btnVergiPdf').addEventListener('click', function () {
+        printTable('vergiTableWrap', 'Vergi Hesabatı');
+    });
+
+    function loadVergiData() {
+        const il = document.getElementById('vergiIl').value;
+        const wrap = document.getElementById('vergiTableWrap');
+
+        showLoading(wrap);
+
+        fetch('/HR/Hesabat/GetVergiData?il=' + il)
+            .then(r => r.json())
+            .then(data => renderVergiTable(wrap, data))
+            .catch(() => showError(wrap));
+    }
+
+    function renderVergiTable(wrap, data) {
+        if (!data.departamentlar || data.departamentlar.length === 0) {
+            wrap.innerHTML = '<div class="rp-no-data">Bu il üçün vergi məlumatı tapılmadı.</div>';
+            return;
+        }
+
+        let html = '<table class="rp-table">';
+        html += '<thead><tr>';
+        html += '<th>İşçi</th>';
+        html += '<th class="rp-th-right">Brut (AZN)</th>';
+        html += '<th class="rp-th-right">Gəlir Vergisi</th>';
+        html += '<th class="rp-th-right">DSMF</th>';
+        html += '<th class="rp-th-right">İşsizlik</th>';
+        html += '<th class="rp-th-right">Cəmi Tutulma</th>';
+        html += '</tr></thead><tbody>';
+
+        data.departamentlar.forEach(dept => {
+            // Department header
+            html += '<tr class="rp-dept-header">';
+            html += '<td colspan="6"><i class="bi bi-building"></i>' + dept.departament + '</td>';
+            html += '</tr>';
+
+            // Employee rows
+            dept.isciler.forEach(isci => {
+                html += '<tr>';
+                html += '<td>' + isci.isciAdSoyad + '</td>';
+                html += '<td class="rp-td-right">' + formatMoney(isci.brutMebleg) + '</td>';
+                html += '<td class="rp-td-right">' + formatMoney(isci.gelirVergisi) + '</td>';
+                html += '<td class="rp-td-right">' + formatMoney(isci.dsmf) + '</td>';
+                html += '<td class="rp-td-right">' + formatMoney(isci.issizlik) + '</td>';
+                html += '<td class="rp-td-right">' + formatMoney(isci.cemiTutulma) + '</td>';
+                html += '</tr>';
+            });
+
+            // Department total
+            html += '<tr class="rp-dept-total">';
+            html += '<td>Cəmi: ' + dept.isciler.length + ' işçi</td>';
+            html += '<td class="rp-td-right">' + formatMoney(dept.cemiBrut) + '</td>';
+            html += '<td class="rp-td-right">' + formatMoney(dept.cemiGelirVergisi) + '</td>';
+            html += '<td class="rp-td-right">' + formatMoney(dept.cemiDsmf) + '</td>';
+            html += '<td class="rp-td-right">' + formatMoney(dept.cemiIssizlik) + '</td>';
+            html += '<td class="rp-td-right">' + formatMoney(dept.cemiTutulma) + '</td>';
+            html += '</tr>';
+        });
+
+        // Grand total
+        html += '<tr class="rp-grand-total">';
+        html += '<td>Ümumi</td>';
+        html += '<td class="rp-td-right">' + formatMoney(data.umumiBrut) + '</td>';
+        html += '<td class="rp-td-right">' + formatMoney(data.umumiGelirVergisi) + '</td>';
+        html += '<td class="rp-td-right">' + formatMoney(data.umumiDsmf) + '</td>';
+        html += '<td class="rp-td-right">' + formatMoney(data.umumiIssizlik) + '</td>';
+        html += '<td class="rp-td-right">' + formatMoney(data.umumiTutulma) + '</td>';
+        html += '</tr>';
+
+        html += '</tbody></table>';
+        wrap.innerHTML = html;
     }
 
 })();

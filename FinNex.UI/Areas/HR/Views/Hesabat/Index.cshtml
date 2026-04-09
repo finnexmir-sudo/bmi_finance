@@ -27,6 +27,9 @@
         <button class="rp-tab" data-tab="balans">
             <i class="bi bi-pie-chart"></i> Balans Hesabatı
         </button>
+        <button class="rp-tab" data-tab="vergi">
+            <i class="bi bi-receipt"></i> Vergi Hesabatı
+        </button>
     </div>
 
     <!-- Maaş Hesabatı Panel -->
@@ -55,6 +58,14 @@
             <button class="rp-btn-show" id="btnMaasGoster">
                 <i class="bi bi-search"></i> Göstər
             </button>
+            <div class="rp-export-bar">
+                <button class="rp-btn-export rp-btn-export--excel" id="btnMaasExcel" title="Excel-ə ixrac et">
+                    <i class="bi bi-file-earmark-excel"></i> Excel
+                </button>
+                <button class="rp-btn-export rp-btn-export--pdf" id="btnMaasPdf" title="PDF kimi çap et">
+                    <i class="bi bi-file-earmark-pdf"></i> PDF
+                </button>
+            </div>
         </div>
 
         <div class="rp-table-wrap" id="maasTableWrap">
@@ -91,6 +102,14 @@
             <button class="rp-btn-show" id="btnDavamiyyetGoster">
                 <i class="bi bi-search"></i> Göstər
             </button>
+            <div class="rp-export-bar">
+                <button class="rp-btn-export rp-btn-export--excel" id="btnDavamiyyetExcel" title="Excel-ə ixrac et">
+                    <i class="bi bi-file-earmark-excel"></i> Excel
+                </button>
+                <button class="rp-btn-export rp-btn-export--pdf" id="btnDavamiyyetPdf" title="PDF kimi çap et">
+                    <i class="bi bi-file-earmark-pdf"></i> PDF
+                </button>
+            </div>
         </div>
 
         <div class="rp-table-wrap" id="davamiyyetTableWrap">
@@ -116,11 +135,52 @@
             <button class="rp-btn-show" id="btnBalansGoster">
                 <i class="bi bi-search"></i> Göstər
             </button>
+            <div class="rp-export-bar">
+                <button class="rp-btn-export rp-btn-export--excel" id="btnBalansExcel" title="Excel-ə ixrac et">
+                    <i class="bi bi-file-earmark-excel"></i> Excel
+                </button>
+                <button class="rp-btn-export rp-btn-export--pdf" id="btnBalansPdf" title="PDF kimi çap et">
+                    <i class="bi bi-file-earmark-pdf"></i> PDF
+                </button>
+            </div>
         </div>
 
         <div class="rp-table-wrap" id="balansTableWrap">
             <div class="rp-empty-state">
                 <i class="bi bi-pie-chart"></i>
+                <p>Hesabat görmək üçün il seçin və "Göstər" düyməsinə basın</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vergi Hesabatı Panel -->
+    <div class="rp-panel" id="panel-vergi">
+        <div class="rp-filter-bar">
+            <div class="rp-filter-group">
+                <label class="rp-filter-label">İl</label>
+                <select id="vergiIl" class="rp-select">
+                    @for (int y = currentYear + 1; y >= currentYear - 3; y--)
+                    {
+                        <option value="@y" selected="@(y == currentYear)">@y</option>
+                    }
+                </select>
+            </div>
+            <button class="rp-btn-show" id="btnVergiGoster">
+                <i class="bi bi-search"></i> Göstər
+            </button>
+            <div class="rp-export-bar">
+                <button class="rp-btn-export rp-btn-export--excel" id="btnVergiExcel" title="Excel-ə ixrac et">
+                    <i class="bi bi-file-earmark-excel"></i> Excel
+                </button>
+                <button class="rp-btn-export rp-btn-export--pdf" id="btnVergiPdf" title="PDF kimi çap et">
+                    <i class="bi bi-file-earmark-pdf"></i> PDF
+                </button>
+            </div>
+        </div>
+
+        <div class="rp-table-wrap" id="vergiTableWrap">
+            <div class="rp-empty-state">
+                <i class="bi bi-receipt"></i>
                 <p>Hesabat görmək üçün il seçin və "Göstər" düyməsinə basın</p>
             </div>
         </div>

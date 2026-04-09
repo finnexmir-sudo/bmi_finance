@@ -1,0 +1,51 @@
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Əmək haqqı tarixçəsi";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/maas-tarixce.css" asp-append-version="true" />
+}
+
+<div class="mt-page">
+    <div class="mt-header">
+        <h2>Əmək haqqı tarixçəsi</h2>
+        <p class="mt-subtitle">Son 12 aylıq maaş dinamikası</p>
+    </div>
+
+    <div class="mt-card">
+        <div class="mt-chart-wrap" id="chartWrap">
+            <div class="mt-loading">
+                <i class="bi bi-arrow-repeat"></i>
+                <span>Yüklənir...</span>
+            </div>
+        </div>
+        <canvas id="maasChart" style="display:none;"></canvas>
+    </div>
+
+    <div class="mt-card mt-summary-card" id="summaryCard" style="display:none;">
+        <div class="mt-summary-grid">
+            <div class="mt-summary-item">
+                <div class="mt-summary-label">Orta Brut</div>
+                <div class="mt-summary-value" id="ortaBrut">--</div>
+            </div>
+            <div class="mt-summary-item">
+                <div class="mt-summary-label">Orta Net</div>
+                <div class="mt-summary-value" id="ortaNet">--</div>
+            </div>
+            <div class="mt-summary-item">
+                <div class="mt-summary-label">Ən yüksək Net</div>
+                <div class="mt-summary-value mt-summary-value--green" id="enYuksekNet">--</div>
+            </div>
+            <div class="mt-summary-item">
+                <div class="mt-summary-label">Ən aşağı Net</div>
+                <div class="mt-summary-value mt-summary-value--red" id="enAsagiNet">--</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="~/js/User/maas-tarixce.js" asp-append-version="true"></script>
+}
