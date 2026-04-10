@@ -1,4 +1,4 @@
-// ── User Chat JS (AJAX Polling) ───────────────────────────
+// ── User Chat JS (AJAX Polling) — Toplu Mesaj + Oxundu İşarələri ──
 
 (function () {
     'use strict';
@@ -114,9 +114,14 @@
                 lastDate = msgDate;
             }
             var cls = m.menimdir ? 'chat-msg--mine' : 'chat-msg--other';
-            html += '<div class="chat-msg ' + cls + '">';
-            html += '<div>' + escHtml(m.metn) + '</div>';
-            html += '<div class="chat-msg-time">' + m.saatStr + '</div>';
+            html += '<div class="chat-msg ' + cls + '" data-msg-id="' + m.id + '">';
+            html += '<div class="chat-msg-text">' + escHtml(m.metn) + '</div>';
+            html += '<div class="chat-msg-meta">';
+            html += '<span class="chat-msg-time">' + m.saatStr + '</span>';
+            if (m.menimdir) {
+                html += getCheckmarkHtml(m.oxunub);
+            }
+            html += '</div>';
             html += '</div>';
         });
 
@@ -124,7 +129,18 @@
         scrollToBottom();
     }
 
-    function appendMessage(metn, tarix, isMine) {
+    // ── Checkmark (✓ / ✓✓) ──────────────────────────────
+    function getCheckmarkHtml(oxunub) {
+        if (oxunub) {
+            // ✓✓ mavi — oxunub
+            return '<span class="chat-check chat-check--read" title="Oxunub">✓✓</span>';
+        } else {
+            // ✓ boz — göndərilib
+            return '<span class="chat-check chat-check--sent" title="Göndərilib">✓</span>';
+        }
+    }
+
+    function appendMessage(metn, tarix, isMine, msgId) {
         var container = document.getElementById('chatMessages');
         var empty = container.querySelector('.chat-empty-state');
         if (empty) empty.remove();
@@ -132,13 +148,44 @@
         var cls = isMine ? 'chat-msg--mine' : 'chat-msg--other';
         var div = document.createElement('div');
         div.className = 'chat-msg ' + cls;
-        div.innerHTML = '<div>' + escHtml(metn) + '</div><div class="chat-msg-time">' + tarix + '</div>';
+        if (msgId) div.setAttribute('data-msg-id', msgId);
+
+        var metaHtml = '<span class="chat-msg-time">' + tarix + '</span>';
+        if (isMine) {
+            metaHtml += getCheckmarkHtml(false);
+        }
+
+        div.innerHTML = '<div class="chat-msg-text">' + escHtml(metn) + '</div>' +
+                         '<div class="chat-msg-meta">' + metaHtml + '</div>';
         container.appendChild(div);
     }
 
     function scrollToBottom() {
         var c = document.getElementById('chatMessages');
         c.scrollTop = c.scrollHeight;
+    }
+
+    // ── Update read receipts for visible messages ───────
+    function updateReadReceipts() {
+        if (!secilmisIsciId) return;
+
+        fetch('/User/Chat/GetReadStatus?isciId=' + secilmisIsciId)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data.oxunmuslar) return;
+                data.oxunmuslar.forEach(function (msgId) {
+                    var msgEl = document.querySelector('[data-msg-id="' + msgId + '"]');
+                    if (msgEl) {
+                        var check = msgEl.querySelector('.chat-check');
+                        if (check && !check.classList.contains('chat-check--read')) {
+                            check.className = 'chat-check chat-check--read';
+                            check.textContent = '✓✓';
+                            check.title = 'Oxunub';
+                        }
+                    }
+                });
+            })
+            .catch(function () { });
     }
 
     // ── Send Message (AJAX POST) ────────────────────────
@@ -149,7 +196,7 @@
 
         var now = new Date();
         var saatStr = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
-        appendMessage(metn, saatStr, true);
+        appendMessage(metn, saatStr, true, null);
         scrollToBottom();
         input.value = '';
 
@@ -157,7 +204,19 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ alanIsciId: secilmisIsciId, metn: metn })
-        }).catch(function (err) {
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.ok && data.id) {
+                // Son əlavə edilmiş mesaja ID əlavə et
+                var allMsgs = document.querySelectorAll('.chat-msg--mine');
+                var lastMsg = allMsgs[allMsgs.length - 1];
+                if (lastMsg && !lastMsg.getAttribute('data-msg-id')) {
+                    lastMsg.setAttribute('data-msg-id', data.id);
+                }
+            }
+        })
+        .catch(function (err) {
             console.error('Mesaj göndərmə xətası:', err);
         });
     }
@@ -167,17 +226,18 @@
         if (pollTimer) clearInterval(pollTimer);
         pollTimer = setInterval(function () {
             if (!secilmisIsciId) return;
+
+            // Yeni mesajları yoxla
             fetch('/User/Chat/GetMessages?isciId=' + secilmisIsciId)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     if (!data.mesajlar || data.mesajlar.length === 0) return;
                     var sonMesaj = data.mesajlar[data.mesajlar.length - 1];
                     if (sonMesaj.id > lastMesajId) {
-                        // Yeni mesajlar var
                         var yeniMesajlar = data.mesajlar.filter(function (m) { return m.id > lastMesajId; });
                         yeniMesajlar.forEach(function (m) {
                             if (!m.menimdir) {
-                                appendMessage(m.metn, m.saatStr, false);
+                                appendMessage(m.metn, m.saatStr, false, m.id);
                             }
                         });
                         lastMesajId = sonMesaj.id;
@@ -185,6 +245,9 @@
                     }
                 })
                 .catch(function () { });
+
+            // Oxundu statuslarını yenilə
+            updateReadReceipts();
         }, 3000);
     }
 
@@ -195,6 +258,95 @@
             item.style.display = item.dataset.ad.toLowerCase().includes(term) ? '' : 'none';
         });
     });
+
+    // ══════════════════════════════════════════════════════
+    // ── Toplu Mesaj (Bulk Messaging) ─────────────────────
+    // ══════════════════════════════════════════════════════
+
+    function openBulkModal() {
+        var modal = document.getElementById('bulkModal');
+        modal.style.display = 'flex';
+        document.getElementById('bulkMetn').value = '';
+        document.getElementById('bulkInfo').textContent = '';
+        loadDepartments();
+    }
+
+    function closeBulkModal() {
+        document.getElementById('bulkModal').style.display = 'none';
+    }
+
+    function loadDepartments() {
+        var select = document.getElementById('bulkTarget');
+        // Mövcud option-ları sil (ilk "Bütün işçilər" saxla)
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
+
+        fetch('/User/Chat/GetDepartments')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.departamentler) {
+                    data.departamentler.forEach(function (d) {
+                        var opt = document.createElement('option');
+                        opt.value = d.id;
+                        opt.textContent = d.ad;
+                        select.appendChild(opt);
+                    });
+                }
+            })
+            .catch(function () {
+                console.error('Departament siyahısı yüklənmədi');
+            });
+    }
+
+    function sendBulkMessage() {
+        var metn = document.getElementById('bulkMetn').value.trim();
+        if (!metn) {
+            document.getElementById('bulkInfo').textContent = 'Mesaj mətni boş ola bilməz!';
+            document.getElementById('bulkInfo').className = 'chat-bulk-info chat-bulk-info--error';
+            return;
+        }
+
+        var targetVal = document.getElementById('bulkTarget').value;
+        var departamentId = targetVal === 'all' ? null : parseInt(targetVal);
+
+        var btn = document.getElementById('btnSendBulk');
+        btn.disabled = true;
+        btn.textContent = 'Göndərilir...';
+
+        fetch('/User/Chat/SendBulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ departamentId: departamentId, metn: metn })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Göndər';
+
+            if (data.ok) {
+                document.getElementById('bulkInfo').textContent =
+                    data.say + ' işçiyə mesaj göndərildi!';
+                document.getElementById('bulkInfo').className = 'chat-bulk-info chat-bulk-info--success';
+                document.getElementById('bulkMetn').value = '';
+
+                // 2 saniyə sonra modal bağla və kontaktları yenilə
+                setTimeout(function () {
+                    closeBulkModal();
+                    loadContacts();
+                }, 1500);
+            } else {
+                document.getElementById('bulkInfo').textContent = data.mesaj || 'Xəta baş verdi';
+                document.getElementById('bulkInfo').className = 'chat-bulk-info chat-bulk-info--error';
+            }
+        })
+        .catch(function () {
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Göndər';
+            document.getElementById('bulkInfo').textContent = 'Şəbəkə xətası!';
+            document.getElementById('bulkInfo').className = 'chat-bulk-info chat-bulk-info--error';
+        });
+    }
 
     // ── Helpers ─────────────────────────────────────────
     function escHtml(str) {
@@ -208,6 +360,17 @@
     document.getElementById('btnSend').addEventListener('click', sendMessage);
     document.getElementById('chatInput').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
+    });
+
+    // Toplu mesaj modal eventləri
+    document.getElementById('btnTopluMesaj').addEventListener('click', openBulkModal);
+    document.getElementById('btnCloseBulk').addEventListener('click', closeBulkModal);
+    document.getElementById('btnCancelBulk').addEventListener('click', closeBulkModal);
+    document.getElementById('btnSendBulk').addEventListener('click', sendBulkMessage);
+
+    // Modal overlay kliklə bağla
+    document.getElementById('bulkModal').addEventListener('click', function (e) {
+        if (e.target === this) closeBulkModal();
     });
 
     // Init
