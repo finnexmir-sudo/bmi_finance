@@ -11,8 +11,17 @@ namespace FinNex.Domain.Entities.Communication
         public Isci GonderenIsci { get; set; } = null!;
 
         public bool Vacibdir { get; set; }
-        public DateTime? BitirmeTarixi { get; set; } // Null = müddətsiz
+        public DateTime? BitirmeTarixi { get; set; }
 
         public bool Aktivdir { get; set; } = true;
+
+        // Şəkil (banner/cover)
+        public string? SekilYolu { get; set; }
+
+        // Sənəd əlavəsi
+        public string? FaylAdi { get; set; }
+        public string? FaylYolu { get; set; }
+        public string? FaylTipi { get; set; }
+        public long? FaylOlcusu { get; set; }
     }
 }
