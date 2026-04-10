@@ -132,10 +132,8 @@
     // ── Checkmark (✓ / ✓✓) ──────────────────────────────
     function getCheckmarkHtml(oxunub) {
         if (oxunub) {
-            // ✓✓ mavi — oxunub
             return '<span class="chat-check chat-check--read" title="Oxunub">✓✓</span>';
         } else {
-            // ✓ boz — göndərilib
             return '<span class="chat-check chat-check--sent" title="Göndərilib">✓</span>';
         }
     }
@@ -208,7 +206,6 @@
         .then(function (r) { return r.json(); })
         .then(function (data) {
             if (data.ok && data.id) {
-                // Son əlavə edilmiş mesaja ID əlavə et
                 var allMsgs = document.querySelectorAll('.chat-msg--mine');
                 var lastMsg = allMsgs[allMsgs.length - 1];
                 if (lastMsg && !lastMsg.getAttribute('data-msg-id')) {
@@ -221,13 +218,12 @@
         });
     }
 
-    // ── Polling: hər 3 saniyədə yeni mesaj yoxla ────────
+    // ── Polling ─────────────────────────────────────────
     function startPolling() {
         if (pollTimer) clearInterval(pollTimer);
         pollTimer = setInterval(function () {
             if (!secilmisIsciId) return;
 
-            // Yeni mesajları yoxla
             fetch('/User/Chat/GetMessages?isciId=' + secilmisIsciId)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
@@ -246,7 +242,6 @@
                 })
                 .catch(function () { });
 
-            // Oxundu statuslarını yenilə
             updateReadReceipts();
         }, 3000);
     }
@@ -268,7 +263,9 @@
         modal.style.display = 'flex';
         document.getElementById('bulkMetn').value = '';
         document.getElementById('bulkInfo').textContent = '';
+        document.getElementById('bulkSearch').value = '';
         loadDepartments();
+        loadEmployees(null);
     }
 
     function closeBulkModal() {
@@ -277,7 +274,6 @@
 
     function loadDepartments() {
         var select = document.getElementById('bulkTarget');
-        // Mövcud option-ları sil (ilk "Bütün işçilər" saxla)
         while (select.options.length > 1) {
             select.remove(1);
         }
@@ -294,9 +290,70 @@
                     });
                 }
             })
+            .catch(function () { });
+    }
+
+    function loadEmployees(departamentId) {
+        var list = document.getElementById('bulkEmployeeList');
+        list.innerHTML = '<div class="chat-loading">Yüklənir...</div>';
+
+        var url = '/User/Chat/GetEmployees';
+        if (departamentId && departamentId !== 'all') {
+            url += '?departamentId=' + departamentId;
+        }
+
+        fetch(url)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                renderEmployeeCheckboxes(data.isciler);
+            })
             .catch(function () {
-                console.error('Departament siyahısı yüklənmədi');
+                list.innerHTML = '<div class="chat-loading">Xəta baş verdi</div>';
             });
+    }
+
+    function renderEmployeeCheckboxes(isciler) {
+        var list = document.getElementById('bulkEmployeeList');
+
+        if (!isciler || isciler.length === 0) {
+            list.innerHTML = '<div class="chat-loading">İşçi tapılmadı</div>';
+            updateBulkCount();
+            return;
+        }
+
+        var html = '';
+        isciler.forEach(function (i) {
+            html += '<label class="bulk-emp-item" data-name="' + escHtml(i.ad + ' ' + i.soyad).toLowerCase() + '">';
+            html += '<input type="checkbox" class="bulk-emp-cb" value="' + i.id + '" checked />';
+            html += '<span class="bulk-emp-name">' + escHtml(i.ad + ' ' + i.soyad) + '</span>';
+            if (i.departament) {
+                html += '<span class="bulk-emp-dept">(' + escHtml(i.departament) + ')</span>';
+            }
+            html += '</label>';
+        });
+
+        list.innerHTML = html;
+
+        // Checkbox dəyişiklikləri dinlə
+        list.querySelectorAll('.bulk-emp-cb').forEach(function (cb) {
+            cb.addEventListener('change', updateBulkCount);
+        });
+
+        updateBulkCount();
+    }
+
+    function updateBulkCount() {
+        var checked = document.querySelectorAll('.bulk-emp-cb:checked').length;
+        var total = document.querySelectorAll('.bulk-emp-cb').length;
+        document.getElementById('bulkCount').textContent = checked + ' / ' + total + ' seçili';
+    }
+
+    function getSelectedEmployeeIds() {
+        var ids = [];
+        document.querySelectorAll('.bulk-emp-cb:checked').forEach(function (cb) {
+            ids.push(parseInt(cb.value));
+        });
+        return ids;
     }
 
     function sendBulkMessage() {
@@ -307,8 +364,12 @@
             return;
         }
 
-        var targetVal = document.getElementById('bulkTarget').value;
-        var departamentId = targetVal === 'all' ? null : parseInt(targetVal);
+        var isciIdler = getSelectedEmployeeIds();
+        if (isciIdler.length === 0) {
+            document.getElementById('bulkInfo').textContent = 'Ən azı bir işçi seçilməlidir!';
+            document.getElementById('bulkInfo').className = 'chat-bulk-info chat-bulk-info--error';
+            return;
+        }
 
         var btn = document.getElementById('btnSendBulk');
         btn.disabled = true;
@@ -317,7 +378,7 @@
         fetch('/User/Chat/SendBulk', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ departamentId: departamentId, metn: metn })
+            body: JSON.stringify({ isciIdler: isciIdler, metn: metn })
         })
         .then(function (r) { return r.json(); })
         .then(function (data) {
@@ -325,12 +386,10 @@
             btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Göndər';
 
             if (data.ok) {
-                document.getElementById('bulkInfo').textContent =
-                    data.say + ' işçiyə mesaj göndərildi!';
+                document.getElementById('bulkInfo').textContent = data.say + ' işçiyə mesaj göndərildi!';
                 document.getElementById('bulkInfo').className = 'chat-bulk-info chat-bulk-info--success';
                 document.getElementById('bulkMetn').value = '';
 
-                // 2 saniyə sonra modal bağla və kontaktları yenilə
                 setTimeout(function () {
                     closeBulkModal();
                     loadContacts();
@@ -362,15 +421,43 @@
         if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
     });
 
-    // Toplu mesaj modal eventləri
+    // Toplu mesaj
     document.getElementById('btnTopluMesaj').addEventListener('click', openBulkModal);
     document.getElementById('btnCloseBulk').addEventListener('click', closeBulkModal);
     document.getElementById('btnCancelBulk').addEventListener('click', closeBulkModal);
     document.getElementById('btnSendBulk').addEventListener('click', sendBulkMessage);
 
-    // Modal overlay kliklə bağla
     document.getElementById('bulkModal').addEventListener('click', function (e) {
         if (e.target === this) closeBulkModal();
+    });
+
+    // Departament dəyişəndə işçiləri yenilə
+    document.getElementById('bulkTarget').addEventListener('change', function () {
+        var val = this.value;
+        loadEmployees(val === 'all' ? null : val);
+    });
+
+    // Hamısını seç / sil
+    document.getElementById('btnSelectAll').addEventListener('click', function () {
+        document.querySelectorAll('.bulk-emp-cb').forEach(function (cb) {
+            if (cb.closest('.bulk-emp-item').style.display !== 'none') {
+                cb.checked = true;
+            }
+        });
+        updateBulkCount();
+    });
+
+    document.getElementById('btnDeselectAll').addEventListener('click', function () {
+        document.querySelectorAll('.bulk-emp-cb').forEach(function (cb) { cb.checked = false; });
+        updateBulkCount();
+    });
+
+    // İşçi axtarışı (modal içində)
+    document.getElementById('bulkSearch').addEventListener('input', function () {
+        var term = this.value.toLowerCase();
+        document.querySelectorAll('.bulk-emp-item').forEach(function (item) {
+            item.style.display = item.dataset.name.includes(term) ? '' : 'none';
+        });
     });
 
     // Init
