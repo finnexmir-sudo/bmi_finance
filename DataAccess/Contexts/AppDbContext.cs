@@ -725,10 +725,6 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasForeignKey(x => x.AlanIsciId)
             .OnDelete(DeleteBehavior.NoAction);
 
-        builder.Entity<ChatMesaj>()
-            .HasIndex(x => x.TopluMesajGrupId)
-            .HasFilter("[TopluMesajGrupId] IS NOT NULL");
-
         // ── XercKateqoriyasi Seed Data ────────────────────────
         builder.Entity<XercKateqoriyasi>().HasData(
             new XercKateqoriyasi { Id = 1, Ad = "Taksi", Ikon = "bi-taxi-front", Aktivdir = true },
