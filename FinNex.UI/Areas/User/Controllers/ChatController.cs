@@ -432,6 +432,38 @@ public class ChatController : Controller
         return Json(new { ok = true, say = kohneMesajlar.Count });
     }
 
+    // ── POST /User/Chat/DeleteMessage ─────────────────────
+    [HttpPost]
+    public async Task<IActionResult> DeleteMessage([FromBody] DeleteMessageDto dto)
+    {
+        if (dto?.MesajId <= 0) return Json(new { ok = false });
+
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var menim = await _unitOfWork.Repository<Isci>()
+            .GetirAsync(x => x.AppUserId == userId && !x.Silinib);
+
+        if (menim == null) return Json(new { ok = false });
+
+        var mesaj = await _unitOfWork.Repository<ChatMesaj>()
+            .GetirAsync(x => x.Id == dto.MesajId && x.GonderenIsciId == menim.Id);
+
+        if (mesaj == null)
+            return Json(new { ok = false, mesaj = "Mesaj tapılmadı və ya sizin deyil" });
+
+        // Fayl varsa sil
+        if (!string.IsNullOrEmpty(mesaj.FaylYolu))
+        {
+            var fullPath = Path.Combine(_env.WebRootPath, mesaj.FaylYolu.TrimStart('/'));
+            if (System.IO.File.Exists(fullPath))
+                System.IO.File.Delete(fullPath);
+        }
+
+        await _unitOfWork.Repository<ChatMesaj>().DeleteAsync(mesaj.Id);
+        await _unitOfWork.YaddaSaxlaAsync();
+
+        return Json(new { ok = true });
+    }
+
     // ── DTOs ────────────────────────────────────────────────
     public class ChatSendDto
     {
@@ -449,5 +481,10 @@ public class ChatController : Controller
     public class MarkAsReadDto
     {
         public int GonderenIsciId { get; set; }
+    }
+
+    public class DeleteMessageDto
+    {
+        public int MesajId { get; set; }
     }
 }

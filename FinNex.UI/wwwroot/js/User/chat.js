@@ -1,5 +1,23 @@
 // ── User Chat JS — Pagination + Emoji + Fayl + Read Receipts ──
 
+// Global: mesaj silmə
+function chatDeleteMsg(msgId) {
+    if (!confirm('Bu mesajı silmək istəyirsiniz?')) return;
+    fetch('/User/Chat/DeleteMessage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mesajId: msgId })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+        if (data.ok) {
+            var el = document.querySelector('[data-msg-id="' + msgId + '"]');
+            if (el) el.remove();
+        }
+    })
+    .catch(function () { });
+}
+
 (function () {
     'use strict';
 
@@ -182,6 +200,7 @@
         }
         var cls = m.menimdir ? 'chat-msg--mine' : 'chat-msg--other';
         html += '<div class="chat-msg ' + cls + '" data-msg-id="' + m.id + '">';
+        if (m.menimdir) html += '<button class="chat-msg-delete" onclick="chatDeleteMsg(' + m.id + ')" title="Sil">&times;</button>';
         if (m.metn) html += '<div class="chat-msg-text">' + escHtml(m.metn) + '</div>';
         if (m.faylAdi) html += buildFileHtml(m.faylAdi, m.faylYolu, m.faylTipi, m.faylOlcusu);
         html += '<div class="chat-msg-meta"><span class="chat-msg-time">' + m.saatStr + '</span>';
