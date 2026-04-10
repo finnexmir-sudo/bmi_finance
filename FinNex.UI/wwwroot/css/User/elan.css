@@ -1,122 +1,243 @@
-/* ── User Elanlar Lovhesi ─────────────────────────────── */
+/* ── User Elanlar — Modern Feed Dizaynı ────────────────── */
 
-.elan-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 20px;
+.elan-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 720px;
+    margin: 0 auto;
 }
 
+/* ── Elan Kartı ────────────────────────────── */
 .elan-card {
     background: #fff;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-    border-left: 4px solid #e2e8f0;
-    transition: transform 0.15s, box-shadow 0.15s;
-    position: relative;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border: 1px solid #e8eaef;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .elan-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
 }
 
 .elan-card--vacib {
-    border-left-color: #dc2626;
-    background: #fffbfb;
+    border-color: #dc2626;
+    border-width: 2px;
+}
+
+/* ── Banner / Şəkil ────────────────────────── */
+.elan-card-banner {
+    width: 100%;
+    max-height: 320px;
+    overflow: hidden;
+    background: #f5f6f8;
+}
+
+.elan-card-banner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* ── Header ────────────────────────────────── */
+.elan-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 0;
+    gap: 8px;
+}
+
+.elan-card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .elan-vacib-badge {
-    position: absolute;
-    top: 12px;
-    right: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     background: #dc2626;
     color: #fff;
     font-size: 10px;
     font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 10px;
+    padding: 3px 10px;
+    border-radius: 20px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-.elan-card-header {
-    margin-bottom: 12px;
-}
-
-.elan-card-title {
-    font-size: 15px;
-    font-weight: 700;
-    color: #1a1d21;
-    margin: 0 0 4px;
-    line-height: 1.4;
-}
-
-.elan-card-date {
+.elan-date-badge {
     font-size: 11px;
     color: #dc2626;
     font-weight: 600;
+    background: #fef2f2;
+    padding: 3px 10px;
+    border-radius: 20px;
 }
 
+.elan-card-time-small {
+    font-size: 11px;
+    color: #94a3b8;
+    white-space: nowrap;
+}
+
+/* ── Başlıq ────────────────────────────────── */
+.elan-card-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #1a2332;
+    margin: 12px 20px 0;
+    line-height: 1.35;
+    letter-spacing: -0.3px;
+}
+
+.elan-card--vacib .elan-card-title {
+    color: #991b1b;
+}
+
+/* ── Mətn ──────────────────────────────────── */
 .elan-card-body {
-    margin-bottom: 16px;
+    padding: 12px 20px 0;
 }
 
 .elan-card-body p {
-    font-size: 13px;
-    color: #4a5568;
-    line-height: 1.6;
-    margin: 0;
-    /* Limit display */
-    display: -webkit-box;
-    -webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    font-size: 14px;
+    color: #475569;
+    line-height: 1.7;
+    margin: 0 0 6px;
 }
 
+/* ── Sənəd Əlavəsi ─────────────────────────── */
+.elan-file-attach {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 20px 0;
+    padding: 12px 16px;
+    background: #f8f9fb;
+    border: 1px solid #e2e6ed;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #1a2332;
+    transition: all 0.15s;
+}
+.elan-file-attach:hover {
+    background: #eef0f4;
+    border-color: #cbd5e1;
+}
+
+.elan-file-icon { font-size: 22px; flex-shrink: 0; }
+.elan-file-name {
+    font-size: 13px;
+    font-weight: 600;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.elan-file-size {
+    font-size: 11px;
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+.elan-file-download {
+    font-size: 11px;
+    color: #e8b84b;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* ── Footer ────────────────────────────────── */
 .elan-card-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 12px;
+    padding: 16px 20px;
+    margin-top: 12px;
     border-top: 1px solid #f1f5f9;
 }
 
 .elan-card-author {
-    font-size: 12px;
-    font-weight: 600;
-    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-.elan-card-time {
+.elan-author-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e8b84b, #c9900a);
+    color: #1a1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.elan-author-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a2332;
+}
+
+.elan-author-role {
+    font-size: 10px;
     color: #94a3b8;
 }
 
-/* ── Empty State ── */
+/* ── HR Create — Şəkil Preview ─────────────── */
+.elan-upload-preview {
+    margin-top: 8px;
+    border-radius: 10px;
+    overflow: hidden;
+    max-height: 200px;
+    border: 1px solid #e2e6ed;
+}
+.elan-upload-preview img {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    display: block;
+}
+
+/* ── Empty State ───────────────────────────── */
 .fn-empty-state {
     text-align: center;
     padding: 60px 20px;
 }
+.fn-empty-icon { margin-bottom: 16px; }
+.fn-empty-title { font-size: 16px; font-weight: 600; color: #64748b; margin-bottom: 4px; }
+.fn-empty-sub { font-size: 13px; color: #94a3b8; }
 
-.fn-empty-icon {
-    margin-bottom: 16px;
+/* ── Animation ─────────────────────────────── */
+.elan-card {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: elanFadeIn 0.4s ease forwards;
+}
+.elan-card:nth-child(1) { animation-delay: 0s; }
+.elan-card:nth-child(2) { animation-delay: 0.08s; }
+.elan-card:nth-child(3) { animation-delay: 0.16s; }
+.elan-card:nth-child(4) { animation-delay: 0.24s; }
+.elan-card:nth-child(5) { animation-delay: 0.32s; }
+
+@keyframes elanFadeIn {
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.fn-empty-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #64748b;
-    margin-bottom: 4px;
-}
-
-.fn-empty-sub {
-    font-size: 13px;
-    color: #94a3b8;
-}
-
+/* ── Responsive ────────────────────────────── */
 @media (max-width: 768px) {
-    .elan-grid {
-        grid-template-columns: 1fr;
-    }
+    .elan-feed { max-width: 100%; }
+    .elan-card-title { font-size: 17px; }
+    .elan-card-banner { max-height: 200px; }
 }
