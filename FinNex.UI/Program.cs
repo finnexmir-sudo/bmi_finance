@@ -122,7 +122,7 @@ namespace FinNex.UI
             // ==================================================
             builder.Services.AddHostedService<FinNex.Application.BackgroundJobs.ZkTecoSdkService>();
             builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.XatirlatmaBackgroundService>();
-            builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.ChatCleanupBackgroundService>();
+            // builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.ChatCleanupBackgroundService>();
 
             var app = builder.Build();
 
@@ -208,11 +208,19 @@ namespace FinNex.UI
                     try
                     {
                         db.Database.Migrate();
-                        break; // uğurlu olsa, hamısını tətbiq edib — çıx
+                        break;
                     }
-                    catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 2714 or 3701 or 1913)
+                    catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 2714 or 3701 or 1913 or 2627 or 4901 or 1801)
                     {
-                        // Bu migration artıq tətbiq olunub və ya indeks yoxdur — qeyd et və növbətiyə keç
+                        // Məlum SQL xətaları: artıq var, yoxdur, duplicate key, alter column
+                        db.Database.ExecuteSqlRaw(
+                            "IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory] WHERE [MigrationId] = {0}) INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES ({0}, {1})",
+                            migration, productVersion);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Gözlənilməyən xəta — migration-ı skip et, app crash olmasın
+                        Console.WriteLine($"Migration xətası ({migration}): {ex.Message}");
                         db.Database.ExecuteSqlRaw(
                             "IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory] WHERE [MigrationId] = {0}) INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES ({0}, {1})",
                             migration, productVersion);
