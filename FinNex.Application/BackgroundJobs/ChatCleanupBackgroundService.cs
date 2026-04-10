@@ -1,5 +1,4 @@
 using FinNex.DataAccess.Contexts;
-using FinNex.Domain.Entities.Communication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -9,7 +8,6 @@ namespace FinNex.Infrastructure.BackgroundJobs
 {
     /// <summary>
     /// Hər gün gecə saat 02:00-da 30 gündən köhnə chat mesajlarını silir.
-    /// Əlavə olunan fayllar da disk-dən silinir.
     /// </summary>
     public class ChatCleanupBackgroundService : BackgroundService
     {
@@ -29,7 +27,6 @@ namespace FinNex.Infrastructure.BackgroundJobs
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                // Gündəlik gecə 02:00-da işlət
                 var now = DateTime.Now;
                 var next = now.Date.AddDays(1).AddHours(2);
                 var delay = next - now;
@@ -63,24 +60,6 @@ namespace FinNex.Infrastructure.BackgroundJobs
             {
                 _logger.LogInformation("Chat cleanup: silinəcək mesaj yoxdur");
                 return;
-            }
-
-            // Faylları disk-dən sil
-            var env = scope.ServiceProvider.GetService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
-            if (env != null)
-            {
-                foreach (var m in kohneMesajlar)
-                {
-                    if (!string.IsNullOrEmpty(m.FaylYolu))
-                    {
-                        var fullPath = Path.Combine(env.WebRootPath, m.FaylYolu.TrimStart('/'));
-                        if (File.Exists(fullPath))
-                        {
-                            try { File.Delete(fullPath); }
-                            catch { /* ignore */ }
-                        }
-                    }
-                }
             }
 
             db.ChatMesajlar.RemoveRange(kohneMesajlar);
