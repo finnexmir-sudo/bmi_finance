@@ -308,6 +308,7 @@ function chatDeleteMsg(msgId) {
                         var lastMsg = allMsgs[allMsgs.length - 1];
                         if (lastMsg && !lastMsg.getAttribute('data-msg-id')) {
                             lastMsg.setAttribute('data-msg-id', data.id);
+                            lastMsg.insertAdjacentHTML('afterbegin', '<button class="chat-msg-delete" onclick="chatDeleteMsg(' + data.id + ')" title="Sil">&times;</button>');
                         }
                     }
                 }).catch(function (err) { console.error('Fayl göndərmə xətası:', err); });
@@ -328,6 +329,7 @@ function chatDeleteMsg(msgId) {
                     var lastMsg = allMsgs[allMsgs.length - 1];
                     if (lastMsg && !lastMsg.getAttribute('data-msg-id')) {
                         lastMsg.setAttribute('data-msg-id', data.id);
+                        lastMsg.insertAdjacentHTML('afterbegin', '<button class="chat-msg-delete" onclick="chatDeleteMsg(' + data.id + ')" title="Sil">&times;</button>');
                     }
                 }
             }).catch(function (err) { console.error('Mesaj göndərmə xətası:', err); });
@@ -345,6 +347,7 @@ function chatDeleteMsg(msgId) {
         if (msgId) div.setAttribute('data-msg-id', msgId);
 
         var inner = '';
+        if (isMine && msgId) inner += '<button class="chat-msg-delete" onclick="chatDeleteMsg(' + msgId + ')" title="Sil">&times;</button>';
         if (metn) inner += '<div class="chat-msg-text">' + escHtml(metn) + '</div>';
         if (faylAdi) {
             if (faylYolu) {
