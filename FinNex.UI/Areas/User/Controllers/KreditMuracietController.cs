@@ -76,4 +76,19 @@ public class KreditMuracietController : Controller
         TempData["Success"] = "Status yeniləndi.";
         return RedirectToAction("Detail", new { id });
     }
+
+    // ── POST /User/KreditMuraciet/Delete/5 ──────────────────
+    [HttpPost]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var muraciet = await _unitOfWork.Repository<KreditMuraciet>()
+            .GetirAsync(x => x.Id == id);
+        if (muraciet != null)
+        {
+            await _unitOfWork.Repository<KreditMuraciet>().DeleteAsync(muraciet.Id);
+            await _unitOfWork.YaddaSaxlaAsync();
+        }
+        TempData["Success"] = "Müraciət silindi.";
+        return RedirectToAction("Index");
+    }
 }
