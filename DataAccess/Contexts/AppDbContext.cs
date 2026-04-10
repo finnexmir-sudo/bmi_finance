@@ -109,6 +109,9 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     // Chat
     public DbSet<ChatMesaj> ChatMesajlar { get; set; }
 
+    // Kredit
+    public DbSet<FinNex.Domain.Entities.Kredit.KreditMuraciet> KreditMuracietler { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

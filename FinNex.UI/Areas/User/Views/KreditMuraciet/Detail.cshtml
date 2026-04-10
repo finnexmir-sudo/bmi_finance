@@ -1,0 +1,135 @@
+@model FinNex.Domain.Entities.Kredit.KreditMuraciet
+@using FinNex.Domain.Entities.Kredit
+@{
+    ViewData["Title"] = "Müraciət #" + Model.Id;
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var statusCls = Model.Status switch {
+        KreditMuracietStatus.Yeni => "km-status--yeni",
+        KreditMuracietStatus.Baxilir => "km-status--baxilir",
+        KreditMuracietStatus.Tesdiqlenib => "km-status--tesdiq",
+        KreditMuracietStatus.ReddEdilib => "km-status--redd",
+        _ => ""
+    };
+    var statusTxt = Model.Status switch {
+        KreditMuracietStatus.Yeni => "Yeni",
+        KreditMuracietStatus.Baxilir => "Baxılır",
+        KreditMuracietStatus.Tesdiqlenib => "Təsdiqlənib",
+        KreditMuracietStatus.ReddEdilib => "Rədd edilib",
+        _ => "-"
+    };
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Müraciət #@Model.Id</div>
+            <div class="fn-page-sub">@Model.MuracietTarixi.ToString("dd.MM.yyyy HH:mm")</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline">&#8592; Geri</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
+    }
+
+    <div class="km-detail-grid">
+
+        @* ── Müştəri məlumatları ── *@
+        <div class="fn-card km-detail-card">
+            <div class="km-detail-section-title">Müştəri məlumatları</div>
+
+            <div class="km-detail-row">
+                <div class="km-detail-label">Ad, Soyad, Ata adı</div>
+                <div class="km-detail-value km-detail-value--bold">@Model.AdSoyadAtaAdi</div>
+            </div>
+            <div class="km-detail-row">
+                <div class="km-detail-label">FİN</div>
+                <div class="km-detail-value">@(Model.FIN ?? "-")</div>
+            </div>
+            <div class="km-detail-row">
+                <div class="km-detail-label">Telefon</div>
+                <div class="km-detail-value">@(Model.Telefon ?? "-")</div>
+            </div>
+            <div class="km-detail-row">
+                <div class="km-detail-label">İş yeri</div>
+                <div class="km-detail-value">@(Model.IsYeri ?? "-")</div>
+            </div>
+            <div class="km-detail-row">
+                <div class="km-detail-label">Əmək haqqı</div>
+                <div class="km-detail-value">@(Model.EmekHaqqi?.ToString("N0") ?? "-") AZN</div>
+            </div>
+        </div>
+
+        @* ── Kredit məlumatları ── *@
+        <div class="fn-card km-detail-card">
+            <div class="km-detail-section-title">Kredit məlumatları</div>
+
+            <div class="km-detail-row">
+                <div class="km-detail-label">Kredit məbləği</div>
+                <div class="km-detail-value km-detail-value--amount">@Model.KreditMeblegi.ToString("N0") @Model.Valyuta</div>
+            </div>
+            <div class="km-detail-row">
+                <div class="km-detail-label">Müddət</div>
+                <div class="km-detail-value">@(Model.KreditMuddeti ?? "-")</div>
+            </div>
+            <div class="km-detail-row">
+                <div class="km-detail-label">Məqsəd</div>
+                <div class="km-detail-value">@(Model.Meqsed ?? "-")</div>
+            </div>
+            <div class="km-detail-row">
+                <div class="km-detail-label">IP ünvan</div>
+                <div class="km-detail-value" style="font-size:11px;color:#94a3b8">@(Model.IP ?? "-")</div>
+            </div>
+
+            <div class="km-detail-divider"></div>
+
+            <div class="km-detail-row">
+                <div class="km-detail-label">Status</div>
+                <div class="km-detail-value">
+                    <span class="km-status @statusCls" style="font-size:13px">@statusTxt</span>
+                </div>
+            </div>
+
+            @if (Model.BaxilmaTarixi.HasValue)
+            {
+                <div class="km-detail-row">
+                    <div class="km-detail-label">Baxılma tarixi</div>
+                    <div class="km-detail-value">@Model.BaxilmaTarixi.Value.ToString("dd.MM.yyyy HH:mm")</div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.Qeyd))
+            {
+                <div class="km-detail-row">
+                    <div class="km-detail-label">Qeyd</div>
+                    <div class="km-detail-value">@Model.Qeyd</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ── Status dəyişmə ── *@
+    <div class="fn-card km-action-card">
+        <div class="km-detail-section-title">Status dəyiş</div>
+        <form asp-action="ChangeStatus" method="post">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="km-action-row">
+                <select name="yeniStatus" class="fn-input km-action-select">
+                    <option value="0" selected="@(Model.Status == KreditMuracietStatus.Yeni)">Yeni</option>
+                    <option value="1" selected="@(Model.Status == KreditMuracietStatus.Baxilir)">Baxılır</option>
+                    <option value="2" selected="@(Model.Status == KreditMuracietStatus.Tesdiqlenib)">Təsdiqlənib</option>
+                    <option value="3" selected="@(Model.Status == KreditMuracietStatus.ReddEdilib)">Rədd edilib</option>
+                </select>
+                <input type="text" name="qeyd" class="fn-input" placeholder="Qeyd (ixtiyari)..."
+                       value="@Model.Qeyd" />
+                <button type="submit" class="fn-btn fn-btn--primary">Yadda saxla</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/kredit-muraciet.css" asp-append-version="true" />
+}

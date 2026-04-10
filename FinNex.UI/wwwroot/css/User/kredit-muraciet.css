@@ -1,0 +1,164 @@
+/* ── Kredit Müraciətləri ────────────────────────────────── */
+
+/* ── Status Filters ────────────────────────── */
+.km-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.km-filter-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    background: #f5f6f8;
+    border: 1px solid #e2e6ed;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+.km-filter-btn:hover { background: #eef0f4; color: #1a2332; text-decoration: none; }
+.km-filter-btn--active { background: #1a2332; color: #e8b84b; border-color: #1a2332; }
+.km-filter-btn--active:hover { background: #243040; }
+
+.km-filter-count {
+    background: rgba(0,0,0,0.1);
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    margin-left: 4px;
+}
+
+/* ── Table ─────────────────────────────────── */
+.km-table-wrap {
+    overflow-x: auto;
+}
+
+.km-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.km-table thead th {
+    padding: 10px 12px;
+    background: #f8f9fb;
+    color: #64748b;
+    font-weight: 600;
+    text-align: left;
+    border-bottom: 2px solid #e2e6ed;
+    white-space: nowrap;
+}
+
+.km-table tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.1s;
+}
+.km-table tbody tr:hover { background: #fafbfc; }
+
+.km-table tbody td {
+    padding: 10px 12px;
+    color: #1a2332;
+}
+
+.km-td-name { font-weight: 700; }
+.km-td-amount { font-weight: 700; color: #16a34a; }
+
+/* ── Status Badges ─────────────────────────── */
+.km-status {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.km-status--yeni { background: #dbeafe; color: #1d4ed8; }
+.km-status--baxilir { background: #fef3c7; color: #b45309; }
+.km-status--tesdiq { background: #dcfce7; color: #16a34a; }
+.km-status--redd { background: #fee2e2; color: #dc2626; }
+
+/* ── Detail Button ─────────────────────────── */
+.km-detail-btn {
+    font-size: 11px;
+    font-weight: 600;
+    color: #e8b84b;
+    text-decoration: none;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid #e8b84b;
+    transition: all 0.15s;
+}
+.km-detail-btn:hover { background: #e8b84b; color: #1a1200; text-decoration: none; }
+
+/* ── Detail Page ───────────────────────────── */
+.km-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.km-detail-card { padding: 20px; }
+
+.km-detail-section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a2332;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e8b84b;
+}
+
+.km-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px solid #f5f6f8;
+}
+
+.km-detail-label {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.km-detail-value {
+    font-size: 13px;
+    color: #1a2332;
+    font-weight: 600;
+    text-align: right;
+}
+
+.km-detail-value--bold { font-size: 15px; font-weight: 800; }
+.km-detail-value--amount { font-size: 18px; font-weight: 800; color: #16a34a; }
+
+.km-detail-divider {
+    height: 1px;
+    background: #e2e6ed;
+    margin: 12px 0;
+}
+
+/* ── Action Card ───────────────────────────── */
+.km-action-card { padding: 20px; }
+
+.km-action-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.km-action-select {
+    width: 180px;
+    flex-shrink: 0;
+}
+
+/* ── Responsive ────────────────────────────── */
+@media (max-width: 768px) {
+    .km-detail-grid { grid-template-columns: 1fr; }
+    .km-action-row { flex-direction: column; }
+    .km-action-select { width: 100%; }
+}
