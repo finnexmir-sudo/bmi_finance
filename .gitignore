@@ -5,3 +5,4 @@ obj/
 *.suo
 *.vsidx
 wwwroot/uploads/
+appsettings.Production.json

@@ -61,6 +61,10 @@
 .km-table tbody td {
     padding: 10px 12px;
     color: #1a2332;
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .km-td-name { font-weight: 700; }
