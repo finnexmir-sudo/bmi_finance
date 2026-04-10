@@ -153,6 +153,34 @@ public class ChatController : Controller
         return Json(new { departamentler });
     }
 
+    // ── GET /User/Chat/GetEmployees?departamentId=0 ────────
+    [HttpGet]
+    public async Task<IActionResult> GetEmployees(int? departamentId)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var menim = await _unitOfWork.Repository<Isci>()
+            .GetirAsync(x => x.AppUserId == userId && !x.Silinib);
+
+        var menimId = menim?.Id ?? 0;
+
+        IQueryable<IsciTeyinat> query = _unitOfWork.Repository<IsciTeyinat>()
+            .Query()
+            .Where(t => t.Aktivdir && !t.Isci.Silinib && t.Isci.Status == IsciStatus.Aktiv && t.IsciId != menimId);
+
+        if (departamentId.HasValue && departamentId > 0)
+        {
+            query = query.Where(t => t.DepartamentId == departamentId.Value);
+        }
+
+        var isciler = await query
+            .Select(t => new { id = t.IsciId, ad = t.Isci.Ad, soyad = t.Isci.Soyad, departament = t.Departament.Ad })
+            .Distinct()
+            .OrderBy(x => x.ad).ThenBy(x => x.soyad)
+            .ToListAsync();
+
+        return Json(new { isciler });
+    }
+
     // ── POST /User/Chat/SendBulk ───────────────────────────
     [HttpPost]
     public async Task<IActionResult> SendBulk([FromBody] ChatBulkSendDto dto)
@@ -166,21 +194,30 @@ public class ChatController : Controller
 
         if (menim == null) return Json(new { ok = false, mesaj = "İşçi tapılmadı" });
 
-        // Hədəf işçiləri müəyyən et
-        IQueryable<IsciTeyinat> teyinatQuery = _unitOfWork.Repository<IsciTeyinat>()
-            .Query()
-            .Where(t => t.Aktivdir && !t.Isci.Silinib && t.Isci.Status == IsciStatus.Aktiv && t.IsciId != menim.Id);
+        List<int> hederIsciIdler;
 
-        if (dto.DepartamentId.HasValue && dto.DepartamentId > 0)
+        if (dto.IsciIdler != null && dto.IsciIdler.Any())
         {
-            // Yalnız seçilmiş departament
-            teyinatQuery = teyinatQuery.Where(t => t.DepartamentId == dto.DepartamentId.Value);
+            // Konkret seçilmiş işçilər
+            hederIsciIdler = dto.IsciIdler.Where(id => id != menim.Id).Distinct().ToList();
         }
+        else
+        {
+            // Departament və ya hamı
+            IQueryable<IsciTeyinat> teyinatQuery = _unitOfWork.Repository<IsciTeyinat>()
+                .Query()
+                .Where(t => t.Aktivdir && !t.Isci.Silinib && t.Isci.Status == IsciStatus.Aktiv && t.IsciId != menim.Id);
 
-        var hederIsciIdler = await teyinatQuery
-            .Select(t => t.IsciId)
-            .Distinct()
-            .ToListAsync();
+            if (dto.DepartamentId.HasValue && dto.DepartamentId > 0)
+            {
+                teyinatQuery = teyinatQuery.Where(t => t.DepartamentId == dto.DepartamentId.Value);
+            }
+
+            hederIsciIdler = await teyinatQuery
+                .Select(t => t.IsciId)
+                .Distinct()
+                .ToListAsync();
+        }
 
         if (!hederIsciIdler.Any())
             return Json(new { ok = false, mesaj = "Göndəriləcək işçi tapılmadı" });
@@ -276,6 +313,7 @@ public class ChatController : Controller
     public class ChatBulkSendDto
     {
         public int? DepartamentId { get; set; }
+        public List<int>? IsciIdler { get; set; }
         public string Metn { get; set; } = "";
     }
 
