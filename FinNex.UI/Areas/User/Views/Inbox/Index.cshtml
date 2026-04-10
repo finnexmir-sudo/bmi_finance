@@ -21,7 +21,7 @@
                     <span class="ibx-badge-count">@Model.CemiOxunmamis</span>
                 }
             </div>
-            <div class="ibx-sub">Bildirişlər, mesajlar və sorğular</div>
+            <div class="ibx-sub">Bildirişlər və sorğular</div>
         </div>
         <div style="display:flex;gap:8px">
             <a asp-action="TopluMesaj" class="ibx-btn ibx-btn--ghost">
@@ -31,12 +31,6 @@
                     <path d="M1 11c0-2 1.5-3 3.5-3s3.5 1 3.5 3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
                 </svg>
                 Toplu Mesaj
-            </a>
-            <a asp-action="YeniMesaj" class="ibx-btn ibx-btn--primary">
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                    <path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                </svg>
-                Yeni Mesaj
             </a>
         </div>
     </div>
@@ -53,18 +47,6 @@
             @if (Model.OxunmamisBildiris > 0)
             {
                 <span class="ibx-tab-dot">@Model.OxunmamisBildiris</span>
-            }
-        </button>
-        <button class="ibx-tab @(Model.AktivTab == "mesajlar" ? "active" : "")"
-                data-tab="mesajlar">
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                <rect x="1" y="2" width="11" height="8" rx="1.5" stroke="currentColor" stroke-width="1.1" />
-                <path d="M3 5h7M3 7.5h4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
-            </svg>
-            Mesajlar
-            @if (Model.OxunmamisMesaj > 0)
-            {
-                <span class="ibx-tab-dot">@Model.OxunmamisMesaj</span>
             }
         </button>
         <button class="ibx-tab @(Model.AktivTab == "sorgular" ? "active" : "")"
@@ -127,50 +109,6 @@
                             <a href="@b.RedirectUrl" class="ibx-item-link" data-bildiris-id="@b.Id">Bax →</a>
                         }
                     </div>
-                }
-            </div>
-        }
-    </div>
-
-    @* ── Mesajlar Paneli ── *@
-    <div class="ibx-panel @(Model.AktivTab == "mesajlar" ? "" : "ibx-hidden")"
-         data-panel="mesajlar">
-
-        @if (!Model.GelenMesajlar.Any())
-        {
-            <div class="ibx-empty">
-                <div class="ibx-empty-icon"><svg width="28" height="28" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3" width="13" height="10" rx="2" stroke="#b0b8c9" stroke-width="1.3"/><path d="M2 4l6 4.5L14 4" stroke="#b0b8c9" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-                <div class="ibx-empty-title">Gələn mesaj yoxdur</div>
-                <a asp-action="YeniMesaj" class="ibx-btn ibx-btn--ghost" style="margin-top:12px">
-                    Mesaj göndər
-                </a>
-            </div>
-        }
-        else
-        {
-            <div class="ibx-list">
-                @foreach (var m in Model.GelenMesajlar)
-                {
-                    <a asp-action="Mesaj" asp-route-id="@m.Id"
-                       class="ibx-item ibx-item--link @(m.Oxunub ? "" : "ibx-item--unread")">
-                        <div class="ibx-avatar">@(m.GonderenAd?.Length > 0 ? m.GonderenAd[0].ToString() : "?")</div>
-                        <div class="ibx-item-body">
-                            <div class="ibx-item-title">
-                                @m.GonderenAd
-                                @if (!m.Oxunub)
-                                {
-                                    <span class="ibx-new-label">Yeni</span>
-                                }
-                            </div>
-                            <div class="ibx-item-movzu">@m.Movzu</div>
-                            <div class="ibx-item-sub">@m.MetnOnizleme</div>
-                            <div class="ibx-item-time">@m.YaradilmaTarixi.ToString("dd.MM HH:mm")</div>
-                        </div>
-                        @if (!m.Oxunub)
-                        {
-                            <div class="ibx-unread-dot"></div>
-                        }
-                    </a>
                 }
             </div>
         }

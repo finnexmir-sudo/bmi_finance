@@ -107,8 +107,28 @@ document.addEventListener('click', async function (e) {
     } catch (e) { console.error('hamisiniOxu:', e); }
 });
 
+// ── Chat oxunmamış badge yenilə ───────────────────────
+async function checkChatUnread() {
+    try {
+        const res = await fetch('/User/Chat/GetContacts');
+        const data = await res.json();
+        let totalUnread = 0;
+        if (data.contacts) {
+            data.contacts.forEach(function (c) { totalUnread += c.oxunmamis || 0; });
+        }
+
+        const badge = document.getElementById('chatCount');
+        if (badge) {
+            badge.textContent = totalUnread > 99 ? '99+' : totalUnread;
+            badge.style.display = totalUnread > 0 ? 'inline' : 'none';
+        }
+    } catch (e) { /* chat endpoint mövcud deyilsə ignore */ }
+}
+
 // ── Başlanğıcda + hər 30 san ──────────────────────────
 checkNotifs();
 checkXatirlatma();
+checkChatUnread();
 setInterval(checkNotifs, 30000);
 setInterval(checkXatirlatma, 30000);
+setInterval(checkChatUnread, 15000);
