@@ -15,10 +15,17 @@ namespace FinNex.UI.Areas.User.Controllers;
 public class ChatController : Controller
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IWebHostEnvironment _env;
 
-    public ChatController(IUnitOfWork unitOfWork)
+    private const int MesajLimit = 50;
+    private const int KohneMesajGunLimiti = 30;
+    private const long MaxFaylOlcusu = 10 * 1024 * 1024; // 10 MB
+    private static readonly string[] IcazaliTipler = { ".pdf", ".doc", ".docx", ".xls", ".xlsx" };
+
+    public ChatController(IUnitOfWork unitOfWork, IWebHostEnvironment env)
     {
         _unitOfWork = unitOfWork;
+        _env = env;
     }
 
     // ── GET /User/Chat ──────────────────────────────────────
@@ -46,7 +53,6 @@ public class ChatController : Controller
             .ThenBy(x => x.Soyad)
             .ToListAsync();
 
-        // Oxunmamish mesajlar
         var oxunmamis = await _unitOfWork.Repository<ChatMesaj>()
             .Query()
             .Where(x => x.AlanIsciId == menim.Id && !x.Oxunub)
@@ -66,35 +72,54 @@ public class ChatController : Controller
         return Json(new { contacts, menimIsciId = menim.Id });
     }
 
-    // ── GET /User/Chat/GetMessages?isciId=5 ─────────────────
+    // ── GET /User/Chat/GetMessages?isciId=5&beforeId=0 ──────
     [HttpGet]
-    public async Task<IActionResult> GetMessages(int isciId)
+    public async Task<IActionResult> GetMessages(int isciId, int beforeId = 0)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var menim = await _unitOfWork.Repository<Isci>()
             .GetirAsync(x => x.AppUserId == userId && !x.Silinib);
 
         if (menim == null)
-            return Json(new { mesajlar = Array.Empty<object>() });
+            return Json(new { mesajlar = Array.Empty<object>(), dahaVar = false });
 
-        var mesajlar = await _unitOfWork.Repository<ChatMesaj>()
+        var query = _unitOfWork.Repository<ChatMesaj>()
             .Query()
             .Where(x =>
                 (x.GonderenIsciId == menim.Id && x.AlanIsciId == isciId) ||
-                (x.GonderenIsciId == isciId && x.AlanIsciId == menim.Id))
-            .OrderBy(x => x.GonderilmeTarixi)
+                (x.GonderenIsciId == isciId && x.AlanIsciId == menim.Id));
+
+        if (beforeId > 0)
+        {
+            query = query.Where(x => x.Id < beforeId);
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var mesajlar = await query
+            .OrderByDescending(x => x.Id)
+            .Take(MesajLimit)
+            .OrderBy(x => x.Id)
             .ToListAsync();
 
-        // Mark as read + set OxunmaTarixi
-        var oxunmamislar = mesajlar.Where(x => x.AlanIsciId == menim.Id && !x.Oxunub).ToList();
-        foreach (var m in oxunmamislar)
+        // İlk yükləmədə oxunmamışları oxundu et
+        if (beforeId == 0)
         {
-            m.Oxunub = true;
-            m.OxunmaTarixi = DateTime.Now;
-            await _unitOfWork.Repository<ChatMesaj>().YenileAsync(m);
+            var oxunmamislar = mesajlar.Where(x => x.AlanIsciId == menim.Id && !x.Oxunub).ToList();
+            var now = DateTime.Now;
+            foreach (var m in oxunmamislar)
+            {
+                m.Oxunub = true;
+                m.OxunmaTarixi = now;
+                await _unitOfWork.Repository<ChatMesaj>().YenileAsync(m);
+            }
+            if (oxunmamislar.Any())
+                await _unitOfWork.YaddaSaxlaAsync();
         }
-        if (oxunmamislar.Any())
-            await _unitOfWork.YaddaSaxlaAsync();
+
+        var dahaVar = beforeId > 0
+            ? totalCount > MesajLimit
+            : totalCount > mesajlar.Count;
 
         var data = mesajlar.Select(m => new
         {
@@ -105,10 +130,13 @@ public class ChatController : Controller
             saatStr = m.GonderilmeTarixi.ToString("HH:mm"),
             menimdir = m.GonderenIsciId == menim.Id,
             oxunub = m.Oxunub,
-            oxunmaTarixi = m.OxunmaTarixi?.ToString("HH:mm")
+            faylAdi = m.FaylAdi,
+            faylYolu = m.FaylYolu,
+            faylTipi = m.FaylTipi,
+            faylOlcusu = m.FaylOlcusu
         });
 
-        return Json(new { mesajlar = data });
+        return Json(new { mesajlar = data, dahaVar });
     }
 
     // ── POST /User/Chat/Send ───────────────────────────────
@@ -137,6 +165,77 @@ public class ChatController : Controller
         await _unitOfWork.YaddaSaxlaAsync();
 
         return Json(new { ok = true, id = mesaj.Id, tarix = mesaj.GonderilmeTarixi.ToString("HH:mm") });
+    }
+
+    // ── POST /User/Chat/SendWithFile ───────────────────────
+    [HttpPost]
+    public async Task<IActionResult> SendWithFile(int alanIsciId, string? metn, IFormFile? fayl)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var menim = await _unitOfWork.Repository<Isci>()
+            .GetirAsync(x => x.AppUserId == userId && !x.Silinib);
+
+        if (menim == null) return Json(new { ok = false, mesaj = "İşçi tapılmadı" });
+        if (alanIsciId <= 0) return Json(new { ok = false, mesaj = "Alıcı seçilməyib" });
+
+        string? faylAdi = null, faylYolu = null, faylTipi = null;
+        long? faylOlcusu = null;
+
+        if (fayl != null && fayl.Length > 0)
+        {
+            if (fayl.Length > MaxFaylOlcusu)
+                return Json(new { ok = false, mesaj = "Fayl ölçüsü 10MB-dan çox ola bilməz" });
+
+            var ext = Path.GetExtension(fayl.FileName).ToLowerInvariant();
+            if (!IcazaliTipler.Contains(ext))
+                return Json(new { ok = false, mesaj = "Yalnız PDF, Word, Excel faylları qəbul olunur" });
+
+            var uploadsDir = Path.Combine(_env.WebRootPath, "uploads", "chat");
+            Directory.CreateDirectory(uploadsDir);
+
+            var uniqueName = $"{Guid.NewGuid()}{ext}";
+            var fullPath = Path.Combine(uploadsDir, uniqueName);
+
+            using (var stream = new FileStream(fullPath, FileMode.Create))
+            {
+                await fayl.CopyToAsync(stream);
+            }
+
+            faylAdi = fayl.FileName;
+            faylYolu = $"/uploads/chat/{uniqueName}";
+            faylTipi = ext.TrimStart('.');
+            faylOlcusu = fayl.Length;
+        }
+
+        if (string.IsNullOrWhiteSpace(metn) && faylAdi == null)
+            return Json(new { ok = false, mesaj = "Mesaj və ya fayl lazımdır" });
+
+        var mesaj = new ChatMesaj
+        {
+            GonderenIsciId = menim.Id,
+            AlanIsciId = alanIsciId,
+            Metn = metn?.Trim() ?? "",
+            Oxunub = false,
+            GonderilmeTarixi = DateTime.Now,
+            FaylAdi = faylAdi,
+            FaylYolu = faylYolu,
+            FaylTipi = faylTipi,
+            FaylOlcusu = faylOlcusu
+        };
+
+        await _unitOfWork.Repository<ChatMesaj>().YaratAsync(mesaj);
+        await _unitOfWork.YaddaSaxlaAsync();
+
+        return Json(new
+        {
+            ok = true,
+            id = mesaj.Id,
+            tarix = mesaj.GonderilmeTarixi.ToString("HH:mm"),
+            faylAdi,
+            faylYolu,
+            faylTipi,
+            faylOlcusu
+        });
     }
 
     // ── GET /User/Chat/GetDepartments ──────────────────────
@@ -198,12 +297,10 @@ public class ChatController : Controller
 
         if (dto.IsciIdler != null && dto.IsciIdler.Any())
         {
-            // Konkret seçilmiş işçilər
             hederIsciIdler = dto.IsciIdler.Where(id => id != menim.Id).Distinct().ToList();
         }
         else
         {
-            // Departament və ya hamı
             IQueryable<IsciTeyinat> teyinatQuery = _unitOfWork.Repository<IsciTeyinat>()
                 .Query()
                 .Where(t => t.Aktivdir && !t.Isci.Silinib && t.Isci.Status == IsciStatus.Aktiv && t.IsciId != menim.Id);
@@ -241,12 +338,7 @@ public class ChatController : Controller
 
         await _unitOfWork.YaddaSaxlaAsync();
 
-        return Json(new
-        {
-            ok = true,
-            say = hederIsciIdler.Count,
-            tarix = now.ToString("HH:mm")
-        });
+        return Json(new { ok = true, say = hederIsciIdler.Count, tarix = now.ToString("HH:mm") });
     }
 
     // ── POST /User/Chat/MarkAsRead ─────────────────────────
@@ -293,7 +385,6 @@ public class ChatController : Controller
         if (menim == null)
             return Json(new { oxunmuslar = Array.Empty<int>() });
 
-        // Mənim göndərdiyim və qarşı tərəfin oxuduğu mesaj ID-ləri
         var oxunmuslar = await _unitOfWork.Repository<ChatMesaj>()
             .Query()
             .Where(x => x.GonderenIsciId == menim.Id && x.AlanIsciId == isciId && x.Oxunub)
@@ -301,6 +392,41 @@ public class ChatController : Controller
             .ToListAsync();
 
         return Json(new { oxunmuslar });
+    }
+
+    // ── POST /User/Chat/Cleanup ────────────────────────────
+    [HttpPost]
+    public async Task<IActionResult> Cleanup()
+    {
+        var limit = DateTime.Now.AddDays(-KohneMesajGunLimiti);
+
+        var kohneMesajlar = await _unitOfWork.Repository<ChatMesaj>()
+            .Query()
+            .Where(x => x.GonderilmeTarixi < limit)
+            .ToListAsync();
+
+        if (!kohneMesajlar.Any())
+            return Json(new { ok = true, say = 0 });
+
+        // Faylları sil
+        foreach (var m in kohneMesajlar)
+        {
+            if (!string.IsNullOrEmpty(m.FaylYolu))
+            {
+                var fullPath = Path.Combine(_env.WebRootPath, m.FaylYolu.TrimStart('/'));
+                if (System.IO.File.Exists(fullPath))
+                    System.IO.File.Delete(fullPath);
+            }
+        }
+
+        // DB-dən sil (hard delete)
+        foreach (var m in kohneMesajlar)
+        {
+            await _unitOfWork.Repository<ChatMesaj>().DeleteAsync(m.Id);
+        }
+        await _unitOfWork.YaddaSaxlaAsync();
+
+        return Json(new { ok = true, say = kohneMesajlar.Count });
     }
 
     // ── DTOs ────────────────────────────────────────────────
