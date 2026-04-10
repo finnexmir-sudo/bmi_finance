@@ -20,6 +20,8 @@
     display: flex;
     flex-direction: column;
     border-right: 1px solid #e2e6ed;
+    overflow: hidden;
+    min-height: 0;
 }
 
 .chat-sidebar-header {
@@ -79,9 +81,9 @@
 .chat-contact-list {
     flex: 1;
     overflow-y: auto;
-    scrollbar-width: none;
+    min-height: 0;
+    scrollbar-width: thin;
 }
-.chat-contact-list::-webkit-scrollbar { display: none; }
 
 .chat-loading {
     text-align: center;
@@ -156,6 +158,8 @@
     display: flex;
     flex-direction: column;
     background: #f0f2f7;
+    overflow: hidden;
+    min-height: 0;
 }
 
 .chat-main-header {
@@ -193,6 +197,7 @@
     overflow-y: auto;
     padding: 16px;
     display: flex;
+    min-height: 0;
     flex-direction: column;
     gap: 6px;
     background: #f0f2f7;
