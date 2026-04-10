@@ -7,38 +7,59 @@
 
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">Yeni elan yaradin</div>
-            <div class="fn-page-sub">Butun emekdashlara gosterilecek elan</div>
+            <div class="fn-page-title">Yeni elan yaradın</div>
+            <div class="fn-page-sub">Bütün əməkdaşlara göstəriləcək elan</div>
         </div>
         <a asp-area="HR" asp-controller="Elan" asp-action="Index"
            class="fn-btn fn-btn--outline">&#8592; Geri</a>
     </div>
 
     <div class="fn-form-wrap">
-        <form asp-area="HR" asp-controller="Elan" asp-action="Create" method="post">
+        <form asp-area="HR" asp-controller="Elan" asp-action="Create" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
 
             <div class="fn-card fn-card--form">
 
-                @* ── Bashliq ── *@
+                @* ── Başlıq ── *@
                 <div class="fn-form-group">
                     <label class="fn-label">
-                        Bashliq <span class="fn-required">*</span>
+                        Başlıq <span class="fn-required">*</span>
                     </label>
                     <input type="text" name="Bashliq" class="fn-input" required
-                           placeholder="Elan bashligi..." />
+                           placeholder="Elan başlığı..." />
                 </div>
 
-                @* ── Metn ── *@
+                @* ── Mətn ── *@
                 <div class="fn-form-group">
                     <label class="fn-label">
-                        Metn <span class="fn-required">*</span>
+                        Mətn <span class="fn-required">*</span>
                     </label>
                     <textarea name="Metn" class="fn-input" rows="5" required
-                              placeholder="Elan metni..."></textarea>
+                              placeholder="Elan mətni..."></textarea>
                 </div>
 
-                @* ── Vacibdir + Bitirme tarixi ── *@
+                @* ── Şəkil (banner) ── *@
+                <div class="fn-form-group">
+                    <label class="fn-label">
+                        Şəkil / Banner
+                        <span class="fn-label-hint">(JPG, PNG, GIF — max 10MB)</span>
+                    </label>
+                    <input type="file" name="sekil" class="fn-input" accept=".jpg,.jpeg,.png,.gif,.webp" />
+                    <div class="elan-upload-preview" id="sekilPreview" style="display:none">
+                        <img id="sekilImg" alt="preview" />
+                    </div>
+                </div>
+
+                @* ── Sənəd əlavəsi ── *@
+                <div class="fn-form-group">
+                    <label class="fn-label">
+                        Sənəd əlavəsi
+                        <span class="fn-label-hint">(PDF, Word, Excel — max 10MB)</span>
+                    </label>
+                    <input type="file" name="fayl" class="fn-input" accept=".pdf,.doc,.docx,.xls,.xlsx" />
+                </div>
+
+                @* ── Vacibdir + Bitmə tarixi ── *@
                 <div class="fn-form-row">
                     <div class="fn-form-group">
                         <label class="fn-label">Vacib elan</label>
@@ -49,17 +70,17 @@
                     </div>
                     <div class="fn-form-group">
                         <label class="fn-label">
-                            Bitirme tarixi
-                            <span class="fn-label-hint">(bosh = muddetsiz)</span>
+                            Bitmə tarixi
+                            <span class="fn-label-hint">(boş = müddətsiz)</span>
                         </label>
                         <input type="date" name="BitirmeTarixi" class="fn-input" />
                     </div>
                 </div>
 
-                @* ── Duymeler ── *@
+                @* ── Düymələr ── *@
                 <div class="fn-form-actions">
                     <a asp-area="HR" asp-controller="Elan" asp-action="Index"
-                       class="fn-btn fn-btn--outline">Legv et</a>
+                       class="fn-btn fn-btn--outline">Ləğv et</a>
                     <button type="submit" class="fn-btn fn-btn--primary">
                         Elan yarat
                     </button>
@@ -71,4 +92,22 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/hr/elan.css" asp-append-version="true" />
+}
+
+@section Scripts {
+<script>
+    // Şəkil preview
+    document.querySelector('input[name="sekil"]').addEventListener('change', function () {
+        var file = this.files[0];
+        var preview = document.getElementById('sekilPreview');
+        var img = document.getElementById('sekilImg');
+        if (file && file.type.startsWith('image/')) {
+            var reader = new FileReader();
+            reader.onload = function (e) { img.src = e.target.result; preview.style.display = 'block'; };
+            reader.readAsDataURL(file);
+        } else {
+            preview.style.display = 'none';
+        }
+    });
+</script>
 }
