@@ -146,6 +146,9 @@ public class ChatController : Controller
         if (string.IsNullOrWhiteSpace(dto?.Metn) || dto.AlanIsciId <= 0)
             return Json(new { ok = false });
 
+        if (dto.Metn.Length > 250)
+            dto.Metn = dto.Metn[..250];
+
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var menim = await _unitOfWork.Repository<Isci>()
             .GetirAsync(x => x.AppUserId == userId && !x.Silinib);

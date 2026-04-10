@@ -535,8 +535,16 @@
     // ══════════════════════════════════════════════════════
 
     document.getElementById('btnSend').addEventListener('click', sendMessage);
-    document.getElementById('chatInput').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
+
+    // Enter = göndər, Shift+Enter = yeni sətir
+    document.getElementById('chatInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+
+    // Textarea avtomatik böyüsün
+    document.getElementById('chatInput').addEventListener('input', function () {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 100) + 'px';
     });
 
     document.getElementById('btnTopluMesaj').addEventListener('click', openBulkModal);
