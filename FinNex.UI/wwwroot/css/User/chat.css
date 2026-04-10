@@ -363,6 +363,13 @@
 .chat-input {
     flex: 1;
     font-size: 13px;
+    resize: none;
+    overflow-y: hidden;
+    min-height: 34px;
+    max-height: 100px;
+    line-height: 1.4;
+    padding: 7px 12px;
+    font-family: inherit;
 }
 
 .chat-send-btn {
