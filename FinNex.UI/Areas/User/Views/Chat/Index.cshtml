@@ -69,15 +69,26 @@
         </div>
         <div class="chat-modal-body">
             <div class="fn-form-group">
-                <label class="fn-label">Hədəf</label>
-                <select id="bulkTarget" class="fn-input chat-bulk-select">
-                    <option value="all">Bütün işçilər</option>
-                </select>
+                <label class="fn-label">Alıcılar</label>
+                <div class="bulk-filter-row">
+                    <select id="bulkTarget" class="fn-input chat-bulk-select">
+                        <option value="all">Bütün işçilər</option>
+                    </select>
+                    <input type="text" id="bulkSearch" class="fn-input" placeholder="İşçi axtar..." />
+                </div>
+                <div class="bulk-actions-row">
+                    <button type="button" class="fn-btn fn-btn--sm bulk-select-all" id="btnSelectAll">Hamısını seç</button>
+                    <button type="button" class="fn-btn fn-btn--sm bulk-deselect-all" id="btnDeselectAll">Hamısını sil</button>
+                    <span class="bulk-count" id="bulkCount">0 seçili</span>
+                </div>
+                <div class="bulk-employee-list" id="bulkEmployeeList">
+                    <div class="chat-loading">Yüklənir...</div>
+                </div>
             </div>
             <div class="fn-form-group">
-                <label class="fn-label">Mesaj mətni</label>
+                <label class="fn-label">Mesaj mətni <span class="fn-required">*</span></label>
                 <textarea id="bulkMetn" class="fn-input chat-bulk-textarea"
-                          rows="4" placeholder="Mesajınızı yazın..."></textarea>
+                          rows="3" placeholder="Mesajınızı yazın..."></textarea>
             </div>
         </div>
         <div class="chat-modal-footer">
