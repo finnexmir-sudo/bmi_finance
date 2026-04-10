@@ -1,38 +1,12 @@
-// ── User Chat JS (SignalR) ────────────────────────────────
+// ── User Chat JS (AJAX Polling) ───────────────────────────
 
 (function () {
     'use strict';
 
     var menimIsciId = 0;
     var secilmisIsciId = 0;
-
-    // ── SignalR Connection ───────────────────────────────
-    var connection = new signalR.HubConnectionBuilder()
-        .withUrl("/chatHub")
-        .withAutomaticReconnect()
-        .build();
-
-    connection.on("ReceiveMessage", function (data) {
-        // If this message is from the currently selected contact, append it
-        if (data.gonderenIsciId === secilmisIsciId) {
-            appendMessage(data.metn, data.tarix, false);
-            scrollToBottom();
-            // Mark as read
-            connection.invoke("MarkAsRead", data.gonderenIsciId).catch(function () { });
-        }
-        // Update unread badge
-        updateContactUnread(data.gonderenIsciId);
-    });
-
-    connection.on("MessageSent", function (data) {
-        // Confirmation of sent message - already appended locally
-    });
-
-    connection.start()
-        .then(function () { console.log('SignalR bağlandı'); })
-        .catch(function (err) {
-            console.error('SignalR bağlantı xətası:', err);
-        });
+    var pollTimer = null;
+    var lastMesajId = 0;
 
     // ── Load Contacts ───────────────────────────────────
     function loadContacts() {
@@ -45,7 +19,7 @@
             })
             .catch(function () {
                 document.getElementById('contactList').innerHTML =
-                    '<div class="chat-loading">Xeta bash verdi</div>';
+                    '<div class="chat-loading">Xəta baş verdi</div>';
             });
     }
 
@@ -53,7 +27,7 @@
         var list = document.getElementById('contactList');
 
         if (!contacts || contacts.length === 0) {
-            list.innerHTML = '<div class="chat-loading">Kontakt tapilmadi</div>';
+            list.innerHTML = '<div class="chat-loading">Kontakt tapılmadı</div>';
             return;
         }
 
@@ -73,13 +47,9 @@
 
         list.innerHTML = html;
 
-        // Attach click events
-        var items = list.querySelectorAll('.chat-contact');
-        items.forEach(function (item) {
+        list.querySelectorAll('.chat-contact').forEach(function (item) {
             item.addEventListener('click', function () {
-                var isciId = parseInt(this.dataset.isciId);
-                var ad = this.dataset.ad;
-                selectContact(isciId, ad, this);
+                selectContact(parseInt(this.dataset.isciId), this.dataset.ad, this);
             });
         });
     }
@@ -89,42 +59,40 @@
         secilmisIsciId = isciId;
         document.getElementById('secilmisIsciId').value = isciId;
 
-        // Highlight
         document.querySelectorAll('.chat-contact').forEach(function (c) {
             c.classList.remove('chat-contact--active');
         });
         if (el) el.classList.add('chat-contact--active');
 
-        // Show header
-        var header = document.getElementById('chatHeader');
-        header.style.display = 'flex';
+        document.getElementById('chatHeader').style.display = 'flex';
         document.getElementById('chatName').textContent = ad;
         var initials = ad.split(' ').map(function (w) { return w[0] || ''; }).join('').substring(0, 2);
         document.getElementById('chatAvatar').textContent = initials.toUpperCase();
-
-        // Show input
         document.getElementById('chatInputArea').style.display = 'flex';
 
-        // Remove unread badge
         var badge = document.querySelector('[data-unread-id="' + isciId + '"]');
         if (badge) badge.remove();
 
-        // Load messages
+        lastMesajId = 0;
         loadMessages(isciId);
+        startPolling();
     }
 
     // ── Load Messages ───────────────────────────────────
     function loadMessages(isciId) {
         var container = document.getElementById('chatMessages');
-        container.innerHTML = '<div class="chat-loading">Yuklenir...</div>';
+        container.innerHTML = '<div class="chat-loading" style="color:#94a3b8">Yüklənir...</div>';
 
         fetch('/User/Chat/GetMessages?isciId=' + isciId)
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 renderMessages(data.mesajlar);
+                if (data.mesajlar && data.mesajlar.length > 0) {
+                    lastMesajId = data.mesajlar[data.mesajlar.length - 1].id;
+                }
             })
             .catch(function () {
-                container.innerHTML = '<div class="chat-loading">Xeta bash verdi</div>';
+                container.innerHTML = '<div class="chat-loading" style="color:#dc2626">Xəta baş verdi</div>';
             });
     }
 
@@ -132,7 +100,7 @@
         var container = document.getElementById('chatMessages');
 
         if (!mesajlar || mesajlar.length === 0) {
-            container.innerHTML = '<div class="chat-empty-state"><div class="chat-empty-title">Hele mesaj yoxdur</div><div class="chat-empty-sub">Ilk mesaji gonderin</div></div>';
+            container.innerHTML = '<div class="chat-empty-state"><div class="chat-empty-title">Hələ mesaj yoxdur</div><div class="chat-empty-sub">İlk mesajı göndərin</div></div>';
             return;
         }
 
@@ -145,7 +113,6 @@
                 html += '<div class="chat-date-sep">' + msgDate + '</div>';
                 lastDate = msgDate;
             }
-
             var cls = m.menimdir ? 'chat-msg--mine' : 'chat-msg--other';
             html += '<div class="chat-msg ' + cls + '">';
             html += '<div>' + escHtml(m.metn) + '</div>';
@@ -159,7 +126,6 @@
 
     function appendMessage(metn, tarix, isMine) {
         var container = document.getElementById('chatMessages');
-        // Remove empty state if present
         var empty = container.querySelector('.chat-empty-state');
         if (empty) empty.remove();
 
@@ -171,79 +137,78 @@
     }
 
     function scrollToBottom() {
-        var container = document.getElementById('chatMessages');
-        container.scrollTop = container.scrollHeight;
+        var c = document.getElementById('chatMessages');
+        c.scrollTop = c.scrollHeight;
     }
 
-    // ── Send Message ────────────────────────────────────
+    // ── Send Message (AJAX POST) ────────────────────────
     function sendMessage() {
         var input = document.getElementById('chatInput');
         var metn = input.value.trim();
-
         if (!metn || !secilmisIsciId) return;
 
-        // Append locally immediately
         var now = new Date();
         var saatStr = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
         appendMessage(metn, saatStr, true);
         scrollToBottom();
         input.value = '';
 
-        // Send via SignalR
-        connection.invoke("SendMessage", secilmisIsciId, metn).catch(function (err) {
-            console.error('Mesaj gonderme xetasi:', err);
+        fetch('/User/Chat/Send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alanIsciId: secilmisIsciId, metn: metn })
+        }).catch(function (err) {
+            console.error('Mesaj göndərmə xətası:', err);
         });
     }
 
-    // ── Update unread badge ─────────────────────────────
-    function updateContactUnread(isciId) {
-        if (isciId === secilmisIsciId) return;
-
-        var badge = document.querySelector('[data-unread-id="' + isciId + '"]');
-        if (badge) {
-            var count = parseInt(badge.textContent) + 1;
-            badge.textContent = count;
-        } else {
-            var contact = document.querySelector('[data-isci-id="' + isciId + '"]');
-            if (contact) {
-                var newBadge = document.createElement('div');
-                newBadge.className = 'chat-contact-unread';
-                newBadge.setAttribute('data-unread-id', isciId);
-                newBadge.textContent = '1';
-                contact.appendChild(newBadge);
-            }
-        }
+    // ── Polling: hər 3 saniyədə yeni mesaj yoxla ────────
+    function startPolling() {
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(function () {
+            if (!secilmisIsciId) return;
+            fetch('/User/Chat/GetMessages?isciId=' + secilmisIsciId)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data.mesajlar || data.mesajlar.length === 0) return;
+                    var sonMesaj = data.mesajlar[data.mesajlar.length - 1];
+                    if (sonMesaj.id > lastMesajId) {
+                        // Yeni mesajlar var
+                        var yeniMesajlar = data.mesajlar.filter(function (m) { return m.id > lastMesajId; });
+                        yeniMesajlar.forEach(function (m) {
+                            if (!m.menimdir) {
+                                appendMessage(m.metn, m.saatStr, false);
+                            }
+                        });
+                        lastMesajId = sonMesaj.id;
+                        scrollToBottom();
+                    }
+                })
+                .catch(function () { });
+        }, 3000);
     }
 
     // ── Search Contacts ─────────────────────────────────
-    function filterContacts() {
-        var term = document.getElementById('contactSearch').value.toLowerCase();
-        var items = document.querySelectorAll('.chat-contact');
-        items.forEach(function (item) {
-            var name = item.dataset.ad.toLowerCase();
-            item.style.display = name.includes(term) ? '' : 'none';
+    document.getElementById('contactSearch').addEventListener('input', function () {
+        var term = this.value.toLowerCase();
+        document.querySelectorAll('.chat-contact').forEach(function (item) {
+            item.style.display = item.dataset.ad.toLowerCase().includes(term) ? '' : 'none';
         });
-    }
+    });
 
     // ── Helpers ─────────────────────────────────────────
     function escHtml(str) {
         if (!str) return '';
-        var div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
+        var d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
     }
 
-    // ── Event Listeners ─────────────────────────────────
+    // ── Events ──────────────────────────────────────────
     document.getElementById('btnSend').addEventListener('click', sendMessage);
-
     document.getElementById('chatInput').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            sendMessage();
-        }
+        if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
     });
-
-    document.getElementById('contactSearch').addEventListener('input', filterContacts);
 
     // Init
     loadContacts();
