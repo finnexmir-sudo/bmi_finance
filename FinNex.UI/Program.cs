@@ -200,31 +200,22 @@ namespace FinNex.UI
                 }
                 catch { /* artıq tətbiq olunub */ }
 
-                var pendingMigrations = db.Database.GetPendingMigrations().ToList();
-                var productVersion = typeof(DbContext).Assembly.GetName().Version?.ToString() ?? "9.0.0";
-
-                foreach (var migration in pendingMigrations)
+                // Avtomatik migration — sadəcə Migrate() çağır, xəta olsa logla amma crash etmə
+                try
                 {
-                    try
+                    var pending = db.Database.GetPendingMigrations().ToList();
+                    if (pending.Any())
                     {
+                        Console.WriteLine($"[Migration] {pending.Count} pending migration tapıldı: {string.Join(", ", pending)}");
                         db.Database.Migrate();
-                        break;
+                        Console.WriteLine("[Migration] Bütün migration-lar uğurla tətbiq olundu.");
                     }
-                    catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 2714 or 3701 or 1913 or 2627 or 4901 or 1801)
-                    {
-                        // Məlum SQL xətaları: artıq var, yoxdur, duplicate key, alter column
-                        db.Database.ExecuteSqlRaw(
-                            "IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory] WHERE [MigrationId] = {0}) INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES ({0}, {1})",
-                            migration, productVersion);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Gözlənilməyən xəta — migration-ı skip et, app crash olmasın
-                        Console.WriteLine($"Migration xətası ({migration}): {ex.Message}");
-                        db.Database.ExecuteSqlRaw(
-                            "IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory] WHERE [MigrationId] = {0}) INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES ({0}, {1})",
-                            migration, productVersion);
-                    }
+                }
+                catch (Exception ex)
+                {
+                    // Migration xətası app-ı crash etməsin — amma logla
+                    Console.WriteLine($"[Migration XƏTA] {ex.Message}");
+                    Console.WriteLine($"[Migration XƏTA] Əl ilə 'Update-Database' və ya SQL script işlədin.");
                 }
             }
 
