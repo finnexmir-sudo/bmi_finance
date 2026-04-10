@@ -131,4 +131,4 @@ checkXatirlatma();
 checkChatUnread();
 setInterval(checkNotifs, 30000);
 setInterval(checkXatirlatma, 30000);
-setInterval(checkChatUnread, 15000);
+setInterval(checkChatUnread, 30000);
