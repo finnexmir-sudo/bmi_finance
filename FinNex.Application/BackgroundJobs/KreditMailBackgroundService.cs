@@ -106,7 +106,15 @@ namespace FinNex.Infrastructure.BackgroundJobs
                         continue;
                     }
 
-                    var body = message.TextBody ?? message.HtmlBody ?? "";
+                    var body = message.TextBody;
+                    if (string.IsNullOrWhiteSpace(body))
+                    {
+                        // HTML gəlirsə, tag-ları sil
+                        body = message.HtmlBody ?? "";
+                        body = Regex.Replace(body, @"<br\s*/?>", "\n", RegexOptions.IgnoreCase);
+                        body = Regex.Replace(body, @"<[^>]+>", "", RegexOptions.Compiled);
+                        body = System.Net.WebUtility.HtmlDecode(body);
+                    }
                     var muraciet = ParseMailBody(body, messageId);
 
                     if (muraciet != null)
@@ -175,7 +183,12 @@ namespace FinNex.Infrastructure.BackgroundJobs
         private static string? ExtractField(string body, string pattern)
         {
             var match = Regex.Match(body, pattern, RegexOptions.IgnoreCase | RegexOptions.Multiline);
-            return match.Success ? match.Groups[1].Value.Trim() : null;
+            if (!match.Success) return null;
+            // Yalnız ilk sətri götür, \n-dən sonrasını kəs
+            var val = match.Groups[1].Value.Trim();
+            var nlIdx = val.IndexOfAny(new[] { '\n', '\r' });
+            if (nlIdx > 0) val = val[..nlIdx].Trim();
+            return val.Length > 500 ? val[..500] : val;
         }
     }
 }
