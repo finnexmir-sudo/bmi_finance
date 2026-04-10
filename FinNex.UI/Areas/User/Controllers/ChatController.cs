@@ -106,4 +106,38 @@ public class ChatController : Controller
 
         return Json(new { mesajlar = data });
     }
+
+    // ── POST /User/Chat/Send ───────────────────────────────
+    [HttpPost]
+    public async Task<IActionResult> Send([FromBody] ChatSendDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto?.Metn) || dto.AlanIsciId <= 0)
+            return Json(new { ok = false });
+
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var menim = await _unitOfWork.Repository<Isci>()
+            .GetirAsync(x => x.AppUserId == userId && !x.Silinib);
+
+        if (menim == null) return Json(new { ok = false });
+
+        var mesaj = new ChatMesaj
+        {
+            GonderenIsciId = menim.Id,
+            AlanIsciId = dto.AlanIsciId,
+            Metn = dto.Metn.Trim(),
+            Oxunub = false,
+            GonderilmeTarixi = DateTime.Now
+        };
+
+        await _unitOfWork.Repository<ChatMesaj>().YaratAsync(mesaj);
+        await _unitOfWork.YaddaSaxlaAsync();
+
+        return Json(new { ok = true, id = mesaj.Id, tarix = mesaj.GonderilmeTarixi.ToString("HH:mm") });
+    }
+
+    public class ChatSendDto
+    {
+        public int AlanIsciId { get; set; }
+        public string Metn { get; set; } = "";
+    }
 }
