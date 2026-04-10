@@ -15,9 +15,12 @@ namespace FinNex.Domain.Entities.Communication
         public DateTime GonderilmeTarixi { get; set; } = DateTime.Now;
         public DateTime? OxunmaTarixi { get; set; }
 
-        /// <summary>
-        /// Toplu mesajları qruplaşdırmaq üçün. Eyni qrup ID-li mesajlar bir toplu göndərişdəndir.
-        /// </summary>
         public Guid? TopluMesajGrupId { get; set; }
+
+        // Fayl əlavəsi
+        public string? FaylAdi { get; set; }
+        public string? FaylYolu { get; set; }
+        public long? FaylOlcusu { get; set; }
+        public string? FaylTipi { get; set; }
     }
 }
