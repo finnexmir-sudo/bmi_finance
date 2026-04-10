@@ -84,9 +84,11 @@ public class ChatHub : Hub
                                   && x.AlanIsciId == alanIsci.Id
                                   && !x.Oxunub);
 
+        var now = DateTime.Now;
         foreach (var m in oxunmamis)
         {
             m.Oxunub = true;
+            m.OxunmaTarixi = now;
             await _unitOfWork.Repository<ChatMesaj>().YenileAsync(m);
         }
         await _unitOfWork.YaddaSaxlaAsync();
