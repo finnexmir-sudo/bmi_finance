@@ -1,7 +1,10 @@
+using FinNex.Domain.Entities.HR;
+
 namespace FinNex.Domain.Entities.Kredit
 {
     public class KreditMuraciet : BaseEntity
     {
+        // Müştəri məlumatları
         public string AdSoyadAtaAdi { get; set; } = null!;
         public string? FIN { get; set; }
         public decimal KreditMeblegi { get; set; }
@@ -17,18 +20,25 @@ namespace FinNex.Domain.Entities.Kredit
         public string? IP { get; set; }
         public string? MailMessageId { get; set; }
 
-        // Status
+        // Status + qiymətləndirmə
         public KreditMuracietStatus Status { get; set; } = KreditMuracietStatus.Yeni;
         public string? Qeyd { get; set; }
         public int? BaxanIsciId { get; set; }
+        public Isci? BaxanIsci { get; set; }
         public DateTime? BaxilmaTarixi { get; set; }
+
+        // Komitə
+        public string? KomiteQerari { get; set; }
+        public string? KomiteProtokolNo { get; set; }
+        public DateTime? KomiteQerarTarixi { get; set; }
     }
 
     public enum KreditMuracietStatus
     {
         Yeni = 0,
-        Baxilir = 1,
-        Tesdiqlenib = 2,
-        ReddEdilib = 3
+        Yoxlanilir = 1,
+        KomiteyeGonderildi = 2,
+        Tesdiqlenib = 3,
+        ReddEdilib = 4
     }
 }

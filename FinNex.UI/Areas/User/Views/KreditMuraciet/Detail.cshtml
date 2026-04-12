@@ -3,19 +3,23 @@
 @{
     ViewData["Title"] = "Müraciət #" + Model.Id;
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-    var statusCls = Model.Status switch {
-        KreditMuracietStatus.Yeni => "km-status--yeni",
-        KreditMuracietStatus.Baxilir => "km-status--baxilir",
-        KreditMuracietStatus.Tesdiqlenib => "km-status--tesdiq",
-        KreditMuracietStatus.ReddEdilib => "km-status--redd",
-        _ => ""
-    };
-    var statusTxt = Model.Status switch {
+    var tarixce = ViewBag.Tarixce as List<KreditMuraciet> ?? new List<KreditMuraciet>();
+
+    string StatusText(KreditMuracietStatus s) => s switch {
         KreditMuracietStatus.Yeni => "Yeni",
-        KreditMuracietStatus.Baxilir => "Baxılır",
+        KreditMuracietStatus.Yoxlanilir => "Yoxlanılır",
+        KreditMuracietStatus.KomiteyeGonderildi => "Komitəyə göndərildi",
         KreditMuracietStatus.Tesdiqlenib => "Təsdiqlənib",
         KreditMuracietStatus.ReddEdilib => "Rədd edilib",
         _ => "-"
+    };
+    string StatusCls(KreditMuracietStatus s) => s switch {
+        KreditMuracietStatus.Yeni => "km-status--yeni",
+        KreditMuracietStatus.Yoxlanilir => "km-status--baxilir",
+        KreditMuracietStatus.KomiteyeGonderildi => "km-status--komite",
+        KreditMuracietStatus.Tesdiqlenib => "km-status--tesdiq",
+        KreditMuracietStatus.ReddEdilib => "km-status--redd",
+        _ => ""
     };
 }
 
@@ -24,7 +28,7 @@
     <div class="fn-page-head">
         <div>
             <div class="fn-page-title">Müraciət #@Model.Id</div>
-            <div class="fn-page-sub">@Model.MuracietTarixi.ToString("dd MMMM yyyy, HH:mm")</div>
+            <div class="fn-page-sub">@Model.MuracietTarixi.ToString("dd.MM.yyyy HH:mm")</div>
         </div>
         <div style="display:flex;gap:8px">
             <a asp-action="Index" class="fn-btn fn-btn--outline">← Geri</a>
@@ -39,118 +43,128 @@
         <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
     }
 
-    @* ── Status badge ── *@
     <div style="margin-bottom:16px">
-        <span class="km-status @statusCls" style="font-size:14px;padding:6px 16px">@statusTxt</span>
+        <span class="km-status @StatusCls(Model.Status)" style="font-size:14px;padding:6px 16px">@StatusText(Model.Status)</span>
+        @if (Model.BaxanIsci != null)
+        {
+            <span style="font-size:12px;color:#64748b;margin-left:10px">
+                Baxan: @Model.BaxanIsci.Ad @Model.BaxanIsci.Soyad — @Model.BaxilmaTarixi?.ToString("dd.MM.yyyy HH:mm")
+            </span>
+        }
     </div>
 
+    @* ══════ FİN Tarixçəsi ══════ *@
+    @if (tarixce.Any())
+    {
+        <div class="fn-card km-tarixce-card">
+            <div class="km-detail-section-title km-tarixce-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                Bu FİN ilə əvvəlki müraciətlər (@tarixce.Count)
+            </div>
+            <table class="km-tarixce-table">
+                <thead>
+                    <tr><th>Tarix</th><th>Məbləğ</th><th>Müddət</th><th>Nəticə</th><th>Qeyd</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in tarixce)
+                    {
+                        <tr>
+                            <td>@t.MuracietTarixi.ToString("dd.MM.yyyy")</td>
+                            <td class="km-td-amount">@t.KreditMeblegi.ToString("N0") @t.Valyuta</td>
+                            <td>@t.KreditMuddeti</td>
+                            <td><span class="km-status @StatusCls(t.Status)">@StatusText(t.Status)</span></td>
+                            <td>@(t.Qeyd ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(Model.FIN))
+    {
+        <div class="fn-card" style="padding:14px 20px;margin-bottom:16px;background:#f0fdf4;border-color:#bbf7d0">
+            <span style="color:#16a34a;font-size:13px;font-weight:600">✓ Bu FİN ilə əvvəlki müraciət yoxdur</span>
+        </div>
+    }
+
+    @* ══════ Əsas məlumatlar ══════ *@
     <div class="km-detail-grid">
 
-        @* ── Müştəri ── *@
         <div class="fn-card km-detail-card">
             <div class="km-detail-section-title">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                 </svg>
                 Müştəri məlumatları
             </div>
-
-            <div class="km-detail-row">
-                <span class="km-detail-label">Ad, Soyad, Ata adı</span>
-                <span class="km-detail-value km-val-bold">@Model.AdSoyadAtaAdi</span>
-            </div>
-            <div class="km-detail-row">
-                <span class="km-detail-label">FİN</span>
-                <span class="km-detail-value">@(Model.FIN ?? "—")</span>
-            </div>
-            <div class="km-detail-row">
-                <span class="km-detail-label">Telefon</span>
-                <span class="km-detail-value">@(Model.Telefon ?? "—")</span>
-            </div>
-            <div class="km-detail-row">
-                <span class="km-detail-label">İş yeri</span>
-                <span class="km-detail-value">@(Model.IsYeri ?? "—")</span>
-            </div>
-            <div class="km-detail-row">
-                <span class="km-detail-label">Əmək haqqı</span>
-                <span class="km-detail-value">@(Model.EmekHaqqi?.ToString("N0") ?? "—") AZN</span>
-            </div>
+            <div class="km-detail-row"><span class="km-detail-label">Ad, Soyad, Ata adı</span><span class="km-detail-value km-val-bold">@Model.AdSoyadAtaAdi</span></div>
+            <div class="km-detail-row"><span class="km-detail-label">FİN</span><span class="km-detail-value">@(Model.FIN ?? "—")</span></div>
+            <div class="km-detail-row"><span class="km-detail-label">Telefon</span><span class="km-detail-value">@(Model.Telefon ?? "—")</span></div>
+            <div class="km-detail-row"><span class="km-detail-label">İş yeri</span><span class="km-detail-value">@(Model.IsYeri ?? "—")</span></div>
+            <div class="km-detail-row"><span class="km-detail-label">Əmək haqqı</span><span class="km-detail-value">@(Model.EmekHaqqi?.ToString("N0") ?? "—") AZN</span></div>
         </div>
 
-        @* ── Kredit ── *@
         <div class="fn-card km-detail-card">
             <div class="km-detail-section-title">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                    <line x1="1" y1="10" x2="23" y2="10"/>
+                    <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
                 </svg>
                 Kredit məlumatları
             </div>
+            <div class="km-detail-row"><span class="km-detail-label">Kredit məbləği</span><span class="km-detail-value km-val-amount">@Model.KreditMeblegi.ToString("N0") @Model.Valyuta</span></div>
+            <div class="km-detail-row"><span class="km-detail-label">Müddət</span><span class="km-detail-value">@(Model.KreditMuddeti ?? "—")</span></div>
+            <div class="km-detail-row"><span class="km-detail-label">Məqsəd</span><span class="km-detail-value">@(Model.Meqsed ?? "—")</span></div>
+            <div class="km-detail-row"><span class="km-detail-label">IP ünvan</span><span class="km-detail-value km-val-muted">@(Model.IP ?? "—")</span></div>
 
-            <div class="km-detail-row">
-                <span class="km-detail-label">Kredit məbləği</span>
-                <span class="km-detail-value km-val-amount">@Model.KreditMeblegi.ToString("N0") @Model.Valyuta</span>
-            </div>
-            <div class="km-detail-row">
-                <span class="km-detail-label">Müddət</span>
-                <span class="km-detail-value">@(Model.KreditMuddeti ?? "—")</span>
-            </div>
-            <div class="km-detail-row">
-                <span class="km-detail-label">Məqsəd</span>
-                <span class="km-detail-value">@(Model.Meqsed ?? "—")</span>
-            </div>
-            <div class="km-detail-row">
-                <span class="km-detail-label">IP ünvan</span>
-                <span class="km-detail-value km-val-muted">@(Model.IP ?? "—")</span>
-            </div>
-
-            @if (!string.IsNullOrEmpty(Model.Qeyd))
+            @if (!string.IsNullOrEmpty(Model.KomiteProtokolNo))
             {
                 <div class="km-detail-divider"></div>
-                <div class="km-detail-row">
-                    <span class="km-detail-label">Qeyd</span>
-                    <span class="km-detail-value">@Model.Qeyd</span>
-                </div>
+                <div class="km-detail-row"><span class="km-detail-label">Protokol №</span><span class="km-detail-value">@Model.KomiteProtokolNo</span></div>
+                <div class="km-detail-row"><span class="km-detail-label">Komitə qərarı</span><span class="km-detail-value">@Model.KomiteQerari</span></div>
+                <div class="km-detail-row"><span class="km-detail-label">Qərar tarixi</span><span class="km-detail-value">@Model.KomiteQerarTarixi?.ToString("dd.MM.yyyy HH:mm")</span></div>
             }
         </div>
     </div>
 
-    @* ── Status dəyişmə ── *@
+    @* ══════ Status dəyişmə ══════ *@
     <div class="fn-card km-action-card">
         <div class="km-detail-section-title">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="9 11 12 14 22 4"/>
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
             </svg>
-            Status dəyiş
+            Qiymətləndir
         </div>
         <form asp-action="ChangeStatus" method="post">
             <input type="hidden" name="id" value="@Model.Id" />
-            <div class="km-action-row">
-                <select name="yeniStatus" class="fn-input km-action-select">
-                    @{
-                        var statuses = new[] {
-                            (0, "Yeni"),
-                            (1, "Baxılır"),
-                            (2, "Təsdiqlənib"),
-                            (3, "Rədd edilib")
-                        };
-                    }
-                    @foreach (var (val, txt) in statuses)
-                    {
-                        if ((int)Model.Status == val)
-                        {
-                            <option value="@val" selected="selected">@txt</option>
+            <div class="km-action-grid">
+                <div class="fn-form-group">
+                    <label class="fn-label">Status</label>
+                    <select name="yeniStatus" class="fn-input">
+                        @{
+                            var statuses = new[] { (0,"Yeni"), (1,"Yoxlanılır"), (2,"Komitəyə göndər"), (3,"Təsdiqlə"), (4,"Rədd et") };
                         }
-                        else
+                        @foreach (var (val, txt) in statuses)
                         {
-                            <option value="@val">@txt</option>
+                            if ((int)Model.Status == val)
+                            { <option value="@val" selected="selected">@txt</option> }
+                            else
+                            { <option value="@val">@txt</option> }
                         }
-                    }
-                </select>
-                <input type="text" name="qeyd" class="fn-input km-action-input" placeholder="Qeyd yazın..."
-                       value="@Model.Qeyd" />
+                    </select>
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Protokol № <span class="fn-label-hint">(komitə üçün)</span></label>
+                    <input type="text" name="komiteProtokolNo" class="fn-input" placeholder="Protokol nömrəsi..."
+                           value="@Model.KomiteProtokolNo" />
+                </div>
+                <div class="fn-form-group" style="grid-column:1/-1">
+                    <label class="fn-label">Qeyd</label>
+                    <textarea name="qeyd" class="fn-input" rows="2" placeholder="Qiymətləndirmə qeydi...">@Model.Qeyd</textarea>
+                </div>
+            </div>
+            <div style="margin-top:12px;text-align:right">
                 <button type="submit" class="fn-btn fn-btn--primary">Yadda saxla</button>
             </div>
         </form>
