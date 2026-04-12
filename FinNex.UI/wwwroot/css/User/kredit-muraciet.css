@@ -258,6 +258,83 @@
     border-top: 1px solid #f1f5f9;
 }
 
+/* ── İşçi Rəyi Kartı ───────────────────────── */
+.km-isci-reyi {
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    background: #f0f4ff;
+    border-color: #c7d2fe;
+}
+.km-reyi-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.km-reyi-icon { font-size: 22px; }
+.km-reyi-title { font-size: 13px; font-weight: 700; color: #1a2332; }
+.km-reyi-meta { font-size: 11px; color: #64748b; }
+.km-reyi-text {
+    font-size: 13px;
+    color: #1e293b;
+    background: #fff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    line-height: 1.6;
+}
+
+/* ── MKR/Asan Placeholder ──────────────────── */
+.km-placeholder-card { padding: 20px; }
+.km-placeholder-text {
+    font-size: 13px;
+    color: #94a3b8;
+    text-align: center;
+    padding: 24px 16px;
+    background: #f8f9fb;
+    border-radius: 8px;
+    border: 2px dashed #e2e6ed;
+}
+
+/* ── Komitə Qərar Kartı ───────────────────── */
+.km-qerar-card {
+    padding: 24px;
+    border: 2px solid #7c3aed;
+    border-radius: 14px;
+}
+.km-qerar-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.km-qerar-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+.km-btn-tesdiq {
+    background: #16a34a;
+    color: #fff;
+    padding: 10px 32px;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.km-btn-tesdiq:hover { background: #15803d; }
+.km-btn-redd {
+    background: #dc2626;
+    color: #fff;
+    padding: 10px 32px;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.km-btn-redd:hover { background: #b91c1c; }
+
 /* ── Responsive ────────────────────────────── */
 @media (max-width: 768px) {
     .km-detail-grid { grid-template-columns: 1fr; }
