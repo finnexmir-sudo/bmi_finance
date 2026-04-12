@@ -21,54 +21,56 @@
 }
 .km-filter-btn:hover { background: #eef0f4; color: #1a2332; text-decoration: none; }
 .km-filter-btn--active { background: #1a2332; color: #e8b84b; border-color: #1a2332; }
-.km-filter-btn--active:hover { background: #243040; }
 
 .km-filter-count {
+    display: inline-block;
     background: rgba(0,0,0,0.1);
-    padding: 1px 6px;
+    padding: 1px 7px;
     border-radius: 10px;
     font-size: 10px;
-    margin-left: 4px;
+    margin-left: 3px;
+}
+.km-filter-count--yeni {
+    background: #dc2626;
+    color: #fff;
 }
 
 /* ── Table ─────────────────────────────────── */
-.km-table-wrap {
-    overflow-x: auto;
-}
-
 .km-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: 13px;
 }
 
 .km-table thead th {
-    padding: 10px 12px;
+    padding: 12px 14px;
     background: #f8f9fb;
     color: #64748b;
     font-weight: 600;
+    font-size: 11px;
     text-align: left;
     border-bottom: 2px solid #e2e6ed;
-    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
-.km-table tbody tr {
+.km-row {
     border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
     transition: background 0.1s;
 }
-.km-table tbody tr:hover { background: #fafbfc; }
+.km-row:hover { background: #fafbfc; }
 
 .km-table tbody td {
-    padding: 10px 12px;
+    padding: 12px 14px;
     color: #1a2332;
-    max-width: 180px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
+.km-td-id { color: #94a3b8; font-size: 11px; }
 .km-td-name { font-weight: 700; }
 .km-td-amount { font-weight: 700; color: #16a34a; }
+.km-td-amount small { font-weight: 400; color: #94a3b8; font-size: 10px; }
+.km-td-date { font-size: 11px; color: #64748b; white-space: nowrap; }
 
 /* ── Status Badges ─────────────────────────── */
 .km-status {
@@ -77,6 +79,7 @@
     border-radius: 20px;
     font-size: 11px;
     font-weight: 700;
+    white-space: nowrap;
 }
 
 .km-status--yeni { background: #dbeafe; color: #1d4ed8; }
@@ -90,12 +93,9 @@
     font-weight: 600;
     color: #e8b84b;
     text-decoration: none;
-    padding: 4px 10px;
-    border-radius: 6px;
-    border: 1px solid #e8b84b;
-    transition: all 0.15s;
+    white-space: nowrap;
 }
-.km-detail-btn:hover { background: #e8b84b; color: #1a1200; text-decoration: none; }
+.km-detail-btn:hover { color: #c9900a; text-decoration: none; }
 
 /* ── Detail Page ───────────────────────────── */
 .km-detail-grid {
@@ -105,14 +105,17 @@
     margin-bottom: 16px;
 }
 
-.km-detail-card { padding: 20px; }
+.km-detail-card { padding: 24px; }
 
 .km-detail-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 14px;
     font-weight: 700;
     color: #1a2332;
-    margin-bottom: 16px;
-    padding-bottom: 8px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
     border-bottom: 2px solid #e8b84b;
 }
 
@@ -120,14 +123,17 @@
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    padding: 8px 0;
+    padding: 10px 0;
     border-bottom: 1px solid #f5f6f8;
+    gap: 16px;
 }
+.km-detail-row:last-child { border-bottom: none; }
 
 .km-detail-label {
     font-size: 12px;
     color: #64748b;
     font-weight: 500;
+    flex-shrink: 0;
 }
 
 .km-detail-value {
@@ -135,10 +141,12 @@
     color: #1a2332;
     font-weight: 600;
     text-align: right;
+    word-break: break-word;
 }
 
-.km-detail-value--bold { font-size: 15px; font-weight: 800; }
-.km-detail-value--amount { font-size: 18px; font-weight: 800; color: #16a34a; }
+.km-val-bold { font-size: 16px; font-weight: 800; }
+.km-val-amount { font-size: 20px; font-weight: 800; color: #16a34a; }
+.km-val-muted { font-size: 11px; color: #94a3b8; font-weight: 400; }
 
 .km-detail-divider {
     height: 1px;
@@ -147,7 +155,7 @@
 }
 
 /* ── Action Card ───────────────────────────── */
-.km-action-card { padding: 20px; }
+.km-action-card { padding: 24px; }
 
 .km-action-row {
     display: flex;
@@ -155,14 +163,12 @@
     align-items: center;
 }
 
-.km-action-select {
-    width: 180px;
-    flex-shrink: 0;
-}
+.km-action-select { width: 160px; flex-shrink: 0; }
+.km-action-input { flex: 1; }
 
 /* ── Responsive ────────────────────────────── */
 @media (max-width: 768px) {
     .km-detail-grid { grid-template-columns: 1fr; }
     .km-action-row { flex-direction: column; }
-    .km-action-select { width: 100%; }
+    .km-action-select, .km-action-input { width: 100%; }
 }

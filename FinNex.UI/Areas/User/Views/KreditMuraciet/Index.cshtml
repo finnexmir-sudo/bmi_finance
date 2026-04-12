@@ -4,6 +4,7 @@
     ViewData["Title"] = "Kredit Müraciətləri";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     var secilmis = ViewBag.SecilmisStatus as int?;
+    var yeniSay = Model.Count(x => x.Status == KreditMuracietStatus.Yeni);
 }
 
 <div class="fn-page">
@@ -11,7 +12,7 @@
     <div class="fn-page-head">
         <div>
             <div class="fn-page-title">Kredit Müraciətləri</div>
-            <div class="fn-page-sub">Online kredit sifarişləri</div>
+            <div class="fn-page-sub">Online kredit sifarişləri — @Model.Count müraciət</div>
         </div>
     </div>
 
@@ -20,16 +21,16 @@
         <a href="@Url.Action("Index")" class="km-filter-btn @(secilmis == null ? "km-filter-btn--active" : "")">
             Hamısı <span class="km-filter-count">@Model.Count</span>
         </a>
-        <a href="@Url.Action("Index", new { status = 0 })" class="km-filter-btn km-filter-btn--yeni @(secilmis == 0 ? "km-filter-btn--active" : "")">
-            Yeni
+        <a href="@Url.Action("Index", new { status = 0 })" class="km-filter-btn @(secilmis == 0 ? "km-filter-btn--active" : "")">
+            Yeni @if(yeniSay > 0) { <span class="km-filter-count km-filter-count--yeni">@yeniSay</span> }
         </a>
-        <a href="@Url.Action("Index", new { status = 1 })" class="km-filter-btn km-filter-btn--baxilir @(secilmis == 1 ? "km-filter-btn--active" : "")">
+        <a href="@Url.Action("Index", new { status = 1 })" class="km-filter-btn @(secilmis == 1 ? "km-filter-btn--active" : "")">
             Baxılır
         </a>
-        <a href="@Url.Action("Index", new { status = 2 })" class="km-filter-btn km-filter-btn--tesdiq @(secilmis == 2 ? "km-filter-btn--active" : "")">
+        <a href="@Url.Action("Index", new { status = 2 })" class="km-filter-btn @(secilmis == 2 ? "km-filter-btn--active" : "")">
             Təsdiqlənib
         </a>
-        <a href="@Url.Action("Index", new { status = 3 })" class="km-filter-btn km-filter-btn--redd @(secilmis == 3 ? "km-filter-btn--active" : "")">
+        <a href="@Url.Action("Index", new { status = 3 })" class="km-filter-btn @(secilmis == 3 ? "km-filter-btn--active" : "")">
             Rədd edilib
         </a>
     </div>
@@ -43,56 +44,52 @@
     }
     else
     {
-        <div class="fn-card">
-            <div class="km-table-wrap">
-                <table class="km-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Ad Soyad</th>
-                            <th>FİN</th>
-                            <th>Məbləğ</th>
-                            <th>Müddət</th>
-                            <th>Telefon</th>
-                            <th>Tarix</th>
-                            <th>Status</th>
-                            <th></th>
+        <div class="fn-card" style="padding:0;overflow:hidden">
+            <table class="km-table">
+                <thead>
+                    <tr>
+                        <th style="width:50px">#</th>
+                        <th>Ad Soyad</th>
+                        <th>Məbləğ</th>
+                        <th>Müddət</th>
+                        <th>Telefon</th>
+                        <th>Tarix</th>
+                        <th>Status</th>
+                        <th style="width:60px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in Model)
+                    {
+                        var statusCls = m.Status switch {
+                            KreditMuracietStatus.Yeni => "km-status--yeni",
+                            KreditMuracietStatus.Baxilir => "km-status--baxilir",
+                            KreditMuracietStatus.Tesdiqlenib => "km-status--tesdiq",
+                            KreditMuracietStatus.ReddEdilib => "km-status--redd",
+                            _ => ""
+                        };
+                        var statusTxt = m.Status switch {
+                            KreditMuracietStatus.Yeni => "Yeni",
+                            KreditMuracietStatus.Baxilir => "Baxılır",
+                            KreditMuracietStatus.Tesdiqlenib => "Təsdiqlənib",
+                            KreditMuracietStatus.ReddEdilib => "Rədd",
+                            _ => "-"
+                        };
+                        <tr class="km-row" onclick="location.href='@Url.Action("Detail", new { id = m.Id })'">
+                            <td class="km-td-id">@m.Id</td>
+                            <td class="km-td-name">@m.AdSoyadAtaAdi</td>
+                            <td class="km-td-amount">@m.KreditMeblegi.ToString("N0") <small>@m.Valyuta</small></td>
+                            <td>@m.KreditMuddeti</td>
+                            <td>@m.Telefon</td>
+                            <td class="km-td-date">@m.MuracietTarixi.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td><span class="km-status @statusCls">@statusTxt</span></td>
+                            <td>
+                                <a asp-action="Detail" asp-route-id="@m.Id" class="km-detail-btn">Bax →</a>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var m in Model)
-                        {
-                            var statusCls = m.Status switch {
-                                KreditMuracietStatus.Yeni => "km-status--yeni",
-                                KreditMuracietStatus.Baxilir => "km-status--baxilir",
-                                KreditMuracietStatus.Tesdiqlenib => "km-status--tesdiq",
-                                KreditMuracietStatus.ReddEdilib => "km-status--redd",
-                                _ => ""
-                            };
-                            var statusTxt = m.Status switch {
-                                KreditMuracietStatus.Yeni => "Yeni",
-                                KreditMuracietStatus.Baxilir => "Baxılır",
-                                KreditMuracietStatus.Tesdiqlenib => "Təsdiqlənib",
-                                KreditMuracietStatus.ReddEdilib => "Rədd",
-                                _ => "-"
-                            };
-                            <tr>
-                                <td>@m.Id</td>
-                                <td class="km-td-name">@m.AdSoyadAtaAdi</td>
-                                <td>@m.FIN</td>
-                                <td class="km-td-amount">@m.KreditMeblegi.ToString("N0") @m.Valyuta</td>
-                                <td>@m.KreditMuddeti</td>
-                                <td>@m.Telefon</td>
-                                <td>@m.MuracietTarixi.ToString("dd.MM.yyyy HH:mm")</td>
-                                <td><span class="km-status @statusCls">@statusTxt</span></td>
-                                <td>
-                                    <a asp-action="Detail" asp-route-id="@m.Id" class="km-detail-btn">Bax</a>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                    }
+                </tbody>
+            </table>
         </div>
     }
 </div>

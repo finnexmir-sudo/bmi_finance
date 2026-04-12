@@ -109,12 +109,10 @@ namespace FinNex.Infrastructure.BackgroundJobs
                     var body = message.TextBody;
                     if (string.IsNullOrWhiteSpace(body))
                     {
-                        // HTML gəlirsə, tag-ları sil
                         body = message.HtmlBody ?? "";
-                        body = Regex.Replace(body, @"<br\s*/?>", "\n", RegexOptions.IgnoreCase);
-                        body = Regex.Replace(body, @"<[^>]+>", "", RegexOptions.Compiled);
-                        body = System.Net.WebUtility.HtmlDecode(body);
                     }
+                    // Hər halda HTML-i təmizlə
+                    body = CleanHtml(body);
                     var muraciet = ParseMailBody(body, messageId);
 
                     if (muraciet != null)
@@ -180,15 +178,35 @@ namespace FinNex.Infrastructure.BackgroundJobs
             return muraciet;
         }
 
+        private static string CleanHtml(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+            // <br> → yeni sətir
+            text = Regex.Replace(text, @"<br\s*/?>", "\n", RegexOptions.IgnoreCase);
+            // <p>, <div> → yeni sətir
+            text = Regex.Replace(text, @"</(p|div|tr|li)>", "\n", RegexOptions.IgnoreCase);
+            // Bütün HTML tag-larını sil
+            text = Regex.Replace(text, @"<[^>]+>", " ", RegexOptions.Compiled);
+            // HTML entity decode
+            text = System.Net.WebUtility.HtmlDecode(text);
+            // Çoxlu boşluqları tək boşluğa
+            text = Regex.Replace(text, @"[ \t]+", " ");
+            // Çoxlu yeni sətirləri tək sətirə
+            text = Regex.Replace(text, @"\n\s*\n+", "\n");
+            return text.Trim();
+        }
+
         private static string? ExtractField(string body, string pattern)
         {
             var match = Regex.Match(body, pattern, RegexOptions.IgnoreCase | RegexOptions.Multiline);
             if (!match.Success) return null;
-            // Yalnız ilk sətri götür, \n-dən sonrasını kəs
             var val = match.Groups[1].Value.Trim();
+            // Yalnız ilk sətri götür
             var nlIdx = val.IndexOfAny(new[] { '\n', '\r' });
             if (nlIdx > 0) val = val[..nlIdx].Trim();
-            return val.Length > 500 ? val[..500] : val;
+            // Artıq boşluqları təmizlə
+            val = Regex.Replace(val, @"\s+", " ").Trim();
+            return val.Length > 200 ? val[..200] : val;
         }
     }
 }
