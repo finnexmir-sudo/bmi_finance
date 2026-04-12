@@ -129,10 +129,25 @@
             <input type="hidden" name="id" value="@Model.Id" />
             <div class="km-action-row">
                 <select name="yeniStatus" class="fn-input km-action-select">
-                    <option value="0" @(Model.Status == KreditMuracietStatus.Yeni ? "selected" : "")>Yeni</option>
-                    <option value="1" @(Model.Status == KreditMuracietStatus.Baxilir ? "selected" : "")>Baxılır</option>
-                    <option value="2" @(Model.Status == KreditMuracietStatus.Tesdiqlenib ? "selected" : "")>Təsdiqlənib</option>
-                    <option value="3" @(Model.Status == KreditMuracietStatus.ReddEdilib ? "selected" : "")>Rədd edilib</option>
+                    @{
+                        var statuses = new[] {
+                            (0, "Yeni"),
+                            (1, "Baxılır"),
+                            (2, "Təsdiqlənib"),
+                            (3, "Rədd edilib")
+                        };
+                    }
+                    @foreach (var (val, txt) in statuses)
+                    {
+                        if ((int)Model.Status == val)
+                        {
+                            <option value="@val" selected="selected">@txt</option>
+                        }
+                        else
+                        {
+                            <option value="@val">@txt</option>
+                        }
+                    }
                 </select>
                 <input type="text" name="qeyd" class="fn-input km-action-input" placeholder="Qeyd yazın..."
                        value="@Model.Qeyd" />
