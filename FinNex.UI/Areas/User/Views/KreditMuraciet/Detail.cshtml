@@ -171,6 +171,22 @@
             {
                 <div class="km-detail-row"><span class="km-detail-label">Protokol №</span><span class="km-detail-value">@Model.KomiteProtokolNo</span></div>
             }
+            @if (Model.TesdiqMebleg.HasValue)
+            {
+                <div class="km-detail-row"><span class="km-detail-label">Təsdiq məbləği</span><span class="km-detail-value km-val-amount">@Model.TesdiqMebleg.Value.ToString("N0") @Model.Valyuta</span></div>
+            }
+            @if (!string.IsNullOrEmpty(Model.TesdiqMuddet))
+            {
+                <div class="km-detail-row"><span class="km-detail-label">Müddət</span><span class="km-detail-value">@Model.TesdiqMuddet</span></div>
+            }
+            @if (Model.FaizDerecesi.HasValue)
+            {
+                <div class="km-detail-row"><span class="km-detail-label">Faiz dərəcəsi</span><span class="km-detail-value">@Model.FaizDerecesi.Value.ToString("N1")%</span></div>
+            }
+            @if (!string.IsNullOrEmpty(Model.Teminat))
+            {
+                <div class="km-detail-row"><span class="km-detail-label">Təminat</span><span class="km-detail-value">@Model.Teminat</span></div>
+            }
             @if (Model.KomiteQerarTarixi.HasValue)
             {
                 <div class="km-detail-row"><span class="km-detail-label">Qərar tarixi</span><span class="km-detail-value">@Model.KomiteQerarTarixi.Value.ToString("dd.MM.yyyy HH:mm")</span></div>
