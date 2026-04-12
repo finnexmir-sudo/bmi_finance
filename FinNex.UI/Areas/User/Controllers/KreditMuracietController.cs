@@ -2,6 +2,9 @@ using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.Kredit;
 using FinNex.Domain.Interfaces;
+using MailKit;
+using MailKit.Net.Imap;
+using MailKit.Search;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,10 +17,12 @@ namespace FinNex.UI.Areas.User.Controllers;
 public class KreditMuracietController : Controller
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IConfiguration _config;
 
-    public KreditMuracietController(IUnitOfWork unitOfWork)
+    public KreditMuracietController(IUnitOfWork unitOfWork, IConfiguration config)
     {
         _unitOfWork = unitOfWork;
+        _config = config;
     }
 
     private async Task<Isci?> GetCurrentIsciAsync()
@@ -75,6 +80,12 @@ public class KreditMuracietController : Controller
                 .OrderByDescending(x => x.MuracietTarixi)
                 .ToListAsync()
             : new List<KreditMuraciet>();
+
+        // Mail-i oxunmuş et (arxa planda, səhifəni yavaşlatmır)
+        if (!string.IsNullOrEmpty(muraciet.MailMessageId))
+        {
+            _ = Task.Run(() => MarkMailAsReadAsync(muraciet.MailMessageId));
+        }
 
         ViewData["Title"] = "Müraciət #" + id;
         return View(muraciet);
@@ -215,5 +226,35 @@ public class KreditMuracietController : Controller
         }
         TempData["Success"] = "Müraciət silindi.";
         return RedirectToAction("Index");
+    }
+
+    // ── Mail-i IMAP-da oxunmuş et ──────────────────────────
+    private async Task MarkMailAsReadAsync(string messageId)
+    {
+        try
+        {
+            var server = _config["KreditMail:ImapServer"] ?? "imap.titan.email";
+            var port = _config.GetValue("KreditMail:Port", 993);
+            var email = _config["KreditMail:Email"] ?? "";
+            var password = _config["KreditMail:Password"] ?? "";
+
+            if (string.IsNullOrEmpty(password) || password == "PAROL_BURA_YAZIN") return;
+
+            using var client = new ImapClient();
+            await client.ConnectAsync(server, port, true);
+            await client.AuthenticateAsync(email, password);
+
+            var inbox = client.Inbox;
+            await inbox.OpenAsync(FolderAccess.ReadWrite);
+
+            var uids = await inbox.SearchAsync(SearchQuery.HeaderContains("Message-Id", messageId));
+            foreach (var uid in uids)
+            {
+                await inbox.AddFlagsAsync(uid, MessageFlags.Seen, true);
+            }
+
+            await client.DisconnectAsync(true);
+        }
+        catch { /* sessiz xəta — mail oxunmuş olmasa da problem deyil */ }
     }
 }
