@@ -46,6 +46,11 @@
 }
 
 /* ── Table ─────────────────────────────────── */
+.km-table-wrap {
+    overflow-x: auto;
+    width: 100%;
+}
+
 .km-table {
     width: 100%;
     border-collapse: collapse;

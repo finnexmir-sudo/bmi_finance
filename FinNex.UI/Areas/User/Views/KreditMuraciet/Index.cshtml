@@ -5,8 +5,6 @@
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     var secilmis = ViewBag.SecilmisStatus as int?;
     var saylar = ViewBag.StatusSaylari as Dictionary<int, int> ?? new Dictionary<int, int>();
-    var komiteSay = saylar.GetValueOrDefault(2);
-    var yeniSay = saylar.GetValueOrDefault(0);
 }
 
 <div class="fn-page">
@@ -27,24 +25,12 @@
     </div>
 
     <div class="km-filters">
-        <a href="@Url.Action("Index")" class="km-filter-btn @(secilmis == null ? "km-filter-btn--active" : "")">
-            Hamısı (@Model.Count)
-        </a>
-        <a href="@Url.Action("Index", new { status = 0 })" class="km-filter-btn @(secilmis == 0 ? "km-filter-btn--active" : "")">
-            Yeni (@yeniSay)
-        </a>
-        <a href="@Url.Action("Index", new { status = 1 })" class="km-filter-btn @(secilmis == 1 ? "km-filter-btn--active" : "")">
-            Yoxlanılır
-        </a>
-        <a href="@Url.Action("Index", new { status = 2 })" class="km-filter-btn @(secilmis == 2 ? "km-filter-btn--active" : "")">
-            Komitə (@komiteSay)
-        </a>
-        <a href="@Url.Action("Index", new { status = 3 })" class="km-filter-btn @(secilmis == 3 ? "km-filter-btn--active" : "")">
-            Təsdiqlənib
-        </a>
-        <a href="@Url.Action("Index", new { status = 4 })" class="km-filter-btn @(secilmis == 4 ? "km-filter-btn--active" : "")">
-            Rədd
-        </a>
+        <a href="@Url.Action("Index")" class="km-filter-btn @(secilmis == null ? "km-filter-btn--active" : "")">Hamısı (@Model.Count)</a>
+        <a href="@Url.Action("Index", new { status = 0 })" class="km-filter-btn @(secilmis == 0 ? "km-filter-btn--active" : "")">Yeni (@saylar.GetValueOrDefault(0))</a>
+        <a href="@Url.Action("Index", new { status = 1 })" class="km-filter-btn @(secilmis == 1 ? "km-filter-btn--active" : "")">Yoxlanılır</a>
+        <a href="@Url.Action("Index", new { status = 2 })" class="km-filter-btn @(secilmis == 2 ? "km-filter-btn--active" : "")">Komitə (@saylar.GetValueOrDefault(2))</a>
+        <a href="@Url.Action("Index", new { status = 3 })" class="km-filter-btn @(secilmis == 3 ? "km-filter-btn--active" : "")">Təsdiqlənib</a>
+        <a href="@Url.Action("Index", new { status = 4 })" class="km-filter-btn @(secilmis == 4 ? "km-filter-btn--active" : "")">Rədd</a>
     </div>
 
     @if (!Model.Any())
@@ -57,64 +43,50 @@
     else
     {
         <div class="fn-card" style="padding:0;overflow:hidden">
-            <table class="km-table">
-                <thead>
-                    <tr>
-                        <th style="width:50px">#</th>
-                        <th>Ad Soyad</th>
-                        <th>Məbləğ</th>
-                        <th>Müddət</th>
-                        <th>Telefon</th>
-                        <th>Tarix</th>
-                        <th>Status</th>
-                        <th style="width:60px"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var m in Model)
-                    {
-                        <tr class="km-row" onclick="location.href='@Url.Action("Detail", new { id = m.Id })'">
-                            <td class="km-td-id">@m.Id</td>
-                            <td class="km-td-name">
-                                @if (m.AdSoyadAtaAdi.Length > 40)
-                                {
-                                    @m.AdSoyadAtaAdi.Substring(0, 40)@:...
-                                }
-                                else
-                                {
-                                    @m.AdSoyadAtaAdi
-                                }
-                            </td>
-                            <td class="km-td-amount">@m.KreditMeblegi.ToString("N0") <small>@m.Valyuta</small></td>
-                            <td>@(m.KreditMuddeti?.Length > 15 ? m.KreditMuddeti.Substring(0, 15) : m.KreditMuddeti)</td>
-                            <td>@(m.Telefon?.Length > 15 ? m.Telefon.Substring(0, 15) : m.Telefon)</td>
-                            <td class="km-td-date">@m.MuracietTarixi.ToString("dd.MM.yyyy HH:mm")</td>
-                            <td>
-                                @{
-                                    var sTxt = m.Status switch {
-                                        KreditMuracietStatus.Yeni => "Yeni",
-                                        KreditMuracietStatus.Yoxlanilir => "Yoxlanılır",
-                                        KreditMuracietStatus.KomiteyeGonderildi => "Komitə",
-                                        KreditMuracietStatus.Tesdiqlenib => "Təsdiq",
-                                        KreditMuracietStatus.ReddEdilib => "Rədd",
-                                        _ => "-"
-                                    };
-                                    var sCls = m.Status switch {
-                                        KreditMuracietStatus.Yeni => "km-status--yeni",
-                                        KreditMuracietStatus.Yoxlanilir => "km-status--baxilir",
-                                        KreditMuracietStatus.KomiteyeGonderildi => "km-status--komite",
-                                        KreditMuracietStatus.Tesdiqlenib => "km-status--tesdiq",
-                                        KreditMuracietStatus.ReddEdilib => "km-status--redd",
-                                        _ => ""
-                                    };
-                                }
-                                <span class="km-status @sCls">@sTxt</span>
-                            </td>
-                            <td><a asp-action="Detail" asp-route-id="@m.Id" class="km-detail-btn">Bax →</a></td>
+            <div class="km-table-wrap">
+                <table class="km-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Ad Soyad</th>
+                            <th>Məbləğ</th>
+                            <th>Müddət</th>
+                            <th>Telefon</th>
+                            <th>Tarix</th>
+                            <th>Status</th>
+                            <th></th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in Model)
+                        {
+                            var ad = m.AdSoyadAtaAdi.Length > 35 ? m.AdSoyadAtaAdi.Substring(0, 35) + "..." : m.AdSoyadAtaAdi;
+                            var tel = (m.Telefon ?? "").Length > 15 ? m.Telefon!.Substring(0, 15) : (m.Telefon ?? "—");
+                            var mud = (m.KreditMuddeti ?? "").Length > 12 ? m.KreditMuddeti!.Substring(0, 12) : (m.KreditMuddeti ?? "—");
+                            var statusAd = "";
+                            var statusCls = "";
+                            switch (m.Status)
+                            {
+                                case KreditMuracietStatus.Yeni: statusAd = "Yeni"; statusCls = "km-status--yeni"; break;
+                                case KreditMuracietStatus.Yoxlanilir: statusAd = "Yoxlanılır"; statusCls = "km-status--baxilir"; break;
+                                case KreditMuracietStatus.KomiteyeGonderildi: statusAd = "Komitə"; statusCls = "km-status--komite"; break;
+                                case KreditMuracietStatus.Tesdiqlenib: statusAd = "Təsdiq"; statusCls = "km-status--tesdiq"; break;
+                                case KreditMuracietStatus.ReddEdilib: statusAd = "Rədd"; statusCls = "km-status--redd"; break;
+                            }
+                            <tr class="km-row" onclick="location.href='@Url.Action("Detail", new { id = m.Id })'">
+                                <td class="km-td-id">@m.Id</td>
+                                <td class="km-td-name">@ad</td>
+                                <td class="km-td-amount">@m.KreditMeblegi.ToString("N0") <small>@m.Valyuta</small></td>
+                                <td>@mud</td>
+                                <td>@tel</td>
+                                <td class="km-td-date">@m.MuracietTarixi.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td><span class="km-status @statusCls">@statusAd</span></td>
+                                <td><a asp-action="Detail" asp-route-id="@m.Id" class="km-detail-btn">Bax</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     }
 </div>
@@ -125,11 +97,11 @@
 
 @section Scripts {
 <script>
-    document.getElementById('kmSearch').addEventListener('input', function () {
-        var term = this.value.toLowerCase();
-        document.querySelectorAll('.km-row').forEach(function (row) {
-            row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
-        });
+document.getElementById('kmSearch').addEventListener('input', function () {
+    var t = this.value.toLowerCase();
+    document.querySelectorAll('.km-row').forEach(function (r) {
+        r.style.display = r.textContent.toLowerCase().indexOf(t) >= 0 ? '' : 'none';
     });
+});
 </script>
 }
