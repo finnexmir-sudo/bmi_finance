@@ -533,27 +533,39 @@
                     Elanlar
                 </a>
 
-                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Index"
-                   class="fn-nav-item @(currentController == "KreditMuraciet" ? "active" : "")">
-                    <div class="fn-nav-icon">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <rect x="2" y="1.5" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
-                            <path d="M5 5h4M5 7.5h4M5 10h2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
-                        </svg>
-                    </div>
-                    Kredit Müraciətləri
-                </a>
+                @* ═══════════════════════════════════════════════════
+                   KREDİT DP
+                   ═══════════════════════════════════════════════════ *@
+                <div class="fn-nav-label">Kredit</div>
 
-                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Komite"
-                   class="fn-nav-item @(currentController == "KreditMuraciet" && currentAction == "Komite" ? "active" : "")">
-                    <div class="fn-nav-icon">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/>
-                            <path d="M5 7l1.5 1.5L9 5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <div class="fn-nav-group @(currentController == "KreditMuraciet" ? "open" : "")">
+                    <div class="fn-nav-group-toggle">
+                        <div class="fn-nav-icon">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <rect x="1" y="3" width="12" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+                                <path d="M1 6h12" stroke="currentColor" stroke-width="1"/>
+                            </svg>
+                        </div>
+                        Kredit DP
+                        <svg class="fn-nav-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none">
+                            <path d="M3 4l2 2 2-2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                         </svg>
                     </div>
-                    Kredit Komitəsi
-                </a>
+                    <div class="fn-nav-group-items">
+                        <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Index"
+                           class="fn-nav-item @(currentController == "KreditMuraciet" && currentAction == "Index" ? "active" : "")">
+                            Müraciətlər
+                        </a>
+                        <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Komite"
+                           class="fn-nav-item @(currentController == "KreditMuraciet" && currentAction == "Komite" ? "active" : "")">
+                            Kredit Komitəsi
+                        </a>
+                        <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Qerarlar"
+                           class="fn-nav-item @(currentController == "KreditMuraciet" && currentAction == "Qerarlar" ? "active" : "")">
+                            Komitə Qərarları
+                        </a>
+                    </div>
+                </div>
 
             </nav>
 

@@ -39,9 +39,10 @@
                         <th>FİN</th>
                         <th>Məbləğ</th>
                         <th>Protokol №</th>
+                        <th>Təsdiq məbləğ</th>
+                        <th>Faiz</th>
                         <th>Qərar</th>
                         <th>Qərar tarixi</th>
-                        <th>Qeyd</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -55,9 +56,10 @@
                             <td>@(m.FIN ?? "—")</td>
                             <td class="km-td-amount">@m.KreditMeblegi.ToString("N0") <small>@m.Valyuta</small></td>
                             <td>@(m.KomiteProtokolNo ?? "—")</td>
+                            <td class="km-td-amount">@(m.TesdiqMebleg?.ToString("N0") ?? "—")</td>
+                            <td>@(m.FaizDerecesi?.ToString("N1") ?? "—")%</td>
                             <td><span class="km-status @cls">@txt</span></td>
                             <td class="km-td-date">@m.KomiteQerarTarixi?.ToString("dd.MM.yyyy HH:mm")</td>
-                            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">@(m.Qeyd ?? "—")</td>
                         </tr>
                     }
                 </tbody>
