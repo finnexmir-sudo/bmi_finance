@@ -247,14 +247,22 @@ public class KreditMuracietController : Controller
             var inbox = client.Inbox;
             await inbox.OpenAsync(FolderAccess.ReadWrite);
 
-            var uids = await inbox.SearchAsync(SearchQuery.HeaderContains("Message-Id", messageId));
+            // Subject ilə axtar
+            var uids = await inbox.SearchAsync(SearchQuery.SubjectContains("Online Kredit").And(SearchQuery.NotSeen));
+
             foreach (var uid in uids)
             {
-                await inbox.AddFlagsAsync(uid, MessageFlags.Seen, true);
+                var msg = await inbox.GetMessageAsync(uid);
+                var msgId = msg.MessageId ?? "";
+                if (msgId == messageId || uid.ToString() == messageId)
+                {
+                    await inbox.AddFlagsAsync(uid, MessageFlags.Seen, true);
+                    break;
+                }
             }
 
             await client.DisconnectAsync(true);
         }
-        catch { /* sessiz xəta — mail oxunmuş olmasa da problem deyil */ }
+        catch { }
     }
 }
