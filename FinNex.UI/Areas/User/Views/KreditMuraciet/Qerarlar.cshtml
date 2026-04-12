@@ -21,6 +21,10 @@
         <a asp-action="Index" class="fn-btn fn-btn--outline">← Bütün müraciətlər</a>
     </div>
 
+    <div class="km-search-bar">
+        <input type="text" id="kmSearch" class="fn-input" placeholder="Ad, FİN və ya protokol ilə axtar..." />
+    </div>
+
     @if (!Model.Any())
     {
         <div class="fn-empty-state">
@@ -70,4 +74,15 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/User/kredit-muraciet.css" asp-append-version="true" />
+}
+
+@section Scripts {
+<script>
+document.getElementById('kmSearch').addEventListener('input', function () {
+    var t = this.value.toLowerCase();
+    document.querySelectorAll('.km-row').forEach(function (r) {
+        r.style.display = r.textContent.toLowerCase().indexOf(t) >= 0 ? '' : 'none';
+    });
+});
+</script>
 }
