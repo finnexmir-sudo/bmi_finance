@@ -327,6 +327,12 @@
     gap: 12px;
     margin-bottom: 16px;
 }
+.km-qerar-grid-4 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
 .km-qerar-buttons {
     display: flex;
     gap: 12px;
@@ -360,4 +366,5 @@
     .km-detail-grid { grid-template-columns: 1fr; }
     .km-action-row { flex-direction: column; }
     .km-action-select, .km-action-input { width: 100%; }
+    .km-qerar-grid-4 { grid-template-columns: 1fr 1fr; }
 }

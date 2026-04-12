@@ -27,10 +27,16 @@ namespace FinNex.Domain.Entities.Kredit
         public Isci? BaxanIsci { get; set; }
         public DateTime? BaxilmaTarixi { get; set; }
 
-        // Komitə
+        // Komitə qərarı
         public string? KomiteQerari { get; set; }
         public string? KomiteProtokolNo { get; set; }
         public DateTime? KomiteQerarTarixi { get; set; }
+
+        // Təsdiq şərtləri (komitə qərar verəndə)
+        public decimal? TesdiqMebleg { get; set; }
+        public string? TesdiqMuddet { get; set; }
+        public decimal? FaizDerecesi { get; set; }
+        public string? Teminat { get; set; }
     }
 
     public enum KreditMuracietStatus

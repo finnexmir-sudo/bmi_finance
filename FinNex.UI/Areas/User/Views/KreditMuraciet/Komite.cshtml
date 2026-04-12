@@ -1,7 +1,10 @@
 @model List<FinNex.Domain.Entities.Kredit.KreditMuraciet>
+@using FinNex.Domain.Entities.Kredit
 @{
     ViewData["Title"] = "Kredit Komitəsi";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var gozlemede = Model.Count(x => x.Status == KreditMuracietStatus.KomiteyeGonderildi);
+    var qerarVerilmis = Model.Count(x => x.Status == KreditMuracietStatus.Tesdiqlenib || x.Status == KreditMuracietStatus.ReddEdilib);
 }
 
 <div class="fn-page">
@@ -9,10 +12,18 @@
     <div class="fn-page-head">
         <div>
             <div class="fn-page-title">Kredit Komitəsi</div>
-            <div class="fn-page-sub">Qərar gözləyən müraciətlər — @Model.Count ədəd</div>
+            <div class="fn-page-sub">
+                Gözləmədə: <strong>@gozlemede</strong> ·
+                Bu gün qərar verilmiş: <strong>@qerarVerilmis</strong>
+            </div>
         </div>
-        <a asp-action="Index" class="fn-btn fn-btn--outline">← Bütün müraciətlər</a>
+        <a asp-action="Index" class="fn-btn fn-btn--outline">← Müraciətlər</a>
     </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Success"]</div>
+    }
 
     @if (!Model.Any())
     {
@@ -24,39 +35,48 @@
     else
     {
         <div class="fn-card" style="padding:0;overflow:hidden">
-            <table class="km-table">
-                <thead>
-                    <tr>
-                        <th style="width:50px">#</th>
-                        <th>Ad Soyad</th>
-                        <th>FİN</th>
-                        <th>Məbləğ</th>
-                        <th>Müddət</th>
-                        <th>Əmək haqqı</th>
-                        <th>Yoxlayan</th>
-                        <th>Göndərilmə tarixi</th>
-                        <th style="width:100px"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var m in Model)
-                    {
-                        <tr class="km-row">
-                            <td class="km-td-id">@m.Id</td>
-                            <td class="km-td-name">@m.AdSoyadAtaAdi</td>
-                            <td>@(m.FIN ?? "—")</td>
-                            <td class="km-td-amount">@m.KreditMeblegi.ToString("N0") <small>@m.Valyuta</small></td>
-                            <td>@m.KreditMuddeti</td>
-                            <td>@(m.EmekHaqqi?.ToString("N0") ?? "—") AZN</td>
-                            <td>@(m.BaxanIsci != null ? $"{m.BaxanIsci.Ad} {m.BaxanIsci.Soyad}" : "—")</td>
-                            <td class="km-td-date">@m.BaxilmaTarixi?.ToString("dd.MM.yyyy HH:mm")</td>
-                            <td>
-                                <a asp-action="KomiteDetail" asp-route-id="@m.Id" class="fn-btn fn-btn--primary fn-btn--sm">Qərar ver</a>
-                            </td>
+            <div class="km-table-wrap">
+                <table class="km-table">
+                    <thead>
+                        <tr>
+                            <th style="width:40px">#</th>
+                            <th style="width:22%">Ad Soyad</th>
+                            <th>Məbləğ</th>
+                            <th>Müddət</th>
+                            <th>Əmək haqqı</th>
+                            <th>Yoxlayan</th>
+                            <th>Status</th>
+                            <th style="width:80px"></th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in Model)
+                        {
+                            var statusAd = "";
+                            var statusCls = "";
+                            switch (m.Status)
+                            {
+                                case KreditMuracietStatus.KomiteyeGonderildi: statusAd = "Gözləmədə"; statusCls = "km-status--komite"; break;
+                                case KreditMuracietStatus.Tesdiqlenib: statusAd = "Təsdiqlənib"; statusCls = "km-status--tesdiq"; break;
+                                case KreditMuracietStatus.ReddEdilib: statusAd = "Rədd"; statusCls = "km-status--redd"; break;
+                                default: statusAd = "-"; break;
+                            }
+                            <tr class="km-row">
+                                <td class="km-td-id">@m.Id</td>
+                                <td class="km-td-name">@m.AdSoyadAtaAdi</td>
+                                <td class="km-td-amount">@m.KreditMeblegi.ToString("N0") <small>@m.Valyuta</small></td>
+                                <td>@m.KreditMuddeti</td>
+                                <td>@(m.EmekHaqqi?.ToString("N0") ?? "—") AZN</td>
+                                <td>@(m.BaxanIsci != null ? $"{m.BaxanIsci.Ad} {m.BaxanIsci.Soyad}" : "—")</td>
+                                <td><span class="km-status @statusCls">@statusAd</span></td>
+                                <td>
+                                    <a asp-action="KomiteDetail" asp-route-id="@m.Id" class="fn-btn fn-btn--primary fn-btn--sm" style="white-space:nowrap">Qərar ver</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     }
 </div>
