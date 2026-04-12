@@ -228,7 +228,81 @@ public class KreditMuracietController : Controller
         return RedirectToAction("Index");
     }
 
-    // ── Mail-i IMAP-da oxunmuş et ──────────────────────────
+    // ══════════════════════════════════════════════════════
+    // MAİL — Yenilə düyməsi + Bax-da oxunmuş et
+    // ══════════════════════════════════════════════════════
+
+    // ── POST /User/KreditMuraciet/Yenile ────────────────────
+    // Düyməyə basanda: mail-dən oxunmamışları gətir, dublikat yoxla, DB-yə yaz
+    [HttpPost]
+    public async Task<IActionResult> Yenile()
+    {
+        try
+        {
+            var server = _config["KreditMail:ImapServer"] ?? "imap.titan.email";
+            var port = _config.GetValue("KreditMail:Port", 993);
+            var email = _config["KreditMail:Email"] ?? "";
+            var password = _config["KreditMail:Password"] ?? "";
+
+            if (string.IsNullOrEmpty(password) || password == "PAROL_BURA_YAZIN")
+            {
+                TempData["Error"] = "Mail parolu konfiqurasiya olunmayıb.";
+                return RedirectToAction("Index");
+            }
+
+            using var client = new ImapClient();
+            await client.ConnectAsync(server, port, true);
+            await client.AuthenticateAsync(email, password);
+
+            var inbox = client.Inbox;
+            await inbox.OpenAsync(FolderAccess.ReadOnly);
+
+            // Yalnız oxunmamış "Online Kredit" mail-ləri
+            var uids = await inbox.SearchAsync(
+                SearchQuery.SubjectContains("Online Kredit").And(SearchQuery.NotSeen));
+
+            int yeniSay = 0;
+
+            foreach (var uid in uids)
+            {
+                var message = await inbox.GetMessageAsync(uid);
+                var messageId = message.MessageId ?? uid.ToString();
+
+                // DB-də varsa skip et (dublikat)
+                var exists = await _unitOfWork.Repository<KreditMuraciet>()
+                    .Query().AnyAsync(x => x.MailMessageId == messageId);
+                if (exists) continue;
+
+                // Body-ni al və təmizlə
+                var body = message.TextBody;
+                if (string.IsNullOrWhiteSpace(body))
+                    body = message.HtmlBody ?? "";
+                body = CleanHtml(body);
+
+                var muraciet = ParseMailBody(body, messageId);
+                if (muraciet != null)
+                {
+                    await _unitOfWork.Repository<KreditMuraciet>().YaratAsync(muraciet);
+                    await _unitOfWork.YaddaSaxlaAsync();
+                    yeniSay++;
+                }
+            }
+
+            await client.DisconnectAsync(true);
+
+            TempData["Success"] = yeniSay > 0
+                ? $"{yeniSay} yeni müraciət gətirildi."
+                : "Yeni müraciət yoxdur.";
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = $"Mail xətası: {ex.Message}";
+        }
+
+        return RedirectToAction("Index");
+    }
+
+    // ── Bax vuranda mail-i oxunmuş et ───────────────────────
     private async Task MarkMailAsReadAsync(string messageId)
     {
         try
@@ -247,9 +321,7 @@ public class KreditMuracietController : Controller
             var inbox = client.Inbox;
             await inbox.OpenAsync(FolderAccess.ReadWrite);
 
-            // Subject ilə axtar
             var uids = await inbox.SearchAsync(SearchQuery.SubjectContains("Online Kredit"));
-
             foreach (var uid in uids)
             {
                 var msg = await inbox.GetMessageAsync(uid);
@@ -264,5 +336,99 @@ public class KreditMuracietController : Controller
             await client.DisconnectAsync(true);
         }
         catch { }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // PARSER
+    // ══════════════════════════════════════════════════════
+
+    private static string CleanHtml(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"<br\s*/?>", "\n", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"</(p|div|tr|li)>", "\n", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"<[^>]+>", " ");
+        text = System.Net.WebUtility.HtmlDecode(text);
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"[ \t]+", " ");
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"\n\s*\n+", "\n");
+        return text.Trim();
+    }
+
+    private static KreditMuraciet? ParseMailBody(string body, string messageId)
+    {
+        if (string.IsNullOrWhiteSpace(body)) return null;
+
+        var lines = body.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        var fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var line in lines)
+        {
+            var colonIdx = line.IndexOf(':');
+            if (colonIdx > 0 && colonIdx < line.Length - 1)
+            {
+                var key = line[..colonIdx].Trim();
+                var val = line[(colonIdx + 1)..].Trim();
+                if (!string.IsNullOrEmpty(val) && val.Length < 300)
+                    fields[key] = val;
+            }
+        }
+
+        if (fields.Count < 2) return null;
+
+        var m = new KreditMuraciet
+        {
+            MailMessageId = messageId,
+            MuracietTarixi = DateTime.Now,
+            Status = KreditMuracietStatus.Yeni,
+            AdSoyadAtaAdi = FindField(fields, "Soyad") ?? FindField(fields, "ad v") ?? "Naməlum",
+            FIN = FindField(fields, "FİN") ?? FindField(fields, "FIN"),
+            Valyuta = FindField(fields, "valyuta") ?? "AZN",
+            KreditMuddeti = FindField(fields, "müddət") ?? FindField(fields, "muddet"),
+            IsYeri = FindField(fields, "İş yer") ?? FindField(fields, "Is yer") ?? FindField(fields, "yeriniz"),
+            Telefon = FindField(fields, "telefon"),
+            Meqsed = FindField(fields, "məqsəd") ?? FindField(fields, "meqsed"),
+            IP = FindField(fields, "Remote IP")
+        };
+
+        var meblegStr = FindField(fields, "kredit məbləğ") ?? FindField(fields, "kredit mebleq");
+        if (meblegStr != null)
+        {
+            var numStr = new string(meblegStr.Where(c => char.IsDigit(c) || c == '.' || c == ',').ToArray());
+            if (decimal.TryParse(numStr.Replace(",", "."), System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out var mebleg))
+                m.KreditMeblegi = mebleg;
+        }
+
+        var haqqiStr = FindField(fields, "əmək haqq") ?? FindField(fields, "emek haqq");
+        if (haqqiStr != null)
+        {
+            var numStr = new string(haqqiStr.Where(c => char.IsDigit(c) || c == '.' || c == ',').ToArray());
+            if (decimal.TryParse(numStr.Replace(",", "."), System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out var haqqi))
+                m.EmekHaqqi = haqqi;
+        }
+
+        var dateStr = FindField(fields, "Date");
+        var timeStr = FindField(fields, "Time");
+        if (!string.IsNullOrEmpty(dateStr))
+        {
+            if (DateTime.TryParse(dateStr + " " + (timeStr ?? ""),
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var dt))
+                m.MuracietTarixi = dt;
+        }
+
+        return m;
+    }
+
+    private static string? FindField(Dictionary<string, string> fields, string search)
+    {
+        search = search.ToLowerInvariant();
+        foreach (var kv in fields)
+        {
+            if (kv.Key.ToLowerInvariant().Contains(search))
+                return kv.Value;
+        }
+        return null;
     }
 }
