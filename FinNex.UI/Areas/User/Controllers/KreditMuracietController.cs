@@ -61,6 +61,48 @@ public class KreditMuracietController : Controller
         return View(muracietler.OrderByDescending(x => x.MuracietTarixi).ToList());
     }
 
+    // ── GET /User/KreditMuraciet/Create ─────────────────────
+    // Əl ilə müraciət əlavə et (filial, telefon və s.)
+    [HttpGet]
+    public IActionResult Create()
+    {
+        ViewData["Title"] = "Yeni Müraciət";
+        return View();
+    }
+
+    // ── POST /User/KreditMuraciet/Create ────────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(string adSoyadAtaAdi, string? fin, string? telefon,
+        string? isYeri, decimal? emekHaqqi, decimal? kreditMeblegi, string? valyuta,
+        string? kreditMuddeti, string? meqsed)
+    {
+        if (string.IsNullOrWhiteSpace(adSoyadAtaAdi))
+            adSoyadAtaAdi = "Naməlum";
+
+        var muraciet = new KreditMuraciet
+        {
+            AdSoyadAtaAdi = adSoyadAtaAdi.Trim(),
+            FIN = fin?.Trim(),
+            Telefon = telefon?.Trim(),
+            IsYeri = isYeri?.Trim(),
+            EmekHaqqi = emekHaqqi,
+            KreditMeblegi = kreditMeblegi ?? 0,
+            Valyuta = string.IsNullOrWhiteSpace(valyuta) ? "AZN" : valyuta.Trim(),
+            KreditMuddeti = kreditMuddeti?.Trim(),
+            Meqsed = meqsed?.Trim(),
+            MuracietTarixi = DateTime.Now,
+            Status = KreditMuracietStatus.Yeni,
+            Menbe = KreditMuracietMenbe.Filial
+        };
+
+        await _unitOfWork.Repository<KreditMuraciet>().YaratAsync(muraciet);
+        await _unitOfWork.YaddaSaxlaAsync();
+
+        TempData["Success"] = "Müraciət əlavə edildi.";
+        return RedirectToAction("Detail", new { id = muraciet.Id });
+    }
+
     // ── GET /User/KreditMuraciet/Detail/5 ───────────────────
     // İşçi baxışı — yoxlama + komitəyə göndərmə
     public async Task<IActionResult> Detail(int id)

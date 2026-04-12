@@ -15,6 +15,7 @@
             <div class="fn-page-sub">Online kredit sifarişləri</div>
         </div>
         <div style="display:flex;gap:8px">
+            <a asp-action="Create" class="fn-btn fn-btn--outline">+ Yeni müraciət</a>
             <form asp-action="Yenile" method="post" style="display:inline">
                 <button type="submit" class="fn-btn fn-btn--outline" id="btnYenile">
                     ↻ Mail-dən yenilə
@@ -87,9 +88,12 @@
                                 case KreditMuracietStatus.Tesdiqlenib: statusAd = "Təsdiq"; statusCls = "km-status--tesdiq"; break;
                                 case KreditMuracietStatus.ReddEdilib: statusAd = "Rədd"; statusCls = "km-status--redd"; break;
                             }
+                            var menbeBadge = m.Menbe == KreditMuracietMenbe.Filial
+                                ? "<span class=\"km-menbe km-menbe--filial\">Filial</span>"
+                                : "<span class=\"km-menbe km-menbe--online\">Online</span>";
                             <tr class="km-row" onclick="location.href='@Url.Action("Detail", new { id = m.Id })'">
                                 <td class="km-td-id">@m.Id</td>
-                                <td class="km-td-name">@ad</td>
+                                <td class="km-td-name">@ad @Html.Raw(menbeBadge)</td>
                                 <td class="km-td-amount">@m.KreditMeblegi.ToString("N0") <small>@m.Valyuta</small></td>
                                 <td>@mud</td>
                                 <td>@tel</td>

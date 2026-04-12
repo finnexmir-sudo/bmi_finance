@@ -28,6 +28,23 @@
 
 document.addEventListener("DOMContentLoaded", function () {
 
+    // localStorage-dan sidebar vəziyyətini bərpa et
+    try {
+        var openGroups = JSON.parse(localStorage.getItem("fn-sidebar-open") || "[]");
+        openGroups.forEach(function (id) {
+            var el = document.querySelector('.fn-nav-group[data-group-id="' + id + '"]');
+            if (el) el.classList.add("open");
+        });
+    } catch (e) { }
+
+    function saveSidebarState() {
+        var open = [];
+        document.querySelectorAll('.fn-nav-group[data-group-id].open').forEach(function (el) {
+            open.push(el.dataset.groupId);
+        });
+        try { localStorage.setItem("fn-sidebar-open", JSON.stringify(open)); } catch (e) { }
+    }
+
     // Attach click to every group toggle
     document.querySelectorAll(".fn-nav-group-toggle").forEach(function (toggle) {
         toggle.addEventListener("click", function (e) {
@@ -48,6 +65,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // Toggle this group
             group.classList.toggle("open", !isOpen);
+
+            // Vəziyyəti yaddaşda saxla
+            saveSidebarState();
         });
     });
 
