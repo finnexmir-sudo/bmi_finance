@@ -168,12 +168,12 @@
                 <div class="fn-form-group">
                     <label class="fn-label">Təsdiq məbləği</label>
                     <input type="number" name="tesdiqMebleg" class="fn-input" placeholder="Məbləğ..."
-                           value="@Model.TesdiqMebleg" step="0.01" />
+                           value="@(Model.TesdiqMebleg ?? Model.KreditMeblegi)" step="0.01" />
                 </div>
                 <div class="fn-form-group">
                     <label class="fn-label">Müddət</label>
                     <input type="text" name="tesdiqMuddet" class="fn-input" placeholder="Məs: 24 ay"
-                           value="@Model.TesdiqMuddet" />
+                           value="@(Model.TesdiqMuddet ?? Model.KreditMuddeti)" />
                 </div>
                 <div class="fn-form-group">
                     <label class="fn-label">Faiz dərəcəsi (%)</label>
