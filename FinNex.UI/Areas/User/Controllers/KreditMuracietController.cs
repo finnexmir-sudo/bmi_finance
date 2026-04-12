@@ -186,6 +186,22 @@ public class KreditMuracietController : Controller
         return RedirectToAction("Komite");
     }
 
+    // ── GET /User/KreditMuraciet/Qerarlar ──────────────────
+    public async Task<IActionResult> Qerarlar()
+    {
+        ViewData["Title"] = "Komitə Qərarları";
+
+        var muracietler = await _unitOfWork.Repository<KreditMuraciet>()
+            .Query()
+            .Where(x => !x.Silinib &&
+                (x.Status == KreditMuracietStatus.Tesdiqlenib || x.Status == KreditMuracietStatus.ReddEdilib))
+            .Include(x => x.BaxanIsci)
+            .OrderByDescending(x => x.KomiteQerarTarixi)
+            .ToListAsync();
+
+        return View(muracietler);
+    }
+
     // ── POST /User/KreditMuraciet/Delete/5 ──────────────────
     [HttpPost]
     public async Task<IActionResult> Delete(int id)

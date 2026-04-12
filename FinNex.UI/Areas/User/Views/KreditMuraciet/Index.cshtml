@@ -31,10 +31,18 @@
             <div class="fn-page-title">Kredit Müraciətləri</div>
             <div class="fn-page-sub">Online kredit sifarişləri</div>
         </div>
-        <a asp-action="Komite" class="fn-btn fn-btn--primary">
-            Kredit Komitəsi
-            @if(saylar.GetValueOrDefault(2) > 0) { <span style="background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:10px;font-size:10px;margin-left:4px">@saylar[2]</span> }
-        </a>
+        <div style="display:flex;gap:8px">
+            <a asp-action="Qerarlar" class="fn-btn fn-btn--outline">Komitə qərarları</a>
+            <a asp-action="Komite" class="fn-btn fn-btn--primary">
+                Kredit Komitəsi
+                @if(saylar.GetValueOrDefault(2) > 0) { <span style="background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:10px;font-size:10px;margin-left:4px">@saylar[2]</span> }
+            </a>
+        </div>
+    </div>
+
+    @* ── Axtarış ── *@
+    <div class="km-search-bar">
+        <input type="text" id="kmSearch" class="fn-input" placeholder="Ad, FİN və ya telefon ilə axtar..." />
     </div>
 
     <div class="km-filters">
@@ -96,4 +104,16 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/User/kredit-muraciet.css" asp-append-version="true" />
+}
+
+@section Scripts {
+<script>
+    document.getElementById('kmSearch').addEventListener('input', function () {
+        var term = this.value.toLowerCase();
+        document.querySelectorAll('.km-row').forEach(function (row) {
+            var text = row.textContent.toLowerCase();
+            row.style.display = text.includes(term) ? '' : 'none';
+        });
+    });
+</script>
 }
