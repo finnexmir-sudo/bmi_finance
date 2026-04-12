@@ -20,6 +20,9 @@ namespace FinNex.Domain.Entities.Kredit
         public string? IP { get; set; }
         public string? MailMessageId { get; set; }
 
+        // Mənbə
+        public KreditMuracietMenbe Menbe { get; set; } = KreditMuracietMenbe.Online;
+
         // Status + qiymətləndirmə
         public KreditMuracietStatus Status { get; set; } = KreditMuracietStatus.Yeni;
         public string? Qeyd { get; set; }
@@ -46,5 +49,11 @@ namespace FinNex.Domain.Entities.Kredit
         KomiteyeGonderildi = 2,
         Tesdiqlenib = 3,
         ReddEdilib = 4
+    }
+
+    public enum KreditMuracietMenbe
+    {
+        Online = 0,
+        Filial = 1
     }
 }
