@@ -70,7 +70,14 @@
                                 <td>@(m.BaxanIsci != null ? $"{m.BaxanIsci.Ad} {m.BaxanIsci.Soyad}" : "—")</td>
                                 <td><span class="km-status @statusCls">@statusAd</span></td>
                                 <td>
-                                    <a asp-action="KomiteDetail" asp-route-id="@m.Id" class="fn-btn fn-btn--primary fn-btn--sm" style="white-space:nowrap">Qərar ver</a>
+                                    @if (m.Status == KreditMuracietStatus.KomiteyeGonderildi)
+                                    {
+                                        <a asp-action="KomiteDetail" asp-route-id="@m.Id" class="fn-btn fn-btn--primary fn-btn--sm" style="white-space:nowrap">Qərar ver</a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-action="KomiteDetail" asp-route-id="@m.Id" class="km-detail-btn">Bax</a>
+                                    }
                                 </td>
                             </tr>
                         }
