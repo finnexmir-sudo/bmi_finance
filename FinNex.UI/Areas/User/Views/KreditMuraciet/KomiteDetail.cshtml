@@ -159,14 +159,35 @@
         </div>
         <form asp-action="KomiteQerar" method="post">
             <input type="hidden" name="id" value="@Model.Id" />
-            <div class="km-qerar-grid">
+            <div class="km-qerar-grid-4">
                 <div class="fn-form-group">
                     <label class="fn-label">Protokol №</label>
-                    <input type="text" name="komiteProtokolNo" class="fn-input" placeholder="Protokol nömrəsi..." />
+                    <input type="text" name="komiteProtokolNo" class="fn-input" placeholder="Protokol nömrəsi..."
+                           value="@Model.KomiteProtokolNo" />
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Təsdiq məbləği</label>
+                    <input type="number" name="tesdiqMebleg" class="fn-input" placeholder="Məbləğ..."
+                           value="@Model.TesdiqMebleg" step="0.01" />
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Müddət</label>
+                    <input type="text" name="tesdiqMuddet" class="fn-input" placeholder="Məs: 24 ay"
+                           value="@Model.TesdiqMuddet" />
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Faiz dərəcəsi (%)</label>
+                    <input type="number" name="faizDerecesi" class="fn-input" placeholder="Məs: 12"
+                           value="@Model.FaizDerecesi" step="0.01" />
+                </div>
+                <div class="fn-form-group" style="grid-column:1/-1">
+                    <label class="fn-label">Təminat</label>
+                    <input type="text" name="teminat" class="fn-input" placeholder="Zamin, girov, depozit və s."
+                           value="@Model.Teminat" />
                 </div>
                 <div class="fn-form-group" style="grid-column:1/-1">
                     <label class="fn-label">Komitə qeydi</label>
-                    <textarea name="qeyd" class="fn-input" rows="2" placeholder="Komitə iclasının qeydi..."></textarea>
+                    <textarea name="qeyd" class="fn-input" rows="2" placeholder="Komitə iclasının qeydi...">@Model.Qeyd</textarea>
                 </div>
             </div>
             <div class="km-qerar-buttons">

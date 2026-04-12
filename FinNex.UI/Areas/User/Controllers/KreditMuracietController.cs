@@ -132,9 +132,13 @@ public class KreditMuracietController : Controller
     {
         ViewData["Title"] = "Kredit Komitəsi";
 
+        // Komitəyə göndərilmiş + bu gün qərar verilmiş
+        var bugun = DateTime.Today;
         var muracietler = await _unitOfWork.Repository<KreditMuraciet>()
             .Query()
-            .Where(x => !x.Silinib && x.Status == KreditMuracietStatus.KomiteyeGonderildi)
+            .Where(x => !x.Silinib &&
+                (x.Status == KreditMuracietStatus.KomiteyeGonderildi ||
+                 (x.KomiteQerarTarixi != null && x.KomiteQerarTarixi >= bugun)))
             .Include(x => x.BaxanIsci)
             .OrderByDescending(x => x.BaxilmaTarixi)
             .ToListAsync();
@@ -170,13 +174,13 @@ public class KreditMuracietController : Controller
     // Komitə: yalnız Təsdiq / Rədd
     [HttpPost]
     public async Task<IActionResult> KomiteQerar(int id, int yeniStatus, string? qeyd,
-        string? komiteProtokolNo)
+        string? komiteProtokolNo, decimal? tesdiqMebleg, string? tesdiqMuddet,
+        decimal? faizDerecesi, string? teminat)
     {
         var muraciet = await _unitOfWork.Repository<KreditMuraciet>()
             .GetirAsync(x => x.Id == id && !x.Silinib);
         if (muraciet == null) return NotFound();
 
-        // Komitə yalnız Təsdiq və ya Rədd edə bilər
         if (yeniStatus != (int)KreditMuracietStatus.Tesdiqlenib &&
             yeniStatus != (int)KreditMuracietStatus.ReddEdilib)
         {
@@ -189,6 +193,10 @@ public class KreditMuracietController : Controller
         muraciet.KomiteProtokolNo = komiteProtokolNo;
         muraciet.KomiteQerarTarixi = DateTime.Now;
         muraciet.Qeyd = qeyd;
+        muraciet.TesdiqMebleg = tesdiqMebleg;
+        muraciet.TesdiqMuddet = tesdiqMuddet;
+        muraciet.FaizDerecesi = faizDerecesi;
+        muraciet.Teminat = teminat;
 
         await _unitOfWork.Repository<KreditMuraciet>().YenileAsync(muraciet);
         await _unitOfWork.YaddaSaxlaAsync();
