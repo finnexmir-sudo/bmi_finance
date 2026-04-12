@@ -728,6 +728,13 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasForeignKey(x => x.AlanIsciId)
             .OnDelete(DeleteBehavior.NoAction);
 
+        // ── Kredit Müraciət ───────────────────────────────────
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditMuraciet>()
+            .HasOne(x => x.BaxanIsci)
+            .WithMany()
+            .HasForeignKey(x => x.BaxanIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
         // ── XercKateqoriyasi Seed Data ────────────────────────
         builder.Entity<XercKateqoriyasi>().HasData(
             new XercKateqoriyasi { Id = 1, Ad = "Taksi", Ikon = "bi-taxi-front", Aktivdir = true },

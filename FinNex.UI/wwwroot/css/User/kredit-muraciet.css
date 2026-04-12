@@ -87,6 +87,8 @@
 .km-status--tesdiq { background: #dcfce7; color: #16a34a; }
 .km-status--redd { background: #fee2e2; color: #dc2626; }
 
+.km-status--komite { background: #f3e8ff; color: #7c3aed; }
+
 /* ── Detail Button ─────────────────────────── */
 .km-detail-btn {
     font-size: 11px;
@@ -165,6 +167,96 @@
 
 .km-action-select { width: 160px; flex-shrink: 0; }
 .km-action-input { flex: 1; }
+
+/* ── Action Grid ───────────────────────────── */
+.km-action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* ── FİN Tarixçə ──────────────────────────── */
+.km-tarixce-card {
+    margin-bottom: 16px;
+    padding: 20px;
+    background: #fffbeb;
+    border-color: #fde68a;
+}
+
+.km-tarixce-title { border-bottom-color: #f59e0b !important; color: #92400e; }
+
+.km-tarixce-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+.km-tarixce-table th {
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+    color: #92400e;
+    border-bottom: 1px solid #fde68a;
+    font-size: 11px;
+}
+.km-tarixce-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #fef3c7;
+    color: #1a2332;
+}
+
+/* ── Komitə Səhifəsi ──────────────────────── */
+.km-komite-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+}
+
+.km-komite-card {
+    padding: 20px;
+    border-left: 4px solid #7c3aed;
+}
+
+.km-komite-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.km-komite-id { font-size: 12px; color: #94a3b8; font-weight: 600; }
+.km-komite-name { font-size: 16px; font-weight: 800; color: #1a2332; }
+.km-komite-fin { font-size: 12px; color: #64748b; margin-bottom: 12px; }
+
+.km-komite-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.km-komite-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.km-komite-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; font-weight: 600; }
+.km-komite-val { font-size: 13px; color: #1a2332; font-weight: 600; }
+
+.km-komite-qeyd {
+    font-size: 12px;
+    color: #475569;
+    background: #f8f9fb;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+.km-komite-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+}
 
 /* ── Responsive ────────────────────────────── */
 @media (max-width: 768px) {
