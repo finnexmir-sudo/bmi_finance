@@ -61,9 +61,12 @@
                                 case KreditMuracietStatus.ReddEdilib: statusAd = "Rədd"; statusCls = "km-status--redd"; break;
                                 default: statusAd = "-"; break;
                             }
+                            var menbeBadge = m.Menbe == KreditMuracietMenbe.Filial
+                                ? "<span class=\"km-menbe km-menbe--filial\">Filial</span>"
+                                : "<span class=\"km-menbe km-menbe--online\">Online</span>";
                             <tr class="km-row">
                                 <td class="km-td-id">@m.Id</td>
-                                <td class="km-td-name">@m.AdSoyadAtaAdi</td>
+                                <td class="km-td-name">@m.AdSoyadAtaAdi @Html.Raw(menbeBadge)</td>
                                 <td class="km-td-amount">@m.KreditMeblegi.ToString("N0") <small>@m.Valyuta</small></td>
                                 <td>@m.KreditMuddeti</td>
                                 <td>@(m.EmekHaqqi?.ToString("N0") ?? "—") AZN</td>

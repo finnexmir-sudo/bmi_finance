@@ -27,7 +27,17 @@
 
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">Komitə — Müraciət #@Model.Id</div>
+            <div class="fn-page-title">
+                Komitə — Müraciət #@Model.Id
+                @if (Model.Menbe == KreditMuracietMenbe.Filial)
+                {
+                    <span class="km-menbe km-menbe--filial">Filial</span>
+                }
+                else
+                {
+                    <span class="km-menbe km-menbe--online">Online</span>
+                }
+            </div>
             <div class="fn-page-sub">@Model.AdSoyadAtaAdi · @Model.MuracietTarixi.ToString("dd.MM.yyyy")</div>
         </div>
         <a asp-action="Komite" class="fn-btn fn-btn--outline">← Komitə siyahısı</a>
