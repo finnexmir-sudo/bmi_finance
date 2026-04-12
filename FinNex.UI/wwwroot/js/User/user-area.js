@@ -24,6 +24,20 @@
         }
     });
 
+    // Sidebar-ı aktiv elementə scroll et
+    setTimeout(function () {
+        var sidebar = document.querySelector('.fn-sidebar');
+        var active = document.querySelector('.fn-nav-item.active, .fn-nav-subitem.active');
+        if (sidebar && active) {
+            var sidebarRect = sidebar.getBoundingClientRect();
+            var activeRect = active.getBoundingClientRect();
+            // Əgər aktiv element sidebar-ın görünən hissəsindən kənardadırsa
+            if (activeRect.top < sidebarRect.top || activeRect.bottom > sidebarRect.bottom) {
+                active.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }
+        }
+    }, 100);
+
 })();
 
 document.addEventListener("DOMContentLoaded", function () {
