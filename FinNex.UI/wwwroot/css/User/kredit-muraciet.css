@@ -108,6 +108,21 @@
 
 .km-status--komite { background: #f3e8ff; color: #7c3aed; }
 
+/* ── Mənbə Badge ───────────────────────────── */
+.km-menbe {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    vertical-align: middle;
+}
+.km-menbe--online { background: #dbeafe; color: #1d4ed8; }
+.km-menbe--filial { background: #fef3c7; color: #b45309; }
+
 /* ── Detail Button ─────────────────────────── */
 .km-detail-btn {
     font-size: 11px;
