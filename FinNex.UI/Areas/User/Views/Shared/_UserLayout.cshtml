@@ -185,8 +185,8 @@
                     </a>
                 }
 
-                @* Programlar *@
-                <div class="fn-nav-group">
+                @* Departamentlər *@
+                <div class="fn-nav-group @(currentController == "KreditMuraciet" ? "open" : "")">
                     <button type="button" class="fn-nav-group-toggle">
                         <div class="fn-nav-group-left">
                             <div class="fn-nav-icon">
@@ -197,7 +197,7 @@
                                     <rect x="7.5" y="7.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.2" />
                                 </svg>
                             </div>
-                            Programlar
+                            Departamentlər
                         </div>
                         <div class="fn-nav-arrow">
                             <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
@@ -261,7 +261,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="fn-nav-group">
+                        <div class="fn-nav-group @(currentController == "KreditMuraciet" ? "open" : "")">
                             <button type="button" class="fn-nav-group-toggle">
                                 <div class="fn-nav-group-left">
                                     <div class="fn-nav-subgroup-icon" style="background:rgba(99,130,246,0.14);">💳</div>
@@ -272,8 +272,18 @@
                                 </div>
                             </button>
                             <div class="fn-nav-submenu">
-                                <a href="#" class="fn-nav-subitem"><div class="fn-sub-dot"></div> Layihə 1</a>
-                                <a href="#" class="fn-nav-subitem"><div class="fn-sub-dot"></div> Layihə 2</a>
+                                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Index"
+                                   class="fn-nav-subitem @(currentController == "KreditMuraciet" && currentAction == "Index" ? "active" : "")">
+                                    <div class="fn-sub-dot"></div> Kredit Müraciətləri
+                                </a>
+                                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Komite"
+                                   class="fn-nav-subitem @(currentController == "KreditMuraciet" && currentAction == "Komite" ? "active" : "")">
+                                    <div class="fn-sub-dot"></div> Kredit Komitəsi
+                                </a>
+                                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Qerarlar"
+                                   class="fn-nav-subitem @(currentController == "KreditMuraciet" && currentAction == "Qerarlar" ? "active" : "")">
+                                    <div class="fn-sub-dot"></div> Komitə Qərarları
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -532,42 +542,6 @@
                     </div>
                     Elanlar
                 </a>
-
-                @* ═══════════════════════════════════════════════════
-                   KREDİT DP
-                   ═══════════════════════════════════════════════════ *@
-                <div class="fn-nav-label">Kredit</div>
-
-                <div class="fn-nav-group @(currentController == "KreditMuraciet" ? "open" : "")">
-                    <button type="button" class="fn-nav-group-toggle">
-                        <div class="fn-nav-group-left">
-                            <div class="fn-nav-icon">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                    <rect x="1" y="3" width="12" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
-                                    <path d="M1 6h12" stroke="currentColor" stroke-width="1"/>
-                                </svg>
-                            </div>
-                            Kredit DP
-                        </div>
-                        <div class="fn-nav-arrow">
-                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                        </div>
-                    </button>
-                    <div class="fn-nav-submenu">
-                        <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Index"
-                           class="fn-nav-subitem @(currentController == "KreditMuraciet" && currentAction == "Index" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Müraciətlər
-                        </a>
-                        <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Komite"
-                           class="fn-nav-subitem @(currentController == "KreditMuraciet" && currentAction == "Komite" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Kredit Komitəsi
-                        </a>
-                        <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Qerarlar"
-                           class="fn-nav-subitem @(currentController == "KreditMuraciet" && currentAction == "Qerarlar" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Komitə Qərarları
-                        </a>
-                    </div>
-                </div>
 
             </nav>
 
