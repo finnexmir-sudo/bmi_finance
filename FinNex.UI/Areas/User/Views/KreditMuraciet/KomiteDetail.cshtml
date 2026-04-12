@@ -1,7 +1,7 @@
 @model FinNex.Domain.Entities.Kredit.KreditMuraciet
 @using FinNex.Domain.Entities.Kredit
 @{
-    ViewData["Title"] = "Müraciət #" + Model.Id;
+    ViewData["Title"] = "Komitə — Müraciət #" + Model.Id;
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     var tarixce = ViewBag.Tarixce as List<KreditMuraciet> ?? new List<KreditMuraciet>();
 
@@ -27,15 +27,10 @@
 
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">Müraciət #@Model.Id</div>
-            <div class="fn-page-sub">@Model.MuracietTarixi.ToString("dd.MM.yyyy HH:mm")</div>
+            <div class="fn-page-title">Komitə — Müraciət #@Model.Id</div>
+            <div class="fn-page-sub">@Model.AdSoyadAtaAdi · @Model.MuracietTarixi.ToString("dd.MM.yyyy")</div>
         </div>
-        <div style="display:flex;gap:8px">
-            <a asp-action="Index" class="fn-btn fn-btn--outline">← Geri</a>
-            <form asp-action="Delete" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Bu müraciəti silmək istəyirsiniz?')">
-                <button type="submit" class="fn-btn fn-btn--outline" style="color:#dc2626;border-color:#dc2626">Sil</button>
-            </form>
-        </div>
+        <a asp-action="Komite" class="fn-btn fn-btn--outline">← Komitə siyahısı</a>
     </div>
 
     @if (TempData["Success"] != null)
@@ -47,14 +42,19 @@
         <div class="fn-alert fn-alert--error" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Error"]</div>
     }
 
-    <div style="margin-bottom:16px">
-        <span class="km-status @StatusCls(Model.Status)" style="font-size:14px;padding:6px 16px">@StatusText(Model.Status)</span>
-        @if (Model.BaxanIsci != null)
-        {
-            <span style="font-size:12px;color:#64748b;margin-left:10px">
-                Baxan: @Model.BaxanIsci.Ad @Model.BaxanIsci.Soyad — @Model.BaxilmaTarixi?.ToString("dd.MM.yyyy HH:mm")
-            </span>
-        }
+    @* ══════ İşçinin rəyi ══════ *@
+    <div class="fn-card km-isci-reyi">
+        <div class="km-reyi-header">
+            <span class="km-reyi-icon">📋</span>
+            <div>
+                <div class="km-reyi-title">Kredit mütəxəssisinin rəyi</div>
+                <div class="km-reyi-meta">
+                    @(Model.BaxanIsci != null ? $"{Model.BaxanIsci.Ad} {Model.BaxanIsci.Soyad}" : "—") ·
+                    @Model.BaxilmaTarixi?.ToString("dd.MM.yyyy HH:mm")
+                </div>
+            </div>
+        </div>
+        <div class="km-reyi-text">@(Model.Qeyd ?? "Qeyd yazılmayıb")</div>
     </div>
 
     @* ══════ FİN Tarixçəsi ══════ *@
@@ -87,7 +87,7 @@
     else if (!string.IsNullOrEmpty(Model.FIN))
     {
         <div class="fn-card" style="padding:14px 20px;margin-bottom:16px;background:#f0fdf4;border-color:#bbf7d0">
-            <span style="color:#16a34a;font-size:13px;font-weight:600">✓ Bu FİN ilə əvvəlki müraciət yoxdur</span>
+            <span style="color:#16a34a;font-size:13px;font-weight:600">✓ Bu FİN ilə əvvəlki müraciət yoxdur — ilk müraciətdir</span>
         </div>
     }
 
@@ -117,70 +117,68 @@
             <div class="km-detail-row"><span class="km-detail-label">Kredit məbləği</span><span class="km-detail-value km-val-amount">@Model.KreditMeblegi.ToString("N0") @Model.Valyuta</span></div>
             <div class="km-detail-row"><span class="km-detail-label">Müddət</span><span class="km-detail-value">@(Model.KreditMuddeti ?? "—")</span></div>
             <div class="km-detail-row"><span class="km-detail-label">Məqsəd</span><span class="km-detail-value">@(Model.Meqsed ?? "—")</span></div>
-            <div class="km-detail-row"><span class="km-detail-label">IP ünvan</span><span class="km-detail-value km-val-muted">@(Model.IP ?? "—")</span></div>
+            <div class="km-detail-row"><span class="km-detail-label">IP</span><span class="km-detail-value km-val-muted">@(Model.IP ?? "—")</span></div>
         </div>
     </div>
 
-    @* ══════ İşçi qiymətləndirmə — yalnız Yeni/Yoxlanılır/Komitəyə göndər ══════ *@
-    @if (Model.Status <= KreditMuracietStatus.KomiteyeGonderildi)
-    {
-        <div class="fn-card km-action-card">
-            <div class="km-detail-section-title">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    @* ══════ MKR + Asan Finance — Placeholder ══════ *@
+    <div class="km-detail-grid">
+        <div class="fn-card km-placeholder-card">
+            <div class="km-detail-section-title" style="border-bottom-color:#94a3b8">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
+                    <path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/><path d="M9 12l2 2 4-4"/>
                 </svg>
-                Yoxla və qiymətləndir
+                <span style="color:#94a3b8">MKR — Kredit tarixçəsi</span>
             </div>
-            <form asp-action="IsciQiymetlendir" method="post">
-                <input type="hidden" name="id" value="@Model.Id" />
-                <div class="km-action-grid">
-                    <div class="fn-form-group">
-                        <label class="fn-label">Status</label>
-                        <select name="yeniStatus" class="fn-input">
-                            @{
-                                var isciStatuses = new[] { (0,"Yeni"), (1,"Yoxlanılır"), (2,"Komitəyə göndər") };
-                            }
-                            @foreach (var (val, txt) in isciStatuses)
-                            {
-                                if ((int)Model.Status == val)
-                                { <option value="@val" selected="selected">@txt</option> }
-                                else
-                                { <option value="@val">@txt</option> }
-                            }
-                        </select>
-                    </div>
-                    <div class="fn-form-group">
-                        <label class="fn-label">Qeyd / Rəy</label>
-                        <input type="text" name="qeyd" class="fn-input" placeholder="Qiymətləndirmə qeydiniz..." value="@Model.Qeyd" />
-                    </div>
-                </div>
-                <div style="margin-top:12px;text-align:right">
-                    <button type="submit" class="fn-btn fn-btn--primary">Yadda saxla</button>
-                </div>
-            </form>
+            <div class="km-placeholder-text">
+                API qoşulduqda bu bölmədə müştərinin Mərkəzi Kredit Reyestrindəki kredit tarixçəsi göstəriləcək.
+            </div>
         </div>
-    }
-    else
-    {
-        @* Komitə qərarı göstər *@
-        <div class="fn-card km-action-card">
-            <div class="km-detail-section-title">Komitə qərarı</div>
-            <div class="km-detail-row"><span class="km-detail-label">Qərar</span><span class="km-detail-value"><span class="km-status @StatusCls(Model.Status)">@StatusText(Model.Status)</span></span></div>
-            @if (!string.IsNullOrEmpty(Model.KomiteProtokolNo))
-            {
-                <div class="km-detail-row"><span class="km-detail-label">Protokol №</span><span class="km-detail-value">@Model.KomiteProtokolNo</span></div>
-            }
-            @if (Model.KomiteQerarTarixi.HasValue)
-            {
-                <div class="km-detail-row"><span class="km-detail-label">Qərar tarixi</span><span class="km-detail-value">@Model.KomiteQerarTarixi.Value.ToString("dd.MM.yyyy HH:mm")</span></div>
-            }
-            @if (!string.IsNullOrEmpty(Model.Qeyd))
-            {
-                <div class="km-detail-row"><span class="km-detail-label">Qeyd</span><span class="km-detail-value">@Model.Qeyd</span></div>
-            }
+
+        <div class="fn-card km-placeholder-card">
+            <div class="km-detail-section-title" style="border-bottom-color:#94a3b8">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <span style="color:#94a3b8">Asan Finance — İş və şəxsiyyət</span>
+            </div>
+            <div class="km-placeholder-text">
+                API qoşulduqda bu bölmədə müştərinin iş məlumatları və şəxsiyyət vəsiqəsi detalları göstəriləcək.
+            </div>
         </div>
-    }
+    </div>
+
+    @* ══════ Komitə qərarı ══════ *@
+    <div class="fn-card km-qerar-card">
+        <div class="km-detail-section-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            Komitə qərarı
+        </div>
+        <form asp-action="KomiteQerar" method="post">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="km-qerar-grid">
+                <div class="fn-form-group">
+                    <label class="fn-label">Protokol №</label>
+                    <input type="text" name="komiteProtokolNo" class="fn-input" placeholder="Protokol nömrəsi..." />
+                </div>
+                <div class="fn-form-group" style="grid-column:1/-1">
+                    <label class="fn-label">Komitə qeydi</label>
+                    <textarea name="qeyd" class="fn-input" rows="2" placeholder="Komitə iclasının qeydi..."></textarea>
+                </div>
+            </div>
+            <div class="km-qerar-buttons">
+                <button type="submit" name="yeniStatus" value="3" class="fn-btn km-btn-tesdiq">
+                    ✓ Təsdiqlə
+                </button>
+                <button type="submit" name="yeniStatus" value="4" class="fn-btn km-btn-redd">
+                    ✕ Rədd et
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 @section Styles {
