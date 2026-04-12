@@ -72,8 +72,9 @@ namespace FinNex.Infrastructure.BackgroundJobs
             var inbox = client.Inbox;
             await inbox.OpenAsync(FolderAccess.ReadWrite, ct);
 
-            // "Online Kredit" mövzulu bütün mailləri tap (oxunmuş/oxunmamış fərq etməz)
-            var query = SearchQuery.SubjectContains("Online Kredit");
+            // Yalnız oxunmamış "Online Kredit" mail-lərini gətir
+            var query = SearchQuery.SubjectContains("Online Kredit")
+                .And(SearchQuery.NotSeen);
 
             var uids = await inbox.SearchAsync(query, ct);
 
@@ -117,7 +118,7 @@ namespace FinNex.Infrastructure.BackgroundJobs
                         _logger.LogInformation("KreditMail: müraciət əlavə edildi - {Ad}", muraciet.AdSoyadAtaAdi);
                     }
 
-                    // Mail-ə toxunmuruq — oxunmamış qalır
+                    // Mail-ə toxunmuruq — "Bax" vuranda oxunmuş olacaq
                 }
                 catch (Exception ex)
                 {
