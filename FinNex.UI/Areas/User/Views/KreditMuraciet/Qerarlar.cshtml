@@ -1,0 +1,71 @@
+@model List<FinNex.Domain.Entities.Kredit.KreditMuraciet>
+@using FinNex.Domain.Entities.Kredit
+@{
+    ViewData["Title"] = "Komitə Qərarları";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var tesdiq = Model.Count(x => x.Status == KreditMuracietStatus.Tesdiqlenib);
+    var redd = Model.Count(x => x.Status == KreditMuracietStatus.ReddEdilib);
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Komitə Qərarları</div>
+            <div class="fn-page-sub">
+                @Model.Count qərar —
+                <span style="color:#16a34a">@tesdiq təsdiqlənib</span>,
+                <span style="color:#dc2626">@redd rədd edilib</span>
+            </div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline">← Bütün müraciətlər</a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="fn-empty-state">
+            <div class="fn-empty-title">Hələ qərar yoxdur</div>
+            <div class="fn-empty-sub">Komitə qərar verdikdə burada görünəcək</div>
+        </div>
+    }
+    else
+    {
+        <div class="fn-card" style="padding:0;overflow:hidden">
+            <table class="km-table">
+                <thead>
+                    <tr>
+                        <th style="width:50px">#</th>
+                        <th>Ad Soyad</th>
+                        <th>FİN</th>
+                        <th>Məbləğ</th>
+                        <th>Protokol №</th>
+                        <th>Qərar</th>
+                        <th>Qərar tarixi</th>
+                        <th>Qeyd</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in Model)
+                    {
+                        var cls = m.Status == KreditMuracietStatus.Tesdiqlenib ? "km-status--tesdiq" : "km-status--redd";
+                        var txt = m.Status == KreditMuracietStatus.Tesdiqlenib ? "Təsdiqlənib" : "Rədd edilib";
+                        <tr class="km-row" onclick="location.href='@Url.Action("Detail", new { id = m.Id })'">
+                            <td class="km-td-id">@m.Id</td>
+                            <td class="km-td-name">@m.AdSoyadAtaAdi</td>
+                            <td>@(m.FIN ?? "—")</td>
+                            <td class="km-td-amount">@m.KreditMeblegi.ToString("N0") <small>@m.Valyuta</small></td>
+                            <td>@(m.KomiteProtokolNo ?? "—")</td>
+                            <td><span class="km-status @cls">@txt</span></td>
+                            <td class="km-td-date">@m.KomiteQerarTarixi?.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">@(m.Qeyd ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/kredit-muraciet.css" asp-append-version="true" />
+}

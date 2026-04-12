@@ -35,6 +35,16 @@
     color: #fff;
 }
 
+/* ── Search Bar ────────────────────────────── */
+.km-search-bar {
+    margin-bottom: 12px;
+    max-width: 400px;
+}
+.km-search-bar .fn-input {
+    padding-left: 14px;
+    font-size: 13px;
+}
+
 /* ── Table ─────────────────────────────────── */
 .km-table {
     width: 100%;
@@ -64,6 +74,7 @@
 .km-table tbody td {
     padding: 12px 14px;
     color: #1a2332;
+    white-space: nowrap;
 }
 
 .km-td-id { color: #94a3b8; font-size: 11px; }
