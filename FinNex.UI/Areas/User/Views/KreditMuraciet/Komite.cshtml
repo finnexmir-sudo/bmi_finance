@@ -1,0 +1,73 @@
+@model List<FinNex.Domain.Entities.Kredit.KreditMuraciet>
+@{
+    ViewData["Title"] = "Kredit Komitəsi";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Kredit Komitəsi</div>
+            <div class="fn-page-sub">Komitəyə göndərilmiş müraciətlər — qərar gözləyir</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline">← Bütün müraciətlər</a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="fn-empty-state">
+            <div class="fn-empty-title">Komitədə müraciət yoxdur</div>
+            <div class="fn-empty-sub">Komitəyə göndərilmiş müraciətlər burada görünəcək</div>
+        </div>
+    }
+    else
+    {
+        <div class="km-komite-grid">
+            @foreach (var m in Model)
+            {
+                <div class="fn-card km-komite-card">
+                    <div class="km-komite-header">
+                        <span class="km-komite-id">#@m.Id</span>
+                        <span class="km-status km-status--komite">Komitəyə göndərildi</span>
+                    </div>
+                    <div class="km-komite-name">@m.AdSoyadAtaAdi</div>
+                    <div class="km-komite-fin">FİN: @(m.FIN ?? "—")</div>
+
+                    <div class="km-komite-details">
+                        <div class="km-komite-detail">
+                            <span class="km-komite-label">Məbləğ</span>
+                            <span class="km-komite-val km-val-amount">@m.KreditMeblegi.ToString("N0") @m.Valyuta</span>
+                        </div>
+                        <div class="km-komite-detail">
+                            <span class="km-komite-label">Müddət</span>
+                            <span class="km-komite-val">@m.KreditMuddeti</span>
+                        </div>
+                        <div class="km-komite-detail">
+                            <span class="km-komite-label">Əmək haqqı</span>
+                            <span class="km-komite-val">@(m.EmekHaqqi?.ToString("N0") ?? "—") AZN</span>
+                        </div>
+                        <div class="km-komite-detail">
+                            <span class="km-komite-label">Yoxlayan</span>
+                            <span class="km-komite-val">@(m.BaxanIsci != null ? $"{m.BaxanIsci.Ad} {m.BaxanIsci.Soyad}" : "—")</span>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(m.Qeyd))
+                    {
+                        <div class="km-komite-qeyd">@m.Qeyd</div>
+                    }
+
+                    <div class="km-komite-footer">
+                        <span class="km-td-date">@m.BaxilmaTarixi?.ToString("dd.MM.yyyy HH:mm")</span>
+                        <a asp-action="Detail" asp-route-id="@m.Id" class="fn-btn fn-btn--primary fn-btn--sm">Qərar ver</a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/kredit-muraciet.css" asp-append-version="true" />
+}
