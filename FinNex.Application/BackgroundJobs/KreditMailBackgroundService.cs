@@ -72,9 +72,8 @@ namespace FinNex.Infrastructure.BackgroundJobs
             var inbox = client.Inbox;
             await inbox.OpenAsync(FolderAccess.ReadWrite, ct);
 
-            // "Online Kredit Müraciəti" mövzulu oxunmamış mailləri tap
-            var query = SearchQuery.SubjectContains("Online Kredit")
-                .And(SearchQuery.NotSeen);
+            // "Online Kredit" mövzulu bütün mailləri tap (oxunmuş/oxunmamış fərq etməz)
+            var query = SearchQuery.SubjectContains("Online Kredit");
 
             var uids = await inbox.SearchAsync(query, ct);
 
@@ -100,11 +99,7 @@ namespace FinNex.Infrastructure.BackgroundJobs
                     var exists = await db.KreditMuracietler
                         .AnyAsync(x => x.MailMessageId == messageId, ct);
 
-                    if (exists)
-                    {
-                        await inbox.AddFlagsAsync(uid, MessageFlags.Seen, true, ct);
-                        continue;
-                    }
+                    if (exists) continue;
 
                     var body = message.TextBody;
                     if (string.IsNullOrWhiteSpace(body))
@@ -122,8 +117,7 @@ namespace FinNex.Infrastructure.BackgroundJobs
                         _logger.LogInformation("KreditMail: müraciət əlavə edildi - {Ad}", muraciet.AdSoyadAtaAdi);
                     }
 
-                    // Oxunmuş kimi işarələ
-                    await inbox.AddFlagsAsync(uid, MessageFlags.Seen, true, ct);
+                    // Mail-ə toxunmuruq — oxunmamış qalır
                 }
                 catch (Exception ex)
                 {
