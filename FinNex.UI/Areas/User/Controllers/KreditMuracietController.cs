@@ -248,7 +248,7 @@ public class KreditMuracietController : Controller
             await inbox.OpenAsync(FolderAccess.ReadWrite);
 
             // Subject ilə axtar
-            var uids = await inbox.SearchAsync(SearchQuery.SubjectContains("Online Kredit").And(SearchQuery.NotSeen));
+            var uids = await inbox.SearchAsync(SearchQuery.SubjectContains("Online Kredit"));
 
             foreach (var uid in uids)
             {
