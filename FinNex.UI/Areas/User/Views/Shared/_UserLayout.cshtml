@@ -186,7 +186,7 @@
                 }
 
                 @* Departamentlər *@
-                <div class="fn-nav-group" data-group-id="departamentler">
+                <div class="fn-nav-group @(currentController == "KreditMuraciet" ? "open" : "")" data-group-id="departamentler">
                     <button type="button" class="fn-nav-group-toggle">
                         <div class="fn-nav-group-left">
                             <div class="fn-nav-icon">
@@ -261,7 +261,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="fn-nav-group" data-group-id="kredit">
+                        <div class="fn-nav-group @(currentController == "KreditMuraciet" ? "open" : "")" data-group-id="kredit">
                             <button type="button" class="fn-nav-group-toggle">
                                 <div class="fn-nav-group-left">
                                     <div class="fn-nav-subgroup-icon" style="background:rgba(99,130,246,0.14);">💳</div>
