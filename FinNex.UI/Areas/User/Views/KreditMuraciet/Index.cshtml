@@ -15,6 +15,11 @@
             <div class="fn-page-sub">Online kredit sifarişləri</div>
         </div>
         <div style="display:flex;gap:8px">
+            <form asp-action="Yenile" method="post" style="display:inline">
+                <button type="submit" class="fn-btn fn-btn--outline" id="btnYenile">
+                    ↻ Mail-dən yenilə
+                </button>
+            </form>
             <a asp-action="Qerarlar" class="fn-btn fn-btn--outline">Komitə qərarları</a>
             <a asp-action="Komite" class="fn-btn fn-btn--primary">Kredit Komitəsi</a>
         </div>
@@ -32,6 +37,15 @@
         <a href="@Url.Action("Index", new { status = 3 })" class="km-filter-btn @(secilmis == 3 ? "km-filter-btn--active" : "")">Təsdiqlənib</a>
         <a href="@Url.Action("Index", new { status = 4 })" class="km-filter-btn @(secilmis == 4 ? "km-filter-btn--active" : "")">Rədd</a>
     </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="fn-alert fn-alert--success" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Error"]</div>
+    }
 
     @if (!Model.Any())
     {

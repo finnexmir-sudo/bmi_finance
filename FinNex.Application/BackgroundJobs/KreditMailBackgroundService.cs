@@ -133,6 +133,30 @@ namespace FinNex.Infrastructure.BackgroundJobs
         {
             if (string.IsNullOrWhiteSpace(body)) return null;
 
+            _logger.LogInformation("KreditMail PARSE: body uzunluq={Len}, ilk 200={Body}",
+                body.Length, body.Length > 200 ? body[..200] : body);
+
+            // Sətirləri ayır və key:value cütlükləri çıxar
+            var lines = body.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            var fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var line in lines)
+            {
+                var colonIdx = line.IndexOf(':');
+                if (colonIdx > 0 && colonIdx < line.Length - 1)
+                {
+                    var key = line[..colonIdx].Trim();
+                    var val = line[(colonIdx + 1)..].Trim();
+                    if (!string.IsNullOrEmpty(val) && val.Length < 300)
+                    {
+                        fields[key] = val;
+                    }
+                }
+            }
+
+            _logger.LogInformation("KreditMail PARSE: {Count} sahə tapıldı: {Keys}",
+                fields.Count, string.Join(", ", fields.Keys));
+
             var muraciet = new KreditMuraciet
             {
                 MailMessageId = messageId,
@@ -140,33 +164,60 @@ namespace FinNex.Infrastructure.BackgroundJobs
                 Status = KreditMuracietStatus.Yeni
             };
 
-            // Sahələri parse et
-            muraciet.AdSoyadAtaAdi = ExtractField(body, @"Soyad,?\s*ad\s+v[əe]\s+ata\s+ad[ıi]:\s*(.+)") ?? "Naməlum";
-            muraciet.FIN = ExtractField(body, @"FİN\s+n[öo]mr[əe]si:\s*(.+)");
-            muraciet.Valyuta = ExtractField(body, @"valyuta[sı]*:\s*(.+)") ?? "AZN";
-            muraciet.KreditMuddeti = ExtractField(body, @"m[üu]dd[əe]ti:\s*(.+)");
-            muraciet.IsYeri = ExtractField(body, @"[İi][şs]\s+yeri(?:niz)?:\s*(.+)");
-            muraciet.Telefon = ExtractField(body, @"telefon\s+n[öo]mr[əe]si:\s*(.+)");
-            muraciet.Meqsed = ExtractField(body, @"m[əe]qs[əe]d:\s*(.+)");
-            muraciet.IP = ExtractField(body, @"Remote\s+IP:\s*(.+)");
+            // Sahələri tap — key-in hissəsinə görə axtar
+            muraciet.AdSoyadAtaAdi = FindField(fields, "Soyad") ?? FindField(fields, "ad v") ?? "Naməlum";
+            muraciet.FIN = FindField(fields, "FİN") ?? FindField(fields, "FIN");
+            muraciet.Valyuta = FindField(fields, "valyuta") ?? "AZN";
+            muraciet.KreditMuddeti = FindField(fields, "müddət") ?? FindField(fields, "muddet");
+            muraciet.IsYeri = FindField(fields, "İş yer") ?? FindField(fields, "Is yer") ?? FindField(fields, "yeriniz");
+            muraciet.Telefon = FindField(fields, "telefon");
+            muraciet.Meqsed = FindField(fields, "məqsəd") ?? FindField(fields, "meqsed") ?? FindField(fields, "maqsad");
+            muraciet.IP = FindField(fields, "Remote IP");
 
             // Kredit məbləği
-            var meblegStr = ExtractField(body, @"kredit\s+m[əe]bl[əe][ğg]i:\s*([\d.,]+)");
-            if (decimal.TryParse(meblegStr?.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out var mebleg))
-                muraciet.KreditMeblegi = mebleg;
+            var meblegStr = FindField(fields, "kredit məbləğ") ?? FindField(fields, "kredit mebleq");
+            if (meblegStr != null)
+            {
+                var numStr = new string(meblegStr.Where(c => char.IsDigit(c) || c == '.' || c == ',').ToArray());
+                if (decimal.TryParse(numStr.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out var mebleg))
+                    muraciet.KreditMeblegi = mebleg;
+            }
 
             // Əmək haqqı
-            var haqqiStr = ExtractField(body, @"[əe]m[əe]k\s+haqq[ıi]:\s*([\d.,]+)");
-            if (decimal.TryParse(haqqiStr?.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out var haqqi))
-                muraciet.EmekHaqqi = haqqi;
+            var haqqiStr = FindField(fields, "əmək haqq") ?? FindField(fields, "emek haqq");
+            if (haqqiStr != null)
+            {
+                var numStr = new string(haqqiStr.Where(c => char.IsDigit(c) || c == '.' || c == ',').ToArray());
+                if (decimal.TryParse(numStr.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out var haqqi))
+                    muraciet.EmekHaqqi = haqqi;
+            }
 
             // Tarix
-            var dateStr = ExtractField(body, @"Date:\s*(.+)");
-            var timeStr = ExtractField(body, @"Time:\s*(.+)");
+            var dateStr = FindField(fields, "Date");
+            var timeStr = FindField(fields, "Time");
             if (!string.IsNullOrEmpty(dateStr))
             {
                 var dtStr = dateStr + (timeStr != null ? " " + timeStr : "");
                 if (DateTime.TryParse(dtStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
+                    muraciet.MuracietTarixi = dt;
+            }
+
+            _logger.LogInformation("KreditMail PARSE nəticə: Ad={Ad}, FIN={Fin}, Məbləğ={Meb}",
+                muraciet.AdSoyadAtaAdi, muraciet.FIN, muraciet.KreditMeblegi);
+
+            return muraciet;
+        }
+
+        private static string? FindField(Dictionary<string, string> fields, string search)
+        {
+            search = search.ToLowerInvariant();
+            foreach (var kv in fields)
+            {
+                if (kv.Key.ToLowerInvariant().Contains(search))
+                    return kv.Value;
+            }
+            return null;
+        }
                     muraciet.MuracietTarixi = dt;
             }
 
@@ -191,17 +242,5 @@ namespace FinNex.Infrastructure.BackgroundJobs
             return text.Trim();
         }
 
-        private static string? ExtractField(string body, string pattern)
-        {
-            var match = Regex.Match(body, pattern, RegexOptions.IgnoreCase | RegexOptions.Multiline);
-            if (!match.Success) return null;
-            var val = match.Groups[1].Value.Trim();
-            // Yalnız ilk sətri götür
-            var nlIdx = val.IndexOfAny(new[] { '\n', '\r' });
-            if (nlIdx > 0) val = val[..nlIdx].Trim();
-            // Artıq boşluqları təmizlə
-            val = Regex.Replace(val, @"\s+", " ").Trim();
-            return val.Length > 200 ? val[..200] : val;
-        }
     }
 }
