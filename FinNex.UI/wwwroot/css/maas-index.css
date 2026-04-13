@@ -1032,3 +1032,91 @@
     text-align: center;
 }
 .mi-tfoot-cemi td.center { text-align: center; }
+
+/* ════════════════════════════════════════════════════════════
+   STICKY: Sol 3 sütun (Status, Əməliyyat, Ad Soyad)
+   horizontal scroll-da daimi görünür
+   ════════════════════════════════════════════════════════════ */
+
+/* Birinci sütun: Status (110px) */
+.mi-table thead th:nth-child(1),
+.mi-table tbody td:nth-child(1),
+.mi-table tfoot td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background: #fff;
+}
+
+/* İkinci sütun: Əməliyyat (120px), birincinin sağında */
+.mi-table thead th:nth-child(2),
+.mi-table tbody td:nth-child(2),
+.mi-table tfoot td:nth-child(2) {
+    position: sticky;
+    left: 110px;
+    z-index: 5;
+    background: #fff;
+}
+
+/* Üçüncü sütun: Ad Soyad (200px) */
+.mi-table thead th:nth-child(3),
+.mi-table tbody td:nth-child(3),
+.mi-table tfoot td:nth-child(3) {
+    position: sticky;
+    left: 230px;
+    z-index: 5;
+    background: #fff;
+    box-shadow: 4px 0 8px rgba(15, 26, 46, 0.08);
+}
+
+/* Header row group istisna — onlar mərkəzi span-lardır */
+.mi-table thead .tr-group th:nth-child(1),
+.mi-table thead .tr-group th:nth-child(2),
+.mi-table thead .tr-group th:nth-child(3),
+.mi-table thead .tr-group th:nth-child(4) {
+    position: relative;
+    left: auto;
+    z-index: auto;
+}
+
+/* Hover state-də sticky sütunlarda da fon dəyişməsi */
+.mi-table tbody tr:hover td:nth-child(1),
+.mi-table tbody tr:hover td:nth-child(2),
+.mi-table tbody tr:hover td:nth-child(3) {
+    background: #fafbfc;
+}
+
+/* Header-də sticky sütunların fonu */
+.mi-table thead .tr-cols th:nth-child(1),
+.mi-table thead .tr-cols th:nth-child(2),
+.mi-table thead .tr-cols th:nth-child(3) {
+    background: #f7f9fc;
+    z-index: 10;
+}
+
+/* Footer (CƏMİ) sticky sütunlar */
+.mi-table tfoot .mi-tfoot-cemi td:nth-child(1),
+.mi-table tfoot .mi-tfoot-cemi td:nth-child(2),
+.mi-table tfoot .mi-tfoot-cemi td:nth-child(3) {
+    background: #fef3c7;
+    z-index: 10;
+}
+
+/* ════════════════════════════════════════════════════════════
+   STICKY: Səhifə header-i (action düymələri) həmişə görünür
+   ════════════════════════════════════════════════════════════ */
+.mi-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: #f7f9fc;
+    padding: 16px 20px 14px;
+    margin: -16px -20px 16px;
+    border-bottom: 1px solid #e4e7ed;
+    backdrop-filter: blur(8px);
+}
+
+/* mi-page parent overflow-u açıq olmalıdır */
+.mi-page {
+    overflow: visible;
+}
