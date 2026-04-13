@@ -245,16 +245,45 @@ namespace FinNex.Application.Services.HR
                 Tip = "melumati"
             });
 
-            // 10. Tutulmalar
-            decimal gelirVergisi = Math.Round(vergilenecek * (p.GelirVergisiFaizi / 100m), 2);
-            decimal dsmfIsci = Math.Round(brutMaas * (p.DsmfFaizi / 100m), 2);
-            decimal issizlikIsci = Math.Round(brutMaas * (p.IssizlikSigortasiFaizi / 100m), 2);
-            decimal itss = Math.Round(brutMaas * (p.IcbariTibbiSigortaFaizi / 100m), 2);
+            // 10. Tutulmalar — pilləli (2026 qaydaları)
+            // VergiPille cədvəli varsa oradan hesabla, yoxdursa flat faiz fallback
+            var pilleler = await _unitOfWork.Repository<VergiPille>()
+                .HamisiniGetirAsync(x =>
+                    x.Aktivdir && !x.Silinib &&
+                    x.BaslamaTarixi <= hesabTarixi &&
+                    (x.BitmeTarixi == null || x.BitmeTarixi >= hesabTarixi));
 
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "Gelir Vergisi", Izah = $"{vergilenecek:N2} x {p.GelirVergisiFaizi}% (guzest: {p.VergiGuzestiMeblegi} AZN)", Mebleg = gelirVergisi, Tip = "vergi" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isci)", Izah = $"{brutMaas:N2} x {p.DsmfFaizi}%", Mebleg = dsmfIsci, Tip = "vergi" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "Issizlik Sigortas (Isci)", Izah = $"{brutMaas:N2} x {p.IssizlikSigortasiFaizi}%", Mebleg = issizlikIsci, Tip = "vergi" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "ITSS", Izah = $"{brutMaas:N2} x {p.IcbariTibbiSigortaFaizi}%", Mebleg = itss, Tip = "vergi" });
+            decimal HesablaTutulma(decimal mebleg, MaasParametrNovu nov, decimal flatFaiz, out string izah)
+            {
+                var novPilleler = pilleler.Where(x => x.Nov == nov).OrderBy(x => x.AsagiHedd).ToList();
+                if (novPilleler.Any())
+                {
+                    var pille = PilleniTap(mebleg, novPilleler);
+                    if (pille == null)
+                    {
+                        izah = $"{mebleg:N2} üçün pillə tapılmadı";
+                        return 0;
+                    }
+                    var netice = Math.Round(
+                        pille.SabitMebleg + (mebleg - pille.AsagiHedd) * (pille.Faiz / 100m),
+                        2);
+                    izah = $"{mebleg:N2} → pillə [{pille.AsagiHedd:N0}..{(pille.YuxariHedd?.ToString("N0") ?? "∞")}]: {pille.SabitMebleg:N2} + ({mebleg:N2} − {pille.AsagiHedd:N2}) × {pille.Faiz}%";
+                    return netice;
+                }
+                // Fallback: köhnə flat faiz
+                izah = $"{mebleg:N2} × {flatFaiz}% (flat)";
+                return Math.Round(mebleg * (flatFaiz / 100m), 2);
+            }
+
+            decimal gelirVergisi   = HesablaTutulma(vergilenecek, MaasParametrNovu.GelirVergisiFaizi,         p.GelirVergisiFaizi,         out var gvIzah);
+            decimal dsmfIsci       = HesablaTutulma(brutMaas,     MaasParametrNovu.DsmfFaizi,                 p.DsmfFaizi,                 out var dsmfIzah);
+            decimal issizlikIsci   = Math.Round(brutMaas * (p.IssizlikSigortasiFaizi / 100m), 2); // flat
+            decimal itss           = HesablaTutulma(brutMaas,     MaasParametrNovu.IcbariTibbiSigortaFaizi,   p.IcbariTibbiSigortaFaizi,   out var itssIzah);
+
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "Gelir Vergisi",              Izah = $"{gvIzah} (guzest: {p.VergiGuzestiMeblegi} AZN)", Mebleg = gelirVergisi, Tip = "vergi" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isci)",                Izah = dsmfIzah,                                           Mebleg = dsmfIsci,     Tip = "vergi" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "Issizlik Sigortas (Isci)",   Izah = $"{brutMaas:N2} x {p.IssizlikSigortasiFaizi}%",     Mebleg = issizlikIsci, Tip = "vergi" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "ITSS (Isci)",                Izah = itssIzah,                                           Mebleg = itss,         Tip = "vergi" });
 
             // 11. NET maas
             decimal umumiTutulma = gelirVergisi + dsmfIsci + issizlikIsci + itss;
@@ -280,12 +309,14 @@ namespace FinNex.Application.Services.HR
                 Tip = "melumati"
             });
 
-            // 12. Sirket xercleri -- indi parametrden oxunur, hardcode deyil
-            decimal dsmfIsegoturen = Math.Round(brutMaas * (p.DsmfIsegotürenFaizi / 100m), 2);
-            decimal issizlikIsegoturen = Math.Round(brutMaas * (p.IssizlikIsegotürenFaizi / 100m), 2);
+            // 12. Sirket xercleri — pilləli (2026 qaydaları)
+            decimal dsmfIsegoturen     = HesablaTutulma(brutMaas, MaasParametrNovu.DsmfIsegoturenFaizi,             p.DsmfIsegotürenFaizi,     out var dsmfIsvIzah);
+            decimal issizlikIsegoturen = Math.Round(brutMaas * (p.IssizlikIsegotürenFaizi / 100m), 2); // flat
+            decimal itssIsegoturen     = HesablaTutulma(brutMaas, MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi, p.IcbariTibbiSigortaFaizi, out var itssIsvIzah);
 
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isegoturen)", Izah = $"{brutMaas:N2} x {p.DsmfIsegotürenFaizi}% -- isciden tutulmur", Mebleg = dsmfIsegoturen, Tip = "sirket" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isegoturen)",              Izah = $"{dsmfIsvIzah} -- isciden tutulmur",                            Mebleg = dsmfIsegoturen,     Tip = "sirket" });
             izahatlar.Add(new HesablamaIzahiDto { Addim = "Issizlik Sigortas (Isegoturen)", Izah = $"{brutMaas:N2} x {p.IssizlikIsegotürenFaizi}% -- isciden tutulmur", Mebleg = issizlikIsegoturen, Tip = "sirket" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "ITSS (Isegoturen)",              Izah = $"{itssIsvIzah} -- isciden tutulmur",                            Mebleg = itssIsegoturen,     Tip = "sirket" });
 
             // 13. MaasNovu kitabcasindan id-leri tap
             var novler = await _unitOfWork.Repository<MaasNovu>()
@@ -331,8 +362,9 @@ namespace FinNex.Application.Services.HR
                 DetayEkle("Issizlik Sigortas (Isci)", MaasDetayTipi.Tutulma,         issizlikIsci,       $"{p.IssizlikSigortasiFaizi}%"),
                 DetayEkle("ITSS",                     MaasDetayTipi.Tutulma,         itss,               $"{p.IcbariTibbiSigortaFaizi}%"),
                 // Sirket xercleri
-                DetayEkle("DSMF (Isegoturen)",        MaasDetayTipi.IsegoturenXerci, dsmfIsegoturen,     $"{p.DsmfIsegotürenFaizi}%"),
+                DetayEkle("DSMF (Isegoturen)",        MaasDetayTipi.IsegoturenXerci, dsmfIsegoturen,     dsmfIsvIzah),
                 DetayEkle("Issizlik (Isegoturen)",    MaasDetayTipi.IsegoturenXerci, issizlikIsegoturen, $"{p.IssizlikIsegotürenFaizi}%"),
+                DetayEkle("İTSS (İşəgötürən)",        MaasDetayTipi.IsegoturenXerci, itssIsegoturen,     itssIsvIzah),
             };
 
             var ilkXeta = xetalar.FirstOrDefault(x => !x.Success);
@@ -370,7 +402,8 @@ namespace FinNex.Application.Services.HR
                 NetMaas = netMaas,
                 DsmfIsegoturen = dsmfIsegoturen,
                 IssizlikIsegoturen = issizlikIsegoturen,
-                UmumiSirketXerci = brutMaas + dsmfIsegoturen + issizlikIsegoturen,
+                ItssIsegoturen = itssIsegoturen,
+                UmumiSirketXerci = brutMaas + dsmfIsegoturen + issizlikIsegoturen + itssIsegoturen,
                 Izahatlar = izahatlar
             });
         }
@@ -490,6 +523,27 @@ namespace FinNex.Application.Services.HR
             decimal hesabGunluk = Math.Max(avgDaily, minDaily);
 
             return Math.Round(hesabGunluk * gunSayi, 2);
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // PİLLƏ TAP — məbləğin hansı pilləyə düşdüyünü təyin edir
+        // ─────────────────────────────────────────────────────────
+        private static VergiPille? PilleniTap(decimal mebleg, List<VergiPille> pilleler)
+        {
+            if (mebleg < 0 || !pilleler.Any()) return null;
+
+            // Pillələr AsagiHedd üzrə sıralanmış olmalıdır
+            foreach (var pille in pilleler)
+            {
+                if (mebleg >= pille.AsagiHedd &&
+                    (pille.YuxariHedd == null || mebleg < pille.YuxariHedd))
+                {
+                    return pille;
+                }
+            }
+
+            // Heç bir pilləyə uyğun gəlmədisə — məbləğ ən sonuncudan da böyükdür
+            return pilleler.LastOrDefault();
         }
 
         // ─────────────────────────────────────────────────────────

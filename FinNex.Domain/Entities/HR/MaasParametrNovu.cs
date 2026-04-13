@@ -14,6 +14,7 @@
 
         // Sirket odeyir (isciden tutulmur) -- evvel hardcode idi, indi parametrden
         DsmfIsegoturenFaizi = 7,
-        IssizlikIsegoturenFaizi = 8
+        IssizlikIsegoturenFaizi = 8,
+        IcbariTibbiSigortaIsegoturenFaizi = 9
     }
 }

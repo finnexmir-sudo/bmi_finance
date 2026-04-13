@@ -5,19 +5,16 @@
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 
     var all = Model.ToList();
+    var pilleler = (ViewBag.VergiPilleleri as List<VergiPille>) ?? new List<VergiPille>();
 
     var tutulmalar = all.Where(x =>
-        x.Nov == MaasParametrNovu.GelirVergisiFaizi ||
-        x.Nov == MaasParametrNovu.DsmfFaizi ||
-        x.Nov == MaasParametrNovu.IssizlikSigortasiFaizi ||
-        x.Nov == MaasParametrNovu.IcbariTibbiSigortaFaizi).ToList();
+        x.Nov == MaasParametrNovu.IssizlikSigortasiFaizi).ToList();
 
     var guzeshtler = all.Where(x =>
         x.Nov == MaasParametrNovu.VergiGuzestiMeblegi ||
         x.Nov == MaasParametrNovu.MinimumEmekHaqqi).ToList();
 
     var isegoturenler = all.Where(x =>
-        x.Nov == MaasParametrNovu.DsmfIsegoturenFaizi ||
         x.Nov == MaasParametrNovu.IssizlikIsegoturenFaizi).ToList();
 
     string NovAd(MaasParametrNovu n) => n switch
@@ -25,11 +22,12 @@
         MaasParametrNovu.GelirVergisiFaizi => "Gəlir Vergisi",
         MaasParametrNovu.DsmfFaizi => "DSMF (İşçi)",
         MaasParametrNovu.IssizlikSigortasiFaizi => "İşsizlik Sığortası (İşçi)",
-        MaasParametrNovu.IcbariTibbiSigortaFaizi => "İTSS",
+        MaasParametrNovu.IcbariTibbiSigortaFaizi => "İTSS (İşçi)",
         MaasParametrNovu.MinimumEmekHaqqi => "Minimum Əmək Haqqı",
         MaasParametrNovu.VergiGuzestiMeblegi => "Vergi Güzəşti",
         MaasParametrNovu.DsmfIsegoturenFaizi => "DSMF (İşəgötürən)",
         MaasParametrNovu.IssizlikIsegoturenFaizi => "İşsizlik (İşəgötürən)",
+        MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi => "İTSS (İşəgötürən)",
         _ => n.ToString()
     };
 
@@ -110,10 +108,198 @@
             </div>
         }
 
-        RenderGroup("İşçi Tutulmaları", "bi-person-dash", "blue", tutulmalar);
+        RenderGroup("Flat Dərəcələr (İşsizlik)", "bi-person-dash", "blue", tutulmalar);
         RenderGroup("Güzəştlər", "bi-gift", "gold", guzeshtler);
-        RenderGroup("İşəgötürən Payı", "bi-building", "purple", isegoturenler);
+        RenderGroup("İşəgötürən — Flat (İşsizlik)", "bi-building", "purple", isegoturenler);
     }
+
+    @* ──────────────────────────────────────────────────────────── *@
+    @*            PİLLƏLİ VERGİ DƏRƏCƏLƏRİ (2026 QAYDASI)            *@
+    @* ──────────────────────────────────────────────────────────── *@
+    @{
+        var pilleNovlari = new[]
+        {
+            (Nov: MaasParametrNovu.GelirVergisiFaizi,                 Ad: "Gəlir Vergisi",          Color: "green",  Icon: "bi-cash-stack"),
+            (Nov: MaasParametrNovu.DsmfFaizi,                         Ad: "DSMF (İşçi)",            Color: "blue",   Icon: "bi-person-dash"),
+            (Nov: MaasParametrNovu.IcbariTibbiSigortaFaizi,           Ad: "İTSS (İşçi)",            Color: "teal",   Icon: "bi-heart-pulse"),
+            (Nov: MaasParametrNovu.DsmfIsegoturenFaizi,               Ad: "DSMF (İşəgötürən)",      Color: "purple", Icon: "bi-building"),
+            (Nov: MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi, Ad: "İTSS (İşəgötürən)",      Color: "orange", Icon: "bi-building-check")
+        };
+    }
+
+    <div class="mp-pilleler-section">
+        <div class="mp-pilleler-header">
+            <div>
+                <h2 class="mp-pilleler-title">
+                    <i class="bi bi-bar-chart-steps"></i>
+                    Pilləli Vergi Dərəcələri
+                </h2>
+                <p class="mp-pilleler-sub">2026 qaydası — hər pillə üçün ayrı dərəcə və sabit məbləğ</p>
+            </div>
+            <button class="mp-btn-primary" id="mpOpenPilleCreate">
+                <i class="bi bi-plus-lg"></i> Yeni pillə
+            </button>
+        </div>
+
+        @foreach (var grup in pilleNovlari)
+        {
+            var grupPilleler = pilleler.Where(x => x.Nov == grup.Nov).OrderBy(x => x.Sira).ToList();
+
+            <div class="mp-pille-group mp-pille-group--@grup.Color">
+                <div class="mp-pille-group-head">
+                    <i class="bi @grup.Icon"></i>
+                    <span class="mp-pille-group-name">@grup.Ad</span>
+                    <span class="mp-pille-group-count">@grupPilleler.Count pillə</span>
+                </div>
+                <div class="mp-pille-list">
+                    @if (!grupPilleler.Any())
+                    {
+                        <div class="mp-pille-empty">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Bu növ üçün pillə yoxdur — flat faiz istifadə olunacaq
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var p in grupPilleler)
+                        {
+                            var araliq = p.YuxariHedd.HasValue
+                                ? $"{p.AsagiHedd:N0} – {p.YuxariHedd:N0} ₼"
+                                : $"{p.AsagiHedd:N0} ₼-dən yuxarı";
+
+                            <div class="mp-pille-row" data-pille-id="@p.Id">
+                                <div class="mp-pille-sira">@p.Sira</div>
+                                <div class="mp-pille-araliq">
+                                    <div class="mp-pille-araliq-label">İnterval</div>
+                                    <div class="mp-pille-araliq-val">@araliq</div>
+                                </div>
+                                <div class="mp-pille-formula">
+                                    <div class="mp-pille-formula-label">Düstur</div>
+                                    <div class="mp-pille-formula-val">
+                                        @if (p.SabitMebleg > 0)
+                                        {
+                                            <span class="mp-pille-sabit">@p.SabitMebleg.ToString("N2") ₼</span>
+                                            <span class="mp-pille-op">+</span>
+                                        }
+                                        <span class="mp-pille-faiz">@p.Faiz.ToString("G29")%</span>
+                                        @if (p.SabitMebleg > 0)
+                                        {
+                                            <span class="mp-pille-op">×</span>
+                                            <span class="mp-pille-artim">artım</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="mp-pille-status">
+                                    @if (p.Aktivdir)
+                                    {
+                                        <span class="mp-badge mp-badge--aktiv">Aktiv</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="mp-badge mp-badge--deaktiv">Deaktiv</span>
+                                    }
+                                </div>
+                                <div class="mp-pille-actions">
+                                    <button class="mp-card-btn mp-card-btn--edit" data-edit-pille-id="@p.Id" title="Redaktə et">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <button class="mp-card-btn mp-card-btn--delete" data-delete-pille-id="@p.Id" title="Sil">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </div>
+                                @if (!string.IsNullOrEmpty(p.Aciqlama))
+                                {
+                                    <div class="mp-pille-desc">@p.Aciqlama</div>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    @* ── Pillə modal ── *@
+    <div id="mpPilleModalOverlay" class="mp-modal-overlay">
+        <div class="mp-modal">
+            <div class="mp-modal-header">
+                <h3 id="mpPilleModalTitle">Yeni Pillə</h3>
+                <button class="mp-modal-close" id="mpPilleCloseBtn">&times;</button>
+            </div>
+            <div class="mp-modal-body">
+                <form id="mpPilleForm">
+                    <input type="hidden" id="mpPilleId" />
+
+                    <div class="mp-form-group">
+                        <label for="mpPilleNov">Parametr Növü</label>
+                        <select id="mpPilleNov" class="mp-form-control">
+                            <option value="1">Gəlir Vergisi</option>
+                            <option value="2">DSMF (İşçi)</option>
+                            <option value="4">İTSS (İşçi)</option>
+                            <option value="7">DSMF (İşəgötürən)</option>
+                            <option value="9">İTSS (İşəgötürən)</option>
+                        </select>
+                    </div>
+
+                    <div class="mp-form-row">
+                        <div class="mp-form-group">
+                            <label for="mpPilleSira">Sıra (1, 2, 3...)</label>
+                            <input type="number" id="mpPilleSira" class="mp-form-control" min="1" value="1" />
+                        </div>
+                    </div>
+
+                    <div class="mp-form-row">
+                        <div class="mp-form-group">
+                            <label for="mpPilleAsagi">Aşağı hədd (₼)</label>
+                            <input type="number" id="mpPilleAsagi" class="mp-form-control" step="0.01" min="0" />
+                        </div>
+                        <div class="mp-form-group">
+                            <label for="mpPilleYuxari">Yuxarı hədd (₼) <span style="color:#888">(boş = sonsuz)</span></label>
+                            <input type="number" id="mpPilleYuxari" class="mp-form-control" step="0.01" min="0" />
+                        </div>
+                    </div>
+
+                    <div class="mp-form-row">
+                        <div class="mp-form-group">
+                            <label for="mpPilleFaiz">Faiz (%)</label>
+                            <input type="number" id="mpPilleFaiz" class="mp-form-control" step="0.01" min="0" />
+                        </div>
+                        <div class="mp-form-group">
+                            <label for="mpPilleSabit">Sabit məbləğ (₼)</label>
+                            <input type="number" id="mpPilleSabit" class="mp-form-control" step="0.01" min="0" value="0" />
+                        </div>
+                    </div>
+
+                    <div class="mp-form-row">
+                        <div class="mp-form-group">
+                            <label for="mpPilleBaslama">Başlama Tarixi</label>
+                            <input type="date" id="mpPilleBaslama" class="mp-form-control" />
+                        </div>
+                        <div class="mp-form-group">
+                            <label for="mpPilleBitme">Bitmə Tarixi</label>
+                            <input type="date" id="mpPilleBitme" class="mp-form-control" />
+                        </div>
+                    </div>
+
+                    <div class="mp-form-group">
+                        <label for="mpPilleAciqlama">Açıqlama</label>
+                        <input type="text" id="mpPilleAciqlama" class="mp-form-control" placeholder="Əlavə qeyd..." />
+                    </div>
+
+                    <div id="mpPilleAktivdirWrap" class="mp-form-group mp-form-check" style="display:none;">
+                        <input type="checkbox" id="mpPilleAktivdir" checked />
+                        <label for="mpPilleAktivdir">Aktivdir</label>
+                    </div>
+                </form>
+            </div>
+            <div class="mp-modal-footer">
+                <button class="mp-btn-secondary" id="mpPilleCancelBtn">Ləğv et</button>
+                <button id="mpPilleSaveBtn" class="mp-btn-save">
+                    <i class="bi bi-check-lg"></i> Yadda saxla
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal -->
     <div id="mpModalOverlay" class="mp-modal-overlay">
