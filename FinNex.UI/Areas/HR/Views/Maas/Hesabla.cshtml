@@ -2,6 +2,12 @@
 @{
     ViewData["Title"] = "Maaş Hesabla";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    // Haradan gəlindiyini təyin et — Referer header-dən
+    var referer = Context.Request.Headers["Referer"].ToString();
+    var returnUrl = !string.IsNullOrEmpty(referer) && referer.Contains("/HR/Maas/")
+        ? referer
+        : Url.Action("Index", "Maas", new { area = "HR" });
 }
 
 <div class="fn-page">
@@ -10,7 +16,7 @@
             <div class="fn-page-title">Fərdi Maaş Hesabla</div>
             <div class="fn-page-sub">İşçi seçin, bonus/cərimə daxil edin, hesablayın</div>
         </div>
-        <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">← Siyahıya qayıt</a>
+        <a href="@returnUrl" class="fn-btn fn-btn--outline fn-btn--sm">← Geri qayıt</a>
     </div>
 
     @if (TempData["Error"] != null)
@@ -90,7 +96,7 @@
                 </div>
 
                 <div class="fn-form-actions">
-                    <a asp-action="Index" class="fn-btn fn-btn--outline">Ləğv et</a>
+                    <a href="@returnUrl" class="fn-btn fn-btn--outline">Ləğv et</a>
                     <button type="submit" class="fn-btn fn-btn--primary">
                         <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                             <path d="M6.5 1.5v5.5L9 4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
