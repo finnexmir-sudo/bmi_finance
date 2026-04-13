@@ -9,6 +9,11 @@
     var isHRGorunur = isHR || User.IsInRole(RoleNames.Rehber);
     // Mühasibatlıq: Mühasib + HR + Admin + Rəhbər (Rəhbər maaşları təsdiq edir)
     var isMuhasib = User.IsInRole(RoleNames.Muhasib) || isHR || User.IsInRole(RoleNames.Rehber);
+    // Yalnız Rəhbər rolu (HR/Admin/Muhasib deyil) — parametrləri/büdcə/xərc görməsin
+    var isRehberOnly = User.IsInRole(RoleNames.Rehber)
+                       && !User.IsInRole(RoleNames.HR)
+                       && !User.IsInRole(RoleNames.Admin)
+                       && !User.IsInRole(RoleNames.Muhasib);
 
     var _layoutVezife = ViewData["UserRole"] as string ?? "";
 
@@ -497,12 +502,6 @@
                 @if (isMuhasib)
                 {
                     @* Mühasibatlıq — Muhasib/HR/Admin (Rəhbər yalnız Əmək Haqqı görür) *@
-                    @{
-                        var isRehberOnly = User.IsInRole(RoleNames.Rehber)
-                                           && !User.IsInRole(RoleNames.HR)
-                                           && !User.IsInRole(RoleNames.Admin)
-                                           && !User.IsInRole(RoleNames.Muhasib);
-                    }
                     <div class="fn-nav-group @(currentController is "Maas" or "MaasParametri" or "Budce" or "Xerc" && currentArea == "HR" ? "open" : "")">
                         <button type="button" class="fn-nav-group-toggle">
                             <div class="fn-nav-group-left">
