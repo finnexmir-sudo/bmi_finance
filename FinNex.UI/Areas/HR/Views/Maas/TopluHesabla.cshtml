@@ -9,6 +9,8 @@
     var hesablanmis  = (List<int>)ViewBag.Hesablanmis;
     var cariMaasMap  = ViewBag.CariMaasMap as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
     var ibanMap      = ViewBag.IbanMap as Dictionary<int, string?> ?? new Dictionary<int, string?>();
+    var vergiPilleleriList = (ViewBag.VergiPilleleri as List<VergiPille>) ?? new();
+    var vergiGuzestiDeyer  = (decimal)(ViewBag.VergiGuzesti ?? 200m);
     var isciList     = Model.ToList();
 
     decimal GetEsas(int isciId) => cariMaasMap.TryGetValue(isciId, out var v) ? v : (isciList.FirstOrDefault(x => x.Id == isciId)?.Maliye?.CariMaas ?? 0m);
@@ -21,6 +23,21 @@
     int ibanYox   = isciList.Count(x => string.IsNullOrEmpty(GetIban(x.Id)));
 
     string Fmt(decimal v) => v > 0 ? v.ToString("N2") + " ₼" : "—";
+
+    // JS-ə keçiriləcək pilləli konfiqurasiya
+    var pilleConfigJson = System.Text.Json.JsonSerializer.Serialize(new
+    {
+        pilleler = vergiPilleleriList.GroupBy(x => (int)x.Nov).ToDictionary(
+            g => g.Key.ToString(),
+            g => g.OrderBy(x => x.Sira).Select(x => new {
+                AsagiHedd = x.AsagiHedd,
+                YuxariHedd = x.YuxariHedd,
+                Faiz = x.Faiz,
+                SabitMebleg = x.SabitMebleg
+            }).ToArray()
+        ),
+        vergiGuzesti = vergiGuzestiDeyer
+    });
 }
 
 @section Styles {
@@ -406,7 +423,7 @@
                                                     <div class="mth-detail-card-body">
                                                         <div class="mth-detail-item">
                                                             <span class="mth-detail-lbl">Güzəşt məbləği</span>
-                                                            <span class="n n--g">200.00 ₼</span>
+                                                            <span class="n n--g">@vergiGuzestiDeyer.ToString("N2") ₼</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -419,14 +436,15 @@
                                                             <path d="M7 4.5v3M7 9v.5" stroke="#d85a30" stroke-width="1.2" stroke-linecap="round"/>
                                                         </svg>
                                                         <span>İşçi tutulmaları</span>
+                                                        <span class="mth-rate-hint" style="margin-left:auto;font-size:9px;color:#6366f1;font-weight:700;">PİLLƏLİ</span>
                                                     </div>
                                                     <div class="mth-detail-card-body mth-detail-card-body--row">
                                                         <div class="mth-detail-item">
-                                                            <span class="mth-detail-lbl">Gəlir V. <span class="mth-rate-hint">14%</span></span>
+                                                            <span class="mth-detail-lbl">Gəlir V.</span>
                                                             <span class="n n--r" data-p="gelirv">—</span>
                                                         </div>
                                                         <div class="mth-detail-item">
-                                                            <span class="mth-detail-lbl">DSMF <span class="mth-rate-hint">3%</span></span>
+                                                            <span class="mth-detail-lbl">DSMF</span>
                                                             <span class="n n--p" data-p="dsmf">—</span>
                                                         </div>
                                                         <div class="mth-detail-item">
@@ -434,7 +452,7 @@
                                                             <span class="n" data-p="issizlik">—</span>
                                                         </div>
                                                         <div class="mth-detail-item">
-                                                            <span class="mth-detail-lbl">İTSS <span class="mth-rate-hint">2%</span></span>
+                                                            <span class="mth-detail-lbl">İTSS</span>
                                                             <span class="n" data-p="itss">—</span>
                                                         </div>
                                                         <div class="mth-detail-sep"></div>
@@ -456,17 +474,21 @@
                                                     </div>
                                                     <div class="mth-detail-card-body">
                                                         <div class="mth-detail-item">
-                                                            <span class="mth-detail-lbl">DSMF işv. <span class="mth-rate-hint">22%</span></span>
-                                                            <span class="n n--p" data-p="dsmfisv">@Fmt(esas * 0.22m)</span>
+                                                            <span class="mth-detail-lbl">DSMF işv.</span>
+                                                            <span class="n n--p" data-p="dsmfisv">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">İTSS işv.</span>
+                                                            <span class="n n--p" data-p="itssisv">—</span>
                                                         </div>
                                                         <div class="mth-detail-item">
                                                             <span class="mth-detail-lbl">İşsizlik işv. <span class="mth-rate-hint">0.5%</span></span>
-                                                            <span class="n" data-p="issizlikisv">@Fmt(esas * 0.005m)</span>
+                                                            <span class="n" data-p="issizlikisv">—</span>
                                                         </div>
                                                         <div class="mth-detail-sep"></div>
                                                         <div class="mth-detail-item mth-detail-item--total">
                                                             <span class="mth-detail-lbl">Ümumi</span>
-                                                            <span class="n n--p" data-p="sirketcemi">@Fmt(esas * 0.225m)</span>
+                                                            <span class="n n--p" data-p="sirketcemi">—</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -597,6 +619,8 @@
 </div>
 
 @section Scripts {
+    @* Pilləli vergi konfiqurasiyası (JS-ə ötürülür) *@
+    <script type="application/json" id="mthVergiConfig">@Html.Raw(pilleConfigJson)</script>
     <script>
         function mthNav() {
             const il = document.getElementById('mthIl').value;

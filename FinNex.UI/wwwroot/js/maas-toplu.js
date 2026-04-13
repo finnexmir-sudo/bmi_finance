@@ -5,8 +5,55 @@
 (function () {
     'use strict';
 
-    const RATES = { gelirV: 0.14, dsmfIsci: 0.03, issizlik: 0.005, itss: 0.02 };
-    const RATES_ISV = { dsmf: 0.22, issizlik: 0.005 };
+    // ── Pilləli vergi dərəcələri (serverdən JSON) ──────────────
+    // Enum: 1=GelirVergisi, 2=DsmfIsci, 3=IssizlikIsci,
+    // 4=ItssIsci, 7=DsmfIsegoturen, 8=IssizlikIsegoturen, 9=ItssIsegoturen
+    let PILLELER = {};
+    let VERGI_GUZESTI = 200;
+    try {
+        const rawEl = document.getElementById('mthVergiConfig');
+        if (rawEl) {
+            const cfg = JSON.parse(rawEl.textContent);
+            PILLELER = cfg.pilleler || {};
+            VERGI_GUZESTI = parseFloat(cfg.vergiGuzesti) || 200;
+        }
+    } catch (e) { console.error('Vergi konfiqurasiyası yüklənmədi:', e); }
+
+    // Flat fallback — əgər pillə yoxdursa
+    const FLAT = { issizlik: 0.005, issizlikIsv: 0.005 };
+
+    /* ── Pilləli hesablama (server ilə eyni məntiq) ──────────── */
+    function pilleliHesabla(mebleg, nov) {
+        const pilleler = PILLELER[nov] || [];
+        if (mebleg <= 0 || pilleler.length === 0) return null;
+
+        // AsagiHedd üzrə sıralı
+        const sorted = [...pilleler].sort((a, b) => a.AsagiHedd - b.AsagiHedd);
+
+        let pille = null;
+        for (const p of sorted) {
+            if (mebleg >= p.AsagiHedd &&
+                (p.YuxariHedd === null || p.YuxariHedd === undefined || mebleg < p.YuxariHedd)) {
+                pille = p;
+                break;
+            }
+        }
+        // Məbləğ ən yuxarı pillədən də böyükdürsə → sonuncu
+        if (!pille) pille = sorted[sorted.length - 1];
+        if (!pille) return null;
+
+        return Math.round(
+            (pille.SabitMebleg + (mebleg - pille.AsagiHedd) * (pille.Faiz / 100)) * 100
+        ) / 100;
+    }
+
+    function hesablaTutulma(mebleg, nov, flatFaiz) {
+        if (mebleg <= 0) return 0;
+        const pilleli = pilleliHesabla(mebleg, nov);
+        if (pilleli !== null) return pilleli;
+        // Fallback: flat faiz
+        return Math.round(mebleg * flatFaiz * 100) / 100;
+    }
 
     const chkAll = document.getElementById('mthChkAll');
     if (chkAll) chkAll.style.pointerEvents = 'auto';
@@ -30,21 +77,28 @@
         const bonus = parseFloat(bInp?.value || 0) || 0;
         const cerime = parseFloat(cInp?.value || 0) || 0;
         const brut = Math.max(esas + bonus - cerime, 0);
-        const gelirV = brut * RATES.gelirV;
-        const dsmf = brut * RATES.dsmfIsci;
-        const iss = brut * RATES.issizlik;
-        const itss = brut * RATES.itss;
-        const tutulma = gelirV + dsmf + iss + itss;
-        const net = Math.max(brut - tutulma, 0);
 
-        // Employer costs
-        const dsmfIsv = brut * RATES_ISV.dsmf;
-        const issIsv = brut * RATES_ISV.issizlik;
-        const sirketCemi = dsmfIsv + issIsv;
+        // Vergilənəcək məbləğ: brut - vergi güzəşti
+        const vergilenecek = Math.max(0, brut - VERGI_GUZESTI);
+
+        // İşçidən tutulanlar (pilləli + flat)
+        const gelirV  = hesablaTutulma(vergilenecek, 1, 0);       // 1 = GelirVergisi
+        const dsmf    = hesablaTutulma(brut,         2, 0);       // 2 = DsmfIsci
+        const iss     = hesablaTutulma(brut,         3, FLAT.issizlik); // flat
+        const itss    = hesablaTutulma(brut,         4, 0);       // 4 = ItssIsci
+        const tutulma = gelirV + dsmf + iss + itss;
+        const net     = Math.max(brut - tutulma, 0);
+
+        // İşəgötürən xərcləri (pilləli + flat)
+        const dsmfIsv = hesablaTutulma(brut, 7, 0);               // 7 = DsmfIsegoturen
+        const itssIsv = hesablaTutulma(brut, 9, 0);               // 9 = ItssIsegoturen
+        const issIsv  = hesablaTutulma(brut, 8, FLAT.issizlikIsv);// flat
+        const sirketCemi = dsmfIsv + issIsv + itssIsv;
 
         return {
-            esas, bonus, cerime, brut, gelirV, dsmf, iss, itss, tutulma, net,
-            dsmfIsv, issIsv, sirketCemi,
+            esas, bonus, cerime, brut, vergilenecek,
+            gelirV, dsmf, iss, itss, tutulma, net,
+            dsmfIsv, issIsv, itssIsv, sirketCemi,
             checked: !!chk?.checked && !done, done
         };
     }
@@ -94,6 +148,7 @@
 
         // Employer costs in detail (update dynamically based on brut)
         set('[data-p="dsmfisv"]', fmt(d.dsmfIsv), d.dsmfIsv > 0 ? 'n n--p' : 'n n--d');
+        set('[data-p="itssisv"]', fmt(d.itssIsv), d.itssIsv > 0 ? 'n n--p' : 'n n--d');
         set('[data-p="issizlikisv"]', fmt(d.issIsv), d.issIsv > 0 ? 'n' : 'n n--d');
         set('[data-p="sirketcemi"]', fmt(d.sirketCemi), d.sirketCemi > 0 ? 'n n--p' : 'n n--d');
     }

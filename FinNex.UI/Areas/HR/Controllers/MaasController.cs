@@ -212,12 +212,24 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .OrderBy(x => x.Nov).ThenBy(x => x.Sira)
                 .ToListAsync();
 
+            // Vergi güzəşti və minimum əmək haqqı (flat parametrlərdən)
+            var flatParamlar = await _unitOfWork.Repository<MaasParametri>()
+                .Query()
+                .Where(x =>
+                    x.Aktivdir && !x.Silinib &&
+                    x.BaslamaTarixi <= hesabTarixi &&
+                    (x.BitmeTarixi == null || x.BitmeTarixi >= hesabTarixi))
+                .OrderByDescending(x => x.BaslamaTarixi)
+                .ToListAsync();
+            var vergiGuzesti = flatParamlar.FirstOrDefault(x => x.Nov == MaasParametrNovu.VergiGuzestiMeblegi)?.Deyer ?? 200m;
+
             ViewBag.Il = cIl;
             ViewBag.Ay = cAy;
             ViewBag.Hesablanmis = hesablanmis;
             ViewBag.CariMaasMap = cariMaasMap;
             ViewBag.IbanMap = ibanMap;
             ViewBag.VergiPilleleri = pilleler;
+            ViewBag.VergiGuzesti = vergiGuzesti;
             ViewBag.Iller = IlSiyahisi(cIl);
             ViewBag.Aylar = AySiyahisi(cAy);
 
