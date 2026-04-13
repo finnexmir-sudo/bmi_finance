@@ -360,8 +360,11 @@
                     @{
                         // HR İdarəetmə yalnız HR area-nın HR-specific controllerləri üçün açılsın
                         // (Maas/MaasParametri/Budce/Xerc Mühasibatlıq altındadır, HR altında deyil)
-                        var hrOpen = (currentArea == "HR" &&
-                                      currentController is not ("Maas" or "MaasParametri" or "Budce" or "Xerc"))
+                        var isAccountingCtrl = currentController == "Maas"
+                                               || currentController == "MaasParametri"
+                                               || currentController == "Budce"
+                                               || currentController == "Xerc";
+                        var hrOpen = (currentArea == "HR" && !isAccountingCtrl)
                                      || currentController == "XestelikEzamiyyet";
                     }
                     <div class="fn-nav-group @(hrOpen ? "open" : "")">
