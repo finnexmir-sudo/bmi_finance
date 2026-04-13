@@ -158,13 +158,16 @@
         const sel = rows.filter(r => rd(r).checked);
         const t = sel.reduce((a, r) => {
             const d = rd(r);
-            a.brut += d.brut;
-            a.tutulma += d.tutulma;
-            a.net += d.net;
-            a.sirketEx += d.sirketCemi;          // yalnız işəgötürən əlavə xərclər
-            a.sirket   += d.brut + d.sirketCemi; // brut + işəgötürən əlavələri (ümumi)
+            a.brut     += d.brut;
+            a.tutulma  += d.tutulma;
+            a.net      += d.net;
+            a.dsmfIsv  += d.dsmfIsv;
+            a.issIsv   += d.issIsv;
+            a.itssIsv  += d.itssIsv;
+            a.sirketEx += d.sirketCemi;          // DSMF + işsizlik + İTSS (işəgötürən)
+            a.sirket   += d.brut + d.sirketCemi; // Brüt + əlavələri (ümumi xərc)
             return a;
-        }, { brut: 0, tutulma: 0, net: 0, sirketEx: 0, sirket: 0 });
+        }, { brut: 0, tutulma: 0, net: 0, dsmfIsv: 0, issIsv: 0, itssIsv: 0, sirketEx: 0, sirket: 0 });
 
         const s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
         s('mthFootSayi', sel.length);
@@ -172,6 +175,9 @@
         s('mthFootTutulma', fmt(t.tutulma));
         s('mthFootNet', fmt(t.net));
         s('mthFootNet2', fmt(t.net));
+        s('mthFootDsmfIsv', fmt(t.dsmfIsv));
+        s('mthFootIssizlikIsv', fmt(t.issIsv));
+        s('mthFootItssIsv', fmt(t.itssIsv));
         s('mthFootSirketEx', fmt(t.sirketEx));
         s('mthFootSirket', fmt(t.sirket));
 
