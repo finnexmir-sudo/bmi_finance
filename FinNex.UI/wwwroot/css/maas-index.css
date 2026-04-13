@@ -325,7 +325,8 @@
     border: 1px solid #e2e6ef;
     border-radius: 13px;
     box-shadow: 0 2px 8px rgba(15,26,46,.05);
-    overflow: hidden;
+    /* overflow: hidden silindi — sticky sütunlar üçün lazımdır.
+       Border-radius hələ də işləyir — table-wrap clipping-i öz üzərinə götürür. */
 }
 
 .mi-toolbar {
