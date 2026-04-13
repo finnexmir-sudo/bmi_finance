@@ -1021,3 +1021,14 @@
     transform: translateY(-1px);
 }
 .mi-btn--green svg { color: #fff; }
+
+/* Footer cəmi sətri — vurğulu */
+.mi-tfoot-cemi {
+    background: linear-gradient(180deg, #fef3c7, #fffbeb) !important;
+    border-top: 2px solid #fbbf24 !important;
+}
+.mi-tfoot-cemi td {
+    padding: 13px 10px !important;
+    text-align: center;
+}
+.mi-tfoot-cemi td.center { text-align: center; }

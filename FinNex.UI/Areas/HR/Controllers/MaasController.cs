@@ -384,6 +384,36 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
         }
 
+        // ── POST /HR/Maas/TopluOdeniş ────────────────────────────
+        // Bütün təsdiqlənmiş maaşları bir kliklə "Ödənildi" işarələ
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.Muhasib + "," + RoleNames.Admin)]
+        public async Task<IActionResult> TopluOdenis(int il, int ay)
+        {
+            var maaslar = await _unitOfWork.Repository<Maas>()
+                .Query()
+                .Where(x => x.Il == il && x.Ay == ay && !x.Silinib && x.Status == MaasStatus.Tesdiqlendi)
+                .ToListAsync();
+
+            if (!maaslar.Any())
+            {
+                TempData["Error"] = "Ödəniş üçün təsdiqlənmiş maaş tapılmadı.";
+                return RedirectToAction(nameof(Index), new { il, ay });
+            }
+
+            int ugurlu = 0, xeta = 0;
+            foreach (var m in maaslar)
+            {
+                var r = await _maasService.StatusDeyisAsync(m.Id, MaasStatus.Odenildi);
+                if (r.Success) ugurlu++;
+                else xeta++;
+            }
+
+            TempData[xeta > 0 ? "Error" : "Success"] =
+                $"Toplu ödəniş: {ugurlu} maaş 'Ödənildi' işarələndi" + (xeta > 0 ? $", {xeta} xətalı." : ".");
+            return RedirectToAction(nameof(Index), new { il, ay });
+        }
+
         // ── POST /HR/Maas/TopluTesdiqle ──────────────────────────
         // Bütün Layihə statuslu maaşları bir kliklə təsdiqlə
         [HttpPost, ValidateAntiForgeryToken]
@@ -619,33 +649,193 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         // ── GET /HR/Maas/BankFayliYukle ──────────────────────────
-        [Authorize(Roles = RoleNames.Muhasib + "," + RoleNames.Admin)]
+        // Tam Excel ixracı (ClosedXML ilə) — bütün məlumatlarla səliqəli
+        [Authorize(Roles = RoleNames.Muhasib + "," + RoleNames.Admin + "," + RoleNames.HR + "," + RoleNames.Rehber)]
         public async Task<IActionResult> BankFayliYukle(int il, int ay)
         {
             var maaslar = await _unitOfWork.Repository<Maas>()
                 .Query()
-                .Where(x => !x.Silinib && x.Il == il && x.Ay == ay &&
-                            x.Status == MaasStatus.Tesdiqlendi)
+                .Where(x => !x.Silinib && x.Il == il && x.Ay == ay)
                 .Include(x => x.Isci).ThenInclude(i => i.Maliye)
+                .Include(x => x.Isci).ThenInclude(i => i.IsciTeyinatlari.Where(t => t.BitmeTarixi == null))
+                    .ThenInclude(t => t.Departament)
+                .Include(x => x.Isci).ThenInclude(i => i.IsciTeyinatlari.Where(t => t.BitmeTarixi == null))
+                    .ThenInclude(t => t.Vezife)
+                .Include(x => x.Detallar).ThenInclude(d => d.MaasNovu)
+                .OrderBy(x => x.Isci.Soyad).ThenBy(x => x.Isci.Ad)
                 .ToListAsync();
 
             if (!maaslar.Any())
             {
-                TempData["Error"] = "Təsdiqlənmiş maaş tapılmadı.";
+                TempData["Error"] = "Bu dövr üçün maaş tapılmadı.";
                 return RedirectToAction(nameof(Index), new { il, ay });
             }
 
-            var satirlar = new List<string> { "Ad Soyad;IBAN;Məbləğ;İzah;Tarix" };
+            var ayAdlar = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+                                  "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+
+            using var workbook = new ClosedXML.Excel.XLWorkbook();
+            var ws = workbook.Worksheets.Add($"Əmək Haqqı {ayAdlar[ay]} {il}");
+
+            // ── Başlıq sətri (mərge) ─────────────────────────────
+            ws.Cell("A1").Value = $"ƏMƏK HAQQI HESABLAMASI — {ayAdlar[ay]} {il}";
+            ws.Range("A1:Q1").Merge();
+            ws.Cell("A1").Style.Font.Bold = true;
+            ws.Cell("A1").Style.Font.FontSize = 14;
+            ws.Cell("A1").Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+            ws.Cell("A1").Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#1a2332");
+            ws.Cell("A1").Style.Font.FontColor = ClosedXML.Excel.XLColor.White;
+            ws.Row(1).Height = 28;
+
+            // Yaradılma tarixi
+            ws.Cell("A2").Value = $"Yaradılma tarixi: {DateTime.Now:dd.MM.yyyy HH:mm}";
+            ws.Range("A2:Q2").Merge();
+            ws.Cell("A2").Style.Font.Italic = true;
+            ws.Cell("A2").Style.Font.FontSize = 10;
+            ws.Cell("A2").Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+            ws.Cell("A2").Style.Font.FontColor = ClosedXML.Excel.XLColor.FromHtml("#7a8599");
+
+            // ── Sütun başlıqları ─────────────────────────────────
+            var headers = new[] {
+                "№", "Ad Soyad", "Departament", "Vəzifə", "FİN", "IBAN",
+                "Əsas Maaş", "Bonus", "Məz. Ödəniş", "Cərimə",
+                "BRÜT", "Gəlir Vergisi", "DSMF (İşçi)", "İşsizlik (İşçi)", "İTSS (İşçi)",
+                "NET MAAŞ", "Status"
+            };
+
+            int headerRow = 4;
+            for (int i = 0; i < headers.Length; i++)
+            {
+                var cell = ws.Cell(headerRow, i + 1);
+                cell.Value = headers[i];
+                cell.Style.Font.Bold = true;
+                cell.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#c9900a");
+                cell.Style.Font.FontColor = ClosedXML.Excel.XLColor.White;
+                cell.Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+                cell.Style.Alignment.Vertical = ClosedXML.Excel.XLAlignmentVerticalValues.Center;
+                cell.Style.Border.OutsideBorder = ClosedXML.Excel.XLBorderStyleValues.Thin;
+            }
+            ws.Row(headerRow).Height = 32;
+
+            decimal Get(Maas m, string ad) =>
+                m.Detallar.Where(d => d.MaasNovu?.Ad == ad).Sum(d => d.Mebleg);
+
+            // ── Data sətirləri ─────────────────────────────────
+            int row = headerRow + 1;
+            int sira = 1;
             foreach (var m in maaslar)
             {
+                var teyinat = m.Isci.IsciTeyinatlari.FirstOrDefault();
                 var iban = m.Isci.Maliye?.BankHesabNo ?? "";
-                satirlar.Add(
-                    $"{m.Isci.Ad} {m.Isci.Soyad};{iban};{m.NetMebleg:F2};" +
-                    $"{il}/{ay:D2} əmək haqqı;{DateTime.Now:dd.MM.yyyy}");
+                var fin = m.Isci.FIN ?? "";
+                var dept = teyinat?.Departament?.Ad ?? "—";
+                var vezife = teyinat?.Vezife?.Ad ?? "—";
+
+                var esas = Get(m, "Əsas Əməkhaqqı");
+                var bonus = Get(m, "Bonus/Mükafat");
+                var mezOd = Get(m, "Məzuniyyət Ödənişi");
+                var cerime = Get(m, "Gecikdirmə Cəriməsi") + Get(m, "Davamiyyət Kəsintisi");
+                var gelirV = Get(m, "Gəlir Vergisi");
+                var dsmf = Get(m, "DSMF (İşçi)");
+                var iss = Get(m, "İşsizlik Sığortası (İşçi)");
+                var itss = Get(m, "İTSS");
+
+                var statusText = m.Status switch
+                {
+                    MaasStatus.Layihe => "Layihə",
+                    MaasStatus.Tesdiqlendi => "Təsdiqləndi",
+                    MaasStatus.Odenildi => "Ödənildi",
+                    MaasStatus.LegvEdildi => "Ləğv edildi",
+                    _ => m.Status.ToString()
+                };
+
+                ws.Cell(row, 1).Value = sira;
+                ws.Cell(row, 2).Value = $"{m.Isci.Ad} {m.Isci.Soyad}";
+                ws.Cell(row, 3).Value = dept;
+                ws.Cell(row, 4).Value = vezife;
+                ws.Cell(row, 5).Value = fin;
+                ws.Cell(row, 6).Value = iban;
+                ws.Cell(row, 7).Value = esas;
+                ws.Cell(row, 8).Value = bonus;
+                ws.Cell(row, 9).Value = mezOd;
+                ws.Cell(row, 10).Value = cerime;
+                ws.Cell(row, 11).Value = m.BrutMebleg;
+                ws.Cell(row, 12).Value = gelirV;
+                ws.Cell(row, 13).Value = dsmf;
+                ws.Cell(row, 14).Value = iss;
+                ws.Cell(row, 15).Value = itss;
+                ws.Cell(row, 16).Value = m.NetMebleg;
+                ws.Cell(row, 17).Value = statusText;
+
+                // Number formatting (kolonlar 7-16)
+                for (int c = 7; c <= 16; c++)
+                {
+                    ws.Cell(row, c).Style.NumberFormat.Format = "#,##0.00 \"₼\"";
+                    ws.Cell(row, c).Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Right;
+                }
+                ws.Cell(row, 1).Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+                ws.Cell(row, 17).Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+
+                // NET kolonu vurğula
+                ws.Cell(row, 16).Style.Font.Bold = true;
+                ws.Cell(row, 16).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#fffbeb");
+                // BRÜT kolonu da vurğula
+                ws.Cell(row, 11).Style.Font.Bold = true;
+
+                // Sətir border-ı
+                ws.Range(row, 1, row, headers.Length).Style.Border.OutsideBorder = ClosedXML.Excel.XLBorderStyleValues.Thin;
+                ws.Range(row, 1, row, headers.Length).Style.Border.InsideBorder = ClosedXML.Excel.XLBorderStyleValues.Thin;
+
+                row++;
+                sira++;
             }
 
-            var bytes = System.Text.Encoding.UTF8.GetBytes(string.Join("\n", satirlar));
-            return File(bytes, "text/csv", $"maas_{il}_{ay:D2}.csv");
+            // ── CƏMI sətri ─────────────────────────────────────
+            int totalRow = row;
+            ws.Cell(totalRow, 1).Value = "";
+            ws.Cell(totalRow, 2).Value = $"CƏMİ — {maaslar.Count} işçi";
+            ws.Range(totalRow, 1, totalRow, 6).Merge();
+
+            ws.Cell(totalRow, 7).FormulaA1 = $"SUM(G{headerRow + 1}:G{row - 1})";
+            ws.Cell(totalRow, 8).FormulaA1 = $"SUM(H{headerRow + 1}:H{row - 1})";
+            ws.Cell(totalRow, 9).FormulaA1 = $"SUM(I{headerRow + 1}:I{row - 1})";
+            ws.Cell(totalRow, 10).FormulaA1 = $"SUM(J{headerRow + 1}:J{row - 1})";
+            ws.Cell(totalRow, 11).FormulaA1 = $"SUM(K{headerRow + 1}:K{row - 1})";
+            ws.Cell(totalRow, 12).FormulaA1 = $"SUM(L{headerRow + 1}:L{row - 1})";
+            ws.Cell(totalRow, 13).FormulaA1 = $"SUM(M{headerRow + 1}:M{row - 1})";
+            ws.Cell(totalRow, 14).FormulaA1 = $"SUM(N{headerRow + 1}:N{row - 1})";
+            ws.Cell(totalRow, 15).FormulaA1 = $"SUM(O{headerRow + 1}:O{row - 1})";
+            ws.Cell(totalRow, 16).FormulaA1 = $"SUM(P{headerRow + 1}:P{row - 1})";
+
+            for (int c = 7; c <= 16; c++)
+            {
+                ws.Cell(totalRow, c).Style.NumberFormat.Format = "#,##0.00 \"₼\"";
+                ws.Cell(totalRow, c).Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Right;
+            }
+            ws.Range(totalRow, 1, totalRow, headers.Length).Style.Font.Bold = true;
+            ws.Range(totalRow, 1, totalRow, headers.Length).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#1a2332");
+            ws.Range(totalRow, 1, totalRow, headers.Length).Style.Font.FontColor = ClosedXML.Excel.XLColor.White;
+            ws.Range(totalRow, 1, totalRow, headers.Length).Style.Border.OutsideBorder = ClosedXML.Excel.XLBorderStyleValues.Medium;
+            ws.Row(totalRow).Height = 26;
+
+            // ── Sütun enini avtomatik nizamla ─────────────────
+            ws.Columns().AdjustToContents();
+            ws.Column(2).Width = Math.Max(ws.Column(2).Width, 25); // Ad Soyad
+            ws.Column(3).Width = Math.Max(ws.Column(3).Width, 18); // Departament
+            ws.Column(4).Width = Math.Max(ws.Column(4).Width, 18); // Vəzifə
+
+            // Freeze header row
+            ws.SheetView.FreezeRows(headerRow);
+
+            // ── Stream qaytarma ───────────────────────────────
+            using var stream = new System.IO.MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Position = 0;
+
+            var fileName = $"Maas_{ayAdlar[ay]}_{il}.xlsx";
+            return File(stream.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
         }
 
         // ── GET /HR/Maas/BankKocurme ─────────────────────────────
