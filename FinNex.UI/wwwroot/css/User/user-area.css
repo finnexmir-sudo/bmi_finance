@@ -1050,34 +1050,38 @@ body {
 }
 
 .fn-ad--present {
-    background: #edf8f4;
-    color: #1a7a50;
+    background: #86efac;
+    color: #14532d;
+    font-weight: 700;
 }
 
 .fn-ad--absent {
-    background: #fef0f0;
-    color: #c0392b;
+    background: #fca5a5;
+    color: #7f1d1d;
+    font-weight: 700;
 }
 
 .fn-ad--leave {
-    background: #fef9ec;
-    color: #b8860b;
+    background: #fcd34d;
+    color: #78350f;
+    font-weight: 700;
 }
 
 .fn-ad--weekend {
-    background: #f5f6fa;
-    color: #c8cdd8;
+    background: #e2e8f0;
+    color: #64748b;
 }
 
 .fn-ad--future {
-    background: #f5f6fa;
-    color: #d8dce6;
-    border: 1px dashed #dde1ea;
+    background: #f1f5f9;
+    color: #94a3b8;
+    border: 1px dashed #cbd5e1;
 }
 
 .fn-ad--late {
-    background: #fff3e0;
-    color: #e65100;
+    background: #fdba74;
+    color: #7c2d12;
+    font-weight: 700;
 }
 
 .fn-ad--empty {
