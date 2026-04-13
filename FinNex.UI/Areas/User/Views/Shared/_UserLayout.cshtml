@@ -10,6 +10,16 @@
     var isMuhasib = User.IsInRole(RoleNames.Muhasib) || isHR;
 
     var _layoutVezife = ViewData["UserRole"] as string ?? "";
+
+    // Sidebar qrupların açılma məntiqi —
+    // HR İdarəetmə qrupu yalnız HR area-nın non-accounting controllerləri üçün açılsın
+    // (Maas/MaasParametri/Budce/Xerc Mühasibatlıq altındadır)
+    var isAccountingCtrl = currentController == "Maas"
+                           || currentController == "MaasParametri"
+                           || currentController == "Budce"
+                           || currentController == "Xerc";
+    var hrGroupOpen = (currentArea == "HR" && !isAccountingCtrl)
+                      || currentController == "XestelikEzamiyyet";
 }
 
 <!DOCTYPE html>
@@ -357,17 +367,7 @@
                 {
                     <div class="fn-nav-label">HR İdarəetmə</div>
 
-                    @{
-                        // HR İdarəetmə yalnız HR area-nın HR-specific controllerləri üçün açılsın
-                        // (Maas/MaasParametri/Budce/Xerc Mühasibatlıq altındadır, HR altında deyil)
-                        var isAccountingCtrl = currentController == "Maas"
-                                               || currentController == "MaasParametri"
-                                               || currentController == "Budce"
-                                               || currentController == "Xerc";
-                        var hrOpen = (currentArea == "HR" && !isAccountingCtrl)
-                                     || currentController == "XestelikEzamiyyet";
-                    }
-                    <div class="fn-nav-group @(hrOpen ? "open" : "")">
+                    <div class="fn-nav-group @(hrGroupOpen ? "open" : "")">
                         <button type="button" class="fn-nav-group-toggle">
                             <div class="fn-nav-group-left">
                                 <div class="fn-nav-icon">
