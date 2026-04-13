@@ -16,6 +16,10 @@
     var ezamiyyetSayi = list.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
     var cemi = list.Count;
 
+    var aktivIsciSayi = ViewBag.AktivIsciSayi as int? ?? 0;
+    var gozlenilenSayi = aktivIsciSayi - cemi;
+    if (gozlenilenSayi < 0) gozlenilenSayi = 0;
+
     var iseSaatleri = list
         .Where(x => x.GirisVaxti.HasValue && x.CixisVaxti.HasValue)
         .Select(x => (x.CixisVaxti!.Value - x.GirisVaxti!.Value).TotalHours)
@@ -98,13 +102,13 @@
                 <div class="hrd-kpi-lbl">Ezamiyyət</div>
             </div>
         </div>
-        <div class="hrd-kpi hrd-kpi--clickable" data-status="" title="Hamısı">
+        <div class="hrd-kpi hrd-kpi--stat" title="Hələ qeydə alınmamış işçilər">
             <div class="hrd-kpi-icon hrd-kpi-icon--indigo">
-                <i class="bi bi-people-fill"></i>
+                <i class="bi bi-hourglass-split"></i>
             </div>
             <div class="hrd-kpi-body">
-                <div class="hrd-kpi-val" id="kpiCemi">@cemi</div>
-                <div class="hrd-kpi-lbl">Cəmi qeyd</div>
+                <div class="hrd-kpi-val" id="kpiGozlenilen">@gozlenilenSayi</div>
+                <div class="hrd-kpi-lbl">Gözlənilir</div>
             </div>
         </div>
         <div class="hrd-kpi hrd-kpi--stat">
