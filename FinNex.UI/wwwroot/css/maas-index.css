@@ -1070,14 +1070,24 @@
     box-shadow: 4px 0 8px rgba(15, 26, 46, 0.08);
 }
 
-/* Header row group istisna — onlar mərkəzi span-lardır */
-.mi-table thead .tr-group th:nth-child(1),
-.mi-table thead .tr-group th:nth-child(2),
-.mi-table thead .tr-group th:nth-child(3),
-.mi-table thead .tr-group th:nth-child(4) {
-    position: relative;
-    left: auto;
-    z-index: auto;
+/* Group row (tr-group) — ilk 3 hücrə də sticky olmalıdır ki tr-cols ilə düz xəttdə olsun */
+.mi-table thead .tr-group th:nth-child(1) {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: #f0f2f7;
+}
+.mi-table thead .tr-group th:nth-child(2) {
+    position: sticky;
+    left: 110px;
+    z-index: 10;
+    background: #f0f2f7;
+}
+.mi-table thead .tr-group th:nth-child(3) {
+    position: sticky;
+    left: 230px;
+    z-index: 10;
+    background: #f0f2f7;
 }
 
 /* Hover state-də sticky sütunlarda da fon dəyişməsi */
