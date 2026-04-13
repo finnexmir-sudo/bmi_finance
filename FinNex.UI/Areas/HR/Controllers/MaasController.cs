@@ -581,18 +581,10 @@ namespace FinNex.UI.Areas.HR.Controllers
                     TempData["Error"] = "Maaşı yalnız Mühasib və ya Admin 'Ödənildi' edə bilər.";
                     return RedirectToAction(nameof(Index), new { il, ay });
                 }
-
-                var m = await _unitOfWork.Repository<Maas>()
-                    .Query()
-                    .Where(x => x.Id == id)
-                    .Include(x => x.Isci).ThenInclude(i => i.Maliye)
-                    .FirstOrDefaultAsync();
-
-                if (string.IsNullOrEmpty(m?.Isci?.Maliye?.BankHesabNo))
-                {
-                    TempData["Error"] = "İşçinin IBAN məlumatı yoxdur.";
-                    return RedirectToAction(nameof(Index), new { il, ay });
-                }
+                // Qeyd: IBAN yoxlaması çıxarıldı — bank əməliyyatı sistemxarici
+                // aparılır. Mühasib öncədən bank köçürməsini həyata keçirir,
+                // sonra burada təsdiqləyir. Bəzi işçilərin IBAN-ı bazada
+                // olmaya bilər (məs. nağd ödəniş alanlar).
             }
             else if (yeniStatus == MaasStatus.LegvEdildi)
             {
