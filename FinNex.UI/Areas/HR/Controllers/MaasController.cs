@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FinNex.UI.Areas.HR.Controllers
 {
     [Area("HR")]
-    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Muhasib)]
+    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Muhasib + "," + RoleNames.Rehber)]
     public class MaasController : Controller
     {
         private readonly IMaasService _maasService;
@@ -131,6 +131,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // ── GET /HR/Maas/Hesabla ─────────────────────────────────
         [HttpGet]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
         public async Task<IActionResult> Hesabla(int? isciId)
         {
             await HesablaFormSiyahilariDoldur();
@@ -146,6 +147,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // ── POST /HR/Maas/Hesabla ────────────────────────────────
         [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
         public async Task<IActionResult> Hesabla(FerdiHesablaInputDto input)
         {
             if (!ModelState.IsValid)
@@ -168,6 +170,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // ── GET /HR/Maas/TopluHesabla ────────────────────────────
         [HttpGet]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
         public async Task<IActionResult> TopluHesabla(int? il, int? ay)
         {
             var cIl = il ?? DateTime.Now.Year;
@@ -239,6 +242,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // ── POST /HR/Maas/TopluHesablaEt ─────────────────────────
         [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
         public async Task<IActionResult> TopluHesablaEt(
             int il, int ay,
             [FromForm] List<FerdiElaveDto> ferdiElaveler)
@@ -369,11 +373,37 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         // ── POST /HR/Maas/StatusDeyis ────────────────────────────
+        // İş axını:
+        //   1) HR/Admin hesablayır → Layihə statusunda yaradılır
+        //   2) Rəhbər/Admin təsdiq edir → Təsdiqləndi
+        //   3) Mühasib/Admin ödənişi yerinə yetirir → Ödənildi
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> StatusDeyis(int id, MaasStatus yeniStatus, int il, int ay)
         {
-            if (yeniStatus == MaasStatus.Odenildi)
+            // Rol-əsaslı icazə yoxlaması
+            var isAdmin = User.IsInRole(RoleNames.Admin);
+            var isRehber = User.IsInRole(RoleNames.Rehber);
+            var isMuhasib = User.IsInRole(RoleNames.Muhasib);
+            var isHR = User.IsInRole(RoleNames.HR);
+
+            if (yeniStatus == MaasStatus.Tesdiqlendi)
             {
+                // Yalnız Rəhbər və ya Admin təsdiq edə bilər
+                if (!isRehber && !isAdmin)
+                {
+                    TempData["Error"] = "Maaşı yalnız Rəhbər və ya Admin təsdiqləyə bilər.";
+                    return RedirectToAction(nameof(Index), new { il, ay });
+                }
+            }
+            else if (yeniStatus == MaasStatus.Odenildi)
+            {
+                // Yalnız Mühasib və ya Admin ödənildi statusuna keçirə bilər
+                if (!isMuhasib && !isAdmin)
+                {
+                    TempData["Error"] = "Maaşı yalnız Mühasib və ya Admin 'Ödənildi' edə bilər.";
+                    return RedirectToAction(nameof(Index), new { il, ay });
+                }
+
                 var m = await _unitOfWork.Repository<Maas>()
                     .Query()
                     .Where(x => x.Id == id)
@@ -386,6 +416,15 @@ namespace FinNex.UI.Areas.HR.Controllers
                     return RedirectToAction(nameof(Index), new { il, ay });
                 }
             }
+            else if (yeniStatus == MaasStatus.LegvEdildi)
+            {
+                // Yalnız Admin ləğv edə bilər
+                if (!isAdmin)
+                {
+                    TempData["Error"] = "Maaşı yalnız Admin ləğv edə bilər.";
+                    return RedirectToAction(nameof(Index), new { il, ay });
+                }
+            }
 
             var r = await _maasService.StatusDeyisAsync(id, yeniStatus);
             TempData[r.Success ? "Success" : "Error"] = r.Message;
@@ -394,6 +433,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // ── POST /HR/Maas/Sil ────────────────────────────────────
         [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
         public async Task<IActionResult> Sil(int id, int il, int ay)
         {
             var maas = await _unitOfWork.Repository<Maas>().IdIleGetirAsync(id);
@@ -409,6 +449,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         // ── GET /HR/Maas/BankFayliYukle ──────────────────────────
+        [Authorize(Roles = RoleNames.Muhasib + "," + RoleNames.Admin)]
         public async Task<IActionResult> BankFayliYukle(int il, int ay)
         {
             var maaslar = await _unitOfWork.Repository<Maas>()
@@ -440,6 +481,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // ── GET /HR/Maas/BankKocurme ─────────────────────────────
         // IBAN;FullName;NetAmount;Currency;Description formatında bank köçürmə faylı
         [HttpGet]
+        [Authorize(Roles = RoleNames.Muhasib + "," + RoleNames.Admin)]
         public async Task<IActionResult> BankKocurme(int il, int ay)
         {
             var maaslar = await _unitOfWork.Repository<Maas>()
