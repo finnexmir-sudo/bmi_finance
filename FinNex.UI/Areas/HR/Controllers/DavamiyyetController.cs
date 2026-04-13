@@ -32,6 +32,13 @@ namespace FinNex.UI.Areas.HR.Controllers
             var bugun = DateTime.Today;
             var list = await _davamiyyetService.TarixUzreAsync(bugun);
 
+            // Giriş saatına görə sırala — qeydə alınanlar əvvəl, sonra digərləri
+            list = list
+                .OrderBy(x => x.GirisVaxti == null)
+                .ThenBy(x => x.GirisVaxti)
+                .ThenBy(x => x.IsciTamAd)
+                .ToList();
+
             // Aktiv işçi sayı — gözlənilir hesablanması üçün
             var aktivIsciSayi = await _unitOfWork.Repository<Isci>()
                 .Query()
