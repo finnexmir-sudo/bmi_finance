@@ -503,8 +503,13 @@ namespace FinNex.Application.Services.HR
                     x.BaslamaTarixi <= tarix &&
                     (x.BitmeTarixi == null || x.BitmeTarixi >= tarix));
 
+            // Eyni növdən çoxlu aktiv sətr olarsa (köhnə datada mümkündür),
+            // həmişə ən son BaslamaTarixi olan sətri götür
             decimal Get(MaasParametrNovu nov, decimal defolt) =>
-                parametrler.FirstOrDefault(x => x.Nov == nov)?.Deyer ?? defolt;
+                parametrler
+                    .Where(x => x.Nov == nov)
+                    .OrderByDescending(x => x.BaslamaTarixi)
+                    .FirstOrDefault()?.Deyer ?? defolt;
 
             return new VergiParametrlerDto
             {

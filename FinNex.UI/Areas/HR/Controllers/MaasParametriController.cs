@@ -76,6 +76,43 @@ namespace FinNex.UI.Areas.HR.Controllers
             if (bitmeTarixi.HasValue && bitmeTarixi <= baslamaTarixi)
                 return Json(new { success = false, message = "Bitmə tarixi başlama tarixindən sonra olmalıdır." });
 
+            // ── Köhnə aktiv sətrləri avtomatik bağla ─────────────
+            // Eyni növdən (nov) olan və yeni sətrin başlama tarixi ilə
+            // üst-üstə düşən aktiv sətrləri tap, onların BitmeTarixi-ni
+            // yeni BaslamaTarixi - 1 gün kimi qoy
+            var yeniBitmeTarixi = baslamaTarixi.AddDays(-1);
+
+            var kohneAktiv = await _unitOfWork.Repository<MaasParametri>()
+                .Query()
+                .Where(x =>
+                    x.Nov == nov &&
+                    x.Aktivdir &&
+                    !x.Silinib &&
+                    x.BaslamaTarixi < baslamaTarixi &&
+                    (x.BitmeTarixi == null || x.BitmeTarixi >= baslamaTarixi))
+                .ToListAsync();
+
+            foreach (var kohne in kohneAktiv)
+            {
+                kohne.BitmeTarixi = yeniBitmeTarixi;
+            }
+
+            // Eyni və ya daha sonrakı BaslamaTarixi ilə aktiv sətr varsa —
+            // onları sadəcə deaktiv et (tarix intervalı qurmaq mümkün deyil)
+            var gelecekAktiv = await _unitOfWork.Repository<MaasParametri>()
+                .Query()
+                .Where(x =>
+                    x.Nov == nov &&
+                    x.Aktivdir &&
+                    !x.Silinib &&
+                    x.BaslamaTarixi >= baslamaTarixi)
+                .ToListAsync();
+
+            foreach (var gelecek in gelecekAktiv)
+            {
+                gelecek.Aktivdir = false;
+            }
+
             var entity = new MaasParametri
             {
                 Nov = nov,
@@ -90,7 +127,12 @@ namespace FinNex.UI.Areas.HR.Controllers
             await _unitOfWork.Repository<MaasParametri>().YaratAsync(entity);
             await _unitOfWork.YaddaSaxlaAsync();
 
-            return Json(new { success = true, message = "Parametr uğurla əlavə edildi." });
+            var bagliSayi = kohneAktiv.Count + gelecekAktiv.Count;
+            var mesaj = bagliSayi > 0
+                ? $"Parametr əlavə edildi. {bagliSayi} köhnə aktiv sətr avtomatik bağlandı."
+                : "Parametr uğurla əlavə edildi.";
+
+            return Json(new { success = true, message = mesaj });
         }
 
         // POST /HR/MaasParametri/Edit/5
