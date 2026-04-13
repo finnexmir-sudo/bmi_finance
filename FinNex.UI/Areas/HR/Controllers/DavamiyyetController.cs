@@ -2,8 +2,10 @@ using ClosedXML.Excel;
 using FinNex.Application.Interfaces;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.UI.Areas.HR.Controllers
 {
@@ -13,19 +15,36 @@ namespace FinNex.UI.Areas.HR.Controllers
     {
         private readonly IDavamiyyetService _davamiyyetService;
         private readonly IIsciService _isciService;
+        private readonly IUnitOfWork _unitOfWork;
 
         public DavamiyyetController(
             IDavamiyyetService davamiyyetService,
-            IIsciService isciService)
+            IIsciService isciService,
+            IUnitOfWork unitOfWork)
         {
             _davamiyyetService = davamiyyetService;
             _isciService = isciService;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<IActionResult> Index()
         {
             var bugun = DateTime.Today;
             var list = await _davamiyyetService.TarixUzreAsync(bugun);
+
+            // Giriş saatına görə sırala — qeydə alınanlar əvvəl, sonra digərləri
+            list = list
+                .OrderBy(x => x.GirisVaxti == null)
+                .ThenBy(x => x.GirisVaxti)
+                .ThenBy(x => x.IsciTamAd)
+                .ToList();
+
+            // Aktiv işçi sayı — gözlənilir hesablanması üçün
+            var aktivIsciSayi = await _unitOfWork.Repository<Isci>()
+                .Query()
+                .CountAsync(x => !x.Silinib && x.Status == IsciStatus.Aktiv);
+            ViewBag.AktivIsciSayi = aktivIsciSayi;
+
             return View(list);
         }
 
