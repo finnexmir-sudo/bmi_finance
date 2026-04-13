@@ -118,7 +118,7 @@ const MaasParametri = (() => {
         const fields = ['mpNov', 'mpDeyer', 'mpBaslamaTarixi'];
         fields.forEach(fid => {
             const el = document.getElementById(fid);
-            if (!el.value || el.value === '' || el.value === '0') {
+            if (!el.value || el.value === '') {
                 el.classList.add('mp-invalid');
                 valid = false;
             } else {
@@ -187,11 +187,17 @@ const MaasParametri = (() => {
     const pilleForm    = () => document.getElementById('mpPilleForm');
     const pilleTitle   = () => document.getElementById('mpPilleModalTitle');
 
-    function pilleOpenCreate() {
+    function pilleOpenCreate(preselectNov) {
         pilleForm().reset();
         document.getElementById('mpPilleId').value = '';
         document.getElementById('mpPilleSabit').value = '0';
         document.getElementById('mpPilleSira').value = '1';
+        // Default başlama tarixi = bu günün tarixi
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('mpPilleBaslama').value = today;
+        if (preselectNov) {
+            document.getElementById('mpPilleNov').value = preselectNov;
+        }
         document.getElementById('mpPilleAktivdirWrap').style.display = 'none';
         pilleTitle().textContent = 'Yeni Pillə';
         pilleOverlay().classList.add('mp-active');
@@ -304,14 +310,15 @@ const MaasParametri = (() => {
         init();
 
         // Event delegation (CSP-safe)
-        document.getElementById('mpOpenCreate').addEventListener('click', openCreate);
+        const openCreateBtn = document.getElementById('mpOpenCreate');
+        if (openCreateBtn) openCreateBtn.addEventListener('click', openCreate);
         document.getElementById('mpCloseBtn').addEventListener('click', closeModal);
         document.getElementById('mpCancelBtn').addEventListener('click', closeModal);
         document.getElementById('mpSaveBtn').addEventListener('click', save);
 
         // Pillə buttons (may not exist on all pages)
         const pilleCreateBtn = document.getElementById('mpOpenPilleCreate');
-        if (pilleCreateBtn) pilleCreateBtn.addEventListener('click', pilleOpenCreate);
+        if (pilleCreateBtn) pilleCreateBtn.addEventListener('click', () => pilleOpenCreate());
         const pilleCloseBtn = document.getElementById('mpPilleCloseBtn');
         if (pilleCloseBtn) pilleCloseBtn.addEventListener('click', pilleCloseModal);
         const pilleCancelBtn = document.getElementById('mpPilleCancelBtn');
@@ -331,6 +338,10 @@ const MaasParametri = (() => {
             if (editBtn) { openEdit(parseInt(editBtn.getAttribute('data-edit-id'))); return; }
             const deleteBtn = e.target.closest('[data-delete-id]');
             if (deleteBtn) { remove(parseInt(deleteBtn.getAttribute('data-delete-id'))); return; }
+
+            // Tax row-dan "Pillə əlavə et" — növ öncədən seçilir
+            const addPilleBtn = e.target.closest('[data-add-pille-nov]');
+            if (addPilleBtn) { pilleOpenCreate(addPilleBtn.getAttribute('data-add-pille-nov')); return; }
 
             // Pillə edit/delete
             const editPille = e.target.closest('[data-edit-pille-id]');
