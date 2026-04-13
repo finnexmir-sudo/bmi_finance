@@ -288,6 +288,22 @@ namespace FinNex.UI.Areas.User.Controllers
 
         private async Task<bool> HasRolAsync(StrukturRolTipi rolTipi)
         {
+            // Admin həmişə keçə bilir
+            if (User.IsInRole(RoleNames.Admin)) return true;
+
+            // Identity rol fallback — sistem-səviyyəli rolu olan istifadəçilər
+            // (struktur rolu olmasa belə keçə bilsinlər)
+            var identityRolAdi = rolTipi switch
+            {
+                StrukturRolTipi.SobeReisi => RoleNames.SobeReisi,
+                StrukturRolTipi.Rehber    => RoleNames.Rehber,
+                StrukturRolTipi.Hr        => RoleNames.HR,
+                _ => null
+            };
+            if (identityRolAdi != null && User.IsInRole(identityRolAdi))
+                return true;
+
+            // Struktur rolu yoxlaması (departament səviyyəsində)
             var appUser = await _userManager.GetUserAsync(User);
             if (appUser?.IsciId == null) return false;
 
