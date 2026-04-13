@@ -219,6 +219,20 @@
 
             <div class="mi-filter-sep"></div>
 
+            @* Tam mətn axtarışı — client-side table filtri *@
+            <div class="mi-search-wrap">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;color:#8a93a8;">
+                    <circle cx="5.5" cy="5.5" r="3.5" stroke="currentColor" stroke-width="1.4"/>
+                    <path d="M8.5 8.5l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+                <input type="text" id="miQuickSearch" class="mi-search-input"
+                       placeholder="Ad, soyad, departament, vəzifə və ya IBAN ilə axtar..."
+                       autocomplete="off"/>
+                <button type="button" id="miClearSearch" class="mi-search-clear" title="Təmizlə" style="display:none;">&times;</button>
+            </div>
+
+            <div class="mi-filter-sep"></div>
+
             <select name="isciId" class="mi-select mi-select--wide mi-auto-filter">
                 <option value="">— Bütün işçilər</option>
                 @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
@@ -258,9 +272,40 @@
     @* ── Table Card ───────────────────────────────────────────── *@
     <div class="mi-table-card">
 
+        @* Prominent period chip — dövrü aydın göstərir *@
+        <div class="mi-period-chip">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect x="1.5" y="2.5" width="11" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+                <path d="M1.5 5.5h11M4 1.5v2M10 1.5v2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            <span class="mi-period-chip-lbl">Hesablama dövrü:</span>
+            <span class="mi-period-chip-val">@ayAdlar[ay] @il</span>
+            <span class="mi-period-chip-sep">·</span>
+            <span class="mi-period-chip-count">@list.Count qeyd</span>
+        </div>
+
         <div class="mi-toolbar">
             <div class="mi-toolbar-left">
                 <div class="mi-result-count"><span>@list.Count</span> nəticə</div>
+                @{
+                    var layiheliSayi = list.Count(x => x.Status == MaasStatus.Layihe);
+                }
+                @if (canTesdiq && layiheliSayi > 0)
+                {
+                    <form asp-area="HR" asp-controller="Maas" asp-action="TopluTesdiqle"
+                          method="post" style="display:inline;margin-left:12px;"
+                          onsubmit="return confirm('@layiheliSayi layihə statuslu maaşı təsdiqləmək istədiyinizə əminsiniz? Bu əməliyyat geri alına bilməz.');">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="il" value="@il"/>
+                        <input type="hidden" name="ay" value="@ay"/>
+                        <button type="submit" class="mi-btn mi-btn--green mi-btn--sm">
+                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                <path d="M2 6.5l3 3 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Hamısını Təsdiqlə (@layiheliSayi)
+                        </button>
+                    </form>
+                }
             </div>
             <div class="mi-toolbar-right">
                 @if (canOdeme && list.Any(x => x.Status == MaasStatus.Tesdiqlendi))
@@ -514,5 +559,5 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/HR/maas-index.js" asp-append-version="true"></script>
+    <script src="~/js/maas-index.js" asp-append-version="true"></script>
 }
