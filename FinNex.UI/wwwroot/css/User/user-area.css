@@ -1050,45 +1050,44 @@ body {
 }
 
 .fn-ad--present {
-    background: #86efac;
-    color: #14532d;
-    font-weight: 700;
+    background: #d1fae5;
+    color: #065f46;
+    font-weight: 600;
 }
 
 .fn-ad--absent {
-    background: #fca5a5;
-    color: #7f1d1d;
-    font-weight: 700;
+    background: #fee2e2;
+    color: #991b1b;
+    font-weight: 600;
 }
 
 .fn-ad--leave {
-    background: #fcd34d;
-    color: #78350f;
-    font-weight: 700;
+    background: #fef3c7;
+    color: #92400e;
+    font-weight: 600;
 }
 
 .fn-ad--weekend {
-    background: #e2e8f0;
-    color: #64748b;
+    background: #f1f5f9;
+    color: #94a3b8;
 }
 
 .fn-ad--future {
-    background: #f1f5f9;
-    color: #94a3b8;
-    border: 1px dashed #cbd5e1;
+    background: #fafbfc;
+    color: #cbd5e1;
+    border: 1px dashed #e2e8f0;
 }
 
 .fn-ad--late {
-    background: #fdba74;
-    color: #7c2d12;
-    font-weight: 700;
+    background: #ffedd5;
+    color: #9a3412;
+    font-weight: 600;
 }
 
 .fn-ad--bayram {
-    background: #e9d5ff;
-    color: #6b21a8;
-    font-weight: 700;
-    border: 1px solid #c084fc;
+    background: #ede9fe;
+    color: #6d28d9;
+    font-weight: 600;
 }
 
 .fn-ad--empty {
