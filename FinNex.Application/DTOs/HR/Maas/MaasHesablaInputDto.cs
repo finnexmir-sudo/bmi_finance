@@ -39,6 +39,7 @@ namespace FinNex.Application.DTOs.HR.Maas
         public decimal NetMaas { get; set; }
         public decimal DsmfIsegoturen { get; set; }
         public decimal IssizlikIsegoturen { get; set; }
+        public decimal ItssIsegoturen { get; set; }
         public decimal UmumiSirketXerci { get; set; }
         public List<HesablamaIzahiDto> Izahatlar { get; set; } = new();
     }
