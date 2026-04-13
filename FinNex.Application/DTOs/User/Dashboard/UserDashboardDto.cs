@@ -62,6 +62,8 @@ namespace FinNex.Application.DTOs.HR.Dashboard
         public bool HefteSonu => Tarix.DayOfWeek == DayOfWeek.Saturday
                                   || Tarix.DayOfWeek == DayOfWeek.Sunday;
         public bool Gələcek => Tarix.Date > DateTime.Today;
+        public bool Bayramdir { get; set; }
+        public string? BayramAdi { get; set; }
     }
 
     // ── Maaş sətri ───────────────────────────────────────────

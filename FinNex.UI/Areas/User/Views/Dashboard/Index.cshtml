@@ -6,7 +6,8 @@
         ViewData["UserRole"] = Model.VezifeAdi;
 
         // ── String-based köməkçi funksiyalar (entity enum yox) ──────
-        string DavClass(string statusText, bool gelecek, bool hefteSonu) =>
+        string DavClass(string statusText, bool gelecek, bool hefteSonu, bool bayram) =>
+            bayram ? "fn-ad--bayram" :
             hefteSonu ? "fn-ad--weekend" :
             gelecek ? "fn-ad--future" :
             statusText switch
@@ -103,8 +104,11 @@
 
                     @foreach (var g in Model.DavamiyyetTakvim)
                     {
-                        <div class="fn-ad @DavClass(g.StatusText, g.Gelecek, g.HefteSonu)"
-                             title="@g.Tarix.ToString("dd MMMM") — @g.StatusText">
+                        var titleTxt = g.Bayramdir
+                            ? $"{g.Tarix:dd MMMM} — {g.BayramAdi ?? "Bayram"}"
+                            : $"{g.Tarix:dd MMMM} — {g.StatusText}";
+                        <div class="fn-ad @DavClass(g.StatusText, g.Gelecek, g.HefteSonu, g.Bayramdir)"
+                             title="@titleTxt">
                             @g.Gun
                         </div>
                     }
