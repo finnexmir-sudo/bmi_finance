@@ -134,6 +134,12 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.OdenisSayi = listDto.Count(x => x.Status == MaasStatus.Odenildi);
             ViewBag.IsciSayi = listDto.Count;
 
+            // Aktiv işçi sayı — Toplu Hesabla düyməsinin görünməsi üçün
+            ViewBag.AktivIsciSayi = await _unitOfWork.Repository<Isci>()
+                .Query()
+                .Where(x => x.Status == IsciStatus.Aktiv && !x.Silinib)
+                .CountAsync();
+
             ViewData["Title"] = $"Əmək Haqqı — {cIl}/{cAy:D2}";
             return View(listDto);
         }
