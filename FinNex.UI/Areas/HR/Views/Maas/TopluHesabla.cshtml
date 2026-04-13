@@ -149,29 +149,57 @@
         </div>
     </div>
 
-    @* ── Vergi dərəcələri ─────────────────────────────────────── *@
-    <div class="mth-rates">
-        @{
-            var rates = new[]
-            {
-                new{Lbl="Gəlir vergisi", Val="14%",  Clr="#2d6cdf"},
-                new{Lbl="DSMF (işçi)",  Val="3%",   Clr="#7c5cbf"},
-                new{Lbl="İşsizlik",      Val="0.5%", Clr="#d85a30"},
-                new{Lbl="İTSS",          Val="2%",   Clr="#1e9b6b"},
-                new{Lbl="DSMF (işv.)",   Val="22%",  Clr="#e8b84b"},
-                new{Lbl="İşsizlik (işv.)",Val="0.5%",Clr="#8a93a8"},
-            };
+    @* ── Vergi dərəcələri (2026 — pilləli qaydalar) ────────────── *@
+    @{
+        var vergiPilleleri = (ViewBag.VergiPilleleri as List<FinNex.Domain.Entities.HR.VergiPille>) ?? new();
+
+        string PilleXulase(FinNex.Domain.Entities.HR.MaasParametrNovu nov)
+        {
+            var nP = vergiPilleleri.Where(x => x.Nov == nov).OrderBy(x => x.Sira).ToList();
+            if (!nP.Any()) return "—";
+            if (nP.Count == 1) return $"{nP[0].Faiz.ToString("G29")}%";
+            return string.Join(" / ", nP.Select(x => $"{x.Faiz.ToString("G29")}%"));
         }
+
+        bool Pilleli(FinNex.Domain.Entities.HR.MaasParametrNovu nov) =>
+            vergiPilleleri.Count(x => x.Nov == nov) > 1;
+
+        var rates = new[]
+        {
+            new{Lbl="Gəlir vergisi",     Nov=FinNex.Domain.Entities.HR.MaasParametrNovu.GelirVergisiFaizi,                 Flat=(string?)null, Clr="#2d6cdf"},
+            new{Lbl="DSMF (işçi)",       Nov=FinNex.Domain.Entities.HR.MaasParametrNovu.DsmfFaizi,                         Flat=(string?)null, Clr="#7c5cbf"},
+            new{Lbl="İşsizlik (işçi)",   Nov=FinNex.Domain.Entities.HR.MaasParametrNovu.IssizlikSigortasiFaizi,             Flat="0.5%",        Clr="#d85a30"},
+            new{Lbl="İTSS (işçi)",       Nov=FinNex.Domain.Entities.HR.MaasParametrNovu.IcbariTibbiSigortaFaizi,            Flat=(string?)null, Clr="#1e9b6b"},
+            new{Lbl="DSMF (işv.)",       Nov=FinNex.Domain.Entities.HR.MaasParametrNovu.DsmfIsegoturenFaizi,                Flat=(string?)null, Clr="#e8b84b"},
+            new{Lbl="İTSS (işv.)",       Nov=FinNex.Domain.Entities.HR.MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi,  Flat=(string?)null, Clr="#14a5a5"},
+            new{Lbl="İşsizlik (işv.)",   Nov=FinNex.Domain.Entities.HR.MaasParametrNovu.IssizlikIsegoturenFaizi,            Flat="0.5%",        Clr="#8a93a8"},
+        };
+    }
+    <div class="mth-rates">
         @foreach (var r in rates)
         {
-            <div class="mth-rate-card">
+            var isPilleli = Pilleli(r.Nov);
+            var val = r.Flat ?? PilleXulase(r.Nov);
+            <div class="mth-rate-card" title="@(isPilleli ? "Pilləli — parametr səhifəsinə bax" : "Flat dərəcə")">
                 <div class="mth-rate-bar" style="background:@r.Clr"></div>
-                <div>
-                    <div class="mth-rate-lbl">@r.Lbl</div>
-                    <div class="mth-rate-val">@r.Val</div>
+                <div style="flex:1;min-width:0;">
+                    <div class="mth-rate-lbl">
+                        @r.Lbl
+                        @if (isPilleli)
+                        {
+                            <span style="font-size:8px;font-weight:700;background:rgba(99,102,241,.12);color:#6366f1;padding:1px 5px;border-radius:999px;margin-left:4px;letter-spacing:.3px;">PİLLƏLİ</span>
+                        }
+                    </div>
+                    <div class="mth-rate-val" style="font-size:@(isPilleli ? "11px" : "13px");white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@val</div>
                 </div>
             </div>
         }
+        <a asp-area="HR" asp-controller="MaasParametri" asp-action="Index" class="mth-rate-card" style="text-decoration:none;color:inherit;border:1px dashed #d0d5dd;background:#f9fafb;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:600;color:#6366f1;">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Parametrləri idarə et
+        </a>
     </div>
 
     @* ── Main form + table ────────────────────────────────────── *@

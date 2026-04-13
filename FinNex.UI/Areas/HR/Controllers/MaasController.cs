@@ -201,11 +201,23 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Select(x => x.IsciId)
                 .ToListAsync();
 
+            // Vergi pillələri — informativ kartlar üçün
+            var hesabTarixi = new DateTime(cIl, cAy, 1);
+            var pilleler = await _unitOfWork.Repository<VergiPille>()
+                .Query()
+                .Where(x =>
+                    x.Aktivdir && !x.Silinib &&
+                    x.BaslamaTarixi <= hesabTarixi &&
+                    (x.BitmeTarixi == null || x.BitmeTarixi >= hesabTarixi))
+                .OrderBy(x => x.Nov).ThenBy(x => x.Sira)
+                .ToListAsync();
+
             ViewBag.Il = cIl;
             ViewBag.Ay = cAy;
             ViewBag.Hesablanmis = hesablanmis;
             ViewBag.CariMaasMap = cariMaasMap;
             ViewBag.IbanMap = ibanMap;
+            ViewBag.VergiPilleleri = pilleler;
             ViewBag.Iller = IlSiyahisi(cIl);
             ViewBag.Aylar = AySiyahisi(cAy);
 
