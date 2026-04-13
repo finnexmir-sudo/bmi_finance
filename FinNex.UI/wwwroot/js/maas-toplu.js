@@ -161,9 +161,10 @@
             a.brut += d.brut;
             a.tutulma += d.tutulma;
             a.net += d.net;
-            a.sirket += d.brut + d.sirketCemi; // brut + işəgötürən əlavələri
+            a.sirketEx += d.sirketCemi;          // yalnız işəgötürən əlavə xərclər
+            a.sirket   += d.brut + d.sirketCemi; // brut + işəgötürən əlavələri (ümumi)
             return a;
-        }, { brut: 0, tutulma: 0, net: 0, sirket: 0 });
+        }, { brut: 0, tutulma: 0, net: 0, sirketEx: 0, sirket: 0 });
 
         const s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
         s('mthFootSayi', sel.length);
@@ -171,6 +172,7 @@
         s('mthFootTutulma', fmt(t.tutulma));
         s('mthFootNet', fmt(t.net));
         s('mthFootNet2', fmt(t.net));
+        s('mthFootSirketEx', fmt(t.sirketEx));
         s('mthFootSirket', fmt(t.sirket));
 
         if (selChip) {

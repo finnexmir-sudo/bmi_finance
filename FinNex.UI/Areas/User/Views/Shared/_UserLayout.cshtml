@@ -357,7 +357,14 @@
                 {
                     <div class="fn-nav-label">HR İdarəetmə</div>
 
-                    <div class="fn-nav-group @(currentArea == "HR" || currentController == "XestelikEzamiyyet" ? "open" : "")">
+                    @{
+                        // HR İdarəetmə yalnız HR area-nın HR-specific controllerləri üçün açılsın
+                        // (Maas/MaasParametri/Budce/Xerc Mühasibatlıq altındadır, HR altında deyil)
+                        var hrOpen = (currentArea == "HR" &&
+                                      currentController is not ("Maas" or "MaasParametri" or "Budce" or "Xerc"))
+                                     || currentController == "XestelikEzamiyyet";
+                    }
+                    <div class="fn-nav-group @(hrOpen ? "open" : "")">
                         <button type="button" class="fn-nav-group-toggle">
                             <div class="fn-nav-group-left">
                                 <div class="fn-nav-icon">
