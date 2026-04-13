@@ -161,8 +161,9 @@
             a.brut += d.brut;
             a.tutulma += d.tutulma;
             a.net += d.net;
+            a.sirket += d.brut + d.sirketCemi; // brut + işəgötürən əlavələri
             return a;
-        }, { brut: 0, tutulma: 0, net: 0 });
+        }, { brut: 0, tutulma: 0, net: 0, sirket: 0 });
 
         const s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
         s('mthFootSayi', sel.length);
@@ -170,6 +171,7 @@
         s('mthFootTutulma', fmt(t.tutulma));
         s('mthFootNet', fmt(t.net));
         s('mthFootNet2', fmt(t.net));
+        s('mthFootSirket', fmt(t.sirket));
 
         if (selChip) {
             selChip.textContent = sel.length + ' işçi seçilib';
