@@ -185,6 +185,15 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .OrderBy(x => x.Soyad)
                 .ToListAsync();
 
+            // CariMaas — IsciMaliye-dən birbaşa sorğu (navigation-dan asılı olmayaraq)
+            var isciIdler = isciler.Select(x => x.Id).ToList();
+            var maliyeler = await _unitOfWork.Repository<IsciMaliye>()
+                .Query()
+                .Where(x => isciIdler.Contains(x.IsciId) && !x.Silinib)
+                .ToListAsync();
+            var cariMaasMap = maliyeler.ToDictionary(x => x.IsciId, x => x.CariMaas);
+            var ibanMap = maliyeler.ToDictionary(x => x.IsciId, x => x.BankHesabNo);
+
             // Artıq hesablanmışları işarələ
             var hesablanmis = await _unitOfWork.Repository<Maas>()
                 .Query()
@@ -195,6 +204,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.Il = cIl;
             ViewBag.Ay = cAy;
             ViewBag.Hesablanmis = hesablanmis;
+            ViewBag.CariMaasMap = cariMaasMap;
+            ViewBag.IbanMap = ibanMap;
             ViewBag.Iller = IlSiyahisi(cIl);
             ViewBag.Aylar = AySiyahisi(cAy);
 
