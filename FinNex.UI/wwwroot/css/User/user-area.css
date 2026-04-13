@@ -1084,6 +1084,13 @@ body {
     font-weight: 700;
 }
 
+.fn-ad--bayram {
+    background: #e9d5ff;
+    color: #6b21a8;
+    font-weight: 700;
+    border: 1px solid #c084fc;
+}
+
 .fn-ad--empty {
     background: none;
 }

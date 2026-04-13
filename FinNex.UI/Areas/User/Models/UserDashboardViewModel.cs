@@ -77,6 +77,8 @@ namespace FinNex.UI.Areas.User.Models
                     },
                     HefteSonu = g.HefteSonu,
                     Gelecek = g.Gələcek,
+                    Bayramdir = g.Bayramdir,
+                    BayramAdi = g.BayramAdi,
                 })
                 .ToList(),
 
@@ -121,6 +123,8 @@ namespace FinNex.UI.Areas.User.Models
         public string StatusText { get; set; } = "";
         public bool HefteSonu { get; set; }
         public bool Gelecek { get; set; }
+        public bool Bayramdir { get; set; }
+        public string? BayramAdi { get; set; }
     }
 
     public class MaasVM

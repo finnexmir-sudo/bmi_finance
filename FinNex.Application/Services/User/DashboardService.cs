@@ -90,13 +90,38 @@ namespace FinNex.Application.Services
                     .Select(d => new DateTime(buIl, buAy, d))
                     .ToList();
 
+                // Bayram günləri
+                var bayramlar = await _unitOfWork.Repository<BayramGunu>()
+                    .HamisiniGetirAsync(b => !b.Silinib, izlemeden: true);
+
+                bool IsHoliday(DateTime g, out string? ad)
+                {
+                    foreach (var b in bayramlar)
+                    {
+                        if (b.HerIlTeyinOlunur)
+                        {
+                            if (b.Tarix.Month == g.Month && b.Tarix.Day == g.Day)
+                            { ad = b.Ad; return true; }
+                        }
+                        else
+                        {
+                            if (b.Tarix.Date == g.Date) { ad = b.Ad; return true; }
+                        }
+                    }
+                    ad = null;
+                    return false;
+                }
+
                 dto.DavamiyyetTakvim = aydakiButunGunler.Select(gun =>
                 {
                     var qeyd = davamiyyetler.FirstOrDefault(d => d.Tarix.Date == gun.Date);
+                    var bayramdir = IsHoliday(gun, out var bayramAdi);
                     return new DashboardDavamiyyetGunDto
                     {
                         Tarix = gun,
-                        Status = qeyd?.Status ?? DavamiyyetStatus.Isde
+                        Status = qeyd?.Status ?? DavamiyyetStatus.Isde,
+                        Bayramdir = bayramdir,
+                        BayramAdi = bayramAdi
                     };
                 }).ToList();
 
