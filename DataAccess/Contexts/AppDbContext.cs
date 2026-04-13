@@ -304,7 +304,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .IsUnique();
         builder.Entity<Maas>()
             .HasOne(x => x.Isci)
-            .WithMany()
+            .WithMany(x => x.Maaslar)
             .HasForeignKey(x => x.IsciId)
             .OnDelete(DeleteBehavior.Cascade);
 
@@ -319,10 +319,10 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
 
 
         builder.Entity<IsciMaliye>()
-    .HasOne(x => x.Isci)
-    .WithOne()
-    .HasForeignKey<IsciMaliye>(x => x.IsciId)
-    .OnDelete(DeleteBehavior.Cascade);
+            .HasOne(x => x.Isci)
+            .WithOne(x => x.Maliye)
+            .HasForeignKey<IsciMaliye>(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<IsciMaliye>()
             .HasIndex(x => x.IsciId)
@@ -382,7 +382,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         // ==========================
         builder.Entity<IsciMaasTarixcesi>()
             .HasOne(x => x.Isci)
-            .WithMany()
+            .WithMany(x => x.MaasTarixcesi)
             .HasForeignKey(x => x.IsciId)
             .OnDelete(DeleteBehavior.Cascade);
 
