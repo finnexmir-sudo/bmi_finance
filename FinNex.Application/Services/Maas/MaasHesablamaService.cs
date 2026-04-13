@@ -346,25 +346,35 @@ namespace FinNex.Application.Services.HR
                 return Result.Ok();
             }
 
+            // NOT: Adlar DB-dəki MaasNovleri cədvəlindəki Ad ilə dəqiq üst-üstə düşməlidir
+            // (seed: migration 20260331052001_dbBaza.cs line 1608+)
+            // Seed-də "Məzuniyyət Kəsintisi" yoxdur — məzuniyyət günləri də
+            // "Davamiyyət Kəsintisi" altında birləşdirilir
+            decimal umumiDavamKesinti = qayibKesinti + mezKesinti;
+            string? davamAciq =
+                (qayibGun > 0 && mezGun > 0) ? $"{qayibGun} qayıb + {mezGun} məz. gün / {ayIsGunu} iş günü"
+                : qayibGun > 0 ? $"{qayibGun} qayıb gün / {ayIsGunu} iş günü"
+                : mezGun > 0 ? $"{mezGun} məz. gün / {ayIsGunu} iş günü"
+                : null;
+
             var xetalar = new[]
             {
-                // Gelirlər
-                DetayEkle("Esas Emekhaqqı",          MaasDetayTipi.Gelir,           esasMaas),
-                DetayEkle("Mezuniyyet Odenisi",       MaasDetayTipi.Gelir,           mezOdenis,          mezGun > 0 ? $"{mezGun} gun" : null),
-                DetayEkle("Bonus/Mukafat",            MaasDetayTipi.Gelir,           input.BonusMeblegi, input.BonusAciqlama),
-                // Kesintiler
-                DetayEkle("Davamiyyət Kəsintisi",     MaasDetayTipi.Tutulma,         qayibKesinti,       qayibGun > 0 ? $"{qayibGun} qayıb gün / {ayIsGunu} iş günü" : null),
-                DetayEkle("Mezuniyyet Kesintisi",     MaasDetayTipi.Tutulma,         mezKesinti,         mezGun > 0 ? $"{mezGun} gun / {ayIsGunu} is gunu" : null),
-                DetayEkle("Gecikdirme Cerimesi",      MaasDetayTipi.Tutulma,         input.CerimeMeblegi, input.CerimeAciqlama),
-                // Vergiler
-                DetayEkle("Gelir Vergisi",            MaasDetayTipi.Tutulma,         gelirVergisi,       $"{p.GelirVergisiFaizi}% (guzest: {p.VergiGuzestiMeblegi} AZN)"),
-                DetayEkle("DSMF (Isci)",              MaasDetayTipi.Tutulma,         dsmfIsci,           $"{p.DsmfFaizi}%"),
-                DetayEkle("Issizlik Sigortas (Isci)", MaasDetayTipi.Tutulma,         issizlikIsci,       $"{p.IssizlikSigortasiFaizi}%"),
-                DetayEkle("ITSS",                     MaasDetayTipi.Tutulma,         itss,               $"{p.IcbariTibbiSigortaFaizi}%"),
-                // Sirket xercleri
-                DetayEkle("DSMF (Isegoturen)",        MaasDetayTipi.IsegoturenXerci, dsmfIsegoturen,     dsmfIsvIzah),
-                DetayEkle("Issizlik (Isegoturen)",    MaasDetayTipi.IsegoturenXerci, issizlikIsegoturen, $"{p.IssizlikIsegotürenFaizi}%"),
-                DetayEkle("İTSS (İşəgötürən)",        MaasDetayTipi.IsegoturenXerci, itssIsegoturen,     itssIsvIzah),
+                // Gəlirlər
+                DetayEkle("Əsas Əməkhaqqı",                    MaasDetayTipi.Gelir,           esasMaas),
+                DetayEkle("Məzuniyyət Ödənişi",                MaasDetayTipi.Gelir,           mezOdenis,          mezGun > 0 ? $"{mezGun} gün" : null),
+                DetayEkle("Bonus/Mükafat",                     MaasDetayTipi.Gelir,           input.BonusMeblegi, input.BonusAciqlama),
+                // Kəsintilər
+                DetayEkle("Davamiyyət Kəsintisi",              MaasDetayTipi.Tutulma,         umumiDavamKesinti,  davamAciq),
+                DetayEkle("Gecikdirmə Cəriməsi",               MaasDetayTipi.Tutulma,         input.CerimeMeblegi, input.CerimeAciqlama),
+                // Vergilər
+                DetayEkle("Gəlir Vergisi",                     MaasDetayTipi.Tutulma,         gelirVergisi,       gvIzah),
+                DetayEkle("DSMF (İşçi)",                       MaasDetayTipi.Tutulma,         dsmfIsci,           dsmfIzah),
+                DetayEkle("İşsizlik Sığortası (İşçi)",         MaasDetayTipi.Tutulma,         issizlikIsci,       $"{brutMaas:N2} × {p.IssizlikSigortasiFaizi}%"),
+                DetayEkle("İTSS",                              MaasDetayTipi.Tutulma,         itss,               itssIzah),
+                // Şirkət xərcləri
+                DetayEkle("DSMF (İşəgötürən)",                 MaasDetayTipi.IsegoturenXerci, dsmfIsegoturen,     dsmfIsvIzah),
+                DetayEkle("İşsizlik Sığortası (İşəgötürən)",   MaasDetayTipi.IsegoturenXerci, issizlikIsegoturen, $"{brutMaas:N2} × {p.IssizlikIsegotürenFaizi}%"),
+                DetayEkle("İTSS (İşəgötürən)",                 MaasDetayTipi.IsegoturenXerci, itssIsegoturen,     itssIsvIzah),
             };
 
             var ilkXeta = xetalar.FirstOrDefault(x => !x.Success);
