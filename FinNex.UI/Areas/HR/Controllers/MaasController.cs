@@ -2,10 +2,13 @@
 using FinNex.Application.DTOs.HR.Maas;
 using FinNex.Application.Interfaces.HR;
 using FinNex.Application.Interfaces.Maas_If;
+using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.Structure;
 using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -19,15 +22,21 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IMaasService _maasService;
         private readonly IMaasHesablamaService _hesablamaService;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IBildirisService _bildirisService;
+        private readonly UserManager<AppUser> _userManager;
 
         public MaasController(
             IMaasService maasService,
             IMaasHesablamaService hesablamaService,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IBildirisService bildirisService,
+            UserManager<AppUser> userManager)
         {
             _maasService = maasService;
             _hesablamaService = hesablamaService;
             _unitOfWork = unitOfWork;
+            _bildirisService = bildirisService;
+            _userManager = userManager;
         }
 
         // ── GET /HR/Maas ─────────────────────────────────────────
@@ -324,7 +333,117 @@ namespace FinNex.UI.Areas.HR.Controllers
             if (d.Xetalar.Any())
                 TempData["Xetalar"] = string.Join("|", d.Xetalar);
 
+            // Bildiriş: bütün Rəhbər/Admin istifadəçilərə təsdiq sorğusu göndər
+            if (d.UgurluSayi > 0)
+            {
+                await BildirisGonderRehberlereAsync(il, ay, d.UgurluSayi);
+            }
+
             return RedirectToAction(nameof(Index), new { il, ay });
+        }
+
+        // ── HELPER: Bütün Rəhbər/Admin istifadəçilərə bildiriş göndər ──
+        private async Task BildirisGonderRehberlereAsync(int il, int ay, int ugurluSayi)
+        {
+            try
+            {
+                var ayAdlar = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+                                      "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+                var dovr = $"{ayAdlar[ay]} {il}";
+                var redirectUrl = Url.Action("Index", "Maas", new { area = "HR", il, ay });
+
+                // Rəhbər və Admin rolu olan bütün istifadəçiləri tap
+                var rehberler = await _userManager.GetUsersInRoleAsync(RoleNames.Rehber);
+                var adminler = await _userManager.GetUsersInRoleAsync(RoleNames.Admin);
+                var alicilar = rehberler.Concat(adminler)
+                    .Where(u => u.IsciId.HasValue)
+                    .GroupBy(u => u.IsciId!.Value)
+                    .Select(g => g.First())
+                    .ToList();
+
+                foreach (var u in alicilar)
+                {
+                    await _bildirisService.YaratAsync(
+                        isciId: u.IsciId!.Value,
+                        nov: BildirisNovu.TesdiqSorgusu,
+                        bashliq: $"Maaş təsdiqi gözləyir — {dovr}",
+                        metn: $"{ugurluSayi} işçi üçün {dovr} maaşı hesablandı, təsdiqinizi gözləyir.",
+                        redirectUrl: redirectUrl
+                    );
+                }
+            }
+            catch
+            {
+                // Bildiriş göndərmə xətası əsas əməliyyatı pozmasın
+            }
+        }
+
+        // ── POST /HR/Maas/TopluTesdiqle ──────────────────────────
+        // Bütün Layihə statuslu maaşları bir kliklə təsdiqlə
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.Rehber + "," + RoleNames.Admin)]
+        public async Task<IActionResult> TopluTesdiqle(int il, int ay)
+        {
+            var maaslar = await _unitOfWork.Repository<Maas>()
+                .Query()
+                .Where(x => x.Il == il && x.Ay == ay && !x.Silinib && x.Status == MaasStatus.Layihe)
+                .ToListAsync();
+
+            if (!maaslar.Any())
+            {
+                TempData["Error"] = "Təsdiqlənəcək layihə statusunda maaş tapılmadı.";
+                return RedirectToAction(nameof(Index), new { il, ay });
+            }
+
+            int ugurlu = 0, xeta = 0;
+            foreach (var m in maaslar)
+            {
+                var r = await _maasService.StatusDeyisAsync(m.Id, MaasStatus.Tesdiqlendi);
+                if (r.Success) ugurlu++;
+                else xeta++;
+            }
+
+            // Mühasibə bildiriş göndər
+            if (ugurlu > 0)
+            {
+                await BildirisGonderMuhasibleriAsync(il, ay, ugurlu);
+            }
+
+            TempData[xeta > 0 ? "Error" : "Success"] =
+                $"Toplu təsdiq: {ugurlu} maaş təsdiqləndi" + (xeta > 0 ? $", {xeta} xətalı." : ".");
+            return RedirectToAction(nameof(Index), new { il, ay });
+        }
+
+        // ── HELPER: Mühasiblərə bildiriş göndər ──
+        private async Task BildirisGonderMuhasibleriAsync(int il, int ay, int sayi)
+        {
+            try
+            {
+                var ayAdlar = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+                                      "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+                var dovr = $"{ayAdlar[ay]} {il}";
+                var redirectUrl = Url.Action("Index", "Maas", new { area = "HR", il, ay });
+
+                var muhasibler = await _userManager.GetUsersInRoleAsync(RoleNames.Muhasib);
+                var adminler = await _userManager.GetUsersInRoleAsync(RoleNames.Admin);
+                var alicilar = muhasibler.Concat(adminler)
+                    .Where(u => u.IsciId.HasValue)
+                    .GroupBy(u => u.IsciId!.Value)
+                    .Select(g => g.First())
+                    .ToList();
+
+                foreach (var u in alicilar)
+                {
+                    await _bildirisService.YaratAsync(
+                        isciId: u.IsciId!.Value,
+                        nov: BildirisNovu.TesdiqSorgusu,
+                        bashliq: $"Maaş ödənişə hazırdır — {dovr}",
+                        metn: $"{sayi} işçi üçün {dovr} maaşı təsdiqləndi, ödəniş gözləyir.",
+                        redirectUrl: redirectUrl
+                    );
+                }
+            }
+            catch { }
         }
 
         // ── GET /HR/Maas/Detal/5 ────────────────────────────────

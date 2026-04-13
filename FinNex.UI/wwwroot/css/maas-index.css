@@ -999,3 +999,25 @@
     font-size: 11.5px;
     opacity: .85;
 }
+
+.mi-btn--green {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #1e9b6b, #16a34a);
+    color: #fff;
+    border: 1px solid #16a34a;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .15s;
+}
+.mi-btn--green:hover {
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    box-shadow: 0 4px 12px rgba(30, 155, 107, 0.25);
+    transform: translateY(-1px);
+}
+.mi-btn--green svg { color: #fff; }

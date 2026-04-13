@@ -287,6 +287,25 @@
         <div class="mi-toolbar">
             <div class="mi-toolbar-left">
                 <div class="mi-result-count"><span>@list.Count</span> nəticə</div>
+                @{
+                    var layiheliSayi = list.Count(x => x.Status == MaasStatus.Layihe);
+                }
+                @if (canTesdiq && layiheliSayi > 0)
+                {
+                    <form asp-area="HR" asp-controller="Maas" asp-action="TopluTesdiqle"
+                          method="post" style="display:inline;margin-left:12px;"
+                          onsubmit="return confirm('@layiheliSayi layihə statuslu maaşı təsdiqləmək istədiyinizə əminsiniz? Bu əməliyyat geri alına bilməz.');">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="il" value="@il"/>
+                        <input type="hidden" name="ay" value="@ay"/>
+                        <button type="submit" class="mi-btn mi-btn--green mi-btn--sm">
+                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                <path d="M2 6.5l3 3 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Hamısını Təsdiqlə (@layiheliSayi)
+                        </button>
+                    </form>
+                }
             </div>
             <div class="mi-toolbar-right">
                 @if (canOdeme && list.Any(x => x.Status == MaasStatus.Tesdiqlendi))
@@ -540,5 +559,5 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/HR/maas-index.js" asp-append-version="true"></script>
+    <script src="~/js/maas-index.js" asp-append-version="true"></script>
 }
