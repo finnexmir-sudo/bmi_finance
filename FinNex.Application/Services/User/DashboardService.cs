@@ -84,12 +84,10 @@ namespace FinNex.Application.Services
                 dto.GozlenilenGun = isGunleri.Count(g => g > DateTime.Today
                     && !davamiyyetler.Any(d => d.Tarix.Date == g.Date));
 
-                // ── 3. Davamiyyət təqvimi ────────────────────────────────
+                // ── 3. Davamiyyət təqvimi — ayın bütün günləri ──────────
                 var aydakiButunGunler = Enumerable
                     .Range(1, DateTime.DaysInMonth(buIl, buAy))
                     .Select(d => new DateTime(buIl, buAy, d))
-                    .Where(d => d.DayOfWeek != DayOfWeek.Saturday
-                             && d.DayOfWeek != DayOfWeek.Sunday)
                     .ToList();
 
                 dto.DavamiyyetTakvim = aydakiButunGunler.Select(gun =>
