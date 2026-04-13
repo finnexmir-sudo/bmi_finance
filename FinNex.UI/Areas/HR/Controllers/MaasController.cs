@@ -156,6 +156,25 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return View(input);
             }
 
+            // Tarix validasiyası — gələcək ay bloklanır, 12 aydan köhnə də
+            var bugun = DateTime.Now;
+            var cariAyBirinci = new DateTime(bugun.Year, bugun.Month, 1);
+            var secilmisAyBirinci = new DateTime(input.Il, input.Ay, 1);
+            var minTarix = cariAyBirinci.AddMonths(-12);
+
+            if (secilmisAyBirinci > cariAyBirinci)
+            {
+                TempData["Error"] = "Gələcək ay üçün maaş hesablaması aparıla bilməz.";
+                await HesablaFormSiyahilariDoldur();
+                return View(input);
+            }
+            if (secilmisAyBirinci < minTarix)
+            {
+                TempData["Error"] = "Son 12 aydan daha köhnə aylar üçün hesablama aparıla bilməz.";
+                await HesablaFormSiyahilariDoldur();
+                return View(input);
+            }
+
             var r = await _hesablamaService.FerdiHesablaAsync(input);
             if (!r.Success)
             {
@@ -175,6 +194,23 @@ namespace FinNex.UI.Areas.HR.Controllers
         {
             var cIl = il ?? DateTime.Now.Year;
             var cAy = ay ?? DateTime.Now.Month;
+
+            // Tarix validasiyası — gələcək aylar bloklanır, 12 aydan köhnə də.
+            var bugun = DateTime.Now;
+            var cariAyBirinci = new DateTime(bugun.Year, bugun.Month, 1);
+            var secilmisAyBirinci = new DateTime(cIl, cAy, 1);
+            var minTarix = cariAyBirinci.AddMonths(-12);
+
+            if (secilmisAyBirinci > cariAyBirinci)
+            {
+                TempData["Error"] = "Gələcək ay üçün maaş hesablaması aparıla bilməz.";
+                return RedirectToAction(nameof(Index), new { il = bugun.Year, ay = bugun.Month });
+            }
+            if (secilmisAyBirinci < minTarix)
+            {
+                TempData["Error"] = "Son 12 aydan daha köhnə aylar üçün hesablama aparıla bilməz.";
+                return RedirectToAction(nameof(Index), new { il = bugun.Year, ay = bugun.Month });
+            }
 
             // Aktiv işçiləri gətir — bonus/cərimə daxil etmək üçün
             var isciler = await _unitOfWork.Repository<Isci>()
@@ -247,6 +283,23 @@ namespace FinNex.UI.Areas.HR.Controllers
             int il, int ay,
             [FromForm] List<FerdiElaveDto> ferdiElaveler)
         {
+            // Tarix validasiyası — POST zamanı təkrar yoxlama
+            var bugun = DateTime.Now;
+            var cariAyBirinci = new DateTime(bugun.Year, bugun.Month, 1);
+            var secilmisAyBirinci = new DateTime(il, ay, 1);
+            var minTarix = cariAyBirinci.AddMonths(-12);
+
+            if (secilmisAyBirinci > cariAyBirinci)
+            {
+                TempData["Error"] = "Gələcək ay üçün maaş hesablaması aparıla bilməz.";
+                return RedirectToAction(nameof(Index), new { il = bugun.Year, ay = bugun.Month });
+            }
+            if (secilmisAyBirinci < minTarix)
+            {
+                TempData["Error"] = "Son 12 aydan daha köhnə aylar üçün hesablama aparıla bilməz.";
+                return RedirectToAction(nameof(Index), new { il = bugun.Year, ay = bugun.Month });
+            }
+
             var input = new TopluHesablaInputDto
             {
                 Il = il,
