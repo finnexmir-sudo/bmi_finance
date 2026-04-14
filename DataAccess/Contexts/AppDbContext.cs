@@ -464,6 +464,12 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .OnDelete(DeleteBehavior.NoAction);
 
         builder.Entity<XestelikOdenis>()
+            .HasOne(x => x.Maas)
+            .WithMany()
+            .HasForeignKey(x => x.MaasId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<XestelikOdenis>()
             .Property(x => x.BirGunluk)
             .HasPrecision(18, 4);
 
