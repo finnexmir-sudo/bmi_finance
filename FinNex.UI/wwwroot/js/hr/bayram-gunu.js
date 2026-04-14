@@ -395,6 +395,7 @@ function bgToggleDay(cell) {
     const dateStr = cell.dataset.date;
     if (!dateStr) return;
     if (cell.classList.contains('bg-day--past')) return;
+    if (cell.dataset.bgBusy === '1') return;
 
     // Current state → desired tip
     let tip;
@@ -413,6 +414,7 @@ function bgToggleDay(cell) {
     formData.append('tarix', dateStr);
     formData.append('tip', tip);
 
+    cell.dataset.bgBusy = '1';
     cell.style.opacity = '0.5';
     fetch('/HR/BayramGunu/Toggle', {
         method: 'POST',
@@ -422,19 +424,69 @@ function bgToggleDay(cell) {
         .then(r => r.json())
         .then(data => {
             cell.style.opacity = '';
+            delete cell.dataset.bgBusy;
             if (!data.success) {
                 bgToast(data.message || 'Xəta baş verdi', false);
                 return;
             }
             bgToast(data.message, true);
-            // Reload year to refresh
-            bgLoadYear(bgCurrentYear);
+
+            // Update ONLY the clicked cell in-place (no full reload → scroll stays)
+            bgUpdateCellState(cell, data);
+
+            // Keep local cache in sync for subsequent clicks
+            if (bgYearData && Array.isArray(bgYearData.records)) {
+                if (data.action === 'removed') {
+                    bgYearData.records = bgYearData.records.filter(r => r.tarix !== dateStr);
+                } else if (data.action === 'added') {
+                    bgYearData.records.push({
+                        id: data.id,
+                        tarix: dateStr,
+                        ad: data.ad,
+                        tip: data.tip
+                    });
+                }
+            }
+
+            // Refresh bottom table list without touching calendar scroll
             refreshTable();
         })
         .catch(() => {
             cell.style.opacity = '';
+            delete cell.dataset.bgBusy;
             bgToast('Şəbəkə xətası', false);
         });
+}
+
+function bgUpdateCellState(cell, data) {
+    const dateStr = cell.dataset.date;
+    // Clear state classes
+    cell.classList.remove('bg-day--holiday', 'bg-day--work-override', 'bg-day--weekend');
+    delete cell.dataset.recordId;
+    delete cell.dataset.tip;
+
+    if (data.action === 'added') {
+        if (data.tip === 2) {
+            cell.classList.add('bg-day--work-override');
+            cell.title = `${data.ad} (İş günü)`;
+        } else {
+            cell.classList.add('bg-day--holiday');
+            cell.title = `${data.ad} (Bayram)`;
+        }
+        cell.dataset.recordId = data.id;
+        cell.dataset.tip = data.tip;
+    } else {
+        // Removed — fall back to default weekday/weekend state
+        const parts = dateStr.split('-');
+        const dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        const dow = dateObj.getDay();
+        if (dow === 0 || dow === 6) {
+            cell.classList.add('bg-day--weekend');
+            cell.title = 'Şənbə/Bazar — kliklə iş günü et';
+        } else {
+            cell.title = 'İş günü — kliklə bayram et';
+        }
+    }
 }
 
 // Initialize on DOM ready
