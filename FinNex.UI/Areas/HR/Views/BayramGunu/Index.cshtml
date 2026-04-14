@@ -41,6 +41,34 @@
         </div>
     </div>
 
+    @* ═══════ YEAR CALENDAR GRID ═══════ *@
+    <div class="bg-calendar-card">
+        <div class="bg-calendar-head">
+            <div class="bg-calendar-nav">
+                <button type="button" class="bg-nav-btn" id="bgYearPrev">‹</button>
+                <h2 class="bg-calendar-year" id="bgCalendarYear">@DateTime.Now.Year</h2>
+                <button type="button" class="bg-nav-btn" id="bgYearNext">›</button>
+                <button type="button" class="bg-btn bg-btn-secondary bg-btn-sm" id="bgYearToday">Bu il</button>
+            </div>
+            <div class="bg-calendar-legend">
+                <span class="bg-lgnd"><span class="bg-sw bg-sw--weekend"></span>Şənbə/Bazar</span>
+                <span class="bg-lgnd"><span class="bg-sw bg-sw--holiday"></span>Bayram</span>
+                <span class="bg-lgnd"><span class="bg-sw bg-sw--work-override"></span>Əlavə iş günü</span>
+                <span class="bg-lgnd"><span class="bg-sw bg-sw--past"></span>Keçmiş (kiliddə)</span>
+            </div>
+        </div>
+        <div class="bg-calendar-hint">
+            <i class="bi bi-info-circle"></i>
+            Kliklə istənilən günü dəyişdirin:
+            <strong>İş günü</strong> → bayram (qırmızı),
+            <strong>Şənbə/Bazar</strong> → iş günü (yaşıl).
+            Təkrar kliklə geri qaytarın. Keçmiş tarixləri dəyişmək mümkün deyil.
+        </div>
+        <div class="bg-calendar-grid" id="bgCalendarGrid">
+            <div class="bg-calendar-loading">Yüklənir...</div>
+        </div>
+    </div>
+
     <div class="bg-table-card">
         <table class="bg-table">
             <thead>
@@ -146,12 +174,12 @@
                 <div class="bg-form-row">
                     <div class="bg-form-group bg-form-half">
                         <label class="bg-label" for="bgBaslangicTarix">Başlanğıc tarix *</label>
-                        <input type="date" class="bg-input" id="bgBaslangicTarix" name="baslangicTarix" required />
+                        <input type="date" class="bg-input" id="bgBaslangicTarix" name="baslangicTarix" required data-fn-datepicker />
                         <span class="bg-error" id="bgTarixError"></span>
                     </div>
                     <div class="bg-form-group bg-form-half">
                         <label class="bg-label" for="bgBitisTarix">Bitiş tarix</label>
-                        <input type="date" class="bg-input" id="bgBitisTarix" name="bitisTarix" />
+                        <input type="date" class="bg-input" id="bgBitisTarix" name="bitisTarix" data-fn-datepicker />
                         <span class="bg-error" id="bgBitisTarixError"></span>
                         <span class="bg-hint">Boş buraxsanız tək gün əlavə olunur</span>
                     </div>

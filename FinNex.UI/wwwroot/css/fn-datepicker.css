@@ -1,0 +1,163 @@
+/* ════════════════════════════════════════════════════════════
+   FnDatePicker — Monday-first custom date picker
+   ════════════════════════════════════════════════════════════ */
+
+.fn-dp-input {
+    cursor: pointer !important;
+    background: #fff !important;
+}
+
+.fn-dp-popup {
+    background: #fff;
+    border: 1px solid #e2e6ef;
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(15, 26, 46, 0.16);
+    padding: 14px;
+    width: 280px;
+    font-family: inherit;
+    font-size: 13px;
+    user-select: none;
+    animation: fn-dp-in 0.18s ease-out;
+}
+@keyframes fn-dp-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header */
+.fn-dp-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.fn-dp-nav {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #e2e6ef;
+    background: #fff;
+    border-radius: 7px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #3d4557;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    padding: 0;
+    line-height: 1;
+}
+.fn-dp-nav:hover {
+    background: #f0f2f7;
+    border-color: #c8d0e0;
+}
+.fn-dp-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a2332;
+}
+
+/* Days of week header */
+.fn-dp-days-head {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: 4px;
+}
+.fn-dp-day-name {
+    text-align: center;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #8a93a8;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 6px 0;
+}
+.fn-dp-day-name.fn-dp-weekend {
+    color: #dc2626;
+}
+
+/* Date grid */
+.fn-dp-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+.fn-dp-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1a2332;
+    transition: all 0.12s;
+}
+.fn-dp-cell:hover {
+    background: #f0f2f7;
+}
+.fn-dp-cell--other {
+    color: #c8d0e0;
+    cursor: default;
+}
+.fn-dp-cell--other:hover {
+    background: transparent;
+}
+.fn-dp-cell.fn-dp-weekend {
+    color: #dc2626;
+}
+.fn-dp-cell.fn-dp-today {
+    border: 1.5px solid #6366f1;
+    font-weight: 700;
+    color: #6366f1;
+}
+.fn-dp-cell.fn-dp-selected {
+    background: #6366f1 !important;
+    color: #fff !important;
+    font-weight: 700;
+}
+.fn-dp-cell.fn-dp-selected.fn-dp-weekend {
+    background: #6366f1 !important;
+    color: #fff !important;
+}
+
+/* Footer */
+.fn-dp-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eef0f5;
+}
+.fn-dp-clear-btn,
+.fn-dp-today-btn {
+    flex: 1;
+    padding: 7px 12px;
+    border: 1px solid #e2e6ef;
+    background: #fff;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #3d4557;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+}
+.fn-dp-clear-btn:hover {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+}
+.fn-dp-today-btn {
+    background: #6366f1;
+    color: #fff;
+    border-color: #6366f1;
+}
+.fn-dp-today-btn:hover {
+    background: #4f46e5;
+    border-color: #4f46e5;
+}

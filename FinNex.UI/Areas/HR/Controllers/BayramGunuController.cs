@@ -148,5 +148,90 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             return Json(new { records = data, stats = new { cemi = ordered.Count, gelecek } });
         }
+
+        // ══════════════════════════════════════════════════════
+        // YEAR CALENDAR ENDPOINT
+        // Müəyyən il üçün bütün qeydləri qaytarır (calendar view üçün)
+        // ══════════════════════════════════════════════════════
+        [HttpGet]
+        public async Task<IActionResult> Year(int year)
+        {
+            var baslangic = new DateTime(year, 1, 1);
+            var bitis = new DateTime(year, 12, 31);
+
+            var repo = _unitOfWork.Repository<BayramGunu>();
+            var list = await repo.HamisiniGetirAsync(x =>
+                !x.Silinib && x.Tarix >= baslangic && x.Tarix <= bitis);
+
+            var records = list.Select(x => new
+            {
+                id = x.Id,
+                tarix = x.Tarix.ToString("yyyy-MM-dd"),
+                ad = x.Ad,
+                tip = (int)x.Tip
+            });
+
+            return Json(new
+            {
+                success = true,
+                year,
+                today = DateTime.Today.ToString("yyyy-MM-dd"),
+                records
+            });
+        }
+
+        // ══════════════════════════════════════════════════════
+        // QUICK TOGGLE
+        // Bir gün üçün Bayram/İş günü toggle edir
+        //   Əgər gün boşdursa → yeni Bayram qeydi yaradır (əgər tip=1) və ya IsGunu (əgər tip=2)
+        //   Əgər gün artıq qeydlidirsə → silir
+        // ══════════════════════════════════════════════════════
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Toggle([FromForm] DateTime tarix, [FromForm] int tip)
+        {
+            // Keçmiş tarix yoxlama
+            if (tarix.Date < DateTime.Today)
+                return Json(new { success = false, message = "Keçmiş tarixi dəyişmək olmaz." });
+
+            if (tip != 1 && tip != 2)
+                return Json(new { success = false, message = "Yanlış növ." });
+
+            var repo = _unitOfWork.Repository<BayramGunu>();
+            var mevcud = (await repo.HamisiniGetirAsync(x =>
+                !x.Silinib && x.Tarix.Date == tarix.Date)).FirstOrDefault();
+
+            if (mevcud != null)
+            {
+                // Mövcud qeyd — sil (toggle off)
+                await repo.YumshakSilAsync(mevcud.Id);
+                await _unitOfWork.YaddaSaxlaAsync();
+                return Json(new { success = true, action = "removed", message = "Qeyd silindi." });
+            }
+
+            // Yeni qeyd yarat
+            var gunTipi = tip == 2 ? GunTipi.IsGunu : GunTipi.Bayram;
+            var defaultAd = gunTipi == GunTipi.IsGunu ? "Əlavə iş günü" : "Bayram";
+
+            var entity = new BayramGunu
+            {
+                Ad = defaultAd,
+                Tarix = tarix.Date,
+                HerIlTeyinOlunur = false,
+                Tip = gunTipi
+            };
+            await repo.YaratAsync(entity);
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            return Json(new
+            {
+                success = true,
+                action = "added",
+                id = entity.Id,
+                tip = (int)entity.Tip,
+                ad = entity.Ad,
+                message = gunTipi == GunTipi.IsGunu ? "İş günü əlavə edildi." : "Bayram əlavə edildi."
+            });
+        }
     }
 }
