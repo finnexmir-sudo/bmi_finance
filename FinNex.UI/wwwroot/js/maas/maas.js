@@ -31,7 +31,7 @@
             mezGun.addEventListener('input', () => this.mezuniyyetOnIzle());
             if (isciId) isciId.addEventListener('change', () => this.mezuniyyetOnIzle());
 
-            // Canlı brüt hesablama (müxbir sahə)
+            // Canlı gross hesablama (müxbir sahə)
             this.initCanliHesab();
         },
 
@@ -61,7 +61,7 @@
             }
         },
 
-        // Canlı brüt hesab: əsas maaş + bonus - cərimə
+        // Canlı gross hesab: əsas maaş + bonus - cərimə
         initCanliHesab() {
             const brutEl = document.getElementById('brut-gosterici');
             if (!brutEl) return;

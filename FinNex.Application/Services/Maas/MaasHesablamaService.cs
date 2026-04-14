@@ -229,7 +229,7 @@ namespace FinNex.Application.Services.HR
 
             izahatlar.Add(new HesablamaIzahiDto
             {
-                Addim = "Brut Mebleg",
+                Addim = "Gross Məbləğ",
                 Izah = $"Esas ({esasMaas:N2}) - MezKes ({mezKesinti:N2}) + MezOd ({mezOdenis:N2}) - Qayıb ({qayibKesinti:N2}) + Bonus ({input.BonusMeblegi:N2}) - Cerime ({input.CerimeMeblegi:N2})",
                 Mebleg = brutMaas,
                 Tip = "melumati"
