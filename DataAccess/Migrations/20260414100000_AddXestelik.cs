@@ -101,7 +101,7 @@ namespace FinNex.DataAccess.Migrations
                         column: x => x.MaasId,
                         principalTable: "Maaslar",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateIndex(

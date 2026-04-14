@@ -3553,7 +3553,8 @@ namespace FinNex.DataAccess.Migrations
 
                     b.HasOne("FinNex.Domain.Entities.HR.Maas", "Maas")
                         .WithMany()
-                        .HasForeignKey("MaasId");
+                        .HasForeignKey("MaasId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("Isci");
 
