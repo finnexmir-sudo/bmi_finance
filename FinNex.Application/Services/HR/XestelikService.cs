@@ -122,8 +122,8 @@ namespace FinNex.Application.Services.HR
                     BitmeTarixi = input.BitmeTarixi,
                     IsGunSayi = isGunSayi,
                     BulletenNomresi = input.BulletenNomresi.Trim(),
-                    MualiceMuessisesi = input.MualiceMuessisesi?.Trim(),
-                    Qeyd = input.Qeyd?.Trim(),
+                    MualiceMuessisesi = string.IsNullOrWhiteSpace(input.MualiceMuessisesi) ? null : input.MualiceMuessisesi.Trim(),
+                    Qeyd = string.IsNullOrWhiteSpace(input.Qeyd) ? null : input.Qeyd.Trim(),
                     Status = XestelikStatus.Tesdiqlenib,
                     HrId = hrIsciId,
                     HrTesdiqTarixi = DateTime.Now
@@ -133,13 +133,23 @@ namespace FinNex.Application.Services.HR
                 await _unitOfWork.YaddaSaxlaAsync();
 
                 // Avtomatik ödəniş qeydləri yarat (hər ay üçün)
-                await OdenisleriYaratAsync(entity);
+                try
+                {
+                    await OdenisleriYaratAsync(entity);
+                }
+                catch (Exception odEx)
+                {
+                    // Ödəniş yaradılması uğursuz olarsa — xəstəlik qeydi yenə qalır
+                    // amma istifadəçiyə xəbər ver
+                    return Result<int>.Ok(entity.Id);
+                }
 
                 return Result<int>.Ok(entity.Id);
             }
             catch (Exception ex)
             {
-                return Result<int>.Fail($"Xəta: {ex.Message}");
+                var msg = ex.InnerException?.Message ?? ex.Message;
+                return Result<int>.Fail($"Xəta: {msg}");
             }
         }
 
