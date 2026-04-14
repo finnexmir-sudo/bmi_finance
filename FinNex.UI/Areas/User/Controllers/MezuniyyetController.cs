@@ -1,13 +1,17 @@
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Communication;
+using FinNex.Application.Interfaces.HR;
+using FinNex.Application.Interfaces.Maas_If;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Interfaces;
 using FinNex.UI.Areas.User.ViewModels.Mezuniyyet;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.UI.Areas.User.Controllers
 {
@@ -20,19 +24,106 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly IIsciService _isciService;
         private readonly UserManager<AppUser> _userManager;
         private readonly IEvezediciTesdiqService _evezediciTesdiqService;
+        private readonly IIsciAyliqQazancService _ayliqQazancService;
+        private readonly IUnitOfWork _unitOfWork;
 
         public MezuniyyetController(
             IMezuniyyetService mezuniyyetService,
             IDashboardService dashboardService,
             IIsciService isciService,
             UserManager<AppUser> userManager,
-            IEvezediciTesdiqService evezediciTesdiqService)
+            IEvezediciTesdiqService evezediciTesdiqService,
+            IIsciAyliqQazancService ayliqQazancService,
+            IUnitOfWork unitOfWork)
         {
             _mezuniyyetService = mezuniyyetService;
             _dashboardService = dashboardService;
             _isciService = isciService;
             _userManager = userManager;
             _evezediciTesdiqService = evezediciTesdiqService;
+            _ayliqQazancService = ayliqQazancService;
+            _unitOfWork = unitOfWork;
+        }
+
+        // ── GET /User/Mezuniyyet/Preview?baslama=2026-04-10&bitme=2026-04-17 ──
+        // Real-time məzuniyyət ödənişi preview (JSON)
+        [HttpGet]
+        public async Task<IActionResult> Preview(DateTime baslama, DateTime bitme)
+        {
+            var isciId = await GetCurrentIsciIdAsync();
+            if (isciId == null) return Json(new { success = false, message = "İşçi tapılmadı." });
+
+            if (bitme < baslama)
+                return Json(new { success = false, message = "Bitmə tarixi başlama tarixindən sonra olmalıdır." });
+
+            // İşçinin cari maaşı
+            var maliye = await _unitOfWork.Repository<IsciMaliye>()
+                .GetirAsync(x => x.IsciId == isciId.Value);
+            decimal cariMaas = maliye?.CariMaas ?? 0;
+
+            // Bayram günlərini gətir (məzuniyyət dövründə)
+            var bayramlar = await _unitOfWork.Repository<BayramGunu>()
+                .HamisiniGetirAsync(x => x.Tarix >= baslama && x.Tarix <= bitme && !x.Silinib);
+            var bayramTarixleri = bayramlar.Select(x => x.Tarix.Date).ToHashSet();
+
+            // GS (təqvim günü) və İGS (iş günü) hesabla
+            int teqvimGun = 0, isGun = 0;
+            for (var t = baslama; t <= bitme; t = t.AddDays(1))
+            {
+                teqvimGun++;
+                if (t.DayOfWeek != DayOfWeek.Saturday &&
+                    t.DayOfWeek != DayOfWeek.Sunday &&
+                    !bayramTarixleri.Contains(t.Date))
+                {
+                    isGun++;
+                }
+            }
+
+            // S = Son 12 ayın cəmi
+            decimal S = await _ayliqQazancService.Son12AyCemiQazancAsync(isciId.Value);
+            int qeydSayi = await _ayliqQazancService.Son12AyQeydSayiAsync(isciId.Value);
+
+            // Cari ayın iş gün sayı (məzuniyyət başladığı ay)
+            var ayBaslangic = new DateTime(baslama.Year, baslama.Month, 1);
+            var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
+            var ayBayramlar = await _unitOfWork.Repository<BayramGunu>()
+                .HamisiniGetirAsync(x => x.Tarix >= ayBaslangic && x.Tarix <= ayBitis && !x.Silinib);
+            var ayBayramTarix = ayBayramlar.Select(x => x.Tarix.Date).ToHashSet();
+            int ayIsGun = 0;
+            for (var t = ayBaslangic; t <= ayBitis; t = t.AddDays(1))
+            {
+                if (t.DayOfWeek != DayOfWeek.Saturday &&
+                    t.DayOfWeek != DayOfWeek.Sunday &&
+                    !ayBayramTarix.Contains(t.Date))
+                    ayIsGun++;
+            }
+            if (ayIsGun == 0) ayIsGun = 22;
+
+            // Formula
+            decimal MH = 0;
+            if (S > 0 && teqvimGun > 0)
+                MH = Math.Round(S / 12m / 30.4m * teqvimGun, 2);
+
+            decimal EH = 0;
+            if (cariMaas > 0 && ayIsGun > 0 && isGun > 0)
+                EH = Math.Round(cariMaas / ayIsGun * isGun, 2);
+
+            decimal odenis = Math.Max(MH, EH);
+
+            return Json(new
+            {
+                success = true,
+                teqvimGun,
+                isGun,
+                cariMaas,
+                ayIsGun,
+                S,
+                qeydSayi,
+                MH,
+                EH,
+                odenis,
+                qalib = MH > EH ? "MH" : "EH"
+            });
         }
 
         // ── GET /User/Mezuniyyet ────────────────────────────────

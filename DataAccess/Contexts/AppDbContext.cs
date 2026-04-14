@@ -72,6 +72,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<IsciMaasTarixcesi> IsciMaasTarixceleri { get; set; }
     public DbSet<MaasParametri> MaasParametrleri { get; set; }
     public DbSet<VergiPille> VergiPilleleri { get; set; }
+    public DbSet<IsciAyliqQazanc> IsciAyliqQazanclar { get; set; }
 
     public DbSet<Mesaj> Mesajlar { get; set; }
     public DbSet<Bildiris> Bildirisler { get; set; }
@@ -418,6 +419,28 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         // Eyni parametr növü üçün eyni başlanma tarixində təkrar olmasın
         builder.Entity<MaasParametri>()
             .HasIndex(x => new { x.Nov, x.BaslamaTarixi })
+            .IsUnique();
+
+        // ==========================
+        // IsciAyliqQazanc (məzuniyyət üçün 12 ay qazanc tarixçəsi)
+        // ==========================
+        builder.Entity<IsciAyliqQazanc>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<IsciAyliqQazanc>()
+            .Property(x => x.Qazanc)
+            .HasPrecision(18, 2);
+
+        builder.Entity<IsciAyliqQazanc>()
+            .Property(x => x.Qeyd)
+            .HasMaxLength(500);
+
+        // Eyni işçi üçün eyni il/ay təkrar olmasın
+        builder.Entity<IsciAyliqQazanc>()
+            .HasIndex(x => new { x.IsciId, x.Il, x.Ay })
             .IsUnique();
 
         // ==========================
