@@ -92,22 +92,26 @@
         }
 
         _render() {
+            // Build the popup shell once, then reposition. Month navigation
+            // only updates the title + grid — the popup is never destroyed,
+            // so its position never jumps mid-interaction.
             if (this.popup) this.popup.remove();
 
             this.popup = document.createElement('div');
             this.popup.className = 'fn-dp-popup';
             this.popup.addEventListener('click', (e) => e.stopPropagation());
+            // Prevent focus-stealing scroll inside the modal when clicking nav/cells
+            this.popup.addEventListener('mousedown', (e) => e.preventDefault());
 
             // Header
             const head = document.createElement('div');
             head.className = 'fn-dp-head';
-            const prev = this._makeNav('‹', () => { this.viewMonth.setMonth(this.viewMonth.getMonth() - 1); this._render(); });
-            const next = this._makeNav('›', () => { this.viewMonth.setMonth(this.viewMonth.getMonth() + 1); this._render(); });
-            const title = document.createElement('div');
-            title.className = 'fn-dp-title';
-            title.textContent = `${MONTHS_AZ[this.viewMonth.getMonth()]} ${this.viewMonth.getFullYear()}`;
+            const prev = this._makeNav('‹', () => { this.viewMonth.setMonth(this.viewMonth.getMonth() - 1); this._renderMonth(); });
+            const next = this._makeNav('›', () => { this.viewMonth.setMonth(this.viewMonth.getMonth() + 1); this._renderMonth(); });
+            this.titleEl = document.createElement('div');
+            this.titleEl.className = 'fn-dp-title';
             head.appendChild(prev);
-            head.appendChild(title);
+            head.appendChild(this.titleEl);
             head.appendChild(next);
             this.popup.appendChild(head);
 
@@ -122,63 +126,10 @@
             });
             this.popup.appendChild(daysHead);
 
-            // Grid
-            const grid = document.createElement('div');
-            grid.className = 'fn-dp-grid';
-
-            const firstDay = new Date(this.viewMonth.getFullYear(), this.viewMonth.getMonth(), 1);
-            // Monday-first: Mon=0, Sun=6
-            let startOffset = firstDay.getDay() - 1;
-            if (startOffset < 0) startOffset = 6;
-
-            const daysInMonth = new Date(this.viewMonth.getFullYear(), this.viewMonth.getMonth() + 1, 0).getDate();
-            const prevMonthLastDay = new Date(this.viewMonth.getFullYear(), this.viewMonth.getMonth(), 0).getDate();
-
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const selected = parseISO(this.input.value);
-
-            // Previous month filler
-            for (let i = startOffset; i > 0; i--) {
-                const cell = document.createElement('div');
-                cell.className = 'fn-dp-cell fn-dp-cell--other';
-                cell.textContent = prevMonthLastDay - i + 1;
-                grid.appendChild(cell);
-            }
-
-            // Current month days
-            for (let d = 1; d <= daysInMonth; d++) {
-                const dateObj = new Date(this.viewMonth.getFullYear(), this.viewMonth.getMonth(), d);
-                const cell = document.createElement('div');
-                cell.className = 'fn-dp-cell';
-                cell.textContent = d;
-
-                const dow = dateObj.getDay();
-                if (dow === 0 || dow === 6) cell.classList.add('fn-dp-weekend');
-                if (sameDay(dateObj, today)) cell.classList.add('fn-dp-today');
-                if (sameDay(dateObj, selected)) cell.classList.add('fn-dp-selected');
-
-                cell.addEventListener('click', () => {
-                    this.input.value = toISO(dateObj);
-                    this.input.dispatchEvent(new Event('change', { bubbles: true }));
-                    this.input.dispatchEvent(new Event('input', { bubbles: true }));
-                    this.close();
-                });
-                grid.appendChild(cell);
-            }
-
-            // Next month filler (to complete 6 rows if needed)
-            const totalCells = startOffset + daysInMonth;
-            const rows = Math.ceil(totalCells / 7);
-            const remaining = (rows * 7) - totalCells;
-            for (let i = 1; i <= remaining; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'fn-dp-cell fn-dp-cell--other';
-                cell.textContent = i;
-                grid.appendChild(cell);
-            }
-
-            this.popup.appendChild(grid);
+            // Grid (contents filled by _renderMonth)
+            this.gridEl = document.createElement('div');
+            this.gridEl.className = 'fn-dp-grid';
+            this.popup.appendChild(this.gridEl);
 
             // Footer
             const foot = document.createElement('div');
@@ -205,7 +156,10 @@
             foot.appendChild(todayBtn);
             this.popup.appendChild(foot);
 
-            // Position below input
+            // Fill month contents
+            this._renderMonth();
+
+            // Position below input (once)
             const rect = this.input.getBoundingClientRect();
             this.popup.style.position = 'fixed';
             this.popup.style.top = (rect.bottom + 4) + 'px';
@@ -214,13 +168,72 @@
 
             document.body.appendChild(this.popup);
 
-            // Ensure it's in viewport
+            // Ensure it's in viewport (once)
             const popupRect = this.popup.getBoundingClientRect();
             if (popupRect.right > window.innerWidth) {
                 this.popup.style.left = (window.innerWidth - popupRect.width - 8) + 'px';
             }
             if (popupRect.bottom > window.innerHeight) {
                 this.popup.style.top = (rect.top - popupRect.height - 4) + 'px';
+            }
+        }
+
+        _renderMonth() {
+            if (!this.titleEl || !this.gridEl) return;
+
+            this.titleEl.textContent = `${MONTHS_AZ[this.viewMonth.getMonth()]} ${this.viewMonth.getFullYear()}`;
+            this.gridEl.innerHTML = '';
+
+            const firstDay = new Date(this.viewMonth.getFullYear(), this.viewMonth.getMonth(), 1);
+            // Monday-first: Mon=0, Sun=6
+            let startOffset = firstDay.getDay() - 1;
+            if (startOffset < 0) startOffset = 6;
+
+            const daysInMonth = new Date(this.viewMonth.getFullYear(), this.viewMonth.getMonth() + 1, 0).getDate();
+            const prevMonthLastDay = new Date(this.viewMonth.getFullYear(), this.viewMonth.getMonth(), 0).getDate();
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const selected = parseISO(this.input.value);
+
+            // Previous month filler
+            for (let i = startOffset; i > 0; i--) {
+                const cell = document.createElement('div');
+                cell.className = 'fn-dp-cell fn-dp-cell--other';
+                cell.textContent = prevMonthLastDay - i + 1;
+                this.gridEl.appendChild(cell);
+            }
+
+            // Current month days
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateObj = new Date(this.viewMonth.getFullYear(), this.viewMonth.getMonth(), d);
+                const cell = document.createElement('div');
+                cell.className = 'fn-dp-cell';
+                cell.textContent = d;
+
+                const dow = dateObj.getDay();
+                if (dow === 0 || dow === 6) cell.classList.add('fn-dp-weekend');
+                if (sameDay(dateObj, today)) cell.classList.add('fn-dp-today');
+                if (sameDay(dateObj, selected)) cell.classList.add('fn-dp-selected');
+
+                cell.addEventListener('click', () => {
+                    this.input.value = toISO(dateObj);
+                    this.input.dispatchEvent(new Event('change', { bubbles: true }));
+                    this.input.dispatchEvent(new Event('input', { bubbles: true }));
+                    this.close();
+                });
+                this.gridEl.appendChild(cell);
+            }
+
+            // Next month filler (to complete 6 rows if needed)
+            const totalCells = startOffset + daysInMonth;
+            const rows = Math.ceil(totalCells / 7);
+            const remaining = (rows * 7) - totalCells;
+            for (let i = 1; i <= remaining; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'fn-dp-cell fn-dp-cell--other';
+                cell.textContent = i;
+                this.gridEl.appendChild(cell);
             }
         }
 
