@@ -129,8 +129,15 @@
                 visibleCount++;
                 return;
             }
-            // Axtarış üçün bütün sətrin mətnini götür
-            const text = normalizeText(row.textContent || '');
+            // Axtarış yalnız işçi məlumatlarında aparılır — status, rəqəm, tarix axtarışa daxil edilmir
+            const nameEl = row.querySelector('.mi-emp-name');
+            const deptEls = row.querySelectorAll('.mi-emp-dept');
+
+            let searchText = '';
+            if (nameEl) searchText += ' ' + nameEl.textContent;
+            deptEls.forEach(el => { searchText += ' ' + el.textContent; });
+
+            const text = normalizeText(searchText);
             if (text.includes(q)) {
                 row.style.display = '';
                 visibleCount++;

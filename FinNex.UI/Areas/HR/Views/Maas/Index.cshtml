@@ -237,7 +237,7 @@
                     <path d="M8.5 8.5l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
                 </svg>
                 <input type="text" id="miQuickSearch" class="mi-search-input"
-                       placeholder="Ad, soyad, departament, vəzifə və ya IBAN ilə axtar..."
+                       placeholder="Ad, soyad, departament, vəzifə ilə axtar..."
                        autocomplete="off"/>
                 <button type="button" id="miClearSearch" class="mi-search-clear" title="Təmizlə" style="display:none;">&times;</button>
             </div>
@@ -382,7 +382,7 @@
                             <th colspan="3" class="grp-gelir">Gəlirlər</th>
                             <th colspan="1" class="grp-kesinti">Kəsinti</th>
                             <th colspan="4" class="grp-vergi">Tutulmalar (İşçi)</th>
-                            <th colspan="1" class="grp-net">NET</th>
+                            <th colspan="2" class="grp-net">NET / Ödəniş</th>
                             <th colspan="2" class="grp-isci">Departament / Vəzifə</th>
                         </tr>
                         @* ── Sütun başlıqları ──────────────────────────────── *@
@@ -403,7 +403,8 @@
                             <th style="min-width:100px;">İşsizlik<br><span style="font-size:8.5px;font-weight:500;color:#aab0bf;">0.5%</span></th>
                             <th class="col-sep" style="min-width:90px;">İTSS<br><span style="font-size:8.5px;font-weight:500;color:#aab0bf;">pilləli</span></th>
 
-                            <th class="col-sep" style="min-width:120px;">NET Maaş</th>
+                            <th style="min-width:120px;">NET Maaş</th>
+                            <th class="center col-sep" style="min-width:110px;">Ödəniş Tarixi</th>
 
                             <th class="left" style="min-width:120px;">Departament</th>
                             <th class="left" style="min-width:110px;">Vəzifə</th>
@@ -517,11 +518,19 @@
                                 <td class="col-sep"><span class="n">@Fmt(m.Itss) ₼</span></td>
 
                                 @* NET *@
-                                <td class="col-sep">
+                                <td>
                                     <span class="n n--gold">@m.NetMebleg.ToString("N2") ₼</span>
+                                </td>
+
+                                @* Ödəniş Tarixi *@
+                                <td class="center col-sep">
                                     @if (m.OdenisTarixi.HasValue)
                                     {
-                                        <span class="n--sub">@m.OdenisTarixi.Value.ToString("dd.MM.yy")</span>
+                                        <span class="n" style="font-size:11.5px;color:#1e9b6b;font-weight:600;">@m.OdenisTarixi.Value.ToString("dd.MM.yyyy")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="n n--dim">—</span>
                                     }
                                 </td>
 
@@ -549,7 +558,8 @@
                             <td class="center"><span class="n n--purple">@umumiDsmf.ToString("N2") ₼</span></td>
                             <td class="center"><span class="n">@umumiIssizlik.ToString("N2") ₼</span></td>
                             <td class="center col-sep"><span class="n">@umumiItss.ToString("N2") ₼</span></td>
-                            <td class="center col-sep"><span class="n n--gold" style="font-size:14px;">@umumiNet.ToString("N2") ₼</span></td>
+                            <td class="center"><span class="n n--gold" style="font-size:14px;">@umumiNet.ToString("N2") ₼</span></td>
+                            <td class="col-sep"></td>
                             <td colspan="2"></td>
                         </tr>
                     </tfoot>
