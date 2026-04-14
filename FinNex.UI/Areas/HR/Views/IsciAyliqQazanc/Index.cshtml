@@ -1,0 +1,333 @@
+@using FinNex.Application.DTOs.HR.Maas
+@{
+    ViewData["Title"] = "İşçi Aylıq Qazanc Tarixçəsi";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    var qazanclar = (List<IsciAyliqQazancDto>)(ViewBag.Qazanclar ?? new List<IsciAyliqQazancDto>());
+    var secilmisIsciId = (int?)ViewBag.SecilmisIsciId;
+    var secilmisIsciAd = (string)(ViewBag.SecilmisIsciAd ?? "");
+    var cemi = (decimal)(ViewBag.Cemi ?? 0m);
+    var ayAdlar = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+                          "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+}
+
+<div class="iaq-page">
+    @Html.AntiForgeryToken()
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="iaq-alert iaq-alert--success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="iaq-alert iaq-alert--error">@TempData["Error"]</div>
+    }
+
+    @* ── Başlıq ── *@
+    <div class="iaq-header">
+        <div>
+            <h1 class="iaq-title">
+                <i class="bi bi-clock-history"></i>
+                İşçi Aylıq Qazanc Tarixçəsi
+            </h1>
+            <p class="iaq-subtitle">
+                Məzuniyyət ödənişinin hesablanması üçün son 12 ayın qazancı.
+                Sliding window: hər işçi üçün maksimum 12 qeyd saxlanılır.
+            </p>
+        </div>
+    </div>
+
+    @* ── Bələdçi ── *@
+    <div class="iaq-guide">
+        <i class="bi bi-info-circle"></i>
+        <div>
+            <strong>Necə işləyir?</strong>
+            HR yeni maaş hesabladıqda sistem avtomatik bu cədvələ qeyd əlavə edir.
+            Sistemin başlanğıcında köhnə tarixi məlumatları (sistemdən əvvəlki ayları)
+            buradan əl ilə daxil edə bilərsiniz. Cəmi 12 qeyd saxlanılır — yeni ay
+            əlavə olunduqda ən köhnə qeyd avtomatik silinir.
+            <br>
+            <strong>Vacib:</strong> Qazanc məbləği <u>xəstəlik ödənişi çıxılmış</u> şəkildə daxil edilməlidir.
+        </div>
+    </div>
+
+    @* ── İşçi seçimi ── *@
+    <form method="get" class="iaq-filter">
+        <label class="iaq-filter-label">İşçi seçin:</label>
+        <select name="isciId" class="iaq-select" onchange="this.form.submit()">
+            <option value="">— İşçi seçin —</option>
+            @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+            {
+                if (item.Selected)
+                {
+                    <option value="@item.Value" selected>@item.Text</option>
+                }
+                else
+                {
+                    <option value="@item.Value">@item.Text</option>
+                }
+            }
+        </select>
+    </form>
+
+    @if (secilmisIsciId.HasValue && secilmisIsciId.Value > 0)
+    {
+        <div class="iaq-card">
+            <div class="iaq-card-head">
+                <div>
+                    <div class="iaq-card-title">@secilmisIsciAd</div>
+                    <div class="iaq-card-sub">@qazanclar.Count / 12 qeyd saxlanılır</div>
+                </div>
+                <button type="button" class="iaq-btn iaq-btn--primary" id="iaqAddBtn">
+                    <i class="bi bi-plus-lg"></i> Yeni qeyd əlavə et
+                </button>
+            </div>
+
+            <div class="iaq-table-wrap">
+                <table class="iaq-table">
+                    <thead>
+                        <tr>
+                            <th>Dövr</th>
+                            <th>Qazanc (₼)</th>
+                            <th>Mənbə</th>
+                            <th>Açıqlama</th>
+                            <th>Yaradılma</th>
+                            <th class="text-right">Əməliyyat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!qazanclar.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="iaq-empty">
+                                    <i class="bi bi-inbox"></i> Bu işçi üçün hələ qeyd yoxdur.<br>
+                                    <small>HR yeni maaş hesabladıqda sistem avtomatik əlavə edəcək.</small>
+                                </td>
+                            </tr>
+                        }
+                        @foreach (var q in qazanclar)
+                        {
+                            <tr>
+                                <td><strong>@ayAdlar[q.Ay] @q.Il</strong></td>
+                                <td><span class="iaq-money">@q.Qazanc.ToString("N2") ₼</span></td>
+                                <td>
+                                    @if (q.ElIleDaxilEdilib)
+                                    {
+                                        <span class="iaq-badge iaq-badge--manual">
+                                            <i class="bi bi-pencil"></i> Əl ilə
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="iaq-badge iaq-badge--auto">
+                                            <i class="bi bi-cpu"></i> Avtomatik
+                                        </span>
+                                    }
+                                </td>
+                                <td class="iaq-qeyd">@(q.Qeyd ?? "—")</td>
+                                <td><small>@q.YaradilmaTarixi.ToString("dd.MM.yyyy")</small></td>
+                                <td class="text-right">
+                                    <form asp-action="Delete" method="post" style="display:inline;"
+                                          onsubmit="return confirm('Bu qeydi silmək istədiyinizə əminsiniz?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@q.Id"/>
+                                        <input type="hidden" name="isciId" value="@secilmisIsciId"/>
+                                        <button type="submit" class="iaq-btn-icon iaq-btn-icon--del">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    @if (qazanclar.Any())
+                    {
+                        <tfoot>
+                            <tr class="iaq-tfoot">
+                                <td><strong>CƏMİ</strong></td>
+                                <td><strong class="iaq-money">@cemi.ToString("N2") ₼</strong></td>
+                                <td colspan="4"></td>
+                            </tr>
+                        </tfoot>
+                    }
+                </table>
+            </div>
+
+            @* Məzuniyyət preview formulu *@
+            @if (qazanclar.Any())
+            {
+                <div class="iaq-formula">
+                    <div class="iaq-formula-title">📊 Məzuniyyət ödənişi formulu (informativ)</div>
+                    <div class="iaq-formula-body">
+                        <div>S = @cemi.ToString("N2") ₼ (son 12 ayın cəmi)</div>
+                        <div>Bir təqvim günü ortalama = S / 12 / 30.4 = <strong>@(Math.Round(cemi / 12m / 30.4m, 2)) ₼</strong></div>
+                        <div class="iaq-formula-note">
+                            Bu, məzuniyyət üçün <strong>tarixi orta</strong>-dır. Faktiki ödəniş cari maaşla
+                            müqayisə edilərək seçilir: <code>MAX(MH, ƏH)</code>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    @* ── Modal: Yeni qeyd ── *@
+    <div class="iaq-modal-overlay" id="iaqModalOverlay">
+        <div class="iaq-modal">
+            <div class="iaq-modal-head">
+                <h3>Yeni Qeyd Əlavə Et</h3>
+                <button type="button" class="iaq-modal-close" id="iaqModalClose">&times;</button>
+            </div>
+            <form asp-action="Save" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="isciId" value="@secilmisIsciId"/>
+
+                <div class="iaq-modal-body">
+                    <div class="iaq-form-row">
+                        <div class="iaq-form-group">
+                            <label>İl</label>
+                            <select name="il" class="iaq-input" required>
+                                @{
+                                    var cariIl = DateTime.Now.Year;
+                                    for (int y = cariIl - 1; y <= cariIl; y++)
+                                    {
+                                        <option value="@y" selected="@(y == cariIl)">@y</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="iaq-form-group">
+                            <label>Ay</label>
+                            <select name="ay" class="iaq-input" required>
+                                @for (int m = 1; m <= 12; m++)
+                                {
+                                    <option value="@m" selected="@(m == DateTime.Now.Month)">@ayAdlar[m]</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="iaq-form-group">
+                        <label>Qazanc məbləği (₼) <span style="color:#dc2626;">*</span></label>
+                        <input type="number" name="qazanc" class="iaq-input" step="0.01" min="0" required placeholder="məs: 1500.00"/>
+                        <div class="iaq-form-hint">
+                            ⚠️ Xəstəlik ödənişi <strong>artıq çıxılmış</strong> məbləği daxil edin
+                        </div>
+                    </div>
+
+                    <div class="iaq-form-group">
+                        <label>Açıqlama (istəğə bağlı)</label>
+                        <input type="text" name="qeyd" class="iaq-input" placeholder="məs: 2025-ci il dekabr maaşı"/>
+                    </div>
+                </div>
+
+                <div class="iaq-modal-foot">
+                    <button type="button" class="iaq-btn iaq-btn--outline" id="iaqModalCancel">Ləğv et</button>
+                    <button type="submit" class="iaq-btn iaq-btn--primary">
+                        <i class="bi bi-check-lg"></i> Yadda saxla
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .iaq-page { max-width: 1100px; padding: 8px 0; }
+        .iaq-alert { padding: 12px 18px; border-radius: 10px; margin-bottom: 16px; font-size: 13px; font-weight: 500; }
+        .iaq-alert--success { background: #ecfdf5; color: #059669; border: 1px solid #bbf7d0; }
+        .iaq-alert--error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+        .iaq-header { margin-bottom: 20px; }
+        .iaq-title { font-size: 1.4rem; font-weight: 800; color: #1a2332; margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
+        .iaq-title i { color: #6366f1; }
+        .iaq-subtitle { font-size: 0.82rem; color: #7a8599; margin: 0; }
+
+        .iaq-guide { display: flex; gap: 12px; padding: 14px 18px; background: linear-gradient(135deg, #eff6ff, #f0f9ff); border: 1px solid #bfdbfe; border-radius: 12px; margin-bottom: 20px; font-size: 0.82rem; color: #1e3a8a; line-height: 1.6; }
+        .iaq-guide i { font-size: 1.1rem; color: #3b82f6; flex-shrink: 0; margin-top: 2px; }
+        .iaq-guide strong { font-weight: 700; }
+
+        .iaq-filter { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .iaq-filter-label { font-size: 0.82rem; font-weight: 600; color: #3d4557; }
+        .iaq-select, .iaq-input { padding: 9px 14px; font-size: 0.82rem; border: 1.5px solid #e2e6ef; border-radius: 9px; background: #fff; color: #1a2332; font-family: inherit; min-width: 280px; }
+        .iaq-select:focus, .iaq-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+
+        .iaq-card { background: #fff; border: 1px solid #e2e6ef; border-radius: 13px; box-shadow: 0 2px 8px rgba(15,26,46,.04); }
+        .iaq-card-head { display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; border-bottom: 1px solid #eef0f5; }
+        .iaq-card-title { font-size: 1.05rem; font-weight: 700; color: #1a2332; }
+        .iaq-card-sub { font-size: 0.78rem; color: #7a8599; margin-top: 2px; }
+
+        .iaq-btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; font-size: 0.82rem; font-weight: 600; border-radius: 9px; cursor: pointer; border: none; font-family: inherit; transition: .15s; }
+        .iaq-btn--primary { background: linear-gradient(135deg, #6366f1, #3b82f6); color: #fff; }
+        .iaq-btn--primary:hover { box-shadow: 0 4px 12px rgba(99,102,241,.25); transform: translateY(-1px); }
+        .iaq-btn--outline { background: #fff; color: #3d4557; border: 1px solid #dde1eb; }
+        .iaq-btn--outline:hover { background: #f5f7fb; }
+
+        .iaq-table-wrap { overflow-x: auto; }
+        .iaq-table { width: 100%; border-collapse: collapse; }
+        .iaq-table thead th { padding: 12px 18px; font-size: 0.7rem; font-weight: 700; color: #8a93a8; text-transform: uppercase; letter-spacing: .5px; text-align: left; background: #f7f9fc; border-bottom: 1px solid #eef0f5; }
+        .iaq-table tbody td { padding: 14px 18px; font-size: 0.85rem; color: #1a2332; border-bottom: 1px solid #f4f5f8; }
+        .iaq-table tbody tr:hover { background: #fafbfc; }
+        .iaq-table .text-right { text-align: right; }
+
+        .iaq-empty { padding: 40px; text-align: center; color: #8a93a8; }
+        .iaq-empty i { font-size: 2rem; display: block; margin-bottom: 8px; color: #d0d5dd; }
+
+        .iaq-money { font-weight: 700; color: #c9900a; font-size: 0.95rem; }
+        .iaq-qeyd { color: #7a8599; font-style: italic; font-size: 0.78rem; }
+
+        .iaq-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+        .iaq-badge--manual { background: rgba(99,102,241,.1); color: #6366f1; }
+        .iaq-badge--auto { background: rgba(16,185,129,.1); color: #059669; }
+
+        .iaq-btn-icon { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e6ef; background: #fff; color: #8a93a8; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: .15s; }
+        .iaq-btn-icon--del:hover { background: rgba(239,68,68,.08); color: #dc2626; border-color: rgba(239,68,68,.3); }
+
+        .iaq-tfoot td { background: #fef3c7; border-top: 2px solid #fbbf24; padding: 14px 18px; font-size: 0.95rem; color: #78350f; }
+
+        .iaq-formula { margin: 18px 22px 22px; padding: 16px 18px; background: linear-gradient(135deg, #faf5ff, #f5f3ff); border: 1px solid #e9d5ff; border-radius: 11px; font-size: 0.82rem; color: #4c1d95; }
+        .iaq-formula-title { font-weight: 700; margin-bottom: 8px; font-size: 0.88rem; }
+        .iaq-formula-body div { margin-bottom: 4px; line-height: 1.6; }
+        .iaq-formula-note { color: #7c3aed; font-size: 0.78rem; font-style: italic; margin-top: 6px; }
+        .iaq-formula code { background: #fff; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+
+        /* Modal */
+        .iaq-modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.45); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 9000; opacity: 0; pointer-events: none; transition: opacity .2s; }
+        .iaq-modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .iaq-modal { background: #fff; border-radius: 16px; box-shadow: 0 24px 80px rgba(15,23,42,.2); width: 480px; max-width: calc(100vw - 32px); transform: translateY(10px) scale(.97); transition: transform .25s; }
+        .iaq-modal-overlay.active .iaq-modal { transform: translateY(0) scale(1); }
+        .iaq-modal-head { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px 0; }
+        .iaq-modal-head h3 { font-size: 1.1rem; font-weight: 700; color: #1a2332; margin: 0; }
+        .iaq-modal-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: #f4f5f8; color: #7a8599; font-size: 1.4rem; cursor: pointer; }
+        .iaq-modal-body { padding: 20px 24px; }
+        .iaq-modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 0 24px 20px; }
+
+        .iaq-form-row { display: flex; gap: 12px; }
+        .iaq-form-row .iaq-form-group { flex: 1; }
+        .iaq-form-group { margin-bottom: 14px; }
+        .iaq-form-group label { display: block; font-size: 0.72rem; font-weight: 700; color: #7a8599; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; }
+        .iaq-form-group .iaq-input { width: 100%; min-width: auto; }
+        .iaq-form-hint { font-size: 0.72rem; color: #b45309; margin-top: 5px; }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const overlay = document.getElementById('iaqModalOverlay');
+            const addBtn = document.getElementById('iaqAddBtn');
+            const closeBtn = document.getElementById('iaqModalClose');
+            const cancelBtn = document.getElementById('iaqModalCancel');
+
+            function open() { overlay?.classList.add('active'); }
+            function close() { overlay?.classList.remove('active'); }
+
+            addBtn?.addEventListener('click', open);
+            closeBtn?.addEventListener('click', close);
+            cancelBtn?.addEventListener('click', close);
+            overlay?.addEventListener('click', e => { if (e.target === overlay) close(); });
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+        });
+    </script>
+}

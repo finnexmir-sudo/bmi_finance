@@ -2,6 +2,19 @@
 
 namespace FinNex.Application.DTOs.HR.Maas
 {
+    // ── İŞÇİ AYLIQ QAZANC (məzuniyyət üçün 12 ay) ─────────────────
+    public class IsciAyliqQazancDto
+    {
+        public int Id { get; set; }
+        public int IsciId { get; set; }
+        public int Il { get; set; }
+        public int Ay { get; set; }
+        public decimal Qazanc { get; set; }
+        public bool ElIleDaxilEdilib { get; set; }
+        public string? Qeyd { get; set; }
+        public DateTime YaradilmaTarixi { get; set; }
+    }
+
     // ── TOPLU INPUT ───────────────────────────────────────────────
     public class TopluHesablaInputDto
     {

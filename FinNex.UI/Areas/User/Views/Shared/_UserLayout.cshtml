@@ -19,13 +19,15 @@
 
     // Sidebar qrupların açılma məntiqi —
     // HR İdarəetmə qrupu yalnız HR area-nın non-accounting controllerləri üçün açılsın
-    // (Maas/MaasParametri/Budce/Xerc Mühasibatlıq altındadır)
+    // (Maas/MaasParametri/Budce/Xerc/IsciAyliqQazanc Mühasibatlıq altındadır)
     var isAccountingCtrl = currentController == "Maas"
                            || currentController == "MaasParametri"
                            || currentController == "Budce"
-                           || currentController == "Xerc";
+                           || currentController == "Xerc"
+                           || currentController == "IsciAyliqQazanc";
     var hrGroupOpen = (currentArea == "HR" && !isAccountingCtrl)
                       || currentController == "XestelikEzamiyyet";
+    var muhasibatGroupOpen = isAccountingCtrl && currentArea == "HR";
 }
 
 <!DOCTYPE html>
@@ -502,7 +504,7 @@
                 @if (isMuhasib)
                 {
                     @* Mühasibatlıq — Muhasib/HR/Admin (Rəhbər yalnız Əmək Haqqı görür) *@
-                    <div class="fn-nav-group @(currentController is "Maas" or "MaasParametri" or "Budce" or "Xerc" && currentArea == "HR" ? "open" : "")">
+                    <div class="fn-nav-group @(muhasibatGroupOpen ? "open" : "")">
                         <button type="button" class="fn-nav-group-toggle">
                             <div class="fn-nav-group-left">
                                 <div class="fn-nav-icon">
@@ -524,6 +526,10 @@
                             </a>
                             @if (!isRehberOnly)
                             {
+                                <a asp-area="HR" asp-controller="IsciAyliqQazanc" asp-action="Index"
+                                   class="fn-nav-subitem @(currentController == "IsciAyliqQazanc" ? "active" : "")">
+                                    <div class="fn-sub-dot"></div> Qazanc Tarixçəsi
+                                </a>
                                 <a asp-area="HR" asp-controller="MaasParametri" asp-action="Index"
                                    class="fn-nav-subitem @(currentController == "MaasParametri" ? "active" : "")">
                                     <div class="fn-sub-dot"></div> Əmək haqqı parametrləri
