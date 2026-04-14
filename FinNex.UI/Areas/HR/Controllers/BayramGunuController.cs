@@ -46,20 +46,23 @@ namespace FinNex.UI.Areas.HR.Controllers
                 id = entity.Id,
                 ad = entity.Ad,
                 tarix = entity.Tarix.ToString("yyyy-MM-dd"),
-                herIlTeyinOlunur = entity.HerIlTeyinOlunur
+                herIlTeyinOlunur = entity.HerIlTeyinOlunur,
+                tip = (int)entity.Tip
             });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([FromForm] string ad, [FromForm] DateTime baslangicTarix, [FromForm] DateTime? bitisTarix, [FromForm] bool herIlTeyinOlunur)
+        public async Task<IActionResult> Create([FromForm] string ad, [FromForm] DateTime baslangicTarix, [FromForm] DateTime? bitisTarix, [FromForm] bool herIlTeyinOlunur, [FromForm] int tip = 1)
         {
             if (string.IsNullOrWhiteSpace(ad))
-                return Json(new { success = false, message = "Bayram adini daxil edin." });
+                return Json(new { success = false, message = "Ad daxil edin." });
 
             var son = bitisTarix ?? baslangicTarix;
             if (son < baslangicTarix)
                 return Json(new { success = false, message = "Bitis tarixi baslangicdan evvel ola bilmez." });
+
+            var gunTipi = tip == 2 ? GunTipi.IsGunu : GunTipi.Bayram;
 
             var repo = _unitOfWork.Repository<BayramGunu>();
             int sayi = 0;
@@ -70,39 +73,42 @@ namespace FinNex.UI.Areas.HR.Controllers
                 {
                     Ad = ad.Trim(),
                     Tarix = gun,
-                    HerIlTeyinOlunur = herIlTeyinOlunur
+                    HerIlTeyinOlunur = herIlTeyinOlunur,
+                    Tip = gunTipi
                 };
                 await repo.YaratAsync(entity);
                 sayi++;
             }
 
             await _unitOfWork.YaddaSaxlaAsync();
-            var msg = sayi == 1 ? "Bayram ugurla elave edildi." : $"{sayi} gun bayram ugurla elave edildi.";
+            var tipAd = gunTipi == GunTipi.IsGunu ? "iş günü" : "bayram";
+            var msg = sayi == 1 ? $"Qeyd uğurla əlavə edildi ({tipAd})." : $"{sayi} {tipAd} qeydi uğurla əlavə edildi.";
             return Json(new { success = true, message = msg });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit([FromForm] int id, [FromForm] string ad, [FromForm] DateTime baslangicTarix, [FromForm] bool herIlTeyinOlunur)
+        public async Task<IActionResult> Edit([FromForm] int id, [FromForm] string ad, [FromForm] DateTime baslangicTarix, [FromForm] bool herIlTeyinOlunur, [FromForm] int tip = 1)
         {
             if (string.IsNullOrWhiteSpace(ad))
-                return Json(new { success = false, message = "Bayram adini daxil edin." });
+                return Json(new { success = false, message = "Ad daxil edin." });
 
             var repo = _unitOfWork.Repository<BayramGunu>();
             var entity = await repo.IdIleGetirAsync(id);
 
             if (entity == null || entity.Silinib)
-                return Json(new { success = false, message = "Bayram tapilmadi." });
+                return Json(new { success = false, message = "Qeyd tapilmadi." });
 
             entity.Ad = ad.Trim();
             entity.Tarix = baslangicTarix;
             entity.HerIlTeyinOlunur = herIlTeyinOlunur;
+            entity.Tip = tip == 2 ? GunTipi.IsGunu : GunTipi.Bayram;
             entity.YenilenmeTarixi = DateTime.Now;
 
             await repo.YenileAsync(entity);
             await _unitOfWork.YaddaSaxlaAsync();
 
-            return Json(new { success = true, message = "Bayram ugurla yenilendi." });
+            return Json(new { success = true, message = "Qeyd uğurla yenilendi." });
         }
 
         [HttpPost]
@@ -135,7 +141,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                 id = x.Id,
                 ad = x.Ad,
                 tarix = x.Tarix.ToString("dd.MM.yyyy"),
-                herIlTeyinOlunur = x.HerIlTeyinOlunur
+                herIlTeyinOlunur = x.HerIlTeyinOlunur,
+                tip = (int)x.Tip,
+                tipAd = x.Tip == GunTipi.IsGunu ? "İş günü" : "Bayram"
             });
 
             return Json(new { records = data, stats = new { cemi = ordered.Count, gelecek } });

@@ -552,13 +552,15 @@ namespace FinNex.Application.Services.HR
 
             if (!mezuniyyetler.Any()) return (0, 0);
 
-            // Bu ayın bayram günlərini gətir
-            var bayramlar = await _unitOfWork.Repository<BayramGunu>()
+            // Bu ayın xüsusi günlərini gətir (bayram + iş günü override)
+            var ozelGunler = await _unitOfWork.Repository<BayramGunu>()
                 .HamisiniGetirAsync(x =>
                     x.Tarix >= ayBaslangic &&
                     x.Tarix <= ayBitis &&
                     !x.Silinib);
-            var bayramTarixleri = bayramlar.Select(x => x.Tarix.Date).ToHashSet();
+            var ozelDict = ozelGunler
+                .GroupBy(x => x.Tarix.Date)
+                .ToDictionary(g => g.Key, g => g.First().Tip);
 
             int teqvimGun = 0;
             int isGun = 0;
@@ -570,12 +572,13 @@ namespace FinNex.Application.Services.HR
                 for (var t = baslama; t <= bitis; t = t.AddDays(1))
                 {
                     teqvimGun++; // hər təqvim günü
-                    if (t.DayOfWeek != DayOfWeek.Saturday &&
-                        t.DayOfWeek != DayOfWeek.Sunday &&
-                        !bayramTarixleri.Contains(t.Date))
-                    {
-                        isGun++; // iş günüdür
-                    }
+                    bool isIsGunu;
+                    if (ozelDict.TryGetValue(t.Date, out var tip))
+                        isIsGunu = tip == GunTipi.IsGunu;
+                    else
+                        isIsGunu = t.DayOfWeek != DayOfWeek.Saturday && t.DayOfWeek != DayOfWeek.Sunday;
+
+                    if (isIsGunu) isGun++;
                 }
             }
 
@@ -694,28 +697,38 @@ namespace FinNex.Application.Services.HR
         }
 
         // ─────────────────────────────────────────────────────────
-        // AYIN IS GUNLERINI HESABLA -- bayram gunleri DB-den oxunur
+        // AYIN IS GUNLERINI HESABLA -- BayramGunu cədvəlindən oxunur
+        // Tip = Bayram → həmin gün istirahət
+        // Tip = IsGunu → həmin gün iş (şənbə/bazar olsa belə)
         // ─────────────────────────────────────────────────────────
         private async Task<int> AyinIsGunleriniHesablaAsync(int il, int ay)
         {
             var ayBaslangic = new DateTime(il, ay, 1);
             var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
 
-            var bayramlar = await _unitOfWork.Repository<BayramGunu>()
+            var ozelGunler = await _unitOfWork.Repository<BayramGunu>()
                 .HamisiniGetirAsync(x =>
                     x.Tarix >= ayBaslangic &&
                     x.Tarix <= ayBitis &&
                     !x.Silinib);
 
-            var bayramTarixleri = bayramlar.Select(x => x.Tarix.Date).ToHashSet();
+            var ozelDict = ozelGunler
+                .GroupBy(x => x.Tarix.Date)
+                .ToDictionary(g => g.Key, g => g.First().Tip);
 
             int sayi = 0;
             for (var t = ayBaslangic; t <= ayBitis; t = t.AddDays(1))
             {
-                if (t.DayOfWeek != DayOfWeek.Saturday &&
-                    t.DayOfWeek != DayOfWeek.Sunday &&
-                    !bayramTarixleri.Contains(t.Date))
-                    sayi++;
+                if (ozelDict.TryGetValue(t.Date, out var tip))
+                {
+                    if (tip == GunTipi.IsGunu) sayi++;
+                }
+                else
+                {
+                    if (t.DayOfWeek != DayOfWeek.Saturday &&
+                        t.DayOfWeek != DayOfWeek.Sunday)
+                        sayi++;
+                }
             }
 
             return sayi > 0 ? sayi : 22; // fallback: 22 is gunu
