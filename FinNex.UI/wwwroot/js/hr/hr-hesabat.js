@@ -120,7 +120,7 @@
         let html = '<table class="rp-table">';
         html += '<thead><tr>';
         html += '<th>İşçi</th>';
-        html += '<th class="rp-th-right">Brut (AZN)</th>';
+        html += '<th class="rp-th-right">Gross (AZN)</th>';
         html += '<th class="rp-th-right">Net (AZN)</th>';
         html += '<th class="rp-th-center">Status</th>';
         html += '</tr></thead><tbody>';
@@ -360,7 +360,7 @@
         let html = '<table class="rp-table">';
         html += '<thead><tr>';
         html += '<th>İşçi</th>';
-        html += '<th class="rp-th-right">Brut (AZN)</th>';
+        html += '<th class="rp-th-right">Gross (AZN)</th>';
         html += '<th class="rp-th-right">Gəlir Vergisi</th>';
         html += '<th class="rp-th-right">DSMF</th>';
         html += '<th class="rp-th-right">İşsizlik</th>';

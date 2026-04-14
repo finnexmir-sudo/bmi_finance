@@ -699,7 +699,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var headers = new[] {
                 "№", "Ad Soyad", "Departament", "Vəzifə", "FİN", "IBAN",
                 "Əsas Maaş", "Bonus", "Məz. Ödəniş", "Cərimə",
-                "BRÜT", "Gəlir Vergisi", "DSMF (İşçi)", "İşsizlik (İşçi)", "İTSS (İşçi)",
+                "GROSS", "Gəlir Vergisi", "DSMF (İşçi)", "İşsizlik (İşçi)", "İTSS (İşçi)",
                 "NET MAAŞ", "Status"
             };
 
@@ -779,7 +779,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 // NET kolonu vurğula
                 ws.Cell(row, 16).Style.Font.Bold = true;
                 ws.Cell(row, 16).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#fffbeb");
-                // BRÜT kolonu da vurğula
+                // GROSS kolonu da vurğula
                 ws.Cell(row, 11).Style.Font.Bold = true;
 
                 // Sətir border-ı
