@@ -39,18 +39,21 @@ const bgModal = {
 
     open() {
         this.isEdit = false;
-        this.titleEl.textContent = 'Yeni Bayram';
+        this.titleEl.textContent = 'Yeni Qeyd';
         this.submitBtn.textContent = 'Yadda saxla';
         this.resetForm();
         this.bitisField.closest('.bg-form-half').style.display = '';
+        // Default tip = Bayram
+        const tip1 = document.getElementById('bgTip1');
+        if (tip1) tip1.checked = true;
         this.overlay.classList.add('bg-active');
         setTimeout(() => this.adField.focus(), 100);
     },
 
     openEdit(id) {
         this.isEdit = true;
-        this.titleEl.textContent = 'Bayram Duzelisi';
-        this.submitBtn.textContent = 'Yenile';
+        this.titleEl.textContent = 'Qeydi Düzəlt';
+        this.submitBtn.textContent = 'Yenilə';
         this.resetForm();
         this.bitisField.closest('.bg-form-half').style.display = 'none';
 
@@ -61,6 +64,10 @@ const bgModal = {
                 this.adField.value = data.ad;
                 this.baslangicField.value = data.tarix;
                 this.herIlField.checked = data.herIlTeyinOlunur;
+                // Set tip radio
+                const tipId = data.tip === 2 ? 'bgTip2' : 'bgTip1';
+                const radio = document.getElementById(tipId);
+                if (radio) radio.checked = true;
                 this.overlay.classList.add('bg-active');
                 setTimeout(() => this.adField.focus(), 100);
             })
@@ -204,16 +211,20 @@ function refreshTable() {
             const emptyEl = document.querySelector('.bg-table-card .bg-empty');
             if (emptyEl) emptyEl.remove();
 
-            tbody.innerHTML = records.map(r => `
+            tbody.innerHTML = records.map(r => {
+                const tipBadge = r.tip === 2
+                    ? '<span class="bg-badge bg-badge--work"><i class="bi bi-briefcase-fill"></i> İş günü</span>'
+                    : '<span class="bg-badge bg-badge--holiday"><i class="bi bi-calendar-heart"></i> Bayram</span>';
+                const herIlBadge = r.herIlTeyinOlunur
+                    ? '<span class="bg-badge bg-badge--yes"><i class="bi bi-check-circle-fill"></i> Bəli</span>'
+                    : '<span class="bg-badge bg-badge--no"><i class="bi bi-x-circle"></i> Xeyr</span>';
+                return `
                 <tr data-id="${r.id}">
                     <td>${r.index}</td>
                     <td>${escapeHtml(r.ad)}</td>
                     <td>${r.tarix}</td>
-                    <td>
-                        ${r.herIlTeyinOlunur
-                    ? '<span class="bg-badge bg-badge--yes"><i class="bi bi-check-circle-fill"></i> Beli</span>'
-                    : '<span class="bg-badge bg-badge--no"><i class="bi bi-x-circle"></i> Xeyr</span>'}
-                    </td>
+                    <td>${tipBadge}</td>
+                    <td>${herIlBadge}</td>
                     <td>
                         <button class="bg-btn-icon bg-btn-icon--edit" data-edit-id="${r.id}" title="Duzelis et">
                             <i class="bi bi-pencil-square"></i>
@@ -222,8 +233,8 @@ function refreshTable() {
                             <i class="bi bi-trash3"></i>
                         </button>
                     </td>
-                </tr>
-            `).join('');
+                </tr>`;
+            }).join('');
         })
         .catch(() => bgToast('Cedvel yenilenilmedi.', false));
 }

@@ -458,3 +458,67 @@
         max-width: calc(100% - 32px);
     }
 }
+
+/* Tip badges */
+.bg-badge--holiday {
+    background: rgba(220, 38, 38, 0.1);
+    color: #b91c1c;
+}
+.bg-badge--work {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+}
+
+/* Tip selector (radio cards) */
+.bg-tip-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.bg-tip-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+.bg-tip-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 14px 16px;
+    border: 2px solid #e2e6ef;
+    border-radius: 11px;
+    cursor: pointer;
+    transition: all .15s;
+    background: #fff;
+    gap: 3px;
+}
+.bg-tip-card i {
+    font-size: 18px;
+    margin-bottom: 4px;
+}
+.bg-tip-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a2332;
+}
+.bg-tip-sub {
+    font-size: 10.5px;
+    color: #8a93a8;
+    font-style: italic;
+}
+.bg-tip-option:hover .bg-tip-card {
+    border-color: #c8d0e0;
+    transform: translateY(-1px);
+}
+.bg-tip-option input:checked + .bg-tip-card--holiday {
+    border-color: #dc2626;
+    background: linear-gradient(135deg, #fef2f2, #fff);
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.1);
+}
+.bg-tip-option input:checked + .bg-tip-card--holiday i { color: #dc2626; }
+.bg-tip-option input:checked + .bg-tip-card--work {
+    border-color: #059669;
+    background: linear-gradient(135deg, #ecfdf5, #fff);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.1);
+}
+.bg-tip-option input:checked + .bg-tip-card--work i { color: #059669; }

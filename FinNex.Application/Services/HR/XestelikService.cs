@@ -271,24 +271,43 @@ namespace FinNex.Application.Services.HR
         // ─────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Tarix aralığında iş günlərini sayır (şənbə, bazar, bayram çıxılmış).
+        /// Tarix aralığında iş günlərini sayır.
+        ///
+        /// Qaydalar:
+        ///   Default: Bazar ertəsi-Cümə = iş, Şənbə-Bazar = istirahət
+        ///   Override (BayramGunu.Tip):
+        ///     - Bayram → həmin gün istirahət (iş günü olsa belə)
+        ///     - IsGunu → həmin gün iş (şənbə/bazar olsa belə)
         /// </summary>
         private async Task<int> IsGunSayiniHesablaAsync(DateTime baslama, DateTime bitme)
         {
-            var bayramlar = await _unitOfWork.Repository<BayramGunu>()
+            var ozelGunler = await _unitOfWork.Repository<BayramGunu>()
                 .HamisiniGetirAsync(x =>
                     x.Tarix >= baslama &&
                     x.Tarix <= bitme &&
                     !x.Silinib);
-            var bayramTarixleri = bayramlar.Select(x => x.Tarix.Date).ToHashSet();
+
+            // Dictionary: Tarix → Tip
+            var ozelDict = ozelGunler
+                .GroupBy(x => x.Tarix.Date)
+                .ToDictionary(g => g.Key, g => g.First().Tip);
 
             int sayi = 0;
             for (var t = baslama.Date; t <= bitme.Date; t = t.AddDays(1))
             {
-                if (t.DayOfWeek != DayOfWeek.Saturday &&
-                    t.DayOfWeek != DayOfWeek.Sunday &&
-                    !bayramTarixleri.Contains(t))
-                    sayi++;
+                if (ozelDict.TryGetValue(t, out var tip))
+                {
+                    // Override mövcuddur
+                    if (tip == GunTipi.IsGunu) sayi++;
+                    // Bayram → sayılmır
+                }
+                else
+                {
+                    // Default: şənbə-bazar istirahət, qalan iş
+                    if (t.DayOfWeek != DayOfWeek.Saturday &&
+                        t.DayOfWeek != DayOfWeek.Sunday)
+                        sayi++;
+                }
             }
             return sayi;
         }
