@@ -41,14 +41,15 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> Index()
         {
             var result = await _mezuniyyetService.GetListAsync();
+            // Qeyd: Xəstəlik artıq ayrıca cədvəldədir (HR/Xestelik). Bu səhifə yalnız ezamiyyət göstərir.
             var list = result.Success
                 ? result.Data!
-                    .Where(x => x.Nov == MezuniyyetNovu.Xestelik || x.Nov == MezuniyyetNovu.Ezamiyyet)
+                    .Where(x => x.Nov == MezuniyyetNovu.Ezamiyyet)
                     .OrderByDescending(x => x.BaslamaTarixi)
                     .ToList()
                 : new();
 
-            ViewData["Title"] = "Xəstəlik / Ezamiyyət";
+            ViewData["Title"] = "Ezamiyyət";
             return View(list);
         }
 
@@ -59,7 +60,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> Create()
         {
             await FillCreateViewBagsAsync();
-            return View();
+            return View(new MezuniyyetCreateDto { Nov = MezuniyyetNovu.Ezamiyyet });
         }
 
         [HttpPost]
@@ -68,6 +69,9 @@ namespace FinNex.UI.Areas.HR.Controllers
         {
             var hrIsciId = await GetCurrentIsciIdAsync();
             if (hrIsciId == null) return Forbid();
+
+            // Bu səhifə yalnız Ezamiyyət üçündür (Xestelik ayrı cədvəldədir)
+            dto.Nov = MezuniyyetNovu.Ezamiyyet;
 
             if (dto.BitmeTarixi < dto.BaslamaTarixi)
                 ModelState.AddModelError("BitmeTarixi", "Bitmə tarixi başlama tarixindən əvvəl ola bilməz.");

@@ -73,6 +73,8 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<MaasParametri> MaasParametrleri { get; set; }
     public DbSet<VergiPille> VergiPilleleri { get; set; }
     public DbSet<IsciAyliqQazanc> IsciAyliqQazanclar { get; set; }
+    public DbSet<Xestelik> Xestelikler { get; set; }
+    public DbSet<XestelikOdenis> XestelikOdenisleri { get; set; }
 
     public DbSet<Mesaj> Mesajlar { get; set; }
     public DbSet<Bildiris> Bildirisler { get; set; }
@@ -420,6 +422,61 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         builder.Entity<MaasParametri>()
             .HasIndex(x => new { x.Nov, x.BaslamaTarixi })
             .IsUnique();
+
+        // ==========================
+        // Xestelik (xəstəlik bülletənləri)
+        // ==========================
+        builder.Entity<Xestelik>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Xestelik>()
+            .Property(x => x.BulletenNomresi)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Entity<Xestelik>()
+            .Property(x => x.MualiceMuessisesi)
+            .HasMaxLength(200);
+
+        builder.Entity<Xestelik>()
+            .Property(x => x.Qeyd)
+            .HasMaxLength(500);
+
+        builder.Entity<Xestelik>()
+            .HasIndex(x => new { x.IsciId, x.BaslamaTarixi });
+
+        // ==========================
+        // XestelikOdenis (audit üçün)
+        // ==========================
+        builder.Entity<XestelikOdenis>()
+            .HasOne(x => x.Xestelik)
+            .WithMany(x => x.Odenisler)
+            .HasForeignKey(x => x.XestelikId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<XestelikOdenis>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<XestelikOdenis>()
+            .Property(x => x.BirGunluk)
+            .HasPrecision(18, 4);
+
+        builder.Entity<XestelikOdenis>()
+            .Property(x => x.SirketOdenis)
+            .HasPrecision(18, 2);
+
+        builder.Entity<XestelikOdenis>()
+            .Property(x => x.DsmfOdenis)
+            .HasPrecision(18, 2);
+
+        builder.Entity<XestelikOdenis>()
+            .HasIndex(x => new { x.IsciId, x.Il, x.Ay });
 
         // ==========================
         // IsciAyliqQazanc (məzuniyyət üçün 12 ay qazanc tarixçəsi)
@@ -802,7 +859,8 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             new MaasNovu { Id = 9, Ad = "İTSS", Tip = MaasDetayTipi.Tutulma, Aktivdir = true },
             new MaasNovu { Id = 10, Ad = "DSMF (İşəgötürən)", Tip = MaasDetayTipi.IsegoturenXerci, Aktivdir = true },
             new MaasNovu { Id = 11, Ad = "İşsizlik Sığortası (İşəgötürən)", Tip = MaasDetayTipi.IsegoturenXerci, Aktivdir = true },
-            new MaasNovu { Id = 12, Ad = "İTSS (İşəgötürən)", Tip = MaasDetayTipi.IsegoturenXerci, Aktivdir = true }
+            new MaasNovu { Id = 12, Ad = "İTSS (İşəgötürən)", Tip = MaasDetayTipi.IsegoturenXerci, Aktivdir = true },
+            new MaasNovu { Id = 13, Ad = "Xəstəlik Ödənişi", Tip = MaasDetayTipi.Gelir, Aktivdir = true }
         );
 
         // ── MaasParametri Seed Data ───────────────────────────────

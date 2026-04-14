@@ -15,6 +15,47 @@ namespace FinNex.Application.DTOs.HR.Maas
         public DateTime YaradilmaTarixi { get; set; }
     }
 
+    // ── XƏSTƏLİK ─────────────────────────────────────────────────
+    public class XestelikDto
+    {
+        public int Id { get; set; }
+        public int IsciId { get; set; }
+        public string IsciAdSoyad { get; set; } = "";
+        public DateTime BaslamaTarixi { get; set; }
+        public DateTime BitmeTarixi { get; set; }
+        public int IsGunSayi { get; set; }
+        public string BulletenNomresi { get; set; } = "";
+        public string? MualiceMuessisesi { get; set; }
+        public string? Qeyd { get; set; }
+        public int Status { get; set; }
+        public DateTime? HrTesdiqTarixi { get; set; }
+        public decimal? UmumiSirketOdenisi { get; set; }
+    }
+
+    public class XestelikCreateDto
+    {
+        public int IsciId { get; set; }
+        public DateTime BaslamaTarixi { get; set; }
+        public DateTime BitmeTarixi { get; set; }
+        public string BulletenNomresi { get; set; } = "";
+        public string? MualiceMuessisesi { get; set; }
+        public string? Qeyd { get; set; }
+    }
+
+    public class XestelikPreviewDto
+    {
+        public int IsGunSayi { get; set; }
+        public decimal S { get; set; }
+        public int Son12AyIsGunu { get; set; }
+        public decimal BirGunluk { get; set; }
+        public int SirketGun { get; set; }
+        public int DsmfGun { get; set; }
+        public decimal SirketOdenis { get; set; }
+        public decimal DsmfOdenis { get; set; }
+        public int OncekiSirketGun { get; set; }
+        public string? Xeberdarliq { get; set; }
+    }
+
     // ── TOPLU INPUT ───────────────────────────────────────────────
     public class TopluHesablaInputDto
     {

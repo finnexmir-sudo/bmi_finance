@@ -1,0 +1,275 @@
+@model FinNex.Application.DTOs.HR.Maas.XestelikCreateDto
+@{
+    ViewData["Title"] = "Yeni Xəstəlik Bülletəni";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="xstc-page">
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="xstc-alert xstc-alert--error">@TempData["Error"]</div>
+    }
+
+    <div class="xstc-header">
+        <div>
+            <h1 class="xstc-title">
+                <i class="bi bi-bandaid"></i>
+                Yeni Xəstəlik Bülletəni
+            </h1>
+            <p class="xstc-subtitle">HR sənəd əsasında yazır — qeyd birbaşa təsdiqlənir</p>
+        </div>
+        <a asp-action="Index" class="xstc-btn xstc-btn--outline">← Geri</a>
+    </div>
+
+    <div class="xstc-grid">
+        @* ── Sol: Forma ── *@
+        <form asp-action="Create" method="post" class="xstc-form">
+            @Html.AntiForgeryToken()
+
+            <div class="xstc-card">
+                <div class="xstc-card-title">Bülletən məlumatları</div>
+
+                <div class="xstc-form-group">
+                    <label>İşçi <span class="xstc-req">*</span></label>
+                    <select asp-for="IsciId" asp-items="ViewBag.Isciler" class="xstc-input" id="xstcIsci" required>
+                        <option value="">— İşçi seçin —</option>
+                    </select>
+                </div>
+
+                <div class="xstc-form-row">
+                    <div class="xstc-form-group">
+                        <label>Başlama tarixi <span class="xstc-req">*</span></label>
+                        <input asp-for="BaslamaTarixi" type="date" class="xstc-input" id="xstcBaslama" required/>
+                    </div>
+                    <div class="xstc-form-group">
+                        <label>Bitmə tarixi <span class="xstc-req">*</span></label>
+                        <input asp-for="BitmeTarixi" type="date" class="xstc-input" id="xstcBitme" required/>
+                    </div>
+                </div>
+
+                <div class="xstc-form-group">
+                    <label>Bülletən nömrəsi <span class="xstc-req">*</span></label>
+                    <input asp-for="BulletenNomresi" type="text" class="xstc-input"
+                           placeholder="məs: B-2026-12345" maxlength="50" required/>
+                    <div class="xstc-hint">Sənəddəki nömrəni daxil edin</div>
+                </div>
+
+                <div class="xstc-form-group">
+                    <label>Müalicə müəssisəsi <span class="xstc-opt">(istəğə bağlı)</span></label>
+                    <input asp-for="MualiceMuessisesi" type="text" class="xstc-input"
+                           placeholder="məs: 1 saylı poliklinika" maxlength="200"/>
+                </div>
+
+                <div class="xstc-form-group">
+                    <label>Qeyd <span class="xstc-opt">(istəğə bağlı)</span></label>
+                    <textarea asp-for="Qeyd" class="xstc-input" rows="3" maxlength="500"></textarea>
+                </div>
+
+                <div class="xstc-actions">
+                    <a asp-action="Index" class="xstc-btn xstc-btn--outline">Ləğv et</a>
+                    <button type="submit" class="xstc-btn xstc-btn--primary">
+                        <i class="bi bi-check-lg"></i> Yadda saxla
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        @* ── Sağ: Real-time hesablama preview ── *@
+        <div class="xstc-side">
+            <div class="xstc-card xstc-card--preview" id="xstcPreview" style="display:none;">
+                <div class="xstc-preview-head">
+                    <i class="bi bi-calculator"></i>
+                    Hesablama Preview
+                </div>
+
+                <div class="xstc-stat">
+                    <div class="xstc-stat-lbl">İş günü sayı</div>
+                    <div class="xstc-stat-val" id="ppIsGun">—</div>
+                </div>
+
+                <div class="xstc-stat">
+                    <div class="xstc-stat-lbl">Bir günlük</div>
+                    <div class="xstc-stat-val" id="ppBirGun">—</div>
+                    <div class="xstc-stat-sub" id="ppBirGunFormula">—</div>
+                </div>
+
+                <div class="xstc-divider"></div>
+
+                <div class="xstc-payment xstc-payment--company">
+                    <div class="xstc-pay-head">
+                        <i class="bi bi-building"></i>
+                        Şirkət ödəyəcək
+                    </div>
+                    <div class="xstc-pay-body">
+                        <div><strong id="ppSirketGun">—</strong> iş günü</div>
+                        <div class="xstc-pay-money" id="ppSirketOdenis">—</div>
+                    </div>
+                </div>
+
+                <div class="xstc-payment xstc-payment--dsmf">
+                    <div class="xstc-pay-head">
+                        <i class="bi bi-bank"></i>
+                        DSMF (informativ)
+                    </div>
+                    <div class="xstc-pay-body">
+                        <div><strong id="ppDsmfGun">—</strong> iş günü</div>
+                        <div class="xstc-pay-money" id="ppDsmfOdenis">—</div>
+                    </div>
+                </div>
+
+                <div class="xstc-warn" id="ppWarn" style="display:none;">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span id="ppWarnText"></span>
+                </div>
+
+                <div class="xstc-info">
+                    <strong>14 gün limiti:</strong>
+                    Şirkət cari ildə bir işçi üçün maksimum 14 iş günü ödəyir.
+                    Cari ildə artıq istifadə: <strong id="ppOnceki">0</strong>/14 gün.
+                </div>
+            </div>
+
+            <div class="xstc-card xstc-empty-side" id="xstcEmptySide">
+                <i class="bi bi-info-circle"></i>
+                <div>İşçi və tarix seçin</div>
+                <small>Hesablama avtomatik göstəriləcək</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .xstc-page { max-width: 1200px; padding: 8px 0; }
+        .xstc-alert { padding: 12px 18px; border-radius: 10px; margin-bottom: 16px; font-size: 13px; font-weight: 500; }
+        .xstc-alert--error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+        .xstc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        .xstc-title { font-size: 1.4rem; font-weight: 800; color: #1a2332; margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
+        .xstc-title i { color: #dc2626; }
+        .xstc-subtitle { font-size: 0.82rem; color: #7a8599; margin: 0; }
+
+        .xstc-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; }
+        @@media (max-width: 1100px) { .xstc-grid { grid-template-columns: 1fr; } }
+
+        .xstc-card { background: #fff; border: 1px solid #e2e6ef; border-radius: 13px; padding: 22px; box-shadow: 0 2px 8px rgba(15,26,46,.04); }
+        .xstc-card-title { font-size: 1rem; font-weight: 700; color: #1a2332; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid #eef0f5; }
+
+        .xstc-form-row { display: flex; gap: 12px; }
+        .xstc-form-row .xstc-form-group { flex: 1; }
+        .xstc-form-group { margin-bottom: 16px; }
+        .xstc-form-group label { display: block; font-size: 0.72rem; font-weight: 700; color: #7a8599; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 5px; }
+        .xstc-req { color: #dc2626; }
+        .xstc-opt { color: #aab1c0; font-weight: 500; text-transform: none; }
+        .xstc-input { width: 100%; padding: 10px 14px; font-size: 0.85rem; border: 1.5px solid #e2e6ef; border-radius: 9px; background: #fff; color: #1a2332; font-family: inherit; }
+        .xstc-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+        .xstc-hint { font-size: 0.7rem; color: #aab1c0; margin-top: 4px; }
+
+        .xstc-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; padding-top: 16px; border-top: 1px solid #eef0f5; }
+        .xstc-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; font-size: 0.82rem; font-weight: 600; border-radius: 9px; cursor: pointer; border: none; text-decoration: none; }
+        .xstc-btn--primary { background: linear-gradient(135deg, #6366f1, #3b82f6); color: #fff; }
+        .xstc-btn--primary:hover { box-shadow: 0 4px 12px rgba(99,102,241,.25); transform: translateY(-1px); color: #fff; }
+        .xstc-btn--outline { background: #fff; color: #3d4557; border: 1px solid #dde1eb; }
+        .xstc-btn--outline:hover { background: #f5f7fb; color: #3d4557; }
+
+        /* Preview side */
+        .xstc-side { position: sticky; top: 20px; }
+        .xstc-card--preview { border-color: #ddd6fe; background: linear-gradient(180deg, #faf5ff, #fff); padding: 20px; }
+        .xstc-preview-head { font-size: 0.95rem; font-weight: 700; color: #6b21a8; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #ede9fe; }
+
+        .xstc-stat { padding: 10px 0; }
+        .xstc-stat-lbl { font-size: 0.7rem; font-weight: 700; color: #7c3aed; text-transform: uppercase; letter-spacing: .4px; }
+        .xstc-stat-val { font-size: 1.3rem; font-weight: 800; color: #1a2332; margin-top: 2px; }
+        .xstc-stat-sub { font-size: 0.7rem; color: #8a93a8; font-style: italic; margin-top: 2px; }
+
+        .xstc-divider { height: 1px; background: #ede9fe; margin: 12px 0; }
+
+        .xstc-payment { padding: 12px 14px; border-radius: 10px; margin-bottom: 10px; }
+        .xstc-payment--company { background: #ecfdf5; border: 1px solid #bbf7d0; }
+        .xstc-payment--dsmf { background: #f0f9ff; border: 1px solid #bae6fd; }
+        .xstc-pay-head { font-size: 0.78rem; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+        .xstc-payment--company .xstc-pay-head { color: #059669; }
+        .xstc-payment--dsmf .xstc-pay-head { color: #0284c7; }
+        .xstc-pay-body { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.82rem; color: #1a2332; }
+        .xstc-pay-money { font-size: 1.05rem; font-weight: 800; }
+        .xstc-payment--company .xstc-pay-money { color: #059669; }
+        .xstc-payment--dsmf .xstc-pay-money { color: #0284c7; }
+
+        .xstc-warn { display: flex; gap: 8px; padding: 10px 12px; background: #fef3c7; border-radius: 8px; margin-top: 10px; font-size: 0.75rem; color: #92400e; align-items: flex-start; }
+        .xstc-warn i { flex-shrink: 0; margin-top: 1px; }
+
+        .xstc-info { margin-top: 14px; padding: 10px 12px; background: #f5f3ff; border-radius: 8px; font-size: 0.72rem; color: #6b21a8; line-height: 1.5; }
+
+        .xstc-empty-side { padding: 40px 22px; text-align: center; color: #8a93a8; }
+        .xstc-empty-side i { font-size: 2rem; display: block; margin-bottom: 10px; color: #d8b4fe; }
+        .xstc-empty-side div { font-size: 0.88rem; font-weight: 600; margin-bottom: 4px; }
+        .xstc-empty-side small { font-size: 0.75rem; }
+    </style>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const isciInp = document.getElementById('xstcIsci');
+            const baslamaInp = document.getElementById('xstcBaslama');
+            const bitmeInp = document.getElementById('xstcBitme');
+            const previewBox = document.getElementById('xstcPreview');
+            const emptyBox = document.getElementById('xstcEmptySide');
+
+            const fmt = v => v > 0
+                ? v.toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₼'
+                : '0.00 ₼';
+
+            let lastKey = '';
+
+            function refresh() {
+                const isciId = isciInp.value;
+                const baslama = baslamaInp.value;
+                const bitme = bitmeInp.value;
+                if (!isciId || !baslama || !bitme) {
+                    previewBox.style.display = 'none';
+                    emptyBox.style.display = 'block';
+                    return;
+                }
+                const key = isciId + '|' + baslama + '|' + bitme;
+                if (key === lastKey) return;
+                lastKey = key;
+
+                fetch(`/HR/Xestelik/Preview?isciId=${isciId}&baslama=${baslama}&bitme=${bitme}`)
+                    .then(r => r.json())
+                    .then(resp => {
+                        if (!resp.success) { previewBox.style.display = 'none'; return; }
+                        const d = resp.data;
+                        previewBox.style.display = 'block';
+                        emptyBox.style.display = 'none';
+
+                        document.getElementById('ppIsGun').textContent = d.isGunSayi + ' gün';
+                        document.getElementById('ppBirGun').textContent = fmt(d.birGunluk);
+                        document.getElementById('ppBirGunFormula').textContent =
+                            `S=${fmt(d.s).replace(' ₼','')} ÷ ${d.son12AyIsGunu} iş günü`;
+
+                        document.getElementById('ppSirketGun').textContent = d.sirketGun;
+                        document.getElementById('ppSirketOdenis').textContent = fmt(d.sirketOdenis);
+                        document.getElementById('ppDsmfGun').textContent = d.dsmfGun;
+                        document.getElementById('ppDsmfOdenis').textContent = fmt(d.dsmfOdenis);
+
+                        document.getElementById('ppOnceki').textContent = d.oncekiSirketGun;
+
+                        if (d.xeberdarliq) {
+                            document.getElementById('ppWarn').style.display = 'flex';
+                            document.getElementById('ppWarnText').textContent = d.xeberdarliq;
+                        } else {
+                            document.getElementById('ppWarn').style.display = 'none';
+                        }
+                    })
+                    .catch(() => { previewBox.style.display = 'none'; });
+            }
+
+            isciInp?.addEventListener('change', refresh);
+            baslamaInp?.addEventListener('change', refresh);
+            bitmeInp?.addEventListener('change', refresh);
+        })();
+    </script>
+}

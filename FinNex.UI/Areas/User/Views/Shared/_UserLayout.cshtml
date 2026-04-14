@@ -431,7 +431,7 @@
                             </div>
 
                             @* ── Davamiyyət & Məzuniyyət sub-group ── *@
-                            <div class="fn-nav-group @(currentArea == "HR" && currentController is "Davamiyyet" or "BayramGunu" or "MezuniyyetBalans" or "XestelikEzamiyyet" ? "open" : "")">
+                            <div class="fn-nav-group @(currentArea == "HR" && currentController is "Davamiyyet" or "BayramGunu" or "MezuniyyetBalans" or "XestelikEzamiyyet" or "Xestelik" ? "open" : "")">
                                 <button type="button" class="fn-nav-group-toggle">
                                     <div class="fn-nav-group-left">
                                         <div class="fn-nav-subgroup-icon" style="background:rgba(30,155,107,0.12);">
@@ -456,9 +456,13 @@
                                        class="fn-nav-subitem @(currentArea == "HR" && currentController == "MezuniyyetBalans" ? "active" : "")">
                                         <div class="fn-sub-dot"></div> Məzuniyyət Balansı
                                     </a>
+                                    <a asp-area="HR" asp-controller="Xestelik" asp-action="Index"
+                                       class="fn-nav-subitem @(currentArea == "HR" && currentController == "Xestelik" ? "active" : "")">
+                                        <div class="fn-sub-dot"></div> Xəstəlik
+                                    </a>
                                     <a asp-area="HR" asp-controller="XestelikEzamiyyet" asp-action="Index"
                                        class="fn-nav-subitem @(currentArea == "HR" && currentController == "XestelikEzamiyyet" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> Xəstəlik / Ezamiyyət
+                                        <div class="fn-sub-dot"></div> Ezamiyyət
                                     </a>
                                 </div>
                             </div>
