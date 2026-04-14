@@ -35,11 +35,16 @@ namespace FinNex.Application.Services.HR
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IIsciAyliqQazancService _ayliqQazancService;
+        private readonly IXestelikService _xestelikService;
 
-        public MaasHesablamaService(IUnitOfWork unitOfWork, IIsciAyliqQazancService ayliqQazancService)
+        public MaasHesablamaService(
+            IUnitOfWork unitOfWork,
+            IIsciAyliqQazancService ayliqQazancService,
+            IXestelikService xestelikService)
         {
             _unitOfWork = unitOfWork;
             _ayliqQazancService = ayliqQazancService;
+            _xestelikService = xestelikService;
         }
 
         // ─────────────────────────────────────────────────────────
@@ -199,7 +204,52 @@ namespace FinNex.Application.Services.HR
                 });
             }
 
-            // 6. Bonus
+            // 6.5. Xəstəlik ödənişi (avtomatik — XestelikOdenis cədvəlindən)
+            // HR əvvəlcədən xəstəlik bülletənini yaradıbsa, sistem həmin ay üçün
+            // şirkət payını brüt-ə əlavə edir.
+            decimal xestelikSirketOdenis = 0;
+            decimal xestelikDsmfOdenis = 0;
+            int xestelikSirketGun = 0;
+            int xestelikDsmfGun = 0;
+            try
+            {
+                var xestelikler = await _xestelikService.AyUzreXestelikleriGetirAsync(input.IsciId, input.Il, input.Ay);
+                foreach (var xst in xestelikler)
+                {
+                    var ayOdenisleri = xst.Odenisler
+                        .Where(o => o.Il == input.Il && o.Ay == input.Ay && !o.Silinib);
+                    foreach (var od in ayOdenisleri)
+                    {
+                        xestelikSirketOdenis += od.SirketOdenis;
+                        xestelikDsmfOdenis += od.DsmfOdenis;
+                        xestelikSirketGun += od.SirketGunSayi;
+                        xestelikDsmfGun += od.DsmfGunSayi;
+                    }
+                }
+                if (xestelikSirketOdenis > 0 || xestelikDsmfOdenis > 0)
+                {
+                    izahatlar.Add(new HesablamaIzahiDto
+                    {
+                        Addim = "Xəstəlik Ödənişi (Şirkət)",
+                        Izah = $"{xestelikSirketGun} iş günü × bir günlük (max 14 gün/il)",
+                        Mebleg = xestelikSirketOdenis,
+                        Tip = "gelir"
+                    });
+                    if (xestelikDsmfOdenis > 0)
+                    {
+                        izahatlar.Add(new HesablamaIzahiDto
+                        {
+                            Addim = "Xəstəlik (DSMF — informativ)",
+                            Izah = $"{xestelikDsmfGun} gün, sistemxarici ödənilir",
+                            Mebleg = xestelikDsmfOdenis,
+                            Tip = "melumati"
+                        });
+                    }
+                }
+            }
+            catch { /* xəstəlik xidməti xətası əsas hesablamanı pozmasın */ }
+
+            // 7. Bonus
             if (input.BonusMeblegi > 0)
                 izahatlar.Add(new HesablamaIzahiDto
                 {
@@ -209,7 +259,7 @@ namespace FinNex.Application.Services.HR
                     Tip = "gelir"
                 });
 
-            // 7. Cerime
+            // 8. Cerime
             if (input.CerimeMeblegi > 0)
                 izahatlar.Add(new HesablamaIzahiDto
                 {
@@ -219,10 +269,11 @@ namespace FinNex.Application.Services.HR
                     Tip = "kesinti"
                 });
 
-            // 8. BRUT
+            // 9. BRUT — xəstəlik şirkət payı əlavə olunur
             decimal brutMaas = esasMaas
                 - mezKesinti
                 + mezOdenis
+                + xestelikSirketOdenis
                 - qayibKesinti
                 + input.BonusMeblegi
                 - input.CerimeMeblegi;
@@ -364,6 +415,7 @@ namespace FinNex.Application.Services.HR
                 // Gəlirlər
                 DetayEkle("Əsas Əməkhaqqı",                    MaasDetayTipi.Gelir,           esasMaas),
                 DetayEkle("Məzuniyyət Ödənişi",                MaasDetayTipi.Gelir,           mezOdenis,          mezGun > 0 ? $"{mezGun} gün" : null),
+                DetayEkle("Xəstəlik Ödənişi",                  MaasDetayTipi.Gelir,           xestelikSirketOdenis, xestelikSirketGun > 0 ? $"{xestelikSirketGun} iş günü (şirkət payı)" : null),
                 DetayEkle("Bonus/Mükafat",                     MaasDetayTipi.Gelir,           input.BonusMeblegi, input.BonusAciqlama),
                 // Kəsintilər
                 DetayEkle("Davamiyyət Kəsintisi",              MaasDetayTipi.Tutulma,         umumiDavamKesinti,  davamAciq),
@@ -386,13 +438,29 @@ namespace FinNex.Application.Services.HR
             await _unitOfWork.Repository<Maas>().YaratAsync(maas);
             await _unitOfWork.YaddaSaxlaAsync();
 
-            // 15. Aylıq qazanc tarixçəsinə avtomatik əlavə (sliding window 12 ay)
-            // Məzuniyyət ödənişi üçün lazımdır. Brüt - məzuniyyət ödənişi
-            // (məzuniyyət öz-özünü gücləndirməsin deyə). Xəstəlik də daxil etməlisə HR
-            // əl ilə düzəldə bilər.
+            // 15. XestelikOdenis qeydlərini bu Maas-a bağla
             try
             {
-                decimal qazanc = brutMaas - mezOdenis;
+                var xestelikler = await _xestelikService.AyUzreXestelikleriGetirAsync(input.IsciId, input.Il, input.Ay);
+                foreach (var xst in xestelikler)
+                {
+                    var ayOdenisleri = xst.Odenisler
+                        .Where(o => o.Il == input.Il && o.Ay == input.Ay && !o.Silinib && o.MaasId == null);
+                    foreach (var od in ayOdenisleri)
+                    {
+                        od.MaasId = maas.Id;
+                    }
+                }
+                await _unitOfWork.YaddaSaxlaAsync();
+            }
+            catch { }
+
+            // 16. Aylıq qazanc tarixçəsinə avtomatik əlavə (sliding window 12 ay)
+            // Brüt - məzuniyyət ödənişi - xəstəlik şirkət payı (məzuniyyət üçün
+            // hesablamada bu hissələr çıxılır — qeyri-müəyyən gücləndirməyə yol verməmək üçün)
+            try
+            {
+                decimal qazanc = brutMaas - mezOdenis - xestelikSirketOdenis;
                 if (qazanc < 0) qazanc = 0;
                 await _ayliqQazancService.AutoInsertFromMaasAsync(input.IsciId, input.Il, input.Ay, qazanc);
             }

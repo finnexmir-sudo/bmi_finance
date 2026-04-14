@@ -1,0 +1,147 @@
+@using FinNex.Application.DTOs.HR.Maas
+@{
+    ViewData["Title"] = "Xəstəlik Bülletənləri";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    var list = (List<XestelikDto>)(ViewBag.List ?? new List<XestelikDto>());
+}
+
+<div class="xst-page">
+    @Html.AntiForgeryToken()
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="xst-alert xst-alert--success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="xst-alert xst-alert--error">@TempData["Error"]</div>
+    }
+
+    <div class="xst-header">
+        <div>
+            <h1 class="xst-title">
+                <i class="bi bi-bandaid"></i>
+                Xəstəlik Bülletənləri
+            </h1>
+            <p class="xst-subtitle">
+                Şirkət maksimum 14 iş günü ödəyir, qalan günlər DSMF tərəfindən ödənilir (informativ).
+            </p>
+        </div>
+        <a asp-action="Create" class="xst-btn xst-btn--primary">
+            <i class="bi bi-plus-lg"></i> Yeni Xəstəlik Yazmaq
+        </a>
+    </div>
+
+    <div class="xst-card">
+        <div class="xst-card-head">
+            <span><strong>@list.Count</strong> qeyd</span>
+        </div>
+
+        @if (!list.Any())
+        {
+            <div class="xst-empty">
+                <i class="bi bi-inbox"></i>
+                <div>Hələ xəstəlik qeydi yoxdur</div>
+                <small>HR sənəd əsasında yeni qeyd yarada bilər</small>
+            </div>
+        }
+        else
+        {
+            <table class="xst-table">
+                <thead>
+                    <tr>
+                        <th>İşçi</th>
+                        <th>Bülletən №</th>
+                        <th>Tarix</th>
+                        <th class="text-right">İş günü</th>
+                        <th class="text-right">Şirkət ödənişi</th>
+                        <th>Müəssisə</th>
+                        <th>Status</th>
+                        <th class="text-right">Əməl.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var x in list)
+                    {
+                        <tr>
+                            <td><strong>@x.IsciAdSoyad</strong></td>
+                            <td><span class="xst-bulleten">@x.BulletenNomresi</span></td>
+                            <td>
+                                @x.BaslamaTarixi.ToString("dd.MM.yyyy") → @x.BitmeTarixi.ToString("dd.MM.yyyy")
+                            </td>
+                            <td class="text-right"><strong>@x.IsGunSayi</strong></td>
+                            <td class="text-right">
+                                <span class="xst-money">@(x.UmumiSirketOdenisi?.ToString("N2") ?? "—") ₼</span>
+                            </td>
+                            <td class="xst-mues">@(x.MualiceMuessisesi ?? "—")</td>
+                            <td>
+                                @if (x.Status == 1)
+                                {
+                                    <span class="xst-badge xst-badge--ok">Təsdiqlənib</span>
+                                }
+                                else
+                                {
+                                    <span class="xst-badge xst-badge--del">Ləğv edilib</span>
+                                }
+                            </td>
+                            <td class="text-right">
+                                <form asp-action="Delete" method="post" style="display:inline;"
+                                      onsubmit="return confirm('Bu xəstəlik qeydini silmək istədiyinizə əminsiniz? Ödəniş qeydləri də silinəcək.');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@x.Id"/>
+                                    <button type="submit" class="xst-btn-icon">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .xst-page { max-width: 1200px; padding: 8px 0; }
+        .xst-alert { padding: 12px 18px; border-radius: 10px; margin-bottom: 16px; font-size: 13px; font-weight: 500; }
+        .xst-alert--success { background: #ecfdf5; color: #059669; border: 1px solid #bbf7d0; }
+        .xst-alert--error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+        .xst-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; gap: 16px; }
+        .xst-title { font-size: 1.4rem; font-weight: 800; color: #1a2332; margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
+        .xst-title i { color: #dc2626; }
+        .xst-subtitle { font-size: 0.82rem; color: #7a8599; margin: 0; max-width: 600px; }
+
+        .xst-btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; font-size: 0.82rem; font-weight: 600; border-radius: 9px; cursor: pointer; border: none; text-decoration: none; transition: .15s; }
+        .xst-btn--primary { background: linear-gradient(135deg, #6366f1, #3b82f6); color: #fff; }
+        .xst-btn--primary:hover { box-shadow: 0 4px 12px rgba(99,102,241,.25); transform: translateY(-1px); color: #fff; }
+
+        .xst-card { background: #fff; border: 1px solid #e2e6ef; border-radius: 13px; box-shadow: 0 2px 8px rgba(15,26,46,.04); }
+        .xst-card-head { padding: 14px 22px; border-bottom: 1px solid #eef0f5; font-size: 0.85rem; color: #3d4557; }
+
+        .xst-empty { padding: 60px; text-align: center; color: #8a93a8; }
+        .xst-empty i { font-size: 2.5rem; display: block; margin-bottom: 10px; color: #d0d5dd; }
+        .xst-empty div { font-size: 0.95rem; font-weight: 600; }
+        .xst-empty small { font-size: 0.78rem; }
+
+        .xst-table { width: 100%; border-collapse: collapse; }
+        .xst-table thead th { padding: 12px 18px; font-size: 0.7rem; font-weight: 700; color: #8a93a8; text-transform: uppercase; letter-spacing: .5px; text-align: left; background: #f7f9fc; border-bottom: 1px solid #eef0f5; }
+        .xst-table tbody td { padding: 12px 18px; font-size: 0.85rem; color: #1a2332; border-bottom: 1px solid #f4f5f8; }
+        .xst-table tbody tr:hover { background: #fafbfc; }
+        .xst-table .text-right { text-align: right; }
+
+        .xst-bulleten { font-family: monospace; background: #fef3c7; color: #78350f; padding: 3px 8px; border-radius: 5px; font-size: 0.78rem; font-weight: 600; }
+        .xst-money { font-weight: 700; color: #c9900a; }
+        .xst-mues { font-size: 0.78rem; color: #6b7589; }
+
+        .xst-badge { padding: 4px 10px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+        .xst-badge--ok { background: rgba(16,185,129,.1); color: #059669; }
+        .xst-badge--del { background: rgba(239,68,68,.1); color: #dc2626; }
+
+        .xst-btn-icon { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e6ef; background: #fff; color: #8a93a8; cursor: pointer; }
+        .xst-btn-icon:hover { background: rgba(239,68,68,.08); color: #dc2626; border-color: rgba(239,68,68,.3); }
+    </style>
+}
