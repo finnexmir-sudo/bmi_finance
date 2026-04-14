@@ -203,9 +203,10 @@ namespace FinNex.Application.Services.HR
                     .ToListAsync();
 
                 decimal S = son12.Sum(x => x.Qazanc);
+                int qeydSayi = son12.Count;
 
-                // Son 12 ayın iş günü cəmi
-                int son12AyIsGun = await Son12AyIsGununuHesablaAsync(son12);
+                // Son 12 ayın iş günü cəmi (xəstəliyin başladığı aydan əvvəlki 12 ay)
+                int son12AyIsGun = await Son12AyIsGununuHesablaAsync(baslama);
 
                 decimal birGunluk = son12AyIsGun > 0 ? S / son12AyIsGun : 0;
 
@@ -221,8 +222,8 @@ namespace FinNex.Application.Services.HR
                 decimal dsmfOdenis = Math.Round(birGunluk * dsmfGun, 2);
 
                 string? xeberdarliq = null;
-                if (son12.Count < 12)
-                    xeberdarliq = $"Yalnız {son12.Count}/12 ay qazanc tarixçəsi var — hesablama dəqiq olmaya bilər.";
+                if (qeydSayi < 12)
+                    xeberdarliq = $"Yalnız {qeydSayi}/12 ay qazanc tarixçəsi var — hesablama dəqiq olmaya bilər.";
                 if (sirketGun == 0 && isGunSayi > 0)
                     xeberdarliq = $"İşçi cari ildə artıq {oncekiSirketGun}/14 şirkət ödənişli xəstəlik istifadə edib. Yalnız DSMF ödəyəcək.";
                 else if (sirketGun < isGunSayi)
@@ -244,7 +245,7 @@ namespace FinNex.Application.Services.HR
             }
             catch (Exception ex)
             {
-                return Result<XestelikPreviewDto>.Fail($"Xəta: {ex.Message}");
+                return Result<XestelikPreviewDto>.Fail($"Xəta: {ex.InnerException?.Message ?? ex.Message}");
             }
         }
 
@@ -293,20 +294,21 @@ namespace FinNex.Application.Services.HR
         }
 
         /// <summary>
-        /// IsciAyliqQazanc cədvəlindəki son 12 ayın iş günlərinin cəmini hesablayır.
+        /// Verilmiş tarix əsasında son 12 ayın iş günlərinin cəmini hesablayır.
+        /// Ayın 1-dən başlayır, xəstəliyin başladığı aydan əvvəlki 12 ay götürülür.
+        ///
+        /// Məsələn, baslama = 14.04.2026 ⇒ 01.04.2025 → 31.03.2026 (12 tam ay)
+        ///
+        /// Daxili olaraq IsGunSayiniHesablaAsync istifadə edir
+        /// (şənbə, bazar və BayramGunu cədvəlindəki bayramları çıxır).
         /// </summary>
-        private async Task<int> Son12AyIsGununuHesablaAsync(List<IsciAyliqQazanc> son12)
+        private async Task<int> Son12AyIsGununuHesablaAsync(DateTime baslama)
         {
-            if (!son12.Any()) return 248; // fallback: standart il
+            // Xəstəlik başlayan aydan əvvəlki 12 tam ay
+            var ayBitis = new DateTime(baslama.Year, baslama.Month, 1).AddDays(-1);
+            var ayBaslangic = new DateTime(ayBitis.Year, ayBitis.Month, 1).AddMonths(-11);
 
-            int cem = 0;
-            foreach (var item in son12)
-            {
-                var ayBaslangic = new DateTime(item.Il, item.Ay, 1);
-                var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
-                cem += await IsGunSayiniHesablaAsync(ayBaslangic, ayBitis);
-            }
-            return cem > 0 ? cem : 248;
+            return await IsGunSayiniHesablaAsync(ayBaslangic, ayBitis);
         }
 
         /// <summary>
@@ -336,7 +338,7 @@ namespace FinNex.Application.Services.HR
                 .ToListAsync();
 
             decimal S = son12.Sum(x => x.Qazanc);
-            int son12AyIsGun = await Son12AyIsGununuHesablaAsync(son12);
+            int son12AyIsGun = await Son12AyIsGununuHesablaAsync(xestelik.BaslamaTarixi);
             decimal birGunluk = son12AyIsGun > 0 ? S / son12AyIsGun : 0;
 
             // Cari ildə artıq istifadə edilmiş şirkət gün sayı
