@@ -146,6 +146,10 @@ const bgModal = {
                     bgToast(data.message, true);
                     this.close();
                     refreshTable();
+                    // Calendar-ı da yenilə
+                    if (typeof bgLoadYear === 'function') {
+                        bgLoadYear(bgCurrentYear);
+                    }
                 } else {
                     bgToast(data.message, false);
                 }
@@ -261,6 +265,178 @@ function bgToast(message, success) {
     }, 3000);
 }
 
+// ═══════════════════════════════════════════════════════════
+// YEAR CALENDAR
+// ═══════════════════════════════════════════════════════════
+
+const MONTHS_AZ = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'İyun',
+    'İyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
+const WEEK_HEADERS_AZ = ['B.e', 'Ç.a', 'Ç', 'C.a', 'C', 'Ş', 'B'];
+
+let bgCurrentYear = new Date().getFullYear();
+let bgYearData = null;
+
+function bgLoadYear(year) {
+    bgCurrentYear = year;
+    document.getElementById('bgCalendarYear').textContent = year;
+    const grid = document.getElementById('bgCalendarGrid');
+    grid.innerHTML = '<div class="bg-calendar-loading">Yüklənir...</div>';
+
+    fetch(`/HR/BayramGunu/Year?year=${year}`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) {
+                grid.innerHTML = '<div class="bg-calendar-loading">Xəta baş verdi.</div>';
+                return;
+            }
+            bgYearData = data;
+            bgRenderYear();
+        })
+        .catch(() => {
+            grid.innerHTML = '<div class="bg-calendar-loading">Xəta baş verdi.</div>';
+        });
+}
+
+function bgRenderYear() {
+    const grid = document.getElementById('bgCalendarGrid');
+    grid.innerHTML = '';
+
+    // Records lookup by date
+    const recordsByDate = {};
+    bgYearData.records.forEach(r => { recordsByDate[r.tarix] = r; });
+
+    const today = bgYearData.today; // yyyy-MM-dd
+
+    for (let m = 0; m < 12; m++) {
+        const monthEl = document.createElement('div');
+        monthEl.className = 'bg-month';
+
+        // Title
+        const title = document.createElement('div');
+        title.className = 'bg-month-title';
+        title.textContent = MONTHS_AZ[m];
+        monthEl.appendChild(title);
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'bg-month-header';
+        WEEK_HEADERS_AZ.forEach((wd, i) => {
+            const el = document.createElement('div');
+            el.textContent = wd;
+            if (i >= 5) el.classList.add('bg-weekend-hdr');
+            header.appendChild(el);
+        });
+        monthEl.appendChild(header);
+
+        // Days grid
+        const days = document.createElement('div');
+        days.className = 'bg-month-days';
+
+        const firstDay = new Date(bgCurrentYear, m, 1);
+        let startOffset = firstDay.getDay() - 1; // Monday-first
+        if (startOffset < 0) startOffset = 6;
+
+        const daysInMonth = new Date(bgCurrentYear, m + 1, 0).getDate();
+
+        // Previous month filler
+        for (let i = 0; i < startOffset; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'bg-day bg-day--other';
+            days.appendChild(cell);
+        }
+
+        // Current month days
+        for (let d = 1; d <= daysInMonth; d++) {
+            const cell = document.createElement('div');
+            cell.className = 'bg-day';
+            cell.textContent = d;
+
+            const dateStr = `${bgCurrentYear}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            cell.dataset.date = dateStr;
+
+            const dateObj = new Date(bgCurrentYear, m, d);
+            const dow = dateObj.getDay();
+            const isWeekend = (dow === 0 || dow === 6);
+
+            const record = recordsByDate[dateStr];
+            if (record) {
+                if (record.tip === 2) {
+                    cell.classList.add('bg-day--work-override');
+                    cell.title = `${record.ad} (İş günü)`;
+                } else {
+                    cell.classList.add('bg-day--holiday');
+                    cell.title = `${record.ad} (Bayram)`;
+                }
+                cell.dataset.recordId = record.id;
+                cell.dataset.tip = record.tip;
+            } else if (isWeekend) {
+                cell.classList.add('bg-day--weekend');
+                cell.title = 'Şənbə/Bazar — kliklə iş günü et';
+            } else {
+                cell.title = 'İş günü — kliklə bayram et';
+            }
+
+            // Past date?
+            if (dateStr < today) {
+                cell.classList.add('bg-day--past');
+            } else if (dateStr === today) {
+                cell.classList.add('bg-day--today');
+            }
+
+            days.appendChild(cell);
+        }
+
+        monthEl.appendChild(days);
+        grid.appendChild(monthEl);
+    }
+}
+
+function bgToggleDay(cell) {
+    const dateStr = cell.dataset.date;
+    if (!dateStr) return;
+    if (cell.classList.contains('bg-day--past')) return;
+
+    // Current state → desired tip
+    let tip;
+    if (cell.classList.contains('bg-day--holiday')) {
+        // Remove (toggle off) — server sees existing record and deletes
+        tip = 1;
+    } else if (cell.classList.contains('bg-day--work-override')) {
+        tip = 2;
+    } else if (cell.classList.contains('bg-day--weekend')) {
+        tip = 2; // weekend → work override
+    } else {
+        tip = 1; // work day → holiday
+    }
+
+    const formData = new FormData();
+    formData.append('tarix', dateStr);
+    formData.append('tip', tip);
+
+    cell.style.opacity = '0.5';
+    fetch('/HR/BayramGunu/Toggle', {
+        method: 'POST',
+        body: formData,
+        headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+    })
+        .then(r => r.json())
+        .then(data => {
+            cell.style.opacity = '';
+            if (!data.success) {
+                bgToast(data.message || 'Xəta baş verdi', false);
+                return;
+            }
+            bgToast(data.message, true);
+            // Reload year to refresh
+            bgLoadYear(bgCurrentYear);
+            refreshTable();
+        })
+        .catch(() => {
+            cell.style.opacity = '';
+            bgToast('Şəbəkə xətası', false);
+        });
+}
+
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
     bgModal.init();
@@ -269,6 +445,28 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('bgOpenCreateBtn').addEventListener('click', () => bgModal.open());
     document.getElementById('bgCloseModalBtn').addEventListener('click', () => bgModal.close());
     document.getElementById('bgCancelBtn').addEventListener('click', () => bgModal.close());
+
+    // Year navigation
+    const prev = document.getElementById('bgYearPrev');
+    const next = document.getElementById('bgYearNext');
+    const today = document.getElementById('bgYearToday');
+    if (prev) prev.addEventListener('click', () => bgLoadYear(bgCurrentYear - 1));
+    if (next) next.addEventListener('click', () => bgLoadYear(bgCurrentYear + 1));
+    if (today) today.addEventListener('click', () => bgLoadYear(new Date().getFullYear()));
+
+    // Calendar click delegation
+    const grid = document.getElementById('bgCalendarGrid');
+    if (grid) {
+        grid.addEventListener('click', (e) => {
+            const cell = e.target.closest('.bg-day');
+            if (!cell) return;
+            if (cell.classList.contains('bg-day--other')) return;
+            bgToggleDay(cell);
+        });
+    }
+
+    // Initial year load
+    bgLoadYear(new Date().getFullYear());
 
     // Table button delegation
     document.addEventListener('click', (e) => {
