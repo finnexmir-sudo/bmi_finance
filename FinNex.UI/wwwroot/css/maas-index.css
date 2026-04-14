@@ -316,7 +316,6 @@
 .mi-filter-actions {
     display: flex;
     gap: 7px;
-    margin-left: auto;
 }
 
 /* ── Table card ──────────────────────────────────────────────── */
