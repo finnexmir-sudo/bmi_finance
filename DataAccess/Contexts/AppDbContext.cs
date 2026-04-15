@@ -75,6 +75,8 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<IsciAyliqQazanc> IsciAyliqQazanclar { get; set; }
     public DbSet<Xestelik> Xestelikler { get; set; }
     public DbSet<XestelikOdenis> XestelikOdenisleri { get; set; }
+    public DbSet<Guzest> Guzestler { get; set; }
+    public DbSet<IsciGuzest> IsciGuzestler { get; set; }
 
     public DbSet<Mesaj> Mesajlar { get; set; }
     public DbSet<Bildiris> Bildirisler { get; set; }
@@ -621,6 +623,36 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         builder.Entity<Mezuniyyet>()
             .Property(x => x.OdenenMebleg)
             .HasColumnType("decimal(18,2)");
+
+        // ── Güzəşt kataloqu və işçi təyinatları ──
+        builder.Entity<Guzest>()
+            .Property(x => x.Ad)
+            .HasMaxLength(200)
+            .IsRequired();
+        builder.Entity<Guzest>()
+            .Property(x => x.Mebleg)
+            .HasColumnType("decimal(18,2)");
+        builder.Entity<Guzest>()
+            .Property(x => x.Madde)
+            .HasMaxLength(300);
+        builder.Entity<Guzest>()
+            .HasIndex(x => x.Aktivdir);
+
+        builder.Entity<IsciGuzest>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<IsciGuzest>()
+            .HasOne(x => x.Guzest)
+            .WithMany(g => g.IsciGuzestler)
+            .HasForeignKey(x => x.GuzestId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<IsciGuzest>()
+            .HasIndex(x => new { x.IsciId, x.GuzestId });
+        builder.Entity<IsciGuzest>()
+            .Property(x => x.Qeyd)
+            .HasMaxLength(500);
 
         builder.Entity<IsciTeyinat>()
     .HasOne(x => x.Isci)

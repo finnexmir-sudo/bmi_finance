@@ -543,6 +543,14 @@
                                    class="fn-nav-subitem @(currentController == "MaasParametri" ? "active" : "")">
                                     <div class="fn-sub-dot"></div> Əmək haqqı parametrləri
                                 </a>
+                                <a asp-area="HR" asp-controller="Guzest" asp-action="Index"
+                                   class="fn-nav-subitem @(currentArea == "HR" && currentController == "Guzest" ? "active" : "")">
+                                    <div class="fn-sub-dot"></div> Güzəşt kataloqu
+                                </a>
+                                <a asp-area="HR" asp-controller="IsciGuzest" asp-action="Index"
+                                   class="fn-nav-subitem @(currentArea == "HR" && currentController == "IsciGuzest" ? "active" : "")">
+                                    <div class="fn-sub-dot"></div> İşçi güzəştləri
+                                </a>
                                 <a asp-area="HR" asp-controller="Budce" asp-action="Index"
                                    class="fn-nav-subitem @(currentController == "Budce" ? "active" : "")">
                                     <div class="fn-sub-dot"></div> Büdcə
