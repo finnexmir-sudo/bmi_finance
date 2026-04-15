@@ -18,7 +18,7 @@
         <form asp-action="Edit" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Id" />
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div asp-validation-summary="All" class="text-danger"></div>
 
             <div class="gz-form-group">
                 <label asp-for="Ad" class="gz-label">Ad <span class="gz-req">*</span></label>
