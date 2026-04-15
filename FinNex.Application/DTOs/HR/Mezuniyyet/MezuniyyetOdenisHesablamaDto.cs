@@ -89,7 +89,13 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
     public class MezuniyyetTutulmaDto
     {
         public decimal Brut { get; set; }
+        // Standart + işçi güzəştinin cəmi (geri uyğunluq üçün).
         public decimal VergiGuzesti { get; set; }
+        // Standart 200 AZN (brüt ≤ birinci pillə üst həddi olduqda, yoxsa 0).
+        public decimal StandartGuzest { get; set; }
+        // İşçinin ən böyük aktiv güzəşti (Qaçqın və s.)
+        public decimal IsciGuzesti { get; set; }
+        public string? IsciGuzestiAd { get; set; }
         public decimal Vergilenecek { get; set; }
         public decimal GelirVergisi { get; set; }
         public decimal DsmfIsci { get; set; }

@@ -890,7 +890,8 @@ namespace FinNex.Application.Services.HR
         // TUTULMALARI HESABLA (ümumi istifadə üçün — eyni məntiq FerdiHesablaAsync-də)
         // Məzuniyyət Preview və Detail səhifələrində NET məbləği çıxartmaq üçün.
         // ─────────────────────────────────────────────────────────
-        public async Task<MezuniyyetTutulmaDto> TutulmalariHesablaAsync(decimal brut, DateTime tarix)
+        public async Task<MezuniyyetTutulmaDto> TutulmalariHesablaAsync(
+            decimal brut, DateTime tarix, int? isciId = null)
         {
             if (brut < 0) brut = 0;
             var p = await VergiParametrleriniGetirAsync(tarix);
@@ -914,7 +915,42 @@ namespace FinNex.Application.Services.HR
                 return Math.Round(mebleg * (flatFaiz / 100m), 2);
             }
 
-            decimal vergilenecek = Math.Max(0, brut - p.VergiGuzestiMeblegi);
+            // Birinci pillə üst həddi — standart 200 AZN güzəşti yalnız brüt bu
+            // sərhəddən yuxarı deyilsə tətbiq olunur (FerdiHesablaAsync ilə eyni məntiq).
+            var gvPilleleri = pilleler
+                .Where(x => x.Nov == MaasParametrNovu.GelirVergisiFaizi)
+                .OrderBy(x => x.AsagiHedd)
+                .ToList();
+            decimal firstBracketMax = gvPilleleri.FirstOrDefault()?.YuxariHedd ?? 2500m;
+
+            // İşçi güzəşti — isciId verilibsə, aktiv olan ən böyüyünü tap
+            decimal maxIsciGuzesti = 0m;
+            string? isciGuzestAd = null;
+            if (isciId.HasValue)
+            {
+                var isciGuzestleri = await _unitOfWork.Repository<IsciGuzest>()
+                    .Query()
+                    .Where(x =>
+                        !x.Silinib &&
+                        x.IsciId == isciId.Value &&
+                        x.BaslamaTarixi <= tarix &&
+                        (x.BitmeTarixi == null || x.BitmeTarixi >= tarix))
+                    .Include(x => x.Guzest)
+                    .Where(x => x.Guzest != null && !x.Guzest.Silinib && x.Guzest.Aktivdir)
+                    .ToListAsync();
+                foreach (var ig in isciGuzestleri)
+                {
+                    if (ig.Guzest.Mebleg > maxIsciGuzesti)
+                    {
+                        maxIsciGuzesti = ig.Guzest.Mebleg;
+                        isciGuzestAd = ig.Guzest.Ad;
+                    }
+                }
+            }
+
+            decimal standartGuzest = brut <= firstBracketMax ? p.VergiGuzestiMeblegi : 0m;
+            decimal vergilenecek = Math.Max(0, brut - standartGuzest - maxIsciGuzesti);
+
             decimal gelirVergisi = Pilleli(vergilenecek, MaasParametrNovu.GelirVergisiFaizi, p.GelirVergisiFaizi);
             decimal dsmfIsci     = Pilleli(brut,         MaasParametrNovu.DsmfFaizi,        p.DsmfFaizi);
             decimal itss         = Pilleli(brut,         MaasParametrNovu.IcbariTibbiSigortaFaizi, p.IcbariTibbiSigortaFaizi);
@@ -925,7 +961,10 @@ namespace FinNex.Application.Services.HR
             return new MezuniyyetTutulmaDto
             {
                 Brut = brut,
-                VergiGuzesti = p.VergiGuzestiMeblegi,
+                VergiGuzesti = standartGuzest + maxIsciGuzesti,
+                StandartGuzest = standartGuzest,
+                IsciGuzesti = maxIsciGuzesti,
+                IsciGuzestiAd = isciGuzestAd,
                 Vergilenecek = vergilenecek,
                 GelirVergisi = gelirVergisi,
                 DsmfIsci = dsmfIsci,
