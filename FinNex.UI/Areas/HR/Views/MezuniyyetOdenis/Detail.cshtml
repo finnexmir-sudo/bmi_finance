@@ -1,0 +1,303 @@
+@model FinNex.Application.DTOs.HR.Mezuniyyet.MezuniyyetOdenisHesablamaDto
+@{
+    ViewData["Title"] = "Məzuniyyət ödənişi — detal";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var mez = (FinNex.Domain.Entities.HR.Mezuniyyet)ViewBag.Mezuniyyet;
+    bool odenilib = mez.OdenisStatus == FinNex.Domain.Entities.HR.MezuniyyetOdenisStatus.Odenilib;
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="mod-page">
+    <div class="mod-head">
+        <div>
+            <a asp-action="Index" class="mod-back"><i class="bi bi-arrow-left"></i> Geri</a>
+            <div class="mod-title">Məzuniyyət ödənişi — @Model.IsciAdSoyad</div>
+            <div class="mod-sub">
+                @Model.BaslamaTarixi.ToString("dd.MM.yyyy") – @Model.BitmeTarixi.ToString("dd.MM.yyyy")
+                &middot; @Model.UmumiTeqvimGun təqvim günü / @Model.UmumiIsGun iş günü
+            </div>
+        </div>
+        @if (odenilib)
+        {
+            <span class="mod-status mod-status--ok">
+                <i class="bi bi-check-circle-fill"></i> Ödənilib
+                @if (mez.OdenilmeTarixi.HasValue)
+                {
+                    <small>(@mez.OdenilmeTarixi.Value.ToString("dd.MM.yyyy HH:mm"))</small>
+                }
+            </span>
+        }
+        else
+        {
+            <span class="mod-status mod-status--warn">
+                <i class="bi bi-hourglass-split"></i> Gözləyir
+            </span>
+        }
+    </div>
+
+    <div class="mod-grid">
+
+        @* ── Əsas göstəricilər ── *@
+        <div class="mod-card mod-card--summary">
+            <div class="mod-card-title"><i class="bi bi-info-circle"></i> Hesablama göstəriciləri</div>
+            <div class="mod-kv">
+                <span>Cari maaş</span><strong>@Model.CariMaas.ToString("N2") ₼</strong>
+                <span>Son 12 ay cəmi (S)</span>
+                <strong>
+                    @Model.Son12AyCemi.ToString("N2") ₼
+                    <small class="mod-muted">(@Model.Son12AyQeydSayi / 12 qeyd)</small>
+                </strong>
+                <span>Formula</span><strong class="mod-mono">MAX(S/12/30.4×GS, Maaş/AyİşGün×İGS)</strong>
+            </div>
+            @if (Model.Son12AyQeydSayi < 12)
+            {
+                <div class="mod-warn">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Yalnız @Model.Son12AyQeydSayi / 12 ay qazanc tarixçəsi mövcuddur — MH
+                    tarixi hissəsi qeyri-dəqiq ola bilər.
+                </div>
+            }
+        </div>
+
+        @* ── Per-month breakdown ── *@
+        <div class="mod-card">
+            <div class="mod-card-title"><i class="bi bi-calendar3"></i> Ay-ay bölünmə</div>
+            <table class="mod-table">
+                <thead>
+                    <tr>
+                        <th>Ay</th>
+                        <th class="mod-num">GS</th>
+                        <th class="mod-num">İGS</th>
+                        <th class="mod-num">Ay iş günü</th>
+                        <th class="mod-num">MH</th>
+                        <th class="mod-num">ƏH</th>
+                        <th class="mod-num">Seçilən</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.AySliceleri)
+                    {
+                        <tr>
+                            <td><strong>@s.AyAdi</strong></td>
+                            <td class="mod-num">@s.TeqvimGun</td>
+                            <td class="mod-num">@s.IsGun</td>
+                            <td class="mod-num">@s.AyIsGun</td>
+                            <td class="mod-num">@s.MH.ToString("N2")</td>
+                            <td class="mod-num">@s.EH.ToString("N2")</td>
+                            <td class="mod-num"><strong>@s.Secilen.ToString("N2")</strong> <small class="mod-muted">(@s.Qalib)</small></td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="6" class="mod-num"><strong>CƏMİ</strong></td>
+                        <td class="mod-num mod-total">@Model.CemiOdenis.ToString("N2") ₼</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        @* ── Addım-addım izahat ── *@
+        <div class="mod-card">
+            <div class="mod-card-title">
+                <i class="bi bi-list-check"></i> Addım-addım hesablama məntiqi
+                <small class="mod-muted">(kodlara baxmadan izləyə bilərsiniz)</small>
+            </div>
+            <ol class="mod-steps">
+                @foreach (var addim in Model.IzahatAddimlari)
+                {
+                    <li>@addim</li>
+                }
+            </ol>
+        </div>
+
+        @* ── Ödəniş bölümü ── *@
+        <div class="mod-card mod-card--action">
+            <div class="mod-card-title"><i class="bi bi-cash-coin"></i> Ödəniş</div>
+
+            @if (odenilib)
+            {
+                <div class="mod-kv">
+                    <span>Ödənilmiş məbləğ</span>
+                    <strong class="mod-gold">@((mez.OdenenMebleg ?? 0).ToString("N2")) ₼</strong>
+                    <span>Ödəniş tarixi</span>
+                    <strong>@(mez.OdenilmeTarixi?.ToString("dd.MM.yyyy HH:mm"))</strong>
+                    <span>Təsdiqləyən Mühasib</span>
+                    <strong>@(mez.OdeyenMuhasib?.TamAd ?? "—")</strong>
+                </div>
+            }
+            else
+            {
+                <form asp-action="Odenildi" method="post" class="mod-odenis-form">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@mez.Id" />
+                    <div class="mod-form-row">
+                        <label class="mod-label">Ödəniş məbləği (AZN)</label>
+                        <input type="number"
+                               name="redakteEdilmisMebleg"
+                               value="@((mez.OdenenMebleg ?? Model.CemiOdenis).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))"
+                               step="0.01" min="0"
+                               class="mod-input" />
+                        <small class="mod-hint">
+                            HR təsdiq anında hesablanan məbləğ: <strong>@((mez.OdenenMebleg ?? 0).ToString("N2")) ₼</strong>.
+                            Yuxarıdakı canlı hesablama nəticəsi: <strong>@Model.CemiOdenis.ToString("N2") ₼</strong>.
+                            Səhv varsa burada düzəldə bilərsiniz.
+                        </small>
+                    </div>
+                    <div class="mod-form-actions">
+                        <a asp-action="Index" class="mod-btn mod-btn--outline">Ləğv et</a>
+                        <button type="submit" class="mod-btn mod-btn--primary">
+                            <i class="bi bi-check2-circle"></i> Ödənildi kimi qeyd et
+                        </button>
+                    </div>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .mod-page { padding: 24px 28px; max-width: 1200px; margin: 0 auto; }
+    .mod-head {
+        display: flex; justify-content: space-between; align-items: flex-start;
+        margin-bottom: 18px;
+    }
+    .mod-back {
+        display: inline-flex; align-items: center; gap: 4px;
+        color: #5a647a; text-decoration: none;
+        font-size: 12px; font-weight: 600;
+        margin-bottom: 6px;
+    }
+    .mod-back:hover { color: #6b21a8; }
+    .mod-title { font-size: 1.35rem; font-weight: 800; color: #1a1d29; }
+    .mod-sub { font-size: 0.82rem; color: #8a93a8; margin-top: 3px; }
+
+    .mod-status {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 10px 18px; border-radius: 999px;
+        font-size: 13px; font-weight: 700;
+    }
+    .mod-status small { font-weight: 500; opacity: 0.85; }
+    .mod-status--warn { background: #fef3c7; color: #92400e; }
+    .mod-status--ok { background: #d1fae5; color: #065f46; }
+
+    .mod-grid { display: flex; flex-direction: column; gap: 14px; }
+    .mod-card {
+        background: #fff; border: 1px solid #e9ecef;
+        border-radius: 14px;
+        padding: 18px 22px;
+        box-shadow: 0 4px 14px rgba(15, 26, 46, .04);
+    }
+    .mod-card-title {
+        font-size: 13px; font-weight: 800; color: #6b21a8;
+        margin-bottom: 14px; display: flex; gap: 8px; align-items: center;
+    }
+    .mod-card-title small { color: #8a93a8; font-weight: 500; margin-left: auto; font-size: 11px; }
+
+    .mod-card--summary { background: linear-gradient(135deg, #faf5ff, #f5f3ff); border-color: #d8b4fe; }
+    .mod-card--action { border-color: #c8b3f2; }
+
+    .mod-kv {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        column-gap: 20px; row-gap: 6px;
+        font-size: 13px; color: #3d4557;
+    }
+    .mod-kv span { color: #5a647a; }
+    .mod-kv strong { color: #1a2332; }
+    .mod-mono { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; }
+    .mod-muted { color: #8a93a8; font-weight: 500; }
+    .mod-gold { color: #c9900a; font-weight: 900; font-size: 18px; }
+
+    .mod-warn {
+        margin-top: 10px;
+        padding: 8px 12px;
+        background: #fef3c7; border-radius: 8px;
+        color: #92400e; font-size: 11.5px;
+        display: flex; gap: 6px; align-items: center;
+    }
+
+    .mod-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .mod-table th {
+        text-align: left; padding: 10px 14px;
+        background: #f7f9fc; color: #5a647a;
+        text-transform: uppercase; font-size: 10.5px; letter-spacing: .4px;
+        border-bottom: 1px solid #eef0f5; font-weight: 800;
+    }
+    .mod-table td {
+        padding: 11px 14px;
+        border-bottom: 1px solid #f1f3f7;
+        color: #1a2332;
+    }
+    .mod-table tbody tr:last-child td { border-bottom: none; }
+    .mod-table .mod-num { text-align: right; font-variant-numeric: tabular-nums; }
+    .mod-table tfoot td {
+        padding: 13px 14px;
+        background: #faf5ff;
+        border-top: 2px solid #d8b4fe;
+        font-size: 13px;
+    }
+    .mod-total { color: #c9900a; font-weight: 900; font-size: 15px; }
+
+    .mod-steps {
+        background: #fcfaff;
+        border: 1px solid #ede7fa;
+        border-radius: 10px;
+        padding: 14px 18px 14px 38px;
+        font-size: 12.5px;
+        line-height: 1.7;
+        color: #3d4557;
+    }
+    .mod-steps li { margin-bottom: 2px; }
+
+    .mod-odenis-form {
+        background: #fcfaff;
+        border: 1px dashed #d8b4fe;
+        border-radius: 10px;
+        padding: 16px 18px;
+    }
+    .mod-form-row { margin-bottom: 14px; }
+    .mod-label {
+        display: block; font-size: 12px; font-weight: 700;
+        color: #6b21a8; margin-bottom: 6px;
+        text-transform: uppercase; letter-spacing: .3px;
+    }
+    .mod-input {
+        width: 240px; padding: 10px 14px;
+        border: 1.5px solid #e2e6ef; border-radius: 8px;
+        font-size: 15px; font-weight: 700;
+        font-family: inherit;
+    }
+    .mod-input:focus { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124, 58, 237, .12); }
+    .mod-hint { display: block; margin-top: 7px; font-size: 11.5px; color: #8a93a8; }
+
+    .mod-form-actions {
+        display: flex; justify-content: flex-end; gap: 10px;
+        margin-top: 10px;
+    }
+    .mod-btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 10px 20px; border-radius: 9px;
+        font-size: 13px; font-weight: 700;
+        text-decoration: none; border: none; cursor: pointer;
+        transition: all .15s; font-family: inherit;
+    }
+    .mod-btn--outline { background: #fff; color: #3d4557; border: 1px solid #e2e6ef; }
+    .mod-btn--outline:hover { border-color: #7c3aed; color: #6b21a8; }
+    .mod-btn--primary { background: #7c3aed; color: #fff; }
+    .mod-btn--primary:hover { background: #6b21a8; }
+</style>

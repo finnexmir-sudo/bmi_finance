@@ -1,6 +1,10 @@
 ﻿using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
+using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain;
+using FinNex.Domain.Entities.Communication;
+using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Interfaces;
 using FinNex.UI.Areas.HR.ViewModels.Mezuniyyet;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -15,15 +19,21 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IMezuniyyetService _mezuniyyetService;
         private readonly IIsciService _isciService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IBildirisService _bildirisService;
+        private readonly IUnitOfWork _unitOfWork;
 
         public MezuniyyetController(
             IMezuniyyetService mezuniyyetService,
             IIsciService isciService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IBildirisService bildirisService,
+            IUnitOfWork unitOfWork)
         {
             _mezuniyyetService = mezuniyyetService;
             _isciService = isciService;
             _userManager = userManager;
+            _bildirisService = bildirisService;
+            _unitOfWork = unitOfWork;
         }
 
         // ── Köməkçi: cari istifadəçinin IsciId-sini alır ──────
@@ -183,8 +193,60 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             var result = await _mezuniyyetService.HrTesdiqAsync(id, status, qeyd, isciId.Value);
 
+            // HR müsbət qərar verdi VƏ qabaqcadan ödəniş seçilibsə —
+            // Mühasibə “ödəniş gözləyir” bildirişi göndər.
+            if (result.Success && status)
+            {
+                await NotifyMuhasibIfAdvanceAsync(id);
+            }
+
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Hr));
+        }
+
+        private async Task NotifyMuhasibIfAdvanceAsync(int mezuniyyetId)
+        {
+            try
+            {
+                var m = await _unitOfWork.Repository<Mezuniyyet>()
+                    .GetirAsync(x => x.Id == mezuniyyetId);
+                if (m == null || m.OdenisTipi != MezuniyyetOdenisTipi.QabaqcadanOdenis) return;
+
+                var isci = await _unitOfWork.Repository<Isci>()
+                    .GetirAsync(x => x.Id == m.IsciId);
+                var isciAd = isci?.TamAd ?? $"İşçi #{m.IsciId}";
+
+                var redirectUrl = Url.Action("Detail", "MezuniyyetOdenis",
+                    new { area = "HR", id = mezuniyyetId });
+
+                var muhasibler = await _userManager.GetUsersInRoleAsync(RoleNames.Muhasib);
+                var adminler = await _userManager.GetUsersInRoleAsync(RoleNames.Admin);
+                var alicilar = muhasibler.Concat(adminler)
+                    .Where(u => u.IsciId.HasValue)
+                    .GroupBy(u => u.IsciId!.Value)
+                    .Select(g => g.First())
+                    .ToList();
+
+                var bashliq = "Məzuniyyət ödənişi — qabaqcadan";
+                var metn = $"{isciAd} üçün {m.BaslamaTarixi:dd.MM.yyyy}–{m.BitmeTarixi:dd.MM.yyyy} " +
+                           $"məzuniyyət ödənişi gözləyir (ilkin hesablama: {m.OdenenMebleg:N2} ₼).";
+
+                foreach (var u in alicilar)
+                {
+                    await _bildirisService.YaratAsync(
+                        isciId: u.IsciId!.Value,
+                        nov: BildirisNovu.TesdiqSorgusu,
+                        bashliq: bashliq,
+                        metn: metn,
+                        redirectUrl: redirectUrl,
+                        mezuniyyetId: mezuniyyetId
+                    );
+                }
+            }
+            catch
+            {
+                // Bildiriş xətası əsas işləməni pozmasın.
+            }
         }
 
         // ══════════════════════════════════════════════════════

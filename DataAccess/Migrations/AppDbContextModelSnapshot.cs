@@ -1946,6 +1946,21 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<int>("Nov")
                         .HasColumnType("int");
 
+                    b.Property<decimal?>("OdenenMebleg")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("OdenilmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("OdenisStatus")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OdenisTipi")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("OdeyenMuhasibId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Qeyd")
                         .HasColumnType("nvarchar(max)");
 
@@ -1998,6 +2013,8 @@ namespace FinNex.DataAccess.Migrations
                     b.HasIndex("HrId");
 
                     b.HasIndex("IsciId");
+
+                    b.HasIndex("OdeyenMuhasibId");
 
                     b.HasIndex("RehberId");
 
@@ -3672,6 +3689,11 @@ namespace FinNex.DataAccess.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
+                    b.HasOne("FinNex.Domain.Entities.HR.Isci", "OdeyenMuhasib")
+                        .WithMany()
+                        .HasForeignKey("OdeyenMuhasibId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("FinNex.Domain.Entities.HR.Isci", "RehberIsci")
                         .WithMany()
                         .HasForeignKey("RehberId")
@@ -3687,6 +3709,8 @@ namespace FinNex.DataAccess.Migrations
                     b.Navigation("HrIsci");
 
                     b.Navigation("Isci");
+
+                    b.Navigation("OdeyenMuhasib");
 
                     b.Navigation("RehberIsci");
 
