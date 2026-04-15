@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace FinNex.UI.Areas.User.Controllers
 {
@@ -25,6 +26,7 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly IEvezediciTesdiqService _evezediciTesdiqService;
         private readonly IIsciAyliqQazancService _ayliqQazancService;
+        private readonly IMaasHesablamaService _maasHesablamaService;
         private readonly IUnitOfWork _unitOfWork;
 
         public MezuniyyetController(
@@ -34,6 +36,7 @@ namespace FinNex.UI.Areas.User.Controllers
             UserManager<AppUser> userManager,
             IEvezediciTesdiqService evezediciTesdiqService,
             IIsciAyliqQazancService ayliqQazancService,
+            IMaasHesablamaService maasHesablamaService,
             IUnitOfWork unitOfWork)
         {
             _mezuniyyetService = mezuniyyetService;
@@ -42,13 +45,14 @@ namespace FinNex.UI.Areas.User.Controllers
             _userManager = userManager;
             _evezediciTesdiqService = evezediciTesdiqService;
             _ayliqQazancService = ayliqQazancService;
+            _maasHesablamaService = maasHesablamaService;
             _unitOfWork = unitOfWork;
         }
 
-        // ── GET /User/Mezuniyyet/Preview?baslama=2026-04-10&bitme=2026-04-17 ──
-        // Real-time məzuniyyət ödənişi preview (JSON)
+        // ── GET /User/Mezuniyyet/Preview?baslama=2026-04-10&bitme=2026-04-17&odenisTipi=1 ──
+        // Real-time məzuniyyət ödənişi + ay-ay bölünmə + gözlənilən aylıq maaş preview (JSON)
         [HttpGet]
-        public async Task<IActionResult> Preview(DateTime baslama, DateTime bitme)
+        public async Task<IActionResult> Preview(DateTime baslama, DateTime bitme, int odenisTipi = 1)
         {
             var isciId = await GetCurrentIsciIdAsync();
             if (isciId == null) return Json(new { success = false, message = "İşçi tapılmadı." });
@@ -56,73 +60,59 @@ namespace FinNex.UI.Areas.User.Controllers
             if (bitme < baslama)
                 return Json(new { success = false, message = "Bitmə tarixi başlama tarixindən sonra olmalıdır." });
 
-            // İşçinin cari maaşı
-            var maliye = await _unitOfWork.Repository<IsciMaliye>()
-                .GetirAsync(x => x.IsciId == isciId.Value);
-            decimal cariMaas = maliye?.CariMaas ?? 0;
+            var hesablama = await _maasHesablamaService
+                .MezuniyyetOdenisiDetalliHesablaAsync(isciId.Value, baslama, bitme);
 
-            // Bayram günlərini gətir (məzuniyyət dövründə)
-            var bayramlar = await _unitOfWork.Repository<BayramGunu>()
-                .HamisiniGetirAsync(x => x.Tarix >= baslama && x.Tarix <= bitme && !x.Silinib);
-            var bayramTarixleri = bayramlar.Select(x => x.Tarix.Date).ToHashSet();
+            // Hər ay üçün gözlənilən maaşın sadə proyeksiyası:
+            //   base - (cariMaas / ayIsGun × bu ayın mez. iş günü)
+            //        + (əgər AySonuOdenis) həmin ayın MAX(MH, ƏH)
+            decimal cariMaas = hesablama.CariMaas;
+            bool qabaqcadan = odenisTipi == (int)MezuniyyetOdenisTipi.QabaqcadanOdenis;
 
-            // GS (təqvim günü) və İGS (iş günü) hesabla
-            int teqvimGun = 0, isGun = 0;
-            for (var t = baslama; t <= bitme; t = t.AddDays(1))
+            var ayProjections = hesablama.AySliceleri.Select(s =>
             {
-                teqvimGun++;
-                if (t.DayOfWeek != DayOfWeek.Saturday &&
-                    t.DayOfWeek != DayOfWeek.Sunday &&
-                    !bayramTarixleri.Contains(t.Date))
+                decimal kesinti = (cariMaas > 0 && s.AyIsGun > 0 && s.IsGun > 0)
+                    ? Math.Round(cariMaas / s.AyIsGun * s.IsGun, 2)
+                    : 0;
+                decimal odenisPay = qabaqcadan ? 0 : s.Secilen;
+                decimal ayMaas = Math.Max(0, cariMaas - kesinti + odenisPay);
+                return new
                 {
-                    isGun++;
-                }
-            }
+                    il = s.Il,
+                    ay = s.Ay,
+                    ayAdi = s.AyAdi,
+                    teqvimGun = s.TeqvimGun,
+                    isGun = s.IsGun,
+                    ayIsGun = s.AyIsGun,
+                    mh = s.MH,
+                    eh = s.EH,
+                    secilen = s.Secilen,
+                    qalib = s.Qalib,
+                    kesinti,
+                    odenisPay,
+                    ayMaas
+                };
+            }).ToList();
 
-            // S = Son 12 ayın cəmi
-            decimal S = await _ayliqQazancService.Son12AyCemiQazancAsync(isciId.Value);
-            int qeydSayi = await _ayliqQazancService.Son12AyQeydSayiAsync(isciId.Value);
-
-            // Cari ayın iş gün sayı (məzuniyyət başladığı ay)
-            var ayBaslangic = new DateTime(baslama.Year, baslama.Month, 1);
-            var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
-            var ayBayramlar = await _unitOfWork.Repository<BayramGunu>()
-                .HamisiniGetirAsync(x => x.Tarix >= ayBaslangic && x.Tarix <= ayBitis && !x.Silinib);
-            var ayBayramTarix = ayBayramlar.Select(x => x.Tarix.Date).ToHashSet();
-            int ayIsGun = 0;
-            for (var t = ayBaslangic; t <= ayBitis; t = t.AddDays(1))
-            {
-                if (t.DayOfWeek != DayOfWeek.Saturday &&
-                    t.DayOfWeek != DayOfWeek.Sunday &&
-                    !ayBayramTarix.Contains(t.Date))
-                    ayIsGun++;
-            }
-            if (ayIsGun == 0) ayIsGun = 22;
-
-            // Formula
-            decimal MH = 0;
-            if (S > 0 && teqvimGun > 0)
-                MH = Math.Round(S / 12m / 30.4m * teqvimGun, 2);
-
-            decimal EH = 0;
-            if (cariMaas > 0 && ayIsGun > 0 && isGun > 0)
-                EH = Math.Round(cariMaas / ayIsGun * isGun, 2);
-
-            decimal odenis = Math.Max(MH, EH);
+            decimal ayMaasCemi = ayProjections.Sum(x => x.ayMaas);
+            decimal umumiYekun = qabaqcadan
+                ? ayMaasCemi + hesablama.CemiOdenis  // qabaqcadan ayrıca
+                : ayMaasCemi;                         // ay sonu — hər şey maaşın içində
 
             return Json(new
             {
                 success = true,
-                teqvimGun,
-                isGun,
+                teqvimGun = hesablama.UmumiTeqvimGun,
+                isGun = hesablama.UmumiIsGun,
                 cariMaas,
-                ayIsGun,
-                S,
-                qeydSayi,
-                MH,
-                EH,
-                odenis,
-                qalib = MH > EH ? "MH" : "EH"
+                S = hesablama.Son12AyCemi,
+                qeydSayi = hesablama.Son12AyQeydSayi,
+                cemiOdenis = hesablama.CemiOdenis,
+                odenisTipi,
+                qabaqcadan,
+                aylar = ayProjections,
+                ayMaasCemi,
+                umumiYekun
             });
         }
 
@@ -203,6 +193,9 @@ namespace FinNex.UI.Areas.User.Controllers
                 BaslamaTarixi = vm.BaslamaTarixi,
                 BitmeTarixi = vm.BitmeTarixi,
                 Qeyd = vm.Qeyd,
+                OdenisTipi = vm.OdenisTipi == 2
+                    ? MezuniyyetOdenisTipi.QabaqcadanOdenis
+                    : MezuniyyetOdenisTipi.AySonuOdenis,
                 MuracietSahibiRehberdirmi = User.IsInRole(RoleNames.Rehber),
                 MuracietSahibiSobeReisidirmi = User.IsInRole(RoleNames.SobeReisi),
             };

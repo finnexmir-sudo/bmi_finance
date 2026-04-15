@@ -610,6 +610,18 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasForeignKey(x => x.EvezEdenIsciId)
             .OnDelete(DeleteBehavior.NoAction);
 
+        // QabaqcadanOdenis halında ödənişi təsdiqləyən Mühasib — optional FK,
+        // heç bir cascade effect olmadan saxlanılır.
+        builder.Entity<Mezuniyyet>()
+            .HasOne(x => x.OdeyenMuhasib)
+            .WithMany()
+            .HasForeignKey(x => x.OdeyenMuhasibId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<Mezuniyyet>()
+            .Property(x => x.OdenenMebleg)
+            .HasColumnType("decimal(18,2)");
+
         builder.Entity<IsciTeyinat>()
     .HasOne(x => x.Isci)
     .WithMany(x => x.IsciTeyinatlari)

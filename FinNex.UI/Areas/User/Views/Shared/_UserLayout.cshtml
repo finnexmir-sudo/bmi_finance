@@ -531,6 +531,10 @@
                             </a>
                             @if (!isRehberOnly)
                             {
+                                <a asp-area="HR" asp-controller="MezuniyyetOdenis" asp-action="Index"
+                                   class="fn-nav-subitem @(currentArea == "HR" && currentController == "MezuniyyetOdenis" ? "active" : "")">
+                                    <div class="fn-sub-dot"></div> Məzuniyyət Ödənişləri
+                                </a>
                                 <a asp-area="HR" asp-controller="IsciAyliqQazanc" asp-action="Index"
                                    class="fn-nav-subitem @(currentController == "IsciAyliqQazanc" ? "active" : "")">
                                     <div class="fn-sub-dot"></div> Qazanc Tarixçəsi

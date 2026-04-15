@@ -1,5 +1,6 @@
 ﻿using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Maas;
+using FinNex.Application.DTOs.HR.Mezuniyyet;
 
 namespace FinNex.Application.Interfaces.Maas_If
 {
@@ -32,5 +33,13 @@ namespace FinNex.Application.Interfaces.Maas_If
         ///   Ödəniş = MAX(MH, ƏH)
         /// </summary>
         Task<decimal> MezuniyyetOdenisiniHesablaV2Async(int isciId, int il, int ay, int teqvimGun, int isGun);
+
+        /// <summary>
+        /// Verilmiş tarix aralığı üçün tam məzuniyyət ödənişi hesablamasını
+        /// (ay-ay bölünməsi + düz mətn izahatı ilə) qaytarır. Məzuniyyət bir
+        /// neçə aya düşdükdə hər ay üçün ayrıca MH/ƏH hesablanır və cəmlənir.
+        /// </summary>
+        Task<MezuniyyetOdenisHesablamaDto> MezuniyyetOdenisiDetalliHesablaAsync(
+            int isciId, DateTime baslama, DateTime bitme);
     }
 }

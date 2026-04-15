@@ -68,11 +68,38 @@
                         Seçilmiş müddət: <strong id="durationText"></strong>
                     </div>
 
+                    @* ── Ödəniş vaxtı seçimi ── *@
+                    <div class="fn-form-group mez-odenis-tipi">
+                        <label class="fn-label">Məzuniyyət ödənişinin vaxtı <span class="fn-required">*</span></label>
+                        <div class="mez-odenis-options">
+                            <label class="mez-odenis-card">
+                                <input type="radio" name="OdenisTipi" value="1" checked />
+                                <div class="mez-odenis-body">
+                                    <div class="mez-odenis-title">
+                                        <i class="bi bi-calendar-check"></i>
+                                        Ay sonu maaşla
+                                    </div>
+                                    <div class="mez-odenis-sub">Məzuniyyət pulu həmin ayın maaşına əlavə olunur (default)</div>
+                                </div>
+                            </label>
+                            <label class="mez-odenis-card">
+                                <input type="radio" name="OdenisTipi" value="2" />
+                                <div class="mez-odenis-body">
+                                    <div class="mez-odenis-title">
+                                        <i class="bi bi-cash-coin"></i>
+                                        Qabaqcadan
+                                    </div>
+                                    <div class="mez-odenis-sub">HR təsdiqindən sonra Mühasib ayrıca ödəyir</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
                     @* ── Məzuniyyət ödənişi preview ── *@
                     <div id="mezPreviewBox" class="mez-preview" style="display:none;">
                         <div class="mez-preview-head">
                             <i class="bi bi-calculator"></i>
-                            Məzuniyyət ödənişi (təxmini hesablama)
+                            Məzuniyyət ödənişi və gözlənilən maaş (təxmini hesablama)
                         </div>
                         <div class="mez-preview-body">
                             <div class="mez-preview-row">
@@ -90,22 +117,22 @@
                                 </div>
                             </div>
 
-                            <div class="mez-preview-formula">
-                                <div class="mez-preview-fline">
-                                    <span class="mp-flbl">MH</span>
-                                    <span class="mp-fdsc">(tarixi orta — son 12 ay)</span>
-                                    <span class="mp-fval" id="mpMH">—</span>
+                            <div class="mez-preview-aylar" id="mpAylar"></div>
+
+                            <div class="mez-preview-totals" id="mpTotals">
+                                <div class="mp-trow">
+                                    <span class="mp-tlbl">Cəmi məzuniyyət ödənişi</span>
+                                    <span class="mp-tval" id="mpCemiOdenis">—</span>
                                 </div>
-                                <div class="mez-preview-fline">
-                                    <span class="mp-flbl">ƏH</span>
-                                    <span class="mp-fdsc">(cari maaş × iş günü)</span>
-                                    <span class="mp-fval" id="mpEH">—</span>
+                                <div class="mp-trow">
+                                    <span class="mp-tlbl">Məzuniyyət aylarının maaşı (cəmi)</span>
+                                    <span class="mp-tval" id="mpAyMaasCemi">—</span>
                                 </div>
-                                <div class="mez-preview-final">
-                                    <span class="mp-flbl">ÖDƏNİŞ</span>
-                                    <span class="mp-fdsc" id="mpQalibInfo">—</span>
-                                    <span class="mp-fval mp-fval--gold" id="mpOdenis">—</span>
+                                <div class="mp-trow mp-trow--gold">
+                                    <span class="mp-tlbl">Ümumi əlinizə çatan (təxmini)</span>
+                                    <span class="mp-tval" id="mpUmumiYekun">—</span>
                                 </div>
+                                <div class="mp-thint" id="mpHint"></div>
                             </div>
 
                             <div class="mez-preview-warn" id="mezPreviewWarn" style="display:none;">
@@ -211,6 +238,134 @@
                             display: flex;
                             align-items: center;
                             gap: 6px;
+                        }
+
+                        /* Per-month breakdown */
+                        .mez-preview-aylar {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 10px;
+                            margin-bottom: 14px;
+                        }
+                        .mp-ay-card {
+                            background: #fff;
+                            border: 1px solid #e9d5ff;
+                            border-radius: 10px;
+                            padding: 10px 14px;
+                        }
+                        .mp-ay-title {
+                            font-weight: 800;
+                            color: #6b21a8;
+                            font-size: 12.5px;
+                            margin-bottom: 6px;
+                            display: flex;
+                            justify-content: space-between;
+                        }
+                        .mp-ay-title .mp-ay-days {
+                            color: #8a93a8;
+                            font-weight: 600;
+                            font-size: 11px;
+                            font-style: italic;
+                        }
+                        .mp-ay-lines {
+                            display: grid;
+                            grid-template-columns: 1fr auto;
+                            row-gap: 3px;
+                            font-size: 11.5px;
+                            color: #3d4557;
+                        }
+                        .mp-ay-lines .mp-ay-lbl { color: #5a647a; }
+                        .mp-ay-lines .mp-ay-val { font-weight: 700; }
+                        .mp-ay-net {
+                            margin-top: 6px;
+                            padding-top: 6px;
+                            border-top: 1px dashed #f3e8ff;
+                            display: flex;
+                            justify-content: space-between;
+                            font-size: 12.5px;
+                            font-weight: 800;
+                            color: #1a2332;
+                        }
+                        .mp-ay-net .mp-ay-net-val { color: #1e9b6b; }
+
+                        /* Totals */
+                        .mez-preview-totals {
+                            background: #fff;
+                            border: 1.5px solid #d8b4fe;
+                            border-radius: 10px;
+                            padding: 12px 14px;
+                        }
+                        .mp-trow {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            font-size: 12.5px;
+                            padding: 5px 0;
+                            color: #3d4557;
+                            border-bottom: 1px dashed #f3e8ff;
+                        }
+                        .mp-trow:last-of-type { border-bottom: none; }
+                        .mp-trow .mp-tval { font-weight: 700; }
+                        .mp-trow--gold {
+                            margin-top: 4px;
+                            padding-top: 9px;
+                            border-top: 2px solid #d8b4fe;
+                            border-bottom: none;
+                            font-size: 14px;
+                        }
+                        .mp-trow--gold .mp-tlbl { font-weight: 800; color: #6b21a8; }
+                        .mp-trow--gold .mp-tval { color: #c9900a; font-weight: 900; font-size: 16px; }
+                        .mp-thint {
+                            margin-top: 8px;
+                            padding: 6px 10px;
+                            background: #eef2ff;
+                            border-radius: 7px;
+                            color: #4338ca;
+                            font-size: 11px;
+                            line-height: 1.45;
+                        }
+
+                        /* Ödəniş tipi kartları */
+                        .mez-odenis-options {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 10px;
+                            margin-top: 4px;
+                        }
+                        .mez-odenis-card {
+                            display: flex;
+                            gap: 8px;
+                            align-items: flex-start;
+                            border: 1.5px solid #e2e6ef;
+                            border-radius: 10px;
+                            padding: 11px 13px;
+                            cursor: pointer;
+                            transition: all .15s;
+                            background: #fff;
+                        }
+                        .mez-odenis-card:hover { border-color: #c8b3f2; background: #faf7ff; }
+                        .mez-odenis-card input[type=radio] {
+                            margin-top: 2px;
+                            accent-color: #7c3aed;
+                        }
+                        .mez-odenis-card input[type=radio]:checked ~ .mez-odenis-body .mez-odenis-title { color: #6b21a8; }
+                        .mez-odenis-card:has(input:checked) {
+                            border-color: #7c3aed;
+                            background: linear-gradient(135deg, #faf5ff, #f5f3ff);
+                            box-shadow: 0 0 0 3px rgba(124, 58, 237, .08);
+                        }
+                        .mez-odenis-title {
+                            font-weight: 800;
+                            font-size: 12.5px;
+                            color: #1a2332;
+                            display: flex;
+                            gap: 6px;
+                            align-items: center;
+                        }
+                        .mez-odenis-sub {
+                            font-size: 11px;
+                            color: #8a93a8;
+                            margin-top: 2px;
                         }
                     </style>
 
@@ -322,29 +477,37 @@
     <partial name="_ValidationScriptsPartial" />
     <script src="~/js/User/user_create_mezuniyyet.js" asp-append-version="true"></script>
     <script>
-        // Real-time məzuniyyət ödənişi preview
+        // Real-time məzuniyyət ödənişi + aylıq maaş preview
         (function () {
             const baslamaInp = document.getElementById('baslamaTarixi');
-            const bitmeInp = document.getElementById('bitmeTarixi');
+            const bitmeInp   = document.getElementById('bitmeTarixi');
             const previewBox = document.getElementById('mezPreviewBox');
-            const fmt = v => v > 0
+            const odenisTipiRadios = document.querySelectorAll('input[name="OdenisTipi"]');
+
+            const fmt = v => (v && v > 0)
                 ? v.toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₼'
-                : '—';
+                : '0.00 ₼';
 
-            let lastFetchKey = '';
+            let lastKey = '';
 
-            function refreshPreview() {
+            function getOdenisTipi() {
+                for (const r of odenisTipiRadios) if (r.checked) return parseInt(r.value) || 1;
+                return 1;
+            }
+
+            function refreshPreview(force) {
                 const baslama = baslamaInp?.value;
-                const bitme = bitmeInp?.value;
+                const bitme   = bitmeInp?.value;
+                const tipi    = getOdenisTipi();
                 if (!baslama || !bitme) {
                     previewBox.style.display = 'none';
                     return;
                 }
-                const key = baslama + '|' + bitme;
-                if (key === lastFetchKey) return;
-                lastFetchKey = key;
+                const key = baslama + '|' + bitme + '|' + tipi;
+                if (!force && key === lastKey) return;
+                lastKey = key;
 
-                fetch(`/User/Mezuniyyet/Preview?baslama=${baslama}&bitme=${bitme}`)
+                fetch(`/User/Mezuniyyet/Preview?baslama=${baslama}&bitme=${bitme}&odenisTipi=${tipi}`)
                     .then(r => r.json())
                     .then(data => {
                         if (!data.success) { previewBox.style.display = 'none'; return; }
@@ -354,19 +517,50 @@
                         document.getElementById('mpIsGun').textContent = data.isGun + ' gün';
                         document.getElementById('mpCariMaas').textContent = fmt(data.cariMaas);
 
-                        document.getElementById('mpMH').textContent = fmt(data.mh);
-                        document.getElementById('mpEH').textContent = fmt(data.eh);
-                        document.getElementById('mpOdenis').textContent = fmt(data.odenis);
+                        // Per-month cards
+                        const aylarEl = document.getElementById('mpAylar');
+                        aylarEl.innerHTML = '';
+                        (data.aylar || []).forEach(ay => {
+                            const card = document.createElement('div');
+                            card.className = 'mp-ay-card';
+                            const qalibTxt = ay.qalib === 'MH'
+                                ? 'MH üstün (tarixi orta)'
+                                : 'ƏH üstün (cari maaş)';
+                            card.innerHTML = `
+                                <div class="mp-ay-title">
+                                    <span>${ay.ayAdi}</span>
+                                    <span class="mp-ay-days">${ay.teqvimGun} tq / ${ay.isGun} iş gün</span>
+                                </div>
+                                <div class="mp-ay-lines">
+                                    <span class="mp-ay-lbl">MH = S / 12 / 30.4 × ${ay.teqvimGun}</span><span class="mp-ay-val">${fmt(ay.mh)}</span>
+                                    <span class="mp-ay-lbl">ƏH = Maaş / ${ay.ayIsGun} × ${ay.isGun}</span><span class="mp-ay-val">${fmt(ay.eh)}</span>
+                                    <span class="mp-ay-lbl">Seçilən (MAX)</span><span class="mp-ay-val">${fmt(ay.secilen)} — ${qalibTxt}</span>
+                                    <span class="mp-ay-lbl">Maaş kəsintisi</span><span class="mp-ay-val" style="color:#d43f3f">− ${fmt(ay.kesinti)}</span>
+                                </div>
+                                <div class="mp-ay-net">
+                                    <span>Bu ayın təxmini maaşı${data.qabaqcadan ? ' (ödəniş ayrıca)' : ''}</span>
+                                    <span class="mp-ay-net-val">${fmt(ay.ayMaas)}</span>
+                                </div>
+                            `;
+                            aylarEl.appendChild(card);
+                        });
 
-                        const qalibInfo = data.qalib === 'MH'
-                            ? '(MH > ƏH — tarixi orta yüksəkdir)'
-                            : '(ƏH > MH — cari maaş yüksəkdir)';
-                        document.getElementById('mpQalibInfo').textContent = qalibInfo;
+                        document.getElementById('mpCemiOdenis').textContent = fmt(data.cemiOdenis);
+                        document.getElementById('mpAyMaasCemi').textContent = fmt(data.ayMaasCemi);
+                        document.getElementById('mpUmumiYekun').textContent = fmt(data.umumiYekun);
+
+                        const hint = document.getElementById('mpHint');
+                        if (data.qabaqcadan) {
+                            hint.textContent = 'Qabaqcadan ödəniş: HR təsdiqindən sonra Mühasib ' +
+                                'məzuniyyət pulunu ayrıca ödəyir; qeyd olunan ayların maaşında yalnız iş günü kəsintisi tətbiq olunur.';
+                        } else {
+                            hint.textContent = 'Ay sonu ödəniş: məzuniyyət pulu həmin ayın maaşına daxildir və tutulmalardan sonra birgə ödənilir.';
+                        }
 
                         // Xəbərdarlıq: az qeyd
                         const warn = document.getElementById('mezPreviewWarn');
                         const warnText = document.getElementById('mezPreviewWarnText');
-                        if (data.qeydSayi < 12) {
+                        if (data.qeydSayi != null && data.qeydSayi < 12) {
                             warn.style.display = 'flex';
                             warnText.textContent =
                                 `Yalnız ${data.qeydSayi}/12 ay qazanc tarixçəsi mövcuddur — MH dəqiq olmaya bilər. ` +
@@ -378,11 +572,12 @@
                     .catch(() => { previewBox.style.display = 'none'; });
             }
 
-            baslamaInp?.addEventListener('change', refreshPreview);
-            bitmeInp?.addEventListener('change', refreshPreview);
+            baslamaInp?.addEventListener('change', () => refreshPreview(false));
+            bitmeInp?.addEventListener('change', () => refreshPreview(false));
+            odenisTipiRadios.forEach(r => r.addEventListener('change', () => refreshPreview(true)));
 
             // Səhifə yüklənəndə də yoxla
-            setTimeout(refreshPreview, 200);
+            setTimeout(() => refreshPreview(true), 200);
         })();
     </script>
 }
