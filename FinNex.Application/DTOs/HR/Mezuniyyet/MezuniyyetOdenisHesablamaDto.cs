@@ -56,4 +56,21 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         public decimal Secilen { get; set; }
         public string Qalib { get; set; } = "MH"; // MH / ƏH (hansı böyükdür)
     }
+
+    /// <summary>
+    /// Vergi və sosial tutulmaların bir məbləğ üçün kəsilişi (Preview və
+    /// Detail səhifələrində yekun NET göstərmək üçün).
+    /// </summary>
+    public class MezuniyyetTutulmaDto
+    {
+        public decimal Brut { get; set; }
+        public decimal VergiGuzesti { get; set; }
+        public decimal Vergilenecek { get; set; }
+        public decimal GelirVergisi { get; set; }
+        public decimal DsmfIsci { get; set; }
+        public decimal IssizlikIsci { get; set; }
+        public decimal Itss { get; set; }
+        public decimal UmumiTutulma { get; set; }
+        public decimal Net { get; set; }
+    }
 }

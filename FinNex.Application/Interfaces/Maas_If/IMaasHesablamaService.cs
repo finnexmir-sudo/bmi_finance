@@ -41,5 +41,12 @@ namespace FinNex.Application.Interfaces.Maas_If
         /// </summary>
         Task<MezuniyyetOdenisHesablamaDto> MezuniyyetOdenisiDetalliHesablaAsync(
             int isciId, DateTime baslama, DateTime bitme);
+
+        /// <summary>
+        /// Verilmiş brüt məbləğ üçün bütün tutulmaları (gəlir vergisi, DSMF,
+        /// İşsizlik, İTSS) və net məbləği hesablayır. FerdiHesablaAsync-ın
+        /// istifadə etdiyi eyni VergiPille/MaasParametri mənbəyindən.
+        /// </summary>
+        Task<MezuniyyetTutulmaDto> TutulmalariHesablaAsync(decimal brut, DateTime tarix);
     }
 }

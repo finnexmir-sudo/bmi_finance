@@ -754,6 +754,56 @@ namespace FinNex.Application.Services.HR
         }
 
         // ─────────────────────────────────────────────────────────
+        // TUTULMALARI HESABLA (ümumi istifadə üçün — eyni məntiq FerdiHesablaAsync-də)
+        // Məzuniyyət Preview və Detail səhifələrində NET məbləği çıxartmaq üçün.
+        // ─────────────────────────────────────────────────────────
+        public async Task<MezuniyyetTutulmaDto> TutulmalariHesablaAsync(decimal brut, DateTime tarix)
+        {
+            if (brut < 0) brut = 0;
+            var p = await VergiParametrleriniGetirAsync(tarix);
+
+            var pilleler = await _unitOfWork.Repository<VergiPille>()
+                .HamisiniGetirAsync(x =>
+                    x.Aktivdir && !x.Silinib &&
+                    x.BaslamaTarixi <= tarix &&
+                    (x.BitmeTarixi == null || x.BitmeTarixi >= tarix));
+
+            decimal Pilleli(decimal mebleg, MaasParametrNovu nov, decimal flatFaiz)
+            {
+                var novPilleler = pilleler.Where(x => x.Nov == nov).OrderBy(x => x.AsagiHedd).ToList();
+                if (novPilleler.Any())
+                {
+                    var pille = PilleniTap(mebleg, novPilleler);
+                    if (pille == null) return 0;
+                    return Math.Round(
+                        pille.SabitMebleg + (mebleg - pille.AsagiHedd) * (pille.Faiz / 100m), 2);
+                }
+                return Math.Round(mebleg * (flatFaiz / 100m), 2);
+            }
+
+            decimal vergilenecek = Math.Max(0, brut - p.VergiGuzestiMeblegi);
+            decimal gelirVergisi = Pilleli(vergilenecek, MaasParametrNovu.GelirVergisiFaizi, p.GelirVergisiFaizi);
+            decimal dsmfIsci     = Pilleli(brut,         MaasParametrNovu.DsmfFaizi,        p.DsmfFaizi);
+            decimal itss         = Pilleli(brut,         MaasParametrNovu.IcbariTibbiSigortaFaizi, p.IcbariTibbiSigortaFaizi);
+            decimal issizlikIsci = Math.Round(brut * (p.IssizlikSigortasiFaizi / 100m), 2);
+            decimal umumi        = gelirVergisi + dsmfIsci + issizlikIsci + itss;
+            decimal net          = Math.Max(0, brut - umumi);
+
+            return new MezuniyyetTutulmaDto
+            {
+                Brut = brut,
+                VergiGuzesti = p.VergiGuzestiMeblegi,
+                Vergilenecek = vergilenecek,
+                GelirVergisi = gelirVergisi,
+                DsmfIsci = dsmfIsci,
+                IssizlikIsci = issizlikIsci,
+                Itss = itss,
+                UmumiTutulma = umumi,
+                Net = net
+            };
+        }
+
+        // ─────────────────────────────────────────────────────────
         // ═════════════════════════════════════════════════════════
         // MEZUNIYYET ODENISININ TAM, ADDIM-ADDIM HESABLAMASI
         //
