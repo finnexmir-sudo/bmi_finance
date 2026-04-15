@@ -34,6 +34,18 @@
         return `${y}-${m}-${dd}`;
     }
 
+    function isoToDisplay(iso) {
+        if (!iso) return '';
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+        if (!m) return '';
+        return `${m[3]}-${m[2]}-${m[1]}`;
+    }
+
+    // Native value setter/getter for HTMLInputElement (needed because we
+    // override .value on the instance to expose ISO format to external code
+    // while showing dd-MM-yyyy to the user).
+    const NATIVE_VALUE = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+
     function sameDay(a, b) {
         return a && b &&
             a.getFullYear() === b.getFullYear() &&
@@ -49,14 +61,53 @@
             this.input = input;
             this.popup = null;
             this.isOpen = false;
+            this._iso = input.value || '';
 
-            // Native date input-u text-ə çevir (value yenə yyyy-MM-dd qalır)
+            // Create a hidden companion that carries the ISO value for form
+            // submission. The visible input shows dd-MM-yyyy; external JS can
+            // still read/write ISO via `input.value` (overridden below).
+            this.hidden = null;
+            if (input.name) {
+                this.hidden = document.createElement('input');
+                this.hidden.type = 'hidden';
+                this.hidden.name = input.name;
+                this.hidden.value = this._iso;
+                input.removeAttribute('name');
+                if (input.parentNode) {
+                    input.parentNode.insertBefore(this.hidden, input.nextSibling);
+                }
+            }
+
+            // Native date input-u text-ə çevir, display dd-MM-yyyy
             if (input.type === 'date') {
                 input.type = 'text';
                 input.setAttribute('readonly', 'readonly');
                 input.autocomplete = 'off';
-                input.placeholder = 'yyyy-mm-dd';
+                input.placeholder = 'gg-aa-iiii';
                 input.classList.add('fn-dp-input');
+            }
+
+            // Seed display with formatted initial value
+            NATIVE_VALUE.set.call(input, isoToDisplay(this._iso));
+
+            // Override .value on the instance: external code sees ISO
+            // (yyyy-MM-dd) while the visible text stays dd-MM-yyyy.
+            const self = this;
+            Object.defineProperty(input, 'value', {
+                configurable: true,
+                get() {
+                    return self._iso;
+                },
+                set(v) {
+                    self._setValue(v || '');
+                }
+            });
+
+            // Keep display in sync if the form is reset
+            if (input.form) {
+                input.form.addEventListener('reset', () => {
+                    setTimeout(() => self._setValue(''), 0);
+                });
             }
 
             this.input.addEventListener('click', (e) => {
@@ -64,6 +115,13 @@
                 this.open();
             });
             this.input.addEventListener('focus', () => this.open());
+        }
+
+        _setValue(iso) {
+            // Accept either ISO yyyy-MM-dd or empty.
+            this._iso = iso || '';
+            if (this.hidden) this.hidden.value = this._iso;
+            NATIVE_VALUE.set.call(this.input, isoToDisplay(this._iso));
         }
 
         open() {
@@ -100,8 +158,6 @@
             this.popup = document.createElement('div');
             this.popup.className = 'fn-dp-popup';
             this.popup.addEventListener('click', (e) => e.stopPropagation());
-            // Prevent focus-stealing scroll inside the modal when clicking nav/cells
-            this.popup.addEventListener('mousedown', (e) => e.preventDefault());
 
             // Header
             const head = document.createElement('div');
@@ -139,7 +195,7 @@
             clearBtn.className = 'fn-dp-clear-btn';
             clearBtn.textContent = 'Təmizlə';
             clearBtn.onclick = () => {
-                this.input.value = '';
+                this._setValue('');
                 this.input.dispatchEvent(new Event('change', { bubbles: true }));
                 this.close();
             };
@@ -148,7 +204,7 @@
             todayBtn.className = 'fn-dp-today-btn';
             todayBtn.textContent = 'Bu gün';
             todayBtn.onclick = () => {
-                this.input.value = toISO(new Date());
+                this._setValue(toISO(new Date()));
                 this.input.dispatchEvent(new Event('change', { bubbles: true }));
                 this.close();
             };
@@ -217,7 +273,7 @@
                 if (sameDay(dateObj, selected)) cell.classList.add('fn-dp-selected');
 
                 cell.addEventListener('click', () => {
-                    this.input.value = toISO(dateObj);
+                    this._setValue(toISO(dateObj));
                     this.input.dispatchEvent(new Event('change', { bubbles: true }));
                     this.input.dispatchEvent(new Event('input', { bubbles: true }));
                     this.close();
