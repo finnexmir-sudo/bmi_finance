@@ -923,18 +923,26 @@ namespace FinNex.Application.Services.HR
                 .ToList();
             decimal firstBracketMax = gvPilleleri.FirstOrDefault()?.YuxariHedd ?? 2500m;
 
-            // İşçi güzəşti — isciId verilibsə, aktiv olan ən böyüyünü tap
+            // İşçi güzəşti — isciId verilibsə, aktiv olan ən böyüyünü tap.
+            //
+            // Vacib: filter ay sonu / ay əvvəli üzrə qurulur ki, ay ortasında təyin
+            // olunmuş güzəşt (məsələn 15.04 başlanır) həmin ay üçün qüvvədə sayılsın.
+            //   - Başlama tarixi ≤ AY SONU   (ay daxilində başlamış güzəşt sayılır)
+            //   - Bitmə tarixi   ≥ AY ƏVVƏLİ (ay daxilində bitmiş güzəşt də sayılır)
             decimal maxIsciGuzesti = 0m;
             string? isciGuzestAd = null;
             if (isciId.HasValue)
             {
+                var ayBaslangic = new DateTime(tarix.Year, tarix.Month, 1);
+                var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
+
                 var isciGuzestleri = await _unitOfWork.Repository<IsciGuzest>()
                     .Query()
                     .Where(x =>
                         !x.Silinib &&
                         x.IsciId == isciId.Value &&
-                        x.BaslamaTarixi <= tarix &&
-                        (x.BitmeTarixi == null || x.BitmeTarixi >= tarix))
+                        x.BaslamaTarixi <= ayBitis &&
+                        (x.BitmeTarixi == null || x.BitmeTarixi >= ayBaslangic))
                     .Include(x => x.Guzest)
                     .Where(x => x.Guzest != null && !x.Guzest.Silinib && x.Guzest.Aktivdir)
                     .ToListAsync();
