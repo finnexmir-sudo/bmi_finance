@@ -1,0 +1,148 @@
+@model List<FinNex.Domain.Entities.HR.Guzest>
+@{
+    ViewData["Title"] = "Vergi güzəştləri";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="gz-page">
+    <div class="gz-head">
+        <div>
+            <div class="gz-title">Vergi güzəştləri kataloqu</div>
+            <div class="gz-sub">Maaş hesablamasında istifadə olunan güzəştlərin siyahısı</div>
+        </div>
+        <a asp-action="Create" class="gz-btn gz-btn--primary">
+            <i class="bi bi-plus-lg"></i> Yeni güzəşt
+        </a>
+    </div>
+
+    <div class="gz-card">
+        @if (!Model.Any())
+        {
+            <div class="gz-empty">
+                <i class="bi bi-inbox"></i>
+                <p>Hələ güzəşt əlavə olunmayıb</p>
+            </div>
+        }
+        else
+        {
+            <table class="gz-table">
+                <thead>
+                    <tr>
+                        <th>Ad</th>
+                        <th class="gz-num">Məbləğ</th>
+                        <th>Maddə</th>
+                        <th>Status</th>
+                        <th class="gz-act">Əməliyyat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var g in Model)
+                    {
+                        <tr>
+                            <td><strong>@g.Ad</strong></td>
+                            <td class="gz-num">@g.Mebleg.ToString("N2") ₼</td>
+                            <td>@(g.Madde ?? "—")</td>
+                            <td>
+                                @if (g.Aktivdir)
+                                {
+                                    <span class="gz-status gz-status--ok">Aktiv</span>
+                                }
+                                else
+                                {
+                                    <span class="gz-status">Passiv</span>
+                                }
+                            </td>
+                            <td class="gz-act">
+                                <a asp-action="Edit" asp-route-id="@g.Id"
+                                   class="gz-btn gz-btn--outline gz-btn--sm">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@g.Id" method="post"
+                                      style="display:inline" onsubmit="return confirm('Güzəşti silmək istəyirsiniz?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="gz-btn gz-btn--danger gz-btn--sm">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+<style>
+    .gz-page { padding: 24px 28px; max-width: 1100px; margin: 0 auto; }
+    .gz-head {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 18px;
+    }
+    .gz-title { font-size: 1.35rem; font-weight: 800; color: #1a1d29; }
+    .gz-sub { font-size: 0.85rem; color: #8a93a8; margin-top: 2px; }
+
+    .gz-card {
+        background: #fff; border-radius: 14px;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 4px 18px rgba(15, 26, 46, .04);
+        overflow: hidden;
+    }
+    .gz-empty { padding: 50px; text-align: center; color: #8a93a8; }
+    .gz-empty i { font-size: 48px; display: block; margin-bottom: 10px; }
+
+    .gz-table { width: 100%; border-collapse: collapse; }
+    .gz-table thead th {
+        background: #f7f9fc; padding: 12px 16px;
+        font-size: 11px; font-weight: 800;
+        text-transform: uppercase;
+        color: #5a647a; letter-spacing: .4px;
+        border-bottom: 1px solid #eef0f5;
+        text-align: left;
+    }
+    .gz-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f3f7;
+        font-size: 13px; color: #1a2332;
+    }
+    .gz-table tbody tr:last-child td { border-bottom: none; }
+    .gz-table .gz-num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .gz-table .gz-act { text-align: right; width: 120px; white-space: nowrap; }
+
+    .gz-status {
+        display: inline-block; padding: 4px 10px;
+        border-radius: 999px; font-size: 11px; font-weight: 700;
+        background: #eef0f5; color: #5a647a;
+    }
+    .gz-status--ok { background: #d1fae5; color: #065f46; }
+
+    .gz-btn {
+        display: inline-flex; gap: 5px; align-items: center;
+        padding: 9px 16px; border-radius: 9px;
+        font-size: 13px; font-weight: 700;
+        text-decoration: none; border: none; cursor: pointer;
+        transition: all .15s; font-family: inherit;
+    }
+    .gz-btn--sm { padding: 6px 10px; font-size: 12px; }
+    .gz-btn--primary { background: #7c3aed; color: #fff; }
+    .gz-btn--primary:hover { background: #6b21a8; }
+    .gz-btn--outline { background: #fff; color: #3d4557; border: 1px solid #e2e6ef; }
+    .gz-btn--outline:hover { border-color: #7c3aed; color: #6b21a8; }
+    .gz-btn--danger { background: #fff; color: #dc2626; border: 1px solid #fecaca; }
+    .gz-btn--danger:hover { background: #fef2f2; }
+</style>

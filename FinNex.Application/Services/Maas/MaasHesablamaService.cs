@@ -330,23 +330,83 @@ namespace FinNex.Application.Services.HR
                 Tip = "melumati"
             });
 
-            // 9. Vergi guzesti
-            decimal vergilenecek = Math.Max(0, brutMaas - p.VergiGuzestiMeblegi);
-            izahatlar.Add(new HesablamaIzahiDto
-            {
-                Addim = "Vergi Guzesti",
-                Izah = $"Parametrden: {p.VergiGuzestiMeblegi:N2} AZN -- vergilerdirilecek: {vergilenecek:N2} AZN",
-                Mebleg = p.VergiGuzestiMeblegi,
-                Tip = "melumati"
-            });
-
-            // 10. Tutulmalar — pilləli (2026 qaydaları)
-            // VergiPille cədvəli varsa oradan hesabla, yoxdursa flat faiz fallback
+            // 9. Vergi pillələri — əvvəlcə gətiririk ki, standart 200 AZN güzəştin
+            //    tətbiq edilib-edilməyəcəyini (yalnız birinci pillə daxilindədirsə)
+            //    təyin etmək üçün birinci pillənin YuxariHedd-i məlum olsun.
             var pilleler = await _unitOfWork.Repository<VergiPille>()
                 .HamisiniGetirAsync(x =>
                     x.Aktivdir && !x.Silinib &&
                     x.BaslamaTarixi <= hesabTarixi &&
                     (x.BitmeTarixi == null || x.BitmeTarixi >= hesabTarixi));
+
+            var gvPilleleri = pilleler
+                .Where(x => x.Nov == MaasParametrNovu.GelirVergisiFaizi)
+                .OrderBy(x => x.AsagiHedd)
+                .ToList();
+            decimal firstBracketMax = gvPilleleri.FirstOrDefault()?.YuxariHedd ?? 2500m;
+
+            // 9.1 İşçiyə aid aktiv güzəştləri gətir (hesab tarixində qüvvədə olanlar)
+            //     Bir neçə güzəşt varsa, ən böyüyü götürülür (toplanmır — Madde 102).
+            var ayBitisTarixi = new DateTime(input.Il, input.Ay, 1).AddMonths(1).AddDays(-1);
+            var isciGuzestleri = await _unitOfWork.Repository<IsciGuzest>()
+                .Query()
+                .Where(x =>
+                    !x.Silinib &&
+                    x.IsciId == input.IsciId &&
+                    x.BaslamaTarixi <= ayBitisTarixi &&
+                    (x.BitmeTarixi == null || x.BitmeTarixi >= hesabTarixi))
+                .Include(x => x.Guzest)
+                .Where(x => x.Guzest != null && !x.Guzest.Silinib && x.Guzest.Aktivdir)
+                .ToListAsync();
+
+            decimal maxIsciGuzesti = 0;
+            string? maxIsciGuzestAd = null;
+            foreach (var ig in isciGuzestleri)
+            {
+                if (ig.Guzest.Mebleg > maxIsciGuzesti)
+                {
+                    maxIsciGuzesti = ig.Guzest.Mebleg;
+                    maxIsciGuzestAd = ig.Guzest.Ad;
+                }
+            }
+
+            if (isciGuzestleri.Any())
+            {
+                var siyahi = string.Join(", ",
+                    isciGuzestleri.Select(x => $"{x.Guzest.Ad} — {x.Guzest.Mebleg:N2} ₼"));
+                izahatlar.Add(new HesablamaIzahiDto
+                {
+                    Addim = "İşçi güzəştləri",
+                    Izah = $"Aktiv güzəştlər: {siyahi}. Seçilən (ən böyük): " +
+                           (maxIsciGuzestAd ?? "—"),
+                    Mebleg = maxIsciGuzesti,
+                    Tip = "melumati"
+                });
+            }
+
+            // 9.2 Standart 200 AZN güzəşti yalnız brut birinci pillə içindədirsə tətbiq olunur.
+            //     (Brüt > 2500 olduqda 200 “gedir” — yəni yalnız pilləli vergi tətbiq olunur.)
+            decimal standartGuzest = brutMaas <= firstBracketMax ? p.VergiGuzestiMeblegi : 0m;
+
+            decimal vergilenecek = Math.Max(0, brutMaas - standartGuzest - maxIsciGuzesti);
+
+            var vergiIzahHisseleri = new List<string> { $"Brüt: {brutMaas:N2}" };
+            if (standartGuzest > 0)
+                vergiIzahHisseleri.Add($"− Standart güzəşt: {standartGuzest:N2} (brüt ≤ {firstBracketMax:N0})");
+            else
+                vergiIzahHisseleri.Add(
+                    $"Brüt > {firstBracketMax:N0} — standart {p.VergiGuzestiMeblegi:N2} ₼ güzəşti tətbiq olunmur");
+            if (maxIsciGuzesti > 0)
+                vergiIzahHisseleri.Add($"− İşçi güzəşti: {maxIsciGuzesti:N2} ({maxIsciGuzestAd})");
+            vergiIzahHisseleri.Add($"= Vergilənəcək: {vergilenecek:N2}");
+
+            izahatlar.Add(new HesablamaIzahiDto
+            {
+                Addim = "Vergi Guzesti",
+                Izah = string.Join("  |  ", vergiIzahHisseleri),
+                Mebleg = standartGuzest + maxIsciGuzesti,
+                Tip = "melumati"
+            });
 
             decimal HesablaTutulma(decimal mebleg, MaasParametrNovu nov, decimal flatFaiz, out string izah)
             {
