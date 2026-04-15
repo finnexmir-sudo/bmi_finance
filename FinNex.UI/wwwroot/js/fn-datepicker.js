@@ -215,22 +215,34 @@
             // Fill month contents
             this._renderMonth();
 
-            // Position below input (once)
+            // Position above the input by default so the popup does not
+            // overflow the bottom of a modal; fall back to below if there
+            // is no room above.
             const rect = this.input.getBoundingClientRect();
             this.popup.style.position = 'fixed';
-            this.popup.style.top = (rect.bottom + 4) + 'px';
             this.popup.style.left = rect.left + 'px';
             this.popup.style.zIndex = '10000';
-
+            // Temporary top so we can measure height
+            this.popup.style.top = '0px';
             document.body.appendChild(this.popup);
 
-            // Ensure it's in viewport (once)
             const popupRect = this.popup.getBoundingClientRect();
+            const popupHeight = popupRect.height;
+            const gap = 6;
+
+            let top = rect.top - popupHeight - gap;
+            if (top < 8) {
+                // No room above → drop below input
+                top = rect.bottom + gap;
+            }
+            this.popup.style.top = top + 'px';
+
+            // Horizontal viewport clamp
             if (popupRect.right > window.innerWidth) {
                 this.popup.style.left = (window.innerWidth - popupRect.width - 8) + 'px';
             }
-            if (popupRect.bottom > window.innerHeight) {
-                this.popup.style.top = (rect.top - popupRect.height - 4) + 'px';
+            if (popupRect.left < 8) {
+                this.popup.style.left = '8px';
             }
         }
 
