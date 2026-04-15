@@ -76,11 +76,15 @@ namespace FinNex.UI.Areas.User.Controllers
 
             foreach (var s in hesablama.AySliceleri)
             {
-                decimal kesinti = (cariMaas > 0 && s.AyIsGun > 0 && s.IsGun > 0)
-                    ? Math.Round(cariMaas / s.AyIsGun * s.IsGun, 2)
+                // İşlənmiş iş günləri = ayın iş günü − məzuniyyət iş günü.
+                // Maaşın iş günü hissəsi = baza / ayIsGun × işlənmiş gün.
+                int islenmisIsGun = Math.Max(0, s.AyIsGun - s.IsGun);
+                decimal islenmisMaas = (cariMaas > 0 && s.AyIsGun > 0)
+                    ? Math.Round(cariMaas / s.AyIsGun * islenmisIsGun, 2)
                     : 0;
+                decimal kesinti = Math.Max(0, cariMaas - islenmisMaas); // geri uyğunluq üçün
                 decimal odenisPay = qabaqcadan ? 0 : s.Secilen;
-                decimal ayBrut = Math.Max(0, cariMaas - kesinti + odenisPay);
+                decimal ayBrut = islenmisMaas + odenisPay;
 
                 var ayTax = await _maasHesablamaService
                     .TutulmalariHesablaAsync(ayBrut, new DateTime(s.Il, s.Ay, 1));
@@ -93,6 +97,8 @@ namespace FinNex.UI.Areas.User.Controllers
                     teqvimGun = s.TeqvimGun,
                     isGun = s.IsGun,
                     ayIsGun = s.AyIsGun,
+                    islenmisIsGun,
+                    islenmisMaas,
                     mh = s.MH,
                     eh = s.EH,
                     secilen = s.Secilen,

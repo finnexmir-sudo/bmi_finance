@@ -284,6 +284,11 @@
                         }
                         .mp-ay-lines .mp-ay-lbl { color: #5a647a; }
                         .mp-ay-lines .mp-ay-val { font-weight: 700; }
+                        .mp-ay-sep {
+                            grid-column: 1 / -1;
+                            border-top: 1px dashed #ede7fa;
+                            margin: 4px 0 2px;
+                        }
                         .mp-ay-net {
                             margin-top: 6px;
                             padding-top: 6px;
@@ -537,20 +542,21 @@
                                 ? 'MH üstün (tarixi orta)'
                                 : 'ƏH üstün (cari maaş)';
                             const odenisLine = data.qabaqcadan
-                                ? `<span class="mp-ay-lbl">Ay sonu məzuniyyət ödənişi</span><span class="mp-ay-val" style="color:#8a93a8">— (qabaqcadan ayrıca)</span>`
-                                : `<span class="mp-ay-lbl">+ Məzuniyyət ödənişi (maaşa əlavə)</span><span class="mp-ay-val" style="color:#1e9b6b">+ ${fmt(ay.odenisPay)}</span>`;
+                                ? `<span class="mp-ay-lbl">Məzuniyyət ödənişi (${ay.isGun} iş günü)</span><span class="mp-ay-val" style="color:#8a93a8">qabaqcadan ayrıca</span>`
+                                : `<span class="mp-ay-lbl">+ Məzuniyyət ödənişi (${ay.isGun} iş günü)</span><span class="mp-ay-val" style="color:#1e9b6b">+ ${fmt(ay.odenisPay)}</span>`;
                             card.innerHTML = `
                                 <div class="mp-ay-title">
                                     <span>${ay.ayAdi}</span>
-                                    <span class="mp-ay-days">${ay.teqvimGun} tq / ${ay.isGun} iş gün</span>
+                                    <span class="mp-ay-days">${ay.ayIsGun} iş günündən ${ay.islenmisIsGun} işlənir, ${ay.isGun} məzuniyyət</span>
                                 </div>
                                 <div class="mp-ay-lines">
                                     <span class="mp-ay-lbl">MH = S / 12 / 30.4 × ${ay.teqvimGun}</span><span class="mp-ay-val">${fmt(ay.mh)}</span>
                                     <span class="mp-ay-lbl">ƏH = Maaş / ${ay.ayIsGun} × ${ay.isGun}</span><span class="mp-ay-val">${fmt(ay.eh)}</span>
-                                    <span class="mp-ay-lbl">Seçilən (MAX)</span><span class="mp-ay-val">${fmt(ay.secilen)} — ${qalibTxt}</span>
-                                    <span class="mp-ay-lbl" title="Məzuniyyət günləri iş günü sayılmır — həmin günlər üçün baza maaşdan çıxılır">− Baza maaşdan məzuniyyət kəsintisi <i class="bi bi-info-circle" style="opacity:.5"></i></span><span class="mp-ay-val" style="color:#d43f3f">− ${fmt(ay.kesinti)}</span>
+                                    <span class="mp-ay-lbl">Seçilən məzuniyyət ödənişi (MAX)</span><span class="mp-ay-val">${fmt(ay.secilen)} — ${qalibTxt}</span>
+                                    <span class="mp-ay-sep"></span>
+                                    <span class="mp-ay-lbl">İşlənmiş günlər üçün maaş (${Number(data.cariMaas).toFixed(0)} / ${ay.ayIsGun} × ${ay.islenmisIsGun})</span><span class="mp-ay-val">${fmt(ay.islenmisMaas)}</span>
                                     ${odenisLine}
-                                    <span class="mp-ay-lbl">Bu ayın brüt məbləği</span><span class="mp-ay-val">${fmt(ay.ayBrut)}</span>
+                                    <span class="mp-ay-lbl"><strong>= Bu ayın brüt məbləği</strong></span><span class="mp-ay-val"><strong>${fmt(ay.ayBrut)}</strong></span>
                                     <span class="mp-ay-lbl">− Tutulmalar (vergi + DSMF + İTSS + işsizlik)</span><span class="mp-ay-val" style="color:#d43f3f">− ${fmt(ay.tutulmalarCemi)}</span>
                                 </div>
                                 <div class="mp-ay-net">
