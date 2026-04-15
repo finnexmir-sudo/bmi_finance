@@ -311,15 +311,24 @@
 
                                 @* ── Main row ──────────────────────────────── *@
                                 @{
-                                    var isciGuzestMap = ViewBag.IsciGuzestMap as Dictionary<int, FinNex.Domain.Entities.HR.IsciGuzest>;
-                                    FinNex.Domain.Entities.HR.IsciGuzest? isciGuzest = null;
-                                    isciGuzestMap?.TryGetValue(isci.Id, out isciGuzest);
-                                    var isciGuzestMebleg = isciGuzest?.Guzest?.Mebleg ?? 0m;
-                                    var isciGuzestAd = isciGuzest?.Guzest?.Ad ?? "";
+                                    decimal isciGuzestMebleg = 0m;
+                                    string isciGuzestAd = "";
+                                    var _igMap = ViewBag.IsciGuzestMap as Dictionary<int, FinNex.Domain.Entities.HR.IsciGuzest>;
+                                    if (_igMap != null && _igMap.ContainsKey(isci.Id))
+                                    {
+                                        var _ig = _igMap[isci.Id];
+                                        if (_ig != null && _ig.Guzest != null)
+                                        {
+                                            isciGuzestMebleg = _ig.Guzest.Mebleg;
+                                            isciGuzestAd = _ig.Guzest.Ad ?? "";
+                                        }
+                                    }
+                                    var isciGuzestMeblegStr = isciGuzestMebleg.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                    var isciGuzestAdParen = isciGuzestAd.Length > 0 ? "(" + isciGuzestAd + ")" : "";
                                 }
                                 <tr data-isci="@isci.Id"
                                     data-esas="@esas.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
-                                    data-isci-guzest="@isciGuzestMebleg.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-isci-guzest="@isciGuzestMeblegStr"
                                     data-isci-guzest-ad="@isciGuzestAd"
                                     class="mth-row @(isDone ? "done" : "")">
 
@@ -452,10 +461,7 @@
                                                         <div class="mth-detail-item">
                                                             <span class="mth-detail-lbl">
                                                                 İşçi güzəşti
-                                                                @if (!string.IsNullOrEmpty(isciGuzestAd))
-                                                                {
-                                                                    <small style="opacity:.7">(@isciGuzestAd)</small>
-                                                                }
+                                                                <small style="opacity:.7">@isciGuzestAdParen</small>
                                                             </span>
                                                             <span class="n n--g" data-p="isciguzest">—</span>
                                                         </div>
