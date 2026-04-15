@@ -18,15 +18,24 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         public int UmumiTeqvimGun { get; set; }  // GS (cəmi, bütün period)
         public int UmumiIsGun { get; set; }      // İGS (cəmi)
 
-        // Son 12 ayın cəmi qazancı və qeyd sayı (S)
+        // Son 12 ayın cəmi qazancı (xam) və qeyd sayı (S_xam)
         public decimal Son12AyCemi { get; set; }
         public int Son12AyQeydSayi { get; set; }
+
+        // Son 12 ayın DÜZƏLMİŞ (K əmsallı) cəmi — MH formulunda istifadə olunan S
+        public decimal Son12AyDuzelmisCemi { get; set; }
 
         // Cari maaş (IsciMaliye.CariMaas)
         public decimal CariMaas { get; set; }
 
         // Nəticə məbləği (ümumi advance məbləği)
         public decimal CemiOdenis { get; set; }
+
+        // Son 12 ayın artım əmsalları cədvəli (Muhasib Detail səhifəsində göstərmək üçün)
+        public List<QazancEmsalSliceDto> QazancEmsallari { get; set; } = new();
+
+        // Maaş tarixçəsində boşluq aşkar olunubsa — xəbərdarlıq mesajları
+        public List<string> TarixceXeberdarliqlari { get; set; } = new();
 
         // Hər ay üçün ayrıca hesablama (məzuniyyət iki aya düşdükdə hər ikisi görünür)
         public List<MezuniyyetOdenisAySliceDto> AySliceleri { get; set; } = new();
@@ -55,6 +64,22 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         // MAX(MH, ƏH) — bu ay üçün seçilən məbləğ
         public decimal Secilen { get; set; }
         public string Qalib { get; set; } = "MH"; // MH / ƏH (hansı böyükdür)
+    }
+
+    /// <summary>
+    /// Son 12 ayın qazancları üçün artım əmsalı (K) cədvəlinin bir sətri.
+    /// K_i = CariStatMaas / StatMaas_i. Məzuniyyət pulunun MH hissəsi
+    /// düzəlmiş cəm üzrə hesablanır.
+    /// </summary>
+    public class QazancEmsalSliceDto
+    {
+        public int Il { get; set; }
+        public int Ay { get; set; }
+        public string AyAdi { get; set; } = string.Empty;
+        public decimal StatMaas { get; set; }         // O ayın sonundakı ştat maaşı
+        public decimal Qazanc { get; set; }           // Faktiki qazanc (IsciAyliqQazanc)
+        public decimal Emsal { get; set; }            // K_i = CariStat / StatMaas_i (>= 1)
+        public decimal DuzelmisQazanc { get; set; }   // Qazanc × Emsal
     }
 
     /// <summary>

@@ -143,11 +143,21 @@ namespace FinNex.UI.Areas.User.Controllers
                 isGun = hesablama.UmumiIsGun,
                 cariMaas,
                 S = hesablama.Son12AyCemi,
+                sDuzelmis = hesablama.Son12AyDuzelmisCemi,
                 qeydSayi = hesablama.Son12AyQeydSayi,
                 cemiOdenis = hesablama.CemiOdenis,
                 odenisTipi,
                 qabaqcadan,
                 aylar = ayProjections,
+                emsalCedveli = hesablama.QazancEmsallari.Select(k => new
+                {
+                    ayAdi = k.AyAdi,
+                    statMaas = k.StatMaas,
+                    qazanc = k.Qazanc,
+                    emsal = k.Emsal,
+                    duzelmisQazanc = k.DuzelmisQazanc
+                }),
+                tarixceXeberdarliqlari = hesablama.TarixceXeberdarliqlari,
                 ayBrutCemi,
                 ayTutulmaCemi,
                 ayNetCemi,
