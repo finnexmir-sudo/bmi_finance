@@ -117,6 +117,45 @@
                                 </div>
                             </div>
 
+                            @* Tarixçə xəbərdarlığı (boşluq varsa) *@
+                            <div class="mez-preview-warn" id="mpTarixceWarn" style="display:none;">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <span id="mpTarixceWarnText"></span>
+                            </div>
+
+                            @* Son 12 ay düzəlmiş qazanc cədvəli (qatlanan) *@
+                            <details class="mp-emsal-details">
+                                <summary>
+                                    <i class="bi bi-graph-up-arrow"></i>
+                                    Son 12 ayın artım əmsallı cəmi qazancı (S)
+                                    <span class="mp-emsal-sum" id="mpEmsalCemi">—</span>
+                                </summary>
+                                <div class="mp-emsal-body">
+                                    <p class="mp-emsal-hint">
+                                        Hər ay üçün K = Cari ştat maaşı / O aydaki ştat maaşı (yalnız artım).
+                                        Köhnə aylar bu günkü səviyyəyə qaldırılır və düzəlmiş cəm MH-da istifadə olunur.
+                                    </p>
+                                    <table class="mp-emsal-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Ay</th>
+                                                <th class="mp-num">Ştat maaşı</th>
+                                                <th class="mp-num">Qazanc</th>
+                                                <th class="mp-num">K</th>
+                                                <th class="mp-num">Düzəlmiş qazanc</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="mpEmsalBody"></tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="4" class="mp-num"><strong>Cəmi S (düzəlmiş)</strong></td>
+                                                <td class="mp-num"><strong id="mpEmsalCemi2">—</strong></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </details>
+
                             <div class="mez-preview-aylar" id="mpAylar"></div>
 
                             <div class="mez-preview-totals" id="mpTotals">
@@ -330,6 +369,67 @@
                         .mp-trow--gold .mp-tval { color: #c9900a; font-weight: 900; font-size: 16px; }
                         .mp-trow--advance { background: #f5f3ff; padding-left: 8px; padding-right: 8px; border-radius: 6px; }
                         .mp-trow--advance .mp-tval { color: #6b21a8; }
+
+                        /* Son 12 ay artım əmsalı cədvəli */
+                        .mp-emsal-details {
+                            margin-bottom: 14px;
+                            background: #fcfaff;
+                            border: 1px solid #ede7fa;
+                            border-radius: 10px;
+                            overflow: hidden;
+                        }
+                        .mp-emsal-details summary {
+                            padding: 10px 14px;
+                            cursor: pointer;
+                            font-size: 12px;
+                            font-weight: 700;
+                            color: #6b21a8;
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                            list-style: none;
+                        }
+                        .mp-emsal-details summary::-webkit-details-marker { display: none; }
+                        .mp-emsal-details summary::after {
+                            content: "▾";
+                            margin-left: auto;
+                            opacity: .5;
+                            transition: transform .15s;
+                        }
+                        .mp-emsal-details[open] summary::after { transform: rotate(180deg); }
+                        .mp-emsal-sum { margin-left: auto; color: #1a2332; font-weight: 800; }
+                        .mp-emsal-body { padding: 10px 14px 14px; border-top: 1px dashed #ede7fa; }
+                        .mp-emsal-hint {
+                            margin: 0 0 10px;
+                            font-size: 11px;
+                            color: #5a647a;
+                            line-height: 1.5;
+                        }
+                        .mp-emsal-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            font-size: 11.5px;
+                        }
+                        .mp-emsal-table th {
+                            text-align: left;
+                            padding: 6px 8px;
+                            color: #5a647a;
+                            font-weight: 800;
+                            text-transform: uppercase;
+                            font-size: 10px;
+                            border-bottom: 1px solid #ede7fa;
+                        }
+                        .mp-emsal-table td {
+                            padding: 5px 8px;
+                            border-bottom: 1px solid #f6f2fd;
+                        }
+                        .mp-emsal-table .mp-num { text-align: right; font-variant-numeric: tabular-nums; }
+                        .mp-emsal-table tfoot td {
+                            border-top: 1.5px solid #d8b4fe;
+                            border-bottom: none;
+                            padding-top: 8px;
+                            color: #6b21a8;
+                        }
                         .mp-thint {
                             margin-top: 8px;
                             padding: 6px 10px;
@@ -531,6 +631,35 @@
                         document.getElementById('mpTeqvimGun').textContent = data.teqvimGun + ' gün';
                         document.getElementById('mpIsGun').textContent = data.isGun + ' gün';
                         document.getElementById('mpCariMaas').textContent = fmt(data.cariMaas);
+
+                        // Tarixçə xəbərdarlıqları
+                        const tWarn = document.getElementById('mpTarixceWarn');
+                        const tWarnText = document.getElementById('mpTarixceWarnText');
+                        if (data.tarixceXeberdarliqlari && data.tarixceXeberdarliqlari.length > 0) {
+                            tWarn.style.display = 'flex';
+                            tWarnText.textContent = data.tarixceXeberdarliqlari.join(' ');
+                        } else {
+                            tWarn.style.display = 'none';
+                        }
+
+                        // Artım əmsalı cədvəli
+                        document.getElementById('mpEmsalCemi').textContent = fmt(data.sDuzelmis);
+                        document.getElementById('mpEmsalCemi2').textContent = fmt(data.sDuzelmis);
+                        const emsalBody = document.getElementById('mpEmsalBody');
+                        emsalBody.innerHTML = '';
+                        (data.emsalCedveli || []).forEach(r => {
+                            const tr = document.createElement('tr');
+                            const kTxt = r.emsal > 1 ? `×${r.emsal.toFixed(4)}` : '1.0000';
+                            const kStyle = r.emsal > 1 ? 'color:#1e9b6b;font-weight:800' : 'color:#8a93a8';
+                            tr.innerHTML = `
+                                <td>${r.ayAdi}</td>
+                                <td class="mp-num">${fmt(r.statMaas)}</td>
+                                <td class="mp-num">${fmt(r.qazanc)}</td>
+                                <td class="mp-num" style="${kStyle}">${kTxt}</td>
+                                <td class="mp-num"><strong>${fmt(r.duzelmisQazanc)}</strong></td>
+                            `;
+                            emsalBody.appendChild(tr);
+                        });
 
                         // Per-month cards
                         const aylarEl = document.getElementById('mpAylar');

@@ -56,13 +56,22 @@
             <div class="mod-card-title"><i class="bi bi-info-circle"></i> Hesablama göstəriciləri</div>
             <div class="mod-kv">
                 <span>Cari maaş</span><strong>@Model.CariMaas.ToString("N2") ₼</strong>
-                <span>Son 12 ay cəmi (S)</span>
+                <span>Son 12 ay xam cəmi</span>
                 <strong>
                     @Model.Son12AyCemi.ToString("N2") ₼
                     <small class="mod-muted">(@Model.Son12AyQeydSayi / 12 qeyd)</small>
                 </strong>
-                <span>Formula</span><strong class="mod-mono">MAX(S/12/30.4×GS, Maaş/AyİşGün×İGS)</strong>
+                <span>Son 12 ay düzəlmiş cəmi (S — artım əmsallı)</span>
+                <strong class="mod-gold">@Model.Son12AyDuzelmisCemi.ToString("N2") ₼</strong>
+                <span>Formula</span><strong class="mod-mono">MAX(S_düzəlmiş/12/30.4×GS, Maaş/AyİşGün×İGS)</strong>
             </div>
+            @foreach (var xeb in Model.TarixceXeberdarliqlari)
+            {
+                <div class="mod-warn">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    @xeb
+                </div>
+            }
             @if (Model.Son12AyQeydSayi < 12)
             {
                 <div class="mod-warn">
@@ -70,6 +79,59 @@
                     Yalnız @Model.Son12AyQeydSayi / 12 ay qazanc tarixçəsi mövcuddur — MH
                     tarixi hissəsi qeyri-dəqiq ola bilər.
                 </div>
+            }
+        </div>
+
+        @* ── Artım əmsalı cədvəli ── *@
+        <div class="mod-card">
+            <div class="mod-card-title">
+                <i class="bi bi-graph-up-arrow"></i> Son 12 ayın artım əmsalı (K) cədvəli
+                <small class="mod-muted">K = Cari ştat maaşı / Ay_i ştat maaşı (yalnız artım)</small>
+            </div>
+            @if (!Model.QazancEmsallari.Any())
+            {
+                <div class="mod-muted">Qazanc qeydi yoxdur.</div>
+            }
+            else
+            {
+                <table class="mod-table">
+                    <thead>
+                        <tr>
+                            <th>Ay</th>
+                            <th class="mod-num">Həmin andaki ştat maaşı</th>
+                            <th class="mod-num">Faktiki qazanc</th>
+                            <th class="mod-num">K əmsalı</th>
+                            <th class="mod-num">Düzəlmiş qazanc</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var k in Model.QazancEmsallari)
+                        {
+                            <tr>
+                                <td><strong>@k.AyAdi</strong></td>
+                                <td class="mod-num">@k.StatMaas.ToString("N2")</td>
+                                <td class="mod-num">@k.Qazanc.ToString("N2")</td>
+                                <td class="mod-num">
+                                    @if (k.Emsal > 1m)
+                                    {
+                                        <strong style="color:#1e9b6b">×@k.Emsal.ToString("0.0000")</strong>
+                                    }
+                                    else
+                                    {
+                                        <span class="mod-muted">1.0000</span>
+                                    }
+                                </td>
+                                <td class="mod-num"><strong>@k.DuzelmisQazanc.ToString("N2")</strong></td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="mod-num"><strong>Cəmi S (düzəlmiş)</strong></td>
+                            <td class="mod-num mod-total">@Model.Son12AyDuzelmisCemi.ToString("N2") ₼</td>
+                        </tr>
+                    </tfoot>
+                </table>
             }
         </div>
 

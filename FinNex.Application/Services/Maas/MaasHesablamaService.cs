@@ -658,30 +658,23 @@ namespace FinNex.Application.Services.HR
             return await MezuniyyetOdenisiniHesablaV2Async(isciId, il, ay, teqvimGun, isGunSayi);
         }
 
-        // Əsas hesablama — həm GS, həm İGS qəbul edir
+        // Əsas hesablama — həm GS, həm İGS qəbul edir (artıq ARTIM ƏMSALLIDIR)
         public async Task<decimal> MezuniyyetOdenisiniHesablaV2Async(
             int isciId, int il, int ay, int teqvimGun, int isGun)
         {
             if (teqvimGun <= 0 && isGun <= 0) return 0;
 
-            // 1. Son 12 ay cəmi qazanc (IsciAyliqQazanc cədvəlindən)
-            var son12 = await _unitOfWork.Repository<IsciAyliqQazanc>()
-                .Query()
-                .Where(x => x.IsciId == isciId && !x.Silinib)
-                .OrderByDescending(x => x.Il * 12 + x.Ay)
-                .Take(12)
-                .ToListAsync();
-
-            decimal S = son12.Sum(x => x.Qazanc);
-
-            // 2. Cari maaş
+            // 1. Cari maaş
             decimal cariMaas = (await _unitOfWork.Repository<IsciMaliye>()
                 .GetirAsync(x => x.IsciId == isciId))?.CariMaas ?? 0;
+
+            // 2. Son 12 ay qazancları + artım əmsalı (K) ilə düzəlmiş cəm
+            decimal S = await Son12AyDuzelmisCeminiHesablaAsync(isciId, cariMaas);
 
             // 3. Cari ayın iş gün sayı
             int ayIsGun = await AyinIsGunleriniHesablaAsync(il, ay);
 
-            // 4. MH = S / 12 / 30.4 × GS  (təqvim günü əsaslı tarixi orta)
+            // 4. MH = S_düzəlmiş / 12 / 30.4 × GS
             decimal MH = 0;
             if (S > 0 && teqvimGun > 0)
             {
@@ -697,6 +690,37 @@ namespace FinNex.Application.Services.HR
 
             // 6. MAX(MH, ƏH)
             return Math.Max(MH, EH);
+        }
+
+        /// <summary>
+        /// Son 12 ayın DÜZƏLMİŞ cəmi qazancı (artım əmsallı).
+        /// K_i = MAX(1.0, CariStatMaas / StatMaas_i) — yalnız maaş artımı
+        /// köhnə ayları qaldırır; azalma halda əmsal 1.0 qalır.
+        /// </summary>
+        private async Task<decimal> Son12AyDuzelmisCeminiHesablaAsync(int isciId, decimal cariMaas)
+        {
+            var son12 = await _unitOfWork.Repository<IsciAyliqQazanc>()
+                .Query()
+                .Where(x => x.IsciId == isciId && !x.Silinib)
+                .OrderByDescending(x => x.Il * 12 + x.Ay)
+                .Take(12)
+                .ToListAsync();
+
+            decimal cemi = 0;
+            foreach (var q in son12)
+            {
+                var ayBitis = new DateTime(q.Il, q.Ay, 1).AddMonths(1).AddDays(-1);
+                decimal statMaas = await StatMaasiTarixeGoreTapAsync(isciId, ayBitis);
+                if (statMaas <= 0) statMaas = cariMaas;
+
+                decimal emsal = (statMaas > 0 && cariMaas > 0)
+                    ? cariMaas / statMaas
+                    : 1m;
+                if (emsal < 1m) emsal = 1m;
+
+                cemi += Math.Round(q.Qazanc * emsal, 2);
+            }
+            return cemi;
         }
 
         // ─────────────────────────────────────────────────────────
@@ -751,6 +775,55 @@ namespace FinNex.Application.Services.HR
                 DsmfIsegotürenFaizi = Get(MaasParametrNovu.DsmfIsegoturenFaizi, 22m),
                 IssizlikIsegotürenFaizi = Get(MaasParametrNovu.IssizlikIsegoturenFaizi, 0.5m),
             };
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // VERİLMİŞ TARİXDƏ STAT MAAŞINI TAP — IsciMaasTarixcesi-dən
+        //
+        // Məzuniyyət pulunun artım əmsallı (K) hesablanması üçün hər ayın
+        // sonunda işçinin həmin andaki ştat maaşı lazımdır.
+        //
+        // Məntiq:
+        //  1. IsciMaasTarixcesi-dən `DeyismeTarixi <= tarix` olan ən son qeydi
+        //     götür — onun `YeniMaas` həmin tarixdə qüvvədə olan maaşdır.
+        //  2. Əgər tarixdən əvvəl heç bir qeyd yoxdursa, amma tarixdən sonra
+        //     qeyd var — o qeydin `KohneMaas` həmin tarixdə qüvvədə olan
+        //     maaşdır (hələ dəyişməmiş dövr).
+        //  3. Heç bir qeyd yoxdursa (maaş heç vaxt dəyişməyib) — cari maaşı
+        //     (IsciMaliye.CariMaas) qaytar (K = 1.0 verəcək).
+        // ─────────────────────────────────────────────────────────
+        public async Task<decimal> StatMaasiTarixeGoreTapAsync(int isciId, DateTime tarix)
+        {
+            var repo = _unitOfWork.Repository<IsciMaasTarixcesi>();
+
+            // Tarixdən əvvəl (və ya bərabər) son dəyişiklik
+            var evvelki = (await repo
+                .HamisiniGetirAsync(
+                    x => x.IsciId == isciId &&
+                         !x.Silinib &&
+                         x.DeyismeTarixi <= tarix,
+                    izlemeden: true))
+                .OrderByDescending(x => x.DeyismeTarixi)
+                .FirstOrDefault();
+
+            if (evvelki != null) return evvelki.YeniMaas;
+
+            // Tarixdən sonra ilk dəyişiklik — o tarixdə KohneMaas qüvvədə idi
+            var sonraki = (await repo
+                .HamisiniGetirAsync(
+                    x => x.IsciId == isciId &&
+                         !x.Silinib &&
+                         x.DeyismeTarixi > tarix,
+                    izlemeden: true))
+                .OrderBy(x => x.DeyismeTarixi)
+                .FirstOrDefault();
+
+            if (sonraki != null) return sonraki.KohneMaas;
+
+            // Heç bir tarixçə qeydi yoxdur — maaş sabit qalıb
+            var maliye = await _unitOfWork.Repository<IsciMaliye>()
+                .GetirAsync(x => x.IsciId == isciId);
+            return maliye?.CariMaas ?? 0m;
         }
 
         // ─────────────────────────────────────────────────────────
@@ -827,17 +900,86 @@ namespace FinNex.Application.Services.HR
                 .GetirAsync(x => x.Id == isciId);
             result.IsciAdSoyad = isci?.TamAd ?? $"İşçi #{isciId}";
 
-            // Son 12 ayın cəmi qazancı (S)
-            decimal S = await _ayliqQazancService.Son12AyCemiQazancAsync(isciId);
-            int qeydSayi = await _ayliqQazancService.Son12AyQeydSayiAsync(isciId);
-            result.Son12AyCemi = S;
-            result.Son12AyQeydSayi = qeydSayi;
-
             // Cari maaş
             var maliye = await _unitOfWork.Repository<IsciMaliye>()
                 .GetirAsync(x => x.IsciId == isciId);
             decimal cariMaas = maliye?.CariMaas ?? 0;
             result.CariMaas = cariMaas;
+
+            // Son 12 ayın qazancları (ən yeni → ən köhnəyə doğru)
+            var son12Qazanc = await _unitOfWork.Repository<IsciAyliqQazanc>()
+                .Query()
+                .Where(x => x.IsciId == isciId && !x.Silinib)
+                .OrderByDescending(x => x.Il * 12 + x.Ay)
+                .Take(12)
+                .ToListAsync();
+
+            decimal Sxam = son12Qazanc.Sum(x => x.Qazanc);
+            result.Son12AyCemi = Sxam;
+            result.Son12AyQeydSayi = son12Qazanc.Count;
+
+            // Ay adları (aşağıda bir neçə yerdə lazım olacaq)
+            var azAyAdlari = new[]
+            {
+                "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+                "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"
+            };
+
+            // ──────────────────────────────────────────────────────
+            // ARTIM ƏMSALI (K) — hər ay üçün o aydaki ştat maaşına görə
+            //
+            //   K_i = CariStatMaas / StatMaas_i    (amma >= 1.0 — azalmalar köhnə qazancı
+            //                                       aşağı salmır, yalnız artım tətbiq olunur)
+            //   Qazanc_düzəlmiş_i = Qazanc_i × K_i
+            //   S_düzəlmiş = Σ Qazanc_düzəlmiş_i
+            // ──────────────────────────────────────────────────────
+            decimal sDuzelmis = 0;
+            foreach (var q in son12Qazanc.OrderBy(x => x.Il).ThenBy(x => x.Ay))
+            {
+                var ayBitis = new DateTime(q.Il, q.Ay, 1).AddMonths(1).AddDays(-1);
+                decimal statMaasOAyda = await StatMaasiTarixeGoreTapAsync(isciId, ayBitis);
+                if (statMaasOAyda <= 0) statMaasOAyda = cariMaas; // fallback
+
+                decimal emsal = (statMaasOAyda > 0 && cariMaas > 0)
+                    ? Math.Round(cariMaas / statMaasOAyda, 4)
+                    : 1m;
+                // Yalnız artım — azalma halda əmsal 1.0 qalır
+                if (emsal < 1m) emsal = 1m;
+
+                decimal duzelmis = Math.Round(q.Qazanc * emsal, 2);
+                sDuzelmis += duzelmis;
+
+                result.QazancEmsallari.Add(new QazancEmsalSliceDto
+                {
+                    Il = q.Il,
+                    Ay = q.Ay,
+                    AyAdi = $"{azAyAdlari[q.Ay]} {q.Il}",
+                    StatMaas = statMaasOAyda,
+                    Qazanc = q.Qazanc,
+                    Emsal = emsal,
+                    DuzelmisQazanc = duzelmis
+                });
+            }
+            result.Son12AyDuzelmisCemi = sDuzelmis;
+
+            // Tarixçə boşluq xəbərdarlığı
+            int noTarixceCount = await _unitOfWork.Repository<IsciMaasTarixcesi>()
+                .Query()
+                .CountAsync(x => x.IsciId == isciId && !x.Silinib);
+            if (noTarixceCount == 0 && son12Qazanc.Count > 0)
+            {
+                result.TarixceXeberdarliqlari.Add(
+                    "İşçi üçün IsciMaasTarixcesi-də heç bir qeyd yoxdur — bütün aylar üçün " +
+                    "əmsal 1.0 tətbiq olundu (maaş sabit qəbul edildi).");
+            }
+            else if (son12Qazanc.Count < 12)
+            {
+                result.TarixceXeberdarliqlari.Add(
+                    $"Yalnız {son12Qazanc.Count}/12 ay qazanc qeydi mövcuddur — MH dəqiq olmaya bilər.");
+            }
+
+            // MH formulu artıq DÜZƏLMİŞ S istifadə edir
+            decimal S = sDuzelmis;
 
             result.IzahatAddimlari.Add(
                 $"İşçi: {result.IsciAdSoyad}");
@@ -846,16 +988,15 @@ namespace FinNex.Application.Services.HR
             result.IzahatAddimlari.Add(
                 $"Cari maaş (IsciMaliye.CariMaas): {cariMaas:N2} ₼");
             result.IzahatAddimlari.Add(
-                $"Son 12 ayın cəmi qazancı (S): {S:N2} ₼ ({qeydSayi} qeyd üzrə)");
+                $"Son 12 ayın xam cəmi qazancı: {Sxam:N2} ₼ ({son12Qazanc.Count} qeyd üzrə)");
             result.IzahatAddimlari.Add(
-                "Formula (2026): MH = S / 12 / 30.4 × GS  |  ƏH = CariMaas / AyİşGün × İGS  →  Ödəniş = MAX(MH, ƏH)");
-
-            // Ayın bayram günləri lazım olacaq → per-month query cache-ləyək
-            var azAyAdlari = new[]
-            {
-                "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
-                "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"
-            };
+                "Artım əmsalı (K) tətbiq olundu — hər ay üçün K_i = Cari ştat maaşı / " +
+                "həmin aydaki ştat maaşı (maaş artıbsa). Köhnə aylar bu günkü səviyyəyə " +
+                "qaldırılır, azalma halda K=1.0 saxlanır.");
+            result.IzahatAddimlari.Add(
+                $"Son 12 ayın DÜZƏLMİŞ cəmi qazancı (S): {sDuzelmis:N2} ₼");
+            result.IzahatAddimlari.Add(
+                "Formula (2026): MH = S_düzəlmiş / 12 / 30.4 × GS  |  ƏH = CariMaas / AyİşGün × İGS  →  Ödəniş = MAX(MH, ƏH)");
 
             // Məzuniyyət periodunu aylar üzrə böl
             var cursorAy = new DateTime(baslama.Year, baslama.Month, 1);

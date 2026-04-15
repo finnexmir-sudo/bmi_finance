@@ -48,5 +48,12 @@ namespace FinNex.Application.Interfaces.Maas_If
         /// istifadə etdiyi eyni VergiPille/MaasParametri mənbəyindən.
         /// </summary>
         Task<MezuniyyetTutulmaDto> TutulmalariHesablaAsync(decimal brut, DateTime tarix);
+
+        /// <summary>
+        /// Verilmiş tarixdə işçinin ştat maaşını IsciMaasTarixcesi-dən tapır.
+        /// Məzuniyyət pulunun artım əmsalı (K_i = SonMaas / Ay_i_Maas) üçün
+        /// istifadə olunur.
+        /// </summary>
+        Task<decimal> StatMaasiTarixeGoreTapAsync(int isciId, DateTime tarix);
     }
 }
