@@ -63,20 +63,29 @@ namespace FinNex.UI.Areas.User.Controllers
             var hesablama = await _maasHesablamaService
                 .MezuniyyetOdenisiDetalliHesablaAsync(isciId.Value, baslama, bitme);
 
-            // Hər ay üçün gözlənilən maaşın sadə proyeksiyası:
-            //   base - (cariMaas / ayIsGun × bu ayın mez. iş günü)
-            //        + (əgər AySonuOdenis) həmin ayın MAX(MH, ƏH)
             decimal cariMaas = hesablama.CariMaas;
             bool qabaqcadan = odenisTipi == (int)MezuniyyetOdenisTipi.QabaqcadanOdenis;
 
-            var ayProjections = hesablama.AySliceleri.Select(s =>
+            // Hər ay üçün brüt (baza - məzuniyyət kəsintisi + (əgər ay sonu) məz. ödənişi),
+            // sonra tutulmalar və net. Qabaqcadan halında məzuniyyət ödənişi ayrıca
+            // hesablanır və ayrıca tutulmalara tabe olur.
+            var ayProjections = new List<object>();
+            decimal ayBrutCemi = 0;
+            decimal ayNetCemi = 0;
+            decimal ayTutulmaCemi = 0;
+
+            foreach (var s in hesablama.AySliceleri)
             {
                 decimal kesinti = (cariMaas > 0 && s.AyIsGun > 0 && s.IsGun > 0)
                     ? Math.Round(cariMaas / s.AyIsGun * s.IsGun, 2)
                     : 0;
                 decimal odenisPay = qabaqcadan ? 0 : s.Secilen;
-                decimal ayMaas = Math.Max(0, cariMaas - kesinti + odenisPay);
-                return new
+                decimal ayBrut = Math.Max(0, cariMaas - kesinti + odenisPay);
+
+                var ayTax = await _maasHesablamaService
+                    .TutulmalariHesablaAsync(ayBrut, new DateTime(s.Il, s.Ay, 1));
+
+                ayProjections.Add(new
                 {
                     il = s.Il,
                     ay = s.Ay,
@@ -90,14 +99,36 @@ namespace FinNex.UI.Areas.User.Controllers
                     qalib = s.Qalib,
                     kesinti,
                     odenisPay,
-                    ayMaas
-                };
-            }).ToList();
+                    ayBrut,
+                    gelirVergisi = ayTax.GelirVergisi,
+                    dsmfIsci = ayTax.DsmfIsci,
+                    issizlikIsci = ayTax.IssizlikIsci,
+                    itss = ayTax.Itss,
+                    tutulmalarCemi = ayTax.UmumiTutulma,
+                    ayNet = ayTax.Net
+                });
 
-            decimal ayMaasCemi = ayProjections.Sum(x => x.ayMaas);
-            decimal umumiYekun = qabaqcadan
-                ? ayMaasCemi + hesablama.CemiOdenis  // qabaqcadan ayrıca
-                : ayMaasCemi;                         // ay sonu — hər şey maaşın içində
+                ayBrutCemi += ayBrut;
+                ayNetCemi += ayTax.Net;
+                ayTutulmaCemi += ayTax.UmumiTutulma;
+            }
+
+            // Qabaqcadan ödəniş: ayrıca brüt → tutulmalar → net
+            decimal advanceBrut = 0;
+            decimal advanceTutulma = 0;
+            decimal advanceNet = 0;
+            if (qabaqcadan && hesablama.CemiOdenis > 0)
+            {
+                advanceBrut = hesablama.CemiOdenis;
+                var advTax = await _maasHesablamaService
+                    .TutulmalariHesablaAsync(advanceBrut, baslama);
+                advanceTutulma = advTax.UmumiTutulma;
+                advanceNet = advTax.Net;
+            }
+
+            decimal umumiNet = qabaqcadan
+                ? ayNetCemi + advanceNet
+                : ayNetCemi;
 
             return Json(new
             {
@@ -111,8 +142,13 @@ namespace FinNex.UI.Areas.User.Controllers
                 odenisTipi,
                 qabaqcadan,
                 aylar = ayProjections,
-                ayMaasCemi,
-                umumiYekun
+                ayBrutCemi,
+                ayTutulmaCemi,
+                ayNetCemi,
+                advanceBrut,
+                advanceTutulma,
+                advanceNet,
+                umumiNet
             });
         }
 

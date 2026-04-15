@@ -121,15 +121,23 @@
 
                             <div class="mez-preview-totals" id="mpTotals">
                                 <div class="mp-trow">
-                                    <span class="mp-tlbl">Cəmi məzuniyyət ödənişi</span>
-                                    <span class="mp-tval" id="mpCemiOdenis">—</span>
+                                    <span class="mp-tlbl">Ay maaşları — brüt (cəmi)</span>
+                                    <span class="mp-tval" id="mpAyBrutCemi">—</span>
                                 </div>
                                 <div class="mp-trow">
-                                    <span class="mp-tlbl">Məzuniyyət aylarının maaşı (cəmi)</span>
-                                    <span class="mp-tval" id="mpAyMaasCemi">—</span>
+                                    <span class="mp-tlbl">− Ay maaşları — tutulmalar (vergi, DSMF, İTSS, işsizlik)</span>
+                                    <span class="mp-tval" id="mpAyTutulmaCemi">—</span>
+                                </div>
+                                <div class="mp-trow">
+                                    <span class="mp-tlbl">Ay maaşları — net (cəmi)</span>
+                                    <span class="mp-tval" id="mpAyNetCemi">—</span>
+                                </div>
+                                <div class="mp-trow mp-trow--advance" id="mpAdvanceRow" style="display:none">
+                                    <span class="mp-tlbl">Qabaqcadan məzuniyyət ödənişi (net)</span>
+                                    <span class="mp-tval" id="mpAdvanceNet">—</span>
                                 </div>
                                 <div class="mp-trow mp-trow--gold">
-                                    <span class="mp-tlbl">Ümumi əlinizə çatan (təxmini)</span>
+                                    <span class="mp-tlbl">Ümumi əlinizə çatan (net, təxmini)</span>
                                     <span class="mp-tval" id="mpUmumiYekun">—</span>
                                 </div>
                                 <div class="mp-thint" id="mpHint"></div>
@@ -315,6 +323,8 @@
                         }
                         .mp-trow--gold .mp-tlbl { font-weight: 800; color: #6b21a8; }
                         .mp-trow--gold .mp-tval { color: #c9900a; font-weight: 900; font-size: 16px; }
+                        .mp-trow--advance { background: #f5f3ff; padding-left: 8px; padding-right: 8px; border-radius: 6px; }
+                        .mp-trow--advance .mp-tval { color: #6b21a8; }
                         .mp-thint {
                             margin-top: 8px;
                             padding: 6px 10px;
@@ -526,6 +536,9 @@
                             const qalibTxt = ay.qalib === 'MH'
                                 ? 'MH üstün (tarixi orta)'
                                 : 'ƏH üstün (cari maaş)';
+                            const odenisLine = data.qabaqcadan
+                                ? `<span class="mp-ay-lbl">Ay sonu məzuniyyət ödənişi</span><span class="mp-ay-val" style="color:#8a93a8">— (qabaqcadan ayrıca)</span>`
+                                : `<span class="mp-ay-lbl">+ Məzuniyyət ödənişi (maaşa əlavə)</span><span class="mp-ay-val" style="color:#1e9b6b">+ ${fmt(ay.odenisPay)}</span>`;
                             card.innerHTML = `
                                 <div class="mp-ay-title">
                                     <span>${ay.ayAdi}</span>
@@ -535,26 +548,44 @@
                                     <span class="mp-ay-lbl">MH = S / 12 / 30.4 × ${ay.teqvimGun}</span><span class="mp-ay-val">${fmt(ay.mh)}</span>
                                     <span class="mp-ay-lbl">ƏH = Maaş / ${ay.ayIsGun} × ${ay.isGun}</span><span class="mp-ay-val">${fmt(ay.eh)}</span>
                                     <span class="mp-ay-lbl">Seçilən (MAX)</span><span class="mp-ay-val">${fmt(ay.secilen)} — ${qalibTxt}</span>
-                                    <span class="mp-ay-lbl">Maaş kəsintisi</span><span class="mp-ay-val" style="color:#d43f3f">− ${fmt(ay.kesinti)}</span>
+                                    <span class="mp-ay-lbl" title="Məzuniyyət günləri iş günü sayılmır — həmin günlər üçün baza maaşdan çıxılır">− Baza maaşdan məzuniyyət kəsintisi <i class="bi bi-info-circle" style="opacity:.5"></i></span><span class="mp-ay-val" style="color:#d43f3f">− ${fmt(ay.kesinti)}</span>
+                                    ${odenisLine}
+                                    <span class="mp-ay-lbl">Bu ayın brüt məbləği</span><span class="mp-ay-val">${fmt(ay.ayBrut)}</span>
+                                    <span class="mp-ay-lbl">− Tutulmalar (vergi + DSMF + İTSS + işsizlik)</span><span class="mp-ay-val" style="color:#d43f3f">− ${fmt(ay.tutulmalarCemi)}</span>
                                 </div>
                                 <div class="mp-ay-net">
-                                    <span>Bu ayın təxmini maaşı${data.qabaqcadan ? ' (ödəniş ayrıca)' : ''}</span>
-                                    <span class="mp-ay-net-val">${fmt(ay.ayMaas)}</span>
+                                    <span>Bu ayın net maaşı${data.qabaqcadan ? ' (məz. ödənişi ayrıca)' : ''}</span>
+                                    <span class="mp-ay-net-val">${fmt(ay.ayNet)}</span>
                                 </div>
                             `;
                             aylarEl.appendChild(card);
                         });
 
-                        document.getElementById('mpCemiOdenis').textContent = fmt(data.cemiOdenis);
-                        document.getElementById('mpAyMaasCemi').textContent = fmt(data.ayMaasCemi);
-                        document.getElementById('mpUmumiYekun').textContent = fmt(data.umumiYekun);
+                        document.getElementById('mpAyBrutCemi').textContent = fmt(data.ayBrutCemi);
+                        document.getElementById('mpAyTutulmaCemi').textContent = '− ' + fmt(data.ayTutulmaCemi);
+                        document.getElementById('mpAyNetCemi').textContent = fmt(data.ayNetCemi);
+                        document.getElementById('mpUmumiYekun').textContent = fmt(data.umumiNet);
+
+                        const advRow = document.getElementById('mpAdvanceRow');
+                        if (data.qabaqcadan) {
+                            advRow.style.display = 'flex';
+                            document.getElementById('mpAdvanceNet').textContent =
+                                fmt(data.advanceNet) + ` (brüt ${fmt(data.advanceBrut)} − tutulmalar ${fmt(data.advanceTutulma)})`;
+                        } else {
+                            advRow.style.display = 'none';
+                        }
 
                         const hint = document.getElementById('mpHint');
                         if (data.qabaqcadan) {
-                            hint.textContent = 'Qabaqcadan ödəniş: HR təsdiqindən sonra Mühasib ' +
-                                'məzuniyyət pulunu ayrıca ödəyir; qeyd olunan ayların maaşında yalnız iş günü kəsintisi tətbiq olunur.';
+                            hint.innerHTML = '<strong>Qabaqcadan ödəniş:</strong> HR təsdiqindən sonra Mühasib ' +
+                                'məzuniyyət ödənişini ayrıca edir. Qeyd olunan ayların maaşında yalnız məzuniyyət iş günü ' +
+                                'kəsintisi tətbiq olunur — yəni ümumi əlinizə <em>iki ayrı ödəniş</em> (ay maaşları net + ' +
+                                'məzuniyyət ödənişi net) kimi gəlir. Bütün rəqəmlər 2026 vergi pillələri, DSMF, İTSS və ' +
+                                'işsizlik sığortası nəzərə alınmaqla təxmini hesablanıb — real maaşda əlavə düzəlişlər ola bilər.';
                         } else {
-                            hint.textContent = 'Ay sonu ödəniş: məzuniyyət pulu həmin ayın maaşına daxildir və tutulmalardan sonra birgə ödənilir.';
+                            hint.innerHTML = '<strong>Ay sonu ödəniş:</strong> məzuniyyət pulu həmin ayın brüt maaşına daxil ' +
+                                'edilir, sonra vergi və tutulmalar tətbiq olunub net ödənilir. Bütün rəqəmlər 2026 vergi ' +
+                                'pillələri, DSMF, İTSS və işsizlik sığortası nəzərə alınmaqla təxmini hesablanıb.';
                         }
 
                         // Xəbərdarlıq: az qeyd
