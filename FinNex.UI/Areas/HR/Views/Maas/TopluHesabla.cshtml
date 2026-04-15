@@ -11,6 +11,7 @@
     var ibanMap      = ViewBag.IbanMap as Dictionary<int, string?> ?? new Dictionary<int, string?>();
     var vergiPilleleriList = (ViewBag.VergiPilleleri as List<VergiPille>) ?? new();
     var vergiGuzestiDeyer  = (decimal)(ViewBag.VergiGuzesti ?? 200m);
+    var firstBracketMax    = (decimal)(ViewBag.FirstBracketMax ?? 2500m);
     var isciList     = Model.ToList();
 
     decimal GetEsas(int isciId) => cariMaasMap.TryGetValue(isciId, out var v) ? v : (isciList.FirstOrDefault(x => x.Id == isciId)?.Maliye?.CariMaas ?? 0m);
@@ -244,7 +245,8 @@
             <div class="mth-card">
 
                 @* Toolbar *@
-                <div class="mth-toolbar">
+                <div class="mth-toolbar"
+                     data-first-bracket-max="@firstBracketMax.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)">
                     <div class="mth-toolbar-left">
                         <label class="mth-chk-wrap">
                             <input type="checkbox" class="mth-checkbox" id="mthChkAll"/>
@@ -252,8 +254,19 @@
                         </label>
                         <div class="mth-sel-chip" id="mthSelChip"></div>
                     </div>
+                    <div class="mth-toolbar-center" style="flex:1;display:flex;justify-content:center;padding:0 12px;">
+                        <div class="mth-search">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                <circle cx="6" cy="6" r="4.3" stroke="#8a93a8" stroke-width="1.3"/>
+                                <path d="M9.2 9.2L12 12" stroke="#8a93a8" stroke-width="1.3" stroke-linecap="round"/>
+                            </svg>
+                            <input type="text" id="mthSearchBox" class="mth-search-input"
+                                   placeholder="Ad və ya departament ilə axtar..." autocomplete="off" />
+                            <button type="button" id="mthSearchClear" class="mth-search-clear" aria-label="Təmizlə" title="Təmizlə">×</button>
+                        </div>
+                    </div>
                     <div class="mth-toolbar-right">
-                        <span style="font-size:12px;color:#8a93a8;font-weight:500;">@isciList.Count işçi</span>
+                        <span style="font-size:12px;color:#8a93a8;font-weight:500;" id="mthIsciCount">@isciList.Count işçi</span>
                         @* "Seçilənləri Hesabla" düyməsi müvəqqəti gizlədilib — alt footer-dəki 'Hamısını Hesabla' eyni işi görür.
                            JS-in btnCalc-a ehtiyacı olduğu üçün DOM-da qalır (display:none). *@
                         <button type="button" id="mthBtnCalc" disabled class="mth-btn mth-btn--gold" style="display:none;">
@@ -297,8 +310,17 @@
                                 var hasIban = !string.IsNullOrEmpty(GetIban(isci.Id));
 
                                 @* ── Main row ──────────────────────────────── *@
+                                @{
+                                    var isciGuzestMap = ViewBag.IsciGuzestMap as Dictionary<int, FinNex.Domain.Entities.HR.IsciGuzest>;
+                                    FinNex.Domain.Entities.HR.IsciGuzest? isciGuzest = null;
+                                    isciGuzestMap?.TryGetValue(isci.Id, out isciGuzest);
+                                    var isciGuzestMebleg = isciGuzest?.Guzest?.Mebleg ?? 0m;
+                                    var isciGuzestAd = isciGuzest?.Guzest?.Ad ?? "";
+                                }
                                 <tr data-isci="@isci.Id"
                                     data-esas="@esas.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-isci-guzest="@isciGuzestMebleg.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-isci-guzest-ad="@isciGuzestAd"
                                     class="mth-row @(isDone ? "done" : "")">
 
                                     @* Checkbox *@
@@ -414,7 +436,7 @@
                                                     </div>
                                                 </div>
 
-                                                @* Vergi güzəşti *@
+                                                @* Vergi güzəşti (standart + işçi) *@
                                                 <div class="mth-detail-card">
                                                     <div class="mth-detail-card-head">
                                                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -424,8 +446,22 @@
                                                     </div>
                                                     <div class="mth-detail-card-body">
                                                         <div class="mth-detail-item">
-                                                            <span class="mth-detail-lbl">Güzəşt məbləği</span>
-                                                            <span class="n n--g">@vergiGuzestiDeyer.ToString("N2") ₼</span>
+                                                            <span class="mth-detail-lbl">Standart <small style="opacity:.6">(brüt ≤ @firstBracketMax.ToString("N0"))</small></span>
+                                                            <span class="n n--g" data-p="standartguzest">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">
+                                                                İşçi güzəşti
+                                                                @if (!string.IsNullOrEmpty(isciGuzestAd))
+                                                                {
+                                                                    <small style="opacity:.7">(@isciGuzestAd)</small>
+                                                                }
+                                                            </span>
+                                                            <span class="n n--g" data-p="isciguzest">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">Vergilənəcək</span>
+                                                            <span class="n n--au" data-p="vergilenecek">—</span>
                                                         </div>
                                                     </div>
                                                 </div>

@@ -318,6 +318,54 @@
     gap: 8px;
 }
 
+/* Toolbar — axtarış */
+.mth-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    max-width: 340px;
+    width: 100%;
+}
+.mth-search > svg {
+    position: absolute;
+    left: 12px;
+    pointer-events: none;
+}
+.mth-search-input {
+    width: 100%;
+    padding: 9px 34px 9px 34px;
+    border: 1px solid #e2e6ef;
+    border-radius: 9px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+    color: #1a2332;
+    transition: border-color .15s, box-shadow .15s;
+}
+.mth-search-input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, .12);
+}
+.mth-search-clear {
+    position: absolute;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: #8a93a8;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 6px;
+    display: none;
+}
+.mth-search.has-value .mth-search-clear { display: inline-flex; align-items: center; justify-content: center; }
+.mth-search-clear:hover { background: #f0f2f7; color: #1a2332; }
+.mth-row.mth-hidden,
+.mth-detail-row.mth-hidden { display: none !important; }
+
 /* ── Checkbox ────────────────────────────────────────────────── */
 .mth-chk-wrap {
     display: flex;
