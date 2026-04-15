@@ -127,28 +127,31 @@
                             <details class="mp-emsal-details">
                                 <summary>
                                     <i class="bi bi-graph-up-arrow"></i>
-                                    Son 12 ayın artım əmsallı cəmi qazancı (S)
+                                    Son 12 ayın artım əmsallı cəmi qazancı
                                     <span class="mp-emsal-sum" id="mpEmsalCemi">—</span>
                                 </summary>
                                 <div class="mp-emsal-body">
                                     <p class="mp-emsal-hint">
-                                        Hər ay üçün K = Cari ştat maaşı / O aydaki ştat maaşı (yalnız artım).
-                                        Köhnə aylar bu günkü səviyyəyə qaldırılır və düzəlmiş cəm MH-da istifadə olunur.
+                                        <strong>Artım əmsalı</strong> hər ay üçün belə hesablanır:
+                                        <em>cari ştat maaşınız ÷ həmin ayda qüvvədə olan ştat maaşı</em> (yalnız maaş artıbsa
+                                        tətbiq olunur). Köhnə aylar bu günkü səviyyəyə qaldırılır və düzəlmiş cəm tarixi
+                                        ortalama (MH) hesablamasında istifadə olunur — beləcə son 12 ayda baş vermiş maaş
+                                        artımı məzuniyyət ödənişində ədalətli əks olunur.
                                     </p>
                                     <table class="mp-emsal-table">
                                         <thead>
                                             <tr>
                                                 <th>Ay</th>
-                                                <th class="mp-num">Ştat maaşı</th>
-                                                <th class="mp-num">Qazanc</th>
-                                                <th class="mp-num">K</th>
+                                                <th class="mp-num">O aydaki ştat maaşı</th>
+                                                <th class="mp-num">Faktiki qazanc</th>
+                                                <th class="mp-num">Artım əmsalı</th>
                                                 <th class="mp-num">Düzəlmiş qazanc</th>
                                             </tr>
                                         </thead>
                                         <tbody id="mpEmsalBody"></tbody>
                                         <tfoot>
                                             <tr>
-                                                <td colspan="4" class="mp-num"><strong>Cəmi S (düzəlmiş)</strong></td>
+                                                <td colspan="4" class="mp-num"><strong>Cəmi (düzəlmiş)</strong></td>
                                                 <td class="mp-num"><strong id="mpEmsalCemi2">—</strong></td>
                                             </tr>
                                         </tfoot>
@@ -327,6 +330,23 @@
                             grid-column: 1 / -1;
                             border-top: 1px dashed #ede7fa;
                             margin: 4px 0 2px;
+                        }
+                        .mp-ay-section-title {
+                            font-size: 11px;
+                            font-weight: 800;
+                            color: #6b21a8;
+                            text-transform: uppercase;
+                            letter-spacing: .4px;
+                            margin: 10px 0 4px;
+                            padding-bottom: 4px;
+                            border-bottom: 1px solid #ede7fa;
+                        }
+                        .mp-ay-sub {
+                            font-size: 10.5px;
+                            color: #8a93a8;
+                            font-style: italic;
+                            margin-top: -2px;
+                            margin-bottom: 2px;
                         }
                         .mp-ay-net {
                             margin-top: 6px;
@@ -668,8 +688,8 @@
                             const card = document.createElement('div');
                             card.className = 'mp-ay-card';
                             const qalibTxt = ay.qalib === 'MH'
-                                ? 'MH üstün (tarixi orta)'
-                                : 'ƏH üstün (cari maaş)';
+                                ? 'tarixi ortalama daha yüksəkdir'
+                                : 'cari maaş daha yüksəkdir';
                             const odenisLine = data.qabaqcadan
                                 ? `<span class="mp-ay-lbl">Məzuniyyət ödənişi (${ay.isGun} iş günü)</span><span class="mp-ay-val" style="color:#8a93a8">qabaqcadan ayrıca</span>`
                                 : `<span class="mp-ay-lbl">+ Məzuniyyət ödənişi (${ay.isGun} iş günü)</span><span class="mp-ay-val" style="color:#1e9b6b">+ ${fmt(ay.odenisPay)}</span>`;
@@ -678,21 +698,28 @@
                                     <span>${ay.ayAdi}</span>
                                     <span class="mp-ay-days">${ay.ayIsGun} iş günündən ${ay.islenmisIsGun} işlənir, ${ay.isGun} məzuniyyət</span>
                                 </div>
+                                <div class="mp-ay-section-title">1) Məzuniyyət pulu</div>
                                 <div class="mp-ay-lines">
-                                    <span class="mp-ay-lbl">MH = S / 12 / 30.4 × ${ay.teqvimGun}</span><span class="mp-ay-val">${fmt(ay.mh)}</span>
-                                    <span class="mp-ay-lbl">ƏH = Maaş / ${ay.ayIsGun} × ${ay.isGun}</span><span class="mp-ay-val">${fmt(ay.eh)}</span>
-                                    <span class="mp-ay-lbl">Seçilən məzuniyyət ödənişi (MAX)</span><span class="mp-ay-val">${fmt(ay.secilen)} — ${qalibTxt}</span>
-                                    <span class="mp-ay-sep"></span>
-                                    <span class="mp-ay-lbl">İşlənmiş günlər üçün maaş (${Number(data.cariMaas).toFixed(0)} / ${ay.ayIsGun} × ${ay.islenmisIsGun})</span><span class="mp-ay-val">${fmt(ay.islenmisMaas)}</span>
+                                    <span class="mp-ay-lbl">Tarixi orta hesablama (son 12 ayın düzəlmiş cəmi ÷ 12 ÷ 30.4 × ${ay.teqvimGun} təqvim günü)</span><span class="mp-ay-val">${fmt(ay.mh)}</span>
+                                    <span class="mp-ay-lbl">Cari maaş hesablaması (cari maaş ÷ ${ay.ayIsGun} ay iş günü × ${ay.isGun} məzuniyyət iş günü)</span><span class="mp-ay-val">${fmt(ay.eh)}</span>
+                                    <span class="mp-ay-lbl"><strong>Məzuniyyət ödənişi</strong> — bu ikidən böyüyü</span><span class="mp-ay-val"><strong>${fmt(ay.secilen)}</strong></span>
+                                    <span class="mp-ay-sub" style="grid-column:1/-1">${qalibTxt}</span>
+                                </div>
+                                <div class="mp-ay-section-title">2) Bu ayın brüt maaşı</div>
+                                <div class="mp-ay-lines">
+                                    <span class="mp-ay-lbl">İşlənmiş günlər üçün maaş (cari maaş ÷ ${ay.ayIsGun} ay iş günü × ${ay.islenmisIsGun} işlənmiş gün)</span><span class="mp-ay-val">${fmt(ay.islenmisMaas)}</span>
                                     ${odenisLine}
-                                    <span class="mp-ay-lbl"><strong>= Bu ayın brüt məbləği</strong></span><span class="mp-ay-val"><strong>${fmt(ay.ayBrut)}</strong></span>
-                                    <span class="mp-ay-sep"></span>
-                                    <span class="mp-ay-lbl">Standart vergi güzəşti${ay.standartGuzest > 0 ? '' : ' (brüt > pillə həddi → tətbiq olunmur)'}</span><span class="mp-ay-val" style="color:${ay.standartGuzest > 0 ? '#1e9b6b' : '#8a93a8'}">${fmt(ay.standartGuzest)}</span>
+                                    <span class="mp-ay-lbl"><strong>= Brüt</strong></span><span class="mp-ay-val"><strong>${fmt(ay.ayBrut)}</strong></span>
+                                </div>
+                                <div class="mp-ay-section-title">3) Vergi və tutulmalar</div>
+                                <div class="mp-ay-lines">
+                                    <span class="mp-ay-lbl">− Standart vergi güzəşti ${ay.standartGuzest > 0 ? '(brüt birinci pillədə)' : '<em>(brüt yuxarı pilləyə keçir → tətbiq olunmur)</em>'}</span><span class="mp-ay-val" style="color:${ay.standartGuzest > 0 ? '#1e9b6b' : '#8a93a8'}">− ${fmt(ay.standartGuzest)}</span>
                                     ${ay.isciGuzesti > 0
-                                        ? `<span class="mp-ay-lbl">İşçi güzəşti${ay.isciGuzestiAd ? ` (${ay.isciGuzestiAd})` : ''}</span><span class="mp-ay-val" style="color:#1e9b6b">${fmt(ay.isciGuzesti)}</span>`
-                                        : ''}
-                                    <span class="mp-ay-lbl">Vergilənəcək məbləğ</span><span class="mp-ay-val">${fmt(ay.vergilenecek)}</span>
-                                    <span class="mp-ay-lbl">− Tutulmalar (gəlir vergisi + DSMF + İTSS + işsizlik)</span><span class="mp-ay-val" style="color:#d43f3f">− ${fmt(ay.tutulmalarCemi)}</span>
+                                        ? `<span class="mp-ay-lbl">− İşçi güzəşti${ay.isciGuzestiAd ? ` (${ay.isciGuzestiAd})` : ''}</span><span class="mp-ay-val" style="color:#1e9b6b">− ${fmt(ay.isciGuzesti)}</span>`
+                                        : `<span class="mp-ay-lbl">− İşçi güzəşti</span><span class="mp-ay-val" style="color:#8a93a8">təyin edilməyib</span>`}
+                                    <span class="mp-ay-lbl"><strong>= Vergi tutulan məbləğ</strong></span><span class="mp-ay-val"><strong>${fmt(ay.vergilenecek)}</strong></span>
+                                    <span class="mp-ay-sub" style="grid-column:1/-1">Bu məbləğ üzrə pilləli gəlir vergisi tətbiq olunur</span>
+                                    <span class="mp-ay-lbl">− Cəmi tutulmalar (gəlir vergisi + DSMF + İcbari Tibbi Sığorta + İşsizlik)</span><span class="mp-ay-val" style="color:#d43f3f">− ${fmt(ay.tutulmalarCemi)}</span>
                                 </div>
                                 <div class="mp-ay-net">
                                     <span>Bu ayın net maaşı${data.qabaqcadan ? ' (məz. ödənişi ayrıca)' : ''}</span>
