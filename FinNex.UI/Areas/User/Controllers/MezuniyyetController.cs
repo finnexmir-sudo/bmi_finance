@@ -87,7 +87,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 decimal ayBrut = islenmisMaas + odenisPay;
 
                 var ayTax = await _maasHesablamaService
-                    .TutulmalariHesablaAsync(ayBrut, new DateTime(s.Il, s.Ay, 1));
+                    .TutulmalariHesablaAsync(ayBrut, new DateTime(s.Il, s.Ay, 1), isciId.Value);
 
                 ayProjections.Add(new
                 {
@@ -106,6 +106,10 @@ namespace FinNex.UI.Areas.User.Controllers
                     kesinti,
                     odenisPay,
                     ayBrut,
+                    standartGuzest = ayTax.StandartGuzest,
+                    isciGuzesti = ayTax.IsciGuzesti,
+                    isciGuzestiAd = ayTax.IsciGuzestiAd,
+                    vergilenecek = ayTax.Vergilenecek,
                     gelirVergisi = ayTax.GelirVergisi,
                     dsmfIsci = ayTax.DsmfIsci,
                     issizlikIsci = ayTax.IssizlikIsci,
@@ -127,7 +131,7 @@ namespace FinNex.UI.Areas.User.Controllers
             {
                 advanceBrut = hesablama.CemiOdenis;
                 var advTax = await _maasHesablamaService
-                    .TutulmalariHesablaAsync(advanceBrut, baslama);
+                    .TutulmalariHesablaAsync(advanceBrut, baslama, isciId.Value);
                 advanceTutulma = advTax.UmumiTutulma;
                 advanceNet = advTax.Net;
             }

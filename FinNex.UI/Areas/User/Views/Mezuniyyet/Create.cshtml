@@ -686,7 +686,13 @@
                                     <span class="mp-ay-lbl">İşlənmiş günlər üçün maaş (${Number(data.cariMaas).toFixed(0)} / ${ay.ayIsGun} × ${ay.islenmisIsGun})</span><span class="mp-ay-val">${fmt(ay.islenmisMaas)}</span>
                                     ${odenisLine}
                                     <span class="mp-ay-lbl"><strong>= Bu ayın brüt məbləği</strong></span><span class="mp-ay-val"><strong>${fmt(ay.ayBrut)}</strong></span>
-                                    <span class="mp-ay-lbl">− Tutulmalar (vergi + DSMF + İTSS + işsizlik)</span><span class="mp-ay-val" style="color:#d43f3f">− ${fmt(ay.tutulmalarCemi)}</span>
+                                    <span class="mp-ay-sep"></span>
+                                    <span class="mp-ay-lbl">Standart vergi güzəşti${ay.standartGuzest > 0 ? '' : ' (brüt > pillə həddi → tətbiq olunmur)'}</span><span class="mp-ay-val" style="color:${ay.standartGuzest > 0 ? '#1e9b6b' : '#8a93a8'}">${fmt(ay.standartGuzest)}</span>
+                                    ${ay.isciGuzesti > 0
+                                        ? `<span class="mp-ay-lbl">İşçi güzəşti${ay.isciGuzestiAd ? ` (${ay.isciGuzestiAd})` : ''}</span><span class="mp-ay-val" style="color:#1e9b6b">${fmt(ay.isciGuzesti)}</span>`
+                                        : ''}
+                                    <span class="mp-ay-lbl">Vergilənəcək məbləğ</span><span class="mp-ay-val">${fmt(ay.vergilenecek)}</span>
+                                    <span class="mp-ay-lbl">− Tutulmalar (gəlir vergisi + DSMF + İTSS + işsizlik)</span><span class="mp-ay-val" style="color:#d43f3f">− ${fmt(ay.tutulmalarCemi)}</span>
                                 </div>
                                 <div class="mp-ay-net">
                                     <span>Bu ayın net maaşı${data.qabaqcadan ? ' (məz. ödənişi ayrıca)' : ''}</span>

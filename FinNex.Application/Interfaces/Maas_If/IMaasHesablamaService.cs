@@ -47,7 +47,7 @@ namespace FinNex.Application.Interfaces.Maas_If
         /// İşsizlik, İTSS) və net məbləği hesablayır. FerdiHesablaAsync-ın
         /// istifadə etdiyi eyni VergiPille/MaasParametri mənbəyindən.
         /// </summary>
-        Task<MezuniyyetTutulmaDto> TutulmalariHesablaAsync(decimal brut, DateTime tarix);
+        Task<MezuniyyetTutulmaDto> TutulmalariHesablaAsync(decimal brut, DateTime tarix, int? isciId = null);
 
         /// <summary>
         /// Verilmiş tarixdə işçinin ştat maaşını IsciMaasTarixcesi-dən tapır.
