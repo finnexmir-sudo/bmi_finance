@@ -310,22 +310,21 @@
                                 var hasIban = !string.IsNullOrEmpty(GetIban(isci.Id));
 
                                 @* ── Main row ──────────────────────────────── *@
-                                @{
-                                    decimal isciGuzestMebleg = 0m;
-                                    string isciGuzestAd = "";
-                                    var _igMap = ViewBag.IsciGuzestMap as Dictionary<int, FinNex.Domain.Entities.HR.IsciGuzest>;
-                                    if (_igMap != null && _igMap.ContainsKey(isci.Id))
+                                decimal isciGuzestMebleg = 0m;
+                                string isciGuzestAd = "";
+                                var _igMap = ViewBag.IsciGuzestMap as Dictionary<int, FinNex.Domain.Entities.HR.IsciGuzest>;
+                                if (_igMap != null && _igMap.ContainsKey(isci.Id))
+                                {
+                                    var _ig = _igMap[isci.Id];
+                                    if (_ig != null && _ig.Guzest != null)
                                     {
-                                        var _ig = _igMap[isci.Id];
-                                        if (_ig != null && _ig.Guzest != null)
-                                        {
-                                            isciGuzestMebleg = _ig.Guzest.Mebleg;
-                                            isciGuzestAd = _ig.Guzest.Ad ?? "";
-                                        }
+                                        isciGuzestMebleg = _ig.Guzest.Mebleg;
+                                        isciGuzestAd = _ig.Guzest.Ad ?? "";
                                     }
-                                    var isciGuzestMeblegStr = isciGuzestMebleg.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-                                    var isciGuzestAdParen = isciGuzestAd.Length > 0 ? "(" + isciGuzestAd + ")" : "";
                                 }
+                                var isciGuzestMeblegStr = isciGuzestMebleg.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                var isciGuzestAdParen = isciGuzestAd.Length > 0 ? "(" + isciGuzestAd + ")" : "";
+
                                 <tr data-isci="@isci.Id"
                                     data-esas="@esas.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
                                     data-isci-guzest="@isciGuzestMeblegStr"
