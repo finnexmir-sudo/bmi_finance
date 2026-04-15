@@ -1085,17 +1085,20 @@ namespace FinNex.Application.Services.HR
             result.IzahatAddimlari.Add(
                 $"Məzuniyyət dövrü: {baslama:dd.MM.yyyy} – {bitme:dd.MM.yyyy}");
             result.IzahatAddimlari.Add(
-                $"Cari maaş (IsciMaliye.CariMaas): {cariMaas:N2} ₼");
+                $"Cari ştat maaşı: {cariMaas:N2} ₼");
             result.IzahatAddimlari.Add(
-                $"Son 12 ayın xam cəmi qazancı: {Sxam:N2} ₼ ({son12Qazanc.Count} qeyd üzrə)");
+                $"Son 12 ayın faktiki cəmi qazancı: {Sxam:N2} ₼ ({son12Qazanc.Count} qeyd üzrə)");
             result.IzahatAddimlari.Add(
-                "Artım əmsalı (K) tətbiq olundu — hər ay üçün K_i = Cari ştat maaşı / " +
-                "həmin aydaki ştat maaşı (maaş artıbsa). Köhnə aylar bu günkü səviyyəyə " +
-                "qaldırılır, azalma halda K=1.0 saxlanır.");
+                "Hər ay üçün ARTIM ƏMSALI tətbiq olundu — köhnə ayların qazancı " +
+                "bu günkü cari ştat maaşı səviyyəsinə qaldırıldı (yalnız maaş artıbsa). " +
+                "Azalma halda əmsal 1.0 saxlanır, qazanc dəyişmir.");
             result.IzahatAddimlari.Add(
-                $"Son 12 ayın DÜZƏLMİŞ cəmi qazancı (S): {sDuzelmis:N2} ₼");
+                $"Son 12 ayın artım əmsallı düzəlmiş cəmi qazancı: {sDuzelmis:N2} ₼");
             result.IzahatAddimlari.Add(
-                "Formula (2026): MH = S_düzəlmiş / 12 / 30.4 × GS  |  ƏH = CariMaas / AyİşGün × İGS  →  Ödəniş = MAX(MH, ƏH)");
+                "Hesablama məntiqi: hər ay üçün iki rəqəm tapılır — TARİXİ ORTA " +
+                "(düzəlmiş cəm ÷ 12 ÷ 30.4 × təqvim günü) və CARİ MAAŞ HESABI " +
+                "(cari maaş ÷ ay iş günü × məzuniyyət iş günü). Hansı böyükdürsə, " +
+                "məzuniyyət ödənişi olaraq götürülür.");
 
             // Məzuniyyət periodunu aylar üzrə böl
             var cursorAy = new DateTime(baslama.Year, baslama.Month, 1);
@@ -1170,14 +1173,15 @@ namespace FinNex.Application.Services.HR
                 result.IzahatAddimlari.Add(
                     $"── {slice.AyAdi} ──");
                 result.IzahatAddimlari.Add(
-                    $"    Bu aydakı məzuniyyət: {gs} təqvim günü, {igs} iş günü " +
-                    $"(ayın iş günü sayı: {ayIsGun})");
+                    $"    Bu ayın məzuniyyəti: {gs} təqvim günü, {igs} iş günü " +
+                    $"(ayın ümumi iş günü sayı: {ayIsGun})");
                 result.IzahatAddimlari.Add(
-                    $"    MH = {S:N2} / 12 / 30.4 × {gs} = {MH:N2} ₼");
+                    $"    Tarixi orta: {S:N2} ÷ 12 ÷ 30.4 × {gs} = {MH:N2} ₼");
                 result.IzahatAddimlari.Add(
-                    $"    ƏH = {cariMaas:N2} / {ayIsGun} × {igs} = {EH:N2} ₼");
+                    $"    Cari maaş hesabı: {cariMaas:N2} ÷ {ayIsGun} × {igs} = {EH:N2} ₼");
                 result.IzahatAddimlari.Add(
-                    $"    MAX(MH, ƏH) = {secilen:N2} ₼   (seçilən: {qalib})");
+                    $"    Məzuniyyət ödənişi (böyüyü götürülür): {secilen:N2} ₼ " +
+                    $"({(qalib == "MH" ? "tarixi orta üstündür" : "cari maaş hesabı üstündür")})");
 
                 umumiGS += gs;
                 umumiIGS += igs;

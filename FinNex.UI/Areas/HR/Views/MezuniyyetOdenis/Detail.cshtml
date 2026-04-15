@@ -61,9 +61,10 @@
                     @Model.Son12AyCemi.ToString("N2") ₼
                     <small class="mod-muted">(@Model.Son12AyQeydSayi / 12 qeyd)</small>
                 </strong>
-                <span>Son 12 ay düzəlmiş cəmi (S — artım əmsallı)</span>
+                <span>Son 12 ay artım əmsallı düzəlmiş cəmi</span>
                 <strong class="mod-gold">@Model.Son12AyDuzelmisCemi.ToString("N2") ₼</strong>
-                <span>Formula</span><strong class="mod-mono">MAX(S_düzəlmiş/12/30.4×GS, Maaş/AyİşGün×İGS)</strong>
+                <span>Hesablama məntiqi</span>
+                <strong class="mod-mono">MAX(tarixi orta, cari maaş hesabı) — hansı böyükdürsə</strong>
             </div>
             @foreach (var xeb in Model.TarixceXeberdarliqlari)
             {
@@ -76,8 +77,8 @@
             {
                 <div class="mod-warn">
                     <i class="bi bi-exclamation-triangle"></i>
-                    Yalnız @Model.Son12AyQeydSayi / 12 ay qazanc tarixçəsi mövcuddur — MH
-                    tarixi hissəsi qeyri-dəqiq ola bilər.
+                    Yalnız @Model.Son12AyQeydSayi / 12 ay qazanc tarixçəsi mövcuddur — tarixi
+                    ortalama qeyri-dəqiq ola bilər.
                 </div>
             }
         </div>
@@ -85,8 +86,8 @@
         @* ── Artım əmsalı cədvəli ── *@
         <div class="mod-card">
             <div class="mod-card-title">
-                <i class="bi bi-graph-up-arrow"></i> Son 12 ayın artım əmsalı (K) cədvəli
-                <small class="mod-muted">K = Cari ştat maaşı / Ay_i ştat maaşı (yalnız artım)</small>
+                <i class="bi bi-graph-up-arrow"></i> Son 12 ayın artım əmsalı cədvəli
+                <small class="mod-muted">Artım əmsalı = cari ştat maaşı ÷ o aydaki ştat maaşı (yalnız artım)</small>
             </div>
             @if (!Model.QazancEmsallari.Any())
             {
@@ -98,9 +99,9 @@
                     <thead>
                         <tr>
                             <th>Ay</th>
-                            <th class="mod-num">Həmin andaki ştat maaşı</th>
+                            <th class="mod-num">O aydaki ştat maaşı</th>
                             <th class="mod-num">Faktiki qazanc</th>
-                            <th class="mod-num">K əmsalı</th>
+                            <th class="mod-num">Artım əmsalı</th>
                             <th class="mod-num">Düzəlmiş qazanc</th>
                         </tr>
                     </thead>
@@ -127,7 +128,7 @@
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colspan="4" class="mod-num"><strong>Cəmi S (düzəlmiş)</strong></td>
+                            <td colspan="4" class="mod-num"><strong>Cəmi (düzəlmiş)</strong></td>
                             <td class="mod-num mod-total">@Model.Son12AyDuzelmisCemi.ToString("N2") ₼</td>
                         </tr>
                     </tfoot>
@@ -142,12 +143,12 @@
                 <thead>
                     <tr>
                         <th>Ay</th>
-                        <th class="mod-num">GS</th>
-                        <th class="mod-num">İGS</th>
+                        <th class="mod-num" title="Təqvim günü — şənbə/bazar daxil">Təqvim günü</th>
+                        <th class="mod-num" title="İş günü — şənbə/bazar/bayram çıxılmış">İş günü</th>
                         <th class="mod-num">Ay iş günü</th>
-                        <th class="mod-num">MH</th>
-                        <th class="mod-num">ƏH</th>
-                        <th class="mod-num">Seçilən</th>
+                        <th class="mod-num" title="Tarixi orta hesablama (son 12 ayın düzəlmiş cəmi ÷ 12 ÷ 30.4 × təqvim günü)">Tarixi orta</th>
+                        <th class="mod-num" title="Cari maaş hesablaması (cari maaş ÷ ay iş günü × məzuniyyət iş günü)">Cari maaş hesabı</th>
+                        <th class="mod-num" title="MAX(tarixi orta, cari maaş hesabı) — hansı böyükdürsə">Məzuniyyət ödənişi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -160,7 +161,12 @@
                             <td class="mod-num">@s.AyIsGun</td>
                             <td class="mod-num">@s.MH.ToString("N2")</td>
                             <td class="mod-num">@s.EH.ToString("N2")</td>
-                            <td class="mod-num"><strong>@s.Secilen.ToString("N2")</strong> <small class="mod-muted">(@s.Qalib)</small></td>
+                            <td class="mod-num">
+                                <strong>@s.Secilen.ToString("N2")</strong>
+                                <small class="mod-muted">
+                                    (@(s.Qalib == "MH" ? "tarixi orta" : "cari maaş hesabı"))
+                                </small>
+                            </td>
                         </tr>
                     }
                 </tbody>
