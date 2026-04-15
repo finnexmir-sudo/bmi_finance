@@ -6,6 +6,10 @@
     var guzestler = (List<FinNex.Domain.Entities.HR.Guzest>)ViewBag.Guzestler;
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/isci-guzest.css" asp-append-version="true" />
+}
+
 <div class="ig-form-page">
     <div class="ig-form-head">
         <a asp-action="Index" class="ig-back"><i class="bi bi-arrow-left"></i> Geri</a>
@@ -15,7 +19,7 @@
     <div class="ig-form-card">
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div asp-validation-summary="All" class="text-danger"></div>
 
             <div class="ig-form-group">
                 <label asp-for="IsciId" class="ig-label">İşçi <span class="ig-req">*</span></label>
@@ -70,57 +74,3 @@
     </div>
 </div>
 
-<style>
-    .ig-form-page { padding: 24px 28px; max-width: 720px; margin: 0 auto; }
-    .ig-form-head { margin-bottom: 18px; }
-    .ig-back {
-        display: inline-flex; align-items: center; gap: 4px;
-        color: #5a647a; text-decoration: none;
-        font-size: 12px; font-weight: 600;
-        margin-bottom: 6px;
-    }
-    .ig-back:hover { color: #6b21a8; }
-    .ig-title { font-size: 1.35rem; font-weight: 800; color: #1a1d29; }
-    .ig-form-card {
-        background: #fff; border-radius: 14px;
-        border: 1px solid #e9ecef; padding: 24px 28px;
-        box-shadow: 0 4px 18px rgba(15, 26, 46, .04);
-    }
-    .ig-form-group { margin-bottom: 18px; }
-    .ig-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .ig-label {
-        display: block; font-size: 12px; font-weight: 800;
-        color: #3d4557; margin-bottom: 6px;
-        text-transform: uppercase; letter-spacing: .3px;
-    }
-    .ig-req { color: #dc2626; }
-    .ig-hint { color: #8a93a8; font-weight: 500; text-transform: none; letter-spacing: 0; }
-    .ig-input {
-        width: 100%; padding: 11px 14px;
-        border: 1.5px solid #e2e6ef; border-radius: 9px;
-        font-size: 14px; font-family: inherit;
-        background: #fff;
-    }
-    .ig-input:focus {
-        outline: none; border-color: #7c3aed;
-        box-shadow: 0 0 0 3px rgba(124, 58, 237, .12);
-    }
-    textarea.ig-input { resize: vertical; min-height: 70px; }
-    .ig-err { display: block; font-size: 11.5px; color: #dc2626; margin-top: 4px; }
-    .ig-form-actions {
-        display: flex; justify-content: flex-end; gap: 10px;
-        margin-top: 10px; padding-top: 16px;
-        border-top: 1px solid #eef0f5;
-    }
-    .ig-btn {
-        display: inline-flex; gap: 5px; align-items: center;
-        padding: 10px 20px; border-radius: 9px;
-        font-size: 13px; font-weight: 700;
-        text-decoration: none; border: none; cursor: pointer;
-        transition: all .15s; font-family: inherit;
-    }
-    .ig-btn--primary { background: #7c3aed; color: #fff; }
-    .ig-btn--primary:hover { background: #6b21a8; }
-    .ig-btn--outline { background: #fff; color: #3d4557; border: 1px solid #e2e6ef; }
-    .ig-btn--outline:hover { border-color: #7c3aed; color: #6b21a8; }
-</style>

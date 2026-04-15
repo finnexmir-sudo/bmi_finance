@@ -63,8 +63,14 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(IsciGuzest model)
+        public async Task<IActionResult> Create(
+            [Bind("IsciId,GuzestId,BaslamaTarixi,BitmeTarixi,Qeyd")] IsciGuzest model)
         {
+            // Navigation property-lər form post-unda yoxdur, amma nullable olmadığı
+            // üçün model binder onlara “required” xətası yazır. Əl ilə təmizləyirik.
+            ModelState.Remove(nameof(model.Isci));
+            ModelState.Remove(nameof(model.Guzest));
+
             if (model.IsciId == 0)
                 ModelState.AddModelError(nameof(model.IsciId), "İşçi seçin.");
             if (model.GuzestId == 0)
