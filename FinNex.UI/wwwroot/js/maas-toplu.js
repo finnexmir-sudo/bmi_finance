@@ -10,12 +10,17 @@
     // 4=ItssIsci, 7=DsmfIsegoturen, 8=IssizlikIsegoturen, 9=ItssIsegoturen
     let PILLELER = {};
     let VERGI_GUZESTI = 200;
+    let FIRST_BRACKET_MAX = 2500;
     try {
         const rawEl = document.getElementById('mthVergiConfig');
         if (rawEl) {
             const cfg = JSON.parse(rawEl.textContent);
             PILLELER = cfg.pilleler || {};
             VERGI_GUZESTI = parseFloat(cfg.vergiGuzesti) || 200;
+        }
+        const toolbarEl = document.querySelector('.mth-toolbar[data-first-bracket-max]');
+        if (toolbarEl) {
+            FIRST_BRACKET_MAX = parseFloat(toolbarEl.dataset.firstBracketMax) || 2500;
         }
     } catch (e) { console.error('Vergi konfiqurasiyası yüklənmədi:', e); }
 
@@ -69,6 +74,8 @@
     /* ── Row data ─────────────────────────────────────────────── */
     function rd(row) {
         const esas = parseFloat(row.dataset.esas || 0);
+        const isciGuzest = parseFloat(row.dataset.isciGuzest || 0) || 0;
+        const isciGuzestAd = row.dataset.isciGuzestAd || '';
         const chk = row.querySelector('.mth-checkbox');
         const bInp = row.querySelector('.mth-inp--b');
         const cInp = row.querySelector('.mth-inp--c');
@@ -78,8 +85,11 @@
         const cerime = parseFloat(cInp?.value || 0) || 0;
         const brut = Math.max(esas + bonus - cerime, 0);
 
-        // Vergilənəcək məbləğ: brut - vergi güzəşti
-        const vergilenecek = Math.max(0, brut - VERGI_GUZESTI);
+        // Standart güzəşt — yalnız brüt ≤ birinci pillə üst həddi olduqda tətbiq olunur.
+        // (Brüt yuxarı pilləyə keçirsə 200 AZN standart güzəşti tətbiq olunmur.)
+        const standartGuzest = brut > 0 && brut <= FIRST_BRACKET_MAX ? VERGI_GUZESTI : 0;
+        // Vergilənəcək məbləğ: brüt − standart − işçi güzəşti
+        const vergilenecek = Math.max(0, brut - standartGuzest - isciGuzest);
 
         // İşçidən tutulanlar (pilləli + flat)
         const gelirV  = hesablaTutulma(vergilenecek, 1, 0);       // 1 = GelirVergisi
@@ -97,6 +107,7 @@
 
         return {
             esas, bonus, cerime, brut, vergilenecek,
+            standartGuzest, isciGuzest, isciGuzestAd,
             gelirV, dsmf, iss, itss, tutulma, net,
             dsmfIsv, issIsv, itssIsv, sirketCemi,
             checked: !!chk?.checked && !done, done
@@ -138,6 +149,11 @@
         // Main row cells
         set('[data-p="brut"]', fmt(d.brut), d.brut > 0 ? 'n' : 'n n--d');
         set('[data-p="net"]', fmt(d.net), d.net > 0 ? 'n n--au' : 'n n--d');
+
+        // Vergi güzəşti breakdown (standart + işçi + vergilənəcək)
+        set('[data-p="standartguzest"]', fmt(d.standartGuzest), d.standartGuzest > 0 ? 'n n--g' : 'n n--d');
+        set('[data-p="isciguzest"]', fmt(d.isciGuzest), d.isciGuzest > 0 ? 'n n--g' : 'n n--d');
+        set('[data-p="vergilenecek"]', fmt(d.vergilenecek), d.vergilenecek > 0 ? 'n n--au' : 'n n--d');
 
         // Detail row cells
         set('[data-p="gelirv"]', fmt(d.gelirV), d.gelirV > 0 ? 'n n--r' : 'n n--d');
@@ -294,5 +310,54 @@
             if (isNaN(v) || v < 0) this.value = '';
         });
     });
+
+    /* ── Client-side search (ad + departament) ───────────────── */
+    function normalizeAz(s) {
+        if (!s) return '';
+        return s.toString().toLowerCase()
+            .replace(/ə/g, 'e').replace(/ö/g, 'o').replace(/ü/g, 'u')
+            .replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ç/g, 'c')
+            .replace(/ğ/g, 'g');
+    }
+
+    const searchBox = document.getElementById('mthSearchBox');
+    const searchClear = document.getElementById('mthSearchClear');
+    const searchWrap = searchBox?.closest('.mth-search');
+    const isciCountEl = document.getElementById('mthIsciCount');
+    const totalCount = rows.length;
+
+    function applySearch() {
+        const raw = (searchBox?.value || '').trim();
+        const needle = normalizeAz(raw);
+        searchWrap?.classList.toggle('has-value', raw.length > 0);
+        let visible = 0;
+        rows.forEach(row => {
+            const name = row.querySelector('.mth-name-primary')?.textContent || '';
+            const dept = row.querySelector('.mth-name-dept')?.textContent || '';
+            const hay = normalizeAz(name + ' ' + dept);
+            const match = needle.length === 0 || hay.indexOf(needle) >= 0;
+            row.classList.toggle('mth-hidden', !match);
+            const detail = getDetailRow(row);
+            if (detail) detail.classList.toggle('mth-hidden', !match);
+            if (match) visible++;
+        });
+        if (isciCountEl) {
+            isciCountEl.textContent = (needle.length > 0 && visible !== totalCount)
+                ? `${visible} / ${totalCount} işçi`
+                : `${totalCount} işçi`;
+        }
+    }
+
+    if (searchBox) {
+        searchBox.addEventListener('input', applySearch);
+        searchBox.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { searchBox.value = ''; applySearch(); searchBox.blur(); }
+        });
+    }
+    if (searchClear) {
+        searchClear.addEventListener('click', () => {
+            if (searchBox) { searchBox.value = ''; applySearch(); searchBox.focus(); }
+        });
+    }
 
 })();

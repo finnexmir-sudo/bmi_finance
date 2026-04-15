@@ -277,6 +277,34 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .ToListAsync();
             var vergiGuzesti = flatParamlar.FirstOrDefault(x => x.Nov == MaasParametrNovu.VergiGuzestiMeblegi)?.Deyer ?? 200m;
 
+            // Birinci pillə üst həddi (standart 200 AZN güzəşti yalnız bu sərhədə qədər tətbiq olunur)
+            var firstBracketMax = pilleler
+                .Where(x => x.Nov == MaasParametrNovu.GelirVergisiFaizi)
+                .OrderBy(x => x.AsagiHedd)
+                .Select(x => x.YuxariHedd)
+                .FirstOrDefault() ?? 2500m;
+
+            // Hər işçi üçün aktiv dövrü olan güzəştlərin ən böyüyü (JS preview üçün).
+            // Server-tərəfi hesablama zatən FerdiHesablaAsync-də düzgün tətbiq edir;
+            // burada yalnız toplu ekran preview-u üçün lazımdır.
+            var ayBitis = hesabTarixi.AddMonths(1).AddDays(-1);
+            var isciGuzestler = await _unitOfWork.Repository<IsciGuzest>()
+                .Query()
+                .Where(x =>
+                    !x.Silinib &&
+                    isciIdler.Contains(x.IsciId) &&
+                    x.BaslamaTarixi <= ayBitis &&
+                    (x.BitmeTarixi == null || x.BitmeTarixi >= hesabTarixi))
+                .Include(x => x.Guzest)
+                .Where(x => x.Guzest != null && !x.Guzest.Silinib && x.Guzest.Aktivdir)
+                .ToListAsync();
+
+            var isciGuzestMap = isciGuzestler
+                .GroupBy(x => x.IsciId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.OrderByDescending(x => x.Guzest.Mebleg).First());
+
             ViewBag.Il = cIl;
             ViewBag.Ay = cAy;
             ViewBag.Hesablanmis = hesablanmis;
@@ -284,6 +312,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.IbanMap = ibanMap;
             ViewBag.VergiPilleleri = pilleler;
             ViewBag.VergiGuzesti = vergiGuzesti;
+            ViewBag.FirstBracketMax = firstBracketMax;
+            ViewBag.IsciGuzestMap = isciGuzestMap;
             ViewBag.Iller = IlSiyahisi(cIl);
             ViewBag.Aylar = AySiyahisi(cAy);
 
