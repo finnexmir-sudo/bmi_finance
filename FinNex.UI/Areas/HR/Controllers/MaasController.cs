@@ -305,6 +305,23 @@ namespace FinNex.UI.Areas.HR.Controllers
                     g => g.Key,
                     g => g.OrderByDescending(x => x.Guzest.Mebleg).First());
 
+            // HYS (Həyat Yığım Sığortası) — hər işçi üçün aktiv HYS-ı tap
+            var isciHysList = await _unitOfWork.Repository<IsciHYS>()
+                .Query()
+                .Where(x =>
+                    !x.Silinib &&
+                    isciIdler.Contains(x.IsciId) &&
+                    x.BaslamaTarixi <= ayBitis &&
+                    (x.BitmeTarixi == null || x.BitmeTarixi >= hesabTarixi))
+                .ToListAsync();
+
+            var isciHysMap = isciHysList
+                .GroupBy(x => x.IsciId)
+                .ToDictionary(g => g.Key, g => g.First().Mebleg);
+
+            // HYS işəgötürən faizi (parametrdən)
+            var hysIsvFaiz = flatParamlar.FirstOrDefault(x => x.Nov == MaasParametrNovu.HysIsegoturenFaizi)?.Deyer ?? 15m;
+
             ViewBag.Il = cIl;
             ViewBag.Ay = cAy;
             ViewBag.Hesablanmis = hesablanmis;
@@ -314,6 +331,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.VergiGuzesti = vergiGuzesti;
             ViewBag.FirstBracketMax = firstBracketMax;
             ViewBag.IsciGuzestMap = isciGuzestMap;
+            ViewBag.IsciHysMap = isciHysMap;
+            ViewBag.HysIsvFaiz = hysIsvFaiz;
             ViewBag.Iller = IlSiyahisi(cIl);
             ViewBag.Aylar = AySiyahisi(cAy);
 

@@ -89,11 +89,13 @@ namespace FinNex.Application.DTOs.HR.Maas
         public decimal DsmfIsci { get; set; }
         public decimal IssizlikIsci { get; set; }
         public decimal Itss { get; set; }
-        public decimal UmumiTutulma => GelirVergisi + DsmfIsci + IssizlikIsci + Itss;
+        public decimal HysIsci { get; set; }
+        public decimal UmumiTutulma => GelirVergisi + DsmfIsci + IssizlikIsci + Itss + HysIsci;
         public decimal NetMaas { get; set; }
         public decimal DsmfIsegoturen { get; set; }
         public decimal IssizlikIsegoturen { get; set; }
         public decimal ItssIsegoturen { get; set; }
+        public decimal HysIsegoturen { get; set; }
         public decimal UmumiSirketXerci { get; set; }
         public List<HesablamaIzahiDto> Izahatlar { get; set; } = new();
     }
@@ -138,6 +140,8 @@ namespace FinNex.Application.DTOs.HR.Maas
         public decimal DsmfIsci { get; set; }
         public decimal IssizlikIsci { get; set; }
         public decimal Itss { get; set; }
+        public decimal HysIsci { get; set; }
+        public decimal HysIsegoturen { get; set; }
         public decimal NetMebleg { get; set; }
         public MaasStatus Status { get; set; }
         public DateTime HesablanmaTarixi { get; set; }
@@ -199,6 +203,7 @@ namespace FinNex.Application.DTOs.HR.Maas
         public decimal MinimumEmekHaqqi { get; set; } = 345m;
         public decimal DsmfIsegotürenFaizi { get; set; } = 22m;
         public decimal IssizlikIsegotürenFaizi { get; set; } = 0.5m;
+        public decimal HysIsegoturenFaizi { get; set; } = 15m;
     }
 
     // ── BANK ─────────────────────────────────────────────────────

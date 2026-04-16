@@ -36,6 +36,11 @@ namespace FinNex.Application.DTOs.HR.MaasNovuDtos
             MaasParametrNovu.IcbariTibbiSigortaFaizi => "İTSS Faizi",
             MaasParametrNovu.MinimumEmekHaqqi => "Minimum Əmək Haqqı",
             MaasParametrNovu.VergiGuzestiMeblegi => "Vergi Güzəşti Məbləği",
+            MaasParametrNovu.DsmfIsegoturenFaizi => "DSMF Faizi (İşəgötürən)",
+            MaasParametrNovu.IssizlikIsegoturenFaizi => "İşsizlik Sığortası Faizi (İşəgötürən)",
+            MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi => "İTSS Faizi (İşəgötürən)",
+            MaasParametrNovu.HysIsegoturenFaizi => "HYS İşəgötürən Faizi",
+            MaasParametrNovu.HysMaxMaasFaizi => "HYS Max Maaş Faizi",
             _ => Nov.ToString()
         };
         public MaasParametrTipi Tip { get; set; }

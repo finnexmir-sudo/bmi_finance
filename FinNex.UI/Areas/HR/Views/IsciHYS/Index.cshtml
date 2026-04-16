@@ -1,0 +1,116 @@
+@model List<FinNex.Domain.Entities.HR.IsciHYS>
+@{
+    ViewData["Title"] = "İşçi HYS təyinatları";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var isciler = (List<FinNex.Domain.Entities.HR.Isci>)ViewBag.Isciler;
+    var selectedIsciId = (int?)ViewBag.IsciId;
+    var today = DateTime.Today;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/isci-hys.css" asp-append-version="true" />
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="ih-page">
+    <div class="ih-head">
+        <div>
+            <div class="ih-title">Həyat Yığım Sığortası (HYS)</div>
+            <div class="ih-sub">İşçilərə təyin olunmuş aylıq HYS məbləğləri. Vergi+DSMF bazasından çıxılır, İTSS/İşsizlik tam qalır.</div>
+        </div>
+        <a asp-action="Create" asp-route-isciId="@selectedIsciId" class="ih-btn ih-btn--primary">
+            <i class="bi bi-plus-lg"></i> Yeni təyinat
+        </a>
+    </div>
+
+    <form method="get" class="ih-filter">
+        <label class="ih-filter-lbl">İşçi:</label>
+        <select name="isciId" class="ih-select" onchange="this.form.submit()">
+            <option value="">— Hamısı —</option>
+            @foreach (var i in isciler)
+            {
+                <option value="@i.Id" selected="@(selectedIsciId == i.Id)">@i.TamAd</option>
+            }
+        </select>
+    </form>
+
+    <div class="ih-card">
+        @if (!Model.Any())
+        {
+            <div class="ih-empty">
+                <i class="bi bi-inbox"></i>
+                <p>HYS təyinatı tapılmadı</p>
+            </div>
+        }
+        else
+        {
+            <table class="ih-table">
+                <thead>
+                    <tr>
+                        <th>İşçi</th>
+                        <th class="ih-num">Aylıq HYS</th>
+                        <th>Başlama</th>
+                        <th>Bitmə</th>
+                        <th>Status</th>
+                        <th>Qeyd</th>
+                        <th class="ih-act"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var x in Model)
+                    {
+                        bool aktivDovr = x.BaslamaTarixi <= today && (x.BitmeTarixi == null || x.BitmeTarixi >= today);
+                        <tr>
+                            <td><strong>@(x.Isci?.TamAd ?? "#" + x.IsciId)</strong></td>
+                            <td class="ih-num">@x.Mebleg.ToString("N2") ₼</td>
+                            <td>@x.BaslamaTarixi.ToString("dd.MM.yyyy")</td>
+                            <td>@(x.BitmeTarixi?.ToString("dd.MM.yyyy") ?? "—")</td>
+                            <td>
+                                @if (aktivDovr)
+                                {
+                                    <span class="ih-status ih-status--ok">Aktiv</span>
+                                }
+                                else if (x.BaslamaTarixi > today)
+                                {
+                                    <span class="ih-status ih-status--pending">Gözləyir</span>
+                                }
+                                else
+                                {
+                                    <span class="ih-status">Bitib</span>
+                                }
+                            </td>
+                            <td class="ih-note">@(x.Qeyd ?? "—")</td>
+                            <td class="ih-act">
+                                <a asp-action="Edit" asp-route-id="@x.Id"
+                                   class="ih-btn ih-btn--outline ih-btn--sm" title="Redaktə">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@x.Id" method="post"
+                                      style="display:inline" onsubmit="return confirm('HYS təyinatını silmək istəyirsiniz?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="ih-btn ih-btn--danger ih-btn--sm">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
