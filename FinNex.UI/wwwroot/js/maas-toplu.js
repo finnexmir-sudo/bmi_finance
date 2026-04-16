@@ -99,8 +99,9 @@
         // İTSS/İşsizlik = əsas brüt (işəgötürən payı daxil deyil, HYS çıxılmır)
         const itssBazasi = esasBrut;
 
-        // Standart güzəşt — vergi bazası ≤ birinci pillə üst həddi
-        const standartGuzest = vergiDsmfBazasi > 0 && vergiDsmfBazasi <= FIRST_BRACKET_MAX ? VERGI_GUZESTI : 0;
+        // Standart güzəşt — işçinin əsas gəliri (esasBrut) ≤ birinci pillə üst həddi
+        // HYS çıxıldıqdan sonrakı bazaya yox, faktiki gəlirə baxılır
+        const standartGuzest = esasBrut > 0 && esasBrut <= FIRST_BRACKET_MAX ? VERGI_GUZESTI : 0;
         const vergilenecek = Math.max(0, vergiDsmfBazasi - standartGuzest - isciGuzest);
 
         // İşçidən tutulanlar — GəlirV və DSMF: vergiDsmfBazası ilə; İTSS və İşsizlik: itssBazası ilə
