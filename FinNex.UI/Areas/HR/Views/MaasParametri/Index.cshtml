@@ -14,6 +14,8 @@
     var issizlikIsv  = Flat(MaasParametrNovu.IssizlikIsegoturenFaizi);
     var minEmek      = Flat(MaasParametrNovu.MinimumEmekHaqqi);
     var vergiGuz     = Flat(MaasParametrNovu.VergiGuzestiMeblegi);
+    var hysIsvFaiz   = Flat(MaasParametrNovu.HysIsegoturenFaizi);
+    var hysMaxFaiz   = Flat(MaasParametrNovu.HysMaxMaasFaizi);
 
     List<VergiPille> Pilleler(MaasParametrNovu n) =>
         pilleler.Where(x => x.Nov == n && x.Aktivdir).OrderBy(x => x.Sira).ToList();
@@ -29,6 +31,8 @@
         MaasParametrNovu.DsmfIsegoturenFaizi => "DSMF",
         MaasParametrNovu.IssizlikIsegoturenFaizi => "İşsizlik Sığortası",
         MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi => "İcbari Tibbi Sığorta (İTSS)",
+        MaasParametrNovu.HysIsegoturenFaizi => "HYS İşəgötürən Faizi",
+        MaasParametrNovu.HysMaxMaasFaizi => "HYS Max Maaş Faizi",
         _ => n.ToString()
     };
 }
@@ -309,6 +313,56 @@
         </div>
     </div>
 
+    @* ═══════════ BÖLMƏ 4: HYS PARAMETRLƏRİ ═══════════ *@
+    <div class="mp-section">
+        <div class="mp-section-head">
+            <i class="bi bi-shield-plus"></i>
+            <h2>Həyat Yığım Sığortası (HYS)</h2>
+            <span class="mp-section-sub">İşəgötürən payı və maaşdan max tutulma faizi</span>
+        </div>
+
+        <div class="mp-guzesht-grid">
+            @if (hysIsvFaiz != null)
+            {
+                <div class="mp-guzesht-card">
+                    <div class="mp-guzesht-head">
+                        <i class="bi bi-building"></i>
+                        <div>
+                            <div class="mp-guzesht-name">İşəgötürən HYS Faizi</div>
+                            <div class="mp-guzesht-desc">İşçinin HYS məbləğinin neçə %-ni şirkət ödəyir</div>
+                        </div>
+                        <button class="mp-card-btn mp-card-btn--edit" data-edit-id="@hysIsvFaiz.Id">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                    </div>
+                    <div class="mp-guzesht-value">
+                        <span class="mp-guzesht-num">@hysIsvFaiz.Deyer.ToString("G29")</span>
+                        <span class="mp-guzesht-suffix">%</span>
+                    </div>
+                </div>
+            }
+            @if (hysMaxFaiz != null)
+            {
+                <div class="mp-guzesht-card">
+                    <div class="mp-guzesht-head">
+                        <i class="bi bi-sliders2"></i>
+                        <div>
+                            <div class="mp-guzesht-name">Max HYS / Maaş Faizi</div>
+                            <div class="mp-guzesht-desc">Maaşın max neçə %-i HYS ola bilər</div>
+                        </div>
+                        <button class="mp-card-btn mp-card-btn--edit" data-edit-id="@hysMaxFaiz.Id">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                    </div>
+                    <div class="mp-guzesht-value">
+                        <span class="mp-guzesht-num">@hysMaxFaiz.Deyer.ToString("G29")</span>
+                        <span class="mp-guzesht-suffix">%</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
     @* ── Flat parametr modal ── *@
     <div id="mpModalOverlay" class="mp-modal-overlay">
         <div class="mp-modal">
@@ -327,6 +381,8 @@
                             <option value="5">Minimum Əmək Haqqı</option>
                             <option value="6">Vergi Güzəşti Məbləği</option>
                             <option value="8">İşsizlik Sığortası (İşəgötürən)</option>
+                            <option value="10">HYS İşəgötürən Faizi</option>
+                            <option value="11">HYS Max Maaş Faizi</option>
                         </select>
                     </div>
 

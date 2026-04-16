@@ -533,44 +533,94 @@
                             </div>
                         </button>
                         <div class="fn-nav-submenu">
-                            <a asp-area="HR" asp-controller="Maas" asp-action="Index"
-                               class="fn-nav-subitem @(currentController == "Maas" ? "active" : "")">
-                                <div class="fn-sub-dot"></div> Əmək Haqqı
-                            </a>
+                            @* ── Əmək Haqqı sub-group ── *@
+                            <div class="fn-nav-group @(currentController is "Maas" or "MezuniyyetOdenis" or "IsciAyliqQazanc" ? "open" : "")">
+                                <button type="button" class="fn-nav-group-toggle">
+                                    <div class="fn-nav-group-left">
+                                        <div class="fn-nav-subgroup-icon" style="background:rgba(201,144,10,0.12);">
+                                            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1" y="2.5" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M1 5.5h12M4 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                                        </div>
+                                        Əmək Haqqı
+                                    </div>
+                                    <div class="fn-nav-arrow">
+                                        <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
+                                    </div>
+                                </button>
+                                <div class="fn-nav-submenu">
+                                    <a asp-area="HR" asp-controller="Maas" asp-action="Index"
+                                       class="fn-nav-subitem @(currentController == "Maas" ? "active" : "")">
+                                        <div class="fn-sub-dot"></div> Maaş Siyahısı
+                                    </a>
+                                    <a asp-area="HR" asp-controller="MezuniyyetOdenis" asp-action="Index"
+                                       class="fn-nav-subitem @(currentArea == "HR" && currentController == "MezuniyyetOdenis" ? "active" : "")">
+                                        <div class="fn-sub-dot"></div> Məzuniyyət Ödənişləri
+                                    </a>
+                                    <a asp-area="HR" asp-controller="IsciAyliqQazanc" asp-action="Index"
+                                       class="fn-nav-subitem @(currentController == "IsciAyliqQazanc" ? "active" : "")">
+                                        <div class="fn-sub-dot"></div> Qazanc Tarixçəsi
+                                    </a>
+                                </div>
+                            </div>
+
                             @if (!isRehberOnly)
                             {
-                                <a asp-area="HR" asp-controller="MezuniyyetOdenis" asp-action="Index"
-                                   class="fn-nav-subitem @(currentArea == "HR" && currentController == "MezuniyyetOdenis" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> Məzuniyyət Ödənişləri
-                                </a>
-                                <a asp-area="HR" asp-controller="IsciAyliqQazanc" asp-action="Index"
-                                   class="fn-nav-subitem @(currentController == "IsciAyliqQazanc" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> Qazanc Tarixçəsi
-                                </a>
-                                <a asp-area="HR" asp-controller="MaasParametri" asp-action="Index"
-                                   class="fn-nav-subitem @(currentController == "MaasParametri" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> Əmək haqqı parametrləri
-                                </a>
-                                <a asp-area="HR" asp-controller="Guzest" asp-action="Index"
-                                   class="fn-nav-subitem @(currentArea == "HR" && currentController == "Guzest" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> Güzəşt kataloqu
-                                </a>
-                                <a asp-area="HR" asp-controller="IsciGuzest" asp-action="Index"
-                                   class="fn-nav-subitem @(currentArea == "HR" && currentController == "IsciGuzest" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> İşçi güzəştləri
-                                </a>
-                                <a asp-area="HR" asp-controller="IsciHYS" asp-action="Index"
-                                   class="fn-nav-subitem @(currentArea == "HR" && currentController == "IsciHYS" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> HYS Təyinatları
-                                </a>
-                                <a asp-area="HR" asp-controller="Budce" asp-action="Index"
-                                   class="fn-nav-subitem @(currentController == "Budce" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> Büdcə
-                                </a>
-                                <a asp-area="HR" asp-controller="Xerc" asp-action="Index"
-                                   class="fn-nav-subitem @(currentArea == "HR" && currentController == "Xerc" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> Xərc İdarəetmə
-                                </a>
+                                @* ── Parametrlər & Güzəştlər sub-group ── *@
+                                <div class="fn-nav-group @(currentController is "MaasParametri" or "Guzest" or "IsciGuzest" or "IsciHYS" ? "open" : "")">
+                                    <button type="button" class="fn-nav-group-toggle">
+                                        <div class="fn-nav-group-left">
+                                            <div class="fn-nav-subgroup-icon" style="background:rgba(124,58,237,0.12);">
+                                                <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1.5v11M4 5l3-3.5L10 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                            </div>
+                                            Parametrlər & Güzəştlər
+                                        </div>
+                                        <div class="fn-nav-arrow">
+                                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
+                                        </div>
+                                    </button>
+                                    <div class="fn-nav-submenu">
+                                        <a asp-area="HR" asp-controller="MaasParametri" asp-action="Index"
+                                           class="fn-nav-subitem @(currentController == "MaasParametri" ? "active" : "")">
+                                            <div class="fn-sub-dot"></div> Vergi parametrləri
+                                        </a>
+                                        <a asp-area="HR" asp-controller="Guzest" asp-action="Index"
+                                           class="fn-nav-subitem @(currentArea == "HR" && currentController == "Guzest" ? "active" : "")">
+                                            <div class="fn-sub-dot"></div> Güzəşt kataloqu
+                                        </a>
+                                        <a asp-area="HR" asp-controller="IsciGuzest" asp-action="Index"
+                                           class="fn-nav-subitem @(currentArea == "HR" && currentController == "IsciGuzest" ? "active" : "")">
+                                            <div class="fn-sub-dot"></div> İşçi güzəştləri
+                                        </a>
+                                        <a asp-area="HR" asp-controller="IsciHYS" asp-action="Index"
+                                           class="fn-nav-subitem @(currentArea == "HR" && currentController == "IsciHYS" ? "active" : "")">
+                                            <div class="fn-sub-dot"></div> HYS Təyinatları
+                                        </a>
+                                    </div>
+                                </div>
+
+                                @* ── Maliyyə sub-group ── *@
+                                <div class="fn-nav-group @(currentController is "Budce" or "Xerc" ? "open" : "")">
+                                    <button type="button" class="fn-nav-group-toggle">
+                                        <div class="fn-nav-group-left">
+                                            <div class="fn-nav-subgroup-icon" style="background:rgba(30,155,107,0.12);">
+                                                <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="2" y="3" width="10" height="9" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M5 6h1M8 6h1M5 8h1M8 8h1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+                                            </div>
+                                            Maliyyə
+                                        </div>
+                                        <div class="fn-nav-arrow">
+                                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
+                                        </div>
+                                    </button>
+                                    <div class="fn-nav-submenu">
+                                        <a asp-area="HR" asp-controller="Budce" asp-action="Index"
+                                           class="fn-nav-subitem @(currentController == "Budce" ? "active" : "")">
+                                            <div class="fn-sub-dot"></div> Büdcə
+                                        </a>
+                                        <a asp-area="HR" asp-controller="Xerc" asp-action="Index"
+                                           class="fn-nav-subitem @(currentArea == "HR" && currentController == "Xerc" ? "active" : "")">
+                                            <div class="fn-sub-dot"></div> Xərc İdarəetmə
+                                        </a>
+                                    </div>
+                                </div>
                             }
                         </div>
                     </div>
