@@ -449,9 +449,9 @@ namespace FinNex.Application.Services.HR
 
             // 9.2 Standart 200 AZN güzəşti yalnız vergi bazası birinci pillə içindədirsə tətbiq olunur.
             //     HYS çıxıldıqdan sonrakı baza istifadə olunur.
-            // Standart güzəşt: işçinin əsas aylıq gəliri (esasBrut) 2500-dən çox deyilsə tətbiq olunur
-            // HYS çıxıldıqdan sonrakı bazaya (vergiDsmfBazasi) yox, faktiki gəlirə baxılır
-            decimal standartGuzest = esasBrut <= firstBracketMax ? p.VergiGuzestiMeblegi : 0m;
+            // Standart güzəşt: işçinin ümumi aylıq gəliri (brutMaas = maaş + işəgötürən HYS)
+            // 2500-dən çox deyilsə tətbiq olunur. Məs: maaş 2400 + işv.HYS 150 = 2550 > 2500 → güzəşt yoxdur
+            decimal standartGuzest = brutMaas <= firstBracketMax ? p.VergiGuzestiMeblegi : 0m;
 
             decimal vergilenecek = Math.Max(0, vergiDsmfBazasi - standartGuzest - maxIsciGuzesti);
 
