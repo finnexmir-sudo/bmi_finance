@@ -15,7 +15,9 @@ const MaasParametri = (() => {
         5: 2, // MinimumEmekHaqqi -> Mebleg
         6: 2, // VergiGuzestiMeblegi -> Mebleg
         7: 1, // DsmfIsegoturenFaizi -> Faiz
-        8: 1  // IssizlikIsegoturenFaizi -> Faiz
+        8: 1, // IssizlikIsegoturenFaizi -> Faiz
+        10: 1, // HysIsegoturenFaizi -> Faiz
+        11: 1  // HysMaxMaasFaizi -> Faiz
     };
 
     function openCreate() {
