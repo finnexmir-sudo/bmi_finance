@@ -106,4 +106,78 @@
         row.addEventListener('mouseleave', () => actions.style.opacity = '');
     });
 
+    /* ── Client-side quick search ────────────────────────────── */
+    const quickSearch = document.getElementById('miQuickSearch');
+    const clearBtn = document.getElementById('miClearSearch');
+
+    function normalizeText(s) {
+        if (!s) return '';
+        return s.toString().toLowerCase()
+            .replaceAll('ə', 'e').replaceAll('ı', 'i').replaceAll('ö', 'o')
+            .replaceAll('ü', 'u').replaceAll('ğ', 'g').replaceAll('ş', 's')
+            .replaceAll('ç', 'c');
+    }
+
+    function filterRows() {
+        const q = normalizeText(quickSearch?.value || '');
+        const rows = document.querySelectorAll('.mi-tr');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            if (!q) {
+                row.style.display = '';
+                visibleCount++;
+                return;
+            }
+            // Axtarış yalnız işçi məlumatlarında aparılır — status, rəqəm, tarix axtarışa daxil edilmir
+            const nameEl = row.querySelector('.mi-emp-name');
+            const deptEls = row.querySelectorAll('.mi-emp-dept');
+
+            let searchText = '';
+            if (nameEl) searchText += ' ' + nameEl.textContent;
+            deptEls.forEach(el => { searchText += ' ' + el.textContent; });
+
+            const text = normalizeText(searchText);
+            if (text.includes(q)) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Show/hide clear button
+        if (clearBtn) clearBtn.style.display = q ? 'flex' : 'none';
+
+        // Show "no results" message if nothing matches
+        const table = document.querySelector('.mi-table-wrap');
+        let emptyMsg = document.getElementById('miSearchEmpty');
+        if (q && visibleCount === 0 && table) {
+            if (!emptyMsg) {
+                emptyMsg = document.createElement('div');
+                emptyMsg.id = 'miSearchEmpty';
+                emptyMsg.className = 'mi-empty';
+                emptyMsg.innerHTML = '<div style="padding:30px;text-align:center;color:#8a93a8;">🔍 "<span id="miSearchQuery"></span>" üçün nəticə tapılmadı</div>';
+                table.appendChild(emptyMsg);
+            }
+            const qSpan = document.getElementById('miSearchQuery');
+            if (qSpan) qSpan.textContent = quickSearch.value;
+            emptyMsg.style.display = '';
+        } else if (emptyMsg) {
+            emptyMsg.style.display = 'none';
+        }
+    }
+
+    if (quickSearch) {
+        quickSearch.addEventListener('input', filterRows);
+        quickSearch.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { quickSearch.value = ''; filterRows(); }
+        });
+    }
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            if (quickSearch) { quickSearch.value = ''; filterRows(); quickSearch.focus(); }
+        });
+    }
+
 })();

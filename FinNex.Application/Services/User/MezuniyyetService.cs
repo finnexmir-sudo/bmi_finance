@@ -3,6 +3,7 @@ using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Communication;
+using FinNex.Application.Interfaces.Maas_If;
 using FinNex.Application.Services;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
@@ -11,9 +12,17 @@ using Microsoft.EntityFrameworkCore;
 public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, MezuniyyetCreateDto, MezuniyyetUpdateDto>, IMezuniyyetService
 {
     private readonly IEvezediciTesdiqService _evezediciTesdiqService;
-    public MezuniyyetService(IUnitOfWork unitOfWork, IMapper mapper,IEvezediciTesdiqService evezediciTesdiqService) : base(unitOfWork, mapper)
+    private readonly IMaasHesablamaService _maasHesablamaService;
+
+    public MezuniyyetService(
+        IUnitOfWork unitOfWork,
+        IMapper mapper,
+        IEvezediciTesdiqService evezediciTesdiqService,
+        IMaasHesablamaService maasHesablamaService)
+        : base(unitOfWork, mapper)
     {
         _evezediciTesdiqService = evezediciTesdiqService;
+        _maasHesablamaService = maasHesablamaService;
     }
 
     
@@ -232,6 +241,16 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             : MezuniyyetStatus.ImtinaEdildi;
 
         if (!status) m.ImtinaSebebi = qeyd;
+
+        // Qabaqcadan ödəniş seçilibsə: HR təsdiq anında məbləğ hesablanır, status
+        // “Gozleyir” olur. Mühasib ayrıca səhifədə yoxlayıb “Ödənildi” vurur.
+        if (status && m.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis)
+        {
+            var hesab = await _maasHesablamaService
+                .MezuniyyetOdenisiDetalliHesablaAsync(m.IsciId, m.BaslamaTarixi, m.BitmeTarixi);
+            m.OdenenMebleg = hesab.CemiOdenis;
+            m.OdenisStatus = MezuniyyetOdenisStatus.Gozleyir;
+        }
 
         await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(m);
 

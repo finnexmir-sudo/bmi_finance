@@ -1,0 +1,56 @@
+@model FinNex.Domain.Entities.HR.Guzest
+@{
+    ViewData["Title"] = "Yeni güzəşt";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/guzest.css" asp-append-version="true" />
+}
+
+<div class="gz-form-page">
+    <div class="gz-form-head">
+        <a asp-action="Index" class="gz-back"><i class="bi bi-arrow-left"></i> Geri</a>
+        <div class="gz-title">Yeni vergi güzəşti</div>
+    </div>
+
+    <div class="gz-form-card">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="All" class="text-danger"></div>
+
+            <div class="gz-form-group">
+                <label asp-for="Ad" class="gz-label">Ad <span class="gz-req">*</span></label>
+                <input asp-for="Ad" class="gz-input" placeholder="Məs: Qaçqın statusu" />
+                <span asp-validation-for="Ad" class="gz-err"></span>
+            </div>
+
+            <div class="gz-form-group">
+                <label asp-for="Mebleg" class="gz-label">Məbləğ (AZN) <span class="gz-req">*</span></label>
+                <input asp-for="Mebleg" type="number" step="0.01" min="0" class="gz-input" />
+                <span asp-validation-for="Mebleg" class="gz-err"></span>
+            </div>
+
+            <div class="gz-form-group">
+                <label asp-for="Madde" class="gz-label">Maddə <span class="gz-hint">(istəyə bağlı)</span></label>
+                <input asp-for="Madde" class="gz-input" placeholder="Məs: Vergi Məcəlləsi, maddə 102.1.6" />
+                <span asp-validation-for="Madde" class="gz-err"></span>
+            </div>
+
+            <div class="gz-form-group gz-form-check">
+                <label class="gz-check-label">
+                    <input asp-for="Aktivdir" type="checkbox" />
+                    <span>Aktiv güzəşt</span>
+                </label>
+            </div>
+
+            <div class="gz-form-actions">
+                <a asp-action="Index" class="gz-btn gz-btn--outline">Ləğv et</a>
+                <button type="submit" class="gz-btn gz-btn--primary">
+                    <i class="bi bi-check2"></i> Yadda saxla
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+

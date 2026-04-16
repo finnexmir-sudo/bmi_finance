@@ -1,6 +1,7 @@
 @model IEnumerable<FinNex.Domain.Entities.HR.BayramGunu>
+@using FinNex.Domain.Entities.HR
 @{
-    ViewData["Title"] = "Bayram Gunleri";
+    ViewData["Title"] = "Bayram / İş günləri";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 }
 
@@ -11,11 +12,11 @@
 <div class="bg-page">
     <div class="bg-header">
         <div class="bg-header-left">
-            <h1 class="bg-title">Bayram Gunleri</h1>
-            <p class="bg-subtitle">Bayram ve istirahet gunlerinin idaresi</p>
+            <h1 class="bg-title">Bayram / İş günləri</h1>
+            <p class="bg-subtitle">Bayram (istirahət) və əlavə iş günü (şənbə/bazar override) qeydləri</p>
         </div>
         <button class="bg-btn bg-btn-primary" id="bgOpenCreateBtn">
-            <i class="bi bi-plus-lg"></i> Yeni bayram elave et
+            <i class="bi bi-plus-lg"></i> Yeni qeyd əlavə et
         </button>
     </div>
 
@@ -40,6 +41,34 @@
         </div>
     </div>
 
+    @* ═══════ YEAR CALENDAR GRID ═══════ *@
+    <div class="bg-calendar-card">
+        <div class="bg-calendar-head">
+            <div class="bg-calendar-nav">
+                <button type="button" class="bg-nav-btn" id="bgYearPrev">‹</button>
+                <h2 class="bg-calendar-year" id="bgCalendarYear">@DateTime.Now.Year</h2>
+                <button type="button" class="bg-nav-btn" id="bgYearNext">›</button>
+                <button type="button" class="bg-btn bg-btn-secondary bg-btn-sm" id="bgYearToday">Bu il</button>
+            </div>
+            <div class="bg-calendar-legend">
+                <span class="bg-lgnd"><span class="bg-sw bg-sw--weekend"></span>Şənbə/Bazar</span>
+                <span class="bg-lgnd"><span class="bg-sw bg-sw--holiday"></span>Bayram</span>
+                <span class="bg-lgnd"><span class="bg-sw bg-sw--work-override"></span>Əlavə iş günü</span>
+                <span class="bg-lgnd"><span class="bg-sw bg-sw--past"></span>Keçmiş (kiliddə)</span>
+            </div>
+        </div>
+        <div class="bg-calendar-hint">
+            <i class="bi bi-info-circle"></i>
+            Kliklə istənilən günü dəyişdirin:
+            <strong>İş günü</strong> → bayram (qırmızı),
+            <strong>Şənbə/Bazar</strong> → iş günü (yaşıl).
+            Təkrar kliklə geri qaytarın. Keçmiş tarixləri dəyişmək mümkün deyil.
+        </div>
+        <div class="bg-calendar-grid" id="bgCalendarGrid">
+            <div class="bg-calendar-loading">Yüklənir...</div>
+        </div>
+    </div>
+
     <div class="bg-table-card">
         <table class="bg-table">
             <thead>
@@ -47,8 +76,9 @@
                     <th>#</th>
                     <th>Ad</th>
                     <th>Tarix</th>
-                    <th>Her il tekrar</th>
-                    <th>Emeliyyat</th>
+                    <th>Növ</th>
+                    <th>Hər il</th>
+                    <th>Əməliyyat</th>
                 </tr>
             </thead>
             <tbody id="bgTableBody">
@@ -61,9 +91,19 @@
                         <td>@item.Ad</td>
                         <td>@item.Tarix.ToString("dd.MM.yyyy")</td>
                         <td>
+                            @if (item.Tip == GunTipi.IsGunu)
+                            {
+                                <span class="bg-badge bg-badge--work"><i class="bi bi-briefcase-fill"></i> İş günü</span>
+                            }
+                            else
+                            {
+                                <span class="bg-badge bg-badge--holiday"><i class="bi bi-calendar-heart"></i> Bayram</span>
+                            }
+                        </td>
+                        <td>
                             @if (item.HerIlTeyinOlunur)
                             {
-                                <span class="bg-badge bg-badge--yes"><i class="bi bi-check-circle-fill"></i> Beli</span>
+                                <span class="bg-badge bg-badge--yes"><i class="bi bi-check-circle-fill"></i> Bəli</span>
                             }
                             else
                             {
@@ -106,28 +146,49 @@
             <input type="hidden" id="bgId" name="id" />
             <div class="bg-modal-body">
                 <div class="bg-form-group">
-                    <label class="bg-label" for="bgAd">Bayram adi *</label>
-                    <input type="text" class="bg-input" id="bgAd" name="ad" required placeholder="Meselen: Novruz Bayrami" />
+                    <label class="bg-label">Qeyd növü *</label>
+                    <div class="bg-tip-selector">
+                        <label class="bg-tip-option">
+                            <input type="radio" name="tip" value="1" id="bgTip1" checked />
+                            <div class="bg-tip-card bg-tip-card--holiday">
+                                <i class="bi bi-calendar-heart"></i>
+                                <span class="bg-tip-title">Bayram / İstirahət</span>
+                                <span class="bg-tip-sub">İş günü olsa da istirahət sayılır</span>
+                            </div>
+                        </label>
+                        <label class="bg-tip-option">
+                            <input type="radio" name="tip" value="2" id="bgTip2" />
+                            <div class="bg-tip-card bg-tip-card--work">
+                                <i class="bi bi-briefcase-fill"></i>
+                                <span class="bg-tip-title">İş günü</span>
+                                <span class="bg-tip-sub">Şənbə / bazar-ı iş günü etmək üçün</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <div class="bg-form-group">
+                    <label class="bg-label" for="bgAd">Ad *</label>
+                    <input type="text" class="bg-input" id="bgAd" name="ad" required placeholder="Məsələn: Novruz Bayramı" />
                     <span class="bg-error" id="bgAdError"></span>
                 </div>
                 <div class="bg-form-row">
                     <div class="bg-form-group bg-form-half">
-                        <label class="bg-label" for="bgBaslangicTarix">Baslangic tarix *</label>
-                        <input type="date" class="bg-input" id="bgBaslangicTarix" name="baslangicTarix" required />
+                        <label class="bg-label" for="bgBaslangicTarix">Başlanğıc tarix *</label>
+                        <input type="date" class="bg-input" id="bgBaslangicTarix" name="baslangicTarix" required data-fn-datepicker />
                         <span class="bg-error" id="bgTarixError"></span>
                     </div>
                     <div class="bg-form-group bg-form-half">
-                        <label class="bg-label" for="bgBitisTarix">Bitis tarix</label>
-                        <input type="date" class="bg-input" id="bgBitisTarix" name="bitisTarix" />
+                        <label class="bg-label" for="bgBitisTarix">Bitiş tarix</label>
+                        <input type="date" class="bg-input" id="bgBitisTarix" name="bitisTarix" data-fn-datepicker />
                         <span class="bg-error" id="bgBitisTarixError"></span>
-                        <span class="bg-hint">Bos buraxsan tek gun elave olunur</span>
+                        <span class="bg-hint">Boş buraxsanız tək gün əlavə olunur</span>
                     </div>
                 </div>
                 <div class="bg-form-group bg-form-check">
                     <label class="bg-checkbox-label">
                         <input type="checkbox" id="bgHerIl" name="herIlTeyinOlunur" value="true" />
                         <span class="bg-checkmark"></span>
-                        Her il tekrar olunur
+                        Hər il təkrar olunur
                     </label>
                 </div>
             </div>

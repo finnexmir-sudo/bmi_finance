@@ -40,5 +40,25 @@
         public Isci? SobeReisiIsci { get; set; }
         public Isci? RehberIsci { get; set; }
         public Isci? HrIsci { get; set; }
+
+        // ── Ödəniş vaxtı və statusu (QabaqcadanOdenis / AySonuOdenis) ──
+        //
+        // İşçi müraciət edərkən seçir:
+        //  AySonuOdenis (default)  — mövcud davranış: məzuniyyət pulu həmin ayın
+        //                            maaşına əlavə olunur (MAX(MH, ƏH)).
+        //  QabaqcadanOdenis        — HR təsdiqindən sonra Mühasibə bildiriş gedir,
+        //                            Mühasib ödənişi ayrıca edir və “Ödənildi” vurur.
+        //                            Maaş hesablamasında həmin ay(lar)ın kəsintisi
+        //                            olur, amma məzuniyyət ödənişi əlavə olunmur
+        //                            (artıq qabaqcadan verilib).
+        public MezuniyyetOdenisTipi OdenisTipi { get; set; } = MezuniyyetOdenisTipi.AySonuOdenis;
+        public MezuniyyetOdenisStatus OdenisStatus { get; set; } = MezuniyyetOdenisStatus.TetbiqEdilmir;
+
+        // HR təsdiq anında hesablanan tam məzuniyyət ödənişi məbləği.
+        // Mühasib yoxlayıb düzəldə bilər (səhv olarsa).
+        public decimal? OdenenMebleg { get; set; }
+        public DateTime? OdenilmeTarixi { get; set; }
+        public int? OdeyenMuhasibId { get; set; }
+        public Isci? OdeyenMuhasib { get; set; }
     }
 }

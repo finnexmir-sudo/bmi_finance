@@ -290,7 +290,7 @@
     border: 1px solid #e2e6ef;
     border-radius: 13px;
     box-shadow: 0 2px 8px rgba(15,26,46,.05);
-    overflow: hidden;
+    /* overflow: hidden SİLİNDİ — sticky footer üçün lazımdır */
 }
 
 /* Toolbar */
@@ -317,6 +317,54 @@
     align-items: center;
     gap: 8px;
 }
+
+/* Toolbar — axtarış */
+.mth-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    max-width: 340px;
+    width: 100%;
+}
+.mth-search > svg {
+    position: absolute;
+    left: 12px;
+    pointer-events: none;
+}
+.mth-search-input {
+    width: 100%;
+    padding: 9px 34px 9px 34px;
+    border: 1px solid #e2e6ef;
+    border-radius: 9px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+    color: #1a2332;
+    transition: border-color .15s, box-shadow .15s;
+}
+.mth-search-input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, .12);
+}
+.mth-search-clear {
+    position: absolute;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: #8a93a8;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 6px;
+    display: none;
+}
+.mth-search.has-value .mth-search-clear { display: inline-flex; align-items: center; justify-content: center; }
+.mth-search-clear:hover { background: #f0f2f7; color: #1a2332; }
+.mth-row.mth-hidden,
+.mth-detail-row.mth-hidden { display: none !important; }
 
 /* ── Checkbox ────────────────────────────────────────────────── */
 .mth-chk-wrap {
@@ -1152,5 +1200,129 @@
 
     .mth-table .tr-cols th.col-status {
         display: none;
+    }
+}
+
+/* ══ Sticky footer — həmişə ekranın altında görünür ══ */
+.mth-footer--sticky {
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+    background: #fff;
+    border-top: 1px solid #e4e7ed;
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.08), 0 -2px 6px rgba(15, 23, 42, 0.04);
+    backdrop-filter: blur(8px);
+    padding: 14px 20px;
+    border-radius: 0 0 13px 13px;
+}
+
+/* Card-ın altındakı padding çıxarıldı ki, sticky footer aşağı düşsün */
+.mth-card:has(.mth-footer--sticky) {
+    padding-bottom: 0;
+}
+
+/* Footer çox elementli olduqda bir sətrə sığmayanda */
+.mth-footer--sticky .mth-footer-totals {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+}
+
+/* Şirkət xərci xüsusi rəng */
+.mth-footer--sticky .mth-ftotal-val[id="mthFootSirket"] {
+    font-weight: 800;
+}
+
+/* ══ Footer groups (İşçi tərəfi + Şirkət tərəfi) ══ */
+.mth-foot-groups {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex: 1;
+    justify-content: flex-end;
+}
+.mth-foot-grp {
+    display: flex;
+    flex-direction: column;
+    padding: 6px 14px 8px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: #fff;
+    min-width: 0;
+    transition: border-color .15s, box-shadow .15s;
+}
+.mth-foot-grp:hover { box-shadow: 0 2px 8px rgba(15,23,42,.05); }
+
+.mth-foot-grp--isci {
+    background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
+    border-color: #bbf7d0;
+}
+.mth-foot-grp--sirket {
+    background: linear-gradient(135deg, #faf5ff, #f5f3ff);
+    border-color: #e9d5ff;
+}
+
+.mth-foot-grp-title {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+    border-bottom: 1px dashed;
+}
+.mth-foot-grp--isci .mth-foot-grp-title {
+    color: #059669;
+    border-color: rgba(5,150,105,.2);
+}
+.mth-foot-grp--sirket .mth-foot-grp-title {
+    color: #7c3aed;
+    border-color: rgba(124,58,237,.2);
+}
+
+.mth-foot-grp-body {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mth-ftotal-val--sirket {
+    font-size: 17px;
+    color: #7c3aed;
+    font-weight: 800;
+}
+
+/* Footer actions — sağa sıxışdır */
+.mth-foot-groups .mth-footer-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-left: auto;
+    padding-left: 8px;
+    border-left: 1px solid #e4e7ed;
+}
+
+/* Responsive: dar ekranda qruplar bir-birinin altına */
+@media (max-width: 1200px) {
+    .mth-footer--sticky .mth-footer-left {
+        flex-basis: 100%;
+        margin-bottom: 8px;
+    }
+    .mth-foot-groups {
+        justify-content: flex-start;
+        flex-basis: 100%;
+    }
+}
+@media (max-width: 900px) {
+    .mth-foot-grp-body { flex-wrap: wrap; gap: 6px 10px; }
+    .mth-foot-groups .mth-footer-actions {
+        margin-left: 0;
+        padding-left: 0;
+        border-left: none;
+        flex-basis: 100%;
+        justify-content: flex-end;
     }
 }

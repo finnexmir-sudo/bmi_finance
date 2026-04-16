@@ -71,6 +71,13 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<MaasNovu> MaasNovleri { get; set; }
     public DbSet<IsciMaasTarixcesi> IsciMaasTarixceleri { get; set; }
     public DbSet<MaasParametri> MaasParametrleri { get; set; }
+    public DbSet<VergiPille> VergiPilleleri { get; set; }
+    public DbSet<IsciAyliqQazanc> IsciAyliqQazanclar { get; set; }
+    public DbSet<Xestelik> Xestelikler { get; set; }
+    public DbSet<XestelikOdenis> XestelikOdenisleri { get; set; }
+    public DbSet<Guzest> Guzestler { get; set; }
+    public DbSet<IsciGuzest> IsciGuzestler { get; set; }
+    public DbSet<IsciHYS> IsciHYSler { get; set; }
 
     public DbSet<Mesaj> Mesajlar { get; set; }
     public DbSet<Bildiris> Bildirisler { get; set; }
@@ -304,7 +311,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .IsUnique();
         builder.Entity<Maas>()
             .HasOne(x => x.Isci)
-            .WithMany()
+            .WithMany(x => x.Maaslar)
             .HasForeignKey(x => x.IsciId)
             .OnDelete(DeleteBehavior.Cascade);
 
@@ -319,10 +326,10 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
 
 
         builder.Entity<IsciMaliye>()
-    .HasOne(x => x.Isci)
-    .WithOne()
-    .HasForeignKey<IsciMaliye>(x => x.IsciId)
-    .OnDelete(DeleteBehavior.Cascade);
+            .HasOne(x => x.Isci)
+            .WithOne(x => x.Maliye)
+            .HasForeignKey<IsciMaliye>(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<IsciMaliye>()
             .HasIndex(x => x.IsciId)
@@ -382,7 +389,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         // ==========================
         builder.Entity<IsciMaasTarixcesi>()
             .HasOne(x => x.Isci)
-            .WithMany()
+            .WithMany(x => x.MaasTarixcesi)
             .HasForeignKey(x => x.IsciId)
             .OnDelete(DeleteBehavior.Cascade);
 
@@ -418,6 +425,110 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         builder.Entity<MaasParametri>()
             .HasIndex(x => new { x.Nov, x.BaslamaTarixi })
             .IsUnique();
+
+        // ==========================
+        // Xestelik (xəstəlik bülletənləri)
+        // ==========================
+        builder.Entity<Xestelik>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Xestelik>()
+            .Property(x => x.BulletenNomresi)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Entity<Xestelik>()
+            .Property(x => x.MualiceMuessisesi)
+            .HasMaxLength(200);
+
+        builder.Entity<Xestelik>()
+            .Property(x => x.Qeyd)
+            .HasMaxLength(500);
+
+        builder.Entity<Xestelik>()
+            .HasIndex(x => new { x.IsciId, x.BaslamaTarixi });
+
+        // ==========================
+        // XestelikOdenis (audit üçün)
+        // ==========================
+        builder.Entity<XestelikOdenis>()
+            .HasOne(x => x.Xestelik)
+            .WithMany(x => x.Odenisler)
+            .HasForeignKey(x => x.XestelikId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<XestelikOdenis>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<XestelikOdenis>()
+            .HasOne(x => x.Maas)
+            .WithMany()
+            .HasForeignKey(x => x.MaasId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<XestelikOdenis>()
+            .Property(x => x.BirGunluk)
+            .HasPrecision(18, 4);
+
+        builder.Entity<XestelikOdenis>()
+            .Property(x => x.SirketOdenis)
+            .HasPrecision(18, 2);
+
+        builder.Entity<XestelikOdenis>()
+            .Property(x => x.DsmfOdenis)
+            .HasPrecision(18, 2);
+
+        builder.Entity<XestelikOdenis>()
+            .HasIndex(x => new { x.IsciId, x.Il, x.Ay });
+
+        // ==========================
+        // IsciAyliqQazanc (məzuniyyət üçün 12 ay qazanc tarixçəsi)
+        // ==========================
+        builder.Entity<IsciAyliqQazanc>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<IsciAyliqQazanc>()
+            .Property(x => x.Qazanc)
+            .HasPrecision(18, 2);
+
+        builder.Entity<IsciAyliqQazanc>()
+            .Property(x => x.Qeyd)
+            .HasMaxLength(500);
+
+        // Eyni işçi üçün eyni il/ay təkrar olmasın
+        builder.Entity<IsciAyliqQazanc>()
+            .HasIndex(x => new { x.IsciId, x.Il, x.Ay })
+            .IsUnique();
+
+        // ==========================
+        // VergiPille (pilləli vergi dərəcələri)
+        // ==========================
+        builder.Entity<VergiPille>()
+            .Property(x => x.AsagiHedd)
+            .HasPrecision(18, 2);
+        builder.Entity<VergiPille>()
+            .Property(x => x.YuxariHedd)
+            .HasPrecision(18, 2);
+        builder.Entity<VergiPille>()
+            .Property(x => x.Faiz)
+            .HasPrecision(6, 2);
+        builder.Entity<VergiPille>()
+            .Property(x => x.SabitMebleg)
+            .HasPrecision(18, 2);
+        builder.Entity<VergiPille>()
+            .Property(x => x.Aciqlama)
+            .HasMaxLength(300);
+        builder.Entity<VergiPille>()
+            .HasIndex(x => new { x.Nov, x.Aktivdir });
 
         builder.Entity<Davamiyyet>()
             .HasIndex(x => new { x.IsciId, x.Tarix })
@@ -501,6 +612,48 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .WithMany()
             .HasForeignKey(x => x.EvezEdenIsciId)
             .OnDelete(DeleteBehavior.NoAction);
+
+        // QabaqcadanOdenis halında ödənişi təsdiqləyən Mühasib — optional FK,
+        // heç bir cascade effect olmadan saxlanılır.
+        builder.Entity<Mezuniyyet>()
+            .HasOne(x => x.OdeyenMuhasib)
+            .WithMany()
+            .HasForeignKey(x => x.OdeyenMuhasibId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<Mezuniyyet>()
+            .Property(x => x.OdenenMebleg)
+            .HasColumnType("decimal(18,2)");
+
+        // ── Güzəşt kataloqu və işçi təyinatları ──
+        builder.Entity<Guzest>()
+            .Property(x => x.Ad)
+            .HasMaxLength(200)
+            .IsRequired();
+        builder.Entity<Guzest>()
+            .Property(x => x.Mebleg)
+            .HasColumnType("decimal(18,2)");
+        builder.Entity<Guzest>()
+            .Property(x => x.Madde)
+            .HasMaxLength(300);
+        builder.Entity<Guzest>()
+            .HasIndex(x => x.Aktivdir);
+
+        builder.Entity<IsciGuzest>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<IsciGuzest>()
+            .HasOne(x => x.Guzest)
+            .WithMany(g => g.IsciGuzestler)
+            .HasForeignKey(x => x.GuzestId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<IsciGuzest>()
+            .HasIndex(x => new { x.IsciId, x.GuzestId });
+        builder.Entity<IsciGuzest>()
+            .Property(x => x.Qeyd)
+            .HasMaxLength(500);
 
         builder.Entity<IsciTeyinat>()
     .HasOne(x => x.Isci)
@@ -756,7 +909,9 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             new MaasNovu { Id = 8, Ad = "İşsizlik Sığortası (İşçi)", Tip = MaasDetayTipi.Tutulma, Aktivdir = true },
             new MaasNovu { Id = 9, Ad = "İTSS", Tip = MaasDetayTipi.Tutulma, Aktivdir = true },
             new MaasNovu { Id = 10, Ad = "DSMF (İşəgötürən)", Tip = MaasDetayTipi.IsegoturenXerci, Aktivdir = true },
-            new MaasNovu { Id = 11, Ad = "İşsizlik Sığortası (İşəgötürən)", Tip = MaasDetayTipi.IsegoturenXerci, Aktivdir = true }
+            new MaasNovu { Id = 11, Ad = "İşsizlik Sığortası (İşəgötürən)", Tip = MaasDetayTipi.IsegoturenXerci, Aktivdir = true },
+            new MaasNovu { Id = 12, Ad = "İTSS (İşəgötürən)", Tip = MaasDetayTipi.IsegoturenXerci, Aktivdir = true },
+            new MaasNovu { Id = 13, Ad = "Xəstəlik Ödənişi", Tip = MaasDetayTipi.Gelir, Aktivdir = true }
         );
 
         // ── MaasParametri Seed Data ───────────────────────────────
@@ -767,6 +922,32 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             new MaasParametri { Id = 4, Nov = MaasParametrNovu.IcbariTibbiSigortaFaizi, Tip = MaasParametrTipi.Faiz, Deyer = 2m, Aciqlama = "2026", BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
             new MaasParametri { Id = 5, Nov = MaasParametrNovu.MinimumEmekHaqqi, Tip = MaasParametrTipi.Mebleg, Deyer = 345m, Aciqlama = "2026", BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
             new MaasParametri { Id = 6, Nov = MaasParametrNovu.VergiGuzestiMeblegi, Tip = MaasParametrTipi.Mebleg, Deyer = 200m, Aciqlama = "2026", BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true }
+        );
+
+        // ── VergiPille Seed Data — 2026 pilləli vergi dərəcələri ──
+        // Qeyri-neft/Qeyri-dövlət sektoru üçün rəsmi qaydalar
+        builder.Entity<VergiPille>().HasData(
+            // Gəlir Vergisi: 0-2500 → 3%; 2500-8000 → 75+10%; 8000+ → 625+14%
+            new VergiPille { Id = 1, Nov = MaasParametrNovu.GelirVergisiFaizi, Sira = 1, AsagiHedd = 0m,    YuxariHedd = 2500m,  Faiz = 3m,  SabitMebleg = 0m,    Aciqlama = "2026: 0–2500 AZN → 3%",           BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+            new VergiPille { Id = 2, Nov = MaasParametrNovu.GelirVergisiFaizi, Sira = 2, AsagiHedd = 2500m, YuxariHedd = 8000m,  Faiz = 10m, SabitMebleg = 75m,   Aciqlama = "2026: 2500–8000 AZN → 75+10%",    BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+            new VergiPille { Id = 3, Nov = MaasParametrNovu.GelirVergisiFaizi, Sira = 3, AsagiHedd = 8000m, YuxariHedd = null,   Faiz = 14m, SabitMebleg = 625m,  Aciqlama = "2026: 8000+ AZN → 625+14%",       BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+
+            // DSMF (İşçi): 0-200 → 3%; 200+ → 6+10%
+            new VergiPille { Id = 4, Nov = MaasParametrNovu.DsmfFaizi, Sira = 1, AsagiHedd = 0m,   YuxariHedd = 200m, Faiz = 3m,  SabitMebleg = 0m, Aciqlama = "2026: 0–200 AZN → 3%",       BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+            new VergiPille { Id = 5, Nov = MaasParametrNovu.DsmfFaizi, Sira = 2, AsagiHedd = 200m, YuxariHedd = null, Faiz = 10m, SabitMebleg = 6m, Aciqlama = "2026: 200+ AZN → 6+10%",    BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+
+            // DSMF (İşəgötürən): 0-200 → 22%; 200-8000 → 44+15%; 8000+ → 1214+11%
+            new VergiPille { Id = 6, Nov = MaasParametrNovu.DsmfIsegoturenFaizi, Sira = 1, AsagiHedd = 0m,    YuxariHedd = 200m,  Faiz = 22m, SabitMebleg = 0m,    Aciqlama = "2026: 0–200 AZN → 22%",           BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+            new VergiPille { Id = 7, Nov = MaasParametrNovu.DsmfIsegoturenFaizi, Sira = 2, AsagiHedd = 200m,  YuxariHedd = 8000m, Faiz = 15m, SabitMebleg = 44m,   Aciqlama = "2026: 200–8000 AZN → 44+15%",     BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+            new VergiPille { Id = 8, Nov = MaasParametrNovu.DsmfIsegoturenFaizi, Sira = 3, AsagiHedd = 8000m, YuxariHedd = null,  Faiz = 11m, SabitMebleg = 1214m, Aciqlama = "2026: 8000+ AZN → 1214+11%",     BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+
+            // İTSS (İşçi): 0-8000 → 2%; 8000+ → 160+0.5%
+            new VergiPille { Id = 9,  Nov = MaasParametrNovu.IcbariTibbiSigortaFaizi, Sira = 1, AsagiHedd = 0m,    YuxariHedd = 8000m, Faiz = 2m,   SabitMebleg = 0m,   Aciqlama = "2026: 0–8000 AZN → 2%",        BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+            new VergiPille { Id = 10, Nov = MaasParametrNovu.IcbariTibbiSigortaFaizi, Sira = 2, AsagiHedd = 8000m, YuxariHedd = null,  Faiz = 0.5m, SabitMebleg = 160m, Aciqlama = "2026: 8000+ AZN → 160+0.5%",  BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+
+            // İTSS (İşəgötürən): 0-8000 → 2%; 8000+ → 160+0.5%  (işçi ilə eynidir)
+            new VergiPille { Id = 11, Nov = MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi, Sira = 1, AsagiHedd = 0m,    YuxariHedd = 8000m, Faiz = 2m,   SabitMebleg = 0m,   Aciqlama = "2026: 0–8000 AZN → 2%",        BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+            new VergiPille { Id = 12, Nov = MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi, Sira = 2, AsagiHedd = 8000m, YuxariHedd = null,  Faiz = 0.5m, SabitMebleg = 160m, Aciqlama = "2026: 8000+ AZN → 160+0.5%",  BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true }
         );
 
     }

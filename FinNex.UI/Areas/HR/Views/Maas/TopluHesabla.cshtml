@@ -7,15 +7,42 @@
     var il           = (int)ViewBag.Il;
     var ay           = (int)ViewBag.Ay;
     var hesablanmis  = (List<int>)ViewBag.Hesablanmis;
+    var cariMaasMap  = ViewBag.CariMaasMap as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+    var ibanMap      = ViewBag.IbanMap as Dictionary<int, string?> ?? new Dictionary<int, string?>();
+    var vergiPilleleriList = (ViewBag.VergiPilleleri as List<VergiPille>) ?? new();
+    var vergiGuzestiDeyer  = (decimal)(ViewBag.VergiGuzesti ?? 200m);
+    var firstBracketMax    = (decimal)(ViewBag.FirstBracketMax ?? 2500m);
     var isciList     = Model.ToList();
+
+    decimal GetEsas(int isciId) => cariMaasMap.TryGetValue(isciId, out var v) ? v : (isciList.FirstOrDefault(x => x.Id == isciId)?.Maliye?.CariMaas ?? 0m);
+    string? GetIban(int isciId) => ibanMap.TryGetValue(isciId, out var v) ? v : isciList.FirstOrDefault(x => x.Id == isciId)?.Maliye?.BankHesabNo;
 
     var ayAdlar = new[]{"","Yanvar","Fevral","Mart","Aprel","May","İyun","İyul","Avqust","Sentyabr","Oktyabr","Noyabr","Dekabr"};
 
     int doneSayi  = isciList.Count(x => hesablanmis.Contains(x.Id));
     int yeniSayi  = isciList.Count(x => !hesablanmis.Contains(x.Id));
-    int ibanYox   = isciList.Count(x => string.IsNullOrEmpty(x.Maliye?.BankHesabNo));
+    int ibanYox   = isciList.Count(x => string.IsNullOrEmpty(GetIban(x.Id)));
 
     string Fmt(decimal v) => v > 0 ? v.ToString("N2") + " ₼" : "—";
+
+    // JS-ə keçiriləcək pilləli konfiqurasiya
+    var isciHysMap = ViewBag.IsciHysMap as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+    var hysIsvFaiz = (decimal)(ViewBag.HysIsvFaiz ?? 15m);
+
+    var pilleConfigJson = System.Text.Json.JsonSerializer.Serialize(new
+    {
+        pilleler = vergiPilleleriList.GroupBy(x => (int)x.Nov).ToDictionary(
+            g => g.Key.ToString(),
+            g => g.OrderBy(x => x.Sira).Select(x => new {
+                AsagiHedd = x.AsagiHedd,
+                YuxariHedd = x.YuxariHedd,
+                Faiz = x.Faiz,
+                SabitMebleg = x.SabitMebleg
+            }).ToArray()
+        ),
+        vergiGuzesti = vergiGuzestiDeyer,
+        hysIsvFaiz = hysIsvFaiz
+    });
 }
 
 @section Styles {
@@ -144,29 +171,57 @@
         </div>
     </div>
 
-    @* ── Vergi dərəcələri ─────────────────────────────────────── *@
-    <div class="mth-rates">
-        @{
-            var rates = new[]
-            {
-                new{Lbl="Gəlir vergisi", Val="14%",  Clr="#2d6cdf"},
-                new{Lbl="DSMF (işçi)",  Val="3%",   Clr="#7c5cbf"},
-                new{Lbl="İşsizlik",      Val="0.5%", Clr="#d85a30"},
-                new{Lbl="İTSS",          Val="2%",   Clr="#1e9b6b"},
-                new{Lbl="DSMF (işv.)",   Val="22%",  Clr="#e8b84b"},
-                new{Lbl="İşsizlik (işv.)",Val="0.5%",Clr="#8a93a8"},
-            };
+    @* ── Vergi dərəcələri (2026 — pilləli qaydalar) ────────────── *@
+    @{
+        var vergiPilleleri = (ViewBag.VergiPilleleri as List<FinNex.Domain.Entities.HR.VergiPille>) ?? new();
+
+        string PilleXulase(FinNex.Domain.Entities.HR.MaasParametrNovu nov)
+        {
+            var nP = vergiPilleleri.Where(x => x.Nov == nov).OrderBy(x => x.Sira).ToList();
+            if (!nP.Any()) return "—";
+            if (nP.Count == 1) return $"{nP[0].Faiz.ToString("G29")}%";
+            return string.Join(" / ", nP.Select(x => $"{x.Faiz.ToString("G29")}%"));
         }
+
+        bool Pilleli(FinNex.Domain.Entities.HR.MaasParametrNovu nov) =>
+            vergiPilleleri.Count(x => x.Nov == nov) > 1;
+
+        var rates = new[]
+        {
+            new{Lbl="Gəlir vergisi",     Nov=FinNex.Domain.Entities.HR.MaasParametrNovu.GelirVergisiFaizi,                 Flat=(string?)null, Clr="#2d6cdf"},
+            new{Lbl="DSMF (işçi)",       Nov=FinNex.Domain.Entities.HR.MaasParametrNovu.DsmfFaizi,                         Flat=(string?)null, Clr="#7c5cbf"},
+            new{Lbl="İşsizlik (işçi)",   Nov=FinNex.Domain.Entities.HR.MaasParametrNovu.IssizlikSigortasiFaizi,             Flat="0.5%",        Clr="#d85a30"},
+            new{Lbl="İTSS (işçi)",       Nov=FinNex.Domain.Entities.HR.MaasParametrNovu.IcbariTibbiSigortaFaizi,            Flat=(string?)null, Clr="#1e9b6b"},
+            new{Lbl="DSMF (işv.)",       Nov=FinNex.Domain.Entities.HR.MaasParametrNovu.DsmfIsegoturenFaizi,                Flat=(string?)null, Clr="#e8b84b"},
+            new{Lbl="İTSS (işv.)",       Nov=FinNex.Domain.Entities.HR.MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi,  Flat=(string?)null, Clr="#14a5a5"},
+            new{Lbl="İşsizlik (işv.)",   Nov=FinNex.Domain.Entities.HR.MaasParametrNovu.IssizlikIsegoturenFaizi,            Flat="0.5%",        Clr="#8a93a8"},
+        };
+    }
+    <div class="mth-rates">
         @foreach (var r in rates)
         {
-            <div class="mth-rate-card">
+            var isPilleli = Pilleli(r.Nov);
+            var val = r.Flat ?? PilleXulase(r.Nov);
+            <div class="mth-rate-card" title="@(isPilleli ? "Pilləli — parametr səhifəsinə bax" : "Flat dərəcə")">
                 <div class="mth-rate-bar" style="background:@r.Clr"></div>
-                <div>
-                    <div class="mth-rate-lbl">@r.Lbl</div>
-                    <div class="mth-rate-val">@r.Val</div>
+                <div style="flex:1;min-width:0;">
+                    <div class="mth-rate-lbl">
+                        @r.Lbl
+                        @if (isPilleli)
+                        {
+                            <span style="font-size:8px;font-weight:700;background:rgba(99,102,241,.12);color:#6366f1;padding:1px 5px;border-radius:999px;margin-left:4px;letter-spacing:.3px;">PİLLƏLİ</span>
+                        }
+                    </div>
+                    <div class="mth-rate-val" style="font-size:@(isPilleli ? "11px" : "13px");white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@val</div>
                 </div>
             </div>
         }
+        <a asp-area="HR" asp-controller="MaasParametri" asp-action="Index" class="mth-rate-card" style="text-decoration:none;color:inherit;border:1px dashed #d0d5dd;background:#f9fafb;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:600;color:#6366f1;">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Parametrləri idarə et
+        </a>
     </div>
 
     @* ── Main form + table ────────────────────────────────────── *@
@@ -194,7 +249,8 @@
             <div class="mth-card">
 
                 @* Toolbar *@
-                <div class="mth-toolbar">
+                <div class="mth-toolbar"
+                     data-first-bracket-max="@firstBracketMax.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)">
                     <div class="mth-toolbar-left">
                         <label class="mth-chk-wrap">
                             <input type="checkbox" class="mth-checkbox" id="mthChkAll"/>
@@ -202,9 +258,22 @@
                         </label>
                         <div class="mth-sel-chip" id="mthSelChip"></div>
                     </div>
+                    <div class="mth-toolbar-center" style="flex:1;display:flex;justify-content:center;padding:0 12px;">
+                        <div class="mth-search">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                <circle cx="6" cy="6" r="4.3" stroke="#8a93a8" stroke-width="1.3"/>
+                                <path d="M9.2 9.2L12 12" stroke="#8a93a8" stroke-width="1.3" stroke-linecap="round"/>
+                            </svg>
+                            <input type="text" id="mthSearchBox" class="mth-search-input"
+                                   placeholder="Ad və ya departament ilə axtar..." autocomplete="off" />
+                            <button type="button" id="mthSearchClear" class="mth-search-clear" aria-label="Təmizlə" title="Təmizlə">×</button>
+                        </div>
+                    </div>
                     <div class="mth-toolbar-right">
-                        <span style="font-size:12px;color:#8a93a8;font-weight:500;">@isciList.Count işçi</span>
-                        <button type="button" id="mthBtnCalc" disabled class="mth-btn mth-btn--gold">
+                        <span style="font-size:12px;color:#8a93a8;font-weight:500;" id="mthIsciCount">@isciList.Count işçi</span>
+                        @* "Seçilənləri Hesabla" düyməsi müvəqqəti gizlədilib — alt footer-dəki 'Hamısını Hesabla' eyni işi görür.
+                           JS-in btnCalc-a ehtiyacı olduğu üçün DOM-da qalır (display:none). *@
+                        <button type="button" id="mthBtnCalc" disabled class="mth-btn mth-btn--gold" style="display:none;">
                             <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                                 <rect x="1" y="1" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/>
                                 <path d="M6.5 4v5M4 6.5h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
@@ -226,7 +295,7 @@
                                 <th class="col-cerime">− Cərimə</th>
                                 <th class="col-esas">Əsas Maaş</th>
                                 <th class="col-brut">
-                                    <span style="color:#1e9b6b;">BRÜT</span>
+                                    <span style="color:#1e9b6b;">GROSS</span>
                                 </th>
                                 <th class="col-net">
                                     <span style="color:#c9900a;">NET MAAŞ</span>
@@ -240,13 +309,36 @@
                                 var isci    = isciList[i];
                                 var teyin   = isci.IsciTeyinatlari.FirstOrDefault();
                                 var dept    = teyin?.Departament?.Ad ?? "—";
-                                var esas    = isci.Maliye?.CariMaas ?? 0m;
+                                var esas    = GetEsas(isci.Id);
                                 var isDone  = hesablanmis.Contains(isci.Id);
-                                var hasIban = !string.IsNullOrEmpty(isci.Maliye?.BankHesabNo);
+                                var hasIban = !string.IsNullOrEmpty(GetIban(isci.Id));
 
                                 @* ── Main row ──────────────────────────────── *@
+                                decimal isciGuzestMebleg = 0m;
+                                string isciGuzestAd = "";
+                                var _igMap = ViewBag.IsciGuzestMap as Dictionary<int, FinNex.Domain.Entities.HR.IsciGuzest>;
+                                if (_igMap != null && _igMap.ContainsKey(isci.Id))
+                                {
+                                    var _ig = _igMap[isci.Id];
+                                    if (_ig != null && _ig.Guzest != null)
+                                    {
+                                        isciGuzestMebleg = _ig.Guzest.Mebleg;
+                                        isciGuzestAd = _ig.Guzest.Ad ?? "";
+                                    }
+                                }
+                                var isciGuzestMeblegStr = isciGuzestMebleg.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                var isciGuzestAdParen = isciGuzestAd.Length > 0 ? "(" + isciGuzestAd + ")" : "";
+
+                                decimal isciHys = 0m;
+                                if (isciHysMap.ContainsKey(isci.Id))
+                                    isciHys = isciHysMap[isci.Id];
+                                var isciHysStr = isciHys.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
                                 <tr data-isci="@isci.Id"
                                     data-esas="@esas.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-isci-guzest="@isciGuzestMeblegStr"
+                                    data-isci-guzest-ad="@isciGuzestAd"
+                                    data-hys="@isciHysStr"
                                     class="mth-row @(isDone ? "done" : "")">
 
                                     @* Checkbox *@
@@ -311,7 +403,7 @@
                                     @* Əsas Maaş *@
                                     <td class="col-esas"><span class="n">@Fmt(esas)</span></td>
 
-                                    @* BRÜT (real-time) *@
+                                    @* GROSS (real-time) *@
                                     <td class="col-brut">
                                         <span data-p="brut" class="n">—</span>
                                     </td>
@@ -362,7 +454,7 @@
                                                     </div>
                                                 </div>
 
-                                                @* Vergi güzəşti *@
+                                                @* Vergi güzəşti (standart + işçi) *@
                                                 <div class="mth-detail-card">
                                                     <div class="mth-detail-card-head">
                                                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -372,8 +464,19 @@
                                                     </div>
                                                     <div class="mth-detail-card-body">
                                                         <div class="mth-detail-item">
-                                                            <span class="mth-detail-lbl">Güzəşt məbləği</span>
-                                                            <span class="n n--g">200.00 ₼</span>
+                                                            <span class="mth-detail-lbl">Standart <small style="opacity:.6">(brüt ≤ @firstBracketMax.ToString("N0"))</small></span>
+                                                            <span class="n n--g" data-p="standartguzest">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">
+                                                                İşçi güzəşti
+                                                                <small style="opacity:.7">@isciGuzestAdParen</small>
+                                                            </span>
+                                                            <span class="n n--g" data-p="isciguzest">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">Vergilənəcək</span>
+                                                            <span class="n n--au" data-p="vergilenecek">—</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -386,14 +489,15 @@
                                                             <path d="M7 4.5v3M7 9v.5" stroke="#d85a30" stroke-width="1.2" stroke-linecap="round"/>
                                                         </svg>
                                                         <span>İşçi tutulmaları</span>
+                                                        <span class="mth-rate-hint" style="margin-left:auto;font-size:9px;color:#6366f1;font-weight:700;">PİLLƏLİ</span>
                                                     </div>
                                                     <div class="mth-detail-card-body mth-detail-card-body--row">
                                                         <div class="mth-detail-item">
-                                                            <span class="mth-detail-lbl">Gəlir V. <span class="mth-rate-hint">14%</span></span>
+                                                            <span class="mth-detail-lbl">Gəlir V.</span>
                                                             <span class="n n--r" data-p="gelirv">—</span>
                                                         </div>
                                                         <div class="mth-detail-item">
-                                                            <span class="mth-detail-lbl">DSMF <span class="mth-rate-hint">3%</span></span>
+                                                            <span class="mth-detail-lbl">DSMF</span>
                                                             <span class="n n--p" data-p="dsmf">—</span>
                                                         </div>
                                                         <div class="mth-detail-item">
@@ -401,7 +505,7 @@
                                                             <span class="n" data-p="issizlik">—</span>
                                                         </div>
                                                         <div class="mth-detail-item">
-                                                            <span class="mth-detail-lbl">İTSS <span class="mth-rate-hint">2%</span></span>
+                                                            <span class="mth-detail-lbl">İTSS</span>
                                                             <span class="n" data-p="itss">—</span>
                                                         </div>
                                                         <div class="mth-detail-sep"></div>
@@ -411,6 +515,33 @@
                                                         </div>
                                                     </div>
                                                 </div>
+
+                                                @* HYS (Həyat Yığım Sığortası) *@
+                                                @if (isciHys > 0)
+                                                {
+                                                    <div class="mth-detail-card">
+                                                        <div class="mth-detail-card-head" style="color:#0d9488;">
+                                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                                <path d="M7 1.5v11M4 5l3-3.5L10 5" stroke="#0d9488" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                            </svg>
+                                                            <span>HYS</span>
+                                                        </div>
+                                                        <div class="mth-detail-card-body">
+                                                            <div class="mth-detail-item">
+                                                                <span class="mth-detail-lbl">İşçi payı</span>
+                                                                <span class="n n--r" data-p="hysisci">—</span>
+                                                            </div>
+                                                            <div class="mth-detail-item">
+                                                                <span class="mth-detail-lbl">İşəgötürən <span class="mth-rate-hint">@hysIsvFaiz.ToString("G29")%</span></span>
+                                                                <span class="n n--p" data-p="hysisv">—</span>
+                                                            </div>
+                                                            <div class="mth-detail-item">
+                                                                <span class="mth-detail-lbl">Vergi bazası (HYS sonrası)</span>
+                                                                <span class="n n--au" data-p="vergibazasi">—</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
 
                                                 @* Şirkət xərcləri *@
                                                 <div class="mth-detail-card">
@@ -423,17 +554,25 @@
                                                     </div>
                                                     <div class="mth-detail-card-body">
                                                         <div class="mth-detail-item">
-                                                            <span class="mth-detail-lbl">DSMF işv. <span class="mth-rate-hint">22%</span></span>
-                                                            <span class="n n--p" data-p="dsmfisv">@Fmt(esas * 0.22m)</span>
+                                                            <span class="mth-detail-lbl">DSMF işv.</span>
+                                                            <span class="n n--p" data-p="dsmfisv">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">İTSS işv.</span>
+                                                            <span class="n n--p" data-p="itssisv">—</span>
                                                         </div>
                                                         <div class="mth-detail-item">
                                                             <span class="mth-detail-lbl">İşsizlik işv. <span class="mth-rate-hint">0.5%</span></span>
-                                                            <span class="n" data-p="issizlikisv">@Fmt(esas * 0.005m)</span>
+                                                            <span class="n" data-p="issizlikisv">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">HYS işv.</span>
+                                                            <span class="n n--p" data-p="hysisv2">—</span>
                                                         </div>
                                                         <div class="mth-detail-sep"></div>
                                                         <div class="mth-detail-item mth-detail-item--total">
                                                             <span class="mth-detail-lbl">Ümumi</span>
-                                                            <span class="n n--p" data-p="sirketcemi">@Fmt(esas * 0.225m)</span>
+                                                            <span class="n n--p" data-p="sirketcemi">—</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -463,7 +602,7 @@
                                 <td class="left" colspan="5" style="font-weight:700;font-size:12px;color:#3d4557;padding:11px 10px;">
                                     CƏMİ — @isciList.Count işçi
                                 </td>
-                                <td><span class="n">@Fmt(isciList.Sum(x=>x.Maliye?.CariMaas??0m))</span></td>
+                                <td><span class="n">@Fmt(isciList.Sum(x=>GetEsas(x.Id)))</span></td>
                                 <td><span class="n" id="mthFootBrutTable">—</span></td>
                                 <td><span class="n n--au" id="mthFootNet">— ₼</span></td>
                                 <td></td>
@@ -472,29 +611,111 @@
                     </table>
                 </div>
 
-                @* ── Footer ───────────────────────────────────────── *@
-                <div class="mth-footer">
+                @* ── Footer (sticky — həmişə görünür) ─────────── *@
+                <div class="mth-footer mth-footer--sticky">
                     <div class="mth-footer-left">
                         <strong id="mthFootSayi">0</strong> işçi seçilib ·
                         <span style="color:#1e9b6b;">@doneSayi hesablanıb</span> ·
                         <span style="color:#2d6cdf;">@yeniSayi yeni</span>
                     </div>
-                    <div class="mth-footer-totals">
-                        <div class="mth-ftotal">
-                            <span class="mth-ftotal-lbl">Seçilənlərin Brütü</span>
-                            <span class="mth-ftotal-val" id="mthFootBrut">— ₼</span>
+
+                    @* İki qrup: İşçi tərəfi + Şirkət tərəfi *@
+                    <div class="mth-foot-groups">
+
+                        @* ── QRUP 1: İşçi tərəfi (hər biri ayrıca) ── *@
+                        <div class="mth-foot-grp mth-foot-grp--isci">
+                            <div class="mth-foot-grp-title">
+                                <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                                    <circle cx="7" cy="4" r="2.5" stroke="currentColor" stroke-width="1.3"/>
+                                    <path d="M2 12c0-2.5 2-4 5-4s5 1.5 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                                </svg>
+                                İşçi tərəfi (tutulmalar)
+                            </div>
+                            <div class="mth-foot-grp-body">
+                                <div class="mth-ftotal">
+                                    <span class="mth-ftotal-lbl">Gross</span>
+                                    <span class="mth-ftotal-val" id="mthFootBrut">— ₼</span>
+                                </div>
+                                <div class="mth-footer-div"></div>
+                                <div class="mth-ftotal">
+                                    <span class="mth-ftotal-lbl">Gəlir V.</span>
+                                    <span class="mth-ftotal-val" id="mthFootGelirV">— ₼</span>
+                                </div>
+                                <div class="mth-footer-div"></div>
+                                <div class="mth-ftotal">
+                                    <span class="mth-ftotal-lbl">DSMF</span>
+                                    <span class="mth-ftotal-val" id="mthFootDsmfIsci">— ₼</span>
+                                </div>
+                                <div class="mth-footer-div"></div>
+                                <div class="mth-ftotal">
+                                    <span class="mth-ftotal-lbl">İşsizlik</span>
+                                    <span class="mth-ftotal-val" id="mthFootIssizlikIsci">— ₼</span>
+                                </div>
+                                <div class="mth-footer-div"></div>
+                                <div class="mth-ftotal">
+                                    <span class="mth-ftotal-lbl">İTSS</span>
+                                    <span class="mth-ftotal-val" id="mthFootItssIsci">— ₼</span>
+                                </div>
+                                <div class="mth-footer-div"></div>
+                                <div class="mth-ftotal">
+                                    <span class="mth-ftotal-lbl">HYS</span>
+                                    <span class="mth-ftotal-val" id="mthFootHysIsci">— ₼</span>
+                                </div>
+                                <div class="mth-footer-div"></div>
+                                <div class="mth-ftotal">
+                                    <span class="mth-ftotal-lbl">Cəmi tutulma</span>
+                                    <span class="mth-ftotal-val" style="color:#d85a30;font-weight:800;" id="mthFootTutulma">— ₼</span>
+                                </div>
+                                <div class="mth-footer-div"></div>
+                                <div class="mth-ftotal">
+                                    <span class="mth-ftotal-lbl">NET (əlinə)</span>
+                                    <span class="mth-ftotal-val mth-ftotal-val--net" id="mthFootNet2">— ₼</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mth-footer-div"></div>
-                        <div class="mth-ftotal">
-                            <span class="mth-ftotal-lbl">Tutulmalar</span>
-                            <span class="mth-ftotal-val" style="color:#d85a30;" id="mthFootTutulma">— ₼</span>
+
+                        @* ── QRUP 2: Şirkət tərəfi (hər biri ayrıca) ── *@
+                        <div class="mth-foot-grp mth-foot-grp--sirket">
+                            <div class="mth-foot-grp-title">
+                                <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                                    <rect x="2" y="3" width="10" height="9" rx="1" stroke="currentColor" stroke-width="1.3"/>
+                                    <path d="M5 6h1M8 6h1M5 8h1M8 8h1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+                                </svg>
+                                Şirkət tərəfi (işəgötürən payı)
+                            </div>
+                            <div class="mth-foot-grp-body">
+                                <div class="mth-ftotal">
+                                    <span class="mth-ftotal-lbl">DSMF</span>
+                                    <span class="mth-ftotal-val" id="mthFootDsmfIsv">— ₼</span>
+                                </div>
+                                <div class="mth-footer-div"></div>
+                                <div class="mth-ftotal">
+                                    <span class="mth-ftotal-lbl">İşsizlik</span>
+                                    <span class="mth-ftotal-val" id="mthFootIssizlikIsv">— ₼</span>
+                                </div>
+                                <div class="mth-footer-div"></div>
+                                <div class="mth-ftotal">
+                                    <span class="mth-ftotal-lbl">İTSS</span>
+                                    <span class="mth-ftotal-val" id="mthFootItssIsv">— ₼</span>
+                                </div>
+                                <div class="mth-footer-div"></div>
+                                <div class="mth-ftotal">
+                                    <span class="mth-ftotal-lbl">HYS</span>
+                                    <span class="mth-ftotal-val" id="mthFootHysIsv">— ₼</span>
+                                </div>
+                                <div class="mth-footer-div"></div>
+                                <div class="mth-ftotal">
+                                    <span class="mth-ftotal-lbl">Cəmi əlavə</span>
+                                    <span class="mth-ftotal-val" style="color:#7c3aed;font-weight:800;" id="mthFootSirketEx">— ₼</span>
+                                </div>
+                                <div class="mth-footer-div"></div>
+                                <div class="mth-ftotal">
+                                    <span class="mth-ftotal-lbl">Ümumi Xərc</span>
+                                    <span class="mth-ftotal-val mth-ftotal-val--sirket" id="mthFootSirket">— ₼</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mth-footer-div"></div>
-                        <div class="mth-ftotal">
-                            <span class="mth-ftotal-lbl">Ümumi NET</span>
-                            <span class="mth-ftotal-val mth-ftotal-val--net" id="mthFootNet2">— ₼</span>
-                        </div>
-                        <div class="mth-footer-div"></div>
+
                         <div class="mth-footer-actions">
                             <a asp-area="HR" asp-controller="Maas" asp-action="Index"
                                asp-route-il="@il" asp-route-ay="@ay"
@@ -538,7 +759,7 @@
                     <span class="mth-modal-val" id="mthMIsci">—</span>
                 </div>
                 <div class="mth-modal-item">
-                    <span class="mth-modal-lbl">Ümumi Brüt</span>
+                    <span class="mth-modal-lbl">Ümumi Gross</span>
                     <span class="mth-modal-val mth-modal-val--au" id="mthMBrut">—</span>
                 </div>
                 <div class="mth-modal-item">
@@ -564,6 +785,8 @@
 </div>
 
 @section Scripts {
+    @* Pilləli vergi konfiqurasiyası (JS-ə ötürülür) *@
+    <script type="application/json" id="mthVergiConfig">@Html.Raw(pilleConfigJson)</script>
     <script>
         function mthNav() {
             const il = document.getElementById('mthIl').value;

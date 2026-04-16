@@ -1,5 +1,6 @@
 ﻿using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Maas;
+using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces.HR;
 using FinNex.Application.Interfaces.Maas_If;
 using FinNex.Domain.Entities.HR;
@@ -34,10 +35,17 @@ namespace FinNex.Application.Services.HR
     public class MaasHesablamaService : IMaasHesablamaService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IIsciAyliqQazancService _ayliqQazancService;
+        private readonly IXestelikService _xestelikService;
 
-        public MaasHesablamaService(IUnitOfWork unitOfWork)
+        public MaasHesablamaService(
+            IUnitOfWork unitOfWork,
+            IIsciAyliqQazancService ayliqQazancService,
+            IXestelikService xestelikService)
         {
             _unitOfWork = unitOfWork;
+            _ayliqQazancService = ayliqQazancService;
+            _xestelikService = xestelikService;
         }
 
         // ─────────────────────────────────────────────────────────
@@ -167,37 +175,123 @@ namespace FinNex.Application.Services.HR
                 });
             }
 
-            // 6. Mezuniyyet gunleri ve odenisi
-            int mezGun = await MezuniyyetGunleriniSayAsync(input.IsciId, input.Il, input.Ay);
+            // 6. Mezuniyyet gunleri ve odenisi (2026 qaydası: GS + İGS)
+            //    Kəsinti həmişə bütün məzuniyyət günlərinə görə tətbiq olunur.
+            //    Ödəniş yalnız AySonuOdenis tipli qeydlər üçün əlavə olunur
+            //    (QabaqcadanOdenis qeydləri Mühasib tərəfindən ayrıca ödənilir).
+            var (mezTeqvimGun, mezGun) = await MezuniyyetGunleriniSayGenisAsync(input.IsciId, input.Il, input.Ay);
 
             decimal mezOdenis = 0;
             decimal mezKesinti = 0;
 
             if (mezGun > 0)
             {
-                // Esas maasdan kesinti: maas / ayIsGunu x mezGun
+                // Esas maasdan kesinti: maas / ayIsGunu x mezGun (yalnız iş günləri)
                 mezKesinti = Math.Round(esasMaas / ayIsGunu * mezGun, 2);
                 izahatlar.Add(new HesablamaIzahiDto
                 {
                     Addim = "Mezuniyyet Kesintisi",
-                    Izah = $"{esasMaas:N2} / {ayIsGunu} is gunu x {mezGun} mezuniyyet gunu",
+                    Izah = $"{esasMaas:N2} / {ayIsGunu} is gunu x {mezGun} mez. is gunu",
                     Mebleg = mezKesinti,
                     Tip = "kesinti"
                 });
 
-                // 2026 mezuniyyet odenisi
-                mezOdenis = await MezuniyyetOdenisiniHesablaAsync(
-                    input.IsciId, input.Il, input.Ay, mezGun);
-                izahatlar.Add(new HesablamaIzahiDto
+                // AySonu tipli qeydlər üçün məzuniyyət ödənişi həmin ayın maaşına daxil edilir
+                var (aySonuGS, aySonuIGS, _) = await MezuniyyetAyGunleriFiltreliSayAsync(
+                    input.IsciId, input.Il, input.Ay, MezuniyyetOdenisTipi.AySonuOdenis);
+
+                if (aySonuIGS > 0 || aySonuGS > 0)
                 {
-                    Addim = "Mezuniyyet Odenisi",
-                    Izah = $"2026 qaydasi: Max(son12AyOrta, cariMaas) / 30 x {mezGun} gun",
-                    Mebleg = mezOdenis,
-                    Tip = "gelir"
-                });
+                    mezOdenis = await MezuniyyetOdenisiniHesablaV2Async(
+                        input.IsciId, input.Il, input.Ay, aySonuGS, aySonuIGS);
+                    izahatlar.Add(new HesablamaIzahiDto
+                    {
+                        Addim = "Mezuniyyet Odenisi",
+                        Izah = $"2026 qaydası: MAX(S/12/30.4×{aySonuGS}, Maas/{ayIsGunu}×{aySonuIGS})",
+                        Mebleg = mezOdenis,
+                        Tip = "gelir"
+                    });
+                }
+
+                // Qabaqcadan ödənilən məzuniyyətlər üçün informativ sətir
+                var (_, _, advanceQeydler) = await MezuniyyetAyGunleriFiltreliSayAsync(
+                    input.IsciId, input.Il, input.Ay, MezuniyyetOdenisTipi.QabaqcadanOdenis);
+
+                foreach (var advanceMez in advanceQeydler)
+                {
+                    if (advanceMez.OdenisStatus == MezuniyyetOdenisStatus.Odenilib)
+                    {
+                        izahatlar.Add(new HesablamaIzahiDto
+                        {
+                            Addim = "Mezuniyyet (qabaqcadan ödənildi)",
+                            Izah = $"{advanceMez.BaslamaTarixi:dd.MM.yyyy}–{advanceMez.BitmeTarixi:dd.MM.yyyy} " +
+                                   $"dövrü üçün ödəniş {advanceMez.OdenilmeTarixi:dd.MM.yyyy} tarixində ayrıca edilib. " +
+                                   $"Bu ayın hesablamasına yalnız iş günü kəsintisi daxildir.",
+                            Mebleg = advanceMez.OdenenMebleg ?? 0,
+                            Tip = "melumati"
+                        });
+                    }
+                    else
+                    {
+                        izahatlar.Add(new HesablamaIzahiDto
+                        {
+                            Addim = "Mezuniyyet (qabaqcadan — ödəniş gözləyir)",
+                            Izah = $"{advanceMez.BaslamaTarixi:dd.MM.yyyy}–{advanceMez.BitmeTarixi:dd.MM.yyyy} " +
+                                   "məzuniyyəti qabaqcadan ödənişə təyin olunub, lakin Mühasib hələ təsdiq etməyib. " +
+                                   "Bu ayın maaşına ödəniş əlavə edilməyib.",
+                            Mebleg = 0,
+                            Tip = "melumati"
+                        });
+                    }
+                }
             }
 
-            // 6. Bonus
+            // 6.5. Xəstəlik ödənişi (avtomatik — XestelikOdenis cədvəlindən)
+            // HR əvvəlcədən xəstəlik bülletənini yaradıbsa, sistem həmin ay üçün
+            // şirkət payını brüt-ə əlavə edir.
+            decimal xestelikSirketOdenis = 0;
+            decimal xestelikDsmfOdenis = 0;
+            int xestelikSirketGun = 0;
+            int xestelikDsmfGun = 0;
+            try
+            {
+                var xestelikler = await _xestelikService.AyUzreXestelikleriGetirAsync(input.IsciId, input.Il, input.Ay);
+                foreach (var xst in xestelikler)
+                {
+                    var ayOdenisleri = xst.Odenisler
+                        .Where(o => o.Il == input.Il && o.Ay == input.Ay && !o.Silinib);
+                    foreach (var od in ayOdenisleri)
+                    {
+                        xestelikSirketOdenis += od.SirketOdenis;
+                        xestelikDsmfOdenis += od.DsmfOdenis;
+                        xestelikSirketGun += od.SirketGunSayi;
+                        xestelikDsmfGun += od.DsmfGunSayi;
+                    }
+                }
+                if (xestelikSirketOdenis > 0 || xestelikDsmfOdenis > 0)
+                {
+                    izahatlar.Add(new HesablamaIzahiDto
+                    {
+                        Addim = "Xəstəlik Ödənişi (Şirkət)",
+                        Izah = $"{xestelikSirketGun} iş günü × bir günlük (max 14 gün/il)",
+                        Mebleg = xestelikSirketOdenis,
+                        Tip = "gelir"
+                    });
+                    if (xestelikDsmfOdenis > 0)
+                    {
+                        izahatlar.Add(new HesablamaIzahiDto
+                        {
+                            Addim = "Xəstəlik (DSMF — informativ)",
+                            Izah = $"{xestelikDsmfGun} gün, sistemxarici ödənilir",
+                            Mebleg = xestelikDsmfOdenis,
+                            Tip = "melumati"
+                        });
+                    }
+                }
+            }
+            catch { /* xəstəlik xidməti xətası əsas hesablamanı pozmasın */ }
+
+            // 7. Bonus
             if (input.BonusMeblegi > 0)
                 izahatlar.Add(new HesablamaIzahiDto
                 {
@@ -207,7 +301,7 @@ namespace FinNex.Application.Services.HR
                     Tip = "gelir"
                 });
 
-            // 7. Cerime
+            // 8. Cerime
             if (input.CerimeMeblegi > 0)
                 izahatlar.Add(new HesablamaIzahiDto
                 {
@@ -217,10 +311,35 @@ namespace FinNex.Application.Services.HR
                     Tip = "kesinti"
                 });
 
-            // 8. BRUT
+            // 8.5. HYS (Həyat Yığım Sığortası) — işçiyə təyin olunmuş aktiv HYS-ı tap
+            var isciHysList = await _unitOfWork.Repository<IsciHYS>()
+                .Query()
+                .Where(x =>
+                    !x.Silinib &&
+                    x.IsciId == input.IsciId &&
+                    x.BaslamaTarixi <= ayBitisTarixi &&
+                    (x.BitmeTarixi == null || x.BitmeTarixi >= hesabTarixi))
+                .ToListAsync();
+
+            // Aktiv dövrdə yalnız bir HYS olmalıdır, amma əgər çoxdursa birincini götür
+            decimal hysMebleg = isciHysList.FirstOrDefault()?.Mebleg ?? 0;
+
+            if (hysMebleg > 0)
+            {
+                izahatlar.Add(new HesablamaIzahiDto
+                {
+                    Addim = "HYS (İşçi payı)",
+                    Izah = $"Aylıq HYS: {hysMebleg:N2} ₼ — vergi+DSMF bazasından çıxılır, İTSS/İşsizlik bazasında tam qalır",
+                    Mebleg = hysMebleg,
+                    Tip = "kesinti"
+                });
+            }
+
+            // 9. BRUT — xəstəlik şirkət payı əlavə olunur
             decimal brutMaas = esasMaas
                 - mezKesinti
                 + mezOdenis
+                + xestelikSirketOdenis
                 - qayibKesinti
                 + input.BonusMeblegi
                 - input.CerimeMeblegi;
@@ -229,35 +348,143 @@ namespace FinNex.Application.Services.HR
 
             izahatlar.Add(new HesablamaIzahiDto
             {
-                Addim = "Brut Mebleg",
+                Addim = "Gross Məbləğ",
                 Izah = $"Esas ({esasMaas:N2}) - MezKes ({mezKesinti:N2}) + MezOd ({mezOdenis:N2}) - Qayıb ({qayibKesinti:N2}) + Bonus ({input.BonusMeblegi:N2}) - Cerime ({input.CerimeMeblegi:N2})",
                 Mebleg = brutMaas,
                 Tip = "melumati"
             });
 
-            // 9. Vergi guzesti
-            decimal vergilenecek = Math.Max(0, brutMaas - p.VergiGuzestiMeblegi);
+            // 9.0.1 HYS bazaları: vergi+DSMF bazası = brut - HYS, İTSS/İşsizlik bazası = brut (tam)
+            decimal vergiDsmfBazasi = Math.Max(0, brutMaas - hysMebleg);
+            decimal itssBazasi = brutMaas; // İTSS/İşsizlik TAM qalır
+
+            if (hysMebleg > 0)
+            {
+                izahatlar.Add(new HesablamaIzahiDto
+                {
+                    Addim = "Vergi+DSMF bazası (HYS çıxılıb)",
+                    Izah = $"Brüt ({brutMaas:N2}) − HYS ({hysMebleg:N2}) = {vergiDsmfBazasi:N2}",
+                    Mebleg = vergiDsmfBazasi,
+                    Tip = "melumati"
+                });
+            }
+
+            // 9. Vergi pillələri — əvvəlcə gətiririk ki, standart 200 AZN güzəştin
+            //    tətbiq edilib-edilməyəcəyini (yalnız birinci pillə daxilindədirsə)
+            //    təyin etmək üçün birinci pillənin YuxariHedd-i məlum olsun.
+            var pilleler = await _unitOfWork.Repository<VergiPille>()
+                .HamisiniGetirAsync(x =>
+                    x.Aktivdir && !x.Silinib &&
+                    x.BaslamaTarixi <= hesabTarixi &&
+                    (x.BitmeTarixi == null || x.BitmeTarixi >= hesabTarixi));
+
+            var gvPilleleri = pilleler
+                .Where(x => x.Nov == MaasParametrNovu.GelirVergisiFaizi)
+                .OrderBy(x => x.AsagiHedd)
+                .ToList();
+            decimal firstBracketMax = gvPilleleri.FirstOrDefault()?.YuxariHedd ?? 2500m;
+
+            // 9.1 İşçiyə aid aktiv güzəştləri gətir (hesab tarixində qüvvədə olanlar)
+            //     Bir neçə güzəşt varsa, ən böyüyü götürülür (toplanmır — Madde 102).
+            var ayBitisTarixi = new DateTime(input.Il, input.Ay, 1).AddMonths(1).AddDays(-1);
+            var isciGuzestleri = await _unitOfWork.Repository<IsciGuzest>()
+                .Query()
+                .Where(x =>
+                    !x.Silinib &&
+                    x.IsciId == input.IsciId &&
+                    x.BaslamaTarixi <= ayBitisTarixi &&
+                    (x.BitmeTarixi == null || x.BitmeTarixi >= hesabTarixi))
+                .Include(x => x.Guzest)
+                .Where(x => x.Guzest != null && !x.Guzest.Silinib && x.Guzest.Aktivdir)
+                .ToListAsync();
+
+            decimal maxIsciGuzesti = 0;
+            string? maxIsciGuzestAd = null;
+            foreach (var ig in isciGuzestleri)
+            {
+                if (ig.Guzest.Mebleg > maxIsciGuzesti)
+                {
+                    maxIsciGuzesti = ig.Guzest.Mebleg;
+                    maxIsciGuzestAd = ig.Guzest.Ad;
+                }
+            }
+
+            if (isciGuzestleri.Any())
+            {
+                var siyahi = string.Join(", ",
+                    isciGuzestleri.Select(x => $"{x.Guzest.Ad} — {x.Guzest.Mebleg:N2} ₼"));
+                izahatlar.Add(new HesablamaIzahiDto
+                {
+                    Addim = "İşçi güzəştləri",
+                    Izah = $"Aktiv güzəştlər: {siyahi}. Seçilən (ən böyük): " +
+                           (maxIsciGuzestAd ?? "—"),
+                    Mebleg = maxIsciGuzesti,
+                    Tip = "melumati"
+                });
+            }
+
+            // 9.2 Standart 200 AZN güzəşti yalnız vergi bazası birinci pillə içindədirsə tətbiq olunur.
+            //     HYS çıxıldıqdan sonrakı baza istifadə olunur.
+            decimal standartGuzest = vergiDsmfBazasi <= firstBracketMax ? p.VergiGuzestiMeblegi : 0m;
+
+            decimal vergilenecek = Math.Max(0, vergiDsmfBazasi - standartGuzest - maxIsciGuzesti);
+
+            var vergiIzahHisseleri = new List<string> { $"Brüt: {brutMaas:N2}" };
+            if (hysMebleg > 0)
+                vergiIzahHisseleri.Add($"− HYS: {hysMebleg:N2} → Vergi bazası: {vergiDsmfBazasi:N2}");
+            if (standartGuzest > 0)
+                vergiIzahHisseleri.Add($"− Standart güzəşt: {standartGuzest:N2} (baza ≤ {firstBracketMax:N0})");
+            else
+                vergiIzahHisseleri.Add(
+                    $"Baza > {firstBracketMax:N0} — standart {p.VergiGuzestiMeblegi:N2} ₼ güzəşti tətbiq olunmur");
+            if (maxIsciGuzesti > 0)
+                vergiIzahHisseleri.Add($"− İşçi güzəşti: {maxIsciGuzesti:N2} ({maxIsciGuzestAd})");
+            vergiIzahHisseleri.Add($"= Vergilənəcək: {vergilenecek:N2}");
+
             izahatlar.Add(new HesablamaIzahiDto
             {
                 Addim = "Vergi Guzesti",
-                Izah = $"Parametrden: {p.VergiGuzestiMeblegi:N2} AZN -- vergilerdirilecek: {vergilenecek:N2} AZN",
-                Mebleg = p.VergiGuzestiMeblegi,
+                Izah = string.Join("  |  ", vergiIzahHisseleri),
+                Mebleg = standartGuzest + maxIsciGuzesti,
                 Tip = "melumati"
             });
 
-            // 10. Tutulmalar
-            decimal gelirVergisi = Math.Round(vergilenecek * (p.GelirVergisiFaizi / 100m), 2);
-            decimal dsmfIsci = Math.Round(brutMaas * (p.DsmfFaizi / 100m), 2);
-            decimal issizlikIsci = Math.Round(brutMaas * (p.IssizlikSigortasiFaizi / 100m), 2);
-            decimal itss = Math.Round(brutMaas * (p.IcbariTibbiSigortaFaizi / 100m), 2);
+            decimal HesablaTutulma(decimal mebleg, MaasParametrNovu nov, decimal flatFaiz, out string izah)
+            {
+                var novPilleler = pilleler.Where(x => x.Nov == nov).OrderBy(x => x.AsagiHedd).ToList();
+                if (novPilleler.Any())
+                {
+                    var pille = PilleniTap(mebleg, novPilleler);
+                    if (pille == null)
+                    {
+                        izah = $"{mebleg:N2} üçün pillə tapılmadı";
+                        return 0;
+                    }
+                    var netice = Math.Round(
+                        pille.SabitMebleg + (mebleg - pille.AsagiHedd) * (pille.Faiz / 100m),
+                        2);
+                    izah = $"{mebleg:N2} → pillə [{pille.AsagiHedd:N0}..{(pille.YuxariHedd?.ToString("N0") ?? "∞")}]: {pille.SabitMebleg:N2} + ({mebleg:N2} − {pille.AsagiHedd:N2}) × {pille.Faiz}%";
+                    return netice;
+                }
+                // Fallback: köhnə flat faiz
+                izah = $"{mebleg:N2} × {flatFaiz}% (flat)";
+                return Math.Round(mebleg * (flatFaiz / 100m), 2);
+            }
 
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "Gelir Vergisi", Izah = $"{vergilenecek:N2} x {p.GelirVergisiFaizi}% (guzest: {p.VergiGuzestiMeblegi} AZN)", Mebleg = gelirVergisi, Tip = "vergi" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isci)", Izah = $"{brutMaas:N2} x {p.DsmfFaizi}%", Mebleg = dsmfIsci, Tip = "vergi" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "Issizlik Sigortas (Isci)", Izah = $"{brutMaas:N2} x {p.IssizlikSigortasiFaizi}%", Mebleg = issizlikIsci, Tip = "vergi" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "ITSS", Izah = $"{brutMaas:N2} x {p.IcbariTibbiSigortaFaizi}%", Mebleg = itss, Tip = "vergi" });
+            // HYS: Gəlir vergisi və DSMF — vergiDsmfBazası üzrə hesablanır (HYS çıxılıb)
+            //      İTSS və İşsizlik — itssBazası (= tam brüt) üzrə hesablanır
+            decimal gelirVergisi   = HesablaTutulma(vergilenecek,    MaasParametrNovu.GelirVergisiFaizi,         p.GelirVergisiFaizi,         out var gvIzah);
+            decimal dsmfIsci       = HesablaTutulma(vergiDsmfBazasi, MaasParametrNovu.DsmfFaizi,                 p.DsmfFaizi,                 out var dsmfIzah);
+            decimal issizlikIsci   = Math.Round(itssBazasi * (p.IssizlikSigortasiFaizi / 100m), 2); // flat — tam brüt
+            decimal itss           = HesablaTutulma(itssBazasi,      MaasParametrNovu.IcbariTibbiSigortaFaizi,   p.IcbariTibbiSigortaFaizi,   out var itssIzah);
 
-            // 11. NET maas
-            decimal umumiTutulma = gelirVergisi + dsmfIsci + issizlikIsci + itss;
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "Gelir Vergisi",              Izah = $"{gvIzah} (guzest: {p.VergiGuzestiMeblegi} AZN)", Mebleg = gelirVergisi, Tip = "vergi" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isci)",                Izah = $"{dsmfIzah}{(hysMebleg > 0 ? " (HYS çıxılıb)" : "")}",  Mebleg = dsmfIsci,     Tip = "vergi" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "Issizlik Sigortas (Isci)",   Izah = $"{itssBazasi:N2} x {p.IssizlikSigortasiFaizi}% (tam brüt)", Mebleg = issizlikIsci, Tip = "vergi" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "ITSS (Isci)",                Izah = $"{itssIzah}{(hysMebleg > 0 ? " (tam brüt)" : "")}",        Mebleg = itss,         Tip = "vergi" });
+
+            // 11. NET maas — HYS də NET-dən tutulur (çünki işçinin öz payıdır)
+            decimal umumiTutulma = gelirVergisi + dsmfIsci + issizlikIsci + itss + hysMebleg;
             decimal netMaas = brutMaas - umumiTutulma;
 
             // Minimum əmək haqqı yoxlaması
@@ -280,12 +507,42 @@ namespace FinNex.Application.Services.HR
                 Tip = "melumati"
             });
 
-            // 12. Sirket xercleri -- indi parametrden oxunur, hardcode deyil
-            decimal dsmfIsegoturen = Math.Round(brutMaas * (p.DsmfIsegotürenFaizi / 100m), 2);
-            decimal issizlikIsegoturen = Math.Round(brutMaas * (p.IssizlikIsegotürenFaizi / 100m), 2);
+            // 12. Sirket xercleri — pilləli (2026 qaydaları)
+            // HYS: DSMF işəgötürən — vergiDsmfBazası (HYS çıxılıb)
+            //       İTSS/İşsizlik işəgötürən — itssBazası (tam brüt)
+            decimal dsmfIsegoturen     = HesablaTutulma(vergiDsmfBazasi, MaasParametrNovu.DsmfIsegoturenFaizi,             p.DsmfIsegotürenFaizi,     out var dsmfIsvIzah);
+            decimal issizlikIsegoturen = Math.Round(itssBazasi * (p.IssizlikIsegotürenFaizi / 100m), 2); // flat — tam brüt
+            decimal itssIsegoturen     = HesablaTutulma(itssBazasi, MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi, p.IcbariTibbiSigortaFaizi, out var itssIsvIzah);
 
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isegoturen)", Izah = $"{brutMaas:N2} x {p.DsmfIsegotürenFaizi}% -- isciden tutulmur", Mebleg = dsmfIsegoturen, Tip = "sirket" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "Issizlik Sigortas (Isegoturen)", Izah = $"{brutMaas:N2} x {p.IssizlikIsegotürenFaizi}% -- isciden tutulmur", Mebleg = issizlikIsegoturen, Tip = "sirket" });
+            // HYS işəgötürən payı: HYS × 15% (parametrdən oxunur)
+            decimal hysIsegoturenFaizi = 0;
+            decimal hysIsegoturen = 0;
+            if (hysMebleg > 0)
+            {
+                hysIsegoturenFaizi = (await _unitOfWork.Repository<MaasParametri>()
+                    .HamisiniGetirAsync(x =>
+                        x.Aktivdir && !x.Silinib &&
+                        x.Nov == MaasParametrNovu.HysIsegoturenFaizi &&
+                        x.BaslamaTarixi <= hesabTarixi &&
+                        (x.BitmeTarixi == null || x.BitmeTarixi >= hesabTarixi)))
+                    .OrderByDescending(x => x.BaslamaTarixi)
+                    .FirstOrDefault()?.Deyer ?? 15m;
+                hysIsegoturen = Math.Round(hysMebleg * (hysIsegoturenFaizi / 100m), 2);
+            }
+
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isegoturen)",              Izah = $"{dsmfIsvIzah}{(hysMebleg > 0 ? " (HYS çıxılıb)" : "")} -- isciden tutulmur", Mebleg = dsmfIsegoturen,     Tip = "sirket" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "Issizlik Sigortas (Isegoturen)", Izah = $"{itssBazasi:N2} x {p.IssizlikIsegotürenFaizi}% (tam brüt) -- isciden tutulmur", Mebleg = issizlikIsegoturen, Tip = "sirket" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "ITSS (Isegoturen)",              Izah = $"{itssIsvIzah}{(hysMebleg > 0 ? " (tam brüt)" : "")} -- isciden tutulmur",     Mebleg = itssIsegoturen,     Tip = "sirket" });
+            if (hysIsegoturen > 0)
+            {
+                izahatlar.Add(new HesablamaIzahiDto
+                {
+                    Addim = "HYS (İşəgötürən)",
+                    Izah = $"{hysMebleg:N2} × {hysIsegoturenFaizi:G29}% = {hysIsegoturen:N2} -- işəgötürən payı",
+                    Mebleg = hysIsegoturen,
+                    Tip = "sirket"
+                });
+            }
 
             // 13. MaasNovu kitabcasindan id-leri tap
             var novler = await _unitOfWork.Repository<MaasNovu>()
@@ -315,24 +572,40 @@ namespace FinNex.Application.Services.HR
                 return Result.Ok();
             }
 
+            // NOT: Adlar DB-dəki MaasNovleri cədvəlindəki Ad ilə dəqiq üst-üstə düşməlidir
+            // (seed: migration 20260331052001_dbBaza.cs line 1608+)
+            // Seed-də "Məzuniyyət Kəsintisi" yoxdur — məzuniyyət günləri də
+            // "Davamiyyət Kəsintisi" altında birləşdirilir
+            decimal umumiDavamKesinti = qayibKesinti + mezKesinti;
+            string? davamAciq =
+                (qayibGun > 0 && mezGun > 0) ? $"{qayibGun} qayıb + {mezGun} məz. gün / {ayIsGunu} iş günü"
+                : qayibGun > 0 ? $"{qayibGun} qayıb gün / {ayIsGunu} iş günü"
+                : mezGun > 0 ? $"{mezGun} məz. gün / {ayIsGunu} iş günü"
+                : null;
+
             var xetalar = new[]
             {
-                // Gelirlər
-                DetayEkle("Esas Emekhaqqı",          MaasDetayTipi.Gelir,           esasMaas),
-                DetayEkle("Mezuniyyet Odenisi",       MaasDetayTipi.Gelir,           mezOdenis,          mezGun > 0 ? $"{mezGun} gun" : null),
-                DetayEkle("Bonus/Mukafat",            MaasDetayTipi.Gelir,           input.BonusMeblegi, input.BonusAciqlama),
-                // Kesintiler
-                DetayEkle("Davamiyyət Kəsintisi",     MaasDetayTipi.Tutulma,         qayibKesinti,       qayibGun > 0 ? $"{qayibGun} qayıb gün / {ayIsGunu} iş günü" : null),
-                DetayEkle("Mezuniyyet Kesintisi",     MaasDetayTipi.Tutulma,         mezKesinti,         mezGun > 0 ? $"{mezGun} gun / {ayIsGunu} is gunu" : null),
-                DetayEkle("Gecikdirme Cerimesi",      MaasDetayTipi.Tutulma,         input.CerimeMeblegi, input.CerimeAciqlama),
-                // Vergiler
-                DetayEkle("Gelir Vergisi",            MaasDetayTipi.Tutulma,         gelirVergisi,       $"{p.GelirVergisiFaizi}% (guzest: {p.VergiGuzestiMeblegi} AZN)"),
-                DetayEkle("DSMF (Isci)",              MaasDetayTipi.Tutulma,         dsmfIsci,           $"{p.DsmfFaizi}%"),
-                DetayEkle("Issizlik Sigortas (Isci)", MaasDetayTipi.Tutulma,         issizlikIsci,       $"{p.IssizlikSigortasiFaizi}%"),
-                DetayEkle("ITSS",                     MaasDetayTipi.Tutulma,         itss,               $"{p.IcbariTibbiSigortaFaizi}%"),
-                // Sirket xercleri
-                DetayEkle("DSMF (Isegoturen)",        MaasDetayTipi.IsegoturenXerci, dsmfIsegoturen,     $"{p.DsmfIsegotürenFaizi}%"),
-                DetayEkle("Issizlik (Isegoturen)",    MaasDetayTipi.IsegoturenXerci, issizlikIsegoturen, $"{p.IssizlikIsegotürenFaizi}%"),
+                // Gəlirlər
+                DetayEkle("Əsas Əməkhaqqı",                    MaasDetayTipi.Gelir,           esasMaas),
+                DetayEkle("Məzuniyyət Ödənişi",                MaasDetayTipi.Gelir,           mezOdenis,          mezGun > 0 ? $"{mezGun} gün" : null),
+                DetayEkle("Xəstəlik Ödənişi",                  MaasDetayTipi.Gelir,           xestelikSirketOdenis, xestelikSirketGun > 0 ? $"{xestelikSirketGun} iş günü (şirkət payı)" : null),
+                DetayEkle("Bonus/Mükafat",                     MaasDetayTipi.Gelir,           input.BonusMeblegi, input.BonusAciqlama),
+                // Kəsintilər
+                DetayEkle("Davamiyyət Kəsintisi",              MaasDetayTipi.Tutulma,         umumiDavamKesinti,  davamAciq),
+                DetayEkle("Gecikdirmə Cəriməsi",               MaasDetayTipi.Tutulma,         input.CerimeMeblegi, input.CerimeAciqlama),
+                // Vergilər
+                DetayEkle("Gəlir Vergisi",                     MaasDetayTipi.Tutulma,         gelirVergisi,       gvIzah),
+                DetayEkle("DSMF (İşçi)",                       MaasDetayTipi.Tutulma,         dsmfIsci,           dsmfIzah),
+                DetayEkle("İşsizlik Sığortası (İşçi)",         MaasDetayTipi.Tutulma,         issizlikIsci,       $"{itssBazasi:N2} × {p.IssizlikSigortasiFaizi}%"),
+                DetayEkle("İTSS",                              MaasDetayTipi.Tutulma,         itss,               itssIzah),
+                // HYS (işçi payı — brüt-dən tutulur)
+                DetayEkle("HYS (İşçi)",                        MaasDetayTipi.Tutulma,         hysMebleg,          hysMebleg > 0 ? $"Aylıq HYS payı" : null),
+                // Şirkət xərcləri
+                DetayEkle("DSMF (İşəgötürən)",                 MaasDetayTipi.IsegoturenXerci, dsmfIsegoturen,     dsmfIsvIzah),
+                DetayEkle("İşsizlik Sığortası (İşəgötürən)",   MaasDetayTipi.IsegoturenXerci, issizlikIsegoturen, $"{itssBazasi:N2} × {p.IssizlikIsegotürenFaizi}%"),
+                DetayEkle("İTSS (İşəgötürən)",                 MaasDetayTipi.IsegoturenXerci, itssIsegoturen,     itssIsvIzah),
+                // HYS (işəgötürən payı — 15%)
+                DetayEkle("HYS (İşəgötürən)",                  MaasDetayTipi.IsegoturenXerci, hysIsegoturen,      hysIsegoturen > 0 ? $"{hysMebleg:N2} × {hysIsegoturenFaizi:G29}%" : null),
             };
 
             var ilkXeta = xetalar.FirstOrDefault(x => !x.Success);
@@ -342,7 +615,36 @@ namespace FinNex.Application.Services.HR
             await _unitOfWork.Repository<Maas>().YaratAsync(maas);
             await _unitOfWork.YaddaSaxlaAsync();
 
-            // 15. Netice DTO
+            // 15. XestelikOdenis qeydlərini bu Maas-a bağla
+            try
+            {
+                var xestelikler = await _xestelikService.AyUzreXestelikleriGetirAsync(input.IsciId, input.Il, input.Ay);
+                foreach (var xst in xestelikler)
+                {
+                    var ayOdenisleri = xst.Odenisler
+                        .Where(o => o.Il == input.Il && o.Ay == input.Ay && !o.Silinib && o.MaasId == null);
+                    foreach (var od in ayOdenisleri)
+                    {
+                        od.MaasId = maas.Id;
+                    }
+                }
+                await _unitOfWork.YaddaSaxlaAsync();
+            }
+            catch { }
+
+            // 16. Aylıq qazanc tarixçəsinə avtomatik əlavə (sliding window 12 ay)
+            // Brüt - məzuniyyət ödənişi - xəstəlik şirkət payı (məzuniyyət üçün
+            // hesablamada bu hissələr çıxılır — qeyri-müəyyən gücləndirməyə yol verməmək üçün)
+            try
+            {
+                // Bazaya düşən gəlir = brüt - məzuniyyət - xəstəlik + işəgötürən HYS payı
+                decimal qazanc = brutMaas - mezOdenis - xestelikSirketOdenis + hysIsegoturen;
+                if (qazanc < 0) qazanc = 0;
+                await _ayliqQazancService.AutoInsertFromMaasAsync(input.IsciId, input.Il, input.Ay, qazanc);
+            }
+            catch { /* avtomatik sync xətası əsas əməliyyatı pozmasın */ }
+
+            // 16. Netice DTO
             var teyinat = isci.IsciTeyinatlari.FirstOrDefault();
             return Result<MaasHesablaNeticesiDto>.Ok(new MaasHesablaNeticesiDto
             {
@@ -367,10 +669,13 @@ namespace FinNex.Application.Services.HR
                 DsmfIsci = dsmfIsci,
                 IssizlikIsci = issizlikIsci,
                 Itss = itss,
+                HysIsci = hysMebleg,
                 NetMaas = netMaas,
                 DsmfIsegoturen = dsmfIsegoturen,
                 IssizlikIsegoturen = issizlikIsegoturen,
-                UmumiSirketXerci = brutMaas + dsmfIsegoturen + issizlikIsegoturen,
+                ItssIsegoturen = itssIsegoturen,
+                HysIsegoturen = hysIsegoturen,
+                UmumiSirketXerci = brutMaas + dsmfIsegoturen + issizlikIsegoturen + itssIsegoturen + hysIsegoturen,
                 Izahatlar = izahatlar
             });
         }
@@ -397,26 +702,63 @@ namespace FinNex.Application.Services.HR
         }
 
         // ─────────────────────────────────────────────────────────
-        // MEZUNIYYET GUNLERINI SAY
+        // MEZUNIYYET GUNLERINI SAY (köhnə — yalnız iş gün — backward compat)
         // ─────────────────────────────────────────────────────────
         public async Task<int> MezuniyyetGunleriniSayAsync(int isciId, int il, int ay)
+        {
+            var (_, isGun) = await MezuniyyetGunleriniSayGenisAsync(isciId, il, ay);
+            return isGun;
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // MEZUNIYYET GUNLERINI SAY — GENİŞ
+        // Həm təqvim günlərini (GS), həm iş günlərini (İGS) qaytarır
+        // İş günü = şənbə/bazar VƏ bayram günləri çıxılmış
+        // ─────────────────────────────────────────────────────────
+        public async Task<(int TeqvimGun, int IsGun)> MezuniyyetGunleriniSayGenisAsync(int isciId, int il, int ay)
+        {
+            var (tg, ig, _) = await MezuniyyetAyGunleriFiltreliSayAsync(isciId, il, ay, null);
+            return (tg, ig);
+        }
+
+        /// <summary>
+        /// Verilmiş ay üçün məzuniyyət günlərini sayır. Əgər <paramref name="odenisTipi"/>
+        /// verilibsə, yalnız həmin ödəniş tipinə sahib qeydlər sayılır. Həmçinin
+        /// tapılmış məzuniyyət qeydlərinin siyahısını qaytarır (info üçün).
+        /// </summary>
+        private async Task<(int TeqvimGun, int IsGun, List<Mezuniyyet> Qeydler)>
+            MezuniyyetAyGunleriFiltreliSayAsync(int isciId, int il, int ay, MezuniyyetOdenisTipi? odenisTipi)
         {
             var ayBaslangic = new DateTime(il, ay, 1);
             var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
 
-            var mezuniyyetler = await _unitOfWork.Repository<Mezuniyyet>()
+            var query = _unitOfWork.Repository<Mezuniyyet>()
                 .Query()
                 .Where(x =>
                     x.IsciId == isciId &&
                     !x.Silinib &&
                     x.Status == MezuniyyetStatus.Tesdiqlenib &&
                     x.BaslamaTarixi <= ayBitis &&
-                    x.BitmeTarixi >= ayBaslangic)
-                .ToListAsync();
+                    x.BitmeTarixi >= ayBaslangic);
 
-            if (!mezuniyyetler.Any()) return 0;
+            if (odenisTipi.HasValue)
+                query = query.Where(x => x.OdenisTipi == odenisTipi.Value);
 
-            int gunSayi = 0;
+            var mezuniyyetler = await query.ToListAsync();
+
+            if (!mezuniyyetler.Any()) return (0, 0, mezuniyyetler);
+
+            var ozelGunler = await _unitOfWork.Repository<BayramGunu>()
+                .HamisiniGetirAsync(x =>
+                    x.Tarix >= ayBaslangic &&
+                    x.Tarix <= ayBitis &&
+                    !x.Silinib);
+            var ozelDict = ozelGunler
+                .GroupBy(x => x.Tarix.Date)
+                .ToDictionary(g => g.Key, g => g.First().Tip);
+
+            int teqvimGun = 0;
+            int isGun = 0;
             foreach (var m in mezuniyyetler)
             {
                 var baslama = m.BaslamaTarixi < ayBaslangic ? ayBaslangic : m.BaslamaTarixi;
@@ -424,72 +766,120 @@ namespace FinNex.Application.Services.HR
 
                 for (var t = baslama; t <= bitis; t = t.AddDays(1))
                 {
-                    if (t.DayOfWeek != DayOfWeek.Saturday && t.DayOfWeek != DayOfWeek.Sunday)
-                        gunSayi++;
+                    teqvimGun++;
+                    bool isIsGunu;
+                    if (ozelDict.TryGetValue(t.Date, out var tip))
+                        isIsGunu = tip == GunTipi.IsGunu;
+                    else
+                        isIsGunu = t.DayOfWeek != DayOfWeek.Saturday && t.DayOfWeek != DayOfWeek.Sunday;
+
+                    if (isIsGunu) isGun++;
                 }
             }
 
-            return gunSayi;
+            return (teqvimGun, isGun, mezuniyyetler);
         }
 
         // ─────────────────────────────────────────────────────────
-        // MEZUNIYYET ODENISI -- 2026 QAYDASI
+        // MEZUNIYYET ODENISI -- 2026 QAYDASI (Yeni formula)
         //
-        // Kohne kod: NetMebleg istifade edirdi + 29.3-e bolurdu
-        // Yeni 2026:
-        //   1. Son 12 ayin yalniz islenmis (BrutMebleg > 0) aylari
-        //   2. avgDaily = totalBrut / islenmis_ay_sayi / 30
-        //   3. minDaily = cariMaas / 30
-        //   4. Netice = Max(avgDaily, minDaily) x gunSayi
+        // S    = Son 12 ayın cəmi qazancı (IsciAyliqQazanc cədvəlindən)
+        // MH   = S / 12 / 30.4 × GS    (təqvim günü əsaslı)
+        // ƏH   = CariMaas / AyİşGün × İGS  (iş günü əsaslı)
+        // Ödəniş = MAX(MH, ƏH)
         // ─────────────────────────────────────────────────────────
         public async Task<decimal> MezuniyyetOdenisiniHesablaAsync(
-            int isciId, int il, int ay, int gunSayi)
+            int isciId, int il, int ay, int isGunSayi)
         {
-            if (gunSayi <= 0) return 0;
+            // Geri uyğunluq üçün — yalnız İGS verilibsə, GS-i tap
+            var (teqvimGun, _) = await MezuniyyetGunleriniSayGenisAsync(isciId, il, ay);
+            return await MezuniyyetOdenisiniHesablaV2Async(isciId, il, ay, teqvimGun, isGunSayi);
+        }
 
-            // Son 12 ayin BRUT maaslari (LegvEdilmis ve silinmisler xaric)
-            var son12Ay = await _unitOfWork.Repository<Maas>()
+        // Əsas hesablama — həm GS, həm İGS qəbul edir (artıq ARTIM ƏMSALLIDIR)
+        public async Task<decimal> MezuniyyetOdenisiniHesablaV2Async(
+            int isciId, int il, int ay, int teqvimGun, int isGun)
+        {
+            if (teqvimGun <= 0 && isGun <= 0) return 0;
+
+            // 1. Cari maaş
+            decimal cariMaas = (await _unitOfWork.Repository<IsciMaliye>()
+                .GetirAsync(x => x.IsciId == isciId))?.CariMaas ?? 0;
+
+            // 2. Son 12 ay qazancları + artım əmsalı (K) ilə düzəlmiş cəm
+            decimal S = await Son12AyDuzelmisCeminiHesablaAsync(isciId, cariMaas);
+
+            // 3. Cari ayın iş gün sayı
+            int ayIsGun = await AyinIsGunleriniHesablaAsync(il, ay);
+
+            // 4. MH = S_düzəlmiş / 12 / 30.4 × GS
+            decimal MH = 0;
+            if (S > 0 && teqvimGun > 0)
+            {
+                MH = Math.Round(S / 12m / 30.4m * teqvimGun, 2);
+            }
+
+            // 5. ƏH = CariMaas / AyİşGün × İGS  (cari maaş əsaslı iş günü)
+            decimal EH = 0;
+            if (cariMaas > 0 && ayIsGun > 0 && isGun > 0)
+            {
+                EH = Math.Round(cariMaas / ayIsGun * isGun, 2);
+            }
+
+            // 6. MAX(MH, ƏH)
+            return Math.Max(MH, EH);
+        }
+
+        /// <summary>
+        /// Son 12 ayın DÜZƏLMİŞ cəmi qazancı (artım əmsallı).
+        /// K_i = MAX(1.0, CariStatMaas / StatMaas_i) — yalnız maaş artımı
+        /// köhnə ayları qaldırır; azalma halda əmsal 1.0 qalır.
+        /// </summary>
+        private async Task<decimal> Son12AyDuzelmisCeminiHesablaAsync(int isciId, decimal cariMaas)
+        {
+            var son12 = await _unitOfWork.Repository<IsciAyliqQazanc>()
                 .Query()
-                .Where(x =>
-                    x.IsciId == isciId &&
-                    !x.Silinib &&
-                    x.Status != MaasStatus.LegvEdildi &&
-                    (x.Il * 12 + x.Ay) < (il * 12 + ay))
+                .Where(x => x.IsciId == isciId && !x.Silinib)
                 .OrderByDescending(x => x.Il * 12 + x.Ay)
                 .Take(12)
                 .ToListAsync();
 
-            decimal cariMaas = (await _unitOfWork.Repository<IsciMaliye>()
-                .GetirAsync(x => x.IsciId == isciId))?.CariMaas ?? 0;
-
-            decimal avgDaily;
-
-            if (son12Ay.Any())
+            decimal cemi = 0;
+            foreach (var q in son12)
             {
-                // 2026 qaydasi: yalniz islenmis aylar (unpaid leave aylari avtomatik cixilir)
-                var islenmisAylar = son12Ay.Where(x => x.BrutMebleg > 0).ToList();
+                var ayBitis = new DateTime(q.Il, q.Ay, 1).AddMonths(1).AddDays(-1);
+                decimal statMaas = await StatMaasiTarixeGoreTapAsync(isciId, ayBitis);
+                if (statMaas <= 0) statMaas = cariMaas;
 
-                if (islenmisAylar.Any())
+                decimal emsal = (statMaas > 0 && cariMaas > 0)
+                    ? cariMaas / statMaas
+                    : 1m;
+                if (emsal < 1m) emsal = 1m;
+
+                cemi += Math.Round(q.Qazanc * emsal, 2);
+            }
+            return cemi;
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // PİLLƏ TAP — məbləğin hansı pilləyə düşdüyünü təyin edir
+        // ─────────────────────────────────────────────────────────
+        private static VergiPille? PilleniTap(decimal mebleg, List<VergiPille> pilleler)
+        {
+            if (mebleg < 0 || !pilleler.Any()) return null;
+
+            // Pillələr AsagiHedd üzrə sıralanmış olmalıdır
+            foreach (var pille in pilleler)
+            {
+                if (mebleg >= pille.AsagiHedd &&
+                    (pille.YuxariHedd == null || mebleg < pille.YuxariHedd))
                 {
-                    decimal totalBrut = islenmisAylar.Sum(x => x.BrutMebleg);
-                    decimal avgMonthly = totalBrut / islenmisAylar.Count;
-                    avgDaily = avgMonthly / 30m;
-                }
-                else
-                {
-                    avgDaily = cariMaas / 30m; // Hec bir islenmis ay yoxdursa
+                    return pille;
                 }
             }
-            else
-            {
-                avgDaily = cariMaas / 30m; // Yeni isci -- tarixce yoxdur
-            }
 
-            // 2026 minimumu: cari maasdan asagi ola bilmez
-            decimal minDaily = cariMaas / 30m;
-            decimal hesabGunluk = Math.Max(avgDaily, minDaily);
-
-            return Math.Round(hesabGunluk * gunSayi, 2);
+            // Heç bir pilləyə uyğun gəlmədisə — məbləğ ən sonuncudan da böyükdür
+            return pilleler.LastOrDefault();
         }
 
         // ─────────────────────────────────────────────────────────
@@ -503,8 +893,13 @@ namespace FinNex.Application.Services.HR
                     x.BaslamaTarixi <= tarix &&
                     (x.BitmeTarixi == null || x.BitmeTarixi >= tarix));
 
+            // Eyni növdən çoxlu aktiv sətr olarsa (köhnə datada mümkündür),
+            // həmişə ən son BaslamaTarixi olan sətri götür
             decimal Get(MaasParametrNovu nov, decimal defolt) =>
-                parametrler.FirstOrDefault(x => x.Nov == nov)?.Deyer ?? defolt;
+                parametrler
+                    .Where(x => x.Nov == nov)
+                    .OrderByDescending(x => x.BaslamaTarixi)
+                    .FirstOrDefault()?.Deyer ?? defolt;
 
             return new VergiParametrlerDto
             {
@@ -517,32 +912,414 @@ namespace FinNex.Application.Services.HR
                 // Sirket paylari indi parametrden oxunur (evvel hardcode idi)
                 DsmfIsegotürenFaizi = Get(MaasParametrNovu.DsmfIsegoturenFaizi, 22m),
                 IssizlikIsegotürenFaizi = Get(MaasParametrNovu.IssizlikIsegoturenFaizi, 0.5m),
+                HysIsegoturenFaizi = Get(MaasParametrNovu.HysIsegoturenFaizi, 15m),
             };
         }
 
         // ─────────────────────────────────────────────────────────
-        // AYIN IS GUNLERINI HESABLA -- bayram gunleri DB-den oxunur
+        // VERİLMİŞ TARİXDƏ STAT MAAŞINI TAP — IsciMaasTarixcesi-dən
+        //
+        // Məzuniyyət pulunun artım əmsallı (K) hesablanması üçün hər ayın
+        // sonunda işçinin həmin andaki ştat maaşı lazımdır.
+        //
+        // Məntiq:
+        //  1. IsciMaasTarixcesi-dən `DeyismeTarixi <= tarix` olan ən son qeydi
+        //     götür — onun `YeniMaas` həmin tarixdə qüvvədə olan maaşdır.
+        //  2. Əgər tarixdən əvvəl heç bir qeyd yoxdursa, amma tarixdən sonra
+        //     qeyd var — o qeydin `KohneMaas` həmin tarixdə qüvvədə olan
+        //     maaşdır (hələ dəyişməmiş dövr).
+        //  3. Heç bir qeyd yoxdursa (maaş heç vaxt dəyişməyib) — cari maaşı
+        //     (IsciMaliye.CariMaas) qaytar (K = 1.0 verəcək).
+        // ─────────────────────────────────────────────────────────
+        public async Task<decimal> StatMaasiTarixeGoreTapAsync(int isciId, DateTime tarix)
+        {
+            var repo = _unitOfWork.Repository<IsciMaasTarixcesi>();
+
+            // Tarixdən əvvəl (və ya bərabər) son dəyişiklik
+            var evvelki = (await repo
+                .HamisiniGetirAsync(
+                    x => x.IsciId == isciId &&
+                         !x.Silinib &&
+                         x.DeyismeTarixi <= tarix,
+                    izlemeden: true))
+                .OrderByDescending(x => x.DeyismeTarixi)
+                .FirstOrDefault();
+
+            if (evvelki != null) return evvelki.YeniMaas;
+
+            // Tarixdən sonra ilk dəyişiklik — o tarixdə KohneMaas qüvvədə idi
+            var sonraki = (await repo
+                .HamisiniGetirAsync(
+                    x => x.IsciId == isciId &&
+                         !x.Silinib &&
+                         x.DeyismeTarixi > tarix,
+                    izlemeden: true))
+                .OrderBy(x => x.DeyismeTarixi)
+                .FirstOrDefault();
+
+            if (sonraki != null) return sonraki.KohneMaas;
+
+            // Heç bir tarixçə qeydi yoxdur — maaş sabit qalıb
+            var maliye = await _unitOfWork.Repository<IsciMaliye>()
+                .GetirAsync(x => x.IsciId == isciId);
+            return maliye?.CariMaas ?? 0m;
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // TUTULMALARI HESABLA (ümumi istifadə üçün — eyni məntiq FerdiHesablaAsync-də)
+        // Məzuniyyət Preview və Detail səhifələrində NET məbləği çıxartmaq üçün.
+        // ─────────────────────────────────────────────────────────
+        public async Task<MezuniyyetTutulmaDto> TutulmalariHesablaAsync(
+            decimal brut, DateTime tarix, int? isciId = null)
+        {
+            if (brut < 0) brut = 0;
+            var p = await VergiParametrleriniGetirAsync(tarix);
+
+            var pilleler = await _unitOfWork.Repository<VergiPille>()
+                .HamisiniGetirAsync(x =>
+                    x.Aktivdir && !x.Silinib &&
+                    x.BaslamaTarixi <= tarix &&
+                    (x.BitmeTarixi == null || x.BitmeTarixi >= tarix));
+
+            decimal Pilleli(decimal mebleg, MaasParametrNovu nov, decimal flatFaiz)
+            {
+                var novPilleler = pilleler.Where(x => x.Nov == nov).OrderBy(x => x.AsagiHedd).ToList();
+                if (novPilleler.Any())
+                {
+                    var pille = PilleniTap(mebleg, novPilleler);
+                    if (pille == null) return 0;
+                    return Math.Round(
+                        pille.SabitMebleg + (mebleg - pille.AsagiHedd) * (pille.Faiz / 100m), 2);
+                }
+                return Math.Round(mebleg * (flatFaiz / 100m), 2);
+            }
+
+            // Birinci pillə üst həddi — standart 200 AZN güzəşti yalnız brüt bu
+            // sərhəddən yuxarı deyilsə tətbiq olunur (FerdiHesablaAsync ilə eyni məntiq).
+            var gvPilleleri = pilleler
+                .Where(x => x.Nov == MaasParametrNovu.GelirVergisiFaizi)
+                .OrderBy(x => x.AsagiHedd)
+                .ToList();
+            decimal firstBracketMax = gvPilleleri.FirstOrDefault()?.YuxariHedd ?? 2500m;
+
+            // İşçi güzəşti — isciId verilibsə, aktiv olan ən böyüyünü tap.
+            //
+            // Vacib: filter ay sonu / ay əvvəli üzrə qurulur ki, ay ortasında təyin
+            // olunmuş güzəşt (məsələn 15.04 başlanır) həmin ay üçün qüvvədə sayılsın.
+            //   - Başlama tarixi ≤ AY SONU   (ay daxilində başlamış güzəşt sayılır)
+            //   - Bitmə tarixi   ≥ AY ƏVVƏLİ (ay daxilində bitmiş güzəşt də sayılır)
+            decimal maxIsciGuzesti = 0m;
+            string? isciGuzestAd = null;
+            if (isciId.HasValue)
+            {
+                var ayBaslangic = new DateTime(tarix.Year, tarix.Month, 1);
+                var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
+
+                var isciGuzestleri = await _unitOfWork.Repository<IsciGuzest>()
+                    .Query()
+                    .Where(x =>
+                        !x.Silinib &&
+                        x.IsciId == isciId.Value &&
+                        x.BaslamaTarixi <= ayBitis &&
+                        (x.BitmeTarixi == null || x.BitmeTarixi >= ayBaslangic))
+                    .Include(x => x.Guzest)
+                    .Where(x => x.Guzest != null && !x.Guzest.Silinib && x.Guzest.Aktivdir)
+                    .ToListAsync();
+                foreach (var ig in isciGuzestleri)
+                {
+                    if (ig.Guzest.Mebleg > maxIsciGuzesti)
+                    {
+                        maxIsciGuzesti = ig.Guzest.Mebleg;
+                        isciGuzestAd = ig.Guzest.Ad;
+                    }
+                }
+            }
+
+            decimal standartGuzest = brut <= firstBracketMax ? p.VergiGuzestiMeblegi : 0m;
+            decimal vergilenecek = Math.Max(0, brut - standartGuzest - maxIsciGuzesti);
+
+            decimal gelirVergisi = Pilleli(vergilenecek, MaasParametrNovu.GelirVergisiFaizi, p.GelirVergisiFaizi);
+            decimal dsmfIsci     = Pilleli(brut,         MaasParametrNovu.DsmfFaizi,        p.DsmfFaizi);
+            decimal itss         = Pilleli(brut,         MaasParametrNovu.IcbariTibbiSigortaFaizi, p.IcbariTibbiSigortaFaizi);
+            decimal issizlikIsci = Math.Round(brut * (p.IssizlikSigortasiFaizi / 100m), 2);
+            decimal umumi        = gelirVergisi + dsmfIsci + issizlikIsci + itss;
+            decimal net          = Math.Max(0, brut - umumi);
+
+            return new MezuniyyetTutulmaDto
+            {
+                Brut = brut,
+                VergiGuzesti = standartGuzest + maxIsciGuzesti,
+                StandartGuzest = standartGuzest,
+                IsciGuzesti = maxIsciGuzesti,
+                IsciGuzestiAd = isciGuzestAd,
+                Vergilenecek = vergilenecek,
+                GelirVergisi = gelirVergisi,
+                DsmfIsci = dsmfIsci,
+                IssizlikIsci = issizlikIsci,
+                Itss = itss,
+                UmumiTutulma = umumi,
+                Net = net
+            };
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // ═════════════════════════════════════════════════════════
+        // MEZUNIYYET ODENISININ TAM, ADDIM-ADDIM HESABLAMASI
+        //
+        // HR təsdiq anında (QabaqcadanOdenis seçilibsə) və Muhasibin Detail
+        // səhifəsində bu metod çağırılır. Verilən tarix aralığını ay-ay bölür,
+        // hər ay üçün MH/ƏH hesablayır və cəmləyir. Hər addım Muhasib üçün
+        // insan-oxunaqlı mətn olaraq `IzahatAddimlari` siyahısında qayıdır.
+        // ═════════════════════════════════════════════════════════
+        public async Task<MezuniyyetOdenisHesablamaDto> MezuniyyetOdenisiDetalliHesablaAsync(
+            int isciId, DateTime baslama, DateTime bitme)
+        {
+            var result = new MezuniyyetOdenisHesablamaDto
+            {
+                IsciId = isciId,
+                BaslamaTarixi = baslama.Date,
+                BitmeTarixi = bitme.Date
+            };
+
+            // İşçi adı (informativ)
+            var isci = await _unitOfWork.Repository<Isci>()
+                .GetirAsync(x => x.Id == isciId);
+            result.IsciAdSoyad = isci?.TamAd ?? $"İşçi #{isciId}";
+
+            // Cari maaş
+            var maliye = await _unitOfWork.Repository<IsciMaliye>()
+                .GetirAsync(x => x.IsciId == isciId);
+            decimal cariMaas = maliye?.CariMaas ?? 0;
+            result.CariMaas = cariMaas;
+
+            // Son 12 ayın qazancları (ən yeni → ən köhnəyə doğru)
+            var son12Qazanc = await _unitOfWork.Repository<IsciAyliqQazanc>()
+                .Query()
+                .Where(x => x.IsciId == isciId && !x.Silinib)
+                .OrderByDescending(x => x.Il * 12 + x.Ay)
+                .Take(12)
+                .ToListAsync();
+
+            decimal Sxam = son12Qazanc.Sum(x => x.Qazanc);
+            result.Son12AyCemi = Sxam;
+            result.Son12AyQeydSayi = son12Qazanc.Count;
+
+            // Ay adları (aşağıda bir neçə yerdə lazım olacaq)
+            var azAyAdlari = new[]
+            {
+                "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+                "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"
+            };
+
+            // ──────────────────────────────────────────────────────
+            // ARTIM ƏMSALI (K) — hər ay üçün o aydaki ştat maaşına görə
+            //
+            //   K_i = CariStatMaas / StatMaas_i    (amma >= 1.0 — azalmalar köhnə qazancı
+            //                                       aşağı salmır, yalnız artım tətbiq olunur)
+            //   Qazanc_düzəlmiş_i = Qazanc_i × K_i
+            //   S_düzəlmiş = Σ Qazanc_düzəlmiş_i
+            // ──────────────────────────────────────────────────────
+            decimal sDuzelmis = 0;
+            foreach (var q in son12Qazanc.OrderBy(x => x.Il).ThenBy(x => x.Ay))
+            {
+                var ayBitis = new DateTime(q.Il, q.Ay, 1).AddMonths(1).AddDays(-1);
+                decimal statMaasOAyda = await StatMaasiTarixeGoreTapAsync(isciId, ayBitis);
+                if (statMaasOAyda <= 0) statMaasOAyda = cariMaas; // fallback
+
+                decimal emsal = (statMaasOAyda > 0 && cariMaas > 0)
+                    ? Math.Round(cariMaas / statMaasOAyda, 4)
+                    : 1m;
+                // Yalnız artım — azalma halda əmsal 1.0 qalır
+                if (emsal < 1m) emsal = 1m;
+
+                decimal duzelmis = Math.Round(q.Qazanc * emsal, 2);
+                sDuzelmis += duzelmis;
+
+                result.QazancEmsallari.Add(new QazancEmsalSliceDto
+                {
+                    Il = q.Il,
+                    Ay = q.Ay,
+                    AyAdi = $"{azAyAdlari[q.Ay]} {q.Il}",
+                    StatMaas = statMaasOAyda,
+                    Qazanc = q.Qazanc,
+                    Emsal = emsal,
+                    DuzelmisQazanc = duzelmis
+                });
+            }
+            result.Son12AyDuzelmisCemi = sDuzelmis;
+
+            // Tarixçə boşluq xəbərdarlığı
+            int noTarixceCount = await _unitOfWork.Repository<IsciMaasTarixcesi>()
+                .Query()
+                .CountAsync(x => x.IsciId == isciId && !x.Silinib);
+            if (noTarixceCount == 0 && son12Qazanc.Count > 0)
+            {
+                result.TarixceXeberdarliqlari.Add(
+                    "İşçi üçün IsciMaasTarixcesi-də heç bir qeyd yoxdur — bütün aylar üçün " +
+                    "əmsal 1.0 tətbiq olundu (maaş sabit qəbul edildi).");
+            }
+            else if (son12Qazanc.Count < 12)
+            {
+                result.TarixceXeberdarliqlari.Add(
+                    $"Yalnız {son12Qazanc.Count}/12 ay qazanc qeydi mövcuddur — MH dəqiq olmaya bilər.");
+            }
+
+            // MH formulu artıq DÜZƏLMİŞ S istifadə edir
+            decimal S = sDuzelmis;
+
+            result.IzahatAddimlari.Add(
+                $"İşçi: {result.IsciAdSoyad}");
+            result.IzahatAddimlari.Add(
+                $"Məzuniyyət dövrü: {baslama:dd.MM.yyyy} – {bitme:dd.MM.yyyy}");
+            result.IzahatAddimlari.Add(
+                $"Cari ştat maaşı: {cariMaas:N2} ₼");
+            result.IzahatAddimlari.Add(
+                $"Son 12 ayın faktiki cəmi qazancı: {Sxam:N2} ₼ ({son12Qazanc.Count} qeyd üzrə)");
+            result.IzahatAddimlari.Add(
+                "Hər ay üçün ARTIM ƏMSALI tətbiq olundu — köhnə ayların qazancı " +
+                "bu günkü cari ştat maaşı səviyyəsinə qaldırıldı (yalnız maaş artıbsa). " +
+                "Azalma halda əmsal 1.0 saxlanır, qazanc dəyişmir.");
+            result.IzahatAddimlari.Add(
+                $"Son 12 ayın artım əmsallı düzəlmiş cəmi qazancı: {sDuzelmis:N2} ₼");
+            result.IzahatAddimlari.Add(
+                "Hesablama məntiqi: hər ay üçün iki rəqəm tapılır — TARİXİ ORTA " +
+                "(düzəlmiş cəm ÷ 12 ÷ 30.4 × təqvim günü) və CARİ MAAŞ HESABI " +
+                "(cari maaş ÷ ay iş günü × məzuniyyət iş günü). Hansı böyükdürsə, " +
+                "məzuniyyət ödənişi olaraq götürülür.");
+
+            // Məzuniyyət periodunu aylar üzrə böl
+            var cursorAy = new DateTime(baslama.Year, baslama.Month, 1);
+            var sonAy = new DateTime(bitme.Year, bitme.Month, 1);
+
+            int umumiGS = 0, umumiIGS = 0;
+            decimal cemi = 0;
+
+            while (cursorAy <= sonAy)
+            {
+                int il = cursorAy.Year;
+                int ay = cursorAy.Month;
+                var ayBaslangic = new DateTime(il, ay, 1);
+                var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
+
+                // Bu ay üçün məzuniyyət sliceini hesabla
+                var sliceBaslama = baslama > ayBaslangic ? baslama : ayBaslangic;
+                var sliceBitis = bitme < ayBitis ? bitme : ayBitis;
+
+                // Bu ayın BayramGunu qeydlərini tap (override dəstəklənir)
+                var ozelGunler = await _unitOfWork.Repository<BayramGunu>()
+                    .HamisiniGetirAsync(x =>
+                        x.Tarix >= ayBaslangic &&
+                        x.Tarix <= ayBitis &&
+                        !x.Silinib);
+                var ozelDict = ozelGunler
+                    .GroupBy(x => x.Tarix.Date)
+                    .ToDictionary(g => g.Key, g => g.First().Tip);
+
+                int gs = 0;  // teqvim gün
+                int igs = 0; // iş gün (şənbə/bazar + bayram çıxıldı)
+                for (var t = sliceBaslama.Date; t <= sliceBitis.Date; t = t.AddDays(1))
+                {
+                    gs++;
+                    bool isIsGunu;
+                    if (ozelDict.TryGetValue(t, out var tip))
+                        isIsGunu = tip == GunTipi.IsGunu;
+                    else
+                        isIsGunu = t.DayOfWeek != DayOfWeek.Saturday &&
+                                   t.DayOfWeek != DayOfWeek.Sunday;
+                    if (isIsGunu) igs++;
+                }
+
+                int ayIsGun = await AyinIsGunleriniHesablaAsync(il, ay);
+
+                decimal MH = 0;
+                if (S > 0 && gs > 0)
+                    MH = Math.Round(S / 12m / 30.4m * gs, 2);
+
+                decimal EH = 0;
+                if (cariMaas > 0 && ayIsGun > 0 && igs > 0)
+                    EH = Math.Round(cariMaas / ayIsGun * igs, 2);
+
+                decimal secilen = Math.Max(MH, EH);
+                string qalib = MH >= EH ? "MH" : "ƏH";
+
+                var slice = new MezuniyyetOdenisAySliceDto
+                {
+                    Il = il,
+                    Ay = ay,
+                    AyAdi = $"{azAyAdlari[ay]} {il}",
+                    TeqvimGun = gs,
+                    IsGun = igs,
+                    AyIsGun = ayIsGun,
+                    MH = MH,
+                    EH = EH,
+                    Secilen = secilen,
+                    Qalib = qalib
+                };
+                result.AySliceleri.Add(slice);
+
+                result.IzahatAddimlari.Add(
+                    $"── {slice.AyAdi} ──");
+                result.IzahatAddimlari.Add(
+                    $"    Bu ayın məzuniyyəti: {gs} təqvim günü, {igs} iş günü " +
+                    $"(ayın ümumi iş günü sayı: {ayIsGun})");
+                result.IzahatAddimlari.Add(
+                    $"    Tarixi orta: {S:N2} ÷ 12 ÷ 30.4 × {gs} = {MH:N2} ₼");
+                result.IzahatAddimlari.Add(
+                    $"    Cari maaş hesabı: {cariMaas:N2} ÷ {ayIsGun} × {igs} = {EH:N2} ₼");
+                result.IzahatAddimlari.Add(
+                    $"    Məzuniyyət ödənişi (böyüyü götürülür): {secilen:N2} ₼ " +
+                    $"({(qalib == "MH" ? "tarixi orta üstündür" : "cari maaş hesabı üstündür")})");
+
+                umumiGS += gs;
+                umumiIGS += igs;
+                cemi += secilen;
+
+                cursorAy = cursorAy.AddMonths(1);
+            }
+
+            result.UmumiTeqvimGun = umumiGS;
+            result.UmumiIsGun = umumiIGS;
+            result.CemiOdenis = cemi;
+
+            result.IzahatAddimlari.Add(
+                $"═══ CƏMİ ÖDƏNİŞ: {cemi:N2} ₼  ({umumiGS} təqvim günü, {umumiIGS} iş günü) ═══");
+
+            return result;
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // AYIN IS GUNLERINI HESABLA -- BayramGunu cədvəlindən oxunur
+        // Tip = Bayram → həmin gün istirahət
+        // Tip = IsGunu → həmin gün iş (şənbə/bazar olsa belə)
         // ─────────────────────────────────────────────────────────
         private async Task<int> AyinIsGunleriniHesablaAsync(int il, int ay)
         {
             var ayBaslangic = new DateTime(il, ay, 1);
             var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
 
-            var bayramlar = await _unitOfWork.Repository<BayramGunu>()
+            var ozelGunler = await _unitOfWork.Repository<BayramGunu>()
                 .HamisiniGetirAsync(x =>
                     x.Tarix >= ayBaslangic &&
                     x.Tarix <= ayBitis &&
                     !x.Silinib);
 
-            var bayramTarixleri = bayramlar.Select(x => x.Tarix.Date).ToHashSet();
+            var ozelDict = ozelGunler
+                .GroupBy(x => x.Tarix.Date)
+                .ToDictionary(g => g.Key, g => g.First().Tip);
 
             int sayi = 0;
             for (var t = ayBaslangic; t <= ayBitis; t = t.AddDays(1))
             {
-                if (t.DayOfWeek != DayOfWeek.Saturday &&
-                    t.DayOfWeek != DayOfWeek.Sunday &&
-                    !bayramTarixleri.Contains(t.Date))
-                    sayi++;
+                if (ozelDict.TryGetValue(t.Date, out var tip))
+                {
+                    if (tip == GunTipi.IsGunu) sayi++;
+                }
+                else
+                {
+                    if (t.DayOfWeek != DayOfWeek.Saturday &&
+                        t.DayOfWeek != DayOfWeek.Sunday)
+                        sayi++;
+                }
             }
 
             return sayi > 0 ? sayi : 22; // fallback: 22 is gunu

@@ -2,6 +2,60 @@
 
 namespace FinNex.Application.DTOs.HR.Maas
 {
+    // ── İŞÇİ AYLIQ QAZANC (məzuniyyət üçün 12 ay) ─────────────────
+    public class IsciAyliqQazancDto
+    {
+        public int Id { get; set; }
+        public int IsciId { get; set; }
+        public int Il { get; set; }
+        public int Ay { get; set; }
+        public decimal Qazanc { get; set; }
+        public bool ElIleDaxilEdilib { get; set; }
+        public string? Qeyd { get; set; }
+        public DateTime YaradilmaTarixi { get; set; }
+    }
+
+    // ── XƏSTƏLİK ─────────────────────────────────────────────────
+    public class XestelikDto
+    {
+        public int Id { get; set; }
+        public int IsciId { get; set; }
+        public string IsciAdSoyad { get; set; } = "";
+        public DateTime BaslamaTarixi { get; set; }
+        public DateTime BitmeTarixi { get; set; }
+        public int IsGunSayi { get; set; }
+        public string BulletenNomresi { get; set; } = "";
+        public string? MualiceMuessisesi { get; set; }
+        public string? Qeyd { get; set; }
+        public int Status { get; set; }
+        public DateTime? HrTesdiqTarixi { get; set; }
+        public decimal? UmumiSirketOdenisi { get; set; }
+    }
+
+    public class XestelikCreateDto
+    {
+        public int IsciId { get; set; }
+        public DateTime BaslamaTarixi { get; set; }
+        public DateTime BitmeTarixi { get; set; }
+        public string BulletenNomresi { get; set; } = "";
+        public string? MualiceMuessisesi { get; set; }
+        public string? Qeyd { get; set; }
+    }
+
+    public class XestelikPreviewDto
+    {
+        public int IsGunSayi { get; set; }
+        public decimal S { get; set; }
+        public int Son12AyIsGunu { get; set; }
+        public decimal BirGunluk { get; set; }
+        public int SirketGun { get; set; }
+        public int DsmfGun { get; set; }
+        public decimal SirketOdenis { get; set; }
+        public decimal DsmfOdenis { get; set; }
+        public int OncekiSirketGun { get; set; }
+        public string? Xeberdarliq { get; set; }
+    }
+
     // ── TOPLU INPUT ───────────────────────────────────────────────
     public class TopluHesablaInputDto
     {
@@ -35,10 +89,13 @@ namespace FinNex.Application.DTOs.HR.Maas
         public decimal DsmfIsci { get; set; }
         public decimal IssizlikIsci { get; set; }
         public decimal Itss { get; set; }
-        public decimal UmumiTutulma => GelirVergisi + DsmfIsci + IssizlikIsci + Itss;
+        public decimal HysIsci { get; set; }
+        public decimal UmumiTutulma => GelirVergisi + DsmfIsci + IssizlikIsci + Itss + HysIsci;
         public decimal NetMaas { get; set; }
         public decimal DsmfIsegoturen { get; set; }
         public decimal IssizlikIsegoturen { get; set; }
+        public decimal ItssIsegoturen { get; set; }
+        public decimal HysIsegoturen { get; set; }
         public decimal UmumiSirketXerci { get; set; }
         public List<HesablamaIzahiDto> Izahatlar { get; set; } = new();
     }
@@ -83,6 +140,8 @@ namespace FinNex.Application.DTOs.HR.Maas
         public decimal DsmfIsci { get; set; }
         public decimal IssizlikIsci { get; set; }
         public decimal Itss { get; set; }
+        public decimal HysIsci { get; set; }
+        public decimal HysIsegoturen { get; set; }
         public decimal NetMebleg { get; set; }
         public MaasStatus Status { get; set; }
         public DateTime HesablanmaTarixi { get; set; }
@@ -144,6 +203,7 @@ namespace FinNex.Application.DTOs.HR.Maas
         public decimal MinimumEmekHaqqi { get; set; } = 345m;
         public decimal DsmfIsegotürenFaizi { get; set; } = 22m;
         public decimal IssizlikIsegotürenFaizi { get; set; } = 0.5m;
+        public decimal HysIsegoturenFaizi { get; set; } = 15m;
     }
 
     // ── BANK ─────────────────────────────────────────────────────

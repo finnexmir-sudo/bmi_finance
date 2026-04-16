@@ -316,7 +316,6 @@
 .mi-filter-actions {
     display: flex;
     gap: 7px;
-    margin-left: auto;
 }
 
 /* ── Table card ──────────────────────────────────────────────── */
@@ -325,7 +324,8 @@
     border: 1px solid #e2e6ef;
     border-radius: 13px;
     box-shadow: 0 2px 8px rgba(15,26,46,.05);
-    overflow: hidden;
+    /* overflow: hidden silindi — sticky sütunlar üçün lazımdır.
+       Border-radius hələ də işləyir — table-wrap clipping-i öz üzərinə götürür. */
 }
 
 .mi-toolbar {
@@ -914,4 +914,219 @@
     .mi-stats {
         grid-template-columns: repeat(2,1fr)
     }
+}
+
+/* ── Quick search (client-side table filter) ──────────────── */
+.mi-search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 260px;
+    max-width: 420px;
+}
+.mi-search-input {
+    width: 100%;
+    padding: 9px 32px 9px 32px;
+    font-size: 13px;
+    font-family: inherit;
+    border: 1.5px solid #e2e6ef;
+    border-radius: 8px;
+    background: #fff;
+    color: #1a2332;
+    transition: border-color .15s, box-shadow .15s;
+}
+.mi-search-input:focus {
+    outline: none;
+    border-color: #c9900a;
+    box-shadow: 0 0 0 3px rgba(201, 144, 10, 0.1);
+}
+.mi-search-input::placeholder { color: #aab1c0; font-size: 12px; }
+
+.mi-search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: #e2e6ef;
+    color: #6b7589;
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: .15s;
+}
+.mi-search-clear:hover { background: #d85a30; color: #fff; }
+
+/* ── Period chip — hesablama dövrü göstərici ──────────────── */
+.mi-period-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 18px;
+    background: linear-gradient(135deg, #fef3c7, #fffbeb);
+    border-bottom: 1.5px solid #fde68a;
+    color: #78350f;
+    font-size: 12.5px;
+    font-weight: 600;
+}
+.mi-period-chip svg { color: #c9900a; flex-shrink: 0; }
+.mi-period-chip-lbl {
+    color: #92400e;
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 10.5px;
+    letter-spacing: .4px;
+}
+.mi-period-chip-val {
+    color: #78350f;
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: .2px;
+}
+.mi-period-chip-sep {
+    color: #d97706;
+    margin: 0 4px;
+    opacity: .6;
+}
+.mi-period-chip-count {
+    color: #92400e;
+    font-weight: 600;
+    font-size: 11.5px;
+    opacity: .85;
+}
+
+.mi-btn--green {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #1e9b6b, #16a34a);
+    color: #fff;
+    border: 1px solid #16a34a;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .15s;
+}
+.mi-btn--green:hover {
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    box-shadow: 0 4px 12px rgba(30, 155, 107, 0.25);
+    transform: translateY(-1px);
+}
+.mi-btn--green svg { color: #fff; }
+
+/* Footer cəmi sətri — vurğulu */
+.mi-tfoot-cemi {
+    background: linear-gradient(180deg, #fef3c7, #fffbeb) !important;
+    border-top: 2px solid #fbbf24 !important;
+}
+.mi-tfoot-cemi td {
+    padding: 13px 10px !important;
+    text-align: center;
+}
+.mi-tfoot-cemi td.center { text-align: center; }
+
+/* ════════════════════════════════════════════════════════════
+   STICKY: Sol 3 sütun (Status, Əməliyyat, Ad Soyad)
+   horizontal scroll-da daimi görünür
+   ════════════════════════════════════════════════════════════ */
+
+/* Birinci sütun: Status (110px) */
+.mi-table thead th:nth-child(1),
+.mi-table tbody td:nth-child(1),
+.mi-table tfoot td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background: #fff;
+}
+
+/* İkinci sütun: Əməliyyat (120px), birincinin sağında */
+.mi-table thead th:nth-child(2),
+.mi-table tbody td:nth-child(2),
+.mi-table tfoot td:nth-child(2) {
+    position: sticky;
+    left: 110px;
+    z-index: 5;
+    background: #fff;
+}
+
+/* Üçüncü sütun: Ad Soyad (200px) */
+.mi-table thead th:nth-child(3),
+.mi-table tbody td:nth-child(3),
+.mi-table tfoot td:nth-child(3) {
+    position: sticky;
+    left: 230px;
+    z-index: 5;
+    background: #fff;
+    box-shadow: 4px 0 8px rgba(15, 26, 46, 0.08);
+}
+
+/* Group row (tr-group) — ilk 3 hücrə də sticky olmalıdır ki tr-cols ilə düz xəttdə olsun */
+.mi-table thead .tr-group th:nth-child(1) {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: #f0f2f7;
+}
+.mi-table thead .tr-group th:nth-child(2) {
+    position: sticky;
+    left: 110px;
+    z-index: 10;
+    background: #f0f2f7;
+}
+.mi-table thead .tr-group th:nth-child(3) {
+    position: sticky;
+    left: 230px;
+    z-index: 10;
+    background: #f0f2f7;
+}
+
+/* Hover state-də sticky sütunlarda da fon dəyişməsi */
+.mi-table tbody tr:hover td:nth-child(1),
+.mi-table tbody tr:hover td:nth-child(2),
+.mi-table tbody tr:hover td:nth-child(3) {
+    background: #fafbfc;
+}
+
+/* Header-də sticky sütunların fonu */
+.mi-table thead .tr-cols th:nth-child(1),
+.mi-table thead .tr-cols th:nth-child(2),
+.mi-table thead .tr-cols th:nth-child(3) {
+    background: #f7f9fc;
+    z-index: 10;
+}
+
+/* Footer (CƏMİ) sticky sütunlar */
+.mi-table tfoot .mi-tfoot-cemi td:nth-child(1),
+.mi-table tfoot .mi-tfoot-cemi td:nth-child(2),
+.mi-table tfoot .mi-tfoot-cemi td:nth-child(3) {
+    background: #fef3c7;
+    z-index: 10;
+}
+
+/* ════════════════════════════════════════════════════════════
+   STICKY: Səhifə header-i (action düymələri) həmişə görünür
+   ════════════════════════════════════════════════════════════ */
+.mi-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: #f7f9fc;
+    padding: 16px 20px 14px;
+    margin: -16px -20px 16px;
+    border-bottom: 1px solid #e4e7ed;
+    backdrop-filter: blur(8px);
+}
+
+/* mi-page parent overflow-u açıq olmalıdır */
+.mi-page {
+    overflow: visible;
 }

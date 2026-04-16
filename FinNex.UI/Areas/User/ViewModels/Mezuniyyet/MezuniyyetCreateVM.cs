@@ -26,6 +26,9 @@ namespace FinNex.UI.Areas.User.ViewModels.Mezuniyyet
         [MaxLength(500, ErrorMessage = "Qeyd 500 simvoldan çox ola bilməz")]
         public string? Qeyd { get; set; }
 
+        // 1 = AySonuOdenis (default), 2 = QabaqcadanOdenis
+        public int OdenisTipi { get; set; } = 1;
+
         // ── Dropdown məlumatları ───────────────────────────────
         public List<SelectListItem> NovList { get; set; } = new()
         {

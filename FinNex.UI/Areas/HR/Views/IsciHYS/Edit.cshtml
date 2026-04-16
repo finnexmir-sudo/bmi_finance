@@ -1,0 +1,63 @@
+@model FinNex.Domain.Entities.HR.IsciHYS
+@{
+    ViewData["Title"] = "HYS təyinatını redaktə et";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var isciler = (List<FinNex.Domain.Entities.HR.Isci>)ViewBag.Isciler;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/isci-hys.css" asp-append-version="true" />
+}
+
+<div class="ih-form-page">
+    <div class="ih-form-head">
+        <a asp-action="Index" class="ih-back"><i class="bi bi-arrow-left"></i> Geri</a>
+        <div class="ih-title">HYS təyinatını redaktə et</div>
+    </div>
+
+    <div class="ih-form-card">
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="IsciId" />
+            <div asp-validation-summary="All" class="text-danger"></div>
+
+            <div class="ih-form-group">
+                <label class="ih-label">İşçi</label>
+                <div class="ih-static">@(Model.Isci?.TamAd ?? "#" + Model.IsciId)</div>
+            </div>
+
+            <div class="ih-form-group">
+                <label asp-for="Mebleg" class="ih-label">Aylıq HYS məbləği (₼) <span class="ih-req">*</span></label>
+                <input asp-for="Mebleg" type="number" step="0.01" min="0.01" class="ih-input" />
+                <span asp-validation-for="Mebleg" class="ih-err"></span>
+            </div>
+
+            <div class="ih-form-row">
+                <div class="ih-form-group">
+                    <label asp-for="BaslamaTarixi" class="ih-label">Başlama tarixi <span class="ih-req">*</span></label>
+                    <input asp-for="BaslamaTarixi" type="date" class="ih-input" />
+                    <span asp-validation-for="BaslamaTarixi" class="ih-err"></span>
+                </div>
+                <div class="ih-form-group">
+                    <label asp-for="BitmeTarixi" class="ih-label">Bitmə tarixi <span class="ih-hint">(boş = müddətsiz)</span></label>
+                    <input asp-for="BitmeTarixi" type="date" class="ih-input" />
+                    <span asp-validation-for="BitmeTarixi" class="ih-err"></span>
+                </div>
+            </div>
+
+            <div class="ih-form-group">
+                <label asp-for="Qeyd" class="ih-label">Qeyd <span class="ih-hint">(istəyə bağlı)</span></label>
+                <textarea asp-for="Qeyd" rows="3" class="ih-input"></textarea>
+                <span asp-validation-for="Qeyd" class="ih-err"></span>
+            </div>
+
+            <div class="ih-form-actions">
+                <a asp-action="Index" class="ih-btn ih-btn--outline">Ləğv et</a>
+                <button type="submit" class="ih-btn ih-btn--primary">
+                    <i class="bi bi-check2"></i> Yadda saxla
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

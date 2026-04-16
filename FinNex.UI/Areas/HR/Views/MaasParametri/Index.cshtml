@@ -5,39 +5,32 @@
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 
     var all = Model.ToList();
+    var pilleler = (ViewBag.VergiPilleleri as List<VergiPille>) ?? new List<VergiPille>();
 
-    var tutulmalar = all.Where(x =>
-        x.Nov == MaasParametrNovu.GelirVergisiFaizi ||
-        x.Nov == MaasParametrNovu.DsmfFaizi ||
-        x.Nov == MaasParametrNovu.IssizlikSigortasiFaizi ||
-        x.Nov == MaasParametrNovu.IcbariTibbiSigortaFaizi).ToList();
+    // Flat parametrlər (pilləli olmayan — yalnız İşsizlik və güzəştlər)
+    MaasParametri? Flat(MaasParametrNovu n) => all.FirstOrDefault(x => x.Nov == n && x.Aktivdir);
 
-    var guzeshtler = all.Where(x =>
-        x.Nov == MaasParametrNovu.VergiGuzestiMeblegi ||
-        x.Nov == MaasParametrNovu.MinimumEmekHaqqi).ToList();
+    var issizlikIsci = Flat(MaasParametrNovu.IssizlikSigortasiFaizi);
+    var issizlikIsv  = Flat(MaasParametrNovu.IssizlikIsegoturenFaizi);
+    var minEmek      = Flat(MaasParametrNovu.MinimumEmekHaqqi);
+    var vergiGuz     = Flat(MaasParametrNovu.VergiGuzestiMeblegi);
 
-    var isegoturenler = all.Where(x =>
-        x.Nov == MaasParametrNovu.DsmfIsegoturenFaizi ||
-        x.Nov == MaasParametrNovu.IssizlikIsegoturenFaizi).ToList();
+    List<VergiPille> Pilleler(MaasParametrNovu n) =>
+        pilleler.Where(x => x.Nov == n && x.Aktivdir).OrderBy(x => x.Sira).ToList();
 
     string NovAd(MaasParametrNovu n) => n switch
     {
         MaasParametrNovu.GelirVergisiFaizi => "Gəlir Vergisi",
-        MaasParametrNovu.DsmfFaizi => "DSMF (İşçi)",
-        MaasParametrNovu.IssizlikSigortasiFaizi => "İşsizlik Sığortası (İşçi)",
-        MaasParametrNovu.IcbariTibbiSigortaFaizi => "İTSS",
+        MaasParametrNovu.DsmfFaizi => "DSMF",
+        MaasParametrNovu.IssizlikSigortasiFaizi => "İşsizlik Sığortası",
+        MaasParametrNovu.IcbariTibbiSigortaFaizi => "İcbari Tibbi Sığorta (İTSS)",
         MaasParametrNovu.MinimumEmekHaqqi => "Minimum Əmək Haqqı",
         MaasParametrNovu.VergiGuzestiMeblegi => "Vergi Güzəşti",
-        MaasParametrNovu.DsmfIsegoturenFaizi => "DSMF (İşəgötürən)",
-        MaasParametrNovu.IssizlikIsegoturenFaizi => "İşsizlik (İşəgötürən)",
+        MaasParametrNovu.DsmfIsegoturenFaizi => "DSMF",
+        MaasParametrNovu.IssizlikIsegoturenFaizi => "İşsizlik Sığortası",
+        MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi => "İcbari Tibbi Sığorta (İTSS)",
         _ => n.ToString()
     };
-
-    string DeyerFormat(MaasParametri p) =>
-        p.Tip == MaasParametrTipi.Faiz ? $"{p.Deyer:G29}" : $"{p.Deyer:N2}";
-
-    string Suffix(MaasParametri p) =>
-        p.Tip == MaasParametrTipi.Faiz ? "%" : "\u20BC";
 }
 
 @section Styles {
@@ -47,79 +40,280 @@
 <div class="mp-page">
     @Html.AntiForgeryToken()
 
+    @* ── Başlıq ─────────────────────────────────────────────── *@
     <div class="mp-header">
         <div>
             <h1 class="mp-title">Əmək haqqı parametrləri</h1>
-            <p class="mp-subtitle">Vergi, sığorta və güzəşt dərəcələrinin idarəsi</p>
+            <p class="mp-subtitle">2026 Vergi Məcəlləsinə uyğun vergi dərəcələri və güzəştlər</p>
         </div>
-        <button class="mp-btn-primary" id="mpOpenCreate">
-            <i class="bi bi-plus-lg"></i> Yeni parametr
-        </button>
+    </div>
+
+    @* ── Bələdçi ──────────────────────────────────────────── *@
+    <div class="mp-guide">
+        <i class="bi bi-info-circle"></i>
+        <div>
+            <strong>Bu səhifədə 3 bölmə var:</strong>
+            Pilləli vergilər üçün "Pillə" düyməsi, flat parametrlər üçün "Redaktə et" düyməsi istifadə olunur.
+            Qaydalar dəyişdikdə yeni pillə əlavə etdikdə köhnələr avtomatik bağlanır.
+        </div>
     </div>
 
     @{
-        void RenderGroup(string title, string icon, string colorClass, List<MaasParametri> items)
+        // Tax row helper — pilləli və flat növlər üçün universal renderer
+        void RenderTaxRow(
+            string ad,
+            string icon,
+            string colorClass,
+            MaasParametrNovu nov,
+            List<VergiPille> rowPilleler,
+            MaasParametri? flatParam)
         {
-            <div class="mp-group mp-group--@colorClass">
-                <div class="mp-group-header">
-                    <i class="bi @icon"></i>
-                    <h2>@title</h2>
-                    <span class="mp-group-count">@items.Count parametr</span>
+            var isPilleli = rowPilleler.Any();
+
+            <div class="mp-tax-row mp-tax-row--@colorClass">
+                <div class="mp-tax-head">
+                    <div class="mp-tax-icon"><i class="bi @icon"></i></div>
+                    <div class="mp-tax-name">
+                        <div class="mp-tax-name-text">@ad</div>
+                        @if (isPilleli)
+                        {
+                            <span class="mp-tax-type mp-tax-type--pilleli">Pilləli</span>
+                        }
+                        else if (flatParam != null)
+                        {
+                            <span class="mp-tax-type mp-tax-type--flat">Flat</span>
+                        }
+                        else
+                        {
+                            <span class="mp-tax-type mp-tax-type--none">Konfiqurasiya yoxdur</span>
+                        }
+                    </div>
+                    <div class="mp-tax-action">
+                        @if (isPilleli)
+                        {
+                            <button class="mp-btn-mini" data-add-pille-nov="@((int)nov)">
+                                <i class="bi bi-plus-lg"></i> Pillə
+                            </button>
+                        }
+                        else if (flatParam != null)
+                        {
+                            <button class="mp-btn-mini" data-edit-id="@flatParam.Id">
+                                <i class="bi bi-pencil-square"></i> Redaktə
+                            </button>
+                        }
+                    </div>
                 </div>
-                <div class="mp-cards">
-                    @if (!items.Any())
+
+                <div class="mp-tax-body">
+                    @if (isPilleli)
                     {
-                        <div class="mp-empty"><i class="bi bi-inbox"></i> Bu qrupda parametr yoxdur.</div>
+                        <table class="mp-bracket-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:36px;">#</th>
+                                    <th>İnterval (₼)</th>
+                                    <th>Düstur</th>
+                                    <th style="width:80px;" class="mp-center">Status</th>
+                                    <th style="width:80px;" class="mp-right"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in rowPilleler)
+                                {
+                                    var araliq = p.YuxariHedd.HasValue
+                                        ? $"{p.AsagiHedd:N0} – {p.YuxariHedd:N0}"
+                                        : $"{p.AsagiHedd:N0}+";
+                                    <tr data-pille-id="@p.Id">
+                                        <td class="mp-sira">@p.Sira</td>
+                                        <td class="mp-araliq">@araliq</td>
+                                        <td class="mp-formula">
+                                            @if (p.SabitMebleg > 0)
+                                            {
+                                                <span class="mp-f-sabit">@p.SabitMebleg.ToString("N0") ₼</span>
+                                                <span class="mp-f-plus">+</span>
+                                            }
+                                            <span class="mp-f-faiz">@p.Faiz.ToString("G29")%</span>
+                                            @if (p.SabitMebleg > 0)
+                                            {
+                                                <span class="mp-f-note">(artan hissəyə)</span>
+                                            }
+                                        </td>
+                                        <td class="mp-center">
+                                            @if (p.Aktivdir)
+                                            {
+                                                <span class="mp-badge mp-badge--aktiv">Aktiv</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="mp-badge mp-badge--deaktiv">Deaktiv</span>
+                                            }
+                                        </td>
+                                        <td class="mp-right">
+                                            <button class="mp-card-btn mp-card-btn--edit" data-edit-pille-id="@p.Id" title="Redaktə et">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+                                            <button class="mp-card-btn mp-card-btn--delete" data-delete-pille-id="@p.Id" title="Sil">
+                                                <i class="bi bi-trash3"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
                     }
-                    @foreach (var p in items)
+                    else if (flatParam != null)
                     {
-                        <div class="mp-card" data-id="@p.Id">
-                            <div class="mp-card-top">
-                                <div class="mp-card-name">@NovAd(p.Nov)</div>
-                                <div class="mp-card-actions">
-                                    <button class="mp-card-btn mp-card-btn--edit" data-edit-id="@p.Id" title="Redaktə et">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </button>
-                                    <button class="mp-card-btn mp-card-btn--delete" data-delete-id="@p.Id" title="Sil">
-                                        <i class="bi bi-trash3"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="mp-card-value">
-                                <span class="mp-card-num">@DeyerFormat(p)</span>
-                                <span class="mp-card-suffix">@Suffix(p)</span>
-                            </div>
-                            <div class="mp-card-meta">
-                                <span><i class="bi bi-calendar3"></i> @p.BaslamaTarixi.ToString("dd.MM.yyyy")</span>
-                                @if (p.Aktivdir)
-                                {
-                                    <span class="mp-badge mp-badge--aktiv">Aktiv</span>
-                                }
-                                else
-                                {
-                                    <span class="mp-badge mp-badge--deaktiv">Deaktiv</span>
-                                }
-                            </div>
-                            @if (!string.IsNullOrEmpty(p.Aciqlama))
-                            {
-                                <div class="mp-card-desc">@p.Aciqlama</div>
-                            }
+                        <div class="mp-flat-value">
+                            <span class="mp-flat-num">@flatParam.Deyer.ToString("G29")</span>
+                            <span class="mp-flat-suffix">@(flatParam.Tip == MaasParametrTipi.Faiz ? "%" : "₼")</span>
+                            <span class="mp-flat-note">bütün məbləğə</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mp-no-config">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Parametr təyin edilməyib — yeni pillə əlavə edin
                         </div>
                     }
                 </div>
             </div>
         }
-
-        RenderGroup("İşçi Tutulmaları", "bi-person-dash", "blue", tutulmalar);
-        RenderGroup("Güzəştlər", "bi-gift", "gold", guzeshtler);
-        RenderGroup("İşəgötürən Payı", "bi-building", "purple", isegoturenler);
     }
 
-    <!-- Modal -->
+    @* ═══════════ BÖLMƏ 1: İŞÇİDƏN TUTULAN VERGİLƏR ═══════════ *@
+    <div class="mp-section">
+        <div class="mp-section-head">
+            <i class="bi bi-person-dash"></i>
+            <h2>İşçidən tutulan vergilər</h2>
+            <span class="mp-section-sub">Bu məbləğlər işçinin gross maaşından çıxılır</span>
+        </div>
+
+        @{
+            RenderTaxRow(
+                "Gəlir Vergisi",
+                "bi-cash-stack",
+                "green",
+                MaasParametrNovu.GelirVergisiFaizi,
+                Pilleler(MaasParametrNovu.GelirVergisiFaizi),
+                null);
+
+            RenderTaxRow(
+                "DSMF (Sosial Sığorta)",
+                "bi-shield-check",
+                "blue",
+                MaasParametrNovu.DsmfFaizi,
+                Pilleler(MaasParametrNovu.DsmfFaizi),
+                null);
+
+            RenderTaxRow(
+                "İcbari Tibbi Sığorta (İTSS)",
+                "bi-heart-pulse",
+                "teal",
+                MaasParametrNovu.IcbariTibbiSigortaFaizi,
+                Pilleler(MaasParametrNovu.IcbariTibbiSigortaFaizi),
+                null);
+
+            RenderTaxRow(
+                "İşsizlikdən Sığorta",
+                "bi-umbrella",
+                "indigo",
+                MaasParametrNovu.IssizlikSigortasiFaizi,
+                Pilleler(MaasParametrNovu.IssizlikSigortasiFaizi),
+                issizlikIsci);
+        }
+    </div>
+
+    @* ═══════════ BÖLMƏ 2: İŞƏGÖTÜRƏN ÖDƏDİKLƏRİ ═══════════ *@
+    <div class="mp-section">
+        <div class="mp-section-head">
+            <i class="bi bi-building"></i>
+            <h2>İşəgötürən (şirkət) ödəyir</h2>
+            <span class="mp-section-sub">İşçidən tutulmur — şirkət xərcidir</span>
+        </div>
+
+        @{
+            RenderTaxRow(
+                "DSMF (Sosial Sığorta)",
+                "bi-shield-check",
+                "purple",
+                MaasParametrNovu.DsmfIsegoturenFaizi,
+                Pilleler(MaasParametrNovu.DsmfIsegoturenFaizi),
+                null);
+
+            RenderTaxRow(
+                "İcbari Tibbi Sığorta (İTSS)",
+                "bi-heart-pulse",
+                "orange",
+                MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi,
+                Pilleler(MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi),
+                null);
+
+            RenderTaxRow(
+                "İşsizlikdən Sığorta",
+                "bi-umbrella",
+                "gray",
+                MaasParametrNovu.IssizlikIsegoturenFaizi,
+                Pilleler(MaasParametrNovu.IssizlikIsegoturenFaizi),
+                issizlikIsv);
+        }
+    </div>
+
+    @* ═══════════ BÖLMƏ 3: GÜZƏŞTLƏR VƏ ƏN AZ MAAŞ ═══════════ *@
+    <div class="mp-section">
+        <div class="mp-section-head">
+            <i class="bi bi-gift"></i>
+            <h2>Güzəştlər və minimum dəyərlər</h2>
+            <span class="mp-section-sub">Vergi güzəşti və minimum əmək haqqı</span>
+        </div>
+
+        <div class="mp-guzesht-grid">
+            @if (minEmek != null)
+            {
+                <div class="mp-guzesht-card">
+                    <div class="mp-guzesht-head">
+                        <i class="bi bi-currency-exchange"></i>
+                        <div>
+                            <div class="mp-guzesht-name">Minimum Əmək Haqqı</div>
+                            <div class="mp-guzesht-desc">Dövlət tərəfindən təyin olunmuş minimum</div>
+                        </div>
+                        <button class="mp-card-btn mp-card-btn--edit" data-edit-id="@minEmek.Id">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                    </div>
+                    <div class="mp-guzesht-value">
+                        <span class="mp-guzesht-num">@minEmek.Deyer.ToString("N0")</span>
+                        <span class="mp-guzesht-suffix">₼</span>
+                    </div>
+                </div>
+            }
+            @if (vergiGuz != null)
+            {
+                <div class="mp-guzesht-card">
+                    <div class="mp-guzesht-head">
+                        <i class="bi bi-percent"></i>
+                        <div>
+                            <div class="mp-guzesht-name">Vergi Güzəşti</div>
+                            <div class="mp-guzesht-desc">Gross məbləğdən vergi hesablanmadan çıxılır</div>
+                        </div>
+                        <button class="mp-card-btn mp-card-btn--edit" data-edit-id="@vergiGuz.Id">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                    </div>
+                    <div class="mp-guzesht-value">
+                        <span class="mp-guzesht-num">@vergiGuz.Deyer.ToString("N0")</span>
+                        <span class="mp-guzesht-suffix">₼</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ── Flat parametr modal ── *@
     <div id="mpModalOverlay" class="mp-modal-overlay">
         <div class="mp-modal">
             <div class="mp-modal-header">
-                <h3 id="mpModalTitle">Yeni Parametr</h3>
+                <h3 id="mpModalTitle">Parametri Redaktə Et</h3>
                 <button class="mp-modal-close" id="mpCloseBtn">&times;</button>
             </div>
             <div class="mp-modal-body">
@@ -129,15 +323,10 @@
                     <div class="mp-form-group">
                         <label for="mpNov">Parametr Növü</label>
                         <select id="mpNov" class="mp-form-control">
-                            <option value="0" disabled selected>-- Seçin --</option>
-                            <option value="1">Gəlir Vergisi Faizi</option>
-                            <option value="2">DSMF Faizi (İşçi)</option>
-                            <option value="3">İşsizlik Sığortası Faizi (İşçi)</option>
-                            <option value="4">İTSS Faizi</option>
+                            <option value="3">İşsizlik Sığortası (İşçi)</option>
                             <option value="5">Minimum Əmək Haqqı</option>
                             <option value="6">Vergi Güzəşti Məbləği</option>
-                            <option value="7">DSMF Faizi (İşəgötürən)</option>
-                            <option value="8">İşsizlik Sığortası Faizi (İşəgötürən)</option>
+                            <option value="8">İşsizlik Sığortası (İşəgötürən)</option>
                         </select>
                     </div>
 
@@ -183,6 +372,88 @@
             <div class="mp-modal-footer">
                 <button class="mp-btn-secondary" id="mpCancelBtn">Ləğv et</button>
                 <button id="mpSaveBtn" class="mp-btn-save">
+                    <i class="bi bi-check-lg"></i> Yadda saxla
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @* ── Pillə modal ── *@
+    <div id="mpPilleModalOverlay" class="mp-modal-overlay">
+        <div class="mp-modal">
+            <div class="mp-modal-header">
+                <h3 id="mpPilleModalTitle">Yeni Pillə</h3>
+                <button class="mp-modal-close" id="mpPilleCloseBtn">&times;</button>
+            </div>
+            <div class="mp-modal-body">
+                <form id="mpPilleForm">
+                    <input type="hidden" id="mpPilleId" />
+
+                    <div class="mp-form-group">
+                        <label for="mpPilleNov">Vergi Növü</label>
+                        <select id="mpPilleNov" class="mp-form-control">
+                            <option value="1">Gəlir Vergisi</option>
+                            <option value="2">DSMF (İşçi)</option>
+                            <option value="4">İTSS (İşçi)</option>
+                            <option value="7">DSMF (İşəgötürən)</option>
+                            <option value="9">İTSS (İşəgötürən)</option>
+                        </select>
+                    </div>
+
+                    <div class="mp-form-row">
+                        <div class="mp-form-group">
+                            <label for="mpPilleSira">Sıra nömrəsi <span class="mp-label-hint">(1-dən başlayır)</span></label>
+                            <input type="number" id="mpPilleSira" class="mp-form-control" min="1" value="1" />
+                        </div>
+                    </div>
+
+                    <div class="mp-form-row">
+                        <div class="mp-form-group">
+                            <label for="mpPilleAsagi">Aşağı hədd (₼)</label>
+                            <input type="number" id="mpPilleAsagi" class="mp-form-control" step="0.01" min="0" placeholder="0" />
+                        </div>
+                        <div class="mp-form-group">
+                            <label for="mpPilleYuxari">Yuxarı hədd (₼) <span class="mp-label-hint">(boş = sonsuz)</span></label>
+                            <input type="number" id="mpPilleYuxari" class="mp-form-control" step="0.01" min="0" placeholder="sonsuz" />
+                        </div>
+                    </div>
+
+                    <div class="mp-form-row">
+                        <div class="mp-form-group">
+                            <label for="mpPilleSabit">Sabit məbləğ (₼) <span class="mp-label-hint">(əvvəlki pillələrdən)</span></label>
+                            <input type="number" id="mpPilleSabit" class="mp-form-control" step="0.01" min="0" value="0" />
+                        </div>
+                        <div class="mp-form-group">
+                            <label for="mpPilleFaiz">Faiz (%)</label>
+                            <input type="number" id="mpPilleFaiz" class="mp-form-control" step="0.01" min="0" placeholder="0" />
+                        </div>
+                    </div>
+
+                    <div class="mp-form-row">
+                        <div class="mp-form-group">
+                            <label for="mpPilleBaslama">Başlama Tarixi</label>
+                            <input type="date" id="mpPilleBaslama" class="mp-form-control" />
+                        </div>
+                        <div class="mp-form-group">
+                            <label for="mpPilleBitme">Bitmə Tarixi <span class="mp-label-hint">(istəğə bağlı)</span></label>
+                            <input type="date" id="mpPilleBitme" class="mp-form-control" />
+                        </div>
+                    </div>
+
+                    <div class="mp-form-group">
+                        <label for="mpPilleAciqlama">Açıqlama</label>
+                        <input type="text" id="mpPilleAciqlama" class="mp-form-control" placeholder="məs: 2027 yeni qayda" />
+                    </div>
+
+                    <div id="mpPilleAktivdirWrap" class="mp-form-group mp-form-check" style="display:none;">
+                        <input type="checkbox" id="mpPilleAktivdir" checked />
+                        <label for="mpPilleAktivdir">Aktivdir</label>
+                    </div>
+                </form>
+            </div>
+            <div class="mp-modal-footer">
+                <button class="mp-btn-secondary" id="mpPilleCancelBtn">Ləğv et</button>
+                <button id="mpPilleSaveBtn" class="mp-btn-save">
                     <i class="bi bi-check-lg"></i> Yadda saxla
                 </button>
             </div>

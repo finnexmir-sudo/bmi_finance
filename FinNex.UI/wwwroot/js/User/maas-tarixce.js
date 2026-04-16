@@ -39,7 +39,7 @@
                     labels: labels,
                     datasets: [
                         {
-                            label: 'Brut Maaş (AZN)',
+                            label: 'Gross Maaş (AZN)',
                             data: brutData,
                             backgroundColor: 'rgba(102, 126, 234, 0.6)',
                             borderColor: '#667eea',

@@ -14,6 +14,11 @@
 
         // Sirket odeyir (isciden tutulmur) -- evvel hardcode idi, indi parametrden
         DsmfIsegoturenFaizi = 7,
-        IssizlikIsegoturenFaizi = 8
+        IssizlikIsegoturenFaizi = 8,
+        IcbariTibbiSigortaIsegoturenFaizi = 9,
+
+        // HYS (Heyat Yigim Sigortasi)
+        HysIsegoturenFaizi = 10,    // isegoturen payi: 15%
+        HysMaxMaasFaizi = 11        // maasin max nece %-i HYS ola biler: 50%
     }
 }

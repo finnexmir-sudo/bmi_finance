@@ -233,7 +233,7 @@ public class HesabatController : Controller
         // Başlıq
         ws.Cell(1, 1).Value = "İşçi";
         ws.Cell(1, 2).Value = "Departament";
-        ws.Cell(1, 3).Value = "Brut (AZN)";
+        ws.Cell(1, 3).Value = "Gross (AZN)";
         ws.Cell(1, 4).Value = "Net (AZN)";
         ws.Cell(1, 5).Value = "Status";
 
@@ -560,7 +560,7 @@ public class HesabatController : Controller
 
         ws.Cell(1, 1).Value = "İşçi";
         ws.Cell(1, 2).Value = "Departament";
-        ws.Cell(1, 3).Value = "Brut Məbləğ (AZN)";
+        ws.Cell(1, 3).Value = "Gross Məbləğ (AZN)";
         ws.Cell(1, 4).Value = "Gəlir Vergisi (AZN)";
         ws.Cell(1, 5).Value = "DSMF (AZN)";
         ws.Cell(1, 6).Value = "İşsizlik (AZN)";

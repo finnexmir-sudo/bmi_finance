@@ -1,0 +1,115 @@
+@model List<FinNex.Domain.Entities.HR.IsciGuzest>
+@{
+    ViewData["Title"] = "İşçi güzəştləri";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var isciler = (List<FinNex.Domain.Entities.HR.Isci>)ViewBag.Isciler;
+    var selectedIsciId = (int?)ViewBag.IsciId;
+    var today = DateTime.Today;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/isci-guzest.css" asp-append-version="true" />
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="ig-page">
+    <div class="ig-head">
+        <div>
+            <div class="ig-title">İşçi güzəştləri</div>
+            <div class="ig-sub">Hər işçi üçün aktiv dövrü olan güzəştlərin ən böyüyü hesablamada istifadə olunur</div>
+        </div>
+        <a asp-action="Create" asp-route-isciId="@selectedIsciId" class="ig-btn ig-btn--primary">
+            <i class="bi bi-plus-lg"></i> Yeni təyinat
+        </a>
+    </div>
+
+    <form method="get" class="ig-filter">
+        <label class="ig-filter-lbl">İşçi:</label>
+        <select name="isciId" class="ig-select" onchange="this.form.submit()">
+            <option value="">— Hamısı —</option>
+            @foreach (var i in isciler)
+            {
+                <option value="@i.Id" selected="@(selectedIsciId == i.Id)">@i.TamAd</option>
+            }
+        </select>
+    </form>
+
+    <div class="ig-card">
+        @if (!Model.Any())
+        {
+            <div class="ig-empty">
+                <i class="bi bi-inbox"></i>
+                <p>Təyinat tapılmadı</p>
+            </div>
+        }
+        else
+        {
+            <table class="ig-table">
+                <thead>
+                    <tr>
+                        <th>İşçi</th>
+                        <th>Güzəşt</th>
+                        <th class="ig-num">Məbləğ</th>
+                        <th>Başlama</th>
+                        <th>Bitmə</th>
+                        <th>Status</th>
+                        <th>Qeyd</th>
+                        <th class="ig-act"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var x in Model)
+                    {
+                        bool aktivDovr = x.BaslamaTarixi <= today && (x.BitmeTarixi == null || x.BitmeTarixi >= today);
+                        <tr>
+                            <td><strong>@(x.Isci?.TamAd ?? "#" + x.IsciId)</strong></td>
+                            <td>@(x.Guzest?.Ad ?? "#" + x.GuzestId)</td>
+                            <td class="ig-num">@((x.Guzest?.Mebleg ?? 0).ToString("N2")) ₼</td>
+                            <td>@x.BaslamaTarixi.ToString("dd.MM.yyyy")</td>
+                            <td>@(x.BitmeTarixi?.ToString("dd.MM.yyyy") ?? "—")</td>
+                            <td>
+                                @if (aktivDovr)
+                                {
+                                    <span class="ig-status ig-status--ok">Aktiv</span>
+                                }
+                                else if (x.BaslamaTarixi > today)
+                                {
+                                    <span class="ig-status ig-status--pending">Gözləyir</span>
+                                }
+                                else
+                                {
+                                    <span class="ig-status">Bitib</span>
+                                }
+                            </td>
+                            <td class="ig-note">@(x.Qeyd ?? "—")</td>
+                            <td class="ig-act">
+                                <form asp-action="Delete" asp-route-id="@x.Id" method="post"
+                                      style="display:inline" onsubmit="return confirm('Təyinatı silmək istəyirsiniz?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="ig-btn ig-btn--danger ig-btn--sm">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
