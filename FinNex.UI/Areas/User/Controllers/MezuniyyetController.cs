@@ -109,17 +109,25 @@ namespace FinNex.UI.Areas.User.Controllers
             foreach (var s in hesablama.AySliceleri)
             {
                 // İşlənmiş iş günləri = ayın iş günü − məzuniyyət iş günü.
-                // Maaşın iş günü hissəsi = baza / ayIsGun × işlənmiş gün.
                 int islenmisIsGun = Math.Max(0, s.AyIsGun - s.IsGun);
                 decimal islenmisMaas = (cariMaas > 0 && s.AyIsGun > 0)
                     ? Math.Round(cariMaas / s.AyIsGun * islenmisIsGun, 2)
                     : 0;
-                decimal kesinti = Math.Max(0, cariMaas - islenmisMaas); // geri uyğunluq üçün
+                decimal kesinti = Math.Max(0, cariMaas - islenmisMaas);
                 decimal odenisPay = qabaqcadan ? 0 : s.Secilen;
+
+                // "Ay sonu maaşla" rejimində ayrı-ayrı hesablayırıq:
+                // 1) Yalnız işlənmiş günlərin maaşı (məzuniyyət pulu olmadan)
+                // 2) Məzuniyyət pulu ayrıca
                 decimal ayBrut = islenmisMaas + odenisPay;
 
+                // Tutulmalar tam brüt üzrə (işlənmiş + məz pulu birlikdə)
                 var ayTax = await _maasHesablamaService
                     .TutulmalariHesablaAsync(ayBrut, new DateTime(s.Il, s.Ay, 1), isciId.Value);
+
+                // Yalnız işlənmiş günlərin maaşı üzrə tutulmalar (ayrıca göstərmək üçün)
+                var islenmisTax = await _maasHesablamaService
+                    .TutulmalariHesablaAsync(islenmisMaas, new DateTime(s.Il, s.Ay, 1), isciId.Value);
 
                 ayProjections.Add(new
                 {
@@ -147,12 +155,37 @@ namespace FinNex.UI.Areas.User.Controllers
                     issizlikIsci = ayTax.IssizlikIsci,
                     itss = ayTax.Itss,
                     tutulmalarCemi = ayTax.UmumiTutulma,
-                    ayNet = ayTax.Net
+                    ayNet = ayTax.Net,
+                    // Ayrıca: yalnız işlənmiş günlər maaşı (NET)
+                    islenmisNet = islenmisTax.Net,
+                    islenmisTutulma = islenmisTax.UmumiTutulma,
+                    // Məzuniyyət pulu (NET): brüt − tutulma fərqi
+                    mezOdenisNet = ayTax.Net - islenmisTax.Net
                 });
 
                 ayBrutCemi += ayBrut;
                 ayNetCemi += ayTax.Net;
                 ayTutulmaCemi += ayTax.UmumiTutulma;
+            }
+
+            // Ay sonu maaşla: məzuniyyət pulu cəmi (brüt və net)
+            decimal mezPuluBrutCemi = hesablama.CemiOdenis;
+            decimal islenmisNetCemi = 0;
+            decimal mezOdenisNetCemi = 0;
+            if (!qabaqcadan)
+            {
+                foreach (var s in hesablama.AySliceleri)
+                {
+                    int ig = Math.Max(0, s.AyIsGun - s.IsGun);
+                    decimal im = (cariMaas > 0 && s.AyIsGun > 0)
+                        ? Math.Round(cariMaas / s.AyIsGun * ig, 2) : 0;
+                    var itax = await _maasHesablamaService
+                        .TutulmalariHesablaAsync(im, new DateTime(s.Il, s.Ay, 1), isciId.Value);
+                    var ftax = await _maasHesablamaService
+                        .TutulmalariHesablaAsync(im + s.Secilen, new DateTime(s.Il, s.Ay, 1), isciId.Value);
+                    islenmisNetCemi += itax.Net;
+                    mezOdenisNetCemi += ftax.Net - itax.Net;
+                }
             }
 
             // Qabaqcadan ödəniş: ayrıca brüt → tutulmalar → net
@@ -189,6 +222,10 @@ namespace FinNex.UI.Areas.User.Controllers
                 sDuzelmis = hesablama.Son12AyDuzelmisCemi,
                 qeydSayi = hesablama.Son12AyQeydSayi,
                 cemiOdenis = hesablama.CemiOdenis,
+                // Ay sonu maaşla: ayrıca məzuniyyət pulu (net) və qalan maaş (net)
+                mezPuluBrutCemi,
+                mezOdenisNetCemi,
+                islenmisNetCemi,
                 odenisTipi,
                 qabaqcadan,
                 aylar = ayProjections,
