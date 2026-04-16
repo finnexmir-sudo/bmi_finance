@@ -86,30 +86,36 @@
 
         const bonus = parseFloat(bInp?.value || 0) || 0;
         const cerime = parseFloat(cInp?.value || 0) || 0;
-        const brut = Math.max(esas + bonus - cerime, 0);
 
-        // HYS bazaları: vergi+DSMF bazası = brüt − HYS, İTSS/İşsizlik = brüt (tam)
-        const vergiDsmfBazasi = Math.max(0, brut - hys);
-        const itssBazasi = brut;
+        // İşəgötürən HYS payı (əvvəlcə hesablanır — brüt-ə daxildir)
+        const hysIsv  = Math.round(hys * (HYS_ISV_FAIZ / 100) * 100) / 100;
+
+        // GROSS = əsas maaş + bonus - cərimə + işəgötürən HYS payı
+        const esasBrut = Math.max(esas + bonus - cerime, 0);
+        const brut = esasBrut + hysIsv;
+
+        // Vergi+DSMF bazası = əsas brüt − işçi HYS (işəgötürən payı daxil deyil)
+        const vergiDsmfBazasi = Math.max(0, esasBrut - hys);
+        // İTSS/İşsizlik = əsas brüt (işəgötürən payı daxil deyil, HYS çıxılmır)
+        const itssBazasi = esasBrut;
 
         // Standart güzəşt — vergi bazası ≤ birinci pillə üst həddi
         const standartGuzest = vergiDsmfBazasi > 0 && vergiDsmfBazasi <= FIRST_BRACKET_MAX ? VERGI_GUZESTI : 0;
-        // Vergilənəcək məbləğ: vergiDsmfBazası − standart − işçi güzəşti
         const vergilenecek = Math.max(0, vergiDsmfBazasi - standartGuzest - isciGuzest);
 
         // İşçidən tutulanlar — GəlirV və DSMF: vergiDsmfBazası ilə; İTSS və İşsizlik: itssBazası ilə
-        const gelirV  = hesablaTutulma(vergilenecek,    1, 0);       // 1 = GelirVergisi
-        const dsmf    = hesablaTutulma(vergiDsmfBazasi,  2, 0);       // 2 = DsmfIsci (HYS çıxılıb)
-        const iss     = hesablaTutulma(itssBazasi,       3, FLAT.issizlik); // flat — tam brüt
-        const itss    = hesablaTutulma(itssBazasi,       4, 0);       // 4 = ItssIsci — tam brüt
-        const tutulma = gelirV + dsmf + iss + itss + hys;
+        const gelirV  = hesablaTutulma(vergilenecek,    1, 0);
+        const dsmf    = hesablaTutulma(vergiDsmfBazasi,  2, 0);
+        const iss     = hesablaTutulma(itssBazasi,       3, FLAT.issizlik);
+        const itss    = hesablaTutulma(itssBazasi,       4, 0);
+        // Tutulma = vergilər + işçi HYS + işəgötürən HYS (brüt-ə daxildir, deməli çıxılmalıdır)
+        const tutulma = gelirV + dsmf + iss + itss + hys + hysIsv;
         const net     = Math.max(brut - tutulma, 0);
 
-        // İşəgötürən xərcləri — DSMF: vergiDsmfBazası; İTSS/İşsizlik: tam brüt
-        const dsmfIsv = hesablaTutulma(vergiDsmfBazasi, 7, 0);        // 7 = DsmfIsegoturen
-        const itssIsv = hesablaTutulma(itssBazasi,      9, 0);        // 9 = ItssIsegoturen
-        const issIsv  = hesablaTutulma(itssBazasi,      8, FLAT.issizlikIsv);// flat — tam brüt
-        const hysIsv  = Math.round(hys * (HYS_ISV_FAIZ / 100) * 100) / 100;
+        // İşəgötürən xərcləri — DSMF: vergiDsmfBazası; İTSS/İşsizlik: əsas brüt
+        const dsmfIsv = hesablaTutulma(vergiDsmfBazasi, 7, 0);
+        const itssIsv = hesablaTutulma(itssBazasi,      9, 0);
+        const issIsv  = hesablaTutulma(itssBazasi,      8, FLAT.issizlikIsv);
         const sirketCemi = dsmfIsv + issIsv + itssIsv + hysIsv;
 
         return {
