@@ -71,6 +71,29 @@ namespace FinNex.UI.Areas.HR.Controllers
                 ModelState.AddModelError(nameof(model.BitmeTarixi),
                     "Bitmə tarixi başlama tarixindən əvvəl ola bilməz.");
 
+            // 50% limit yoxlaması — HYS məbləği əsas maaşın 50%-ni keçə bilməz
+            if (ModelState.IsValid && model.IsciId > 0)
+            {
+                var maliye = await _unitOfWork.Repository<IsciMaliye>()
+                    .Query()
+                    .FirstOrDefaultAsync(x => x.IsciId == model.IsciId && !x.Silinib);
+                if (maliye != null)
+                {
+                    var maxFaizParam = await _unitOfWork.Repository<MaasParametri>()
+                        .Query()
+                        .Where(x => x.Aktivdir && !x.Silinib && x.Nov == MaasParametrNovu.HysMaxMaasFaizi)
+                        .OrderByDescending(x => x.BaslamaTarixi)
+                        .FirstOrDefaultAsync();
+                    decimal maxFaiz = maxFaizParam?.Deyer ?? 50m;
+                    decimal maxHys = Math.Round(maliye.CariMaas * (maxFaiz / 100m), 2);
+
+                    if (model.Mebleg > maxHys)
+                        ModelState.AddModelError(nameof(model.Mebleg),
+                            $"HYS məbləği əsas maaşın {maxFaiz:G29}%-ni keçə bilməz. " +
+                            $"Maaş: {maliye.CariMaas:N2} ₼, max HYS: {maxHys:N2} ₼");
+                }
+            }
+
             // Eyni isci ucun kesisen dovrde ikinci HYS olmasin
             if (ModelState.IsValid)
             {
@@ -137,6 +160,29 @@ namespace FinNex.UI.Areas.HR.Controllers
             if (model.BitmeTarixi.HasValue && model.BitmeTarixi < model.BaslamaTarixi)
                 ModelState.AddModelError(nameof(model.BitmeTarixi),
                     "Bitmə tarixi başlama tarixindən əvvəl ola bilməz.");
+
+            // 50% limit yoxlaması
+            if (ModelState.IsValid && model.IsciId > 0)
+            {
+                var maliye = await _unitOfWork.Repository<IsciMaliye>()
+                    .Query()
+                    .FirstOrDefaultAsync(x => x.IsciId == model.IsciId && !x.Silinib);
+                if (maliye != null)
+                {
+                    var maxFaizParam = await _unitOfWork.Repository<MaasParametri>()
+                        .Query()
+                        .Where(x => x.Aktivdir && !x.Silinib && x.Nov == MaasParametrNovu.HysMaxMaasFaizi)
+                        .OrderByDescending(x => x.BaslamaTarixi)
+                        .FirstOrDefaultAsync();
+                    decimal maxFaiz = maxFaizParam?.Deyer ?? 50m;
+                    decimal maxHys = Math.Round(maliye.CariMaas * (maxFaiz / 100m), 2);
+
+                    if (model.Mebleg > maxHys)
+                        ModelState.AddModelError(nameof(model.Mebleg),
+                            $"HYS məbləği əsas maaşın {maxFaiz:G29}%-ni keçə bilməz. " +
+                            $"Maaş: {maliye.CariMaas:N2} ₼, max HYS: {maxHys:N2} ₼");
+                }
+            }
 
             // Kesisen dovr yoxlamasi (ozunu istisna et)
             if (ModelState.IsValid)
