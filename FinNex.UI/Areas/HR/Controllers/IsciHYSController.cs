@@ -181,7 +181,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _unitOfWork.Repository<IsciHYS>().YumshaqSilAsync(id);
+            var result = await _unitOfWork.Repository<IsciHYS>().YumshakSilAsync(id);
             await _unitOfWork.YaddaSaxlaAsync();
             TempData[result ? "Success" : "Error"] = result
                 ? "HYS təyinatı silindi."
