@@ -162,17 +162,13 @@
                             <div class="mez-preview-aylar" id="mpAylar"></div>
 
                             <div class="mez-preview-totals" id="mpTotals">
-                                <div class="mp-trow">
-                                    <span class="mp-tlbl">Ay maaşları — brüt (cəmi)</span>
-                                    <span class="mp-tval" id="mpAyBrutCemi">—</span>
+                                <div class="mp-trow mp-trow--mez" id="mpMezPuluRow" style="display:none">
+                                    <span class="mp-tlbl">Məzuniyyət pulu (net)</span>
+                                    <span class="mp-tval" id="mpMezPuluNet" style="color:#6b21a8;font-weight:800">—</span>
                                 </div>
-                                <div class="mp-trow">
-                                    <span class="mp-tlbl">− Ay maaşları — tutulmalar (vergi, DSMF, İTSS, işsizlik)</span>
-                                    <span class="mp-tval" id="mpAyTutulmaCemi">—</span>
-                                </div>
-                                <div class="mp-trow">
-                                    <span class="mp-tlbl">Ay maaşları — net (cəmi)</span>
-                                    <span class="mp-tval" id="mpAyNetCemi">—</span>
+                                <div class="mp-trow mp-trow--mez" id="mpQalanMaasRow" style="display:none">
+                                    <span class="mp-tlbl">Maaş verilənda alacağınız (net, tutulmalardan sonra)</span>
+                                    <span class="mp-tval" id="mpQalanMaasNet" style="color:#1e9b6b;font-weight:800">—</span>
                                 </div>
                                 <div class="mp-trow" id="mpHysRow" style="display:none">
                                     <span class="mp-tlbl">− HYS (işçi payı)</span>
@@ -768,9 +764,20 @@
                             aylarEl.appendChild(card);
                         });
 
-                        document.getElementById('mpAyBrutCemi').textContent = fmt(data.ayBrutCemi);
-                        document.getElementById('mpAyTutulmaCemi').textContent = '− ' + fmt(data.ayTutulmaCemi);
-                        document.getElementById('mpAyNetCemi').textContent = fmt(data.ayNetCemi);
+                        // Məzuniyyət pulu (net) və qalan maaş (net) — ayrıca göstər
+                        const mezPuluRow = document.getElementById('mpMezPuluRow');
+                        const qalanMaasRow = document.getElementById('mpQalanMaasRow');
+                        if (!data.qabaqcadan && (data.mezOdenisNetCemi || 0) > 0) {
+                            mezPuluRow.style.display = 'flex';
+                            qalanMaasRow.style.display = 'flex';
+                            document.getElementById('mpMezPuluNet').textContent = fmt(data.mezOdenisNetCemi);
+                            // Qalan maaş = işlənmiş net − HYS − Avans
+                            const qalanNet = (data.islenmisNetCemi || 0) - (data.hysMebleg || 0) - (data.avansMebleg || 0);
+                            document.getElementById('mpQalanMaasNet').textContent = fmt(Math.max(0, qalanNet));
+                        } else {
+                            mezPuluRow.style.display = 'none';
+                            qalanMaasRow.style.display = 'none';
+                        }
 
                         // HYS — yalnız işçi payı (işəgötürən payı NET-ə təsir etmir)
                         const hysRow = document.getElementById('mpHysRow');
