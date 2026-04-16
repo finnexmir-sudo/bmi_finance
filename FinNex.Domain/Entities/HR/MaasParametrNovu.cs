@@ -19,6 +19,10 @@
 
         // HYS (Heyat Yigim Sigortasi)
         HysIsegoturenFaizi = 10,    // isegoturen payi: 15%
-        HysMaxMaasFaizi = 11        // maasin max nece %-i HYS ola biler: 50%
+        HysMaxMaasFaizi = 11,       // maasin max nece %-i HYS ola biler: 50%
+
+        // Avans
+        AvansMaxFaizi = 12,         // maasin max nece %-i avans ola biler: 30%
+        AvansGunu = 13              // ayin nece-ci gunu avans verilir: 15
     }
 }

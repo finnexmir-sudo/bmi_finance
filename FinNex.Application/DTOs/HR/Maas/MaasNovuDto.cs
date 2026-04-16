@@ -41,6 +41,8 @@ namespace FinNex.Application.DTOs.HR.MaasNovuDtos
             MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi => "İTSS Faizi (İşəgötürən)",
             MaasParametrNovu.HysIsegoturenFaizi => "HYS İşəgötürən Faizi",
             MaasParametrNovu.HysMaxMaasFaizi => "HYS Max Maaş Faizi",
+            MaasParametrNovu.AvansMaxFaizi => "Avans Max Faizi",
+            MaasParametrNovu.AvansGunu => "Avans Günü",
             _ => Nov.ToString()
         };
         public MaasParametrTipi Tip { get; set; }
