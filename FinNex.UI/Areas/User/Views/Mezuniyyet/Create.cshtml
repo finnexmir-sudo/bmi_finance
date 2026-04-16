@@ -175,7 +175,7 @@
                                     <span class="mp-tval" id="mpAyNetCemi">—</span>
                                 </div>
                                 <div class="mp-trow" id="mpHysRow" style="display:none">
-                                    <span class="mp-tlbl">− HYS (işçi payı + işəgötürən)</span>
+                                    <span class="mp-tlbl">− HYS (işçi payı)</span>
                                     <span class="mp-tval" id="mpHysCemi">—</span>
                                 </div>
                                 <div class="mp-trow" id="mpAvansRow" style="display:none">
@@ -772,9 +772,9 @@
                         document.getElementById('mpAyTutulmaCemi').textContent = '− ' + fmt(data.ayTutulmaCemi);
                         document.getElementById('mpAyNetCemi').textContent = fmt(data.ayNetCemi);
 
-                        // HYS
+                        // HYS — yalnız işçi payı (işəgötürən payı NET-ə təsir etmir)
                         const hysRow = document.getElementById('mpHysRow');
-                        const hysCemi = (data.hysMebleg || 0) + (data.hysIsv || 0);
+                        const hysCemi = data.hysMebleg || 0;
                         if (hysCemi > 0) {
                             hysRow.style.display = 'flex';
                             document.getElementById('mpHysCemi').textContent = '− ' + fmt(hysCemi);
