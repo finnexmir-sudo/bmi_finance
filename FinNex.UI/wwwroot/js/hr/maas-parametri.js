@@ -35,14 +35,15 @@ const MaasParametri = (() => {
             .then(data => {
                 if (!data.success) { toast(data.message, 'error'); return; }
                 const d = data.data;
-                document.getElementById('mpId').value = d.Id;
-                document.getElementById('mpNov').value = d.Nov;
-                document.getElementById('mpTip').value = d.Tip;
-                document.getElementById('mpDeyer').value = d.Deyer;
-                document.getElementById('mpAciqlama').value = d.Aciqlama || '';
-                document.getElementById('mpBaslamaTarixi').value = d.BaslamaTarixi;
-                document.getElementById('mpBitmeTarixi').value = d.BitmeTarixi || '';
-                document.getElementById('mpAktivdir').checked = d.Aktivdir;
+                // ASP.NET Core JSON camelCase qaytarır
+                document.getElementById('mpId').value = d.id ?? d.Id;
+                document.getElementById('mpNov').value = d.nov ?? d.Nov;
+                document.getElementById('mpTip').value = d.tip ?? d.Tip;
+                document.getElementById('mpDeyer').value = d.deyer ?? d.Deyer;
+                document.getElementById('mpAciqlama').value = d.aciqlama ?? d.Aciqlama ?? '';
+                document.getElementById('mpBaslamaTarixi').value = d.baslamaTarixi ?? d.BaslamaTarixi ?? '';
+                document.getElementById('mpBitmeTarixi').value = d.bitmeTarixi ?? d.BitmeTarixi ?? '';
+                document.getElementById('mpAktivdir').checked = d.aktivdir ?? d.Aktivdir ?? true;
                 document.getElementById('mpAktivdirWrap').style.display = 'flex';
                 title().textContent = 'Parametri Redaktə Et';
                 updateSuffix();
@@ -211,17 +212,18 @@ const MaasParametri = (() => {
             .then(data => {
                 if (!data.success) { toast(data.message, 'error'); return; }
                 const d = data.data;
-                document.getElementById('mpPilleId').value = d.Id;
-                document.getElementById('mpPilleNov').value = d.Nov;
-                document.getElementById('mpPilleSira').value = d.Sira;
-                document.getElementById('mpPilleAsagi').value = d.AsagiHedd;
-                document.getElementById('mpPilleYuxari').value = d.YuxariHedd || '';
-                document.getElementById('mpPilleFaiz').value = d.Faiz;
-                document.getElementById('mpPilleSabit').value = d.SabitMebleg;
-                document.getElementById('mpPilleAciqlama').value = d.Aciqlama || '';
-                document.getElementById('mpPilleBaslama').value = d.BaslamaTarixi;
-                document.getElementById('mpPilleBitme').value = d.BitmeTarixi || '';
-                document.getElementById('mpPilleAktivdir').checked = d.Aktivdir;
+                // ASP.NET Core JSON camelCase qaytarır
+                document.getElementById('mpPilleId').value = d.id ?? d.Id;
+                document.getElementById('mpPilleNov').value = d.nov ?? d.Nov;
+                document.getElementById('mpPilleSira').value = d.sira ?? d.Sira;
+                document.getElementById('mpPilleAsagi').value = d.asagiHedd ?? d.AsagiHedd;
+                document.getElementById('mpPilleYuxari').value = d.yuxariHedd ?? d.YuxariHedd ?? '';
+                document.getElementById('mpPilleFaiz').value = d.faiz ?? d.Faiz;
+                document.getElementById('mpPilleSabit').value = d.sabitMebleg ?? d.SabitMebleg;
+                document.getElementById('mpPilleAciqlama').value = d.aciqlama ?? d.Aciqlama ?? '';
+                document.getElementById('mpPilleBaslama').value = d.baslamaTarixi ?? d.BaslamaTarixi ?? '';
+                document.getElementById('mpPilleBitme').value = d.bitmeTarixi ?? d.BitmeTarixi ?? '';
+                document.getElementById('mpPilleAktivdir').checked = d.aktivdir ?? d.Aktivdir ?? true;
                 document.getElementById('mpPilleAktivdirWrap').style.display = 'flex';
                 pilleTitle().textContent = 'Pilləni Redaktə Et';
                 pilleOverlay().classList.add('mp-active');
