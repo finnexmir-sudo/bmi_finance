@@ -78,6 +78,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<Guzest> Guzestler { get; set; }
     public DbSet<IsciGuzest> IsciGuzestler { get; set; }
     public DbSet<IsciHYS> IsciHYSler { get; set; }
+    public DbSet<Avans> Avanslar { get; set; }
 
     public DbSet<Mesaj> Mesajlar { get; set; }
     public DbSet<Bildiris> Bildirisler { get; set; }
@@ -653,6 +654,27 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasIndex(x => new { x.IsciId, x.GuzestId });
         builder.Entity<IsciGuzest>()
             .Property(x => x.Qeyd)
+            .HasMaxLength(500);
+
+        // Avans — MuhasibId FK (NoAction — multi-cascade path)
+        builder.Entity<Avans>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<Avans>()
+            .HasOne(x => x.Muhasib)
+            .WithMany()
+            .HasForeignKey(x => x.MuhasibId)
+            .OnDelete(DeleteBehavior.NoAction);
+        builder.Entity<Avans>()
+            .Property(x => x.Mebleg)
+            .HasColumnType("decimal(18,2)");
+        builder.Entity<Avans>()
+            .Property(x => x.Sebeb)
+            .HasMaxLength(500);
+        builder.Entity<Avans>()
+            .Property(x => x.ImtinaSebebi)
             .HasMaxLength(500);
 
         builder.Entity<IsciTeyinat>()

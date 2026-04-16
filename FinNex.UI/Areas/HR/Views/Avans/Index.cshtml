@@ -1,0 +1,174 @@
+@model List<FinNex.Domain.Entities.HR.Avans>
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = "Avans Müraciətləri";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var statusFilter = (int?)ViewBag.StatusFilter;
+    int gozlemede = (int)(ViewBag.GozlemedeSayi ?? 0);
+    int tesdiq = (int)(ViewBag.TesdiqSayi ?? 0);
+    int imtina = (int)(ViewBag.ImtinaSayi ?? 0);
+    var ayAdlar = new[]{"","Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avqust","Sentyabr","Oktyabr","Noyabr","Dekabr"};
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/avans.css" asp-append-version="true" />
+}
+
+<div class="ha-page">
+    <div class="ha-head">
+        <div>
+            <div class="ha-title">Avans Müraciətləri</div>
+            <div class="ha-sub">İşçilərin avans müraciətlərini nəzərdən keçirin</div>
+        </div>
+        <div class="ha-stats">
+            <a asp-action="Index" asp-route-statusFilter="1"
+               class="ha-stat @(statusFilter == 1 ? "ha-stat--active" : "")">
+                <span class="ha-stat-num" style="color:#b45309;">@gozlemede</span>
+                <span class="ha-stat-lbl">Gözləmədə</span>
+            </a>
+            <a asp-action="Index" asp-route-statusFilter="2"
+               class="ha-stat @(statusFilter == 2 ? "ha-stat--active" : "")">
+                <span class="ha-stat-num" style="color:#1e9b6b;">@tesdiq</span>
+                <span class="ha-stat-lbl">Təsdiqlənib</span>
+            </a>
+            <a asp-action="Index" asp-route-statusFilter="3"
+               class="ha-stat @(statusFilter == 3 ? "ha-stat--active" : "")">
+                <span class="ha-stat-num" style="color:#dc2626;">@imtina</span>
+                <span class="ha-stat-lbl">Rədd</span>
+            </a>
+            <a asp-action="Index" class="ha-stat @(statusFilter == null ? "ha-stat--active" : "")">
+                <span class="ha-stat-num">@Model.Count</span>
+                <span class="ha-stat-lbl">Hamısı</span>
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="ha-card">
+        @if (!Model.Any())
+        {
+            <div class="ha-empty">
+                <i class="bi bi-inbox"></i>
+                <p>Müraciət tapılmadı</p>
+            </div>
+        }
+        else
+        {
+            <table class="ha-table">
+                <thead>
+                    <tr>
+                        <th>İşçi</th>
+                        <th>Departament</th>
+                        <th>Dövr</th>
+                        <th class="ha-num">Maaş</th>
+                        <th class="ha-num">Avans</th>
+                        <th>Status</th>
+                        <th>Müraciət</th>
+                        <th>Səbəb</th>
+                        <th class="ha-act"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model)
+                    {
+                        var teyinat = a.Isci?.IsciTeyinatlari?.FirstOrDefault();
+                        <tr>
+                            <td><strong>@(a.Isci != null ? $"{a.Isci.Ad} {a.Isci.Soyad}" : "#" + a.IsciId)</strong></td>
+                            <td>@(teyinat?.Departament?.Ad ?? "—")</td>
+                            <td>@ayAdlar[a.Ay] @a.Il</td>
+                            <td class="ha-num">@(a.Isci?.Maliye?.CariMaas.ToString("N2") ?? "—") ₼</td>
+                            <td class="ha-num"><strong>@a.Mebleg.ToString("N2") ₼</strong></td>
+                            <td>
+                                @switch (a.Status)
+                                {
+                                    case AvansStatus.Gozlemede:
+                                        <span class="ha-badge ha-badge--pending">Gözləmədə</span>
+                                        break;
+                                    case AvansStatus.Tesdiqlenib:
+                                        <span class="ha-badge ha-badge--ok">Təsdiqlənib</span>
+                                        break;
+                                    case AvansStatus.Odenilib:
+                                        <span class="ha-badge ha-badge--ok">Ödənilib</span>
+                                        break;
+                                    case AvansStatus.ImtinaEdildi:
+                                        <span class="ha-badge ha-badge--reject">Rədd</span>
+                                        break;
+                                }
+                            </td>
+                            <td>@a.YaradilmaTarixi.ToString("dd.MM.yyyy")</td>
+                            <td class="ha-note">@(a.Sebeb ?? "—")</td>
+                            <td class="ha-act">
+                                @if (a.Status == AvansStatus.Gozlemede)
+                                {
+                                    <div style="display:flex;gap:6px;">
+                                        <form asp-action="Tesdiq" method="post" style="display:inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@a.Id" />
+                                            <input type="hidden" name="tesdiq" value="true" />
+                                            <button type="submit" class="ha-btn ha-btn--ok ha-btn--sm" title="Təsdiq et">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                        </form>
+                                        <button type="button" class="ha-btn ha-btn--danger ha-btn--sm"
+                                                onclick="openReject(@a.Id)" title="Rədd et">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@* ── Rədd modalı ── *@
+<div class="ha-overlay" id="haOverlay">
+    <div class="ha-modal">
+        <div class="ha-modal-head">Müraciəti rədd et</div>
+        <form asp-action="Tesdiq" method="post" id="haRejectForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="haRejectId" />
+            <input type="hidden" name="tesdiq" value="false" />
+            <div class="ha-modal-body">
+                <label class="ha-label">İmtina səbəbi</label>
+                <textarea name="imtinaSebebi" rows="3" class="ha-input" placeholder="Səbəbi qeyd edin..."></textarea>
+            </div>
+            <div class="ha-modal-foot">
+                <button type="button" class="ha-btn ha-btn--outline" onclick="closeReject()">Ləğv et</button>
+                <button type="submit" class="ha-btn ha-btn--danger">Rədd et</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openReject(id) {
+            document.getElementById('haRejectId').value = id;
+            document.getElementById('haOverlay').classList.add('open');
+        }
+        function closeReject() {
+            document.getElementById('haOverlay').classList.remove('open');
+        }
+        document.getElementById('haOverlay')?.addEventListener('click', function(e) {
+            if (e.target === this) closeReject();
+        });
+    </script>
+}

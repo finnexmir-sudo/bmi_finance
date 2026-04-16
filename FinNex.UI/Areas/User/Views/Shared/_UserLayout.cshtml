@@ -28,7 +28,8 @@
                            || currentController == "MezuniyyetOdenis"
                            || currentController == "Guzest"
                            || currentController == "IsciGuzest"
-                           || currentController == "IsciHYS";
+                           || currentController == "IsciHYS"
+                           || (currentController == "Avans" && currentArea == "HR");
     var hrGroupOpen = (currentArea == "HR" && !isAccountingCtrl)
                       || currentController == "XestelikEzamiyyet";
     var muhasibatGroupOpen = isAccountingCtrl && currentArea == "HR";
@@ -151,6 +152,10 @@
                         <a asp-area="User" asp-controller="Maas" asp-action="HYS"
                            class="fn-nav-subitem @(currentController == "Maas" && currentArea == "User" && currentAction == "HYS" ? "active" : "")">
                             <div class="fn-sub-dot"></div> HYS
+                        </a>
+                        <a asp-area="User" asp-controller="Avans" asp-action="Index"
+                           class="fn-nav-subitem @(currentController == "Avans" && currentArea == "User" ? "active" : "")">
+                            <div class="fn-sub-dot"></div> Avans
                         </a>
                         <a asp-area="User" asp-controller="Xerc" asp-action="Index"
                            class="fn-nav-subitem @(currentController == "Xerc" && currentArea == "User" ? "active" : "")">
@@ -558,6 +563,10 @@
                                     <a asp-area="HR" asp-controller="IsciAyliqQazanc" asp-action="Index"
                                        class="fn-nav-subitem @(currentController == "IsciAyliqQazanc" ? "active" : "")">
                                         <div class="fn-sub-dot"></div> Qazanc Tarixçəsi
+                                    </a>
+                                    <a asp-area="HR" asp-controller="Avans" asp-action="Index"
+                                       class="fn-nav-subitem @(currentController == "Avans" && currentArea == "HR" ? "active" : "")">
+                                        <div class="fn-sub-dot"></div> Avans Müraciətləri
                                     </a>
                                 </div>
                             </div>

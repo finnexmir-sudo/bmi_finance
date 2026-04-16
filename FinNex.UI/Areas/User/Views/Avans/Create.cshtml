@@ -1,0 +1,59 @@
+@{
+    ViewData["Title"] = "Avans müraciəti";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    decimal cariMaas = (decimal)(ViewBag.CariMaas ?? 0m);
+    decimal maxAvans = (decimal)(ViewBag.MaxAvans ?? 0m);
+    decimal maxFaiz = (decimal)(ViewBag.MaxFaiz ?? 30m);
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/avans.css" asp-append-version="true" />
+}
+
+<div class="av-form-page">
+    <div class="av-form-head">
+        <a asp-action="Index" class="av-back"><i class="bi bi-arrow-left"></i> Geri</a>
+        <div class="av-title">Avans müraciəti</div>
+    </div>
+
+    <div class="av-info-box">
+        <div class="av-info-item">
+            <span class="av-info-label">Cari maaşınız</span>
+            <span class="av-info-value">@cariMaas.ToString("N2") ₼</span>
+        </div>
+        <div class="av-info-item">
+            <span class="av-info-label">Max avans (@maxFaiz.ToString("G29")%)</span>
+            <span class="av-info-value av-info-value--highlight">@maxAvans.ToString("N2") ₼</span>
+        </div>
+    </div>
+
+    <div class="av-form-card">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="av-form-group">
+                <label class="av-label">Avans məbləği (₼) <span class="av-req">*</span></label>
+                <input type="number" name="mebleg" step="0.01" min="1" max="@maxAvans.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                       class="av-input" placeholder="Məs: 500.00" required />
+                <span class="av-hint">Minimum: 1 ₼, Maximum: @maxAvans.ToString("N2") ₼</span>
+            </div>
+
+            <div class="av-form-group">
+                <label class="av-label">Səbəb <span class="av-hint-inline">(istəyə bağlı)</span></label>
+                <textarea name="sebeb" rows="3" class="av-input" placeholder="Avans istəmə səbəbinizi qeyd edin..."></textarea>
+            </div>
+
+            <div class="av-warn">
+                <i class="bi bi-info-circle"></i>
+                Müraciətiniz mühasib tərəfindən nəzərdən keçiriləcək. Təsdiqlənmiş avans ay sonu maaşınızdan çıxılacaq.
+            </div>
+
+            <div class="av-form-actions">
+                <a asp-action="Index" class="av-btn av-btn--outline">Ləğv et</a>
+                <button type="submit" class="av-btn av-btn--primary">
+                    <i class="bi bi-send"></i> Göndər
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

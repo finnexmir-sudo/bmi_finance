@@ -1,0 +1,122 @@
+@model List<FinNex.Domain.Entities.HR.Avans>
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = "Avans";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    decimal cariMaas = (decimal)(ViewBag.CariMaas ?? 0m);
+    decimal maxAvans = (decimal)(ViewBag.MaxAvans ?? 0m);
+    decimal maxFaiz = (decimal)(ViewBag.MaxFaiz ?? 30m);
+    var buAy = DateTime.Now;
+    bool buAyMuracietVar = Model.Any(x => x.Il == buAy.Year && x.Ay == buAy.Month && x.Status != AvansStatus.ImtinaEdildi);
+    var ayAdlar = new[]{"","Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avqust","Sentyabr","Oktyabr","Noyabr","Dekabr"};
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/avans.css" asp-append-version="true" />
+}
+
+<div class="av-page">
+    <div class="av-head">
+        <div>
+            <div class="av-title">Avans</div>
+            <div class="av-sub">Aylıq avans müraciəti göndərin. Maaşın max @maxFaiz.ToString("G29")%-i — @maxAvans.ToString("N2") ₼</div>
+        </div>
+        @if (!buAyMuracietVar)
+        {
+            <a asp-action="Create" class="av-btn av-btn--primary">
+                <i class="bi bi-plus-lg"></i> Yeni müraciət
+            </a>
+        }
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="av-card">
+        @if (!Model.Any())
+        {
+            <div class="av-empty">
+                <i class="bi bi-inbox"></i>
+                <p>Avans müraciətiniz yoxdur</p>
+            </div>
+        }
+        else
+        {
+            <table class="av-table">
+                <thead>
+                    <tr>
+                        <th>Dövr</th>
+                        <th class="av-num">Məbləğ</th>
+                        <th>Status</th>
+                        <th>Müraciət tarixi</th>
+                        <th>Təsdiq tarixi</th>
+                        <th>Səbəb / Qeyd</th>
+                        <th class="av-act"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model)
+                    {
+                        <tr>
+                            <td><strong>@ayAdlar[a.Ay] @a.Il</strong></td>
+                            <td class="av-num">@a.Mebleg.ToString("N2") ₼</td>
+                            <td>
+                                @switch (a.Status)
+                                {
+                                    case AvansStatus.Gozlemede:
+                                        <span class="av-badge av-badge--pending">Gözləmədə</span>
+                                        break;
+                                    case AvansStatus.Tesdiqlenib:
+                                        <span class="av-badge av-badge--ok">Təsdiqlənib</span>
+                                        break;
+                                    case AvansStatus.Odenilib:
+                                        <span class="av-badge av-badge--ok">Ödənilib</span>
+                                        break;
+                                    case AvansStatus.ImtinaEdildi:
+                                        <span class="av-badge av-badge--reject">Rədd edilib</span>
+                                        break;
+                                }
+                            </td>
+                            <td>@a.YaradilmaTarixi.ToString("dd.MM.yyyy")</td>
+                            <td>@(a.TesdiqTarixi?.ToString("dd.MM.yyyy") ?? "—")</td>
+                            <td class="av-note">
+                                @if (!string.IsNullOrEmpty(a.ImtinaSebebi))
+                                {
+                                    <span style="color:#dc2626;">@a.ImtinaSebebi</span>
+                                }
+                                else
+                                {
+                                    @(a.Sebeb ?? "—")
+                                }
+                            </td>
+                            <td class="av-act">
+                                @if (a.Status == AvansStatus.Gozlemede)
+                                {
+                                    <form asp-action="Legv" asp-route-id="@a.Id" method="post"
+                                          style="display:inline" onsubmit="return confirm('Müraciəti ləğv etmək istəyirsiniz?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="av-btn av-btn--danger av-btn--sm">
+                                            <i class="bi bi-x-lg"></i> Ləğv et
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
