@@ -15,6 +15,10 @@
         // Sirket odeyir (isciden tutulmur) -- evvel hardcode idi, indi parametrden
         DsmfIsegoturenFaizi = 7,
         IssizlikIsegoturenFaizi = 8,
-        IcbariTibbiSigortaIsegoturenFaizi = 9
+        IcbariTibbiSigortaIsegoturenFaizi = 9,
+
+        // HYS (Həyat Yığım Sığortası) parametrləri
+        HysIsegotürenFaizi = 10,     // İşəgötürənin HYS payı (default 15%)
+        HysMaxMaasFaizi = 11         // İşçinin HYS ödənişi maaşın max neçə %-i ola bilər (default 50%)
     }
 }

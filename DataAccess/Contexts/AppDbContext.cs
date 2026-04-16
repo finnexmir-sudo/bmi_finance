@@ -77,6 +77,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<XestelikOdenis> XestelikOdenisleri { get; set; }
     public DbSet<Guzest> Guzestler { get; set; }
     public DbSet<IsciGuzest> IsciGuzestler { get; set; }
+    public DbSet<IsciHYS> IsciHYSler { get; set; }
 
     public DbSet<Mesaj> Mesajlar { get; set; }
     public DbSet<Bildiris> Bildirisler { get; set; }
@@ -653,6 +654,27 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         builder.Entity<IsciGuzest>()
             .Property(x => x.Qeyd)
             .HasMaxLength(500);
+
+        // ── HYS (Həyat Yığım Sığortası) ──
+        builder.Entity<IsciHYS>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<IsciHYS>()
+            .Property(x => x.AyliqMebleg)
+            .HasColumnType("decimal(18,2)");
+        builder.Entity<IsciHYS>()
+            .Property(x => x.SigortaSirketi)
+            .HasMaxLength(200);
+        builder.Entity<IsciHYS>()
+            .Property(x => x.PolisNomresi)
+            .HasMaxLength(100);
+        builder.Entity<IsciHYS>()
+            .Property(x => x.Qeyd)
+            .HasMaxLength(500);
+        builder.Entity<IsciHYS>()
+            .HasIndex(x => x.IsciId);
 
         builder.Entity<IsciTeyinat>()
     .HasOne(x => x.Isci)
