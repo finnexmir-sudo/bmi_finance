@@ -1073,13 +1073,47 @@ namespace FinNex.Application.Services.HR
                 }
             }
 
-            decimal standartGuzest = brut <= firstBracketMax ? p.VergiGuzestiMeblegi : 0m;
-            decimal vergilenecek = Math.Max(0, brut - standartGuzest - maxIsciGuzesti);
+            // HYS — işçinin aktiv HYS-ını tap (vergi+DSMF bazasından çıxılır)
+            decimal hysMebleg = 0;
+            decimal hysIsv = 0;
+            if (isciId.HasValue)
+            {
+                var ayBaslangicHys = new DateTime(tarix.Year, tarix.Month, 1);
+                var ayBitisHys = ayBaslangicHys.AddMonths(1).AddDays(-1);
+                var isciHys = await _unitOfWork.Repository<IsciHYS>()
+                    .Query()
+                    .Where(x =>
+                        !x.Silinib &&
+                        x.IsciId == isciId.Value &&
+                        x.BaslamaTarixi <= ayBitisHys &&
+                        (x.BitmeTarixi == null || x.BitmeTarixi >= ayBaslangicHys))
+                    .FirstOrDefaultAsync();
+                hysMebleg = isciHys?.Mebleg ?? 0;
+                if (hysMebleg > 0)
+                {
+                    var hysIsvParam = await _unitOfWork.Repository<MaasParametri>()
+                        .Query()
+                        .Where(x => x.Aktivdir && !x.Silinib && x.Nov == MaasParametrNovu.HysIsegoturenFaizi)
+                        .OrderByDescending(x => x.BaslamaTarixi)
+                        .FirstOrDefaultAsync();
+                    hysIsv = Math.Round(hysMebleg * ((hysIsvParam?.Deyer ?? 15m) / 100m), 2);
+                }
+            }
+
+            // HYS bazaları: vergi+DSMF = brut − HYS, İTSS/İşsizlik = brut (tam)
+            decimal vergiDsmfBazasi = Math.Max(0, brut - hysMebleg);
+            decimal itssBazasi = brut;
+
+            // GROSS = brut + işəgötürən HYS (2500 güzəşt yoxlaması üçün)
+            decimal grossForCheck = brut + hysIsv;
+
+            decimal standartGuzest = grossForCheck <= firstBracketMax ? p.VergiGuzestiMeblegi : 0m;
+            decimal vergilenecek = Math.Max(0, vergiDsmfBazasi - standartGuzest - maxIsciGuzesti);
 
             decimal gelirVergisi = Pilleli(vergilenecek, MaasParametrNovu.GelirVergisiFaizi, p.GelirVergisiFaizi);
-            decimal dsmfIsci     = Pilleli(brut,         MaasParametrNovu.DsmfFaizi,        p.DsmfFaizi);
-            decimal itss         = Pilleli(brut,         MaasParametrNovu.IcbariTibbiSigortaFaizi, p.IcbariTibbiSigortaFaizi);
-            decimal issizlikIsci = Math.Round(brut * (p.IssizlikSigortasiFaizi / 100m), 2);
+            decimal dsmfIsci     = Pilleli(vergiDsmfBazasi, MaasParametrNovu.DsmfFaizi,        p.DsmfFaizi);
+            decimal itss         = Pilleli(itssBazasi,      MaasParametrNovu.IcbariTibbiSigortaFaizi, p.IcbariTibbiSigortaFaizi);
+            decimal issizlikIsci = Math.Round(itssBazasi * (p.IssizlikSigortasiFaizi / 100m), 2);
             decimal umumi        = gelirVergisi + dsmfIsci + issizlikIsci + itss;
             decimal net          = Math.Max(0, brut - umumi);
 
