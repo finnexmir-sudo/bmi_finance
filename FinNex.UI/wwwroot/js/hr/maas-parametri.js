@@ -67,7 +67,8 @@ const MaasParametri = (() => {
         formData.append('__RequestVerificationToken', token());
         formData.append('nov', document.getElementById('mpNov').value);
         formData.append('tip', document.getElementById('mpTip').value);
-        formData.append('deyer', document.getElementById('mpDeyer').value);
+        // Server az-AZ locale: onluq ayırıcı vergüldür, nöqtəni vergülə çevir
+        formData.append('deyer', document.getElementById('mpDeyer').value.replace('.', ','));
         formData.append('aciqlama', document.getElementById('mpAciqlama').value);
         formData.append('baslamaTarixi', document.getElementById('mpBaslamaTarixi').value);
         formData.append('bitmeTarixi', document.getElementById('mpBitmeTarixi').value);
@@ -258,10 +259,10 @@ const MaasParametri = (() => {
         formData.append('__RequestVerificationToken', token());
         formData.append('nov', document.getElementById('mpPilleNov').value);
         formData.append('sira', sira);
-        formData.append('asagiHedd', asagi);
-        if (yuxari !== null) formData.append('yuxariHedd', yuxari);
-        formData.append('faiz', faiz);
-        formData.append('sabitMebleg', sabit);
+        formData.append('asagiHedd', String(asagi).replace('.', ','));
+        if (yuxari !== null) formData.append('yuxariHedd', String(yuxari).replace('.', ','));
+        formData.append('faiz', String(faiz).replace('.', ','));
+        formData.append('sabitMebleg', String(sabit).replace('.', ','));
         formData.append('aciqlama', document.getElementById('mpPilleAciqlama').value);
         formData.append('baslamaTarixi', baslama);
         const bitme = document.getElementById('mpPilleBitme').value;
