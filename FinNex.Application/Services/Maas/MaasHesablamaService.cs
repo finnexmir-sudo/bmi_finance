@@ -312,12 +312,13 @@ namespace FinNex.Application.Services.HR
                 });
 
             // 8.5. HYS (Həyat Yığım Sığortası) — işçiyə təyin olunmuş aktiv HYS-ı tap
+            var hysAyBitis = new DateTime(input.Il, input.Ay, 1).AddMonths(1).AddDays(-1);
             var isciHysList = await _unitOfWork.Repository<IsciHYS>()
                 .Query()
                 .Where(x =>
                     !x.Silinib &&
                     x.IsciId == input.IsciId &&
-                    x.BaslamaTarixi <= ayBitisTarixi &&
+                    x.BaslamaTarixi <= hysAyBitis &&
                     (x.BitmeTarixi == null || x.BitmeTarixi >= hesabTarixi))
                 .ToListAsync();
 
