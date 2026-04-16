@@ -66,6 +66,38 @@ namespace FinNex.UI.Areas.User.Controllers
             decimal cariMaas = hesablama.CariMaas;
             bool qabaqcadan = odenisTipi == (int)MezuniyyetOdenisTipi.QabaqcadanOdenis;
 
+            // HYS — işçinin aktiv HYS-ını tap
+            var hysAyBitis = new DateTime(baslama.Year, baslama.Month, 1).AddMonths(1).AddDays(-1);
+            var isciHys = await _unitOfWork.Repository<IsciHYS>()
+                .Query()
+                .Where(x =>
+                    !x.Silinib &&
+                    x.IsciId == isciId.Value &&
+                    x.BaslamaTarixi <= hysAyBitis &&
+                    (x.BitmeTarixi == null || x.BitmeTarixi >= new DateTime(baslama.Year, baslama.Month, 1)))
+                .FirstOrDefaultAsync();
+            decimal hysMebleg = isciHys?.Mebleg ?? 0;
+
+            // İşəgötürən HYS faizi
+            var hysIsvParam = await _unitOfWork.Repository<MaasParametri>()
+                .Query()
+                .Where(x => x.Aktivdir && !x.Silinib && x.Nov == MaasParametrNovu.HysIsegoturenFaizi)
+                .OrderByDescending(x => x.BaslamaTarixi)
+                .FirstOrDefaultAsync();
+            decimal hysIsv = hysMebleg > 0 ? Math.Round(hysMebleg * ((hysIsvParam?.Deyer ?? 15m) / 100m), 2) : 0;
+
+            // Avans — bu aydakı təsdiqlənmiş avans
+            var avanslar = await _unitOfWork.Repository<Avans>()
+                .Query()
+                .Where(x =>
+                    !x.Silinib &&
+                    x.IsciId == isciId.Value &&
+                    x.Il == baslama.Year &&
+                    x.Ay == baslama.Month &&
+                    (x.Status == AvansStatus.Tesdiqlenib || x.Status == AvansStatus.Odenilib))
+                .ToListAsync();
+            decimal avansMebleg = avanslar.Sum(x => x.Mebleg);
+
             // Hər ay üçün brüt (baza - məzuniyyət kəsintisi + (əgər ay sonu) məz. ödənişi),
             // sonra tutulmalar və net. Qabaqcadan halında məzuniyyət ödənişi ayrıca
             // hesablanır və ayrıca tutulmalara tabe olur.
@@ -136,9 +168,12 @@ namespace FinNex.UI.Areas.User.Controllers
                 advanceNet = advTax.Net;
             }
 
+            // HYS və avans NET-dən çıxılır (hər ay üçün)
+            decimal hysAvansToplu = hysMebleg + hysIsv + avansMebleg;
             decimal umumiNet = qabaqcadan
-                ? ayNetCemi + advanceNet
-                : ayNetCemi;
+                ? ayNetCemi + advanceNet - hysAvansToplu
+                : ayNetCemi - hysAvansToplu;
+            if (umumiNet < 0) umumiNet = 0;
 
             return Json(new
             {
@@ -146,6 +181,9 @@ namespace FinNex.UI.Areas.User.Controllers
                 teqvimGun = hesablama.UmumiTeqvimGun,
                 isGun = hesablama.UmumiIsGun,
                 cariMaas,
+                hysMebleg,
+                hysIsv,
+                avansMebleg,
                 S = hesablama.Son12AyCemi,
                 sDuzelmis = hesablama.Son12AyDuzelmisCemi,
                 qeydSayi = hesablama.Son12AyQeydSayi,

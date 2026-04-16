@@ -79,6 +79,7 @@
         const isciGuzest = parseFloat(row.dataset.isciGuzest || 0) || 0;
         const isciGuzestAd = row.dataset.isciGuzestAd || '';
         const hys = parseFloat(row.dataset.hys || 0) || 0;
+        const avans = parseFloat(row.dataset.avans || 0) || 0;
         const chk = row.querySelector('.mth-checkbox');
         const bInp = row.querySelector('.mth-inp--b');
         const cInp = row.querySelector('.mth-inp--c');
@@ -108,8 +109,8 @@
         const dsmf    = hesablaTutulma(vergiDsmfBazasi,  2, 0);
         const iss     = hesablaTutulma(itssBazasi,       3, FLAT.issizlik);
         const itss    = hesablaTutulma(itssBazasi,       4, 0);
-        // Tutulma = vergilər + işçi HYS + işəgötürən HYS (brüt-ə daxildir, deməli çıxılmalıdır)
-        const tutulma = gelirV + dsmf + iss + itss + hys + hysIsv;
+        // Tutulma = vergilər + HYS + avans
+        const tutulma = gelirV + dsmf + iss + itss + hys + hysIsv + avans;
         const net     = Math.max(brut - tutulma, 0);
 
         // İşəgötürən xərcləri — DSMF: vergiDsmfBazası; İTSS/İşsizlik: əsas brüt
@@ -122,7 +123,7 @@
             esas, bonus, cerime, brut, vergilenecek,
             vergiDsmfBazasi, itssBazasi,
             standartGuzest, isciGuzest, isciGuzestAd,
-            hys, hysIsv,
+            hys, hysIsv, avans,
             gelirV, dsmf, iss, itss, tutulma, net,
             dsmfIsv, issIsv, itssIsv, sirketCemi,
             checked: !!chk?.checked && !done, done
@@ -177,6 +178,9 @@
         set('[data-p="itss"]', fmt(d.itss), d.itss > 0 ? 'n' : 'n n--d');
         set('[data-p="tutulma"]', fmt(d.tutulma), d.tutulma > 0 ? 'n n--r' : 'n n--d');
 
+        // Avans
+        set('[data-p="avans"]', fmt(d.avans), d.avans > 0 ? 'n n--r' : 'n n--d');
+
         // HYS detail cells
         set('[data-p="hysisci"]', fmt(d.hys), d.hys > 0 ? 'n n--r' : 'n n--d');
         set('[data-p="hysisv"]', fmt(d.hysIsv), d.hysIsv > 0 ? 'n n--p' : 'n n--d');
@@ -202,6 +206,7 @@
             a.issIsci  += d.iss;
             a.itssIsci += d.itss;
             a.hysIsci  += d.hys;
+            a.avans    += d.avans;
             a.tutulma  += d.tutulma;
             a.net      += d.net;
             // Şirkət tərəfi
@@ -213,7 +218,7 @@
             a.sirket   += d.brut + d.sirketCemi;
             return a;
         }, {
-            brut: 0, gelirV: 0, dsmfIsci: 0, issIsci: 0, itssIsci: 0, hysIsci: 0, tutulma: 0, net: 0,
+            brut: 0, gelirV: 0, dsmfIsci: 0, issIsci: 0, itssIsci: 0, hysIsci: 0, avans: 0, tutulma: 0, net: 0,
             dsmfIsv: 0, issIsv: 0, itssIsv: 0, hysIsv: 0, sirketEx: 0, sirket: 0
         });
 
@@ -226,6 +231,7 @@
         s('mthFootIssizlikIsci', fmt(t.issIsci));
         s('mthFootItssIsci', fmt(t.itssIsci));
         s('mthFootHysIsci', fmt(t.hysIsci));
+        s('mthFootAvans', fmt(t.avans));
         s('mthFootTutulma', fmt(t.tutulma));
         s('mthFootNet', fmt(t.net));
         s('mthFootNet2', fmt(t.net));
