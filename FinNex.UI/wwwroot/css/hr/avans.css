@@ -1,0 +1,48 @@
+/* ═══════ Avans — Muhasib terefindeki sehife ═══════ */
+.ha-page { padding: 24px 28px; max-width: 1400px; margin: 0 auto; }
+.ha-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 14px; }
+.ha-title { font-size: 1.35rem; font-weight: 800; color: #1a1d29; }
+.ha-sub { font-size: 0.85rem; color: #8a93a8; margin-top: 2px; }
+
+.ha-stats { display: flex; gap: 8px; }
+.ha-stat { display: flex; flex-direction: column; align-items: center; padding: 8px 16px; border-radius: 10px; border: 1px solid #e2e6ef; background: #fff; text-decoration: none; transition: all .15s; min-width: 70px; }
+.ha-stat:hover { border-color: #2d6cdf; }
+.ha-stat--active { border-color: #2d6cdf; background: #f0f7ff; }
+.ha-stat-num { font-size: 18px; font-weight: 800; }
+.ha-stat-lbl { font-size: 10px; font-weight: 700; color: #5a647a; text-transform: uppercase; letter-spacing: .3px; }
+
+.ha-card { background: #fff; border-radius: 14px; border: 1px solid #e9ecef; box-shadow: 0 4px 18px rgba(15,26,46,.04); overflow-x: auto; }
+.ha-empty { padding: 50px; text-align: center; color: #8a93a8; }
+.ha-empty i { font-size: 48px; display: block; margin-bottom: 10px; }
+
+.ha-table { width: 100%; border-collapse: collapse; }
+.ha-table thead th { background: #f7f9fc; padding: 12px 14px; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #5a647a; letter-spacing: .4px; border-bottom: 1px solid #eef0f5; text-align: left; }
+.ha-table td { padding: 12px 14px; border-bottom: 1px solid #f1f3f7; font-size: 13px; color: #1a2332; }
+.ha-table tbody tr:last-child td { border-bottom: none; }
+.ha-table .ha-num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ha-table .ha-act { text-align: right; width: 100px; }
+.ha-table .ha-note { color: #5a647a; font-size: 12px; max-width: 180px; }
+
+.ha-badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.ha-badge--pending { background: #fef3c7; color: #92400e; }
+.ha-badge--ok { background: #d1fae5; color: #065f46; }
+.ha-badge--reject { background: #fecaca; color: #991b1b; }
+
+.ha-btn { display: inline-flex; gap: 5px; align-items: center; padding: 9px 16px; border-radius: 9px; font-size: 13px; font-weight: 700; text-decoration: none; border: none; cursor: pointer; transition: all .15s; font-family: inherit; }
+.ha-btn--sm { padding: 6px 10px; font-size: 12px; }
+.ha-btn--ok { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.ha-btn--ok:hover { background: #a7f3d0; }
+.ha-btn--danger { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.ha-btn--danger:hover { background: #fecaca; }
+.ha-btn--outline { background: #fff; color: #3d4557; border: 1px solid #e2e6ef; }
+
+/* ── Reject Modal ── */
+.ha-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1000; display: none; align-items: center; justify-content: center; }
+.ha-overlay.open { display: flex; }
+.ha-modal { background: #fff; border-radius: 14px; padding: 24px; width: 420px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,.15); }
+.ha-modal-head { font-size: 16px; font-weight: 800; color: #1a2332; margin-bottom: 16px; }
+.ha-modal-body { margin-bottom: 16px; }
+.ha-label { display: block; font-size: 12px; font-weight: 700; color: #3d4557; margin-bottom: 6px; }
+.ha-input { width: 100%; padding: 10px 14px; border: 1.5px solid #e2e6ef; border-radius: 9px; font-size: 14px; font-family: inherit; box-sizing: border-box; }
+.ha-input:focus { outline: none; border-color: #2d6cdf; }
+.ha-modal-foot { display: flex; justify-content: flex-end; gap: 10px; }

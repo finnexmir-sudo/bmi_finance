@@ -311,6 +311,28 @@ namespace FinNex.Application.Services.HR
                     Tip = "kesinti"
                 });
 
+            // 8.1. Avans — tesdiqlenmiş avans mebleğini NET-den cix
+            decimal avansMebleg = 0;
+            var avanslar = await _unitOfWork.Repository<Avans>()
+                .Query()
+                .Where(x =>
+                    !x.Silinib &&
+                    x.IsciId == input.IsciId &&
+                    x.Il == input.Il &&
+                    x.Ay == input.Ay &&
+                    (x.Status == AvansStatus.Tesdiqlenib || x.Status == AvansStatus.Odenilib))
+                .ToListAsync();
+            avansMebleg = avanslar.Sum(x => x.Mebleg);
+
+            if (avansMebleg > 0)
+                izahatlar.Add(new HesablamaIzahiDto
+                {
+                    Addim = "Avans Kəsintisi",
+                    Izah = $"Bu ay üçün təsdiqlənmiş avans — maaşdan çıxılır",
+                    Mebleg = avansMebleg,
+                    Tip = "kesinti"
+                });
+
             // 8.5. HYS (Həyat Yığım Sığortası) — işçiyə təyin olunmuş aktiv HYS-ı tap
             var hysAyBitis = new DateTime(input.Il, input.Ay, 1).AddMonths(1).AddDays(-1);
             var isciHysList = await _unitOfWork.Repository<IsciHYS>()
@@ -511,7 +533,7 @@ namespace FinNex.Application.Services.HR
 
             // 11. NET maas — HYS də NET-dən tutulur (çünki işçinin öz payıdır)
             // HYS: brüt-ə hysIsegoturen daxildir, deməli NET-dən çıxılmalıdır
-            decimal umumiTutulma = gelirVergisi + dsmfIsci + issizlikIsci + itss + hysMebleg + hysIsegoturen;
+            decimal umumiTutulma = gelirVergisi + dsmfIsci + issizlikIsci + itss + hysMebleg + hysIsegoturen + avansMebleg;
             decimal netMaas = brutMaas - umumiTutulma;
 
             // Minimum əmək haqqı yoxlaması
@@ -613,6 +635,8 @@ namespace FinNex.Application.Services.HR
                 DetayEkle("İTSS",                              MaasDetayTipi.Tutulma,         itss,               itssIzah),
                 // HYS (işçi payı — brüt-dən tutulur)
                 DetayEkle("HYS (İşçi)",                        MaasDetayTipi.Tutulma,         hysMebleg,          hysMebleg > 0 ? $"Aylıq HYS payı" : null),
+                // Avans kəsintisi
+                DetayEkle("Avans Kəsintisi",                   MaasDetayTipi.Tutulma,         avansMebleg,        avansMebleg > 0 ? "Təsdiqlənmiş avans" : null),
                 // Şirkət xərcləri
                 DetayEkle("DSMF (İşəgötürən)",                 MaasDetayTipi.IsegoturenXerci, dsmfIsegoturen,     dsmfIsvIzah),
                 DetayEkle("İşsizlik Sığortası (İşəgötürən)",   MaasDetayTipi.IsegoturenXerci, issizlikIsegoturen, $"{itssBazasi:N2} × {p.IssizlikIsegotürenFaizi}%"),
