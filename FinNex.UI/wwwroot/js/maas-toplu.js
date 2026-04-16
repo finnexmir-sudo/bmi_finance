@@ -11,12 +11,14 @@
     let PILLELER = {};
     let VERGI_GUZESTI = 200;
     let FIRST_BRACKET_MAX = 2500;
+    let HYS_ISV_FAIZ = 15;
     try {
         const rawEl = document.getElementById('mthVergiConfig');
         if (rawEl) {
             const cfg = JSON.parse(rawEl.textContent);
             PILLELER = cfg.pilleler || {};
             VERGI_GUZESTI = parseFloat(cfg.vergiGuzesti) || 200;
+            HYS_ISV_FAIZ = parseFloat(cfg.hysIsvFaiz) || 15;
         }
         const toolbarEl = document.querySelector('.mth-toolbar[data-first-bracket-max]');
         if (toolbarEl) {
@@ -76,6 +78,7 @@
         const esas = parseFloat(row.dataset.esas || 0);
         const isciGuzest = parseFloat(row.dataset.isciGuzest || 0) || 0;
         const isciGuzestAd = row.dataset.isciGuzestAd || '';
+        const hys = parseFloat(row.dataset.hys || 0) || 0;
         const chk = row.querySelector('.mth-checkbox');
         const bInp = row.querySelector('.mth-inp--b');
         const cInp = row.querySelector('.mth-inp--c');
@@ -85,29 +88,35 @@
         const cerime = parseFloat(cInp?.value || 0) || 0;
         const brut = Math.max(esas + bonus - cerime, 0);
 
-        // Standart güzəşt — yalnız brüt ≤ birinci pillə üst həddi olduqda tətbiq olunur.
-        // (Brüt yuxarı pilləyə keçirsə 200 AZN standart güzəşti tətbiq olunmur.)
-        const standartGuzest = brut > 0 && brut <= FIRST_BRACKET_MAX ? VERGI_GUZESTI : 0;
-        // Vergilənəcək məbləğ: brüt − standart − işçi güzəşti
-        const vergilenecek = Math.max(0, brut - standartGuzest - isciGuzest);
+        // HYS bazaları: vergi+DSMF bazası = brüt − HYS, İTSS/İşsizlik = brüt (tam)
+        const vergiDsmfBazasi = Math.max(0, brut - hys);
+        const itssBazasi = brut;
 
-        // İşçidən tutulanlar (pilləli + flat)
-        const gelirV  = hesablaTutulma(vergilenecek, 1, 0);       // 1 = GelirVergisi
-        const dsmf    = hesablaTutulma(brut,         2, 0);       // 2 = DsmfIsci
-        const iss     = hesablaTutulma(brut,         3, FLAT.issizlik); // flat
-        const itss    = hesablaTutulma(brut,         4, 0);       // 4 = ItssIsci
-        const tutulma = gelirV + dsmf + iss + itss;
+        // Standart güzəşt — vergi bazası ≤ birinci pillə üst həddi
+        const standartGuzest = vergiDsmfBazasi > 0 && vergiDsmfBazasi <= FIRST_BRACKET_MAX ? VERGI_GUZESTI : 0;
+        // Vergilənəcək məbləğ: vergiDsmfBazası − standart − işçi güzəşti
+        const vergilenecek = Math.max(0, vergiDsmfBazasi - standartGuzest - isciGuzest);
+
+        // İşçidən tutulanlar — GəlirV və DSMF: vergiDsmfBazası ilə; İTSS və İşsizlik: itssBazası ilə
+        const gelirV  = hesablaTutulma(vergilenecek,    1, 0);       // 1 = GelirVergisi
+        const dsmf    = hesablaTutulma(vergiDsmfBazasi,  2, 0);       // 2 = DsmfIsci (HYS çıxılıb)
+        const iss     = hesablaTutulma(itssBazasi,       3, FLAT.issizlik); // flat — tam brüt
+        const itss    = hesablaTutulma(itssBazasi,       4, 0);       // 4 = ItssIsci — tam brüt
+        const tutulma = gelirV + dsmf + iss + itss + hys;
         const net     = Math.max(brut - tutulma, 0);
 
-        // İşəgötürən xərcləri (pilləli + flat)
-        const dsmfIsv = hesablaTutulma(brut, 7, 0);               // 7 = DsmfIsegoturen
-        const itssIsv = hesablaTutulma(brut, 9, 0);               // 9 = ItssIsegoturen
-        const issIsv  = hesablaTutulma(brut, 8, FLAT.issizlikIsv);// flat
-        const sirketCemi = dsmfIsv + issIsv + itssIsv;
+        // İşəgötürən xərcləri — DSMF: vergiDsmfBazası; İTSS/İşsizlik: tam brüt
+        const dsmfIsv = hesablaTutulma(vergiDsmfBazasi, 7, 0);        // 7 = DsmfIsegoturen
+        const itssIsv = hesablaTutulma(itssBazasi,      9, 0);        // 9 = ItssIsegoturen
+        const issIsv  = hesablaTutulma(itssBazasi,      8, FLAT.issizlikIsv);// flat — tam brüt
+        const hysIsv  = Math.round(hys * (HYS_ISV_FAIZ / 100) * 100) / 100;
+        const sirketCemi = dsmfIsv + issIsv + itssIsv + hysIsv;
 
         return {
             esas, bonus, cerime, brut, vergilenecek,
+            vergiDsmfBazasi, itssBazasi,
             standartGuzest, isciGuzest, isciGuzestAd,
+            hys, hysIsv,
             gelirV, dsmf, iss, itss, tutulma, net,
             dsmfIsv, issIsv, itssIsv, sirketCemi,
             checked: !!chk?.checked && !done, done
@@ -162,6 +171,12 @@
         set('[data-p="itss"]', fmt(d.itss), d.itss > 0 ? 'n' : 'n n--d');
         set('[data-p="tutulma"]', fmt(d.tutulma), d.tutulma > 0 ? 'n n--r' : 'n n--d');
 
+        // HYS detail cells
+        set('[data-p="hysisci"]', fmt(d.hys), d.hys > 0 ? 'n n--r' : 'n n--d');
+        set('[data-p="hysisv"]', fmt(d.hysIsv), d.hysIsv > 0 ? 'n n--p' : 'n n--d');
+        set('[data-p="hysisv2"]', fmt(d.hysIsv), d.hysIsv > 0 ? 'n n--p' : 'n n--d');
+        set('[data-p="vergibazasi"]', fmt(d.vergiDsmfBazasi), d.vergiDsmfBazasi > 0 ? 'n n--au' : 'n n--d');
+
         // Employer costs in detail (update dynamically based on brut)
         set('[data-p="dsmfisv"]', fmt(d.dsmfIsv), d.dsmfIsv > 0 ? 'n n--p' : 'n n--d');
         set('[data-p="itssisv"]', fmt(d.itssIsv), d.itssIsv > 0 ? 'n n--p' : 'n n--d');
@@ -180,18 +195,20 @@
             a.dsmfIsci += d.dsmf;
             a.issIsci  += d.iss;
             a.itssIsci += d.itss;
+            a.hysIsci  += d.hys;
             a.tutulma  += d.tutulma;
             a.net      += d.net;
             // Şirkət tərəfi
             a.dsmfIsv  += d.dsmfIsv;
             a.issIsv   += d.issIsv;
             a.itssIsv  += d.itssIsv;
+            a.hysIsv   += d.hysIsv;
             a.sirketEx += d.sirketCemi;
             a.sirket   += d.brut + d.sirketCemi;
             return a;
         }, {
-            brut: 0, gelirV: 0, dsmfIsci: 0, issIsci: 0, itssIsci: 0, tutulma: 0, net: 0,
-            dsmfIsv: 0, issIsv: 0, itssIsv: 0, sirketEx: 0, sirket: 0
+            brut: 0, gelirV: 0, dsmfIsci: 0, issIsci: 0, itssIsci: 0, hysIsci: 0, tutulma: 0, net: 0,
+            dsmfIsv: 0, issIsv: 0, itssIsv: 0, hysIsv: 0, sirketEx: 0, sirket: 0
         });
 
         const s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
@@ -202,6 +219,7 @@
         s('mthFootDsmfIsci', fmt(t.dsmfIsci));
         s('mthFootIssizlikIsci', fmt(t.issIsci));
         s('mthFootItssIsci', fmt(t.itssIsci));
+        s('mthFootHysIsci', fmt(t.hysIsci));
         s('mthFootTutulma', fmt(t.tutulma));
         s('mthFootNet', fmt(t.net));
         s('mthFootNet2', fmt(t.net));
@@ -209,6 +227,7 @@
         s('mthFootDsmfIsv', fmt(t.dsmfIsv));
         s('mthFootIssizlikIsv', fmt(t.issIsv));
         s('mthFootItssIsv', fmt(t.itssIsv));
+        s('mthFootHysIsv', fmt(t.hysIsv));
         s('mthFootSirketEx', fmt(t.sirketEx));
         s('mthFootSirket', fmt(t.sirket));
 

@@ -1,0 +1,69 @@
+@model List<FinNex.Domain.Entities.HR.IsciHYS>
+@{
+    ViewData["Title"] = "Həyat Yığım Sığortası (HYS)";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var today = DateTime.Today;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/isci-hys.css" asp-append-version="true" />
+}
+
+<div class="ih-page">
+    <div class="ih-head">
+        <div>
+            <div class="ih-title">Həyat Yığım Sığortası (HYS)</div>
+            <div class="ih-sub">Sizə təyin olunmuş HYS məbləğləri. Brüt maaşınızdan tutulur, vergi+DSMF bazanızı azaldır.</div>
+        </div>
+    </div>
+
+    <div class="ih-card">
+        @if (!Model.Any())
+        {
+            <div class="ih-empty">
+                <i class="bi bi-inbox"></i>
+                <p>Sizə aid HYS təyinatı yoxdur</p>
+            </div>
+        }
+        else
+        {
+            <table class="ih-table">
+                <thead>
+                    <tr>
+                        <th class="ih-num">Aylıq HYS</th>
+                        <th>Başlama</th>
+                        <th>Bitmə</th>
+                        <th>Status</th>
+                        <th>Qeyd</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var x in Model)
+                    {
+                        bool aktivDovr = x.BaslamaTarixi <= today && (x.BitmeTarixi == null || x.BitmeTarixi >= today);
+                        <tr>
+                            <td class="ih-num">@x.Mebleg.ToString("N2") ₼</td>
+                            <td>@x.BaslamaTarixi.ToString("dd.MM.yyyy")</td>
+                            <td>@(x.BitmeTarixi?.ToString("dd.MM.yyyy") ?? "—")</td>
+                            <td>
+                                @if (aktivDovr)
+                                {
+                                    <span class="ih-status ih-status--ok">Aktiv</span>
+                                }
+                                else if (x.BaslamaTarixi > today)
+                                {
+                                    <span class="ih-status ih-status--pending">Gözləyir</span>
+                                }
+                                else
+                                {
+                                    <span class="ih-status">Bitib</span>
+                                }
+                            </td>
+                            <td class="ih-note">@(x.Qeyd ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

@@ -68,5 +68,29 @@ namespace FinNex.UI.Areas.User.Controllers
 
             return Json(new { success = true, data });
         }
+
+        // ── GET /User/Maas/HYS ─────────────────────────────────
+        // İşçi öz HYS təyinatlarını görür (read-only)
+        public async Task<IActionResult> HYS()
+        {
+            var appUser = await _userManager.GetUserAsync(User);
+            if (appUser?.IsciId == null)
+            {
+                TempData["Error"] = "İşçi məlumatı tapılmadı.";
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            var isciId = appUser.IsciId.Value;
+            var today = DateTime.Today;
+
+            var hysList = await _unitOfWork.Repository<IsciHYS>()
+                .Query()
+                .Where(x => !x.Silinib && x.IsciId == isciId)
+                .OrderByDescending(x => x.BaslamaTarixi)
+                .ToListAsync();
+
+            ViewData["Title"] = "Həyat Yığım Sığortası (HYS)";
+            return View(hysList);
+        }
     }
 }

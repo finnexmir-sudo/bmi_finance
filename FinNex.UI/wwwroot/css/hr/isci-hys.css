@@ -1,0 +1,167 @@
+/* =============================================================
+   Isci HYS teyinatlari
+   ============================================================= */
+
+.ih-page { padding: 24px 28px; max-width: 1300px; margin: 0 auto; }
+
+.ih-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+.ih-title { font-size: 1.35rem; font-weight: 800; color: #1a1d29; }
+.ih-sub { font-size: 0.85rem; color: #8a93a8; margin-top: 2px; }
+
+.ih-filter {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 14px;
+}
+.ih-filter-lbl { font-size: 12px; font-weight: 700; color: #5a647a; }
+.ih-select {
+    padding: 8px 12px;
+    border: 1px solid #e2e6ef;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 13px;
+    font-family: inherit;
+    min-width: 260px;
+}
+
+.ih-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 4px 18px rgba(15, 26, 46, .04);
+    overflow-x: auto;
+}
+.ih-empty { padding: 50px; text-align: center; color: #8a93a8; }
+.ih-empty i { font-size: 48px; display: block; margin-bottom: 10px; }
+
+.ih-table { width: 100%; border-collapse: collapse; }
+.ih-table thead th {
+    background: #f7f9fc;
+    padding: 12px 16px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #5a647a;
+    letter-spacing: .4px;
+    border-bottom: 1px solid #eef0f5;
+    text-align: left;
+}
+.ih-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f3f7;
+    font-size: 13px;
+    color: #1a2332;
+}
+.ih-table tbody tr:last-child td { border-bottom: none; }
+.ih-table .ih-num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ih-table .ih-act { text-align: right; width: 100px; white-space: nowrap; }
+.ih-table .ih-note { color: #5a647a; font-size: 12px; max-width: 220px; }
+
+.ih-status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #eef0f5;
+    color: #5a647a;
+}
+.ih-status--ok { background: #d1fae5; color: #065f46; }
+.ih-status--pending { background: #fef3c7; color: #92400e; }
+
+.ih-btn {
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+    padding: 9px 16px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: inherit;
+}
+.ih-btn--sm { padding: 6px 10px; font-size: 12px; }
+.ih-btn--primary { background: #0d9488; color: #fff; }
+.ih-btn--primary:hover { background: #0f766e; }
+.ih-btn--outline { background: #fff; color: #3d4557; border: 1px solid #e2e6ef; }
+.ih-btn--outline:hover { border-color: #0d9488; color: #0f766e; }
+.ih-btn--danger { background: #fff; color: #dc2626; border: 1px solid #fecaca; }
+.ih-btn--danger:hover { background: #fef2f2; }
+
+/* -- Create / Edit form -- */
+.ih-form-page { padding: 24px 28px; max-width: 720px; margin: 0 auto; }
+.ih-form-head { margin-bottom: 18px; }
+.ih-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #5a647a;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+.ih-back:hover { color: #0f766e; }
+.ih-form-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e9ecef;
+    padding: 24px 28px;
+    box-shadow: 0 4px 18px rgba(15, 26, 46, .04);
+}
+.ih-form-group { margin-bottom: 18px; }
+.ih-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.ih-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 800;
+    color: #3d4557;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+}
+.ih-req { color: #dc2626; }
+.ih-hint { color: #8a93a8; font-weight: 500; text-transform: none; letter-spacing: 0; }
+.ih-hint-text { display: block; font-size: 11px; color: #8a93a8; margin-top: 4px; }
+.ih-input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid #e2e6ef;
+    border-radius: 9px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #fff;
+    box-sizing: border-box;
+}
+.ih-input:focus {
+    outline: none;
+    border-color: #0d9488;
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, .12);
+}
+textarea.ih-input { resize: vertical; min-height: 70px; }
+.ih-err { display: block; font-size: 11.5px; color: #dc2626; margin-top: 4px; }
+.ih-static {
+    padding: 11px 14px;
+    background: #f7f9fc;
+    border-radius: 9px;
+    font-size: 14px;
+    color: #1a2332;
+    font-weight: 600;
+}
+.ih-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+    padding-top: 16px;
+    border-top: 1px solid #eef0f5;
+}
