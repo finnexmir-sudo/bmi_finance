@@ -322,6 +322,20 @@ namespace FinNex.UI.Areas.HR.Controllers
             // HYS işəgötürən faizi (parametrdən)
             var hysIsvFaiz = flatParamlar.FirstOrDefault(x => x.Nov == MaasParametrNovu.HysIsegoturenFaizi)?.Deyer ?? 15m;
 
+            // Avans — hər işçi üçün bu aydakı təsdiqlənmiş avans məbləği
+            var avanslar = await _unitOfWork.Repository<Avans>()
+                .Query()
+                .Where(x =>
+                    !x.Silinib &&
+                    isciIdler.Contains(x.IsciId) &&
+                    x.Il == cIl && x.Ay == cAy &&
+                    (x.Status == AvansStatus.Tesdiqlenib || x.Status == AvansStatus.Odenilib))
+                .ToListAsync();
+
+            var isciAvansMap = avanslar
+                .GroupBy(x => x.IsciId)
+                .ToDictionary(g => g.Key, g => g.Sum(x => x.Mebleg));
+
             ViewBag.Il = cIl;
             ViewBag.Ay = cAy;
             ViewBag.Hesablanmis = hesablanmis;
@@ -333,6 +347,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.IsciGuzestMap = isciGuzestMap;
             ViewBag.IsciHysMap = isciHysMap;
             ViewBag.HysIsvFaiz = hysIsvFaiz;
+            ViewBag.IsciAvansMap = isciAvansMap;
             ViewBag.Iller = IlSiyahisi(cIl);
             ViewBag.Aylar = AySiyahisi(cAy);
 

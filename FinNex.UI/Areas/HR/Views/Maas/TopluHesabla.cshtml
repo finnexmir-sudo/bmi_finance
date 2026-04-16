@@ -28,6 +28,7 @@
     // JS-ə keçiriləcək pilləli konfiqurasiya
     var isciHysMap = ViewBag.IsciHysMap as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
     var hysIsvFaiz = (decimal)(ViewBag.HysIsvFaiz ?? 15m);
+    var isciAvansMap = ViewBag.IsciAvansMap as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
 
     var pilleConfigJson = System.Text.Json.JsonSerializer.Serialize(new
     {
@@ -334,11 +335,17 @@
                                     isciHys = isciHysMap[isci.Id];
                                 var isciHysStr = isciHys.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
 
+                                decimal isciAvans = 0m;
+                                if (isciAvansMap.ContainsKey(isci.Id))
+                                    isciAvans = isciAvansMap[isci.Id];
+                                var isciAvansStr = isciAvans.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
                                 <tr data-isci="@isci.Id"
                                     data-esas="@esas.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
                                     data-isci-guzest="@isciGuzestMeblegStr"
                                     data-isci-guzest-ad="@isciGuzestAd"
                                     data-hys="@isciHysStr"
+                                    data-avans="@isciAvansStr"
                                     class="mth-row @(isDone ? "done" : "")">
 
                                     @* Checkbox *@
@@ -508,6 +515,10 @@
                                                             <span class="mth-detail-lbl">İTSS</span>
                                                             <span class="n" data-p="itss">—</span>
                                                         </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">Avans</span>
+                                                            <span class="n n--r" data-p="avans">—</span>
+                                                        </div>
                                                         <div class="mth-detail-sep"></div>
                                                         <div class="mth-detail-item mth-detail-item--total">
                                                             <span class="mth-detail-lbl">Cəmi tutulma</span>
@@ -660,6 +671,11 @@
                                 <div class="mth-ftotal">
                                     <span class="mth-ftotal-lbl">HYS</span>
                                     <span class="mth-ftotal-val" id="mthFootHysIsci">— ₼</span>
+                                </div>
+                                <div class="mth-footer-div"></div>
+                                <div class="mth-ftotal">
+                                    <span class="mth-ftotal-lbl">Avans</span>
+                                    <span class="mth-ftotal-val" id="mthFootAvans">— ₼</span>
                                 </div>
                                 <div class="mth-footer-div"></div>
                                 <div class="mth-ftotal">
