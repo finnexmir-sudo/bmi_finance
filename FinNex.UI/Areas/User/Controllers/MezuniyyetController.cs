@@ -168,8 +168,9 @@ namespace FinNex.UI.Areas.User.Controllers
                 advanceNet = advTax.Net;
             }
 
-            // HYS və avans NET-dən çıxılır (hər ay üçün)
-            decimal hysAvansToplu = hysMebleg + hysIsv + avansMebleg;
+            // NET-dən çıxılanlar: yalnız işçi HYS payı + avans
+            // İşəgötürən HYS (hysIsv) NET-ə təsir etmir — GROSS-a əlavə olunub geri çıxılır
+            decimal hysAvansToplu = hysMebleg + avansMebleg;
             decimal umumiNet = qabaqcadan
                 ? ayNetCemi + advanceNet - hysAvansToplu
                 : ayNetCemi - hysAvansToplu;
