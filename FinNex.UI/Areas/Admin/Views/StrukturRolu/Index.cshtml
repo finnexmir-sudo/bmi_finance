@@ -1,0 +1,227 @@
+@model FinNex.UI.Areas.Admin.ViewModels.StrukturRoluIndexVM
+@using FinNex.Domain.Entities.HR
+
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Struktur Rolları";
+
+    static string RolText(StrukturRolTipi r) => r switch
+    {
+        StrukturRolTipi.SobeReisi => "Şöbə Rəisi",
+        StrukturRolTipi.Rehber => "Rəhbər",
+        StrukturRolTipi.Hr => "HR",
+        _ => r.ToString()
+    };
+
+    static string RolBadge(StrukturRolTipi r) => r switch
+    {
+        StrukturRolTipi.SobeReisi => "primary",
+        StrukturRolTipi.Rehber => "warning",
+        StrukturRolTipi.Hr => "info",
+        _ => "secondary"
+    };
+}
+
+<div class="container-fluid">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-diagram-3-fill me-2 text-primary"></i>
+                Struktur Rolları
+            </h3>
+            <small class="text-muted">
+                İşçilərin təsdiq axınında roluni idarə edin (Şöbə Rəisi, Rəhbər, HR)
+            </small>
+        </div>
+
+        <a asp-action="Create" class="btn btn-primary shadow-sm">
+            <i class="bi bi-plus-circle me-1"></i>
+            Yeni rol təyin et
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- STATISTIKALAR -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Ümumi qeyd</h6>
+                    <h2 class="fw-bold mb-0">@Model.UmumiSayi</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 border-start border-primary border-4">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Aktiv Şöbə Rəisi</h6>
+                    <h2 class="fw-bold mb-0 text-primary">@Model.SobeReisiSayi</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 border-start border-warning border-4">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Aktiv Rəhbər</h6>
+                    <h2 class="fw-bold mb-0 text-warning">@Model.RehberSayi</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 border-start border-info border-4">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Aktiv HR</h6>
+                    <h2 class="fw-bold mb-0 text-info">@Model.HrSayi</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FİLTRLƏR -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-2">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted mb-1">Rol</label>
+                    <select name="rolFilter" class="form-select form-select-sm">
+                        <option value="">— Hamısı —</option>
+                        @foreach (var r in Enum.GetValues<StrukturRolTipi>())
+                        {
+                            <option value="@((int)r)" selected="@(Model.RolFilter == r)">@RolText(r)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted mb-1">Departament</label>
+                    <select name="departamentFilter" class="form-select form-select-sm">
+                        <option value="">— Hamısı —</option>
+                        @foreach (var d in Model.Departamentler)
+                        {
+                            <option value="@d.Value" selected="@d.Selected">@d.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-funnel"></i> Filtrlə
+                    </button>
+                    <a asp-action="Index" class="btn btn-sm btn-outline-secondary">Sıfırla</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SİYAHI -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+
+            @if (!Model.Items.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-diagram-3 text-muted" style="font-size:50px;"></i>
+                    <h5 class="mt-3 text-muted">Struktur rolu tapılmadı</h5>
+                    <p class="text-muted small">
+                        "Yeni rol təyin et" düyməsi ilə işçiyə Şöbə Rəisi / Rəhbər / HR rolu verə bilərsiniz.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:50px;">#</th>
+                                <th>İşçi</th>
+                                <th>Rol</th>
+                                <th>Departament</th>
+                                <th>Başlama</th>
+                                <th>Bitmə</th>
+                                <th>Status</th>
+                                <th style="width:200px;" class="text-end">Əməliyyat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ int i = 1; }
+                            @foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td class="text-muted">@i</td>
+                                    <td class="fw-semibold">@item.IsciAdSoyad</td>
+                                    <td>
+                                        <span class="badge bg-@RolBadge(item.RolTipi)">
+                                            @RolText(item.RolTipi)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (string.IsNullOrEmpty(item.DepartamentAd))
+                                        {
+                                            <span class="text-muted small">— (üst səviyyə)</span>
+                                        }
+                                        else
+                                        {
+                                            @item.DepartamentAd
+                                        }
+                                    </td>
+                                    <td class="small">@item.BaslamaTarixi.ToString("dd.MM.yyyy")</td>
+                                    <td class="small">@(item.BitmeTarixi?.ToString("dd.MM.yyyy") ?? "—")</td>
+                                    <td>
+                                        @if (item.Aktivdir)
+                                        {
+                                            <span class="badge bg-success-subtle text-success">Aktiv</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary-subtle text-secondary">Deaktiv</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <form asp-action="ToggleActive" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit"
+                                                    class="btn btn-sm @(item.Aktivdir ? "btn-outline-secondary" : "btn-outline-success")"
+                                                    title="@(item.Aktivdir ? "Deaktiv et" : "Aktiv et")">
+                                                <i class="bi @(item.Aktivdir ? "bi-pause-circle" : "bi-play-circle")"></i>
+                                            </button>
+                                        </form>
+                                        <a asp-action="Edit" asp-route-id="@item.Id"
+                                           class="btn btn-sm btn-outline-warning ms-1">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <form asp-action="Delete" method="post" class="d-inline ms-1"
+                                              onsubmit="return confirm('Bu qeydi silmək istədiyinizə əminsiniz?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                i++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+</div>
