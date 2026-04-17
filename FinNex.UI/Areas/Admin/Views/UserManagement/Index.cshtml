@@ -84,6 +84,16 @@
                                     <i class="bi bi-diagram-3"></i>
                                 </a>
 
+                                @if (user.IsciId.HasValue)
+                                {
+                                    <a asp-controller="StrukturRolu" asp-action="Create"
+                                       asp-route-isciId="@user.IsciId"
+                                       class="btn btn-sm btn-outline-dark"
+                                       title="Struktur Rolu Təyin et">
+                                        <i class="bi bi-person-badge"></i>
+                                    </a>
+                                }
+
                                 <form asp-action="ToggleActive" asp-route-id="@user.Id" method="post"
                                       class="d-inline">
                                     @Html.AntiForgeryToken()

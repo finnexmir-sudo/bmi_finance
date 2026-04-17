@@ -10,4 +10,5 @@ public class UserListVM
     public bool IsActive { get; set; }
     public DateTime RegisteredAt { get; set; }
     public bool IsLockedOut { get; set; }
+    public int? IsciId { get; set; }
 }

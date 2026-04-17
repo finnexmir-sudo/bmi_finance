@@ -50,7 +50,8 @@ public class UserManagementController : Controller
                 Roles = roles,
                 IsActive = user.Aktivdir,
                 RegisteredAt = user.QeydiyyatTarixi,
-                IsLockedOut = await _userManager.IsLockedOutAsync(user)
+                IsLockedOut = await _userManager.IsLockedOutAsync(user),
+                IsciId = user.IsciId
             });
         }
 
@@ -184,8 +185,21 @@ public class UserManagementController : Controller
 
         var currentRoles = await _userManager.GetRolesAsync(user);
 
+        // Struktur Rolları səhifəsindən idarə olunan rollar bu ekrandan
+        // dəyişdirilə bilməz — mövcud vəziyyəti məcburi saxlayırıq.
+        var strukturIdareOlunan = new[]
+        {
+            RoleNames.HR, RoleNames.Rehber, RoleNames.SobeReisi, RoleNames.Muhasib
+        };
+
+        var yeniRollar = vm.SelectedRoles
+            .Where(r => !strukturIdareOlunan.Contains(r))   // POST-dakı seçimləri götür
+            .Union(currentRoles.Where(r => strukturIdareOlunan.Contains(r))) // struktur rollarını cari vəziyyətdən saxla
+            .Distinct()
+            .ToList();
+
         await _userManager.RemoveFromRolesAsync(user, currentRoles);
-        await _userManager.AddToRolesAsync(user, vm.SelectedRoles);
+        await _userManager.AddToRolesAsync(user, yeniRollar);
 
         TempData["StatusMessage"] = $"'{user.UserName}' üçün rollar yeniləndi.";
         return RedirectToAction(nameof(Index));
