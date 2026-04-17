@@ -193,6 +193,64 @@
             </ol>
         </div>
 
+        @* ── Maaş günü preview — mühasib üçün informativ ── *@
+        @if (!odenilib)
+        {
+            var cariMaasVal = (decimal)(ViewBag.CariMaas ?? 0m);
+            var ayIsGunVal = (int)(ViewBag.AyIsGun ?? 22);
+            var mezIsGunVal = (int)(ViewBag.MezIsGun ?? 0);
+            var islenmisGunVal = (int)(ViewBag.IslenmisGun ?? 0);
+            var islenmisMaasVal = (decimal)(ViewBag.IslenmisMaas ?? 0m);
+            var islenmisNetVal = (decimal)(ViewBag.IslenmisNet ?? 0m);
+            var hysMeblegVal = (decimal)(ViewBag.HysMebleg ?? 0m);
+            var avansMeblegVal = (decimal)(ViewBag.AvansMebleg ?? 0m);
+            var mezPuluBrutVal = (decimal)(ViewBag.MezPuluBrut ?? 0m);
+            var maasGuniNetVal = (decimal)(ViewBag.MaasGuniNet ?? 0m);
+            bool menfi = maasGuniNetVal < 0;
+
+            <div class="mod-card @(menfi ? "mod-card--danger" : "")">
+                <div class="mod-card-title">
+                    <i class="bi bi-calculator"></i>
+                    İşçi maaş günü nə alacaq? (təxmini)
+                </div>
+                <div class="mod-kv" style="font-size:13px;">
+                    <span>Cari maaş</span>
+                    <strong>@cariMaasVal.ToString("N2") ₼</strong>
+
+                    <span>Ayda @ayIsGunVal iş günü, @islenmisGunVal işlənir, @mezIsGunVal məzuniyyət</span>
+                    <strong>İşlənmiş günlər maaşı: @islenmisMaasVal.ToString("N2") ₼</strong>
+
+                    <span>İşlənmiş maaş NET (tutulmalardan sonra)</span>
+                    <strong>@islenmisNetVal.ToString("N2") ₼</strong>
+
+                    @if (hysMeblegVal > 0)
+                    {
+                        <span>− HYS (işçi payı)</span>
+                        <strong style="color:#dc2626">− @hysMeblegVal.ToString("N2") ₼</strong>
+                    }
+                    @if (avansMeblegVal > 0)
+                    {
+                        <span>− Avans</span>
+                        <strong style="color:#dc2626">− @avansMeblegVal.ToString("N2") ₼</strong>
+                    }
+                    <span>− Məzuniyyət pulu (qabaqcadan verildi)</span>
+                    <strong style="color:#dc2626">− @mezPuluBrutVal.ToString("N2") ₼</strong>
+
+                    <span style="font-weight:800;font-size:14px;">Maaş günü işçi alacaq</span>
+                    <strong style="font-size:16px;color:@(menfi ? "#dc2626" : "#1e9b6b")">@maasGuniNetVal.ToString("N2") ₼</strong>
+                </div>
+
+                @if (menfi)
+                {
+                    <div class="mod-warn" style="background:#fef2f2;border-color:#fecaca;color:#991b1b;margin-top:12px;">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <strong>Diqqət:</strong> İşçinin maaşı qabaqcadan verilən məzuniyyət pulunu, HYS və avans kəsintilərini
+                        ödəməyə çatmır. Maaş günü @(Math.Abs(maasGuniNetVal).ToString("N2")) ₼ borc yaranacaq. Qərarı özünüz verin.
+                    </div>
+                }
+            </div>
+        }
+
         @* ── Ödəniş bölümü ── *@
         <div class="mod-card mod-card--action">
             <div class="mod-card-title"><i class="bi bi-cash-coin"></i> Ödəniş</div>
@@ -278,6 +336,7 @@
 
     .mod-card--summary { background: linear-gradient(135deg, #faf5ff, #f5f3ff); border-color: #d8b4fe; }
     .mod-card--action { border-color: #c8b3f2; }
+    .mod-card--danger { border-color: #fca5a5; background: #fef2f2; }
 
     .mod-kv {
         display: grid;
