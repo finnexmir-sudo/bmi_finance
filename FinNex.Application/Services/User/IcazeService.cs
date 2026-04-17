@@ -428,6 +428,7 @@ namespace FinNex.Application.Services
                         await _bildirisRouter.NotifyDepartmentRoleAsync(
                             departamentId.Value, StrukturRolTipi.SobeReisi,
                             BildirisNovu.IcazeMuraciet, bashliq, metn,
+                            redirectUrl: $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=SobeReisi",
                             icazeId: ic.Id, exceptIsciId: ic.IsciId);
                     }
                     break;
@@ -436,6 +437,7 @@ namespace FinNex.Application.Services
                     await _bildirisRouter.NotifyRolesAsync(
                         new[] { RoleNames.Rehber, RoleNames.Admin },
                         BildirisNovu.IcazeMuraciet, bashliq, metn,
+                        redirectUrl: $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Rehber",
                         icazeId: ic.Id, exceptIsciId: ic.IsciId);
                     break;
 
@@ -443,6 +445,7 @@ namespace FinNex.Application.Services
                     await _bildirisRouter.NotifyRolesAsync(
                         new[] { RoleNames.HR, RoleNames.Admin },
                         BildirisNovu.IcazeMuraciet, bashliq, metn,
+                        redirectUrl: $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Hr",
                         icazeId: ic.Id, exceptIsciId: ic.IsciId);
                     break;
             }
@@ -457,6 +460,7 @@ namespace FinNex.Application.Services
                 BildirisNovu.IcazeMuraciet,
                 "İcazə müraciəti — Rəhbər təsdiqi gözləyir",
                 $"{isciAd} ({dovr}) icazəsi şöbə rəisi tərəfindən təsdiqlənib.",
+                redirectUrl: $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Rehber",
                 icazeId: ic.Id, exceptIsciId: ic.IsciId);
         }
 
@@ -469,12 +473,14 @@ namespace FinNex.Application.Services
                 BildirisNovu.IcazeMuraciet,
                 "İcazə müraciəti — HR təsdiqi gözləyir",
                 $"{isciAd} ({dovr}) icazəsi rəhbər tərəfindən təsdiqlənib.",
+                redirectUrl: $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Hr",
                 icazeId: ic.Id, exceptIsciId: ic.IsciId);
         }
 
         private async Task NotifyIsciProgressAsync(Icaze ic, string mərhələ, bool tesdiq, string? qeyd)
         {
             var dovr = $"{ic.IcazeTarixi:dd.MM.yyyy} {ic.BaslamaSaati:hh\\:mm}–{ic.BitisSaati:hh\\:mm}";
+            var redirectUrl = $"/User/Icaze/Detail/{ic.Id}";
             if (tesdiq)
             {
                 await _bildirisRouter.NotifyIsciAsync(
@@ -482,6 +488,7 @@ namespace FinNex.Application.Services
                     BildirisNovu.IcazeTesdiq,
                     $"İcazə — {mərhələ} təsdiqi alındı",
                     $"{dovr} icazə müraciətiniz {mərhələ} tərəfindən təsdiqləndi.",
+                    redirectUrl: redirectUrl,
                     icazeId: ic.Id);
             }
             else
@@ -492,6 +499,7 @@ namespace FinNex.Application.Services
                     BildirisNovu.IcazeImtina,
                     $"İcazə — {mərhələ} imtinası",
                     $"{dovr} icazə müraciətiniz {mərhələ} tərəfindən rədd edildi.{sebeb}",
+                    redirectUrl: redirectUrl,
                     icazeId: ic.Id);
             }
         }
