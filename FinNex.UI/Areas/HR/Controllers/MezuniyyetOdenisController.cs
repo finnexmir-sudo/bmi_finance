@@ -87,6 +87,57 @@ namespace FinNex.UI.Areas.HR.Controllers
             var hesab = await _maasHesablamaService
                 .MezuniyyetOdenisiDetalliHesablaAsync(mez.IsciId, mez.BaslamaTarixi, mez.BitmeTarixi);
 
+            // ── Ay sonu maaş preview — mühasib üçün informativ ──
+            // İşçi maaş günü nə qədər alacaq (qabaqcadan ödəniş çıxıldıqdan sonra)?
+            var maliye = await _unitOfWork.Repository<IsciMaliye>()
+                .GetirAsync(x => x.IsciId == mez.IsciId);
+            decimal cariMaas = maliye?.CariMaas ?? 0;
+
+            // Məzuniyyət iş günü sayı (bu ay üçün)
+            var mezAy = mez.BaslamaTarixi.Month;
+            var mezIl = mez.BaslamaTarixi.Year;
+            int ayIsGun = hesab.AySliceleri.FirstOrDefault()?.AyIsGun ?? 22;
+            int mezIsGun = hesab.UmumiIsGun;
+            int islenmisGun = Math.Max(0, ayIsGun - mezIsGun);
+            decimal islenmisMaas = ayIsGun > 0 ? Math.Round(cariMaas / ayIsGun * islenmisGun, 2) : 0;
+
+            // NET (yalnız işlənmiş günlər)
+            var islenmisTax = await _maasHesablamaService
+                .TutulmalariHesablaAsync(islenmisMaas, new DateTime(mezIl, mezAy, 1), mez.IsciId);
+
+            // HYS
+            var hysAyBitis = new DateTime(mezIl, mezAy, 1).AddMonths(1).AddDays(-1);
+            var isciHys = await _unitOfWork.Repository<IsciHYS>()
+                .Query()
+                .FirstOrDefaultAsync(x =>
+                    !x.Silinib && x.IsciId == mez.IsciId &&
+                    x.BaslamaTarixi <= hysAyBitis &&
+                    (x.BitmeTarixi == null || x.BitmeTarixi >= new DateTime(mezIl, mezAy, 1)));
+            decimal hysMebleg = isciHys?.Mebleg ?? 0;
+
+            // Avans
+            var avanslar = await _unitOfWork.Repository<Avans>()
+                .Query()
+                .Where(x => !x.Silinib && x.IsciId == mez.IsciId &&
+                    x.Il == mezIl && x.Ay == mezAy &&
+                    (x.Status == AvansStatus.Tesdiqlenib || x.Status == AvansStatus.Odenilib))
+                .ToListAsync();
+            decimal avansMebleg = avanslar.Sum(x => x.Mebleg);
+
+            // Maaş günü əlinə çatacaq
+            decimal maasGuniNet = islenmisTax.Net - hysMebleg - avansMebleg - hesab.CemiOdenis;
+
+            ViewBag.CariMaas = cariMaas;
+            ViewBag.AyIsGun = ayIsGun;
+            ViewBag.MezIsGun = mezIsGun;
+            ViewBag.IslenmisGun = islenmisGun;
+            ViewBag.IslenmisMaas = islenmisMaas;
+            ViewBag.IslenmisNet = islenmisTax.Net;
+            ViewBag.HysMebleg = hysMebleg;
+            ViewBag.AvansMebleg = avansMebleg;
+            ViewBag.MezPuluBrut = hesab.CemiOdenis;
+            ViewBag.MaasGuniNet = maasGuniNet;
+
             ViewBag.Mezuniyyet = mez;
             return View(hesab);
         }
