@@ -1,4 +1,11 @@
 @model ChangeUserRoleVM
+@using FinNex.Domain
+
+@{
+    // Bu rollar Struktur Rolları səhifəsindən avtomatik sinxronlaşır —
+    // bu ekrandan manual dəyişmək blok edilir (qarışıqlığın qarşısını alır).
+    var strukturIdareOlunan = new[] { RoleNames.HR, RoleNames.Rehber, RoleNames.SobeReisi, RoleNames.Muhasib };
+}
 
 <div class="row justify-content-center">
     <div class="col-lg-6">
@@ -32,6 +39,13 @@
                     </div>
                 </div>
 
+                <div class="alert alert-info py-2 small mb-4">
+                    <i class="bi bi-info-circle me-1"></i>
+                    <b>HR</b>, <b>Rəhbər</b>, <b>Şöbə Rəisi</b> və <b>Mühasib</b> rolları
+                    <a asp-controller="StrukturRolu" asp-action="Index" class="fw-semibold">Struktur Rolları</a>
+                    səhifəsindən idarə olunur və buradan dəyişdirilə bilməz.
+                </div>
+
                 <form asp-action="ChangeRole" method="post">
                     @Html.AntiForgeryToken()
                     <input type="hidden" asp-for="UserId" />
@@ -44,17 +58,29 @@
                             <div class="border rounded p-3">
                                 @foreach (var role in Model.AvailableRoles)
                                 {
-                                    <div class="form-check mb-2">
+                                    var isStruktur = strukturIdareOlunan.Contains(role);
+                                    var isChecked = Model.SelectedRoles.Contains(role);
+                                    <div class="form-check mb-2 @(isStruktur ? "text-muted" : "")">
                                         <input class="form-check-input"
                                                type="checkbox"
                                                name="SelectedRoles"
                                                value="@role"
                                                id="role_@role"
-                                               @(Model.SelectedRoles.Contains(role) ? "checked" : "") />
+                                               @(isChecked ? "checked" : "")
+                                               @(isStruktur ? "disabled" : "") />
                                         <label class="form-check-label" for="role_@role">
                                             @role
+                                            @if (isStruktur)
+                                            {
+                                                <i class="bi bi-link-45deg ms-1" title="Struktur Rolları-dan idarə olunur"></i>
+                                            }
                                         </label>
                                     </div>
+                                    @* Disabled checkbox POST-da gəlmir — cari dəyəri hidden input ilə qoru *@
+                                    @if (isStruktur && isChecked)
+                                    {
+                                        <input type="hidden" name="SelectedRoles" value="@role" />
+                                    }
                                 }
                             </div>
                             <span asp-validation-for="SelectedRoles" class="text-danger small"></span>
