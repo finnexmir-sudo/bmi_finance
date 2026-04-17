@@ -12,5 +12,9 @@ namespace FinNex.UI.Areas.HR.ViewModels.Mezuniyyet
     {
         public MezuniyyetDto Mezuniyyet { get; set; } = null!;
         public string ReturnAction { get; set; } = "Hr"; // geri qayıdacaq action
+
+        // Təsdiqçinin görməsi üçün əlavə kontekst
+        public List<MezuniyyetOverlapDto> OverlapMezuniyyetler { get; set; } = new();
+        public List<EvezediciKonfliktDto> EvezediciKonfliktleri { get; set; } = new();
     }
 }

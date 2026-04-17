@@ -137,6 +137,9 @@ namespace FinNex.UI.Areas.User.Controllers
                 return RedirectToAction(rol);
             }
 
+            var overlap = await _mezuniyyetService.GetOverlapMezuniyyetlerAsync(id);
+            var konflikt = await _mezuniyyetService.GetEvezediciKonfliktiAsync(id);
+
             var dto = result.Data;
             var vm = new TesdiqDetalVM
             {
@@ -146,6 +149,8 @@ namespace FinNex.UI.Areas.User.Controllers
                 VezifeAdi = dto.VezifeAdi,
                 EvezEdenIsciAdSoyad = dto.EvezEdenIsciAdSoyad,
                 IsMezuniyyet = true,
+                OverlapMezuniyyetler = overlap.Success ? overlap.Data!.ToList() : new(),
+                EvezediciKonfliktleri = konflikt.Success ? konflikt.Data!.ToList() : new(),
                 NovText = (int)dto.Nov switch
                 {
                     1 => "İllik məzuniyyət",

@@ -60,5 +60,10 @@
         public DateTime? OdenilmeTarixi { get; set; }
         public int? OdeyenMuhasibId { get; set; }
         public Isci? OdeyenMuhasib { get; set; }
+
+        // PlanliOdenis mərhələsində — faktiki bank köçürməsi bu tarixdə icra
+        // olunur (məzuniyyətdən bir iş günü əvvəl). Fon xidməti həmin tarixdə
+        // statusu avtomatik Odenilib-ə çevirir.
+        public DateTime? PlanliOdenisTarixi { get; set; }
     }
 }
