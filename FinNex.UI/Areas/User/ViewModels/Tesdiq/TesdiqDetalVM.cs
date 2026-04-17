@@ -29,6 +29,7 @@ namespace FinNex.UI.Areas.User.ViewModels.Tesdiq
         public string? Sebeb { get; set; }
 
         // Ümumi
+        public int Status { get; set; }
         public string StatusText { get; set; } = null!;
         public string? ImtinaSebebi { get; set; }
 
