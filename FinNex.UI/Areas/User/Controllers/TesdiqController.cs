@@ -157,6 +157,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 BitmeTarixi = dto.BitmeTarixi,
                 IsGunlerininSayi = dto.IsGunlerininSayi,
                 Qeyd = dto.Qeyd,
+                Status = (int)dto.Status,
                 StatusText = (int)dto.Status switch
                 {
                     1 => "Gözləmədə",
@@ -206,6 +207,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 BitisSaati = dto.BitisSaati,
                 IcazeSaati = dto.IcazeSaati,
                 Sebeb = dto.Sebeb,
+                Status = (int)dto.Status,
                 StatusText = (int)dto.Status switch
                 {
                     1 => "Gözləmədə",
