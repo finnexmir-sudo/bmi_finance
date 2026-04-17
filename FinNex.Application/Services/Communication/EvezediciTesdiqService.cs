@@ -15,12 +15,18 @@ namespace FinNex.Application.Services.Communication
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IBildirisService _bildirisService;
+        private readonly IBildirisRouter _bildirisRouter;
         private readonly UserManager<AppUser> _userManager;
 
-        public EvezediciTesdiqService(IUnitOfWork unitOfWork, IBildirisService bildirisService, UserManager<AppUser> userManager)
+        public EvezediciTesdiqService(
+            IUnitOfWork unitOfWork,
+            IBildirisService bildirisService,
+            IBildirisRouter bildirisRouter,
+            UserManager<AppUser> userManager)
         {
             _unitOfWork = unitOfWork;
             _bildirisService = bildirisService;
+            _bildirisRouter = bildirisRouter;
             _userManager = userManager;
         }
 
@@ -112,7 +118,45 @@ namespace FinNex.Application.Services.Communication
                 redirectUrl: $"/User/Mezuniyyet/Detail/{e.MezuniyyetId}",
                 mezuniyyetId: e.MezuniyyetId);
 
+            // Növbəti mərhələ təsdiqçilərinə — indi müraciət aktiv mərhələyə düşdü
+            await NotifyNextStageApproversAsync(e.Mezuniyyet);
+
             return Result.Ok("Sorğu qəbul edildi.");
+        }
+
+        private async Task NotifyNextStageApproversAsync(Mezuniyyet m)
+        {
+            var dovr = $"{m.BaslamaTarixi:dd.MM.yyyy} – {m.BitmeTarixi:dd.MM.yyyy}";
+            var bashliq = "Yeni məzuniyyət müraciəti";
+            var metn = $"{m.Isci?.TamAd ?? $"İşçi #{m.IsciId}"} ({dovr}) məzuniyyət müraciəti göndərdi (əvəzedici qəbul edildi).";
+
+            switch (m.Status)
+            {
+                case MezuniyyetStatus.SobeReisiTesdiqinde:
+                    var teyinat = m.Isci?.IsciTeyinatlari?.FirstOrDefault(t => t.Aktivdir);
+                    if (teyinat != null)
+                    {
+                        await _bildirisRouter.NotifyDepartmentRoleAsync(
+                            teyinat.DepartamentId, StrukturRolTipi.SobeReisi,
+                            BildirisNovu.MezuniyyetMuraciet, bashliq, metn,
+                            mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
+                    }
+                    break;
+
+                case MezuniyyetStatus.RehberTesdiqinde:
+                    await _bildirisRouter.NotifyRolesAsync(
+                        new[] { RoleNames.Rehber, RoleNames.Admin },
+                        BildirisNovu.MezuniyyetMuraciet, bashliq, metn,
+                        mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
+                    break;
+
+                case MezuniyyetStatus.HrTesdiqinde:
+                    await _bildirisRouter.NotifyRolesAsync(
+                        new[] { RoleNames.HR, RoleNames.Admin },
+                        BildirisNovu.MezuniyyetMuraciet, bashliq, metn,
+                        mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
+                    break;
+            }
         }
 
         public async Task<Result> ReddEtAsync(int tesdiqId, int isciId, string? qeyd)

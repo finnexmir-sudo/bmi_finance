@@ -1,4 +1,6 @@
+using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -14,11 +16,16 @@ namespace FinNex.UI.Areas.User.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IBildirisRouter _bildirisRouter;
 
-        public AvansController(IUnitOfWork unitOfWork, UserManager<AppUser> userManager)
+        public AvansController(
+            IUnitOfWork unitOfWork,
+            UserManager<AppUser> userManager,
+            IBildirisRouter bildirisRouter)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
+            _bildirisRouter = bildirisRouter;
         }
 
         // ── GET /User/Avans ──────────────────────────────────
@@ -138,6 +145,19 @@ namespace FinNex.UI.Areas.User.Controllers
 
             await _unitOfWork.Repository<Avans>().YaratAsync(entity);
             await _unitOfWork.YaddaSaxlaAsync();
+
+            // Bildiriş — Mühasib + HR + Admin
+            var isci = await _unitOfWork.Repository<Isci>()
+                .GetirAsync(x => x.Id == isciId.Value, izlemeden: true);
+            var isciAd = isci?.TamAd ?? $"İşçi #{isciId.Value}";
+
+            await _bildirisRouter.NotifyRolesAsync(
+                new[] { RoleNames.Muhasib, RoleNames.HR, RoleNames.Admin },
+                BildirisNovu.AvansMuraciet,
+                "Yeni avans müraciəti",
+                $"{isciAd} {buAy.Year}/{buAy.Month:D2} ayı üçün {mebleg:N2} ₼ avans tələb edir.",
+                redirectUrl: Url.Action("Index", "Avans", new { area = "HR" }),
+                exceptIsciId: isciId.Value);
 
             TempData["Success"] = $"Avans müraciəti göndərildi — {mebleg:N2} ₼";
             return RedirectToAction(nameof(Index));
