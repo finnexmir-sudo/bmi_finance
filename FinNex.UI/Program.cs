@@ -122,6 +122,7 @@ namespace FinNex.UI
             // ==================================================
             builder.Services.AddHostedService<FinNex.Application.BackgroundJobs.ZkTecoSdkService>();
             builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.XatirlatmaBackgroundService>();
+            builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.MezuniyyetOdenisSchedulerService>();
             // builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.ChatCleanupBackgroundService>();
             // builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.KreditMailBackgroundService>();
 
@@ -162,6 +163,23 @@ namespace FinNex.UI
                         )
                         BEGIN
                             ALTER TABLE [Senedler] ADD [SenedNomresi] NVARCHAR(MAX) NULL;
+                        END
+                    ");
+                }
+                catch { /* artıq tətbiq olunub */ }
+
+                // Mezuniyyetler.PlanliOdenisTarixi sütununu əlavə etmə
+                // (qabaqcadan ödənişin faktiki bank köçürməsi tarixini saxlayır)
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (
+                            SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                            WHERE TABLE_NAME = 'Mezuniyyetler'
+                              AND COLUMN_NAME = 'PlanliOdenisTarixi'
+                        )
+                        BEGIN
+                            ALTER TABLE [Mezuniyyetler] ADD [PlanliOdenisTarixi] DATETIME2 NULL;
                         END
                     ");
                 }

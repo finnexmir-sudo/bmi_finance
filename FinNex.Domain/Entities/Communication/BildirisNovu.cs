@@ -40,6 +40,10 @@ namespace FinNex.Domain.Entities.Communication
         MaasReddedildi = 28,
 
         // Məzuniyyət ödənişi (mühasibə ay sonu axını)
-        MezuniyyetOdenisGozleyir = 29
+        MezuniyyetOdenisGozleyir = 29,
+
+        // Məzuniyyət ödənişi işçiyə — planlı / icra edildi
+        MezuniyyetOdenisPlanlandi = 30,
+        MezuniyyetOdenisIcraEdildi = 31
     }
 }

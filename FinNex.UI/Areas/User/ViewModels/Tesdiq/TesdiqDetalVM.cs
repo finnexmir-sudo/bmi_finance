@@ -1,3 +1,4 @@
+using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Domain.Entities.HR;
 
 namespace FinNex.UI.Areas.User.ViewModels.Tesdiq
@@ -43,5 +44,9 @@ namespace FinNex.UI.Areas.User.ViewModels.Tesdiq
 
         // Cari təsdiqçi rolu
         public StrukturRolTipi TesdiqciRol { get; set; }
+
+        // Təsdiq ekranı üçün əlavə kontekst — yalnız məzuniyyət üçün
+        public List<MezuniyyetOverlapDto> OverlapMezuniyyetler { get; set; } = new();
+        public List<EvezediciKonfliktDto> EvezediciKonfliktleri { get; set; } = new();
     }
 }

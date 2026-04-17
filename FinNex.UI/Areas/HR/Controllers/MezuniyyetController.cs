@@ -129,10 +129,15 @@ namespace FinNex.UI.Areas.HR.Controllers
             var result = await _mezuniyyetService.IdIleGetirAsync(id);
             if (!result.Success || result.Data == null) return NotFound();
 
+            var overlap = await _mezuniyyetService.GetOverlapMezuniyyetlerAsync(id);
+            var konflikt = await _mezuniyyetService.GetEvezediciKonfliktiAsync(id);
+
             var vm = new HrMezuniyyetDetalVM
             {
                 Mezuniyyet = result.Data,
-                ReturnAction = returnAction
+                ReturnAction = returnAction,
+                OverlapMezuniyyetler = overlap.Success ? overlap.Data!.ToList() : new(),
+                EvezediciKonfliktleri = konflikt.Success ? konflikt.Data!.ToList() : new()
             };
 
             ViewData["Title"] = "Müraciət Detalı";

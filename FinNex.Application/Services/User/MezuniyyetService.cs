@@ -886,4 +886,130 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             return Result<IList<MezuniyyetListDto>>.Fail($"Xəta: {ex.Message}");
         }
     }
+
+    // ════════════════════════════════════════════════════════════
+    // TƏSDİQ EKRANI MƏLUMATLANDIRICILARI
+    // ════════════════════════════════════════════════════════════
+
+    // Verilən müraciətin tarix aralığında həmin vaxt məzuniyyətdə olan
+    // və ya olmağı planlaşdırılmış (təsdiq gözləyən) digər işçiləri gətirir.
+    // Ləğv edilmiş / imtina olunmuş qeydlər nəzərə alınmır.
+    public async Task<Result<IList<MezuniyyetOverlapDto>>> GetOverlapMezuniyyetlerAsync(int mezuniyyetId)
+    {
+        try
+        {
+            var hedef = await _unitOfWork.Repository<Mezuniyyet>()
+                .GetirAsync(x => x.Id == mezuniyyetId, izlemeden: true);
+            if (hedef == null)
+                return Result<IList<MezuniyyetOverlapDto>>.Fail("Müraciət tapılmadı.");
+
+            // Müraciət edənin aktiv şöbəsini öyrən (EyniSobe işarəsi üçün)
+            var hedefTeyinat = await _unitOfWork.Repository<IsciTeyinat>()
+                .GetirAsync(x => x.IsciId == hedef.IsciId && x.Aktivdir, izlemeden: true);
+            int? hedefDepId = hedefTeyinat?.DepartamentId;
+
+            var aktivStatuslar = new[]
+            {
+                MezuniyyetStatus.SobeReisiTesdiqinde,
+                MezuniyyetStatus.RehberTesdiqinde,
+                MezuniyyetStatus.HrTesdiqinde,
+                MezuniyyetStatus.Tesdiqlenib
+            };
+
+            var entities = await _unitOfWork.Repository<Mezuniyyet>()
+                .HamisiniGetirAsync(
+                    predicate: x =>
+                        x.Id != mezuniyyetId &&
+                        x.IsciId != hedef.IsciId &&
+                        !x.Silinib &&
+                        aktivStatuslar.Contains(x.Status) &&
+                        x.BaslamaTarixi <= hedef.BitmeTarixi &&
+                        x.BitmeTarixi >= hedef.BaslamaTarixi,
+                    include: q => q
+                        .Include(m => m.Isci)
+                            .ThenInclude(i => i.IsciTeyinatlari)
+                                .ThenInclude(t => t.Departament)
+                        .Include(m => m.Isci)
+                            .ThenInclude(i => i.IsciTeyinatlari)
+                                .ThenInclude(t => t.Vezife),
+                    izlemeden: true);
+
+            var dtos = entities
+                .OrderBy(x => x.BaslamaTarixi)
+                .Select(m =>
+                {
+                    var teyinat = m.Isci.IsciTeyinatlari.FirstOrDefault(t => t.Aktivdir);
+                    return new MezuniyyetOverlapDto
+                    {
+                        Id = m.Id,
+                        IsciId = m.IsciId,
+                        IsciAdSoyad = m.Isci.TamAd,
+                        SobeAdi = teyinat?.Departament?.Ad ?? "-",
+                        VezifeAdi = teyinat?.Vezife?.Ad ?? "-",
+                        Nov = m.Nov,
+                        Status = m.Status,
+                        BaslamaTarixi = m.BaslamaTarixi,
+                        BitmeTarixi = m.BitmeTarixi,
+                        IsGunlerininSayi = m.IsGunlerininSayi,
+                        EyniSobe = hedefDepId.HasValue
+                                   && teyinat != null
+                                   && teyinat.DepartamentId == hedefDepId.Value
+                    };
+                })
+                .ToList();
+
+            return Result<IList<MezuniyyetOverlapDto>>.Ok(dtos);
+        }
+        catch (Exception ex)
+        {
+            return Result<IList<MezuniyyetOverlapDto>>.Fail($"Xəta: {ex.Message}");
+        }
+    }
+
+    // Müraciət edən işçinin eyni tarix aralığında başqa işçi üçün qəbul
+    // edilmiş əvəzedici olub-olmadığını yoxlayır. Soft-warn — yalnız xəbərdarlıq.
+    public async Task<Result<IList<EvezediciKonfliktDto>>> GetEvezediciKonfliktiAsync(int mezuniyyetId)
+    {
+        try
+        {
+            var hedef = await _unitOfWork.Repository<Mezuniyyet>()
+                .GetirAsync(x => x.Id == mezuniyyetId, izlemeden: true);
+            if (hedef == null)
+                return Result<IList<EvezediciKonfliktDto>>.Fail("Müraciət tapılmadı.");
+
+            // Müraciət edən işçi üçün QƏBUL edilmiş əvəzedici sorğuları
+            var qebullar = await _unitOfWork.Repository<FinNex.Domain.Entities.Communication.EvezediciTesdiq>()
+                .HamisiniGetirAsync(
+                    predicate: x => !x.Silinib
+                                 && x.EvezediciIsciId == hedef.IsciId
+                                 && x.Status == FinNex.Domain.Entities.Communication.EvezediciTesdiqStatus.Qebul
+                                 && x.Mezuniyyet != null
+                                 && !x.Mezuniyyet.Silinib
+                                 && x.MezuniyyetId != mezuniyyetId
+                                 && x.Mezuniyyet.Status != MezuniyyetStatus.ImtinaEdildi
+                                 && x.Mezuniyyet.Status != MezuniyyetStatus.LegvEdildi
+                                 && x.Mezuniyyet.BaslamaTarixi <= hedef.BitmeTarixi
+                                 && x.Mezuniyyet.BitmeTarixi >= hedef.BaslamaTarixi,
+                    include: q => q.Include(e => e.Mezuniyyet).ThenInclude(m => m.Isci),
+                    izlemeden: true);
+
+            var dtos = qebullar
+                .OrderBy(x => x.Mezuniyyet.BaslamaTarixi)
+                .Select(x => new EvezediciKonfliktDto
+                {
+                    MezuniyyetId = x.MezuniyyetId,
+                    MuracietEdenIsciId = x.Mezuniyyet.IsciId,
+                    MuracietEdenIsciAdSoyad = x.Mezuniyyet.Isci?.TamAd ?? $"İşçi #{x.Mezuniyyet.IsciId}",
+                    BaslamaTarixi = x.Mezuniyyet.BaslamaTarixi,
+                    BitmeTarixi = x.Mezuniyyet.BitmeTarixi
+                })
+                .ToList();
+
+            return Result<IList<EvezediciKonfliktDto>>.Ok(dtos);
+        }
+        catch (Exception ex)
+        {
+            return Result<IList<EvezediciKonfliktDto>>.Fail($"Xəta: {ex.Message}");
+        }
+    }
 }

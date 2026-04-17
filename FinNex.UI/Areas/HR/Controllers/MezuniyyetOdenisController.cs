@@ -40,7 +40,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         // ── GET /HR/MezuniyyetOdenis ─────────────────────────────
-        //  Filter: status = gozleyir (default) / odenilib / hamisi
+        //  Filter: gozleyir (default) / planli / odenilib / hamisi
         public async Task<IActionResult> Index(string filter = "gozleyir")
         {
             var query = _unitOfWork.Repository<Mezuniyyet>()
@@ -50,6 +50,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             IQueryable<Mezuniyyet> filtered = filter switch
             {
+                "planli" => query.Where(x => x.OdenisStatus == MezuniyyetOdenisStatus.PlanliOdenis),
                 "odenilib" => query.Where(x => x.OdenisStatus == MezuniyyetOdenisStatus.Odenilib),
                 "hamisi" => query,
                 _ => query.Where(x => x.OdenisStatus == MezuniyyetOdenisStatus.Gozleyir)
@@ -65,6 +66,10 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .CountAsync(x => !x.Silinib
                     && x.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis
                     && x.OdenisStatus == MezuniyyetOdenisStatus.Gozleyir);
+            ViewBag.PlanliSay = await _unitOfWork.Repository<Mezuniyyet>().Query()
+                .CountAsync(x => !x.Silinib
+                    && x.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis
+                    && x.OdenisStatus == MezuniyyetOdenisStatus.PlanliOdenis);
 
             return View(list);
         }
@@ -142,10 +147,15 @@ namespace FinNex.UI.Areas.HR.Controllers
             return View(hesab);
         }
 
-        // ── POST /HR/MezuniyyetOdenis/Odenildi ────────────────────
+        // ── POST /HR/MezuniyyetOdenis/Planla ─────────────────────
+        // Mühasib məbləği təsdiqləyir. Faktiki bank köçürməsi məzuniyyətdən bir
+        // iş günü əvvəl (PlanliOdenisTarixi) icra olunur. Həmin tarixdə fon
+        // xidməti statusu avtomatik Odenilib-ə çevirir və işçiyə ödəniş
+        // bildirişi göndərir. Müstəsna hallarda "IcraEt" düyməsi ilə bu tarixdən
+        // asılı olmayaraq manual olaraq icra etmək mümkündür.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Odenildi(int id, decimal? redakteEdilmisMebleg)
+        public async Task<IActionResult> Planla(int id, decimal? redakteEdilmisMebleg)
         {
             var mez = await _unitOfWork.Repository<Mezuniyyet>()
                 .GetirAsync(x => x.Id == id);
@@ -162,14 +172,12 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            if (mez.OdenisStatus == MezuniyyetOdenisStatus.Odenilib)
+            if (mez.OdenisStatus != MezuniyyetOdenisStatus.Gozleyir)
             {
-                TempData["Error"] = "Bu müraciət artıq ödənilmiş kimi qeyd olunub.";
+                TempData["Error"] = "Yalnız gözləmədə olan ödənişi planlaşdırmaq olar.";
                 return RedirectToAction(nameof(Detail), new { id });
             }
 
-            // Mühasib məbləği düzəldə bilər. Əgər verilməyibsə, HR təsdiq anında
-            // hesablanmış məbləği istifadə edirik.
             decimal? yekunMebleg = redakteEdilmisMebleg.HasValue && redakteEdilmisMebleg.Value > 0
                 ? Math.Round(redakteEdilmisMebleg.Value, 2)
                 : mez.OdenenMebleg;
@@ -183,32 +191,120 @@ namespace FinNex.UI.Areas.HR.Controllers
             var appUser = await _userManager.GetUserAsync(User);
             var muhasibIsciId = appUser?.IsciId;
 
+            // Planlı ödəniş tarixi — məzuniyyətdən bir iş günü əvvəl
+            var planliTarix = await EvvelkiIsGunuAsync(mez.BaslamaTarixi);
+
             mez.OdenenMebleg = yekunMebleg;
-            mez.OdenisStatus = MezuniyyetOdenisStatus.Odenilib;
-            mez.OdenilmeTarixi = DateTime.Now;
+            mez.OdenisStatus = MezuniyyetOdenisStatus.PlanliOdenis;
+            mez.PlanliOdenisTarixi = planliTarix;
             mez.OdeyenMuhasibId = muhasibIsciId;
             mez.YenilenmeTarixi = DateTime.Now;
 
             await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(mez);
             await _unitOfWork.YaddaSaxlaAsync();
 
-            // İşçiyə bildiriş göndər
             try
             {
                 await _bildirisService.YaratAsync(
                     isciId: mez.IsciId,
-                    nov: BildirisNovu.MezuniyyetTesdiq,
-                    bashliq: "Məzuniyyət ödənişi edildi",
-                    metn: $"{mez.BaslamaTarixi:dd.MM.yyyy}–{mez.BitmeTarixi:dd.MM.yyyy} məzuniyyət ödənişiniz " +
-                          $"({yekunMebleg:N2} ₼) Mühasibiyyat tərəfindən həyata keçirildi.",
+                    nov: BildirisNovu.MezuniyyetOdenisPlanlandi,
+                    bashliq: "Məzuniyyət ödənişi planlaşdı",
+                    metn: $"{mez.BaslamaTarixi:dd.MM.yyyy}–{mez.BitmeTarixi:dd.MM.yyyy} məzuniyyət " +
+                          $"ödənişiniz ({yekunMebleg:N2} ₼) {planliTarix:dd.MM.yyyy} tarixində " +
+                          "kartınıza köçürüləcək.",
                     redirectUrl: Url.Action("Detail", "Mezuniyyet", new { area = "User", id = mez.Id }),
                     mezuniyyetId: mez.Id
                 );
             }
             catch { /* bildiriş xətası əsas işləməni pozmasın */ }
 
-            TempData["Success"] = $"Məzuniyyət ödənişi təsdiqləndi ({yekunMebleg:N2} ₼).";
+            TempData["Success"] = $"Ödəniş planlaşdı — {planliTarix:dd.MM.yyyy} ({yekunMebleg:N2} ₼).";
             return RedirectToAction(nameof(Index));
+        }
+
+        // ── POST /HR/MezuniyyetOdenis/IcraEt ──────────────────────
+        // Planlı tarixdən asılı olmayaraq ödənişi dərhal "Icra edildi"
+        // kimi işarələ (məsələn, bank köçürməsi daha erkən edildi).
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> IcraEt(int id)
+        {
+            var mez = await _unitOfWork.Repository<Mezuniyyet>()
+                .GetirAsync(x => x.Id == id);
+
+            if (mez == null)
+            {
+                TempData["Error"] = "Müraciət tapılmadı.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (mez.OdenisTipi != MezuniyyetOdenisTipi.QabaqcadanOdenis)
+            {
+                TempData["Error"] = "Bu müraciət qabaqcadan ödənişə təyin olunmayıb.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (mez.OdenisStatus != MezuniyyetOdenisStatus.PlanliOdenis
+                && mez.OdenisStatus != MezuniyyetOdenisStatus.Gozleyir)
+            {
+                TempData["Error"] = "Bu müraciət artıq icra edilib.";
+                return RedirectToAction(nameof(Detail), new { id });
+            }
+
+            if (mez.OdenenMebleg == null || mez.OdenenMebleg <= 0)
+            {
+                TempData["Error"] = "Ödəniş məbləği təsdiqlənməyib. Əvvəlcə 'Planla' addımını tamamlayın.";
+                return RedirectToAction(nameof(Detail), new { id });
+            }
+
+            var appUser = await _userManager.GetUserAsync(User);
+            var muhasibIsciId = appUser?.IsciId;
+
+            mez.OdenisStatus = MezuniyyetOdenisStatus.Odenilib;
+            mez.OdenilmeTarixi = DateTime.Now;
+            mez.OdeyenMuhasibId = muhasibIsciId ?? mez.OdeyenMuhasibId;
+            mez.YenilenmeTarixi = DateTime.Now;
+
+            await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(mez);
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            try
+            {
+                await _bildirisService.YaratAsync(
+                    isciId: mez.IsciId,
+                    nov: BildirisNovu.MezuniyyetOdenisIcraEdildi,
+                    bashliq: "Məzuniyyət ödənişi icra edildi",
+                    metn: $"{mez.BaslamaTarixi:dd.MM.yyyy}–{mez.BitmeTarixi:dd.MM.yyyy} məzuniyyət " +
+                          $"ödənişiniz ({mez.OdenenMebleg:N2} ₼) kartınıza köçürüldü.",
+                    redirectUrl: Url.Action("Detail", "Mezuniyyet", new { area = "User", id = mez.Id }),
+                    mezuniyyetId: mez.Id
+                );
+            }
+            catch { /* bildiriş xətası əsas işləməni pozmasın */ }
+
+            TempData["Success"] = $"Ödəniş icra edildi ({mez.OdenenMebleg:N2} ₼).";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // Məzuniyyətin başlanğıcından bir iş günü əvvəlki tarix — həftəsonu və
+        // bayram günlərini atlayır.
+        private async Task<DateTime> EvvelkiIsGunuAsync(DateTime baslama)
+        {
+            var gun = baslama.Date.AddDays(-1);
+
+            // Məzuniyyət başlayan aydakı (və əvvəlki ay sərhədində) bayramları
+            var pencereBas = gun.AddDays(-14);
+            var bayramlar = await _unitOfWork.Repository<BayramGunu>()
+                .HamisiniGetirAsync(x => x.Tarix >= pencereBas && x.Tarix <= baslama, izlemeden: true);
+
+            while (gun.DayOfWeek == DayOfWeek.Saturday
+                || gun.DayOfWeek == DayOfWeek.Sunday
+                || bayramlar.Any(b => b.Tarix.Date == gun.Date))
+            {
+                gun = gun.AddDays(-1);
+            }
+
+            return gun;
         }
     }
 }
