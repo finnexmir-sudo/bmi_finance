@@ -70,6 +70,12 @@
                 Departments
             </a>
 
+            <a class="nav-link @(currentController == "StrukturRolu" ? "active" : "")"
+               asp-area="Admin" asp-controller="StrukturRolu" asp-action="Index">
+                <i class="bi bi-person-badge-fill"></i>
+                Struktur Rolları
+            </a>
+
             <a class="nav-link @(currentController == "UserPermissions" ? "active" : "")"
                asp-area="Admin" asp-controller="UserPermissions" asp-action="Index">
                 <i class="bi bi-shield-lock-fill"></i>
