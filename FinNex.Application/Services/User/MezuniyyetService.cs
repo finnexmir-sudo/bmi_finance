@@ -342,8 +342,12 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         {
             await NotifyIsciFinalApproveAsync(m);
 
-            // Ödəniş ay sonu seçilibsə Mühasibə də xəbər ver — maaş hesablamasında nəzərə alsın
-            if (m.OdenisTipi == MezuniyyetOdenisTipi.AySonuOdenis)
+            // Ödəniş tipinə görə Mühasibi məlumatlandır.
+            if (m.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis)
+            {
+                await NotifyMuhasibForAdvancePaymentAsync(m);
+            }
+            else if (m.OdenisTipi == MezuniyyetOdenisTipi.AySonuOdenis)
             {
                 await NotifyMuhasibForMonthEndPaymentAsync(m);
             }
@@ -472,6 +476,20 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             BildirisNovu.MezuniyyetOdenisGozleyir,
             "Məzuniyyət ödənişi — ay sonu maaşla",
             $"{isciAd} üçün {dovr} məzuniyyəti təsdiqlənib. Ödəniş həmin ayın maaşına əlavə olunmalıdır.",
+            redirectUrl: $"/HR/MezuniyyetOdenis/Detail/{m.Id}",
+            mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
+    }
+
+    private async Task NotifyMuhasibForAdvancePaymentAsync(Mezuniyyet m)
+    {
+        var isciAd = await GetIsciAdAsync(m.IsciId);
+        var dovr = $"{m.BaslamaTarixi:dd.MM.yyyy} – {m.BitmeTarixi:dd.MM.yyyy}";
+        var mebleg = m.OdenenMebleg.HasValue ? $" (ilkin hesablama: {m.OdenenMebleg:N2} ₼)" : "";
+        await _bildirisRouter.NotifyRolesAsync(
+            new[] { RoleNames.Muhasib, RoleNames.Admin },
+            BildirisNovu.TesdiqSorgusu,
+            "Məzuniyyət ödənişi — qabaqcadan",
+            $"{isciAd} üçün {dovr} məzuniyyət ödənişi gözləyir{mebleg}.",
             redirectUrl: $"/HR/MezuniyyetOdenis/Detail/{m.Id}",
             mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
     }
@@ -904,7 +922,9 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
     // Verilən müraciətin tarix aralığında həmin vaxt məzuniyyətdə olan
     // və ya olmağı planlaşdırılmış (təsdiq gözləyən) digər işçiləri gətirir.
     // Ləğv edilmiş / imtina olunmuş qeydlər nəzərə alınmır.
-    public async Task<Result<IList<MezuniyyetOverlapDto>>> GetOverlapMezuniyyetlerAsync(int mezuniyyetId)
+    // viewerRol = SobeReisi olduqda yalnız eyni şöbənin qeydləri qayıdır
+    // (Şöbə Rəisi başqa şöbənin iş yükünə cavabdeh deyil).
+    public async Task<Result<IList<MezuniyyetOverlapDto>>> GetOverlapMezuniyyetlerAsync(int mezuniyyetId, StrukturRolTipi? viewerRol = null)
     {
         try
         {
@@ -913,10 +933,11 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             if (hedef == null)
                 return Result<IList<MezuniyyetOverlapDto>>.Fail("Müraciət tapılmadı.");
 
-            // Müraciət edənin aktiv şöbəsini öyrən (EyniSobe işarəsi üçün)
+            // Müraciət edənin aktiv şöbəsini öyrən (EyniSobe işarəsi + SobeReisi filtri üçün)
             var hedefTeyinat = await _unitOfWork.Repository<IsciTeyinat>()
                 .GetirAsync(x => x.IsciId == hedef.IsciId && x.Aktivdir, izlemeden: true);
             int? hedefDepId = hedefTeyinat?.DepartamentId;
+            bool sobeReisiFiltr = viewerRol == StrukturRolTipi.SobeReisi && hedefDepId.HasValue;
 
             var aktivStatuslar = new[]
             {
@@ -934,7 +955,9 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                         !x.Silinib &&
                         aktivStatuslar.Contains(x.Status) &&
                         x.BaslamaTarixi <= hedef.BitmeTarixi &&
-                        x.BitmeTarixi >= hedef.BaslamaTarixi,
+                        x.BitmeTarixi >= hedef.BaslamaTarixi &&
+                        (!sobeReisiFiltr || x.Isci.IsciTeyinatlari
+                            .Any(t => t.Aktivdir && t.DepartamentId == hedefDepId)),
                     include: q => q
                         .Include(m => m.Isci)
                             .ThenInclude(i => i.IsciTeyinatlari)
