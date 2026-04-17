@@ -1,4 +1,4 @@
-﻿// FinNex.Domain.Entities.Communication/BildirisNovu.cs
+// FinNex.Domain.Entities.Communication/BildirisNovu.cs
 // FinNex.Domain.Entities.Communication/Bildiris.cs
 namespace FinNex.Domain.Entities.Communication
 {
@@ -22,6 +22,24 @@ namespace FinNex.Domain.Entities.Communication
         YeniGorush = 16,
         GorushXatirlama = 17,
         GorushLegv = 18,
-        MuqavileYenilenme = 19
+        MuqavileYenilenme = 19,
+
+        // Avans iş axını
+        AvansMuraciet = 20,
+        AvansTesdiq = 21,
+        AvansImtina = 22,
+
+        // Xərc iş axını
+        XercMuraciet = 23,
+        XercTesdiq = 24,
+        XercImtina = 25,
+        XercOdenis = 26,
+
+        // Maaş iş axını (işçiyə bildiriş)
+        MaasOdenildi = 27,
+        MaasReddedildi = 28,
+
+        // Məzuniyyət ödənişi (mühasibə ay sonu axını)
+        MezuniyyetOdenisGozleyir = 29
     }
 }

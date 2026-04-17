@@ -23,6 +23,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IMaasHesablamaService _hesablamaService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IBildirisService _bildirisService;
+        private readonly IBildirisRouter _bildirisRouter;
         private readonly UserManager<AppUser> _userManager;
 
         public MaasController(
@@ -30,12 +31,14 @@ namespace FinNex.UI.Areas.HR.Controllers
             IMaasHesablamaService hesablamaService,
             IUnitOfWork unitOfWork,
             IBildirisService bildirisService,
+            IBildirisRouter bildirisRouter,
             UserManager<AppUser> userManager)
         {
             _maasService = maasService;
             _hesablamaService = hesablamaService;
             _unitOfWork = unitOfWork;
             _bildirisService = bildirisService;
+            _bildirisRouter = bildirisRouter;
             _userManager = userManager;
         }
 
@@ -465,11 +468,30 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return RedirectToAction(nameof(Index), new { il, ay });
             }
 
+            var ayAdlar = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+                                  "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+            var dovr = $"{ayAdlar[ay]} {il}";
+            var isciRedirect = Url.Action("Index", "Maas", new { area = "User" });
+
             int ugurlu = 0, xeta = 0;
             foreach (var m in maaslar)
             {
                 var r = await _maasService.StatusDeyisAsync(m.Id, MaasStatus.Odenildi);
-                if (r.Success) ugurlu++;
+                if (r.Success)
+                {
+                    ugurlu++;
+                    // İşçiyə ödəniş bildirişi
+                    try
+                    {
+                        await _bildirisService.YaratAsync(
+                            isciId: m.IsciId,
+                            nov: BildirisNovu.MaasOdenildi,
+                            bashliq: $"Əmək haqqı ödənildi — {dovr}",
+                            metn: $"{dovr} üçün əmək haqqınız ({m.NetMebleg:N2} ₼) ödənildi.",
+                            redirectUrl: isciRedirect);
+                    }
+                    catch { /* bildiriş əsas əməliyyatı pozmasın */ }
+                }
                 else xeta++;
             }
 
@@ -691,8 +713,60 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             var r = await _maasService.StatusDeyisAsync(id, yeniStatus);
+
+            // Fərdi status dəyişmə — aidiyyəti rollara/işçiyə bildiriş
+            if (r.Success)
+            {
+                await NotifyForStatusChangeAsync(id, yeniStatus, il, ay);
+            }
+
             TempData[r.Success ? "Success" : "Error"] = r.Message;
             return RedirectToAction(nameof(Index), new { il, ay });
+        }
+
+        private async Task NotifyForStatusChangeAsync(int maasId, MaasStatus yeniStatus, int il, int ay)
+        {
+            try
+            {
+                var maas = await _unitOfWork.Repository<Maas>()
+                    .GetirAsync(x => x.Id == maasId, izlemeden: true);
+                if (maas == null) return;
+
+                var ayAdlar = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+                                      "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+                var dovr = $"{ayAdlar[ay]} {il}";
+
+                switch (yeniStatus)
+                {
+                    case MaasStatus.Tesdiqlendi:
+                        await _bildirisRouter.NotifyRolesAsync(
+                            new[] { RoleNames.Muhasib, RoleNames.Admin },
+                            BildirisNovu.TesdiqSorgusu,
+                            $"Maaş təsdiqləndi — {dovr}",
+                            $"{dovr} dövrü üçün maaş təsdiqləndi, ödəniş gözləyir.",
+                            redirectUrl: Url.Action("Index", "Maas", new { area = "HR", il, ay }));
+                        break;
+
+                    case MaasStatus.Odenildi:
+                        await _bildirisService.YaratAsync(
+                            isciId: maas.IsciId,
+                            nov: BildirisNovu.MaasOdenildi,
+                            bashliq: $"Əmək haqqı ödənildi — {dovr}",
+                            metn: $"{dovr} üçün əmək haqqınız ({maas.NetMebleg:N2} ₼) ödənildi.",
+                            redirectUrl: Url.Action("Index", "Maas", new { area = "User" }));
+                        break;
+
+                    case MaasStatus.LegvEdildi:
+                        await _bildirisRouter.NotifyIsciAsync(
+                            maas.IsciId,
+                            BildirisNovu.MaasReddedildi,
+                            $"Maaş ləğv edildi — {dovr}",
+                            $"{dovr} dövrü üçün maaş qeydi ləğv edildi. Ətraflı məlumat üçün HR ilə əlaqə saxlayın.",
+                            redirectUrl: Url.Action("Index", "Maas", new { area = "User" }));
+                        break;
+                }
+            }
+            catch { /* bildiriş xətası əsas əməliyyatı pozmasın */ }
         }
 
         // ── POST /HR/Maas/Sil ────────────────────────────────────

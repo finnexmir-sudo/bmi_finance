@@ -1,4 +1,6 @@
+using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -13,10 +15,12 @@ namespace FinNex.UI.Areas.User.Controllers;
 public class XercController : Controller
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IBildirisRouter _bildirisRouter;
 
-    public XercController(IUnitOfWork unitOfWork)
+    public XercController(IUnitOfWork unitOfWork, IBildirisRouter bildirisRouter)
     {
         _unitOfWork = unitOfWork;
+        _bildirisRouter = bildirisRouter;
     }
 
     // ── GET /User/Xerc ──────────────────────────────────────
@@ -79,6 +83,27 @@ public class XercController : Controller
 
         await _unitOfWork.Repository<Xerc>().YaratAsync(xerc);
         await _unitOfWork.YaddaSaxlaAsync();
+
+        // Bildiriş — işçinin aktiv şöbəsində Şöbə Rəisi, yoxdursa HR/Rəhbər/Admin
+        var teyinat = await _unitOfWork.Repository<IsciTeyinat>()
+            .GetirAsync(x => x.IsciId == isci.Id && x.Aktivdir, izlemeden: true);
+
+        var bashliq = "Yeni xərc müraciəti";
+        var metn = $"{isci.TamAd} {xerc.Mebleg:N2} ₼ xərc müraciəti göndərdi: {xerc.Tesvir}";
+        var redirectUrl = Url.Action("Index", "Xerc", new { area = "HR" });
+
+        if (teyinat != null)
+        {
+            await _bildirisRouter.NotifyDepartmentRoleAsync(
+                teyinat.DepartamentId, StrukturRolTipi.SobeReisi,
+                BildirisNovu.XercMuraciet, bashliq, metn,
+                redirectUrl: redirectUrl, exceptIsciId: isci.Id);
+        }
+
+        await _bildirisRouter.NotifyRolesAsync(
+            new[] { RoleNames.HR, RoleNames.Rehber, RoleNames.Admin },
+            BildirisNovu.XercMuraciet, bashliq, metn,
+            redirectUrl: redirectUrl, exceptIsciId: isci.Id);
 
         TempData["Success"] = "Xerc muracietiniz ugurla gonderildi.";
         return RedirectToAction("Index");
