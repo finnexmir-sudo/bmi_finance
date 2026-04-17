@@ -375,6 +375,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     await _bildirisRouter.NotifyDepartmentRoleAsync(
                         departamentId.Value, StrukturRolTipi.SobeReisi,
                         BildirisNovu.MezuniyyetMuraciet, bashliq, metn,
+                        redirectUrl: $"/User/Tesdiq/MezuniyyetDetal/{m.Id}?rol=SobeReisi",
                         mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
                 }
                 break;
@@ -383,6 +384,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 await _bildirisRouter.NotifyRolesAsync(
                     new[] { RoleNames.Rehber, RoleNames.Admin },
                     BildirisNovu.MezuniyyetMuraciet, bashliq, metn,
+                    redirectUrl: $"/User/Tesdiq/MezuniyyetDetal/{m.Id}?rol=Rehber",
                     mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
                 break;
 
@@ -390,6 +392,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 await _bildirisRouter.NotifyRolesAsync(
                     new[] { RoleNames.HR, RoleNames.Admin },
                     BildirisNovu.MezuniyyetMuraciet, bashliq, metn,
+                    redirectUrl: $"/User/Tesdiq/MezuniyyetDetal/{m.Id}?rol=Hr",
                     mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
                 break;
         }
@@ -404,6 +407,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             BildirisNovu.MezuniyyetMuraciet,
             "Məzuniyyət müraciəti — Rəhbər təsdiqi gözləyir",
             $"{isciAd} ({dovr}) müraciəti şöbə rəisi tərəfindən təsdiqlənib, sizin təsdiqinizi gözləyir.",
+            redirectUrl: $"/User/Tesdiq/MezuniyyetDetal/{m.Id}?rol=Rehber",
             mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
     }
 
@@ -416,12 +420,14 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             BildirisNovu.MezuniyyetMuraciet,
             "Məzuniyyət müraciəti — HR təsdiqi gözləyir",
             $"{isciAd} ({dovr}) müraciəti rəhbər tərəfindən təsdiqlənib, son təsdiqi gözləyir.",
+            redirectUrl: $"/User/Tesdiq/MezuniyyetDetal/{m.Id}?rol=Hr",
             mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
     }
 
     private async Task NotifyIsciProgressAsync(Mezuniyyet m, string mərhələ, bool tesdiq, string? qeyd)
     {
         var dovr = $"{m.BaslamaTarixi:dd.MM.yyyy} – {m.BitmeTarixi:dd.MM.yyyy}";
+        var redirectUrl = $"/User/Mezuniyyet/Detail/{m.Id}";
         if (tesdiq)
         {
             await _bildirisRouter.NotifyIsciAsync(
@@ -429,6 +435,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 BildirisNovu.MezuniyyetTesdiq,
                 $"Məzuniyyət — {mərhələ} təsdiqi alındı",
                 $"{dovr} məzuniyyət müraciətiniz {mərhələ} tərəfindən təsdiqləndi.",
+                redirectUrl: redirectUrl,
                 mezuniyyetId: m.Id);
         }
         else
@@ -439,6 +446,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 BildirisNovu.MezuniyyetImtina,
                 $"Məzuniyyət — {mərhələ} imtinası",
                 $"{dovr} məzuniyyət müraciətiniz {mərhələ} tərəfindən rədd edildi.{sebeb}",
+                redirectUrl: redirectUrl,
                 mezuniyyetId: m.Id);
         }
     }
@@ -451,6 +459,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             BildirisNovu.MezuniyyetTesdiq,
             "Məzuniyyət — yekun təsdiq",
             $"{dovr} məzuniyyət müraciətiniz HR tərəfindən rəsmiləşdirildi.",
+            redirectUrl: $"/User/Mezuniyyet/Detail/{m.Id}",
             mezuniyyetId: m.Id);
     }
 
@@ -463,6 +472,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             BildirisNovu.MezuniyyetOdenisGozleyir,
             "Məzuniyyət ödənişi — ay sonu maaşla",
             $"{isciAd} üçün {dovr} məzuniyyəti təsdiqlənib. Ödəniş həmin ayın maaşına əlavə olunmalıdır.",
+            redirectUrl: $"/HR/MezuniyyetOdenis/Detail/{m.Id}",
             mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
     }
 

@@ -139,6 +139,7 @@ namespace FinNex.Application.Services.Communication
                         await _bildirisRouter.NotifyDepartmentRoleAsync(
                             teyinat.DepartamentId, StrukturRolTipi.SobeReisi,
                             BildirisNovu.MezuniyyetMuraciet, bashliq, metn,
+                            redirectUrl: $"/User/Tesdiq/MezuniyyetDetal/{m.Id}?rol=SobeReisi",
                             mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
                     }
                     break;
@@ -147,6 +148,7 @@ namespace FinNex.Application.Services.Communication
                     await _bildirisRouter.NotifyRolesAsync(
                         new[] { RoleNames.Rehber, RoleNames.Admin },
                         BildirisNovu.MezuniyyetMuraciet, bashliq, metn,
+                        redirectUrl: $"/User/Tesdiq/MezuniyyetDetal/{m.Id}?rol=Rehber",
                         mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
                     break;
 
@@ -154,6 +156,7 @@ namespace FinNex.Application.Services.Communication
                     await _bildirisRouter.NotifyRolesAsync(
                         new[] { RoleNames.HR, RoleNames.Admin },
                         BildirisNovu.MezuniyyetMuraciet, bashliq, metn,
+                        redirectUrl: $"/User/Tesdiq/MezuniyyetDetal/{m.Id}?rol=Hr",
                         mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
                     break;
             }
