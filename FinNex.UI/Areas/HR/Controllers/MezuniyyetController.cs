@@ -198,60 +198,11 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             var result = await _mezuniyyetService.HrTesdiqAsync(id, status, qeyd, isciId.Value);
 
-            // HR müsbət qərar verdi VƏ qabaqcadan ödəniş seçilibsə —
-            // Mühasibə “ödəniş gözləyir” bildirişi göndər.
-            if (result.Success && status)
-            {
-                await NotifyMuhasibIfAdvanceAsync(id);
-            }
+            // Mühasib bildirişi artıq MezuniyyetService.HrTesdiqAsync daxilindədir
+            // (həm qabaqcadan, həm ay-sonu üçün). Burada təkrar göndərilmir.
 
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Hr));
-        }
-
-        private async Task NotifyMuhasibIfAdvanceAsync(int mezuniyyetId)
-        {
-            try
-            {
-                var m = await _unitOfWork.Repository<Mezuniyyet>()
-                    .GetirAsync(x => x.Id == mezuniyyetId);
-                if (m == null || m.OdenisTipi != MezuniyyetOdenisTipi.QabaqcadanOdenis) return;
-
-                var isci = await _unitOfWork.Repository<Isci>()
-                    .GetirAsync(x => x.Id == m.IsciId);
-                var isciAd = isci?.TamAd ?? $"İşçi #{m.IsciId}";
-
-                var redirectUrl = Url.Action("Detail", "MezuniyyetOdenis",
-                    new { area = "HR", id = mezuniyyetId });
-
-                var muhasibler = await _userManager.GetUsersInRoleAsync(RoleNames.Muhasib);
-                var adminler = await _userManager.GetUsersInRoleAsync(RoleNames.Admin);
-                var alicilar = muhasibler.Concat(adminler)
-                    .Where(u => u.IsciId.HasValue)
-                    .GroupBy(u => u.IsciId!.Value)
-                    .Select(g => g.First())
-                    .ToList();
-
-                var bashliq = "Məzuniyyət ödənişi — qabaqcadan";
-                var metn = $"{isciAd} üçün {m.BaslamaTarixi:dd.MM.yyyy}–{m.BitmeTarixi:dd.MM.yyyy} " +
-                           $"məzuniyyət ödənişi gözləyir (ilkin hesablama: {m.OdenenMebleg:N2} ₼).";
-
-                foreach (var u in alicilar)
-                {
-                    await _bildirisService.YaratAsync(
-                        isciId: u.IsciId!.Value,
-                        nov: BildirisNovu.TesdiqSorgusu,
-                        bashliq: bashliq,
-                        metn: metn,
-                        redirectUrl: redirectUrl,
-                        mezuniyyetId: mezuniyyetId
-                    );
-                }
-            }
-            catch
-            {
-                // Bildiriş xətası əsas işləməni pozmasın.
-            }
         }
 
         // ══════════════════════════════════════════════════════

@@ -155,7 +155,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // asılı olmayaraq manual olaraq icra etmək mümkündür.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Planla(int id, decimal? redakteEdilmisMebleg)
+        public async Task<IActionResult> Planla(int id, string? redakteEdilmisMebleg)
         {
             var mez = await _unitOfWork.Repository<Mezuniyyet>()
                 .GetirAsync(x => x.Id == id);
@@ -178,9 +178,29 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return RedirectToAction(nameof(Detail), new { id });
             }
 
-            decimal? yekunMebleg = redakteEdilmisMebleg.HasValue && redakteEdilmisMebleg.Value > 0
-                ? Math.Round(redakteEdilmisMebleg.Value, 2)
-                : mez.OdenenMebleg;
+            // HTML number input həmişə "456.52" formatında POST edir, amma Azərbaycan
+            // culture-ı vergülü decimal separator kimi gözləyir → səhv parse olunub
+            // rəqəm 100 qat böyüyürdü. InvariantCulture ilə (həm dot həm comma qəbul)
+            // manual parse edirik.
+            decimal? parsedMebleg = null;
+            if (!string.IsNullOrWhiteSpace(redakteEdilmisMebleg))
+            {
+                var normalized = redakteEdilmisMebleg.Trim().Replace(',', '.');
+                if (decimal.TryParse(normalized,
+                        System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out var parsed) && parsed > 0)
+                {
+                    parsedMebleg = Math.Round(parsed, 2);
+                }
+                else
+                {
+                    TempData["Error"] = "Ödəniş məbləği düzgün deyil.";
+                    return RedirectToAction(nameof(Detail), new { id });
+                }
+            }
+
+            decimal? yekunMebleg = parsedMebleg ?? mez.OdenenMebleg;
 
             if (yekunMebleg == null || yekunMebleg <= 0)
             {
