@@ -4,6 +4,8 @@
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     var mez = (FinNex.Domain.Entities.HR.Mezuniyyet)ViewBag.Mezuniyyet;
     bool odenilib = mez.OdenisStatus == FinNex.Domain.Entities.HR.MezuniyyetOdenisStatus.Odenilib;
+    bool planli = mez.OdenisStatus == FinNex.Domain.Entities.HR.MezuniyyetOdenisStatus.PlanliOdenis;
+    bool gozleyir = mez.OdenisStatus == FinNex.Domain.Entities.HR.MezuniyyetOdenisStatus.Gozleyir;
 }
 
 @if (TempData["Success"] != null)
@@ -38,6 +40,16 @@
                 @if (mez.OdenilmeTarixi.HasValue)
                 {
                     <small>(@mez.OdenilmeTarixi.Value.ToString("dd.MM.yyyy HH:mm"))</small>
+                }
+            </span>
+        }
+        else if (planli)
+        {
+            <span class="mod-status mod-status--planli">
+                <i class="bi bi-calendar-event"></i> Planlı ödəniş
+                @if (mez.PlanliOdenisTarixi.HasValue)
+                {
+                    <small>(@mez.PlanliOdenisTarixi.Value.ToString("dd.MM.yyyy"))</small>
                 }
             </span>
         }
@@ -266,9 +278,36 @@
                     <strong>@(mez.OdeyenMuhasib?.TamAd ?? "—")</strong>
                 </div>
             }
+            else if (planli)
+            {
+                <div class="mod-kv">
+                    <span>Planlı məbləğ</span>
+                    <strong class="mod-gold">@((mez.OdenenMebleg ?? 0).ToString("N2")) ₼</strong>
+                    <span>Planlı ödəniş tarixi</span>
+                    <strong>@(mez.PlanliOdenisTarixi?.ToString("dd.MM.yyyy"))</strong>
+                    <span>Təsdiqləyən Mühasib</span>
+                    <strong>@(mez.OdeyenMuhasib?.TamAd ?? "—")</strong>
+                </div>
+                <div class="mod-warn" style="margin-top:10px;">
+                    <i class="bi bi-info-circle"></i>
+                    Ödəniş planlı tarixdə avtomatik icra ediləcək. Bank köçürməsini
+                    daha erkən icra etmisinizsə, aşağıdakı düymə ilə dərhal
+                    <b>İcra edildi</b> işarələyə bilərsiniz.
+                </div>
+                <form asp-action="IcraEt" method="post" class="mod-odenis-form" style="margin-top:10px;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@mez.Id" />
+                    <div class="mod-form-actions">
+                        <a asp-action="Index" class="mod-btn mod-btn--outline">Geri</a>
+                        <button type="submit" class="mod-btn mod-btn--primary">
+                            <i class="bi bi-check2-circle"></i> İndi icra edildi
+                        </button>
+                    </div>
+                </form>
+            }
             else
             {
-                <form asp-action="Odenildi" method="post" class="mod-odenis-form">
+                <form asp-action="Planla" method="post" class="mod-odenis-form">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@mez.Id" />
                     <div class="mod-form-row">
@@ -284,10 +323,15 @@
                             Səhv varsa burada düzəldə bilərsiniz.
                         </small>
                     </div>
+                    <div class="mod-warn" style="margin-bottom:10px;">
+                        <i class="bi bi-info-circle"></i>
+                        Ödəniş məzuniyyətin başladığı gündən <b>bir iş günü əvvəl</b>
+                        avtomatik icra ediləcək. İşçiyə planlı tarix bildirişi göndəriləcək.
+                    </div>
                     <div class="mod-form-actions">
                         <a asp-action="Index" class="mod-btn mod-btn--outline">Ləğv et</a>
                         <button type="submit" class="mod-btn mod-btn--primary">
-                            <i class="bi bi-check2-circle"></i> Ödənildi kimi qeyd et
+                            <i class="bi bi-calendar-check"></i> Ödənişi planlaşdır
                         </button>
                     </div>
                 </form>
@@ -320,6 +364,7 @@
     .mod-status small { font-weight: 500; opacity: 0.85; }
     .mod-status--warn { background: #fef3c7; color: #92400e; }
     .mod-status--ok { background: #d1fae5; color: #065f46; }
+    .mod-status--planli { background: #dbeafe; color: #1e40af; }
 
     .mod-grid { display: flex; flex-direction: column; gap: 14px; }
     .mod-card {

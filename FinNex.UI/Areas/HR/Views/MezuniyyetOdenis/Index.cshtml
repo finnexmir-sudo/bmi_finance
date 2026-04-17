@@ -4,6 +4,7 @@
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     var filter = (string)(ViewBag.Filter ?? "gozleyir");
     var gozleyirSay = (int)(ViewBag.GozleyirSay ?? 0);
+    var planliSay = (int)(ViewBag.PlanliSay ?? 0);
 }
 
 @if (TempData["Success"] != null)
@@ -31,6 +32,12 @@
             <span class="mo-pill mo-pill--warn">
                 <i class="bi bi-hourglass-split"></i> @gozleyirSay gözləyən
             </span>
+            @if (planliSay > 0)
+            {
+                <span class="mo-pill mo-pill--planli" style="margin-left:6px;">
+                    <i class="bi bi-calendar-event"></i> @planliSay planlı
+                </span>
+            }
         </div>
     </div>
 
@@ -38,6 +45,10 @@
         <a asp-action="Index" asp-route-filter="gozleyir"
            class="mo-filter @(filter == "gozleyir" ? "mo-filter--active" : "")">
             Gözləyən
+        </a>
+        <a asp-action="Index" asp-route-filter="planli"
+           class="mo-filter @(filter == "planli" ? "mo-filter--active" : "")">
+            Planlı
         </a>
         <a asp-action="Index" asp-route-filter="odenilib"
            class="mo-filter @(filter == "odenilib" ? "mo-filter--active" : "")">
@@ -92,6 +103,12 @@
                                 {
                                     <span class="mo-status mo-status--warn">Gözləyir</span>
                                 }
+                                else if (m.OdenisStatus == FinNex.Domain.Entities.HR.MezuniyyetOdenisStatus.PlanliOdenis)
+                                {
+                                    <span class="mo-status mo-status--planli">
+                                        Planlı · @(m.PlanliOdenisTarixi?.ToString("dd.MM") ?? "—")
+                                    </span>
+                                }
                                 else if (m.OdenisStatus == FinNex.Domain.Entities.HR.MezuniyyetOdenisStatus.Odenilib)
                                 {
                                     <span class="mo-status mo-status--ok">Ödənilib</span>
@@ -129,6 +146,7 @@
         font-size: 12px; font-weight: 700;
     }
     .mo-pill--warn { background: #fef3c7; color: #92400e; }
+    .mo-pill--planli { background: #dbeafe; color: #1e40af; }
 
     .mo-filters { display: flex; gap: 8px; margin-bottom: 14px; }
     .mo-filter {
@@ -179,6 +197,7 @@
     }
     .mo-status--warn { background: #fef3c7; color: #92400e; }
     .mo-status--ok { background: #d1fae5; color: #065f46; }
+    .mo-status--planli { background: #dbeafe; color: #1e40af; }
 
     .mo-btn {
         display: inline-flex; gap: 5px; align-items: center;
