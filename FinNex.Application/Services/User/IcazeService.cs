@@ -2,6 +2,8 @@
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Icaze;
 using FinNex.Application.Interfaces;
+using FinNex.Application.Interfaces.Communication;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -15,12 +17,18 @@ namespace FinNex.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly UserManager<AppUser> _userManager;
         private readonly IMapper _mapper;
+        private readonly IBildirisRouter _bildirisRouter;
 
-        public IcazeService(IUnitOfWork unitOfWork, UserManager<AppUser> userManager, IMapper mapper)
+        public IcazeService(
+            IUnitOfWork unitOfWork,
+            UserManager<AppUser> userManager,
+            IMapper mapper,
+            IBildirisRouter bildirisRouter)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
             _mapper = mapper;
+            _bildirisRouter = bildirisRouter;
         }
 
         public async Task<Result<IList<IcazeListDto>>> GetIsciIcazeleriAsync(int isciId)
@@ -63,6 +71,7 @@ namespace FinNex.Application.Services
 
                 // İşçinin roluna görə status müəyyən et
                 IcazeStatus ilkinStatus;
+                int? departamentId = null;
 
                 if (dto.MuracietSahibiRehberdirmi)
                 {
@@ -79,6 +88,8 @@ namespace FinNex.Application.Services
                     // Adi işçi — şöbə rəisinə gedir
                     var teyinat = await _unitOfWork.Repository<IsciTeyinat>()
                         .GetirAsync(x => x.IsciId == dto.IsciId && x.Aktivdir);
+
+                    departamentId = teyinat?.DepartamentId;
 
                     var sobeReisiVar = teyinat != null && await _unitOfWork.Repository<IsciStrukturRolu>()
                         .MovcuddurmuAsync(x =>
@@ -119,6 +130,9 @@ namespace FinNex.Application.Services
                                     .ThenInclude(t => t.Vezife)
                             .Include(i => i.EvezEdenIsci),
                         izlemeden: true);
+
+                // Bildiriş — sonrakı mərhələ təsdiqçilərinə
+                await NotifyApproversForCreateAsync(entity, departamentId);
 
                 return Result<IcazeListDto>.Ok(MapToListDto(saved!), "Icaze muracietiniz gonderildi.");
             }
@@ -336,6 +350,16 @@ namespace FinNex.Application.Services
 
             await _unitOfWork.Repository<Icaze>().YenileAsync(icaze);
             await _unitOfWork.YaddaSaxlaAsync();
+
+            if (status)
+            {
+                await NotifyIsciProgressAsync(icaze, "Şöbə rəisi", true, qeyd);
+                await NotifyAllRehberAsync(icaze);
+            }
+            else
+            {
+                await NotifyIsciProgressAsync(icaze, "Şöbə rəisi", false, qeyd);
+            }
             return Result.Ok("Şöbə rəisi qərarı qeydə alındı.");
         }
 
@@ -353,6 +377,16 @@ namespace FinNex.Application.Services
 
             await _unitOfWork.Repository<Icaze>().YenileAsync(icaze);
             await _unitOfWork.YaddaSaxlaAsync();
+
+            if (status)
+            {
+                await NotifyIsciProgressAsync(icaze, "Rəhbər", true, qeyd);
+                await NotifyAllHrAsync(icaze);
+            }
+            else
+            {
+                await NotifyIsciProgressAsync(icaze, "Rəhbər", false, qeyd);
+            }
             return Result.Ok("Rəhbər qərarı qeydə alındı.");
         }
 
@@ -370,7 +404,103 @@ namespace FinNex.Application.Services
 
             await _unitOfWork.Repository<Icaze>().YenileAsync(icaze);
             await _unitOfWork.YaddaSaxlaAsync();
+
+            await NotifyIsciProgressAsync(icaze, "HR", status, qeyd);
             return Result.Ok("HR qərarı qeydə alındı.");
+        }
+
+        // ════════════════════════════════════════════════════════
+        // Bildiriş köməkçiləri — bütün icazə iş axını üçün
+        // ════════════════════════════════════════════════════════
+
+        private async Task NotifyApproversForCreateAsync(Icaze ic, int? departamentId)
+        {
+            var isciAd = await GetIsciAdAsync(ic.IsciId);
+            var dovr = $"{ic.IcazeTarixi:dd.MM.yyyy} {ic.BaslamaSaati:hh\\:mm}–{ic.BitisSaati:hh\\:mm}";
+            var bashliq = "Yeni icazə müraciəti";
+            var metn = $"{isciAd} ({dovr}) icazə müraciəti göndərdi.";
+
+            switch (ic.Status)
+            {
+                case IcazeStatus.SobeReisiTesdiqinde:
+                    if (departamentId.HasValue)
+                    {
+                        await _bildirisRouter.NotifyDepartmentRoleAsync(
+                            departamentId.Value, StrukturRolTipi.SobeReisi,
+                            BildirisNovu.IcazeMuraciet, bashliq, metn,
+                            icazeId: ic.Id, exceptIsciId: ic.IsciId);
+                    }
+                    break;
+
+                case IcazeStatus.RehberTesdiqinde:
+                    await _bildirisRouter.NotifyRolesAsync(
+                        new[] { RoleNames.Rehber, RoleNames.Admin },
+                        BildirisNovu.IcazeMuraciet, bashliq, metn,
+                        icazeId: ic.Id, exceptIsciId: ic.IsciId);
+                    break;
+
+                case IcazeStatus.HrTesdiqinde:
+                    await _bildirisRouter.NotifyRolesAsync(
+                        new[] { RoleNames.HR, RoleNames.Admin },
+                        BildirisNovu.IcazeMuraciet, bashliq, metn,
+                        icazeId: ic.Id, exceptIsciId: ic.IsciId);
+                    break;
+            }
+        }
+
+        private async Task NotifyAllRehberAsync(Icaze ic)
+        {
+            var isciAd = await GetIsciAdAsync(ic.IsciId);
+            var dovr = $"{ic.IcazeTarixi:dd.MM.yyyy} {ic.BaslamaSaati:hh\\:mm}–{ic.BitisSaati:hh\\:mm}";
+            await _bildirisRouter.NotifyRolesAsync(
+                new[] { RoleNames.Rehber, RoleNames.Admin },
+                BildirisNovu.IcazeMuraciet,
+                "İcazə müraciəti — Rəhbər təsdiqi gözləyir",
+                $"{isciAd} ({dovr}) icazəsi şöbə rəisi tərəfindən təsdiqlənib.",
+                icazeId: ic.Id, exceptIsciId: ic.IsciId);
+        }
+
+        private async Task NotifyAllHrAsync(Icaze ic)
+        {
+            var isciAd = await GetIsciAdAsync(ic.IsciId);
+            var dovr = $"{ic.IcazeTarixi:dd.MM.yyyy} {ic.BaslamaSaati:hh\\:mm}–{ic.BitisSaati:hh\\:mm}";
+            await _bildirisRouter.NotifyRolesAsync(
+                new[] { RoleNames.HR, RoleNames.Admin },
+                BildirisNovu.IcazeMuraciet,
+                "İcazə müraciəti — HR təsdiqi gözləyir",
+                $"{isciAd} ({dovr}) icazəsi rəhbər tərəfindən təsdiqlənib.",
+                icazeId: ic.Id, exceptIsciId: ic.IsciId);
+        }
+
+        private async Task NotifyIsciProgressAsync(Icaze ic, string mərhələ, bool tesdiq, string? qeyd)
+        {
+            var dovr = $"{ic.IcazeTarixi:dd.MM.yyyy} {ic.BaslamaSaati:hh\\:mm}–{ic.BitisSaati:hh\\:mm}";
+            if (tesdiq)
+            {
+                await _bildirisRouter.NotifyIsciAsync(
+                    ic.IsciId,
+                    BildirisNovu.IcazeTesdiq,
+                    $"İcazə — {mərhələ} təsdiqi alındı",
+                    $"{dovr} icazə müraciətiniz {mərhələ} tərəfindən təsdiqləndi.",
+                    icazeId: ic.Id);
+            }
+            else
+            {
+                var sebeb = string.IsNullOrWhiteSpace(qeyd) ? "" : $" Səbəb: {qeyd}";
+                await _bildirisRouter.NotifyIsciAsync(
+                    ic.IsciId,
+                    BildirisNovu.IcazeImtina,
+                    $"İcazə — {mərhələ} imtinası",
+                    $"{dovr} icazə müraciətiniz {mərhələ} tərəfindən rədd edildi.{sebeb}",
+                    icazeId: ic.Id);
+            }
+        }
+
+        private async Task<string> GetIsciAdAsync(int isciId)
+        {
+            var isci = await _unitOfWork.Repository<Isci>()
+                .GetirAsync(x => x.Id == isciId, izlemeden: true);
+            return isci?.TamAd ?? $"İşçi #{isciId}";
         }
 
         private static IcazeListDto MapToListDto(Icaze icaze) => new()

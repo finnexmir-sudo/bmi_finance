@@ -1,5 +1,7 @@
 using ClosedXML.Excel;
+using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -14,10 +16,12 @@ namespace FinNex.UI.Areas.HR.Controllers;
 public class XercController : Controller
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IBildirisRouter _bildirisRouter;
 
-    public XercController(IUnitOfWork unitOfWork)
+    public XercController(IUnitOfWork unitOfWork, IBildirisRouter bildirisRouter)
     {
         _unitOfWork = unitOfWork;
+        _bildirisRouter = bildirisRouter;
     }
 
     // ── GET /HR/Xerc ────────────────────────────────────────
@@ -92,6 +96,7 @@ public class XercController : Controller
             .GetirAsync(x => x.AppUserId == userId && !x.Silinib);
 
         // Advance status based on current
+        var oncekiStatus = xerc.Status;
         if (xerc.Status == XercStatus.Muraciet)
             xerc.Status = XercStatus.SobeReisiTesdiq;
         else if (xerc.Status == XercStatus.SobeReisiTesdiq)
@@ -102,6 +107,40 @@ public class XercController : Controller
 
         await _unitOfWork.Repository<Xerc>().YenileAsync(xerc);
         await _unitOfWork.YaddaSaxlaAsync();
+
+        // İşçiyə mərhələ bildirişi
+        var isciRedirect = Url.Action("Index", "Xerc", new { area = "User" });
+        var mərhələ = xerc.Status == XercStatus.SobeReisiTesdiq ? "Şöbə rəisi" :
+                      xerc.Status == XercStatus.HrTesdiq ? "HR" : "Təsdiqçi";
+        await _bildirisRouter.NotifyIsciAsync(
+            xerc.IsciId,
+            BildirisNovu.XercTesdiq,
+            $"Xərc müraciəti — {mərhələ} təsdiqi",
+            $"{xerc.Mebleg:N2} ₼ xərc müraciətiniz {mərhələ} tərəfindən təsdiqləndi.",
+            redirectUrl: isciRedirect);
+
+        // SobeReisi mərhələsindən keçib HR-a gedibsə, HR-a bildiriş
+        if (oncekiStatus == XercStatus.Muraciet && xerc.Status == XercStatus.SobeReisiTesdiq)
+        {
+            await _bildirisRouter.NotifyRolesAsync(
+                new[] { RoleNames.HR, RoleNames.Admin },
+                BildirisNovu.XercMuraciet,
+                "Xərc müraciəti — HR təsdiqi gözləyir",
+                $"{xerc.Mebleg:N2} ₼ xərc Şöbə rəisi tərəfindən təsdiqlənib, HR təsdiqi gözləyir.",
+                redirectUrl: Url.Action("Index", "Xerc", new { area = "HR" }),
+                exceptIsciId: xerc.IsciId);
+        }
+        // HR mərhələsinə keçibsə, Mühasibə ödəniş sorğusu
+        else if (xerc.Status == XercStatus.HrTesdiq)
+        {
+            await _bildirisRouter.NotifyRolesAsync(
+                new[] { RoleNames.Muhasib, RoleNames.Admin },
+                BildirisNovu.XercTesdiq,
+                "Xərc — ödəniş gözləyir",
+                $"{xerc.Mebleg:N2} ₼ xərc HR tərəfindən təsdiqlənib, ödəniş gözləyir.",
+                redirectUrl: Url.Action("Index", "Xerc", new { area = "HR" }),
+                exceptIsciId: xerc.IsciId);
+        }
 
         return Ok(new { message = "Xerc tesdiqlendi." });
     }
@@ -126,6 +165,14 @@ public class XercController : Controller
         await _unitOfWork.Repository<Xerc>().YenileAsync(xerc);
         await _unitOfWork.YaddaSaxlaAsync();
 
+        var sebebMetn = string.IsNullOrWhiteSpace(dto.Sebeb) ? "" : $" Səbəb: {dto.Sebeb}";
+        await _bildirisRouter.NotifyIsciAsync(
+            xerc.IsciId,
+            BildirisNovu.XercImtina,
+            "Xərc müraciəti rədd edildi",
+            $"{xerc.Mebleg:N2} ₼ xərc müraciətiniz rədd edildi.{sebebMetn}",
+            redirectUrl: Url.Action("Index", "Xerc", new { area = "User" }));
+
         return Ok(new { message = "Xerc imtina edildi." });
     }
 
@@ -142,6 +189,13 @@ public class XercController : Controller
 
         await _unitOfWork.Repository<Xerc>().YenileAsync(xerc);
         await _unitOfWork.YaddaSaxlaAsync();
+
+        await _bildirisRouter.NotifyIsciAsync(
+            xerc.IsciId,
+            BildirisNovu.XercOdenis,
+            "Xərc ödənişi edildi",
+            $"{xerc.Mebleg:N2} ₼ xərc ödənişiniz Mühasibiyyat tərəfindən həyata keçirildi.",
+            redirectUrl: Url.Action("Index", "Xerc", new { area = "User" }));
 
         return Ok(new { message = "Xerc odenildi kimi isharelendi." });
     }

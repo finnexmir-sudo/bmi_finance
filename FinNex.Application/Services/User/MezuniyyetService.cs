@@ -5,6 +5,8 @@ using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.Application.Interfaces.Maas_If;
 using FinNex.Application.Services;
+using FinNex.Domain;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -13,16 +15,19 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 {
     private readonly IEvezediciTesdiqService _evezediciTesdiqService;
     private readonly IMaasHesablamaService _maasHesablamaService;
+    private readonly IBildirisRouter _bildirisRouter;
 
     public MezuniyyetService(
         IUnitOfWork unitOfWork,
         IMapper mapper,
         IEvezediciTesdiqService evezediciTesdiqService,
-        IMaasHesablamaService maasHesablamaService)
+        IMaasHesablamaService maasHesablamaService,
+        IBildirisRouter bildirisRouter)
         : base(unitOfWork, mapper)
     {
         _evezediciTesdiqService = evezediciTesdiqService;
         _maasHesablamaService = maasHesablamaService;
+        _bildirisRouter = bildirisRouter;
     }
 
     
@@ -104,6 +109,13 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 }
                 await transaction.CommitAsync();
 
+                // Bildiriş — yalnız əvəzedici GÖZLƏMƏDƏ deyilsə göndər;
+                // əks halda əvvəlcə əvəzedici cavab verməlidir.
+                if (entity.Status != MezuniyyetStatus.Gozlemede)
+                {
+                    await NotifyApproversForCreateAsync(entity, teyinat?.DepartamentId);
+                }
+
                 // Navigation property-lər yüklənməyib, manual DTO yaradılır
                 var resultDto = new MezuniyyetDto
                 {
@@ -183,6 +195,18 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
         await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(m);
         await _unitOfWork.YaddaSaxlaAsync();
+
+        if (status)
+        {
+            // İşçiyə progress, sonrakı mərhələ təsdiqçilərinə (Rəhbər) sorğu
+            await NotifyIsciProgressAsync(m, "Şöbə rəisi", true, qeyd);
+            await NotifyAllRehberAsync(m);
+        }
+        else
+        {
+            await NotifyIsciProgressAsync(m, "Şöbə rəisi", false, qeyd);
+        }
+
         return Result.Ok("Şöbə rəisi qərarı qeydə alındı.");
     }
 
@@ -224,6 +248,17 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
         await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(m); // ← explicit update
         await _unitOfWork.YaddaSaxlaAsync();
+
+        if (status)
+        {
+            await NotifyIsciProgressAsync(m, "Rəhbər", true, qeyd);
+            await NotifyAllHrAsync(m);
+        }
+        else
+        {
+            await NotifyIsciProgressAsync(m, "Rəhbər", false, qeyd);
+        }
+
         return Result.Ok("Rəhbər qərarı qeydə alındı.");
     }
     // HrTesdiqAsync metodu
@@ -301,8 +336,143 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         }
 
         await _unitOfWork.YaddaSaxlaAsync();
+
+        // Bildirişlər — HR mərhələsi son təsdiq/imtina nöqtəsidir
+        if (status)
+        {
+            await NotifyIsciFinalApproveAsync(m);
+
+            // Ödəniş ay sonu seçilibsə Mühasibə də xəbər ver — maaş hesablamasında nəzərə alsın
+            if (m.OdenisTipi == MezuniyyetOdenisTipi.AySonuOdenis)
+            {
+                await NotifyMuhasibForMonthEndPaymentAsync(m);
+            }
+        }
+        else
+        {
+            await NotifyIsciProgressAsync(m, "HR", false, qeyd);
+        }
+
         return Result.Ok("HR qərarı qeydə alındı.");
     }
+
+    // ════════════════════════════════════════════════════════════
+    // Bildiriş köməkçiləri — bütün məzuniyyət iş axını üçün
+    // ════════════════════════════════════════════════════════════
+
+    private async Task NotifyApproversForCreateAsync(Mezuniyyet m, int? departamentId)
+    {
+        var isciAd = await GetIsciAdAsync(m.IsciId);
+        var dovr = $"{m.BaslamaTarixi:dd.MM.yyyy} – {m.BitmeTarixi:dd.MM.yyyy}";
+        var bashliq = "Yeni məzuniyyət müraciəti";
+        var metn = $"{isciAd} ({dovr}, {m.IsGunlerininSayi} iş günü, {m.Nov}) məzuniyyət müraciəti göndərdi.";
+
+        switch (m.Status)
+        {
+            case MezuniyyetStatus.SobeReisiTesdiqinde:
+                if (departamentId.HasValue)
+                {
+                    await _bildirisRouter.NotifyDepartmentRoleAsync(
+                        departamentId.Value, StrukturRolTipi.SobeReisi,
+                        BildirisNovu.MezuniyyetMuraciet, bashliq, metn,
+                        mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
+                }
+                break;
+
+            case MezuniyyetStatus.RehberTesdiqinde:
+                await _bildirisRouter.NotifyRolesAsync(
+                    new[] { RoleNames.Rehber, RoleNames.Admin },
+                    BildirisNovu.MezuniyyetMuraciet, bashliq, metn,
+                    mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
+                break;
+
+            case MezuniyyetStatus.HrTesdiqinde:
+                await _bildirisRouter.NotifyRolesAsync(
+                    new[] { RoleNames.HR, RoleNames.Admin },
+                    BildirisNovu.MezuniyyetMuraciet, bashliq, metn,
+                    mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
+                break;
+        }
+    }
+
+    private async Task NotifyAllRehberAsync(Mezuniyyet m)
+    {
+        var isciAd = await GetIsciAdAsync(m.IsciId);
+        var dovr = $"{m.BaslamaTarixi:dd.MM.yyyy} – {m.BitmeTarixi:dd.MM.yyyy}";
+        await _bildirisRouter.NotifyRolesAsync(
+            new[] { RoleNames.Rehber, RoleNames.Admin },
+            BildirisNovu.MezuniyyetMuraciet,
+            "Məzuniyyət müraciəti — Rəhbər təsdiqi gözləyir",
+            $"{isciAd} ({dovr}) müraciəti şöbə rəisi tərəfindən təsdiqlənib, sizin təsdiqinizi gözləyir.",
+            mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
+    }
+
+    private async Task NotifyAllHrAsync(Mezuniyyet m)
+    {
+        var isciAd = await GetIsciAdAsync(m.IsciId);
+        var dovr = $"{m.BaslamaTarixi:dd.MM.yyyy} – {m.BitmeTarixi:dd.MM.yyyy}";
+        await _bildirisRouter.NotifyRolesAsync(
+            new[] { RoleNames.HR, RoleNames.Admin },
+            BildirisNovu.MezuniyyetMuraciet,
+            "Məzuniyyət müraciəti — HR təsdiqi gözləyir",
+            $"{isciAd} ({dovr}) müraciəti rəhbər tərəfindən təsdiqlənib, son təsdiqi gözləyir.",
+            mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
+    }
+
+    private async Task NotifyIsciProgressAsync(Mezuniyyet m, string mərhələ, bool tesdiq, string? qeyd)
+    {
+        var dovr = $"{m.BaslamaTarixi:dd.MM.yyyy} – {m.BitmeTarixi:dd.MM.yyyy}";
+        if (tesdiq)
+        {
+            await _bildirisRouter.NotifyIsciAsync(
+                m.IsciId,
+                BildirisNovu.MezuniyyetTesdiq,
+                $"Məzuniyyət — {mərhələ} təsdiqi alındı",
+                $"{dovr} məzuniyyət müraciətiniz {mərhələ} tərəfindən təsdiqləndi.",
+                mezuniyyetId: m.Id);
+        }
+        else
+        {
+            var sebeb = string.IsNullOrWhiteSpace(qeyd) ? "" : $" Səbəb: {qeyd}";
+            await _bildirisRouter.NotifyIsciAsync(
+                m.IsciId,
+                BildirisNovu.MezuniyyetImtina,
+                $"Məzuniyyət — {mərhələ} imtinası",
+                $"{dovr} məzuniyyət müraciətiniz {mərhələ} tərəfindən rədd edildi.{sebeb}",
+                mezuniyyetId: m.Id);
+        }
+    }
+
+    private async Task NotifyIsciFinalApproveAsync(Mezuniyyet m)
+    {
+        var dovr = $"{m.BaslamaTarixi:dd.MM.yyyy} – {m.BitmeTarixi:dd.MM.yyyy}";
+        await _bildirisRouter.NotifyIsciAsync(
+            m.IsciId,
+            BildirisNovu.MezuniyyetTesdiq,
+            "Məzuniyyət — yekun təsdiq",
+            $"{dovr} məzuniyyət müraciətiniz HR tərəfindən rəsmiləşdirildi.",
+            mezuniyyetId: m.Id);
+    }
+
+    private async Task NotifyMuhasibForMonthEndPaymentAsync(Mezuniyyet m)
+    {
+        var isciAd = await GetIsciAdAsync(m.IsciId);
+        var dovr = $"{m.BaslamaTarixi:dd.MM.yyyy} – {m.BitmeTarixi:dd.MM.yyyy}";
+        await _bildirisRouter.NotifyRolesAsync(
+            new[] { RoleNames.Muhasib, RoleNames.Admin },
+            BildirisNovu.MezuniyyetOdenisGozleyir,
+            "Məzuniyyət ödənişi — ay sonu maaşla",
+            $"{isciAd} üçün {dovr} məzuniyyəti təsdiqlənib. Ödəniş həmin ayın maaşına əlavə olunmalıdır.",
+            mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
+    }
+
+    private async Task<string> GetIsciAdAsync(int isciId)
+    {
+        var isci = await _unitOfWork.Repository<Isci>()
+            .GetirAsync(x => x.Id == isciId, izlemeden: true);
+        return isci?.TamAd ?? $"İşçi #{isciId}";
+    }
+
     // ============================================================
     // Bu faylı MezuniyyetService.cs-ə əlavə edin:
     // HrTesdiqAsync metodundan SONRA bu iki metodu əlavə edin.

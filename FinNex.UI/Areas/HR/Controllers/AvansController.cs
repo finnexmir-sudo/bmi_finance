@@ -1,4 +1,6 @@
+using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -14,11 +16,16 @@ namespace FinNex.UI.Areas.HR.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IBildirisRouter _bildirisRouter;
 
-        public AvansController(IUnitOfWork unitOfWork, UserManager<AppUser> userManager)
+        public AvansController(
+            IUnitOfWork unitOfWork,
+            UserManager<AppUser> userManager,
+            IBildirisRouter bildirisRouter)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
+            _bildirisRouter = bildirisRouter;
         }
 
         // ── GET /HR/Avans ────────────────────────────────────
@@ -91,6 +98,29 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             await _unitOfWork.YaddaSaxlaAsync();
+
+            // İşçiyə bildiriş — qərar nəticəsi
+            var redirectUrl = Url.Action("Index", "Avans", new { area = "User" });
+            if (tesdiq)
+            {
+                await _bildirisRouter.NotifyIsciAsync(
+                    avans.IsciId,
+                    BildirisNovu.AvansTesdiq,
+                    "Avansınız təsdiqləndi",
+                    $"{avans.Il}/{avans.Ay:D2} ayı üçün {avans.Mebleg:N2} ₼ avans müraciətiniz təsdiqləndi.",
+                    redirectUrl: redirectUrl);
+            }
+            else
+            {
+                var sebebMetn = string.IsNullOrWhiteSpace(avans.ImtinaSebebi) ? "" : $" Səbəb: {avans.ImtinaSebebi}";
+                await _bildirisRouter.NotifyIsciAsync(
+                    avans.IsciId,
+                    BildirisNovu.AvansImtina,
+                    "Avansınız rədd edildi",
+                    $"{avans.Il}/{avans.Ay:D2} ayı üçün {avans.Mebleg:N2} ₼ avans müraciətiniz rədd edildi.{sebebMetn}",
+                    redirectUrl: redirectUrl);
+            }
+
             return RedirectToAction(nameof(Index));
         }
     }
