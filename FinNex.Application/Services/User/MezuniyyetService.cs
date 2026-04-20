@@ -1045,4 +1045,199 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             return Result<IList<EvezediciKonfliktDto>>.Fail($"Xəta: {ex.Message}");
         }
     }
+
+    // ════════════════════════════════════════════════════════════
+    // GERİYƏ QEYD — HR tərəfindən keçmiş tarixlərə məzuniyyət
+    // ════════════════════════════════════════════════════════════
+    private const int GeriyeQeydMaxGun = 90;
+
+    public async Task<Result<MezuniyyetDto>> GeriyeQeydEtAsync(GeriyeMezuniyyetCreateDto dto, int hrIsciId)
+    {
+        using (var transaction = await _unitOfWork.BeginTransactionAsync())
+        {
+            try
+            {
+                // ── 1. Tarix validasiyası ──────────────────────────────
+                if (dto.BitmeTarixi < dto.BaslamaTarixi)
+                    return Result<MezuniyyetDto>.Fail("Bitmə tarixi başlama tarixindən əvvəl ola bilməz.");
+
+                var bugun = DateTime.Today;
+                if (dto.BitmeTarixi.Date >= bugun)
+                    return Result<MezuniyyetDto>.Fail("Geriyə qeyd yalnız keçmiş tarixlər üçün olur (bugün və ya gələcək tarix olmaz).");
+
+                var minTarix = bugun.AddDays(-GeriyeQeydMaxGun);
+                if (dto.BaslamaTarixi.Date < minTarix)
+                    return Result<MezuniyyetDto>.Fail($"Geriyə qeyd üçün maksimum {GeriyeQeydMaxGun} gün əvvəl olmalıdır.");
+
+                // ── 2. Eyni tarix aralığında mövcud məzuniyyət yoxlanışı ──
+                var aktivStatuslar = new[]
+                {
+                    MezuniyyetStatus.SobeReisiTesdiqinde,
+                    MezuniyyetStatus.RehberTesdiqinde,
+                    MezuniyyetStatus.HrTesdiqinde,
+                    MezuniyyetStatus.Tesdiqlenib,
+                    MezuniyyetStatus.Gozlemede
+                };
+
+                var konflikt = await _unitOfWork.Repository<Mezuniyyet>()
+                    .MovcuddurmuAsync(x =>
+                        !x.Silinib &&
+                        x.IsciId == dto.IsciId &&
+                        aktivStatuslar.Contains(x.Status) &&
+                        x.BaslamaTarixi <= dto.BitmeTarixi &&
+                        x.BitmeTarixi >= dto.BaslamaTarixi);
+
+                if (konflikt)
+                    return Result<MezuniyyetDto>.Fail("Bu tarix aralığında işçinin artıq məzuniyyəti mövcuddur.");
+
+                // ── 3. İş günlərinin sayı ──────────────────────────────
+                int isGunu = await HesablaIsGunuAsync(dto.BaslamaTarixi, dto.BitmeTarixi);
+                if (isGunu <= 0)
+                    return Result<MezuniyyetDto>.Fail("Seçilən aralıqda iş günü yoxdur (yalnız həftəsonu/bayram).");
+
+                // ── 4. Balans yoxlanışı (yalnız illik üçün) ────────────
+                if (dto.Nov == MezuniyyetNovu.Illik)
+                {
+                    var balans = await _unitOfWork.Repository<MezuniyyetBalans>()
+                        .GetirAsync(x => x.IsciId == dto.IsciId
+                                      && x.Il == dto.BaslamaTarixi.Year
+                                      && x.Nov == dto.Nov);
+
+                    if (balans == null || balans.QaliqGun < isGunu)
+                        return Result<MezuniyyetDto>.Fail(
+                            $"İllik məzuniyyət balansı kifayət etmir ({balans?.QaliqGun ?? 0} gün qalıb, {isGunu} gün lazımdır).");
+                }
+
+                // ── 5. Entity yarat — bütün addımlar HR tərəfindən təsdiqli ──
+                var indi = DateTime.Now;
+                var entity = new Mezuniyyet
+                {
+                    IsciId = dto.IsciId,
+                    Nov = dto.Nov,
+                    BaslamaTarixi = dto.BaslamaTarixi,
+                    BitmeTarixi = dto.BitmeTarixi,
+                    IsGunlerininSayi = isGunu,
+                    Qeyd = $"[Geriyə qeyd — HR] {dto.Sebeb}",
+                    Status = MezuniyyetStatus.Tesdiqlenib,
+                    OdenisTipi = MezuniyyetOdenisTipi.AySonuOdenis,
+                    OdenisStatus = MezuniyyetOdenisStatus.TetbiqEdilmir,
+                    // Bütün təsdiq addımlarını HR icracısı ilə qeyd et (audit üçün)
+                    SobeReisiTesdiq = true,
+                    SobeReisiId = hrIsciId,
+                    SobeReisiTesdiqTarixi = indi,
+                    RehberTesdiq = true,
+                    RehberId = hrIsciId,
+                    RehberTesdiqTarixi = indi,
+                    HrTesdiq = true,
+                    HrId = hrIsciId,
+                    HrTesdiqTarixi = indi
+                };
+
+                await _unitOfWork.Repository<Mezuniyyet>().YaratAsync(entity);
+                await _unitOfWork.YaddaSaxlaAsync();
+
+                // ── 6. Balansı yenilə (illik üçün) ─────────────────────
+                if (dto.Nov == MezuniyyetNovu.Illik)
+                {
+                    var balans = await _unitOfWork.Repository<MezuniyyetBalans>()
+                        .GetirAsync(x => x.IsciId == dto.IsciId
+                                      && x.Il == dto.BaslamaTarixi.Year
+                                      && x.Nov == dto.Nov);
+                    if (balans != null)
+                    {
+                        balans.IstifadeOlunanGun += isGunu;
+                        await _unitOfWork.Repository<MezuniyyetBalans>().YenileAsync(balans);
+                    }
+                }
+
+                // ── 7. Davamiyyət: Qayib → İcazəli/Xəstəlik/Ezamiyyət ──
+                var yeniStatus = dto.Nov switch
+                {
+                    MezuniyyetNovu.Xestelik  => DavamiyyetStatus.Xestelik,
+                    MezuniyyetNovu.Ezamiyyet => DavamiyyetStatus.Ezamiyyet,
+                    _ => DavamiyyetStatus.Icazeli
+                };
+
+                var bayramlar = await _unitOfWork.Repository<BayramGunu>()
+                    .HamisiniGetirAsync(x => x.Tarix >= dto.BaslamaTarixi && x.Tarix <= dto.BitmeTarixi);
+
+                int duzeldilenQaib = 0, yeniQeyd = 0;
+                for (var gun = dto.BaslamaTarixi.Date; gun <= dto.BitmeTarixi.Date; gun = gun.AddDays(1))
+                {
+                    if (gun.DayOfWeek == DayOfWeek.Saturday || gun.DayOfWeek == DayOfWeek.Sunday) continue;
+                    if (bayramlar.Any(b => b.Tarix.Date == gun.Date)) continue;
+
+                    var mevcud = await _unitOfWork.Repository<Davamiyyet>()
+                        .GetirAsync(x => x.IsciId == dto.IsciId && x.Tarix.Date == gun.Date);
+
+                    if (mevcud != null)
+                    {
+                        // Qayib idisə icazəliyə çevir — digər statuslara toxunma
+                        if (mevcud.Status == DavamiyyetStatus.Qayib)
+                        {
+                            mevcud.Status = yeniStatus;
+                            await _unitOfWork.Repository<Davamiyyet>().YenileAsync(mevcud);
+                            duzeldilenQaib++;
+                        }
+                    }
+                    else
+                    {
+                        await _unitOfWork.Repository<Davamiyyet>().YaratAsync(new Davamiyyet
+                        {
+                            IsciId = dto.IsciId,
+                            Tarix = gun,
+                            Status = yeniStatus
+                        });
+                        yeniQeyd++;
+                    }
+                }
+
+                await _unitOfWork.YaddaSaxlaAsync();
+                await transaction.CommitAsync();
+
+                // ── 8. Bildirişlər ─────────────────────────────────────
+                var isciAd = await GetIsciAdAsync(dto.IsciId);
+                var dovr = $"{dto.BaslamaTarixi:dd.MM.yyyy} – {dto.BitmeTarixi:dd.MM.yyyy}";
+
+                // İşçiyə
+                await _bildirisRouter.NotifyIsciAsync(
+                    dto.IsciId,
+                    BildirisNovu.MezuniyyetTesdiq,
+                    "HR geriyə məzuniyyət qeyd etdi",
+                    $"HR sizin üçün {dovr} ({isGunu} iş günü, {dto.Nov}) məzuniyyəti qeyd etdi. Səbəb: {dto.Sebeb}",
+                    redirectUrl: $"/User/Mezuniyyet/Detail/{entity.Id}",
+                    mezuniyyetId: entity.Id);
+
+                // Mühasibə (ay sonu maaşa təsir edə bilər)
+                await _bildirisRouter.NotifyRolesAsync(
+                    new[] { RoleNames.Muhasib, RoleNames.Admin },
+                    BildirisNovu.MezuniyyetOdenisGozleyir,
+                    "Geriyə qeyd edilmiş məzuniyyət",
+                    $"HR {isciAd} üçün {dovr} ({isGunu} iş günü) məzuniyyəti geriyə qeyd etdi. Ay-sonu maaş hesablamasında nəzərə alın.",
+                    redirectUrl: $"/HR/Mezuniyyet/Detal/{entity.Id}",
+                    mezuniyyetId: entity.Id, exceptIsciId: dto.IsciId);
+
+                var resultDto = new MezuniyyetDto
+                {
+                    Id = entity.Id,
+                    IsciId = entity.IsciId,
+                    Nov = entity.Nov,
+                    Status = entity.Status,
+                    BaslamaTarixi = entity.BaslamaTarixi,
+                    BitmeTarixi = entity.BitmeTarixi,
+                    IsGunlerininSayi = entity.IsGunlerininSayi,
+                    Qeyd = entity.Qeyd
+                };
+
+                var mesaj = $"Geriyə qeyd uğurla rəsmiləşdirildi ({isGunu} iş günü). " +
+                           $"Davamiyyət: {duzeldilenQaib} qayib → icazəli, {yeniQeyd} yeni qeyd yaradıldı.";
+                return Result<MezuniyyetDto>.Ok(resultDto, mesaj);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return Result<MezuniyyetDto>.Fail($"Xəta baş verdi: {ex.Message}");
+            }
+        }
+    }
 }

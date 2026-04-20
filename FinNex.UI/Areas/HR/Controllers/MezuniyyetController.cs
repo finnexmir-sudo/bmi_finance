@@ -206,6 +206,81 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         // ══════════════════════════════════════════════════════
+        // GERİYƏ QEYD — HR keçmiş tarix üçün məzuniyyət rəsmiləşdirir
+        // Emergency halları üçün: işçi işdə olmayıb, sonra HR sənədləşdirir.
+        // Təsdiq axınını atlayır, işçinin Davamiyyətindəki Qayib → İcazəliyə çevirir.
+        // ══════════════════════════════════════════════════════
+
+        [HttpGet]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> GeriyeQeyd()
+        {
+            var vm = new GeriyeQeydVM
+            {
+                Isciler = await GetAktivIsciSelectListAsync()
+            };
+
+            ViewData["Title"] = "Geriyə Məzuniyyət Qeyd et";
+            return View(vm);
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> GeriyeQeyd(GeriyeQeydVM vm)
+        {
+            if (!ModelState.IsValid)
+            {
+                vm.Isciler = await GetAktivIsciSelectListAsync(vm.IsciId);
+                return View(vm);
+            }
+
+            var hrIsciId = await GetCurrentIsciIdAsync();
+            if (hrIsciId == null)
+            {
+                TempData["Error"] = "HR istifadəçisinin işçi qeydi tapılmadı.";
+                vm.Isciler = await GetAktivIsciSelectListAsync(vm.IsciId);
+                return View(vm);
+            }
+
+            var dto = new GeriyeMezuniyyetCreateDto
+            {
+                IsciId = vm.IsciId,
+                Nov = vm.Nov,
+                BaslamaTarixi = vm.BaslamaTarixi,
+                BitmeTarixi = vm.BitmeTarixi,
+                Sebeb = vm.Sebeb
+            };
+
+            var result = await _mezuniyyetService.GeriyeQeydEtAsync(dto, hrIsciId.Value);
+
+            if (!result.Success)
+            {
+                TempData["Error"] = result.Message;
+                vm.Isciler = await GetAktivIsciSelectListAsync(vm.IsciId);
+                return View(vm);
+            }
+
+            TempData["Success"] = result.Message ?? "Geriyə qeyd uğurla rəsmiləşdirildi.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task<List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>> GetAktivIsciSelectListAsync(int? selected = null)
+        {
+            var iscilerResult = await _isciService.HamisiniGetirAsync(
+                x => x.Status == IsciStatus.Aktiv,
+                izlemeden: true);
+
+            if (!iscilerResult.Success || iscilerResult.Data == null)
+                return new();
+
+            return iscilerResult.Data
+                .OrderBy(x => x.TamAd)
+                .Select(x => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+                    x.TamAd, x.Id.ToString(), x.Id == selected))
+                .ToList();
+        }
+
+        // ══════════════════════════════════════════════════════
         // ADMIN — hamısını görür
         // ══════════════════════════════════════════════════════
 
