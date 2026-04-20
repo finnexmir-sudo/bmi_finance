@@ -317,15 +317,21 @@ document.addEventListener('DOMContentLoaded', function () {
          3. window.triggerWordGeneration() — payment-word.js-in
             export etdiyi funksiya birbaşa çağırılır
     ================================================================ */
-    async function bankYoxlaVeYarat() {
+    // Ümumi köməkçi: prefix ilə (Oduyen/Alan) bank və müştərini yoxlayıb,
+    // tapılmazsa bazaya əlavə edir və hidden ID-ləri doldurur.
+    async function bankYoxlaVeYaratFor(prefix) {
+        const bankIdEl = el(prefix + 'BankIdHidden');
+        const existingId = (bankIdEl?.value ?? '').trim();
+        // Hidden ID artıq dolub və 0-dan böyükdürsə Axtar vasitəsilə təyin olunub — toxunma
+        if (existingId && existingId !== '0') return;
+
         const dto = {
-            ad: (el('AlanBankAd')?.value ?? '').trim(),
-            kod: (el('AlanBankKod')?.value ?? '').trim(),
-            voen: (el('AlanBankVoen')?.value ?? '').trim(),
-            swiftBic: (el('AlanBankSwift')?.value ?? '').trim(),
-            muxHesab: (el('AlanBankMuxbirHesab')?.value ?? '').trim()
+            ad:       (el(prefix + 'BankAd')?.value ?? '').trim(),
+            kod:      (el(prefix + 'BankKod')?.value ?? '').trim(),
+            voen:     (el(prefix + 'BankVoen')?.value ?? '').trim(),
+            swiftBic: (el(prefix + 'BankSwift')?.value ?? '').trim(),
+            muxHesab: (el(prefix + 'BankMuxbirHesab')?.value ?? '').trim()
         };
-        // Heç bir sahə doldurulmayıbsa server çağırışı mənasızdır
         if (!dto.ad && !dto.kod && !dto.voen && !dto.swiftBic && !dto.muxHesab) return;
 
         try {
@@ -334,22 +340,26 @@ document.addEventListener('DOMContentLoaded', function () {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dto)
             });
-            if (!r.ok) { console.error('BankYoxlaVeYarat HTTP', r.status); return; }
+            if (!r.ok) { console.error(prefix + ' BankYoxlaVeYarat HTTP', r.status); return; }
             const d = await r.json();
-            if (d && d.id) setVal('AlanBankIdHidden', d.id);
-            if (d && d.hesabId) setVal('AlanHesabIdHidden', d.hesabId);
-        } catch (e) { console.error('BankYoxlaVeYarat xətası:', e); }
+            if (d && d.id) setVal(prefix + 'BankIdHidden', d.id);
+        } catch (e) { console.error(prefix + ' BankYoxlaVeYarat xətası:', e); }
     }
 
-    async function musteriYoxlaVeYarat() {
-        const musteriId = (el('AlanMusteriIdHidden')?.value ?? '').trim();
-        const hesabIban = (el('AlanMusteriHesab')?.value ?? '').trim();
+    async function musteriYoxlaVeYaratFor(prefix) {
+        const musteriIdEl = el(prefix + 'MusteriIdHidden');
+        const hesabIdEl   = el(prefix + 'HesabIdHidden');
+        const existingMusteri = (musteriIdEl?.value ?? '').trim();
+        const existingHesab   = (hesabIdEl?.value ?? '').trim();
+        // Hər ikisi doludursa — dəyişdirməyə ehtiyac yoxdur
+        if (existingMusteri && existingMusteri !== '0' &&
+            existingHesab && existingHesab !== '0') return;
 
         const dto = {
-            id: musteriId ? parseInt(musteriId) : null,
-            ad: (el('AlanMusteriAd')?.value ?? '').trim(),
-            voen: (el('AlanMusteriVoen')?.value ?? '').trim(),
-            hesab: hesabIban
+            id: existingMusteri && existingMusteri !== '0' ? parseInt(existingMusteri) : null,
+            ad:    (el(prefix + 'MusteriAd')?.value ?? '').trim(),
+            voen:  (el(prefix + 'MusteriVoen')?.value ?? '').trim(),
+            hesab: (el(prefix + 'MusteriHesab')?.value ?? '').trim()
         };
         if (!dto.voen && !dto.ad) return;
 
@@ -359,11 +369,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dto)
             });
+            if (!r.ok) { console.error(prefix + ' MusteriYoxlaVeYarat HTTP', r.status); return; }
             const d = await r.json();
-            setVal('AlanMusteriIdHidden', d.id);
-            setVal('AlanMusteriHesabId', d.hesabId);
-            setVal('AlanHesabIdHidden', d.hesabId);
-        } catch (e) { console.error('MusteriYoxlaVeYarat xətası:', e); }
+            if (d && d.id)      setVal(prefix + 'MusteriIdHidden', d.id);
+            if (d && d.hesabId) setVal(prefix + 'HesabIdHidden', d.hesabId);
+        } catch (e) { console.error(prefix + ' MusteriYoxlaVeYarat xətası:', e); }
+    }
+
+    async function bankYoxlaVeYarat() {
+        // Ödüyən və Alan — hər ikisi avtomatik yaradıla bilər
+        await bankYoxlaVeYaratFor('Oduyen');
+        await bankYoxlaVeYaratFor('Alan');
+    }
+    async function musteriYoxlaVeYarat() {
+        await musteriYoxlaVeYaratFor('Oduyen');
+        await musteriYoxlaVeYaratFor('Alan');
     }
 
     // ── btnGenerateWord-u klonla: payment-word.js listener-ini sil ──
