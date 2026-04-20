@@ -24,11 +24,9 @@ namespace FinNex.UI.Areas.HR.ViewModels.Mezuniyyet
         [Display(Name = "Bitmə tarixi")]
         public DateTime BitmeTarixi { get; set; } = DateTime.Today.AddDays(-1);
 
-        [Required(ErrorMessage = "Səbəb qeyd edilməlidir.")]
-        [MinLength(5, ErrorMessage = "Səbəb ən azı 5 simvoldan ibarət olmalıdır.")]
         [MaxLength(500)]
         [Display(Name = "Səbəb")]
-        public string Sebeb { get; set; } = "";
+        public string? Sebeb { get; set; }
 
         public List<SelectListItem> Isciler { get; set; } = new();
 
