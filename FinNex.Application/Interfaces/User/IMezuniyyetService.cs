@@ -21,6 +21,8 @@ namespace FinNex.Application.Interfaces
         Task<Result<IList<MezuniyyetListDto>>> GetGozlemededeAsync();
         Task<Result<IList<MezuniyyetListDto>>> GetRehberTesdiqindeAsync();
         Task<Result<IList<MezuniyyetListDto>>> GetHrTesdiqindeAsync();
+        // HR izləmə üçün — SobeReisi və Rəhbər təsdiqində dayanan müraciətlər
+        Task<Result<IList<MezuniyyetListDto>>> GetProsesdeOlanlarAsync();
         Task<Result<IList<MezuniyyetListDto>>> GetSobeyeGoreMezuniyyetlerAsync(int departamentId, int sobeReisiIsciId);
         Task<Result<IList<MezuniyyetListDto>>> GetFiltrliAsync( DateTime? baslaTarixFrom,DateTime? baslaTarixTo,int? departamentId,int? status,string? axtaris);
 
