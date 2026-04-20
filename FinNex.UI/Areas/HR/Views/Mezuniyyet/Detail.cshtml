@@ -45,10 +45,20 @@
             <div class="fn-page-sub">@m.IsciAdSoyad · @NovText(m.Nov)</div>
         </div>
         <div style="display:flex;gap:8px;">
-            <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="HrSiyahi"
-               class="fn-btn fn-btn--outline">← Siyahı</a>
-            <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Edit" asp-route-id="@m.Id"
-               class="fn-btn fn-btn--primary">Redaktə et</a>
+            @{
+                // ReturnAction dəyərinə görə uyğun panelə geri qayıt
+                var backAction = string.IsNullOrEmpty(Model.ReturnAction) ? "Hr" : Model.ReturnAction;
+                // Boş, HrTesdiq, RehberTesdiq, SobeReisiTesdiq dəyərlərini GET action-na map et
+                var backActionMapped = backAction switch
+                {
+                    "HrTesdiq" => "Hr",
+                    "RehberTesdiq" => "Rehber",
+                    "SobeReisiTesdiq" => "Hr", // SobeReisi üçün ayrıca panel User/Tesdiq-dir
+                    _ => backAction
+                };
+            }
+            <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="@backActionMapped"
+               class="fn-btn fn-btn--outline">← Geri</a>
         </div>
     </div>
 
