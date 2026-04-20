@@ -205,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (hesablar.length === 1) {
             if (manual) { manual.style.display = ''; manual.value = hesablar[0].iban; manual.readOnly = true; }
-            setVal('AlanMusteriHesabId', hesablar[0].id);
+            setVal('AlanHesabIdHidden', hesablar[0].id);
             return;
         }
 
@@ -226,13 +226,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else {
                     all.forEach(o => { o.classList.remove('active'); o.style.display = 'none'; });
                     opt.classList.add('active'); opt.style.display = '';
-                    setVal('AlanMusteriHesabId', h.id);
+                    setVal('AlanHesabIdHidden', h.id);
                     setVal('AlanMusteriHesab', h.iban);
                 }
             });
             list.appendChild(opt);
         });
-        setVal('AlanMusteriHesabId', hesablar[0].id);
+        setVal('AlanHesabIdHidden', hesablar[0].id);
         setVal('AlanMusteriHesab', hesablar[0].iban);
     }
 
