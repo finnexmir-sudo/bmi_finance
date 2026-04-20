@@ -1,105 +1,85 @@
-﻿@model FinNex.Application.DTOs.PR_Odenis_Tapsirigi.Musteri.MusteriCreateDto
+@model FinNex.Application.DTOs.PR_Odenis_Tapsirigi.Musteri.MusteriCreateDto
 
 @{
     var returnUrl = ViewBag.ReturnUrl as string;
 
-    var ad = Context.Request.Query["ad"].ToString();
-    var voen = Context.Request.Query["voen"].ToString();
+    var ad    = Context.Request.Query["ad"].ToString();
+    var voen  = Context.Request.Query["voen"].ToString();
     var hesab = Context.Request.Query["hesab"].ToString();
 
-    var legvUrl = string.IsNullOrEmpty(returnUrl) ? null :
-        returnUrl + "?ad=" + Uri.EscapeDataString(ad ?? "")
-                  + "&voen=" + Uri.EscapeDataString(voen ?? "")
-                  + "&hesab=" + Uri.EscapeDataString(hesab ?? "");
+    string legvUrl;
+    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+    {
+        legvUrl = returnUrl
+                + (returnUrl.Contains('?') ? "&" : "?")
+                + "ad="    + Uri.EscapeDataString(ad ?? "")
+                + "&voen=" + Uri.EscapeDataString(voen ?? "")
+                + "&hesab=" + Uri.EscapeDataString(hesab ?? "");
+    }
+    else
+    {
+        legvUrl = Url.Action("Index", "Musteri");
+    }
 }
 
-<div class="musteri-form-page">
-    <!-- HEADER -->
-    <div class="musteri-form-header">
-        <div class="musteri-form-header-content">
-            <div class="musteri-form-icon">
-                <i class="bi bi-person-plus"></i>
-            </div>
-            <div>
-                <h3>Yeni Musteri Elave Et</h3>
-                <p>Musteri melumatlarini daxil edin</p>
-            </div>
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Yeni müştəri əlavə et</div>
+            <div class="fn-page-sub">Müştəri məlumatlarını daxil edin</div>
         </div>
+        <a href="@legvUrl" class="fn-btn fn-btn--outline">← Geri</a>
     </div>
 
-    <!-- FORM -->
-    <form asp-action="Yarat" method="post" class="musteri-form-card">
-
-        <!-- returnUrl hidden -->
+    <form asp-action="Yarat" method="post">
         <input type="hidden" name="returnUrl" value="@returnUrl" />
 
-        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" style="display:none"></div>
 
-        <!-- Musteri Adi -->
-        <div class="musteri-field-group">
-            <label class="musteri-field-label">
-                <i class="bi bi-person me-1"></i> Musterinin adi
-            </label>
-            <input asp-for="Ad" class="form-control musteri-input" placeholder="Meselen: BMI Sigorta MMC" />
-            <span asp-validation-for="Ad" class="text-danger small"></span>
+        <div class="fn-card" style="margin-bottom:16px;">
+            <div class="fn-card-title" style="margin-bottom:14px;">
+                <i class="bi bi-person-plus me-1"></i> Müştəri məlumatları
+            </div>
+
+            <div class="fn-form-group" style="margin-bottom:14px;">
+                <label class="fn-label">Müştərinin adı</label>
+                <input asp-for="Ad" class="fn-input" placeholder="Məsələn: BMI Sigorta MMC" />
+                <span asp-validation-for="Ad" class="text-danger small"></span>
+            </div>
+
+            <div class="fn-form-row" style="margin-bottom:14px;">
+                <div class="fn-form-group">
+                    <label class="fn-label">VÖEN</label>
+                    <input asp-for="Voen" class="fn-input" placeholder="Məsələn: 1400012345" />
+                    <span asp-validation-for="Voen" class="text-danger small"></span>
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Hesab</label>
+                    <input asp-for="Hesab" class="fn-input" placeholder="Məsələn: 4101000025" />
+                    <span asp-validation-for="Hesab" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="fn-form-group">
+                <label class="fn-label">Valyuta</label>
+                <select asp-for="ValyutaId"
+                        asp-items="ViewBag.Valyutalar"
+                        class="fn-select">
+                    <option value="">Valyuta seçin</option>
+                </select>
+                <span asp-validation-for="ValyutaId" class="text-danger small"></span>
+            </div>
         </div>
 
-        <!-- VOEN -->
-        <div class="musteri-field-group">
-            <label class="musteri-field-label">
-                <i class="bi bi-upc-scan me-1"></i> VOEN
-            </label>
-            <input asp-for="Voen" class="form-control musteri-input" placeholder="Meselen: 1400012345" />
-            <span asp-validation-for="Voen" class="text-danger small"></span>
-        </div>
-
-        <!-- Hesab -->
-        <div class="musteri-field-group">
-            <label class="musteri-field-label">
-                <i class="bi bi-credit-card me-1"></i> Hesab
-            </label>
-            <input asp-for="Hesab" class="form-control musteri-input" placeholder="Meselen: 4101000025" />
-            <span asp-validation-for="Hesab" class="text-danger small"></span>
-        </div>
-
-        <!-- Valyuta -->
-        <div class="musteri-field-group">
-            <label class="musteri-field-label">
-                <i class="bi bi-cash-coin me-1"></i> Valyuta
-            </label>
-            <select asp-for="ValyutaId"
-                    asp-items="ViewBag.Valyutalar"
-                    class="form-control musteri-input">
-                <option value="">Valyuta secin</option>
-            </select>
-            <span asp-validation-for="ValyutaId" class="text-danger small"></span>
-        </div>
-
-        <!-- ACTIONS -->
-        <div class="musteri-form-actions">
-            <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
-                <i class="bi bi-check-lg me-1"></i> Yadda Saxla
+        <div style="display:flex;justify-content:flex-end;gap:8px;">
+            <a href="@legvUrl" class="fn-btn fn-btn--outline">
+                <i class="bi bi-x-lg me-1"></i> Ləğv et
+            </a>
+            <button type="submit" class="fn-btn fn-btn--primary">
+                <i class="bi bi-check-lg me-1"></i> Yadda saxla
             </button>
-
-            @if (!string.IsNullOrEmpty(legvUrl))
-            {
-                <a href="@legvUrl" class="btn btn-outline-secondary btn-lg rounded-pill px-4">
-                    <i class="bi bi-x-lg me-1"></i> Legv Et
-                </a>
-            }
-            else
-            {
-                <a asp-action="Index" class="btn btn-outline-secondary btn-lg rounded-pill px-4">
-                    <i class="bi bi-x-lg me-1"></i> Legv Et
-                </a>
-            }
         </div>
-        ```
-
 
     </form>
 </div>
-
-@section Styles {
-    <link rel="stylesheet" href="~/css/musteri.css" asp-append-version="true" />
-}

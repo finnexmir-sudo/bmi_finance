@@ -24,17 +24,26 @@ public class BankController : Controller
     }
 
     // YENİ BANK SƏHİFƏSİ
-    public IActionResult Yarat() => View();
+    public IActionResult Yarat(string? returnUrl = null)
+    {
+        ViewBag.ReturnUrl = returnUrl;
+        return View();
+    }
 
     [HttpPost]
-    public async Task<IActionResult> Yarat(Bank bank)
+    public async Task<IActionResult> Yarat(Bank bank, string? returnUrl = null)
     {
         if (ModelState.IsValid)
         {
             await _uow.Repository<Bank>().YaratAsync(bank);
             await _uow.YaddaSaxlaAsync();
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
             return RedirectToAction(nameof(Index));
         }
+        ViewBag.ReturnUrl = returnUrl;
         return View(bank);
     }
 
