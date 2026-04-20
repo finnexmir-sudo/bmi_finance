@@ -1,173 +1,221 @@
-﻿@model FinNex.UI.Areas.HR.ViewModels.Mezuniyyet.HrMezuniyyetIndexVM
+@model FinNex.UI.Areas.HR.ViewModels.Mezuniyyet.HrMezuniyyetIndexVM
+@using FinNex.Domain.Entities.HR
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    var showTabs = currentAction == "Hr";
+    var showGeriyeBtn = currentAction == "Hr";
+
+    string ProsesStatusText(MezuniyyetStatus s) => s switch
+    {
+        MezuniyyetStatus.SobeReisiTesdiqinde => "Şöbə rəisi təsdiqində",
+        MezuniyyetStatus.RehberTesdiqinde => "Rəhbər təsdiqində",
+        MezuniyyetStatus.HrTesdiqinde => "HR təsdiqində",
+        _ => "Gözləyir"
+    };
+
+    string ProsesStatusColor(MezuniyyetStatus s) => s switch
+    {
+        MezuniyyetStatus.SobeReisiTesdiqinde => "#2d6cdf",
+        MezuniyyetStatus.RehberTesdiqinde => "#c9900a",
+        MezuniyyetStatus.HrTesdiqinde => "#7c3aed",
+        _ => "#8a93a8"
+    };
+
+    string NovBadgeStyle(MezuniyyetNovu n)
+    {
+        var (color, ad, icon) = n switch
+        {
+            MezuniyyetNovu.Xestelik  => ("#a855f7", "Xəstəlik",  "bi-hospital"),
+            MezuniyyetNovu.Ezamiyyet => ("#f97316", "Ezamiyyət", "bi-briefcase"),
+            _                        => ("#2d6cdf", "İllik",     "bi-calendar-check")
+        };
+        return $"display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:{color}1a;color:{color};";
+    }
+
+    string NovText(MezuniyyetNovu n) => n switch
+    {
+        MezuniyyetNovu.Xestelik  => "Xəstəlik",
+        MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
+        _                        => "İllik"
+    };
+
+    string NovIcon(MezuniyyetNovu n) => n switch
+    {
+        MezuniyyetNovu.Xestelik  => "bi-hospital",
+        MezuniyyetNovu.Ezamiyyet => "bi-briefcase",
+        _                        => "bi-calendar-check"
+    };
+}
 
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show">
-        <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div style="background:#d1fae5;border:1px solid #a7f3d0;color:#065f46;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+        <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
     </div>
 }
 @if (TempData["Error"] != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div style="background:#fee2e2;border:1px solid #fecaca;color:#991b1b;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+        <i class="bi bi-x-circle-fill"></i> @TempData["Error"]
     </div>
 }
 
-@{
-    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
-    // Geriyə Qeyd düyməsi və tablar yalnız HR panelində (Hr action) göstərilir
-    var showGeriyeBtn = currentAction == "Hr";
-    var showTabs = currentAction == "Hr";
-}
+<div class="fn-page">
 
-@if (showTabs)
-{
-    <ul class="nav nav-tabs mb-3">
-        <li class="nav-item">
-            <a class="nav-link @(Model.AktivTab == "tesdiq" ? "active fw-semibold" : "")"
-               asp-action="Hr" asp-route-tab="tesdiq">
-                <i class="bi bi-check2-circle me-1"></i>
-                HR təsdiqində
-                <span class="badge bg-primary ms-1">@Model.TesdiqSayi</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link @(Model.AktivTab == "proses" ? "active fw-semibold" : "")"
-               asp-action="Hr" asp-route-tab="proses">
-                <i class="bi bi-hourglass-split me-1"></i>
-                Prosesdə
-                <span class="badge bg-secondary ms-1">@Model.ProsesSayi</span>
-            </a>
-        </li>
-    </ul>
-}
-
-<div class="admin-table-card">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="fn-page-head">
         <div>
-            <h5 class="d-inline-block mb-0"><i class="bi bi-calendar-check me-2"></i>@Model.PageTitle</h5>
-            <span class="badge bg-primary ms-2">@Model.Mezuniyyetler.Count müraciət</span>
-            @if (Model.YalnizIzleme)
-            {
-                <span class="badge bg-info ms-1" title="Bu siyahı yalnız izləmə üçündür — təsdiq edə bilməzsiniz">
-                    <i class="bi bi-eye"></i> Yalnız izləmə
-                </span>
-            }
+            <div class="fn-page-title">@Model.PageTitle</div>
+            <div class="fn-page-sub">
+                @if (Model.YalnizIzleme)
+                {
+                    <span>Şöbə rəisi və Rəhbər təsdiqində olan müraciətləri izləyin</span>
+                }
+                else
+                {
+                    <span>HR-ın qərarını gözləyən müraciətlər</span>
+                }
+            </div>
         </div>
         @if (showGeriyeBtn)
         {
-            <a asp-action="GeriyeQeyd" class="btn btn-sm btn-warning">
+            <a asp-action="GeriyeQeyd" class="fn-btn fn-btn--primary"
+               style="background:#c9900a;border-color:#c9900a;">
                 <i class="bi bi-clock-history me-1"></i>
                 Geriyə qeyd et
             </a>
         }
     </div>
 
+    @* ── Tablar ── *@
+    @if (showTabs)
+    {
+        <div style="display:flex;gap:6px;border-bottom:1px solid #e4e8f0;margin-bottom:14px;">
+            <a asp-action="Hr" asp-route-tab="tesdiq"
+               style="padding:10px 16px;font-size:13px;font-weight:@(Model.AktivTab == "tesdiq" ? "700" : "500");color:@(Model.AktivTab == "tesdiq" ? "#1a2332" : "#8a93a8");text-decoration:none;border-bottom:2px solid @(Model.AktivTab == "tesdiq" ? "#e8b84b" : "transparent");display:inline-flex;align-items:center;gap:6px;transition:all .15s;">
+                <i class="bi bi-check2-circle"></i>
+                HR təsdiqində
+                <span style="background:@(Model.AktivTab == "tesdiq" ? "#e8b84b" : "#dde1ea");color:@(Model.AktivTab == "tesdiq" ? "#fff" : "#5a647a");padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700;">@Model.TesdiqSayi</span>
+            </a>
+            <a asp-action="Hr" asp-route-tab="proses"
+               style="padding:10px 16px;font-size:13px;font-weight:@(Model.AktivTab == "proses" ? "700" : "500");color:@(Model.AktivTab == "proses" ? "#1a2332" : "#8a93a8");text-decoration:none;border-bottom:2px solid @(Model.AktivTab == "proses" ? "#e8b84b" : "transparent");display:inline-flex;align-items:center;gap:6px;transition:all .15s;">
+                <i class="bi bi-hourglass-split"></i>
+                Prosesdə
+                <span style="background:@(Model.AktivTab == "proses" ? "#e8b84b" : "#dde1ea");color:@(Model.AktivTab == "proses" ? "#fff" : "#5a647a");padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700;">@Model.ProsesSayi</span>
+            </a>
+        </div>
+    }
+
+    @* ── Statistika / info rozetka ── *@
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;background:#fff;border:1px solid #e4e8f0;border-radius:8px;">
+            <span style="font-size:15px;font-weight:700;color:#1a2332;">@Model.Mezuniyyetler.Count</span>
+            <span style="font-size:11.5px;color:#8a93a8;">müraciət</span>
+        </div>
+        @if (Model.YalnizIzleme)
+        {
+            <div style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(45,108,223,.1);color:#2d6cdf;">
+                <i class="bi bi-eye"></i> Yalnız izləmə
+            </div>
+        }
+    </div>
+
+    @* ── Boş vəziyyət ── *@
     @if (!Model.Mezuniyyetler.Any())
     {
-        <div class="p-5 text-center text-muted">
-            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-            Gözləyən müraciət yoxdur.
+        <div class="fn-card" style="text-align:center;padding:40px 20px;">
+            <div style="font-size:32px;color:#dde1ea;margin-bottom:8px;">
+                <i class="bi bi-inbox"></i>
+            </div>
+            <div style="font-size:13px;color:#8a93a8;">
+                @(Model.YalnizIzleme ? "Prosesdə olan müraciət yoxdur." : "HR təsdiqi gözləyən müraciət yoxdur.")
+            </div>
         </div>
     }
     else
     {
-        <div class="table-responsive">
-            <table class="table admin-table">
+        <div class="fn-card" style="padding:0;overflow:hidden;">
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
                 <thead>
-                    <tr>
-                        <th>İşçi</th>
-                        <th>Şöbə / Vəzifə</th>
-                        <th>Növ</th>
-                        <th>Başlama</th>
-                        <th>Bitmə</th>
-                        <th class="text-center">İş Günü</th>
-                        <th>Status</th>
-                        <th class="text-end">Əməliyyat</th>
+                    <tr style="background:#f8f9fb;border-bottom:1px solid #e4e8f0;">
+                        <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;letter-spacing:0.04em;">İşçi</th>
+                        <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;">Növ</th>
+                        <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;">Başlama</th>
+                        <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;">Bitmə</th>
+                        <th style="padding:10px 14px;text-align:center;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;">Gün</th>
+                        <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;">Status</th>
+                        <th style="padding:10px 14px;text-align:right;font-size:11px;font-weight:600;color:#8a93a8;text-transform:uppercase;"></th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var m in Model.Mezuniyyetler)
                     {
-                        <tr>
-                            <td class="fw-semibold">@m.IsciAdSoyad</td>
-                            <td>
-                                <div>@m.SobeAdi</div>
-                                <div class="text-muted small">@m.VezifeAdi</div>
+                        <tr style="border-bottom:1px solid #f0f2f7;">
+                            <td style="padding:11px 14px;">
+                                <div style="font-weight:500;color:#1a2332;">@m.IsciAdSoyad</div>
+                                <div style="font-size:11px;color:#8a93a8;">@m.SobeAdi · @m.VezifeAdi</div>
                             </td>
-                            <td>
-                                @switch (m.Nov)
-                                {
-                                    case FinNex.Domain.Entities.HR.MezuniyyetNovu.Illik:
-                                        <span class="badge bg-primary bg-opacity-10 text-primary admin-badge">İllik</span>
-                                        break;
-                                    case FinNex.Domain.Entities.HR.MezuniyyetNovu.Xestelik:
-                                        <span class="badge bg-warning bg-opacity-10 text-warning admin-badge">Xəstəlik</span>
-                                        break;
-                                    case FinNex.Domain.Entities.HR.MezuniyyetNovu.Ezamiyyet:
-                                        <span class="badge bg-info bg-opacity-10 text-info admin-badge">Ezamiyyət</span>
-                                        break;
-                                }
+                            <td style="padding:11px 14px;">
+                                <span style="@NovBadgeStyle(m.Nov)">
+                                    <i class="bi @NovIcon(m.Nov)" style="font-size:10px;"></i>
+                                    @NovText(m.Nov)
+                                </span>
                             </td>
-                            <td>@m.BaslamaTarixi.ToString("dd MMM yyyy")</td>
-                            <td>@m.BitmeTarixi.ToString("dd MMM yyyy")</td>
-                            <td class="text-center fw-semibold">@m.IsGunlerininSayi</td>
-                            <td>
+                            <td style="padding:11px 14px;color:#3d4557;">@m.BaslamaTarixi.ToString("dd.MM.yyyy")</td>
+                            <td style="padding:11px 14px;color:#3d4557;">@m.BitmeTarixi.ToString("dd.MM.yyyy")</td>
+                            <td style="padding:11px 14px;text-align:center;font-weight:600;color:#1a2332;">@m.IsGunlerininSayi</td>
+                            <td style="padding:11px 14px;">
                                 @if (Model.YalnizIzleme)
                                 {
-                                    var statusLabel = m.Status switch
-                                    {
-                                        FinNex.Domain.Entities.HR.MezuniyyetStatus.SobeReisiTesdiqinde => "Şöbə rəisi",
-                                        FinNex.Domain.Entities.HR.MezuniyyetStatus.RehberTesdiqinde => "Rəhbər",
-                                        _ => "Gözləyir"
-                                    };
                                     var waitDays = (DateTime.Now - m.YaradilmaTarixi).Days;
-                                    var waitBadge = waitDays >= 3 ? "text-bg-danger" : waitDays >= 1 ? "text-bg-warning" : "text-bg-secondary";
-                                    <span class="badge bg-secondary bg-opacity-10 text-dark admin-badge">
-                                        <i class="bi bi-hourglass-split me-1"></i>@statusLabel təsdiqində
-                                    </span>
-                                    <div class="small mt-1">
-                                        <span class="badge @waitBadge">@waitDays gün gözləyir</span>
+                                    var waitColor = waitDays >= 3 ? "#c0392b" : waitDays >= 1 ? "#c9900a" : "#8a93a8";
+                                    var waitBg = waitDays >= 3 ? "rgba(192,57,43,.1)" : waitDays >= 1 ? "rgba(201,144,10,.1)" : "rgba(138,147,168,.1)";
+                                    var statusColor = ProsesStatusColor(m.Status);
+                                    <div style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:@(statusColor)1a;color:@(statusColor);">
+                                        <span style="width:6px;height:6px;border-radius:50%;background:@(statusColor);"></span>
+                                        @ProsesStatusText(m.Status)
+                                    </div>
+                                    <div style="margin-top:4px;">
+                                        <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:600;background:@waitBg;color:@waitColor;">
+                                            <i class="bi bi-clock"></i> @waitDays gün gözləyir
+                                        </span>
                                     </div>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-warning bg-opacity-10 text-warning admin-badge">
+                                    <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(201,144,10,.1);color:#c9900a;">
+                                        <span style="width:6px;height:6px;border-radius:50%;background:#c9900a;"></span>
                                         Gözləyir
                                     </span>
                                 }
                             </td>
-                            <td class="text-end">
-                                <div class="d-flex gap-1 justify-content-end">
-                                    <!-- Detal -->
+                            <td style="padding:11px 14px;text-align:right;">
+                                <div style="display:flex;gap:4px;justify-content:flex-end;">
                                     <a asp-action="Detal"
                                        asp-route-id="@m.Id"
                                        asp-route-returnAction="@Model.TesdiqAction"
-                                       class="btn btn-sm btn-outline-secondary"
+                                       style="padding:4px 9px;border:1px solid #e4e8f0;border-radius:6px;font-size:12px;color:#5a647a;text-decoration:none;display:inline-flex;align-items:center;"
                                        title="Detala bax">
                                         <i class="bi bi-eye"></i>
                                     </a>
 
                                     @if (!string.IsNullOrEmpty(Model.TesdiqAction))
                                     {
-                                        <!-- Təsdiq et -->
                                         <form asp-action="@Model.TesdiqAction" method="post" class="d-inline">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@m.Id" />
                                             <input type="hidden" name="status" value="true" />
                                             <button type="submit"
-                                                    class="btn btn-sm btn-outline-success"
+                                                    style="padding:4px 9px;border:1px solid #bbf7d0;background:rgba(30,155,107,.08);color:#15803d;border-radius:6px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;"
                                                     title="Təsdiq et"
                                                     onclick="return confirm('Müraciəti təsdiq etmək istəyirsiniz?')">
                                                 <i class="bi bi-check-lg"></i>
                                             </button>
                                         </form>
 
-                                        <!-- İmtina et -->
                                         <button type="button"
-                                                class="btn btn-sm btn-outline-danger"
+                                                style="padding:4px 9px;border:1px solid #fecaca;background:rgba(192,57,43,.08);color:#b91c1c;border-radius:6px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;"
                                                 title="İmtina et"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#imtinaModal"
@@ -184,28 +232,35 @@
             </table>
         </div>
     }
+
 </div>
 
-<!-- İmtina Modal -->
+@* İmtina Modal *@
 <div class="modal fade" id="imtinaModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-content" style="border:none;border-radius:12px;">
             <form id="imtinaForm" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" id="imtinaId" />
                 <input type="hidden" name="status" value="false" />
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-x-circle me-2 text-danger"></i>İmtina səbəbi</h5>
+                <div class="modal-header" style="border-bottom:1px solid #e4e8f0;">
+                    <h5 class="modal-title" style="font-size:15px;font-weight:700;color:#1a2332;">
+                        <i class="bi bi-x-circle me-2" style="color:#c0392b;"></i>İmtina səbəbi
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <label class="form-label fw-semibold">Səbəb <span class="text-danger">*</span></label>
-                    <textarea name="qeyd" class="form-control" rows="3"
-                              placeholder="İmtina səbəbini qeyd edin..." required></textarea>
+                    <label style="font-size:12px;font-weight:600;color:#5a647a;margin-bottom:6px;display:block;">
+                        Səbəb <span style="color:#c0392b;">*</span>
+                    </label>
+                    <textarea name="qeyd" rows="3" required
+                              style="width:100%;border:1px solid #e4e8f0;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;resize:vertical;"
+                              placeholder="İmtina səbəbini qeyd edin..."></textarea>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Ləğv et</button>
-                    <button type="submit" class="btn btn-danger">
+                <div class="modal-footer" style="border-top:1px solid #e4e8f0;">
+                    <button type="button" class="fn-btn fn-btn--outline" data-bs-dismiss="modal">Ləğv et</button>
+                    <button type="submit" class="fn-btn fn-btn--primary"
+                            style="background:#c0392b;border-color:#c0392b;">
                         <i class="bi bi-x-lg me-1"></i>İmtina et
                     </button>
                 </div>
@@ -216,7 +271,6 @@
 
 @section Scripts {
     <script>
-        // İmtina modalına id və action set et
         document.getElementById('imtinaModal').addEventListener('show.bs.modal', function (e) {
             const btn = e.relatedTarget;
             const id = btn.getAttribute('data-id');
