@@ -325,14 +325,37 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
         }
 
         // Bank yoxla və ya yarat
+        // İstifadəçi manual yaza bilər — bazada varsa tapılır, yoxsa yeni bank
+        // və hesab yaradılır. Hansı sahə doldurulubsa ona görə axtarırıq
+        // (kod > voen > swift > ad).
         [HttpPost]
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> BankYoxlaVeYarat([FromBody] BankYoxlaDto dto)
         {
-            // Bankı tap
+            if (dto == null)
+                return BadRequest("Bank məlumatı göndərilmədi.");
+
+            var kod      = (dto.Kod ?? "").Trim();
+            var ad       = (dto.Ad ?? "").Trim();
+            var voen     = (dto.Voen ?? "").Trim();
+            var swift    = (dto.SwiftBic ?? "").Trim();
+            var muxHesab = (dto.MuxHesab ?? "").Trim();
+
+            // Ən azı bir identifikator olmalıdır — yoxsa DB-də izləmə mənasız
+            if (string.IsNullOrEmpty(kod) && string.IsNullOrEmpty(voen)
+                && string.IsNullOrEmpty(swift) && string.IsNullOrEmpty(ad))
+            {
+                return BadRequest("Bank məlumatları boşdur. Ad, kod, VÖEN və ya SWIFT-dən ən azı biri olmalıdır.");
+            }
+
+            // Çoxmetrlik axtarış — ilk uyğun sahəyə görə tap
             var banklar = await _uow.Repository<Bank>()
                 .HamisiniGetirAsync(
-                    predicate: b => b.Kod == dto.Kod.Trim(),
+                    predicate: b =>
+                        (!string.IsNullOrEmpty(kod) && b.Kod == kod) ||
+                        (!string.IsNullOrEmpty(voen) && b.Voen == voen) ||
+                        (!string.IsNullOrEmpty(swift) && b.SwiftBic == swift) ||
+                        (!string.IsNullOrEmpty(ad) && b.Ad == ad),
                     include: q => q.Include(b => b.BankHesablari)
                 );
 
@@ -345,31 +368,39 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
             }
             else
             {
-                // Yeni bank yarat
                 bank = new Bank
                 {
-                    Ad = dto.Ad,
-                    Kod = dto.Kod,
-                    Voen = dto.Voen,
-                    SwiftBic = dto.SwiftBic
-                    //MuxHesab = dto.MuxHesab
+                    Ad = ad,
+                    Kod = kod,
+                    Voen = voen,
+                    SwiftBic = swift
                 };
                 await _uow.Repository<Bank>().YaratAsync(bank);
                 await _uow.YaddaSaxlaAsync();
             }
 
-            // Hesabı tap və ya yarat
-            var hesab = bank.BankHesablari.FirstOrDefault(h => h.Iban == dto.MuxHesab);
-            if (hesab == null)
+            // Hesabı tap və ya yarat — muxHesab boş ola bilər
+            BankHesabi hesab;
+            if (!string.IsNullOrEmpty(muxHesab))
             {
-                hesab = new BankHesabi
+                hesab = bank.BankHesablari.FirstOrDefault(h => h.Iban == muxHesab)
+                     ?? new BankHesabi { BankId = bank.Id, Iban = muxHesab, ValyutaId = 1 };
+                if (hesab.Id == 0)
                 {
-                    BankId = bank.Id,
-                    Iban = dto.MuxHesab,
-                    ValyutaId = 1 // AZN default
-                };
-                await _uow.Repository<BankHesabi>().YaratAsync(hesab);
-                await _uow.YaddaSaxlaAsync();
+                    await _uow.Repository<BankHesabi>().YaratAsync(hesab);
+                    await _uow.YaddaSaxlaAsync();
+                }
+            }
+            else
+            {
+                // IBAN yoxdur — ilk mövcud hesabı götür, yoxdursa boş hesab yarat
+                hesab = bank.BankHesablari.FirstOrDefault()
+                     ?? new BankHesabi { BankId = bank.Id, Iban = "", ValyutaId = 1 };
+                if (hesab.Id == 0)
+                {
+                    await _uow.Repository<BankHesabi>().YaratAsync(hesab);
+                    await _uow.YaddaSaxlaAsync();
+                }
             }
 
             return Json(new
@@ -381,54 +412,76 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
         }
 
         // Musteri yoxla və ya yarat
+        // Axtar ilə tapılmayan müştərilər manual yazılır — bu metod onları
+        // bazaya əlavə edir (VÖEN/Ad üzrə axtarır, hər ikisi boşdursa xəta verir).
         [HttpPost]
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> MusteriYoxlaVeYarat([FromBody] MusteriYoxlaDto dto)
         {
+            if (dto == null)
+                return BadRequest("Müştəri məlumatı göndərilmədi.");
+
+            var voen  = (dto.Voen ?? "").Trim();
+            var ad    = (dto.Ad ?? "").Trim();
+            var hesab = (dto.Hesab ?? "").Trim();
+
+            if (string.IsNullOrEmpty(voen) && string.IsNullOrEmpty(ad))
+                return BadRequest("Müştərinin ən azı adı və ya VÖEN-i daxil edilməlidir.");
+
+            // VÖEN varsa onunla tap; yoxdursa ada görə tap
             var musteriler = await _uow.Repository<Musteri>()
                 .HamisiniGetirAsync(
-                    predicate: m => m.Voen == dto.Voen.Trim(),
+                    predicate: m =>
+                        (!string.IsNullOrEmpty(voen) && m.Voen == voen) ||
+                        (string.IsNullOrEmpty(voen) && !string.IsNullOrEmpty(ad) && m.Ad == ad),
                     include: q => q.Include(m => m.MusteriHesablari)
                 );
 
-            if (musteriler.Any())
+            Musteri movcud;
+            bool tapildi = musteriler.Any();
+
+            if (tapildi)
             {
-                var movcud = musteriler.First();
-                var hesab = movcud.MusteriHesablari.FirstOrDefault();
-                return Json(new
-                {
-                    tapildi = true,
-                    id = movcud.Id,
-                    hesabId = hesab?.Id ?? 0,
-                    hesabIban = hesab?.Iban ?? ""
-                });
+                movcud = musteriler.First();
+            }
+            else
+            {
+                movcud = new Musteri { Ad = ad, Voen = voen };
+                await _uow.Repository<Musteri>().YaratAsync(movcud);
+                await _uow.YaddaSaxlaAsync();
             }
 
-            var yeniMusteri = new Musteri
+            // IBAN üzrə hesab tap və ya yarat. IBAN boşdursa, ilk mövcud hesabı
+            // qaytar — yoxdursa boş hesab yarat (sərt validasiya məzənnədə yox
+            // client-side formYoxla-da gedir).
+            MusteriHesabi musteriHesabi;
+            if (!string.IsNullOrEmpty(hesab))
             {
-                Ad = dto.Ad,
-                Voen = dto.Voen
-            };
-
-            await _uow.Repository<Musteri>().YaratAsync(yeniMusteri);
-            await _uow.YaddaSaxlaAsync();
-
-            var yeniHesab = new MusteriHesabi
+                musteriHesabi = movcud.MusteriHesablari.FirstOrDefault(h => h.Iban == hesab)
+                             ?? new MusteriHesabi { MusteriId = movcud.Id, Iban = hesab, ValyutaId = 1 };
+                if (musteriHesabi.Id == 0)
+                {
+                    await _uow.Repository<MusteriHesabi>().YaratAsync(musteriHesabi);
+                    await _uow.YaddaSaxlaAsync();
+                }
+            }
+            else
             {
-                MusteriId = yeniMusteri.Id,
-                Iban = dto.Hesab,
-                ValyutaId = 1
-            };
-
-            await _uow.Repository<MusteriHesabi>().YaratAsync(yeniHesab);
-            await _uow.YaddaSaxlaAsync();
+                musteriHesabi = movcud.MusteriHesablari.FirstOrDefault()
+                             ?? new MusteriHesabi { MusteriId = movcud.Id, Iban = "", ValyutaId = 1 };
+                if (musteriHesabi.Id == 0)
+                {
+                    await _uow.Repository<MusteriHesabi>().YaratAsync(musteriHesabi);
+                    await _uow.YaddaSaxlaAsync();
+                }
+            }
 
             return Json(new
             {
-                tapildi = false,
-                id = yeniMusteri.Id,
-                hesabId = yeniHesab.Id,
-                hesabIban = yeniHesab.Iban
+                tapildi,
+                id = movcud.Id,
+                hesabId = musteriHesabi.Id,
+                hesabIban = musteriHesabi.Iban
             });
         }
 
