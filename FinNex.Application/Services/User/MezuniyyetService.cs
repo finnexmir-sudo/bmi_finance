@@ -694,6 +694,58 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         }
     }
 
+    // HR izləmə paneli üçün — hələ şöbə rəisi/rəhbər təsdiqində dayanan
+    // müraciətlər (HR-a hələ çatmayanlar). HR bunları read-only görür ki,
+    // pipeline-i izləyə və gecikən qeydləri fərq edə bilsin.
+    public async Task<Result<IList<MezuniyyetListDto>>> GetProsesdeOlanlarAsync()
+    {
+        try
+        {
+            var entities = await _unitOfWork.Repository<Mezuniyyet>()
+                .HamisiniGetirAsync(
+                    predicate: x => x.Status == MezuniyyetStatus.SobeReisiTesdiqinde
+                                 || x.Status == MezuniyyetStatus.RehberTesdiqinde,
+                    include: q => q
+                        .Include(m => m.Isci)
+                            .ThenInclude(i => i.IsciTeyinatlari)
+                                .ThenInclude(t => t.Departament)
+                        .Include(m => m.Isci)
+                            .ThenInclude(i => i.IsciTeyinatlari)
+                                .ThenInclude(t => t.Vezife)
+                        .Include(m => m.EvezEdenIsci),
+                    izlemeden: true);
+
+            var dtos = entities
+                .OrderBy(x => x.YaradilmaTarixi) // ən qədim əvvəl — gecikənləri tez fərq et
+                .Select(m => new MezuniyyetListDto
+                {
+                    Id = m.Id,
+                    IsciAdSoyad = m.Isci.TamAd,
+                    SobeAdi = m.Isci.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => t.Departament.Ad)
+                        .FirstOrDefault() ?? "-",
+                    VezifeAdi = m.Isci.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => t.Vezife.Ad)
+                        .FirstOrDefault() ?? "-",
+                    EvezEdenIsciAdSoyad = m.EvezEdenIsci?.TamAd,
+                    Nov = m.Nov,
+                    Status = m.Status,
+                    BaslamaTarixi = m.BaslamaTarixi,
+                    BitmeTarixi = m.BitmeTarixi,
+                    IsGunlerininSayi = m.IsGunlerininSayi,
+                    YaradilmaTarixi = m.YaradilmaTarixi,
+                }).ToList();
+
+            return Result<IList<MezuniyyetListDto>>.Ok(dtos);
+        }
+        catch (Exception ex)
+        {
+            return Result<IList<MezuniyyetListDto>>.Fail($"Prosesdə olan müraciətlər gətirilmədi: {ex.Message}");
+        }
+    }
+
     public async Task<Result> LegvEtAsync(int id, int isciId)
     {
         var m = await _unitOfWork.Repository<Mezuniyyet>().IdIleGetirAsync(id);
