@@ -120,6 +120,17 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Hazırlanır...';
         }
 
+        // Diaqnostika — hansı hidden ID-lərin POST-da nə dəyər daşıdığını göstər
+        console.log('[GenerateWord] Hidden ID-lər POST-dan əvvəl:', {
+            oduyenBankId:    dto.oduyenBankId,
+            alanBankId:      dto.alanBankId,
+            oduyenMusteriId: dto.oduyenMusteriId,
+            oduyenHesabId:   dto.oduyenHesabId,
+            alanMusteriId:   dto.alanMusteriId,
+            alanHesabId:     dto.alanHesabId,
+            valyutaId:       dto.valyutaId
+        });
+
         try {
             const response = await fetch('/PR_Odenis_Tapsirigi/OdenisTapsirigi/GenerateWord', {
                 method: 'POST',
