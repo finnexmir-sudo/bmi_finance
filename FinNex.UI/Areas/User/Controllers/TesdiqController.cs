@@ -137,7 +137,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 return RedirectToAction(rol);
             }
 
-            var viewerRol = Enum.TryParse<StrukturRolTipi>(rol, out var r) ? (StrukturRolTipi?)r : null;
+            var viewerRol = Enum.TryParse<StrukturRolTipi>(rol, out var parsedViewerRol) ? (StrukturRolTipi?)parsedViewerRol : null;
             var overlap = await _mezuniyyetService.GetOverlapMezuniyyetlerAsync(id, viewerRol);
             var konflikt = await _mezuniyyetService.GetEvezediciKonfliktiAsync(id);
 
