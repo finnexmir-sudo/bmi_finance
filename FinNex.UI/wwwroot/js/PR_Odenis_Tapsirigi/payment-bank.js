@@ -318,8 +318,6 @@ document.addEventListener('DOMContentLoaded', function () {
             export etdiyi funksiya birbaşa çağırılır
     ================================================================ */
     async function bankYoxlaVeYarat() {
-        // Əvvəlki: if (AlanBankIdHidden dolu) return;  ← SİL BU SƏTRİ
-
         const dto = {
             ad: (el('AlanBankAd')?.value ?? '').trim(),
             kod: (el('AlanBankKod')?.value ?? '').trim(),
@@ -327,7 +325,8 @@ document.addEventListener('DOMContentLoaded', function () {
             swiftBic: (el('AlanBankSwift')?.value ?? '').trim(),
             muxHesab: (el('AlanBankMuxbirHesab')?.value ?? '').trim()
         };
-        if (!dto.kod) return;  // ← Yalnız kod yoxdursa keç
+        // Heç bir sahə doldurulmayıbsa server çağırışı mənasızdır
+        if (!dto.ad && !dto.kod && !dto.voen && !dto.swiftBic && !dto.muxHesab) return;
 
         try {
             const r = await fetch('/PR_Odenis_Tapsirigi/OdenisTapsirigi/BankYoxlaVeYarat', {
@@ -335,9 +334,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dto)
             });
+            if (!r.ok) { console.error('BankYoxlaVeYarat HTTP', r.status); return; }
             const d = await r.json();
-            setVal('AlanBankIdHidden', d.id);
-            setVal('AlanHesabIdHidden', d.hesabId);
+            if (d && d.id) setVal('AlanBankIdHidden', d.id);
+            if (d && d.hesabId) setVal('AlanHesabIdHidden', d.hesabId);
         } catch (e) { console.error('BankYoxlaVeYarat xətası:', e); }
     }
 
