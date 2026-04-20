@@ -261,7 +261,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             TempData["Success"] = result.Message ?? "Geriyə qeyd uğurla rəsmiləşdirildi.";
-            return RedirectToAction(nameof(Index));
+            // HR təsdiq panelinə qayıt (Index yalnız Admin üçündür).
+            return RedirectToAction(nameof(Hr));
         }
 
         private async Task<List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>> GetAktivIsciSelectListAsync(int? selected = null)
