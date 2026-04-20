@@ -17,8 +17,31 @@
 
 @{
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
-    // Geriyə Qeyd düyməsi yalnız HR panelində (Hr action) göstərilir
+    // Geriyə Qeyd düyməsi və tablar yalnız HR panelində (Hr action) göstərilir
     var showGeriyeBtn = currentAction == "Hr";
+    var showTabs = currentAction == "Hr";
+}
+
+@if (showTabs)
+{
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link @(Model.AktivTab == "tesdiq" ? "active fw-semibold" : "")"
+               asp-action="Hr" asp-route-tab="tesdiq">
+                <i class="bi bi-check2-circle me-1"></i>
+                HR təsdiqində
+                <span class="badge bg-primary ms-1">@Model.TesdiqSayi</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(Model.AktivTab == "proses" ? "active fw-semibold" : "")"
+               asp-action="Hr" asp-route-tab="proses">
+                <i class="bi bi-hourglass-split me-1"></i>
+                Prosesdə
+                <span class="badge bg-secondary ms-1">@Model.ProsesSayi</span>
+            </a>
+        </li>
+    </ul>
 }
 
 <div class="admin-table-card">
@@ -26,6 +49,12 @@
         <div>
             <h5 class="d-inline-block mb-0"><i class="bi bi-calendar-check me-2"></i>@Model.PageTitle</h5>
             <span class="badge bg-primary ms-2">@Model.Mezuniyyetler.Count müraciət</span>
+            @if (Model.YalnizIzleme)
+            {
+                <span class="badge bg-info ms-1" title="Bu siyahı yalnız izləmə üçündür — təsdiq edə bilməzsiniz">
+                    <i class="bi bi-eye"></i> Yalnız izləmə
+                </span>
+            }
         </div>
         @if (showGeriyeBtn)
         {
@@ -86,9 +115,29 @@
                             <td>@m.BitmeTarixi.ToString("dd MMM yyyy")</td>
                             <td class="text-center fw-semibold">@m.IsGunlerininSayi</td>
                             <td>
-                                <span class="badge bg-warning bg-opacity-10 text-warning admin-badge">
-                                    Gözləyir
-                                </span>
+                                @if (Model.YalnizIzleme)
+                                {
+                                    var statusLabel = m.Status switch
+                                    {
+                                        FinNex.Domain.Entities.HR.MezuniyyetStatus.SobeReisiTesdiqinde => "Şöbə rəisi",
+                                        FinNex.Domain.Entities.HR.MezuniyyetStatus.RehberTesdiqinde => "Rəhbər",
+                                        _ => "Gözləyir"
+                                    };
+                                    var waitDays = (DateTime.Now - m.YaradilmaTarixi).Days;
+                                    var waitBadge = waitDays >= 3 ? "text-bg-danger" : waitDays >= 1 ? "text-bg-warning" : "text-bg-secondary";
+                                    <span class="badge bg-secondary bg-opacity-10 text-dark admin-badge">
+                                        <i class="bi bi-hourglass-split me-1"></i>@statusLabel təsdiqində
+                                    </span>
+                                    <div class="small mt-1">
+                                        <span class="badge @waitBadge">@waitDays gün gözləyir</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning bg-opacity-10 text-warning admin-badge">
+                                        Gözləyir
+                                    </span>
+                                }
                             </td>
                             <td class="text-end">
                                 <div class="d-flex gap-1 justify-content-end">

@@ -104,18 +104,30 @@ namespace FinNex.UI.Areas.HR.Controllers
         // ══════════════════════════════════════════════════════
 
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
-        public async Task<IActionResult> Hr()
+        public async Task<IActionResult> Hr(string tab = "tesdiq")
         {
-            var result = await _mezuniyyetService.GetHrTesdiqindeAsync();
+            // Hər iki tabın siyahısı + sayğac üçün gətirilir
+            var tesdiqResult = await _mezuniyyetService.GetHrTesdiqindeAsync();
+            var prosesResult = await _mezuniyyetService.GetProsesdeOlanlarAsync();
+
+            var tesdiqList = tesdiqResult.Success ? tesdiqResult.Data!.ToList() : new();
+            var prosesList = prosesResult.Success ? prosesResult.Data!.ToList() : new();
+
+            var aktivTab = tab == "proses" ? "proses" : "tesdiq";
 
             var vm = new HrMezuniyyetIndexVM
             {
-                Mezuniyyetler = result.Success ? result.Data!.ToList() : new(),
-                PageTitle = "HR — Son Təsdiq",
-                TesdiqAction = "HrTesdiq"
+                Mezuniyyetler = aktivTab == "proses" ? prosesList : tesdiqList,
+                PageTitle = aktivTab == "proses"
+                    ? "Prosesdə olan müraciətlər"
+                    : "HR — Son Təsdiq",
+                TesdiqAction = aktivTab == "proses" ? "" : "HrTesdiq",
+                AktivTab = aktivTab,
+                TesdiqSayi = tesdiqList.Count,
+                ProsesSayi = prosesList.Count
             };
 
-            ViewData["Title"] = "HR Təsdiqi";
+            ViewData["Title"] = aktivTab == "proses" ? "HR — İzləmə" : "HR Təsdiqi";
             return View("TesdiqIndex", vm);
         }
 
