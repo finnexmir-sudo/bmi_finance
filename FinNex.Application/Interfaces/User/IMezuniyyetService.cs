@@ -27,5 +27,10 @@ namespace FinNex.Application.Interfaces
         // Təsdiq zamanı məlumatlandırma — paralel məzuniyyətlər + əvəzedici konflikti
         Task<Result<IList<MezuniyyetOverlapDto>>> GetOverlapMezuniyyetlerAsync(int mezuniyyetId, StrukturRolTipi? viewerRol = null);
         Task<Result<IList<EvezediciKonfliktDto>>> GetEvezediciKonfliktiAsync(int mezuniyyetId);
+
+        // HR tərəfindən keçmiş tarixlər üçün məzuniyyətin geriyə qeyd edilməsi.
+        // Təsdiq axınını atlayır, avtomatik təsdiqlənib statusunda yaranır,
+        // davamiyyətdə "Qayib" qeydlərini "İcazəli"-yə çevirir.
+        Task<Result<MezuniyyetDto>> GeriyeQeydEtAsync(GeriyeMezuniyyetCreateDto dto, int hrIsciId);
     }
 }

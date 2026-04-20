@@ -1,0 +1,115 @@
+@model FinNex.UI.Areas.HR.ViewModels.Mezuniyyet.GeriyeQeydVM
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = "Geriyə Məzuniyyət Qeyd et";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    var minTarix = DateTime.Today.AddDays(-Model.MaksimumKohneGun).ToString("yyyy-MM-dd");
+    var maxTarix = DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd");
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">
+                <i class="bi bi-clock-history me-2" style="color:#c9900a;"></i>
+                Geriyə Məzuniyyət Qeyd et
+            </div>
+            <div class="fn-page-sub">
+                Emergency hallarda işçi işdə olmayıbsa — HR sonradan qeydə alır
+            </div>
+        </div>
+        <a asp-action="Hr" class="fn-btn fn-btn--outline">
+            <i class="bi bi-arrow-left me-1"></i> Geri
+        </a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="fn-card" style="max-width:760px;">
+
+        <div style="padding:12px 14px;background:#fffbea;border:1px solid #fde68a;border-left:4px solid #c9900a;border-radius:8px;margin-bottom:18px;">
+            <div style="display:flex;align-items:start;gap:10px;">
+                <span style="font-size:18px;line-height:1;">⚠</span>
+                <div style="font-size:12.5px;color:#7a5a10;line-height:1.55;">
+                    <b>Diqqət:</b> Bu səhifə təsdiq axınını atlayır — müraciət dərhal
+                    <b>"Təsdiqlənib"</b> statusunda yaranır, işçi qəbul edilmiş sayılır.
+                    Maksimum <b>@Model.MaksimumKohneGun gün</b> əvvələ qədər keçmiş tarix
+                    üçün qeyd etmək olar. İşçinin davamiyyətindəki <b>"Qayib"</b> qeydləri
+                    avtomatik <b>"İcazəli/Xəstəlik/Ezamiyyət"</b>-ə çevriləcək. İllik
+                    məzuniyyət balansı azalacaq.
+                </div>
+            </div>
+        </div>
+
+        <form asp-action="GeriyeQeyd" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger d-none"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="IsciId" class="fn-sbi-label fw-semibold"></label>
+                    <select asp-for="IsciId" asp-items="Model.Isciler" class="form-select">
+                        <option value="">— İşçi seçin —</option>
+                    </select>
+                    <span asp-validation-for="IsciId" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Nov" class="fn-sbi-label fw-semibold"></label>
+                    <select asp-for="Nov" class="form-select">
+                        <option value="1" selected="@(Model.Nov == MezuniyyetNovu.Illik)">İllik məzuniyyət</option>
+                        <option value="2" selected="@(Model.Nov == MezuniyyetNovu.Xestelik)">Xəstəlik</option>
+                        <option value="3" selected="@(Model.Nov == MezuniyyetNovu.Ezamiyyet)">Ezamiyyət</option>
+                    </select>
+                    <span asp-validation-for="Nov" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="BaslamaTarixi" class="fn-sbi-label fw-semibold"></label>
+                    <input asp-for="BaslamaTarixi" type="date" class="form-control"
+                           min="@minTarix" max="@maxTarix"
+                           value="@Model.BaslamaTarixi.ToString("yyyy-MM-dd")" />
+                    <span asp-validation-for="BaslamaTarixi" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="BitmeTarixi" class="fn-sbi-label fw-semibold"></label>
+                    <input asp-for="BitmeTarixi" type="date" class="form-control"
+                           min="@minTarix" max="@maxTarix"
+                           value="@Model.BitmeTarixi.ToString("yyyy-MM-dd")" />
+                    <span asp-validation-for="BitmeTarixi" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Sebeb" class="fn-sbi-label fw-semibold"></label>
+                    <textarea asp-for="Sebeb" class="form-control" rows="3"
+                              placeholder="Nəyə görə geriyə qeyd olunur? (məs: 'işçi xəstə idi, sənədləri sonradan gətirdi')"></textarea>
+                    <span asp-validation-for="Sebeb" class="text-danger small"></span>
+                    <small class="text-muted">Audit üçün qeydə alınır — konkret və aydın yazın.</small>
+                </div>
+            </div>
+
+            <hr class="my-4" />
+
+            <div class="d-flex justify-content-end gap-2">
+                <a asp-action="Hr" class="fn-btn fn-btn--outline">Ləğv et</a>
+                <button type="submit" class="fn-btn fn-btn--primary"
+                        onclick="return confirm('Bu əməliyyat təsdiq axınını atlayır və dərhal təsdiqlənmiş kimi qeyd olunur. Davam edəksinizmi?');">
+                    <i class="bi bi-check2-circle me-1"></i> Qeyd et
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
