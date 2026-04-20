@@ -418,4 +418,97 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    /* ================================================================
+       AUTO-LOOKUP ON BLUR
+       İstifadəçi sahəni dolduranda (Axtar basmasa belə) sistem sessizcə
+       bazada axtarır və tapılarsa digər sahələri və hidden ID-ləri
+       avtomatik doldurur. Bu, duplicate yaradılmasının qarşısını alır.
+    ================================================================ */
+
+    // Sahəni autofill badge ilə yanıp-sönür — istifadəçi bilir DB-dən gəldi
+    function showAutoFillFlash(fieldId) {
+        const e = el(fieldId);
+        if (!e) return;
+        const origBorder = e.style.borderColor;
+        e.style.borderColor = '#1e9b6b';
+        e.style.boxShadow = '0 0 0 3px rgba(30,155,107,.15)';
+        setTimeout(() => {
+            e.style.borderColor = origBorder;
+            e.style.boxShadow = '';
+        }, 1200);
+    }
+
+    async function bankAutoLookup(prefix, searchField, queryParam) {
+        // ID artıq təyin olunubsa (Axtar ilə), təkrar lookup yoxdur
+        const currentId = (el(prefix + 'BankIdHidden')?.value ?? '').trim();
+        if (currentId && currentId !== '0') return;
+
+        const value = (el(searchField)?.value ?? '').trim();
+        if (!value) return;
+
+        try {
+            const r = await fetch(
+                `/PR_Odenis_Tapsirigi/OdenisTapsirigi/BankTap?${queryParam}=${encodeURIComponent(value)}`);
+            if (!r.ok) return;
+            const d = await r.json();
+            if (!d || !d.tapildi) return;
+
+            setVal(prefix + 'BankIdHidden',      d.id);
+            if (d.ad)       setVal(prefix + 'BankAd',          d.ad);
+            if (d.kod)      setVal(prefix + 'BankKod',         d.kod);
+            if (d.voen)     setVal(prefix + 'BankVoen',        d.voen);
+            if (d.swiftBic) setVal(prefix + 'BankSwift',       d.swiftBic);
+            if (d.muxHesab) setVal(prefix + 'BankMuxbirHesab', d.muxHesab);
+
+            ['BankAd', 'BankKod', 'BankVoen', 'BankSwift', 'BankMuxbirHesab']
+                .forEach(suffix => showAutoFillFlash(prefix + suffix));
+        } catch (e) { console.warn('BankTap xətası:', e); }
+    }
+
+    async function musteriAutoLookup(prefix, searchField, queryParam) {
+        const currentId = (el(prefix + 'MusteriIdHidden')?.value ?? '').trim();
+        if (currentId && currentId !== '0') return;
+
+        const value = (el(searchField)?.value ?? '').trim();
+        if (!value) return;
+
+        try {
+            const r = await fetch(
+                `/PR_Odenis_Tapsirigi/OdenisTapsirigi/MusteriTap?${queryParam}=${encodeURIComponent(value)}`);
+            if (!r.ok) return;
+            const d = await r.json();
+            if (!d || !d.tapildi) return;
+
+            setVal(prefix + 'MusteriIdHidden', d.id);
+            if (d.ad)        setVal(prefix + 'MusteriAd',    d.ad);
+            if (d.voen)      setVal(prefix + 'MusteriVoen',  d.voen);
+            if (d.hesabIban) setVal(prefix + 'MusteriHesab', d.hesabIban);
+            if (d.hesabId)   setVal(prefix + 'HesabIdHidden', d.hesabId);
+
+            ['MusteriAd', 'MusteriVoen', 'MusteriHesab']
+                .forEach(suffix => showAutoFillFlash(prefix + suffix));
+        } catch (e) { console.warn('MusteriTap xətası:', e); }
+    }
+
+    // Hər iki tərəf üçün blur-da lookup qoş (Ödüyən + Alan)
+    ['Oduyen', 'Alan'].forEach(prefix => {
+        // Bank sahələri — kod/voen/swift/ad
+        [['BankKod', 'kod'], ['BankVoen', 'voen'], ['BankSwift', 'swift'], ['BankAd', 'ad']]
+            .forEach(([suffix, param]) => {
+                const e = el(prefix + suffix);
+                if (e && !e.readOnly) {
+                    e.addEventListener('blur', () => bankAutoLookup(prefix, prefix + suffix, param));
+                }
+            });
+
+        // Müştəri sahələri — voen/iban/ad
+        [['MusteriVoen', 'voen'], ['MusteriHesab', 'iban'], ['MusteriAd', 'ad']]
+            .forEach(([suffix, param]) => {
+                const e = el(prefix + suffix);
+                if (e && !e.readOnly) {
+                    e.addEventListener('blur', () => musteriAutoLookup(prefix, prefix + suffix, param));
+                }
+            });
+    });
+
 });
