@@ -1125,13 +1125,10 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     Status = MezuniyyetStatus.Tesdiqlenib,
                     OdenisTipi = MezuniyyetOdenisTipi.AySonuOdenis,
                     OdenisStatus = MezuniyyetOdenisStatus.TetbiqEdilmir,
-                    // Bütün təsdiq addımlarını HR icracısı ilə qeyd et (audit üçün)
-                    SobeReisiTesdiq = true,
-                    SobeReisiId = hrIsciId,
-                    SobeReisiTesdiqTarixi = indi,
-                    RehberTesdiq = true,
-                    RehberId = hrIsciId,
-                    RehberTesdiqTarixi = indi,
+                    // Geriyə qeyd — təsdiq axını keçmir; yalnız HR addımı rəsmi
+                    // olaraq "rəsmiləşdirən" kimi qeyd olunur (audit).
+                    // SobeReisi/Rəhbər boş qalır, çünki onlar həqiqətən təsdiq
+                    // etməyiblər — fake audit yaratmayaq.
                     HrTesdiq = true,
                     HrId = hrIsciId,
                     HrTesdiqTarixi = indi
