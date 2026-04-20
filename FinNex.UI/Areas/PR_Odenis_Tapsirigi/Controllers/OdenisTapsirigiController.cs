@@ -185,6 +185,130 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
             });
         }
 
+        // API: Bank-ı istənilən sahə ilə tap (auto-lookup on blur üçün)
+        // kod/voen/swift/ad-dan hansı dolu olsa ona görə axtarır.
+        [HttpGet]
+        public async Task<IActionResult> BankTap(string? kod, string? voen, string? swift, string? ad)
+        {
+            var k  = (kod ?? "").Trim();
+            var v  = (voen ?? "").Trim();
+            var s  = (swift ?? "").Trim();
+            var a  = (ad ?? "").Trim();
+
+            if (string.IsNullOrEmpty(k) && string.IsNullOrEmpty(v)
+                && string.IsNullOrEmpty(s) && string.IsNullOrEmpty(a))
+                return Json(new { tapildi = false });
+
+            var bank = await _uow.Repository<Bank>()
+                .GetirAsync(
+                    predicate: b =>
+                        (!string.IsNullOrEmpty(k) && b.Kod == k) ||
+                        (!string.IsNullOrEmpty(v) && b.Voen == v) ||
+                        (!string.IsNullOrEmpty(s) && b.SwiftBic == s) ||
+                        (!string.IsNullOrEmpty(a) && b.Ad == a),
+                    include: q => q.Include(b => b.BankHesablari),
+                    izlemeden: true);
+
+            if (bank == null)
+                return Json(new { tapildi = false });
+
+            var hesab = bank.BankHesablari.FirstOrDefault();
+            return Json(new
+            {
+                tapildi = true,
+                id = bank.Id,
+                ad = bank.Ad,
+                kod = bank.Kod,
+                voen = bank.Voen,
+                swiftBic = bank.SwiftBic,
+                muxHesab = hesab?.Iban ?? bank.MuxHesab ?? "",
+                hesabId = hesab?.Id ?? 0
+            });
+        }
+
+        // API: Müştəri-ni istənilən sahə ilə tap (auto-lookup on blur üçün)
+        // IBAN > VÖEN > Ad prioritetlə axtarır.
+        [HttpGet]
+        public async Task<IActionResult> MusteriTap(string? voen, string? ad, string? iban)
+        {
+            var v    = (voen ?? "").Trim();
+            var a    = (ad ?? "").Trim();
+            var ibn  = (iban ?? "").Trim();
+
+            // 1. IBAN ən spesifikdir — əvvəlcə onu yoxla
+            if (!string.IsNullOrEmpty(ibn))
+            {
+                var hesab = await _uow.Repository<MusteriHesabi>()
+                    .GetirAsync(
+                        predicate: h => h.Iban == ibn,
+                        include: q => q.Include(h => h.Musteri).ThenInclude(m => m.MusteriHesablari),
+                        izlemeden: true);
+
+                if (hesab != null && hesab.Musteri != null)
+                {
+                    return Json(new
+                    {
+                        tapildi = true,
+                        id = hesab.MusteriId,
+                        ad = hesab.Musteri.Ad,
+                        voen = hesab.Musteri.Voen,
+                        hesabId = hesab.Id,
+                        hesabIban = hesab.Iban
+                    });
+                }
+            }
+
+            // 2. VÖEN
+            if (!string.IsNullOrEmpty(v))
+            {
+                var musteri = await _uow.Repository<Musteri>()
+                    .GetirAsync(
+                        predicate: m => m.Voen == v,
+                        include: q => q.Include(m => m.MusteriHesablari),
+                        izlemeden: true);
+
+                if (musteri != null)
+                {
+                    var h = musteri.MusteriHesablari.FirstOrDefault();
+                    return Json(new
+                    {
+                        tapildi = true,
+                        id = musteri.Id,
+                        ad = musteri.Ad,
+                        voen = musteri.Voen,
+                        hesabId = h?.Id ?? 0,
+                        hesabIban = h?.Iban ?? ""
+                    });
+                }
+            }
+
+            // 3. Ad (son çarə)
+            if (!string.IsNullOrEmpty(a))
+            {
+                var musteri = await _uow.Repository<Musteri>()
+                    .GetirAsync(
+                        predicate: m => m.Ad == a,
+                        include: q => q.Include(m => m.MusteriHesablari),
+                        izlemeden: true);
+
+                if (musteri != null)
+                {
+                    var h = musteri.MusteriHesablari.FirstOrDefault();
+                    return Json(new
+                    {
+                        tapildi = true,
+                        id = musteri.Id,
+                        ad = musteri.Ad,
+                        voen = musteri.Voen,
+                        hesabId = h?.Id ?? 0,
+                        hesabIban = h?.Iban ?? ""
+                    });
+                }
+            }
+
+            return Json(new { tapildi = false });
+        }
+
         // API: Musteri VOEN ile axtar
         [HttpGet]
         public async Task<IActionResult> MusteriVoenleAxtar(string voen)
