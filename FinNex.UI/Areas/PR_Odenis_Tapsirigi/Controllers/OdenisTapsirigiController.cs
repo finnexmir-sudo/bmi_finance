@@ -359,6 +359,35 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> GenerateWord([FromBody] OdenisTapsirigiWordDto dto)
         {
+            // ID validasiyası — Nomre rezerv etmədən əvvəl, ki eksik sahə olarsa
+            // sayğac boş yerə artmasın.
+            static bool TryId(string? raw, out int v)
+            {
+                v = 0;
+                return int.TryParse(raw, out v) && v > 0;
+            }
+
+            var eksikler = new List<string>();
+            if (!TryId(dto.OduyenBankId, out int obId))    eksikler.Add("Ödüyən bank (A1)");
+            if (!TryId(dto.AlanBankId, out int abId))      eksikler.Add("Alan bank (B1)");
+            if (!TryId(dto.OduyenMusteriId, out int omId)) eksikler.Add("Ödüyən müştəri (A2)");
+            if (!TryId(dto.OduyenHesabId, out int ohId))   eksikler.Add("Ödüyən müştərinin hesabı (A2)");
+            if (!TryId(dto.AlanMusteriId, out int amId))   eksikler.Add("Alan müştəri (B2)");
+            if (!TryId(dto.AlanHesabId, out int ahId))     eksikler.Add("Alan müştərinin hesabı (B2)");
+            if (!TryId(dto.ValyutaId, out int vId))        eksikler.Add("Valyuta");
+
+            if (eksikler.Any())
+            {
+                return BadRequest("Natamam sahələr: " + string.Join(", ", eksikler) +
+                    ". Əvvəlcə bu sahələri doldurun.");
+            }
+
+            if (!decimal.TryParse(dto.Mebleg, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out decimal mebleg))
+            {
+                return BadRequest("Məbləğ düzgün formatda deyil: '" + dto.Mebleg + "'");
+            }
+
             try
             {
                 int nomre = await _odenisNomreService.NovbetiNomreAlAsync();
@@ -370,31 +399,11 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
                     "wwwroot", "Files", "Word", "Odenis_tapsirigi.docx"
                 );
 
+                if (!System.IO.File.Exists(templatePath))
+                    return StatusCode(500, "Word şablonu tapılmadı: " + templatePath);
+
                 var bytes = OdenisTapsirigiWordService.GenerateFromTemplate(templatePath, dto);
                 var fileName = $"OdenisTapsirigi_{DateTime.Now:yyyyMMdd_HHmmss}.docx";
-
-                // ID validasiyası — hər sahəni ayrı yoxla ki, istifadəçi dəqiq
-                // hansı hissənin natamam olduğunu bilsin.
-                static bool TryId(string? raw, out int v)
-                {
-                    v = 0;
-                    return int.TryParse(raw, out v) && v > 0;
-                }
-
-                var eksikler = new List<string>();
-                if (!TryId(dto.OduyenBankId, out int obId))    eksikler.Add("Ödüyən bank (A1)");
-                if (!TryId(dto.AlanBankId, out int abId))      eksikler.Add("Alan bank (B1)");
-                if (!TryId(dto.OduyenMusteriId, out int omId)) eksikler.Add("Ödüyən müştəri (A2)");
-                if (!TryId(dto.OduyenHesabId, out int ohId))   eksikler.Add("Ödüyən müştərinin hesabı (A2)");
-                if (!TryId(dto.AlanMusteriId, out int amId))   eksikler.Add("Alan müştəri (B2)");
-                if (!TryId(dto.AlanHesabId, out int ahId))     eksikler.Add("Alan müştərinin hesabı (B2)");
-                if (!TryId(dto.ValyutaId, out int vId))        eksikler.Add("Valyuta");
-
-                if (eksikler.Any())
-                {
-                    return BadRequest("Natamam sahələr: " + string.Join(", ", eksikler) +
-                        ". Əvvəlcə bu sahələri doldurun.");
-                }
 
                 var odenis = new OdenisTapsirigi
                 {
@@ -407,7 +416,7 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
                     AlanMusteriId = amId,
                     AlanHesabId = ahId,
                     ValyutaId = vId,
-                    Mebleg = decimal.Parse(dto.Mebleg, System.Globalization.CultureInfo.InvariantCulture),
+                    Mebleg = mebleg,
                     MeblegYazi = dto.MeblegYazi,
                     Teyinat = dto.Teyinat,
                     ElaveInformasiya = dto.ElaveInfo,
@@ -424,7 +433,12 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "Word sənədi yaradılarkən xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.");
+                // Diaqnostika üçün daxili xətanın mesajını client-ə qaytar —
+                // intermittent problemləri console-da tez tap.
+                var detal = ex.GetBaseException().Message;
+                Console.Error.WriteLine("[GenerateWord] " + ex);
+                return StatusCode(500,
+                    "Word sənədi yaradılarkən xəta baş verdi: " + detal);
             }
         }
 
