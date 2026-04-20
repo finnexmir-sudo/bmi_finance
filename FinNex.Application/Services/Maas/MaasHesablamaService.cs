@@ -1198,13 +1198,17 @@ namespace FinNex.Application.Services.HR
                 decimal statMaasOAyda = await StatMaasiTarixeGoreTapAsync(isciId, ayBitis);
                 if (statMaasOAyda <= 0) statMaasOAyda = cariMaas; // fallback
 
-                decimal emsal = (statMaasOAyda > 0 && cariMaas > 0)
-                    ? Math.Round(cariMaas / statMaasOAyda, 4)
+                decimal emsalRaw = (statMaasOAyda > 0 && cariMaas > 0)
+                    ? cariMaas / statMaasOAyda
                     : 1m;
                 // Yalnız artım — azalma halda əmsal 1.0 qalır
-                if (emsal < 1m) emsal = 1m;
+                if (emsalRaw < 1m) emsalRaw = 1m;
 
-                decimal duzelmis = Math.Round(q.Qazanc * emsal, 2);
+                // Hesablamada TAM (yuvarlaqlanmamış) əmsal istifadə olunur,
+                // yalnız son nəticə 2 rəqəmə yuvarlaqlanır. Ekrana əmsal 4
+                // rəqəmlə göstərilir.
+                decimal duzelmis = Math.Round(q.Qazanc * emsalRaw, 2);
+                decimal emsalDisplay = Math.Round(emsalRaw, 4);
                 sDuzelmis += duzelmis;
 
                 result.QazancEmsallari.Add(new QazancEmsalSliceDto
@@ -1214,7 +1218,7 @@ namespace FinNex.Application.Services.HR
                     AyAdi = $"{azAyAdlari[q.Ay]} {q.Il}",
                     StatMaas = statMaasOAyda,
                     Qazanc = q.Qazanc,
-                    Emsal = emsal,
+                    Emsal = emsalDisplay,
                     DuzelmisQazanc = duzelmis
                 });
             }
