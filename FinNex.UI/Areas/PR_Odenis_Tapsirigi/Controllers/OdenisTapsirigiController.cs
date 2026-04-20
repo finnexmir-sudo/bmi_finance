@@ -249,16 +249,27 @@ namespace FinNex.UI.Areas.PR_Odenis_Tapsirigi.Controllers
                 var bytes = OdenisTapsirigiWordService.GenerateFromTemplate(templatePath, dto);
                 var fileName = $"OdenisTapsirigi_{DateTime.Now:yyyyMMdd_HHmmss}.docx";
 
-                // ID validasiyası
-                if (!int.TryParse(dto.OduyenBankId, out int obId) || obId <= 0 ||
-                    !int.TryParse(dto.AlanBankId, out int abId) || abId <= 0 ||
-                    !int.TryParse(dto.OduyenMusteriId, out int omId) || omId <= 0 ||
-                    !int.TryParse(dto.OduyenHesabId, out int ohId) || ohId <= 0 ||
-                    !int.TryParse(dto.AlanMusteriId, out int amId) || amId <= 0 ||
-                    !int.TryParse(dto.AlanHesabId, out int ahId) || ahId <= 0 ||
-                    !int.TryParse(dto.ValyutaId, out int vId) || vId <= 0)
+                // ID validasiyası — hər sahəni ayrı yoxla ki, istifadəçi dəqiq
+                // hansı hissənin natamam olduğunu bilsin.
+                static bool TryId(string? raw, out int v)
                 {
-                    return BadRequest("Bank, müştəri və ya hesab məlumatları natamam. Formu yenidən doldurun.");
+                    v = 0;
+                    return int.TryParse(raw, out v) && v > 0;
+                }
+
+                var eksikler = new List<string>();
+                if (!TryId(dto.OduyenBankId, out int obId))    eksikler.Add("Ödüyən bank (A1)");
+                if (!TryId(dto.AlanBankId, out int abId))      eksikler.Add("Alan bank (B1)");
+                if (!TryId(dto.OduyenMusteriId, out int omId)) eksikler.Add("Ödüyən müştəri (A2)");
+                if (!TryId(dto.OduyenHesabId, out int ohId))   eksikler.Add("Ödüyən müştərinin hesabı (A2)");
+                if (!TryId(dto.AlanMusteriId, out int amId))   eksikler.Add("Alan müştəri (B2)");
+                if (!TryId(dto.AlanHesabId, out int ahId))     eksikler.Add("Alan müştərinin hesabı (B2)");
+                if (!TryId(dto.ValyutaId, out int vId))        eksikler.Add("Valyuta");
+
+                if (eksikler.Any())
+                {
+                    return BadRequest("Natamam sahələr: " + string.Join(", ", eksikler) +
+                        ". Əvvəlcə bu sahələri doldurun.");
                 }
 
                 var odenis = new OdenisTapsirigi
