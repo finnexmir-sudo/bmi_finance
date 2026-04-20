@@ -98,9 +98,14 @@ namespace FinNex.UI.Areas.User.Controllers
                 .ToListAsync();
             decimal avansMebleg = avanslar.Sum(x => x.Mebleg);
 
-            // Hər ay üçün brüt (baza - məzuniyyət kəsintisi + (əgər ay sonu) məz. ödənişi),
-            // sonra tutulmalar və net. Qabaqcadan halında məzuniyyət ödənişi ayrıca
-            // hesablanır və ayrıca tutulmalara tabe olur.
+            // Hər iki rejimdə (Ay sonu VƏ Qabaqcadan) aylıq brüt EYNİ cür hesablanır:
+            //   ay brütü = işlənmiş günlərin maaşı + məzuniyyət pulu
+            // və aylıq brüt üzərindən vergi tutulur. Yeganə fərq ödəniş qaydasıdır:
+            //   • Ay sonu — hər şey bir ödənişlə (ay sonunda NET ödənilir)
+            //   • Qabaqcadan — məzuniyyət pulu avans kimi vergisiz verilir,
+            //                  ay sonunda ay nettindən avans çıxılır
+            // Beləliklə işçinin aylıq cəmi NET-i HƏR İKİ REJİMDƏ EYNİDİR —
+            // qanuni cəhətdən düzgün yanaşma.
             var ayProjections = new List<object>();
             decimal ayBrutCemi = 0;
             decimal ayNetCemi = 0;
@@ -114,11 +119,9 @@ namespace FinNex.UI.Areas.User.Controllers
                     ? Math.Round(cariMaas / s.AyIsGun * islenmisIsGun, 2)
                     : 0;
                 decimal kesinti = Math.Max(0, cariMaas - islenmisMaas);
-                decimal odenisPay = qabaqcadan ? 0 : s.Secilen;
 
-                // "Ay sonu maaşla" rejimində ayrı-ayrı hesablayırıq:
-                // 1) Yalnız işlənmiş günlərin maaşı (məzuniyyət pulu olmadan)
-                // 2) Məzuniyyət pulu ayrıca
+                // Məzuniyyət pulu həmişə ay brütünə daxil edilir (qanuni doğru)
+                decimal odenisPay = s.Secilen;
                 decimal ayBrut = islenmisMaas + odenisPay;
 
                 // Tutulmalar tam brüt üzrə (işlənmiş + məz pulu birlikdə)
@@ -159,7 +162,7 @@ namespace FinNex.UI.Areas.User.Controllers
                     // Ayrıca: yalnız işlənmiş günlər maaşı (NET)
                     islenmisNet = islenmisTax.Net,
                     islenmisTutulma = islenmisTax.UmumiTutulma,
-                    // Məzuniyyət pulu (NET): brüt − tutulma fərqi
+                    // Məzuniyyət pulu (NET) = tam ay net − işlənmiş net
                     mezOdenisNet = ayTax.Net - islenmisTax.Net
                 });
 
@@ -168,45 +171,41 @@ namespace FinNex.UI.Areas.User.Controllers
                 ayTutulmaCemi += ayTax.UmumiTutulma;
             }
 
-            // Ay sonu maaşla: məzuniyyət pulu cəmi (brüt və net)
+            // Ay sonu rejimi üçün məzuniyyət pulu cəmi (brüt və net, ayrıca göstərmək üçün)
             decimal mezPuluBrutCemi = hesablama.CemiOdenis;
             decimal islenmisNetCemi = 0;
             decimal mezOdenisNetCemi = 0;
-            if (!qabaqcadan)
+            foreach (var s in hesablama.AySliceleri)
             {
-                foreach (var s in hesablama.AySliceleri)
-                {
-                    int ig = Math.Max(0, s.AyIsGun - s.IsGun);
-                    decimal im = (cariMaas > 0 && s.AyIsGun > 0)
-                        ? Math.Round(cariMaas / s.AyIsGun * ig, 2) : 0;
-                    var itax = await _maasHesablamaService
-                        .TutulmalariHesablaAsync(im, new DateTime(s.Il, s.Ay, 1), isciId.Value);
-                    var ftax = await _maasHesablamaService
-                        .TutulmalariHesablaAsync(im + s.Secilen, new DateTime(s.Il, s.Ay, 1), isciId.Value);
-                    islenmisNetCemi += itax.Net;
-                    mezOdenisNetCemi += ftax.Net - itax.Net;
-                }
+                int ig = Math.Max(0, s.AyIsGun - s.IsGun);
+                decimal im = (cariMaas > 0 && s.AyIsGun > 0)
+                    ? Math.Round(cariMaas / s.AyIsGun * ig, 2) : 0;
+                var itax = await _maasHesablamaService
+                    .TutulmalariHesablaAsync(im, new DateTime(s.Il, s.Ay, 1), isciId.Value);
+                var ftax = await _maasHesablamaService
+                    .TutulmalariHesablaAsync(im + s.Secilen, new DateTime(s.Il, s.Ay, 1), isciId.Value);
+                islenmisNetCemi += itax.Net;
+                mezOdenisNetCemi += ftax.Net - itax.Net;
             }
 
-            // Qabaqcadan ödəniş: ayrıca brüt → tutulmalar → net
+            // Qabaqcadan rejimi: məzuniyyət pulu avans kimi VERGİSİZ ödənilir
+            // (brüt = avans məbləği), ay sonunda ay nettindən bu avans çıxılır.
             decimal advanceBrut = 0;
             decimal advanceTutulma = 0;
             decimal advanceNet = 0;
             if (qabaqcadan && hesablama.CemiOdenis > 0)
             {
                 advanceBrut = hesablama.CemiOdenis;
-                var advTax = await _maasHesablamaService
-                    .TutulmalariHesablaAsync(advanceBrut, baslama, isciId.Value);
-                advanceTutulma = advTax.UmumiTutulma;
-                advanceNet = advTax.Net;
+                advanceTutulma = 0;          // Avansdan vergi tutulmur
+                advanceNet = advanceBrut;    // İşçi tam brütü alır
             }
 
             // NET-dən çıxılanlar: yalnız işçi HYS payı + avans
-            // İşəgötürən HYS (hysIsv) NET-ə təsir etmir — GROSS-a əlavə olunub geri çıxılır
+            // Hər iki rejimdə aylıq cəmi NET eynidir (ayNetCemi).
+            // Qabaqcadan halda bu nettin bir hissəsi (advanceBrut) artıq ödənilib,
+            // qalanı ay sonunda ödənilir: aySonuQalan = ayNetCemi − advanceBrut.
             decimal hysAvansToplu = hysMebleg + avansMebleg;
-            decimal umumiNet = qabaqcadan
-                ? ayNetCemi + advanceNet - hysAvansToplu
-                : ayNetCemi - hysAvansToplu;
+            decimal umumiNet = ayNetCemi - hysAvansToplu;
             if (umumiNet < 0) umumiNet = 0;
 
             return Json(new
