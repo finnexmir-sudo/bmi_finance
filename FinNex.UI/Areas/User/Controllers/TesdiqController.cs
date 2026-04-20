@@ -181,7 +181,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 RehberTesdiqTarixi = dto.RehberTesdiqTarixi,
                 HrTesdiq = dto.HrTesdiq,
                 HrTesdiqTarixi = dto.HrTesdiqTarixi,
-                TesdiqciRol = Enum.TryParse<StrukturRolTipi>(rol, out var r) ? r : StrukturRolTipi.SobeReisi
+                TesdiqciRol = Enum.TryParse<StrukturRolTipi>(rol, out var mezTesdiqciRol) ? mezTesdiqciRol : StrukturRolTipi.SobeReisi
             };
 
             ViewBag.Rol = rol;
