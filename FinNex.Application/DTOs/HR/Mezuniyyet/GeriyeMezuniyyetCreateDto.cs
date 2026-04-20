@@ -26,9 +26,7 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         [DataType(DataType.Date)]
         public DateTime BitmeTarixi { get; set; }
 
-        [Required(ErrorMessage = "Səbəb qeyd edilməlidir.")]
-        [MinLength(5, ErrorMessage = "Səbəb ən azı 5 simvoldan ibarət olmalıdır.")]
         [MaxLength(500)]
-        public string Sebeb { get; set; } = "";
+        public string? Sebeb { get; set; }
     }
 }
