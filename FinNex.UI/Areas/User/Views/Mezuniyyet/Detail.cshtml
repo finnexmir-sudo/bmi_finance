@@ -3,6 +3,11 @@
     ViewData["Title"] = "Müraciət Detayı";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     ViewData["UserRole"] = User.IsInRole(RoleNames.Operator) ? RoleNames.Operator : "";
+
+    // Geriyə qeyd: HR normal axını atlamaqla birbaşa qeyd etdiyi müraciət.
+    // İşçiyə saxta workflow göstərməyək — xüsusi banner kifayət edir.
+    var isGeriyeQeyd = !string.IsNullOrEmpty(Model.Qeyd)
+                      && Model.Qeyd.StartsWith("[Geriyə qeyd");
 }
 
 <div class="fn-page">
@@ -36,8 +41,35 @@
                 </div>
             </div>
 
-            @* Workflow xətti *@
-            @if (!Model.ImtinaEdildi)
+            @* Geriyə qeyd — HR tərəfindən rəsmiləşdirilib, workflow göstərilmir *@
+            @if (isGeriyeQeyd)
+            {
+                <div class="fn-card" style="border-left:4px solid #1e9b6b;padding:16px 18px;">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <div style="width:40px;height:40px;border-radius:50%;background:#d1fae5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.5" />
+                                <path d="M8 12l3 3 5-6" stroke="#065f46" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div style="font-size:14px;font-weight:700;color:#065f46;">
+                                HR tərəfindən rəsmiləşdirilib
+                            </div>
+                            <div style="font-size:12.5px;color:#3d4557;margin-top:3px;line-height:1.5;">
+                                Bu məzuniyyət HR tərəfindən keçmiş tarixlər üçün qeyd edildi —
+                                təsdiq axını keçmədi.
+                                @if (Model.HrTesdiqTarixi.HasValue)
+                                {
+                                    <span>Qeyd tarixi: @Model.HrTesdiqTarixi.Value.ToString("dd.MM.yyyy HH:mm").</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            @* Workflow xətti — normal müraciətlər üçün *@
+            else if (!Model.ImtinaEdildi)
             {
                 <div class="fn-card fn-workflow-card">
                     <div class="fn-card-title" style="margin-bottom:16px">Müraciət gedişatı</div>
