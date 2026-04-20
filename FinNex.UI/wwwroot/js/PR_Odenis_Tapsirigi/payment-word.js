@@ -1,8 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
 
-    const btn = document.getElementById('btnGenerateWord');
-    if (!btn) return;
-
     const val = id => (document.getElementById(id)?.value ?? '').trim();
 
     // ─── Validasiya ───────────────────────────────────────────────────────────
@@ -53,7 +50,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ─── Word generasiyası ───────────────────────────────────────────────────
-    btn.addEventListener('click', async function () {
+    // Bu funksiya window-a export edilir ki, payment-bank.js əvvəlcə bank/
+    // müştəri yaratma await-ləri ilə hidden ID-ləri doldurub, sonra bunu
+    // çağıra bilsin. Düymənin ayrıca click listener-i yoxdur — payment-bank.js
+    // tək orkestrator olaraq ardıcıl axını idarə edir (race condition-un qarşısını alır).
+    async function triggerWordGeneration() {
+        const btn = document.getElementById('btnGenerateWord');
 
         const xetalar = formYoxla();
         if (xetalar.length > 0) {
@@ -104,17 +106,19 @@ document.addEventListener('DOMContentLoaded', function () {
             budceTesnifatininKodu: val('Odenis_BudceTesnifatininKodu'),
             budceSeviyyesininKodu: val('Odenis_BudceSeviyyesininKodu'),
 
-            oduyenBankId: val('OduyenBankIdHidden'),
-            alanBankId: val('AlanBankIdHidden'),
+            oduyenBankId:    val('OduyenBankIdHidden'),
+            alanBankId:      val('AlanBankIdHidden'),
             oduyenMusteriId: val('OduyenMusteriIdHidden'),
-            oduyenHesabId: val('OduyenHesabIdHidden'),
-            alanMusteriId: val('AlanMusteriIdHidden'),
-            alanHesabId: val('AlanHesabIdHidden'),
-            valyutaId: val('Odenis_ValyutaId'), 
+            oduyenHesabId:   val('OduyenHesabIdHidden'),
+            alanMusteriId:   val('AlanMusteriIdHidden'),
+            alanHesabId:     val('AlanHesabIdHidden'),
+            valyutaId:       val('Odenis_ValyutaId'),
         };
 
-        btn.disabled = true;
-        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Hazırlanır...';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Hazırlanır...';
+        }
 
         try {
             const response = await fetch('/PR_Odenis_Tapsirigi/OdenisTapsirigi/GenerateWord', {
@@ -127,22 +131,17 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             if (!response.ok) {
-                throw new Error('Server xətası: ' + response.status);
+                // Server xəta mətnini oxu — mümkünsə istifadəçiyə yaxşı mesaj göstər
+                let mesaj = 'Server xətası: ' + response.status;
+                try {
+                    const errText = await response.text();
+                    if (errText) mesaj += '\n' + errText;
+                } catch (_) { }
+                throw new Error(mesaj);
             }
 
-            console.log({
-                oduyenBankId: document.getElementById('OduyenBankIdHidden')?.value,
-                alanBankId: document.getElementById('AlanBankIdHidden')?.value,
-                oduyenMusteriId: document.getElementById('OduyenMusteriIdHidden')?.value,
-                oduyenHesabId: document.getElementById('OduyenHesabIdHidden')?.value,
-                alanMusteriId: document.getElementById('AlanMusteriIdHidden')?.value,
-                alanHesabId: document.getElementById('AlanHesabIdHidden')?.value,
-                valyutaId: document.getElementById('Odenis_ValyutaId')?.value,
-            });
-
-
             const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);   
+            const url = window.URL.createObjectURL(blob);
 
             const a = document.createElement('a');
             a.href = url;
@@ -159,8 +158,13 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (err) {
             alert('Word sənədi hazırlanarkən xəta baş verdi:\n' + err.message);
         } finally {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-file-earmark-word"></i> Yadda saxla';
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-file-earmark-word"></i> Yadda saxla';
+            }
         }
-    });
+    }
+
+    // Export — payment-bank.js orkestrator çağırır
+    window.triggerWordGeneration = triggerWordGeneration;
 });
