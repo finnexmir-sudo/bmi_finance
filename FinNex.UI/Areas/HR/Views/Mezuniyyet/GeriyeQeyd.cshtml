@@ -89,11 +89,13 @@
                 </div>
 
                 <div class="col-12">
-                    <label asp-for="Sebeb" class="fn-sbi-label fw-semibold"></label>
+                    <label asp-for="Sebeb" class="fn-sbi-label fw-semibold">
+                        Səbəb <span class="text-muted small fw-normal">(ixtiyari)</span>
+                    </label>
                     <textarea asp-for="Sebeb" class="form-control" rows="3"
                               placeholder="Nəyə görə geriyə qeyd olunur? (məs: 'işçi xəstə idi, sənədləri sonradan gətirdi')"></textarea>
                     <span asp-validation-for="Sebeb" class="text-danger small"></span>
-                    <small class="text-muted">Audit üçün qeydə alınır — konkret və aydın yazın.</small>
+                    <small class="text-muted">Verilərsə, audit üçün qeydə alınır.</small>
                 </div>
             </div>
 

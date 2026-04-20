@@ -1110,6 +1110,10 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
                 // ── 5. Entity yarat — bütün addımlar HR tərəfindən təsdiqli ──
                 var indi = DateTime.Now;
+                var sebebTrim = string.IsNullOrWhiteSpace(dto.Sebeb) ? null : dto.Sebeb.Trim();
+                var qeydMetni = sebebTrim == null
+                    ? "[Geriyə qeyd — HR]"
+                    : $"[Geriyə qeyd — HR] {sebebTrim}";
                 var entity = new Mezuniyyet
                 {
                     IsciId = dto.IsciId,
@@ -1117,7 +1121,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     BaslamaTarixi = dto.BaslamaTarixi,
                     BitmeTarixi = dto.BitmeTarixi,
                     IsGunlerininSayi = isGunu,
-                    Qeyd = $"[Geriyə qeyd — HR] {dto.Sebeb}",
+                    Qeyd = qeydMetni,
                     Status = MezuniyyetStatus.Tesdiqlenib,
                     OdenisTipi = MezuniyyetOdenisTipi.AySonuOdenis,
                     OdenisStatus = MezuniyyetOdenisStatus.TetbiqEdilmir,
@@ -1200,11 +1204,12 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 var dovr = $"{dto.BaslamaTarixi:dd.MM.yyyy} – {dto.BitmeTarixi:dd.MM.yyyy}";
 
                 // İşçiyə
+                var sebebMetn = sebebTrim == null ? "" : $" Səbəb: {sebebTrim}";
                 await _bildirisRouter.NotifyIsciAsync(
                     dto.IsciId,
                     BildirisNovu.MezuniyyetTesdiq,
                     "HR geriyə məzuniyyət qeyd etdi",
-                    $"HR sizin üçün {dovr} ({isGunu} iş günü, {dto.Nov}) məzuniyyəti qeyd etdi. Səbəb: {dto.Sebeb}",
+                    $"HR sizin üçün {dovr} ({isGunu} iş günü, {dto.Nov}) məzuniyyəti qeyd etdi.{sebebMetn}",
                     redirectUrl: $"/User/Mezuniyyet/Detail/{entity.Id}",
                     mezuniyyetId: entity.Id);
 
