@@ -119,6 +119,10 @@ public class ADMSController : Controller
 
             var tarix = vaxt.Date;
 
+            // Həmin işçi+tarix üçün mövcud davamiyyət qeydini tap
+            var movcud = await _db.Davamiyyetler
+                .FirstOrDefaultAsync(x => x.IsciId == isciId && x.Tarix == tarix);
+
             // İş başlama vaxtı — 9:00. Bu vaxta qədər hər yeni oxuma "duplikat giriş
             // cəhdi" kimi qəbul olunur (işçi qayıdıb ikinci dəfə barmağını basa bilər
             // və sistem bunu çıxış kimi yazmamalıdır). 9:00-dan sonra sonrakı oxumalar
