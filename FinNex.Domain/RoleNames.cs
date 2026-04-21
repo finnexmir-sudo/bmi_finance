@@ -10,4 +10,9 @@ public static class RoleNames
     public const string Rehber = "Rehber";
     public const string SobeReisi = "SobeReisi";
     public const string Muhasib = "Muhasib";
+
+    // Kredit modulu — admin bu rolu olan istifadəçilər kimin kredit müraciətlərinə
+    // baxa və ya komitə üzvü olduğunu idarə edir. Əsas Admin rolu da avtomatik
+    // bu səlahiyyətə malikdir.
+    public const string KreditAdmin = "KreditAdmin";
 }

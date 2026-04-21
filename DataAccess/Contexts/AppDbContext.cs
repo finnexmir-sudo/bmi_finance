@@ -119,6 +119,13 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
 
     // Kredit
     public DbSet<FinNex.Domain.Entities.Kredit.KreditMuraciet> KreditMuracietler { get; set; }
+    public DbSet<FinNex.Domain.Entities.Kredit.KreditBaxanIsci> KreditBaxanIsciler { get; set; }
+    public DbSet<FinNex.Domain.Entities.Kredit.KomiteUzvu> KomiteUzvleri { get; set; }
+    public DbSet<FinNex.Domain.Entities.Kredit.KreditQerar> KreditQerarlar { get; set; }
+    public DbSet<FinNex.Domain.Entities.Kredit.KreditQerarImza> KreditQerarImzalar { get; set; }
+    public DbSet<FinNex.Domain.Entities.Kredit.KreditZamin> KreditZaminler { get; set; }
+    public DbSet<FinNex.Domain.Entities.Kredit.KreditRandevu> KreditRandevular { get; set; }
+    public DbSet<FinNex.Domain.Entities.Kredit.KreditSmsLog> KreditSmsLoglar { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -908,6 +915,97 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasOne(x => x.BaxanIsci)
             .WithMany()
             .HasForeignKey(x => x.BaxanIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditMuraciet>()
+            .HasOne(x => x.MkrBaxanIsci)
+            .WithMany()
+            .HasForeignKey(x => x.MkrBaxanIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditMuraciet>()
+            .HasOne(x => x.AsanFinanceBaxanIsci)
+            .WithMany()
+            .HasForeignKey(x => x.AsanFinanceBaxanIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        // ── Kredit Baxan İşçilər ──────────────────────────────
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditBaxanIsci>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ── Komitə Üzvü ───────────────────────────────────────
+        builder.Entity<FinNex.Domain.Entities.Kredit.KomiteUzvu>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ── Kredit Qərar ──────────────────────────────────────
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditQerar>()
+            .HasOne(x => x.KreditMuraciet)
+            .WithOne(m => m.Qerar!)
+            .HasForeignKey<FinNex.Domain.Entities.Kredit.KreditQerar>(x => x.KreditMuracietId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditQerar>()
+            .HasOne(x => x.DaxilEdenIsci)
+            .WithMany()
+            .HasForeignKey(x => x.DaxilEdenIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        // ── Kredit Qərar İmza ────────────────────────────────
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditQerarImza>()
+            .HasOne(x => x.KreditQerar)
+            .WithMany(q => q.Imzalar)
+            .HasForeignKey(x => x.KreditQerarId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditQerarImza>()
+            .HasOne(x => x.KomiteUzvu)
+            .WithMany()
+            .HasForeignKey(x => x.KomiteUzvuId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // ── Kredit Zamin ──────────────────────────────────────
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditZamin>()
+            .HasOne(x => x.KreditMuraciet)
+            .WithMany(m => m.Zaminler)
+            .HasForeignKey(x => x.KreditMuracietId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditZamin>()
+            .HasIndex(x => x.FIN);
+
+        // ── Kredit Randevu ────────────────────────────────────
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditRandevu>()
+            .HasOne(x => x.KreditMuraciet)
+            .WithOne(m => m.Randevu!)
+            .HasForeignKey<FinNex.Domain.Entities.Kredit.KreditRandevu>(x => x.KreditMuracietId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditRandevu>()
+            .HasOne(x => x.TeyinEdenIsci)
+            .WithMany()
+            .HasForeignKey(x => x.TeyinEdenIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditRandevu>()
+            .HasIndex(x => x.Tarix);
+
+        // ── Kredit SMS Log ────────────────────────────────────
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditSmsLog>()
+            .HasOne(x => x.KreditMuraciet)
+            .WithMany(m => m.SmsLoglar)
+            .HasForeignKey(x => x.KreditMuracietId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditSmsLog>()
+            .HasOne(x => x.GonderenIsci)
+            .WithMany()
+            .HasForeignKey(x => x.GonderenIsciId)
             .OnDelete(DeleteBehavior.NoAction);
 
         // ── XercKateqoriyasi Seed Data ────────────────────────
