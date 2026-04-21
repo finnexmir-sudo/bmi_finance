@@ -82,6 +82,20 @@
                 Permissions
             </a>
 
+            <div class="nav-section">Kredit</div>
+
+            <a class="nav-link @(currentController == "KreditBaxanIsci" ? "active" : "")"
+               asp-area="Admin" asp-controller="KreditBaxanIsci" asp-action="Index">
+                <i class="bi bi-cash-coin"></i>
+                Baxan işçilər
+            </a>
+
+            <a class="nav-link @(currentController == "KomiteUzvu" ? "active" : "")"
+               asp-area="Admin" asp-controller="KomiteUzvu" asp-action="Index">
+                <i class="bi bi-people-fill"></i>
+                Komitə üzvləri
+            </a>
+
             <div class="nav-section">System</div>
 
             <a class="nav-link @(currentController == "LoginLogs" ? "active" : "")"

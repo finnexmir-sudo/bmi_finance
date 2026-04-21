@@ -1,0 +1,105 @@
+@model List<IsciSecimVM>
+@{
+    var axtaris = ViewBag.Axtaris as string;
+}
+
+<div class="admin-table-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-person-plus-fill me-2"></i>Komitə üçün işçi seç</h5>
+        <a asp-action="Index" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Geri
+        </a>
+    </div>
+
+    <div class="p-3 border-bottom">
+        <form method="get" asp-action="Secim" class="d-flex gap-2">
+            <input type="text" name="axtaris" value="@axtaris" placeholder="Ad, soyad və ya FIN..."
+                   class="form-control" />
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i>
+            </button>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table admin-table mb-0">
+            <thead>
+                <tr>
+                    <th>Ad Soyad</th>
+                    <th>FIN</th>
+                    <th>Şöbə</th>
+                    <th>Vəzifə</th>
+                    <th class="text-end">Əməliyyat</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    <tr><td colspan="5" class="text-center text-muted py-4">Uyğun işçi tapılmadı.</td></tr>
+                }
+                else
+                {
+                    @foreach (var row in Model)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@row.TamAd</td>
+                            <td>@row.FIN</td>
+                            <td>@(row.SobeAdi ?? "—")</td>
+                            <td>@(row.VezifeAdi ?? "—")</td>
+                            <td class="text-end">
+                                @if (row.ArtiqTeyindir)
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success admin-badge">
+                                        <i class="bi bi-check-circle me-1"></i>Üzvdür
+                                    </span>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                            data-bs-toggle="modal" data-bs-target="#modal_@row.IsciId">
+                                        <i class="bi bi-plus-lg me-1"></i>Üzv et
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@foreach (var row in Model.Where(r => !r.ArtiqTeyindir))
+{
+    <div class="modal fade" id="modal_@row.IsciId" tabindex="-1">
+        <div class="modal-dialog">
+            <form asp-action="TeyinEt" method="post" class="modal-content">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title">Komitə üzvü — @row.TamAd</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="IsciId" value="@row.IsciId" />
+                    <div class="mb-3">
+                        <label class="form-label">Rol</label>
+                        <select name="Rol" class="form-select">
+                            <option value="0" selected>Üzv</option>
+                            <option value="1">Sədr</option>
+                            <option value="2">Sədr müavini</option>
+                            <option value="3">Katib</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Qeyd (ixtiyari)</label>
+                        <textarea name="Qeyd" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bağla</button>
+                    <button type="submit" class="btn btn-primary">Əlavə et</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
