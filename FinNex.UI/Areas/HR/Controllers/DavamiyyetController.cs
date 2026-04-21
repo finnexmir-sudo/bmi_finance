@@ -167,6 +167,64 @@ namespace FinNex.UI.Areas.HR.Controllers
             return File(ms.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
 
+        // ── Gözlənilən işçilər ──────────────────────────────────
+        // Aktiv olan, amma göstərilən tarix üçün davamiyyət qeydi olmayan
+        // işçilər. Bu gün üçün — hələ gəlməyənlər. Keçmiş tarix üçün — real
+        // qayıblar (icazə/xəstəlik yoxdursa).
+        [HttpGet]
+        public async Task<IActionResult> GetGozlenilen(DateTime? tarix)
+        {
+            var hedef = (tarix ?? DateTime.Today).Date;
+
+            // Aktiv işçilər
+            var aktivIsciler = await _unitOfWork.Repository<Isci>()
+                .Query()
+                .AsNoTracking()
+                .Where(x => !x.Silinib && x.Status == IsciStatus.Aktiv)
+                .Include(i => i.IsciTeyinatlari.Where(t => !t.Silinib))
+                    .ThenInclude(t => t.Departament)
+                .ToListAsync();
+
+            // Hədəf tarixdə qeydi olanların ID-ləri
+            var qeydiOlanlar = await _unitOfWork.Repository<Davamiyyet>()
+                .Query()
+                .AsNoTracking()
+                .Where(x => !x.Silinib && x.Tarix.Date == hedef)
+                .Select(x => x.IsciId)
+                .ToListAsync();
+
+            var gozlenilenler = aktivIsciler
+                .Where(i => !qeydiOlanlar.Contains(i.Id))
+                .Select(i =>
+                {
+                    var esasTeyinat = i.IsciTeyinatlari
+                        .Where(t => t.Esasdir && !t.Silinib)
+                        .FirstOrDefault()
+                        ?? i.IsciTeyinatlari.FirstOrDefault(t => !t.Silinib);
+                    return new
+                    {
+                        id = 0,
+                        isciId = i.Id,
+                        isciTamAd = i.Ad + " " + i.Soyad,
+                        departamentAd = esasTeyinat?.Departament?.Ad ?? "-",
+                        tarix = hedef,
+                        girisVaxti = (DateTime?)null,
+                        cixisVaxti = (DateTime?)null,
+                        // Keçmiş gün üçün = Qayıb (3), bu gün üçün = Gözlənilir (0 virtual)
+                        status = hedef < DateTime.Today ? 3 : 0
+                    };
+                })
+                .OrderBy(x => x.isciTamAd)
+                .ToList();
+
+            return Json(new
+            {
+                records = gozlenilenler,
+                count = gozlenilenler.Count,
+                tarix = hedef
+            });
+        }
+
         [HttpGet]
         public async Task<IActionResult> IsciAxtar(string q)
         {

@@ -64,7 +64,11 @@ document.addEventListener('DOMContentLoaded', function () {
             // Remove active from all
             document.querySelectorAll('.hrd-kpi--clickable').forEach(function (k) { k.classList.remove('hrd-kpi--active'); });
 
-            if (statusVal === '') {
+            if (statusVal === 'gozlenilen') {
+                // Gözlənilən işçilər — ayrı endpoint
+                kpi.classList.add('hrd-kpi--active');
+                loadGozlenilen();
+            } else if (statusVal === '') {
                 // "Cəmi" — hamısını göstər, filtr sil
                 selectStatus.value = '';
                 var p = getBaseParams();
@@ -84,6 +88,25 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    // ── Gözlənilən işçiləri yüklə ──
+    function loadGozlenilen() {
+        var tarix = inputTarix.value || new Date().toISOString().split('T')[0];
+        var url = '/HR/Davamiyyet/GetGozlenilen?tarix=' + encodeURIComponent(tarix);
+
+        tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><div class="spinner-border spinner-border-sm text-muted"></div><div style="margin-top:8px">Yüklənir...</div></div></td></tr>';
+
+        fetch(url)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                renderTable(data.records || []);
+                recordCount.textContent = (data.count || 0) + ' gözlənilən işçi';
+                extraStats.style.display = 'none';
+            })
+            .catch(function () {
+                tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><i class="bi bi-exclamation-triangle"></i><div>Xəta baş verdi</div></div></td></tr>';
+            });
+    }
 
     // ── Tarixə görə axtarış ──
     btnAxtar.addEventListener('click', function () {
@@ -275,6 +298,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function getStatusBadge(status) {
         switch (status) {
+            case 0: return '<span class="hrd-badge" style="background:rgba(99,102,241,.1);color:#6366f1;"><span class="hrd-badge-dot" style="background:#6366f1;"></span>Gözlənilir</span>';
             case 1: return '<span class="hrd-badge hrd-badge--isde"><span class="hrd-badge-dot"></span>İşdə</span>';
             case 2: return '<span class="hrd-badge hrd-badge--gecikme"><span class="hrd-badge-dot"></span>Gecikmə</span>';
             case 3: return '<span class="hrd-badge hrd-badge--qayib"><span class="hrd-badge-dot"></span>Qayıb</span>';
