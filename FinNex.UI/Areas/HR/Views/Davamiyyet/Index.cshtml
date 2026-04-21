@@ -278,26 +278,34 @@
                                     else { <span class="hrd-nodata">---</span> }
                                 </td>
                                 <td>
-                                    @switch (item.Status)
+                                    @* Çıxış qeydi varsa — işdə yox, Getdi göstər *@
+                                    @if (item.CixisVaxti.HasValue && (item.Status == DavamiyyetStatus.Isde || item.Status == DavamiyyetStatus.Gecikme))
                                     {
-                                        case DavamiyyetStatus.Isde:
-                                            <span class="hrd-badge hrd-badge--isde"><span class="hrd-badge-dot"></span>İşdə</span>
-                                            break;
-                                        case DavamiyyetStatus.Gecikme:
-                                            <span class="hrd-badge hrd-badge--gecikme"><span class="hrd-badge-dot"></span>Gecikmə</span>
-                                            break;
-                                        case DavamiyyetStatus.Qayib:
-                                            <span class="hrd-badge hrd-badge--qayib"><span class="hrd-badge-dot"></span>Qayıb</span>
-                                            break;
-                                        case DavamiyyetStatus.Icazeli:
-                                            <span class="hrd-badge hrd-badge--icazeli"><span class="hrd-badge-dot"></span>İcazəli</span>
-                                            break;
-                                        case DavamiyyetStatus.Xestelik:
-                                            <span class="hrd-badge hrd-badge--xestelik" style="background:rgba(168,85,247,.1);color:#a855f7;"><span class="hrd-badge-dot" style="background:#a855f7;"></span>Xəstəlik</span>
-                                            break;
-                                        case DavamiyyetStatus.Ezamiyyet:
-                                            <span class="hrd-badge hrd-badge--ezamiyyet" style="background:rgba(249,115,22,.1);color:#f97316;"><span class="hrd-badge-dot" style="background:#f97316;"></span>Ezamiyyət</span>
-                                            break;
+                                        <span class="hrd-badge hrd-badge--getdi" style="background:rgba(107,114,128,.1);color:#6b7280;"><span class="hrd-badge-dot" style="background:#6b7280;"></span>Getdi</span>
+                                    }
+                                    else
+                                    {
+                                        switch (item.Status)
+                                        {
+                                            case DavamiyyetStatus.Isde:
+                                                <span class="hrd-badge hrd-badge--isde"><span class="hrd-badge-dot"></span>İşdə</span>
+                                                break;
+                                            case DavamiyyetStatus.Gecikme:
+                                                <span class="hrd-badge hrd-badge--gecikme"><span class="hrd-badge-dot"></span>Gecikmə</span>
+                                                break;
+                                            case DavamiyyetStatus.Qayib:
+                                                <span class="hrd-badge hrd-badge--qayib"><span class="hrd-badge-dot"></span>Qayıb</span>
+                                                break;
+                                            case DavamiyyetStatus.Icazeli:
+                                                <span class="hrd-badge hrd-badge--icazeli"><span class="hrd-badge-dot"></span>İcazəli</span>
+                                                break;
+                                            case DavamiyyetStatus.Xestelik:
+                                                <span class="hrd-badge hrd-badge--xestelik" style="background:rgba(168,85,247,.1);color:#a855f7;"><span class="hrd-badge-dot" style="background:#a855f7;"></span>Xəstəlik</span>
+                                                break;
+                                            case DavamiyyetStatus.Ezamiyyet:
+                                                <span class="hrd-badge hrd-badge--ezamiyyet" style="background:rgba(249,115,22,.1);color:#f97316;"><span class="hrd-badge-dot" style="background:#f97316;"></span>Ezamiyyət</span>
+                                                break;
+                                        }
                                     }
                                 </td>
                             </tr>
