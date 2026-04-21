@@ -766,49 +766,36 @@
                         });
 
                         // ────────────────────────────────────────────────
-                        // Yekun bölmənin görünüşü rejimdən asılıdır:
-                        //   • Ay sonu   — məzuniyyət pulu (net) + qalan maaş (net)
-                        //   • Qabaqcadan — vergisiz avans + ay sonu qalan (net)
-                        // Cəmi əlinizə çatan hər iki halda EYNİDİR (qanuni).
+                        // Yekun bölməsi: hər iki rejimdə EYNİ NET qiymətlər göstərilir.
+                        // Yalnız etiketlər rejimə görə dəyişir — işçi yanılmasın deyə
+                        // məzuniyyət pulu (net) heç vaxt artıq görünmür.
                         // ────────────────────────────────────────────────
                         const mezPuluRow = document.getElementById('mpMezPuluRow');
                         const qalanMaasRow = document.getElementById('mpQalanMaasRow');
                         const advRow = document.getElementById('mpAdvanceRow');
+                        advRow.style.display = 'none';
 
-                        if (data.qabaqcadan) {
-                            // Avans sətri: məzuniyyət pulu brüt, vergi tutulmur
-                            mezPuluRow.style.display = 'none';
-                            if ((data.advanceBrut || 0) > 0) {
-                                advRow.style.display = 'flex';
-                                document.getElementById('mpAdvanceNet').textContent =
-                                    fmt(data.advanceBrut) + ' (vergisiz avans)';
-                            } else {
-                                advRow.style.display = 'none';
-                            }
-                            // Ay sonu qalan = ayNetCemi − avans − HYS − avans kəsintisi
-                            const aySonuQalan = (data.ayNetCemi || 0)
-                                - (data.advanceBrut || 0)
-                                - (data.hysMebleg || 0)
-                                - (data.avansMebleg || 0);
+                        if ((data.mezOdenisNetCemi || 0) > 0) {
+                            mezPuluRow.style.display = 'flex';
                             qalanMaasRow.style.display = 'flex';
-                            qalanMaasRow.querySelector('.mp-tlbl').textContent =
-                                'Ay sonu qalan ödəniş (net, tutulmalardan sonra)';
-                            document.getElementById('mpQalanMaasNet').textContent = fmt(Math.max(0, aySonuQalan));
-                        } else {
-                            // Ay sonu rejimi — məzuniyyət pulu + işlənmiş günlər ayrıca göstərilir
-                            advRow.style.display = 'none';
-                            if ((data.mezOdenisNetCemi || 0) > 0) {
-                                mezPuluRow.style.display = 'flex';
-                                qalanMaasRow.style.display = 'flex';
+                            const qalanNet = (data.islenmisNetCemi || 0) - (data.hysMebleg || 0) - (data.avansMebleg || 0);
+
+                            if (data.qabaqcadan) {
+                                // Qabaqcadan: eyni rəqəmlər, fərqli etiketlər
+                                mezPuluRow.querySelector('.mp-tlbl').textContent =
+                                    'Qabaqcadan məzuniyyət ödənişi (net)';
+                                qalanMaasRow.querySelector('.mp-tlbl').textContent =
+                                    'Ay sonu qalan maaş (net, tutulmalardan sonra)';
+                            } else {
+                                mezPuluRow.querySelector('.mp-tlbl').textContent = 'Məzuniyyət pulu (net)';
                                 qalanMaasRow.querySelector('.mp-tlbl').textContent =
                                     'Maaş verilənda alacağınız (net, tutulmalardan sonra)';
-                                document.getElementById('mpMezPuluNet').textContent = fmt(data.mezOdenisNetCemi);
-                                const qalanNet = (data.islenmisNetCemi || 0) - (data.hysMebleg || 0) - (data.avansMebleg || 0);
-                                document.getElementById('mpQalanMaasNet').textContent = fmt(Math.max(0, qalanNet));
-                            } else {
-                                mezPuluRow.style.display = 'none';
-                                qalanMaasRow.style.display = 'none';
                             }
+                            document.getElementById('mpMezPuluNet').textContent = fmt(data.mezOdenisNetCemi);
+                            document.getElementById('mpQalanMaasNet').textContent = fmt(Math.max(0, qalanNet));
+                        } else {
+                            mezPuluRow.style.display = 'none';
+                            qalanMaasRow.style.display = 'none';
                         }
 
                         // HYS — yalnız işçi payı (işəgötürən payı NET-ə təsir etmir)
@@ -834,17 +821,34 @@
 
                         const hint = document.getElementById('mpHint');
                         if (data.qabaqcadan) {
-                            hint.innerHTML = '<strong>Qabaqcadan ödəniş:</strong> Məzuniyyət pulu ' +
-                                '<em>vergisiz avans</em> kimi məzuniyyətdən öncə ödənilir. Ay sonunda ' +
-                                'bütün aylıq gəlir (maaş + məzuniyyət pulu) üzərindən vergi tutulub, ' +
-                                'ödənilmiş avans çıxılaraq qalan məbləğ köçürülür. <strong>Cəmi əlinizə ' +
-                                'çatan məbləğ Ay sonu rejimi ilə EYNİDİR</strong> — sadəcə iki dəfəyə bölünmüş ' +
-                                'ödəniş şəklində. Bu qanuni cəhətdən düzgün yanaşmadır (AR Vergi ' +
-                                'Məcəlləsi, maddə 102 — aylıq gəlir üzərindən vergi).';
+                            const mezBrut = fmt(data.mezPuluBrutCemi);
+                            const mezNet = fmt(data.mezOdenisNetCemi);
+                            const mezTutulma = fmt((data.mezPuluBrutCemi || 0) - (data.mezOdenisNetCemi || 0));
+                            hint.innerHTML =
+                                '<strong>Qabaqcadan ödəniş — necə hesablandı:</strong><br>' +
+                                '1) Aylıq <em>ümumi brüt</em> (işlənmiş günlər + məzuniyyət pulu) üzərindən ' +
+                                'vergi və tutulmalar hesablanır (AR Vergi Məcəlləsi, maddə 102 — aylıq gəlir).<br>' +
+                                '2) Məzuniyyət pulu hissəsinə düşən vergi ayrılır: ' +
+                                'brüt <strong>' + mezBrut + ' ₼</strong> − tutulma <strong>' + mezTutulma + ' ₼</strong> ' +
+                                '= net <strong>' + mezNet + ' ₼</strong>.<br>' +
+                                '3) Bu net məbləğ məzuniyyətdən öncə işçiyə avans kimi köçürülür.<br>' +
+                                '4) Ay sonunda qalan ödəniş (işlənmiş günlər NET − HYS − avans kəsintisi) ayrıca verilir.<br>' +
+                                '<strong>Nəticə:</strong> cəmi əlinizə çatan məbləğ Ay sonu rejimi ilə tam EYNİDİR — ' +
+                                'sadəcə iki ödənişə bölünüb. Qanuni və ədalətlidir.';
                         } else {
-                            hint.innerHTML = '<strong>Ay sonu ödəniş:</strong> məzuniyyət pulu həmin ayın brüt maaşına daxil ' +
-                                'edilir, sonra vergi və tutulmalar tətbiq olunub net ödənilir. Bütün rəqəmlər 2026 vergi ' +
-                                'pillələri, DSMF, İTSS və işsizlik sığortası nəzərə alınmaqla təxmini hesablanıb.';
+                            const mezBrut = fmt(data.mezPuluBrutCemi);
+                            const mezNet = fmt(data.mezOdenisNetCemi);
+                            const mezTutulma = fmt((data.mezPuluBrutCemi || 0) - (data.mezOdenisNetCemi || 0));
+                            hint.innerHTML =
+                                '<strong>Ay sonu ödəniş — necə hesablandı:</strong><br>' +
+                                '1) Məzuniyyət pulu (brüt <strong>' + mezBrut + ' ₼</strong>) həmin ayın ' +
+                                'brüt maaşına daxil edilir.<br>' +
+                                '2) Aylıq cəmi brüt üzərindən 2026 vergi pillələri (gəlir vergisi, DSMF, İTSS, ' +
+                                'işsizlik sığortası) tətbiq olunur.<br>' +
+                                '3) Məzuniyyət hissəsinin NET payı: <strong>' + mezNet + ' ₼</strong> ' +
+                                '(tutulma <strong>' + mezTutulma + ' ₼</strong>).<br>' +
+                                '4) Qalan işlənmiş günlər NET-i maaşla birlikdə köçürülür.<br>' +
+                                '<strong>Nəticə:</strong> bir ödənişlə, ay sonunda — sadə və tez.';
                         }
 
                         // Xəbərdarlıq: az qeyd

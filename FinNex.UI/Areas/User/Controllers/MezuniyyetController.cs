@@ -188,22 +188,22 @@ namespace FinNex.UI.Areas.User.Controllers
                 mezOdenisNetCemi += ftax.Net - itax.Net;
             }
 
-            // Qabaqcadan rejimi: məzuniyyət pulu avans kimi VERGİSİZ ödənilir
-            // (brüt = avans məbləği), ay sonunda ay nettindən bu avans çıxılır.
+            // Qabaqcadan rejimi: məzuniyyət pulu vergili NET olaraq avans kimi ödənilir.
+            // (Aylıq brüt üzərindən vergi hesablanır, vergi məz pulu hissəsinə mütənasib
+            // şəkildə ayrılır.) İşçi avans olaraq tam net mezOdenisNetCemi-ni alır.
+            // Ay sonu qalan ödəniş = işlənmiş günlər NET.
             decimal advanceBrut = 0;
             decimal advanceTutulma = 0;
             decimal advanceNet = 0;
             if (qabaqcadan && hesablama.CemiOdenis > 0)
             {
-                advanceBrut = hesablama.CemiOdenis;
-                advanceTutulma = 0;          // Avansdan vergi tutulmur
-                advanceNet = advanceBrut;    // İşçi tam brütü alır
+                advanceBrut = mezPuluBrutCemi;                      // məz pulu brüt (məlumat üçün)
+                advanceNet = mezOdenisNetCemi;                      // işçinin əlinə çatan NET
+                advanceTutulma = advanceBrut - advanceNet;          // məz hissəsinin vergisi
             }
 
             // NET-dən çıxılanlar: yalnız işçi HYS payı + avans
             // Hər iki rejimdə aylıq cəmi NET eynidir (ayNetCemi).
-            // Qabaqcadan halda bu nettin bir hissəsi (advanceBrut) artıq ödənilib,
-            // qalanı ay sonunda ödənilir: aySonuQalan = ayNetCemi − advanceBrut.
             decimal hysAvansToplu = hysMebleg + avansMebleg;
             decimal umumiNet = ayNetCemi - hysAvansToplu;
             if (umumiNet < 0) umumiNet = 0;
