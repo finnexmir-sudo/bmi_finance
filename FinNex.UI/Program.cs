@@ -123,6 +123,7 @@ namespace FinNex.UI
             builder.Services.AddHostedService<FinNex.Application.BackgroundJobs.ZkTecoSdkService>();
             builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.XatirlatmaBackgroundService>();
             builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.MezuniyyetOdenisSchedulerService>();
+            builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.QayibMarkerBackgroundService>();
             // builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.ChatCleanupBackgroundService>();
             // builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.KreditMailBackgroundService>();
 
