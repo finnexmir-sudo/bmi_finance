@@ -119,8 +119,11 @@ public class ADMSController : Controller
 
             var tarix = vaxt.Date;
 
-            var movcud = await _db.Davamiyyetler
-                .FirstOrDefaultAsync(x => x.IsciId == isciId && x.Tarix == tarix);
+            // İş başlama vaxtı — 9:00. Bu vaxta qədər hər yeni oxuma "duplikat giriş
+            // cəhdi" kimi qəbul olunur (işçi qayıdıb ikinci dəfə barmağını basa bilər
+            // və sistem bunu çıxış kimi yazmamalıdır). 9:00-dan sonra sonrakı oxumalar
+            // normal çıxış kimi tutulur.
+            var isBaslamaVaxti = tarix.AddHours(9);
 
             if (movcud == null)
             {
@@ -138,11 +141,21 @@ public class ADMSController : Controller
             {
                 if (movcud.GirisVaxti == null || vaxt < movcud.GirisVaxti)
                 {
+                    // Giriş yazılmayıb və ya bu oxuma əvvəlkindən ERKƏNdir → girişi yenilə
                     movcud.GirisVaxti = vaxt;
                     movcud.Status = HesablaStatus(vaxt, true);
                 }
+                else if (vaxt < isBaslamaVaxti)
+                {
+                    // 9:00-dan əvvəl və mövcud girişdən sonradır → **duplikat giriş cəhdi**.
+                    // Çıxış kimi qeydə alma, ilk giriş saxlanılsın.
+                    _logger.LogInformation(
+                        "Duplikat giriş cəhdi ignor edildi: IsciId={IsciId}, İlk giriş={Ilk}, Yeni oxuma={Yeni}",
+                        isciId, movcud.GirisVaxti, vaxt);
+                }
                 else if (vaxt > movcud.GirisVaxti)
                 {
+                    // 9:00-dan sonra və girişdən sonradır → əsl çıxış
                     if (movcud.CixisVaxti == null || vaxt > movcud.CixisVaxti)
                     {
                         movcud.CixisVaxti = vaxt;
