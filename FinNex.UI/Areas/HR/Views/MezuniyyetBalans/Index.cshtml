@@ -14,50 +14,67 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/hr/mezuniyyet-balans.css" asp-append-version="true" />
     <style>
-        /* ── Səliqəli kompakt dizayn ── */
-        .mb-table tbody td { vertical-align: middle; padding: 14px 12px }
-        .mb-isci-ad { font-weight: 600; color: #0f172a; font-size: 13px }
-        .mb-dept { font-size: 12px; color: #64748b }
+        /* ── Sakit və oxunaqlı dizayn ── */
+        .mb-table tbody td { vertical-align: middle; padding: 16px 14px }
+        .mb-table thead th { padding: 12px 14px; font-size: 11px; letter-spacing: .4px }
 
-        .mb-balance-block { display:flex; flex-direction:column; gap:5px; min-width:220px }
-        .mb-balance-main {
-            display:flex; align-items:baseline; justify-content:space-between;
-            gap:8px;
-            font-size:11.5px; color:#94a3b8
+        .mb-isci-ad { font-weight: 600; color: #0f172a; font-size: 13.5px }
+        .mb-dept { font-size: 12.5px; color: #64748b }
+
+        /* İllik balansı — qalıq mərkəzdə, istifadə altda */
+        .mb-balance-block { display:flex; flex-direction:column; gap:6px; min-width:180px; max-width:240px }
+        .mb-qaliq-row {
+            display:flex; align-items:baseline; gap:6px;
         }
-        .mb-qaliq-big { font-size:19px; font-weight:800; color:#0f172a; line-height:1.1 }
-        .mb-qaliq-big .unit { font-size:11px; font-weight:500; color:#94a3b8; margin-left:4px }
-        .mb-carryover {
-            font-size:10.5px; color:#1e40af; background:#eff6ff; padding:3px 9px;
-            border-radius:12px; display:inline-flex; align-items:center; gap:4px;
-            border:1px solid #dbeafe; width:max-content; margin-top:2px
+        .mb-qaliq-big {
+            font-size:22px; font-weight:800; color:#0f172a; line-height:1
         }
+        .mb-qaliq-unit { font-size:12px; color:#64748b; font-weight:500 }
+        .mb-istifade-info {
+            font-size:11.5px; color:#94a3b8; font-weight:500
+        }
+        .mb-istifade-info strong { color:#0f172a; font-weight:600 }
+
         .mb-prog {
-            height:5px; background:#f1f5f9; border-radius:3px; overflow:hidden
+            height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden
         }
         .mb-prog__bar { height:100%; border-radius:3px; transition:width .3s }
         .mb-prog__bar--green  { background:linear-gradient(90deg,#16a34a,#22c55e) }
         .mb-prog__bar--yellow { background:linear-gradient(90deg,#f59e0b,#fbbf24) }
         .mb-prog__bar--red    { background:linear-gradient(90deg,#dc2626,#ef4444) }
 
-        .mb-prev-years { display:flex; flex-direction:column; gap:4px; min-width:140px; max-width:200px }
+        /* Əvvəlki illər siyahısı */
+        .mb-prev-years { display:flex; flex-direction:column; gap:5px; min-width:130px; max-width:180px }
         .mb-prev-year-row {
             display:flex; justify-content:space-between; align-items:center;
-            font-size:11.5px; padding:4px 10px; background:#f8fafc;
+            font-size:12px; padding:5px 11px; background:#f8fafc;
             border-radius:6px; border:1px solid #e2e8f0
         }
         .mb-prev-year-row .il { color:#64748b; font-weight:600 }
         .mb-prev-year-row .gun { color:#0f172a; font-weight:700 }
-        .mb-prev-empty { font-size:11px; color:#cbd5e1; font-style:italic }
+        .mb-prev-empty { font-size:12px; color:#cbd5e1; font-style:italic }
         .mb-prev-cemi {
-            font-size:10.5px; color:#1e40af; font-weight:700; margin-top:4px;
-            padding:2px 9px; background:#eff6ff; border-radius:10px; display:inline-block;
+            font-size:11px; color:#1e40af; font-weight:700; margin-top:4px;
+            padding:3px 10px; background:#eff6ff; border-radius:10px; display:inline-block;
             border:1px solid #dbeafe
         }
 
-        .mb-small-num { font-size:15px; font-weight:700; color:#0f172a }
+        /* Xəstəlik / Ezamiyyət — minimalist */
         .mb-used-cell { text-align:center }
-        .mb-used-cell .mb-small-num + div { font-size:10px; color:#94a3b8; margin-top:2px }
+        .mb-used-num { font-size:16px; font-weight:700; color:#0f172a; line-height:1 }
+        .mb-used-lbl { font-size:10.5px; color:#94a3b8; margin-top:3px }
+        .mb-used-empty { color:#cbd5e1; font-size:12px; font-style:italic }
+
+        /* Əməliyyat sütunu — daha aydın düymə */
+        .mb-btn-edit {
+            display:inline-flex; align-items:center; gap:5px;
+            padding:7px 14px; background:#fff; border:1px solid #cbd5e1;
+            border-radius:7px; cursor:pointer; font-size:12.5px; font-weight:600;
+            color:#0f172a; transition:all .15s;
+            white-space:nowrap
+        }
+        .mb-btn-edit:hover { background:#f1f5f9; border-color:#94a3b8 }
+        .mb-btn-edit i { font-size:13px }
     </style>
 }
 
@@ -68,8 +85,6 @@
             <h2 style="margin-bottom:4px">Məzuniyyət Balansı</h2>
             <div style="font-size:13px;color:#64748b">
                 @secilmisIl-ci il üçün işçilərin məzuniyyət balansları
-                <span style="margin:0 6px;color:#cbd5e1">·</span>
-                Standart illik norma: <strong style="color:#0f172a">@standartGun gün</strong>
             </div>
         </div>
         <div class="mb-controls">
@@ -124,11 +139,6 @@
                                 qaliq = b.QaliqGun
                             }));
 
-                            // Cari il breakdown: əsas vs köçürülmüş
-                            int? kecirilmisGun = illik != null && illik.ToplamGun > standartGun
-                                ? illik.ToplamGun - standartGun
-                                : (int?)null;
-
                             // Əvvəlki illərdən qalan
                             var evvelkiQalan = evvelkiIller.TryGetValue(isci.Id, out var list) ? list : null;
 
@@ -158,19 +168,23 @@
                                         var cls = pct > 50 ? "green" : (pct >= 20 ? "yellow" : "red");
 
                                         <div class="mb-balance-block">
-                                            <div class="mb-balance-main">
-                                                <div class="mb-qaliq-big">@illik.QaliqGun<span class="unit">gün qalır</span></div>
-                                                <div>@illik.ToplamGun cəmi · @illik.IstifadeOlunanGun istifadə</div>
+                                            <div class="mb-qaliq-row">
+                                                <span class="mb-qaliq-big">@illik.QaliqGun</span>
+                                                <span class="mb-qaliq-unit">gün qalır</span>
                                             </div>
                                             <div class="mb-prog">
                                                 <div class="mb-prog__bar mb-prog__bar--@cls" style="width:@(pct)%"></div>
                                             </div>
-                                            @if (kecirilmisGun.HasValue && kecirilmisGun.Value > 0)
-                                            {
-                                                <div class="mb-carryover">
-                                                    ↪ @kecirilmisGun gün @(secilmisIl - 1)-dən köçürülüb
-                                                </div>
-                                            }
+                                            <div class="mb-istifade-info">
+                                                @if (illik.IstifadeOlunanGun > 0)
+                                                {
+                                                    <span><strong>@illik.IstifadeOlunanGun</strong> gün istifadə edilib</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>hələ istifadə olunmayıb</span>
+                                                }
+                                            </div>
                                         </div>
                                     }
                                 </td>
@@ -202,27 +216,27 @@
                                     }
                                 </td>
 
-                                @* ═══ Xəstəlik / Ezamiyyət ═══ *@
+                                @* ═══ Xəstəlik / Ezamiyyət — yalnız istifadə olunduqda göstər ═══ *@
                                 <td class="mb-used-cell">
-                                    @if (xestelik == null)
+                                    @if (xestelik == null || xestelik.IstifadeOlunanGun == 0)
                                     {
-                                        <span class="mb-dept">—</span>
+                                        <span class="mb-used-empty">—</span>
                                     }
                                     else
                                     {
-                                        <span class="mb-small-num">@xestelik.IstifadeOlunanGun</span>
-                                        <div style="font-size:10px;color:#94a3b8">gün istifadə</div>
+                                        <div class="mb-used-num">@xestelik.IstifadeOlunanGun</div>
+                                        <div class="mb-used-lbl">gün</div>
                                     }
                                 </td>
                                 <td class="mb-used-cell">
-                                    @if (ezamiyyet == null)
+                                    @if (ezamiyyet == null || ezamiyyet.IstifadeOlunanGun == 0)
                                     {
-                                        <span class="mb-dept">—</span>
+                                        <span class="mb-used-empty">—</span>
                                     }
                                     else
                                     {
-                                        <span class="mb-small-num">@ezamiyyet.IstifadeOlunanGun</span>
-                                        <div style="font-size:10px;color:#94a3b8">gün istifadə</div>
+                                        <div class="mb-used-num">@ezamiyyet.IstifadeOlunanGun</div>
+                                        <div class="mb-used-lbl">gün</div>
                                     }
                                 </td>
 
@@ -231,8 +245,9 @@
                                             data-isci-id="@isci.Id"
                                             data-isci-ad="@isci.Ad @isci.Soyad"
                                             data-il="@secilmisIl"
-                                            data-balanslar="@Html.Raw(System.Net.WebUtility.HtmlEncode(balansJson))">
-                                        <i class="bi bi-pencil"></i> Redaktə
+                                            data-balanslar="@Html.Raw(System.Net.WebUtility.HtmlEncode(balansJson))"
+                                            title="İşçinin məzuniyyət balansını illərə görə redaktə et və ya yeni il üçün gün əlavə et">
+                                        <i class="bi bi-sliders"></i> Balansı dəyiş
                                     </button>
                                 </td>
                             </tr>
