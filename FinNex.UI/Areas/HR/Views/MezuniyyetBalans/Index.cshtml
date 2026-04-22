@@ -210,10 +210,10 @@
                                 @* ═══ İllər üzrə qalıq (hər il ayrıca) ═══ *@
                                 <td>
                                     @{
-                                        var cariIlVar = illerList != null && illerList.Any(x => x.Cari);
-                                        var iller = illerList?.Where(x => x.Cari || x.Qaliq > 0).OrderByDescending(x => x.Il).ToList() ?? new();
+                                        var cariIlBalansVar = illerList != null && illerList.Any(x => x.Cari);
+                                        var gostersilecekIller = illerList?.Where(x => x.Cari || x.Qaliq > 0).OrderByDescending(x => x.Il).ToList() ?? new();
                                     }
-                                    @if (!iller.Any() && !cariIlVar)
+                                    @if (!gostersilecekIller.Any() && !cariIlBalansVar)
                                     {
                                         <div class="mb-prev-years">
                                             <div class="mb-prev-year-row mb-year-missing">
@@ -224,17 +224,16 @@
                                     }
                                     else
                                     {
-                                        var cemi = iller.Sum(y => y.Qaliq);
+                                        var cemQaliq = gostersilecekIller.Sum(y => y.Qaliq);
                                         <div class="mb-prev-years">
-                                            @foreach (var y in iller)
+                                            @foreach (var y in gostersilecekIller)
                                             {
                                                 <div class="mb-prev-year-row @(y.Cari ? "mb-year-current" : "")">
                                                     <span class="il">@y.Il @(y.Cari ? "(cari)" : "")</span>
                                                     <span class="gun">@y.Qaliq gün</span>
                                                 </div>
                                             }
-                                            @* Cari il yoxdursa "hələ verilməyib" əlavə et *@
-                                            @if (!cariIlVar)
+                                            @if (!cariIlBalansVar)
                                             {
                                                 <div class="mb-prev-year-row mb-year-missing">
                                                     <span class="il">@secilmisIl (cari)</span>
@@ -242,10 +241,10 @@
                                                 </div>
                                             }
                                         </div>
-                                        @if (iller.Count >= 2)
+                                        @if (gostersilecekIller.Count >= 2)
                                         {
                                             <span class="mb-prev-cemi">
-                                                Cəm: @cemi gün
+                                                Cəm: @cemQaliq gün
                                             </span>
                                         }
                                     }
