@@ -1,0 +1,37 @@
+@model IList<FinNex.Domain.Entities.Kredit.KreditZamin>
+
+@if (Model == null || !Model.Any())
+{
+    <div class="km-tarixce-empty" style="padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;color:#16a34a;font-size:12px;font-weight:600">
+        ✓ Bu FİN ilə əvvəlki zamin qeydi yoxdur
+    </div>
+}
+else
+{
+    <div class="km-tarixce-inline">
+        <div style="font-size:12px;font-weight:700;color:#dc2626;margin-bottom:8px">
+            ⚠ Bu FİN @Model.Count dəfə zamin olub:
+        </div>
+        <table class="km-tarixce-table" style="font-size:12px">
+            <thead>
+                <tr>
+                    <th>Müraciət</th>
+                    <th>Müştəri</th>
+                    <th>Ad Soyad (zamin)</th>
+                    <th>Tarix</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var z in Model)
+                {
+                    <tr>
+                        <td>#@z.KreditMuracietId</td>
+                        <td>@(z.KreditMuraciet?.AdSoyadAtaAdi ?? "—")</td>
+                        <td>@z.AdSoyadAtaAdi</td>
+                        <td>@z.YaradilmaTarixi.ToString("dd.MM.yyyy")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

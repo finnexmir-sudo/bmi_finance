@@ -18,7 +18,7 @@ namespace FinNex.DataAccess.Seed
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            string[] roles = { RoleNames.Admin, RoleNames.Operator, RoleNames.Viewer };
+            string[] roles = { RoleNames.Admin, RoleNames.Operator, RoleNames.Viewer, RoleNames.KreditAdmin };
 
             foreach (var role in roles)
             {

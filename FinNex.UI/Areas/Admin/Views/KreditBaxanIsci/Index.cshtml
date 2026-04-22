@@ -1,0 +1,93 @@
+@model List<KreditBaxanIsciListVM>
+
+@if (TempData["StatusMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@TempData["StatusMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-circle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="admin-table-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Kredit müraciətinə baxan işçilər (@Model.Count)</h5>
+        <a asp-action="Secim" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg me-1"></i>İşçi əlavə et
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="table admin-table">
+            <thead>
+                <tr>
+                    <th>Ad Soyad</th>
+                    <th>FIN</th>
+                    <th>Şöbə</th>
+                    <th>Vəzifə</th>
+                    <th>İcazə tarixi</th>
+                    <th>Qeyd</th>
+                    <th>Status</th>
+                    <th class="text-end">Əməliyyat</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            Hələ ki kredit müraciətinə baxma icazəsi olan işçi yoxdur.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var row in Model)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@row.TamAd</td>
+                            <td>@row.FIN</td>
+                            <td>@(row.SobeAdi ?? "—")</td>
+                            <td>@(row.VezifeAdi ?? "—")</td>
+                            <td>
+                                @row.AktivdirFrom.ToString("dd.MM.yyyy")
+                                @if (row.AktivdirTo != null)
+                                {
+                                    <span class="text-muted small">→ @row.AktivdirTo.Value.ToString("dd.MM.yyyy")</span>
+                                }
+                            </td>
+                            <td class="text-muted small">@(row.Qeyd ?? "")</td>
+                            <td>
+                                @if (row.AktivdirIndi)
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success admin-badge">Aktiv</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary admin-badge">Ləğv edilib</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                @if (row.AktivdirIndi)
+                                {
+                                    <form asp-action="LegvEt" asp-route-id="@row.Id" method="post"
+                                          onsubmit="return confirm('İcazəni ləğv etmək istədiyinizə əminsiniz?');" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-x-circle me-1"></i>Ləğv et
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

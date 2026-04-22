@@ -1,14 +1,13 @@
+using FinNex.Application.Interfaces.Kredit;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.Kredit;
-using FinNex.Domain.Interfaces;
 using MailKit;
 using MailKit.Net.Imap;
 using MailKit.Search;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace FinNex.UI.Areas.User.Controllers;
 
@@ -16,37 +15,90 @@ namespace FinNex.UI.Areas.User.Controllers;
 [Authorize]
 public class KreditMuracietController : Controller
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IKreditMuracietService _muracietService;
+    private readonly IKreditQerarService _qerarService;
+    private readonly IKreditZaminService _zaminService;
+    private readonly IKreditRandevuService _randevuService;
+    private readonly IKreditSmsService _smsService;
+    private readonly IKreditBaxanIsciService _baxanIsciService;
+    private readonly IKomiteUzvuService _komiteService;
+    private readonly UserManager<AppUser> _userManager;
+    private readonly IWebHostEnvironment _env;
     private readonly IConfiguration _config;
 
-    public KreditMuracietController(IUnitOfWork unitOfWork, IConfiguration config)
+    public KreditMuracietController(
+        IKreditMuracietService muracietService,
+        IKreditQerarService qerarService,
+        IKreditZaminService zaminService,
+        IKreditRandevuService randevuService,
+        IKreditSmsService smsService,
+        IKreditBaxanIsciService baxanIsciService,
+        IKomiteUzvuService komiteService,
+        UserManager<AppUser> userManager,
+        IWebHostEnvironment env,
+        IConfiguration config)
     {
-        _unitOfWork = unitOfWork;
+        _muracietService = muracietService;
+        _qerarService = qerarService;
+        _zaminService = zaminService;
+        _randevuService = randevuService;
+        _smsService = smsService;
+        _baxanIsciService = baxanIsciService;
+        _komiteService = komiteService;
+        _userManager = userManager;
+        _env = env;
         _config = config;
     }
 
-    private async Task<Isci?> GetCurrentIsciAsync()
+    // ══════════════════════════════════════════════════════
+    // İcazə yoxlaması
+    // ══════════════════════════════════════════════════════
+    // Admin/KreditAdmin — hər yerə, həm işçi həm komitə səlahiyyəti ilə
+    // KreditBaxanIsci — işçi səhifələrinə (Index, Detail, MKR, AsanFinance,
+    //                   Zamin, SMS, Randevu, Yenile)
+    // KomiteUzvu     — komitə səhifələrinə (Komite, KomiteDetail, KomiteQerar,
+    //                   Qerarlar)
+    public sealed record KreditAccess(int? IsciId, bool IsAdmin, bool IsBaxan, bool IsKomite)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        return await _unitOfWork.Repository<Isci>()
-            .GetirAsync(x => x.AppUserId == userId && !x.Silinib);
+        public bool CanSeeIsciPages => IsAdmin || IsBaxan;
+        public bool CanSeeKomitePages => IsAdmin || IsKomite;
+        public bool Any => IsAdmin || IsBaxan || IsKomite;
     }
 
+    private async Task<KreditAccess> GetAccessAsync()
+    {
+        var appUser = await _userManager.GetUserAsync(User);
+        var isciId = appUser?.IsciId;
+        var isAdmin = User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.KreditAdmin);
+
+        bool isBaxan = false, isKomite = false;
+        if (isciId.HasValue)
+        {
+            isBaxan = await _baxanIsciService.BaxaBilerMiAsync(isciId.Value);
+            isKomite = await _komiteService.IsciKomiteUzvuMu(isciId.Value);
+        }
+        return new KreditAccess(isciId, isAdmin, isBaxan, isKomite);
+    }
+
+    private IActionResult Icazesiz() => Forbid();
+
     // ══════════════════════════════════════════════════════
-    // İŞÇİ (Kredit Mütəxəssisi) — müraciətlərə baxır, yoxlayır, komitəyə göndərir
+    // İŞÇİ SƏHİFƏLƏRİ
     // ══════════════════════════════════════════════════════
 
-    // ── GET /User/KreditMuraciet ────────────────────────────
+    // GET /User/KreditMuraciet
     public async Task<IActionResult> Index(int? status)
     {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+
         ViewData["Title"] = "Kredit Müraciətləri";
 
-        var hamisi = await _unitOfWork.Repository<KreditMuraciet>()
-            .Query().Where(x => !x.Silinib).ToListAsync();
+        var hamisi = await _muracietService.SiyahiAsync();
 
         var muracietler = status.HasValue
             ? hamisi.Where(x => (int)x.Status == status.Value).ToList()
-            : hamisi;
+            : hamisi.ToList();
 
         ViewBag.SecilmisStatus = status;
         ViewBag.StatusSaylari = new Dictionary<int, int>
@@ -57,26 +109,32 @@ public class KreditMuracietController : Controller
             [3] = hamisi.Count(x => x.Status == KreditMuracietStatus.Tesdiqlenib),
             [4] = hamisi.Count(x => x.Status == KreditMuracietStatus.ReddEdilib)
         };
+        ViewBag.Erisim = erisim;
 
-        return View(muracietler.OrderByDescending(x => x.MuracietTarixi).ToList());
+        return View(muracietler);
     }
 
-    // ── GET /User/KreditMuraciet/Create ─────────────────────
-    // Əl ilə müraciət əlavə et (filial, telefon və s.)
+    // GET /User/KreditMuraciet/Create
     [HttpGet]
-    public IActionResult Create()
+    public async Task<IActionResult> Create()
     {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+
         ViewData["Title"] = "Yeni Müraciət";
         return View();
     }
 
-    // ── POST /User/KreditMuraciet/Create ────────────────────
+    // POST /User/KreditMuraciet/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(string adSoyadAtaAdi, string? fin, string? telefon,
         string? isYeri, decimal? emekHaqqi, decimal? kreditMeblegi, string? valyuta,
         string? kreditMuddeti, string? meqsed)
     {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+
         if (string.IsNullOrWhiteSpace(adSoyadAtaAdi))
             adSoyadAtaAdi = "Naməlum";
 
@@ -92,201 +150,417 @@ public class KreditMuracietController : Controller
             KreditMuddeti = kreditMuddeti?.Trim(),
             Meqsed = meqsed?.Trim(),
             MuracietTarixi = DateTime.Now,
-            Status = KreditMuracietStatus.Yeni,
             Menbe = KreditMuracietMenbe.Filial
         };
 
-        await _unitOfWork.Repository<KreditMuraciet>().YaratAsync(muraciet);
-        await _unitOfWork.YaddaSaxlaAsync();
+        await _muracietService.YaratAsync(muraciet, erisim.IsciId);
 
         TempData["Success"] = "Müraciət əlavə edildi.";
         return RedirectToAction("Detail", new { id = muraciet.Id });
     }
 
-    // ── GET /User/KreditMuraciet/Detail/5 ───────────────────
-    // İşçi baxışı — yoxlama + komitəyə göndərmə
+    // GET /User/KreditMuraciet/Detail/5
     public async Task<IActionResult> Detail(int id)
     {
-        var muraciet = await _unitOfWork.Repository<KreditMuraciet>()
-            .Query()
-            .Include(x => x.BaxanIsci)
-            .FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
 
+        var muraciet = await _muracietService.IdIleGetirAsync(id);
         if (muraciet == null) return NotFound();
 
-        // FİN tarixçəsi
-        ViewBag.Tarixce = !string.IsNullOrEmpty(muraciet.FIN)
-            ? await _unitOfWork.Repository<KreditMuraciet>()
-                .Query()
-                .Where(x => x.FIN == muraciet.FIN && x.Id != id && !x.Silinib)
-                .OrderByDescending(x => x.MuracietTarixi)
-                .ToListAsync()
-            : new List<KreditMuraciet>();
+        ViewBag.Tarixce = await _muracietService.FinUzreTarixceAsync(muraciet.FIN, id);
+        ViewBag.Zaminler = await _zaminService.MuracietZaminleriniGetirAsync(id);
+        ViewBag.SmsLoglar = await _smsService.MuracietUzreGetirAsync(id);
+        ViewBag.Erisim = erisim;
 
-        // Mail-i oxunmuş et (arxa planda, səhifəni yavaşlatmır)
+        // Mail-i arxa planda oxunmuş et
         if (!string.IsNullOrEmpty(muraciet.MailMessageId))
         {
-            _ = Task.Run(() => MarkMailAsReadAsync(muraciet.MailMessageId));
+            var messageId = muraciet.MailMessageId;
+            _ = Task.Run(() => MarkMailAsReadAsync(messageId));
         }
 
         ViewData["Title"] = "Müraciət #" + id;
         return View(muraciet);
     }
 
-    // ── POST /User/KreditMuraciet/IsciQiymetlendir ──────────
-    // İşçi: yalnız Yeni → Yoxlanılır → Komitəyə göndər
+    // POST /User/KreditMuraciet/IsciQiymetlendir
+    // yeniStatus: 1 = Yoxlanılır (baxmağa götür), 2 = Komitəyə göndər
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> IsciQiymetlendir(int id, int yeniStatus, string? qeyd)
     {
-        var muraciet = await _unitOfWork.Repository<KreditMuraciet>()
-            .GetirAsync(x => x.Id == id && !x.Silinib);
-        if (muraciet == null) return NotFound();
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+        if (erisim.IsciId is null) { TempData["Error"] = "İşçi məlumatı tapılmadı."; return RedirectToAction("Detail", new { id }); }
 
-        // İşçi yalnız bu statuslara dəyişə bilər
-        if (yeniStatus > (int)KreditMuracietStatus.KomiteyeGonderildi)
+        try
         {
-            TempData["Error"] = "Bu əməliyyat yalnız Kredit Komitəsinə aiddir.";
-            return RedirectToAction("Detail", new { id });
+            if (yeniStatus == (int)KreditMuracietStatus.Yoxlanilir)
+            {
+                await _muracietService.BaxilmagaGoturAsync(id, erisim.IsciId.Value, qeyd);
+                TempData["Success"] = "Status yeniləndi.";
+            }
+            else if (yeniStatus == (int)KreditMuracietStatus.KomiteyeGonderildi)
+            {
+                await _muracietService.KomiteyeGonderAsync(id, erisim.IsciId.Value, qeyd);
+                TempData["Success"] = "Müraciət Kredit Komitəsinə göndərildi.";
+            }
+            else
+            {
+                TempData["Error"] = "Bu status keçidi İşçi üçün icazəli deyil.";
+            }
         }
+        catch (InvalidOperationException ex) { TempData["Error"] = ex.Message; }
 
-        var isci = await GetCurrentIsciAsync();
-
-        muraciet.Status = (KreditMuracietStatus)yeniStatus;
-        muraciet.Qeyd = qeyd;
-        muraciet.BaxanIsciId = isci?.Id;
-        muraciet.BaxilmaTarixi = DateTime.Now;
-
-        await _unitOfWork.Repository<KreditMuraciet>().YenileAsync(muraciet);
-        await _unitOfWork.YaddaSaxlaAsync();
-
-        TempData["Success"] = yeniStatus == (int)KreditMuracietStatus.KomiteyeGonderildi
-            ? "Müraciət Kredit Komitəsinə göndərildi."
-            : "Status yeniləndi.";
         return RedirectToAction("Detail", new { id });
     }
 
+    // POST /User/KreditMuraciet/MkrYaz
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MkrYaz(int id, string netice)
+    {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+        if (erisim.IsciId is null) { TempData["Error"] = "İşçi məlumatı tapılmadı."; return RedirectToAction("Detail", new { id }); }
+        if (string.IsNullOrWhiteSpace(netice)) { TempData["Error"] = "MKR nəticəsi boş ola bilməz."; return RedirectToAction("Detail", new { id }); }
+
+        try
+        {
+            await _muracietService.MkrNeticesiYazAsync(id, netice.Trim(), erisim.IsciId.Value);
+            TempData["Success"] = "MKR nəticəsi qeydə alındı.";
+        }
+        catch (InvalidOperationException ex) { TempData["Error"] = ex.Message; }
+
+        return RedirectToAction("Detail", new { id });
+    }
+
+    // POST /User/KreditMuraciet/AsanFinanceYaz
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AsanFinanceYaz(int id, string netice)
+    {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+        if (erisim.IsciId is null) { TempData["Error"] = "İşçi məlumatı tapılmadı."; return RedirectToAction("Detail", new { id }); }
+        if (string.IsNullOrWhiteSpace(netice)) { TempData["Error"] = "AsanFinance nəticəsi boş ola bilməz."; return RedirectToAction("Detail", new { id }); }
+
+        try
+        {
+            await _muracietService.AsanFinanceNeticesiYazAsync(id, netice.Trim(), erisim.IsciId.Value);
+            TempData["Success"] = "AsanFinance nəticəsi qeydə alındı.";
+        }
+        catch (InvalidOperationException ex) { TempData["Error"] = ex.Message; }
+
+        return RedirectToAction("Detail", new { id });
+    }
+
+    // POST /User/KreditMuraciet/ZaminEkle
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ZaminEkle(int muracietId, string adSoyadAtaAdi, string? fin,
+        string? telefon, string? isYeri, decimal? emekHaqqi, string? unvan, string? qeyd)
+    {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+
+        if (string.IsNullOrWhiteSpace(adSoyadAtaAdi))
+        {
+            TempData["Error"] = "Zaminin ad-soyadı boş ola bilməz.";
+            return RedirectToAction("Detail", new { id = muracietId });
+        }
+
+        var zamin = new KreditZamin
+        {
+            KreditMuracietId = muracietId,
+            AdSoyadAtaAdi = adSoyadAtaAdi.Trim(),
+            FIN = fin?.Trim(),
+            Telefon = telefon?.Trim(),
+            IsYeri = isYeri?.Trim(),
+            EmekHaqqi = emekHaqqi,
+            Unvan = unvan?.Trim(),
+            Qeyd = qeyd?.Trim()
+        };
+        await _zaminService.YaratAsync(zamin, erisim.IsciId);
+
+        TempData["Success"] = "Zamin əlavə edildi.";
+        return RedirectToAction("Detail", new { id = muracietId });
+    }
+
+    // POST /User/KreditMuraciet/ZaminSil
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ZaminSil(int id, int muracietId)
+    {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+
+        await _zaminService.SilAsync(id, erisim.IsciId);
+        TempData["Success"] = "Zamin silindi.";
+        return RedirectToAction("Detail", new { id = muracietId });
+    }
+
+    // GET /User/KreditMuraciet/ZaminTarixce
+    public async Task<IActionResult> ZaminTarixce(string fin, int? muracietId)
+    {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+
+        var siyahi = await _zaminService.FinUzreTarixceAsync(fin ?? "", muracietId);
+        return PartialView("_ZaminTarixce", siyahi);
+    }
+
+    // POST /User/KreditMuraciet/SmsGonder
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SmsGonder(int muracietId, string telefon, string metn, string? sablon)
+    {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+        if (erisim.IsciId is null) { TempData["Error"] = "İşçi məlumatı tapılmadı."; return RedirectToAction("Detail", new { id = muracietId }); }
+
+        if (string.IsNullOrWhiteSpace(telefon) || string.IsNullOrWhiteSpace(metn))
+        {
+            TempData["Error"] = "Telefon və SMS mətni tələb olunur.";
+            return RedirectToAction("Detail", new { id = muracietId });
+        }
+
+        await _smsService.GonderAsync(muracietId, telefon.Trim(), metn.Trim(), sablon, erisim.IsciId.Value);
+        TempData["Success"] = "SMS göndərmə sorğusu qeydə alındı.";
+        return RedirectToAction("Detail", new { id = muracietId });
+    }
+
     // ══════════════════════════════════════════════════════
-    // KREDİT KOMİTƏSİ — qərar verir
+    // KREDİT KOMİTƏSİ
     // ══════════════════════════════════════════════════════
 
-    // ── GET /User/KreditMuraciet/Komite ─────────────────────
+    // GET /User/KreditMuraciet/Komite
     public async Task<IActionResult> Komite()
     {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeKomitePages) return Icazesiz();
+
         ViewData["Title"] = "Kredit Komitəsi";
-
-        // Komitəyə göndərilmiş + bu gün qərar verilmiş
-        var bugun = DateTime.Today;
-        var muracietler = await _unitOfWork.Repository<KreditMuraciet>()
-            .Query()
-            .Where(x => !x.Silinib &&
-                (x.Status == KreditMuracietStatus.KomiteyeGonderildi ||
-                 (x.KomiteQerarTarixi != null && x.KomiteQerarTarixi >= bugun)))
-            .Include(x => x.BaxanIsci)
-            .OrderByDescending(x => x.BaxilmaTarixi)
-            .ToListAsync();
-
+        var muracietler = await _muracietService.SiyahiAsync(status: KreditMuracietStatus.KomiteyeGonderildi);
+        ViewBag.Erisim = erisim;
         return View(muracietler);
     }
 
-    // ── GET /User/KreditMuraciet/KomiteDetail/5 ─────────────
-    // Komitə baxışı — tam dosye + qərar formu
+    // GET /User/KreditMuraciet/KomiteDetail/5
     public async Task<IActionResult> KomiteDetail(int id)
     {
-        var muraciet = await _unitOfWork.Repository<KreditMuraciet>()
-            .Query()
-            .Include(x => x.BaxanIsci)
-            .FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeKomitePages) return Icazesiz();
 
+        var muraciet = await _muracietService.IdIleGetirAsync(id);
         if (muraciet == null) return NotFound();
 
-        // FİN tarixçəsi
-        ViewBag.Tarixce = !string.IsNullOrEmpty(muraciet.FIN)
-            ? await _unitOfWork.Repository<KreditMuraciet>()
-                .Query()
-                .Where(x => x.FIN == muraciet.FIN && x.Id != id && !x.Silinib)
-                .OrderByDescending(x => x.MuracietTarixi)
-                .ToListAsync()
-            : new List<KreditMuraciet>();
+        ViewBag.Tarixce = await _muracietService.FinUzreTarixceAsync(muraciet.FIN, id);
+        ViewBag.Zaminler = await _zaminService.MuracietZaminleriniGetirAsync(id);
+        ViewBag.Qerar = await _qerarService.MuracietUzreGetirAsync(id);
+        ViewBag.KomiteUzvleri = await _komiteService.HamisiniGetirAsync(yalnizAktiv: true);
+        ViewBag.Erisim = erisim;
 
         ViewData["Title"] = "Komitə — Müraciət #" + id;
         return View(muraciet);
     }
 
-    // ── POST /User/KreditMuraciet/KomiteQerar ───────────────
-    // Komitə: yalnız Təsdiq / Rədd
+    // POST /User/KreditMuraciet/KomiteQerar
+    // Komitə offline yığışır → Word protokol imzalanıb skan edilir → bura upload
     [HttpPost]
-    public async Task<IActionResult> KomiteQerar(int id, int yeniStatus, string? qeyd,
-        string? komiteProtokolNo, decimal? tesdiqMebleg, string? tesdiqMuddet,
-        decimal? faizDerecesi, string? teminat)
+    [ValidateAntiForgeryToken]
+    [RequestFormLimits(MultipartBodyLengthLimit = 50_000_000)]
+    public async Task<IActionResult> KomiteQerar(int muracietId, int qerarTipi, string protokolNo,
+        DateTime qerarTarixi, decimal? tesdiqMebleg, string? tesdiqMuddet, decimal? faizDerecesi,
+        string? teminat, string? qeyd, List<int> imzalayanlar, IFormFile? protokolFayl)
     {
-        var muraciet = await _unitOfWork.Repository<KreditMuraciet>()
-            .GetirAsync(x => x.Id == id && !x.Silinib);
-        if (muraciet == null) return NotFound();
-
-        if (yeniStatus != (int)KreditMuracietStatus.Tesdiqlenib &&
-            yeniStatus != (int)KreditMuracietStatus.ReddEdilib)
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeKomitePages) return Icazesiz();
+        if (erisim.IsciId is null)
         {
-            TempData["Error"] = "Komitə yalnız təsdiq və ya rədd edə bilər.";
-            return RedirectToAction("KomiteDetail", new { id });
+            TempData["Error"] = "İşçi məlumatı tapılmadı.";
+            return RedirectToAction("KomiteDetail", new { id = muracietId });
         }
 
-        muraciet.Status = (KreditMuracietStatus)yeniStatus;
-        muraciet.KomiteQerari = yeniStatus == (int)KreditMuracietStatus.Tesdiqlenib ? "Təsdiqlənib" : "Rədd edilib";
-        muraciet.KomiteProtokolNo = komiteProtokolNo;
-        muraciet.KomiteQerarTarixi = DateTime.Now;
-        muraciet.Qeyd = qeyd;
-        muraciet.TesdiqMebleg = tesdiqMebleg;
-        muraciet.TesdiqMuddet = tesdiqMuddet;
-        muraciet.FaizDerecesi = faizDerecesi;
-        muraciet.Teminat = teminat;
+        if (qerarTipi != (int)KreditQerarTipi.Tesdiqlenib && qerarTipi != (int)KreditQerarTipi.ReddEdilib)
+        {
+            TempData["Error"] = "Qərar tipi düzgün deyil.";
+            return RedirectToAction("KomiteDetail", new { id = muracietId });
+        }
+        if (string.IsNullOrWhiteSpace(protokolNo))
+        {
+            TempData["Error"] = "Protokol nömrəsi tələb olunur.";
+            return RedirectToAction("KomiteDetail", new { id = muracietId });
+        }
+        if (imzalayanlar == null || imzalayanlar.Count == 0)
+        {
+            TempData["Error"] = "Ən azı bir imzalayan üzv seçilməlidir.";
+            return RedirectToAction("KomiteDetail", new { id = muracietId });
+        }
 
-        await _unitOfWork.Repository<KreditMuraciet>().YenileAsync(muraciet);
-        await _unitOfWork.YaddaSaxlaAsync();
+        // Faylı saxla
+        string? faylAdi = null;
+        string? faylYolu = null;
+        if (protokolFayl != null && protokolFayl.Length > 0)
+        {
+            var uploadsDir = Path.Combine(_env.WebRootPath, "Files", "Kredit", "Qerarlar");
+            Directory.CreateDirectory(uploadsDir);
 
-        TempData["Success"] = "Komitə qərarı qeydə alındı.";
+            var ext = Path.GetExtension(protokolFayl.FileName);
+            faylAdi = $"{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}{ext}";
+            var fullPath = Path.Combine(uploadsDir, faylAdi);
+            using var stream = new FileStream(fullPath, FileMode.Create);
+            await protokolFayl.CopyToAsync(stream);
+            faylYolu = $"/Files/Kredit/Qerarlar/{faylAdi}";
+        }
+
+        var qerar = new KreditQerar
+        {
+            KreditMuracietId = muracietId,
+            Qerar = (KreditQerarTipi)qerarTipi,
+            ProtokolNo = protokolNo.Trim(),
+            QerarTarixi = qerarTarixi == default ? DateTime.Now : qerarTarixi,
+            ProtokolFaylAdi = protokolFayl?.FileName,
+            ProtokolFaylYolu = faylYolu,
+            TesdiqMebleg = qerarTipi == (int)KreditQerarTipi.Tesdiqlenib ? tesdiqMebleg : null,
+            TesdiqMuddet = qerarTipi == (int)KreditQerarTipi.Tesdiqlenib ? tesdiqMuddet?.Trim() : null,
+            FaizDerecesi = qerarTipi == (int)KreditQerarTipi.Tesdiqlenib ? faizDerecesi : null,
+            Teminat = qerarTipi == (int)KreditQerarTipi.Tesdiqlenib ? teminat?.Trim() : null,
+            Qeyd = qeyd?.Trim()
+        };
+
+        try
+        {
+            await _qerarService.QebulEtAsync(qerar, imzalayanlar, erisim.IsciId.Value);
+            TempData["Success"] = "Komitə qərarı qeydə alındı.";
+        }
+        catch (InvalidOperationException ex) { TempData["Error"] = ex.Message; }
+
         return RedirectToAction("Komite");
     }
 
-    // ── GET /User/KreditMuraciet/Qerarlar ──────────────────
-    public async Task<IActionResult> Qerarlar()
+    // GET /User/KreditMuraciet/Qerarlar
+    public async Task<IActionResult> Qerarlar(int? tip)
     {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeKomitePages && !erisim.CanSeeIsciPages) return Icazesiz();
+
         ViewData["Title"] = "Komitə Qərarları";
-
-        var muracietler = await _unitOfWork.Repository<KreditMuraciet>()
-            .Query()
-            .Where(x => !x.Silinib &&
-                (x.Status == KreditMuracietStatus.Tesdiqlenib || x.Status == KreditMuracietStatus.ReddEdilib))
-            .Include(x => x.BaxanIsci)
-            .OrderByDescending(x => x.KomiteQerarTarixi)
-            .ToListAsync();
-
-        return View(muracietler);
+        KreditQerarTipi? filter = tip.HasValue ? (KreditQerarTipi)tip.Value : null;
+        var qerarlar = await _qerarService.HamisiniGetirAsync(filter);
+        ViewBag.SecilmisTip = tip;
+        ViewBag.Erisim = erisim;
+        return View(qerarlar);
     }
 
-    // ── POST /User/KreditMuraciet/Delete/5 ──────────────────
+    // ══════════════════════════════════════════════════════
+    // RANDEVU
+    // ══════════════════════════════════════════════════════
+
+    // GET /User/KreditMuraciet/Randevular?gun=2026-04-22
+    public async Task<IActionResult> Randevular(DateTime? gun)
+    {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+
+        var secilenGun = gun?.Date ?? DateTime.Today;
+        ViewData["Title"] = "Randevular — " + secilenGun.ToString("dd MMM yyyy");
+
+        var randevular = await _randevuService.GunUzreGetirAsync(secilenGun);
+
+        // Həftəlik sayım (calendar zolaq üçün)
+        var hefteBaslangic = secilenGun.AddDays(-(int)secilenGun.DayOfWeek + 1);
+        if (secilenGun.DayOfWeek == DayOfWeek.Sunday) hefteBaslangic = secilenGun.AddDays(-6);
+        var hefteSon = hefteBaslangic.AddDays(6);
+        var hefteRandevular = await _randevuService.AraliqUzreGetirAsync(hefteBaslangic, hefteSon);
+
+        ViewBag.SecilenGun = secilenGun;
+        ViewBag.HefteBaslangic = hefteBaslangic;
+        ViewBag.HefteRandevular = hefteRandevular;
+        ViewBag.Erisim = erisim;
+        return View(randevular);
+    }
+
+    // POST /User/KreditMuraciet/RandevuTeyin
     [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RandevuTeyin(int muracietId, DateTime tarix, int? muddetDeqiqe, string? qeyd)
+    {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+        if (erisim.IsciId is null)
+        {
+            TempData["Error"] = "İşçi məlumatı tapılmadı.";
+            return RedirectToAction("Detail", new { id = muracietId });
+        }
+
+        try
+        {
+            await _randevuService.TeyinEtAsync(muracietId, tarix, muddetDeqiqe ?? 30, qeyd, erisim.IsciId.Value);
+            TempData["Success"] = "Randevu təyin edildi.";
+        }
+        catch (InvalidOperationException ex) { TempData["Error"] = ex.Message; }
+
+        return RedirectToAction("Detail", new { id = muracietId });
+    }
+
+    // POST /User/KreditMuraciet/RandevuDurumDeyis
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RandevuDurumDeyis(int randevuId, int yeniDurum, DateTime? gun)
+    {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+
+        await _randevuService.DurumDeyisAsync(randevuId, (KreditRandevuStatus)yeniDurum, erisim.IsciId);
+        TempData["Success"] = "Randevu statusu yeniləndi.";
+        return RedirectToAction("Randevular", new { gun });
+    }
+
+    // POST /User/KreditMuraciet/RandevuLegv
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RandevuLegv(int randevuId, DateTime? gun)
+    {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+
+        await _randevuService.LegvEtAsync(randevuId, erisim.IsciId);
+        TempData["Success"] = "Randevu ləğv edildi.";
+        return RedirectToAction("Randevular", new { gun });
+    }
+
+    // ══════════════════════════════════════════════════════
+    // SİLMƏ
+    // ══════════════════════════════════════════════════════
+
+    // POST /User/KreditMuraciet/Delete/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        var muraciet = await _unitOfWork.Repository<KreditMuraciet>()
-            .GetirAsync(x => x.Id == id);
-        if (muraciet != null)
-        {
-            await _unitOfWork.Repository<KreditMuraciet>().DeleteAsync(muraciet.Id);
-            await _unitOfWork.YaddaSaxlaAsync();
-        }
+        var erisim = await GetAccessAsync();
+        // Yalnız admin silə bilər
+        if (!erisim.IsAdmin) return Icazesiz();
+
+        await _muracietService.SilAsync(id, erisim.IsciId);
         TempData["Success"] = "Müraciət silindi.";
         return RedirectToAction("Index");
     }
 
     // ══════════════════════════════════════════════════════
-    // MAİL — Yenilə düyməsi + Bax-da oxunmuş et
+    // MAİL — IMAP-dan yeni müraciət gətir
     // ══════════════════════════════════════════════════════
 
-    // ── POST /User/KreditMuraciet/Yenile ────────────────────
-    // Düyməyə basanda: mail-dən oxunmamışları gətir, dublikat yoxla, DB-yə yaz
+    // POST /User/KreditMuraciet/Yenile
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Yenile()
     {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+
         try
         {
             var server = _config["KreditMail:ImapServer"] ?? "imap.titan.email";
@@ -307,7 +581,6 @@ public class KreditMuracietController : Controller
             var inbox = client.Inbox;
             await inbox.OpenAsync(FolderAccess.ReadOnly);
 
-            // Yalnız oxunmamış "Online Kredit" mail-ləri
             var uids = await inbox.SearchAsync(
                 SearchQuery.SubjectContains("Online Kredit").And(SearchQuery.NotSeen));
 
@@ -318,22 +591,16 @@ public class KreditMuracietController : Controller
                 var message = await inbox.GetMessageAsync(uid);
                 var messageId = message.MessageId ?? uid.ToString();
 
-                // DB-də varsa skip et (dublikat)
-                var exists = await _unitOfWork.Repository<KreditMuraciet>()
-                    .Query().AnyAsync(x => x.MailMessageId == messageId);
-                if (exists) continue;
+                if (await _muracietService.MailMessageIdVarsa(messageId)) continue;
 
-                // Body-ni al və təmizlə
                 var body = message.TextBody;
-                if (string.IsNullOrWhiteSpace(body))
-                    body = message.HtmlBody ?? "";
+                if (string.IsNullOrWhiteSpace(body)) body = message.HtmlBody ?? "";
                 body = CleanHtml(body);
 
                 var muraciet = ParseMailBody(body, messageId);
                 if (muraciet != null)
                 {
-                    await _unitOfWork.Repository<KreditMuraciet>().YaratAsync(muraciet);
-                    await _unitOfWork.YaddaSaxlaAsync();
+                    await _muracietService.YaratAsync(muraciet, erisim.IsciId);
                     yeniSay++;
                 }
             }
@@ -352,7 +619,6 @@ public class KreditMuracietController : Controller
         return RedirectToAction("Index");
     }
 
-    // ── Bax vuranda mail-i oxunmuş et ───────────────────────
     private async Task MarkMailAsReadAsync(string messageId)
     {
         try
@@ -429,7 +695,6 @@ public class KreditMuracietController : Controller
         {
             MailMessageId = messageId,
             MuracietTarixi = DateTime.Now,
-            Status = KreditMuracietStatus.Yeni,
             AdSoyadAtaAdi = FindField(fields, "Soyad") ?? FindField(fields, "ad v") ?? "Naməlum",
             FIN = FindField(fields, "FİN") ?? FindField(fields, "FIN"),
             Valyuta = FindField(fields, "valyuta") ?? "AZN",
@@ -437,7 +702,8 @@ public class KreditMuracietController : Controller
             IsYeri = FindField(fields, "İş yer") ?? FindField(fields, "Is yer") ?? FindField(fields, "yeriniz"),
             Telefon = FindField(fields, "telefon"),
             Meqsed = FindField(fields, "məqsəd") ?? FindField(fields, "meqsed"),
-            IP = FindField(fields, "Remote IP")
+            IP = FindField(fields, "Remote IP"),
+            Menbe = KreditMuracietMenbe.Online
         };
 
         var meblegStr = FindField(fields, "kredit məbləğ") ?? FindField(fields, "kredit mebleq");

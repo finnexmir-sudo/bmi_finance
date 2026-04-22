@@ -8,8 +8,10 @@ using FinNex.Application.Interfaces.PR_Odenis_Tapsirigi;
 using FinNex.Application.Interfaces.SenedDovriyyesi;
 using FinNex.Application.Interfaces.Structur;
 using FinNex.Application.Services;
+using FinNex.Application.Interfaces.Kredit;
 using FinNex.Application.Services.Communication;
 using FinNex.Application.Services.HR;
+using FinNex.Application.Services.Kredit;
 using FinNex.Application.Services.PR_Odenis_Tapsirigi;
 using FinNex.Application.Services.SenedDovriyyesi;
 using FinNex.Application.Services.Structur;
@@ -113,5 +115,13 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped(typeof(IServiceAsync<BayramGunu, BayramGunuDto, BayramGunuCreateDto, BayramGunuUpdateDto>), typeof(ServiceAsync<BayramGunu, BayramGunuDto, BayramGunuCreateDto, BayramGunuUpdateDto>));
         services.AddScoped(typeof(IServiceAsync<MezuniyyetBalans, MezuniyyetBalansDto, MezuniyyetBalansCreateDto, MezuniyyetBalansUpdateDto>), typeof(ServiceAsync<MezuniyyetBalans, MezuniyyetBalansDto, MezuniyyetBalansCreateDto, MezuniyyetBalansUpdateDto>));
 
+        // ── Kredit Modul Servisləri ───────────────────────────
+        services.AddScoped<IKreditBaxanIsciService, KreditBaxanIsciService>();
+        services.AddScoped<IKomiteUzvuService, KomiteUzvuService>();
+        services.AddScoped<IKreditMuracietService, KreditMuracietService>();
+        services.AddScoped<IKreditQerarService, KreditQerarService>();
+        services.AddScoped<IKreditZaminService, KreditZaminService>();
+        services.AddScoped<IKreditRandevuService, KreditRandevuService>();
+        services.AddScoped<IKreditSmsService, KreditSmsService>();
     }
 }

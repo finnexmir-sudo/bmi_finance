@@ -1,10 +1,11 @@
-@model List<FinNex.Domain.Entities.Kredit.KreditMuraciet>
+@model IList<FinNex.Domain.Entities.Kredit.KreditQerar>
 @using FinNex.Domain.Entities.Kredit
 @{
     ViewData["Title"] = "Komitə Qərarları";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-    var tesdiq = Model.Count(x => x.Status == KreditMuracietStatus.Tesdiqlenib);
-    var redd = Model.Count(x => x.Status == KreditMuracietStatus.ReddEdilib);
+    var tesdiq = Model.Count(x => x.Qerar == KreditQerarTipi.Tesdiqlenib);
+    var redd = Model.Count(x => x.Qerar == KreditQerarTipi.ReddEdilib);
+    var secilmisTip = ViewBag.SecilmisTip as int?;
 }
 
 <div class="fn-page">
@@ -19,6 +20,13 @@
             </div>
         </div>
         <a asp-action="Index" class="fn-btn fn-btn--outline">← Bütün müraciətlər</a>
+    </div>
+
+    @* Filtr *@
+    <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+        <a asp-action="Qerarlar" class="fn-btn @(secilmisTip == null ? "fn-btn--primary" : "fn-btn--outline") fn-btn--sm">Hamısı (@Model.Count)</a>
+        <a asp-action="Qerarlar" asp-route-tip="@((int)KreditQerarTipi.Tesdiqlenib)" class="fn-btn @(secilmisTip == (int)KreditQerarTipi.Tesdiqlenib ? "fn-btn--primary" : "fn-btn--outline") fn-btn--sm">Təsdiqlənib (@tesdiq)</a>
+        <a asp-action="Qerarlar" asp-route-tip="@((int)KreditQerarTipi.ReddEdilib)" class="fn-btn @(secilmisTip == (int)KreditQerarTipi.ReddEdilib ? "fn-btn--primary" : "fn-btn--outline") fn-btn--sm">Rədd (@redd)</a>
     </div>
 
     <div class="km-search-bar">
@@ -38,32 +46,48 @@
             <table class="km-table">
                 <thead>
                     <tr>
-                        <th style="width:50px">#</th>
-                        <th>Ad Soyad</th>
+                        <th style="width:60px">Müraciət</th>
+                        <th>Müştəri</th>
                         <th>FİN</th>
-                        <th>Məbləğ</th>
                         <th>Protokol №</th>
+                        <th>Qərar tarixi</th>
+                        <th>Məbləğ</th>
                         <th>Təsdiq məbləğ</th>
                         <th>Faiz</th>
                         <th>Qərar</th>
-                        <th>Qərar tarixi</th>
+                        <th>Protokol</th>
+                        <th style="width:60px"></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var m in Model)
+                    @foreach (var q in Model)
                     {
-                        var cls = m.Status == KreditMuracietStatus.Tesdiqlenib ? "km-status--tesdiq" : "km-status--redd";
-                        var txt = m.Status == KreditMuracietStatus.Tesdiqlenib ? "Təsdiqlənib" : "Rədd edilib";
-                        <tr class="km-row" onclick="location.href='@Url.Action("Detail", new { id = m.Id })'">
-                            <td class="km-td-id">@m.Id</td>
-                            <td class="km-td-name">@m.AdSoyadAtaAdi</td>
-                            <td>@(m.FIN ?? "—")</td>
-                            <td class="km-td-amount">@m.KreditMeblegi.ToString("N0") <small>@m.Valyuta</small></td>
-                            <td>@(m.KomiteProtokolNo ?? "—")</td>
-                            <td class="km-td-amount">@(m.TesdiqMebleg?.ToString("N0") ?? "—")</td>
-                            <td>@(m.FaizDerecesi?.ToString("N1") ?? "—")%</td>
+                        var m = q.KreditMuraciet;
+                        var cls = q.Qerar == KreditQerarTipi.Tesdiqlenib ? "km-status--tesdiq" : "km-status--redd";
+                        var txt = q.Qerar == KreditQerarTipi.Tesdiqlenib ? "Təsdiqlənib" : "Rədd edilib";
+                        <tr class="km-row">
+                            <td class="km-td-id">#@q.KreditMuracietId</td>
+                            <td class="km-td-name">@(m?.AdSoyadAtaAdi ?? "—")</td>
+                            <td>@(m?.FIN ?? "—")</td>
+                            <td style="font-weight:600">@q.ProtokolNo</td>
+                            <td class="km-td-date">@q.QerarTarixi.ToString("dd.MM.yyyy")</td>
+                            <td class="km-td-amount">@(m?.KreditMeblegi.ToString("N0")) <small>@(m?.Valyuta)</small></td>
+                            <td class="km-td-amount">@(q.TesdiqMebleg?.ToString("N0") ?? "—")</td>
+                            <td>@(q.FaizDerecesi?.ToString("N1") ?? "—")%</td>
                             <td><span class="km-status @cls">@txt</span></td>
-                            <td class="km-td-date">@m.KomiteQerarTarixi?.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(q.ProtokolFaylYolu))
+                                {
+                                    <a href="@q.ProtokolFaylYolu" target="_blank" style="color:#2563eb;font-size:12px;text-decoration:none">📄 Yüklə</a>
+                                }
+                                else
+                                {
+                                    <span style="color:#94a3b8;font-size:12px">—</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="KomiteDetail" asp-route-id="@q.KreditMuracietId" class="km-detail-btn">Bax</a>
+                            </td>
                         </tr>
                     }
                 </tbody>
