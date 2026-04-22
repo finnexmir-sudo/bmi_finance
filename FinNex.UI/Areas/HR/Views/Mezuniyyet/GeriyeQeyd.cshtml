@@ -6,20 +6,14 @@
 
     var minTarix = DateTime.Today.AddDays(-Model.MaksimumKohneGun).ToString("yyyy-MM-dd");
     var maxTarix = DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd");
-
-    // Radio seçim üçün bool dəyişənlər (Razor-da checked="@bool" düzgün render edir;
-    // asp-for ilə inline @() yazmaq RZ1031 xətası verir).
-    var cIllik = Model.Nov == MezuniyyetNovu.Illik;
-    var cXestelik = Model.Nov == MezuniyyetNovu.Xestelik;
-    var cEzamiyyet = Model.Nov == MezuniyyetNovu.Ezamiyyet;
 }
 
 <div class="fn-page fn-mez-create">
 
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">Geriyə Qeyd et</div>
-            <div class="fn-page-sub">İşçi işə gəlməyib və "Qayıb" kimi qeyd olunubsa — HR sonradan illik məzuniyyət / xəstəlik / ezamiyyət yaza və Qayıbları avtomatik uyğun statusa çevirə bilər</div>
+            <div class="fn-page-title">Geriyə İllik Məzuniyyət Qeyd et</div>
+            <div class="fn-page-sub">İşçi illik məzuniyyətə çıxıbsa və Qayıb kimi qeyd olunubsa — HR sonradan yaza, Qayıbı avtomatik İcazəli-yə çevirə bilər. (Xəstəlik / Ezamiyyət üçün sidebar-da ayrıca səhifələr var.)</div>
         </div>
         <a asp-action="Hr" class="fn-btn fn-btn--outline">← Geri</a>
     </div>
@@ -46,10 +40,8 @@
                             <strong>"Təsdiqlənib"</strong> statusunda yaranır. Maksimum
                             <strong>@Model.MaksimumKohneGun gün</strong> əvvələ qədər keçmiş tarix üçün
                             qeyd etmək olar. İşçinin davamiyyətindəki <strong>"Qayıb"</strong> qeydləri
-                            seçilən növə uyğun olaraq <strong>"İcazəli"</strong> (illik),
-                            <strong>"Xəstəlik"</strong> və ya <strong>"Ezamiyyət"</strong>-ə avtomatik
-                            çevriləcək. İllik məzuniyyət halında balans azalır (xəstəlik / ezamiyyətdə
-                            balansa toxunulmur).
+                            avtomatik <strong>"İcazəli"</strong>-yə çevriləcək və illik məzuniyyət
+                            balansı azalacaq.
                         </div>
                     </div>
 
@@ -66,33 +58,10 @@
                         <span asp-validation-for="IsciId" class="fn-val-msg"></span>
                     </div>
 
-                    @* ── Növ seçimi (kart radio-lar) ── *@
-                    <div class="fn-form-group">
-                        <label class="fn-label">Növ <span class="fn-required">*</span></label>
-                        <div class="fn-nov-grid" style="grid-template-columns:repeat(3,1fr)">
-                            <label class="fn-nov-card">
-                                <input type="radio" name="Nov" value="@((int)MezuniyyetNovu.Illik)"
-                                       class="fn-nov-radio" checked="@cIllik" />
-                                <i class="bi bi-sun" style="font-size:20px;color:#1e9b6b"></i>
-                                İllik məzuniyyət
-                                <small>Qayıb → İcazəli</small>
-                            </label>
-                            <label class="fn-nov-card">
-                                <input type="radio" name="Nov" value="@((int)MezuniyyetNovu.Xestelik)"
-                                       class="fn-nov-radio" checked="@cXestelik" />
-                                <i class="bi bi-hospital" style="font-size:20px;color:#a855f7"></i>
-                                Xəstəlik
-                                <small>Qayıb → Xəstəlik</small>
-                            </label>
-                            <label class="fn-nov-card">
-                                <input type="radio" name="Nov" value="@((int)MezuniyyetNovu.Ezamiyyet)"
-                                       class="fn-nov-radio" checked="@cEzamiyyet" />
-                                <i class="bi bi-briefcase" style="font-size:20px;color:#f97316"></i>
-                                Ezamiyyət
-                                <small>Qayıb → Ezamiyyət</small>
-                            </label>
-                        </div>
-                    </div>
+                    @* Növ: yalnız İllik — Xəstəlik və Ezamiyyət üçün ayrıca səhifələr var.
+                       Backend GeriyeQeydEtAsync 3 növü də dəstəkləyir, amma UI yalnız İllik göstərir
+                       (xəstəlik/ezamiyyət axını Xestelik və Ezamiyyet controller-lərindən keçir). *@
+                    <input type="hidden" name="Nov" value="@((int)MezuniyyetNovu.Illik)" />
 
                     @* ── Tarixlər ── *@
                     <div class="fn-form-row">
@@ -161,15 +130,8 @@
                     <div class="fn-wi-step">
                         <div class="fn-wi-num"><i class="bi bi-arrow-repeat" style="font-size:11px"></i></div>
                         <div class="fn-wi-text">
-                            <strong>Qayıb avtomatik çevrilir</strong>
-                            <span>Seçilən növə uyğun İcazəli / Xəstəlik / Ezamiyyət statusuna</span>
-                        </div>
-                    </div>
-                    <div class="fn-wi-step">
-                        <div class="fn-wi-num"><i class="bi bi-piggy-bank" style="font-size:11px"></i></div>
-                        <div class="fn-wi-text">
-                            <strong>Balans yalnız illikdə</strong>
-                            <span>İllik məzuniyyətdə balans azalır; xəstəlik / ezamiyyətdə toxunulmur</span>
+                            <strong>Qayıb → İcazəli</strong>
+                            <span>Davamiyyətdəki qeydlər avtomatik çevrilir</span>
                         </div>
                     </div>
                     <div class="fn-wi-step">
