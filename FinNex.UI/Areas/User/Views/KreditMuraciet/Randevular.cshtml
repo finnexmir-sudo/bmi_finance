@@ -3,9 +3,17 @@
 @{
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     var secilenGun = (DateTime)ViewBag.SecilenGun;
-    var hefteBaslangic = (DateTime)ViewBag.HefteBaslangic;
-    var hefteRandevular = ViewBag.HefteRandevular as IList<KreditRandevu> ?? new List<KreditRandevu>();
+    var ayBaslangic = (DateTime)ViewBag.AyBaslangic;
+    var ayinRandevular = ViewBag.AyinRandevular as IList<KreditRandevu> ?? new List<KreditRandevu>();
     ViewData["Title"] = "Randevular — " + secilenGun.ToString("dd MMM yyyy");
+
+    var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
+    var ilkGunGunu = (int)ayBaslangic.DayOfWeek;
+    var baslangicOffset = ilkGunGunu == 0 ? 6 : ilkGunGunu - 1;
+
+    var gunSayi = ayinRandevular
+        .GroupBy(r => r.Tarix.Date)
+        .ToDictionary(g => g.Key, g => g.ToList());
 
     string DurumText(KreditRandevuStatus s) => s switch
     {
@@ -16,19 +24,25 @@
         KreditRandevuStatus.Legv => "Ləğv",
         _ => "-"
     };
-    string DurumCls(KreditRandevuStatus s) => s switch
+    string DurumRengi(KreditRandevuStatus s) => s switch
     {
-        KreditRandevuStatus.Planli => "km-status--komite",
-        KreditRandevuStatus.Gelib => "km-status--tesdiq",
-        KreditRandevuStatus.Gelmeyib => "km-status--redd",
-        KreditRandevuStatus.Tehxir => "km-status--baxilir",
-        KreditRandevuStatus.Legv => "km-status--redd",
-        _ => ""
+        KreditRandevuStatus.Gelib => "#16a34a",
+        KreditRandevuStatus.Gelmeyib => "#dc2626",
+        KreditRandevuStatus.Legv => "#94a3b8",
+        KreditRandevuStatus.Tehxir => "#f59e0b",
+        _ => "#2563eb"
+    };
+    string DurumBg(KreditRandevuStatus s) => s switch
+    {
+        KreditRandevuStatus.Gelib => "#f0fdf4",
+        KreditRandevuStatus.Gelmeyib => "#fef2f2",
+        KreditRandevuStatus.Legv => "#f1f5f9",
+        KreditRandevuStatus.Tehxir => "#fffbeb",
+        _ => "#eff6ff"
     };
 
-    var gunler = Enumerable.Range(0, 7).Select(i => hefteBaslangic.AddDays(i)).ToList();
-    var gunSayi = hefteRandevular.GroupBy(r => r.Tarix.Date).ToDictionary(g => g.Key, g => g.Count());
-    var azDayNames = new[] { "B.e.", "Ç.a.", "Ç", "C.a.", "C", "Ş", "B" };
+    string[] ayAdlari = { "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun", "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+    string[] gunAdlari = { "B.e.", "Ç.a.", "Ç", "C.a.", "C", "Ş", "B" };
 }
 
 <div class="fn-page">
@@ -36,123 +50,168 @@
     <div class="fn-page-head">
         <div>
             <div class="fn-page-title">Randevular</div>
-            <div class="fn-page-sub">@secilenGun.ToString("dd MMMM yyyy, dddd")</div>
+            <div class="fn-page-sub">Müştərilərin banka gəlmə günləri · @secilenGun.ToString("dd MMMM yyyy, dddd")</div>
         </div>
-        <a asp-action="Index" class="fn-btn fn-btn--outline">← Müraciətlər</a>
+        <div style="display:flex;gap:8px">
+            <a asp-action="Index" class="fn-btn fn-btn--outline">← Müraciətlər</a>
+            <a asp-action="Randevular" asp-route-gun="@DateTime.Today.ToString("yyyy-MM-dd")"
+               class="fn-btn @(secilenGun == DateTime.Today ? "fn-btn--primary" : "fn-btn--outline")">Bu gün</a>
+        </div>
     </div>
 
-    @if (TempData["Success"] != null)
-    {
-        <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
-    }
-    @if (TempData["Error"] != null)
-    {
-        <div style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Error"]</div>
-    }
+    @if (TempData["Success"] != null) { <div class="fn-alert fn-alert--success">@TempData["Success"]</div> }
+    @if (TempData["Error"] != null) { <div style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Error"]</div> }
 
-    @* ══════ Həftəlik zolaq ══════ *@
-    <div class="fn-card" style="padding:12px;margin-bottom:16px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <a asp-action="Randevular" asp-route-gun="@hefteBaslangic.AddDays(-7).ToString("yyyy-MM-dd")" class="fn-btn fn-btn--outline fn-btn--sm">← Əvvəlki həftə</a>
-            <div style="font-weight:600;font-size:13px">@hefteBaslangic.ToString("dd MMM") – @hefteBaslangic.AddDays(6).ToString("dd MMM yyyy")</div>
-            <a asp-action="Randevular" asp-route-gun="@hefteBaslangic.AddDays(7).ToString("yyyy-MM-dd")" class="fn-btn fn-btn--outline fn-btn--sm">Sonrakı həftə →</a>
+    <div style="display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:flex-start">
+
+        @* ═══════ SOL: Mini aylıq calendar ═══════ *@
+        <div class="fn-card" style="padding:16px;position:sticky;top:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <a asp-action="Randevular" asp-route-gun="@ayBaslangic.AddMonths(-1).ToString("yyyy-MM-dd")"
+                   style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;text-decoration:none;color:#64748b;background:#f1f5f9">←</a>
+                <div style="font-weight:700;font-size:14px;color:#0f172a">@ayAdlari[ayBaslangic.Month - 1] @ayBaslangic.Year</div>
+                <a asp-action="Randevular" asp-route-gun="@ayBaslangic.AddMonths(1).ToString("yyyy-MM-dd")"
+                   style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;text-decoration:none;color:#64748b;background:#f1f5f9">→</a>
+            </div>
+
+            @* Həftə günləri başlığı *@
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">
+                @foreach (var gAd in gunAdlari)
+                {
+                    <div style="text-align:center;font-size:10px;font-weight:700;color:#94a3b8;padding:6px 0">@gAd</div>
+                }
+            </div>
+
+            @* Calendar gridi *@
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">
+                @* Boş offset *@
+                @for (int i = 0; i < baslangicOffset; i++)
+                {
+                    <div></div>
+                }
+                @for (int gun = 1; gun <= ayBitis.Day; gun++)
+                {
+                    var tarix = new DateTime(ayBaslangic.Year, ayBaslangic.Month, gun);
+                    var var = gunSayi.ContainsKey(tarix);
+                    var say = var ? gunSayi[tarix].Count : 0;
+                    var sec = tarix.Date == secilenGun.Date;
+                    var bugun = tarix.Date == DateTime.Today;
+                    <a asp-action="Randevular" asp-route-gun="@tarix.ToString("yyyy-MM-dd")"
+                       style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;height:38px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600;
+                              background:@(sec ? "#2563eb" : (bugun ? "#eff6ff" : "transparent"));
+                              color:@(sec ? "#fff" : (var ? "#0f172a" : "#64748b"));
+                              border:1px solid @(sec ? "#2563eb" : (bugun ? "#bfdbfe" : "transparent"))">
+                        <span>@gun</span>
+                        @if (var)
+                        {
+                            <span style="position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;
+                                         background:@(sec ? "#fff" : "#2563eb")"></span>
+                        }
+                    </a>
+                }
+            </div>
+
+            @* Aylıq statistika *@
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e2e8f0">
+                <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Bu ay</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                    <div>
+                        <div style="font-size:20px;font-weight:800;color:#2563eb">@ayinRandevular.Count</div>
+                        <div style="font-size:11px;color:#64748b">randevu</div>
+                    </div>
+                    <div>
+                        <div style="font-size:20px;font-weight:800;color:#16a34a">@ayinRandevular.Count(x => x.Status == KreditRandevuStatus.Gelib)</div>
+                        <div style="font-size:11px;color:#64748b">gəlib</div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
-            @for (int i = 0; i < 7; i++)
+
+        @* ═══════ SAĞ: Seçilmiş günün randevuları ═══════ *@
+        <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <div>
+                    <div style="font-size:20px;font-weight:800;color:#0f172a">@secilenGun.ToString("dd MMMM yyyy")</div>
+                    <div style="font-size:12px;color:#64748b">@secilenGun.ToString("dddd") · @Model.Count randevu</div>
+                </div>
+            </div>
+
+            @if (!Model.Any())
             {
-                var g = gunler[i];
-                var sec = g.Date == secilenGun.Date;
-                var say = gunSayi.TryGetValue(g.Date, out var s) ? s : 0;
-                var isToday = g.Date == DateTime.Today;
-                <a asp-action="Randevular" asp-route-gun="@g.ToString("yyyy-MM-dd")"
-                   style="display:block;padding:10px 6px;border-radius:8px;text-decoration:none;text-align:center;
-                          background:@(sec ? "#2563eb" : (isToday ? "#eff6ff" : "#f8fafc"));
-                          color:@(sec ? "#fff" : "#0f172a");
-                          border:1px solid @(sec ? "#2563eb" : "#e2e8f0")">
-                    <div style="font-size:11px;opacity:.8">@azDayNames[i]</div>
-                    <div style="font-size:18px;font-weight:700">@g.Day</div>
-                    @if (say > 0)
+                <div class="fn-card" style="padding:60px 20px;text-align:center">
+                    <div style="font-size:48px;margin-bottom:12px;opacity:.4">📅</div>
+                    <div style="font-size:15px;font-weight:600;color:#0f172a;margin-bottom:6px">Bu gün üçün randevu yoxdur</div>
+                    <div style="font-size:13px;color:#64748b">Təsdiqlənmiş müraciətlərə Müraciət səhifəsindən randevu təyin edin</div>
+                </div>
+            }
+            else
+            {
+                <div style="display:flex;flex-direction:column;gap:10px">
+                    @foreach (var r in Model.OrderBy(x => x.Tarix))
                     {
-                        <div style="font-size:10px;margin-top:2px;opacity:.9">@say randevu</div>
+                        var m = r.KreditMuraciet;
+                        <div class="fn-card" style="padding:14px 16px;display:grid;grid-template-columns:80px 1fr auto;gap:14px;align-items:center;border-left:4px solid @DurumRengi(r.Status);background:@DurumBg(r.Status)">
+                            @* Saat (böyük) *@
+                            <div style="text-align:center">
+                                <div style="font-size:22px;font-weight:800;color:#0f172a;line-height:1">@r.Tarix.ToString("HH:mm")</div>
+                                <div style="font-size:10px;color:#64748b;margin-top:2px">@r.MuddetDeqiqe dəq</div>
+                            </div>
+
+                            @* Müştəri *@
+                            <div style="min-width:0">
+                                <div style="font-weight:700;font-size:14px;color:#0f172a;margin-bottom:2px">
+                                    <a asp-action="Detail" asp-route-id="@r.KreditMuracietId" style="color:#0f172a;text-decoration:none">
+                                        @(m?.AdSoyadAtaAdi ?? $"Müraciət #{r.KreditMuracietId}")
+                                    </a>
+                                </div>
+                                <div style="font-size:11px;color:#64748b;display:flex;flex-wrap:wrap;gap:8px">
+                                    <span>#@r.KreditMuracietId</span>
+                                    @if (!string.IsNullOrEmpty(m?.FIN)) { <span>· FİN: @m.FIN</span> }
+                                    @if (!string.IsNullOrEmpty(m?.Telefon)) { <span>· @m.Telefon</span> }
+                                    @if (m?.KreditMeblegi > 0) { <span>· @m.KreditMeblegi.ToString("N0") @m.Valyuta</span> }
+                                </div>
+                                @if (!string.IsNullOrEmpty(r.Qeyd))
+                                {
+                                    <div style="font-size:11px;color:#475569;margin-top:4px;font-style:italic">“@r.Qeyd”</div>
+                                }
+                            </div>
+
+                            @* Status və əməliyyatlar *@
+                            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+                                <span style="padding:3px 10px;border-radius:12px;background:#fff;color:@DurumRengi(r.Status);font-size:11px;font-weight:600">@DurumText(r.Status)</span>
+                                @if (r.Status == KreditRandevuStatus.Planli)
+                                {
+                                    <div style="display:flex;gap:4px">
+                                        <form asp-action="RandevuDurumDeyis" method="post" style="display:inline">
+                                            <input type="hidden" name="randevuId" value="@r.Id" />
+                                            <input type="hidden" name="yeniDurum" value="@((int)KreditRandevuStatus.Gelib)" />
+                                            <input type="hidden" name="gun" value="@secilenGun.ToString("yyyy-MM-dd")" />
+                                            <button type="submit" title="Gəldi" style="width:30px;height:30px;border:none;background:#16a34a;color:#fff;border-radius:6px;cursor:pointer;font-size:14px">✓</button>
+                                        </form>
+                                        <form asp-action="RandevuDurumDeyis" method="post" style="display:inline">
+                                            <input type="hidden" name="randevuId" value="@r.Id" />
+                                            <input type="hidden" name="yeniDurum" value="@((int)KreditRandevuStatus.Gelmeyib)" />
+                                            <input type="hidden" name="gun" value="@secilenGun.ToString("yyyy-MM-dd")" />
+                                            <button type="submit" title="Gəlməyib" style="width:30px;height:30px;border:1px solid #e2e8f0;background:#fff;color:#64748b;border-radius:6px;cursor:pointer;font-size:14px">✕</button>
+                                        </form>
+                                        <form asp-action="RandevuLegv" method="post" style="display:inline" onsubmit="return confirm('Ləğv etmək istəyirsən?')">
+                                            <input type="hidden" name="randevuId" value="@r.Id" />
+                                            <input type="hidden" name="gun" value="@secilenGun.ToString("yyyy-MM-dd")" />
+                                            <button type="submit" title="Ləğv" style="width:30px;height:30px;border:1px solid #fecaca;background:#fff;color:#dc2626;border-radius:6px;cursor:pointer;font-size:14px">🗑</button>
+                                        </form>
+                                    </div>
+                                }
+                                else if (r.GelmeTarixi.HasValue)
+                                {
+                                    <span style="font-size:10px;color:#64748b">@r.GelmeTarixi.Value.ToString("HH:mm")</span>
+                                }
+                            </div>
+                        </div>
                     }
-                </a>
+                </div>
             }
         </div>
     </div>
-
-    @* ══════ Seçilən günün randevuları ══════ *@
-    @if (!Model.Any())
-    {
-        <div class="fn-empty-state">
-            <div class="fn-empty-title">Bu gün üçün randevu yoxdur</div>
-            <div class="fn-empty-sub">Təsdiqlənmiş müraciətə randevu təyin etmək üçün Detail səhifəsinə keçin</div>
-        </div>
-    }
-    else
-    {
-        <div class="fn-card" style="padding:0;overflow:hidden">
-            <table class="km-table">
-                <thead>
-                    <tr>
-                        <th style="width:90px">Saat</th>
-                        <th style="width:60px">Müddət</th>
-                        <th>Müştəri</th>
-                        <th>FİN</th>
-                        <th>Telefon</th>
-                        <th>Təyin edən</th>
-                        <th>Status</th>
-                        <th style="width:180px">Əməliyyat</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var r in Model)
-                    {
-                        var m = r.KreditMuraciet;
-                        <tr>
-                            <td style="font-weight:700">@r.Tarix.ToString("HH:mm")</td>
-                            <td>@r.MuddetDeqiqe dəq</td>
-                            <td class="km-td-name">
-                                <a asp-action="Detail" asp-route-id="@r.KreditMuracietId" style="color:#2563eb;text-decoration:none">
-                                    @(m?.AdSoyadAtaAdi ?? $"Müraciət #{r.KreditMuracietId}")
-                                </a>
-                            </td>
-                            <td>@(m?.FIN ?? "—")</td>
-                            <td>@(m?.Telefon ?? "—")</td>
-                            <td>@(r.TeyinEdenIsci != null ? $"{r.TeyinEdenIsci.Ad} {r.TeyinEdenIsci.Soyad}" : "—")</td>
-                            <td><span class="km-status @DurumCls(r.Status)">@DurumText(r.Status)</span></td>
-                            <td>
-                                @if (r.Status == KreditRandevuStatus.Planli)
-                                {
-                                    <form asp-action="RandevuDurumDeyis" method="post" style="display:inline">
-                                        <input type="hidden" name="randevuId" value="@r.Id" />
-                                        <input type="hidden" name="yeniDurum" value="@((int)KreditRandevuStatus.Gelib)" />
-                                        <input type="hidden" name="gun" value="@secilenGun.ToString("yyyy-MM-dd")" />
-                                        <button type="submit" class="fn-btn fn-btn--sm" style="background:#16a34a;color:#fff">Gəldi</button>
-                                    </form>
-                                    <form asp-action="RandevuDurumDeyis" method="post" style="display:inline;margin-left:4px">
-                                        <input type="hidden" name="randevuId" value="@r.Id" />
-                                        <input type="hidden" name="yeniDurum" value="@((int)KreditRandevuStatus.Gelmeyib)" />
-                                        <input type="hidden" name="gun" value="@secilenGun.ToString("yyyy-MM-dd")" />
-                                        <button type="submit" class="fn-btn fn-btn--sm" style="background:#f1f5f9">Gəlməyib</button>
-                                    </form>
-                                    <form asp-action="RandevuLegv" method="post" style="display:inline;margin-left:4px"
-                                          onsubmit="return confirm('Randevunu ləğv edim?')">
-                                        <input type="hidden" name="randevuId" value="@r.Id" />
-                                        <input type="hidden" name="gun" value="@secilenGun.ToString("yyyy-MM-dd")" />
-                                        <button type="submit" class="fn-btn fn-btn--sm" style="color:#dc2626;border:1px solid #fecaca;background:#fff">Ləğv</button>
-                                    </form>
-                                }
-                                else
-                                {
-                                    <span style="font-size:11px;color:#94a3b8">@r.GelmeTarixi?.ToString("HH:mm")</span>
-                                }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
 </div>
 
 @section Styles {

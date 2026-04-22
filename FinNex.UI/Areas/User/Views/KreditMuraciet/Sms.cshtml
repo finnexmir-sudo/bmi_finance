@@ -1,0 +1,120 @@
+@model IList<FinNex.Domain.Entities.Kredit.KreditSmsLog>
+@using FinNex.Domain.Entities.Kredit
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var m = ViewBag.Muraciet as KreditMuraciet;
+    ViewData["Title"] = "SMS — Müraciət #" + m?.Id;
+
+    string StatusText(KreditSmsStatus s) => s switch
+    {
+        KreditSmsStatus.Gozleyir => "Gözləyir",
+        KreditSmsStatus.Gonderilib => "Göndərilib",
+        KreditSmsStatus.Xeta => "Xəta",
+        _ => "-"
+    };
+    string StatusRengi(KreditSmsStatus s) => s switch
+    {
+        KreditSmsStatus.Gonderilib => "#16a34a",
+        KreditSmsStatus.Xeta => "#dc2626",
+        _ => "#f59e0b"
+    };
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">SMS tarixçəsi</div>
+            <div class="fn-page-sub">
+                Müraciət #@m?.Id · @m?.AdSoyadAtaAdi · @m?.Telefon
+            </div>
+        </div>
+        <a asp-action="Detail" asp-route-id="@m?.Id" class="fn-btn fn-btn--outline">← Müraciətə qayıt</a>
+    </div>
+
+    @if (TempData["Success"] != null) { <div class="fn-alert fn-alert--success">@TempData["Success"]</div> }
+    @if (TempData["Error"] != null) { <div style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Error"]</div> }
+
+    @* SMS göndərmə formu *@
+    <div class="fn-card" style="padding:18px;margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:12px">Yeni SMS</div>
+        <form asp-action="SmsGonder" method="post">
+            <input type="hidden" name="muracietId" value="@m?.Id" />
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div class="fn-form-group">
+                    <label class="fn-label">Telefon *</label>
+                    <input type="text" name="telefon" class="fn-input" value="@m?.Telefon" required />
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Şablon</label>
+                    <select name="sablon" class="fn-input" id="smsSablon" onchange="tetbiqEt(this)">
+                        <option value="">— Seç —</option>
+                        <option value="Tesdiq" data-metn="Hörmətli @m?.AdSoyadAtaAdi, kredit müraciətiniz təsdiqləndi. Sənədləşmə üçün banka müraciət edin.">Təsdiq</option>
+                        <option value="Redd" data-metn="Hörmətli @m?.AdSoyadAtaAdi, kredit müraciətiniz rədd edildi.">Rədd</option>
+                        <option value="Randevu" data-metn="Hörmətli @m?.AdSoyadAtaAdi, banka gəlmə vaxtınız təyin edildi. Zəhmət olmasa şəxsiyyət vəsiqəsi ilə gələsiniz.">Randevu</option>
+                    </select>
+                </div>
+                <div class="fn-form-group" style="grid-column:1/-1">
+                    <label class="fn-label">Mətn *</label>
+                    <textarea name="metn" id="smsMetn" class="fn-input" rows="4" required></textarea>
+                </div>
+            </div>
+            <div style="margin-top:10px;text-align:right">
+                <button type="submit" class="fn-btn fn-btn--primary">📨 Göndər</button>
+            </div>
+        </form>
+    </div>
+
+    @* Tarixçə *@
+    <div class="fn-card" style="padding:0;overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid #e2e8f0;font-size:14px;font-weight:700;color:#0f172a">
+            Göndərilən SMS-lər (@Model.Count)
+        </div>
+        @if (!Model.Any())
+        {
+            <div style="padding:40px;text-align:center;color:#94a3b8;font-size:13px">Bu müraciət üçün SMS göndərilməyib</div>
+        }
+        else
+        {
+            <table class="km-table">
+                <thead>
+                    <tr>
+                        <th style="width:140px">Tarix</th>
+                        <th style="width:120px">Telefon</th>
+                        <th style="width:90px">Şablon</th>
+                        <th>Mətn</th>
+                        <th style="width:100px">Göndərən</th>
+                        <th style="width:90px">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model)
+                    {
+                        <tr>
+                            <td>@s.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>@s.Telefon</td>
+                            <td>@(s.Sablon ?? "—")</td>
+                            <td style="white-space:normal;max-width:400px">@s.Metn</td>
+                            <td>@(s.GonderenIsci != null ? $"{s.GonderenIsci.Ad} {s.GonderenIsci.Soyad}" : "—")</td>
+                            <td><span style="padding:3px 8px;border-radius:10px;background:#f1f5f9;color:@StatusRengi(s.Status);font-size:11px;font-weight:600">@StatusText(s.Status)</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/kredit-muraciet.css" asp-append-version="true" />
+}
+
+@section Scripts {
+<script>
+function tetbiqEt(sel) {
+    var opt = sel.options[sel.selectedIndex];
+    var metn = opt.getAttribute('data-metn');
+    if (metn) document.getElementById('smsMetn').value = metn;
+}
+</script>
+}
