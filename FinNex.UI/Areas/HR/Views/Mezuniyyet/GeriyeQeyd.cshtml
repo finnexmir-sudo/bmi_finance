@@ -6,6 +6,12 @@
 
     var minTarix = DateTime.Today.AddDays(-Model.MaksimumKohneGun).ToString("yyyy-MM-dd");
     var maxTarix = DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd");
+
+    // Radio-ların "checked" vəziyyəti — Razor-da bool checked atribut ilə
+    // düzgün render olunur; asp-for ilə inline @() yazsaq RZ1031 alırıq.
+    var cIllik = Model.Nov == MezuniyyetNovu.Illik;
+    var cXestelik = Model.Nov == MezuniyyetNovu.Xestelik;
+    var cEzamiyyet = Model.Nov == MezuniyyetNovu.Ezamiyyet;
 }
 
 <div class="fn-page fn-mez-create">
@@ -63,22 +69,22 @@
                         <label class="fn-label">Məzuniyyət növü <span class="fn-required">*</span></label>
                         <div class="fn-nov-grid" style="grid-template-columns:repeat(3,1fr)">
                             <label class="fn-nov-card">
-                                <input type="radio" asp-for="Nov" value="@((int)MezuniyyetNovu.Illik)"
-                                       class="fn-nov-radio" @(Model.Nov == MezuniyyetNovu.Illik ? "checked" : "") />
+                                <input type="radio" name="Nov" value="@((int)MezuniyyetNovu.Illik)"
+                                       class="fn-nov-radio" checked="@cIllik" />
                                 <i class="bi bi-sun" style="font-size:20px;color:#1e9b6b"></i>
                                 İllik
                                 <small>İllik məzuniyyət</small>
                             </label>
                             <label class="fn-nov-card">
-                                <input type="radio" asp-for="Nov" value="@((int)MezuniyyetNovu.Xestelik)"
-                                       class="fn-nov-radio" @(Model.Nov == MezuniyyetNovu.Xestelik ? "checked" : "") />
+                                <input type="radio" name="Nov" value="@((int)MezuniyyetNovu.Xestelik)"
+                                       class="fn-nov-radio" checked="@cXestelik" />
                                 <i class="bi bi-hospital" style="font-size:20px;color:#a855f7"></i>
                                 Xəstəlik
                                 <small>Xəstəlik vərəqəsi</small>
                             </label>
                             <label class="fn-nov-card">
-                                <input type="radio" asp-for="Nov" value="@((int)MezuniyyetNovu.Ezamiyyet)"
-                                       class="fn-nov-radio" @(Model.Nov == MezuniyyetNovu.Ezamiyyet ? "checked" : "") />
+                                <input type="radio" name="Nov" value="@((int)MezuniyyetNovu.Ezamiyyet)"
+                                       class="fn-nov-radio" checked="@cEzamiyyet" />
                                 <i class="bi bi-briefcase" style="font-size:20px;color:#f97316"></i>
                                 Ezamiyyət
                                 <small>Xidməti ezamiyyət</small>
