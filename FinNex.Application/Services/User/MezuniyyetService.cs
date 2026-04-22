@@ -1074,9 +1074,6 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                         BaslamaTarixi = m.BaslamaTarixi,
                         BitmeTarixi = m.BitmeTarixi,
                         IsGunlerininSayi = m.IsGunlerininSayi,
-                    EmrRegem = m.EmrRegem,
-                    EmrSuffiks = m.EmrSuffiks,
-                    EmrIl = m.EmrIl,
                         EyniSobe = hedefDepId.HasValue
                                    && teyinat != null
                                    && teyinat.DepartamentId == hedefDepId.Value
