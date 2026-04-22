@@ -334,18 +334,31 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 if (bayramlar.Any(b => b.Tarix.Date == gun.Date))
                     continue;
 
-                // Artıq qeyd varsa yaratma
-                var movcud = await _unitOfWork.Repository<Davamiyyet>()
-                    .MovcuddurmuAsync(x => x.IsciId == m.IsciId && x.Tarix.Date == gun.Date);
-                if (movcud) continue;
+                // Cari günün qeydi varmı? Varsa və "Qayıb" idisə — yeni statusa çevir.
+                // Başqa status (məs. İşdə) idisə toxunma. Qeyd yoxdursa — yeni yarat.
+                // Bu məntiq HR-in keçmiş tarixlər üçün yazdığı məzuniyyətləri də
+                // düzgün emal edir (məs: işçi bir neçə gün gəlmədi, Qayıb yazıldı,
+                // sonra sənəd gətirdi — HR təsdiq edəndə Qayıb → Xəstəlik/Ezamiyyət
+                // olaraq avtomatik düzəlir).
+                var mevcud = await _unitOfWork.Repository<Davamiyyet>()
+                    .GetirAsync(x => x.IsciId == m.IsciId && x.Tarix.Date == gun.Date);
 
-                var dav = new Davamiyyet
+                if (mevcud != null)
+                {
+                    if (mevcud.Status == DavamiyyetStatus.Qayib)
+                    {
+                        mevcud.Status = davamiyyetStatusu;
+                        await _unitOfWork.Repository<Davamiyyet>().YenileAsync(mevcud);
+                    }
+                    continue;
+                }
+
+                await _unitOfWork.Repository<Davamiyyet>().YaratAsync(new Davamiyyet
                 {
                     IsciId = m.IsciId,
                     Tarix = gun,
                     Status = davamiyyetStatusu
-                };
-                await _unitOfWork.Repository<Davamiyyet>().YaratAsync(dav);
+                });
             }
         }
 
