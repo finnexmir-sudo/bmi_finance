@@ -46,6 +46,26 @@ namespace FinNex.Application.Services.Kredit
                           .ToListAsync();
         }
 
+        public async Task<IList<KreditMuraciet>> FinUzreTarixceAsync(string? fin, int? istisnaMuracietId = null)
+        {
+            if (string.IsNullOrWhiteSpace(fin)) return new List<KreditMuraciet>();
+            var normalize = fin.Trim().ToUpper();
+
+            var q = _uow.Repository<KreditMuraciet>().Query()
+                .Where(x => !x.Silinib && x.FIN != null && x.FIN.ToUpper() == normalize);
+            if (istisnaMuracietId.HasValue)
+                q = q.Where(x => x.Id != istisnaMuracietId.Value);
+
+            return await q.OrderByDescending(x => x.MuracietTarixi).ToListAsync();
+        }
+
+        public async Task<bool> MailMessageIdVarsa(string messageId)
+        {
+            if (string.IsNullOrWhiteSpace(messageId)) return false;
+            return await _uow.Repository<KreditMuraciet>().Query()
+                .AnyAsync(x => x.MailMessageId == messageId);
+        }
+
         public async Task<KreditMuraciet> YaratAsync(KreditMuraciet entity, int? yaradanIcraciId)
         {
             entity.Status = KreditMuracietStatus.Yeni;

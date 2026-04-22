@@ -16,6 +16,17 @@ namespace FinNex.Application.Interfaces.Kredit
                                                   KreditMuracietMenbe? menbe = null,
                                                   int? baxanIsciId = null);
 
+        /// <summary>
+        /// Verilən FIN üzrə eyni şəxsin əvvəlki müraciətlərini qaytarır
+        /// (cari müraciət istisna). Boş FIN olsa — boş siyahı.
+        /// </summary>
+        Task<IList<KreditMuraciet>> FinUzreTarixceAsync(string? fin, int? istisnaMuracietId = null);
+
+        /// <summary>
+        /// Mail-dən gələn müraciətin MessageId-si artıq DB-də varsa true qaytarır.
+        /// </summary>
+        Task<bool> MailMessageIdVarsa(string messageId);
+
         // ── Yaratma ──────────────────────────────────────────
         Task<KreditMuraciet> YaratAsync(KreditMuraciet entity, int? yaradanIcraciId);
 
