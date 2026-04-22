@@ -1,4 +1,6 @@
-﻿namespace FinNex.Domain.Entities.HR
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace FinNex.Domain.Entities.HR
 {
     public class Mezuniyyet : BaseEntity
     {
@@ -65,5 +67,21 @@
         // olunur (məzuniyyətdən bir iş günü əvvəl). Fon xidməti həmin tarixdə
         // statusu avtomatik Odenilib-ə çevirir.
         public DateTime? PlanliOdenisTarixi { get; set; }
+
+        // ── Əmr nömrəsi (K/M) ────────────────────────────────
+        // HR təsdiqindən sonra avtomatik verilir. Hər il 1-dən başlayır.
+        // Rəqəm hissəsi ayrıca saxlanır ki, suffiks ("a", "b" və s.) əlavə
+        // etmək lazım olsa (məs. araya düşmüş əmr halları), düzgün sırala bilək.
+        public int? EmrRegem { get; set; }
+        public string? EmrSuffiks { get; set; }   // nvarchar(5), adətən null; məs "a", "b"
+        public int? EmrIl { get; set; }           // Hansı il üçün (reset logic)
+
+        /// <summary>
+        /// Tam əmr nömrəsi formatı — "K/M 1", "K/M 10a" və s.
+        /// Boşdursa (hələ HR təsdiq olmayıb) — null.
+        /// </summary>
+        [NotMapped]
+        public string? EmrNomresi =>
+            EmrRegem.HasValue ? $"K/M {EmrRegem}{EmrSuffiks ?? string.Empty}" : null;
     }
 }

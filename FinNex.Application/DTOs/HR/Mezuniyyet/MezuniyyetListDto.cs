@@ -54,6 +54,12 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         public string? ImtinaSebebi { get; set; }
         public DateTime YaradilmaTarixi { get; set; }
 
+        // Əmr nömrəsi (K/M)
+        public int? EmrRegem { get; set; }
+        public string? EmrSuffiks { get; set; }
+        public int? EmrIl { get; set; }
+        public string? EmrNomresi => EmrRegem.HasValue ? $"K/M {EmrRegem}{EmrSuffiks ?? string.Empty}" : null;
+
         // Müraciət sahibinin rolu — workflow göstəricisi üçün
         public bool MuracietSahibiRehberdirmi { get; set; }
         public bool MuracietSahibiSobeReisidirmi { get; set; }

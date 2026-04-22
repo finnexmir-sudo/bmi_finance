@@ -45,6 +45,12 @@ namespace FinNex.UI.Areas.User.ViewModels.Tesdiq
         // Cari təsdiqçi rolu
         public StrukturRolTipi TesdiqciRol { get; set; }
 
+        // Əmr nömrəsi — yalnız məzuniyyət üçün, HR təsdiqindən sonra dolur
+        public int? EmrRegem { get; set; }
+        public string? EmrSuffiks { get; set; }
+        public int? EmrIl { get; set; }
+        public string? EmrNomresi => EmrRegem.HasValue ? $"K/M {EmrRegem}{EmrSuffiks ?? string.Empty}" : null;
+
         // Təsdiq ekranı üçün əlavə kontekst — yalnız məzuniyyət üçün
         public List<MezuniyyetOverlapDto> OverlapMezuniyyetler { get; set; } = new();
         public List<EvezediciKonfliktDto> EvezediciKonfliktleri { get; set; } = new();
