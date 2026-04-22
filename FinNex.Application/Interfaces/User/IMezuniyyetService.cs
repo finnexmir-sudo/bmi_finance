@@ -25,6 +25,12 @@ namespace FinNex.Application.Interfaces
         Task<Result<IList<MezuniyyetListDto>>> GetProsesdeOlanlarAsync();
 
         /// <summary>
+        /// HR tarixçəsi — təsdiqlənmiş və imtina edilmiş bütün müraciətlər
+        /// (opsional axtarış: işçi adı/soyadı/FIN).
+        /// </summary>
+        Task<Result<IList<MezuniyyetListDto>>> GetTarixceAsync(string? axtaris = null);
+
+        /// <summary>
         /// Hazırda məzuniyyətdə olan (Təsdiqlənib + BaslamaTarixi ≤ bugün ≤ BitmeTarixi)
         /// və/və ya yaxın günlərdə başlayacaq işçilərin izləmə siyahısı.
         /// </summary>

@@ -49,18 +49,7 @@
     };
 }
 
-@if (TempData["Success"] != null)
-{
-    <div style="background:#d1fae5;border:1px solid #a7f3d0;color:#065f46;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
-        <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
-    </div>
-}
-@if (TempData["Error"] != null)
-{
-    <div style="background:#fee2e2;border:1px solid #fecaca;color:#991b1b;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
-        <i class="bi bi-x-circle-fill"></i> @TempData["Error"]
-    </div>
-}
+@* Success/Error alert-ləri _UserLayout-da mərkəzləşdirilib — burda dublikat lazım deyil *@
 
 <div class="fn-page">
 
@@ -104,7 +93,31 @@
                 Prosesdə
                 <span style="background:@(Model.AktivTab == "proses" ? "#e8b84b" : "#dde1ea");color:@(Model.AktivTab == "proses" ? "#fff" : "#5a647a");padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700;">@Model.ProsesSayi</span>
             </a>
+            <a asp-action="Hr" asp-route-tab="tarixce"
+               style="padding:10px 16px;font-size:13px;font-weight:@(Model.AktivTab == "tarixce" ? "700" : "500");color:@(Model.AktivTab == "tarixce" ? "#1a2332" : "#8a93a8");text-decoration:none;border-bottom:2px solid @(Model.AktivTab == "tarixce" ? "#e8b84b" : "transparent");display:inline-flex;align-items:center;gap:6px;transition:all .15s;">
+                <i class="bi bi-clock-history"></i>
+                Tarixçə
+                <span style="background:@(Model.AktivTab == "tarixce" ? "#e8b84b" : "#dde1ea");color:@(Model.AktivTab == "tarixce" ? "#fff" : "#5a647a");padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700;">@Model.TarixceSayi</span>
+            </a>
         </div>
+
+        @* ── Axtarış: yalnız tarixçə tabında ── *@
+        @if (Model.AktivTab == "tarixce")
+        {
+            <form method="get" asp-action="Hr" style="margin-bottom:14px;display:flex;gap:8px;align-items:center;">
+                <input type="hidden" name="tab" value="tarixce" />
+                <input type="text" name="axtaris" value="@Model.Axtaris" placeholder="İşçi adı, soyadı və ya FİN ilə axtar..."
+                       style="flex:1;max-width:420px;padding:9px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none" />
+                <button type="submit" style="padding:9px 16px;background:#1a2332;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+                    <i class="bi bi-search"></i> Axtar
+                </button>
+                @if (!string.IsNullOrWhiteSpace(Model.Axtaris))
+                {
+                    <a asp-action="Hr" asp-route-tab="tarixce"
+                       style="padding:9px 14px;font-size:13px;color:#64748b;text-decoration:none">Təmizlə</a>
+                }
+            </form>
+        }
     }
 
     @* ── Statistika / info rozetka ── *@

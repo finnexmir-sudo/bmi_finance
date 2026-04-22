@@ -8,15 +8,19 @@ namespace FinNex.UI.Areas.HR.ViewModels.Mezuniyyet
         public string PageTitle { get; set; } = "";
         public string TesdiqAction { get; set; } = ""; // POST action adı
 
-        // HR panelinin tab rejimi: "tesdiq" (default) | "proses"
+        // HR panelinin tab rejimi: "tesdiq" (default) | "proses" | "tarixce"
         public string AktivTab { get; set; } = "tesdiq";
 
         // Tab sayğacları
         public int TesdiqSayi { get; set; }
         public int ProsesSayi { get; set; }
+        public int TarixceSayi { get; set; }
 
-        // "Prosesdə" tabı üçün — siyahı read-only göstərilməlidir
-        public bool YalnizIzleme => AktivTab == "proses";
+        // "Prosesdə" və "Tarixçə" tabları üçün — siyahı read-only göstərilir
+        public bool YalnizIzleme => AktivTab == "proses" || AktivTab == "tarixce";
+
+        // Axtarış üçün (istəyə görə GET-dən gəlir)
+        public string? Axtaris { get; set; }
     }
     public class HrMezuniyyetDetalVM
     {

@@ -788,6 +788,63 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
     }
 
     // ══════════════════════════════════════════════════════
+    // HR Tarixçə — təsdiqlənmiş/imtina edilmiş müraciətlər
+    // Axtarış: işçi adı, soyadı və ya FIN ilə
+    // ══════════════════════════════════════════════════════
+    public async Task<Result<IList<MezuniyyetListDto>>> GetTarixceAsync(string? axtaris = null)
+    {
+        try
+        {
+            var q = _unitOfWork.Repository<Mezuniyyet>().Query()
+                .Where(x => !x.Silinib
+                         && (x.Status == MezuniyyetStatus.Tesdiqlenib
+                          || x.Status == MezuniyyetStatus.ImtinaEdildi));
+
+            if (!string.IsNullOrWhiteSpace(axtaris))
+            {
+                var t = axtaris.Trim();
+                q = q.Where(x => x.Isci.Ad.Contains(t)
+                              || x.Isci.Soyad.Contains(t)
+                              || (x.Isci.FIN != null && x.Isci.FIN.Contains(t)));
+            }
+
+            var entities = await q
+                .Include(m => m.Isci).ThenInclude(i => i.IsciTeyinatlari).ThenInclude(t => t.Departament)
+                .Include(m => m.Isci).ThenInclude(i => i.IsciTeyinatlari).ThenInclude(t => t.Vezife)
+                .Include(m => m.EvezEdenIsci)
+                .OrderByDescending(m => m.HrTesdiqTarixi ?? m.YaradilmaTarixi)
+                .ToListAsync();
+
+            var dtos = entities.Select(m => new MezuniyyetListDto
+            {
+                Id = m.Id,
+                IsciAdSoyad = m.Isci.TamAd,
+                SobeAdi = m.Isci.IsciTeyinatlari.Where(t => t.Aktivdir).Select(t => t.Departament.Ad).FirstOrDefault() ?? "-",
+                VezifeAdi = m.Isci.IsciTeyinatlari.Where(t => t.Aktivdir).Select(t => t.Vezife.Ad).FirstOrDefault() ?? "-",
+                EvezEdenIsciAdSoyad = m.EvezEdenIsci?.TamAd,
+                Nov = m.Nov,
+                Status = m.Status,
+                BaslamaTarixi = m.BaslamaTarixi,
+                BitmeTarixi = m.BitmeTarixi,
+                IsGunlerininSayi = m.IsGunlerininSayi,
+                EmrRegem = m.EmrRegem,
+                EmrSuffiks = m.EmrSuffiks,
+                EmrIl = m.EmrIl,
+                HrTesdiq = m.HrTesdiq,
+                HrTesdiqTarixi = m.HrTesdiqTarixi,
+                ImtinaSebebi = m.ImtinaSebebi,
+                YaradilmaTarixi = m.YaradilmaTarixi,
+            }).ToList();
+
+            return Result<IList<MezuniyyetListDto>>.Ok(dtos);
+        }
+        catch (Exception ex)
+        {
+            return Result<IList<MezuniyyetListDto>>.Fail($"Tarixçə gətirilmədi: {ex.Message}");
+        }
+    }
+
+    // ══════════════════════════════════════════════════════
     // Aktiv və yaxınlaşan məzuniyyətlər (HR izləmə səhifəsi)
     // ══════════════════════════════════════════════════════
     public async Task<Result<IList<MezuniyyetListDto>>> GetAktivVeYaxinlardakilarAsync(int qabaqcaGun = 30)
