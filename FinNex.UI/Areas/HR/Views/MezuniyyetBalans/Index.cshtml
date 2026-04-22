@@ -115,14 +115,23 @@
     <!-- Table Card -->
     <div class="mb-card">
         <div class="mb-card__header">
-            <h3 class="mb-card__title">İşçilər (@Model.Count nəfər)</h3>
+            <h3 class="mb-card__title">İşçilər (<span id="mbVisibleCount">@Model.Count</span> nəfər)</h3>
             <span class="mb-card__badge">@secilmisIl</span>
+        </div>
+
+        @* ── Axtarış + departament filtri ── *@
+        <div style="padding:12px 16px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <div style="flex:1;min-width:260px;position:relative">
+                <i class="bi bi-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px"></i>
+                <input type="text" id="mbSearch" placeholder="İşçi adı, FİN, departament və ya vəzifə ilə axtar..."
+                       style="width:100%;padding:9px 14px 9px 38px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none" />
+            </div>
         </div>
 
         @if (Model.Any())
         {
             <div class="mb-table-wrap">
-                <table class="mb-table">
+                <table class="mb-table" id="mbTable">
                     <thead>
                         <tr>
                             <th style="min-width:200px">İşçi</th>

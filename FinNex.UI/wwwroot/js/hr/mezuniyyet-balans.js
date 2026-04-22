@@ -11,6 +11,23 @@
         });
     }
 
+    // ── İşçi axtarışı (ad, FİN, departament, vəzifə) ──────
+    const searchInput = document.getElementById('mbSearch');
+    const visibleCountEl = document.getElementById('mbVisibleCount');
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            const t = this.value.trim().toLowerCase();
+            const rows = document.querySelectorAll('#mbTable tbody tr');
+            let gorunen = 0;
+            rows.forEach(function (r) {
+                const match = !t || r.textContent.toLowerCase().indexOf(t) >= 0;
+                r.style.display = match ? '' : 'none';
+                if (match) gorunen++;
+            });
+            if (visibleCountEl) visibleCountEl.textContent = gorunen;
+        });
+    }
+
     // ── Toast ────────────────────────────────────────────
     function showToast(message, type) {
         let toast = document.getElementById('mbToast');
