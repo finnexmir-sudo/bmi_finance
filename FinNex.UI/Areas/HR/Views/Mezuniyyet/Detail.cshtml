@@ -62,8 +62,8 @@
         </div>
     </div>
 
-    @* ── Status + Növ ── *@
-    <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
+    @* ── Status + Növ + Əmr № ── *@
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
         <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:@(StatusColor(m.Status))1a;color:@(StatusColor(m.Status));">
             <span style="width:7px;height:7px;border-radius:50%;background:@(StatusColor(m.Status));"></span>
             @StatusText(m.Status)
@@ -71,6 +71,12 @@
         <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:@(NovColor(m.Nov))1a;color:@(NovColor(m.Nov));">
             @NovText(m.Nov)
         </span>
+        @if (!string.IsNullOrEmpty(m.EmrNomresi))
+        {
+            <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#eff6ff;color:#1e40af;font-family:monospace">
+                📄 @m.EmrNomresi @(m.EmrIl.HasValue ? $"· {m.EmrIl}" : "")
+            </span>
+        }
     </div>
 
     @* ── Məlumatlar ── *@

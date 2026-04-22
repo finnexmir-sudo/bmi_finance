@@ -277,6 +277,20 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
         if (!status) m.ImtinaSebebi = qeyd;
 
+        // Əmr nömrəsi — yalnız HR təsdiq edərkən (imtina halında verilmir).
+        // Hər il 1-dən başlayır; rəqəm hissəsi ayrıca saxlanır ki, araya
+        // düşmüş əmr halları üçün sonradan suffiks ("a", "b" ...) əlavə edilsin.
+        if (status && !m.EmrRegem.HasValue)
+        {
+            var il = m.HrTesdiqTarixi.Value.Year;
+            var sonRegem = await _unitOfWork.Repository<Mezuniyyet>().Query()
+                .Where(x => !x.Silinib && x.EmrIl == il && x.EmrRegem != null)
+                .MaxAsync(x => (int?)x.EmrRegem) ?? 0;
+            m.EmrRegem = sonRegem + 1;
+            m.EmrIl = il;
+            // EmrSuffiks — default null; UI-dan əl ilə verilə bilər
+        }
+
         // Qabaqcadan ödəniş seçilibsə: HR təsdiq anında məbləğ hesablanır, status
         // “Gozleyir” olur. Mühasib ayrıca səhifədə yoxlayıb “Ödənildi” vurur.
         if (status && m.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis)
@@ -543,6 +557,9 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     BaslamaTarixi = m.BaslamaTarixi,
                     BitmeTarixi = m.BitmeTarixi,
                     IsGunlerininSayi = m.IsGunlerininSayi,
+                    EmrRegem = m.EmrRegem,
+                    EmrSuffiks = m.EmrSuffiks,
+                    EmrIl = m.EmrIl,
                 }).ToList();
 
             return Result<IList<MezuniyyetListDto>>.Ok(dtos);
@@ -590,6 +607,9 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     BaslamaTarixi = m.BaslamaTarixi,
                     BitmeTarixi = m.BitmeTarixi,
                     IsGunlerininSayi = m.IsGunlerininSayi,
+                    EmrRegem = m.EmrRegem,
+                    EmrSuffiks = m.EmrSuffiks,
+                    EmrIl = m.EmrIl,
                 }).ToList();
 
             return Result<IList<MezuniyyetListDto>>.Ok(dtos);
@@ -637,6 +657,9 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     BaslamaTarixi = m.BaslamaTarixi,
                     BitmeTarixi = m.BitmeTarixi,
                     IsGunlerininSayi = m.IsGunlerininSayi,
+                    EmrRegem = m.EmrRegem,
+                    EmrSuffiks = m.EmrSuffiks,
+                    EmrIl = m.EmrIl,
                 }).ToList();
 
             return Result<IList<MezuniyyetListDto>>.Ok(dtos);
@@ -684,6 +707,9 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     BaslamaTarixi = m.BaslamaTarixi,
                     BitmeTarixi = m.BitmeTarixi,
                     IsGunlerininSayi = m.IsGunlerininSayi,
+                    EmrRegem = m.EmrRegem,
+                    EmrSuffiks = m.EmrSuffiks,
+                    EmrIl = m.EmrIl,
                 }).ToList();
 
             return Result<IList<MezuniyyetListDto>>.Ok(dtos);
@@ -735,6 +761,9 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     BaslamaTarixi = m.BaslamaTarixi,
                     BitmeTarixi = m.BitmeTarixi,
                     IsGunlerininSayi = m.IsGunlerininSayi,
+                    EmrRegem = m.EmrRegem,
+                    EmrSuffiks = m.EmrSuffiks,
+                    EmrIl = m.EmrIl,
                     YaradilmaTarixi = m.YaradilmaTarixi,
                 }).ToList();
 
@@ -835,6 +864,9 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     BaslamaTarixi = m.BaslamaTarixi,
                     BitmeTarixi = m.BitmeTarixi,
                     IsGunlerininSayi = m.IsGunlerininSayi,
+                    EmrRegem = m.EmrRegem,
+                    EmrSuffiks = m.EmrSuffiks,
+                    EmrIl = m.EmrIl,
                 }).ToList();
 
             return Result<IList<MezuniyyetListDto>>.Ok(dtos);
@@ -890,6 +922,9 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             RehberTesdiqTarixi = entity.RehberTesdiqTarixi,
             HrTesdiq = entity.HrTesdiq,
             HrTesdiqTarixi = entity.HrTesdiqTarixi,
+            EmrRegem = entity.EmrRegem,
+            EmrSuffiks = entity.EmrSuffiks,
+            EmrIl = entity.EmrIl,
         };
 
         return Result<MezuniyyetDto>.Ok(dto);
@@ -946,6 +981,9 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     BaslamaTarixi = m.BaslamaTarixi,
                     BitmeTarixi = m.BitmeTarixi,
                     IsGunlerininSayi = m.IsGunlerininSayi,
+                    EmrRegem = m.EmrRegem,
+                    EmrSuffiks = m.EmrSuffiks,
+                    EmrIl = m.EmrIl,
                     SobeReisiAdSoyad = m.SobeReisiIsci?.TamAd,
                     SobeReisiTesdiq = m.SobeReisiTesdiq,
                     SobeReisiTesdiqTarixi = m.SobeReisiTesdiqTarixi,
@@ -1036,6 +1074,9 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                         BaslamaTarixi = m.BaslamaTarixi,
                         BitmeTarixi = m.BitmeTarixi,
                         IsGunlerininSayi = m.IsGunlerininSayi,
+                    EmrRegem = m.EmrRegem,
+                    EmrSuffiks = m.EmrSuffiks,
+                    EmrIl = m.EmrIl,
                         EyniSobe = hedefDepId.HasValue
                                    && teyinat != null
                                    && teyinat.DepartamentId == hedefDepId.Value

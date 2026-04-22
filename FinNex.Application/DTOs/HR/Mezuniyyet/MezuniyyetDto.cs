@@ -37,5 +37,11 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
 
         public bool? HrTesdiq { get; set; }
         public DateTime? HrTesdiqTarixi { get; set; }
+
+        // Əmr nömrəsi (K/M) — HR təsdiqindən sonra avtomatik verilir
+        public int? EmrRegem { get; set; }
+        public string? EmrSuffiks { get; set; }
+        public int? EmrIl { get; set; }
+        public string? EmrNomresi => EmrRegem.HasValue ? $"K/M {EmrRegem}{EmrSuffiks ?? string.Empty}" : null;
     }
 }
