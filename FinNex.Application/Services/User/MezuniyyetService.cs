@@ -49,14 +49,18 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 // 1. İş günlərini hesabla
                 int isGunu = await HesablaIsGunuAsync(dto.BaslamaTarixi, dto.BitmeTarixi);
 
-                // 2. Balansı növə görə yoxla (Xəstəlik və Ezamiyyət limitsizdir)
+                // 2. Balansı növə görə yoxla — BÜTÜN illərin cəmi qalığı
+                // ilə müqayisə edirik (FIFO məntiqi ilə köhnə illərdən də
+                // istifadə edilə bilir). Xəstəlik və Ezamiyyət limitsizdir.
                 if (dto.Nov == MezuniyyetNovu.Illik)
                 {
-                    var balans = await _unitOfWork.Repository<MezuniyyetBalans>()
-                        .GetirAsync(x => x.IsciId == dto.IsciId && x.Il == dto.BaslamaTarixi.Year && x.Nov == dto.Nov);
+                    var umumiQaliq = await _unitOfWork.Repository<MezuniyyetBalans>().Query()
+                        .Where(x => !x.Silinib && x.IsciId == dto.IsciId && x.Nov == dto.Nov)
+                        .SumAsync(x => (int?)(x.ToplamGun - x.IstifadeOlunanGun)) ?? 0;
 
-                    if (balans == null || balans.QaliqGun < isGunu)
-                        return Result<MezuniyyetDto>.Fail($"Kifayət qədər {dto.Nov} məzuniyyət balansınız yoxdur.");
+                    if (umumiQaliq < isGunu)
+                        return Result<MezuniyyetDto>.Fail(
+                            $"Kifayət qədər illik məzuniyyət balansı yoxdur. Bütün illərin cəmi qalıq: {umumiQaliq} gün, tələb olunur: {isGunu} gün.");
                 }
 
                 // 3. İşçinin aktiv departamentini tap
@@ -306,15 +310,10 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         // Təsdiqlənibsə: balansı yenilə + davamiyyətdə icazəli qeydlər yarat
         if (status)
         {
-            // Balansı yenilə
-            var balans = await _unitOfWork.Repository<MezuniyyetBalans>()
-                .GetirAsync(x => x.IsciId == m.IsciId && x.Il == m.BaslamaTarixi.Year && x.Nov == m.Nov);
-
-            if (balans != null)
-            {
-                balans.IstifadeOlunanGun += m.IsGunlerininSayi;
-                await _unitOfWork.Repository<MezuniyyetBalans>().YenileAsync(balans);
-            }
+            // FIFO — ən köhnə illərdən istifadə et, sonra cari ilə gəl.
+            // Bu məntiq illər boyu yığılmış qalıq günlərin ilk növbədə xərclənməsini
+            // təmin edir (cari ilin balansı ən sonda istifadə olunur).
+            await BalansiFifoKesAsync(m.IsciId, m.Nov, m.IsGunlerininSayi);
 
             // Davamiyyətdə növə görə qeydlər yarat (hər iş günü üçün)
             var davamiyyetStatusu = m.Nov switch
@@ -1210,6 +1209,64 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
     }
 
     // ════════════════════════════════════════════════════════════
+    // FIFO balans kəsmə — ən köhnə illərdən sırayla istifadə et
+    //
+    // Məntiq: əgər işçinin 2024 (5 qalıq), 2025 (10 qalıq), 2026 (21 qalıq)
+    // balansı var və 8 gün məzuniyyət yazılırsa:
+    //   → 2024-dən 5 gün (hamısı istifadə olunur)
+    //   → 2025-dən 3 gün (qalan 7 saxlanır)
+    //   → 2026-ya toxunulmur
+    //
+    // Əvvəlki sadə "cari ildən kəs" məntiqi köhnə illərdən qalan günləri
+    // itirməyə səbəb olurdu — köhnə illərin qalığı heç vaxt istifadə
+    // edilmirdi.
+    // ════════════════════════════════════════════════════════════
+    private async Task BalansiFifoKesAsync(int isciId, MezuniyyetNovu nov, int gunu)
+    {
+        if (gunu <= 0) return;
+
+        var repo = _unitOfWork.Repository<MezuniyyetBalans>();
+
+        // Bütün aktiv balansları il artma sırası ilə al (ən köhnə əvvəl)
+        var balanslar = await repo.Query()
+            .Where(b => !b.Silinib && b.IsciId == isciId && b.Nov == nov
+                     && (b.ToplamGun - b.IstifadeOlunanGun) > 0)
+            .OrderBy(b => b.Il)
+            .ToListAsync();
+
+        int qalanTelebatGun = gunu;
+        foreach (var b in balanslar)
+        {
+            if (qalanTelebatGun <= 0) break;
+            int ilinQaligi = b.ToplamGun - b.IstifadeOlunanGun;
+            int kesilecek = Math.Min(ilinQaligi, qalanTelebatGun);
+
+            b.IstifadeOlunanGun += kesilecek;
+            b.YenilenmeTarixi = DateTime.Now;
+            await repo.YenileAsync(b);
+
+            qalanTelebatGun -= kesilecek;
+        }
+
+        // Qalan tələbat var amma balans bitibsə — cari ilin balansına borc
+        // kimi əlavə olunur (ToplamGun aşılır, İstifadə ToplamGun-dan çox olur).
+        // Bu vəziyyət nadirdir, validasiya (balans.QaliqGun >= isGunu) ilk
+        // yoxlanışdan keçməlidir. Amma edge case üçün cari ili hədəfləyirik.
+        if (qalanTelebatGun > 0)
+        {
+            var cariIl = DateTime.Now.Year;
+            var cariBalans = await repo.GetirAsync(x =>
+                x.IsciId == isciId && x.Nov == nov && x.Il == cariIl && !x.Silinib);
+            if (cariBalans != null)
+            {
+                cariBalans.IstifadeOlunanGun += qalanTelebatGun;
+                cariBalans.YenilenmeTarixi = DateTime.Now;
+                await repo.YenileAsync(cariBalans);
+            }
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════
     // GERİYƏ QEYD — HR tərəfindən keçmiş tarixlərə məzuniyyət
     // ════════════════════════════════════════════════════════════
     private const int GeriyeQeydMaxGun = 90;
@@ -1258,17 +1315,16 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 if (isGunu <= 0)
                     return Result<MezuniyyetDto>.Fail("Seçilən aralıqda iş günü yoxdur (yalnız həftəsonu/bayram).");
 
-                // ── 4. Balans yoxlanışı (yalnız illik üçün) ────────────
+                // ── 4. Balans yoxlanışı — bütün illərin cəmi qalığı ────
                 if (dto.Nov == MezuniyyetNovu.Illik)
                 {
-                    var balans = await _unitOfWork.Repository<MezuniyyetBalans>()
-                        .GetirAsync(x => x.IsciId == dto.IsciId
-                                      && x.Il == dto.BaslamaTarixi.Year
-                                      && x.Nov == dto.Nov);
+                    var umumiQaliq = await _unitOfWork.Repository<MezuniyyetBalans>().Query()
+                        .Where(x => !x.Silinib && x.IsciId == dto.IsciId && x.Nov == dto.Nov)
+                        .SumAsync(x => (int?)(x.ToplamGun - x.IstifadeOlunanGun)) ?? 0;
 
-                    if (balans == null || balans.QaliqGun < isGunu)
+                    if (umumiQaliq < isGunu)
                         return Result<MezuniyyetDto>.Fail(
-                            $"İllik məzuniyyət balansı kifayət etmir ({balans?.QaliqGun ?? 0} gün qalıb, {isGunu} gün lazımdır).");
+                            $"İllik məzuniyyət balansı kifayət etmir. Bütün illərin cəmi qalıq: {umumiQaliq} gün, tələb olunur: {isGunu} gün.");
                 }
 
                 // ── 5. Entity yarat — bütün addımlar HR tərəfindən təsdiqli ──
@@ -1300,18 +1356,10 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 await _unitOfWork.Repository<Mezuniyyet>().YaratAsync(entity);
                 await _unitOfWork.YaddaSaxlaAsync();
 
-                // ── 6. Balansı yenilə (illik üçün) ─────────────────────
+                // ── 6. Balansı yenilə (FIFO — ən köhnə illərdən sırayla kəs) ──
                 if (dto.Nov == MezuniyyetNovu.Illik)
                 {
-                    var balans = await _unitOfWork.Repository<MezuniyyetBalans>()
-                        .GetirAsync(x => x.IsciId == dto.IsciId
-                                      && x.Il == dto.BaslamaTarixi.Year
-                                      && x.Nov == dto.Nov);
-                    if (balans != null)
-                    {
-                        balans.IstifadeOlunanGun += isGunu;
-                        await _unitOfWork.Repository<MezuniyyetBalans>().YenileAsync(balans);
-                    }
+                    await BalansiFifoKesAsync(dto.IsciId, dto.Nov, isGunu);
                 }
 
                 // ── 7. Davamiyyət: Qayib → İcazəli/Xəstəlik/Ezamiyyət ──
