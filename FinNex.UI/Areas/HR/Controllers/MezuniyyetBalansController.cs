@@ -38,7 +38,8 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             ViewBag.Iller = illerSiyahisi;
 
-            // Aktiv işçilər və balansları
+            // Aktiv işçilər — cari il balansları + əvvəlki illərin İllik qalıqları
+            // (əvvəlki illərdən qalan günlərin tarixçəsini göstərmək üçün)
             var isciler = await _unitOfWork.Repository<Isci>()
                 .Query()
                 .Where(x => !x.Silinib && x.Status == IsciStatus.Aktiv)
@@ -48,6 +49,29 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .OrderBy(x => x.Soyad)
                 .ThenBy(x => x.Ad)
                 .ToListAsync();
+
+            // Əvvəlki illərin İllik qalıqları (yalnız qaldığı günlər > 0 olanlar) —
+            // ayrıca dictionary kimi göndərilir ki, view tarixçəni göstərə bilsin
+            var isciIds = isciler.Select(i => i.Id).ToList();
+            var evvelkiBalanslar = await _unitOfWork.Repository<MezuniyyetBalans>()
+                .Query()
+                .Where(b => !b.Silinib
+                         && b.Nov == MezuniyyetNovu.Illik
+                         && b.Il < cariIl
+                         && isciIds.Contains(b.IsciId))
+                .OrderByDescending(b => b.Il)
+                .ToListAsync();
+
+            // { isciId: [ (il, qaliq), ... ] } — yalnız qaliq > 0 olanlar göstərilir.
+            // ValueTuple istifadə edilir (anonymous type view-də dynamic ilə problemli olur).
+            ViewBag.EvvelkiIller = evvelkiBalanslar
+                .Where(b => (b.ToplamGun - b.IstifadeOlunanGun) > 0)
+                .GroupBy(b => b.IsciId)
+                .ToDictionary(g => g.Key, g => g.Select(b => (Il: b.Il, Qaliq: b.ToplamGun - b.IstifadeOlunanGun)).ToList());
+
+            // Standart illik məzuniyyət dərəcəsi (cari il üçün) — göstəricinin
+            // "N gün bu ildən + M gün keçmiş illərdən" ayrımını göstərmək üçün
+            ViewBag.StandartIllikGun = 21;
 
             return View(isciler);
         }
