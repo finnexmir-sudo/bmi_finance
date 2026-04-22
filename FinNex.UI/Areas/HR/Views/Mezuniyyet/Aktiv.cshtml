@@ -1,0 +1,291 @@
+@model List<FinNex.Application.DTOs.HR.Mezuniyyet.MezuniyyetListDto>
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = "Aktiv Məzuniyyətlər";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var qabaqcaGun = (int)(ViewBag.QabaqcaGun ?? 30);
+    var bugun = DateTime.Today;
+
+    // Seqmentlərə ayır: hazırda məzuniyyətdə / bu həftə başlayacaq / yaxın (30 gün)
+    var hazirda = Model.Where(x => x.BaslamaTarixi.Date <= bugun && x.BitmeTarixi.Date >= bugun).ToList();
+    var buHefte = Model.Where(x => x.BaslamaTarixi.Date > bugun && x.BaslamaTarixi.Date <= bugun.AddDays(7)).ToList();
+    var yaxinlarda = Model.Where(x => x.BaslamaTarixi.Date > bugun.AddDays(7)).ToList();
+
+    string NovRengi(MezuniyyetNovu n) => n switch
+    {
+        MezuniyyetNovu.Illik => "#1e9b6b",
+        MezuniyyetNovu.Xestelik => "#a855f7",
+        MezuniyyetNovu.Ezamiyyet => "#f97316",
+        _ => "#64748b"
+    };
+    string NovBg(MezuniyyetNovu n) => n switch
+    {
+        MezuniyyetNovu.Illik => "#f0fdf4",
+        MezuniyyetNovu.Xestelik => "#faf5ff",
+        MezuniyyetNovu.Ezamiyyet => "#fff7ed",
+        _ => "#f1f5f9"
+    };
+    string NovText(MezuniyyetNovu n) => n switch
+    {
+        MezuniyyetNovu.Illik => "İllik məzuniyyət",
+        MezuniyyetNovu.Xestelik => "Xəstəlik",
+        MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
+        _ => n.ToString()
+    };
+    string NovIcon(MezuniyyetNovu n) => n switch
+    {
+        MezuniyyetNovu.Illik => "bi-sun",
+        MezuniyyetNovu.Xestelik => "bi-hospital",
+        MezuniyyetNovu.Ezamiyyet => "bi-briefcase",
+        _ => "bi-calendar"
+    };
+
+    int GunHesabla(DateTime from, DateTime to)
+    {
+        var delta = (to.Date - from.Date).Days;
+        return delta < 0 ? 0 : delta;
+    }
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">
+                <i class="bi bi-people-fill me-2" style="color:#2563eb;"></i>
+                Aktiv Məzuniyyətlər
+            </div>
+            <div class="fn-page-sub">Hazırda məzuniyyətdə olan və yaxın günlərdə başlayacaq işçilər</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a asp-action="Aktiv" asp-route-qabaqcaGun="7"
+               class="fn-btn @(qabaqcaGun == 7 ? "fn-btn--primary" : "fn-btn--outline") fn-btn--sm">Bu həftə</a>
+            <a asp-action="Aktiv" asp-route-qabaqcaGun="30"
+               class="fn-btn @(qabaqcaGun == 30 ? "fn-btn--primary" : "fn-btn--outline") fn-btn--sm">30 gün</a>
+            <a asp-action="Aktiv" asp-route-qabaqcaGun="90"
+               class="fn-btn @(qabaqcaGun == 90 ? "fn-btn--primary" : "fn-btn--outline") fn-btn--sm">90 gün</a>
+            <a asp-action="Hr" class="fn-btn fn-btn--outline">← Müraciətlər</a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null) { <div class="fn-alert fn-alert--success">@TempData["Success"]</div> }
+    @if (TempData["Error"] != null) { <div style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Error"]</div> }
+
+    @* ═══════ Statistika kartları ═══════ *@
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px">
+        <div class="fn-card" style="padding:16px;border-left:4px solid #2563eb">
+            <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Hazırda məzuniyyətdə</div>
+            <div style="font-size:28px;font-weight:800;color:#0f172a">@hazirda.Count</div>
+            <div style="font-size:12px;color:#2563eb;margin-top:2px">işçi</div>
+        </div>
+        <div class="fn-card" style="padding:16px;border-left:4px solid #f59e0b">
+            <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Bu həftə başlayacaq</div>
+            <div style="font-size:28px;font-weight:800;color:#0f172a">@buHefte.Count</div>
+            <div style="font-size:12px;color:#f59e0b;margin-top:2px">işçi</div>
+        </div>
+        <div class="fn-card" style="padding:16px;border-left:4px solid #64748b">
+            <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Yaxın @qabaqcaGun gündə</div>
+            <div style="font-size:28px;font-weight:800;color:#0f172a">@yaxinlarda.Count</div>
+            <div style="font-size:12px;color:#64748b;margin-top:2px">işçi</div>
+        </div>
+        <div class="fn-card" style="padding:16px;border-left:4px solid #16a34a">
+            <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Cəmi izlənilir</div>
+            <div style="font-size:28px;font-weight:800;color:#0f172a">@Model.Count</div>
+            <div style="font-size:12px;color:#16a34a;margin-top:2px">qeyd</div>
+        </div>
+    </div>
+
+    @* Axtarış *@
+    <div class="km-search-bar" style="margin-bottom:16px">
+        <input type="text" id="mezSearch" class="fn-input" placeholder="İşçi adı, şöbə və ya vəzifə ilə axtar..." />
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="fn-empty-state">
+            <div class="fn-empty-title">Aktiv məzuniyyət yoxdur</div>
+            <div class="fn-empty-sub">Hazırda heç kim məzuniyyətdə deyil və yaxın @qabaqcaGun gündə də başlayacaq yoxdur</div>
+        </div>
+    }
+    else
+    {
+        @* ══════ HAZIRDA MƏZUNİYYƏTDƏ OLANLAR ══════ *@
+        @if (hazirda.Any())
+        {
+            <div class="fn-card" style="padding:18px;margin-bottom:16px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #e2e8f0">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#2563eb;box-shadow:0 0 0 4px rgba(37,99,235,0.15)"></span>
+                    <div style="font-size:15px;font-weight:700;color:#0f172a">Hazırda məzuniyyətdə</div>
+                    <span style="background:#eff6ff;color:#1e40af;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:700">@hazirda.Count</span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px">
+                    @foreach (var m in hazirda.OrderBy(x => x.BitmeTarixi))
+                    {
+                        var qalan = GunHesabla(bugun, m.BitmeTarixi);
+                        var umumi = GunHesabla(m.BaslamaTarixi, m.BitmeTarixi);
+                        var progres = umumi > 0 ? (int)Math.Round((double)(umumi - qalan) / umumi * 100) : 0;
+
+                        <div class="mez-sirasi-card" style="padding:14px;border:1px solid #e2e8f0;border-radius:10px;background:#fff">
+                            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+                                <div style="min-width:0;flex:1">
+                                    <div style="font-weight:700;font-size:14px;color:#0f172a;margin-bottom:2px">@m.IsciAdSoyad</div>
+                                    <div style="font-size:11px;color:#64748b">@m.SobeAdi · @m.VezifeAdi</div>
+                                </div>
+                                <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;background:@NovBg(m.Nov);color:@NovRengi(m.Nov);white-space:nowrap">
+                                    <i class="bi @NovIcon(m.Nov)"></i> @NovText(m.Nov)
+                                </span>
+                            </div>
+
+                            <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#64748b;margin-bottom:6px">
+                                <span>@m.BaslamaTarixi.ToString("dd.MM") – @m.BitmeTarixi.ToString("dd.MM.yyyy")</span>
+                                <span style="font-weight:700;color:@(qalan <= 2 ? "#dc2626" : "#0f172a")">
+                                    @if (qalan == 0) { <span>Bu gün qayıdır</span> }
+                                    else if (qalan == 1) { <span>Sabah qayıdır</span> }
+                                    else { <span>@qalan gün qalıb</span> }
+                                </span>
+                            </div>
+
+                            @* Progress bar *@
+                            <div style="height:4px;background:#f1f5f9;border-radius:2px;overflow:hidden;margin-bottom:6px">
+                                <div style="height:100%;background:@NovRengi(m.Nov);width:@(progres)%"></div>
+                            </div>
+
+                            <div style="display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#94a3b8">
+                                <span>
+                                    @if (!string.IsNullOrEmpty(m.EvezEdenIsciAdSoyad))
+                                    {
+                                        <span>↪ Əvəzedici: @m.EvezEdenIsciAdSoyad</span>
+                                    }
+                                </span>
+                                @if (!string.IsNullOrEmpty(m.EmrNomresi))
+                                {
+                                    <span style="font-family:monospace;font-weight:700;color:#1e40af;background:#eff6ff;padding:2px 6px;border-radius:4px">@m.EmrNomresi</span>
+                                }
+                            </div>
+
+                            <div style="margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9;text-align:right">
+                                <a asp-action="Detal" asp-route-id="@m.Id" asp-route-returnAction="Aktiv" style="font-size:11px;color:#2563eb;text-decoration:none">Detallar →</a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @* ══════ BU HƏFTƏ BAŞLAYACAQLAR ══════ *@
+        @if (buHefte.Any())
+        {
+            <div class="fn-card" style="padding:18px;margin-bottom:16px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #e2e8f0">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#f59e0b"></span>
+                    <div style="font-size:15px;font-weight:700;color:#0f172a">Bu həftə başlayacaq</div>
+                    <span style="background:#fef3c7;color:#78350f;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:700">@buHefte.Count</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px">
+                    @foreach (var m in buHefte.OrderBy(x => x.BaslamaTarixi))
+                    {
+                        var qalanGun = GunHesabla(bugun, m.BaslamaTarixi);
+                        <div class="fn-card" style="padding:12px;border:1px solid #fde68a;background:#fffbeb;border-radius:8px;display:flex;gap:10px;align-items:center">
+                            <div style="width:56px;text-align:center;flex-shrink:0">
+                                <div style="font-size:20px;font-weight:800;color:#78350f;line-height:1">@m.BaslamaTarixi.ToString("dd")</div>
+                                <div style="font-size:10px;color:#92400e;text-transform:uppercase;margin-top:2px">@m.BaslamaTarixi.ToString("MMM")</div>
+                            </div>
+                            <div style="flex:1;min-width:0">
+                                <div style="font-size:13px;font-weight:700;color:#0f172a">@m.IsciAdSoyad</div>
+                                <div style="font-size:11px;color:#64748b;margin-top:1px">@m.SobeAdi · @m.IsGunlerininSayi iş günü</div>
+                                <div style="font-size:11px;color:@NovRengi(m.Nov);font-weight:600;margin-top:2px">@NovText(m.Nov)</div>
+                            </div>
+                            <div style="text-align:right;flex-shrink:0">
+                                <div style="font-size:11px;color:#b45309;font-weight:700">
+                                    @if (qalanGun == 1) { <span>Sabah</span> }
+                                    else { <span>@qalanGun gün</span> }
+                                </div>
+                                <a asp-action="Detal" asp-route-id="@m.Id" asp-route-returnAction="Aktiv" style="font-size:10px;color:#2563eb;text-decoration:none">Detal →</a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @* ══════ YAXINLARDAKI CƏDVƏL ══════ *@
+        @if (yaxinlarda.Any())
+        {
+            <div class="fn-card" style="padding:0;overflow:hidden">
+                <div style="padding:14px 18px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:8px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#64748b"></span>
+                    <div style="font-size:14px;font-weight:700;color:#0f172a">Sonrakı @qabaqcaGun gündə</div>
+                    <span style="background:#f1f5f9;color:#334155;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700">@yaxinlarda.Count</span>
+                </div>
+                <table class="km-table">
+                    <thead>
+                        <tr>
+                            <th style="width:90px">Başlayır</th>
+                            <th>İşçi</th>
+                            <th>Şöbə / Vəzifə</th>
+                            <th>Növ</th>
+                            <th style="width:120px">Tarix aralığı</th>
+                            <th style="width:70px">Günlər</th>
+                            <th style="width:90px">Əmr №</th>
+                            <th style="width:140px">Əvəzedici</th>
+                            <th style="width:80px"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="aktiv-table">
+                        @foreach (var m in yaxinlarda.OrderBy(x => x.BaslamaTarixi))
+                        {
+                            var qalanGun = GunHesabla(bugun, m.BaslamaTarixi);
+                            <tr class="km-row">
+                                <td style="font-weight:700;color:#0f172a">
+                                    <div style="font-size:14px">@m.BaslamaTarixi.ToString("dd MMM")</div>
+                                    <div style="font-size:10px;color:#94a3b8;font-weight:500">@qalanGun gün qalıb</div>
+                                </td>
+                                <td class="km-td-name">@m.IsciAdSoyad</td>
+                                <td>
+                                    <div style="font-size:12px">@m.SobeAdi</div>
+                                    <div style="font-size:10px;color:#94a3b8">@m.VezifeAdi</div>
+                                </td>
+                                <td>
+                                    <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:@NovBg(m.Nov);color:@NovRengi(m.Nov)">
+                                        <i class="bi @NovIcon(m.Nov)"></i> @NovText(m.Nov)
+                                    </span>
+                                </td>
+                                <td style="font-size:11px">@m.BaslamaTarixi.ToString("dd.MM") – @m.BitmeTarixi.ToString("dd.MM.yyyy")</td>
+                                <td style="text-align:center;font-weight:700">@m.IsGunlerininSayi</td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(m.EmrNomresi))
+                                    {
+                                        <span style="font-family:monospace;font-weight:700;font-size:11px;color:#1e40af;background:#eff6ff;padding:2px 6px;border-radius:4px">@m.EmrNomresi</span>
+                                    }
+                                </td>
+                                <td style="font-size:11px;color:#475569">@(m.EvezEdenIsciAdSoyad ?? "—")</td>
+                                <td>
+                                    <a asp-action="Detal" asp-route-id="@m.Id" asp-route-returnAction="Aktiv" class="km-detail-btn">Bax</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/kredit-muraciet.css" asp-append-version="true" />
+    <style>
+        .mez-sirasi-card:hover { border-color:#93c5fd !important; box-shadow:0 2px 8px rgba(37,99,235,0.08); transition:all .15s }
+    </style>
+}
+
+@section Scripts {
+<script>
+    document.getElementById('mezSearch')?.addEventListener('input', function () {
+        var t = this.value.toLowerCase();
+        document.querySelectorAll('.mez-sirasi-card, #aktiv-table tr').forEach(function (r) {
+            r.style.display = r.textContent.toLowerCase().indexOf(t) >= 0 ? '' : 'none';
+        });
+    });
+</script>
+}
