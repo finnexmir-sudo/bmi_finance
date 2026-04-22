@@ -104,30 +104,65 @@ namespace FinNex.UI.Areas.HR.Controllers
         // ══════════════════════════════════════════════════════
 
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
-        public async Task<IActionResult> Hr(string tab = "tesdiq")
+        public async Task<IActionResult> Hr(string tab = "tesdiq", string? axtaris = null)
         {
-            // Hər iki tabın siyahısı + sayğac üçün gətirilir
+            var aktivTab = tab switch
+            {
+                "proses" => "proses",
+                "tarixce" => "tarixce",
+                _ => "tesdiq"
+            };
+
+            // Sayğaclar üçün bütün tablar sayğısını hesablayırıq
             var tesdiqResult = await _mezuniyyetService.GetHrTesdiqindeAsync();
             var prosesResult = await _mezuniyyetService.GetProsesdeOlanlarAsync();
+            var tarixceResult = await _mezuniyyetService.GetTarixceAsync(
+                aktivTab == "tarixce" ? axtaris : null);
 
             var tesdiqList = tesdiqResult.Success ? tesdiqResult.Data!.ToList() : new();
             var prosesList = prosesResult.Success ? prosesResult.Data!.ToList() : new();
+            var tarixceList = tarixceResult.Success ? tarixceResult.Data!.ToList() : new();
 
-            var aktivTab = tab == "proses" ? "proses" : "tesdiq";
+            // Tarixçə üçün sayğacı axtarış olmadan götürürük ki, rəqəm sabit qalsın
+            int tarixceTotalSayi = tarixceList.Count;
+            if (aktivTab == "tarixce" && !string.IsNullOrWhiteSpace(axtaris))
+            {
+                var hamisi = await _mezuniyyetService.GetTarixceAsync(null);
+                tarixceTotalSayi = hamisi.Success ? hamisi.Data!.Count : tarixceList.Count;
+            }
+
+            var mezuniyyetler = aktivTab switch
+            {
+                "proses" => prosesList,
+                "tarixce" => tarixceList,
+                _ => tesdiqList
+            };
+
+            var pageTitle = aktivTab switch
+            {
+                "proses" => "Prosesdə olan müraciətlər",
+                "tarixce" => "Təsdiq tarixçəsi",
+                _ => "HR — Son Təsdiq"
+            };
 
             var vm = new HrMezuniyyetIndexVM
             {
-                Mezuniyyetler = aktivTab == "proses" ? prosesList : tesdiqList,
-                PageTitle = aktivTab == "proses"
-                    ? "Prosesdə olan müraciətlər"
-                    : "HR — Son Təsdiq",
-                TesdiqAction = aktivTab == "proses" ? "" : "HrTesdiq",
+                Mezuniyyetler = mezuniyyetler,
+                PageTitle = pageTitle,
+                TesdiqAction = aktivTab == "tesdiq" ? "HrTesdiq" : "",
                 AktivTab = aktivTab,
                 TesdiqSayi = tesdiqList.Count,
-                ProsesSayi = prosesList.Count
+                ProsesSayi = prosesList.Count,
+                TarixceSayi = tarixceTotalSayi,
+                Axtaris = axtaris
             };
 
-            ViewData["Title"] = aktivTab == "proses" ? "HR — İzləmə" : "HR Təsdiqi";
+            ViewData["Title"] = aktivTab switch
+            {
+                "proses" => "HR — İzləmə",
+                "tarixce" => "HR — Tarixçə",
+                _ => "HR Təsdiqi"
+            };
             return View("TesdiqIndex", vm);
         }
 
