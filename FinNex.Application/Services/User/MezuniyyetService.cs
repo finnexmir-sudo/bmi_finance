@@ -1221,16 +1221,16 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             try
             {
                 // ── 1. Tarix validasiyası ──────────────────────────────
+                // HR birbaşa qeyd (həm keçmiş, həm gələcək tarix üçün) — təsdiq axını
+                // atlanır, müraciət dərhal "Təsdiqlənib" statusunda yaranır. Keçmiş
+                // tarixlər üçün Davamiyyətdə Qayıb qeydləri avtomatik çevrilir.
                 if (dto.BitmeTarixi < dto.BaslamaTarixi)
                     return Result<MezuniyyetDto>.Fail("Bitmə tarixi başlama tarixindən əvvəl ola bilməz.");
 
                 var bugun = DateTime.Today;
-                if (dto.BitmeTarixi.Date >= bugun)
-                    return Result<MezuniyyetDto>.Fail("Geriyə qeyd yalnız keçmiş tarixlər üçün olur (bugün və ya gələcək tarix olmaz).");
-
                 var minTarix = bugun.AddDays(-GeriyeQeydMaxGun);
                 if (dto.BaslamaTarixi.Date < minTarix)
-                    return Result<MezuniyyetDto>.Fail($"Geriyə qeyd üçün maksimum {GeriyeQeydMaxGun} gün əvvəl olmalıdır.");
+                    return Result<MezuniyyetDto>.Fail($"Keçmiş tarixlər üçün maksimum {GeriyeQeydMaxGun} gün əvvələ qədər qeyd etmək olar.");
 
                 // ── 2. Eyni tarix aralığında mövcud məzuniyyət yoxlanışı ──
                 var aktivStatuslar = new[]
