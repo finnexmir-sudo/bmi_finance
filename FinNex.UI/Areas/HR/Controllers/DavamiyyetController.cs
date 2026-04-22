@@ -51,58 +51,71 @@ namespace FinNex.UI.Areas.HR.Controllers
         [HttpGet]
         public async Task<IActionResult> GetByTarix(DateTime? tarix, DateTime? baslangic, DateTime? son, int? isciId, int? status)
         {
-            var result = await GetFilteredData(tarix, baslangic, son, isciId, status);
-
-            var data = result.Select(x => new
+            try
             {
-                id = x.Id,
-                isciTamAd = x.IsciTamAd,
-                departamentAd = x.DepartamentAd ?? "-",
-                tarix = x.Tarix,
-                girisVaxti = x.GirisVaxti,
-                cixisVaxti = x.CixisVaxti,
-                status = (int)x.Status
-            }).OrderByDescending(x => x.tarix).ThenBy(x => x.isciTamAd).ToList();
+                // KPI-lar filter-dən ƏVVƏL hesablanır ki, status filtri cədvələ təsir
+                // etsə də, yuxarıdakı statistika sabit qalsın (istifadəçi filtrlə işləyəndə
+                // bütün KPI-ların sıfra düşməsi pis UX-dir).
+                var umumi = await GetFilteredData(tarix, baslangic, son, isciId, null);
+                var result = status.HasValue
+                    ? umumi.Where(x => (int)x.Status == status.Value).ToList()
+                    : umumi;
 
-            var gelib = result.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
-            var gecikme = result.Count(x => x.Status == DavamiyyetStatus.Gecikme);
-            var qayib = result.Count(x => x.Status == DavamiyyetStatus.Qayib);
-            var icazeli = result.Count(x => x.Status == DavamiyyetStatus.Icazeli);
-            var xestelik = result.Count(x => x.Status == DavamiyyetStatus.Xestelik);
-            var ezamiyyet = result.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
-
-            // Orta iş saatı
-            var iseSaatleri = result
-                .Where(x => x.GirisVaxti.HasValue && x.CixisVaxti.HasValue)
-                .Select(x => (x.CixisVaxti!.Value - x.GirisVaxti!.Value).TotalHours)
-                .ToList();
-            var ortaIsSaati = iseSaatleri.Any() ? Math.Round(iseSaatleri.Average(), 1) : 0;
-
-            // Ən çox gecikən departament
-            var enCoxGecikenDept = result
-                .Where(x => x.Status == DavamiyyetStatus.Gecikme)
-                .GroupBy(x => x.DepartamentAd ?? "-")
-                .OrderByDescending(g => g.Count())
-                .Select(g => new { ad = g.Key, say = g.Count() })
-                .FirstOrDefault();
-
-            return Json(new
-            {
-                records = data,
-                stats = new
+                var data = result.Select(x => new
                 {
-                    gelib,
-                    gecikme,
-                    qayib,
-                    icazeli,
-                    xestelik,
-                    ezamiyyet,
-                    cemi = result.Count,
-                    ortaIsSaati,
-                    enCoxGecikenDept = enCoxGecikenDept?.ad ?? "-",
-                    enCoxGecikenDeptSay = enCoxGecikenDept?.say ?? 0
-                }
-            });
+                    id = x.Id,
+                    isciTamAd = x.IsciTamAd ?? "-",
+                    departamentAd = x.DepartamentAd ?? "-",
+                    tarix = x.Tarix,
+                    girisVaxti = x.GirisVaxti,
+                    cixisVaxti = x.CixisVaxti,
+                    status = (int)x.Status
+                }).OrderByDescending(x => x.tarix).ThenBy(x => x.isciTamAd).ToList();
+
+                // Stats — umumi üzərindən (filter olsa belə bütün KPI-lar görünsün)
+                var gelib = umumi.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
+                var gecikme = umumi.Count(x => x.Status == DavamiyyetStatus.Gecikme);
+                var qayib = umumi.Count(x => x.Status == DavamiyyetStatus.Qayib);
+                var icazeli = umumi.Count(x => x.Status == DavamiyyetStatus.Icazeli);
+                var xestelik = umumi.Count(x => x.Status == DavamiyyetStatus.Xestelik);
+                var ezamiyyet = umumi.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
+
+                var iseSaatleri = umumi
+                    .Where(x => x.GirisVaxti.HasValue && x.CixisVaxti.HasValue)
+                    .Select(x => (x.CixisVaxti!.Value - x.GirisVaxti!.Value).TotalHours)
+                    .ToList();
+                var ortaIsSaati = iseSaatleri.Any() ? Math.Round(iseSaatleri.Average(), 1) : 0;
+
+                var enCoxGecikenDept = umumi
+                    .Where(x => x.Status == DavamiyyetStatus.Gecikme)
+                    .GroupBy(x => x.DepartamentAd ?? "-")
+                    .OrderByDescending(g => g.Count())
+                    .Select(g => new { ad = g.Key, say = g.Count() })
+                    .FirstOrDefault();
+
+                return Json(new
+                {
+                    records = data,
+                    stats = new
+                    {
+                        gelib,
+                        gecikme,
+                        qayib,
+                        icazeli,
+                        xestelik,
+                        ezamiyyet,
+                        cemi = umumi.Count,
+                        ortaIsSaati,
+                        enCoxGecikenDept = enCoxGecikenDept?.ad ?? "-",
+                        enCoxGecikenDeptSay = enCoxGecikenDept?.say ?? 0
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                // Server-side log — prod-da ILogger istifadə olunmalıdır
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         [HttpGet]

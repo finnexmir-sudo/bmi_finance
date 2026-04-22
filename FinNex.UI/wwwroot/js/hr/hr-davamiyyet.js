@@ -103,7 +103,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 recordCount.textContent = (data.count || 0) + ' gözlənilən işçi';
                 extraStats.style.display = 'none';
             })
-            .catch(function () {
+            .catch(function (err) {
+                console.error('Gözlənilən işçilər yüklənmədi:', err);
                 tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><i class="bi bi-exclamation-triangle"></i><div>Xəta baş verdi</div></div></td></tr>';
             });
     }
@@ -235,20 +236,24 @@ document.addEventListener('DOMContentLoaded', function () {
                     extraStats.style.display = 'none';
                 }
             })
-            .catch(function () {
+            .catch(function (err) {
+                console.error('Davamiyyət yüklənmədi:', err);
                 tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><i class="bi bi-exclamation-triangle"></i><div>Xəta baş verdi</div></div></td></tr>';
             });
     }
 
     function updateKPI(stats) {
-        kpiGelib.textContent = stats.gelib;
-        kpiGecikme.textContent = stats.gecikme;
-        kpiQayib.textContent = stats.qayib;
-        kpiIcazeli.textContent = stats.icazeli;
-        kpiCemi.textContent = stats.cemi;
-        kpiOrtaSaat.textContent = stats.ortaIsSaati;
-        if (kpiXestelik) kpiXestelik.textContent = stats.xestelik || 0;
-        if (kpiEzamiyyet) kpiEzamiyyet.textContent = stats.ezamiyyet || 0;
+        // Null-safe: bütün KPI element-ləri səhifədə mövcud olmaya bilər
+        // (məs. kpiCemi markup-dan çıxarılıb) — guard olmasa .textContent
+        // null üzərində TypeError atır və fetch-in .catch-ı tetiklənir.
+        if (kpiGelib) kpiGelib.textContent = stats.gelib ?? 0;
+        if (kpiGecikme) kpiGecikme.textContent = stats.gecikme ?? 0;
+        if (kpiQayib) kpiQayib.textContent = stats.qayib ?? 0;
+        if (kpiIcazeli) kpiIcazeli.textContent = stats.icazeli ?? 0;
+        if (kpiXestelik) kpiXestelik.textContent = stats.xestelik ?? 0;
+        if (kpiEzamiyyet) kpiEzamiyyet.textContent = stats.ezamiyyet ?? 0;
+        if (kpiCemi) kpiCemi.textContent = stats.cemi ?? 0;
+        if (kpiOrtaSaat) kpiOrtaSaat.textContent = stats.ortaIsSaati ?? 0;
     }
 
     function renderTable(records) {
