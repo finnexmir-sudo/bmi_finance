@@ -14,49 +14,50 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/hr/mezuniyyet-balans.css" asp-append-version="true" />
     <style>
-        /* Təkmilləşdirmələr — yeni kompakt dizayn */
-        .mb-balance-block { display:flex; flex-direction:column; gap:6px; min-width:220px }
+        /* ── Səliqəli kompakt dizayn ── */
+        .mb-table tbody td { vertical-align: middle; padding: 14px 12px }
+        .mb-isci-ad { font-weight: 600; color: #0f172a; font-size: 13px }
+        .mb-dept { font-size: 12px; color: #64748b }
+
+        .mb-balance-block { display:flex; flex-direction:column; gap:5px; min-width:220px }
         .mb-balance-main {
             display:flex; align-items:baseline; justify-content:space-between;
-            font-size:12px; color:#64748b
+            gap:8px;
+            font-size:11.5px; color:#94a3b8
         }
-        .mb-balance-main .mb-qaliq-big {
-            font-size:18px; font-weight:800; color:#0f172a
-        }
-        .mb-balance-main .mb-qaliq-big .unit { font-size:11px; font-weight:500; color:#64748b; margin-left:3px }
-        .mb-balance-sub {
-            font-size:11px; color:#64748b; display:flex; gap:10px; flex-wrap:wrap
-        }
-        .mb-balance-sub span strong { color:#0f172a; font-weight:600 }
+        .mb-qaliq-big { font-size:19px; font-weight:800; color:#0f172a; line-height:1.1 }
+        .mb-qaliq-big .unit { font-size:11px; font-weight:500; color:#94a3b8; margin-left:4px }
         .mb-carryover {
-            font-size:11px; color:#1e40af; background:#eff6ff; padding:3px 8px;
-            border-radius:10px; display:inline-flex; align-items:center; gap:4px;
-            border:1px solid #dbeafe; width:max-content
+            font-size:10.5px; color:#1e40af; background:#eff6ff; padding:3px 9px;
+            border-radius:12px; display:inline-flex; align-items:center; gap:4px;
+            border:1px solid #dbeafe; width:max-content; margin-top:2px
         }
         .mb-prog {
-            height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden; position:relative
+            height:5px; background:#f1f5f9; border-radius:3px; overflow:hidden
         }
         .mb-prog__bar { height:100%; border-radius:3px; transition:width .3s }
-        .mb-prog__bar--green { background:linear-gradient(90deg,#16a34a,#22c55e) }
+        .mb-prog__bar--green  { background:linear-gradient(90deg,#16a34a,#22c55e) }
         .mb-prog__bar--yellow { background:linear-gradient(90deg,#f59e0b,#fbbf24) }
-        .mb-prog__bar--red { background:linear-gradient(90deg,#dc2626,#ef4444) }
-        .mb-prev-years {
-            display:flex; flex-direction:column; gap:3px; min-width:140px
-        }
+        .mb-prog__bar--red    { background:linear-gradient(90deg,#dc2626,#ef4444) }
+
+        .mb-prev-years { display:flex; flex-direction:column; gap:4px; min-width:140px; max-width:200px }
         .mb-prev-year-row {
             display:flex; justify-content:space-between; align-items:center;
-            font-size:11px; padding:2px 8px; background:#f8fafc;
-            border-radius:4px; border:1px solid #e2e8f0
+            font-size:11.5px; padding:4px 10px; background:#f8fafc;
+            border-radius:6px; border:1px solid #e2e8f0
         }
         .mb-prev-year-row .il { color:#64748b; font-weight:600 }
         .mb-prev-year-row .gun { color:#0f172a; font-weight:700 }
         .mb-prev-empty { font-size:11px; color:#cbd5e1; font-style:italic }
         .mb-prev-cemi {
-            font-size:10px; color:#1e40af; font-weight:700; margin-top:2px;
-            padding:2px 8px; background:#eff6ff; border-radius:4px; display:inline-block
+            font-size:10.5px; color:#1e40af; font-weight:700; margin-top:4px;
+            padding:2px 9px; background:#eff6ff; border-radius:10px; display:inline-block;
+            border:1px solid #dbeafe
         }
-        .mb-small-num { font-size:14px; font-weight:700; color:#0f172a }
+
+        .mb-small-num { font-size:15px; font-weight:700; color:#0f172a }
         .mb-used-cell { text-align:center }
+        .mb-used-cell .mb-small-num + div { font-size:10px; color:#94a3b8; margin-top:2px }
     </style>
 }
 
@@ -159,18 +160,10 @@
                                         <div class="mb-balance-block">
                                             <div class="mb-balance-main">
                                                 <div class="mb-qaliq-big">@illik.QaliqGun<span class="unit">gün qalır</span></div>
-                                                <div>/ @illik.ToplamGun cəmi</div>
+                                                <div>@illik.ToplamGun cəmi · @illik.IstifadeOlunanGun istifadə</div>
                                             </div>
                                             <div class="mb-prog">
                                                 <div class="mb-prog__bar mb-prog__bar--@cls" style="width:@(pct)%"></div>
-                                            </div>
-                                            <div class="mb-balance-sub">
-                                                <span>İstifadə: <strong>@illik.IstifadeOlunanGun</strong></span>
-                                                @if (kecirilmisGun.HasValue && kecirilmisGun.Value > 0)
-                                                {
-                                                    <span>Əsas: <strong>@standartGun</strong></span>
-                                                    <span>Köçürülmüş: <strong>@kecirilmisGun gün</strong></span>
-                                                }
                                             </div>
                                             @if (kecirilmisGun.HasValue && kecirilmisGun.Value > 0)
                                             {
@@ -200,9 +193,12 @@
                                                 </div>
                                             }
                                         </div>
-                                        <span class="mb-prev-cemi" title="Qeyd: bu günlər artıq cari ilə köçürülüb (maks. 5 gün qədər) — tarixçə informativdir">
-                                            Cəm: @cemi gün
-                                        </span>
+                                        @if (evvelkiQalan.Count > 1)
+                                        {
+                                            <span class="mb-prev-cemi" title="Ümumi qalıq — tarixçə informativdir">
+                                                Cəm: @cemi gün
+                                            </span>
+                                        }
                                     }
                                 </td>
 
