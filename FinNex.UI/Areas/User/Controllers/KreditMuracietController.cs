@@ -328,6 +328,82 @@ public class KreditMuracietController : Controller
 
         await _smsService.GonderAsync(muracietId, telefon.Trim(), metn.Trim(), sablon, erisim.IsciId.Value);
         TempData["Success"] = "SMS göndərmə sorğusu qeydə alındı.";
+        return RedirectToAction("Sms", new { id = muracietId });
+    }
+
+    // GET /User/KreditMuraciet/Sms/{id}
+    // Müraciət üzrə SMS tarixçəsi + göndərmə formu (ayrı səhifə)
+    public async Task<IActionResult> Sms(int id)
+    {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+
+        var muraciet = await _muracietService.IdIleGetirAsync(id, includeAll: false);
+        if (muraciet == null) return NotFound();
+
+        ViewBag.Muraciet = muraciet;
+        ViewBag.Erisim = erisim;
+        ViewData["Title"] = "SMS — Müraciət #" + id;
+
+        var loglar = await _smsService.MuracietUzreGetirAsync(id);
+        return View(loglar);
+    }
+
+    // GET /User/KreditMuraciet/Randevu/{id}
+    // Müraciət üzrə randevu detalı + təyin/dəyiş formu (ayrı səhifə)
+    public async Task<IActionResult> Randevu(int id)
+    {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+
+        var muraciet = await _muracietService.IdIleGetirAsync(id);
+        if (muraciet == null) return NotFound();
+
+        ViewBag.Erisim = erisim;
+        ViewData["Title"] = "Randevu — Müraciət #" + id;
+
+        return View(muraciet);
+    }
+
+    // POST /User/KreditMuraciet/ZaminMkrYaz
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ZaminMkrYaz(int zaminId, int muracietId, string netice)
+    {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+        if (erisim.IsciId is null) { TempData["Error"] = "İşçi məlumatı tapılmadı."; return RedirectToAction("Detail", new { id = muracietId }); }
+
+        if (string.IsNullOrWhiteSpace(netice))
+        {
+            TempData["Error"] = "MKR nəticəsi boş ola bilməz.";
+            return RedirectToAction("Detail", new { id = muracietId });
+        }
+
+        try { await _zaminService.MkrNeticesiYazAsync(zaminId, netice.Trim(), erisim.IsciId.Value); TempData["Success"] = "Zamin MKR nəticəsi qeydə alındı."; }
+        catch (InvalidOperationException ex) { TempData["Error"] = ex.Message; }
+
+        return RedirectToAction("Detail", new { id = muracietId });
+    }
+
+    // POST /User/KreditMuraciet/ZaminAsanFinanceYaz
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ZaminAsanFinanceYaz(int zaminId, int muracietId, string netice)
+    {
+        var erisim = await GetAccessAsync();
+        if (!erisim.CanSeeIsciPages) return Icazesiz();
+        if (erisim.IsciId is null) { TempData["Error"] = "İşçi məlumatı tapılmadı."; return RedirectToAction("Detail", new { id = muracietId }); }
+
+        if (string.IsNullOrWhiteSpace(netice))
+        {
+            TempData["Error"] = "AsanFinance nəticəsi boş ola bilməz.";
+            return RedirectToAction("Detail", new { id = muracietId });
+        }
+
+        try { await _zaminService.AsanFinanceNeticesiYazAsync(zaminId, netice.Trim(), erisim.IsciId.Value); TempData["Success"] = "Zamin AsanFinance nəticəsi qeydə alındı."; }
+        catch (InvalidOperationException ex) { TempData["Error"] = ex.Message; }
+
         return RedirectToAction("Detail", new { id = muracietId });
     }
 
@@ -469,15 +545,14 @@ public class KreditMuracietController : Controller
 
         var randevular = await _randevuService.GunUzreGetirAsync(secilenGun);
 
-        // Həftəlik sayım (calendar zolaq üçün)
-        var hefteBaslangic = secilenGun.AddDays(-(int)secilenGun.DayOfWeek + 1);
-        if (secilenGun.DayOfWeek == DayOfWeek.Sunday) hefteBaslangic = secilenGun.AddDays(-6);
-        var hefteSon = hefteBaslangic.AddDays(6);
-        var hefteRandevular = await _randevuService.AraliqUzreGetirAsync(hefteBaslangic, hefteSon);
+        // Aylıq sayım (mini-calendar üçün — günlərə dot düşür)
+        var ayBaslangic = new DateTime(secilenGun.Year, secilenGun.Month, 1);
+        var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
+        var ayinRandevular = await _randevuService.AraliqUzreGetirAsync(ayBaslangic, ayBitis);
 
         ViewBag.SecilenGun = secilenGun;
-        ViewBag.HefteBaslangic = hefteBaslangic;
-        ViewBag.HefteRandevular = hefteRandevular;
+        ViewBag.AyBaslangic = ayBaslangic;
+        ViewBag.AyinRandevular = ayinRandevular;
         ViewBag.Erisim = erisim;
         return View(randevular);
     }
@@ -502,7 +577,7 @@ public class KreditMuracietController : Controller
         }
         catch (InvalidOperationException ex) { TempData["Error"] = ex.Message; }
 
-        return RedirectToAction("Detail", new { id = muracietId });
+        return RedirectToAction("Randevu", new { id = muracietId });
     }
 
     // POST /User/KreditMuraciet/RandevuDurumDeyis

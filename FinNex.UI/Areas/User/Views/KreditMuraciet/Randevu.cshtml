@@ -1,0 +1,164 @@
+@model FinNex.Domain.Entities.Kredit.KreditMuraciet
+@using FinNex.Domain.Entities.Kredit
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Randevu — Müraciət #" + Model.Id;
+    var r = Model.Randevu;
+
+    string DurumText(KreditRandevuStatus s) => s switch
+    {
+        KreditRandevuStatus.Planli => "Planlı",
+        KreditRandevuStatus.Gelib => "Gəlib",
+        KreditRandevuStatus.Gelmeyib => "Gəlməyib",
+        KreditRandevuStatus.Tehxir => "Təxir",
+        KreditRandevuStatus.Legv => "Ləğv",
+        _ => "-"
+    };
+    string DurumRengi(KreditRandevuStatus s) => s switch
+    {
+        KreditRandevuStatus.Gelib => "#16a34a",
+        KreditRandevuStatus.Gelmeyib => "#dc2626",
+        KreditRandevuStatus.Legv => "#94a3b8",
+        KreditRandevuStatus.Tehxir => "#f59e0b",
+        _ => "#2563eb"
+    };
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Banka randevusu</div>
+            <div class="fn-page-sub">
+                Müraciət #@Model.Id · @Model.AdSoyadAtaAdi · @Model.KreditMeblegi.ToString("N0") @Model.Valyuta
+            </div>
+        </div>
+        <a asp-action="Detail" asp-route-id="@Model.Id" class="fn-btn fn-btn--outline">← Müraciətə qayıt</a>
+    </div>
+
+    @if (TempData["Success"] != null) { <div class="fn-alert fn-alert--success">@TempData["Success"]</div> }
+    @if (TempData["Error"] != null) { <div style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Error"]</div> }
+
+    @if (Model.Status != KreditMuracietStatus.Tesdiqlenib)
+    {
+        <div class="fn-card" style="padding:16px;background:#fef3c7;border-color:#fde68a">
+            <div style="color:#78350f;font-size:13px">⚠ Randevu yalnız <strong>Təsdiqlənmiş</strong> müraciətə təyin edilə bilər. Cari status: <strong>@Model.Status</strong></div>
+        </div>
+    }
+    else
+    {
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+            @* Cari randevu kartı *@
+            <div class="fn-card" style="padding:20px">
+                <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+                    <span>Cari randevu</span>
+                    @if (r != null)
+                    {
+                        <span style="padding:4px 12px;border-radius:12px;background:#f1f5f9;color:@DurumRengi(r.Status);font-size:11px;font-weight:600">@DurumText(r.Status)</span>
+                    }
+                </div>
+
+                @if (r == null)
+                {
+                    <div style="text-align:center;padding:40px 20px;color:#94a3b8">
+                        <div style="font-size:48px;margin-bottom:10px">📅</div>
+                        <div style="font-size:13px">Randevu hələ təyin edilməyib</div>
+                    </div>
+                }
+                else
+                {
+                    <div style="text-align:center;padding:20px 10px;background:#f8fafc;border-radius:8px;margin-bottom:14px">
+                        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px">@r.Tarix.ToString("dddd")</div>
+                        <div style="font-size:32px;font-weight:800;color:#0f172a;margin:6px 0">@r.Tarix.ToString("dd.MM.yyyy")</div>
+                        <div style="font-size:24px;font-weight:700;color:#2563eb">@r.Tarix.ToString("HH:mm")</div>
+                        <div style="font-size:12px;color:#64748b;margin-top:6px">@r.MuddetDeqiqe dəqiqə</div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(r.Qeyd))
+                    {
+                        <div style="padding:10px 12px;background:#eff6ff;border-radius:6px;font-size:12px;color:#1e40af;margin-bottom:10px">
+                            <strong>Qeyd:</strong> @r.Qeyd
+                        </div>
+                    }
+
+                    @if (r.GelmeTarixi.HasValue)
+                    {
+                        <div style="padding:10px 12px;background:#f0fdf4;border-radius:6px;font-size:12px;color:#16a34a;margin-bottom:10px">
+                            ✓ Gəlmə: @r.GelmeTarixi.Value.ToString("dd.MM.yyyy HH:mm")
+                        </div>
+                    }
+
+                    <div style="font-size:11px;color:#94a3b8">
+                        Təyin edən: @(r.TeyinEdenIsci != null ? $"{r.TeyinEdenIsci.Ad} {r.TeyinEdenIsci.Soyad}" : "—") · @r.YaradilmaTarixi.ToString("dd.MM.yyyy")
+                    </div>
+
+                    @if (r.Status == KreditRandevuStatus.Planli)
+                    {
+                        <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e2e8f0;display:flex;gap:6px;flex-wrap:wrap">
+                            <form asp-action="RandevuDurumDeyis" method="post" style="display:inline">
+                                <input type="hidden" name="randevuId" value="@r.Id" />
+                                <input type="hidden" name="yeniDurum" value="@((int)KreditRandevuStatus.Gelib)" />
+                                <input type="hidden" name="gun" value="@r.Tarix.ToString("yyyy-MM-dd")" />
+                                <button type="submit" class="fn-btn fn-btn--sm" style="background:#16a34a;color:#fff">✓ Gəldi</button>
+                            </form>
+                            <form asp-action="RandevuDurumDeyis" method="post" style="display:inline">
+                                <input type="hidden" name="randevuId" value="@r.Id" />
+                                <input type="hidden" name="yeniDurum" value="@((int)KreditRandevuStatus.Gelmeyib)" />
+                                <input type="hidden" name="gun" value="@r.Tarix.ToString("yyyy-MM-dd")" />
+                                <button type="submit" class="fn-btn fn-btn--sm" style="background:#f1f5f9">✕ Gəlməyib</button>
+                            </form>
+                            <form asp-action="RandevuLegv" method="post" style="display:inline" onsubmit="return confirm('Randevunu ləğv edim?')">
+                                <input type="hidden" name="randevuId" value="@r.Id" />
+                                <input type="hidden" name="gun" value="@r.Tarix.ToString("yyyy-MM-dd")" />
+                                <button type="submit" class="fn-btn fn-btn--sm" style="color:#dc2626;border:1px solid #fecaca;background:#fff">Ləğv et</button>
+                            </form>
+                        </div>
+                    }
+                }
+            </div>
+
+            @* Təyin / Dəyiş formu *@
+            <div class="fn-card" style="padding:20px">
+                <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:14px">
+                    @(r == null ? "Randevu təyin et" : "Randevunu dəyiş")
+                </div>
+                <form asp-action="RandevuTeyin" method="post">
+                    <input type="hidden" name="muracietId" value="@Model.Id" />
+                    <div class="fn-form-group">
+                        <label class="fn-label">Tarix və saat *</label>
+                        <input type="datetime-local" name="tarix" class="fn-input" required
+                               value="@((r?.Tarix ?? DateTime.Today.AddDays(1).AddHours(10)).ToString("yyyy-MM-ddTHH:mm"))" />
+                        <div style="font-size:11px;color:#94a3b8;margin-top:4px">Müştərinin banka gəlmə tarixi və saatı</div>
+                    </div>
+                    <div class="fn-form-group">
+                        <label class="fn-label">Müddət (dəqiqə)</label>
+                        <input type="number" name="muddetDeqiqe" class="fn-input" value="@(r?.MuddetDeqiqe ?? 30)" min="5" max="240" />
+                    </div>
+                    <div class="fn-form-group">
+                        <label class="fn-label">Qeyd</label>
+                        <textarea name="qeyd" class="fn-input" rows="3" placeholder="Müştəriyə iletiləcək qeyd və ya daxili qeyd">@r?.Qeyd</textarea>
+                    </div>
+                    <div style="margin-top:10px">
+                        <button type="submit" class="fn-btn fn-btn--primary" style="width:100%">
+                            @(r == null ? "📅 Randevu təyin et" : "Randevunu yenilə")
+                        </button>
+                    </div>
+                </form>
+
+                @if (r != null)
+                {
+                    <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e2e8f0">
+                        <a asp-action="Randevular" asp-route-gun="@r.Tarix.ToString("yyyy-MM-dd")" class="fn-btn fn-btn--outline" style="width:100%;text-align:center;display:block">
+                            📅 @r.Tarix.ToString("dd MMM") günü bütün randevular
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/kredit-muraciet.css" asp-append-version="true" />
+}
