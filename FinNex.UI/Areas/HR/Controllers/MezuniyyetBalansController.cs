@@ -50,28 +50,31 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .ThenBy(x => x.Ad)
                 .ToListAsync();
 
-            // Əvvəlki illərin İllik qalıqları (yalnız qaldığı günlər > 0 olanlar) —
-            // ayrıca dictionary kimi göndərilir ki, view tarixçəni göstərə bilsin
+            // Bütün illərin balansı (həm keçmiş, həm cari) — yan sütunda
+            // illər üzrə qalıq göstərmək üçün.
             var isciIds = isciler.Select(i => i.Id).ToList();
-            var evvelkiBalanslar = await _unitOfWork.Repository<MezuniyyetBalans>()
+            var butunBalanslar = await _unitOfWork.Repository<MezuniyyetBalans>()
                 .Query()
                 .Where(b => !b.Silinib
                          && b.Nov == MezuniyyetNovu.Illik
-                         && b.Il < cariIl
                          && isciIds.Contains(b.IsciId))
                 .OrderByDescending(b => b.Il)
                 .ToListAsync();
 
-            // { isciId: [ (il, qaliq), ... ] } — yalnız qaliq > 0 olanlar göstərilir.
-            // ValueTuple istifadə edilir (anonymous type view-də dynamic ilə problemli olur).
-            ViewBag.EvvelkiIller = evvelkiBalanslar
-                .Where(b => (b.ToplamGun - b.IstifadeOlunanGun) > 0)
+            // { isciId: [ (il, qaliq), ... ] } — həm cari həm keçmiş illər daxildir
+            // (yalnız qaliq > 0 olanlar, amma cari il həmişə göstərilir — "hələ
+            //  verilməyib" informasiyası üçün).
+            ViewBag.IllerUzreQaliq = butunBalanslar
+                .Where(b => (b.ToplamGun - b.IstifadeOlunanGun) > 0 || b.Il == cariIl)
                 .GroupBy(b => b.IsciId)
-                .ToDictionary(g => g.Key, g => g.Select(b => (Il: b.Il, Qaliq: b.ToplamGun - b.IstifadeOlunanGun)).ToList());
-
-            // Standart illik məzuniyyət dərəcəsi (cari il üçün) — göstəricinin
-            // "N gün bu ildən + M gün keçmiş illərdən" ayrımını göstərmək üçün
-            ViewBag.StandartIllikGun = 21;
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(b => (
+                        Il: b.Il,
+                        Qaliq: b.ToplamGun - b.IstifadeOlunanGun,
+                        Cari: b.Il == cariIl
+                    )).OrderByDescending(x => x.Il).ToList()
+                );
 
             return View(isciler);
         }

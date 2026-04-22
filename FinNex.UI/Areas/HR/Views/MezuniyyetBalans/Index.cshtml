@@ -6,8 +6,8 @@
 
     var secilmisIl = (int)ViewBag.SecilmisIl;
     var iller = (List<int>)ViewBag.Iller;
-    var evvelkiIller = ViewBag.EvvelkiIller as Dictionary<int, List<(int Il, int Qaliq)>>
-                     ?? new Dictionary<int, List<(int Il, int Qaliq)>>();
+    var illerUzreQaliq = ViewBag.IllerUzreQaliq as Dictionary<int, List<(int Il, int Qaliq, bool Cari)>>
+                       ?? new Dictionary<int, List<(int Il, int Qaliq, bool Cari)>>();
     var standartGun = (int)(ViewBag.StandartIllikGun ?? 21);
 }
 
@@ -57,6 +57,16 @@
         }
         .mb-prev-year-row .il { color:#64748b; font-weight:600 }
         .mb-prev-year-row .gun { color:#0f172a; font-weight:700 }
+        .mb-prev-year-row .gun-missing { color:#94a3b8; font-style:italic; font-size:11px; font-weight:500 }
+        .mb-year-current { background:#eff6ff !important; border-color:#bfdbfe !important }
+        .mb-year-current .il { color:#1e40af }
+        .mb-year-missing { background:#fef2f2 !important; border-color:#fecaca !important }
+        .mb-year-missing .il { color:#991b1b }
+        .mb-no-balance {
+            font-size:12px; color:#991b1b; background:#fef2f2; border:1px solid #fecaca;
+            padding:8px 12px; border-radius:8px; display:inline-flex; align-items:center; gap:6px;
+            font-weight:600
+        }
         .mb-prev-empty { font-size:12px; color:#cbd5e1; font-style:italic }
         .mb-prev-cemi {
             font-size:11px; color:#1e40af; font-weight:700; margin-top:4px;
@@ -117,8 +127,8 @@
                         <tr>
                             <th style="min-width:200px">İşçi</th>
                             <th>Departament</th>
-                            <th style="min-width:240px">İllik məzuniyyət (@secilmisIl)</th>
-                            <th style="min-width:180px">Əvvəlki illərdən qalan</th>
+                            <th style="min-width:240px">Qalıq məzuniyyət (@secilmisIl)</th>
+                            <th style="min-width:200px">İllər üzrə qalıq</th>
                             <th class="mb-used-cell">Xəstəlik</th>
                             <th class="mb-used-cell">Ezamiyyət</th>
                             <th style="width:110px">Əməliyyat</th>
@@ -144,8 +154,9 @@
                                 qaliq = b.QaliqGun
                             }));
 
-                            // Əvvəlki illərdən qalan
-                            var evvelkiQalan = evvelkiIller.TryGetValue(isci.Id, out var list) ? list : null;
+                            // İllər üzrə qalıq (cari il də daxil)
+                            var illerList = illerUzreQaliq.TryGetValue(isci.Id, out var list) ? list : null;
+                            var umumiQaliq = (illerList?.Sum(x => x.Qaliq) ?? 0) + (illik == null ? 0 : 0);
 
                             <tr>
                                 <td>
@@ -159,11 +170,13 @@
                                     <span class="mb-dept">@deptAd</span>
                                 </td>
 
-                                @* ═══ İllik məzuniyyət (cari il) ═══ *@
+                                @* ═══ Qalıq məzuniyyət (cari il əsas göstəriş) ═══ *@
                                 <td>
                                     @if (illik == null)
                                     {
-                                        <span class="mb-dept">— balans yoxdur —</span>
+                                        <div class="mb-no-balance">
+                                            <i class="bi bi-info-circle"></i> hələ verilməyib
+                                        </div>
                                     }
                                     else
                                     {
@@ -176,7 +189,6 @@
                                             <div class="mb-qaliq-row">
                                                 <span class="mb-qaliq-big">@illik.QaliqGun</span>
                                                 <span class="mb-qaliq-unit">gün qalır</span>
-                                                <span class="mb-toplam-badge">@illik.ToplamGun toplam</span>
                                             </div>
                                             <div class="mb-prog">
                                                 <div class="mb-prog__bar mb-prog__bar--@cls" style="width:@(pct)%"></div>
@@ -184,38 +196,55 @@
                                             <div class="mb-istifade-info">
                                                 @if (illik.IstifadeOlunanGun > 0)
                                                 {
-                                                    <span><strong>@illik.IstifadeOlunanGun</strong> gün istifadə edilib</span>
+                                                    <span><strong>@illik.IstifadeOlunanGun</strong> gün istifadə edilib · @illik.ToplamGun toplam</span>
                                                 }
                                                 else
                                                 {
-                                                    <span>hələ istifadə olunmayıb</span>
+                                                    <span>@illik.ToplamGun gün verilib · istifadə olunmayıb</span>
                                                 }
                                             </div>
                                         </div>
                                     }
                                 </td>
 
-                                @* ═══ Əvvəlki illərdən qalan ═══ *@
+                                @* ═══ İllər üzrə qalıq (hər il ayrıca) ═══ *@
                                 <td>
-                                    @if (evvelkiQalan == null || !evvelkiQalan.Any())
+                                    @{
+                                        var cariIlVar = illerList != null && illerList.Any(x => x.Cari);
+                                        var iller = illerList?.Where(x => x.Cari || x.Qaliq > 0).OrderByDescending(x => x.Il).ToList() ?? new();
+                                    }
+                                    @if (!iller.Any() && !cariIlVar)
                                     {
-                                        <span class="mb-prev-empty">— qalıq yoxdur —</span>
+                                        <div class="mb-prev-years">
+                                            <div class="mb-prev-year-row mb-year-missing">
+                                                <span class="il">@secilmisIl</span>
+                                                <span class="gun-missing">hələ verilməyib</span>
+                                            </div>
+                                        </div>
                                     }
                                     else
                                     {
-                                        var cemi = evvelkiQalan.Sum(y => y.Qaliq);
+                                        var cemi = iller.Sum(y => y.Qaliq);
                                         <div class="mb-prev-years">
-                                            @foreach (var y in evvelkiQalan)
+                                            @foreach (var y in iller)
                                             {
-                                                <div class="mb-prev-year-row">
-                                                    <span class="il">@y.Il</span>
+                                                <div class="mb-prev-year-row @(y.Cari ? "mb-year-current" : "")">
+                                                    <span class="il">@y.Il @(y.Cari ? "(cari)" : "")</span>
                                                     <span class="gun">@y.Qaliq gün</span>
                                                 </div>
                                             }
+                                            @* Cari il yoxdursa "hələ verilməyib" əlavə et *@
+                                            @if (!cariIlVar)
+                                            {
+                                                <div class="mb-prev-year-row mb-year-missing">
+                                                    <span class="il">@secilmisIl (cari)</span>
+                                                    <span class="gun-missing">hələ verilməyib</span>
+                                                </div>
+                                            }
                                         </div>
-                                        @if (evvelkiQalan.Count > 1)
+                                        @if (iller.Count >= 2)
                                         {
-                                            <span class="mb-prev-cemi" title="Ümumi qalıq — tarixçə informativdir">
+                                            <span class="mb-prev-cemi">
                                                 Cəm: @cemi gün
                                             </span>
                                         }
