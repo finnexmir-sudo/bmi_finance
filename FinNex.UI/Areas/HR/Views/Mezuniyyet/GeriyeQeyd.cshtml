@@ -6,14 +6,20 @@
 
     var minTarix = DateTime.Today.AddDays(-Model.MaksimumKohneGun).ToString("yyyy-MM-dd");
     var maxTarix = DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd");
+
+    // Radio seçim üçün bool dəyişənlər (Razor-da checked="@bool" düzgün render edir;
+    // asp-for ilə inline @() yazmaq RZ1031 xətası verir).
+    var cIllik = Model.Nov == MezuniyyetNovu.Illik;
+    var cXestelik = Model.Nov == MezuniyyetNovu.Xestelik;
+    var cEzamiyyet = Model.Nov == MezuniyyetNovu.Ezamiyyet;
 }
 
 <div class="fn-page fn-mez-create">
 
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">Geriyə İllik Məzuniyyət Qeyd et</div>
-            <div class="fn-page-sub">Emergency hallarda — işçi illik məzuniyyətə çıxıbsa, HR sonradan qeydə alır (Xəstəlik / Ezamiyyət üçün "Yeni qeyd" səhifəsindən istifadə edin)</div>
+            <div class="fn-page-title">Geriyə Qeyd et</div>
+            <div class="fn-page-sub">İşçi işə gəlməyib və "Qayıb" kimi qeyd olunubsa — HR sonradan illik məzuniyyət / xəstəlik / ezamiyyət yaza və Qayıbları avtomatik uyğun statusa çevirə bilər</div>
         </div>
         <a asp-action="Hr" class="fn-btn fn-btn--outline">← Geri</a>
     </div>
@@ -39,9 +45,11 @@
                             <strong>Diqqət:</strong> Bu səhifə təsdiq axınını atlayır — müraciət dərhal
                             <strong>"Təsdiqlənib"</strong> statusunda yaranır. Maksimum
                             <strong>@Model.MaksimumKohneGun gün</strong> əvvələ qədər keçmiş tarix üçün
-                            qeyd etmək olar. İşçinin davamiyyətindəki <strong>"Qayib"</strong> qeydləri
-                            avtomatik <strong>"İcazəli"</strong>-yə çevriləcək və illik məzuniyyət
-                            balansı azalacaq.
+                            qeyd etmək olar. İşçinin davamiyyətindəki <strong>"Qayıb"</strong> qeydləri
+                            seçilən növə uyğun olaraq <strong>"İcazəli"</strong> (illik),
+                            <strong>"Xəstəlik"</strong> və ya <strong>"Ezamiyyət"</strong>-ə avtomatik
+                            çevriləcək. İllik məzuniyyət halında balans azalır (xəstəlik / ezamiyyətdə
+                            balansa toxunulmur).
                         </div>
                     </div>
 
@@ -58,8 +66,33 @@
                         <span asp-validation-for="IsciId" class="fn-val-msg"></span>
                     </div>
 
-                    @* Növ: yalnız İllik — Xəstəlik/Ezamiyyət "HR → Create" səhifəsindən yazılır *@
-                    <input type="hidden" name="Nov" value="@((int)MezuniyyetNovu.Illik)" />
+                    @* ── Növ seçimi (kart radio-lar) ── *@
+                    <div class="fn-form-group">
+                        <label class="fn-label">Növ <span class="fn-required">*</span></label>
+                        <div class="fn-nov-grid" style="grid-template-columns:repeat(3,1fr)">
+                            <label class="fn-nov-card">
+                                <input type="radio" name="Nov" value="@((int)MezuniyyetNovu.Illik)"
+                                       class="fn-nov-radio" checked="@cIllik" />
+                                <i class="bi bi-sun" style="font-size:20px;color:#1e9b6b"></i>
+                                İllik məzuniyyət
+                                <small>Qayıb → İcazəli</small>
+                            </label>
+                            <label class="fn-nov-card">
+                                <input type="radio" name="Nov" value="@((int)MezuniyyetNovu.Xestelik)"
+                                       class="fn-nov-radio" checked="@cXestelik" />
+                                <i class="bi bi-hospital" style="font-size:20px;color:#a855f7"></i>
+                                Xəstəlik
+                                <small>Qayıb → Xəstəlik</small>
+                            </label>
+                            <label class="fn-nov-card">
+                                <input type="radio" name="Nov" value="@((int)MezuniyyetNovu.Ezamiyyet)"
+                                       class="fn-nov-radio" checked="@cEzamiyyet" />
+                                <i class="bi bi-briefcase" style="font-size:20px;color:#f97316"></i>
+                                Ezamiyyət
+                                <small>Qayıb → Ezamiyyət</small>
+                            </label>
+                        </div>
+                    </div>
 
                     @* ── Tarixlər ── *@
                     <div class="fn-form-row">
@@ -128,8 +161,15 @@
                     <div class="fn-wi-step">
                         <div class="fn-wi-num"><i class="bi bi-arrow-repeat" style="font-size:11px"></i></div>
                         <div class="fn-wi-text">
-                            <strong>Qayib → İcazəli</strong>
-                            <span>Davamiyyətdəki qeydlər avtomatik çevrilir</span>
+                            <strong>Qayıb avtomatik çevrilir</strong>
+                            <span>Seçilən növə uyğun İcazəli / Xəstəlik / Ezamiyyət statusuna</span>
+                        </div>
+                    </div>
+                    <div class="fn-wi-step">
+                        <div class="fn-wi-num"><i class="bi bi-piggy-bank" style="font-size:11px"></i></div>
+                        <div class="fn-wi-text">
+                            <strong>Balans yalnız illikdə</strong>
+                            <span>İllik məzuniyyətdə balans azalır; xəstəlik / ezamiyyətdə toxunulmur</span>
                         </div>
                     </div>
                     <div class="fn-wi-step">
