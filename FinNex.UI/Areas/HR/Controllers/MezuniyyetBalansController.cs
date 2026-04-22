@@ -165,6 +165,93 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
         }
 
+        // GET /HR/MezuniyyetBalans/IsciBalanslari?isciId=5
+        // Bir işçinin bütün illərin balansını qaytarır — modal redaktə üçün.
+        [HttpGet]
+        public async Task<IActionResult> IsciBalanslari(int isciId)
+        {
+            try
+            {
+                var isci = await _unitOfWork.Repository<Isci>().IdIleGetirAsync(isciId);
+                if (isci == null) return Json(new { success = false, message = "İşçi tapılmadı." });
+
+                var balanslar = await _unitOfWork.Repository<MezuniyyetBalans>()
+                    .Query()
+                    .Where(b => !b.Silinib && b.IsciId == isciId)
+                    .OrderByDescending(b => b.Il)
+                    .ThenBy(b => b.Nov)
+                    .ToListAsync();
+
+                var data = balanslar.Select(b => new
+                {
+                    id = b.Id,
+                    il = b.Il,
+                    nov = (int)b.Nov,
+                    novAd = b.Nov.ToString(),
+                    toplamGun = b.ToplamGun,
+                    istifade = b.IstifadeOlunanGun,
+                    qaliq = b.ToplamGun - b.IstifadeOlunanGun
+                }).ToList();
+
+                return Json(new
+                {
+                    success = true,
+                    isciAd = $"{isci.Ad} {isci.Soyad}",
+                    balanslar = data
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Xəta: {ex.Message}" });
+            }
+        }
+
+        // POST /HR/MezuniyyetBalans/AddIllikBalans
+        // Müəyyən il üçün İllik məzuniyyət balansı yaradır (və ya artıq varsa
+        // Toplam günü üstə gəlir). Bu HR-a keçmiş illərdə unudulmuş və ya
+        // əl ilə əlavə edilmək istənilən günləri yazmağa imkan verir.
+        [HttpPost]
+        public async Task<IActionResult> AddIllikBalans(int isciId, int il, int toplamGun)
+        {
+            try
+            {
+                if (toplamGun <= 0)
+                    return Json(new { success = false, message = "Toplam gün 0-dan böyük olmalıdır." });
+                if (il < 2000 || il > DateTime.Now.Year + 5)
+                    return Json(new { success = false, message = "İl düzgün deyil." });
+
+                var repo = _unitOfWork.Repository<MezuniyyetBalans>();
+                var movcud = await repo.GetirAsync(x =>
+                    x.IsciId == isciId && x.Il == il && x.Nov == MezuniyyetNovu.Illik && !x.Silinib);
+
+                if (movcud != null)
+                {
+                    // Artıq var — üstə gəl
+                    movcud.ToplamGun += toplamGun;
+                    movcud.YenilenmeTarixi = DateTime.Now;
+                    await repo.YenileAsync(movcud);
+                    await _unitOfWork.YaddaSaxlaAsync();
+                    return Json(new { success = true, message = $"{il}-ci il balansına {toplamGun} gün əlavə edildi. Cəmi: {movcud.ToplamGun} gün." });
+                }
+
+                // Yenisi
+                await repo.YaratAsync(new MezuniyyetBalans
+                {
+                    IsciId = isciId,
+                    Il = il,
+                    Nov = MezuniyyetNovu.Illik,
+                    ToplamGun = toplamGun,
+                    IstifadeOlunanGun = 0
+                });
+                await _unitOfWork.YaddaSaxlaAsync();
+                return Json(new { success = true, message = $"{il}-ci il üçün {toplamGun} günlük balans yaradıldı." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Xəta: {ex.Message}" });
+            }
+        }
+
         // POST /HR/MezuniyyetBalans/YeniIlBalansYarat
         [HttpPost]
         public async Task<IActionResult> YeniIlBalansYarat(int il)

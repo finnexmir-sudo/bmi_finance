@@ -255,30 +255,80 @@
     </div>
 </div>
 
-<!-- Edit Modal -->
+<!-- Edit Modal — illərə görə redaktə + yeni il əlavə etmə -->
 <div id="mbModalOverlay" class="mb-modal-overlay">
-    <div class="mb-modal">
+    <div class="mb-modal" style="max-width:700px">
         <div class="mb-modal__header">
             <h3>Balans Redaktəsi</h3>
             <button id="mbModalClose" class="mb-modal__close">&times;</button>
         </div>
         <div class="mb-modal__body">
             <div id="mbModalIsciAd" class="mb-modal__isci-info"></div>
-            <table class="mb-edit-table">
-                <thead>
-                    <tr>
-                        <th>Məzuniyyət növü</th>
-                        <th>Toplam gün</th>
-                        <th>İstifadə</th>
-                        <th>Qalıq</th>
-                    </tr>
-                </thead>
-                <tbody id="mbEditTableBody"></tbody>
-            </table>
+
+            @* İllik məzuniyyət — illərə görə *@
+            <div style="margin-bottom:16px">
+                <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+                    <span>İllik məzuniyyət — illərə görə</span>
+                    <span id="mbLoadingIndicator" style="font-size:11px;color:#94a3b8;display:none">Yüklənir...</span>
+                </div>
+                <table class="mb-edit-table" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th style="width:80px">İl</th>
+                            <th>Toplam</th>
+                            <th>İstifadə</th>
+                            <th>Qalıq</th>
+                            <th style="width:90px">Əməliyyat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mbIllikTbody">
+                        <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">— yüklənir —</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            @* Yeni il əlavə et *@
+            <div style="padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:16px">
+                <div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:8px">
+                    <i class="bi bi-plus-circle"></i> Yeni il üçün İllik balans əlavə et
+                </div>
+                <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+                    <div style="flex:1;min-width:90px">
+                        <label style="font-size:10px;color:#64748b;display:block;margin-bottom:3px">İl</label>
+                        <input type="number" id="mbYeniIl" class="mb-edit-input" placeholder="Məs. 2023" min="2000" max="2030" style="width:100%" />
+                    </div>
+                    <div style="flex:2;min-width:120px">
+                        <label style="font-size:10px;color:#64748b;display:block;margin-bottom:3px">Toplam gün</label>
+                        <input type="number" id="mbYeniToplam" class="mb-edit-input" placeholder="Məs. 5" min="1" max="365" style="width:100%" />
+                    </div>
+                    <button id="mbYeniIlElaveEt" class="mb-btn-save" style="min-width:110px">Əlavə et</button>
+                </div>
+                <div style="font-size:10px;color:#94a3b8;margin-top:6px">
+                    Əgər həmin il üçün artıq balans varsa — günlər üstə gəlinəcək.
+                </div>
+            </div>
+
+            @* Cari ilin Xəstəlik / Ezamiyyət balansı *@
+            <div>
+                <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:8px">
+                    Cari il (<span id="mbCariIlMetn">—</span>) — digər növlər
+                </div>
+                <table class="mb-edit-table" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Növ</th>
+                            <th>Toplam gün</th>
+                            <th>İstifadə</th>
+                            <th>Qalıq</th>
+                            <th style="width:90px">Əməliyyat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mbDigerTbody"></tbody>
+                </table>
+            </div>
         </div>
         <div class="mb-modal__footer">
-            <button id="mbModalCancel" class="mb-btn-cancel">Ləğv et</button>
-            <button id="mbModalSave" class="mb-btn-save">Yadda saxla</button>
+            <button id="mbModalCancel" class="mb-btn-cancel">Bağla</button>
         </div>
     </div>
 </div>
