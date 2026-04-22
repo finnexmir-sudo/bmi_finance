@@ -23,6 +23,14 @@ namespace FinNex.Application.Interfaces
         Task<Result<IList<MezuniyyetListDto>>> GetHrTesdiqindeAsync();
         // HR izləmə üçün — SobeReisi və Rəhbər təsdiqində dayanan müraciətlər
         Task<Result<IList<MezuniyyetListDto>>> GetProsesdeOlanlarAsync();
+
+        /// <summary>
+        /// Hazırda məzuniyyətdə olan (Təsdiqlənib + BaslamaTarixi ≤ bugün ≤ BitmeTarixi)
+        /// və/və ya yaxın günlərdə başlayacaq işçilərin izləmə siyahısı.
+        /// </summary>
+        /// <param name="qabaqcaGun">Bugündən sonra neçə gün irəli (default 30) — "yaxın 30 gündə başlayacaqlar" üçün</param>
+        Task<Result<IList<MezuniyyetListDto>>> GetAktivVeYaxinlardakilarAsync(int qabaqcaGun = 30);
+
         Task<Result<IList<MezuniyyetListDto>>> GetSobeyeGoreMezuniyyetlerAsync(int departamentId, int sobeReisiIsciId);
         Task<Result<IList<MezuniyyetListDto>>> GetFiltrliAsync( DateTime? baslaTarixFrom,DateTime? baslaTarixTo,int? departamentId,int? status,string? axtaris);
 

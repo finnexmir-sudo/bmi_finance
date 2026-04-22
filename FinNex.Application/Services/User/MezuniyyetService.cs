@@ -775,6 +775,66 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         }
     }
 
+    // ══════════════════════════════════════════════════════
+    // Aktiv və yaxınlaşan məzuniyyətlər (HR izləmə səhifəsi)
+    // ══════════════════════════════════════════════════════
+    public async Task<Result<IList<MezuniyyetListDto>>> GetAktivVeYaxinlardakilarAsync(int qabaqcaGun = 30)
+    {
+        try
+        {
+            var bugun = DateTime.Today;
+            var sonTarix = bugun.AddDays(qabaqcaGun);
+
+            var entities = await _unitOfWork.Repository<Mezuniyyet>()
+                .HamisiniGetirAsync(
+                    // Yalnız təsdiqlənmişlər + (məzuniyyətdə olan VƏ YA yaxınlarda başlayacaq)
+                    predicate: x => x.Status == MezuniyyetStatus.Tesdiqlenib
+                                 && x.BaslamaTarixi <= sonTarix
+                                 && x.BitmeTarixi >= bugun,
+                    include: q => q
+                        .Include(m => m.Isci)
+                            .ThenInclude(i => i.IsciTeyinatlari)
+                                .ThenInclude(t => t.Departament)
+                        .Include(m => m.Isci)
+                            .ThenInclude(i => i.IsciTeyinatlari)
+                                .ThenInclude(t => t.Vezife)
+                        .Include(m => m.EvezEdenIsci),
+                    izlemeden: true);
+
+            var dtos = entities
+                .OrderBy(x => x.BaslamaTarixi)
+                .Select(m => new MezuniyyetListDto
+                {
+                    Id = m.Id,
+                    IsciAdSoyad = m.Isci.TamAd,
+                    SobeAdi = m.Isci.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => t.Departament.Ad)
+                        .FirstOrDefault() ?? "-",
+                    VezifeAdi = m.Isci.IsciTeyinatlari
+                        .Where(t => t.Aktivdir)
+                        .Select(t => t.Vezife.Ad)
+                        .FirstOrDefault() ?? "-",
+                    EvezEdenIsciAdSoyad = m.EvezEdenIsci?.TamAd,
+                    Nov = m.Nov,
+                    Status = m.Status,
+                    BaslamaTarixi = m.BaslamaTarixi,
+                    BitmeTarixi = m.BitmeTarixi,
+                    IsGunlerininSayi = m.IsGunlerininSayi,
+                    EmrRegem = m.EmrRegem,
+                    EmrSuffiks = m.EmrSuffiks,
+                    EmrIl = m.EmrIl,
+                    YaradilmaTarixi = m.YaradilmaTarixi,
+                }).ToList();
+
+            return Result<IList<MezuniyyetListDto>>.Ok(dtos);
+        }
+        catch (Exception ex)
+        {
+            return Result<IList<MezuniyyetListDto>>.Fail($"Aktiv məzuniyyətlər gətirilmədi: {ex.Message}");
+        }
+    }
+
     public async Task<Result> LegvEtAsync(int id, int isciId)
     {
         var m = await _unitOfWork.Repository<Mezuniyyet>().IdIleGetirAsync(id);

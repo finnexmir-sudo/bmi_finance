@@ -469,8 +469,12 @@
                                     @if (User.IsInRole(RoleNames.HR) || User.IsInRole(RoleNames.Admin))
                                     {
                                         <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Hr"
-                                           class="fn-nav-subitem @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction != "GeriyeQeyd" ? "active" : "")">
+                                           class="fn-nav-subitem @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction != "GeriyeQeyd" && currentAction != "Aktiv" ? "active" : "")">
                                             <div class="fn-sub-dot"></div> Məzuniyyət Müraciətləri
+                                        </a>
+                                        <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Aktiv"
+                                           class="fn-nav-subitem @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction == "Aktiv" ? "active" : "")">
+                                            <div class="fn-sub-dot"></div> Aktiv Məzuniyyətlər
                                         </a>
                                         <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="GeriyeQeyd"
                                            class="fn-nav-subitem @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction == "GeriyeQeyd" ? "active" : "")">
