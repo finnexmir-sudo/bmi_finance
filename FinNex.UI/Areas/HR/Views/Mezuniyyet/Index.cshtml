@@ -156,6 +156,7 @@
                         <th data-sort="type">Növ</th>
                         <th data-sort="start">Tarix Aralığı</th>
                         <th>İş Günü</th>
+                        <th>Əmr №</th>
                         <th data-sort="status">Status</th>
                         <th style="width:100px;">Əməliyyat</th>
                     </tr>
@@ -164,7 +165,7 @@
                     @if (!list.Any())
                     {
                         <tr>
-                            <td colspan="7">
+                            <td colspan="8">
                                 <div class="mez-empty">
                                     <div class="mez-empty-icon"><i class="bi bi-calendar-x"></i></div>
                                     <div class="mez-empty-title">Heç bir məzuniyyət tapılmadı</div>
@@ -212,6 +213,20 @@
                                 </td>
                                 <td>
                                     <span class="days-pill">@item.IsGunlerininSayi g</span>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(item.EmrNomresi))
+                                    {
+                                        <span style="font-family:monospace;font-weight:700;color:#0f172a;background:#f1f5f9;padding:3px 8px;border-radius:4px;font-size:12px">@item.EmrNomresi</span>
+                                        @if (item.EmrIl.HasValue)
+                                        {
+                                            <div style="font-size:10px;color:#94a3b8;margin-top:2px">@item.EmrIl</div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span style="color:#cbd5e1;font-size:12px">—</span>
+                                    }
                                 </td>
                                 <td>
                                     <span class="mez-badge @StatusBadgeClass(item.Status)">

@@ -168,6 +168,16 @@
                         <span class="tsd-badge tsd-badge--wait">@Model.StatusText</span>
                     </span>
                 </div>
+                @if (!string.IsNullOrEmpty(Model.EmrNomresi))
+                {
+                    <div class="tsd-info-row">
+                        <span class="tsd-info-lbl">Əmr nömrəsi</span>
+                        <span class="tsd-info-val" style="font-family:monospace;font-weight:700;color:#1e40af">
+                            📄 @Model.EmrNomresi
+                            @if (Model.EmrIl.HasValue) { <span style="color:#94a3b8;font-weight:500">· @Model.EmrIl</span> }
+                        </span>
+                    </div>
+                }
                 @if (!string.IsNullOrEmpty(Model.ImtinaSebebi))
                 {
                     <div class="tsd-info-row">
