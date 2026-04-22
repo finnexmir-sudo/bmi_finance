@@ -8,107 +8,166 @@
     var maxTarix = DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd");
 }
 
-<div class="fn-page">
+<div class="fn-page fn-mez-create">
 
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">
-                <i class="bi bi-clock-history me-2" style="color:#c9900a;"></i>
-                Geriyə Məzuniyyət Qeyd et
-            </div>
-            <div class="fn-page-sub">
-                Emergency hallarda işçi işdə olmayıbsa — HR sonradan qeydə alır
-            </div>
+            <div class="fn-page-title">Geriyə Məzuniyyət Qeyd et</div>
+            <div class="fn-page-sub">Emergency hallarda — işçi işdə olmayıbsa, HR sonradan qeydə alır</div>
         </div>
-        <a asp-action="Hr" class="fn-btn fn-btn--outline">
-            <i class="bi bi-arrow-left me-1"></i> Geri
-        </a>
+        <a asp-action="Hr" class="fn-btn fn-btn--outline">← Geri</a>
     </div>
 
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+        <div style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Error"]</div>
     }
 
-    <div class="fn-card" style="max-width:760px;">
+    <div class="fn-create-layout">
 
-        <div style="padding:12px 14px;background:#fffbea;border:1px solid #fde68a;border-left:4px solid #c9900a;border-radius:8px;margin-bottom:18px;">
-            <div style="display:flex;align-items:start;gap:10px;">
-                <span style="font-size:18px;line-height:1;">⚠</span>
-                <div style="font-size:12.5px;color:#7a5a10;line-height:1.55;">
-                    <b>Diqqət:</b> Bu səhifə təsdiq axınını atlayır — müraciət dərhal
-                    <b>"Təsdiqlənib"</b> statusunda yaranır, işçi qəbul edilmiş sayılır.
-                    Maksimum <b>@Model.MaksimumKohneGun gün</b> əvvələ qədər keçmiş tarix
-                    üçün qeyd etmək olar. İşçinin davamiyyətindəki <b>"Qayib"</b> qeydləri
-                    avtomatik <b>"İcazəli/Xəstəlik/Ezamiyyət"</b>-ə çevriləcək. İllik
-                    məzuniyyət balansı azalacaq.
+        @* ── Forma ── *@
+        <div class="fn-form-wrap fn-form-wrap--wide">
+            <form asp-action="GeriyeQeyd" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="fn-card fn-card--form">
+
+                    @* Xəbərdarlıq *@
+                    <div style="display:flex;gap:10px;padding:12px 14px;background:#fffbea;border:1px solid #fde68a;border-left:4px solid #c9900a;border-radius:8px;margin-bottom:18px">
+                        <div style="font-size:18px;line-height:1">⚠</div>
+                        <div style="font-size:12.5px;color:#7a5a10;line-height:1.55">
+                            <strong>Diqqət:</strong> Bu səhifə təsdiq axınını atlayır — müraciət dərhal
+                            <strong>"Təsdiqlənib"</strong> statusunda yaranır. Maksimum
+                            <strong>@Model.MaksimumKohneGun gün</strong> əvvələ qədər keçmiş tarix üçün
+                            qeyd etmək olar. İşçinin davamiyyətindəki <strong>"Qayib"</strong> qeydləri
+                            avtomatik <strong>"İcazəli / Xəstəlik / Ezamiyyət"</strong>-ə çevriləcək.
+                            İllik məzuniyyət balansı azalacaq.
+                        </div>
+                    </div>
+
+                    <div asp-validation-summary="ModelOnly" class="fn-val-msg" style="display:block;margin-bottom:10px"></div>
+
+                    @* ── İşçi seçimi ── *@
+                    <div class="fn-form-group">
+                        <label asp-for="IsciId" class="fn-label">
+                            İşçi <span class="fn-required">*</span>
+                        </label>
+                        <select asp-for="IsciId" asp-items="Model.Isciler" class="fn-select" required>
+                            <option value="">— İşçi seçin —</option>
+                        </select>
+                        <span asp-validation-for="IsciId" class="fn-val-msg"></span>
+                    </div>
+
+                    @* ── Növ seçimi (kart radio-lar) ── *@
+                    <div class="fn-form-group">
+                        <label class="fn-label">Məzuniyyət növü <span class="fn-required">*</span></label>
+                        <div class="fn-nov-grid" style="grid-template-columns:repeat(3,1fr)">
+                            <label class="fn-nov-card">
+                                <input type="radio" asp-for="Nov" value="@((int)MezuniyyetNovu.Illik)"
+                                       class="fn-nov-radio" @(Model.Nov == MezuniyyetNovu.Illik ? "checked" : "") />
+                                <i class="bi bi-sun" style="font-size:20px;color:#1e9b6b"></i>
+                                İllik
+                                <small>İllik məzuniyyət</small>
+                            </label>
+                            <label class="fn-nov-card">
+                                <input type="radio" asp-for="Nov" value="@((int)MezuniyyetNovu.Xestelik)"
+                                       class="fn-nov-radio" @(Model.Nov == MezuniyyetNovu.Xestelik ? "checked" : "") />
+                                <i class="bi bi-hospital" style="font-size:20px;color:#a855f7"></i>
+                                Xəstəlik
+                                <small>Xəstəlik vərəqəsi</small>
+                            </label>
+                            <label class="fn-nov-card">
+                                <input type="radio" asp-for="Nov" value="@((int)MezuniyyetNovu.Ezamiyyet)"
+                                       class="fn-nov-radio" @(Model.Nov == MezuniyyetNovu.Ezamiyyet ? "checked" : "") />
+                                <i class="bi bi-briefcase" style="font-size:20px;color:#f97316"></i>
+                                Ezamiyyət
+                                <small>Xidməti ezamiyyət</small>
+                            </label>
+                        </div>
+                        <span asp-validation-for="Nov" class="fn-val-msg"></span>
+                    </div>
+
+                    @* ── Tarixlər ── *@
+                    <div class="fn-form-row">
+                        <div class="fn-form-group">
+                            <label asp-for="BaslamaTarixi" class="fn-label">
+                                Başlama tarixi <span class="fn-required">*</span>
+                            </label>
+                            <input asp-for="BaslamaTarixi" type="date" class="fn-input"
+                                   min="@minTarix" max="@maxTarix"
+                                   value="@Model.BaslamaTarixi.ToString("yyyy-MM-dd")" required />
+                            <span asp-validation-for="BaslamaTarixi" class="fn-val-msg"></span>
+                        </div>
+                        <div class="fn-form-group">
+                            <label asp-for="BitmeTarixi" class="fn-label">
+                                Bitmə tarixi <span class="fn-required">*</span>
+                            </label>
+                            <input asp-for="BitmeTarixi" type="date" class="fn-input"
+                                   min="@minTarix" max="@maxTarix"
+                                   value="@Model.BitmeTarixi.ToString("yyyy-MM-dd")" required />
+                            <span asp-validation-for="BitmeTarixi" class="fn-val-msg"></span>
+                        </div>
+                    </div>
+
+                    @* ── Səbəb ── *@
+                    <div class="fn-form-group">
+                        <label asp-for="Sebeb" class="fn-label">
+                            Səbəb <span class="fn-label-hint">(ixtiyari)</span>
+                        </label>
+                        <textarea asp-for="Sebeb" rows="3" class="fn-textarea"
+                                  placeholder="Nəyə görə geriyə qeyd olunur? (məs: 'işçi xəstə idi, sənədləri sonradan gətirdi')"></textarea>
+                        <span asp-validation-for="Sebeb" class="fn-val-msg"></span>
+                        <small style="font-size:11px;color:#94a3b8;margin-top:4px;display:block">Verilərsə, audit üçün qeydə alınır</small>
+                    </div>
+
+                    @* ── Düymələr ── *@
+                    <div class="fn-form-actions">
+                        <a asp-action="Hr" class="fn-btn fn-btn--outline">Ləğv et</a>
+                        <button type="submit" class="fn-btn fn-btn--primary"
+                                onclick="return confirm('Bu əməliyyat təsdiq axınını atlayır və dərhal təsdiqlənmiş kimi qeyd olunur. Davam edilsin?');">
+                            Qeyd et
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        @* ── Sağ panel: məlumat ── *@
+        <div class="fn-side-info">
+            <div class="fn-card">
+                <div class="fn-card-title" style="margin-bottom:10px">Məlumat</div>
+                <div class="fn-workflow-info">
+                    <div class="fn-wi-step">
+                        <div class="fn-wi-num"><i class="bi bi-exclamation" style="font-size:11px"></i></div>
+                        <div class="fn-wi-text">
+                            <strong>Təsdiq atlanır</strong>
+                            <span>Müraciət dərhal "Təsdiqlənib" statusunda yaranır</span>
+                        </div>
+                    </div>
+                    <div class="fn-wi-step">
+                        <div class="fn-wi-num"><i class="bi bi-calendar-x" style="font-size:11px"></i></div>
+                        <div class="fn-wi-text">
+                            <strong>Maks @Model.MaksimumKohneGun gün</strong>
+                            <span>Daha əvvələ qeyd etmək olmur</span>
+                        </div>
+                    </div>
+                    <div class="fn-wi-step">
+                        <div class="fn-wi-num"><i class="bi bi-arrow-repeat" style="font-size:11px"></i></div>
+                        <div class="fn-wi-text">
+                            <strong>Qayib → İcazəli</strong>
+                            <span>Davamiyyətdəki qeydlər avtomatik çevrilir</span>
+                        </div>
+                    </div>
+                    <div class="fn-wi-step">
+                        <div class="fn-wi-num"><i class="bi bi-file-earmark-text" style="font-size:11px"></i></div>
+                        <div class="fn-wi-text">
+                            <strong>Audit</strong>
+                            <span>Bütün geriyə qeydlər log-a düşür</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <form asp-action="GeriyeQeyd" method="post">
-            @Html.AntiForgeryToken()
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger d-none"></div>
-
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label asp-for="IsciId" class="fn-sbi-label fw-semibold"></label>
-                    <select asp-for="IsciId" asp-items="Model.Isciler" class="form-select">
-                        <option value="">— İşçi seçin —</option>
-                    </select>
-                    <span asp-validation-for="IsciId" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6">
-                    <label asp-for="Nov" class="fn-sbi-label fw-semibold"></label>
-                    <select asp-for="Nov" class="form-select">
-                        <option value="1" selected="@(Model.Nov == MezuniyyetNovu.Illik)">İllik məzuniyyət</option>
-                        <option value="2" selected="@(Model.Nov == MezuniyyetNovu.Xestelik)">Xəstəlik</option>
-                        <option value="3" selected="@(Model.Nov == MezuniyyetNovu.Ezamiyyet)">Ezamiyyət</option>
-                    </select>
-                    <span asp-validation-for="Nov" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6">
-                    <label asp-for="BaslamaTarixi" class="fn-sbi-label fw-semibold"></label>
-                    <input asp-for="BaslamaTarixi" type="date" class="form-control"
-                           min="@minTarix" max="@maxTarix"
-                           value="@Model.BaslamaTarixi.ToString("yyyy-MM-dd")" />
-                    <span asp-validation-for="BaslamaTarixi" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6">
-                    <label asp-for="BitmeTarixi" class="fn-sbi-label fw-semibold"></label>
-                    <input asp-for="BitmeTarixi" type="date" class="form-control"
-                           min="@minTarix" max="@maxTarix"
-                           value="@Model.BitmeTarixi.ToString("yyyy-MM-dd")" />
-                    <span asp-validation-for="BitmeTarixi" class="text-danger small"></span>
-                </div>
-
-                <div class="col-12">
-                    <label asp-for="Sebeb" class="fn-sbi-label fw-semibold">
-                        Səbəb <span class="text-muted small fw-normal">(ixtiyari)</span>
-                    </label>
-                    <textarea asp-for="Sebeb" class="form-control" rows="3"
-                              placeholder="Nəyə görə geriyə qeyd olunur? (məs: 'işçi xəstə idi, sənədləri sonradan gətirdi')"></textarea>
-                    <span asp-validation-for="Sebeb" class="text-danger small"></span>
-                    <small class="text-muted">Verilərsə, audit üçün qeydə alınır.</small>
-                </div>
-            </div>
-
-            <hr class="my-4" />
-
-            <div class="d-flex justify-content-end gap-2">
-                <a asp-action="Hr" class="fn-btn fn-btn--outline">Ləğv et</a>
-                <button type="submit" class="fn-btn fn-btn--primary"
-                        onclick="return confirm('Bu əməliyyat təsdiq axınını atlayır və dərhal təsdiqlənmiş kimi qeyd olunur. Davam edəksinizmi?');">
-                    <i class="bi bi-check2-circle me-1"></i> Qeyd et
-                </button>
-            </div>
-        </form>
     </div>
 </div>
 

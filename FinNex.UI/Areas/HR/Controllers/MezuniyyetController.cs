@@ -236,6 +236,25 @@ namespace FinNex.UI.Areas.HR.Controllers
             return View(vm);
         }
 
+        // ══════════════════════════════════════════════════════
+        // AKTİV MƏZUNİYYƏTLƏR — izləmə paneli
+        // Hazırda məzuniyyətdə olan və yaxın günlərdə başlayacaqlar.
+        // ══════════════════════════════════════════════════════
+
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> Aktiv(int qabaqcaGun = 30)
+        {
+            if (qabaqcaGun < 0) qabaqcaGun = 0;
+            if (qabaqcaGun > 365) qabaqcaGun = 365;
+
+            var result = await _mezuniyyetService.GetAktivVeYaxinlardakilarAsync(qabaqcaGun);
+            var list = result.Success ? result.Data!.ToList() : new();
+
+            ViewBag.QabaqcaGun = qabaqcaGun;
+            ViewData["Title"] = "Aktiv Məzuniyyətlər";
+            return View(list);
+        }
+
         [HttpPost, ValidateAntiForgeryToken]
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
         public async Task<IActionResult> GeriyeQeyd(GeriyeQeydVM vm)
