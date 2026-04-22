@@ -1,4 +1,4 @@
-// ── Mezuniyyet Balans JS ──────────────────────────────────
+// ── Mezuniyyet Balans JS — illərə görə redaktə ─────────────
 
 (function () {
     'use strict';
@@ -7,8 +7,7 @@
     const yearSelect = document.getElementById('mbYearSelect');
     if (yearSelect) {
         yearSelect.addEventListener('change', function () {
-            const il = this.value;
-            window.location.href = '/HR/MezuniyyetBalans?il=' + il;
+            window.location.href = '/HR/MezuniyyetBalans?il=' + this.value;
         });
     }
 
@@ -23,216 +22,280 @@
         }
         toast.textContent = message;
         toast.className = 'mb-toast mb-toast--' + type;
-        // trigger reflow
         void toast.offsetWidth;
         toast.classList.add('mb-toast--visible');
-
-        setTimeout(function () {
-            toast.classList.remove('mb-toast--visible');
-        }, 3000);
+        setTimeout(function () { toast.classList.remove('mb-toast--visible'); }, 3000);
     }
 
-    // ── Progress bar colors ──────────────────────────────
-    function getColorClass(qaliq, toplam) {
-        if (toplam === 0) return 'green';
-        var pct = (qaliq / toplam) * 100;
-        if (pct > 50) return 'green';
-        if (pct >= 20) return 'yellow';
-        return 'red';
-    }
-
-    function updateProgressBars() {
-        document.querySelectorAll('.mb-progress__bar').forEach(function (bar) {
-            var qaliq = parseInt(bar.dataset.qaliq) || 0;
-            var toplam = parseInt(bar.dataset.toplam) || 0;
-            var pct = toplam > 0 ? Math.round((qaliq / toplam) * 100) : 0;
-            bar.style.width = pct + '%';
-
-            bar.classList.remove('mb-progress__bar--green', 'mb-progress__bar--yellow', 'mb-progress__bar--red');
-            bar.classList.add('mb-progress__bar--' + getColorClass(qaliq, toplam));
-        });
-
-        document.querySelectorAll('.mb-qaliq').forEach(function (el) {
-            var qaliq = parseInt(el.dataset.qaliq) || 0;
-            var toplam = parseInt(el.dataset.toplam) || 0;
-            el.classList.remove('mb-qaliq--green', 'mb-qaliq--yellow', 'mb-qaliq--red');
-            el.classList.add('mb-qaliq--' + getColorClass(qaliq, toplam));
-        });
-    }
-
-    updateProgressBars();
-
-    // ── Modal ────────────────────────────────────────────
+    // ── Modal refs ───────────────────────────────────────
     const overlay = document.getElementById('mbModalOverlay');
-    const modal = overlay ? overlay.querySelector('.mb-modal') : null;
+    const illikTbody = document.getElementById('mbIllikTbody');
+    const digerTbody = document.getElementById('mbDigerTbody');
+    const loadingInd = document.getElementById('mbLoadingIndicator');
+    const cariIlMetn = document.getElementById('mbCariIlMetn');
+    const yeniIlInput = document.getElementById('mbYeniIl');
+    const yeniToplamInput = document.getElementById('mbYeniToplam');
+    const yeniIlBtn = document.getElementById('mbYeniIlElaveEt');
 
-    // Store current edit context
     let currentIsciId = null;
     let currentIl = null;
 
-    const novDefaults = [
-        { nov: 1, ad: 'İllik məzuniyyət', defaultGun: 21 },
-        { nov: 2, ad: 'Xəstəlik məzuniyyəti', defaultGun: 14 },
-        { nov: 3, ad: 'Ezamiyyət (limitsiz)', defaultGun: 365 }
-    ];
+    const novAdlari = {
+        1: 'İllik məzuniyyət',
+        2: 'Xəstəlik məzuniyyəti',
+        3: 'Ezamiyyət'
+    };
 
-    function openModal(isciId, isciAd, il, balanslar) {
+    // ── Modal aç / doldurma ──────────────────────────────
+    async function openModal(isciId, isciAd, il) {
         if (!overlay) return;
 
-        currentIsciId = isciId;
-        currentIl = il;
+        currentIsciId = parseInt(isciId);
+        currentIl = parseInt(il);
         document.getElementById('mbModalIsciAd').textContent = isciAd;
-
-        const tbody = document.getElementById('mbEditTableBody');
-        tbody.innerHTML = '';
-
-        novDefaults.forEach(function (nd) {
-            var existing = balanslar.find(function (b) { return b.nov === nd.nov; });
-            var toplam = existing ? existing.toplamGun : nd.defaultGun;
-            var istifade = existing ? existing.istifade : 0;
-            var qaliq = toplam - istifade;
-
-            var tr = document.createElement('tr');
-            tr.innerHTML =
-                '<td><strong>' + nd.ad + '</strong></td>' +
-                '<td><input type="number" class="mb-edit-input" min="0" value="' + toplam + '" data-nov="' + nd.nov + '"></td>' +
-                '<td>' + istifade + '</td>' +
-                '<td class="mb-edit-qaliq">' + qaliq + '</td>';
-            tbody.appendChild(tr);
-
-            // Real-time qalıq hesablama
-            var input = tr.querySelector('input');
-            var qaliqTd = tr.querySelector('.mb-edit-qaliq');
-            input.addEventListener('input', function () {
-                var newToplam = parseInt(this.value) || 0;
-                qaliqTd.textContent = newToplam - istifade;
-            });
-        });
+        cariIlMetn.textContent = currentIl;
 
         overlay.classList.add('mb-modal-overlay--active');
+        await loadBalanslari();
     }
 
-    function closeModal() {
-        if (overlay) {
-            overlay.classList.remove('mb-modal-overlay--active');
+    function closeModal() { if (overlay) overlay.classList.remove('mb-modal-overlay--active'); }
+
+    async function loadBalanslari() {
+        illikTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">— yüklənir —</td></tr>';
+        digerTbody.innerHTML = '';
+        if (loadingInd) loadingInd.style.display = 'inline';
+
+        try {
+            const resp = await fetch('/HR/MezuniyyetBalans/IsciBalanslari?isciId=' + currentIsciId);
+            const data = await resp.json();
+            if (!data.success) {
+                showToast(data.message || 'Məlumat yüklənmədi.', 'error');
+                return;
+            }
+
+            const illik = data.balanslar.filter(b => b.nov === 1).sort((a, b) => b.il - a.il);
+            renderIllik(illik);
+
+            const diger = data.balanslar.filter(b => b.nov !== 1 && b.il === currentIl);
+            renderDiger(diger);
+        } catch (err) {
+            showToast('Server xətası baş verdi.', 'error');
+        } finally {
+            if (loadingInd) loadingInd.style.display = 'none';
         }
     }
 
-    // Edit button click delegation
+    // ── İllik cədvəli renderi ────────────────────────────
+    function renderIllik(balanslar) {
+        if (!balanslar.length) {
+            illikTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">Heç bir il üçün İllik balansı yoxdur</td></tr>';
+            return;
+        }
+
+        illikTbody.innerHTML = '';
+        balanslar.forEach(function (b) {
+            const tr = document.createElement('tr');
+            const isActiveYear = b.il === currentIl;
+            tr.innerHTML =
+                '<td style="font-weight:700' + (isActiveYear ? ';color:#1e40af' : '') + '">' +
+                    b.il + (isActiveYear ? ' <span style="font-size:10px;background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:8px;margin-left:4px">cari</span>' : '') +
+                '</td>' +
+                '<td><input type="number" class="mb-edit-input mb-illik-toplam" min="' + b.istifade + '" value="' + b.toplamGun + '" data-balans-id="' + b.id + '" data-istifade="' + b.istifade + '" style="width:80px"></td>' +
+                '<td style="text-align:center">' + b.istifade + '</td>' +
+                '<td class="mb-edit-qaliq" style="text-align:center;font-weight:700">' + b.qaliq + '</td>' +
+                '<td><button type="button" class="mb-btn-save mb-illik-save" data-balans-id="' + b.id + '" style="padding:4px 10px;font-size:11px">Saxla</button></td>';
+            illikTbody.appendChild(tr);
+
+            const input = tr.querySelector('.mb-illik-toplam');
+            const qaliqTd = tr.querySelector('.mb-edit-qaliq');
+            input.addEventListener('input', function () {
+                const newT = parseInt(this.value) || 0;
+                qaliqTd.textContent = newT - b.istifade;
+            });
+
+            tr.querySelector('.mb-illik-save').addEventListener('click', async function () {
+                const btn = this;
+                const newT = parseInt(input.value) || 0;
+                if (newT < b.istifade) {
+                    showToast('Toplam istifadədən az ola bilməz (' + b.istifade + ' gün istifadə olunub).', 'error');
+                    return;
+                }
+                btn.disabled = true; btn.textContent = '...';
+                try {
+                    const resp = await fetch('/HR/MezuniyyetBalans/Update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'id=' + b.id + '&toplamGun=' + newT
+                    });
+                    const r = await resp.json();
+                    if (r.success) {
+                        showToast(b.il + '-ci il balansı yeniləndi.', 'success');
+                        b.toplamGun = newT;
+                        b.qaliq = r.qaliqGun;
+                    } else {
+                        showToast(r.message, 'error');
+                    }
+                } catch (e) {
+                    showToast('Server xətası.', 'error');
+                }
+                btn.disabled = false; btn.textContent = 'Saxla';
+            });
+        });
+    }
+
+    // ── Xəstəlik / Ezamiyyət cədvəli (cari il) ───────────
+    function renderDiger(balanslar) {
+        digerTbody.innerHTML = '';
+        [2, 3].forEach(function (nov) {
+            const b = balanslar.find(x => x.nov === nov);
+            const tr = document.createElement('tr');
+
+            if (!b) {
+                // Yeni yarat — CreateOrUpdate istifadə edə bilmək üçün mövcud illik-i saxlayırıq
+                tr.innerHTML =
+                    '<td><strong>' + novAdlari[nov] + '</strong></td>' +
+                    '<td><input type="number" class="mb-edit-input mb-diger-toplam" min="0" value="0" data-nov="' + nov + '" style="width:80px"></td>' +
+                    '<td style="text-align:center">0</td>' +
+                    '<td class="mb-edit-qaliq" style="text-align:center">0</td>' +
+                    '<td><button type="button" class="mb-btn-save mb-diger-save" data-nov="' + nov + '" style="padding:4px 10px;font-size:11px">Yarat</button></td>';
+            } else {
+                tr.innerHTML =
+                    '<td><strong>' + novAdlari[nov] + '</strong></td>' +
+                    '<td><input type="number" class="mb-edit-input mb-diger-toplam" min="' + b.istifade + '" value="' + b.toplamGun + '" data-balans-id="' + b.id + '" data-nov="' + nov + '" data-istifade="' + b.istifade + '" style="width:80px"></td>' +
+                    '<td style="text-align:center">' + b.istifade + '</td>' +
+                    '<td class="mb-edit-qaliq" style="text-align:center;font-weight:700">' + b.qaliq + '</td>' +
+                    '<td><button type="button" class="mb-btn-save mb-diger-save" data-balans-id="' + b.id + '" data-nov="' + nov + '" style="padding:4px 10px;font-size:11px">Saxla</button></td>';
+            }
+            digerTbody.appendChild(tr);
+
+            const input = tr.querySelector('.mb-diger-toplam');
+            const qaliqTd = tr.querySelector('.mb-edit-qaliq');
+            const istifadeVal = b ? b.istifade : 0;
+            input.addEventListener('input', function () {
+                const newT = parseInt(this.value) || 0;
+                qaliqTd.textContent = newT - istifadeVal;
+            });
+
+            tr.querySelector('.mb-diger-save').addEventListener('click', async function () {
+                const btn = this;
+                const newT = parseInt(input.value) || 0;
+                if (b && newT < b.istifade) {
+                    showToast('Toplam istifadədən az ola bilməz.', 'error');
+                    return;
+                }
+                btn.disabled = true; btn.textContent = '...';
+                try {
+                    // b varsa — Update, yoxdursa — CreateOrUpdate ilə yarat
+                    if (b) {
+                        const resp = await fetch('/HR/MezuniyyetBalans/Update', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: 'id=' + b.id + '&toplamGun=' + newT
+                        });
+                        const r = await resp.json();
+                        if (r.success) {
+                            showToast(novAdlari[nov] + ' yeniləndi.', 'success');
+                            b.toplamGun = newT;
+                            b.qaliq = r.qaliqGun;
+                        } else { showToast(r.message, 'error'); }
+                    } else {
+                        // CreateOrUpdate yalnız tam set göndərir — current il üçün İllik digər növü saxlaya bilmirik.
+                        // Sadə yol: backend-də yeni CreateSingle əvvəlcədən yazıldı.
+                        // Amma hələ CreateOrUpdate istifadə edirik — yalnız həmin novu 0 olmayan kimi göndəririk.
+                        // Digərləri 0 gəlsə də, onlar artıq yaradılıb. -1 göndərsək skip olur — 0-dan az olsa. Əlavə olaraq növü yaratmaq üçün sadə yol: AddIllikBalans nov 1 üçündür. Hazırda nov 2/3 yaratmaq üçün manual POST:
+                        const resp = await fetch('/HR/MezuniyyetBalans/CreateOrUpdate', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: 'isciId=' + currentIsciId + '&il=' + currentIl +
+                                  '&illikGun=-1' +
+                                  '&xestelikGun=' + (nov === 2 ? newT : -1) +
+                                  '&ezamiyyetGun=' + (nov === 3 ? newT : -1)
+                        });
+                        const r = await resp.json();
+                        if (r.success) {
+                            showToast(novAdlari[nov] + ' yaradıldı.', 'success');
+                            await loadBalanslari();
+                        } else { showToast(r.message, 'error'); }
+                    }
+                } catch (e) {
+                    showToast('Server xətası.', 'error');
+                }
+                btn.disabled = false;
+                btn.textContent = b ? 'Saxla' : 'Yarat';
+            });
+        });
+    }
+
+    // ── Yeni il əlavə et ─────────────────────────────────
+    if (yeniIlBtn) {
+        yeniIlBtn.addEventListener('click', async function () {
+            const il = parseInt(yeniIlInput.value) || 0;
+            const gun = parseInt(yeniToplamInput.value) || 0;
+            if (il < 2000 || il > 2030) {
+                showToast('İl düzgün daxil edilməlidir (2000–2030).', 'error'); return;
+            }
+            if (gun <= 0) {
+                showToast('Gün 0-dan böyük olmalıdır.', 'error'); return;
+            }
+            yeniIlBtn.disabled = true; yeniIlBtn.textContent = '...';
+            try {
+                const resp = await fetch('/HR/MezuniyyetBalans/AddIllikBalans', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'isciId=' + currentIsciId + '&il=' + il + '&toplamGun=' + gun
+                });
+                const r = await resp.json();
+                if (r.success) {
+                    showToast(r.message, 'success');
+                    yeniIlInput.value = '';
+                    yeniToplamInput.value = '';
+                    await loadBalanslari();
+                } else { showToast(r.message, 'error'); }
+            } catch (e) { showToast('Server xətası.', 'error'); }
+            yeniIlBtn.disabled = false; yeniIlBtn.textContent = 'Əlavə et';
+        });
+    }
+
+    // ── Edit button click delegation ─────────────────────
     document.addEventListener('click', function (e) {
         const btn = e.target.closest('.mb-btn-edit');
         if (!btn) return;
-
-        const isciId = btn.dataset.isciId;
-        const isciAd = btn.dataset.isciAd;
-        const il = btn.dataset.il || yearSelect.value;
-        let balanslar = [];
-        try {
-            balanslar = JSON.parse(btn.dataset.balanslar);
-        } catch (err) { }
-
-        openModal(isciId, isciAd, il, balanslar);
+        openModal(btn.dataset.isciId, btn.dataset.isciAd, btn.dataset.il || (yearSelect && yearSelect.value) || new Date().getFullYear());
     });
 
-    // Close modal
+    // ── Close ────────────────────────────────────────────
     if (overlay) {
         overlay.addEventListener('click', function (e) {
-            if (e.target === overlay) closeModal();
+            if (e.target === overlay) closeModalAndReload();
         });
     }
-
     const closeBtn = document.getElementById('mbModalClose');
-    if (closeBtn) closeBtn.addEventListener('click', closeModal);
-
+    if (closeBtn) closeBtn.addEventListener('click', closeModalAndReload);
     const cancelBtn = document.getElementById('mbModalCancel');
-    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModalAndReload);
 
-    // Escape key
     document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') closeModal();
+        if (e.key === 'Escape' && overlay && overlay.classList.contains('mb-modal-overlay--active')) {
+            closeModalAndReload();
+        }
     });
 
-    // ── Save Changes ─────────────────────────────────────
-    const saveBtn = document.getElementById('mbModalSave');
-    if (saveBtn) {
-        saveBtn.addEventListener('click', async function () {
-            var inputs = document.querySelectorAll('#mbEditTableBody .mb-edit-input');
-            var illikGun = 0, xestelikGun = 0, ezamiyyetGun = 0;
+    // Modal bağlananda — əgər redaktə olunub reload et ki cədvəl yenilənsin
+    let modalDirty = false;
+    document.addEventListener('click', function (e) {
+        if (e.target.classList.contains('mb-illik-save') ||
+            e.target.classList.contains('mb-diger-save') ||
+            e.target.id === 'mbYeniIlElaveEt') {
+            modalDirty = true;
+        }
+    });
 
-            inputs.forEach(function (input) {
-                var nov = parseInt(input.dataset.nov);
-                var val = parseInt(input.value) || 0;
-                if (nov === 1) illikGun = val;
-                if (nov === 2) xestelikGun = val;
-                if (nov === 3) ezamiyyetGun = val;
-            });
-
-            saveBtn.disabled = true;
-            saveBtn.textContent = 'Saxlanılır...';
-
-            try {
-                var body = 'isciId=' + currentIsciId +
-                    '&il=' + currentIl +
-                    '&illikGun=' + illikGun +
-                    '&xestelikGun=' + xestelikGun +
-                    '&ezamiyyetGun=' + ezamiyyetGun;
-
-                var resp = await fetch('/HR/MezuniyyetBalans/CreateOrUpdate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: body
-                });
-                var result = await resp.json();
-
-                if (result.success) {
-                    showToast(result.message, 'success');
-                    closeModal();
-                    setTimeout(function () { location.reload(); }, 800);
-                } else {
-                    showToast(result.message, 'error');
-                }
-            } catch (err) {
-                showToast('Server xətası baş verdi.', 'error');
-            }
-
-            saveBtn.disabled = false;
-            saveBtn.textContent = 'Yadda saxla';
-        });
-    }
-
-    // ── Create New Year Balances ─────────────────────────
-    const createBtn = document.getElementById('mbCreateYearBtn');
-    if (createBtn) {
-        createBtn.addEventListener('click', function () {
-            const il = yearSelect ? yearSelect.value : new Date().getFullYear();
-            const ok = confirm(il + '-ci il ucun butun aktiv iscilere yeni balans yaradilsin?');
-            if (!ok) return;
-
-            createBtn.disabled = true;
-            createBtn.textContent = 'Yaradilir...';
-
-            fetch('/HR/MezuniyyetBalans/YeniIlBalansYarat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'il=' + il
-            })
-                .then(function (r) { return r.json(); })
-                .then(function (result) {
-                    if (result.success) {
-                        showToast(result.message, 'success');
-                        setTimeout(function () { location.reload(); }, 800);
-                    } else {
-                        showToast(result.message, 'error');
-                    }
-                })
-                .catch(function () {
-                    showToast('Server xetasi bas verdi.', 'error');
-                })
-                .finally(function () {
-                    createBtn.disabled = false;
-                    createBtn.innerHTML = '<i class="bi bi-plus-circle"></i> Yeni il balansi yarat';
-                });
-        });
+    function closeModalAndReload() {
+        closeModal();
+        if (modalDirty) {
+            setTimeout(function () { location.reload(); }, 300);
+        }
     }
 
 })();

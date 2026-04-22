@@ -6,16 +6,71 @@
 
     var secilmisIl = (int)ViewBag.SecilmisIl;
     var iller = (List<int>)ViewBag.Iller;
+    var evvelkiIller = ViewBag.EvvelkiIller as Dictionary<int, List<(int Il, int Qaliq)>>
+                     ?? new Dictionary<int, List<(int Il, int Qaliq)>>();
+    var standartGun = (int)(ViewBag.StandartIllikGun ?? 21);
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/hr/mezuniyyet-balans.css" asp-append-version="true" />
+    <style>
+        /* Təkmilləşdirmələr — yeni kompakt dizayn */
+        .mb-balance-block { display:flex; flex-direction:column; gap:6px; min-width:220px }
+        .mb-balance-main {
+            display:flex; align-items:baseline; justify-content:space-between;
+            font-size:12px; color:#64748b
+        }
+        .mb-balance-main .mb-qaliq-big {
+            font-size:18px; font-weight:800; color:#0f172a
+        }
+        .mb-balance-main .mb-qaliq-big .unit { font-size:11px; font-weight:500; color:#64748b; margin-left:3px }
+        .mb-balance-sub {
+            font-size:11px; color:#64748b; display:flex; gap:10px; flex-wrap:wrap
+        }
+        .mb-balance-sub span strong { color:#0f172a; font-weight:600 }
+        .mb-carryover {
+            font-size:11px; color:#1e40af; background:#eff6ff; padding:3px 8px;
+            border-radius:10px; display:inline-flex; align-items:center; gap:4px;
+            border:1px solid #dbeafe; width:max-content
+        }
+        .mb-prog {
+            height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden; position:relative
+        }
+        .mb-prog__bar { height:100%; border-radius:3px; transition:width .3s }
+        .mb-prog__bar--green { background:linear-gradient(90deg,#16a34a,#22c55e) }
+        .mb-prog__bar--yellow { background:linear-gradient(90deg,#f59e0b,#fbbf24) }
+        .mb-prog__bar--red { background:linear-gradient(90deg,#dc2626,#ef4444) }
+        .mb-prev-years {
+            display:flex; flex-direction:column; gap:3px; min-width:140px
+        }
+        .mb-prev-year-row {
+            display:flex; justify-content:space-between; align-items:center;
+            font-size:11px; padding:2px 8px; background:#f8fafc;
+            border-radius:4px; border:1px solid #e2e8f0
+        }
+        .mb-prev-year-row .il { color:#64748b; font-weight:600 }
+        .mb-prev-year-row .gun { color:#0f172a; font-weight:700 }
+        .mb-prev-empty { font-size:11px; color:#cbd5e1; font-style:italic }
+        .mb-prev-cemi {
+            font-size:10px; color:#1e40af; font-weight:700; margin-top:2px;
+            padding:2px 8px; background:#eff6ff; border-radius:4px; display:inline-block
+        }
+        .mb-small-num { font-size:14px; font-weight:700; color:#0f172a }
+        .mb-used-cell { text-align:center }
+    </style>
 }
 
 <div class="mb-page">
     <!-- Header -->
     <div class="mb-header">
-        <h2>Məzuniyyət Balansı İdarəetməsi</h2>
+        <div>
+            <h2 style="margin-bottom:4px">Məzuniyyət Balansı</h2>
+            <div style="font-size:13px;color:#64748b">
+                @secilmisIl-ci il üçün işçilərin məzuniyyət balansları
+                <span style="margin:0 6px;color:#cbd5e1">·</span>
+                Standart illik norma: <strong style="color:#0f172a">@standartGun gün</strong>
+            </div>
+        </div>
         <div class="mb-controls">
             <select id="mbYearSelect" class="mb-year-select">
                 @foreach (var il in iller)
@@ -29,8 +84,8 @@
     <!-- Table Card -->
     <div class="mb-card">
         <div class="mb-card__header">
-            <h3 class="mb-card__title">@secilmisIl-ci il balansları</h3>
-            <span class="mb-card__badge">@Model.Count işçi</span>
+            <h3 class="mb-card__title">İşçilər (@Model.Count nəfər)</h3>
+            <span class="mb-card__badge">@secilmisIl</span>
         </div>
 
         @if (Model.Any())
@@ -39,12 +94,13 @@
                 <table class="mb-table">
                     <thead>
                         <tr>
-                            <th>İşçi</th>
+                            <th style="min-width:200px">İşçi</th>
                             <th>Departament</th>
-                            <th class="mb-table__th-center">İllik (T/İ/Q)</th>
-                            <th class="mb-table__th-center">Xəstəlik (gün)</th>
-                            <th class="mb-table__th-center">Ezamiyyət (gün)</th>
-                            <th>Əməliyyat</th>
+                            <th style="min-width:240px">İllik məzuniyyət (@secilmisIl)</th>
+                            <th style="min-width:180px">Əvvəlki illərdən qalan</th>
+                            <th class="mb-used-cell">Xəstəlik</th>
+                            <th class="mb-used-cell">Ezamiyyət</th>
+                            <th style="width:110px">Əməliyyat</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -58,7 +114,6 @@
                             var xestelik = balanslar.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Xestelik);
                             var ezamiyyet = balanslar.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Ezamiyyet);
 
-                            // JSON for edit modal
                             var balansJson = System.Text.Json.JsonSerializer.Serialize(balanslar.Select(b => new
                             {
                                 id = b.Id,
@@ -68,17 +123,112 @@
                                 qaliq = b.QaliqGun
                             }));
 
+                            // Cari il breakdown: əsas vs köçürülmüş
+                            int? kecirilmisGun = illik != null && illik.ToplamGun > standartGun
+                                ? illik.ToplamGun - standartGun
+                                : (int?)null;
+
+                            // Əvvəlki illərdən qalan
+                            var evvelkiQalan = evvelkiIller.TryGetValue(isci.Id, out var list) ? list : null;
+
                             <tr>
                                 <td>
                                     <div class="mb-isci-ad">@isci.Ad @isci.Soyad</div>
+                                    @if (!string.IsNullOrEmpty(isci.FIN))
+                                    {
+                                        <div style="font-size:10px;color:#94a3b8;margin-top:2px">FİN: @isci.FIN</div>
+                                    }
                                 </td>
                                 <td>
                                     <span class="mb-dept">@deptAd</span>
                                 </td>
 
-                                @{ await RenderBalanceCell(illik); }
-                                @{ await RenderUsedOnlyCell(xestelik); }
-                                @{ await RenderUsedOnlyCell(ezamiyyet); }
+                                @* ═══ İllik məzuniyyət (cari il) ═══ *@
+                                <td>
+                                    @if (illik == null)
+                                    {
+                                        <span class="mb-dept">— balans yoxdur —</span>
+                                    }
+                                    else
+                                    {
+                                        var pct = illik.ToplamGun > 0
+                                            ? (int)Math.Round((double)illik.QaliqGun / illik.ToplamGun * 100)
+                                            : 0;
+                                        var cls = pct > 50 ? "green" : (pct >= 20 ? "yellow" : "red");
+
+                                        <div class="mb-balance-block">
+                                            <div class="mb-balance-main">
+                                                <div class="mb-qaliq-big">@illik.QaliqGun<span class="unit">gün qalır</span></div>
+                                                <div>/ @illik.ToplamGun cəmi</div>
+                                            </div>
+                                            <div class="mb-prog">
+                                                <div class="mb-prog__bar mb-prog__bar--@cls" style="width:@(pct)%"></div>
+                                            </div>
+                                            <div class="mb-balance-sub">
+                                                <span>İstifadə: <strong>@illik.IstifadeOlunanGun</strong></span>
+                                                @if (kecirilmisGun.HasValue && kecirilmisGun.Value > 0)
+                                                {
+                                                    <span>Əsas: <strong>@standartGun</strong></span>
+                                                    <span>Köçürülmüş: <strong>@kecirilmisGun gün</strong></span>
+                                                }
+                                            </div>
+                                            @if (kecirilmisGun.HasValue && kecirilmisGun.Value > 0)
+                                            {
+                                                <div class="mb-carryover">
+                                                    ↪ @kecirilmisGun gün @(secilmisIl - 1)-dən köçürülüb
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </td>
+
+                                @* ═══ Əvvəlki illərdən qalan ═══ *@
+                                <td>
+                                    @if (evvelkiQalan == null || !evvelkiQalan.Any())
+                                    {
+                                        <span class="mb-prev-empty">— qalıq yoxdur —</span>
+                                    }
+                                    else
+                                    {
+                                        var cemi = evvelkiQalan.Sum(y => y.Qaliq);
+                                        <div class="mb-prev-years">
+                                            @foreach (var y in evvelkiQalan)
+                                            {
+                                                <div class="mb-prev-year-row">
+                                                    <span class="il">@y.Il</span>
+                                                    <span class="gun">@y.Qaliq gün</span>
+                                                </div>
+                                            }
+                                        </div>
+                                        <span class="mb-prev-cemi" title="Qeyd: bu günlər artıq cari ilə köçürülüb (maks. 5 gün qədər) — tarixçə informativdir">
+                                            Cəm: @cemi gün
+                                        </span>
+                                    }
+                                </td>
+
+                                @* ═══ Xəstəlik / Ezamiyyət ═══ *@
+                                <td class="mb-used-cell">
+                                    @if (xestelik == null)
+                                    {
+                                        <span class="mb-dept">—</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="mb-small-num">@xestelik.IstifadeOlunanGun</span>
+                                        <div style="font-size:10px;color:#94a3b8">gün istifadə</div>
+                                    }
+                                </td>
+                                <td class="mb-used-cell">
+                                    @if (ezamiyyet == null)
+                                    {
+                                        <span class="mb-dept">—</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="mb-small-num">@ezamiyyet.IstifadeOlunanGun</span>
+                                        <div style="font-size:10px;color:#94a3b8">gün istifadə</div>
+                                    }
+                                </td>
 
                                 <td>
                                     <button class="mb-btn-edit"
@@ -105,30 +255,80 @@
     </div>
 </div>
 
-<!-- Edit Modal -->
+<!-- Edit Modal — illərə görə redaktə + yeni il əlavə etmə -->
 <div id="mbModalOverlay" class="mb-modal-overlay">
-    <div class="mb-modal">
+    <div class="mb-modal" style="max-width:700px">
         <div class="mb-modal__header">
             <h3>Balans Redaktəsi</h3>
             <button id="mbModalClose" class="mb-modal__close">&times;</button>
         </div>
         <div class="mb-modal__body">
             <div id="mbModalIsciAd" class="mb-modal__isci-info"></div>
-            <table class="mb-edit-table">
-                <thead>
-                    <tr>
-                        <th>Məzuniyyət növü</th>
-                        <th>Toplam gün</th>
-                        <th>İstifadə</th>
-                        <th>Qalıq</th>
-                    </tr>
-                </thead>
-                <tbody id="mbEditTableBody"></tbody>
-            </table>
+
+            @* İllik məzuniyyət — illərə görə *@
+            <div style="margin-bottom:16px">
+                <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+                    <span>İllik məzuniyyət — illərə görə</span>
+                    <span id="mbLoadingIndicator" style="font-size:11px;color:#94a3b8;display:none">Yüklənir...</span>
+                </div>
+                <table class="mb-edit-table" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th style="width:80px">İl</th>
+                            <th>Toplam</th>
+                            <th>İstifadə</th>
+                            <th>Qalıq</th>
+                            <th style="width:90px">Əməliyyat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mbIllikTbody">
+                        <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">— yüklənir —</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            @* Yeni il əlavə et *@
+            <div style="padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:16px">
+                <div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:8px">
+                    <i class="bi bi-plus-circle"></i> Yeni il üçün İllik balans əlavə et
+                </div>
+                <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+                    <div style="flex:1;min-width:90px">
+                        <label style="font-size:10px;color:#64748b;display:block;margin-bottom:3px">İl</label>
+                        <input type="number" id="mbYeniIl" class="mb-edit-input" placeholder="Məs. 2023" min="2000" max="2030" style="width:100%" />
+                    </div>
+                    <div style="flex:2;min-width:120px">
+                        <label style="font-size:10px;color:#64748b;display:block;margin-bottom:3px">Toplam gün</label>
+                        <input type="number" id="mbYeniToplam" class="mb-edit-input" placeholder="Məs. 5" min="1" max="365" style="width:100%" />
+                    </div>
+                    <button id="mbYeniIlElaveEt" class="mb-btn-save" style="min-width:110px">Əlavə et</button>
+                </div>
+                <div style="font-size:10px;color:#94a3b8;margin-top:6px">
+                    Əgər həmin il üçün artıq balans varsa — günlər üstə gəlinəcək.
+                </div>
+            </div>
+
+            @* Cari ilin Xəstəlik / Ezamiyyət balansı *@
+            <div>
+                <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:8px">
+                    Cari il (<span id="mbCariIlMetn">—</span>) — digər növlər
+                </div>
+                <table class="mb-edit-table" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Növ</th>
+                            <th>Toplam gün</th>
+                            <th>İstifadə</th>
+                            <th>Qalıq</th>
+                            <th style="width:90px">Əməliyyat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mbDigerTbody"></tbody>
+                </table>
+            </div>
         </div>
         <div class="mb-modal__footer">
-            <button id="mbModalCancel" class="mb-btn-cancel">Ləğv et</button>
-            <button id="mbModalSave" class="mb-btn-save">Yadda saxla</button>
+            <button id="mbModalCancel" class="mb-btn-cancel">Bağla</button>
         </div>
     </div>
 </div>
@@ -138,53 +338,4 @@
 
 @section Scripts {
     <script src="~/js/hr/mezuniyyet-balans.js" asp-append-version="true"></script>
-}
-
-@functions {
-    async Task RenderUsedOnlyCell(MezuniyyetBalans? b)
-    {
-        if (b == null)
-        {
-            WriteLiteral("<td class=\"mb-balance-cell\"><span class=\"mb-dept\">—</span></td>");
-            return;
-        }
-
-        var istifade = b.IstifadeOlunanGun;
-        WriteLiteral($@"<td class=""mb-balance-cell"">
-            <div class=""mb-balance-nums"">
-                <span class=""mb-qaliq mb-qaliq--green"">{istifade} gün</span>
-            </div>
-        </td>");
-    }
-
-    async Task RenderBalanceCell(MezuniyyetBalans? b)
-    {
-        if (b == null)
-        {
-            WriteLiteral("<td class=\"mb-balance-cell\"><span class=\"mb-dept\">—</span></td>");
-            return;
-        }
-
-        var toplam = b.ToplamGun;
-        var istifade = b.IstifadeOlunanGun;
-        var qaliq = b.QaliqGun;
-        var pct = toplam > 0 ? (int)Math.Round((double)qaliq / toplam * 100) : 0;
-
-        string colorClass;
-        if (toplam == 0) colorClass = "green";
-        else if (pct > 50) colorClass = "green";
-        else if (pct >= 20) colorClass = "yellow";
-        else colorClass = "red";
-
-        WriteLiteral($@"<td class=""mb-balance-cell"">
-            <div class=""mb-balance-nums"">
-                <span class=""mb-toplam"">{toplam}</span>
-                <span class=""mb-istifade"">{istifade}</span>
-                <span class=""mb-qaliq mb-qaliq--{colorClass}"" data-qaliq=""{qaliq}"" data-toplam=""{toplam}"">{qaliq}</span>
-            </div>
-            <div class=""mb-progress"">
-                <div class=""mb-progress__bar mb-progress__bar--{colorClass}"" data-qaliq=""{qaliq}"" data-toplam=""{toplam}"" style=""width:{pct}%""></div>
-            </div>
-        </td>");
-    }
 }
