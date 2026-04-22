@@ -56,5 +56,35 @@ namespace FinNex.Application.Services.Kredit
             await _uow.Repository<KreditZamin>().YenileAsync(entity);
             await _uow.YaddaSaxlaAsync();
         }
+
+        public async Task MkrNeticesiYazAsync(int zaminId, string netice, int baxanIsciId)
+        {
+            var z = await _uow.Repository<KreditZamin>().IdIleGetirAsync(zaminId)
+                ?? throw new InvalidOperationException("Zamin tapılmadı.");
+            if (z.Silinib) throw new InvalidOperationException("Zamin silinib.");
+
+            z.MkrNeticesi = netice;
+            z.MkrBaxilmaTarixi = DateTime.Now;
+            z.MkrBaxanIsciId = baxanIsciId;
+            z.YenileyenIcraciId = baxanIsciId;
+            z.YenilenmeTarixi = DateTime.Now;
+            await _uow.Repository<KreditZamin>().YenileAsync(z);
+            await _uow.YaddaSaxlaAsync();
+        }
+
+        public async Task AsanFinanceNeticesiYazAsync(int zaminId, string netice, int baxanIsciId)
+        {
+            var z = await _uow.Repository<KreditZamin>().IdIleGetirAsync(zaminId)
+                ?? throw new InvalidOperationException("Zamin tapılmadı.");
+            if (z.Silinib) throw new InvalidOperationException("Zamin silinib.");
+
+            z.AsanFinanceNeticesi = netice;
+            z.AsanFinanceBaxilmaTarixi = DateTime.Now;
+            z.AsanFinanceBaxanIsciId = baxanIsciId;
+            z.YenileyenIcraciId = baxanIsciId;
+            z.YenilenmeTarixi = DateTime.Now;
+            await _uow.Repository<KreditZamin>().YenileAsync(z);
+            await _uow.YaddaSaxlaAsync();
+        }
     }
 }

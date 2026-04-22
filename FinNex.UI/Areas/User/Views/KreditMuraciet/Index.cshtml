@@ -63,12 +63,14 @@
                     <thead>
                         <tr>
                             <th style="width:45px">#</th>
-                            <th style="width:28%">Ad Soyad</th>
-                            <th style="width:12%">Məbləğ</th>
-                            <th style="width:10%">Müddət</th>
-                            <th style="width:13%">Telefon</th>
-                            <th style="width:14%">Tarix</th>
-                            <th style="width:10%">Status</th>
+                            <th style="width:24%">Ad Soyad</th>
+                            <th style="width:10%">Məbləğ</th>
+                            <th style="width:8%">Müddət</th>
+                            <th style="width:11%">Telefon</th>
+                            <th style="width:12%">Tarix</th>
+                            <th style="width:9%">Status</th>
+                            <th style="width:60px;text-align:center" title="SMS">📨</th>
+                            <th style="width:80px;text-align:center" title="Randevu">📅</th>
                             <th style="width:50px"></th>
                         </tr>
                     </thead>
@@ -91,14 +93,46 @@
                             var menbeBadge = m.Menbe == KreditMuracietMenbe.Filial
                                 ? "<span class=\"km-menbe km-menbe--filial\">Filial</span>"
                                 : "<span class=\"km-menbe km-menbe--online\">Online</span>";
-                            <tr class="km-row" onclick="location.href='@Url.Action("Detail", new { id = m.Id })'">
-                                <td class="km-td-id">@m.Id</td>
-                                <td class="km-td-name">@ad @Html.Raw(menbeBadge)</td>
-                                <td class="km-td-amount">@m.KreditMeblegi.ToString("N0") <small>@m.Valyuta</small></td>
-                                <td>@mud</td>
-                                <td>@tel</td>
-                                <td class="km-td-date">@m.MuracietTarixi.ToString("dd.MM.yyyy HH:mm")</td>
-                                <td><span class="km-status @statusCls">@statusAd</span></td>
+
+                            var smsSay = m.SmsLoglar?.Count(s => !s.Silinib) ?? 0;
+                            var randevu = m.Randevu != null && !m.Randevu.Silinib ? m.Randevu : null;
+                            var randevuRengi = randevu switch {
+                                null => "#cbd5e1",
+                                { Status: KreditRandevuStatus.Gelib } => "#16a34a",
+                                { Status: KreditRandevuStatus.Gelmeyib } => "#dc2626",
+                                { Status: KreditRandevuStatus.Legv } => "#94a3b8",
+                                { Status: KreditRandevuStatus.Tehxir } => "#f59e0b",
+                                _ => "#2563eb"
+                            };
+
+                            <tr class="km-row">
+                                <td class="km-td-id" onclick="location.href='@Url.Action("Detail", new { id = m.Id })'">@m.Id</td>
+                                <td class="km-td-name" onclick="location.href='@Url.Action("Detail", new { id = m.Id })'">@ad @Html.Raw(menbeBadge)</td>
+                                <td class="km-td-amount" onclick="location.href='@Url.Action("Detail", new { id = m.Id })'">@m.KreditMeblegi.ToString("N0") <small>@m.Valyuta</small></td>
+                                <td onclick="location.href='@Url.Action("Detail", new { id = m.Id })'">@mud</td>
+                                <td onclick="location.href='@Url.Action("Detail", new { id = m.Id })'">@tel</td>
+                                <td class="km-td-date" onclick="location.href='@Url.Action("Detail", new { id = m.Id })'">@m.MuracietTarixi.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td onclick="location.href='@Url.Action("Detail", new { id = m.Id })'"><span class="km-status @statusCls">@statusAd</span></td>
+                                <td style="text-align:center" onclick="event.stopPropagation()">
+                                    <a asp-action="Sms" asp-route-id="@m.Id"
+                                       title="@(smsSay > 0 ? $"{smsSay} SMS göndərilib" : "SMS göndərilməyib")"
+                                       style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:12px;text-decoration:none;
+                                              background:@(smsSay > 0 ? "#dbeafe" : "#f1f5f9");
+                                              color:@(smsSay > 0 ? "#1e40af" : "#94a3b8");
+                                              font-size:12px;font-weight:600">
+                                        📨 @(smsSay > 0 ? smsSay.ToString() : "0")
+                                    </a>
+                                </td>
+                                <td style="text-align:center" onclick="event.stopPropagation()">
+                                    <a asp-action="Randevu" asp-route-id="@m.Id"
+                                       title="@(randevu != null ? $"{randevu.Tarix:dd.MM HH:mm}" : "Randevu yoxdur")"
+                                       style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:12px;text-decoration:none;
+                                              background:@(randevu != null ? "#eff6ff" : "#f1f5f9");
+                                              color:@randevuRengi;
+                                              font-size:12px;font-weight:600">
+                                        📅 @(randevu != null ? randevu.Tarix.ToString("dd.MM") : "—")
+                                    </a>
+                                </td>
                                 <td><a asp-action="Detail" asp-route-id="@m.Id" class="km-detail-btn">Bax</a></td>
                             </tr>
                         }

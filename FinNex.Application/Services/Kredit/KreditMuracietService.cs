@@ -42,6 +42,8 @@ namespace FinNex.Application.Services.Kredit
             if (baxanIsciId.HasValue) q = q.Where(x => x.BaxanIsciId == baxanIsciId.Value);
 
             return await q.Include(x => x.BaxanIsci)
+                          .Include(x => x.Randevu)
+                          .Include(x => x.SmsLoglar.Where(s => !s.Silinib))
                           .OrderByDescending(x => x.MuracietTarixi)
                           .ToListAsync();
         }

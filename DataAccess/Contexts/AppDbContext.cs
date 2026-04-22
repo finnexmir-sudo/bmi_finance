@@ -979,6 +979,18 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         builder.Entity<FinNex.Domain.Entities.Kredit.KreditZamin>()
             .HasIndex(x => x.FIN);
 
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditZamin>()
+            .HasOne(x => x.MkrBaxanIsci)
+            .WithMany()
+            .HasForeignKey(x => x.MkrBaxanIsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<FinNex.Domain.Entities.Kredit.KreditZamin>()
+            .HasOne(x => x.AsanFinanceBaxanIsci)
+            .WithMany()
+            .HasForeignKey(x => x.AsanFinanceBaxanIsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // ── Kredit Randevu ────────────────────────────────────
         builder.Entity<FinNex.Domain.Entities.Kredit.KreditRandevu>()
             .HasOne(x => x.KreditMuraciet)

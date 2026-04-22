@@ -54,8 +54,17 @@
             </div>
             <div class="fn-page-sub">@Model.MuracietTarixi.ToString("dd.MM.yyyy HH:mm")</div>
         </div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
             <a asp-action="Index" class="fn-btn fn-btn--outline">← Geri</a>
+            <a asp-action="Sms" asp-route-id="@Model.Id" class="fn-btn fn-btn--outline" title="SMS tarixçəsi və göndərmə">
+                📨 SMS @(smsLoglar.Any() ? $"({smsLoglar.Count})" : "")
+            </a>
+            @if (Model.Status == KreditMuracietStatus.Tesdiqlenib)
+            {
+                <a asp-action="Randevu" asp-route-id="@Model.Id" class="fn-btn fn-btn--outline" title="Banka randevusu">
+                    📅 Randevu @(randevu != null ? randevu.Tarix.ToString("dd.MM HH:mm") : "")
+                </a>
+            }
             @if (isAdmin)
             {
                 <form asp-action="Delete" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Bu müraciəti silmək istəyirsiniz?')">
@@ -144,7 +153,7 @@
                 <input type="hidden" name="id" value="@Model.Id" />
                 <div style="display:flex;gap:8px;align-items:flex-start">
                     <textarea name="netice" class="fn-input" rows="2" placeholder="MKR nəticəsini daxil edin..." style="flex:1" required>@Model.MkrNeticesi</textarea>
-                    <button type="submit" class="fn-btn fn-btn--primary" style="white-space:nowrap">Yadda saxla</button>
+                    <button type="submit" class="fn-btn fn-btn--primary" style="white-space:nowrap">MKR</button>
                 </div>
             </form>
         }
@@ -167,7 +176,7 @@
                 <input type="hidden" name="id" value="@Model.Id" />
                 <div style="display:flex;gap:8px;align-items:flex-start">
                     <textarea name="netice" class="fn-input" rows="2" placeholder="AsanFinance nəticəsini daxil edin..." style="flex:1" required>@Model.AsanFinanceNeticesi</textarea>
-                    <button type="submit" class="fn-btn fn-btn--primary" style="white-space:nowrap">Yadda saxla</button>
+                    <button type="submit" class="fn-btn fn-btn--primary" style="white-space:nowrap">AsanFinance</button>
                 </div>
             </form>
         }
@@ -178,18 +187,17 @@
         <div class="km-detail-section-title">Zaminlər (@zaminler.Count)</div>
         @if (zaminler.Any())
         {
-            <table class="km-table">
-                <thead><tr><th>Ad Soyad</th><th>FİN</th><th>Telefon</th><th>İş yeri</th><th>Əmək haqqı</th><th></th></tr></thead>
-                <tbody>
-                    @foreach (var z in zaminler)
-                    {
-                        <tr>
-                            <td class="km-td-name">@z.AdSoyadAtaAdi</td>
-                            <td>@(z.FIN ?? "—")</td>
-                            <td>@(z.Telefon ?? "—")</td>
-                            <td>@(z.IsYeri ?? "—")</td>
-                            <td>@(z.EmekHaqqi?.ToString("N0") ?? "—") AZN</td>
-                            <td>
+            <div style="display:flex;flex-direction:column;gap:12px">
+                @foreach (var z in zaminler)
+                {
+                    <div style="padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px">
+                        <div style="display:grid;grid-template-columns:repeat(5,1fr) auto;gap:12px;align-items:start">
+                            <div><div style="font-size:10px;color:#94a3b8;text-transform:uppercase">Ad Soyad</div><div style="font-weight:600;font-size:13px">@z.AdSoyadAtaAdi</div></div>
+                            <div><div style="font-size:10px;color:#94a3b8;text-transform:uppercase">FİN</div><div style="font-size:13px">@(z.FIN ?? "—")</div></div>
+                            <div><div style="font-size:10px;color:#94a3b8;text-transform:uppercase">Telefon</div><div style="font-size:13px">@(z.Telefon ?? "—")</div></div>
+                            <div><div style="font-size:10px;color:#94a3b8;text-transform:uppercase">İş yeri</div><div style="font-size:13px">@(z.IsYeri ?? "—")</div></div>
+                            <div><div style="font-size:10px;color:#94a3b8;text-transform:uppercase">Əmək haqqı</div><div style="font-size:13px">@(z.EmekHaqqi?.ToString("N0") ?? "—") AZN</div></div>
+                            <div>
                                 @if (Model.Status <= KreditMuracietStatus.KomiteyeGonderildi)
                                 {
                                     <form asp-action="ZaminSil" method="post" style="display:inline" onsubmit="return confirm('Zamin silinsin?')">
@@ -198,11 +206,62 @@
                                         <button type="submit" class="fn-btn fn-btn--sm" style="color:#dc2626;border:1px solid #fecaca;background:#fff">Sil</button>
                                     </form>
                                 }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                            </div>
+                        </div>
+
+                        @* Zamin MKR + AsanFinance *@
+                        <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                            @* MKR *@
+                            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:10px">
+                                <div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:6px">MKR</div>
+                                @if (!string.IsNullOrWhiteSpace(z.MkrNeticesi))
+                                {
+                                    <div style="white-space:pre-wrap;font-size:12px;color:#0f172a">@z.MkrNeticesi</div>
+                                    <div style="font-size:10px;color:#94a3b8;margin-top:4px">
+                                        @z.MkrBaxilmaTarixi?.ToString("dd.MM.yyyy HH:mm") ·
+                                        @(z.MkrBaxanIsci != null ? $"{z.MkrBaxanIsci.Ad} {z.MkrBaxanIsci.Soyad}" : "")
+                                    </div>
+                                }
+                                @if (Model.Status <= KreditMuracietStatus.KomiteyeGonderildi)
+                                {
+                                    <form asp-action="ZaminMkrYaz" method="post" style="margin-top:6px">
+                                        <input type="hidden" name="zaminId" value="@z.Id" />
+                                        <input type="hidden" name="muracietId" value="@Model.Id" />
+                                        <div style="display:flex;gap:6px;align-items:flex-start">
+                                            <textarea name="netice" class="fn-input" rows="1" placeholder="Zamin MKR nəticəsi..." style="flex:1;font-size:12px" required>@z.MkrNeticesi</textarea>
+                                            <button type="submit" class="fn-btn fn-btn--sm fn-btn--primary">MKR</button>
+                                        </div>
+                                    </form>
+                                }
+                            </div>
+
+                            @* AsanFinance *@
+                            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:10px">
+                                <div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:6px">AsanFinance</div>
+                                @if (!string.IsNullOrWhiteSpace(z.AsanFinanceNeticesi))
+                                {
+                                    <div style="white-space:pre-wrap;font-size:12px;color:#0f172a">@z.AsanFinanceNeticesi</div>
+                                    <div style="font-size:10px;color:#94a3b8;margin-top:4px">
+                                        @z.AsanFinanceBaxilmaTarixi?.ToString("dd.MM.yyyy HH:mm") ·
+                                        @(z.AsanFinanceBaxanIsci != null ? $"{z.AsanFinanceBaxanIsci.Ad} {z.AsanFinanceBaxanIsci.Soyad}" : "")
+                                    </div>
+                                }
+                                @if (Model.Status <= KreditMuracietStatus.KomiteyeGonderildi)
+                                {
+                                    <form asp-action="ZaminAsanFinanceYaz" method="post" style="margin-top:6px">
+                                        <input type="hidden" name="zaminId" value="@z.Id" />
+                                        <input type="hidden" name="muracietId" value="@Model.Id" />
+                                        <div style="display:flex;gap:6px;align-items:flex-start">
+                                            <textarea name="netice" class="fn-input" rows="1" placeholder="Zamin AsanFinance nəticəsi..." style="flex:1;font-size:12px" required>@z.AsanFinanceNeticesi</textarea>
+                                            <button type="submit" class="fn-btn fn-btn--sm fn-btn--primary">AsanFinance</button>
+                                        </div>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
         }
         else
         {
@@ -310,100 +369,7 @@
         </div>
     }
 
-    @* ══════ Randevu — yalnız təsdiqlənmiş müraciət üçün ══════ *@
-    @if (Model.Status == KreditMuracietStatus.Tesdiqlenib)
-    {
-        <div class="fn-card km-detail-card">
-            <div class="km-detail-section-title">Banka randevusu</div>
-            @if (randevu != null)
-            {
-                <div class="km-detail-row"><span class="km-detail-label">Tarix & saat</span><span class="km-detail-value km-val-bold">@randevu.Tarix.ToString("dd.MM.yyyy HH:mm")</span></div>
-                <div class="km-detail-row"><span class="km-detail-label">Müddət</span><span class="km-detail-value">@randevu.MuddetDeqiqe dəqiqə</span></div>
-                <div class="km-detail-row"><span class="km-detail-label">Status</span><span class="km-detail-value">@RandevuText(randevu.Status)</span></div>
-                @if (!string.IsNullOrEmpty(randevu.Qeyd))
-                {
-                    <div class="km-detail-row"><span class="km-detail-label">Qeyd</span><span class="km-detail-value">@randevu.Qeyd</span></div>
-                }
-                <div style="margin-top:10px">
-                    <a asp-action="Randevular" asp-route-gun="@randevu.Tarix.ToString("yyyy-MM-dd")" class="fn-btn fn-btn--outline fn-btn--sm">Gündəki randevular</a>
-                </div>
-            }
-            <details style="margin-top:10px">
-                <summary style="cursor:pointer;font-size:13px;font-weight:600;color:#2563eb">@(randevu == null ? "+ Randevu təyin et" : "Randevunu dəyiş")</summary>
-                <form asp-action="RandevuTeyin" method="post" style="margin-top:10px">
-                    <input type="hidden" name="muracietId" value="@Model.Id" />
-                    <div class="km-qerar-grid-4" style="grid-template-columns:repeat(3,1fr)">
-                        <div class="fn-form-group">
-                            <label class="fn-label">Tarix & saat *</label>
-                            <input type="datetime-local" name="tarix" class="fn-input" required
-                                   value="@((randevu?.Tarix ?? DateTime.Today.AddDays(1).AddHours(10)).ToString("yyyy-MM-ddTHH:mm"))" />
-                        </div>
-                        <div class="fn-form-group">
-                            <label class="fn-label">Müddət (dəq)</label>
-                            <input type="number" name="muddetDeqiqe" class="fn-input" value="@(randevu?.MuddetDeqiqe ?? 30)" min="5" />
-                        </div>
-                        <div class="fn-form-group" style="grid-column:1/-1">
-                            <label class="fn-label">Qeyd</label>
-                            <input type="text" name="qeyd" class="fn-input" value="@randevu?.Qeyd" />
-                        </div>
-                    </div>
-                    <div style="margin-top:10px;text-align:right">
-                        <button type="submit" class="fn-btn fn-btn--primary">@(randevu == null ? "Randevu təyin et" : "Randevunu yenilə")</button>
-                    </div>
-                </form>
-            </details>
-        </div>
-    }
-
-    @* ══════ SMS ══════ *@
-    <div class="fn-card km-detail-card">
-        <div class="km-detail-section-title">SMS</div>
-        @if (smsLoglar.Any())
-        {
-            <table class="km-table" style="font-size:12px">
-                <thead><tr><th style="width:140px">Tarix</th><th style="width:120px">Telefon</th><th>Mətn</th><th style="width:100px">Status</th></tr></thead>
-                <tbody>
-                    @foreach (var s in smsLoglar.OrderByDescending(x => x.YaradilmaTarixi))
-                    {
-                        <tr>
-                            <td>@s.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</td>
-                            <td>@s.Telefon</td>
-                            <td style="white-space:normal">@s.Metn</td>
-                            <td>@s.Status</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
-        <details style="margin-top:10px">
-            <summary style="cursor:pointer;font-size:13px;font-weight:600;color:#2563eb">+ SMS göndər</summary>
-            <form asp-action="SmsGonder" method="post" style="margin-top:10px">
-                <input type="hidden" name="muracietId" value="@Model.Id" />
-                <div class="km-qerar-grid-4" style="grid-template-columns:repeat(2,1fr)">
-                    <div class="fn-form-group">
-                        <label class="fn-label">Telefon *</label>
-                        <input type="text" name="telefon" class="fn-input" value="@Model.Telefon" required />
-                    </div>
-                    <div class="fn-form-group">
-                        <label class="fn-label">Şablon</label>
-                        <select name="sablon" class="fn-input" onchange="if(this.value){document.getElementById('smsMetn').value=this.dataset.m=this.options[this.selectedIndex].dataset.metn}">
-                            <option value="">— Seç —</option>
-                            <option value="Tesdiq" data-metn="Hörmətli @Model.AdSoyadAtaAdi, kredit müraciətiniz təsdiqləndi. Sənədləşmə üçün banka müraciət edin.">Təsdiq</option>
-                            <option value="Redd" data-metn="Hörmətli @Model.AdSoyadAtaAdi, kredit müraciətiniz rədd edildi.">Rədd</option>
-                            <option value="Randevu" data-metn="Hörmətli @Model.AdSoyadAtaAdi, banka gəlmə vaxtınız: ... . Zəhmət olmasa şəxsiyyət vəsiqəsi ilə gələsiniz.">Randevu</option>
-                        </select>
-                    </div>
-                    <div class="fn-form-group" style="grid-column:1/-1">
-                        <label class="fn-label">Mətn *</label>
-                        <textarea name="metn" id="smsMetn" class="fn-input" rows="3" required></textarea>
-                    </div>
-                </div>
-                <div style="margin-top:10px;text-align:right">
-                    <button type="submit" class="fn-btn fn-btn--primary">Göndər</button>
-                </div>
-            </form>
-        </details>
-    </div>
+    @* SMS və Randevu bölmələri ayrı səhifələrə köçürülüb — yuxarıdakı action button-lardan açılır *@
 </div>
 
 @section Styles {

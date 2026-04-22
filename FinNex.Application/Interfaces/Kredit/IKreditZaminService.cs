@@ -19,5 +19,15 @@ namespace FinNex.Application.Interfaces.Kredit
 
         Task<KreditZamin> YaratAsync(KreditZamin entity, int? yaradanIcraciId);
         Task SilAsync(int zaminId, int? silenIcraciId);
+
+        /// <summary>
+        /// Zamin üçün MKR nəticəsini yazır (manual — gələcəkdə API ilə əvəz olunacaq).
+        /// </summary>
+        Task MkrNeticesiYazAsync(int zaminId, string netice, int baxanIsciId);
+
+        /// <summary>
+        /// Zamin üçün AsanFinance nəticəsini yazır.
+        /// </summary>
+        Task AsanFinanceNeticesiYazAsync(int zaminId, string netice, int baxanIsciId);
     }
 }
