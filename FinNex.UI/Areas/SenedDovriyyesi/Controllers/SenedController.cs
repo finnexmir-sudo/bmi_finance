@@ -182,7 +182,8 @@ public class SenedController : Controller
     // ── INDEX ─────────────────────────────────────────────────────
     public async Task<IActionResult> Index(
         int? sobeId, int? senedNovuId, int? tagId, SenedStatusu? status,
-        string? q, int page = 1, int pageSize = 20)
+        string? q, int page = 1, int pageSize = 20,
+        string? sortBy = null, string? sortDir = null)
     {
         var icazeliSobeIdleri = await GetIcazeliSobeIdleriAsync();
 
@@ -191,7 +192,7 @@ public class SenedController : Controller
 
         var result = await _senedService.GetPagedAsync(
             new PagedRequest { Page = page, PageSize = pageSize },
-            icazeliSobeIdleri, sobeId, senedNovuId, status, q, tagId);
+            icazeliSobeIdleri, sobeId, senedNovuId, status, q, tagId, sortBy, sortDir);
 
         var vm = new SenedListVM
         {
@@ -201,7 +202,9 @@ public class SenedController : Controller
             SenedNovuId = senedNovuId,
             TagId = tagId,
             Status = status,
-            AxtarisKelimesi = q
+            AxtarisKelimesi = q,
+            SortBy = sortBy,
+            SortDir = sortDir
         };
 
         if (result.Success && result.Data != null)
@@ -217,6 +220,7 @@ public class SenedController : Controller
                 Sobe = x.Sobe,
                 SenedNovu = x.SenedNovu,
                 FaylSayi = x.FaylSayi,
+                SenedTarixi = x.SenedTarixi,
                 YaradilmaTarixi = x.YaradilmaTarixi
             }).ToList();
         }
@@ -262,6 +266,7 @@ public class SenedController : Controller
                 Sobe = x.Sobe,
                 SenedNovu = x.SenedNovu,
                 FaylSayi = x.FaylSayi,
+                SenedTarixi = x.SenedTarixi,
                 YaradilmaTarixi = x.YaradilmaTarixi
             }).ToList();
         }
@@ -292,6 +297,23 @@ public class SenedController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Yarat(SenedCreateVM vm)
     {
+        // Fayllar və ya tək fayl — hər hansı biri seçilibsə keç.
+        var fayllar = (vm.Fayllar ?? new List<IFormFile>())
+            .Where(f => f != null && f.Length > 0)
+            .ToList();
+        if (fayllar.Count == 0 && vm.Fayl != null && vm.Fayl.Length > 0)
+            fayllar.Add(vm.Fayl);
+
+        if (fayllar.Count == 0)
+            ModelState.AddModelError(nameof(vm.Fayllar), "Ən azı bir fayl yüklənməlidir.");
+        else
+        {
+            // Fayllar validasiyaya görə bu ana qədər səhvli göstərilə bilərdi,
+            // indi ki en azı bir fayl var, səhvi çıxartmaq üçün modeli təmizləyirik.
+            ModelState.Remove(nameof(vm.Fayl));
+            ModelState.Remove(nameof(vm.Fayllar));
+        }
+
         if (!ModelState.IsValid)
         {
             await LoadCreateDropdowns(vm);
@@ -312,7 +334,8 @@ public class SenedController : Controller
             SenedNovuId = vm.SenedNovuId,
             Basliq = vm.Basliq,
             AcarSoz = vm.AcarSoz,
-            TagIds = vm.TagIds ?? new List<int>()
+            TagIds = vm.TagIds ?? new List<int>(),
+            SenedTarixi = vm.SenedTarixi == default ? DateTime.Now.Date : vm.SenedTarixi
         };
 
         var uploadDto = new SenedUploadDto
@@ -321,7 +344,7 @@ public class SenedController : Controller
             SenedNovuId = vm.SenedNovuId,
             Basliq = vm.Basliq,
             AcarSoz = vm.AcarSoz,
-            Fayl = vm.Fayl
+            Fayllar = fayllar
         };
 
         var result = await _senedService.CreateAsync(createDto, uploadDto, GetUserId(), GetIp());
@@ -333,7 +356,9 @@ public class SenedController : Controller
             return View(vm);
         }
 
-        TempData["Success"] = "Sənəd yaradıldı";
+        TempData["Success"] = fayllar.Count > 1
+            ? $"Sənəd yaradıldı ({fayllar.Count} fayl əlavə edildi)."
+            : "Sənəd yaradıldı";
         return RedirectToAction(nameof(Index));
     }
 
@@ -868,6 +893,7 @@ public class SenedController : Controller
         Sobe = dto.Sobe,
         SenedNovu = dto.SenedNovu,
         YaradanIcraciId = dto.YaradanIcraciId,
+        SenedTarixi = dto.SenedTarixi,
         YaradilmaTarixi = dto.YaradilmaTarixi,
         YenilenmeTarixi = dto.YenilenmeTarixi,
         Tags = dto.Tags,

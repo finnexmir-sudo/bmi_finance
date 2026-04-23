@@ -46,6 +46,14 @@
             </select>
             <input type="text" name="q" value="@Model.AxtarisKelimesi"
                    class="sd-search-input" placeholder="Başlıq və ya açar söz..." />
+            <select name="sortBy" class="sd-select" title="Sıralama sahəsi">
+                <option value="senedTarixi" selected="@(Model.SortBy == null || Model.SortBy == "senedTarixi")">Sənəd tarixi</option>
+                <option value="yaradilmaTarixi" selected="@(Model.SortBy == "yaradilmaTarixi")">Yaradılma tarixi</option>
+            </select>
+            <select name="sortDir" class="sd-select" title="Sıralama istiqaməti">
+                <option value="desc" selected="@(Model.SortDir == null || Model.SortDir == "desc")">Böyükdən kiçiyə</option>
+                <option value="asc" selected="@(Model.SortDir == "asc")">Kiçikdən böyüyə</option>
+            </select>
             <button type="submit" class="fn-btn fn-btn--primary" style="padding:0 14px;height:36px;">
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                     <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3" />
@@ -78,7 +86,8 @@
                     <th>Növ</th>
                     <th>Status</th>
                     <th>Fayl</th>
-                    <th>Tarix</th>
+                    <th>Sənəd tarixi</th>
+                    <th>Yaradılma</th>
                     <th class="isci-th-right">Əməliyyat</th>
                 </tr>
             </thead>
@@ -126,6 +135,7 @@
                                     @s.FaylSayi
                                 </span>
                             </td>
+                            <td style="font-size:12px;color:#1a2332;font-weight:600;">@s.SenedTarixi.ToString("dd.MM.yyyy")</td>
                             <td style="font-size:12px;color:#8a93a8;">@s.YaradilmaTarixi.ToString("dd.MM.yyyy")</td>
                             <td class="isci-td-actions">
                                 <a asp-area="SenedDovriyyesi" asp-controller="Sened"
@@ -157,7 +167,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="10" class="sd-table-empty">
+                        <td colspan="11" class="sd-table-empty">
                             <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style="margin:0 auto 8px;display:block;opacity:.25;">
                                 <rect x="4" y="4" width="24" height="24" rx="4" stroke="#1a2332" stroke-width="1.5" />
                                 <path d="M10 16h12M10 11h12M10 21h7" stroke="#1a2332" stroke-width="1.5" stroke-linecap="round" />
@@ -177,7 +187,9 @@
                 {
                     <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
                        asp-route-page="@(Model.Page - 1)"
-                       asp-route-sobeId="@Model.SobeId" asp-route-tagId="@Model.TagId" asp-route-q="@Model.AxtarisKelimesi"
+                       asp-route-sobeId="@Model.SobeId" asp-route-senedNovuId="@Model.SenedNovuId"
+                       asp-route-tagId="@Model.TagId" asp-route-status="@Model.Status" asp-route-q="@Model.AxtarisKelimesi"
+                       asp-route-sortBy="@Model.SortBy" asp-route-sortDir="@Model.SortDir"
                        class="sd-page-btn">←</a>
                 }
                 @{
@@ -188,14 +200,18 @@
                 {
                     <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
                        asp-route-page="@i"
-                       asp-route-sobeId="@Model.SobeId" asp-route-tagId="@Model.TagId" asp-route-q="@Model.AxtarisKelimesi"
+                       asp-route-sobeId="@Model.SobeId" asp-route-senedNovuId="@Model.SenedNovuId"
+                       asp-route-tagId="@Model.TagId" asp-route-status="@Model.Status" asp-route-q="@Model.AxtarisKelimesi"
+                       asp-route-sortBy="@Model.SortBy" asp-route-sortDir="@Model.SortDir"
                        class="sd-page-btn @(i == Model.Page ? "sd-page-btn--active" : "")">@i</a>
                 }
                 @if (Model.Page < Model.TotalPages)
                 {
                     <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
                        asp-route-page="@(Model.Page + 1)"
-                       asp-route-sobeId="@Model.SobeId" asp-route-tagId="@Model.TagId" asp-route-q="@Model.AxtarisKelimesi"
+                       asp-route-sobeId="@Model.SobeId" asp-route-senedNovuId="@Model.SenedNovuId"
+                       asp-route-tagId="@Model.TagId" asp-route-status="@Model.Status" asp-route-q="@Model.AxtarisKelimesi"
+                       asp-route-sortBy="@Model.SortBy" asp-route-sortDir="@Model.SortDir"
                        class="sd-page-btn">→</a>
                 }
             </div>

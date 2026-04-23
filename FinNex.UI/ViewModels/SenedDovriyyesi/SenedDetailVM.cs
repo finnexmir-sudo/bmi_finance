@@ -11,6 +11,7 @@ public class SenedDetailVM
     public SenedStatusu Status { get; set; }
     public string Sobe { get; set; } = null!;
     public string SenedNovu { get; set; } = null!;
+    public DateTime SenedTarixi { get; set; }
     public DateTime YaradilmaTarixi { get; set; }
     public int? YaradanIcraciId { get; set; }
     public DateTime? YenilenmeTarixi { get; set; }

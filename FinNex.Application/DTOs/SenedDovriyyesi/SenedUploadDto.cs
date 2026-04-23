@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 
 namespace FinNex.Application.DTOs.SenedDovriyyesi
 {
@@ -8,7 +8,12 @@ namespace FinNex.Application.DTOs.SenedDovriyyesi
         public int SenedNovuId { get; set; }
         public string Basliq { get; set; } = null!;
         public string AcarSoz { get; set; } = null!;
-        public IFormFile Fayl { get; set; } = null!;
+
+        // Geriyə uyğunluq üçün tək fayl qalır.
+        public IFormFile? Fayl { get; set; }
+
+        // Yeni: bir neçə fayl eyni anda yüklənə bilsin.
+        public List<IFormFile> Fayllar { get; set; } = new();
     }
 
 }

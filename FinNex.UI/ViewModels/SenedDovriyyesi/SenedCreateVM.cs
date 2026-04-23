@@ -14,9 +14,16 @@ public class SenedCreateVM
     [StringLength(300, ErrorMessage = "Başlıq maksimum 300 simvol ola bilər")]
     public string Basliq { get; set; } = null!;
 
-    [Required(ErrorMessage = "Fayl yüklənməlidir")]
-    public IFormFile Fayl { get; set; } = null!;
+    // Köhnə tək fayl sahəsi (geri uyğunluq üçün saxlanılır).
+    public IFormFile? Fayl { get; set; }
 
+    // Bir neçə fayl eyni anda yüklənə bilər.
+    // Məcburi yoxlama controller-də əl ilə aparılır (Fayl + Fayllar birlikdə).
+    public List<IFormFile> Fayllar { get; set; } = new();
+
+    // Sənədin tarixi — default bu gün, istifadəçi dəyişə bilər.
+    [DataType(DataType.Date)]
+    public DateTime SenedTarixi { get; set; } = DateTime.Now.Date;
 
     [Required(ErrorMessage = "Açar söz daxil edilməlidir")]
     [StringLength(500, ErrorMessage = "Açar söz maksimum 500 simvol ola bilər")]
