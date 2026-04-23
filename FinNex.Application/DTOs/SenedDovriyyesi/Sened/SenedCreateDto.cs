@@ -1,4 +1,4 @@
-﻿namespace FinNex.Application.DTOs.SenedDovriyyesi.Sened
+namespace FinNex.Application.DTOs.SenedDovriyyesi.Sened
 {
     public class SenedCreateDto
     {
@@ -7,5 +7,8 @@
         public string Basliq { get; set; } = null!;
         public string AcarSoz { get; set; } = null!;
         public List<int> TagIds { get; set; } = new();
+
+        // Sənədin tarixi — istifadəçi tərəfindən daxil edilir (default: bu gün)
+        public DateTime SenedTarixi { get; set; } = DateTime.Now.Date;
     }
 }

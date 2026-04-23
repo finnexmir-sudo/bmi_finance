@@ -41,7 +41,13 @@
                             var bt = Model.Status == SenedStatusu.Arxiv ? "Arxiv" : "Aktiv";
                         }
                         <span class="sd-badge @bc">@bt</span>
-                        <span style="font-size:12px;color:#8a93a8;">@Model.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</span>
+                        @if (Model.SenedTarixi != default)
+                        {
+                            <span style="font-size:12px;color:#1a2332;font-weight:600;" title="Sənəd tarixi">
+                                📅 @Model.SenedTarixi.ToString("dd.MM.yyyy")
+                            </span>
+                        }
+                        <span style="font-size:12px;color:#8a93a8;" title="Yaradılma tarixi">@Model.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</span>
                         <span class="str-dept-tag">@Model.Sobe</span>
                         <span style="font-size:12px;color:#5a647a;font-weight:500;">@Model.SenedNovu</span>
                     </div>
@@ -128,6 +134,13 @@
                         <div class="sd-meta-key">Status</div>
                         <div class="sd-meta-val"><span class="sd-badge @bc">@bt</span></div>
                     </div>
+                    @if (Model.SenedTarixi != default)
+                    {
+                        <div class="sd-meta-row">
+                            <div class="sd-meta-key">Sənəd tarixi</div>
+                            <div class="sd-meta-val" style="font-weight:600;color:#1a2332;">@Model.SenedTarixi.ToString("dd.MM.yyyy")</div>
+                        </div>
+                    }
                     <div class="sd-meta-row">
                         <div class="sd-meta-key">Yaradılma</div>
                         <div class="sd-meta-val">@Model.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</div>

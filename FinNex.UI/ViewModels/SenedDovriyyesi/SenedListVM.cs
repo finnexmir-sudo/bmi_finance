@@ -12,6 +12,10 @@ public class SenedListVM
     public string? AxtarisKelimesi { get; set; }
     public bool Silinmisler { get; set; }
 
+    // Sıralama: "senedTarixi" | "yaradilmaTarixi"; "asc" | "desc"
+    public string? SortBy { get; set; }
+    public string? SortDir { get; set; }
+
     // Pagination
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 20;
@@ -38,6 +42,7 @@ public class SenedListItemVM
     public string IsciAdi { get; set; }=null!;
     public string SenedNovu { get; set; } = null!;
     public int FaylSayi { get; set; }
+    public DateTime SenedTarixi { get; set; }
     public DateTime YaradilmaTarixi { get; set; }
     public bool Silinib { get; set; }
 }

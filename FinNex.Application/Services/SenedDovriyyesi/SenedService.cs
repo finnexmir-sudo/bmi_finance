@@ -56,8 +56,15 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             if (string.IsNullOrWhiteSpace(dto.AcarSoz))
                 return Result<int>.Fail("Açar söz boş ola bilməz.");
 
-            if (uploadDto?.Fayl is null)
-                return Result<int>.Fail("Fayl seçilməlidir.");
+            // Bir neçə fayl dəstəyi + köhnə tək-fayl yolu ilə geri uyğunluq
+            var fayllar = new List<IFormFile>();
+            if (uploadDto?.Fayllar != null && uploadDto.Fayllar.Count > 0)
+                fayllar.AddRange(uploadDto.Fayllar.Where(f => f != null && f.Length > 0));
+            else if (uploadDto?.Fayl != null && uploadDto.Fayl.Length > 0)
+                fayllar.Add(uploadDto.Fayl);
+
+            if (fayllar.Count == 0)
+                return Result<int>.Fail("Ən azı bir fayl seçilməlidir.");
 
             var sobe = await _departmentService
                 .HamisiniGetirAsync(x => x.Id == dto.SobeId && !x.Silinib);
@@ -82,6 +89,11 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                     && x.YaradilmaTarixi.Year == currentYear);
             var senedNomresi = $"{nov.Kod}-{currentYear}-{(existingCount + 1):D3}";
 
+            // SenedTarixi: istifadəçi boş saxlaya bilməz deyil — default bugün
+            var senedTarixi = dto.SenedTarixi == default
+                ? DateTime.Now.Date
+                : dto.SenedTarixi.Date;
+
             var sened = new Sened
             {
                 DepartmentId = dto.SobeId,
@@ -89,6 +101,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 Basliq = dto.Basliq.Trim(),
                 AcarSoz = dto.AcarSoz.Trim(),
                 SenedNomresi = senedNomresi,
+                SenedTarixi = senedTarixi,
                 Status = SenedStatusu.Yeni,
                 Mexfilik = MexfilikSeviyesi.Internal,
                 YaradanIcraciId = userId,
@@ -99,31 +112,40 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             await _uow.YaddaSaxlaAsync(); // burada ID yaranır
 
             // =========================
-            // 3️⃣ FILE SAVE (VERSIYA 1)
+            // 3️⃣ FILES SAVE (hər biri üçün ayrı versiya)
             // =========================
-            using var stream = uploadDto.Fayl.OpenReadStream();
-
-            var (storedName, path, sha256) =
-                await _storage.SaveAsync(
-                    stream,
-                    uploadDto.Fayl.FileName,
-                    uploadDto.Fayl.ContentType);
-
-            var fayl = new SenedFayl
+            var faylAdlari = new List<string>();
+            var versiyaNo = 0;
+            foreach (var formFile in fayllar)
             {
-                SenedId = sened.Id,
-                VersiyaNo = 1,
-                OriginalAd = uploadDto.Fayl.FileName,
-                ContentType = uploadDto.Fayl.ContentType,
-                OlcuBytes = uploadDto.Fayl.Length,
-                Sha256 = sha256,
-                AktivVersiya = true,
-                Yol = path,
-                StoredAd = storedName,
-                YaradilmaTarixi = DateTime.UtcNow
-            };
+                versiyaNo++;
 
-            await _uow.Repository<SenedFayl>().YaratAsync(fayl);
+                using var stream = formFile.OpenReadStream();
+                var (storedName, path, sha256) =
+                    await _storage.SaveAsync(
+                        stream,
+                        formFile.FileName,
+                        formFile.ContentType);
+
+                var fayl = new SenedFayl
+                {
+                    SenedId = sened.Id,
+                    VersiyaNo = versiyaNo,
+                    OriginalAd = formFile.FileName,
+                    ContentType = formFile.ContentType,
+                    OlcuBytes = formFile.Length,
+                    Sha256 = sha256,
+                    // Yaradılışda hər fayl aktiv — istifadəçi birdən çox sənəd əlavə
+                    // edəndə hamısı Detal səhifəsində görünsün deyə.
+                    AktivVersiya = true,
+                    Yol = path,
+                    StoredAd = storedName,
+                    YaradilmaTarixi = DateTime.UtcNow
+                };
+
+                await _uow.Repository<SenedFayl>().YaratAsync(fayl);
+                faylAdlari.Add(formFile.FileName);
+            }
 
             // =========================
             // 4️⃣ TAG MAP
@@ -170,8 +192,9 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                     SenedNovuId = dto.SenedNovuId,
                     Basliq = dto.Basliq,
                     AcarSoz = dto.AcarSoz,
-                    FaylAdi = uploadDto.Fayl.FileName,
-                    Versiya = 1
+                    SenedTarixi = senedTarixi,
+                    FaylAdlari = faylAdlari,
+                    FaylSayi = faylAdlari.Count
                 });
 
             // =========================
@@ -191,7 +214,9 @@ namespace FinNex.Application.Services.SenedDovriyyesi
     int? senedNovuId,
     SenedStatusu? status,
     string? search,
-    int? tagId = null)
+    int? tagId = null,
+    string? sortBy = null,
+    string? sortDir = null)
         {
             var query = _uow.Repository<Sened>().Query();
 
@@ -216,8 +241,21 @@ namespace FinNex.Application.Services.SenedDovriyyesi
 
             var total = await query.CountAsync();
 
+            // Sıralama: default = sənəd tarixi (desc)
+            var desc = !string.Equals(sortDir, "asc", StringComparison.OrdinalIgnoreCase);
+            var key = (sortBy ?? "senedTarixi").ToLowerInvariant();
+
+            query = key switch
+            {
+                "yaradilmatarixi" => desc
+                    ? query.OrderByDescending(x => x.YaradilmaTarixi)
+                    : query.OrderBy(x => x.YaradilmaTarixi),
+                _ => desc
+                    ? query.OrderByDescending(x => x.SenedTarixi).ThenByDescending(x => x.YaradilmaTarixi)
+                    : query.OrderBy(x => x.SenedTarixi).ThenBy(x => x.YaradilmaTarixi)
+            };
+
             var items = await query
-                .OrderByDescending(x => x.YaradilmaTarixi)
                 .Skip((req.Page - 1) * req.PageSize)
                 .Take(req.PageSize)
                 .ToListAsync();
