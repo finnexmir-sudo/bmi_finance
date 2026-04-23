@@ -102,7 +102,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             await _unitOfWork.YaddaSaxlaAsync();
-            var tipAd = gunTipi == GunTipi.IsGunu ? "iş günü" : "bayram";
+            var tipAd = gunTipi == GunTipi.IsGunu ? "iş günü" : "qeyri iş günü";
             var msg = sayi == 1 ? $"Qeyd uğurla əlavə edildi ({tipAd})." : $"{sayi} {tipAd} qeydi uğurla əlavə edildi.";
             return Json(new { success = true, message = msg });
         }
@@ -120,7 +120,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var entity = await repo.IdIleGetirAsync(id);
 
             if (entity == null || entity.Silinib)
-                return Json(new { success = false, message = "Qeyd tapilmadi." });
+                return Json(new { success = false, message = "Qeyd tapılmadı." });
 
             entity.Ad = ad.Trim();
             entity.Tarix = baslangicTarix;
@@ -144,9 +144,9 @@ namespace FinNex.UI.Areas.HR.Controllers
             await _unitOfWork.YaddaSaxlaAsync();
 
             if (!result)
-                return Json(new { success = false, message = "Bayram tapilmadi." });
+                return Json(new { success = false, message = "Qeyd tapılmadı." });
 
-            return Json(new { success = true, message = "Bayram ugurla silindi." });
+            return Json(new { success = true, message = "Qeyd uğurla silindi." });
         }
 
         [HttpGet]
@@ -242,7 +242,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             // Yeni qeyd yarat
             var gunTipi = tip == 2 ? GunTipi.IsGunu : GunTipi.Bayram;
-            var defaultAd = gunTipi == GunTipi.IsGunu ? "Əlavə iş günü" : "Bayram";
+            var defaultAd = gunTipi == GunTipi.IsGunu ? "Əlavə iş günü" : "Qeyri iş günü";
 
             var entity = new BayramGunu
             {
@@ -261,7 +261,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 id = entity.Id,
                 tip = (int)entity.Tip,
                 ad = entity.Ad,
-                message = gunTipi == GunTipi.IsGunu ? "İş günü əlavə edildi." : "Bayram əlavə edildi."
+                message = gunTipi == GunTipi.IsGunu ? "İş günü əlavə edildi." : "Qeyri iş günü əlavə edildi."
             });
         }
     }
