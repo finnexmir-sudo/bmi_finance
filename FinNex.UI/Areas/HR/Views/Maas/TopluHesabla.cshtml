@@ -340,12 +340,35 @@
                                     isciAvans = isciAvansMap[isci.Id];
                                 var isciAvansStr = isciAvans.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
 
+                                // Məzuniyyət (preview üçün) — (gün, ödəniş)
+                                var mezMap = ViewBag.IsciMezuniyyetMap as Dictionary<int, (int gun, decimal odenis)>
+                                             ?? new Dictionary<int, (int gun, decimal odenis)>();
+                                int mezGun = 0; decimal mezOdenis = 0m;
+                                if (mezMap.TryGetValue(isci.Id, out var mezVal))
+                                { mezGun = mezVal.gun; mezOdenis = mezVal.odenis; }
+                                var mezOdenisStr = mezOdenis.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
+                                // Xəstəlik (preview üçün)
+                                var xesMap = ViewBag.IsciXestelikMap as Dictionary<int, (int sirketGun, int dsmfGun, decimal sirketOdenis, decimal dsmfOdenis)>
+                                             ?? new Dictionary<int, (int sirketGun, int dsmfGun, decimal sirketOdenis, decimal dsmfOdenis)>();
+                                int xSirketGun = 0, xDsmfGun = 0; decimal xSirketOd = 0m, xDsmfOd = 0m;
+                                if (xesMap.TryGetValue(isci.Id, out var xesVal))
+                                { xSirketGun = xesVal.sirketGun; xDsmfGun = xesVal.dsmfGun; xSirketOd = xesVal.sirketOdenis; xDsmfOd = xesVal.dsmfOdenis; }
+                                var xSirketOdStr = xSirketOd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                var xDsmfOdStr = xDsmfOd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
                                 <tr data-isci="@isci.Id"
                                     data-esas="@esas.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
                                     data-isci-guzest="@isciGuzestMeblegStr"
                                     data-isci-guzest-ad="@isciGuzestAd"
                                     data-hys="@isciHysStr"
                                     data-avans="@isciAvansStr"
+                                    data-mez-gun="@mezGun"
+                                    data-mez-odenis="@mezOdenisStr"
+                                    data-xes-sirket-gun="@xSirketGun"
+                                    data-xes-dsmf-gun="@xDsmfGun"
+                                    data-xes-sirket-odenis="@xSirketOdStr"
+                                    data-xes-dsmf-odenis="@xDsmfOdStr"
                                     class="mth-row @(isDone ? "done" : "")">
 
                                     @* Checkbox *@
@@ -457,6 +480,26 @@
                                                         <div class="mth-detail-item">
                                                             <span class="mth-detail-lbl">Kəsinti</span>
                                                             <span class="n n--r" data-p="mezkes">—</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                @* Xəstəlik *@
+                                                <div class="mth-detail-card">
+                                                    <div class="mth-detail-card-head" style="color:#a855f7;">
+                                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                            <path d="M7 2v10M2 7h10" stroke="#a855f7" stroke-width="1.3" stroke-linecap="round"/>
+                                                        </svg>
+                                                        <span>Xəstəlik</span>
+                                                    </div>
+                                                    <div class="mth-detail-card-body">
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">Şirkət gün / ödəniş</span>
+                                                            <span class="n n--b" data-p="xessirket">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">DSMF gün / ödəniş</span>
+                                                            <span class="n n--d" data-p="xesdsmf">—</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -735,6 +778,7 @@
                         <div class="mth-footer-actions">
                             <a asp-area="HR" asp-controller="Maas" asp-action="Index"
                                asp-route-il="@il" asp-route-ay="@ay"
+                               onclick="event.preventDefault(); window.location.href = this.href;"
                                class="mth-btn mth-btn--outline">Ləğv et</a>
                             <button type="button" id="mthBtnCalc2" disabled class="mth-btn mth-btn--gold"
                                     onclick="document.getElementById('mthBtnCalc').click()">
