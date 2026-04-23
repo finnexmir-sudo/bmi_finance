@@ -12,6 +12,7 @@ using FinNex.DataAccess.UnitOfWorks;
 using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Entities.Structure;
 using FinNex.Domain.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client.Extensions.Msal;
 using System.Security.Cryptography;
