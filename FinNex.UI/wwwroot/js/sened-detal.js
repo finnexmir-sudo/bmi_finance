@@ -74,8 +74,22 @@
                 '</div>';
         }
 
-        // Modali ac
+        // Modali ac — həm class-ı sil həm də display-ı təyin et
+        // (struktur.css overlay-ı display:none yapır, sened css-i flex; hər
+        // iki halda garantili açılır deyə inline display:flex veririk)
         modalEl.classList.remove('str-modal-hidden');
+        modalEl.style.display = 'flex';
+    }
+
+    function closePreview() {
+        var modalEl = document.getElementById('filePreviewModal');
+        if (!modalEl) return;
+        modalEl.classList.add('str-modal-hidden');
+        modalEl.style.display = 'none';
+
+        // Iframe-in davam edib səs çıxartmaması üçün boşalt
+        var body = document.getElementById('pvModalBody');
+        if (body) body.innerHTML = '';
     }
 
     // Event delegation - btn-preview kliklerini tut
@@ -84,6 +98,25 @@
         if (btn) {
             e.preventDefault();
             openPreview(btn);
+            return;
         }
+
+        // Bağlama düyməsi
+        var closeBtn = e.target.closest('[data-close-modal="filePreviewModal"]');
+        if (closeBtn) {
+            e.preventDefault();
+            closePreview();
+            return;
+        }
+
+        // Overlay-ə klik (modaldan kənar boşluq)
+        if (e.target && e.target.id === 'filePreviewModal') {
+            closePreview();
+        }
+    });
+
+    // ESC ilə bağla
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closePreview();
     });
 })();
