@@ -37,13 +37,6 @@
             <select asp-for="SenedNovuId" class="sd-select" id="senedNovuSelect">
                 <option value="">Bütün növlər</option>
             </select>
-            <select asp-for="TagId" class="sd-select">
-                <option value="">Bütün etiketlər</option>
-                @foreach (var t in Model.Tagler)
-                {
-                    <option value="@t.Id">@t.Ad</option>
-                }
-            </select>
             <input type="text" name="q" value="@Model.AxtarisKelimesi"
                    class="sd-search-input" placeholder="Başlıq və ya açar söz..." />
             <select name="sortBy" class="sd-select" title="Sıralama sahəsi">
@@ -188,7 +181,7 @@
                     <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
                        asp-route-page="@(Model.Page - 1)"
                        asp-route-sobeId="@Model.SobeId" asp-route-senedNovuId="@Model.SenedNovuId"
-                       asp-route-tagId="@Model.TagId" asp-route-status="@Model.Status" asp-route-q="@Model.AxtarisKelimesi"
+                       asp-route-status="@Model.Status" asp-route-q="@Model.AxtarisKelimesi"
                        asp-route-sortBy="@Model.SortBy" asp-route-sortDir="@Model.SortDir"
                        class="sd-page-btn">←</a>
                 }
@@ -201,7 +194,7 @@
                     <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
                        asp-route-page="@i"
                        asp-route-sobeId="@Model.SobeId" asp-route-senedNovuId="@Model.SenedNovuId"
-                       asp-route-tagId="@Model.TagId" asp-route-status="@Model.Status" asp-route-q="@Model.AxtarisKelimesi"
+                       asp-route-status="@Model.Status" asp-route-q="@Model.AxtarisKelimesi"
                        asp-route-sortBy="@Model.SortBy" asp-route-sortDir="@Model.SortDir"
                        class="sd-page-btn @(i == Model.Page ? "sd-page-btn--active" : "")">@i</a>
                 }
@@ -210,7 +203,7 @@
                     <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
                        asp-route-page="@(Model.Page + 1)"
                        asp-route-sobeId="@Model.SobeId" asp-route-senedNovuId="@Model.SenedNovuId"
-                       asp-route-tagId="@Model.TagId" asp-route-status="@Model.Status" asp-route-q="@Model.AxtarisKelimesi"
+                       asp-route-status="@Model.Status" asp-route-q="@Model.AxtarisKelimesi"
                        asp-route-sortBy="@Model.SortBy" asp-route-sortDir="@Model.SortDir"
                        class="sd-page-btn">→</a>
                 }
