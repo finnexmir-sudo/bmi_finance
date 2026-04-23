@@ -137,32 +137,10 @@
                         </div>
                     </div>
 
-                <!-- 3. Teqlər -->
-                @if (Model.Tagler.Any())
-                {
-                    <div>
-                        <div class="sd-form-hdr-sub" style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:#e8b84b;margin-bottom:12px;">
-                            3 · Teqlər
-                            <span style="font-size:10px;color:#aab0bf;font-weight:400;">(istəyə bağlı)</span>
-                        </div>
-                        <div style="display:flex;flex-wrap:wrap;gap:8px;">
-                            @foreach (var tag in Model.Tagler)
-                            {
-                                var isChecked = Model.TagIds != null && Model.TagIds.Contains(tag.Id);
-                                <label class="str-checkbox-label" style="cursor:pointer;">
-                                    <input type="checkbox" name="TagIds" value="@tag.Id"
-                                           class="str-checkbox" @(isChecked ? "checked" : "") />
-                                    @tag.Ad
-                                </label>
-                            }
-                        </div>
-                    </div>
-                }
-
-                <!-- 4. Fayl -->
+                <!-- 3. Fayl -->
                 <div>
                     <div class="sd-form-hdr-sub" style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:#e8b84b;margin-bottom:12px;">
-                        4 · Fayl Yükləmə
+                        3 · Fayl Yükləmə
                         <span style="font-size:10px;color:#aab0bf;font-weight:400;">(bir və ya bir neçə fayl)</span>
                     </div>
                     <div class="sd-file-zone" id="faylZone">

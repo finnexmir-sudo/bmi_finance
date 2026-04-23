@@ -67,10 +67,19 @@ public class SenedController : Controller
     private bool IsAdmin() =>
         User.IsInRole(RoleNames.Admin);
 
+    // Rehber: bütün sənədlərə BAXIŞ və YÜKLƏMƏ icazəsi var, ancaq SİLMƏ
+    // yalnız öz yaratdığı sənədlər üçündür (aşağıdakı Sil action-da yoxlanılır).
+    private bool IsRehber() =>
+        User.IsInRole(RoleNames.Rehber);
+
+    private bool IsAdminOrRehber() => IsAdmin() || IsRehber();
+
     private async Task<List<int>> GetIcazeliSobeIdleriAsync()
     {
         var userId = GetUserId();
-        if (IsAdmin())
+
+        // Admin və Rehber: bütün şöbələr (oxu/yüklə icazəsi)
+        if (IsAdminOrRehber())
         {
             var butun = await _departmentService.HamisiniGetirAsync(x => !x.Silinib);
             return butun.Data?.Select(x => x.Id).Distinct().ToList() ?? new();
@@ -137,6 +146,19 @@ public class SenedController : Controller
         return tamIcazeler.Contains(sobeId);
     }
 
+    // Fayl baxışı/yükləməsi üçün icazə yoxlaması.
+    // Admin və Rehber — hər şeyi görə/yükləyə bilər.
+    // Digərləri — yalnız öz icazəli şöbələrindən.
+    private async Task<bool> FaylaBaxisIcazesiVarAsync(SenedFayl fayl)
+    {
+        if (IsAdminOrRehber()) return true;
+        var sened = await _unitOf.Repository<Sened>()
+            .GetirAsync(x => x.Id == fayl.SenedId && !x.Silinib);
+        if (sened == null) return false;
+        var icazeliSobeler = await GetIcazeliSobeIdleriAsync();
+        return icazeliSobeler.Contains(sened.DepartmentId);
+    }
+
     // ── Fayl endirmə ─────────────────────────────────────────────
     [HttpGet]
     public async Task<IActionResult> Download(int id)
@@ -144,6 +166,8 @@ public class SenedController : Controller
         var fayl = await _unitOf.Repository<SenedFayl>()
             .GetirAsync(x => x.Id == id && !x.Silinib);
         if (fayl == null) return NotFound();
+
+        if (!await FaylaBaxisIcazesiVarAsync(fayl)) return Forbid();
 
         var rootPath = @"C:\FinNex_DMS";
         var fullPath = Path.Combine(rootPath,
@@ -163,6 +187,8 @@ public class SenedController : Controller
         var fayl = await _unitOf.Repository<SenedFayl>()
             .GetirAsync(x => x.Id == id && !x.Silinib);
         if (fayl == null) return NotFound();
+
+        if (!await FaylaBaxisIcazesiVarAsync(fayl)) return Forbid();
 
         var rootPath = @"C:\FinNex_DMS";
         var fullPath = Path.Combine(rootPath,
@@ -187,7 +213,7 @@ public class SenedController : Controller
     {
         var icazeliSobeIdleri = await GetIcazeliSobeIdleriAsync();
 
-        if (!IsAdmin() && sobeId.HasValue && !icazeliSobeIdleri.Contains(sobeId.Value))
+        if (!IsAdminOrRehber() && sobeId.HasValue && !icazeliSobeIdleri.Contains(sobeId.Value))
             return Forbid();
 
         var result = await _senedService.GetPagedAsync(
@@ -366,7 +392,8 @@ public class SenedController : Controller
     public async Task<IActionResult> Detal(int id)
     {
         var icazeliSobeIdleri = await GetIcazeliSobeIdleriAsync();
-        var result = await _senedService.GetDetailAsync(id, icazeliSobeIdleri, IsAdmin());
+        // Rehber-ə də Admin kimi tam baxış — tüm şöbələrdən sənəd aça bilər
+        var result = await _senedService.GetDetailAsync(id, icazeliSobeIdleri, IsAdminOrRehber());
 
         if (!result.Success || result.Data == null)
         {
@@ -540,6 +567,7 @@ public class SenedController : Controller
         if (request?.Ids == null || request.Ids.Count == 0)
             return Json(new { success = false, message = "Heç bir sənəd seçilməyib." });
 
+        var userId = GetUserId();
         var tamIcazeliSobeler = await GetTamIcazeliSobeIdleriAsync();
         var ugurlu = 0;
         var icazesiz = 0;
@@ -549,13 +577,21 @@ public class SenedController : Controller
             var sened = await _senedService.IdIleGetirAsync(id);
             if (!sened.Success || sened.Data == null) continue;
 
-            if (!IsAdmin() && !tamIcazeliSobeler.Contains(sened.Data.DepartmentId))
+            // İcazə qaydası:
+            //  - Admin: hər sənədi silə bilər
+            //  - TamIcazəli (Full) istifadəçi: öz icazəli şöbəsindəki sənədləri
+            //  - Digərləri (o cümlədən Rehber): yalnız ÖZ yaratdığı sənədi
+            var admin = IsAdmin();
+            var tamIcaze = tamIcazeliSobeler.Contains(sened.Data.DepartmentId);
+            var yaradan = sened.Data.YaradanIcraciId == userId;
+
+            if (!admin && !tamIcaze && !yaradan)
             {
                 icazesiz++;
                 continue;
             }
 
-            var result = await _senedService.SoftDeleteAsync(id, GetUserId(), GetIp());
+            var result = await _senedService.SoftDeleteAsync(id, userId, GetIp());
             if (result.Success) ugurlu++;
         }
 
