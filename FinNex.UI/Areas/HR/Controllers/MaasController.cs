@@ -205,6 +205,117 @@ namespace FinNex.UI.Areas.HR.Controllers
             return RedirectToAction(nameof(Detal), new { id = r.Data.MaasId });
         }
 
+        // ── GET /HR/Maas/Context ─────────────────────────────────
+        // Fərdi hesabla formunda işçi + il + ay seçiləndə AJAX ilə
+        // faktiki vəziyyəti qaytarır — HR dəyişiklik olub-olmadığını
+        // görə bilsin.
+        [HttpGet]
+        public async Task<IActionResult> Context(int isciId, int il, int ay)
+        {
+            try
+            {
+                var isci = await _unitOfWork.Repository<Isci>().Query()
+                    .Where(x => x.Id == isciId)
+                    .Include(x => x.Maliye)
+                    .FirstOrDefaultAsync();
+                if (isci == null) return Json(new { success = false, message = "İşçi tapılmadı." });
+
+                // Cari əsas maaş
+                decimal cariMaas = isci.Maliye?.CariMaas ?? 0;
+
+                // Staj (xəstəlik üçün)
+                var stajBas = isci.UmumiIsStajiBaslangic ?? isci.IsheQebulTarixi;
+                var ref_ = new DateTime(il, ay, 1);
+                int stajIl = ref_.Year - stajBas.Year;
+                int stajAy = ref_.Month - stajBas.Month;
+                if (stajAy < 0) { stajIl--; stajAy += 12; }
+                int stajFaiz = stajIl < 8 ? 60 : stajIl < 12 ? 80 : 100;
+
+                var ayBaslangic = new DateTime(il, ay, 1);
+                var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
+
+                // Bu ayda təsdiqlənmiş məzuniyyətlər
+                var mez = await _unitOfWork.Repository<Mezuniyyet>().Query()
+                    .Where(m => !m.Silinib && m.IsciId == isciId
+                             && m.Status == MezuniyyetStatus.Tesdiqlenib
+                             && m.BaslamaTarixi <= ayBitis && m.BitmeTarixi >= ayBaslangic)
+                    .Select(m => new
+                    {
+                        m.Id,
+                        m.Nov,
+                        m.BaslamaTarixi,
+                        m.BitmeTarixi,
+                        m.IsGunlerininSayi,
+                        m.OdenenMebleg
+                    })
+                    .ToListAsync();
+
+                // Bu ayda xəstəlik bülletənləri + ödənişləri
+                var xesOdenisler = await _unitOfWork.Repository<XestelikOdenis>().Query()
+                    .Where(o => !o.Silinib && o.IsciId == isciId && o.Il == il && o.Ay == ay)
+                    .Include(o => o.Xestelik)
+                    .Select(o => new
+                    {
+                        o.Id,
+                        BulletenNo = o.Xestelik.BulletenNomresi,
+                        o.SirketGunSayi,
+                        o.DsmfGunSayi,
+                        o.SirketOdenis,
+                        o.DsmfOdenis
+                    })
+                    .ToListAsync();
+
+                // Bu ayda avans müraciətləri (təsdiqlənib və ya ödənilib)
+                var avans = await _unitOfWork.Repository<Avans>().Query()
+                    .Where(a => !a.Silinib && a.IsciId == isciId && a.Il == il && a.Ay == ay
+                             && (a.Status == AvansStatus.Tesdiqlenib
+                              || a.Status == AvansStatus.Odenilib))
+                    .Select(a => new { a.Id, a.Mebleg, Status = a.Status.ToString() })
+                    .ToListAsync();
+
+                // Bu ay üçün əvvəlki maaş hesablaması varmı?
+                var movcudMaas = await _unitOfWork.Repository<Maas>().Query()
+                    .Where(m => !m.Silinib && m.IsciId == isciId && m.Il == il && m.Ay == ay)
+                    .Select(m => new { m.Id, m.BrutMebleg, m.NetMebleg })
+                    .FirstOrDefaultAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    cariMaas,
+                    staj = new { il = stajIl, ay = stajAy, faiz = stajFaiz },
+                    mezuniyyetler = mez.Select(m => new
+                    {
+                        id = m.Id,
+                        nov = m.Nov.ToString(),
+                        baslama = m.BaslamaTarixi.ToString("dd.MM.yyyy"),
+                        bitme = m.BitmeTarixi.ToString("dd.MM.yyyy"),
+                        isGunu = m.IsGunlerininSayi,
+                        odenen = m.OdenenMebleg
+                    }),
+                    xestelikler = xesOdenisler.Select(o => new
+                    {
+                        bulletenNo = o.BulletenNo,
+                        sirketGun = o.SirketGunSayi,
+                        dsmfGun = o.DsmfGunSayi,
+                        sirketOdenis = o.SirketOdenis,
+                        dsmfOdenis = o.DsmfOdenis
+                    }),
+                    avanslar = avans.Select(a => new { id = a.Id, mebleg = a.Mebleg, status = a.Status }),
+                    movcudHesablama = movcudMaas == null ? null : new
+                    {
+                        id = movcudMaas.Id,
+                        brut = movcudMaas.BrutMebleg,
+                        net = movcudMaas.NetMebleg
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
         // ── GET /HR/Maas/TopluHesabla ────────────────────────────
         [HttpGet]
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
