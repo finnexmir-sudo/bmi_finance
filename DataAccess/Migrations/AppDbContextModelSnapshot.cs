@@ -2903,9 +2903,6 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<int>("SenedNovuId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("SenedTarixi")
-                        .HasColumnType("datetime2");
-
                     b.Property<int?>("SilenIcraciId")
                         .HasColumnType("int");
 
