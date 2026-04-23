@@ -13,6 +13,7 @@ namespace FinNex.Application.DTOs.SenedDovriyyesi.Sened
         public string? IsciAdi { get; set; }
         public string SenedNovu { get; set; } = null!;
         public int FaylSayi { get; set; }
+        public DateTime SenedTarixi { get; set; }
         public DateTime YaradilmaTarixi { get; set; }
     }
 }

@@ -17,6 +17,10 @@ namespace FinNex.Domain.Entities.SenedDovriyyesi
 
         public string? SenedNomresi { get; set; }
 
+        // Sənədin tarixi (editə bilinən). Default olaraq yaradılma anı,
+        // ancaq istifadəçi tərəfindən geri/irəli göstərilə bilər.
+        public DateTime SenedTarixi { get; set; }
+
         public SenedStatusu Status { get; set; } = SenedStatusu.Yeni;
 
         public MexfilikSeviyesi Mexfilik { get; set; } = MexfilikSeviyesi.Internal;
