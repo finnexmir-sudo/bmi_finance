@@ -80,22 +80,49 @@
             <div class="xstc-card xstc-card--preview" id="xstcPreview" style="display:none;">
                 <div class="xstc-preview-head">
                     <i class="bi bi-calculator"></i>
-                    Hesablama Preview
+                    Hesablama breakdown
                 </div>
 
+                @* ── Cari bülletən günü ── *@
                 <div class="xstc-stat">
-                    <div class="xstc-stat-lbl">İş günü sayı</div>
+                    <div class="xstc-stat-lbl">Cari xəstəlik günü</div>
                     <div class="xstc-stat-val" id="ppIsGun">—</div>
-                </div>
-
-                <div class="xstc-stat">
-                    <div class="xstc-stat-lbl">Bir günlük</div>
-                    <div class="xstc-stat-val" id="ppBirGun">—</div>
-                    <div class="xstc-stat-sub" id="ppBirGunFormula">—</div>
                 </div>
 
                 <div class="xstc-divider"></div>
 
+                @* ── Gəlir blok ── *@
+                <div class="xstc-block">
+                    <div class="xstc-block-title">Gəlir (son 12 ay <span id="ppDovr" style="font-weight:500;color:#64748b">—</span>)</div>
+                    <div class="xstc-line"><span>Cəmi qazanc (S)</span><strong id="ppS">—</strong></div>
+                    <div class="xstc-line xstc-minus"><span>Çıxılan xəstəlik ödənişi</span><strong id="ppCixilanS">—</strong></div>
+                    <div class="xstc-line xstc-eq"><span>Effektiv gəlir</span><strong id="ppSEff">—</strong></div>
+                </div>
+
+                @* ── İş günü blok ── *@
+                <div class="xstc-block">
+                    <div class="xstc-block-title">İş günləri (son 12 ay)</div>
+                    <div class="xstc-line"><span>Cəmi iş günü</span><strong id="pp12IsGun">—</strong></div>
+                    <div class="xstc-line xstc-minus"><span>Çıxılan xəstəlik günü</span><strong id="pp12XGun">—</strong></div>
+                    <div class="xstc-line xstc-eq"><span>Effektiv iş günü</span><strong id="ppEffIsGun">—</strong></div>
+                </div>
+
+                @* ── Bir günlük ── *@
+                <div class="xstc-stat">
+                    <div class="xstc-stat-lbl">Bir günlük (effektiv_gəlir ÷ effektiv_iş_günü)</div>
+                    <div class="xstc-stat-val" id="ppBirGun">—</div>
+                </div>
+
+                @* ── Staj ── *@
+                <div class="xstc-stat">
+                    <div class="xstc-stat-lbl">İşçinin ümumi stajı</div>
+                    <div class="xstc-stat-val" id="ppStaj">—</div>
+                    <div class="xstc-stat-sub" id="ppStajFaiz">—</div>
+                </div>
+
+                <div class="xstc-divider"></div>
+
+                @* ── Şirkət ödəyəcək ── *@
                 <div class="xstc-payment xstc-payment--company">
                     <div class="xstc-pay-head">
                         <i class="bi bi-building"></i>
@@ -104,9 +131,11 @@
                     <div class="xstc-pay-body">
                         <div><strong id="ppSirketGun">—</strong> iş günü</div>
                         <div class="xstc-pay-money" id="ppSirketOdenis">—</div>
+                        <div style="font-size:10.5px;color:#64748b;margin-top:4px" id="ppSirketFormula">—</div>
                     </div>
                 </div>
 
+                @* ── DSMF ── *@
                 <div class="xstc-payment xstc-payment--dsmf">
                     <div class="xstc-pay-head">
                         <i class="bi bi-bank"></i>
@@ -124,9 +153,12 @@
                 </div>
 
                 <div class="xstc-info">
-                    <strong>14 gün limiti:</strong>
-                    Şirkət cari ildə bir işçi üçün maksimum 14 iş günü ödəyir.
-                    Cari ildə artıq istifadə: <strong id="ppOnceki">0</strong>/14 gün.
+                    <strong>Qayda:</strong>
+                    Şirkət hər xəstəlik bülletəni üçün maksimum <strong>14 iş günü</strong> ödəyir,
+                    qalanı DSMF ödəyir. Staj faizi:
+                    <strong>&lt;8 il=60%</strong>,
+                    <strong>8–12 il=80%</strong>,
+                    <strong>≥12 il=100%</strong>.
                 </div>
             </div>
 
@@ -184,6 +216,14 @@
         .xstc-stat-sub { font-size: 0.7rem; color: #8a93a8; font-style: italic; margin-top: 2px; }
 
         .xstc-divider { height: 1px; background: #ede9fe; margin: 12px 0; }
+        .xstc-block { background:#faf5ff; border:1px solid #ede9fe; border-radius:8px; padding:10px 12px; margin-bottom:10px; }
+        .xstc-block-title { font-size:11.5px; font-weight:700; color:#6b21a8; text-transform:uppercase; letter-spacing:.3px; margin-bottom:6px; }
+        .xstc-line { display:flex; justify-content:space-between; align-items:center; font-size:12px; padding:3px 0; color:#475569; }
+        .xstc-line strong { color:#0f172a; font-weight:700 }
+        .xstc-line.xstc-minus { color:#c0392b }
+        .xstc-line.xstc-minus strong { color:#c0392b }
+        .xstc-line.xstc-eq { border-top:1px dashed #cbd5e1; margin-top:3px; padding-top:6px; font-weight:700; color:#0f172a }
+        .xstc-line.xstc-eq strong { color:#6b21a8 }
 
         .xstc-payment { padding: 12px 14px; border-radius: 10px; margin-bottom: 10px; }
         .xstc-payment--company { background: #ecfdf5; border: 1px solid #bbf7d0; }
@@ -246,16 +286,42 @@
                         emptyBox.style.display = 'none';
 
                         document.getElementById('ppIsGun').textContent = d.isGunSayi + ' gün';
-                        document.getElementById('ppBirGun').textContent = fmt(d.birGunluk);
-                        document.getElementById('ppBirGunFormula').textContent =
-                            `S=${fmt(d.s).replace(' ₼','')} ÷ ${d.son12AyIsGunu} iş günü`;
 
+                        // 12 ay dövrü
+                        if (d.son12AyBaslangic && d.son12AyBitis) {
+                            const bas = new Date(d.son12AyBaslangic);
+                            const bit = new Date(d.son12AyBitis);
+                            const ayAd = ['Yan','Fev','Mar','Apr','May','İyn','İyl','Avq','Sen','Okt','Noy','Dek'];
+                            document.getElementById('ppDovr').textContent =
+                                `${ayAd[bas.getMonth()]} ${bas.getFullYear()} → ${ayAd[bit.getMonth()]} ${bit.getFullYear()}`;
+                        }
+
+                        // Gəlir bloku
+                        document.getElementById('ppS').textContent = fmt(d.s);
+                        document.getElementById('ppCixilanS').textContent = '− ' + fmt(d.son12XestelikOdenisi);
+                        document.getElementById('ppSEff').textContent = fmt(d.sEffektiv);
+
+                        // İş günü bloku
+                        document.getElementById('pp12IsGun').textContent = d.son12AyIsGunu + ' gün';
+                        document.getElementById('pp12XGun').textContent = '− ' + d.son12AyXestelikGunu + ' gün';
+                        document.getElementById('ppEffIsGun').textContent = d.son12AyEffektivIsGunu + ' gün';
+
+                        // Bir günlük
+                        document.getElementById('ppBirGun').textContent = fmt(d.birGunluk);
+
+                        // Staj
+                        const stajText = d.stajIl + ' il' + (d.stajAy > 0 ? ' ' + d.stajAy + ' ay' : '');
+                        document.getElementById('ppStaj').textContent = stajText;
+                        const faiz = Math.round(d.stajFaizi * 100);
+                        document.getElementById('ppStajFaiz').textContent = `faiz: ${faiz}%`;
+
+                        // Ödəniş bölgüsü
                         document.getElementById('ppSirketGun').textContent = d.sirketGun;
                         document.getElementById('ppSirketOdenis').textContent = fmt(d.sirketOdenis);
+                        document.getElementById('ppSirketFormula').textContent =
+                            `${fmt(d.birGunluk).replace(' ₼','')} × ${d.sirketGun} × ${faiz}%`;
                         document.getElementById('ppDsmfGun').textContent = d.dsmfGun;
                         document.getElementById('ppDsmfOdenis').textContent = fmt(d.dsmfOdenis);
-
-                        document.getElementById('ppOnceki').textContent = d.oncekiSirketGun;
 
                         if (d.xeberdarliq) {
                             document.getElementById('ppWarn').style.display = 'flex';

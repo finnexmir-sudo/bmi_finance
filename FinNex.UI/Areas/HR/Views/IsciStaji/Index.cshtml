@@ -1,0 +1,173 @@
+@model IList<FinNex.Domain.Entities.HR.Isci>
+@{
+    ViewData["Title"] = "İşçi Stajı";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var axtaris = ViewBag.Axtaris as string;
+    var bugun = DateTime.Today;
+
+    (int il, int ay, int faiz, string menbe) HesablaStaj(FinNex.Domain.Entities.HR.Isci i)
+    {
+        var bas = i.UmumiIsStajiBaslangic ?? i.IsheQebulTarixi;
+        int il = bugun.Year - bas.Year;
+        int ay = bugun.Month - bas.Month;
+        if (bugun.Day < bas.Day) ay--;
+        if (ay < 0) { il--; ay += 12; }
+        int faiz = il < 8 ? 60 : il < 12 ? 80 : 100;
+        string menbe = i.UmumiIsStajiBaslangic.HasValue ? "ümumi" : "bank";
+        return (il, ay, faiz, menbe);
+    }
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">İşçi Stajı</div>
+            <div class="fn-page-sub">
+                Xəstəlik ödənişində istifadə olunan ümumi iş stajı.
+                Default olaraq <strong>bu banka işə gəlmə tarixi</strong> götürülür.
+                Əgər işçi əvvəl başqa yerlərdə işləyibsə, ümumi staj başlanğıcı daxil edin.
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null) { <div class="fn-alert fn-alert--success">@TempData["Success"]</div> }
+    @if (TempData["Error"] != null) { <div style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Error"]</div> }
+
+    @* ── Axtarış ── *@
+    <form method="get" asp-action="Index" style="display:flex;gap:8px;margin-bottom:16px">
+        <input type="text" name="axtaris" value="@axtaris" placeholder="İşçi adı, soyadı və ya FİN..."
+               style="flex:1;max-width:420px;padding:9px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:13px" />
+        <button type="submit" style="padding:9px 16px;background:#1a2332;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+            <i class="bi bi-search"></i> Axtar
+        </button>
+        @if (!string.IsNullOrWhiteSpace(axtaris))
+        {
+            <a asp-action="Index" style="padding:9px 14px;font-size:13px;color:#64748b;text-decoration:none;display:flex;align-items:center">Təmizlə</a>
+        }
+    </form>
+
+    <div style="padding:12px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;margin-bottom:12px;font-size:12px;color:#1e40af">
+        <strong>Staj faizi qaydası:</strong>
+        <span>&lt; 8 il → 60%</span> ·
+        <span>8 – 12 il → 80%</span> ·
+        <span>≥ 12 il → 100%</span>
+    </div>
+
+    <div class="fn-card" style="padding:0;overflow:hidden">
+        <table class="km-table">
+            <thead>
+                <tr>
+                    <th style="min-width:220px">İşçi</th>
+                    <th>Departament</th>
+                    <th style="width:140px">Bu bankda işə gəlmə</th>
+                    <th style="width:180px">Ümumi staj başlanğıcı</th>
+                    <th style="width:150px">Cari staj</th>
+                    <th style="width:90px">Faiz</th>
+                    <th style="width:110px">Əməliyyat</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var i in Model)
+                {
+                    var (il, ay, faiz, menbe) = HesablaStaj(i);
+                    var teyinat = i.IsciTeyinatlari?.FirstOrDefault(t => t.BitmeTarixi == null);
+                    var deptAd = teyinat?.Departament?.Ad ?? "—";
+
+                    <tr class="km-row" data-isci-id="@i.Id">
+                        <td class="km-td-name">
+                            <div style="font-weight:600">@i.Ad @i.Soyad</div>
+                            <div style="font-size:10.5px;color:#94a3b8">FİN: @i.FIN</div>
+                        </td>
+                        <td><span style="font-size:12px;color:#475569">@deptAd</span></td>
+                        <td style="font-size:12px">@i.IsheQebulTarixi.ToString("dd.MM.yyyy")</td>
+                        <td>
+                            <input type="date" class="staj-input" data-isci-id="@i.Id"
+                                   value="@(i.UmumiIsStajiBaslangic?.ToString("yyyy-MM-dd"))"
+                                   max="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                   style="padding:5px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;width:140px" />
+                            @if (!i.UmumiIsStajiBaslangic.HasValue)
+                            {
+                                <div style="font-size:10px;color:#94a3b8;margin-top:2px">default: bank tarixi</div>
+                            }
+                        </td>
+                        <td>
+                            <span class="cari-staj" style="font-weight:700;color:#0f172a;font-size:13px">@il il @ay ay</span>
+                            <div style="font-size:10px;color:#94a3b8">mənbə: <span class="staj-menbe">@menbe</span></div>
+                        </td>
+                        <td>
+                            <span class="cari-faiz" style="display:inline-block;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700;
+                                  background:@(faiz == 100 ? "#dcfce7" : faiz == 80 ? "#fef3c7" : "#fee2e2");
+                                  color:@(faiz == 100 ? "#166534" : faiz == 80 ? "#92400e" : "#991b1b")">
+                                @faiz%
+                            </span>
+                        </td>
+                        <td>
+                            <button type="button" class="fn-btn fn-btn--primary fn-btn--sm staj-save-btn" data-isci-id="@i.Id">
+                                Saxla
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/kredit-muraciet.css" asp-append-version="true" />
+}
+
+@section Scripts {
+<script>
+    (function () {
+        function showToast(msg, ok) {
+            var t = document.createElement('div');
+            t.style.cssText = 'position:fixed;top:20px;right:20px;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;' +
+                (ok ? 'background:#16a34a;color:#fff' : 'background:#dc2626;color:#fff');
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(function () { t.remove(); }, 3000);
+        }
+
+        document.querySelectorAll('.staj-save-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = btn.dataset.isciId;
+                var row = btn.closest('tr');
+                var input = row.querySelector('.staj-input');
+                btn.disabled = true;
+
+                var formData = new FormData();
+                formData.append('isciId', id);
+                if (input.value) formData.append('umumiIsStajiBaslangic', input.value);
+
+                var csrf = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (csrf) formData.append('__RequestVerificationToken', csrf.value);
+
+                fetch('/HR/IsciStaji/Update', { method: 'POST', body: formData })
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        if (d.success) {
+                            showToast(d.message, true);
+                            var cariSpan = row.querySelector('.cari-staj');
+                            var menbeSpan = row.querySelector('.staj-menbe');
+                            var faizSpan = row.querySelector('.cari-faiz');
+                            cariSpan.textContent = d.stajIl + ' il ' + d.stajAy + ' ay';
+                            menbeSpan.textContent = d.menbe;
+                            faizSpan.textContent = d.faiz + '%';
+                            var bg = d.faiz === 100 ? '#dcfce7' : d.faiz === 80 ? '#fef3c7' : '#fee2e2';
+                            var c = d.faiz === 100 ? '#166534' : d.faiz === 80 ? '#92400e' : '#991b1b';
+                            faizSpan.style.background = bg;
+                            faizSpan.style.color = c;
+                        } else {
+                            showToast(d.message, false);
+                        }
+                    })
+                    .catch(function () { showToast('Server xətası.', false); })
+                    .finally(function () { btn.disabled = false; });
+            });
+        });
+    })();
+</script>
+
+@Html.AntiForgeryToken()
+}

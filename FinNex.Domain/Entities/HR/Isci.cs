@@ -19,6 +19,13 @@
         public DateTime? IsdenAyrilmaTarixi { get; set; }
         public IsciStatus Status { get; set; } = IsciStatus.Aktiv;
 
+        /// <summary>
+        /// Ümumi iş stajı başlanğıc tarixi (əvvəlki iş yerləri daxil).
+        /// Null olarsa — IsheQebulTarixi istifadə olunur (yalnız bu bank).
+        /// Xəstəlik ödənişində staj faizi (60/80/100%) bu tarixdən hesablanır.
+        /// </summary>
+        public DateTime? UmumiIsStajiBaslangic { get; set; }
+
         // Sistem əlaqəsi
         public int? AppUserId { get; set; }
         public AppUser? AppUser { get; set; }
