@@ -352,6 +352,31 @@
                     <input type="hidden" name="rol" value="@rol" />
                     <input type="hidden" name="status" id="formStatus" value="true" />
 
+                    @* HR üçün gün sayı manual düzəliş bloğu *@
+                    @if (rol == "Hr" && Model.IsMezuniyyet)
+                    {
+                        <div style="margin-bottom:14px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                                <label style="font-size:12px;color:#475569;font-weight:600">Gün sayı</label>
+                                <label style="font-size:11px;color:#64748b;display:flex;align-items:center;gap:5px;cursor:pointer">
+                                    <input type="checkbox" id="tsd-gun-override" style="cursor:pointer" />
+                                    Düzəliş et
+                                </label>
+                            </div>
+                            <div style="font-size:11.5px;color:#64748b;margin-bottom:8px">
+                                Avtomatik hesablanmış: <strong style="color:#0f172a">@Model.IsGunlerininSayi gün</strong>
+                                <span style="color:#94a3b8;margin-left:6px">(həftəsonu sayılır, hesablanmayan bayramlar skip)</span>
+                            </div>
+                            <div id="tsd-gun-override-box" style="display:none">
+                                <input type="number" name="gunSayiManual" id="tsd-gun-manual" min="0" max="365"
+                                       value="@Model.IsGunlerininSayi" placeholder="Faktiki gün sayı"
+                                       style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;margin-bottom:6px" />
+                                <input type="text" name="duzelisSebebi" placeholder="Düzəlişin səbəbi (məs. Qurban bayramı 1 gün)"
+                                       style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:12px" />
+                            </div>
+                        </div>
+                    }
+
                     <label style="font-size:12px;color:#8a93a8;display:block;margin-bottom:6px">İmtina səbəbi (ixtiyari)</label>
                     <textarea name="qeyd" class="tsd-approve-reason"
                               placeholder="İmtina etdikdə səbəbi qeyd edin..."></textarea>
@@ -399,4 +424,19 @@
 
 @section Scripts {
     <script src="~/js/User/tesdiq.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            var cb = document.getElementById('tsd-gun-override');
+            var box = document.getElementById('tsd-gun-override-box');
+            if (!cb || !box) return;
+            var inputs = box.querySelectorAll('input');
+            // Default: checkbox yox, input-lar disabled (submit olunmur)
+            inputs.forEach(function (i) { i.disabled = true; });
+            cb.addEventListener('change', function () {
+                box.style.display = cb.checked ? '' : 'none';
+                inputs.forEach(function (i) { i.disabled = !cb.checked; });
+                if (cb.checked) box.querySelector('input[type="number"]').focus();
+            });
+        })();
+    </script>
 }

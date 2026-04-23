@@ -21,6 +21,7 @@ const bgModal = {
         this.baslangicField = document.getElementById('bgBaslangicTarix');
         this.bitisField = document.getElementById('bgBitisTarix');
         this.herIlField = document.getElementById('bgHerIl');
+        this.mezuniyyetdeHesablanirField = document.getElementById('bgMezuniyyetdeHesablanir');
         this.submitBtn = document.getElementById('bgSubmitBtn');
 
         this.form.addEventListener('submit', (e) => {
@@ -64,6 +65,9 @@ const bgModal = {
                 this.adField.value = data.ad;
                 this.baslangicField.value = data.tarix;
                 this.herIlField.checked = data.herIlTeyinOlunur;
+                if (this.mezuniyyetdeHesablanirField) {
+                    this.mezuniyyetdeHesablanirField.checked = !!data.mezuniyyetdeHesablanir;
+                }
                 // Set tip radio
                 const tipId = data.tip === 2 ? 'bgTip2' : 'bgTip1';
                 const radio = document.getElementById(tipId);
@@ -125,9 +129,12 @@ const bgModal = {
         const url = this.isEdit ? '/HR/BayramGunu/Edit' : '/HR/BayramGunu/Create';
         const formData = new FormData(this.form);
 
-        // Checkbox handling: if not checked, don't send true
+        // Checkbox handling: if not checked, send 'false' (checkbox unchecked doesn't submit)
         if (!this.herIlField.checked) {
             formData.set('herIlTeyinOlunur', 'false');
+        }
+        if (this.mezuniyyetdeHesablanirField && !this.mezuniyyetdeHesablanirField.checked) {
+            formData.set('mezuniyyetdeHesablanir', 'false');
         }
 
         this.submitBtn.disabled = true;

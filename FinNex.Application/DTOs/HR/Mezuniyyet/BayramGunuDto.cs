@@ -7,5 +7,6 @@
             public string? Ad { get; set; }
             public DateTime Tarix { get; set; }
             public bool HerIlTeyinOlunur { get; set; }
+            public bool MezuniyyetdeHesablanir { get; set; }
     }
 }

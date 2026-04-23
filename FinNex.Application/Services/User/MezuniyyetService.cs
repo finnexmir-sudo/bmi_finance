@@ -214,22 +214,29 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         return Result.Ok("Şöbə rəisi qərarı qeydə alındı.");
     }
 
-    // --- Yardımçı Alqoritm: İş günlərini bayramlara görə hesablayır ---
+    // --- Yardımçı Alqoritm: Məzuniyyət günlərini hesablayır ---
+    //
+    // Qayda:
+    //   - Həftəsonu (Ş/B) → SAYILIR (bank daxili qaydaya uyğun)
+    //   - Bayram günləri  → yalnız MezuniyyetdeHesablanir=true olsa sayılır
+    //     (default false — skip). Bu sayəsində "1 gün hesablanır, 1 yox"
+    //     kimi hallar (məs. Qurban bayramı) per-day konfiqurasiya olunur.
+    //   - HR təsdiq zamanı əl ilə düzəliş etmək imkanı var (override
+    //     MezuniyyetService.HrTesdiqAsync-də tətbiq olunur).
     private async Task<int> HesablaIsGunuAsync(DateTime baslangic, DateTime bitis)
     {
-        var bayramlar = await _unitOfWork.Repository<BayramGunu>()
-            .HamisiniGetirAsync(x => x.Tarix >= baslangic && x.Tarix <= bitis);
+        // Bayramlardan yalnız "hesablanmır" olanlar skip olunur
+        var skipBayramlar = await _unitOfWork.Repository<BayramGunu>()
+            .HamisiniGetirAsync(x => x.Tarix >= baslangic && x.Tarix <= bitis
+                                  && x.Tip == GunTipi.Bayram
+                                  && !x.MezuniyyetdeHesablanir);
 
         int count = 0;
         for (var date = baslangic; date <= bitis; date = date.AddDays(1))
         {
-            // Şənbə (6) və Bazar (0) günləri deyilsə VƏ bayram günləri siyahısında yoxdursa
-            if (date.DayOfWeek != DayOfWeek.Saturday &&
-                date.DayOfWeek != DayOfWeek.Sunday &&
-                !bayramlar.Any(b => b.Tarix.Date == date.Date))
-            {
-                count++;
-            }
+            if (skipBayramlar.Any(b => b.Tarix.Date == date.Date))
+                continue; // hesablanmayan bayram — skip
+            count++;       // qalan hər gün sayılır (həftəsonu daxil)
         }
         return count;
     }
@@ -266,7 +273,8 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         return Result.Ok("Rəhbər qərarı qeydə alındı.");
     }
     // HrTesdiqAsync metodu
-    public async Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd, int hrId)
+    public async Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd, int hrId,
+                                              int? gunSayiManual = null, string? duzelisSebebi = null)
     {
         var m = await _unitOfWork.Repository<Mezuniyyet>()
             .GetirAsync(x => x.Id == id);
@@ -280,6 +288,18 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             : MezuniyyetStatus.ImtinaEdildi;
 
         if (!status) m.ImtinaSebebi = qeyd;
+
+        // HR manual gün sayı düzəlişi (təsdiq halında — ivə avtomatikdən
+        // fərqli dəyər verilibsə saxlanır, balans və davamiyyət buna görə)
+        if (status && gunSayiManual.HasValue && gunSayiManual.Value != m.IsGunlerininSayi)
+        {
+            if (gunSayiManual.Value < 0)
+                return Result.Fail("Gün sayı mənfi ola bilməz.");
+            m.IsGunlerininSayiManual = gunSayiManual.Value;
+            m.GunHesabiDuzelisiSebebi = string.IsNullOrWhiteSpace(duzelisSebebi)
+                ? "(HR tərəfindən əl ilə düzəldilib)"
+                : duzelisSebebi.Trim();
+        }
 
         // Əmr nömrəsi — yalnız HR təsdiq edərkən (imtina halında verilmir).
         // Hər il 1-dən başlayır; rəqəm hissəsi ayrıca saxlanır ki, araya
@@ -313,9 +333,11 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             // FIFO — ən köhnə illərdən istifadə et, sonra cari ilə gəl.
             // Bu məntiq illər boyu yığılmış qalıq günlərin ilk növbədə xərclənməsini
             // təmin edir (cari ilin balansı ən sonda istifadə olunur).
-            await BalansiFifoKesAsync(m.IsciId, m.Nov, m.IsGunlerininSayi);
+            // Effektiv gün sayı: HR manual dəyər varsa onu, yoxdursa avtomatiki.
+            await BalansiFifoKesAsync(m.IsciId, m.Nov, m.EfektivGunSayi);
 
-            // Davamiyyətdə növə görə qeydlər yarat (hər iş günü üçün)
+            // Davamiyyətdə növə görə qeydlər yarat (həftəsonu da sayılır,
+            // yalnız MezuniyyetdeHesablanir=false olan bayramlar skip olunur)
             var davamiyyetStatusu = m.Nov switch
             {
                 MezuniyyetNovu.Xestelik => DavamiyyetStatus.Xestelik,
@@ -323,14 +345,15 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 _ => DavamiyyetStatus.Icazeli
             };
 
-            var bayramlar = await _unitOfWork.Repository<BayramGunu>()
-                .HamisiniGetirAsync(x => x.Tarix >= m.BaslamaTarixi && x.Tarix <= m.BitmeTarixi);
+            var skipBayramlar = await _unitOfWork.Repository<BayramGunu>()
+                .HamisiniGetirAsync(x => x.Tarix >= m.BaslamaTarixi && x.Tarix <= m.BitmeTarixi
+                                      && x.Tip == GunTipi.Bayram
+                                      && !x.MezuniyyetdeHesablanir);
 
             for (var gun = m.BaslamaTarixi; gun <= m.BitmeTarixi; gun = gun.AddDays(1))
             {
-                if (gun.DayOfWeek == DayOfWeek.Saturday || gun.DayOfWeek == DayOfWeek.Sunday)
-                    continue;
-                if (bayramlar.Any(b => b.Tarix.Date == gun.Date))
+                // Hesablanmayan bayramlar skip — həftəsonu artıq skip EDİLMİR
+                if (skipBayramlar.Any(b => b.Tarix.Date == gun.Date))
                     continue;
 
                 // Cari günün qeydi varmı? Varsa və "Qayıb" idisə — yeni statusa çevir.
@@ -1427,14 +1450,16 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     _ => DavamiyyetStatus.Icazeli
                 };
 
-                var bayramlar = await _unitOfWork.Repository<BayramGunu>()
-                    .HamisiniGetirAsync(x => x.Tarix >= dto.BaslamaTarixi && x.Tarix <= dto.BitmeTarixi);
+                var skipBayramlar = await _unitOfWork.Repository<BayramGunu>()
+                    .HamisiniGetirAsync(x => x.Tarix >= dto.BaslamaTarixi && x.Tarix <= dto.BitmeTarixi
+                                          && x.Tip == GunTipi.Bayram
+                                          && !x.MezuniyyetdeHesablanir);
 
                 int duzeldilenQaib = 0, yeniQeyd = 0;
                 for (var gun = dto.BaslamaTarixi.Date; gun <= dto.BitmeTarixi.Date; gun = gun.AddDays(1))
                 {
-                    if (gun.DayOfWeek == DayOfWeek.Saturday || gun.DayOfWeek == DayOfWeek.Sunday) continue;
-                    if (bayramlar.Any(b => b.Tarix.Date == gun.Date)) continue;
+                    // Həftəsonu artıq skip edilmir — yeni qayda
+                    if (skipBayramlar.Any(b => b.Tarix.Date == gun.Date)) continue;
 
                     var mevcud = await _unitOfWork.Repository<Davamiyyet>()
                         .GetirAsync(x => x.IsciId == dto.IsciId && x.Tarix.Date == gun.Date);
