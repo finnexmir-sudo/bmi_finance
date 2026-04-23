@@ -14,6 +14,7 @@ public class SenedDetailVM
     public DateTime SenedTarixi { get; set; }
     public DateTime YaradilmaTarixi { get; set; }
     public int? YaradanIcraciId { get; set; }
+    public string? YaradanAd { get; set; }
     public DateTime? YenilenmeTarixi { get; set; }
     public List<string> Tags { get; set; } = new();
     public List<SenedFaylItemVM> Fayllar { get; set; } = new();

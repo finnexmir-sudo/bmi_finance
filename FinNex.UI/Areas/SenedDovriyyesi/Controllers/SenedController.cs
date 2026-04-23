@@ -402,6 +402,18 @@ public class SenedController : Controller
         }
 
         var dto = result.Data;
+
+        // Yaradanın tam adı
+        if (dto.YaradanIcraciId.HasValue)
+        {
+            var yaradan = await _userManager.FindByIdAsync(dto.YaradanIcraciId.Value.ToString());
+            if (yaradan != null)
+            {
+                var fullName = $"{yaradan.Ad} {yaradan.Soyad}".Trim();
+                dto.YaradanAd = string.IsNullOrWhiteSpace(fullName) ? yaradan.UserName : fullName;
+            }
+        }
+
         var vm = MapToDetailVM(dto);
         return View(vm);
     }
@@ -425,7 +437,10 @@ public class SenedController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        if (!await TamIcazeVarAsync(sened.Data.DepartmentId))
+        // İcazə: Admin / şöbədə TamIcazə sahibi / və ya sənədi yaradan özü
+        var userId = GetUserId();
+        if (!await TamIcazeVarAsync(sened.Data.DepartmentId)
+            && sened.Data.YaradanIcraciId != userId)
         {
             TempData["Error"] = "Bu sənədə fayl yükləmək icazəniz yoxdur.";
             return RedirectToAction(nameof(Detal), new { id = senedId });
@@ -441,7 +456,7 @@ public class SenedController : Controller
             Stream = stream
         };
 
-        var result = await _senedService.UploadNewVersionAsync(uploadDto, GetUserId(), GetIp());
+        var result = await _senedService.UploadNewVersionAsync(uploadDto, userId, GetIp());
 
         TempData[result.Success ? "Success" : "Error"] = result.Message;
         return RedirectToAction(nameof(Detal), new { id = senedId });
@@ -784,8 +799,10 @@ public class SenedController : Controller
         if (sened == null || !sened.Success || sened.Data == null)
             return NotFound();
 
-        // İcazə yoxla
-        if (!await TamIcazeVarAsync(sened.Data.DepartmentId))
+        // İcazə: Admin / şöbədə TamIcazə / və ya sənədi yaradan özü
+        var userId = GetUserId();
+        if (!await TamIcazeVarAsync(sened.Data.DepartmentId)
+            && sened.Data.YaradanIcraciId != userId)
         {
             TempData["Error"] = "Bu sənədi redaktə etmək icazəniz yoxdur.";
             return RedirectToAction(nameof(Detal), new { id });
@@ -825,6 +842,19 @@ public class SenedController : Controller
             return View(vm);
         }
 
+        // İcazə: Admin / şöbədə TamIcazə / və ya sənədi yaradan özü
+        var userId = GetUserId();
+        var movcud = await _senedService.IdIleGetirAsync(vm.Id);
+        if (movcud == null || !movcud.Success || movcud.Data == null)
+            return NotFound();
+
+        if (!await TamIcazeVarAsync(movcud.Data.DepartmentId)
+            && movcud.Data.YaradanIcraciId != userId)
+        {
+            TempData["Error"] = "Bu sənədi redaktə etmək icazəniz yoxdur.";
+            return RedirectToAction(nameof(Detal), new { id = vm.Id });
+        }
+
         var updateDto = new SenedUpdateDto
         {
             Id = vm.Id,
@@ -835,7 +865,7 @@ public class SenedController : Controller
             TagIds = vm.TagIds ?? new List<int>()
         };
 
-        var result = await _senedService.UpdateAsync(updateDto, GetUserId(), GetIp());
+        var result = await _senedService.UpdateAsync(updateDto, userId, GetIp());
 
         if (!result.Success)
         {
@@ -929,6 +959,7 @@ public class SenedController : Controller
         Sobe = dto.Sobe,
         SenedNovu = dto.SenedNovu,
         YaradanIcraciId = dto.YaradanIcraciId,
+        YaradanAd = dto.YaradanAd,
         SenedTarixi = dto.SenedTarixi,
         YaradilmaTarixi = dto.YaradilmaTarixi,
         YenilenmeTarixi = dto.YenilenmeTarixi,
