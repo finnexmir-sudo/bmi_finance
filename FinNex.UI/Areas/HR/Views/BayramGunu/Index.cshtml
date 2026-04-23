@@ -79,6 +79,33 @@
     </div>
 
     <div class="bg-table-card">
+        @{
+            var iller = ViewBag.Iller as List<int> ?? new List<int>();
+            var secilmisIl = (int)(ViewBag.SecilmisIl ?? DateTime.Today.Year);
+        }
+        <div class="bg-table-head">
+            <div class="bg-table-title">
+                <i class="bi bi-list-ul"></i>
+                <strong>@secilmisIl</strong> ili üçün qeydlər
+                <span class="bg-table-sub">(hər il təkrar olunanlar da daxildir)</span>
+            </div>
+            <div class="bg-table-filter">
+                <label for="bgIlFilter" class="bg-table-filter-label">İl:</label>
+                <select id="bgIlFilter" class="bg-input bg-input--sm" onchange="window.location.href='?il=' + this.value;">
+                    @foreach (var y in iller)
+                    {
+                        if (y == secilmisIl)
+                        {
+                            <option value="@y" selected>@y</option>
+                        }
+                        else
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
         <table class="bg-table">
             <thead>
                 <tr>
