@@ -452,6 +452,40 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             ViewBag.Il = cIl;
             ViewBag.Ay = cAy;
+            // Məzuniyyət ödənişləri (bu ay üçün təsdiqlənmiş məzuniyyətlərdən)
+            // Daha dəqiq hesab MaasHesablamaService-də aparılır — burda sadəcə
+            // preview üçün ödənilmiş məbləği götürürük (əgər varsa).
+            var isciMezuniyyetMap = new Dictionary<int, (int gun, decimal odenis)>();
+            var aktivMez = await _unitOfWork.Repository<Mezuniyyet>().Query()
+                .Where(m => !m.Silinib && isciIdler.Contains(m.IsciId)
+                         && m.Status == MezuniyyetStatus.Tesdiqlenib
+                         && m.BaslamaTarixi <= ayBitis && m.BitmeTarixi >= hesabTarixi)
+                .ToListAsync();
+            foreach (var m in aktivMez)
+            {
+                var cur = isciMezuniyyetMap.GetValueOrDefault(m.IsciId);
+                isciMezuniyyetMap[m.IsciId] = (
+                    cur.gun + (m.IsGunlerininSayiManual ?? m.IsGunlerininSayi),
+                    cur.odenis + (m.OdenenMebleg ?? 0)
+                );
+            }
+
+            // Xəstəlik ödənişləri (XestelikOdenis-dən ay üzrə, şirkət payı gross-a əlavə olunur)
+            var xestelikOdenisList = await _unitOfWork.Repository<XestelikOdenis>().Query()
+                .Where(o => !o.Silinib && isciIdler.Contains(o.IsciId)
+                         && o.Il == cIl && o.Ay == cAy)
+                .ToListAsync();
+            var isciXestelikMap = xestelikOdenisList
+                .GroupBy(o => o.IsciId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => (
+                        sirketGun: g.Sum(o => o.SirketGunSayi),
+                        dsmfGun: g.Sum(o => o.DsmfGunSayi),
+                        sirketOdenis: g.Sum(o => o.SirketOdenis),
+                        dsmfOdenis: g.Sum(o => o.DsmfOdenis)
+                    ));
+
             ViewBag.Hesablanmis = hesablanmis;
             ViewBag.CariMaasMap = cariMaasMap;
             ViewBag.IbanMap = ibanMap;
@@ -462,6 +496,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.IsciHysMap = isciHysMap;
             ViewBag.HysIsvFaiz = hysIsvFaiz;
             ViewBag.IsciAvansMap = isciAvansMap;
+            ViewBag.IsciMezuniyyetMap = isciMezuniyyetMap;
+            ViewBag.IsciXestelikMap = isciXestelikMap;
             ViewBag.Iller = IlSiyahisi(cIl);
             ViewBag.Aylar = AySiyahisi(cAy);
 

@@ -2,12 +2,6 @@
 @{
     ViewData["Title"] = "Maaş Hesabla";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-
-    // Haradan gəlindiyini təyin et — Referer header-dən
-    var referer = Context.Request.Headers["Referer"].ToString();
-    var returnUrl = !string.IsNullOrEmpty(referer) && referer.Contains("/HR/Maas/")
-        ? referer
-        : Url.Action("Index", "Maas", new { area = "HR" });
 }
 
 <div class="fn-page">
@@ -16,7 +10,7 @@
             <div class="fn-page-title">Fərdi Maaş Hesabla</div>
             <div class="fn-page-sub">İşçi seçin, bonus/cərimə daxil edin, hesablayın</div>
         </div>
-        <a href="@returnUrl" class="fn-btn fn-btn--outline fn-btn--sm">← Geri qayıt</a>
+        <a asp-action="Index" asp-controller="Maas" asp-area="HR" class="fn-btn fn-btn--outline fn-btn--sm">← Maaş siyahısına qayıt</a>
     </div>
 
     @if (TempData["Error"] != null)
