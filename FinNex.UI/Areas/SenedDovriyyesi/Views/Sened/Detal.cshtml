@@ -145,6 +145,13 @@
                         <div class="sd-meta-key">Yaradılma</div>
                         <div class="sd-meta-val">@Model.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</div>
                     </div>
+                    @if (!string.IsNullOrWhiteSpace(Model.YaradanAd))
+                    {
+                        <div class="sd-meta-row">
+                            <div class="sd-meta-key">Yaradan</div>
+                            <div class="sd-meta-val" style="font-weight:600;color:#1a2332;">@Model.YaradanAd</div>
+                        </div>
+                    }
                     @if (Model.YenilenmeTarixi.HasValue)
                     {
                         <div class="sd-meta-row">
