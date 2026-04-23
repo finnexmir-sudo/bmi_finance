@@ -64,6 +64,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 ad = entity.Ad,
                 tarix = entity.Tarix.ToString("yyyy-MM-dd"),
                 herIlTeyinOlunur = entity.HerIlTeyinOlunur,
+                mezuniyyetdeHesablanir = entity.MezuniyyetdeHesablanir,
                 tip = (int)entity.Tip
             });
         }
