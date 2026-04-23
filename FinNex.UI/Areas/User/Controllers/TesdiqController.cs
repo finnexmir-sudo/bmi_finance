@@ -245,7 +245,8 @@ namespace FinNex.UI.Areas.User.Controllers
         // TesdiqController.cs — MezuniyyetTesdiq metodu, DƏYİŞ:
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MezuniyyetTesdiq(int id, bool status, string? qeyd, string rol)
+        public async Task<IActionResult> MezuniyyetTesdiq(int id, bool status, string? qeyd, string rol,
+            int? gunSayiManual = null, string? duzelisSebebi = null)
         {
             var appUser = await _userManager.GetUserAsync(User);
             var isciId = appUser?.IsciId ?? 0;
@@ -254,13 +255,15 @@ namespace FinNex.UI.Areas.User.Controllers
             switch (rol)
             {
                 case "SobeReisi":
-                    result = await _mezuniyyetService.SobeReisiTesdiqAsync(id, status, qeyd, isciId); // ← isciId əlavə et
+                    result = await _mezuniyyetService.SobeReisiTesdiqAsync(id, status, qeyd, isciId);
                     break;
                 case "Rehber":
-                    result = await _mezuniyyetService.RehberTesdiqAsync(id, status, qeyd, isciId);    // ← isciId əlavə et
+                    result = await _mezuniyyetService.RehberTesdiqAsync(id, status, qeyd, isciId);
                     break;
                 case "Hr":
-                    result = await _mezuniyyetService.HrTesdiqAsync(id, status, qeyd, isciId);        // ← isciId əlavə et
+                    // HR üçün opsional gün sayı düzəlişi
+                    result = await _mezuniyyetService.HrTesdiqAsync(id, status, qeyd, isciId,
+                        gunSayiManual, duzelisSebebi);
                     break;
                 default:
                     TempData["Error"] = "Naməlum rol.";
