@@ -170,7 +170,7 @@ const bgModal = {
 };
 
 function bgDelete(id) {
-    if (!confirm('Bu bayrami silmek isteyirsiniz?')) return;
+    if (!confirm('Bu qeydi silmək istəyirsiniz?')) return;
 
     const formData = new FormData();
     formData.append('id', id);
@@ -225,10 +225,20 @@ function refreshTable() {
             const emptyEl = document.querySelector('.bg-table-card .bg-empty');
             if (emptyEl) emptyEl.remove();
 
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
             tbody.innerHTML = records.map(r => {
                 const tipBadge = r.tip === 2
                     ? '<span class="bg-badge bg-badge--work"><i class="bi bi-briefcase-fill"></i> İş günü</span>'
                     : '<span class="bg-badge bg-badge--holiday"><i class="bi bi-calendar-heart"></i> Qeyri iş günü</span>';
+                // r.tarix formatı: dd.MM.yyyy → Date obyekti yaradaq
+                const parts = r.tarix.split('.');
+                const recDate = parts.length === 3 ? new Date(+parts[2], +parts[1] - 1, +parts[0]) : null;
+                const kecmis = !r.herIlTeyinOlunur && recDate && recDate < today;
+                const deleteBtn = kecmis
+                    ? '<button class="bg-btn-icon bg-btn-icon--delete" disabled title="Keçmiş tarixli qeyd silinə bilməz"><i class="bi bi-trash3"></i></button>'
+                    : `<button class="bg-btn-icon bg-btn-icon--delete" data-delete-id="${r.id}" title="Sil"><i class="bi bi-trash3"></i></button>`;
                 const herIlBadge = r.herIlTeyinOlunur
                     ? '<span class="bg-badge bg-badge--yes"><i class="bi bi-check-circle-fill"></i> Bəli</span>'
                     : '<span class="bg-badge bg-badge--no"><i class="bi bi-x-circle"></i> Xeyr</span>';
@@ -240,12 +250,10 @@ function refreshTable() {
                     <td>${tipBadge}</td>
                     <td>${herIlBadge}</td>
                     <td>
-                        <button class="bg-btn-icon bg-btn-icon--edit" data-edit-id="${r.id}" title="Duzelis et">
+                        <button class="bg-btn-icon bg-btn-icon--edit" data-edit-id="${r.id}" title="Düzəliş et">
                             <i class="bi bi-pencil-square"></i>
                         </button>
-                        <button class="bg-btn-icon bg-btn-icon--delete" data-delete-id="${r.id}" title="Sil">
-                            <i class="bi bi-trash3"></i>
-                        </button>
+                        ${deleteBtn}
                     </td>
                 </tr>`;
             }).join('');

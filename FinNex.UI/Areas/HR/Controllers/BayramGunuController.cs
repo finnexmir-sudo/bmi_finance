@@ -140,6 +140,20 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var repo = _unitOfWork.Repository<BayramGunu>();
+            var entity = await repo.IdIleGetirAsync(id);
+            if (entity == null || entity.Silinib)
+                return Json(new { success = false, message = "Qeyd tapılmadı." });
+
+            // Keçmiş tarixli qeydlər silinə bilməz
+            // (hər il təkrar olunanlar istisnadır — onların ilkin tarixi keçmişdə ola bilər,
+            //  amma ümumi təsir cari/gələcək ildir)
+            if (!entity.HerIlTeyinOlunur && entity.Tarix.Date < DateTime.Today)
+                return Json(new
+                {
+                    success = false,
+                    message = "Keçmiş tarixli qeydi silmək mümkün deyil."
+                });
+
             var result = await repo.YumshakSilAsync(id);
             await _unitOfWork.YaddaSaxlaAsync();
 

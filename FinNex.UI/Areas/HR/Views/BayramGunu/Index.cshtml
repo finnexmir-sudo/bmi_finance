@@ -147,12 +147,25 @@
                             }
                         </td>
                         <td>
-                            <button class="bg-btn-icon bg-btn-icon--edit" data-edit-id="@item.Id" title="Duzelis et">
+                            <button class="bg-btn-icon bg-btn-icon--edit" data-edit-id="@item.Id" title="Düzəliş et">
                                 <i class="bi bi-pencil-square"></i>
                             </button>
-                            <button class="bg-btn-icon bg-btn-icon--delete" data-delete-id="@item.Id" title="Sil">
-                                <i class="bi bi-trash3"></i>
-                            </button>
+                            @{
+                                var kecmis = !item.HerIlTeyinOlunur && item.Tarix.Date < DateTime.Today;
+                            }
+                            @if (kecmis)
+                            {
+                                <button class="bg-btn-icon bg-btn-icon--delete" disabled
+                                        title="Keçmiş tarixli qeyd silinə bilməz">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="bg-btn-icon bg-btn-icon--delete" data-delete-id="@item.Id" title="Sil">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            }
                         </td>
                     </tr>
                 }
