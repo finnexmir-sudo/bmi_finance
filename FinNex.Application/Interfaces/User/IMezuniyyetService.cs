@@ -11,7 +11,14 @@ namespace FinNex.Application.Interfaces
         Task<Result<IList<MezuniyyetListDto>>> GetListAsync();
         Task<Result> SobeReisiTesdiqAsync(int id, bool status, string? qeyd, int sobeReisiId);
         Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId);
-        Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd, int hrId);
+        /// <summary>
+        /// HR təsdiq. Opsional olaraq manual gün sayı və düzəliş səbəbi ilə.
+        /// gunSayiManual null olarsa avtomatik hesablanmış IsGunlerininSayi
+        /// istifadə olunur. Dəyər varsa balans kəsimi və davamiyyət qeydləri
+        /// bu rəqəmə görə icra olunur.
+        /// </summary>
+        Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd, int hrId,
+                                     int? gunSayiManual = null, string? duzelisSebebi = null);
 
         // YENİ: İşçi paneli üçün əlavə edildi
         Task<Result<IList<MezuniyyetListDto>>> GetIsciMezuniyyetleriAsync(int isciId);

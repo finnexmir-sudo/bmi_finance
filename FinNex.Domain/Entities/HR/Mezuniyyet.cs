@@ -16,7 +16,20 @@ namespace FinNex.Domain.Entities.HR
 
         public DateTime BaslamaTarixi { get; set; }
         public DateTime BitmeTarixi { get; set; }
-        public int IsGunlerininSayi { get; set; } // Bayramlar çıxılmaqla hesablanan gün
+        public int IsGunlerininSayi { get; set; } // Avtomatik hesablanan (qayda üzrə)
+
+        /// <summary>
+        /// HR təsdiq zamanı manual dəyişə biləcəyi "son" gün sayı.
+        /// Null olarsa — IsGunlerininSayi (avtomatik) istifadə olunur.
+        /// Dəyər varsa — effektiv gün sayı bu olur (balansdan bu qədər kəsilir,
+        /// davamiyyət qeydləri də bu aralıqdan yaradılır).
+        /// </summary>
+        public int? IsGunlerininSayiManual { get; set; }
+
+        /// <summary>
+        /// HR manual düzəliş etdikdə səbəbi (audit üçün).
+        /// </summary>
+        public string? GunHesabiDuzelisiSebebi { get; set; }
 
         public string? Qeyd { get; set; }
         public string? ImtinaSebebi { get; set; }
@@ -83,5 +96,13 @@ namespace FinNex.Domain.Entities.HR
         [NotMapped]
         public string? EmrNomresi =>
             EmrRegem.HasValue ? $"K/M {EmrRegem}{EmrSuffiks ?? string.Empty}" : null;
+
+        /// <summary>
+        /// Effektiv iş günü sayı — balans kəsimi və davamiyyət qeydləri
+        /// üçün istifadə olunan final rəqəm. HR manual dəyər varsa onu
+        /// qaytarır, yoxdursa avtomatik hesablanmış IsGunlerininSayi.
+        /// </summary>
+        [NotMapped]
+        public int EfektivGunSayi => IsGunlerininSayiManual ?? IsGunlerininSayi;
     }
 }

@@ -53,7 +53,9 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([FromForm] string ad, [FromForm] DateTime baslangicTarix, [FromForm] DateTime? bitisTarix, [FromForm] bool herIlTeyinOlunur, [FromForm] int tip = 1)
+        public async Task<IActionResult> Create([FromForm] string ad, [FromForm] DateTime baslangicTarix,
+            [FromForm] DateTime? bitisTarix, [FromForm] bool herIlTeyinOlunur,
+            [FromForm] bool mezuniyyetdeHesablanir = false, [FromForm] int tip = 1)
         {
             if (string.IsNullOrWhiteSpace(ad))
                 return Json(new { success = false, message = "Ad daxil edin." });
@@ -74,6 +76,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                     Ad = ad.Trim(),
                     Tarix = gun,
                     HerIlTeyinOlunur = herIlTeyinOlunur,
+                    MezuniyyetdeHesablanir = mezuniyyetdeHesablanir,
                     Tip = gunTipi
                 };
                 await repo.YaratAsync(entity);
@@ -88,7 +91,9 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit([FromForm] int id, [FromForm] string ad, [FromForm] DateTime baslangicTarix, [FromForm] bool herIlTeyinOlunur, [FromForm] int tip = 1)
+        public async Task<IActionResult> Edit([FromForm] int id, [FromForm] string ad, [FromForm] DateTime baslangicTarix,
+            [FromForm] bool herIlTeyinOlunur, [FromForm] bool mezuniyyetdeHesablanir = false,
+            [FromForm] int tip = 1)
         {
             if (string.IsNullOrWhiteSpace(ad))
                 return Json(new { success = false, message = "Ad daxil edin." });
@@ -102,6 +107,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             entity.Ad = ad.Trim();
             entity.Tarix = baslangicTarix;
             entity.HerIlTeyinOlunur = herIlTeyinOlunur;
+            entity.MezuniyyetdeHesablanir = mezuniyyetdeHesablanir;
             entity.Tip = tip == 2 ? GunTipi.IsGunu : GunTipi.Bayram;
             entity.YenilenmeTarixi = DateTime.Now;
 
@@ -142,6 +148,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 ad = x.Ad,
                 tarix = x.Tarix.ToString("dd.MM.yyyy"),
                 herIlTeyinOlunur = x.HerIlTeyinOlunur,
+                mezuniyyetdeHesablanir = x.MezuniyyetdeHesablanir,
                 tip = (int)x.Tip,
                 tipAd = x.Tip == GunTipi.IsGunu ? "İş günü" : "Bayram"
             });
