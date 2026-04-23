@@ -17,13 +17,16 @@ public class StrukturRoluController : Controller
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly UserManager<AppUser> _userManager;
+    private readonly RoleManager<AppRole> _roleManager;
 
     public StrukturRoluController(
         IUnitOfWork unitOfWork,
-        UserManager<AppUser> userManager)
+        UserManager<AppUser> userManager,
+        RoleManager<AppRole> roleManager)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
+        _roleManager = roleManager;
     }
 
     // Struktur rolundan Identity rolu adına map
@@ -167,9 +170,19 @@ public class StrukturRoluController : Controller
         await _unitOfWork.Repository<IsciStrukturRolu>().YaratAsync(entity);
         await _unitOfWork.YaddaSaxlaAsync();
 
-        // Auto-sync: Identity rolu əlavə et
+        // Auto-sync: Identity rolu əlavə et — struktur rolu artıq yaradılıb,
+        // Identity sync uğursuz olsa belə istifadəçiyə success göstərilsin.
         if (vm.Aktivdir)
-            await EnsureIdentityRoleAsync(vm.IsciId, vm.RolTipi);
+        {
+            try
+            {
+                await EnsureIdentityRoleAsync(vm.IsciId, vm.RolTipi);
+            }
+            catch
+            {
+                TempData["Warning"] = "Struktur rolu yaradıldı, lakin Identity rolu avtomatik təyin edilmədi.";
+            }
+        }
 
         TempData["Success"] = "Struktur rolu uğurla əlavə edildi.";
         return RedirectToAction(nameof(Index));
@@ -256,14 +269,21 @@ public class StrukturRoluController : Controller
         await _unitOfWork.Repository<IsciStrukturRolu>().YenileAsync(entity);
         await _unitOfWork.YaddaSaxlaAsync();
 
-        // Auto-sync: köhnə işçi/rol/aktiv vəziyyəti → yeni vəziyyətə uyğunlaş
-        // 1. Əvvəl aktiv idi, indi həm işçi/rol dəyişib və ya deaktivdir → köhnə tərəfdə Identity rolunu yenidən hesabla
-        if (evvelkiAktiv && (evvelkiIsciId != vm.IsciId || evvelkiRolTipi != vm.RolTipi || !vm.Aktivdir))
-            await RemoveIdentityRoleIfUnusedAsync(evvelkiIsciId, evvelkiRolTipi, excludingId: entity.Id);
+        // Identity sync — uğursuz olarsa əsas əməliyyatı bloklanmaz
+        try
+        {
+            // 1. Əvvəl aktiv idi, indi həm işçi/rol dəyişib və ya deaktivdir → köhnə tərəfdə Identity rolunu yenidən hesabla
+            if (evvelkiAktiv && (evvelkiIsciId != vm.IsciId || evvelkiRolTipi != vm.RolTipi || !vm.Aktivdir))
+                await RemoveIdentityRoleIfUnusedAsync(evvelkiIsciId, evvelkiRolTipi, excludingId: entity.Id);
 
-        // 2. Yeni vəziyyət aktivdirsə, yeni işçi + rol üçün Identity rolunu əlavə et
-        if (vm.Aktivdir)
-            await EnsureIdentityRoleAsync(vm.IsciId, vm.RolTipi);
+            // 2. Yeni vəziyyət aktivdirsə, yeni işçi + rol üçün Identity rolunu əlavə et
+            if (vm.Aktivdir)
+                await EnsureIdentityRoleAsync(vm.IsciId, vm.RolTipi);
+        }
+        catch
+        {
+            TempData["Warning"] = "Struktur rolu yeniləndi, lakin Identity rolu avtomatik sinxronizasiya edilmədi.";
+        }
 
         TempData["Success"] = "Struktur rolu yeniləndi.";
         return RedirectToAction(nameof(Index));
@@ -282,11 +302,17 @@ public class StrukturRoluController : Controller
         await _unitOfWork.Repository<IsciStrukturRolu>().YenileAsync(entity);
         await _unitOfWork.YaddaSaxlaAsync();
 
-        // Auto-sync
-        if (entity.Aktivdir)
-            await EnsureIdentityRoleAsync(entity.IsciId, entity.RolTipi);
-        else
-            await RemoveIdentityRoleIfUnusedAsync(entity.IsciId, entity.RolTipi, excludingId: entity.Id);
+        try
+        {
+            if (entity.Aktivdir)
+                await EnsureIdentityRoleAsync(entity.IsciId, entity.RolTipi);
+            else
+                await RemoveIdentityRoleIfUnusedAsync(entity.IsciId, entity.RolTipi, excludingId: entity.Id);
+        }
+        catch
+        {
+            TempData["Warning"] = "Əməliyyat uğurlu oldu, lakin Identity rolu sinxronizasiya edilmədi.";
+        }
 
         TempData["Success"] = entity.Aktivdir ? "Aktiv edildi." : "Deaktiv edildi.";
         return RedirectToAction(nameof(Index));
@@ -308,9 +334,15 @@ public class StrukturRoluController : Controller
         await _unitOfWork.Repository<IsciStrukturRolu>().YumshakSilAsync(id);
         await _unitOfWork.YaddaSaxlaAsync();
 
-        // Auto-sync: silinən aktiv rol idi və işçinin başqa aktiv eyni rolu yoxdursa, Identity rolunu sil
-        if (aktiv)
-            await RemoveIdentityRoleIfUnusedAsync(isciId, rolTipi, excludingId: id);
+        try
+        {
+            if (aktiv)
+                await RemoveIdentityRoleIfUnusedAsync(isciId, rolTipi, excludingId: id);
+        }
+        catch
+        {
+            TempData["Warning"] = "Struktur rolu silindi, lakin Identity rolu sinxronizasiya edilmədi.";
+        }
 
         TempData["Success"] = "Struktur rolu silindi.";
         return RedirectToAction(nameof(Index));
@@ -325,6 +357,15 @@ public class StrukturRoluController : Controller
     {
         var identityRole = StrukturToIdentityRole(rolTipi);
         if (identityRole == null) return;
+
+        // Identity rolu AspNetRoles cədvəlində yoxdursa avtomatik yaradılır.
+        // Əks halda AddToRoleAsync exception atar və DB commit-dən sonra səhifə
+        // "Xəta baş verdi" göstərir (bu vəziyyət real istifadədə baş verirdi).
+        if (!await _roleManager.RoleExistsAsync(identityRole))
+        {
+            var createResult = await _roleManager.CreateAsync(new AppRole { Name = identityRole });
+            if (!createResult.Succeeded) return; // qorumaq — rol yaratmaq mümkün olmadı
+        }
 
         var appUser = await _userManager.Users.FirstOrDefaultAsync(u => u.IsciId == isciId);
         if (appUser == null) return;
