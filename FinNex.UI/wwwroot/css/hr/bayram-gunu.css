@@ -292,9 +292,23 @@
     color: #d85a30;
 }
 
-.bg-btn-icon--delete:hover {
+.bg-btn-icon--delete:hover:not(:disabled) {
     background: #d85a30;
     color: #fff;
+}
+
+.bg-btn-icon:disabled,
+.bg-btn-icon[disabled] {
+    background: #f0f2f5 !important;
+    color: #b8c0cc !important;
+    cursor: not-allowed !important;
+    opacity: 0.55;
+}
+
+.bg-btn-icon:disabled:hover,
+.bg-btn-icon[disabled]:hover {
+    background: #f0f2f5 !important;
+    color: #b8c0cc !important;
 }
 
 /* Empty State */
