@@ -12,6 +12,9 @@
         MezuniyyetStatus.SobeReisiTesdiqinde => "Şöbə rəisi təsdiqində",
         MezuniyyetStatus.RehberTesdiqinde => "Rəhbər təsdiqində",
         MezuniyyetStatus.HrTesdiqinde => "HR təsdiqində",
+        MezuniyyetStatus.Tesdiqlenib => "Təsdiqlənib",
+        MezuniyyetStatus.ImtinaEdildi => "İmtina edildi",
+        MezuniyyetStatus.Gozlemede => "Gözləmədə",
         _ => "Gözləyir"
     };
 
@@ -20,6 +23,8 @@
         MezuniyyetStatus.SobeReisiTesdiqinde => "#2d6cdf",
         MezuniyyetStatus.RehberTesdiqinde => "#c9900a",
         MezuniyyetStatus.HrTesdiqinde => "#7c3aed",
+        MezuniyyetStatus.Tesdiqlenib => "#1e9b6b",
+        MezuniyyetStatus.ImtinaEdildi => "#c0392b",
         _ => "#8a93a8"
     };
 
@@ -179,8 +184,24 @@
                             <td style="padding:11px 14px;color:#3d4557;">@m.BitmeTarixi.ToString("dd.MM.yyyy")</td>
                             <td style="padding:11px 14px;text-align:center;font-weight:600;color:#1a2332;">@m.IsGunlerininSayi</td>
                             <td style="padding:11px 14px;">
-                                @if (Model.YalnizIzleme)
+                                @if (Model.AktivTab == "tarixce")
                                 {
+                                    // Tarixcə tabı — təsdiq/imtina statusu + təsdiq tarixi
+                                    var statusColor = ProsesStatusColor(m.Status);
+                                    <div style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:@(statusColor)1a;color:@(statusColor);">
+                                        <span style="width:6px;height:6px;border-radius:50%;background:@(statusColor);"></span>
+                                        @ProsesStatusText(m.Status)
+                                    </div>
+                                    @if (m.HrTesdiqTarixi.HasValue)
+                                    {
+                                        <div style="margin-top:4px;font-size:10.5px;color:#8a93a8">
+                                            @m.HrTesdiqTarixi.Value.ToString("dd.MM.yyyy HH:mm")
+                                        </div>
+                                    }
+                                }
+                                else if (Model.YalnizIzleme)
+                                {
+                                    // Prosesdə tabı — neçə gün gözlədiyini göstər
                                     var waitDays = (DateTime.Now - m.YaradilmaTarixi).Days;
                                     var waitColor = waitDays >= 3 ? "#c0392b" : waitDays >= 1 ? "#c9900a" : "#8a93a8";
                                     var waitBg = waitDays >= 3 ? "rgba(192,57,43,.1)" : waitDays >= 1 ? "rgba(201,144,10,.1)" : "rgba(138,147,168,.1)";
