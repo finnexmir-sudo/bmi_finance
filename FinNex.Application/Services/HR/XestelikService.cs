@@ -21,11 +21,35 @@ namespace FinNex.Application.Services.HR
     public class XestelikService : IXestelikService
     {
         private readonly IUnitOfWork _unitOfWork;
+
+        // Şirkət hər xəstəlik bülletəni üçün maksimum 14 iş günü ödəyir.
+        // Qalan günlər DSMF tərəfindən ödənilir (informativ — sistem hesablamır).
+        // NOTE: Əvvəlki versiyada illik limit idi; indi per-bülletəndir.
         private const int SIRKET_MAX_GUN = 14;
 
         public XestelikService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // STAJ — ümumi iş stajı ilə (əvvəlki iş yerləri daxil), staj
+        // başlanğıcı yoxdursa bu banka gəlmə tarixini istifadə edir.
+        // Qanun üzrə faizlər:
+        //   < 8 il: 60%, 8–12 il: 80%, ≥ 12 il: 100%
+        // ─────────────────────────────────────────────────────────
+        private static (int il, int ay, decimal faiz) HesablaStaj(Isci isci, DateTime referansTarix)
+        {
+            var bas = isci.UmumiIsStajiBaslangic ?? isci.IsheQebulTarixi;
+            if (bas > referansTarix) return (0, 0, 0.60m);
+
+            int il = referansTarix.Year - bas.Year;
+            int ay = referansTarix.Month - bas.Month;
+            if (referansTarix.Day < bas.Day) ay--;
+            if (ay < 0) { il--; ay += 12; }
+
+            decimal faiz = il < 8 ? 0.60m : il < 12 ? 0.80m : 1.00m;
+            return (il, ay, faiz);
         }
 
         public async Task<Result<IList<XestelikDto>>> GetListAsync()
@@ -192,54 +216,91 @@ namespace FinNex.Application.Services.HR
                 if (bitme < baslama)
                     return Result<XestelikPreviewDto>.Fail("Bitmə tarixi başlama tarixindən sonra olmalıdır.");
 
+                // İşçini yüklə (staj hesablamaq üçün)
+                var isci = await _unitOfWork.Repository<Isci>().IdIleGetirAsync(isciId);
+                if (isci == null)
+                    return Result<XestelikPreviewDto>.Fail("İşçi tapılmadı.");
+
+                // Cari xəstəlik bülletəninin iş günü sayı
                 int isGunSayi = await IsGunSayiniHesablaAsync(baslama, bitme);
 
-                // Son 12 ayın cəmi qazancı
+                // ── Son 12 ay dövrü (xəstəlik ayından əvvəlki 12 tam ay) ──
+                var ayBitis = new DateTime(baslama.Year, baslama.Month, 1).AddDays(-1);
+                var ayBaslangic = new DateTime(ayBitis.Year, ayBitis.Month, 1).AddMonths(-11);
+
+                // Son 12 ay qazancı — yalnız bu interval üçün olan qeydlər
                 var son12 = await _unitOfWork.Repository<IsciAyliqQazanc>()
                     .Query()
-                    .Where(x => x.IsciId == isciId && !x.Silinib)
-                    .OrderByDescending(x => x.Il * 12 + x.Ay)
-                    .Take(12)
+                    .Where(x => x.IsciId == isciId && !x.Silinib
+                             && ((x.Il > ayBaslangic.Year)
+                                 || (x.Il == ayBaslangic.Year && x.Ay >= ayBaslangic.Month))
+                             && ((x.Il < ayBitis.Year)
+                                 || (x.Il == ayBitis.Year && x.Ay <= ayBitis.Month)))
                     .ToListAsync();
 
                 decimal S = son12.Sum(x => x.Qazanc);
-                int qeydSayi = son12.Count;
 
-                // Son 12 ayın iş günü cəmi (xəstəliyin başladığı aydan əvvəlki 12 ay)
-                int son12AyIsGun = await Son12AyIsGununuHesablaAsync(baslama);
+                // Son 12 ayın iş günü cəmi
+                int son12AyIsGun = await IsGunSayiniHesablaAsync(ayBaslangic, ayBitis);
 
-                decimal birGunluk = son12AyIsGun > 0 ? S / son12AyIsGun : 0;
+                // ── Son 12 ayda alınmış xəstəlik ödənişləri (S-dən çıxılır) ──
+                decimal son12XestelikOdenisi = await _unitOfWork.Repository<XestelikOdenis>().Query()
+                    .Where(o => o.IsciId == isciId && !o.Silinib
+                             && ((o.Il > ayBaslangic.Year)
+                                 || (o.Il == ayBaslangic.Year && o.Ay >= ayBaslangic.Month))
+                             && ((o.Il < ayBitis.Year)
+                                 || (o.Il == ayBitis.Year && o.Ay <= ayBitis.Month)))
+                    .SumAsync(o => (decimal?)(o.SirketOdenis + o.DsmfOdenis)) ?? 0m;
 
-                // Cari ildə bu işçinin artıq aldığı şirkət ödənişi (gün sayı)
-                int oncekiSirketGun = await OncekiSirketGununuTapAsync(isciId, baslama.Year);
+                // ── Son 12 ayda olan xəstəlik günləri (iş günləri bazasından çıxılır) ──
+                int son12XestelikGun = await _unitOfWork.Repository<XestelikOdenis>().Query()
+                    .Where(o => o.IsciId == isciId && !o.Silinib
+                             && ((o.Il > ayBaslangic.Year)
+                                 || (o.Il == ayBaslangic.Year && o.Ay >= ayBaslangic.Month))
+                             && ((o.Il < ayBitis.Year)
+                                 || (o.Il == ayBitis.Year && o.Ay <= ayBitis.Month)))
+                    .SumAsync(o => (int?)(o.SirketGunSayi + o.DsmfGunSayi)) ?? 0;
 
-                // Şirkət limitini hesabla
-                int qalanLimit = Math.Max(0, SIRKET_MAX_GUN - oncekiSirketGun);
-                int sirketGun = Math.Min(isGunSayi, qalanLimit);
+                // Effektiv gəlir və iş günləri
+                decimal SEffektiv = S - son12XestelikOdenisi;
+                int effektivIsGun = son12AyIsGun - son12XestelikGun;
+
+                decimal birGunluk = effektivIsGun > 0 ? SEffektiv / effektivIsGun : 0;
+
+                // ── Staj ──
+                var (stajIl, stajAy, stajFaizi) = HesablaStaj(isci, baslama);
+
+                // ── 14 gün per-bülletən limit (illik deyil) ──
+                int sirketGun = Math.Min(isGunSayi, SIRKET_MAX_GUN);
                 int dsmfGun = isGunSayi - sirketGun;
 
-                decimal sirketOdenis = Math.Round(birGunluk * sirketGun, 2);
-                decimal dsmfOdenis = Math.Round(birGunluk * dsmfGun, 2);
+                decimal sirketOdenis = Math.Round(birGunluk * sirketGun * stajFaizi, 2);
+                decimal dsmfOdenis = Math.Round(birGunluk * dsmfGun * stajFaizi, 2);
 
+                // Xəbərdarlıqlar
                 string? xeberdarliq = null;
-                if (qeydSayi < 12)
-                    xeberdarliq = $"Yalnız {qeydSayi}/12 ay qazanc tarixçəsi var — hesablama dəqiq olmaya bilər.";
-                if (sirketGun == 0 && isGunSayi > 0)
-                    xeberdarliq = $"İşçi cari ildə artıq {oncekiSirketGun}/14 şirkət ödənişli xəstəlik istifadə edib. Yalnız DSMF ödəyəcək.";
-                else if (sirketGun < isGunSayi)
-                    xeberdarliq = $"İşçi cari ildə artıq {oncekiSirketGun} gün xəstəlik istifadə edib. Şirkət yalnız {sirketGun} gün ödəyə bilər.";
+                if (son12.Count < 12)
+                    xeberdarliq = $"Yalnız {son12.Count}/12 ay qazanc tarixçəsi var — hesablama dəqiq olmaya bilər.";
+                else if (dsmfGun > 0)
+                    xeberdarliq = $"14 gündən artıq ({dsmfGun} gün) DSMF tərəfindən ödənilir (şirkət limiti 14).";
 
                 return Result<XestelikPreviewDto>.Ok(new XestelikPreviewDto
                 {
                     IsGunSayi = isGunSayi,
-                    S = S,
+                    S = Math.Round(S, 2),
+                    Son12XestelikOdenisi = Math.Round(son12XestelikOdenisi, 2),
                     Son12AyIsGunu = son12AyIsGun,
+                    Son12AyXestelikGunu = son12XestelikGun,
+                    Son12AyBaslangic = ayBaslangic,
+                    Son12AyBitis = ayBitis,
                     BirGunluk = Math.Round(birGunluk, 2),
+                    StajIl = stajIl,
+                    StajAy = stajAy,
+                    StajFaizi = stajFaizi,
                     SirketGun = sirketGun,
                     DsmfGun = dsmfGun,
                     SirketOdenis = sirketOdenis,
                     DsmfOdenis = dsmfOdenis,
-                    OncekiSirketGun = oncekiSirketGun,
                     Xeberdarliq = xeberdarliq
                 });
             }
@@ -344,40 +405,68 @@ namespace FinNex.Application.Services.HR
 
         /// <summary>
         /// Yeni xəstəlik üçün ödəniş qeydlərini yaradır (hər ay üzrə).
-        /// 14 gün limiti il üzrə yoxlanılır.
+        /// Hesablama: (S - son12_xestelik_odenisi) / (iş_günü - xəstəlik_günü)
+        ///            × şirkət_gün × staj_faizi
+        /// 14 gün limiti per-bülletəndir (illik deyil).
         /// </summary>
         private async Task OdenisleriYaratAsync(Xestelik xestelik)
         {
-            // Son 12 ay qazanc
-            var son12 = await _unitOfWork.Repository<IsciAyliqQazanc>()
-                .Query()
-                .Where(x => x.IsciId == xestelik.IsciId && !x.Silinib)
-                .OrderByDescending(x => x.Il * 12 + x.Ay)
-                .Take(12)
+            var isci = await _unitOfWork.Repository<Isci>().IdIleGetirAsync(xestelik.IsciId);
+            if (isci == null) return;
+
+            // 12 ay dövrü
+            var ayBitis = new DateTime(xestelik.BaslamaTarixi.Year, xestelik.BaslamaTarixi.Month, 1).AddDays(-1);
+            var ayBaslangic = new DateTime(ayBitis.Year, ayBitis.Month, 1).AddMonths(-11);
+
+            // Son 12 ay qazanc (interval üzrə)
+            var son12 = await _unitOfWork.Repository<IsciAyliqQazanc>().Query()
+                .Where(x => x.IsciId == xestelik.IsciId && !x.Silinib
+                         && ((x.Il > ayBaslangic.Year)
+                             || (x.Il == ayBaslangic.Year && x.Ay >= ayBaslangic.Month))
+                         && ((x.Il < ayBitis.Year)
+                             || (x.Il == ayBitis.Year && x.Ay <= ayBitis.Month)))
                 .ToListAsync();
 
             decimal S = son12.Sum(x => x.Qazanc);
-            int son12AyIsGun = await Son12AyIsGununuHesablaAsync(xestelik.BaslamaTarixi);
-            decimal birGunluk = son12AyIsGun > 0 ? S / son12AyIsGun : 0;
+            int son12AyIsGun = await IsGunSayiniHesablaAsync(ayBaslangic, ayBitis);
 
-            // Cari ildə artıq istifadə edilmiş şirkət gün sayı
-            int oncekiSirketGun = await OncekiSirketGununuTapAsync(xestelik.IsciId, xestelik.BaslamaTarixi.Year);
-            int qalanLimit = Math.Max(0, SIRKET_MAX_GUN - oncekiSirketGun);
+            // Son 12 ay xəstəlik ödənişləri və günləri (çıxılır)
+            var son12XestelikOdenisi = await _unitOfWork.Repository<XestelikOdenis>().Query()
+                .Where(o => o.IsciId == xestelik.IsciId && !o.Silinib
+                         && ((o.Il > ayBaslangic.Year)
+                             || (o.Il == ayBaslangic.Year && o.Ay >= ayBaslangic.Month))
+                         && ((o.Il < ayBitis.Year)
+                             || (o.Il == ayBitis.Year && o.Ay <= ayBitis.Month)))
+                .SumAsync(o => (decimal?)(o.SirketOdenis + o.DsmfOdenis)) ?? 0m;
 
-            // Xəstəliyi aylara böl
+            int son12XestelikGun = await _unitOfWork.Repository<XestelikOdenis>().Query()
+                .Where(o => o.IsciId == xestelik.IsciId && !o.Silinib
+                         && ((o.Il > ayBaslangic.Year)
+                             || (o.Il == ayBaslangic.Year && o.Ay >= ayBaslangic.Month))
+                         && ((o.Il < ayBitis.Year)
+                             || (o.Il == ayBitis.Year && o.Ay <= ayBitis.Month)))
+                .SumAsync(o => (int?)(o.SirketGunSayi + o.DsmfGunSayi)) ?? 0;
+
+            decimal SEffektiv = S - son12XestelikOdenisi;
+            int effektivIsGun = son12AyIsGun - son12XestelikGun;
+            decimal birGunluk = effektivIsGun > 0 ? SEffektiv / effektivIsGun : 0;
+
+            // Staj faizi
+            var (_, _, stajFaizi) = HesablaStaj(isci, xestelik.BaslamaTarixi);
+
+            // 14 gün per-bülletən limit
+            int limitQalan = SIRKET_MAX_GUN;
+
             var aylar = AylaraBolAsync(xestelik.BaslamaTarixi, xestelik.BitmeTarixi);
-
-            int istifadeOlunmusSirketGun = 0;
             foreach (var (il, ay, ayBaslama, ayBitme) in aylar)
             {
                 int ayIsGun = await IsGunSayiniHesablaAsync(ayBaslama, ayBitme);
                 if (ayIsGun == 0) continue;
 
-                // Bu ay üçün şirkət payı (limitlə)
-                int qalan = Math.Max(0, qalanLimit - istifadeOlunmusSirketGun);
-                int aySirketGun = Math.Min(ayIsGun, qalan);
+                // Bu bülletən üçün qalan limit
+                int aySirketGun = Math.Min(ayIsGun, limitQalan);
                 int ayDsmfGun = ayIsGun - aySirketGun;
-                istifadeOlunmusSirketGun += aySirketGun;
+                limitQalan -= aySirketGun;
 
                 var odenis = new XestelikOdenis
                 {
@@ -388,8 +477,8 @@ namespace FinNex.Application.Services.HR
                     BirGunluk = Math.Round(birGunluk, 4),
                     SirketGunSayi = aySirketGun,
                     DsmfGunSayi = ayDsmfGun,
-                    SirketOdenis = Math.Round(birGunluk * aySirketGun, 2),
-                    DsmfOdenis = Math.Round(birGunluk * ayDsmfGun, 2)
+                    SirketOdenis = Math.Round(birGunluk * aySirketGun * stajFaizi, 2),
+                    DsmfOdenis = Math.Round(birGunluk * ayDsmfGun * stajFaizi, 2)
                 };
 
                 await _unitOfWork.Repository<XestelikOdenis>().YaratAsync(odenis);

@@ -45,14 +45,35 @@ namespace FinNex.Application.DTOs.HR.Maas
     public class XestelikPreviewDto
     {
         public int IsGunSayi { get; set; }
-        public decimal S { get; set; }
-        public int Son12AyIsGunu { get; set; }
+
+        // ── Gəlir (S) ──────────────────────────────────────────
+        public decimal S { get; set; }                         // Son 12 ay cəmi qazanc (ham)
+        public decimal Son12XestelikOdenisi { get; set; }      // Bu müddətdə alınmış xəstəlik (çıxılır)
+        public decimal SEffektiv => S - Son12XestelikOdenisi;  // Formulada istifadə olunan gəlir
+
+        // ── İş günləri ─────────────────────────────────────────
+        public int Son12AyIsGunu { get; set; }                 // Son 12 ay iş günü (ham)
+        public int Son12AyXestelikGunu { get; set; }           // Bu müddətdəki xəstəlik günü (çıxılır)
+        public int Son12AyEffektivIsGunu => Son12AyIsGunu - Son12AyXestelikGunu;
+
+        // ── 12 ay intervalı (breakdown göstəriş üçün) ─────────
+        public DateTime? Son12AyBaslangic { get; set; }
+        public DateTime? Son12AyBitis { get; set; }
+
+        // ── Bir günlük və ödəniş hesablaması ───────────────────
         public decimal BirGunluk { get; set; }
+
+        // ── Staj və faiz ───────────────────────────────────────
+        public int StajIl { get; set; }
+        public int StajAy { get; set; }                        // 9 il 3 ay göstərmək üçün
+        public decimal StajFaizi { get; set; }                 // 0.60 / 0.80 / 1.00
+
+        // ── Ödəniş bölgüsü ─────────────────────────────────────
         public int SirketGun { get; set; }
         public int DsmfGun { get; set; }
-        public decimal SirketOdenis { get; set; }
-        public decimal DsmfOdenis { get; set; }
-        public int OncekiSirketGun { get; set; }
+        public decimal SirketOdenis { get; set; }              // staj faizi tətbiq olunmuş
+        public decimal DsmfOdenis { get; set; }                // staj faizi tətbiq olunmuş (informativ)
+
         public string? Xeberdarliq { get; set; }
     }
 
