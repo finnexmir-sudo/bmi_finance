@@ -63,10 +63,17 @@
                     <path d="M1 4.5h11M4.5 1.5v2M8.5 1.5v2" stroke="currentColor" stroke-width="1" stroke-linecap="round" /> 
                 </svg> Məzuniyyət müraciəti </a>
                 <a asp-area="User" asp-controller="Icaze" asp-action="Create" class="fn-qa-btn fn-qa-btn--secondary">
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"> 
-                        <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.1" /> 
-                        <path d="M6.5 4v3.5l2 1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" /> 
-                    </svg> İcazə müraciəti </a> <div class="fn-date-pill">@DateTime.Now.ToString("MMMM yyyy")</div> </div>
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.1" />
+                        <path d="M6.5 4v3.5l2 1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+                    </svg> İcazə müraciəti </a>
+                <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index" class="fn-qa-btn fn-qa-btn--secondary">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <path d="M3 1.5h5l2.5 2.5v7.5H3v-10z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" />
+                        <path d="M8 1.5v3h2.5" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" />
+                        <path d="M5 7h4M5 9h3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+                    </svg> Sənəd Dövriyyəsi </a>
+                <div class="fn-date-pill">@DateTime.Now.ToString("MMMM yyyy")</div> </div>
         </div>
 
         @* ── 2 sütunlu grid ── *@
