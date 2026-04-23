@@ -195,7 +195,12 @@ function bgDelete(id) {
 }
 
 function refreshTable() {
-    fetch('/HR/BayramGunu/List')
+    // Mövcud seçilmiş ili URL-dən götür ki, filtr qorunsun
+    const urlParams = new URLSearchParams(window.location.search);
+    const il = urlParams.get('il');
+    const endpoint = il ? `/HR/BayramGunu/List?il=${il}` : '/HR/BayramGunu/List';
+
+    fetch(endpoint)
         .then(r => r.json())
         .then(data => {
             const tbody = document.getElementById('bgTableBody');
@@ -206,26 +211,24 @@ function refreshTable() {
 
             if (records.length === 0) {
                 tbody.innerHTML = '';
-                // Show empty state
                 const card = document.querySelector('.bg-table-card');
                 let emptyEl = card.querySelector('.bg-empty');
                 if (!emptyEl) {
                     emptyEl = document.createElement('div');
                     emptyEl.className = 'bg-empty';
-                    emptyEl.innerHTML = '<i class="bi bi-calendar-x"></i><p>Hec bir bayram tapilmadi</p>';
+                    emptyEl.innerHTML = '<i class="bi bi-calendar-x"></i><p>Heç bir qeyd tapılmadı</p>';
                     card.appendChild(emptyEl);
                 }
                 return;
             }
 
-            // Remove empty state if exists
             const emptyEl = document.querySelector('.bg-table-card .bg-empty');
             if (emptyEl) emptyEl.remove();
 
             tbody.innerHTML = records.map(r => {
                 const tipBadge = r.tip === 2
                     ? '<span class="bg-badge bg-badge--work"><i class="bi bi-briefcase-fill"></i> İş günü</span>'
-                    : '<span class="bg-badge bg-badge--holiday"><i class="bi bi-calendar-heart"></i> Bayram</span>';
+                    : '<span class="bg-badge bg-badge--holiday"><i class="bi bi-calendar-heart"></i> Qeyri iş günü</span>';
                 const herIlBadge = r.herIlTeyinOlunur
                     ? '<span class="bg-badge bg-badge--yes"><i class="bi bi-check-circle-fill"></i> Bəli</span>'
                     : '<span class="bg-badge bg-badge--no"><i class="bi bi-x-circle"></i> Xeyr</span>';

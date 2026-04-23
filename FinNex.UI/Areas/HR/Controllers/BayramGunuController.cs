@@ -17,19 +17,36 @@ namespace FinNex.UI.Areas.HR.Controllers
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int? il = null)
         {
             var repo = _unitOfWork.Repository<BayramGunu>();
-            var list = await repo.HamisiniGetirAsync(x => !x.Silinib);
-            var ordered = list.OrderBy(x => x.Tarix).ToList();
+            var hamisi = (await repo.HamisiniGetirAsync(x => !x.Silinib))
+                .OrderBy(x => x.Tarix)
+                .ToList();
+
+            // Mövcud illər (filtrdə istifadə üçün) — bütün qeydlərdən çıxarılır
+            var iller = hamisi.Select(x => x.Tarix.Year).Distinct().OrderByDescending(y => y).ToList();
+            var cariIl = DateTime.Today.Year;
+            if (!iller.Contains(cariIl)) iller.Insert(0, cariIl);
+
+            // Default: seçilmiş il və ya cari il
+            var secilmis = il ?? cariIl;
+
+            // Filtr tətbiq et — amma "hər il təkrar olunan"lar bütün illərdə görünsün
+            var filtrlenmis = hamisi
+                .Where(x => x.Tarix.Year == secilmis || x.HerIlTeyinOlunur)
+                .OrderBy(x => new DateTime(secilmis, x.Tarix.Month, x.Tarix.Day))
+                .ToList();
 
             var bugun = DateTime.Today;
-            var gelecek = ordered.Count(x => x.Tarix.Date >= bugun);
+            var gelecek = hamisi.Count(x => x.Tarix.Date >= bugun);
 
-            ViewBag.Cemi = ordered.Count;
+            ViewBag.Cemi = hamisi.Count;
             ViewBag.Gelecek = gelecek;
+            ViewBag.Iller = iller;
+            ViewBag.SecilmisIl = secilmis;
 
-            return View(ordered);
+            return View(filtrlenmis);
         }
 
         [HttpGet]
@@ -132,16 +149,22 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> List()
+        public async Task<IActionResult> List(int? il = null)
         {
             var repo = _unitOfWork.Repository<BayramGunu>();
-            var list = await repo.HamisiniGetirAsync(x => !x.Silinib);
-            var ordered = list.OrderBy(x => x.Tarix).ToList();
+            var hamisi = (await repo.HamisiniGetirAsync(x => !x.Silinib))
+                .OrderBy(x => x.Tarix)
+                .ToList();
 
             var bugun = DateTime.Today;
-            var gelecek = ordered.Count(x => x.Tarix.Date >= bugun);
+            var gelecek = hamisi.Count(x => x.Tarix.Date >= bugun);
 
-            var data = ordered.Select((x, i) => new
+            // İl filtrasi — Her il tekrar olunanlar da daxil
+            var filtrlenmis = il.HasValue
+                ? hamisi.Where(x => x.Tarix.Year == il.Value || x.HerIlTeyinOlunur).ToList()
+                : hamisi;
+
+            var data = filtrlenmis.Select((x, i) => new
             {
                 index = i + 1,
                 id = x.Id,
@@ -150,10 +173,10 @@ namespace FinNex.UI.Areas.HR.Controllers
                 herIlTeyinOlunur = x.HerIlTeyinOlunur,
                 mezuniyyetdeHesablanir = x.MezuniyyetdeHesablanir,
                 tip = (int)x.Tip,
-                tipAd = x.Tip == GunTipi.IsGunu ? "İş günü" : "Bayram"
+                tipAd = x.Tip == GunTipi.IsGunu ? "İş günü" : "Qeyri iş günü"
             });
 
-            return Json(new { records = data, stats = new { cemi = ordered.Count, gelecek } });
+            return Json(new { records = data, stats = new { cemi = hamisi.Count, gelecek } });
         }
 
         // ══════════════════════════════════════════════════════
