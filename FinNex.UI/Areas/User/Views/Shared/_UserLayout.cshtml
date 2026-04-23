@@ -109,7 +109,7 @@
                    ═══════════════════════════════════════════════════ *@
                 <div class="fn-nav-label">Əməkdaş</div>
 
-                <div class="fn-nav-group @(currentArea != "HR" && currentController is "Davamiyyet" or "Mezuniyyet" or "Muraciet" or "Tapshiriq" or "Gorush" or "Icaze" or "Maas" or "Xerc" ? "open" : "")">
+                <div class="fn-nav-group @(currentArea != "HR" && currentController is "Davamiyyet" or "Takvim" or "Mezuniyyet" or "Muraciet" or "Tapshiriq" or "Gorush" or "Icaze" or "Maas" or "Xerc" ? "open" : "")">
                     <button type="button" class="fn-nav-group-toggle">
                         <div class="fn-nav-group-left">
                             <div class="fn-nav-icon">
@@ -128,6 +128,10 @@
                         <a asp-area="User" asp-controller="Davamiyyet" asp-action="Index"
                            class="fn-nav-subitem @(currentController == "Davamiyyet" ? "active" : "")">
                             <div class="fn-sub-dot"></div> Davamiyyət
+                        </a>
+                        <a asp-area="User" asp-controller="Takvim" asp-action="Index"
+                           class="fn-nav-subitem @(currentController == "Takvim" ? "active" : "")">
+                            <div class="fn-sub-dot"></div> Təqvim
                         </a>
                         <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Index"
                            class="fn-nav-subitem @(currentController == "Mezuniyyet" ? "active" : "")">

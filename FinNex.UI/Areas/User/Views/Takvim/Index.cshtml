@@ -1,0 +1,71 @@
+@{
+    ViewData["Title"] = "Qeyri iş günləri təqvimi";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/bayram-gunu.css" asp-append-version="true" />
+}
+
+<div class="bg-page">
+    <div class="bg-header">
+        <div class="bg-header-left">
+            <h1 class="bg-title">Qeyri iş günləri təqvimi</h1>
+            <p class="bg-subtitle">İl ərzində bayram, matəm, istirahət və əlavə iş günləri — yalnız oxu</p>
+        </div>
+    </div>
+
+    <div class="bg-stats">
+        <div class="bg-stat-card">
+            <div class="bg-stat-icon bg-stat-icon--total">
+                <i class="bi bi-calendar-event"></i>
+            </div>
+            <div class="bg-stat-info">
+                <span class="bg-stat-value" id="statCemi">—</span>
+                <span class="bg-stat-label">Cəmi qeyri iş günü</span>
+            </div>
+        </div>
+        <div class="bg-stat-card">
+            <div class="bg-stat-icon bg-stat-icon--upcoming">
+                <i class="bi bi-calendar-check"></i>
+            </div>
+            <div class="bg-stat-info">
+                <span class="bg-stat-value" id="statGelecek">—</span>
+                <span class="bg-stat-label">Gələcək qeyri iş günləri</span>
+            </div>
+        </div>
+        <div class="bg-stat-card">
+            <div class="bg-stat-icon bg-stat-icon--workdays">
+                <i class="bi bi-briefcase"></i>
+            </div>
+            <div class="bg-stat-info">
+                <span class="bg-stat-value" id="statIsGunu">—</span>
+                <span class="bg-stat-label">Bu il iş günləri</span>
+            </div>
+        </div>
+    </div>
+
+    @* ═══════ YEAR CALENDAR GRID ═══════ *@
+    <div class="bg-calendar-card">
+        <div class="bg-calendar-head">
+            <div class="bg-calendar-nav">
+                <button type="button" class="bg-nav-btn" id="tvYearPrev">‹</button>
+                <h2 class="bg-calendar-year" id="tvCalendarYear">@DateTime.Now.Year</h2>
+                <button type="button" class="bg-nav-btn" id="tvYearNext">›</button>
+                <button type="button" class="bg-btn bg-btn-secondary bg-btn-sm" id="tvYearToday">Bu il</button>
+            </div>
+            <div class="bg-calendar-legend">
+                <span class="bg-lgnd"><span class="bg-sw bg-sw--weekend"></span>Şənbə/Bazar</span>
+                <span class="bg-lgnd"><span class="bg-sw bg-sw--holiday"></span>Qeyri iş günü</span>
+                <span class="bg-lgnd"><span class="bg-sw bg-sw--work-override"></span>Əlavə iş günü</span>
+            </div>
+        </div>
+        <div class="bg-calendar-grid bg-calendar-grid--readonly" id="tvCalendarGrid">
+            <div class="bg-calendar-loading">Yüklənir...</div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/user/takvim.js" asp-append-version="true"></script>
+}

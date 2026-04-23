@@ -314,6 +314,8 @@ function bgRenderYear() {
 
     const today = bgYearData.today; // yyyy-MM-dd
 
+    let totalWorkDays = 0; // ilin cəmi iş günləri
+
     for (let m = 0; m < 12; m++) {
         const monthEl = document.createElement('div');
         monthEl.className = 'bg-month';
@@ -352,6 +354,8 @@ function bgRenderYear() {
             days.appendChild(cell);
         }
 
+        let monthWorkDays = 0;
+
         // Current month days
         for (let d = 1; d <= daysInMonth; d++) {
             const cell = document.createElement('div');
@@ -366,13 +370,19 @@ function bgRenderYear() {
             const isWeekend = (dow === 0 || dow === 6);
 
             const record = recordsByDate[dateStr];
+            let isWorkDay = !isWeekend; // default iş günü qaydası
+
             if (record) {
                 if (record.tip === 2) {
+                    // weekend-i iş gününə çevirir (override)
                     cell.classList.add('bg-day--work-override');
                     cell.title = `${record.ad} (İş günü)`;
+                    isWorkDay = true;
                 } else {
+                    // qeyri iş günü (bayram/matəm/istirahət)
                     cell.classList.add('bg-day--holiday');
-                    cell.title = `${record.ad} (Bayram)`;
+                    cell.title = `${record.ad} (Qeyri iş günü)`;
+                    isWorkDay = false;
                 }
                 cell.dataset.recordId = record.id;
                 cell.dataset.tip = record.tip;
@@ -380,8 +390,10 @@ function bgRenderYear() {
                 cell.classList.add('bg-day--weekend');
                 cell.title = 'Şənbə/Bazar — kliklə iş günü et';
             } else {
-                cell.title = 'İş günü — kliklə bayram et';
+                cell.title = 'İş günü — kliklə qeyri iş günü et';
             }
+
+            if (isWorkDay) monthWorkDays++;
 
             // Past date?
             if (dateStr < today) {
@@ -394,8 +406,21 @@ function bgRenderYear() {
         }
 
         monthEl.appendChild(days);
+
+        // Ay altında iş günü sayı
+        const footer = document.createElement('div');
+        footer.className = 'bg-month-footer';
+        footer.innerHTML = `<i class="bi bi-briefcase"></i> <strong>${monthWorkDays}</strong> iş günü`;
+        monthEl.appendChild(footer);
+
+        totalWorkDays += monthWorkDays;
+
         grid.appendChild(monthEl);
     }
+
+    // İlin cəmi iş günlərini stat card-ına yaz
+    const statIsGunu = document.getElementById('statIsGunu');
+    if (statIsGunu) statIsGunu.textContent = totalWorkDays;
 }
 
 function bgToggleDay(cell) {

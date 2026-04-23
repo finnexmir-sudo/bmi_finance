@@ -1,7 +1,7 @@
 @model IEnumerable<FinNex.Domain.Entities.HR.BayramGunu>
 @using FinNex.Domain.Entities.HR
 @{
-    ViewData["Title"] = "Bayram / İş günləri";
+    ViewData["Title"] = "Qeyri iş günləri";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 }
 
@@ -12,8 +12,8 @@
 <div class="bg-page">
     <div class="bg-header">
         <div class="bg-header-left">
-            <h1 class="bg-title">Bayram / İş günləri</h1>
-            <p class="bg-subtitle">Bayram (istirahət) və əlavə iş günü (şənbə/bazar override) qeydləri</p>
+            <h1 class="bg-title">Qeyri iş günləri</h1>
+            <p class="bg-subtitle">Bayram, matəm, istirahət və əlavə iş günü (şənbə/bazar override) qeydləri</p>
         </div>
         <button class="bg-btn bg-btn-primary" id="bgOpenCreateBtn">
             <i class="bi bi-plus-lg"></i> Yeni qeyd əlavə et
@@ -27,7 +27,7 @@
             </div>
             <div class="bg-stat-info">
                 <span class="bg-stat-value" id="statCemi">@ViewBag.Cemi</span>
-                <span class="bg-stat-label">Cemi bayram</span>
+                <span class="bg-stat-label">Cəmi qeyri iş günü</span>
             </div>
         </div>
         <div class="bg-stat-card">
@@ -36,7 +36,16 @@
             </div>
             <div class="bg-stat-info">
                 <span class="bg-stat-value" id="statGelecek">@ViewBag.Gelecek</span>
-                <span class="bg-stat-label">Gelecek bayramlar</span>
+                <span class="bg-stat-label">Gələcək qeyri iş günləri</span>
+            </div>
+        </div>
+        <div class="bg-stat-card">
+            <div class="bg-stat-icon bg-stat-icon--workdays">
+                <i class="bi bi-briefcase"></i>
+            </div>
+            <div class="bg-stat-info">
+                <span class="bg-stat-value" id="statIsGunu">—</span>
+                <span class="bg-stat-label">Bu il iş günləri</span>
             </div>
         </div>
     </div>
@@ -52,7 +61,7 @@
             </div>
             <div class="bg-calendar-legend">
                 <span class="bg-lgnd"><span class="bg-sw bg-sw--weekend"></span>Şənbə/Bazar</span>
-                <span class="bg-lgnd"><span class="bg-sw bg-sw--holiday"></span>Bayram</span>
+                <span class="bg-lgnd"><span class="bg-sw bg-sw--holiday"></span>Qeyri iş günü</span>
                 <span class="bg-lgnd"><span class="bg-sw bg-sw--work-override"></span>Əlavə iş günü</span>
                 <span class="bg-lgnd"><span class="bg-sw bg-sw--past"></span>Keçmiş (kiliddə)</span>
             </div>
@@ -60,7 +69,7 @@
         <div class="bg-calendar-hint">
             <i class="bi bi-info-circle"></i>
             Kliklə istənilən günü dəyişdirin:
-            <strong>İş günü</strong> → bayram (qırmızı),
+            <strong>İş günü</strong> → qeyri iş günü (qırmızı),
             <strong>Şənbə/Bazar</strong> → iş günü (yaşıl).
             Təkrar kliklə geri qaytarın. Keçmiş tarixləri dəyişmək mümkün deyil.
         </div>
@@ -97,7 +106,7 @@
                             }
                             else
                             {
-                                <span class="bg-badge bg-badge--holiday"><i class="bi bi-calendar-heart"></i> Bayram</span>
+                                <span class="bg-badge bg-badge--holiday"><i class="bi bi-calendar-heart"></i> Qeyri iş günü</span>
                             }
                         </td>
                         <td>
@@ -126,7 +135,7 @@
         {
             <div class="bg-empty">
                 <i class="bi bi-calendar-x"></i>
-                <p>Hec bir bayram tapilmadi</p>
+                <p>Heç bir qeyri iş günü qeydi tapılmadı</p>
             </div>
         }
     </div>
@@ -136,7 +145,7 @@
 <div class="bg-modal-overlay" id="bgModalOverlay">
     <div class="bg-modal">
         <div class="bg-modal-header">
-            <h2 class="bg-modal-title" id="bgModalTitle">Yeni Bayram</h2>
+            <h2 class="bg-modal-title" id="bgModalTitle">Yeni qeyri iş günü</h2>
             <button class="bg-modal-close" id="bgCloseModalBtn">
                 <i class="bi bi-x-lg"></i>
             </button>
@@ -152,8 +161,8 @@
                             <input type="radio" name="tip" value="1" id="bgTip1" checked />
                             <div class="bg-tip-card bg-tip-card--holiday">
                                 <i class="bi bi-calendar-heart"></i>
-                                <span class="bg-tip-title">Bayram / İstirahət</span>
-                                <span class="bg-tip-sub">İş günü olsa da istirahət sayılır</span>
+                                <span class="bg-tip-title">Qeyri iş günü</span>
+                                <span class="bg-tip-sub">Bayram, matəm, istirahət — iş günü olsa da sayılmır</span>
                             </div>
                         </label>
                         <label class="bg-tip-option">
@@ -168,7 +177,7 @@
                 </div>
                 <div class="bg-form-group">
                     <label class="bg-label" for="bgAd">Ad *</label>
-                    <input type="text" class="bg-input" id="bgAd" name="ad" required placeholder="Məsələn: Novruz Bayramı" />
+                    <input type="text" class="bg-input" id="bgAd" name="ad" required placeholder="Məs: Novruz Bayramı, Şəhidlər günü (matəm), ..." />
                     <span class="bg-error" id="bgAdError"></span>
                 </div>
                 <div class="bg-form-row">
