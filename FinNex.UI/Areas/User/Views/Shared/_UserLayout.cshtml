@@ -613,19 +613,8 @@
         });
     })();
 
-    // Departamentlər dropdown toggle
-    (function () {
-        var d = document.querySelector('.fn-topnav-dropdown');
-        if (!d) return;
-        var btn = d.querySelector('button');
-        btn?.addEventListener('click', function (e) {
-            e.stopPropagation();
-            d.classList.toggle('fn-topnav-dropdown--open');
-        });
-        document.addEventListener('click', function (e) {
-            if (!d.contains(e.target)) d.classList.remove('fn-topnav-dropdown--open');
-        });
-    })();
+    // Departamentlər dropdown — yalnız hover ilə açılır (klik yoxdur)
+    // CSS :hover pattern-i işləyir, JS gərək deyil.
 </script>
 @await RenderSectionAsync("Scripts", required: false)
 

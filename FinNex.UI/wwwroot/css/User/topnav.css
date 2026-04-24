@@ -105,7 +105,7 @@
     color: #e8b84b;
 }
 
-/* Departamentlər dropdown */
+/* Departamentlər dropdown — yalnız hover */
 .fn-topnav-dropdown {
     position: relative;
     display: inline-flex;
@@ -114,7 +114,7 @@
 .fn-topnav-dropdown > button {
     border: none;
     background: transparent;
-    cursor: pointer;
+    cursor: default;
     font-family: inherit;
 }
 
@@ -125,26 +125,35 @@
     transition: transform 0.15s;
 }
 
-.fn-topnav-dropdown--open .fn-topnav-caret,
 .fn-topnav-dropdown:hover .fn-topnav-caret {
     transform: rotate(180deg);
 }
 
 .fn-topnav-dropdown-menu {
     position: absolute;
-    top: calc(100% + 6px);
+    top: 100%; /* tab-ın alt tərəfindən başlayır — hover bridge */
     left: 0;
-    min-width: 280px;
+    min-width: 300px;
     background: #fff;
     border: 1px solid #e2e6ef;
     border-radius: 12px;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
-    padding: 6px;
+    padding: 10px 6px 6px;
     display: none;
     z-index: 110;
+    margin-top: 2px;
 }
 
-.fn-topnav-dropdown--open .fn-topnav-dropdown-menu,
+/* "Bridge" — tab ilə menyu arasındakı boşluq hover-i qırmasın deyə */
+.fn-topnav-dropdown-menu::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 0;
+    right: 0;
+    height: 10px;
+}
+
 .fn-topnav-dropdown:hover .fn-topnav-dropdown-menu {
     display: block;
     animation: fnTopnavDdIn 0.14s ease;
@@ -387,44 +396,56 @@
 
 .fn-sidebar2 {
     flex-shrink: 0;
-    width: 220px;
-    /* Kök/torpaq tonu — qızılı topnav-a uyğun, gözə qurucu kontrast */
-    background: linear-gradient(180deg, #ebe1c8 0%, #ddd2b2 100%);
-    border-right: 1px solid #c9bd9b;
-    padding: 18px 10px;
+    width: 230px;
+    /* Tünd navy — topnav ilə eyni palet. Modern admin dashboard görünüşü */
+    background: linear-gradient(180deg, #1a2332 0%, #141a26 100%);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 20px 12px;
     overflow-y: auto;
     height: calc(100vh - 60px);
     position: sticky;
     top: 60px;
-    box-shadow: inset -1px 0 0 rgba(139, 114, 61, 0.08);
+}
+
+.fn-sidebar2::-webkit-scrollbar {
+    width: 6px;
+}
+
+.fn-sidebar2::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
 }
 
 .fn-sidebar2 .fn-nav-label {
     font-size: 10px;
     font-weight: 700;
-    color: #6b5e40;
+    color: #8b95a8;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
-    padding: 12px 10px 6px;
-    margin-top: 4px;
+    letter-spacing: 1px;
+    padding: 14px 12px 8px;
+    margin-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .fn-sidebar2 .fn-nav-label:first-child {
     margin-top: 0;
+    border-top: none;
+    padding-top: 4px;
 }
 
 .fn-sidebar2 .fn-nav-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
+    gap: 11px;
+    padding: 10px 13px;
     border-radius: 8px;
-    color: #3d3520;
+    color: #b8c0cc;
     text-decoration: none;
     font-size: 13px;
     font-weight: 500;
-    transition: all 0.12s;
+    transition: all 0.14s;
     margin-bottom: 2px;
+    position: relative;
 }
 
 .fn-sidebar2 .fn-nav-item i {
@@ -432,22 +453,24 @@
     opacity: 0.75;
     width: 18px;
     text-align: center;
+    flex-shrink: 0;
 }
 
 .fn-sidebar2 .fn-nav-item:hover {
-    background: rgba(255, 255, 255, 0.6);
-    color: #1a1400;
+    background: rgba(255, 255, 255, 0.07);
+    color: #fff;
 }
 
 .fn-sidebar2 .fn-nav-item:hover i {
     opacity: 1;
+    color: #e8b84b;
 }
 
 .fn-sidebar2 .fn-nav-item.active {
-    background: #1a2332;
+    background: linear-gradient(90deg, rgba(232, 184, 75, 0.18) 0%, rgba(232, 184, 75, 0.04) 100%);
     color: #fff;
     font-weight: 600;
-    box-shadow: 0 2px 8px rgba(26, 35, 50, 0.2);
+    box-shadow: inset 3px 0 0 #e8b84b;
 }
 
 .fn-sidebar2 .fn-nav-item.active i {
