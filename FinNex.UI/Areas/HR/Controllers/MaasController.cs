@@ -453,25 +453,24 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             ViewBag.Il = cIl;
             ViewBag.Ay = cAy;
-            // Məzuniyyət ödənişləri (bu ay üçün təsdiqlənmiş məzuniyyətlərdən)
-            // Daha dəqiq hesab MaasHesablamaService-də aparılır — burda sadəcə
-            // preview üçün ödənilmiş məbləği götürürük (əgər varsa).
-            var isciMezuniyyetMap = new Dictionary<int, (int gun, decimal odenis)>();
-            var aktivMez = await _unitOfWork.Repository<Mezuniyyet>().Query()
-                .Where(m => !m.Silinib && isciIdler.Contains(m.IsciId)
-                         && m.Status == MezuniyyetStatus.Tesdiqlenib
-                         && m.BaslamaTarixi <= ayBitis && m.BitmeTarixi >= hesabTarixi)
-                .ToListAsync();
-            foreach (var m in aktivMez)
+
+            // Ayın iş günü — preview-də kəsinti hesablaması üçün lazımdır
+            int ayIsGunu = await _hesablamaService.AyIsGunSayiniHesablaAsync(cIl, cAy);
+
+            // Məzuniyyət preview — FerdiHesablaAsync ilə eyni məntiq:
+            //  - IsGun: həmin aya düşən təsdiqli məzuniyyət iş günləri (hər 2 tipdə)
+            //  - Odenis: yalnız AySonuOdenis qeydlər üçün 2026 düsturu ilə
+            //  - Kesinti: esasMaas / ayIsGunu × IsGun
+            var isciMezuniyyetMap = new Dictionary<int, (int gun, decimal odenis, decimal kesinti)>();
+            foreach (var id in isciIdler)
             {
-                var cur = isciMezuniyyetMap.GetValueOrDefault(m.IsciId);
-                isciMezuniyyetMap[m.IsciId] = (
-                    cur.gun + (m.IsGunlerininSayiManual ?? m.IsGunlerininSayi),
-                    cur.odenis + (m.OdenenMebleg ?? 0)
-                );
+                var (mezIsGun, mezKesinti, mezOdenis) = await _hesablamaService.MezuniyyetPreviewAsync(id, cIl, cAy);
+                if (mezIsGun > 0 || mezOdenis > 0 || mezKesinti > 0)
+                    isciMezuniyyetMap[id] = (mezIsGun, mezOdenis, mezKesinti);
             }
 
-            // Xəstəlik ödənişləri (XestelikOdenis-dən ay üzrə, şirkət payı gross-a əlavə olunur)
+            // Xəstəlik ödənişləri (XestelikOdenis-dən ay üzrə, şirkət payı gross-a əlavə olunur,
+            // xəstəlik günlərinə görə əsas maaşdan kəsinti də tətbiq olunur)
             var xestelikOdenisList = await _unitOfWork.Repository<XestelikOdenis>().Query()
                 .Where(o => !o.Silinib && isciIdler.Contains(o.IsciId)
                          && o.Il == cIl && o.Ay == cAy)
@@ -480,12 +479,22 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .GroupBy(o => o.IsciId)
                 .ToDictionary(
                     g => g.Key,
-                    g => (
-                        sirketGun: g.Sum(o => o.SirketGunSayi),
-                        dsmfGun: g.Sum(o => o.DsmfGunSayi),
-                        sirketOdenis: g.Sum(o => o.SirketOdenis),
-                        dsmfOdenis: g.Sum(o => o.DsmfOdenis)
-                    ));
+                    g =>
+                    {
+                        int sirketGun = g.Sum(o => o.SirketGunSayi);
+                        int dsmfGun = g.Sum(o => o.DsmfGunSayi);
+                        decimal esas = cariMaasMap.TryGetValue(g.Key, out var m) ? m : 0m;
+                        decimal kesinti = (ayIsGunu > 0 && (sirketGun + dsmfGun) > 0)
+                            ? Math.Round(esas / ayIsGunu * (sirketGun + dsmfGun), 2)
+                            : 0m;
+                        return (
+                            sirketGun: sirketGun,
+                            dsmfGun: dsmfGun,
+                            sirketOdenis: g.Sum(o => o.SirketOdenis),
+                            dsmfOdenis: g.Sum(o => o.DsmfOdenis),
+                            kesinti: kesinti
+                        );
+                    });
 
             ViewBag.Hesablanmis = hesablanmis;
             ViewBag.CariMaasMap = cariMaasMap;

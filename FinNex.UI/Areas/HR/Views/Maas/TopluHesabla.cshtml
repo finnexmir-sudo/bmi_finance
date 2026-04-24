@@ -340,22 +340,27 @@
                                     isciAvans = isciAvansMap[isci.Id];
                                 var isciAvansStr = isciAvans.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
 
-                                // Məzuniyyət (preview üçün) — (gün, ödəniş)
-                                var mezMap = ViewBag.IsciMezuniyyetMap as Dictionary<int, (int gun, decimal odenis)>
-                                             ?? new Dictionary<int, (int gun, decimal odenis)>();
-                                int mezGun = 0; decimal mezOdenis = 0m;
+                                // Məzuniyyət (preview üçün) — (gün, ödəniş, kəsinti)
+                                // FerdiHesablaAsync ilə eyni məntiq: yalnız AySonuOdenis tipli qeydlər
+                                // ödənişə əlavə olunur, lakin bütün təsdiqli məzuniyyətlər üçün
+                                // əsas maaşdan iş günü mütənasib kəsinti tutulur.
+                                var mezMap = ViewBag.IsciMezuniyyetMap as Dictionary<int, (int gun, decimal odenis, decimal kesinti)>
+                                             ?? new Dictionary<int, (int gun, decimal odenis, decimal kesinti)>();
+                                int mezGun = 0; decimal mezOdenis = 0m; decimal mezKesinti = 0m;
                                 if (mezMap.TryGetValue(isci.Id, out var mezVal))
-                                { mezGun = mezVal.gun; mezOdenis = mezVal.odenis; }
+                                { mezGun = mezVal.gun; mezOdenis = mezVal.odenis; mezKesinti = mezVal.kesinti; }
                                 var mezOdenisStr = mezOdenis.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                var mezKesintiStr = mezKesinti.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
 
-                                // Xəstəlik (preview üçün)
-                                var xesMap = ViewBag.IsciXestelikMap as Dictionary<int, (int sirketGun, int dsmfGun, decimal sirketOdenis, decimal dsmfOdenis)>
-                                             ?? new Dictionary<int, (int sirketGun, int dsmfGun, decimal sirketOdenis, decimal dsmfOdenis)>();
-                                int xSirketGun = 0, xDsmfGun = 0; decimal xSirketOd = 0m, xDsmfOd = 0m;
+                                // Xəstəlik (preview üçün) — kəsinti də pre-computed
+                                var xesMap = ViewBag.IsciXestelikMap as Dictionary<int, (int sirketGun, int dsmfGun, decimal sirketOdenis, decimal dsmfOdenis, decimal kesinti)>
+                                             ?? new Dictionary<int, (int sirketGun, int dsmfGun, decimal sirketOdenis, decimal dsmfOdenis, decimal kesinti)>();
+                                int xSirketGun = 0, xDsmfGun = 0; decimal xSirketOd = 0m, xDsmfOd = 0m, xKesinti = 0m;
                                 if (xesMap.TryGetValue(isci.Id, out var xesVal))
-                                { xSirketGun = xesVal.sirketGun; xDsmfGun = xesVal.dsmfGun; xSirketOd = xesVal.sirketOdenis; xDsmfOd = xesVal.dsmfOdenis; }
+                                { xSirketGun = xesVal.sirketGun; xDsmfGun = xesVal.dsmfGun; xSirketOd = xesVal.sirketOdenis; xDsmfOd = xesVal.dsmfOdenis; xKesinti = xesVal.kesinti; }
                                 var xSirketOdStr = xSirketOd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
                                 var xDsmfOdStr = xDsmfOd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                var xKesintiStr = xKesinti.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
 
                                 <tr data-isci="@isci.Id"
                                     data-esas="@esas.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
@@ -365,10 +370,12 @@
                                     data-avans="@isciAvansStr"
                                     data-mez-gun="@mezGun"
                                     data-mez-odenis="@mezOdenisStr"
+                                    data-mez-kesinti="@mezKesintiStr"
                                     data-xes-sirket-gun="@xSirketGun"
                                     data-xes-dsmf-gun="@xDsmfGun"
                                     data-xes-sirket-odenis="@xSirketOdStr"
                                     data-xes-dsmf-odenis="@xDsmfOdStr"
+                                    data-xes-kesinti="@xKesintiStr"
                                     class="mth-row @(isDone ? "done" : "")">
 
                                     @* Checkbox *@

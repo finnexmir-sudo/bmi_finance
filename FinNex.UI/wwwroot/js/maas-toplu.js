@@ -81,12 +81,16 @@
         const hys = parseFloat(row.dataset.hys || 0) || 0;
         const avans = parseFloat(row.dataset.avans || 0) || 0;
         // Məzuniyyət + Xəstəlik preview üçün server-tərəfi yüklənmiş data
+        // (mezKesinti və xesKesinti server-də FerdiHesablaAsync ilə eyni düsturla
+        // hesablanır → preview GROSS/NET həqiqi hesablanacaq rəqəmlə üst-üstə düşür)
         const mezGun = parseInt(row.dataset.mezGun || 0) || 0;
         const mezOdenis = parseFloat(row.dataset.mezOdenis || 0) || 0;
+        const mezKesinti = parseFloat(row.dataset.mezKesinti || 0) || 0;
         const xesSirketGun = parseInt(row.dataset.xesSirketGun || 0) || 0;
         const xesDsmfGun = parseInt(row.dataset.xesDsmfGun || 0) || 0;
         const xesSirketOdenis = parseFloat(row.dataset.xesSirketOdenis || 0) || 0;
         const xesDsmfOdenis = parseFloat(row.dataset.xesDsmfOdenis || 0) || 0;
+        const xesKesinti = parseFloat(row.dataset.xesKesinti || 0) || 0;
         const chk = row.querySelector('.mth-checkbox');
         const bInp = row.querySelector('.mth-inp--b');
         const cInp = row.querySelector('.mth-inp--c');
@@ -98,9 +102,15 @@
         // İşəgötürən HYS payı (əvvəlcə hesablanır — brüt-ə daxildir)
         const hysIsv  = Math.round(hys * (HYS_ISV_FAIZ / 100) * 100) / 100;
 
-        // GROSS = əsas maaş + bonus - cərimə + məzuniyyət ödənişi
-        //        + xəstəlik şirkət ödənişi + işəgötürən HYS payı
-        const esasBrut = Math.max(esas + bonus - cerime + mezOdenis + xesSirketOdenis, 0);
+        // GROSS = əsas maaş − məzuniyyət kəsintisi + məzuniyyət ödənişi
+        //        + xəstəlik şirkət ödənişi − xəstəlik kəsintisi
+        //        + bonus − cərimə + işəgötürən HYS payı
+        // (FerdiHesablaAsync ilə eyni düstur — preview həqiqi nəticə ilə üst-üstə düşür)
+        const esasBrut = Math.max(
+            esas - mezKesinti + mezOdenis
+                 - xesKesinti + xesSirketOdenis
+                 + bonus - cerime,
+            0);
         const brut = esasBrut + hysIsv;
 
         // Vergi+DSMF bazası = əsas brüt − işçi HYS (işəgötürən payı daxil deyil)
@@ -132,8 +142,8 @@
             vergiDsmfBazasi, itssBazasi,
             standartGuzest, isciGuzest, isciGuzestAd,
             hys, hysIsv, avans,
-            mezGun, mezOdenis,
-            xesSirketGun, xesDsmfGun, xesSirketOdenis, xesDsmfOdenis,
+            mezGun, mezOdenis, mezKesinti,
+            xesSirketGun, xesDsmfGun, xesSirketOdenis, xesDsmfOdenis, xesKesinti,
             gelirV, dsmf, iss, itss, tutulma, net,
             dsmfIsv, issIsv, itssIsv, sirketCemi,
             checked: !!chk?.checked && !done, done
@@ -177,12 +187,10 @@
         set('[data-p="net"]', fmt(d.net), d.net > 0 ? 'n n--au' : 'n n--d');
 
         // Vergi güzəşti breakdown (standart + işçi + vergilənəcək)
-        // Məzuniyyət
+        // Məzuniyyət — gün sayı / ödəniş / kəsinti (server ilə eyni düstur)
         set('[data-p="mezgun"]', d.mezGun > 0 ? d.mezGun + ' gün' : '—', d.mezGun > 0 ? 'n n--b' : 'n n--d');
         set('[data-p="mez"]', fmt(d.mezOdenis), d.mezOdenis > 0 ? 'n n--b' : 'n n--d');
-        // Məzuniyyət kəsintisi hazırda preview-də hesablanmır (server-tərəfi maaş hesablaması
-        // əhatə edir). Boş qalsın ki, səhv rəqəm olmasın.
-        set('[data-p="mezkes"]', '—', 'n n--d');
+        set('[data-p="mezkes"]', fmt(d.mezKesinti), d.mezKesinti > 0 ? 'n n--r' : 'n n--d');
 
         // Xəstəlik
         const xesSirketText = d.xesSirketGun > 0
