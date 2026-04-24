@@ -4,35 +4,60 @@
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
     var currentTab = Context.Request.Query["tab"].ToString();
 
-    var isHR = User.IsInRole(RoleNames.HR) || User.IsInRole(RoleNames.Admin);
-    var isRehber = User.IsInRole(RoleNames.Rehber) || User.IsInRole(RoleNames.SobeReisi) || isHR;
-    var isHRGorunur = isHR || User.IsInRole(RoleNames.Rehber);
-    // Mühasibatlıq: Mühasib + HR + Admin + Rəhbər (Rəhbər maaşları təsdiq edir)
-    var isMuhasib = User.IsInRole(RoleNames.Muhasib) || isHR || User.IsInRole(RoleNames.Rehber);
-    // Yalnız Rəhbər rolu (HR/Admin/Muhasib deyil) — parametrləri/büdcə/xərc görməsin
-    var isRehberOnly = User.IsInRole(RoleNames.Rehber)
-                       && !User.IsInRole(RoleNames.HR)
-                       && !User.IsInRole(RoleNames.Admin)
-                       && !User.IsInRole(RoleNames.Muhasib);
+    var isAdmin = User.IsInRole(RoleNames.Admin);
+    var isHR = User.IsInRole(RoleNames.HR) || isAdmin;
+    var isRehberRol = User.IsInRole(RoleNames.Rehber);
+    var isSobeReisi = User.IsInRole(RoleNames.SobeReisi);
+    var isMuhasib = User.IsInRole(RoleNames.Muhasib) || isHR || isRehberRol;
+    var isRehberOnly = isRehberRol && !isHR && !isMuhasib;
+
+    var tesdiqGorunur = isSobeReisi || isRehberRol || isHR;
+    var hrGorunur = isHR || isRehberRol;
 
     var _layoutVezife = ViewData["UserRole"] as string ?? "";
 
-    // Sidebar qrupların açılma məntiqi —
-    // HR İdarəetmə qrupu yalnız HR area-nın non-accounting controllerləri üçün açılsın
-    // (Maas/MaasParametri/Budce/Xerc/IsciAyliqQazanc Mühasibatlıq altındadır)
-    var isAccountingCtrl = currentController == "Maas"
-                           || currentController == "MaasParametri"
-                           || currentController == "Budce"
-                           || currentController == "Xerc"
-                           || currentController == "IsciAyliqQazanc"
-                           || currentController == "MezuniyyetOdenis"
-                           || currentController == "Guzest"
-                           || currentController == "IsciGuzest"
-                           || currentController == "IsciHYS"
-                           || (currentController == "Avans" && currentArea == "HR");
-    var hrGroupOpen = (currentArea == "HR" && !isAccountingCtrl)
-                      || currentController == "XestelikEzamiyyet";
-    var muhasibatGroupOpen = isAccountingCtrl && currentArea == "HR";
+    // Hangı modul aktivdir — top tab-ı vurğulamaq + contextual sidebar üçün
+    bool IsAccountingCtrl()
+    {
+        return currentController == "Maas"
+            || currentController == "MaasParametri"
+            || currentController == "Budce"
+            || currentController == "Xerc"
+            || currentController == "IsciAyliqQazanc"
+            || currentController == "MezuniyyetOdenis"
+            || currentController == "Guzest"
+            || currentController == "IsciGuzest"
+            || currentController == "IsciHYS"
+            || (currentController == "Avans" && currentArea == "HR");
+    }
+
+    string DetectActiveModule()
+    {
+        if (currentArea == "HR")
+            return IsAccountingCtrl() ? "muhasibat" : "hr";
+        if (currentArea == "SenedDovriyyesi") return "sened";
+        if (currentArea == "PR_Odenis_Tapsirigi") return "swift";
+        if (currentController == "Tesdiq") return "tesdiq";
+        if (currentController == "KreditMuraciet") return "kredit";
+        if (currentController == "Hesabat" || currentController == "HesabatIzleme") return "hesabat";
+        if (currentController == "RehberDashboard") return "hr";
+        if (currentController is "Davamiyyet" or "Takvim" or "Mezuniyyet" or "Muraciet"
+            or "Tapshiriq" or "Gorush" or "Icaze" or "Maas" or "Xerc" or "Avans")
+            return "emekdas";
+        if (currentController == "Chat" || currentController == "Elan") return "emekdas";
+        return "home";
+    }
+
+    var activeModule = DetectActiveModule();
+
+    string TabCls(string module) =>
+        "fn-topnav-tab" + (activeModule == module ? " fn-topnav-tab--active" : "");
+
+    string userName = User.Identity?.Name ?? "";
+    var parts = userName.Split(' ');
+    var initials = parts.Length >= 2
+        ? $"{parts[0][0]}{parts[1][0]}"
+        : userName.Length > 0 ? userName[0].ToString() : "?";
 }
 
 <!DOCTYPE html>
@@ -55,6 +80,7 @@
     <link rel="stylesheet" href="~/css/User/user-area.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/User/dashboard.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/User/createmezuniyyet.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/User/topnav.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/fn-datepicker.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
@@ -62,723 +88,499 @@
 </head>
 <body>
 
-    <div class="fn-layout">
+<!-- ══════════════════ YUXARI NAVBAR ══════════════════ -->
+<header class="fn-topnav">
+    <div class="fn-topnav-inner">
+        <a asp-area="User" asp-controller="Dashboard" asp-action="Index" class="fn-topnav-brand">
+            <img src="~/images/Logobank.jpg" alt="BMI" class="fn-topnav-logo" />
+            <span class="fn-topnav-brand-text">BMI <b>Finance</b></span>
+        </a>
 
-        <aside class="fn-sidebar">
-            <div class="fn-sidebar-top">
-                <div class="fn-sidebar-logo-wrap">
-                    <img src="~/images/Logobank.jpg" alt="BMI Finance" class="fn-sidebar-logo-img" />
-                    <div class="fn-sidebar-logo">BMI <span>Finance</span></div>
+        <nav class="fn-topnav-tabs">
+            <a asp-area="User" asp-controller="Dashboard" asp-action="Index" class="@TabCls("home")">
+                <i class="bi bi-house-door"></i><span>Əsas</span>
+            </a>
+
+            <a asp-area="User" asp-controller="Davamiyyet" asp-action="Index" class="@TabCls("emekdas")">
+                <i class="bi bi-person-badge"></i><span>Əməkdaş</span>
+            </a>
+
+            @if (tesdiqGorunur)
+            {
+                var tesdiqAction = isSobeReisi ? "SobeReisi" : (isRehberRol ? "Rehber" : "Hr");
+                <a asp-area="User" asp-controller="Tesdiq" asp-action="@tesdiqAction" class="@TabCls("tesdiq")">
+                    <i class="bi bi-check2-square"></i><span>Təsdiq</span>
+                </a>
+            }
+
+            <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Index" class="@TabCls("kredit")">
+                <i class="bi bi-credit-card"></i><span>Kredit</span>
+            </a>
+
+            @if (hrGorunur)
+            {
+                <a asp-area="HR" asp-controller="Dashboard" asp-action="Index" class="@TabCls("hr")">
+                    <i class="bi bi-people"></i><span>HR</span>
+                </a>
+            }
+
+            @if (isMuhasib)
+            {
+                <a asp-area="HR" asp-controller="Maas" asp-action="Index" class="@TabCls("muhasibat")">
+                    <i class="bi bi-cash-coin"></i><span>Mühasibatlıq</span>
+                </a>
+            }
+
+            <a asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index" class="@TabCls("sened")">
+                <i class="bi bi-folder2"></i><span>Sənədlər</span>
+            </a>
+
+            <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Siyahi" class="@TabCls("swift")">
+                <i class="bi bi-bank2"></i><span>Swift</span>
+            </a>
+
+            @if (isMuhasib || isRehberRol)
+            {
+                <a asp-area="User" asp-controller="Hesabat" asp-action="Index" class="@TabCls("hesabat")">
+                    <i class="bi bi-bar-chart"></i><span>Hesabatlar</span>
+                </a>
+            }
+        </nav>
+
+        <div class="fn-topnav-right">
+            <a asp-area="User" asp-controller="Xatirlatma" asp-action="Index"
+               class="fn-topnav-icon" id="xatirlatmaBtn" title="Xatırlatmalar">
+                <i class="bi bi-clock"></i>
+                <span class="fn-topnav-badge" id="xatirlatmaCount" style="display:none">0</span>
+            </a>
+            <a asp-area="User" asp-controller="Chat" asp-action="Index"
+               class="fn-topnav-icon" id="chatBtn" title="Chat">
+                <i class="bi bi-chat-dots"></i>
+                <span class="fn-topnav-badge" id="chatCount" style="display:none">0</span>
+            </a>
+            <a asp-area="User" asp-controller="Inbox" asp-action="Index"
+               asp-route-tab="bildirisler"
+               class="fn-topnav-icon" id="notifBtn" title="Bildirişlər">
+                <i class="bi bi-bell"></i>
+                <span class="fn-topnav-badge" id="notifCount" style="display:none">0</span>
+            </a>
+
+            <div class="fn-topnav-user" tabindex="0">
+                <div class="fn-topnav-avatar">@initials</div>
+                <div class="fn-topnav-user-info">
+                    <div class="fn-topnav-user-name">@userName</div>
+                    <div class="fn-topnav-user-role">@_layoutVezife</div>
                 </div>
-                <div class="fn-sidebar-tagline">Bank İdarəetmə Sistemi</div>
+                <div class="fn-topnav-user-menu">
+                    <a asp-area="User" asp-controller="Profile" asp-action="Index" class="fn-topnav-user-menu-item">
+                        <i class="bi bi-person"></i> Profil
+                    </a>
+                    <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="fn-topnav-user-menu-item fn-topnav-user-menu-danger">
+                            <i class="bi bi-box-arrow-right"></i> Çıxış
+                        </button>
+                    </form>
+                </div>
             </div>
 
-            <nav class="fn-nav">
+            <button type="button" class="fn-topnav-burger" id="fnBurgerBtn" title="Menyu">
+                <i class="bi bi-list"></i>
+            </button>
+        </div>
+    </div>
+</header>
 
-                @* ═══════════════════════════════════════════════════
-                   ƏSAS — Bütün istifadəçilər görür
-                   ═══════════════════════════════════════════════════ *@
+<div class="fn-layout2">
+
+    <!-- ══════════════════ KONTEKSTUAL SİDEBAR ══════════════════ -->
+    <aside class="fn-sidebar2" id="fnSidebar">
+
+        @switch (activeModule)
+        {
+            case "home":
                 <div class="fn-nav-label">Əsas</div>
-
                 <a asp-area="User" asp-controller="Dashboard" asp-action="Index"
                    class="fn-nav-item @(currentController == "Dashboard" && currentArea == "User" ? "active" : "")">
-                    <div class="fn-nav-icon">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <rect x="1" y="1" width="5" height="5" rx="1.5" fill="currentColor" />
-                            <rect x="8" y="1" width="5" height="5" rx="1.5" fill="currentColor" />
-                            <rect x="1" y="8" width="5" height="5" rx="1.5" fill="currentColor" />
-                            <rect x="8" y="8" width="5" height="5" rx="1.5" fill="currentColor" />
-                        </svg>
-                    </div>
-                    Dashboard
+                    <i class="bi bi-grid"></i> Dashboard
                 </a>
-
                 <a asp-area="User" asp-controller="Profile" asp-action="Index"
                    class="fn-nav-item @(currentController == "Profile" ? "active" : "")">
-                    <div class="fn-nav-icon">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <circle cx="7" cy="4.5" r="2.5" stroke="currentColor" stroke-width="1.3" />
-                            <path d="M1.5 12c0-3 2.5-4.5 5.5-4.5S12 9 12 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-                        </svg>
-                    </div>
-                    Profil
+                    <i class="bi bi-person"></i> Profil
+                </a>
+                <a asp-area="User" asp-controller="Chat" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Chat" && currentArea == "User" ? "active" : "")">
+                    <i class="bi bi-chat-dots"></i> Chat
+                </a>
+                <a asp-area="User" asp-controller="Elan" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Elan" && currentArea == "User" ? "active" : "")">
+                    <i class="bi bi-megaphone"></i> Elanlar
+                </a>
+                break;
+
+            case "emekdas":
+                <div class="fn-nav-label">Əməkdaş Portalı</div>
+                <a asp-area="User" asp-controller="Davamiyyet" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Davamiyyet" ? "active" : "")">
+                    <i class="bi bi-calendar-check"></i> Davamiyyət
+                </a>
+                <a asp-area="User" asp-controller="Takvim" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Takvim" ? "active" : "")">
+                    <i class="bi bi-calendar3"></i> Təqvim
+                </a>
+                <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Mezuniyyet" ? "active" : "")">
+                    <i class="bi bi-tree"></i> Məzuniyyət
+                </a>
+                <a asp-area="User" asp-controller="Icaze" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Icaze" ? "active" : "")">
+                    <i class="bi bi-hourglass-split"></i> İcazə
+                </a>
+                <a asp-area="User" asp-controller="Muraciet" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Muraciet" ? "active" : "")">
+                    <i class="bi bi-envelope-paper"></i> Müraciətlər
+                </a>
+                <a asp-area="User" asp-controller="Tapshiriq" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Tapshiriq" ? "active" : "")">
+                    <i class="bi bi-list-check"></i> Tapşırıqlar
+                </a>
+                <a asp-area="User" asp-controller="Gorush" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Gorush" ? "active" : "")">
+                    <i class="bi bi-calendar-event"></i> Görüşlər
                 </a>
 
-                @* ═══════════════════════════════════════════════════
-                   ƏMƏKDAŞ PORTALI — Bütün istifadəçilər görür
-                   ═══════════════════════════════════════════════════ *@
-                <div class="fn-nav-label">Əməkdaş</div>
+                <div class="fn-nav-label">Maliyyə</div>
+                <a asp-area="User" asp-controller="Maas" asp-action="Tarixce"
+                   class="fn-nav-item @(currentController == "Maas" && currentArea == "User" && currentAction == "Tarixce" ? "active" : "")">
+                    <i class="bi bi-clock-history"></i> Maaş Tarixçəsi
+                </a>
+                <a asp-area="User" asp-controller="Maas" asp-action="HYS"
+                   class="fn-nav-item @(currentController == "Maas" && currentArea == "User" && currentAction == "HYS" ? "active" : "")">
+                    <i class="bi bi-percent"></i> HYS
+                </a>
+                <a asp-area="User" asp-controller="Avans" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Avans" && currentArea == "User" ? "active" : "")">
+                    <i class="bi bi-cash"></i> Avans
+                </a>
+                <a asp-area="User" asp-controller="Xerc" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Xerc" && currentArea == "User" ? "active" : "")">
+                    <i class="bi bi-receipt"></i> Xərclər
+                </a>
+                break;
 
-                <div class="fn-nav-group @(currentArea != "HR" && currentController is "Davamiyyet" or "Takvim" or "Mezuniyyet" or "Muraciet" or "Tapshiriq" or "Gorush" or "Icaze" or "Maas" or "Xerc" ? "open" : "")">
-                    <button type="button" class="fn-nav-group-toggle">
-                        <div class="fn-nav-group-left">
-                            <div class="fn-nav-icon">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                    <rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" />
-                                    <path d="M1 5h12M5 2v2M9 2v2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
-                                </svg>
-                            </div>
-                            Əməkdaş Portalı
-                        </div>
-                        <div class="fn-nav-arrow">
-                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                        </div>
-                    </button>
-                    <div class="fn-nav-submenu">
-                        <a asp-area="User" asp-controller="Davamiyyet" asp-action="Index"
-                           class="fn-nav-subitem @(currentController == "Davamiyyet" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Davamiyyət
-                        </a>
-                        <a asp-area="User" asp-controller="Takvim" asp-action="Index"
-                           class="fn-nav-subitem @(currentController == "Takvim" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Təqvim
-                        </a>
-                        <a asp-area="User" asp-controller="Mezuniyyet" asp-action="Index"
-                           class="fn-nav-subitem @(currentController == "Mezuniyyet" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Məzuniyyət
-                        </a>
-                        <a asp-area="User" asp-controller="Muraciet" asp-action="Index"
-                           class="fn-nav-subitem @(currentController == "Muraciet" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Müraciətlər
-                        </a>
-                        <a asp-area="User" asp-controller="Tapshiriq" asp-action="Index"
-                           class="fn-nav-subitem @(currentController == "Tapshiriq" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Tapşırıqlar
-                        </a>
-                        <a asp-area="User" asp-controller="Gorush" asp-action="Index"
-                           class="fn-nav-subitem @(currentController == "Gorush" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Görüşlər
-                        </a>
-                        <a asp-area="User" asp-controller="Maas" asp-action="Tarixce"
-                           class="fn-nav-subitem @(currentController == "Maas" && currentArea == "User" && currentAction == "Tarixce" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Maaş Tarixçəsi
-                        </a>
-                        <a asp-area="User" asp-controller="Maas" asp-action="HYS"
-                           class="fn-nav-subitem @(currentController == "Maas" && currentArea == "User" && currentAction == "HYS" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> HYS
-                        </a>
-                        <a asp-area="User" asp-controller="Avans" asp-action="Index"
-                           class="fn-nav-subitem @(currentController == "Avans" && currentArea == "User" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Avans
-                        </a>
-                        <a asp-area="User" asp-controller="Xerc" asp-action="Index"
-                           class="fn-nav-subitem @(currentController == "Xerc" && currentArea == "User" ? "active" : "")">
-                            <div class="fn-sub-dot"></div> Xərclər
-                        </a>
-                    </div>
-                </div>
-
-                @* User Hesabatları — yalnız rəhbərlər görür *@
-                @if (isRehber)
+            case "tesdiq":
+                <div class="fn-nav-label">Təsdiq Paneli</div>
+                @if (isSobeReisi)
                 {
-                    <div class="fn-nav-group @(currentController == "Hesabat" && currentArea == "User" ? "open" : "")">
-                        <button type="button" class="fn-nav-group-toggle">
-                            <div class="fn-nav-group-left">
-                                <div class="fn-nav-icon">
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                        <rect x="1" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" />
-                                        <path d="M4 3V1.5M10 3V1.5M1 6h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
-                                    </svg>
-                                </div>
-                                Hesabatlar
-                            </div>
-                            <div class="fn-nav-arrow">
-                                <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                            </div>
-                        </button>
-                        <div class="fn-nav-submenu">
-                            <a asp-area="User" asp-controller="Hesabat" asp-action="Index"
-                               class="fn-nav-subitem @(currentController == "Hesabat" && currentArea == "User" ? "active" : "")">
-                                <div class="fn-sub-dot"></div> Məzuniyyət / İcazə
-                            </a>
-                        </div>
-                    </div>
+                    <a asp-area="User" asp-controller="Tesdiq" asp-action="SobeReisi"
+                       class="fn-nav-item @(currentAction == "SobeReisi" ? "active" : "")">
+                        <i class="bi bi-person-check"></i> Şöbə Rəhbəri
+                    </a>
                 }
+                @if (isRehberRol)
+                {
+                    <a asp-area="User" asp-controller="Tesdiq" asp-action="Rehber"
+                       class="fn-nav-item @(currentAction == "Rehber" ? "active" : "")">
+                        <i class="bi bi-person-workspace"></i> Rəhbər
+                    </a>
+                }
+                @if (isHR)
+                {
+                    <a asp-area="User" asp-controller="Tesdiq" asp-action="Hr"
+                       class="fn-nav-item @(currentAction == "Hr" ? "active" : "")">
+                        <i class="bi bi-briefcase"></i> HR
+                    </a>
+                }
+                break;
 
-                @* Rehber Dashboard — yalnız Rehber rolu *@
-                @if (User.IsInRole(RoleNames.Rehber))
+            case "kredit":
+                <div class="fn-nav-label">Kredit</div>
+                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Index"
+                   class="fn-nav-item @(currentAction == "Index" ? "active" : "")">
+                    <i class="bi bi-credit-card"></i> Müraciətlər
+                </a>
+                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Komite"
+                   class="fn-nav-item @(currentAction == "Komite" ? "active" : "")">
+                    <i class="bi bi-people"></i> Kredit Komitəsi
+                </a>
+                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Qerarlar"
+                   class="fn-nav-item @(currentAction == "Qerarlar" ? "active" : "")">
+                    <i class="bi bi-journal-check"></i> Komitə Qərarları
+                </a>
+                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Randevular"
+                   class="fn-nav-item @(currentAction == "Randevular" ? "active" : "")">
+                    <i class="bi bi-calendar-plus"></i> Randevular
+                </a>
+                break;
+
+            case "hr":
+                <div class="fn-nav-label">HR İdarəetmə</div>
+                <a asp-area="HR" asp-controller="Dashboard" asp-action="Index"
+                   class="fn-nav-item @(currentArea == "HR" && currentController == "Dashboard" ? "active" : "")">
+                    <i class="bi bi-grid"></i> HR Dashboard
+                </a>
+                @if (isRehberRol)
                 {
                     <a asp-area="HR" asp-controller="RehberDashboard" asp-action="Index"
                        class="fn-nav-item @(currentController == "RehberDashboard" ? "active" : "")">
-                        <div class="fn-nav-icon">
-                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                <path d="M7 1.5A5.5 5.5 0 0 0 1.5 7h2A3.5 3.5 0 0 1 7 3.5V1.5z" fill="currentColor" opacity=".3"/>
-                                <path d="M7 1.5A5.5 5.5 0 0 1 12.5 7h-2A3.5 3.5 0 0 0 7 3.5V1.5z" fill="currentColor" opacity=".6"/>
-                                <path d="M12.5 7A5.5 5.5 0 0 1 7 12.5v-2A3.5 3.5 0 0 0 10.5 7h2z" fill="currentColor" opacity=".45"/>
-                                <path d="M7 12.5A5.5 5.5 0 0 1 1.5 7h2A3.5 3.5 0 0 0 7 10.5v2z" fill="currentColor" opacity=".15"/>
-                                <circle cx="7" cy="7" r="1.5" fill="currentColor"/>
-                            </svg>
-                        </div>
-                        Rəhbər Panel
+                        <i class="bi bi-speedometer2"></i> Rəhbər Panel
                     </a>
                 }
 
-                @* Hesabat İzləmə — Mühasib/HR/Admin *@
+                <div class="fn-nav-label">Kadr</div>
+                <a asp-area="HR" asp-controller="Isci" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Isci" ? "active" : "")">
+                    <i class="bi bi-people"></i> İşçilər
+                </a>
+                <a asp-area="HR" asp-controller="Departament" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Departament" ? "active" : "")">
+                    <i class="bi bi-diagram-3"></i> Departamentlər
+                </a>
+                <a asp-area="HR" asp-controller="Vezife" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Vezife" ? "active" : "")">
+                    <i class="bi bi-briefcase"></i> Vəzifələr
+                </a>
+                <a asp-area="HR" asp-controller="Organizasiya" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Organizasiya" ? "active" : "")">
+                    <i class="bi bi-diagram-2"></i> Organizasiya
+                </a>
+
+                <div class="fn-nav-label">Davamiyyət & Məzuniyyət</div>
+                <a asp-area="HR" asp-controller="Davamiyyet" asp-action="Index"
+                   class="fn-nav-item @(currentArea == "HR" && currentController == "Davamiyyet" ? "active" : "")">
+                    <i class="bi bi-calendar-check"></i> Davamiyyət
+                </a>
+                @if (isHR)
+                {
+                    <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Hr"
+                       class="fn-nav-item @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction != "GeriyeQeyd" && currentAction != "Aktiv" ? "active" : "")">
+                        <i class="bi bi-tree"></i> Məzuniyyət Müraciətləri
+                    </a>
+                    <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Aktiv"
+                       class="fn-nav-item @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction == "Aktiv" ? "active" : "")">
+                        <i class="bi bi-airplane"></i> Aktiv Məzuniyyətlər
+                    </a>
+                    <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="GeriyeQeyd"
+                       class="fn-nav-item @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction == "GeriyeQeyd" ? "active" : "")">
+                        <i class="bi bi-arrow-counterclockwise"></i> Geriyə Məzuniyyət
+                    </a>
+                }
+                <a asp-area="HR" asp-controller="BayramGunu" asp-action="Index"
+                   class="fn-nav-item @(currentArea == "HR" && currentController == "BayramGunu" ? "active" : "")">
+                    <i class="bi bi-calendar-x"></i> Qeyri iş günləri
+                </a>
+                <a asp-area="HR" asp-controller="MezuniyyetBalans" asp-action="Index"
+                   class="fn-nav-item @(currentArea == "HR" && currentController == "MezuniyyetBalans" ? "active" : "")">
+                    <i class="bi bi-bar-chart"></i> Məzuniyyət Balansı
+                </a>
+                <a asp-area="HR" asp-controller="Xestelik" asp-action="Index"
+                   class="fn-nav-item @(currentArea == "HR" && currentController == "Xestelik" ? "active" : "")">
+                    <i class="bi bi-heart-pulse"></i> Xəstəlik
+                </a>
+                <a asp-area="HR" asp-controller="XestelikEzamiyyet" asp-action="Index"
+                   class="fn-nav-item @(currentArea == "HR" && currentController == "XestelikEzamiyyet" ? "active" : "")">
+                    <i class="bi bi-airplane-engines"></i> Ezamiyyət
+                </a>
+                <a asp-area="HR" asp-controller="IsciStaji" asp-action="Index"
+                   class="fn-nav-item @(currentArea == "HR" && currentController == "IsciStaji" ? "active" : "")">
+                    <i class="bi bi-award"></i> İşçi Stajı
+                </a>
+
+                <div class="fn-nav-label">Qiymətləndirmə</div>
+                <a asp-area="HR" asp-controller="Performans" asp-action="Index"
+                   class="fn-nav-item @(currentArea == "HR" && currentController == "Performans" ? "active" : "")">
+                    <i class="bi bi-star"></i> Performans
+                </a>
+                <a asp-area="HR" asp-controller="Telim" asp-action="Index"
+                   class="fn-nav-item @(currentArea == "HR" && currentController == "Telim" ? "active" : "")">
+                    <i class="bi bi-mortarboard"></i> Təlim
+                </a>
+
+                <div class="fn-nav-label">Digər</div>
+                <a asp-area="HR" asp-controller="Hesabat" asp-action="Index"
+                   class="fn-nav-item @(currentArea == "HR" && currentController == "Hesabat" ? "active" : "")">
+                    <i class="bi bi-graph-up"></i> HR Hesabatları
+                </a>
+                <a asp-area="HR" asp-controller="Elan" asp-action="Index"
+                   class="fn-nav-item @(currentArea == "HR" && currentController == "Elan" ? "active" : "")">
+                    <i class="bi bi-megaphone"></i> Elan İdarəetmə
+                </a>
+                break;
+
+            case "muhasibat":
+                <div class="fn-nav-label">Əmək Haqqı</div>
+                <a asp-area="HR" asp-controller="Maas" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Maas" ? "active" : "")">
+                    <i class="bi bi-cash-stack"></i> Maaş Siyahısı
+                </a>
+                <a asp-area="HR" asp-controller="MezuniyyetOdenis" asp-action="Index"
+                   class="fn-nav-item @(currentArea == "HR" && currentController == "MezuniyyetOdenis" ? "active" : "")">
+                    <i class="bi bi-wallet"></i> Məzuniyyət Ödənişləri
+                </a>
+                <a asp-area="HR" asp-controller="IsciAyliqQazanc" asp-action="Index"
+                   class="fn-nav-item @(currentController == "IsciAyliqQazanc" ? "active" : "")">
+                    <i class="bi bi-clock-history"></i> Qazanc Tarixçəsi
+                </a>
+                <a asp-area="HR" asp-controller="Avans" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Avans" && currentArea == "HR" ? "active" : "")">
+                    <i class="bi bi-cash-coin"></i> Avans Müraciətləri
+                </a>
+
+                @if (!isRehberOnly)
+                {
+                    <div class="fn-nav-label">Parametrlər & Güzəştlər</div>
+                    <a asp-area="HR" asp-controller="MaasParametri" asp-action="Index"
+                       class="fn-nav-item @(currentController == "MaasParametri" ? "active" : "")">
+                        <i class="bi bi-sliders"></i> Əmək haqqı parametrləri
+                    </a>
+                    <a asp-area="HR" asp-controller="Guzest" asp-action="Index"
+                       class="fn-nav-item @(currentArea == "HR" && currentController == "Guzest" ? "active" : "")">
+                        <i class="bi bi-gift"></i> Güzəşt kataloqu
+                    </a>
+                    <a asp-area="HR" asp-controller="IsciGuzest" asp-action="Index"
+                       class="fn-nav-item @(currentArea == "HR" && currentController == "IsciGuzest" ? "active" : "")">
+                        <i class="bi bi-person-gear"></i> İşçi güzəştləri
+                    </a>
+                    <a asp-area="HR" asp-controller="IsciHYS" asp-action="Index"
+                       class="fn-nav-item @(currentArea == "HR" && currentController == "IsciHYS" ? "active" : "")">
+                        <i class="bi bi-percent"></i> HYS Təyinatları
+                    </a>
+
+                    <div class="fn-nav-label">Maliyyə</div>
+                    <a asp-area="HR" asp-controller="Budce" asp-action="Index"
+                       class="fn-nav-item @(currentController == "Budce" ? "active" : "")">
+                        <i class="bi bi-piggy-bank"></i> Büdcə
+                    </a>
+                    <a asp-area="HR" asp-controller="Xerc" asp-action="Index"
+                       class="fn-nav-item @(currentArea == "HR" && currentController == "Xerc" ? "active" : "")">
+                        <i class="bi bi-receipt"></i> Xərc İdarəetmə
+                    </a>
+                }
+                break;
+
+            case "sened":
+                <div class="fn-nav-label">Sənəd Dövriyyəsi</div>
+                <a asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Dashboard" && currentArea == "SenedDovriyyesi" ? "active" : "")">
+                    <i class="bi bi-grid"></i> Dashboard
+                </a>
+                <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Sened" && currentAction == "Index" ? "active" : "")">
+                    <i class="bi bi-folder"></i> Sənədlər
+                </a>
+                <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Yarat"
+                   class="fn-nav-item @(currentController == "Sened" && currentAction == "Yarat" ? "active" : "")">
+                    <i class="bi bi-plus-circle"></i> Yeni sənəd
+                </a>
+                <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Sablonlar"
+                   class="fn-nav-item @(currentController == "Sened" && currentAction == "Sablonlar" ? "active" : "")">
+                    <i class="bi bi-file-earmark-text"></i> Şablonlar
+                </a>
+                <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="SenedNovleri"
+                   class="fn-nav-item @(currentController == "Sened" && currentAction == "SenedNovleri" ? "active" : "")">
+                    <i class="bi bi-tags"></i> Sənəd növləri
+                </a>
+                @if (isAdmin)
+                {
+                    <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Silinmisler"
+                       class="fn-nav-item @(currentController == "Sened" && currentAction == "Silinmisler" ? "active" : "")">
+                        <i class="bi bi-trash"></i> Silinmişlər
+                    </a>
+                    <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Icazeler"
+                       class="fn-nav-item @(currentController == "Sened" && currentAction == "Icazeler" ? "active" : "")">
+                        <i class="bi bi-shield-check"></i> İcazələr
+                    </a>
+                }
+                break;
+
+            case "swift":
+                <div class="fn-nav-label">Swift / Ödəniş</div>
+                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Siyahi"
+                   class="fn-nav-item @(currentController == "OdenisTapsirigi" && currentAction == "Siyahi" ? "active" : "")">
+                    <i class="bi bi-list-ul"></i> Ödəniş siyahısı
+                </a>
+                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Create"
+                   class="fn-nav-item @(currentController == "OdenisTapsirigi" && currentAction == "Create" ? "active" : "")">
+                    <i class="bi bi-plus-circle"></i> Yeni ödəniş
+                </a>
+                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="Bank" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Bank" ? "active" : "")">
+                    <i class="bi bi-bank"></i> Banklar
+                </a>
+                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="Musteri" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Musteri" ? "active" : "")">
+                    <i class="bi bi-person-vcard"></i> Müştərilər
+                </a>
+                break;
+
+            case "hesabat":
+                <div class="fn-nav-label">Hesabatlar</div>
+                <a asp-area="User" asp-controller="Hesabat" asp-action="Index"
+                   class="fn-nav-item @(currentController == "Hesabat" && currentArea == "User" ? "active" : "")">
+                    <i class="bi bi-graph-up"></i> Məzuniyyət / İcazə
+                </a>
                 @if (isMuhasib)
                 {
                     <a asp-area="User" asp-controller="HesabatIzleme" asp-action="Index"
                        class="fn-nav-item @(currentController == "HesabatIzleme" ? "active" : "")">
-                        <div class="fn-nav-icon">
-                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                <path d="M2 10V4a1 1 0 011-1h8a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1z" stroke="currentColor" stroke-width="1.2"/>
-                                <path d="M5 7l1.5 1.5L9 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M4 3V2M10 3V2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        Hesabat İzləmə
+                        <i class="bi bi-clipboard-check"></i> Hesabat İzləmə
                     </a>
                 }
+                break;
+        }
 
-                @* Departamentlər *@
-                <div class="fn-nav-group @(currentController == "KreditMuraciet" ? "open" : "")" data-group-id="departamentler">
-                    <button type="button" class="fn-nav-group-toggle">
-                        <div class="fn-nav-group-left">
-                            <div class="fn-nav-icon">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                    <rect x="1" y="1" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.2" />
-                                    <rect x="7.5" y="1" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.2" />
-                                    <rect x="1" y="7.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.2" />
-                                    <rect x="7.5" y="7.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.2" />
-                                </svg>
-                            </div>
-                            Departamentlər
-                        </div>
-                        <div class="fn-nav-arrow">
-                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                        </div>
-                    </button>
-                    <div class="fn-nav-submenu">
-                        <div class="fn-nav-group">
-                            <button type="button" class="fn-nav-group-toggle">
-                                <div class="fn-nav-group-left">
-                                    <div class="fn-nav-subgroup-icon" style="background:rgba(232,184,75,0.14);">⚡</div>
-                                    Ümumi
-                                </div>
-                                <div class="fn-nav-arrow">
-                                    <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                                </div>
-                            </button>
-                            <div class="fn-nav-submenu">
-                                <a asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index" class="fn-nav-subitem">
-                                    <div class="fn-sub-dot"></div> Sənəd Dövriyyəsi
-                                </a>
-                            </div>
-                        </div>
-                        <div class="fn-nav-group">
-                            <button type="button" class="fn-nav-group-toggle">
-                                <div class="fn-nav-group-left">
-                                    <div class="fn-nav-subgroup-icon" style="background:rgba(232,184,75,0.14);">⚡</div>
-                                    Swift
-                                </div>
-                                <div class="fn-nav-arrow">
-                                    <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                                </div>
-                            </button>
-                            <div class="fn-nav-submenu">
-                                <div class="fn-nav-group @(currentArea == "PR_Odenis_Tapsirigi" ? "open" : "")">
-                                    <button type="button" class="fn-nav-group-toggle" style="padding-left:12px;">
-                                        <div class="fn-nav-group-left">
-                                            Ödəniş tapşırığı
-                                        </div>
-                                        <div class="fn-nav-arrow">
-                                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                                        </div>
-                                    </button>
-                                    <div class="fn-nav-submenu">
-                                        <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Siyahi"
-                                           class="fn-nav-subitem @(currentArea == "PR_Odenis_Tapsirigi" && currentController == "OdenisTapsirigi" && currentAction == "Siyahi" ? "active" : "")">
-                                            <div class="fn-sub-dot"></div> Ödəniş siyahısı
-                                        </a>
-                                        <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Create"
-                                           class="fn-nav-subitem @(currentArea == "PR_Odenis_Tapsirigi" && currentController == "OdenisTapsirigi" && currentAction == "Create" ? "active" : "")">
-                                            <div class="fn-sub-dot"></div> Yeni ödəniş yaz
-                                        </a>
-                                        <a asp-area="PR_Odenis_Tapsirigi" asp-controller="Bank" asp-action="Index"
-                                           class="fn-nav-subitem @(currentArea == "PR_Odenis_Tapsirigi" && currentController == "Bank" ? "active" : "")">
-                                            <div class="fn-sub-dot"></div> Banklar
-                                        </a>
-                                        <a asp-area="PR_Odenis_Tapsirigi" asp-controller="Musteri" asp-action="Index"
-                                           class="fn-nav-subitem @(currentArea == "PR_Odenis_Tapsirigi" && currentController == "Musteri" ? "active" : "")">
-                                            <div class="fn-sub-dot"></div> Müştərilər
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="fn-nav-group @(currentController == "KreditMuraciet" ? "open" : "")" data-group-id="kredit">
-                            <button type="button" class="fn-nav-group-toggle">
-                                <div class="fn-nav-group-left">
-                                    <div class="fn-nav-subgroup-icon" style="background:rgba(99,130,246,0.14);">💳</div>
-                                    Kredit
-                                </div>
-                                <div class="fn-nav-arrow">
-                                    <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                                </div>
-                            </button>
-                            <div class="fn-nav-submenu">
-                                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Index"
-                                   class="fn-nav-subitem @(currentController == "KreditMuraciet" && currentAction == "Index" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> Kredit Müraciətləri
-                                </a>
-                                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Komite"
-                                   class="fn-nav-subitem @(currentController == "KreditMuraciet" && currentAction == "Komite" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> Kredit Komitəsi
-                                </a>
-                                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Qerarlar"
-                                   class="fn-nav-subitem @(currentController == "KreditMuraciet" && currentAction == "Qerarlar" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> Komitə Qərarları
-                                </a>
-                                <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Randevular"
-                                   class="fn-nav-subitem @(currentController == "KreditMuraciet" && currentAction == "Randevular" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> Randevular
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    </aside>
 
-                @* ═══════════════════════════════════════════════════
-                   TƏSDİQ PANELİ — Yalnız SobeReisi/Rehber/HR
-                   ═══════════════════════════════════════════════════ *@
-                @{
-                    var isSobeReisi = User.IsInRole(RoleNames.SobeReisi);
-                    var isRehberRol = User.IsInRole(RoleNames.Rehber);
-                    var isHrRol = User.IsInRole(RoleNames.HR);
-                    var tesdiqGorunur = isSobeReisi || isRehberRol || isHrRol;
-                }
-                @if (tesdiqGorunur)
-                {
-                    <div class="fn-nav-label">Təsdiq və İdarəetmə</div>
+    <!-- ══════════════════ ƏSAS KONTENT ══════════════════ -->
+    <main class="fn-main2">
 
-                    <div class="fn-nav-group @(currentController == "Tesdiq" ? "open" : "")">
-                        <button type="button" class="fn-nav-group-toggle">
-                            <div class="fn-nav-group-left">
-                                <div class="fn-nav-icon">
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                        <path d="M2 11l3-3 2 2 5-6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
-                                    </svg>
-                                </div>
-                                Təsdiq Paneli
-                            </div>
-                            <div class="fn-nav-arrow">
-                                <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                            </div>
-                        </button>
-                        <div class="fn-nav-submenu">
-                            @if (isSobeReisi)
-                            {
-                                <a asp-area="User" asp-controller="Tesdiq" asp-action="SobeReisi"
-                                   class="fn-nav-subitem @(currentController == "Tesdiq" && currentAction == "SobeReisi" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> Şöbə Rəhbəri
-                                </a>
-                            }
-                            @if (isRehberRol)
-                            {
-                                <a asp-area="User" asp-controller="Tesdiq" asp-action="Rehber"
-                                   class="fn-nav-subitem @(currentController == "Tesdiq" && currentAction == "Rehber" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> Rəhbər
-                                </a>
-                            }
-                            @if (isHrRol)
-                            {
-                                <a asp-area="User" asp-controller="Tesdiq" asp-action="Hr"
-                                   class="fn-nav-subitem @(currentController == "Tesdiq" && currentAction == "Hr" ? "active" : "")">
-                                    <div class="fn-sub-dot"></div> HR
-                                </a>
-                            }
-                        </div>
-                    </div>
-                }
-
-                @* ═══════════════════════════════════════════════════
-                   HR İDARƏETMƏ — Yalnız HR/Admin
-                   ═══════════════════════════════════════════════════ *@
-                @if (isHRGorunur)
-                {
-                    <div class="fn-nav-label">HR İdarəetmə</div>
-
-                    <div class="fn-nav-group @(hrGroupOpen ? "open" : "")">
-                        <button type="button" class="fn-nav-group-toggle">
-                            <div class="fn-nav-group-left">
-                                <div class="fn-nav-icon">
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                        <circle cx="5" cy="4" r="2" stroke="currentColor" stroke-width="1.2" />
-                                        <path d="M1 12c0-2.5 1.8-4 4-4s4 1.5 4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
-                                        <path d="M10 6v4M12 8h-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
-                                    </svg>
-                                </div>
-                                HR İdarəetmə
-                            </div>
-                            <div class="fn-nav-arrow">
-                                <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                            </div>
-                        </button>
-                        <div class="fn-nav-submenu">
-                            <a asp-area="HR" asp-controller="Dashboard" asp-action="Index"
-                               class="fn-nav-subitem @(currentArea == "HR" && currentController == "Dashboard" ? "active" : "")">
-                                <div class="fn-sub-dot"></div> HR Dashboard
-                            </a>
-
-                            @* ── Kadr sub-group ── *@
-                            <div class="fn-nav-group @(currentController is "Isci" or "Departament" or "Vezife" or "Organizasiya" ? "open" : "")">
-                                <button type="button" class="fn-nav-group-toggle">
-                                    <div class="fn-nav-group-left">
-                                        <div class="fn-nav-subgroup-icon" style="background:rgba(45,108,223,0.12);">
-                                            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="5" cy="4" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M1 12c0-2.5 1.8-4 4-4s4 1.5 4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="10.5" cy="5" r="1.5" stroke="currentColor" stroke-width="1"/><path d="M9 11c0-1.5 1-2.5 2-2.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
-                                        </div>
-                                        Kadr
-                                    </div>
-                                    <div class="fn-nav-arrow">
-                                        <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                                    </div>
-                                </button>
-                                <div class="fn-nav-submenu">
-                                    <a asp-area="HR" asp-controller="Isci" asp-action="Index"
-                                       class="fn-nav-subitem @(currentController == "Isci" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> İşçilər
-                                    </a>
-                                    <a asp-area="HR" asp-controller="Departament" asp-action="Index"
-                                       class="fn-nav-subitem @(currentController == "Departament" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> Departamentlər
-                                    </a>
-                                    <a asp-area="HR" asp-controller="Vezife" asp-action="Index"
-                                       class="fn-nav-subitem @(currentController == "Vezife" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> Vəzifələr
-                                    </a>
-                                    <a asp-area="HR" asp-controller="Organizasiya" asp-action="Index"
-                                       class="fn-nav-subitem @(currentController == "Organizasiya" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> Organizasiya
-                                    </a>
-                                </div>
-                            </div>
-
-                            @* ── Davamiyyət & Məzuniyyət sub-group ── *@
-                            <div class="fn-nav-group @(currentArea == "HR" && currentController is "Davamiyyet" or "BayramGunu" or "MezuniyyetBalans" or "XestelikEzamiyyet" or "Xestelik" or "Mezuniyyet" or "IsciStaji" ? "open" : "")">
-                                <button type="button" class="fn-nav-group-toggle">
-                                    <div class="fn-nav-group-left">
-                                        <div class="fn-nav-subgroup-icon" style="background:rgba(30,155,107,0.12);">
-                                            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M1 5h12M5 2v2M9 2v2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
-                                        </div>
-                                        Davamiyyət & Məzuniyyət
-                                    </div>
-                                    <div class="fn-nav-arrow">
-                                        <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                                    </div>
-                                </button>
-                                <div class="fn-nav-submenu">
-                                    <a asp-area="HR" asp-controller="Davamiyyet" asp-action="Index"
-                                       class="fn-nav-subitem @(currentArea == "HR" && currentController == "Davamiyyet" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> Davamiyyət
-                                    </a>
-                                    @if (User.IsInRole(RoleNames.HR) || User.IsInRole(RoleNames.Admin))
-                                    {
-                                        <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Hr"
-                                           class="fn-nav-subitem @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction != "GeriyeQeyd" && currentAction != "Aktiv" ? "active" : "")">
-                                            <div class="fn-sub-dot"></div> Məzuniyyət Müraciətləri
-                                        </a>
-                                        <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Aktiv"
-                                           class="fn-nav-subitem @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction == "Aktiv" ? "active" : "")">
-                                            <div class="fn-sub-dot"></div> Aktiv Məzuniyyətlər
-                                        </a>
-                                        <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="GeriyeQeyd"
-                                           class="fn-nav-subitem @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction == "GeriyeQeyd" ? "active" : "")">
-                                            <div class="fn-sub-dot"></div> Geriyə Məzuniyyət
-                                        </a>
-                                    }
-                                    <a asp-area="HR" asp-controller="BayramGunu" asp-action="Index"
-                                       class="fn-nav-subitem @(currentArea == "HR" && currentController == "BayramGunu" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> Bayram Günləri
-                                    </a>
-                                    <a asp-area="HR" asp-controller="MezuniyyetBalans" asp-action="Index"
-                                       class="fn-nav-subitem @(currentArea == "HR" && currentController == "MezuniyyetBalans" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> Məzuniyyət Balansı
-                                    </a>
-                                    <a asp-area="HR" asp-controller="Xestelik" asp-action="Index"
-                                       class="fn-nav-subitem @(currentArea == "HR" && currentController == "Xestelik" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> Xəstəlik
-                                    </a>
-                                    <a asp-area="HR" asp-controller="XestelikEzamiyyet" asp-action="Index"
-                                       class="fn-nav-subitem @(currentArea == "HR" && currentController == "XestelikEzamiyyet" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> Ezamiyyət
-                                    </a>
-                                    <a asp-area="HR" asp-controller="IsciStaji" asp-action="Index"
-                                       class="fn-nav-subitem @(currentArea == "HR" && currentController == "IsciStaji" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> İşçi Stajı
-                                    </a>
-                                </div>
-                            </div>
-
-                            @* ── Qiymətləndirmə sub-group ── *@
-                            <div class="fn-nav-group @(currentController is "Performans" or "Telim" ? "open" : "")">
-                                <button type="button" class="fn-nav-group-toggle">
-                                    <div class="fn-nav-group-left">
-                                        <div class="fn-nav-subgroup-icon" style="background:rgba(124,58,237,0.12);">
-                                            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.7 3.5 3.8.5-2.7 2.7.6 3.8L7 9.8 3.6 11.5l.6-3.8L1.5 5l3.8-.5L7 1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
-                                        </div>
-                                        Qiymətləndirmə
-                                    </div>
-                                    <div class="fn-nav-arrow">
-                                        <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                                    </div>
-                                </button>
-                                <div class="fn-nav-submenu">
-                                    <a asp-area="HR" asp-controller="Performans" asp-action="Index"
-                                       class="fn-nav-subitem @(currentArea == "HR" && currentController == "Performans" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> Performans
-                                    </a>
-                                    <a asp-area="HR" asp-controller="Telim" asp-action="Index"
-                                       class="fn-nav-subitem @(currentArea == "HR" && currentController == "Telim" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> Təlim
-                                    </a>
-                                </div>
-                            </div>
-
-                            <a asp-area="HR" asp-controller="Hesabat" asp-action="Index"
-                               class="fn-nav-subitem @(currentArea == "HR" && currentController == "Hesabat" ? "active" : "")">
-                                <div class="fn-sub-dot"></div> HR Hesabatları
-                            </a>
-                            <a asp-area="HR" asp-controller="Elan" asp-action="Index"
-                               class="fn-nav-subitem @(currentArea == "HR" && currentController == "Elan" ? "active" : "")">
-                                <div class="fn-sub-dot"></div> Elan İdarəetmə
-                            </a>
-                        </div>
-                    </div>
-
-                }
-
-                @if (isMuhasib)
-                {
-                    @* Mühasibatlıq — Muhasib/HR/Admin (Rəhbər yalnız Əmək Haqqı görür) *@
-                    <div class="fn-nav-group @(muhasibatGroupOpen ? "open" : "")">
-                        <button type="button" class="fn-nav-group-toggle">
-                            <div class="fn-nav-group-left">
-                                <div class="fn-nav-icon">
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                        <rect x="1" y="2.5" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
-                                        <path d="M1 5.5h12M4 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                                    </svg>
-                                </div>
-                                Mühasibatlıq
-                            </div>
-                            <div class="fn-nav-arrow">
-                                <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8"/></svg>
-                            </div>
-                        </button>
-                        <div class="fn-nav-submenu">
-                            @* ── Əmək Haqqı sub-group ── *@
-                            <div class="fn-nav-group @(currentController is "Maas" or "MezuniyyetOdenis" or "IsciAyliqQazanc" ? "open" : "")">
-                                <button type="button" class="fn-nav-group-toggle">
-                                    <div class="fn-nav-group-left">
-                                        <div class="fn-nav-subgroup-icon" style="background:rgba(201,144,10,0.12);">
-                                            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1" y="2.5" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M1 5.5h12M4 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-                                        </div>
-                                        Əmək Haqqı
-                                    </div>
-                                    <div class="fn-nav-arrow">
-                                        <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                                    </div>
-                                </button>
-                                <div class="fn-nav-submenu">
-                                    <a asp-area="HR" asp-controller="Maas" asp-action="Index"
-                                       class="fn-nav-subitem @(currentController == "Maas" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> Maaş Siyahısı
-                                    </a>
-                                    <a asp-area="HR" asp-controller="MezuniyyetOdenis" asp-action="Index"
-                                       class="fn-nav-subitem @(currentArea == "HR" && currentController == "MezuniyyetOdenis" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> Məzuniyyət Ödənişləri
-                                    </a>
-                                    <a asp-area="HR" asp-controller="IsciAyliqQazanc" asp-action="Index"
-                                       class="fn-nav-subitem @(currentController == "IsciAyliqQazanc" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> Qazanc Tarixçəsi
-                                    </a>
-                                    <a asp-area="HR" asp-controller="Avans" asp-action="Index"
-                                       class="fn-nav-subitem @(currentController == "Avans" && currentArea == "HR" ? "active" : "")">
-                                        <div class="fn-sub-dot"></div> Avans Müraciətləri
-                                    </a>
-                                </div>
-                            </div>
-
-                            @if (!isRehberOnly)
-                            {
-                                @* ── Parametrlər & Güzəştlər sub-group ── *@
-                                <div class="fn-nav-group @(currentController is "MaasParametri" or "Guzest" or "IsciGuzest" or "IsciHYS" ? "open" : "")">
-                                    <button type="button" class="fn-nav-group-toggle">
-                                        <div class="fn-nav-group-left">
-                                            <div class="fn-nav-subgroup-icon" style="background:rgba(124,58,237,0.12);">
-                                                <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1.5v11M4 5l3-3.5L10 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                            </div>
-                                            Parametrlər & Güzəştlər
-                                        </div>
-                                        <div class="fn-nav-arrow">
-                                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                                        </div>
-                                    </button>
-                                    <div class="fn-nav-submenu">
-                                        <a asp-area="HR" asp-controller="MaasParametri" asp-action="Index"
-                                           class="fn-nav-subitem @(currentController == "MaasParametri" ? "active" : "")">
-                                            <div class="fn-sub-dot"></div> Əmək haqqı parametrləri
-                                        </a>
-                                        <a asp-area="HR" asp-controller="Guzest" asp-action="Index"
-                                           class="fn-nav-subitem @(currentArea == "HR" && currentController == "Guzest" ? "active" : "")">
-                                            <div class="fn-sub-dot"></div> Güzəşt kataloqu
-                                        </a>
-                                        <a asp-area="HR" asp-controller="IsciGuzest" asp-action="Index"
-                                           class="fn-nav-subitem @(currentArea == "HR" && currentController == "IsciGuzest" ? "active" : "")">
-                                            <div class="fn-sub-dot"></div> İşçi güzəştləri
-                                        </a>
-                                        <a asp-area="HR" asp-controller="IsciHYS" asp-action="Index"
-                                           class="fn-nav-subitem @(currentArea == "HR" && currentController == "IsciHYS" ? "active" : "")">
-                                            <div class="fn-sub-dot"></div> HYS Təyinatları
-                                        </a>
-                                    </div>
-                                </div>
-
-                                @* ── Maliyyə sub-group ── *@
-                                <div class="fn-nav-group @(currentController is "Budce" or "Xerc" ? "open" : "")">
-                                    <button type="button" class="fn-nav-group-toggle">
-                                        <div class="fn-nav-group-left">
-                                            <div class="fn-nav-subgroup-icon" style="background:rgba(30,155,107,0.12);">
-                                                <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="2" y="3" width="10" height="9" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M5 6h1M8 6h1M5 8h1M8 8h1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
-                                            </div>
-                                            Maliyyə
-                                        </div>
-                                        <div class="fn-nav-arrow">
-                                            <svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8" /></svg>
-                                        </div>
-                                    </button>
-                                    <div class="fn-nav-submenu">
-                                        <a asp-area="HR" asp-controller="Budce" asp-action="Index"
-                                           class="fn-nav-subitem @(currentController == "Budce" ? "active" : "")">
-                                            <div class="fn-sub-dot"></div> Büdcə
-                                        </a>
-                                        <a asp-area="HR" asp-controller="Xerc" asp-action="Index"
-                                           class="fn-nav-subitem @(currentArea == "HR" && currentController == "Xerc" ? "active" : "")">
-                                            <div class="fn-sub-dot"></div> Xərc İdarəetmə
-                                        </a>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                }
-
-                @* ═══════════════════════════════════════════════════
-                   KOMMUNİKASİYA — Bütün istifadəçilər görür
-                   ═══════════════════════════════════════════════════ *@
-                <div class="fn-nav-label">Kommunikasiya</div>
-
-                <a asp-area="User" asp-controller="Chat" asp-action="Index"
-                   class="fn-nav-item @(currentController == "Chat" && currentArea == "User" ? "active" : "")">
-                    <div class="fn-nav-icon">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <path d="M2 2.5h10a1 1 0 011 1v6a1 1 0 01-1 1H8l-2.5 2v-2H2a1 1 0 01-1-1v-6a1 1 0 011-1z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M4.5 6h5M4.5 8h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
-                        </svg>
-                    </div>
-                    Chat
-                </a>
-
-                <a asp-area="User" asp-controller="Elan" asp-action="Index"
-                   class="fn-nav-item @(currentController == "Elan" && currentArea == "User" ? "active" : "")">
-                    <div class="fn-nav-icon">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <path d="M2 3h10a1 1 0 011 1v7l-3-2H2a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <circle cx="5" cy="6.5" r=".7" fill="currentColor"/>
-                            <circle cx="7" cy="6.5" r=".7" fill="currentColor"/>
-                            <circle cx="9" cy="6.5" r=".7" fill="currentColor"/>
-                        </svg>
-                    </div>
-                    Elanlar
-                </a>
-
-            </nav>
-
-            <div class="fn-sidebar-footer">
-                <div class="fn-sidebar-user">
-                    @{
-                        var userName = User.Identity?.Name ?? "";
-                        var parts = userName.Split(' ');
-                        var initials = parts.Length >= 2
-                        ? $"{parts[0][0]}{parts[1][0]}"
-                        : userName.Length > 0 ? userName[0].ToString() : "?";
-                    }
-                    <div class="fn-sidebar-avatar">@initials</div>
-                    <div class="fn-sidebar-info">
-                        <div class="fn-sidebar-username">@userName</div>
-                        <div class="fn-sidebar-role">@_layoutVezife</div>
-                    </div>
-                </div>
-                <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="fn-logout-btn">
-                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                            <path d="M5 2H2a1 1 0 00-1 1v7a1 1 0 001 1h3M9 9l3-2.5L9 4M5 6.5h7"
-                                  stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                        Çıxış
-                    </button>
-                </form>
+        <div class="fn-topbar-wrap">
+            <div>
+                <div class="fn-topbar-title">@ViewData["Title"]</div>
+                <div class="fn-topbar-sub">@DateTime.Now.ToString("dd MMMM yyyy") · @_layoutVezife</div>
             </div>
-        </aside>
+        </div>
 
-        <main class="fn-main">
+        @if (TempData["Success"] != null)
+        {
+            <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="fn-alert fn-alert--error">@TempData["Error"]</div>
+        }
 
-            <div class="fn-topbar-wrap">
-                <div>
-                    <div class="fn-topbar-title">@ViewData["Title"]</div>
-                    <div class="fn-topbar-sub">@DateTime.Now.ToString("dd MMMM yyyy") · @_layoutVezife</div>
-                </div>
-                <div class="fn-topbar-right">
-                    <a asp-area="User" asp-controller="Xatirlatma" asp-action="Index"
-                       class="fn-notif-btn" id="xatirlatmaBtn" title="Xatırlatmalar">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <circle cx="7" cy="7" r="5.5" stroke="#5a647a" stroke-width="1.3" />
-                            <path d="M7 4.5V7l2 1.5" stroke="#5a647a" stroke-width="1.3" stroke-linecap="round" />
-                        </svg>
-                        <span class="fn-notif-count" id="xatirlatmaCount" style="display:none">0</span>
-                    </a>
-                    <a asp-area="User" asp-controller="Chat" asp-action="Index"
-                       class="fn-notif-btn" id="chatBtn" title="Chat">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <path d="M1.5 2.5h11a1 1 0 011 1v6a1 1 0 01-1 1H4l-2.5 2v-2h0a1 1 0 01-1-1v-6a1 1 0 011-1z"
-                                  stroke="#5a647a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                        <span class="fn-notif-count" id="chatCount" style="display:none">0</span>
-                    </a>
-                    <a asp-area="User" asp-controller="Inbox" asp-action="Index"
-                       asp-route-tab="bildirisler"
-                       class="fn-notif-btn" id="notifBtn" title="Bildirişlər">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <path d="M7 1a4 4 0 014 4c0 4 1.5 5 1.5 5H1.5S3 9 3 5a4 4 0 014-4zM5.5 10.5a1.5 1.5 0 003 0"
-                                  stroke="#5a647a" stroke-width="1.2" stroke-linecap="round" />
-                        </svg>
-                        <span class="fn-notif-count" id="notifCount" style="display:none">0</span>
-                    </a>
-                    <div class="fn-topbar-av">@initials</div>
-                </div>
-            </div>
+        @RenderBody()
+    </main>
 
-            @if (TempData["Success"] != null)
-            {
-                <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
-            }
-            @if (TempData["Error"] != null)
-            {
-                <div class="fn-alert fn-alert--error">@TempData["Error"]</div>
-            }
+</div>
 
-            @RenderBody()
-        </main>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/User/user-area.js" asp-append-version="true"></script>
+<script src="~/js/User/Bildiris.js" asp-append-version="true"></script>
+<script src="~/js/date-format-hint.js" asp-append-version="true"></script>
+<script src="~/js/fn-datepicker.js" asp-append-version="true"></script>
+<script>
+    // Hamburger (mobile) — sidebar toggle
+    document.getElementById('fnBurgerBtn')?.addEventListener('click', function () {
+        document.getElementById('fnSidebar')?.classList.toggle('fn-sidebar2--open');
+    });
 
-    </div>
-
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/User/user-area.js" asp-append-version="true"></script>
-    <script src="~/js/User/Bildiris.js" asp-append-version="true"></script>
-    <script src="~/js/date-format-hint.js" asp-append-version="true"></script>
-    <script src="~/js/fn-datepicker.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+    // User menu toggle
+    (function () {
+        var u = document.querySelector('.fn-topnav-user');
+        if (!u) return;
+        u.addEventListener('click', function (e) {
+            if (e.target.closest('.fn-topnav-user-menu')) return;
+            u.classList.toggle('fn-topnav-user--open');
+        });
+        document.addEventListener('click', function (e) {
+            if (!u.contains(e.target)) u.classList.remove('fn-topnav-user--open');
+        });
+    })();
+</script>
+@await RenderSectionAsync("Scripts", required: false)
 
 </body>
 </html>
