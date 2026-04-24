@@ -40,6 +40,9 @@
             or "Dashboard" or "Profile" && currentArea == "User")
             return "home";
 
+        // Rəhbər Panel — Əsas sidebar-dan girilir, orada qalsın
+        if (currentController == "RehberDashboard") return "home";
+
         if (currentArea == "HR")
             return IsAccountingCtrl() ? "muhasibat" : "hr";
         if (currentArea == "SenedDovriyyesi") return "sened";
@@ -47,7 +50,6 @@
         if (currentController == "Tesdiq") return "tesdiq";
         if (currentController == "KreditMuraciet") return "kredit";
         if (currentController == "Hesabat" || currentController == "HesabatIzleme") return "hesabat";
-        if (currentController == "RehberDashboard") return "hr";
         if (currentController is "Davamiyyet" or "Takvim" or "Mezuniyyet" or "Muraciet"
             or "Tapshiriq" or "Gorush" or "Icaze" or "Maas" or "Xerc" or "Avans")
             return "emekdas";
@@ -277,6 +279,20 @@
                    class="fn-nav-item @(currentController == "Dashboard" && currentArea == "User" ? "active" : "")">
                     <i class="bi bi-grid"></i> Dashboard
                 </a>
+                @if (isRehberRol)
+                {
+                    <a asp-area="HR" asp-controller="RehberDashboard" asp-action="Index"
+                       class="fn-nav-item @(currentController == "RehberDashboard" ? "active" : "")">
+                        <i class="bi bi-speedometer2"></i> Rəhbər Panel
+                    </a>
+                }
+                @if (isHR)
+                {
+                    <a asp-area="HR" asp-controller="Dashboard" asp-action="Index"
+                       class="fn-nav-item @(currentArea == "HR" && currentController == "Dashboard" ? "active" : "")">
+                        <i class="bi bi-clipboard2-pulse"></i> HR Dashboard
+                    </a>
+                }
                 <a asp-area="User" asp-controller="Profile" asp-action="Index"
                    class="fn-nav-item @(currentController == "Profile" ? "active" : "")">
                     <i class="bi bi-person"></i> Profil
