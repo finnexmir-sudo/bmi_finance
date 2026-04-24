@@ -259,6 +259,8 @@
     border-radius: 9px;
     padding: 8px 13px;
     box-shadow: 0 1px 3px rgba(15,26,46,.04);
+    min-width: 110px;
+    flex: 1 1 auto;
 }
 
 .mth-rate-bar {
@@ -798,9 +800,9 @@
 
 .mth-detail-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 2fr 1fr auto;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 12px;
-    align-items: start;
+    align-items: stretch;
 }
 
 /* Detail cards */
@@ -810,20 +812,24 @@
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(15,26,46,.04);
+    display: flex;
+    flex-direction: column;
 }
 
+/* İşçi tutulmaları 2 sütun genişlikdə olsun */
 .mth-detail-card--wide {
-    /* spans wider in grid */
+    grid-column: span 2;
 }
 
 .mth-detail-card--action {
+    grid-column: 1 / -1;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
     background: transparent;
     border: none;
     box-shadow: none;
-    padding: 8px 0;
+    padding: 4px 0 0;
 }
 
 .mth-detail-card-head {

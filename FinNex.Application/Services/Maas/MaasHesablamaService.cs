@@ -1395,6 +1395,38 @@ namespace FinNex.Application.Services.HR
         }
 
         // ─────────────────────────────────────────────────────────
+        // MEZUNIYYET PREVIEW -- toplu hesablama ekranında GROSS/NET-i
+        // serverlə eyni rəqəmlərlə göstərmək üçün. FerdiHesablaAsync-dəki
+        // məzuniyyət bloku ilə eyni formuldur.
+        // ─────────────────────────────────────────────────────────
+        public async Task<(int IsGun, decimal Kesinti, decimal AySonuOdenisi)>
+            MezuniyyetPreviewAsync(int isciId, int il, int ay)
+        {
+            var maliye = await _unitOfWork.Repository<IsciMaliye>()
+                .GetirAsync(x => x.IsciId == isciId && !x.Silinib);
+            if (maliye == null) return (0, 0, 0);
+
+            var (_, toplamIsGun, _) = await MezuniyyetAyGunleriFiltreliSayAsync(isciId, il, ay, null);
+            if (toplamIsGun == 0) return (0, 0, 0);
+
+            int ayIsGunu = await AyinIsGunleriniHesablaAsync(il, ay);
+            decimal kesinti = ayIsGunu > 0
+                ? Math.Round(maliye.CariMaas / ayIsGunu * toplamIsGun, 2)
+                : 0;
+
+            var (aySonuGS, aySonuIGS, _) = await MezuniyyetAyGunleriFiltreliSayAsync(
+                isciId, il, ay, MezuniyyetOdenisTipi.AySonuOdenis);
+            decimal aySonuOdenisi = (aySonuGS > 0 || aySonuIGS > 0)
+                ? await MezuniyyetOdenisiniHesablaV2Async(isciId, il, ay, aySonuGS, aySonuIGS)
+                : 0;
+
+            return (toplamIsGun, kesinti, aySonuOdenisi);
+        }
+
+        public Task<int> AyIsGunSayiniHesablaAsync(int il, int ay) =>
+            AyinIsGunleriniHesablaAsync(il, ay);
+
+        // ─────────────────────────────────────────────────────────
         // AYIN IS GUNLERINI HESABLA -- BayramGunu cədvəlindən oxunur
         // Tip = Bayram → həmin gün istirahət
         // Tip = IsGunu → həmin gün iş (şənbə/bazar olsa belə)

@@ -55,5 +55,20 @@ namespace FinNex.Application.Interfaces.Maas_If
         /// istifadə olunur.
         /// </summary>
         Task<decimal> StatMaasiTarixeGoreTapAsync(int isciId, DateTime tarix);
+
+        /// <summary>
+        /// Toplu hesablama ekranında preview üçün məzuniyyətin 3 dəyərini
+        /// qaytarır (həqiqi FerdiHesablaAsync ilə eyni məntiqdə):
+        ///  - IsGun      — həmin aya düşən təsdiqli məzuniyyət iş günləri (bütün tiplər)
+        ///  - Kesinti    — esas maaş / ayıniş günü × mez.iş günü (hər 2 tipdə tətbiq olunur)
+        ///  - AySonuOdenisi — yalnız AySonuOdenis tipli qeydlər üçün 2026 düsturu ilə ödəniş
+        /// </summary>
+        Task<(int IsGun, decimal Kesinti, decimal AySonuOdenisi)> MezuniyyetPreviewAsync(
+            int isciId, int il, int ay);
+
+        /// <summary>
+        /// Verilmiş ay üçün iş günlərini sayır (BayramGunu + həftəsonu qaydaları ilə).
+        /// </summary>
+        Task<int> AyIsGunSayiniHesablaAsync(int il, int ay);
     }
 }
