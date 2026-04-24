@@ -1,4 +1,5 @@
-﻿using FinNex.Application.Common.Results;
+﻿using System.Text.Json;
+using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Maas;
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces.HR;
@@ -674,6 +675,10 @@ namespace FinNex.Application.Services.HR
             var ilkXeta = xetalar.FirstOrDefault(x => !x.Success);
             if (ilkXeta != null)
                 return Result<MaasHesablaNeticesiDto>.Fail(ilkXeta.Message);
+
+            // Addım-addım izahları JSON kimi saxla — Detal səhifəsində
+            // mühasib yekun rəqəmin hardan gəldiyini oxuya bilsin deyə.
+            maas.HesablamaIzahi = JsonSerializer.Serialize(izahatlar);
 
             await _unitOfWork.Repository<Maas>().YaratAsync(maas);
             await _unitOfWork.YaddaSaxlaAsync();

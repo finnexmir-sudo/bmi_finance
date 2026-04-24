@@ -118,6 +118,75 @@
                     </table>
                 </div>
             }
+
+            @* Hesablama axını — addım-addım audit izahı (mühasibatçı üçün) *@
+            @if (Model.Izahatlar != null && Model.Izahatlar.Any())
+            {
+                string TipBadge(string tip) => tip switch
+                {
+                    "gelir"    => "background:#e8f6ee;color:#1a7a50;border:1px solid #b2e0cc;",
+                    "kesinti"  => "background:#fdecea;color:#8a2a20;border:1px solid #f4c1b9;",
+                    "vergi"    => "background:#fff4e0;color:#8a5a1b;border:1px solid #eecb97;",
+                    "sirket"   => "background:#eef2f9;color:#3b4a66;border:1px solid #c7d1e4;",
+                    _           => "background:#f4f6fb;color:#5a6478;border:1px solid #dfe4ee;"
+                };
+                string TipAd(string tip) => tip switch
+                {
+                    "gelir"    => "gəlir",
+                    "kesinti"  => "kəsinti",
+                    "vergi"    => "vergi",
+                    "sirket"   => "şirkət",
+                    _           => "məlumat"
+                };
+                string MeblegPrefix(string tip) => tip switch
+                {
+                    "gelir"   => "+",
+                    "kesinti" => "−",
+                    "vergi"   => "−",
+                    _         => ""
+                };
+
+                <details class="fn-card" style="padding:0;overflow:hidden;" open>
+                    <summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:12px;color:#3b4a66;background:#f8fafd;border-bottom:1px solid #e4e8f0;display:flex;align-items:center;gap:8px;list-style:none;">
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                            <path d="M2 3h9M2 6.5h9M2 10h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                        </svg>
+                        Hesablama axını <span style="font-weight:400;opacity:.6;font-size:10px;">(hər rəqəmin hardan gəldiyi — audit üçün)</span>
+                    </summary>
+                    <table class="dt-table" style="font-size:11.5px;">
+                        <thead>
+                            <tr style="background:#fafbfd;color:#8a93a8;font-size:10px;text-transform:uppercase;letter-spacing:.3px;">
+                                <th style="padding:6px 10px;text-align:left;width:26%;">Addım</th>
+                                <th style="padding:6px 10px;text-align:left;">İzah / Düstur</th>
+                                <th style="padding:6px 10px;text-align:right;width:13%;">Tip</th>
+                                <th style="padding:6px 10px;text-align:right;width:15%;">Məbləğ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var iz in Model.Izahatlar)
+                            {
+                                <tr>
+                                    <td class="dt-ad" style="vertical-align:top;">@iz.Addim</td>
+                                    <td class="dt-izah" style="white-space:normal;line-height:1.5;">@iz.Izah</td>
+                                    <td style="text-align:right;vertical-align:top;">
+                                        <span style="display:inline-block;padding:1px 7px;border-radius:10px;font-size:9.5px;font-weight:500;@TipBadge(iz.Tip)">@TipAd(iz.Tip)</span>
+                                    </td>
+                                    <td class="dt-mebleg" style="vertical-align:top;">
+                                        @if (iz.Mebleg != 0)
+                                        {
+                                            <text>@MeblegPrefix(iz.Tip)@iz.Mebleg.ToString("N2") ₼</text>
+                                        }
+                                        else
+                                        {
+                                            <span style="color:#b0b7c5;">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </details>
+            }
         </div>
 
         @* ── Sağ: Xülasə ── *@
@@ -214,6 +283,14 @@
                             <input type="hidden" name="ay" value="@Model.Ay"/>
                             <button type="submit" class="fn-btn fn-btn--primary" style="width:100%;justify-content:center;">
                                 Rəhbər təsdiqləyir
+                            </button>
+                        </form>
+                        <form asp-action="YenidenHesabla" method="post"
+                              onsubmit="return confirm('Köhnə hesablama silinib yenidən hesablanacaq. Bonus və cərimə saxlanılır. Davam?');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id"/>
+                            <button type="submit" class="fn-btn fn-btn--outline" style="width:100%;justify-content:center;">
+                                Yenidən Hesabla
                             </button>
                         </form>
                     }

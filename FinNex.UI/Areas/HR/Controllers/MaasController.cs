@@ -1,4 +1,5 @@
-﻿using FinNex.Domain;
+﻿using System.Text.Json;
+using FinNex.Domain;
 using FinNex.Application.DTOs.HR.Maas;
 using FinNex.Application.Interfaces.HR;
 using FinNex.Application.Interfaces.Maas_If;
@@ -764,6 +765,17 @@ namespace FinNex.UI.Areas.HR.Controllers
                 }).ToList()
             };
 
+            // Hesablama addımları (JSON kimi saxlanır) — mühasib üçün audit izahatı
+            if (!string.IsNullOrWhiteSpace(maas.HesablamaIzahi))
+            {
+                try
+                {
+                    dto.Izahatlar = JsonSerializer.Deserialize<List<HesablamaIzahiDto>>(maas.HesablamaIzahi)
+                                    ?? new List<HesablamaIzahiDto>();
+                }
+                catch { /* köhnə yazılarda JSON korlansa boş göstərir */ }
+            }
+
             ViewData["Title"] = $"Maaş Detalı — {maas.Isci.Ad} {maas.Isci.Soyad}";
             return View(dto);
         }
@@ -931,6 +943,72 @@ namespace FinNex.UI.Areas.HR.Controllers
             var r = await _maasService.SilAsync(id);
             TempData[r.Success ? "Success" : "Error"] = r.Message;
             return RedirectToAction(nameof(Index), new { il, ay });
+        }
+
+        // ── POST /HR/Maas/YenidenHesabla ─────────────────────────
+        // Layihə statuslu maaşı silib yenidən hesablayır. Məsələn xəstəlik/
+        // məzuniyyət qeydiyyatında səhv düzəldilibsə mühasib rəqəmləri təzələyə bilir.
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Muhasib)]
+        public async Task<IActionResult> YenidenHesabla(int id)
+        {
+            var maas = await _unitOfWork.Repository<Maas>().IdIleGetirAsync(id);
+            if (maas == null || maas.Silinib)
+            {
+                TempData["Error"] = "Maaş tapılmadı.";
+                return RedirectToAction(nameof(Index));
+            }
+            if (maas.Status != MaasStatus.Layihe)
+            {
+                TempData["Error"] = "Yalnız 'Layihə' statuslu maaş yenidən hesablana bilər. Təsdiqlənmiş və ya ödənilmiş maaşı dəyişmək üçün əvvəlcə statusu geri qaytarın.";
+                return RedirectToAction(nameof(Detal), new { id });
+            }
+
+            int isciId = maas.IsciId;
+            int il = maas.Il;
+            int ay = maas.Ay;
+
+            // Əvvəlki bonus/cərimə dəyərlərini saxla ki, yenidən hesablamada itməsin
+            var maasWithDetallar = await _unitOfWork.Repository<Maas>()
+                .Query()
+                .Where(x => x.Id == id)
+                .Include(x => x.Detallar).ThenInclude(d => d.MaasNovu)
+                .FirstOrDefaultAsync();
+            var bonusDetay = maasWithDetallar?.Detallar
+                .FirstOrDefault(d => d.MaasNovu != null && d.MaasNovu.Ad == "Bonus/Mükafat");
+            var cerimeDetay = maasWithDetallar?.Detallar
+                .FirstOrDefault(d => d.MaasNovu != null && d.MaasNovu.Ad == "Gecikdirmə Cəriməsi");
+            decimal bonusMebleg = bonusDetay?.Mebleg ?? 0;
+            decimal cerimeMebleg = cerimeDetay?.Mebleg ?? 0;
+            string? bonusAciq = bonusDetay?.Aciqlama;
+            string? cerimeAciq = cerimeDetay?.Aciqlama;
+
+            var silR = await _maasService.SilAsync(id);
+            if (!silR.Success)
+            {
+                TempData["Error"] = $"Köhnə hesablama silinmədi: {silR.Message}";
+                return RedirectToAction(nameof(Detal), new { id });
+            }
+
+            var r = await _hesablamaService.FerdiHesablaAsync(new FerdiHesablaInputDto
+            {
+                IsciId = isciId,
+                Il = il,
+                Ay = ay,
+                BonusMeblegi = bonusMebleg,
+                BonusAciqlama = bonusAciq,
+                CerimeMeblegi = cerimeMebleg,
+                CerimeAciqlama = cerimeAciq
+            });
+
+            if (!r.Success || r.Data == null)
+            {
+                TempData["Error"] = $"Yenidən hesablama alınmadı: {r.Message}";
+                return RedirectToAction(nameof(Index), new { il, ay });
+            }
+
+            TempData["Success"] = $"Yenidən hesablandı — NET: {r.Data.NetMaas:N2} ₼";
+            return RedirectToAction(nameof(Detal), new { id = r.Data.MaasId });
         }
 
         // ── GET /HR/Maas/BankFayliYukle ──────────────────────────
