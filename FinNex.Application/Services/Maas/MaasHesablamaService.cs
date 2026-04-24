@@ -177,9 +177,13 @@ namespace FinNex.Application.Services.HR
             }
 
             // 6. Mezuniyyet gunleri ve odenisi (2026 qaydası: GS + İGS)
-            //    Kəsinti həmişə bütün məzuniyyət günlərinə görə tətbiq olunur.
-            //    Ödəniş yalnız AySonuOdenis tipli qeydlər üçün əlavə olunur
-            //    (QabaqcadanOdenis qeydləri Mühasib tərəfindən ayrıca ödənilir).
+            //    QAYDA (BMI Finance biznes qərarı):
+            //      - AySonuOdenis qeydləri → bu ayın maaşına ödəniş əlavə olunur,
+            //        əsas maaşdan KƏSİNTİ TƏTBİQ OLUNMUR. İşçi tam əsas maaş +
+            //        məzuniyyət haqqı alır.
+            //      - QabaqcadanOdenis qeydləri → Mühasib ayrıca ödəyib göndərib;
+            //        bu ay üçün əsas maaşdan iş günü mütənasib KƏSİNTİ tutulur
+            //        (ikiqat ödəməyə yol verməmək üçün) və ödəniş əlavə olunmur.
             var (mezTeqvimGun, mezGun) = await MezuniyyetGunleriniSayGenisAsync(input.IsciId, input.Il, input.Ay);
 
             decimal mezOdenis = 0;
@@ -187,16 +191,6 @@ namespace FinNex.Application.Services.HR
 
             if (mezGun > 0)
             {
-                // Esas maasdan kesinti: maas / ayIsGunu x mezGun (yalnız iş günləri)
-                mezKesinti = Math.Round(esasMaas / ayIsGunu * mezGun, 2);
-                izahatlar.Add(new HesablamaIzahiDto
-                {
-                    Addim = "Mezuniyyet Kesintisi",
-                    Izah = $"{esasMaas:N2} / {ayIsGunu} is gunu x {mezGun} mez. is gunu",
-                    Mebleg = mezKesinti,
-                    Tip = "kesinti"
-                });
-
                 // AySonu tipli qeydlər üçün məzuniyyət ödənişi həmin ayın maaşına daxil edilir
                 var (aySonuGS, aySonuIGS, _) = await MezuniyyetAyGunleriFiltreliSayAsync(
                     input.IsciId, input.Il, input.Ay, MezuniyyetOdenisTipi.AySonuOdenis);
@@ -208,15 +202,30 @@ namespace FinNex.Application.Services.HR
                     izahatlar.Add(new HesablamaIzahiDto
                     {
                         Addim = "Mezuniyyet Odenisi",
-                        Izah = $"2026 qaydası: MAX(S/12/30.4×{aySonuGS}, Maas/{ayIsGunu}×{aySonuIGS})",
+                        Izah = $"2026 qaydası: MAX(S/12/30.4×{aySonuGS}, Maas/{ayIsGunu}×{aySonuIGS}) — " +
+                               "əsas maaş tam qalır, ödəniş üzərinə əlavə olunur",
                         Mebleg = mezOdenis,
                         Tip = "gelir"
                     });
                 }
 
-                // Qabaqcadan ödənilən məzuniyyətlər üçün informativ sətir
-                var (_, _, advanceQeydler) = await MezuniyyetAyGunleriFiltreliSayAsync(
+                // Qabaqcadan ödənilən məzuniyyətlər — ödəniş ayrıca edildiyi üçün
+                // yalnız həmin günlərə görə əsas maaşdan proporsional kəsinti tutulur.
+                var (_, advanceIGS, advanceQeydler) = await MezuniyyetAyGunleriFiltreliSayAsync(
                     input.IsciId, input.Il, input.Ay, MezuniyyetOdenisTipi.QabaqcadanOdenis);
+
+                if (advanceIGS > 0)
+                {
+                    mezKesinti = Math.Round(esasMaas / ayIsGunu * advanceIGS, 2);
+                    izahatlar.Add(new HesablamaIzahiDto
+                    {
+                        Addim = "Mezuniyyet Kesintisi (qabaqcadan ödənilən günlər)",
+                        Izah = $"{esasMaas:N2} / {ayIsGunu} iş günü × {advanceIGS} qabaqcadan ödənilmiş iş günü. " +
+                               "Ödəniş ayrıca edildiyi üçün əsas maaşdan bu günlər çıxılır.",
+                        Mebleg = mezKesinti,
+                        Tip = "kesinti"
+                    });
+                }
 
                 foreach (var advanceMez in advanceQeydler)
                 {
@@ -1398,6 +1407,8 @@ namespace FinNex.Application.Services.HR
         // MEZUNIYYET PREVIEW -- toplu hesablama ekranında GROSS/NET-i
         // serverlə eyni rəqəmlərlə göstərmək üçün. FerdiHesablaAsync-dəki
         // məzuniyyət bloku ilə eyni formuldur.
+        //  - AySonuOdenis günləri → ödəniş əlavə olunur, kəsinti YOX.
+        //  - QabaqcadanOdenis günləri → kəsinti tətbiq olunur, ödəniş YOX.
         // ─────────────────────────────────────────────────────────
         public async Task<(int IsGun, decimal Kesinti, decimal AySonuOdenisi)>
             MezuniyyetPreviewAsync(int isciId, int il, int ay)
@@ -1410,10 +1421,15 @@ namespace FinNex.Application.Services.HR
             if (toplamIsGun == 0) return (0, 0, 0);
 
             int ayIsGunu = await AyinIsGunleriniHesablaAsync(il, ay);
-            decimal kesinti = ayIsGunu > 0
-                ? Math.Round(maliye.CariMaas / ayIsGunu * toplamIsGun, 2)
+
+            // Qabaqcadan ödənilmiş günlər — yalnız onlara görə kəsinti tətbiq olunur
+            var (_, advanceIGS, _) = await MezuniyyetAyGunleriFiltreliSayAsync(
+                isciId, il, ay, MezuniyyetOdenisTipi.QabaqcadanOdenis);
+            decimal kesinti = (ayIsGunu > 0 && advanceIGS > 0)
+                ? Math.Round(maliye.CariMaas / ayIsGunu * advanceIGS, 2)
                 : 0;
 
+            // AySonu günləri — yalnız onlara görə ödəniş əlavə olunur (kəsinti yox)
             var (aySonuGS, aySonuIGS, _) = await MezuniyyetAyGunleriFiltreliSayAsync(
                 isciId, il, ay, MezuniyyetOdenisTipi.AySonuOdenis);
             decimal aySonuOdenisi = (aySonuGS > 0 || aySonuIGS > 0)
