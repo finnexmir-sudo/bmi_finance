@@ -13,6 +13,7 @@ namespace FinNex.Application.Interfaces
         // Təsdiq paneli üçün
         Task<Result<IList<IcazeListDto>>> GetAllAsync();
         Task<Result<IList<IcazeListDto>>> GetGozlemededeAsync();
+        Task<Result<IList<IcazeListDto>>> GetSobeyeGoreIcazelerAsync(int departamentId, int sobeReisiIsciId);
         Task<Result<IList<IcazeListDto>>> GetRehberTesdiqindeAsync();
         Task<Result<IList<IcazeListDto>>> GetHrTesdiqindeAsync();
         Task<Result> SobeReisiTesdiqAsync(int id, bool status, string? qeyd, int sobeReisiId = 0);

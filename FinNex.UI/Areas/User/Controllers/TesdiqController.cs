@@ -1,4 +1,5 @@
 using FinNex.Application.Common.Results;
+using FinNex.Application.DTOs.HR.Icaze;
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
 using FinNex.Domain;
@@ -54,15 +55,17 @@ namespace FinNex.UI.Areas.User.Controllers
                     ?.DepartamentId
                 : null;
 
-            // Departamentə görə filtrləyib çək
+            // Departamentə görə filtrləyib çək — həm Mezuniyyet həm də İcazə üçün
             Task<Result<IList<MezuniyyetListDto>>> mezTask = departamentId.HasValue
                 ? _mezuniyyetService.GetSobeyeGoreMezuniyyetlerAsync(departamentId.Value, isciId.Value)
                 : _mezuniyyetService.GetGozlemededeAsync(); // fallback
 
-            var mezResult = await mezTask;
+            Task<Result<IList<IcazeListDto>>> icazeTask = departamentId.HasValue
+                ? _icazeService.GetSobeyeGoreIcazelerAsync(departamentId.Value, isciId.Value)
+                : _icazeService.GetGozlemededeAsync(); // fallback — şöbə tapılmayıbsa hamısı
 
-            // İcazə üçün də eyni filtr lazımdır (aşağıda qeyd)
-            var icazeResult = await _icazeService.GetGozlemededeAsync(); // ← icazə üçün də departament filtri əlavə etmək lazımdır
+            var mezResult = await mezTask;
+            var icazeResult = await icazeTask;
 
             var vm = new TesdiqIndexVM
             {
@@ -279,17 +282,22 @@ namespace FinNex.UI.Areas.User.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> IcazeTesdiq(int id, bool status, string? qeyd, string rol)
         {
+            // Təsdiqləyənin IsciId-sini müəyyən et — audit üçün lazımdır.
+            // Əvvəl service-ə 0 keçirdi, buna görə "kim təsdiq etdi" qeydi yarım qalırdı.
+            var appUser = await _userManager.GetUserAsync(User);
+            var tesdiqciIsciId = appUser?.IsciId ?? 0;
+
             Result result;
             switch (rol)
             {
                 case "SobeReisi":
-                    result = await _icazeService.SobeReisiTesdiqAsync(id, status, qeyd);
+                    result = await _icazeService.SobeReisiTesdiqAsync(id, status, qeyd, tesdiqciIsciId);
                     break;
                 case "Rehber":
-                    result = await _icazeService.RehberTesdiqAsync(id, status, qeyd);
+                    result = await _icazeService.RehberTesdiqAsync(id, status, qeyd, tesdiqciIsciId);
                     break;
                 case "Hr":
-                    result = await _icazeService.HrTesdiqAsync(id, status, qeyd);
+                    result = await _icazeService.HrTesdiqAsync(id, status, qeyd, tesdiqciIsciId);
                     break;
                 default:
                     TempData["Error"] = "Naməlum rol.";

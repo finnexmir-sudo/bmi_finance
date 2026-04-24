@@ -244,13 +244,17 @@ namespace FinNex.Application.Services
             }
         }
 
+        // SobeReisi-nin gözləmədə olan icazələri (bütün pending).
+        // Qeyd: Icaze heç vaxt IcazeStatus.Gozlemede statusunda yaradılmır
+        // (YaratAsync bir-başa SobeReisiTesdiqinde/RehberTesdiqinde/HrTesdiqinde
+        // qoyur). Ona görə SobeReisi panel SobeReisiTesdiqinde statusunu filtrləyir.
         public async Task<Result<IList<IcazeListDto>>> GetGozlemededeAsync()
         {
             try
             {
                 var list = await _unitOfWork.Repository<Icaze>()
                     .HamisiniGetirAsync(
-                        predicate: x => x.Status == IcazeStatus.Gozlemede,
+                        predicate: x => x.Status == IcazeStatus.SobeReisiTesdiqinde,
                         include: q => q
     .Include(i => i.Isci)
         .ThenInclude(i => i.IsciTeyinatlari)
@@ -271,6 +275,41 @@ namespace FinNex.Application.Services
             catch (Exception ex)
             {
                 return Result<IList<IcazeListDto>>.Fail($"Gözləmədə icazələr gətirilmədi: {ex.Message}");
+            }
+        }
+
+        // Şöbə rəisi üçün yalnız ÖZ şöbəsinin pending icazələri.
+        // Mezuniyyet.GetSobeyeGoreMezuniyyetlerAsync-in analoqu.
+        public async Task<Result<IList<IcazeListDto>>> GetSobeyeGoreIcazelerAsync(int departamentId, int sobeReisiIsciId)
+        {
+            try
+            {
+                var list = await _unitOfWork.Repository<Icaze>()
+                    .HamisiniGetirAsync(
+                        predicate: x => x.Status == IcazeStatus.SobeReisiTesdiqinde
+                                     && x.IsciId != sobeReisiIsciId  // şöbə rəisi özünü görməsin
+                                     && x.Isci.IsciTeyinatlari
+                                            .Any(t => t.Aktivdir && t.DepartamentId == departamentId),
+                        include: q => q
+    .Include(i => i.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Departament)
+    .Include(i => i.Isci)
+        .ThenInclude(i => i.IsciTeyinatlari)
+            .ThenInclude(t => t.Vezife)
+    .Include(i => i.EvezEdenIsci),
+                        izlemeden: true);
+
+                var dtos = list
+                    .OrderByDescending(x => x.IcazeTarixi)
+                    .Select(MapToListDto)
+                    .ToList();
+
+                return Result<IList<IcazeListDto>>.Ok(dtos);
+            }
+            catch (Exception ex)
+            {
+                return Result<IList<IcazeListDto>>.Fail($"Şöbə üzrə icazələr gətirilmədi: {ex.Message}");
             }
         }
 
@@ -342,6 +381,12 @@ namespace FinNex.Application.Services
                 .GetirAsync(x => x.Id == id);
             if (icaze == null) return Result.Fail("İcazə tapılmadı.");
 
+            // IDEMPOTENCY GUARD — yalnız SobeReisiTesdiqinde statusunda qərar verilə bilər.
+            // Double-click / təkrar sorğu halında status pozulmasın, bildirişlər
+            // iki dəfə göndərilməsin deyə.
+            if (icaze.Status != IcazeStatus.SobeReisiTesdiqinde)
+                return Result.Fail($"Bu müraciət artıq emal edilib (status: {icaze.Status}). Təkrar təsdiq mümkün deyil.");
+
             icaze.SobeReisiTesdiq = status;
             icaze.SobeReisiId = sobeReisiId > 0 ? sobeReisiId : icaze.SobeReisiId;
             icaze.SobeReisiTesdiqTarixi = DateTime.Now;
@@ -369,6 +414,10 @@ namespace FinNex.Application.Services
                 .GetirAsync(x => x.Id == id);
             if (icaze == null) return Result.Fail("İcazə tapılmadı.");
 
+            // IDEMPOTENCY GUARD — yalnız RehberTesdiqinde statusunda qərar verilə bilər
+            if (icaze.Status != IcazeStatus.RehberTesdiqinde)
+                return Result.Fail($"Bu müraciət artıq emal edilib (status: {icaze.Status}). Təkrar təsdiq mümkün deyil.");
+
             icaze.RehberTesdiq = status;
             icaze.RehberId = rehberId > 0 ? rehberId : icaze.RehberId;
             icaze.RehberTesdiqTarixi = DateTime.Now;
@@ -395,6 +444,10 @@ namespace FinNex.Application.Services
             var icaze = await _unitOfWork.Repository<Icaze>()
                 .GetirAsync(x => x.Id == id);
             if (icaze == null) return Result.Fail("İcazə tapılmadı.");
+
+            // IDEMPOTENCY GUARD — yalnız HrTesdiqinde statusunda qərar verilə bilər
+            if (icaze.Status != IcazeStatus.HrTesdiqinde)
+                return Result.Fail($"Bu müraciət artıq emal edilib (status: {icaze.Status}). Təkrar təsdiq mümkün deyil.");
 
             icaze.HrTesdiq = status;
             icaze.HrId = hrId > 0 ? hrId : icaze.HrId;
