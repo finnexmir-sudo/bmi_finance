@@ -188,6 +188,13 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             .GetirAsync(x => x.Id == id);
         if (m == null) return Result.Fail("Müraciət tapılmadı.");
 
+        // IDEMPOTENCY GUARD — yalnız SobeReisiTesdiqinde statusunda qərar verilə bilər
+        if (m.Status != MezuniyyetStatus.SobeReisiTesdiqinde)
+        {
+            return Result.Fail(
+                $"Bu müraciət artıq emal edilib (status: {m.Status}). Təkrar təsdiq mümkün deyil.");
+        }
+
         m.SobeReisiTesdiq = status;
         m.SobeReisiId = sobeReisiId;
         m.SobeReisiTesdiqTarixi = DateTime.Now;
@@ -248,6 +255,16 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
         if (m == null) return Result.Fail("Müraciət tapılmadı.");
 
+        // ─────────── IDEMPOTENCY GUARD ───────────
+        // Yalnız RehberTesdiqinde statusunda olan müraciət rəhbər tərəfindən
+        // qərarlandırıla bilər. Təkrarlı klik / iki pəncərə səhvini önləyir.
+        if (m.Status != MezuniyyetStatus.RehberTesdiqinde)
+        {
+            return Result.Fail(
+                $"Bu müraciət artıq emal edilib (status: {m.Status}). Təkrar təsdiq mümkün deyil.");
+        }
+        // ─────────────────────────────────────────
+
         m.RehberTesdiq = status;
         m.RehberId = rehberId;
         m.RehberTesdiqTarixi = DateTime.Now;
@@ -279,6 +296,26 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         var m = await _unitOfWork.Repository<Mezuniyyet>()
             .GetirAsync(x => x.Id == id);
         if (m == null) return Result.Fail("Müraciət tapılmadı.");
+
+        // ─────────────── IDEMPOTENCY GUARD ───────────────
+        // Vacib qoruma: eyni müraciət iki dəfə təsdiq edilə bilməz.
+        // Əks halda balans iki dəfə çıxılır (bag reported by users).
+        // Yalnız HrTesdiqinde statusunda olan müraciətlər qərarlandırıla bilər.
+        if (m.Status != MezuniyyetStatus.HrTesdiqinde)
+        {
+            var statusAdi = m.Status switch
+            {
+                MezuniyyetStatus.Tesdiqlenib => "təsdiqlənib",
+                MezuniyyetStatus.ImtinaEdildi => "imtina edilib",
+                MezuniyyetStatus.LegvEdildi => "ləğv edilib",
+                MezuniyyetStatus.Gozlemede => "hələ rəhbər təsdiqindən keçməyib",
+                MezuniyyetStatus.RehberTesdiqinde => "rəhbər təsdiqində gözləyir",
+                MezuniyyetStatus.SobeReisiTesdiqinde => "şöbə rəisində gözləyir",
+                _ => m.Status.ToString()
+            };
+            return Result.Fail($"Bu müraciət artıq emal edilib ({statusAdi}). Təkrar təsdiq mümkün deyil.");
+        }
+        // ─────────────────────────────────────────────────
 
         m.HrTesdiq = status;
         m.HrId = hrId;
