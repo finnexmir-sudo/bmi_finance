@@ -251,6 +251,25 @@ namespace FinNex.UI.Areas.HR.Controllers
                     })
                     .ToListAsync();
 
+                // Təsdiq gözləyən məzuniyyətlər — maaşa təsir etmir, amma HR/mühasibə
+                // göstərilsin ki, niyə kəsinti tətbiq olunmayacağını başa düşsün.
+                var gozleyenMez = await _unitOfWork.Repository<Mezuniyyet>().Query()
+                    .Where(m => !m.Silinib && m.IsciId == isciId
+                             && m.BaslamaTarixi <= ayBitis && m.BitmeTarixi >= ayBaslangic
+                             && m.Status != MezuniyyetStatus.Tesdiqlenib
+                             && m.Status != MezuniyyetStatus.ImtinaEdildi
+                             && m.Status != MezuniyyetStatus.LegvEdildi)
+                    .Select(m => new
+                    {
+                        m.Id,
+                        m.Nov,
+                        m.Status,
+                        m.BaslamaTarixi,
+                        m.BitmeTarixi,
+                        m.IsGunlerininSayi
+                    })
+                    .ToListAsync();
+
                 // Bu ayda xəstəlik bülletənləri + ödənişləri
                 var xesOdenisler = await _unitOfWork.Repository<XestelikOdenis>().Query()
                     .Where(o => !o.Silinib && o.IsciId == isciId && o.Il == il && o.Ay == ay)
@@ -293,6 +312,15 @@ namespace FinNex.UI.Areas.HR.Controllers
                         bitme = m.BitmeTarixi.ToString("dd.MM.yyyy"),
                         isGunu = m.IsGunlerininSayi,
                         odenen = m.OdenenMebleg
+                    }),
+                    gozleyenMezuniyyetler = gozleyenMez.Select(m => new
+                    {
+                        id = m.Id,
+                        nov = m.Nov.ToString(),
+                        status = m.Status.ToString(),
+                        baslama = m.BaslamaTarixi.ToString("dd.MM.yyyy"),
+                        bitme = m.BitmeTarixi.ToString("dd.MM.yyyy"),
+                        isGunu = m.IsGunlerininSayi
                     }),
                     xestelikler = xesOdenisler.Select(o => new
                     {

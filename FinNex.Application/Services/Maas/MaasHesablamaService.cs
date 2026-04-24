@@ -247,6 +247,48 @@ namespace FinNex.Application.Services.HR
                 }
             }
 
+            // 6.4. Təsdiqlənməmiş məzuniyyət qeydləri — informativ xəbərdarlıq.
+            // Workflow belədir: Gözləmədə → Şöbə rəisi → Rəhbər → HR → Təsdiqlənib.
+            // Yalnız "Təsdiqlənib" statuslu məzuniyyət maaşa təsir edir. Əgər ay
+            // ərzində başqa statuslu məzuniyyət qeydi varsa, mühasib bilsin ki,
+            // kəsinti niyə tətbiq olunmur — iş axını tamamlanmayıb.
+            try
+            {
+                var mezAyBaslangic = new DateTime(input.Il, input.Ay, 1);
+                var mezAyBitis = mezAyBaslangic.AddMonths(1).AddDays(-1);
+                var gozleyenMezler = await _unitOfWork.Repository<Mezuniyyet>()
+                    .Query()
+                    .Where(x => x.IsciId == input.IsciId && !x.Silinib
+                             && x.BaslamaTarixi <= mezAyBitis && x.BitmeTarixi >= mezAyBaslangic
+                             && x.Status != MezuniyyetStatus.Tesdiqlenib
+                             && x.Status != MezuniyyetStatus.ImtinaEdildi
+                             && x.Status != MezuniyyetStatus.LegvEdildi)
+                    .ToListAsync();
+
+                foreach (var m in gozleyenMezler)
+                {
+                    string statusAd = m.Status switch
+                    {
+                        MezuniyyetStatus.Gozlemede            => "Gözləmədə (ilkin müraciət)",
+                        MezuniyyetStatus.SobeReisiTesdiqinde  => "Şöbə rəisi təsdiqində",
+                        MezuniyyetStatus.RehberTesdiqinde     => "Rəhbər təsdiqində",
+                        MezuniyyetStatus.HrTesdiqinde         => "HR son təsdiqində",
+                        _                                     => m.Status.ToString()
+                    };
+                    izahatlar.Add(new HesablamaIzahiDto
+                    {
+                        Addim = "Məzuniyyət (təsdiq gözləyir)",
+                        Izah = $"{m.BaslamaTarixi:dd.MM.yyyy}–{m.BitmeTarixi:dd.MM.yyyy} " +
+                               $"({m.IsGunlerininSayiManual ?? m.IsGunlerininSayi} iş günü) — " +
+                               $"status: {statusAd}. Tam təsdiqlənməyənə qədər maaş kəsintisi " +
+                               "və ödənişi tətbiq olunmur. Təsdiqdən sonra 'Yenidən Hesabla'.",
+                        Mebleg = 0,
+                        Tip = "melumati"
+                    });
+                }
+            }
+            catch { /* məzuniyyət xəbərdarlığı əsas hesablamanı pozmasın */ }
+
             // 6.5. Xəstəlik ödənişi (avtomatik — XestelikOdenis cədvəlindən)
             // HR əvvəlcədən xəstəlik bülletənini yaradıbsa, sistem həmin ay üçün
             // şirkət payını brüt-ə əlavə edir.

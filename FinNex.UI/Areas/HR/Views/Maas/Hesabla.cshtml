@@ -283,15 +283,35 @@
 
                 // Məzuniyyət
                 const mezEl = document.getElementById('ctxMez');
-                if (!d.mezuniyyetler.length) {
-                    mezEl.innerHTML = '<span style="color:#94a3b8;font-size:12px">— yoxdur —</span>';
-                } else {
-                    mezEl.innerHTML = d.mezuniyyetler.map(m =>
+                const statusAd = {
+                    Gozlemede:            'Gözləmədə',
+                    SobeReisiTesdiqinde:  'Şöbə rəisi təsdiqində',
+                    RehberTesdiqinde:     'Rəhbər təsdiqində',
+                    HrTesdiqinde:         'HR son təsdiqində'
+                };
+                let mezHtml = '';
+                if (d.mezuniyyetler.length) {
+                    mezHtml += d.mezuniyyetler.map(m =>
                         `<div style="padding:4px 0">
-                            <strong>${m.nov}</strong> · ${m.baslama} → ${m.bitme} · ${m.isGunu} iş günü
+                            ✅ <strong>${m.nov}</strong> · ${m.baslama} → ${m.bitme} · ${m.isGunu} iş günü
                             ${m.odenen ? ' · ödənən: <strong>' + fmt(m.odenen) + '</strong>' : ''}
                         </div>`
                     ).join('');
+                }
+                if (d.gozleyenMezuniyyetler && d.gozleyenMezuniyyetler.length) {
+                    mezHtml += d.gozleyenMezuniyyetler.map(m =>
+                        `<div style="padding:4px 8px;margin-top:4px;background:#fff7e6;border:1px solid #fde68a;border-radius:4px;color:#78350f;font-size:11.5px">
+                            ⚠ <strong>${m.nov}</strong> · ${m.baslama} → ${m.bitme} · ${m.isGunu} iş günü
+                            <div style="font-size:10.5px;opacity:.85;margin-top:2px">
+                              Status: <strong>${statusAd[m.status] || m.status}</strong> — tam təsdiqlənməyənə qədər maaşa təsir etmir.
+                            </div>
+                        </div>`
+                    ).join('');
+                }
+                if (!mezHtml) {
+                    mezEl.innerHTML = '<span style="color:#94a3b8;font-size:12px">— yoxdur —</span>';
+                } else {
+                    mezEl.innerHTML = mezHtml;
                 }
 
                 // Xəstəlik
