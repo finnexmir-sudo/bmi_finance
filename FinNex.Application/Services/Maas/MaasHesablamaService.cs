@@ -249,10 +249,14 @@ namespace FinNex.Application.Services.HR
             // 6.5. Xəstəlik ödənişi (avtomatik — XestelikOdenis cədvəlindən)
             // HR əvvəlcədən xəstəlik bülletənini yaradıbsa, sistem həmin ay üçün
             // şirkət payını brüt-ə əlavə edir.
+            // QAYDA: İşçi xəstə olduğu günlər FAKTİKİ işlənmir → əsas maaşdan proporsional
+            // kəsinti edilir (qayıb və məzuniyyət kimi), yerinə xəstəlik ödənişi gəlir kimi
+            // əlavə olunur. Əks halda həmin günlər iki dəfə ödənmiş olur.
             decimal xestelikSirketOdenis = 0;
             decimal xestelikDsmfOdenis = 0;
             int xestelikSirketGun = 0;
             int xestelikDsmfGun = 0;
+            decimal xestelikKesinti = 0;
             try
             {
                 var xestelikler = await _xestelikService.AyUzreXestelikleriGetirAsync(input.IsciId, input.Il, input.Ay);
@@ -268,6 +272,22 @@ namespace FinNex.Application.Services.HR
                         xestelikDsmfGun += od.DsmfGunSayi;
                     }
                 }
+
+                int xestelikGun = xestelikSirketGun + xestelikDsmfGun;
+                if (xestelikGun > 0)
+                {
+                    xestelikKesinti = Math.Round(esasMaas / ayIsGunu * xestelikGun, 2);
+                    izahatlar.Add(new HesablamaIzahiDto
+                    {
+                        Addim = "Xəstəlik Gün Kəsintisi",
+                        Izah = $"{esasMaas:N2} / {ayIsGunu} iş günü × {xestelikGun} xəstəlik günü " +
+                               $"(şirkət: {xestelikSirketGun}, DSMF: {xestelikDsmfGun}) = {xestelikKesinti:N2} ₼. " +
+                               "Əsas maaşdan çıxılır — həmin günlər üçün ayrıca Xəstəlik Ödənişi əlavə olunur.",
+                        Mebleg = xestelikKesinti,
+                        Tip = "kesinti"
+                    });
+                }
+
                 if (xestelikSirketOdenis > 0 || xestelikDsmfOdenis > 0)
                 {
                     izahatlar.Add(new HesablamaIzahiDto
@@ -383,6 +403,7 @@ namespace FinNex.Application.Services.HR
                 - mezKesinti
                 + mezOdenis
                 + xestelikSirketOdenis
+                - xestelikKesinti
                 - qayibKesinti
                 + input.BonusMeblegi
                 - input.CerimeMeblegi;
@@ -394,7 +415,9 @@ namespace FinNex.Application.Services.HR
             {
                 Addim = "Gross Məbləğ",
                 Izah = esasBrut == brutMaas
-                    ? $"Esas ({esasMaas:N2}) - MezKes ({mezKesinti:N2}) + MezOd ({mezOdenis:N2}) - Qayıb ({qayibKesinti:N2}) + Bonus ({input.BonusMeblegi:N2}) - Cerime ({input.CerimeMeblegi:N2})"
+                    ? $"Esas ({esasMaas:N2}) - MezKes ({mezKesinti:N2}) + MezOd ({mezOdenis:N2}) " +
+                      $"- XstKes ({xestelikKesinti:N2}) + XstOd ({xestelikSirketOdenis:N2}) " +
+                      $"- Qayıb ({qayibKesinti:N2}) + Bonus ({input.BonusMeblegi:N2}) - Cerime ({input.CerimeMeblegi:N2})"
                     : $"Esas ({esasMaas:N2}) ± düzəlişlər ({esasBrut:N2}) + İşəgötürən HYS ({hysIsegoturen:N2}) = {brutMaas:N2}",
                 Mebleg = brutMaas,
                 Tip = "melumati"
@@ -609,13 +632,16 @@ namespace FinNex.Application.Services.HR
 
             // NOT: Adlar DB-dəki MaasNovleri cədvəlindəki Ad ilə dəqiq üst-üstə düşməlidir
             // (seed: migration 20260331052001_dbBaza.cs line 1608+)
-            // Seed-də "Məzuniyyət Kəsintisi" yoxdur — məzuniyyət günləri də
-            // "Davamiyyət Kəsintisi" altında birləşdirilir
-            decimal umumiDavamKesinti = qayibKesinti + mezKesinti;
-            string? davamAciq =
-                (qayibGun > 0 && mezGun > 0) ? $"{qayibGun} qayıb + {mezGun} məz. gün / {ayIsGunu} iş günü"
-                : qayibGun > 0 ? $"{qayibGun} qayıb gün / {ayIsGunu} iş günü"
-                : mezGun > 0 ? $"{mezGun} məz. gün / {ayIsGunu} iş günü"
+            // Seed-də "Məzuniyyət Kəsintisi" və "Xəstəlik Kəsintisi" yoxdur —
+            // məzuniyyət və xəstəlik günləri də "Davamiyyət Kəsintisi" altında birləşdirilir
+            int xestelikUmumiGun = xestelikSirketGun + xestelikDsmfGun;
+            decimal umumiDavamKesinti = qayibKesinti + mezKesinti + xestelikKesinti;
+            var davamHisseleri = new List<string>();
+            if (qayibGun > 0) davamHisseleri.Add($"{qayibGun} qayıb");
+            if (mezGun > 0) davamHisseleri.Add($"{mezGun} məz.");
+            if (xestelikUmumiGun > 0) davamHisseleri.Add($"{xestelikUmumiGun} xəstəlik");
+            string? davamAciq = davamHisseleri.Count > 0
+                ? $"{string.Join(" + ", davamHisseleri)} gün / {ayIsGunu} iş günü"
                 : null;
 
             var xetalar = new[]
