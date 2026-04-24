@@ -45,8 +45,8 @@
 
         if (currentArea == "HR")
             return IsAccountingCtrl() ? "muhasibat" : "hr";
-        if (currentArea == "SenedDovriyyesi") return "sened";
-        if (currentArea == "PR_Odenis_Tapsirigi") return "swift";
+        if (currentArea == "SenedDovriyyesi") return "umumi";
+        if (currentArea == "PR_Odenis_Tapsirigi") return "umumi";
         if (currentController == "Tesdiq") return "tesdiq";
         if (currentController == "KreditMuraciet") return "kredit";
         if (currentController == "Hesabat" || currentController == "HesabatIzleme") return "hesabat";
@@ -143,7 +143,7 @@
             }
 
             @{
-                var isDepartModule = activeModule is "kredit" or "hr" or "muhasibat" or "sened" or "swift";
+                var isDepartModule = activeModule is "kredit" or "hr" or "muhasibat" or "umumi";
                 var departActiveCls = isDepartModule ? " fn-topnav-tab--active" : "";
             }
             <div class="fn-topnav-dropdown @(isDepartModule ? "fn-topnav-dropdown--active" : "")">
@@ -183,19 +183,11 @@
                         </a>
                     }
                     <a asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index"
-                       class="fn-topnav-dd-item @(activeModule == "sened" ? "fn-topnav-dd-item--active" : "")">
+                       class="fn-topnav-dd-item @(activeModule == "umumi" ? "fn-topnav-dd-item--active" : "")">
                         <i class="bi bi-folder2"></i>
                         <div>
-                            <div class="fn-topnav-dd-title">Sənəd Dövriyyəsi</div>
-                            <div class="fn-topnav-dd-sub">Sənədlər, şablonlar, növlər</div>
-                        </div>
-                    </a>
-                    <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Siyahi"
-                       class="fn-topnav-dd-item @(activeModule == "swift" ? "fn-topnav-dd-item--active" : "")">
-                        <i class="bi bi-bank2"></i>
-                        <div>
-                            <div class="fn-topnav-dd-title">Swift / Ödəniş</div>
-                            <div class="fn-topnav-dd-sub">Ödəniş tapşırığı, banklar, müştərilər</div>
+                            <div class="fn-topnav-dd-title">Ümumi</div>
+                            <div class="fn-topnav-dd-sub">Sənəd dövriyyəsi, Swift / ödəniş</div>
                         </div>
                     </a>
                 </div>
@@ -637,7 +629,7 @@
                 }
                 break;
 
-            case "sened":
+            case "umumi":
                 <div class="fn-nav-label">Sənəd Dövriyyəsi</div>
                 <a asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index"
                    class="fn-nav-item @(currentController == "Dashboard" && currentArea == "SenedDovriyyesi" ? "active" : "")">
@@ -670,9 +662,7 @@
                         <i class="bi bi-shield-check"></i> İcazələr
                     </a>
                 }
-                break;
 
-            case "swift":
                 <div class="fn-nav-label">Swift / Ödəniş</div>
                 <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Siyahi"
                    class="fn-nav-item @(currentController == "OdenisTapsirigi" && currentAction == "Siyahi" ? "active" : "")">
