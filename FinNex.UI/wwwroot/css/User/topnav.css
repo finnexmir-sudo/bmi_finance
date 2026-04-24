@@ -396,15 +396,16 @@
 
 .fn-sidebar2 {
     flex-shrink: 0;
-    width: 230px;
-    /* Tünd navy — topnav ilə eyni palet. Modern admin dashboard görünüşü */
-    background: linear-gradient(180deg, #1a2332 0%, #141a26 100%);
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
-    padding: 20px 12px;
+    width: 240px;
+    /* Soft pearl/krem — tünd navy topnav-a kontrast, bank aestet */
+    background: #faf8f3;
+    border-right: 1px solid #e6ddc7;
+    padding: 16px 10px;
     overflow-y: auto;
     height: calc(100vh - 60px);
     position: sticky;
     top: 60px;
+    box-shadow: inset -1px 0 0 rgba(201, 180, 133, 0.08);
 }
 
 .fn-sidebar2::-webkit-scrollbar {
@@ -412,34 +413,88 @@
 }
 
 .fn-sidebar2::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(26, 35, 50, 0.12);
     border-radius: 3px;
 }
 
+/* ═══ Açılıb-bağlanan qrup (accordion) ═══ */
+.fn-nav-g {
+    margin-bottom: 4px;
+}
+
+.fn-nav-g-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    color: #8b7d56;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.14s, color 0.14s;
+}
+
+.fn-nav-g-head:hover {
+    background: rgba(232, 184, 75, 0.08);
+    color: #5a4d2a;
+}
+
+.fn-nav-g-head .bi-chevron-down {
+    font-size: 11px;
+    opacity: 0.6;
+    transition: transform 0.2s;
+}
+
+.fn-nav-g.open .fn-nav-g-head {
+    color: #5a4d2a;
+}
+
+.fn-nav-g.open .fn-nav-g-head .bi-chevron-down {
+    transform: rotate(180deg);
+    opacity: 1;
+}
+
+.fn-nav-g-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.22s ease;
+    padding: 0 4px;
+}
+
+.fn-nav-g.open .fn-nav-g-body {
+    max-height: 1000px;
+    padding: 2px 4px 6px;
+}
+
+/* Köhnə .fn-nav-label stil — tək bənd varsa istifadə olunur */
 .fn-sidebar2 .fn-nav-label {
     font-size: 10px;
     font-weight: 700;
-    color: #8b95a8;
+    color: #8b7d56;
     text-transform: uppercase;
     letter-spacing: 1px;
-    padding: 14px 12px 8px;
-    margin-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 12px 12px 6px;
+    margin-top: 6px;
 }
 
 .fn-sidebar2 .fn-nav-label:first-child {
     margin-top: 0;
-    border-top: none;
-    padding-top: 4px;
 }
 
 .fn-sidebar2 .fn-nav-item {
     display: flex;
     align-items: center;
     gap: 11px;
-    padding: 10px 13px;
+    padding: 9px 12px;
     border-radius: 8px;
-    color: #b8c0cc;
+    color: #3d3520;
     text-decoration: none;
     font-size: 13px;
     font-weight: 500;
@@ -450,27 +505,28 @@
 
 .fn-sidebar2 .fn-nav-item i {
     font-size: 15px;
-    opacity: 0.75;
+    opacity: 0.65;
     width: 18px;
     text-align: center;
     flex-shrink: 0;
+    color: #7a6a42;
 }
 
 .fn-sidebar2 .fn-nav-item:hover {
-    background: rgba(255, 255, 255, 0.07);
-    color: #fff;
+    background: rgba(232, 184, 75, 0.14);
+    color: #1a2332;
 }
 
 .fn-sidebar2 .fn-nav-item:hover i {
     opacity: 1;
-    color: #e8b84b;
+    color: #c49628;
 }
 
 .fn-sidebar2 .fn-nav-item.active {
-    background: linear-gradient(90deg, rgba(232, 184, 75, 0.18) 0%, rgba(232, 184, 75, 0.04) 100%);
+    background: linear-gradient(90deg, #1a2332 0%, #2a3447 100%);
     color: #fff;
     font-weight: 600;
-    box-shadow: inset 3px 0 0 #e8b84b;
+    box-shadow: 0 2px 8px rgba(26, 35, 50, 0.25);
 }
 
 .fn-sidebar2 .fn-nav-item.active i {
