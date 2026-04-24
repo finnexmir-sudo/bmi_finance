@@ -1,28 +1,160 @@
 /* ════════════════════════════════════════════════════════════
-   Top Navbar + Contextual Sidebar
-   (Yeni layout — köhnəsi _UserLayout.old.cshtml-də qalıb)
+   FinNex Top Navbar + Contextual Sidebar — TEMA DƏSTƏYİ
+   Rənglər CSS variable-larla idarə olunur; body class ilə
+   tema dəyişir (theme-red default, theme-ocean, theme-forest,
+   theme-midnight)
    ════════════════════════════════════════════════════════════ */
 
-/* ════════════════════════════════════════════════════════════
-   Rəng Palet — Bank Melli tərzində (logo əsaslı)
-   ════════════════════════════════════════════════════════════
-   --bm-red-1: #9a1b2e    tünd qırmızı (topnav fonu)
-   --bm-red-2: #b72839    orta qırmızı (hover)
-   --bm-gold:  #e8b84b    qızılı vurğu
-   --bm-cream: #faf6e9    krem / pearl
-   --bm-tan:   #e5d9b8    sakit kəhrəba
-   ════════════════════════════════════════════════════════════ */
+:root,
+body.theme-red {
+    /* === Bank Melli qırmızı-qızılı (default) === */
+    --nav-bg-1: #a01e2b;
+    --nav-bg-2: #7d1520;
+    --nav-text: #f5d8d0;
+    --nav-text-strong: #fff;
+    --nav-accent: #f4cc6b;
+    --nav-accent-dark: #d4a022;
+    --nav-border-accent: #e8b84b;
+
+    --sb-bg: #faf6e9;
+    --sb-border: #e5d9b8;
+    --sb-text: #3a2420;
+    --sb-label: #8b4a3a;
+    --sb-label-active: #7d1520;
+    --sb-icon: #a01e2b;
+    --sb-active-bg-1: #a01e2b;
+    --sb-active-bg-2: #7d1520;
+    --sb-active-icon: #f4cc6b;
+    --sb-hover-bg: rgba(232, 184, 75, 0.22);
+    --sb-hover-text: #7d1520;
+    --sb-scrollbar: rgba(122, 19, 32, 0.15);
+
+    --avatar-bg-1: #f4cc6b;
+    --avatar-bg-2: #d4a022;
+    --avatar-text: #7d1520;
+
+    --badge-bg: #f4cc6b;
+    --badge-text: #7d1520;
+    --badge-border: #7d1520;
+
+    --main-bg: #f7f8fa;
+    --main-text: #1a2332;
+}
+
+body.theme-ocean {
+    /* === Okean tünd göy + bürünc === */
+    --nav-bg-1: #1e3a5f;
+    --nav-bg-2: #0e1e33;
+    --nav-text: #c8d4e4;
+    --nav-text-strong: #fff;
+    --nav-accent: #4da8da;
+    --nav-accent-dark: #2d88bd;
+    --nav-border-accent: #4da8da;
+
+    --sb-bg: #eef3fa;
+    --sb-border: #d4dde7;
+    --sb-text: #1a2332;
+    --sb-label: #475569;
+    --sb-label-active: #1e3a5f;
+    --sb-icon: #2d6cdf;
+    --sb-active-bg-1: #1e3a5f;
+    --sb-active-bg-2: #0e1e33;
+    --sb-active-icon: #4da8da;
+    --sb-hover-bg: rgba(77, 168, 218, 0.18);
+    --sb-hover-text: #1e3a5f;
+    --sb-scrollbar: rgba(30, 58, 95, 0.15);
+
+    --avatar-bg-1: #4da8da;
+    --avatar-bg-2: #2d6cdf;
+    --avatar-text: #fff;
+
+    --badge-bg: #4da8da;
+    --badge-text: #fff;
+    --badge-border: #1e3a5f;
+
+    --main-bg: #f4f7fb;
+    --main-text: #1a2332;
+}
+
+body.theme-forest {
+    /* === Zümrüd yaşıl + qızılı === */
+    --nav-bg-1: #0a5740;
+    --nav-bg-2: #053824;
+    --nav-text: #c7e9d1;
+    --nav-text-strong: #fff;
+    --nav-accent: #fbbf24;
+    --nav-accent-dark: #d69e2e;
+    --nav-border-accent: #fbbf24;
+
+    --sb-bg: #f2fbf5;
+    --sb-border: #c7e9d1;
+    --sb-text: #1a2e22;
+    --sb-label: #4f7760;
+    --sb-label-active: #0a5740;
+    --sb-icon: #10926b;
+    --sb-active-bg-1: #0a5740;
+    --sb-active-bg-2: #053824;
+    --sb-active-icon: #fbbf24;
+    --sb-hover-bg: rgba(251, 191, 36, 0.18);
+    --sb-hover-text: #0a5740;
+    --sb-scrollbar: rgba(10, 87, 64, 0.15);
+
+    --avatar-bg-1: #fbbf24;
+    --avatar-bg-2: #d69e2e;
+    --avatar-text: #0a5740;
+
+    --badge-bg: #fbbf24;
+    --badge-text: #0a5740;
+    --badge-border: #053824;
+
+    --main-bg: #f5faf6;
+    --main-text: #1a2332;
+}
+
+body.theme-midnight {
+    /* === Gecə qara + bənövşəyi qızıl === */
+    --nav-bg-1: #1f1f2e;
+    --nav-bg-2: #0a0a14;
+    --nav-text: #d4d4e8;
+    --nav-text-strong: #fff;
+    --nav-accent: #c9a25f;
+    --nav-accent-dark: #a88843;
+    --nav-border-accent: #c9a25f;
+
+    --sb-bg: #f5f3f7;
+    --sb-border: #dcd6e0;
+    --sb-text: #232140;
+    --sb-label: #5a5370;
+    --sb-label-active: #1f1f2e;
+    --sb-icon: #4b3e7a;
+    --sb-active-bg-1: #1f1f2e;
+    --sb-active-bg-2: #0a0a14;
+    --sb-active-icon: #c9a25f;
+    --sb-hover-bg: rgba(201, 162, 95, 0.18);
+    --sb-hover-text: #1f1f2e;
+    --sb-scrollbar: rgba(31, 31, 46, 0.15);
+
+    --avatar-bg-1: #c9a25f;
+    --avatar-bg-2: #a88843;
+    --avatar-text: #1f1f2e;
+
+    --badge-bg: #c9a25f;
+    --badge-text: #1f1f2e;
+    --badge-border: #1f1f2e;
+
+    --main-bg: #f7f7fb;
+    --main-text: #1a2332;
+}
 
 /* ── YUXARI NAVBAR ────────────────────────────────────────── */
 .fn-topnav {
     position: sticky;
     top: 0;
     z-index: 100;
-    /* Bank Melli qırmızı gradient */
-    background: linear-gradient(180deg, #a01e2b 0%, #7d1520 100%);
-    color: #fff4e0;
-    border-bottom: 2px solid #e8b84b;
-    box-shadow: 0 1px 3px rgba(122, 19, 32, 0.18);
+    background: linear-gradient(180deg, var(--nav-bg-1) 0%, var(--nav-bg-2) 100%);
+    color: var(--nav-text);
+    border-bottom: 2px solid var(--nav-border-accent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
 }
 
 .fn-topnav-inner {
@@ -54,23 +186,21 @@
 .fn-topnav-brand-text {
     font-size: 15px;
     font-weight: 500;
-    color: #fff4e0;
+    color: var(--nav-text-strong);
     letter-spacing: -0.2px;
 }
 
 .fn-topnav-brand-text b {
     font-weight: 700;
-    color: #f4cc6b;
+    color: var(--nav-accent);
 }
 
-/* Tabs (əsas naviqasiya) */
+/* Tabs */
 .fn-topnav-tabs {
     display: flex;
     align-items: center;
     gap: 2px;
     flex: 1;
-    /* Vacib: dropdown-menu-nun absolute pozisiyalı alt menyusu kəsilməsin deyə
-       scrollbar vermirik. Tab-lar çox olduqda 960px-dən aşağı hamburger aktivdir. */
     overflow: visible;
     scrollbar-width: none;
 }
@@ -86,7 +216,7 @@
     padding: 0 14px;
     height: 38px;
     border-radius: 8px;
-    color: #f5d8d0;
+    color: var(--nav-text);
     text-decoration: none;
     font-size: 13px;
     font-weight: 500;
@@ -101,22 +231,22 @@
 
 .fn-topnav-tab:hover {
     background: rgba(255, 255, 255, 0.12);
-    color: #fff;
+    color: var(--nav-text-strong);
 }
 
 .fn-topnav-tab--active {
-    background: rgba(232, 184, 75, 0.22);
-    color: #fff;
+    background: rgba(255, 255, 255, 0.14);
+    color: var(--nav-text-strong);
     font-weight: 600;
-    box-shadow: inset 0 -2px 0 #f4cc6b;
+    box-shadow: inset 0 -2px 0 var(--nav-accent);
 }
 
 .fn-topnav-tab--active i {
     opacity: 1;
-    color: #f4cc6b;
+    color: var(--nav-accent);
 }
 
-/* Departamentlər dropdown — yalnız hover */
+/* Departamentlər dropdown */
 .fn-topnav-dropdown {
     position: relative;
     display: inline-flex;
@@ -142,7 +272,7 @@
 
 .fn-topnav-dropdown-menu {
     position: absolute;
-    top: 100%; /* tab-ın alt tərəfindən başlayır — hover bridge */
+    top: 100%;
     left: 0;
     min-width: 300px;
     background: #fff;
@@ -155,7 +285,6 @@
     margin-top: 2px;
 }
 
-/* "Bridge" — tab ilə menyu arasındakı boşluq hover-i qırmasın deyə */
 .fn-topnav-dropdown-menu::before {
     content: '';
     position: absolute;
@@ -217,8 +346,20 @@
     background: rgba(160, 30, 43, 0.08);
 }
 
+body.theme-ocean .fn-topnav-dd-item--active {
+    background: rgba(30, 58, 95, 0.08);
+}
+
+body.theme-forest .fn-topnav-dd-item--active {
+    background: rgba(10, 87, 64, 0.08);
+}
+
+body.theme-midnight .fn-topnav-dd-item--active {
+    background: rgba(31, 31, 46, 0.08);
+}
+
 .fn-topnav-dd-item--active > i {
-    color: #a01e2b;
+    color: var(--nav-bg-1);
 }
 
 .fn-topnav-dd-item--active .fn-topnav-dd-title {
@@ -242,7 +383,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #f5d8d0;
+    color: var(--nav-text);
     text-decoration: none;
     font-size: 16px;
     transition: all 0.15s;
@@ -250,7 +391,7 @@
 
 .fn-topnav-icon:hover {
     background: rgba(255, 255, 255, 0.12);
-    color: #fff;
+    color: var(--nav-text-strong);
 }
 
 .fn-topnav-badge {
@@ -261,14 +402,14 @@
     height: 18px;
     padding: 0 5px;
     border-radius: 9px;
-    background: #f4cc6b;
-    color: #7d1520;
+    background: var(--badge-bg);
+    color: var(--badge-text);
     font-size: 10px;
     font-weight: 700;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #7d1520;
+    border: 2px solid var(--badge-border);
 }
 
 /* User menu */
@@ -292,8 +433,8 @@
     width: 34px;
     height: 34px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #f4cc6b, #d4a022);
-    color: #7d1520;
+    background: linear-gradient(135deg, var(--avatar-bg-1), var(--avatar-bg-2));
+    color: var(--avatar-text);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -313,7 +454,7 @@
 .fn-topnav-user-name {
     font-size: 12px;
     font-weight: 600;
-    color: #fff4e0;
+    color: var(--nav-text-strong);
     line-height: 1.3;
     white-space: nowrap;
     overflow: hidden;
@@ -323,19 +464,20 @@
 
 .fn-topnav-user-role {
     font-size: 10.5px;
-    color: #e8b5aa;
+    color: var(--nav-text);
     line-height: 1.2;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 140px;
+    opacity: 0.8;
 }
 
 .fn-topnav-user-menu {
     position: absolute;
     top: calc(100% + 6px);
     right: 0;
-    min-width: 180px;
+    min-width: 220px;
     background: #fff;
     border: 1px solid #e2e6ef;
     border-radius: 10px;
@@ -382,6 +524,73 @@
     margin: 0;
 }
 
+.fn-topnav-user-menu-divider {
+    height: 1px;
+    background: #e2e6ef;
+    margin: 6px 4px;
+}
+
+/* Tema seçici */
+.fn-theme-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #8a93a8;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 10px 12px 6px;
+}
+
+.fn-theme-row {
+    display: flex;
+    gap: 6px;
+    padding: 4px 8px 8px;
+}
+
+.fn-theme-chip {
+    flex: 1;
+    height: 36px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s, border-color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fn-theme-chip:hover {
+    transform: translateY(-1px);
+}
+
+.fn-theme-chip--red {
+    background: linear-gradient(135deg, #a01e2b, #7d1520);
+}
+
+.fn-theme-chip--ocean {
+    background: linear-gradient(135deg, #1e3a5f, #0e1e33);
+}
+
+.fn-theme-chip--forest {
+    background: linear-gradient(135deg, #0a5740, #053824);
+}
+
+.fn-theme-chip--midnight {
+    background: linear-gradient(135deg, #1f1f2e, #0a0a14);
+}
+
+.fn-theme-chip.active {
+    border-color: #fff;
+    box-shadow: 0 0 0 2px #1a2332;
+}
+
+.fn-theme-chip.active::after {
+    content: '✓';
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+}
+
 /* Hamburger (mobile) */
 .fn-topnav-burger {
     display: none;
@@ -389,7 +598,7 @@
     height: 38px;
     border: none;
     background: transparent;
-    color: #f5d8d0;
+    color: var(--nav-text);
     border-radius: 8px;
     font-size: 20px;
     cursor: pointer;
@@ -397,7 +606,7 @@
 
 .fn-topnav-burger:hover {
     background: rgba(255, 255, 255, 0.12);
-    color: #fff;
+    color: var(--nav-text-strong);
 }
 
 /* ── LAYOUT (sidebar + main) ──────────────────────────────── */
@@ -409,15 +618,14 @@
 .fn-sidebar2 {
     flex-shrink: 0;
     width: 240px;
-    /* Krem — Bank Melli logosundakı ağ emblem fonu ilə uyğun */
-    background: #faf6e9;
-    border-right: 1px solid #e5d9b8;
+    background: var(--sb-bg);
+    border-right: 1px solid var(--sb-border);
     padding: 16px 10px;
     overflow-y: auto;
     height: calc(100vh - 60px);
     position: sticky;
     top: 60px;
-    box-shadow: inset -1px 0 0 rgba(201, 162, 34, 0.08);
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.04);
 }
 
 .fn-sidebar2::-webkit-scrollbar {
@@ -425,11 +633,11 @@
 }
 
 .fn-sidebar2::-webkit-scrollbar-thumb {
-    background: rgba(122, 19, 32, 0.15);
+    background: var(--sb-scrollbar);
     border-radius: 3px;
 }
 
-/* ═══ Açılıb-bağlanan qrup (accordion) ═══ */
+/* Accordion qrup */
 .fn-nav-g {
     margin-bottom: 4px;
 }
@@ -445,7 +653,7 @@
     font-family: inherit;
     font-size: 11px;
     font-weight: 700;
-    color: #8b4a3a;
+    color: var(--sb-label);
     text-transform: uppercase;
     letter-spacing: 0.8px;
     cursor: pointer;
@@ -454,8 +662,8 @@
 }
 
 .fn-nav-g-head:hover {
-    background: rgba(160, 30, 43, 0.06);
-    color: #7d1520;
+    background: var(--sb-hover-bg);
+    color: var(--sb-label-active);
 }
 
 .fn-nav-g-head .bi-chevron-down {
@@ -465,7 +673,7 @@
 }
 
 .fn-nav-g.open .fn-nav-g-head {
-    color: #7d1520;
+    color: var(--sb-label-active);
 }
 
 .fn-nav-g.open .fn-nav-g-head .bi-chevron-down {
@@ -485,11 +693,10 @@
     padding: 2px 4px 6px;
 }
 
-/* Köhnə .fn-nav-label stil — tək bənd varsa istifadə olunur */
 .fn-sidebar2 .fn-nav-label {
     font-size: 10px;
     font-weight: 700;
-    color: #8b4a3a;
+    color: var(--sb-label);
     text-transform: uppercase;
     letter-spacing: 1px;
     padding: 12px 12px 6px;
@@ -506,7 +713,7 @@
     gap: 11px;
     padding: 9px 12px;
     border-radius: 8px;
-    color: #3a2420;
+    color: var(--sb-text);
     text-decoration: none;
     font-size: 13px;
     font-weight: 500;
@@ -521,28 +728,28 @@
     width: 18px;
     text-align: center;
     flex-shrink: 0;
-    color: #a01e2b;
+    color: var(--sb-icon);
 }
 
 .fn-sidebar2 .fn-nav-item:hover {
-    background: rgba(232, 184, 75, 0.22);
-    color: #7d1520;
+    background: var(--sb-hover-bg);
+    color: var(--sb-hover-text);
 }
 
 .fn-sidebar2 .fn-nav-item:hover i {
     opacity: 1;
-    color: #7d1520;
+    color: var(--sb-hover-text);
 }
 
 .fn-sidebar2 .fn-nav-item.active {
-    background: linear-gradient(90deg, #a01e2b 0%, #7d1520 100%);
+    background: linear-gradient(90deg, var(--sb-active-bg-1) 0%, var(--sb-active-bg-2) 100%);
     color: #fff;
     font-weight: 600;
-    box-shadow: 0 2px 8px rgba(122, 19, 32, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .fn-sidebar2 .fn-nav-item.active i {
-    color: #f4cc6b;
+    color: var(--sb-active-icon);
     opacity: 1;
 }
 
@@ -551,10 +758,9 @@
     flex: 1;
     min-width: 0;
     padding: 14px 24px 32px;
-    background: #f7f8fa;
+    background: var(--main-bg);
 }
 
-/* Yığcam topbar-wrap (ViewData["Title"] yeri) — üstəlik boşluq azaldıldı */
 .fn-main2 .fn-topbar-wrap {
     padding-top: 0 !important;
     padding-bottom: 8px !important;
