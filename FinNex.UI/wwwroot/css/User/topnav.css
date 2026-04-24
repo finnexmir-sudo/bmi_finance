@@ -6,43 +6,8 @@
    ════════════════════════════════════════════════════════════ */
 
 :root,
-body.theme-red {
-    /* === Bank Melli qırmızı-qızılı (default) === */
-    --nav-bg-1: #a01e2b;
-    --nav-bg-2: #7d1520;
-    --nav-text: #f5d8d0;
-    --nav-text-strong: #fff;
-    --nav-accent: #f4cc6b;
-    --nav-accent-dark: #d4a022;
-    --nav-border-accent: #e8b84b;
-
-    --sb-bg: #faf6e9;
-    --sb-border: #e5d9b8;
-    --sb-text: #3a2420;
-    --sb-label: #8b4a3a;
-    --sb-label-active: #7d1520;
-    --sb-icon: #a01e2b;
-    --sb-active-bg-1: #a01e2b;
-    --sb-active-bg-2: #7d1520;
-    --sb-active-icon: #f4cc6b;
-    --sb-hover-bg: rgba(232, 184, 75, 0.22);
-    --sb-hover-text: #7d1520;
-    --sb-scrollbar: rgba(122, 19, 32, 0.15);
-
-    --avatar-bg-1: #f4cc6b;
-    --avatar-bg-2: #d4a022;
-    --avatar-text: #7d1520;
-
-    --badge-bg: #f4cc6b;
-    --badge-text: #7d1520;
-    --badge-border: #7d1520;
-
-    --main-bg: #f7f8fa;
-    --main-text: #1a2332;
-}
-
 body.theme-ocean {
-    /* === Okean tünd göy + bürünc === */
+    /* === Okean tünd göy + bürünc (DEFAULT) === */
     --nav-bg-1: #1e3a5f;
     --nav-bg-2: #0e1e33;
     --nav-text: #c8d4e4;
@@ -73,6 +38,41 @@ body.theme-ocean {
     --badge-border: #1e3a5f;
 
     --main-bg: #f4f7fb;
+    --main-text: #1a2332;
+}
+
+body.theme-red {
+    /* === Bank Melli qırmızı-qızılı === */
+    --nav-bg-1: #a01e2b;
+    --nav-bg-2: #7d1520;
+    --nav-text: #f5d8d0;
+    --nav-text-strong: #fff;
+    --nav-accent: #f4cc6b;
+    --nav-accent-dark: #d4a022;
+    --nav-border-accent: #e8b84b;
+
+    --sb-bg: #faf6e9;
+    --sb-border: #e5d9b8;
+    --sb-text: #3a2420;
+    --sb-label: #8b4a3a;
+    --sb-label-active: #7d1520;
+    --sb-icon: #a01e2b;
+    --sb-active-bg-1: #a01e2b;
+    --sb-active-bg-2: #7d1520;
+    --sb-active-icon: #f4cc6b;
+    --sb-hover-bg: rgba(232, 184, 75, 0.22);
+    --sb-hover-text: #7d1520;
+    --sb-scrollbar: rgba(122, 19, 32, 0.15);
+
+    --avatar-bg-1: #f4cc6b;
+    --avatar-bg-2: #d4a022;
+    --avatar-text: #7d1520;
+
+    --badge-bg: #f4cc6b;
+    --badge-text: #7d1520;
+    --badge-border: #7d1520;
+
+    --main-bg: #f7f8fa;
     --main-text: #1a2332;
 }
 

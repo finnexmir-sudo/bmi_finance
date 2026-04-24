@@ -96,7 +96,7 @@
         // saniyəsi) yaranmasın deyə <body> görüşdən əvvəl class qoyulur.
         (function () {
             try {
-                var t = localStorage.getItem('fn-theme') || 'red';
+                var t = localStorage.getItem('fn-theme') || 'ocean';
                 document.documentElement.dataset.theme = t; // diaqnostika
             } catch (e) { }
         })();
@@ -107,10 +107,10 @@
         // body element-inə tema class-ı tətbiq et (JS — localStorage-dən)
         (function () {
             try {
-                var t = localStorage.getItem('fn-theme') || 'red';
+                var t = localStorage.getItem('fn-theme') || 'ocean';
                 document.body.classList.add('theme-' + t);
             } catch (e) {
-                document.body.classList.add('theme-red');
+                document.body.classList.add('theme-ocean');
             }
         })();
     </script>
@@ -756,7 +756,7 @@
     // Tema seçici
     (function () {
         function markActiveChip() {
-            var current = localStorage.getItem('fn-theme') || 'red';
+            var current = localStorage.getItem('fn-theme') || 'ocean';
             document.querySelectorAll('.fn-theme-chip').forEach(function (c) {
                 c.classList.toggle('active', c.dataset.theme === current);
             });
