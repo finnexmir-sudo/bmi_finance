@@ -3,15 +3,26 @@
    (Yeni layout — köhnəsi _UserLayout.old.cshtml-də qalıb)
    ════════════════════════════════════════════════════════════ */
 
+/* ════════════════════════════════════════════════════════════
+   Rəng Palet — Bank Melli tərzində (logo əsaslı)
+   ════════════════════════════════════════════════════════════
+   --bm-red-1: #9a1b2e    tünd qırmızı (topnav fonu)
+   --bm-red-2: #b72839    orta qırmızı (hover)
+   --bm-gold:  #e8b84b    qızılı vurğu
+   --bm-cream: #faf6e9    krem / pearl
+   --bm-tan:   #e5d9b8    sakit kəhrəba
+   ════════════════════════════════════════════════════════════ */
+
 /* ── YUXARI NAVBAR ────────────────────────────────────────── */
 .fn-topnav {
     position: sticky;
     top: 0;
     z-index: 100;
-    background: #1a2332;
-    color: #e8ecf4;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    /* Bank Melli qırmızı gradient */
+    background: linear-gradient(180deg, #a01e2b 0%, #7d1520 100%);
+    color: #fff4e0;
+    border-bottom: 2px solid #e8b84b;
+    box-shadow: 0 1px 3px rgba(122, 19, 32, 0.18);
 }
 
 .fn-topnav-inner {
@@ -43,13 +54,13 @@
 .fn-topnav-brand-text {
     font-size: 15px;
     font-weight: 500;
-    color: #fff;
+    color: #fff4e0;
     letter-spacing: -0.2px;
 }
 
 .fn-topnav-brand-text b {
     font-weight: 700;
-    color: #e8b84b;
+    color: #f4cc6b;
 }
 
 /* Tabs (əsas naviqasiya) */
@@ -75,7 +86,7 @@
     padding: 0 14px;
     height: 38px;
     border-radius: 8px;
-    color: #aab0bf;
+    color: #f5d8d0;
     text-decoration: none;
     font-size: 13px;
     font-weight: 500;
@@ -89,20 +100,20 @@
 }
 
 .fn-topnav-tab:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.12);
     color: #fff;
 }
 
 .fn-topnav-tab--active {
-    background: rgba(232, 184, 75, 0.12);
+    background: rgba(232, 184, 75, 0.22);
     color: #fff;
     font-weight: 600;
-    box-shadow: inset 0 -2px 0 #e8b84b;
+    box-shadow: inset 0 -2px 0 #f4cc6b;
 }
 
 .fn-topnav-tab--active i {
     opacity: 1;
-    color: #e8b84b;
+    color: #f4cc6b;
 }
 
 /* Departamentlər dropdown — yalnız hover */
@@ -203,11 +214,11 @@
 }
 
 .fn-topnav-dd-item--active {
-    background: rgba(232, 184, 75, 0.12);
+    background: rgba(160, 30, 43, 0.08);
 }
 
 .fn-topnav-dd-item--active > i {
-    color: #c49628;
+    color: #a01e2b;
 }
 
 .fn-topnav-dd-item--active .fn-topnav-dd-title {
@@ -231,14 +242,14 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #aab0bf;
+    color: #f5d8d0;
     text-decoration: none;
     font-size: 16px;
     transition: all 0.15s;
 }
 
 .fn-topnav-icon:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.12);
     color: #fff;
 }
 
@@ -250,14 +261,14 @@
     height: 18px;
     padding: 0 5px;
     border-radius: 9px;
-    background: #ef4444;
-    color: #fff;
+    background: #f4cc6b;
+    color: #7d1520;
     font-size: 10px;
     font-weight: 700;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #1a2332;
+    border: 2px solid #7d1520;
 }
 
 /* User menu */
@@ -274,15 +285,15 @@
 }
 
 .fn-topnav-user:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.12);
 }
 
 .fn-topnav-avatar {
     width: 34px;
     height: 34px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #e8b84b, #c49628);
-    color: #1a2332;
+    background: linear-gradient(135deg, #f4cc6b, #d4a022);
+    color: #7d1520;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -290,6 +301,7 @@
     font-weight: 700;
     letter-spacing: -0.3px;
     flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .fn-topnav-user-info {
@@ -301,7 +313,7 @@
 .fn-topnav-user-name {
     font-size: 12px;
     font-weight: 600;
-    color: #fff;
+    color: #fff4e0;
     line-height: 1.3;
     white-space: nowrap;
     overflow: hidden;
@@ -311,7 +323,7 @@
 
 .fn-topnav-user-role {
     font-size: 10.5px;
-    color: #8a93a8;
+    color: #e8b5aa;
     line-height: 1.2;
     white-space: nowrap;
     overflow: hidden;
@@ -377,14 +389,14 @@
     height: 38px;
     border: none;
     background: transparent;
-    color: #aab0bf;
+    color: #f5d8d0;
     border-radius: 8px;
     font-size: 20px;
     cursor: pointer;
 }
 
 .fn-topnav-burger:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.12);
     color: #fff;
 }
 
@@ -397,15 +409,15 @@
 .fn-sidebar2 {
     flex-shrink: 0;
     width: 240px;
-    /* Soft pearl/krem — tünd navy topnav-a kontrast, bank aestet */
-    background: #faf8f3;
-    border-right: 1px solid #e6ddc7;
+    /* Krem — Bank Melli logosundakı ağ emblem fonu ilə uyğun */
+    background: #faf6e9;
+    border-right: 1px solid #e5d9b8;
     padding: 16px 10px;
     overflow-y: auto;
     height: calc(100vh - 60px);
     position: sticky;
     top: 60px;
-    box-shadow: inset -1px 0 0 rgba(201, 180, 133, 0.08);
+    box-shadow: inset -1px 0 0 rgba(201, 162, 34, 0.08);
 }
 
 .fn-sidebar2::-webkit-scrollbar {
@@ -413,7 +425,7 @@
 }
 
 .fn-sidebar2::-webkit-scrollbar-thumb {
-    background: rgba(26, 35, 50, 0.12);
+    background: rgba(122, 19, 32, 0.15);
     border-radius: 3px;
 }
 
@@ -433,7 +445,7 @@
     font-family: inherit;
     font-size: 11px;
     font-weight: 700;
-    color: #8b7d56;
+    color: #8b4a3a;
     text-transform: uppercase;
     letter-spacing: 0.8px;
     cursor: pointer;
@@ -442,8 +454,8 @@
 }
 
 .fn-nav-g-head:hover {
-    background: rgba(232, 184, 75, 0.08);
-    color: #5a4d2a;
+    background: rgba(160, 30, 43, 0.06);
+    color: #7d1520;
 }
 
 .fn-nav-g-head .bi-chevron-down {
@@ -453,7 +465,7 @@
 }
 
 .fn-nav-g.open .fn-nav-g-head {
-    color: #5a4d2a;
+    color: #7d1520;
 }
 
 .fn-nav-g.open .fn-nav-g-head .bi-chevron-down {
@@ -477,7 +489,7 @@
 .fn-sidebar2 .fn-nav-label {
     font-size: 10px;
     font-weight: 700;
-    color: #8b7d56;
+    color: #8b4a3a;
     text-transform: uppercase;
     letter-spacing: 1px;
     padding: 12px 12px 6px;
@@ -494,7 +506,7 @@
     gap: 11px;
     padding: 9px 12px;
     border-radius: 8px;
-    color: #3d3520;
+    color: #3a2420;
     text-decoration: none;
     font-size: 13px;
     font-weight: 500;
@@ -505,32 +517,32 @@
 
 .fn-sidebar2 .fn-nav-item i {
     font-size: 15px;
-    opacity: 0.65;
+    opacity: 0.7;
     width: 18px;
     text-align: center;
     flex-shrink: 0;
-    color: #7a6a42;
+    color: #a01e2b;
 }
 
 .fn-sidebar2 .fn-nav-item:hover {
-    background: rgba(232, 184, 75, 0.14);
-    color: #1a2332;
+    background: rgba(232, 184, 75, 0.22);
+    color: #7d1520;
 }
 
 .fn-sidebar2 .fn-nav-item:hover i {
     opacity: 1;
-    color: #c49628;
+    color: #7d1520;
 }
 
 .fn-sidebar2 .fn-nav-item.active {
-    background: linear-gradient(90deg, #1a2332 0%, #2a3447 100%);
+    background: linear-gradient(90deg, #a01e2b 0%, #7d1520 100%);
     color: #fff;
     font-weight: 600;
-    box-shadow: 0 2px 8px rgba(26, 35, 50, 0.25);
+    box-shadow: 0 2px 8px rgba(122, 19, 32, 0.3);
 }
 
 .fn-sidebar2 .fn-nav-item.active i {
-    color: #e8b84b;
+    color: #f4cc6b;
     opacity: 1;
 }
 
