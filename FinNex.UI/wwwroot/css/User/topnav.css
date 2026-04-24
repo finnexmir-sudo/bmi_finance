@@ -550,8 +550,15 @@
 .fn-main2 {
     flex: 1;
     min-width: 0;
-    padding: 20px 28px 40px;
+    padding: 14px 24px 32px;
     background: #f7f8fa;
+}
+
+/* Yığcam topbar-wrap (ViewData["Title"] yeri) — üstəlik boşluq azaldıldı */
+.fn-main2 .fn-topbar-wrap {
+    padding-top: 0 !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 8px !important;
 }
 
 /* Responsive */

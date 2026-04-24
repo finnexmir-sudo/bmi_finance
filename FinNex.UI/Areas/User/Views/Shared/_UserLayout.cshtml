@@ -33,6 +33,13 @@
 
     string DetectActiveModule()
     {
+        // Əvvəl ümumi home səhifələrini yoxla (Chat, Elan, Inbox, Xatirlatma,
+        // Profile) ki, onlara klik edəndə top tab "Əsas"-da qalsın və
+        // sidebar "keçid" etməsin.
+        if (currentController is "Chat" or "Elan" or "Inbox" or "Xatirlatma"
+            or "Dashboard" or "Profile" && currentArea == "User")
+            return "home";
+
         if (currentArea == "HR")
             return IsAccountingCtrl() ? "muhasibat" : "hr";
         if (currentArea == "SenedDovriyyesi") return "sened";
@@ -44,7 +51,6 @@
         if (currentController is "Davamiyyet" or "Takvim" or "Mezuniyyet" or "Muraciet"
             or "Tapshiriq" or "Gorush" or "Icaze" or "Maas" or "Xerc" or "Avans")
             return "emekdas";
-        if (currentController == "Chat" || currentController == "Elan") return "emekdas";
         return "home";
     }
 
