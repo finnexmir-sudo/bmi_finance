@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="utf-8"/>
+<title>Variant 4 — Hibrid: Kompakt Sidebar + Rol Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:#f4f6f8;color:#1a2332;min-height:100vh}
+
+  .layout{display:flex;min-height:100vh}
+
+  /* COMPACT SIDEBAR - sadəcə 5 əsas qrup, hər birinin altında max 3-4 maddə (lazımsızlar üstə/altmeuya keçib) */
+  .side{width:230px;background:#fff;border-right:1px solid #e5e9ef;padding:18px 10px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .side .brand{display:flex;align-items:center;gap:10px;padding:0 8px 18px;border-bottom:1px solid #eef0f3;margin-bottom:16px}
+  .side .brand-ic{width:36px;height:36px;background:linear-gradient(135deg,#0f5132,#146c43);border-radius:10px;display:grid;place-items:center;color:#fff;font-weight:800}
+  .side .brand b{font-size:15px}
+  .side .brand div{font-size:10px;color:#98a2b3;text-transform:uppercase;letter-spacing:.4px}
+
+  .side .grp{margin-bottom:4px}
+  .side .ghead{padding:10px;display:flex;align-items:center;gap:10px;border-radius:8px;cursor:pointer;color:#344054;font-size:13.5px;font-weight:600}
+  .side .ghead:hover{background:#f4f6f8}
+  .side .ghead.active{background:#ecfdf3;color:#0f5132}
+  .side .ghead .ico{width:28px;height:28px;border-radius:7px;background:#f4f6f8;display:grid;place-items:center;font-size:14px}
+  .side .ghead.active .ico{background:#0f5132;color:#fff}
+  .side .ghead .arr{margin-left:auto;font-size:10px;opacity:.5;transition:.15s}
+  .side .grp.open .ghead .arr{transform:rotate(90deg)}
+  .side .sub{display:none;padding:4px 0 6px 46px}
+  .side .grp.open .sub{display:block}
+  .side .sub a{display:block;padding:6px 10px;font-size:12.5px;color:#667085;text-decoration:none;border-radius:6px}
+  .side .sub a:hover{background:#f4f6f8;color:#1a2332}
+  .side .sub a.active{color:#0f5132;font-weight:600}
+
+  .side .sep{margin:14px 0 10px;padding:0 10px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#98a2b3;font-weight:700}
+
+  .side .user{margin-top:auto;padding:12px;background:#f9fafb;border-radius:10px;display:flex;align-items:center;gap:10px;position:sticky;bottom:0}
+  .side .avatar{width:36px;height:36px;border-radius:50%;background:#ffc107;display:grid;place-items:center;font-weight:700;color:#1a2332}
+  .side .user b{display:block;font-size:13px}
+  .side .user small{font-size:11px;color:#667085}
+
+  /* MAIN */
+  .main{flex:1;min-width:0}
+  .topstrip{background:#fff;border-bottom:1px solid #e5e9ef;padding:14px 28px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10}
+  .crumb{color:#667085;font-size:13px}
+  .crumb b{color:#1a2332}
+  .search{flex:1;max-width:360px;position:relative;margin-left:auto}
+  .search input{width:100%;padding:9px 14px 9px 36px;background:#f4f6f8;border:1px solid #eef0f3;border-radius:9px;font-size:13px;font-family:inherit;outline:none}
+  .search::before{content:"🔍";position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;opacity:.5}
+  .icon-btn{width:38px;height:38px;border-radius:10px;background:#f4f6f8;border:none;display:grid;place-items:center;cursor:pointer;position:relative;color:#475467;font-size:16px}
+  .icon-btn:hover{background:#e9ecef}
+  .badge{position:absolute;top:6px;right:6px;width:7px;height:7px;background:#dc3545;border-radius:50%}
+
+  .page{padding:24px 28px;max-width:1300px}
+
+  .hero{background:#fff;border:1px solid #e5e9ef;border-radius:16px;padding:22px 24px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center}
+  .hero .av-lg{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#ffc107,#ff9800);display:grid;place-items:center;font-weight:700;font-size:22px;color:#1a2332}
+  .hero-left{display:flex;gap:16px;align-items:center}
+  .hero h2{font-size:18px;margin-bottom:2px}
+  .hero .sub{color:#667085;font-size:13px}
+  .hero .quick{display:flex;gap:8px}
+  .btn-dark{background:#1a2332;color:#fff;border:none;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer}
+  .btn-ghost{background:#f4f6f8;color:#344054;border:1px solid #e5e9ef;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer}
+
+  /* KPI ROW */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+  .kpi{background:#fff;border:1px solid #e5e9ef;border-radius:14px;padding:16px}
+  .kpi .klbl{font-size:11px;color:#98a2b3;text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+  .kpi .kval{font-size:24px;font-weight:700;margin-top:4px}
+  .kpi .ktrend{font-size:11px;margin-top:6px;display:flex;align-items:center;gap:4px}
+  .kpi .ktrend.up{color:#16a34a}
+  .kpi .ktrend.dn{color:#dc3545}
+
+  .grid{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:18px}
+  .card{background:#fff;border:1px solid #e5e9ef;border-radius:16px;padding:20px}
+  .card h3{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+  .card h3 a{font-size:12px;color:#0f5132;text-decoration:none;font-weight:500}
+
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;font-size:12px}
+  .cal .d{padding:8px 4px;border-radius:6px;text-align:center;font-weight:600;color:#98a2b3;font-size:10px}
+  .cal .c{padding:10px 4px;border-radius:8px;text-align:center;background:#f4f6f8;color:#667085}
+  .cal .c.work{background:#d4f4dd;color:#0f5132;font-weight:600}
+  .cal .c.today{background:#fff3cd;color:#7a5800;font-weight:700}
+  .cal .c.off{background:#f2e6ff;color:#6f42c1}
+
+  .note{background:linear-gradient(135deg,#fff3cd,#fff);border:1px dashed #ffc107;padding:16px 20px;border-radius:12px;margin-bottom:18px;font-size:13px;color:#7a5800}
+  .note strong{display:block;margin-bottom:4px;color:#1a2332}
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- Kompakt sidebar: qruplar yalnız 5 əsas, maddələrin çoxu üstə/kafellərə köçürülüb -->
+  <aside class="side">
+    <div class="brand">
+      <div class="brand-ic">B</div>
+      <div>
+        <b style="display:block">BMI Finance</b>
+        <div>HR & Finance</div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <div class="ghead active"><div class="ico">⊞</div>Dashboard</div>
+    </div>
+
+    <div class="sep">İŞ YERİM</div>
+
+    <div class="grp open">
+      <div class="ghead"><div class="ico">👤</div>Mənim<div class="arr">▸</div></div>
+      <div class="sub">
+        <a class="active">Davamiyyət</a>
+        <a>Məzuniyyət</a>
+        <a>Müraciətlər</a>
+        <a>Maaş & HYS</a>
+      </div>
+    </div>
+
+    <div class="grp">
+      <div class="ghead"><div class="ico">✓</div>Tapşırıq & Təsdiq<div class="arr">▸</div></div>
+    </div>
+
+    <div class="sep">İDARƏETMƏ</div>
+
+    <div class="grp">
+      <div class="ghead"><div class="ico">🏢</div>HR<div class="arr">▸</div></div>
+    </div>
+
+    <div class="grp">
+      <div class="ghead"><div class="ico">💰</div>Mühasibatlıq<div class="arr">▸</div></div>
+    </div>
+
+    <div class="grp">
+      <div class="ghead"><div class="ico">📊</div>Hesabatlar<div class="arr">▸</div></div>
+    </div>
+
+    <div style="margin-top:20px" class="user">
+      <div class="avatar">M</div>
+      <div style="flex:1;min-width:0">
+        <b>Mirvari</b>
+        <small>baş mühasib</small>
+      </div>
+      <span style="font-size:16px;opacity:.5">⋮</span>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topstrip">
+      <div class="crumb">Əsas / <b>Dashboard</b></div>
+      <div class="search"><input placeholder="Axtar... (Ctrl+K)"/></div>
+      <button class="icon-btn" title="Sənəd">📄</button>
+      <button class="icon-btn" title="Chat">💬<span class="badge"></span></button>
+      <button class="icon-btn" title="Bildiriş">🔔<span class="badge"></span></button>
+    </div>
+
+    <div class="page">
+      <div class="note">
+        <strong>VARIANT 4 — Hibrid: Sadələşdirilmiş Sidebar + Rol-bazlı Dashboard</strong>
+        Sol menyu yalnız <b>5 əsas qrupa</b> endirilib ("Mənim", "Tapşırıq & Təsdiq", "HR", "Mühasibatlıq", "Hesabatlar"). Köhnə 10+ alt-maddə artıq Dashboard-un kafelləri və KPI-ları vasitəsilə açılır. Sidebar aç/bağla düyməsi ilə gizlədilə bilər. Faydası: mövcud sistemə ən az dəyişikliklə, kimisə yenidən öyrətməyə ehtiyac yoxdur, amma daha təmiz görünür.
+      </div>
+
+      <div class="hero">
+        <div class="hero-left">
+          <div class="av-lg">M</div>
+          <div>
+            <h2>Xoş gəldin, Mirvari Heydərova İlqar</h2>
+            <div class="sub">Maliyyə departamenti · baş mühasib · 15,1 il staj · 🗓 24 aprel 2026</div>
+          </div>
+        </div>
+        <div class="quick">
+          <button class="btn-dark">+ Məzuniyyət</button>
+          <button class="btn-ghost">İcazə</button>
+          <button class="btn-ghost">Sənəd Dövriyyəsi</button>
+        </div>
+      </div>
+
+      <!-- KPI row replaces some sidebar items with clickable info -->
+      <div class="kpis">
+        <div class="kpi" style="cursor:pointer">
+          <div class="klbl">Məzuniyyət qalığı</div>
+          <div class="kval" style="color:#0f5132">36 <span style="font-size:14px;color:#98a2b3;font-weight:500">/ 36 gün</span></div>
+          <div class="ktrend up">↗ Tam istifadə edilə bilər</div>
+        </div>
+        <div class="kpi" style="cursor:pointer">
+          <div class="klbl">Aktiv müraciətlər</div>
+          <div class="kval">4 <span style="font-size:14px;color:#98a2b3;font-weight:500">ədəd</span></div>
+          <div class="ktrend" style="color:#f59e0b">⏳ 1 təsdiq gözləyir</div>
+        </div>
+        <div class="kpi" style="cursor:pointer">
+          <div class="klbl">Bu ay iş günü</div>
+          <div class="kval">19 <span style="font-size:14px;color:#98a2b3;font-weight:500">/ 22</span></div>
+          <div class="ktrend up">↗ 86% davamiyyət</div>
+        </div>
+        <div class="kpi" style="cursor:pointer">
+          <div class="klbl">Sonuncu maaş</div>
+          <div class="kval">—</div>
+          <div class="ktrend" style="color:#667085">Tarixçə →</div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h3>Davamiyyət — Aprel 2026 <a href="#">Tam bax →</a></h3>
+          <div class="cal">
+            <div class="d">B.e</div><div class="d">Ç.a</div><div class="d">Ç</div><div class="d">C.a</div><div class="d">C</div><div class="d">Ş</div><div class="d">B</div>
+            <div class="c"></div><div class="c"></div><div class="c work">1</div><div class="c work">2</div><div class="c work">3</div><div class="c">4</div><div class="c">5</div>
+            <div class="c work">6</div><div class="c work">7</div><div class="c work">8</div><div class="c work">9</div><div class="c work">10</div><div class="c">11</div><div class="c">12</div>
+            <div class="c work">13</div><div class="c work">14</div><div class="c work">15</div><div class="c work">16</div><div class="c work">17</div><div class="c">18</div><div class="c">19</div>
+            <div class="c work">20</div><div class="c today">21</div><div class="c work">22</div><div class="c work">23</div><div class="c work">24</div><div class="c">25</div><div class="c">26</div>
+            <div class="c">27</div><div class="c off">28</div><div class="c">29</div><div class="c">30</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Aktiv müraciətlər <a href="#">Hamısı →</a></h3>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="padding:12px;background:#f9fafb;border-radius:10px;border-left:3px solid #16a34a">
+              <div style="font-weight:600;font-size:13px">İllik məzuniyyət — 21.04</div>
+              <div style="color:#667085;font-size:11px">1 iş günü · ✓ Təsdiqlənib</div>
+            </div>
+            <div style="padding:12px;background:#f9fafb;border-radius:10px;border-left:3px solid #f59e0b">
+              <div style="font-weight:600;font-size:13px">İcazə müraciəti</div>
+              <div style="color:#667085;font-size:11px">⏳ HR təsdiqi gözlənilir</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Son ödənişlər <a href="#">Hamısı →</a></h3>
+        <div style="text-align:center;color:#98a2b3;font-size:13px;padding:20px">Ödəniş məlumatı yoxdur</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>
