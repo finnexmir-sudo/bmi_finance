@@ -15,6 +15,10 @@
         public decimal BrutMebleg { get; set; } // Tutulmalardan evvel mebleg
         public decimal NetMebleg { get; set; } // Iscinin kartina yatan son mebleg
 
+        // Addım-addım hesablama izahı (JSON — List<HesablamaIzahiDto>).
+        // Mühasib yekun rəqəmin hardan gəldiyini oxuya bilsin deyə saxlanılır.
+        public string? HesablamaIzahi { get; set; }
+
         public MaasStatus Status { get; set; } = MaasStatus.Layihe;
 
         public ICollection<MaasDetay> Detallar { get; set; } = new List<MaasDetay>();

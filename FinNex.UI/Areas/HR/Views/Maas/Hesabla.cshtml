@@ -141,7 +141,9 @@
                 </div>
 
                 <div class="fn-form-actions">
-                    <a asp-action="Index" asp-controller="Maas" asp-area="HR" class="fn-btn fn-btn--outline">Ləğv et</a>
+                    <a asp-action="TopluHesabla" asp-controller="Maas" asp-area="HR"
+                       asp-route-il="@Model.Il" asp-route-ay="@Model.Ay"
+                       class="fn-btn fn-btn--outline">Ləğv et (Toplu siyahıya qayıt)</a>
                     <button type="submit" class="fn-btn fn-btn--primary">
                         <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                             <path d="M6.5 1.5v5.5L9 4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
