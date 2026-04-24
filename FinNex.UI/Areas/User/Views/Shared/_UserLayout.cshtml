@@ -91,8 +91,29 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
     @await RenderSectionAsync("Styles", required: false)
+    <script>
+        // Temanı səhifə rendera başlamadan tətbiq et — "flash" (saxta rəng
+        // saniyəsi) yaranmasın deyə <body> görüşdən əvvəl class qoyulur.
+        (function () {
+            try {
+                var t = localStorage.getItem('fn-theme') || 'red';
+                document.documentElement.dataset.theme = t; // diaqnostika
+            } catch (e) { }
+        })();
+    </script>
 </head>
-<body>
+<body class="@(string.IsNullOrEmpty(ViewData["Theme"] as string) ? "" : "theme-" + ViewData["Theme"])">
+    <script>
+        // body element-inə tema class-ı tətbiq et (JS — localStorage-dən)
+        (function () {
+            try {
+                var t = localStorage.getItem('fn-theme') || 'red';
+                document.body.classList.add('theme-' + t);
+            } catch (e) {
+                document.body.classList.add('theme-red');
+            }
+        })();
+    </script>
 
 <!-- ══════════════════ YUXARI NAVBAR ══════════════════ -->
 <header class="fn-topnav">
@@ -214,6 +235,19 @@
                     <a asp-area="User" asp-controller="Profile" asp-action="Index" class="fn-topnav-user-menu-item">
                         <i class="bi bi-person"></i> Profil
                     </a>
+
+                    <div class="fn-topnav-user-menu-divider"></div>
+
+                    <div class="fn-theme-label">Tema</div>
+                    <div class="fn-theme-row">
+                        <button type="button" class="fn-theme-chip fn-theme-chip--red" data-theme="red" title="Bank Melli qırmızı"></button>
+                        <button type="button" class="fn-theme-chip fn-theme-chip--ocean" data-theme="ocean" title="Okean göy"></button>
+                        <button type="button" class="fn-theme-chip fn-theme-chip--forest" data-theme="forest" title="Zümrüd yaşıl"></button>
+                        <button type="button" class="fn-theme-chip fn-theme-chip--midnight" data-theme="midnight" title="Gecə qara"></button>
+                    </div>
+
+                    <div class="fn-topnav-user-menu-divider"></div>
+
                     <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
                         @Html.AntiForgeryToken()
                         <button type="submit" class="fn-topnav-user-menu-item fn-topnav-user-menu-danger">
@@ -718,6 +752,29 @@
             btn.parentElement.classList.toggle('open');
         });
     });
+
+    // Tema seçici
+    (function () {
+        function markActiveChip() {
+            var current = localStorage.getItem('fn-theme') || 'red';
+            document.querySelectorAll('.fn-theme-chip').forEach(function (c) {
+                c.classList.toggle('active', c.dataset.theme === current);
+            });
+        }
+        markActiveChip();
+
+        document.querySelectorAll('.fn-theme-chip').forEach(function (chip) {
+            chip.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var theme = chip.dataset.theme;
+                // Köhnə tema class-larını təmizlə
+                document.body.classList.remove('theme-red', 'theme-ocean', 'theme-forest', 'theme-midnight');
+                document.body.classList.add('theme-' + theme);
+                localStorage.setItem('fn-theme', theme);
+                markActiveChip();
+            });
+        });
+    })();
 </script>
 @await RenderSectionAsync("Scripts", required: false)
 
