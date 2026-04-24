@@ -113,31 +113,64 @@
                 </a>
             }
 
-            <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Index" class="@TabCls("kredit")">
-                <i class="bi bi-credit-card"></i><span>Kredit</span>
-            </a>
-
-            @if (hrGorunur)
-            {
-                <a asp-area="HR" asp-controller="Dashboard" asp-action="Index" class="@TabCls("hr")">
-                    <i class="bi bi-people"></i><span>HR</span>
-                </a>
+            @{
+                var isDepartModule = activeModule is "kredit" or "hr" or "muhasibat" or "sened" or "swift";
+                var departActiveCls = isDepartModule ? " fn-topnav-tab--active" : "";
             }
-
-            @if (isMuhasib)
-            {
-                <a asp-area="HR" asp-controller="Maas" asp-action="Index" class="@TabCls("muhasibat")">
-                    <i class="bi bi-cash-coin"></i><span>Mühasibatlıq</span>
-                </a>
-            }
-
-            <a asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index" class="@TabCls("sened")">
-                <i class="bi bi-folder2"></i><span>Sənədlər</span>
-            </a>
-
-            <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Siyahi" class="@TabCls("swift")">
-                <i class="bi bi-bank2"></i><span>Swift</span>
-            </a>
+            <div class="fn-topnav-dropdown @(isDepartModule ? "fn-topnav-dropdown--active" : "")">
+                <button type="button" class="fn-topnav-tab @departActiveCls">
+                    <i class="bi bi-grid-3x3-gap"></i><span>Departamentlər</span>
+                    <i class="bi bi-chevron-down fn-topnav-caret"></i>
+                </button>
+                <div class="fn-topnav-dropdown-menu">
+                    <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Index"
+                       class="fn-topnav-dd-item @(activeModule == "kredit" ? "fn-topnav-dd-item--active" : "")">
+                        <i class="bi bi-credit-card"></i>
+                        <div>
+                            <div class="fn-topnav-dd-title">Kredit</div>
+                            <div class="fn-topnav-dd-sub">Müraciətlər, komitə, qərarlar</div>
+                        </div>
+                    </a>
+                    @if (hrGorunur)
+                    {
+                        <a asp-area="HR" asp-controller="Dashboard" asp-action="Index"
+                           class="fn-topnav-dd-item @(activeModule == "hr" ? "fn-topnav-dd-item--active" : "")">
+                            <i class="bi bi-people"></i>
+                            <div>
+                                <div class="fn-topnav-dd-title">HR</div>
+                                <div class="fn-topnav-dd-sub">Kadr, davamiyyət, qiymətləndirmə</div>
+                            </div>
+                        </a>
+                    }
+                    @if (isMuhasib)
+                    {
+                        <a asp-area="HR" asp-controller="Maas" asp-action="Index"
+                           class="fn-topnav-dd-item @(activeModule == "muhasibat" ? "fn-topnav-dd-item--active" : "")">
+                            <i class="bi bi-cash-coin"></i>
+                            <div>
+                                <div class="fn-topnav-dd-title">Mühasibatlıq</div>
+                                <div class="fn-topnav-dd-sub">Maaş, avans, büdcə, xərc</div>
+                            </div>
+                        </a>
+                    }
+                    <a asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index"
+                       class="fn-topnav-dd-item @(activeModule == "sened" ? "fn-topnav-dd-item--active" : "")">
+                        <i class="bi bi-folder2"></i>
+                        <div>
+                            <div class="fn-topnav-dd-title">Sənəd Dövriyyəsi</div>
+                            <div class="fn-topnav-dd-sub">Sənədlər, şablonlar, növlər</div>
+                        </div>
+                    </a>
+                    <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Siyahi"
+                       class="fn-topnav-dd-item @(activeModule == "swift" ? "fn-topnav-dd-item--active" : "")">
+                        <i class="bi bi-bank2"></i>
+                        <div>
+                            <div class="fn-topnav-dd-title">Swift / Ödəniş</div>
+                            <div class="fn-topnav-dd-sub">Ödəniş tapşırığı, banklar, müştərilər</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
 
             @if (isMuhasib || isRehberRol)
             {
@@ -577,6 +610,20 @@
         });
         document.addEventListener('click', function (e) {
             if (!u.contains(e.target)) u.classList.remove('fn-topnav-user--open');
+        });
+    })();
+
+    // Departamentlər dropdown toggle
+    (function () {
+        var d = document.querySelector('.fn-topnav-dropdown');
+        if (!d) return;
+        var btn = d.querySelector('button');
+        btn?.addEventListener('click', function (e) {
+            e.stopPropagation();
+            d.classList.toggle('fn-topnav-dropdown--open');
+        });
+        document.addEventListener('click', function (e) {
+            if (!d.contains(e.target)) d.classList.remove('fn-topnav-dropdown--open');
         });
     })();
 </script>
