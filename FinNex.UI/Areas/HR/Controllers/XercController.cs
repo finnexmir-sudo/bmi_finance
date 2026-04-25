@@ -147,6 +147,7 @@ public class XercController : Controller
 
     // ── POST /HR/Xerc/Imtina ────────────────────────────────
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Imtina(int id, [FromBody] ImtinaDto dto)
     {
         var xerc = await _unitOfWork.Repository<Xerc>().IdIleGetirAsync(id);
