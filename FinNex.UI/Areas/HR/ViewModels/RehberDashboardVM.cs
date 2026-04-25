@@ -23,6 +23,18 @@ namespace FinNex.UI.Areas.HR.ViewModels
         public int BugunIcazeli { get; set; }
         public int BugunMezuniyyetde { get; set; }
         public int DavamiyyetFaizi { get; set; }
+        public bool BugunQeydVar { get; set; }   // bugün üçün heç bir davamiyyət qeydi varmı
+
+        // Bu günün adlı siyahıları (rəhbərin "kim?" sualına cavab vermək üçün)
+        public List<DavamiyyetIsciDto> BugunGecikenIsciler { get; set; } = new();
+        public List<DavamiyyetIsciDto> BugunQayibIsciler { get; set; } = new();
+
+        // ── Action Center (rəhbərin diqqət tələb edən işləri) ──
+        public int GozleyenAvansSayi { get; set; }            // Avans.Status = Gozlemede
+        public int MaasLayiheSayi { get; set; }               // Bu ay Layihə statusunda olan maaşlar
+        public int MaasHesablanmamisSayi { get; set; }        // Aktiv işçilər - bu ay maaş yaradılmayanlar
+        public int GozleyenSenedSayi { get; set; }            // Sened.Status = Yoxlanilir
+        public int KritikMezBalansSayi { get; set; }          // Qalan illik məz. ≤ 3 gün
 
         // ── Məzuniyyət & İcazə ──
         public int HazirdaMezuniyyetde { get; set; }
@@ -47,6 +59,19 @@ namespace FinNex.UI.Areas.HR.ViewModels
         public int MaasTesdiqlendi { get; set; }
         public int MaasOdenildi { get; set; }
         public List<MaasDeyisiklikDto> SonMaasDeyisiklikleri { get; set; } = new();
+
+        // ── Avans ──
+        public decimal BuAyAvansCemi { get; set; }            // Tesdiqlenib + Odenilib
+        public int BuAyAvansSayi { get; set; }
+
+        // ── Sənəd Dövriyyəsi & Swift ──
+        public int AktivSenedSayi { get; set; }               // Yeni + Yoxlanilir + Tesdiq
+        public int BuAySenedSayi { get; set; }                // bu ay yaradılan
+        public int BuAyOdenisTapsirigiSayi { get; set; }
+        public decimal BuAyOdenisTapsirigiMebleg { get; set; }
+
+        // ── Kritik məzuniyyət balansı olan işçilər ──
+        public List<KritikBalansDto> KritikBalansIsciler { get; set; } = new();
 
         // ── Yaş & Staj ──
         public int Yas20_30 { get; set; }
@@ -111,5 +136,19 @@ namespace FinNex.UI.Areas.HR.ViewModels
         public string? GirisVaxti { get; set; }
         public string? CixisVaxti { get; set; }
         public int Status { get; set; }
+    }
+
+    public class DavamiyyetIsciDto
+    {
+        public string AdSoyad { get; set; } = null!;
+        public string Departament { get; set; } = null!;
+        public string? GirisVaxti { get; set; }
+    }
+
+    public class KritikBalansDto
+    {
+        public string AdSoyad { get; set; } = null!;
+        public string Departament { get; set; } = null!;
+        public int QalanGun { get; set; }
     }
 }

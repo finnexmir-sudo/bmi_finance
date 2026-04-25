@@ -1,5 +1,7 @@
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
+using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Entities.Structure;
 using FinNex.Domain.Interfaces;
 using FinNex.Application.Interfaces;
@@ -109,12 +111,34 @@ namespace FinNex.UI.Areas.HR.Controllers
             var bugunkuDav = await _davamiyyetService.TarixUzreAsync(bugun);
             var davlar = bugunkuDav?.ToList() ?? new();
 
+            vm.BugunQeydVar = davlar.Any();
             vm.BugunIshde = davlar.Count(x => x.Status == DavamiyyetStatus.Isde);
             vm.BugunGeciken = davlar.Count(x => x.Status == DavamiyyetStatus.Gecikme);
             vm.BugunQayib = davlar.Count(x => x.Status == DavamiyyetStatus.Qayib);
             vm.BugunIcazeli = davlar.Count(x => x.Status == DavamiyyetStatus.Icazeli
                                               || x.Status == DavamiyyetStatus.Xestelik
                                               || x.Status == DavamiyyetStatus.Ezamiyyet);
+
+            // Adlı siyahılar — rəhbərə "kim?" sualına dərhal cavab vermək üçün
+            vm.BugunGecikenIsciler = davlar
+                .Where(x => x.Status == DavamiyyetStatus.Gecikme)
+                .Select(x => new DavamiyyetIsciDto
+                {
+                    AdSoyad = x.IsciTamAd ?? "—",
+                    Departament = x.DepartamentAd ?? "—",
+                    GirisVaxti = x.GirisVaxti?.ToString("HH:mm")
+                })
+                .ToList();
+
+            vm.BugunQayibIsciler = davlar
+                .Where(x => x.Status == DavamiyyetStatus.Qayib)
+                .Select(x => new DavamiyyetIsciDto
+                {
+                    AdSoyad = x.IsciTamAd ?? "—",
+                    Departament = x.DepartamentAd ?? "—",
+                    GirisVaxti = null
+                })
+                .ToList();
 
             // Davamiyyət faizi (bu ay)
             var isGunleriSayi = 0;
@@ -294,6 +318,88 @@ namespace FinNex.UI.Areas.HR.Controllers
                     KohneMaas = x.KohneMaas,
                     YeniMaas = x.YeniMaas,
                     Tarix = x.DeyismeTarixi
+                })
+                .ToList();
+
+            // Maaş status sayları + bu ay maaş hesablanmamış aktiv işçilər
+            vm.MaasLayiheSayi = vm.MaasLayihe;
+            var hesablanmisIsciIdler = buAyMaaslar.Select(x => x.IsciId).ToHashSet();
+            vm.MaasHesablanmamisSayi = isciler
+                .Count(x => x.Status == IsciStatus.Aktiv && !hesablanmisIsciIdler.Contains(x.Id));
+
+            // ═══════════════════════════════════════════════════
+            // 6. AVANS
+            // ═══════════════════════════════════════════════════
+            var buAyAvanslar = await _uow.Repository<Avans>()
+                .Query()
+                .Where(x => !x.Silinib && x.Il == bugun.Year && x.Ay == bugun.Month)
+                .ToListAsync();
+
+            vm.GozleyenAvansSayi = buAyAvanslar.Count(x => x.Status == AvansStatus.Gozlemede);
+            var tasdiqlenmisAvanslar = buAyAvanslar
+                .Where(x => x.Status == AvansStatus.Tesdiqlenib || x.Status == AvansStatus.Odenilib)
+                .ToList();
+            vm.BuAyAvansSayi = tasdiqlenmisAvanslar.Count;
+            vm.BuAyAvansCemi = tasdiqlenmisAvanslar.Sum(x => x.Mebleg);
+
+            // ═══════════════════════════════════════════════════
+            // 7. SƏNƏD DÖVRİYYƏSİ
+            // ═══════════════════════════════════════════════════
+            var senedler = await _uow.Repository<Sened>()
+                .Query()
+                .Where(x => !x.Silinib)
+                .Select(x => new { x.Status, x.SenedTarixi })
+                .ToListAsync();
+            vm.GozleyenSenedSayi = senedler.Count(x => x.Status == SenedStatusu.Yoxlanilir);
+            vm.AktivSenedSayi = senedler.Count(x => x.Status != SenedStatusu.Arxiv);
+            vm.BuAySenedSayi = senedler.Count(x =>
+                x.SenedTarixi.Year == bugun.Year && x.SenedTarixi.Month == bugun.Month);
+
+            // ═══════════════════════════════════════════════════
+            // 8. SWIFT / ÖDƏNİŞ TAPŞIRIQLARI
+            // ═══════════════════════════════════════════════════
+            var buAyOdenisler = await _uow.Repository<OdenisTapsirigi>()
+                .Query()
+                .Where(x => !x.Silinib && x.Tarix.Year == bugun.Year && x.Tarix.Month == bugun.Month)
+                .Select(x => new { x.Mebleg })
+                .ToListAsync();
+            vm.BuAyOdenisTapsirigiSayi = buAyOdenisler.Count;
+            vm.BuAyOdenisTapsirigiMebleg = buAyOdenisler.Sum(x => x.Mebleg);
+
+            // ═══════════════════════════════════════════════════
+            // 9. KRİTİK MƏZUNİYYƏT BALANSI (illik ≤ 3 gün qalan aktiv işçilər)
+            // ═══════════════════════════════════════════════════
+            const int KritikHedd = 3;
+            var balanslar = await _uow.Repository<MezuniyyetBalans>()
+                .Query()
+                .Where(x => !x.Silinib && x.Il == bugun.Year && x.Nov == MezuniyyetNovu.Illik)
+                .Include(x => x.Isci)
+                    .ThenInclude(i => i.IsciTeyinatlari.Where(t => t.BitmeTarixi == null))
+                        .ThenInclude(t => t.Departament)
+                .ToListAsync();
+
+            var kritikList = balanslar
+                .Where(x => x.Isci != null && !x.Isci.Silinib && x.Isci.Status == IsciStatus.Aktiv)
+                .Select(x => new
+                {
+                    AdSoyad = $"{x.Isci.Ad} {x.Isci.Soyad}",
+                    Departament = x.Isci.IsciTeyinatlari
+                        .Select(t => t.Departament != null ? t.Departament.Ad : null)
+                        .FirstOrDefault() ?? "—",
+                    Qalan = x.ToplamGun - x.IstifadeOlunanGun
+                })
+                .Where(x => x.Qalan <= KritikHedd)
+                .OrderBy(x => x.Qalan)
+                .ToList();
+
+            vm.KritikMezBalansSayi = kritikList.Count;
+            vm.KritikBalansIsciler = kritikList
+                .Take(8)
+                .Select(x => new KritikBalansDto
+                {
+                    AdSoyad = x.AdSoyad,
+                    Departament = x.Departament,
+                    QalanGun = x.Qalan
                 })
                 .ToList();
 

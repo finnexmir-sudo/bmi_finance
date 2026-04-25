@@ -426,3 +426,291 @@
     .rd-kpi-grid   { grid-template-columns: 1fr; }
     .rd-stat-row   { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ───────────────────────────────────────────────
+   Action Center — diqqət tələb edən işlər
+   ─────────────────────────────────────────────── */
+.rd-section-head--action {
+    color: #1a2332;
+    font-size: 11px;
+}
+
+.rd-action-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #d4920a;
+    box-shadow: 0 0 0 0 rgba(212,146,10,.6);
+    animation: rd-action-pulse 1.6s ease-out infinite;
+}
+
+@keyframes rd-action-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(212,146,10,.55); }
+    70%  { box-shadow: 0 0 0 8px rgba(212,146,10,0); }
+    100% { box-shadow: 0 0 0 0 rgba(212,146,10,0); }
+}
+
+.rd-action-total {
+    background: #fef3e0;
+    color: #b8780a;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.rd-action-total--ok {
+    background: #e8f7ef;
+    color: #0e7a4d;
+}
+
+.rd-action-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    margin-bottom: 22px;
+}
+
+.rd-action-tile {
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 11px;
+    padding: 14px 12px;
+    text-decoration: none;
+    color: #1a2332;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    transition: all .14s;
+    position: relative;
+    overflow: hidden;
+}
+
+.rd-action-tile:hover {
+    border-color: #c8d0e0;
+    box-shadow: 0 4px 14px rgba(15,26,46,0.08);
+    transform: translateY(-2px);
+    color: #1a2332;
+    text-decoration: none;
+}
+
+.rd-action-tile i {
+    font-size: 18px;
+    color: #8a93a8;
+}
+
+.rd-action-num {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1;
+    color: #1a2332;
+}
+
+.rd-action-lbl {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #6b7589;
+    line-height: 1.3;
+}
+
+/* Variants */
+.rd-action-tile--alert {
+    border-color: #f5c6c2;
+    background: linear-gradient(135deg, #fff 0%, #fff5f5 100%);
+}
+.rd-action-tile--alert i,
+.rd-action-tile--alert .rd-action-num { color: #c83838; }
+.rd-action-tile--alert::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: #c83838;
+}
+
+.rd-action-tile--warn {
+    border-color: #f0d99c;
+    background: linear-gradient(135deg, #fff 0%, #fffaf0 100%);
+}
+.rd-action-tile--warn i,
+.rd-action-tile--warn .rd-action-num { color: #b8780a; }
+.rd-action-tile--warn::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: #d4920a;
+}
+
+.rd-action-tile--info {
+    border-color: #c5d8f5;
+    background: linear-gradient(135deg, #fff 0%, #f5f9ff 100%);
+}
+.rd-action-tile--info i,
+.rd-action-tile--info .rd-action-num { color: #2459b8; }
+.rd-action-tile--info::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: #2d6cdf;
+}
+
+/* ───────────────────────────────────────────────
+   Davamiyyət — yeni layout
+   ─────────────────────────────────────────────── */
+.rd-section-meta {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 600;
+    color: #8a93a8;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.rd-att-stats {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.rd-att-stat {
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    text-align: center;
+}
+
+.rd-att-num {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.rd-att-lbl {
+    font-size: 10px;
+    font-weight: 600;
+    color: #8a93a8;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+}
+
+.rd-att-stat--green  .rd-att-num { color: #1e9b6b; }
+.rd-att-stat--amber  .rd-att-num { color: #d4920a; }
+.rd-att-stat--red    .rd-att-num { color: #c83838; }
+.rd-att-stat--blue   .rd-att-num { color: #2d6cdf; }
+.rd-att-stat--purple .rd-att-num { color: #7c3aed; }
+
+.rd-att-stat--gauge {
+    grid-column: span 1;
+    text-align: left;
+    padding: 12px 14px 14px;
+}
+
+.rd-att-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 22px;
+}
+
+.rd-att-detail .fn-card-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ───────────────────────────────────────────────
+   Empty state — bugün heç bir qeyd yoxdur
+   ─────────────────────────────────────────────── */
+.rd-empty-state {
+    background: #fff;
+    border: 1px dashed #d8dde8;
+    border-radius: 12px;
+    padding: 36px 24px;
+    text-align: center;
+    margin-bottom: 22px;
+}
+
+.rd-empty-state i {
+    font-size: 32px;
+    color: #b8c0d0;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.rd-empty-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #3d4557;
+    margin-bottom: 4px;
+}
+
+.rd-empty-sub {
+    font-size: 12px;
+    color: #8a93a8;
+}
+
+/* ───────────────────────────────────────────────
+   KPI variantları (zəngin görünüş)
+   ─────────────────────────────────────────────── */
+.rd-kpi-grid--rich {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.rd-kpi--primary {
+    background: linear-gradient(135deg, #fff 0%, #fafbfd 100%);
+    border-color: #d4dbe8;
+    box-shadow: 0 2px 8px rgba(15,26,46,0.04);
+}
+
+.rd-kpi-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.rd-kpi-icon--gold   { background: #e8b84b1c; color: #b8780a; }
+.rd-kpi-icon--purple { background: #7c3aed12; color: #6b27d4; }
+.rd-kpi-icon--teal   { background: #0d948812; color: #0d9488; }
+
+/* ───────────────────────────────────────────────
+   Stack (3-cü sütunda iki kart üst-alt)
+   ─────────────────────────────────────────────── */
+.rd-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.rd-count-badge--red   { background: #fde6e2; color: #a02828; }
+.rd-count-badge--amber { background: #fef3e0; color: #b8780a; }
+
+.rd-date-tag--red {
+    background: #fde6e2;
+    color: #a02828;
+}
+
+/* ───────────────────────────────────────────────
+   Responsive
+   ─────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+    .rd-action-grid { grid-template-columns: repeat(4, 1fr); }
+    .rd-kpi-grid--rich { grid-template-columns: repeat(3, 1fr); }
+    .rd-att-stats { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 900px) {
+    .rd-action-grid { grid-template-columns: repeat(3, 1fr); }
+    .rd-kpi-grid--rich { grid-template-columns: repeat(2, 1fr); }
+    .rd-att-stats { grid-template-columns: repeat(2, 1fr); }
+    .rd-att-detail-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 576px) {
+    .rd-action-grid { grid-template-columns: repeat(2, 1fr); }
+    .rd-kpi-grid--rich { grid-template-columns: 1fr; }
+    .rd-att-stats { grid-template-columns: 1fr 1fr; }
+}
