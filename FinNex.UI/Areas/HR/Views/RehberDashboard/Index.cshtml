@@ -492,22 +492,108 @@
     <div class="rd-section-head">
         <i class="bi bi-bar-chart-line-fill"></i> Analitika
     </div>
-    <div class="rd-grid3">
+
+    @{
+        int yasCemi = Model.Yas20_30 + Model.Yas30_40 + Model.Yas40_50 + Model.Yas50Plus;
+        int stajCemi = Model.Staj0_1 + Model.Staj1_3 + Model.Staj3_5 + Model.Staj5Plus;
+        int kqCemi = Model.KisiSayi + Model.QadinSayi;
+
+        int Pct(int v, int total) => total > 0 ? (int)Math.Round((double)v / total * 100) : 0;
+    }
+
+    @* Sıra 1: Gender + Yaş + Staj — kompakt, hər biri öz kartında *@
+    <div class="rd-analytics-row">
         <div class="fn-card">
-            <div class="fn-card-head"><div class="fn-card-title">Departament üzrə işçilər</div></div>
-            <div class="rd-chart-wrap"><canvas id="chartDept"></canvas></div>
+            <div class="fn-card-head"><div class="fn-card-title">Kişi / Qadın</div></div>
+            <div class="rd-donut-wrap">
+                <canvas id="chartGender"></canvas>
+                <div class="rd-donut-center">
+                    <div class="rd-donut-num">@kqCemi</div>
+                    <div class="rd-donut-lbl">Aktiv</div>
+                </div>
+            </div>
+            <div class="rd-legend">
+                <div class="rd-legend-item">
+                    <span class="rd-legend-dot" style="background:#2d6cdf"></span>
+                    Kişi <strong>@Model.KisiSayi</strong> · @Pct(Model.KisiSayi, kqCemi)%
+                </div>
+                <div class="rd-legend-item">
+                    <span class="rd-legend-dot" style="background:#ec4899"></span>
+                    Qadın <strong>@Model.QadinSayi</strong> · @Pct(Model.QadinSayi, kqCemi)%
+                </div>
+            </div>
         </div>
+
         <div class="fn-card">
-            <div class="fn-card-head"><div class="fn-card-title">Kişi / Qadın nisbəti</div></div>
-            <div class="rd-chart-wrap rd-chart-wrap--sm"><canvas id="chartGender"></canvas></div>
-            <div class="fn-card-head" style="border-top:1px solid #f0f2f5"><div class="fn-card-title">Yaş qrupları</div></div>
-            <div class="rd-chart-wrap rd-chart-wrap--sm"><canvas id="chartAge"></canvas></div>
+            <div class="fn-card-head"><div class="fn-card-title">Yaş qrupları</div></div>
+            <div class="rd-statbar-list">
+                @{
+                    var yasItems = new[]
+                    {
+                        ("20–30", Model.Yas20_30, "#1e9b6b"),
+                        ("30–40", Model.Yas30_40, "#2d6cdf"),
+                        ("40–50", Model.Yas40_50, "#d4920a"),
+                        ("50+",   Model.Yas50Plus, "#c83838")
+                    };
+                }
+                @foreach (var (lbl, val, clr) in yasItems)
+                {
+                    var p = Pct(val, yasCemi);
+                    <div class="rd-statbar">
+                        <div class="rd-statbar-row">
+                            <span class="rd-statbar-lbl">@lbl</span>
+                            <span class="rd-statbar-val"><strong>@val</strong> <small>@p%</small></span>
+                        </div>
+                        <div class="rd-statbar-track">
+                            <div class="rd-statbar-fill" style="width:@p%;background:@clr"></div>
+                        </div>
+                    </div>
+                }
+            </div>
         </div>
+
         <div class="fn-card">
             <div class="fn-card-head"><div class="fn-card-title">Staj qrupları</div></div>
-            <div class="rd-chart-wrap rd-chart-wrap--sm"><canvas id="chartStaj"></canvas></div>
-            <div class="fn-card-head" style="border-top:1px solid #f0f2f5"><div class="fn-card-title">Vəzifə paylanması (Top 10)</div></div>
-            <div class="rd-chart-wrap rd-chart-wrap--sm"><canvas id="chartVezife"></canvas></div>
+            <div class="rd-statbar-list">
+                @{
+                    var stajItems = new[]
+                    {
+                        ("0–1 il", Model.Staj0_1, "#0ea5e9"),
+                        ("1–3 il", Model.Staj1_3, "#2d6cdf"),
+                        ("3–5 il", Model.Staj3_5, "#7c3aed"),
+                        ("5+ il",  Model.Staj5Plus, "#1e2a3b")
+                    };
+                }
+                @foreach (var (lbl, val, clr) in stajItems)
+                {
+                    var p = Pct(val, stajCemi);
+                    <div class="rd-statbar">
+                        <div class="rd-statbar-row">
+                            <span class="rd-statbar-lbl">@lbl</span>
+                            <span class="rd-statbar-val"><strong>@val</strong> <small>@p%</small></span>
+                        </div>
+                        <div class="rd-statbar-track">
+                            <div class="rd-statbar-fill" style="width:@p%;background:@clr"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* Sıra 2: Departament + Vəzifə — geniş chart kartları *@
+    <div class="rd-chart-row">
+        <div class="fn-card">
+            <div class="fn-card-head">
+                <div class="fn-card-title">Departament üzrə işçilər</div>
+            </div>
+            <div class="rd-chart-wrap rd-chart-wrap--lg"><canvas id="chartDept"></canvas></div>
+        </div>
+        <div class="fn-card">
+            <div class="fn-card-head">
+                <div class="fn-card-title">Vəzifə paylanması (Top 10)</div>
+            </div>
+            <div class="rd-chart-wrap rd-chart-wrap--lg"><canvas id="chartVezife"></canvas></div>
         </div>
     </div>
 
@@ -676,44 +762,8 @@
             type: 'doughnut',
             data: { labels: ['Kişi','Qadın'], datasets: [{ data: [@Model.KisiSayi, @Model.QadinSayi], backgroundColor: ['#2d6cdf', '#ec4899'], borderWidth: 3, borderColor: '#fff', hoverOffset: 6 }] },
             options: {
-                responsive: true, maintainAspectRatio: false, cutout: '68%',
-                plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 12, usePointStyle: true, pointStyle: 'circle' } } }
-            }
-        });
-
-        // ── Yaş qrupları ──
-        new Chart(document.getElementById('chartAge'), {
-            type: 'doughnut',
-            data: { labels: ['20-30','30-40','40-50','50+'], datasets: [{ data: [@Model.Yas20_30, @Model.Yas30_40, @Model.Yas40_50, @Model.Yas50Plus], backgroundColor: ['#1e9b6b','#2d6cdf','#d4920a','#c83838'], borderWidth: 3, borderColor: '#fff', hoverOffset: 6 }] },
-            options: {
-                responsive: true, maintainAspectRatio: false, cutout: '68%',
-                plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, usePointStyle: true, pointStyle: 'circle' } } }
-            }
-        });
-
-        // ── Staj qrupları ──
-        new Chart(document.getElementById('chartStaj'), {
-            type: 'bar',
-            data: {
-                labels: ['0-1 il','1-3 il','3-5 il','5+ il'],
-                datasets: [{
-                    label: 'İşçi sayı',
-                    data: [@Model.Staj0_1, @Model.Staj1_3, @Model.Staj3_5, @Model.Staj5Plus],
-                    backgroundColor: [
-                        ctx => vGrad(ctx, '#48c0f5', '#0ea5e9'),
-                        ctx => vGrad(ctx, '#5a91f0', '#2d6cdf'),
-                        ctx => vGrad(ctx, '#a06bf2', '#7c3aed'),
-                        ctx => vGrad(ctx, '#3a4a63', '#1e2a3b')
-                    ],
-                    borderRadius: 8, borderSkipped: false, barThickness: 32, hoverBackgroundColor: '#1a2332'
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: {
-                    x: { grid: { display: false, drawBorder: false } },
-                    y: { grid: { color: '#f3f4f8', drawBorder: false }, ticks: { precision: 0 } }
-                }
+                responsive: true, maintainAspectRatio: false, cutout: '72%',
+                plugins: { legend: { display: false } }
             }
         });
 
