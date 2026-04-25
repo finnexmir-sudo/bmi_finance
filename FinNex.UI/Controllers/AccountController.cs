@@ -9,7 +9,9 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace FinNex.UI.Controllers
 {
-    [AllowAnonymous]
+    // Class səviyyəsində [AllowAnonymous] silindi — hər action özünə uyğun
+    // [AllowAnonymous] və ya [Authorize] daşıyır. Bu, Register kimi həssas
+    // əməliyyatların təsadüfən anonim qalmamasını təmin edir.
     public class AccountController : Controller
     {
         private readonly UserManager<AppUser> _userManager;
@@ -33,6 +35,7 @@ namespace FinNex.UI.Controllers
         // LOGIN (GET)
         // ======================
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Login()
         {
             var lastUser = Request.Cookies["LastUserName"] ?? "";
@@ -42,6 +45,7 @@ namespace FinNex.UI.Controllers
         // ======================
         // LOGIN (POST)
         [HttpPost]
+        [AllowAnonymous]
         [EnableRateLimiting("login")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginDto dto)
@@ -113,18 +117,21 @@ namespace FinNex.UI.Controllers
 
 
         // ======================
-        // REGISTER (GET)
+        // REGISTER (GET) — yalnız Admin
         // ======================
         [HttpGet]
+        [Authorize(Roles = RoleNames.Admin)]
         public IActionResult Register()
         {
             return View(new RegisterDto());
         }
 
         // ======================
-        // REGISTER (POST)
+        // REGISTER (POST) — yalnız Admin
+        // Bank-internal sistemdə anonim hesab açılışı qadağan edildi.
         // ======================
         [HttpPost]
+        [Authorize(Roles = RoleNames.Admin)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
@@ -178,13 +185,16 @@ namespace FinNex.UI.Controllers
         // ======================
         // ACCESS DENIED
         // ======================
+        [AllowAnonymous]
         public IActionResult AccessDenied()
         {
             return View();
         }
 
-        // GET
+        // GET — istifadəçi öz şifrəsini login olmadan dəyişə bilsin
+        // (mövcud parolu bilməlidir; Identity ChangePasswordAsync yoxlayır).
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult ChangePassword()
         {
             return View(new UI.DTO.ChangePasswordDto());
@@ -192,6 +202,7 @@ namespace FinNex.UI.Controllers
 
         // POST
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangePassword(UI.DTO.ChangePasswordDto dto)
         {
