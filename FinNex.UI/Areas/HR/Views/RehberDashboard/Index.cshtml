@@ -11,6 +11,26 @@
                     + Model.GozleyenAvansSayi + Model.MaasLayiheSayi
                     + Model.GozleyenSenedSayi + Model.KritikMezBalansSayi
                     + Model.MaasHesablanmamisSayi;
+
+    var saatIndi = DateTime.Now.Hour;
+    var salam = saatIndi < 6 ? "Xeyirli gecələr"
+              : saatIndi < 12 ? "Sabahın xeyir"
+              : saatIndi < 18 ? "Günün xeyir"
+              : "Axşamın xeyir";
+
+    var userFullName = User.Identity?.Name ?? "";
+    var firstName = userFullName.Split(' ').FirstOrDefault() ?? "Rəhbər";
+
+    var ayAdlar = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+                          "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+    var gunAdlar = new Dictionary<DayOfWeek, string>
+    {
+        { DayOfWeek.Monday, "Bazar ertəsi" }, { DayOfWeek.Tuesday, "Çərşənbə axşamı" },
+        { DayOfWeek.Wednesday, "Çərşənbə" }, { DayOfWeek.Thursday, "Cümə axşamı" },
+        { DayOfWeek.Friday, "Cümə" }, { DayOfWeek.Saturday, "Şənbə" }, { DayOfWeek.Sunday, "Bazar" }
+    };
+    var bugun = DateTime.Today;
+    var tarixStr = $"{gunAdlar[bugun.DayOfWeek]}, {bugun.Day} {ayAdlar[bugun.Month]} {bugun.Year}";
 }
 
 @section Styles {
@@ -25,6 +45,55 @@
 }
 
 <div class="fn-dashboard rd">
+
+    <!-- ═══ 0. WELCOME HERO ═══ -->
+    <div class="rd-hero">
+        <div class="rd-hero-bg">
+            <svg width="100%" height="100%" viewBox="0 0 600 200" preserveAspectRatio="xMaxYMid slice" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="rdHeroGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%"  stop-color="#1e2a3b" stop-opacity=".0"/>
+                        <stop offset="100%" stop-color="#1e2a3b" stop-opacity=".18"/>
+                    </linearGradient>
+                </defs>
+                <circle cx="540" cy="40"  r="80" fill="url(#rdHeroGrad)"/>
+                <circle cx="490" cy="170" r="50" fill="url(#rdHeroGrad)"/>
+                <circle cx="600" cy="120" r="35" fill="url(#rdHeroGrad)"/>
+            </svg>
+        </div>
+        <div class="rd-hero-main">
+            <div class="rd-hero-date">
+                <i class="bi bi-calendar3"></i> @tarixStr
+            </div>
+            <div class="rd-hero-greet">@salam, @firstName 👋</div>
+            <div class="rd-hero-sub">
+                @if (actionTotal == 0)
+                {
+                    <span><i class="bi bi-check2-circle" style="color:#7ee2b8"></i> Bu gün diqqət tələb edən iş yoxdur — hər şey nizamdadır.</span>
+                }
+                else
+                {
+                    <span><i class="bi bi-bell" style="color:#ffd178"></i> <strong>@actionTotal</strong> element diqqətinizi gözləyir.</span>
+                }
+            </div>
+        </div>
+        <div class="rd-hero-snap">
+            <div class="rd-hero-snap-item">
+                <div class="rd-hero-snap-num">@Model.AktivIsciSayi</div>
+                <div class="rd-hero-snap-lbl">Aktiv işçi</div>
+            </div>
+            <div class="rd-hero-snap-divider"></div>
+            <div class="rd-hero-snap-item">
+                <div class="rd-hero-snap-num">@Model.HazirdaMezuniyyetde</div>
+                <div class="rd-hero-snap-lbl">Məzuniyyətdə</div>
+            </div>
+            <div class="rd-hero-snap-divider"></div>
+            <div class="rd-hero-snap-item">
+                <div class="rd-hero-snap-num" style="color:@(actionTotal > 0 ? "#ffd178" : "#7ee2b8")">@actionTotal</div>
+                <div class="rd-hero-snap-lbl">Tapşırıq</div>
+            </div>
+        </div>
+    </div>
 
     <!-- ═══ 1. ACTION CENTER — Diqqət Tələb Edən İşlər ═══ -->
     <div class="rd-section-head rd-section-head--action">
@@ -303,7 +372,10 @@
             }
             @if (!Model.GozleyenMezuniyyetler.Any() && !Model.GozleyenIcazeler.Any())
             {
-                <div class="rd-empty">Gözləyən təsdiq yoxdur</div>
+                <div class="rd-empty rd-empty--mini">
+                    <i class="bi bi-check2-circle"></i>
+                    <span>Gözləyən təsdiq yoxdur</span>
+                </div>
             }
         </div>
 
@@ -329,7 +401,10 @@
             }
             else
             {
-                <div class="rd-empty">Hal-hazırda məzuniyyətdə olan yoxdur</div>
+                <div class="rd-empty rd-empty--mini">
+                    <i class="bi bi-tree"></i>
+                    <span>Hal-hazırda məzuniyyətdə olan yoxdur</span>
+                </div>
             }
             <div class="rd-summary-block">
                 <div class="rd-summary-row"><span>Bu həftə bitən</span><strong>@Model.BuHefteBitenMezuniyyet</strong></div>
@@ -365,7 +440,10 @@
                 }
                 else
                 {
-                    <div class="rd-empty">Kritik balans yoxdur</div>
+                    <div class="rd-empty rd-empty--mini">
+                        <i class="bi bi-shield-check"></i>
+                        <span>Kritik balans yoxdur</span>
+                    </div>
                 }
             </div>
 
@@ -400,7 +478,10 @@
                     }
                     else
                     {
-                        <div class="rd-empty">Bugün hələ qeyd yoxdur</div>
+                        <div class="rd-empty rd-empty--mini">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Bugün hələ qeyd yoxdur</span>
+                        </div>
                     }
                 </div>
             </div>
@@ -485,7 +566,10 @@
                 }
                 else
                 {
-                    <div class="rd-empty">Maaş dəyişikliyi yoxdur</div>
+                    <div class="rd-empty rd-empty--mini">
+                        <i class="bi bi-cash-coin"></i>
+                        <span>Maaş dəyişikliyi yoxdur</span>
+                    </div>
                 }
             </div>
         </div>
@@ -530,57 +614,128 @@
     <script>
         Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
         Chart.defaults.font.size = 11;
+        Chart.defaults.color = '#6b7589';
         Chart.defaults.plugins.legend.display = false;
+        Chart.defaults.plugins.tooltip.backgroundColor = '#1a2332';
+        Chart.defaults.plugins.tooltip.titleColor = '#fff';
+        Chart.defaults.plugins.tooltip.bodyColor = '#cbd1dc';
+        Chart.defaults.plugins.tooltip.padding = 10;
+        Chart.defaults.plugins.tooltip.cornerRadius = 8;
+        Chart.defaults.plugins.tooltip.displayColors = false;
+        Chart.defaults.plugins.tooltip.titleFont = { weight: '600', size: 12 };
 
-        const pal = ['#1e2a3b','#2d6cdf','#1e9b6b','#d4920a','#c83838','#7c3aed','#0ea5e9','#ec4899','#f59e0b','#6366f1'];
+        // Şaquli/üfüqi qrafiklər üçün gradient köməkçi
+        function vGrad(ctx, top, bottom) {
+            const { chart: { ctx: c, chartArea } } = ctx;
+            if (!chartArea) return top;
+            const g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            g.addColorStop(0, top); g.addColorStop(1, bottom);
+            return g;
+        }
+        function hGrad(ctx, left, right) {
+            const { chart: { ctx: c, chartArea } } = ctx;
+            if (!chartArea) return left;
+            const g = c.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
+            g.addColorStop(0, left); g.addColorStop(1, right);
+            return g;
+        }
 
+        // Pal cütlükləri (start → end)
+        const palPairs = [
+            ['#2d6cdf','#5a91f0'], ['#1e9b6b','#4ec99a'], ['#d4920a','#f0b94d'],
+            ['#c83838','#e36b6b'], ['#7c3aed','#a06bf2'], ['#0ea5e9','#48c0f5'],
+            ['#ec4899','#f57bb5'], ['#f59e0b','#fbb951'], ['#6366f1','#8c8ff5'],
+            ['#1e2a3b','#3a4a63']
+        ];
+        const palStart = palPairs.map(p => p[0]);
+        const palEnd   = palPairs.map(p => p[1]);
+
+        // ── Departament üzrə işçilər ──
         new Chart(document.getElementById('chartDept'), {
             type: 'bar',
             data: {
                 labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DepartamentStat.Select(x => x.Ad))),
                 datasets: [{
+                    label: 'İşçi sayı',
                     data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DepartamentStat.Select(x => x.IsciSayi))),
-                    backgroundColor: pal.slice(0, @Model.DepartamentStat.Count),
-                    borderRadius: 5, barThickness: 24
+                    backgroundColor: ctx => hGrad(ctx, palStart[ctx.dataIndex % palStart.length], palEnd[ctx.dataIndex % palEnd.length]),
+                    borderRadius: 6, barThickness: 22, hoverBackgroundColor: '#1a2332'
                 }]
             },
-            options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
-                scales: { x:{grid:{display:false},ticks:{precision:0}}, y:{grid:{display:false}} } }
+            options: {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: '#f3f4f8', drawBorder: false }, ticks: { precision: 0 } },
+                    y: { grid: { display: false, drawBorder: false } }
+                }
+            }
         });
 
+        // ── Kişi / Qadın ──
         new Chart(document.getElementById('chartGender'), {
             type: 'doughnut',
-            data: { labels:['Kişi','Qadın'], datasets:[{ data:[@Model.KisiSayi,@Model.QadinSayi], backgroundColor:['#2d6cdf','#ec4899'], borderWidth:0 }] },
-            options: { responsive:true, maintainAspectRatio:false, cutout:'60%',
-                plugins:{ legend:{ display:true, position:'bottom', labels:{boxWidth:10,padding:10} } } }
+            data: { labels: ['Kişi','Qadın'], datasets: [{ data: [@Model.KisiSayi, @Model.QadinSayi], backgroundColor: ['#2d6cdf', '#ec4899'], borderWidth: 3, borderColor: '#fff', hoverOffset: 6 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '68%',
+                plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 12, usePointStyle: true, pointStyle: 'circle' } } }
+            }
         });
 
+        // ── Yaş qrupları ──
         new Chart(document.getElementById('chartAge'), {
             type: 'doughnut',
-            data: { labels:['20-30','30-40','40-50','50+'], datasets:[{ data:[@Model.Yas20_30,@Model.Yas30_40,@Model.Yas40_50,@Model.Yas50Plus], backgroundColor:['#1e9b6b','#2d6cdf','#d4920a','#c83838'], borderWidth:0 }] },
-            options: { responsive:true, maintainAspectRatio:false, cutout:'60%',
-                plugins:{ legend:{ display:true, position:'bottom', labels:{boxWidth:10,padding:10} } } }
+            data: { labels: ['20-30','30-40','40-50','50+'], datasets: [{ data: [@Model.Yas20_30, @Model.Yas30_40, @Model.Yas40_50, @Model.Yas50Plus], backgroundColor: ['#1e9b6b','#2d6cdf','#d4920a','#c83838'], borderWidth: 3, borderColor: '#fff', hoverOffset: 6 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '68%',
+                plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, usePointStyle: true, pointStyle: 'circle' } } }
+            }
         });
 
+        // ── Staj qrupları ──
         new Chart(document.getElementById('chartStaj'), {
             type: 'bar',
-            data: { labels:['0-1 il','1-3 il','3-5 il','5+ il'], datasets:[{ data:[@Model.Staj0_1,@Model.Staj1_3,@Model.Staj3_5,@Model.Staj5Plus], backgroundColor:['#0ea5e9','#2d6cdf','#7c3aed','#1e2a3b'], borderRadius:5, barThickness:28 }] },
-            options: { responsive:true, maintainAspectRatio:false,
-                scales: { x:{grid:{display:false}}, y:{grid:{color:'#f3f4f8'},ticks:{precision:0}} } }
+            data: {
+                labels: ['0-1 il','1-3 il','3-5 il','5+ il'],
+                datasets: [{
+                    label: 'İşçi sayı',
+                    data: [@Model.Staj0_1, @Model.Staj1_3, @Model.Staj3_5, @Model.Staj5Plus],
+                    backgroundColor: [
+                        ctx => vGrad(ctx, '#48c0f5', '#0ea5e9'),
+                        ctx => vGrad(ctx, '#5a91f0', '#2d6cdf'),
+                        ctx => vGrad(ctx, '#a06bf2', '#7c3aed'),
+                        ctx => vGrad(ctx, '#3a4a63', '#1e2a3b')
+                    ],
+                    borderRadius: 8, borderSkipped: false, barThickness: 32, hoverBackgroundColor: '#1a2332'
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { display: false, drawBorder: false } },
+                    y: { grid: { color: '#f3f4f8', drawBorder: false }, ticks: { precision: 0 } }
+                }
+            }
         });
 
+        // ── Vəzifə paylanması ──
         new Chart(document.getElementById('chartVezife'), {
             type: 'bar',
             data: {
                 labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.VezifeStat.Select(x => x.Ad))),
                 datasets: [{
+                    label: 'İşçi sayı',
                     data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.VezifeStat.Select(x => x.IsciSayi))),
-                    backgroundColor: pal.slice(0, @Model.VezifeStat.Count),
-                    borderRadius: 5, barThickness: 24
+                    backgroundColor: ctx => hGrad(ctx, palStart[ctx.dataIndex % palStart.length], palEnd[ctx.dataIndex % palEnd.length]),
+                    borderRadius: 6, barThickness: 20, hoverBackgroundColor: '#1a2332'
                 }]
             },
-            options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
-                scales: { x:{grid:{display:false},ticks:{precision:0}}, y:{grid:{display:false}} } }
+            options: {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: '#f3f4f8', drawBorder: false }, ticks: { precision: 0 } },
+                    y: { grid: { display: false, drawBorder: false } }
+                }
+            }
         });
     </script>
 }
