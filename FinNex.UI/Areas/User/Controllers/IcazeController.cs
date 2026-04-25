@@ -38,11 +38,13 @@ namespace FinNex.UI.Areas.User.Controllers
 
             var rehberdirmi = User.IsInRole(RoleNames.Rehber);
             var sobeReisidirmi = User.IsInRole(RoleNames.SobeReisi);
+            var hrdirmi = User.IsInRole(RoleNames.HR);
             var icazeList = result.Success ? result.Data!.ToList() : new();
             foreach (var ic in icazeList)
             {
                 ic.MuracietSahibiRehberdirmi = rehberdirmi;
                 ic.MuracietSahibiSobeReisidirmi = sobeReisidirmi;
+                ic.MuracietSahibiHrdirmi = hrdirmi;
             }
 
             var vm = new IcazeIndexVM
@@ -119,6 +121,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 Sebeb = vm.Sebeb,
                 MuracietSahibiRehberdirmi = User.IsInRole(RoleNames.Rehber),
                 MuracietSahibiSobeReisidirmi = User.IsInRole(RoleNames.SobeReisi),
+                MuracietSahibiHrdirmi = User.IsInRole(RoleNames.HR),
             };
 
             var result = await _icazeService.YaratAsync(createDto);

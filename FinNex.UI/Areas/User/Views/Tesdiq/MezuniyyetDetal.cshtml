@@ -254,12 +254,23 @@
                     </div>
                     }
 
-                    @* Step 2: Rehber *@
+                    @* Step 2: Rehber — yalnız bu addımdan keçibsə göstər *@
                     @{
+                        bool rehberAddimi = Model.RehberTesdiq.HasValue
+                            || Model.Status == (int)MezuniyyetStatus.RehberTesdiqinde
+                            || Model.Status < (int)MezuniyyetStatus.HrTesdiqinde;
+                        if ((Model.Status == (int)MezuniyyetStatus.HrTesdiqinde
+                             || Model.Status == (int)MezuniyyetStatus.Tesdiqlenib)
+                            && !Model.RehberTesdiq.HasValue)
+                        {
+                            rehberAddimi = false;
+                        }
+                    }
+                    @if (rehberAddimi)
+                    {
                         var s2Class = Model.RehberTesdiq == true ? "done"
                             : Model.RehberTesdiq == false ? "rejected"
                             : (Model.SobeReisiTesdiq == true || !sobeReisiAddimi) ? "active" : "";
-                    }
                     <div class="tsd-wf-step @s2Class">
                         <div class="tsd-wf-dot">
                             @if (Model.RehberTesdiq == true)
@@ -296,11 +307,27 @@
                             }
                         </div>
                     </div>
-
-                    @* Step 3: HR *@
-                    @{
-                        var s3Class = Model.HrTesdiq == true ? "done" : Model.HrTesdiq == false ? "rejected" : (Model.RehberTesdiq == true ? "active" : "");
                     }
+
+                    @* Step 3: HR — yalnız bu addımdan keçibsə göstər *@
+                    @{
+                        bool hrAddimi = Model.HrTesdiq.HasValue
+                            || Model.Status == (int)MezuniyyetStatus.HrTesdiqinde
+                            || Model.Status < (int)MezuniyyetStatus.HrTesdiqinde;
+                        if (Model.Status == (int)MezuniyyetStatus.Tesdiqlenib && !Model.HrTesdiq.HasValue)
+                        {
+                            hrAddimi = false;
+                        }
+
+                        int hrNo = 1;
+                        if (sobeReisiAddimi) hrNo++;
+                        if (rehberAddimi) hrNo++;
+                    }
+                    @if (hrAddimi)
+                    {
+                        var s3Class = Model.HrTesdiq == true ? "done"
+                            : Model.HrTesdiq == false ? "rejected"
+                            : (Model.RehberTesdiq == true || !rehberAddimi) ? "active" : "";
                     <div class="tsd-wf-step @s3Class">
                         <div class="tsd-wf-dot">
                             @if (Model.HrTesdiq == true)
@@ -315,7 +342,7 @@
                                     <path d="M3 3l6 6M9 3l-6 6" stroke="#fff" stroke-width="1.3" stroke-linecap="round" />
                                 </svg>
                             }
-                            else { <text>@(sobeReisiAddimi ? "3" : "2")</text> }
+                            else { <text>@hrNo</text> }
                         </div>
                         <div class="tsd-wf-info">
                             <div class="tsd-wf-role">HR Təsdiqi</div>
@@ -337,6 +364,7 @@
                             }
                         </div>
                     </div>
+                    }
 
                 </div>
             </div>
