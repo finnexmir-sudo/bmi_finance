@@ -258,11 +258,13 @@ namespace FinNex.UI.Areas.User.Controllers
 
             var rehberdirmi = User.IsInRole(RoleNames.Rehber);
             var sobeReisidirmi = User.IsInRole(RoleNames.SobeReisi);
+            var hrdirmi = User.IsInRole(RoleNames.HR);
             var mezList = mezResult.Success ? mezResult.Data!.ToList() : new();
             foreach (var m in mezList)
             {
                 m.MuracietSahibiRehberdirmi = rehberdirmi;
                 m.MuracietSahibiSobeReisidirmi = sobeReisidirmi;
+                m.MuracietSahibiHrdirmi = hrdirmi;
             }
 
             var vm = new MezuniyyetIndexVM
@@ -329,6 +331,7 @@ namespace FinNex.UI.Areas.User.Controllers
                     : MezuniyyetOdenisTipi.AySonuOdenis,
                 MuracietSahibiRehberdirmi = User.IsInRole(RoleNames.Rehber),
                 MuracietSahibiSobeReisidirmi = User.IsInRole(RoleNames.SobeReisi),
+                MuracietSahibiHrdirmi = User.IsInRole(RoleNames.HR),
             };
 
             var result = await _mezuniyyetService.YaratAsync(createDto);
@@ -369,6 +372,7 @@ namespace FinNex.UI.Areas.User.Controllers
             var vm = MezuniyyetDetailVM.FromDto(dto);
             vm.MuracietSahibiRehberdirmi = User.IsInRole(RoleNames.Rehber);
             vm.MuracietSahibiSobeReisidirmi = User.IsInRole(RoleNames.SobeReisi);
+            vm.MuracietSahibiHrdirmi = User.IsInRole(RoleNames.HR);
 
             // Əvəzedici statusunu yoxla
             var evezResult = await _evezediciTesdiqService.GetByMezuniyyetAsync(id);

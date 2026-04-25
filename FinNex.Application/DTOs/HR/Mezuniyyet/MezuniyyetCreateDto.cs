@@ -18,5 +18,6 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         // Rol əsaslı workflow — controller tərəfindən doldurulur
         public bool MuracietSahibiRehberdirmi { get; set; }
         public bool MuracietSahibiSobeReisidirmi { get; set; }
+        public bool MuracietSahibiHrdirmi { get; set; }
     }
 }

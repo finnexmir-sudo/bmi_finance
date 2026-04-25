@@ -154,12 +154,25 @@
                     </div>
                     }
 
-                    @* Step 2: Rehber *@
+                    @* Step 2: Rehber — yalnız bu addımdan keçibsə göstər *@
                     @{
+                        // Status >= HrTesdiqinde (4) və RehberTesdiq qeydi yoxdursa, bu addım atlandı (Rəhbər özü muraciet edib)
+                        bool rehberAddimi = Model.RehberTesdiq.HasValue
+                            || Model.Status == (int)FinNex.Domain.Entities.HR.MezuniyyetStatus.RehberTesdiqinde
+                            || (Model.Status < (int)FinNex.Domain.Entities.HR.MezuniyyetStatus.HrTesdiqinde);
+                        // Tesdiqlenib və ya HrTesdiqinde olub Rehber qeydi yoxdursa atlandı
+                        if ((Model.Status == (int)FinNex.Domain.Entities.HR.MezuniyyetStatus.HrTesdiqinde
+                             || Model.Status == (int)FinNex.Domain.Entities.HR.MezuniyyetStatus.Tesdiqlenib)
+                            && !Model.RehberTesdiq.HasValue)
+                        {
+                            rehberAddimi = false;
+                        }
+                    }
+                    @if (rehberAddimi)
+                    {
                         var s2Class = Model.RehberTesdiq == true ? "done"
                             : Model.RehberTesdiq == false ? "rejected"
                             : (Model.SobeReisiTesdiq == true || !sobeReisiAddimi) ? "active" : "";
-                    }
                     <div class="tsd-wf-step @s2Class">
                         <div class="tsd-wf-dot">
                             @if (Model.RehberTesdiq == true)
@@ -187,11 +200,31 @@
                             else { <div class="tsd-wf-result tsd-wf-result--wait">Gözləyir</div> }
                         </div>
                     </div>
-
-                    @* Step 3: HR *@
-                    @{
-                        var s3Class = Model.HrTesdiq == true ? "done" : Model.HrTesdiq == false ? "rejected" : (Model.RehberTesdiq == true ? "active" : "");
                     }
+
+                    @* Step 3: HR — yalnız bu addımdan keçibsə göstər *@
+                    @{
+                        // HR addımı: HR qeydi var, və ya status HrTesdiqinde, ya da addım hələ qabaq mərhələdədir
+                        bool hrAddimi = Model.HrTesdiq.HasValue
+                            || Model.Status == (int)FinNex.Domain.Entities.HR.MezuniyyetStatus.HrTesdiqinde
+                            || Model.Status < (int)FinNex.Domain.Entities.HR.MezuniyyetStatus.HrTesdiqinde;
+                        // Tesdiqlenib statusunda olub HR qeydi yoxdursa atlandı (HR özü muraciet edib)
+                        if (Model.Status == (int)FinNex.Domain.Entities.HR.MezuniyyetStatus.Tesdiqlenib
+                            && !Model.HrTesdiq.HasValue)
+                        {
+                            hrAddimi = false;
+                        }
+
+                        // Görünən addım sayını hesabla — HR-ın nömrəsi düzgün dursun
+                        int hrNo = 1;
+                        if (sobeReisiAddimi) hrNo++;
+                        if (rehberAddimi) hrNo++;
+                    }
+                    @if (hrAddimi)
+                    {
+                        var s3Class = Model.HrTesdiq == true ? "done"
+                            : Model.HrTesdiq == false ? "rejected"
+                            : (Model.RehberTesdiq == true || !rehberAddimi) ? "active" : "";
                     <div class="tsd-wf-step @s3Class">
                         <div class="tsd-wf-dot">
                             @if (Model.HrTesdiq == true)
@@ -206,7 +239,7 @@
                                     <path d="M3 3l6 6M9 3l-6 6" stroke="#fff" stroke-width="1.3" stroke-linecap="round" />
                                 </svg>
                             }
-                            else { <text>@(sobeReisiAddimi ? "3" : "2")</text> }
+                            else { <text>@hrNo</text> }
                         </div>
                         <div class="tsd-wf-info">
                             <div class="tsd-wf-role">HR Təsdiqi</div>
@@ -219,6 +252,7 @@
                             else { <div class="tsd-wf-result tsd-wf-result--wait">Gözləyir</div> }
                         </div>
                     </div>
+                    }
 
                 </div>
             </div>

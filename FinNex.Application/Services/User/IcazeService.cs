@@ -70,10 +70,22 @@ namespace FinNex.Application.Services
                     return Result<IcazeListDto>.Fail("Bitme saati baslama saatindan sonra olmalidir.");
 
                 // İşçinin roluna görə status müəyyən et
+                // QAYDA:
+                //   • HR muraciet edir → yalnız Rəhbər təsdiqi (HR-self atlanır)
+                //   • Rəhbər muraciet edir → birbaşa HR
+                //   • Şöbə rəisi muraciet edir → Rəhbər → HR
+                //   • Adi işçi:
+                //       - şöbədə aktiv (məzuniyyətdə olmayan) şöbə rəisi varsa → SobeReisi → Rəhbər → HR
+                //       - yoxdursa və ya məzuniyyətdədirsə → Rəhbər → HR
                 IcazeStatus ilkinStatus;
                 int? departamentId = null;
 
-                if (dto.MuracietSahibiRehberdirmi)
+                if (dto.MuracietSahibiHrdirmi)
+                {
+                    // HR-ın muraciəti yalnız Rəhbər təsdiqindən keçir, sonra Tesdiqlenib
+                    ilkinStatus = IcazeStatus.RehberTesdiqinde;
+                }
+                else if (dto.MuracietSahibiRehberdirmi)
                 {
                     // Rəhbər birbaşa HR-a gedir
                     ilkinStatus = IcazeStatus.HrTesdiqinde;
@@ -85,20 +97,38 @@ namespace FinNex.Application.Services
                 }
                 else
                 {
-                    // Adi işçi — şöbə rəisinə gedir
+                    // Adi işçi
                     var teyinat = await _unitOfWork.Repository<IsciTeyinat>()
                         .GetirAsync(x => x.IsciId == dto.IsciId && x.Aktivdir);
 
                     departamentId = teyinat?.DepartamentId;
 
-                    var sobeReisiVar = teyinat != null && await _unitOfWork.Repository<IsciStrukturRolu>()
-                        .MovcuddurmuAsync(x =>
-                            x.DepartamentId == teyinat.DepartamentId &&
-                            x.RolTipi == StrukturRolTipi.SobeReisi &&
-                            x.IsciId != dto.IsciId &&
-                            x.Aktivdir);
+                    bool sobeReisiAvailable = false;
+                    if (teyinat != null)
+                    {
+                        var sobeReisi = await _unitOfWork.Repository<IsciStrukturRolu>()
+                            .GetirAsync(x =>
+                                x.DepartamentId == teyinat.DepartamentId &&
+                                x.RolTipi == StrukturRolTipi.SobeReisi &&
+                                x.IsciId != dto.IsciId &&
+                                x.Aktivdir);
 
-                    ilkinStatus = sobeReisiVar
+                        if (sobeReisi != null)
+                        {
+                            // Şöbə rəisinin bugün aktiv (təsdiqlənmiş) məzuniyyətdə olub-olmadığını yoxla
+                            var bugun = DateTime.Today;
+                            var mezuniyyetdedir = await _unitOfWork.Repository<Mezuniyyet>()
+                                .MovcuddurmuAsync(m =>
+                                    m.IsciId == sobeReisi.IsciId &&
+                                    m.Status == MezuniyyetStatus.Tesdiqlenib &&
+                                    m.BaslamaTarixi <= bugun &&
+                                    m.BitmeTarixi >= bugun);
+
+                            sobeReisiAvailable = !mezuniyyetdedir;
+                        }
+                    }
+
+                    ilkinStatus = sobeReisiAvailable
                         ? IcazeStatus.SobeReisiTesdiqinde
                         : IcazeStatus.RehberTesdiqinde;
                 }
@@ -422,8 +452,25 @@ namespace FinNex.Application.Services
             icaze.RehberTesdiq = status;
             icaze.RehberId = rehberId > 0 ? rehberId : icaze.RehberId;
             icaze.RehberTesdiqTarixi = DateTime.Now;
-            icaze.Status = status ? IcazeStatus.HrTesdiqinde : IcazeStatus.ImtinaEdildi;
-            if (!status) icaze.ImtinaSebebi = qeyd;
+
+            if (!status)
+            {
+                icaze.Status = IcazeStatus.ImtinaEdildi;
+                icaze.ImtinaSebebi = qeyd;
+            }
+            else
+            {
+                // Müraciəti edən işçinin HR rolu olub-olmadığını yoxla — varsa HR step atlanır
+                var muracietciHrdir = await _unitOfWork.Repository<IsciStrukturRolu>()
+                    .MovcuddurmuAsync(x =>
+                        x.IsciId == icaze.IsciId &&
+                        x.RolTipi == StrukturRolTipi.Hr &&
+                        x.Aktivdir);
+
+                icaze.Status = muracietciHrdir
+                    ? IcazeStatus.Tesdiqlenib
+                    : IcazeStatus.HrTesdiqinde;
+            }
 
             await _unitOfWork.Repository<Icaze>().YenileAsync(icaze);
             await _unitOfWork.YaddaSaxlaAsync();
@@ -431,7 +478,8 @@ namespace FinNex.Application.Services
             if (status)
             {
                 await NotifyIsciProgressAsync(icaze, "Rəhbər", true, qeyd);
-                await NotifyAllHrAsync(icaze);
+                if (icaze.Status == IcazeStatus.HrTesdiqinde)
+                    await NotifyAllHrAsync(icaze);
             }
             else
             {

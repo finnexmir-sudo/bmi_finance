@@ -18,6 +18,7 @@ namespace FinNex.UI.Areas.User.ViewModels.Mezuniyyet
         public bool? EvezediciTesdiqlenib { get; set; }
         public bool MuracietSahibiRehberdirmi { get; set; }
         public bool MuracietSahibiSobeReisidirmi { get; set; }
+        public bool MuracietSahibiHrdirmi { get; set; }
 
         // ── Məzuniyyət məlumatları ─────────────────────────────
         public string NovText { get; set; } = null!;

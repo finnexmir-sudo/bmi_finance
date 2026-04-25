@@ -25,6 +25,7 @@ namespace FinNex.Application.DTOs.HR.Icaze
         // Rol əsaslı workflow — controller tərəfindən doldurulur
         public bool MuracietSahibiRehberdirmi { get; set; }
         public bool MuracietSahibiSobeReisidirmi { get; set; }
+        public bool MuracietSahibiHrdirmi { get; set; }
     }
 
     // ── Siyahı üçün ─────────────────────────────────────
@@ -70,12 +71,15 @@ namespace FinNex.Application.DTOs.HR.Icaze
         // Müraciət sahibinin rolu — workflow göstəricisi üçün
         public bool MuracietSahibiRehberdirmi { get; set; }
         public bool MuracietSahibiSobeReisidirmi { get; set; }
+        public bool MuracietSahibiHrdirmi { get; set; }
 
         // Keçilmiş addımlar — rol əsaslı workflow üçün
-        public bool SobeReisiKecildi => MuracietSahibiRehberdirmi || MuracietSahibiSobeReisidirmi
+        public bool SobeReisiKecildi => MuracietSahibiRehberdirmi || MuracietSahibiSobeReisidirmi || MuracietSahibiHrdirmi
             || (SobeReisiTesdiq == null && (int)Status >= 3);
         public bool RehberKecildi => MuracietSahibiRehberdirmi
             || (RehberTesdiq == null && (int)Status >= 4);
+        // HR muraciet edibsə HR step atlanır (Rehber təsdiqindən sonra birbaşa Tesdiqlenib)
+        public bool HrKecildi => MuracietSahibiHrdirmi && HrTesdiq == null;
     }
 
     // ── Detallı baxış üçün ──────────────────────────────
