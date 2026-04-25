@@ -351,3 +351,86 @@
     color: #9ca3af;
     margin-top: 4px;
 }
+
+/* ───────────────────────────────────────────────
+   Sticky filter — scroll zamanı yuxarıda qalsın
+   (topnav 60px-dir, ona görə top: 60px)
+   ─────────────────────────────────────────────── */
+.hsb-sticky {
+    position: sticky;
+    top: 60px;
+    z-index: 20;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(15, 26, 46, 0.06);
+    transition: box-shadow .14s;
+}
+
+/* ───────────────────────────────────────────────
+   Pagination
+   ─────────────────────────────────────────────── */
+.hsb-table-page {
+    color: #9aa3b5;
+    font-weight: 500;
+    margin-left: 4px;
+}
+
+.hsb-pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 14px 18px 18px;
+    flex-wrap: wrap;
+}
+
+.hsb-page-btn,
+.hsb-page-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 7px;
+    border: 1px solid #e4e8f0;
+    background: #fff;
+    color: #3d4557;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all .14s;
+    font-variant-numeric: tabular-nums;
+}
+
+.hsb-page-btn:hover,
+.hsb-page-num:hover {
+    background: #f5f7fb;
+    border-color: #c8d0e0;
+    color: #1a2332;
+    text-decoration: none;
+}
+
+.hsb-page-num.is-active {
+    background: #1e2a3b;
+    border-color: #1e2a3b;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(30,42,59,0.18);
+}
+
+.hsb-page-num.is-active:hover {
+    background: #1e2a3b;
+    color: #fff;
+}
+
+.hsb-page-btn.is-disabled {
+    opacity: .45;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+.hsb-page-dots {
+    color: #9aa3b5;
+    padding: 0 4px;
+    font-size: 13px;
+}

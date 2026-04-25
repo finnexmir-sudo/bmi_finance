@@ -117,14 +117,23 @@ public class HesabatController : Controller
 
         satirlar = satirlar.OrderByDescending(x => x.YaradilmaTarixi).ToList();
 
+        // ── Səhifələmə ──
+        var totalCount = satirlar.Count;
+        var pageSize = filter.PageSize <= 0 ? 25 : Math.Min(filter.PageSize, 200);
+        var totalPages = totalCount > 0 ? (int)Math.Ceiling((double)totalCount / pageSize) : 1;
+        var page = Math.Max(1, filter.Page);
+        if (page > totalPages) page = totalPages;
+        var pagedSatirlar = satirlar.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
         var buAy = DateTime.Now;
         var vm = new HesabatIndexVM
         {
             Filter = filter,
-            Satirlar = satirlar,
+            Satirlar = pagedSatirlar,
             Departamentler = deptList,
             CemiMezuniyyet = mezuniyyetler.Count,
             CemiIcaze = icazeler.Count,
+            // Statistika SİYAHININ TAM məbləğindən hesablanır (səhifələnməmiş)
             Gozleyen = satirlar.Count(x => x.StatusValue is 1 or 2 or 3 or 4),
             Tesdiqlenib = satirlar.Count(x => x.StatusValue == 5),
             ImtinaEdildi = satirlar.Count(x => x.StatusValue == 6),
@@ -132,6 +141,10 @@ public class HesabatController : Controller
                 x.BaslamaTarixi.Month == buAy.Month && x.BaslamaTarixi.Year == buAy.Year),
             BuAyIcaze = icazeler.Count(x =>
                 x.IcazeTarixi.Month == buAy.Month && x.IcazeTarixi.Year == buAy.Year),
+            TotalCount = totalCount,
+            CurrentPage = page,
+            TotalPages = totalPages,
+            PageSize = pageSize,
         };
 
 
