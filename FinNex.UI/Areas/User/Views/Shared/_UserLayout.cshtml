@@ -760,12 +760,48 @@
     // Departamentlər dropdown — yalnız hover ilə açılır (klik yoxdur)
     // CSS :hover pattern-i işləyir, JS gərək deyil.
 
-    // Sidebar accordion qrupları — header-ə klik qrupu aç/bağla
-    document.querySelectorAll('.fn-nav-g-head').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            btn.parentElement.classList.toggle('open');
+    // Sidebar accordion qrupları — header-ə klik qrupu aç/bağla.
+    // İstifadəçinin aç/bağla seçimi localStorage-da saxlanır ki, səhifə
+    // dəyişəndə qrup eyni vəziyyətdə qalsın (auto-open yoxdur — yalnız
+    // istifadəçi açdığı qruplar açıq qalır).
+    (function () {
+        var STORE_KEY = 'fn-nav-groups-open';
+        function getOpenSet() {
+            try { return new Set(JSON.parse(localStorage.getItem(STORE_KEY) || '[]')); }
+            catch (e) { return new Set(); }
+        }
+        function saveOpenSet(set) {
+            try { localStorage.setItem(STORE_KEY, JSON.stringify(Array.from(set))); }
+            catch (e) { }
+        }
+        function groupKey(g) {
+            var head = g.querySelector(':scope > .fn-nav-g-head > span');
+            var label = head ? head.textContent.trim() : '';
+            // Qrupu unikal yolla tanımaq üçün valideyn qrupun adını da əlavə et
+            var parent = g.parentElement && g.parentElement.closest('.fn-nav-g');
+            return parent ? groupKey(parent) + ' › ' + label : label;
+        }
+
+        // Saxlanmış vəziyyəti bərpa et
+        var openSet = getOpenSet();
+        document.querySelectorAll('.fn-nav-g').forEach(function (g) {
+            var key = groupKey(g);
+            if (openSet.has(key)) g.classList.add('open');
         });
-    });
+
+        // Header-ə klik — toggle + persist
+        document.querySelectorAll('.fn-nav-g-head').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var g = btn.parentElement;
+                g.classList.toggle('open');
+                var key = groupKey(g);
+                var set = getOpenSet();
+                if (g.classList.contains('open')) set.add(key);
+                else set.delete(key);
+                saveOpenSet(set);
+            });
+        });
+    })();
 
     // Tema seçici
     (function () {

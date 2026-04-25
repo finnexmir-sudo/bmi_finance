@@ -22,14 +22,11 @@ if ('serviceWorker' in navigator) {
         }, 4000);
     });
 
-    // Active nav item highlight
-    var currentPath = window.location.pathname.toLowerCase();
-    document.querySelectorAll('.fn-nav-item').forEach(function (link) {
-        var href = link.getAttribute('href');
-        if (href && href !== '#' && currentPath.startsWith(href.toLowerCase())) {
-            link.classList.add('active');
-        }
-    });
+    // QEYD: Aktiv nav-item server tərəfində Razor ilə (currentController +
+    // currentAction) dəqiq tətbiq olunur. Burada əvvəl prefix uyğunluğu
+    // əlavə edilirdi (path.startsWith(href)) — ancaq bu valideyn yolları
+    // da aktiv kimi göstərirdi (məs. /Sened/Sablonlar səhifəsində /Sened
+    // linki də aktiv olurdu). Çıxarıldı.
 
 })();
 
