@@ -83,6 +83,22 @@ namespace FinNex.UI
                         });
                 });
 
+                // ChangePassword brute-force qoruması (cari parolu axtaran istifadəçilərə qarşı)
+                options.AddPolicy("changepassword", context =>
+                {
+                    var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+                    return RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: ip,
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 5,
+                            Window = TimeSpan.FromMinutes(5),
+                            QueueLimit = 0,
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+                        });
+                });
+
                 options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             });
 
