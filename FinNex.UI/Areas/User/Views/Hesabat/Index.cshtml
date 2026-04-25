@@ -284,45 +284,44 @@
             @* ── Səhifələmə ── *@
             @if (Model.TotalPages > 1)
             {
-                @{
-                    string PageUrl(int p) => Url.Action("Index", new
-                    {
-                        Model.Filter.BaslamaTarixFrom,
-                        Model.Filter.BaslamaTarixTo,
-                        Model.Filter.DepartamentId,
-                        Model.Filter.Nov,
-                        Model.Filter.Status,
-                        Model.Filter.Axtaris,
-                        Model.Filter.PageSize,
-                        Page = p
-                    }) ?? "#";
+                string PageUrl(int p) => Url.Action("Index", new
+                {
+                    Model.Filter.BaslamaTarixFrom,
+                    Model.Filter.BaslamaTarixTo,
+                    Model.Filter.DepartamentId,
+                    Model.Filter.Nov,
+                    Model.Filter.Status,
+                    Model.Filter.Axtaris,
+                    Model.Filter.PageSize,
+                    Page = p
+                }) ?? "#";
 
-                    int win = 2;
-                    int from = Math.Max(1, Model.CurrentPage - win);
-                    int to = Math.Min(Model.TotalPages, Model.CurrentPage + win);
-                }
+                int win = 2;
+                int pageFrom = Math.Max(1, Model.CurrentPage - win);
+                int pageTo = Math.Min(Model.TotalPages, Model.CurrentPage + win);
+
                 <div class="hsb-pager">
                     <a class="hsb-page-btn @(Model.CurrentPage <= 1 ? "is-disabled" : "")"
                        href="@(Model.CurrentPage > 1 ? PageUrl(Model.CurrentPage - 1) : "#")">‹ Əvvəl</a>
 
-                    @if (from > 1)
+                    @if (pageFrom > 1)
                     {
                         <a class="hsb-page-num" href="@PageUrl(1)">1</a>
-                        if (from > 2)
+                        if (pageFrom > 2)
                         {
                             <span class="hsb-page-dots">…</span>
                         }
                     }
 
-                    @for (int p = from; p <= to; p++)
+                    @for (int p = pageFrom; p <= pageTo; p++)
                     {
                         <a class="hsb-page-num @(p == Model.CurrentPage ? "is-active" : "")"
                            href="@PageUrl(p)">@p</a>
                     }
 
-                    @if (to < Model.TotalPages)
+                    @if (pageTo < Model.TotalPages)
                     {
-                        if (to < Model.TotalPages - 1)
+                        if (pageTo < Model.TotalPages - 1)
                         {
                             <span class="hsb-page-dots">…</span>
                         }
