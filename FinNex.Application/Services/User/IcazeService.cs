@@ -180,7 +180,8 @@ namespace FinNex.Application.Services
                         x => x.Id == icazeId,
                         include: q => q
                             .Include(i => i.Isci)
-    .ThenInclude(i => i.IsciTeyinatlari)
+                                .ThenInclude(i => i.IsciTeyinatlari)
+                                    .ThenInclude(t => t.Departament)
                             .Include(i => i.EvezEdenIsci),
                         izlemeden: true);
 
@@ -190,11 +191,11 @@ namespace FinNex.Application.Services
                 var dto = new IcazeDetailDto
                 {
                     Id = icaze.Id,
-                    IsciAdSoyad = icaze.Isci.TamAd,
-                    SobeAdi = icaze.Isci.IsciTeyinatlari
-                    .Where(t => t.Aktivdir)
-                    .Select(t => t.Departament.Ad)
-                    .FirstOrDefault() ?? "-",
+                    IsciAdSoyad = icaze.Isci?.TamAd ?? "-",
+                    SobeAdi = icaze.Isci?.IsciTeyinatlari?
+                        .Where(t => t.Aktivdir && t.Departament != null)
+                        .Select(t => t.Departament.Ad)
+                        .FirstOrDefault() ?? "-",
                     EvezEdenAdSoyad = icaze.EvezEdenIsci?.TamAd ?? "—",
                     IcazeTarixi = icaze.IcazeTarixi,
                     BaslamaSaati = icaze.BaslamaSaati,
