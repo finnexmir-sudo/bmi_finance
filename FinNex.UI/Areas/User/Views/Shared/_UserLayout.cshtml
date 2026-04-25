@@ -631,11 +631,7 @@
 
             case "umumi":
                 {
-                    var senedActive = currentArea == "SenedDovriyyesi";
-                    var swiftActive = currentArea == "PR_Odenis_Tapsirigi";
-                    var odenisTapsirigiActive = currentController == "OdenisTapsirigi";
-
-                    <div class="fn-nav-g @(senedActive || !swiftActive ? "open" : "")">
+                    <div class="fn-nav-g">
                         <button type="button" class="fn-nav-g-head">
                             <span>Sənəd Dövriyyəsi</span>
                             <i class="bi bi-chevron-down"></i>
@@ -648,10 +644,6 @@
                             <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
                                class="fn-nav-item @(currentController == "Sened" && currentAction == "Index" ? "active" : "")">
                                 <i class="bi bi-folder"></i> Sənədlər
-                            </a>
-                            <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Yarat"
-                               class="fn-nav-item @(currentController == "Sened" && currentAction == "Yarat" ? "active" : "")">
-                                <i class="bi bi-plus-circle"></i> Yeni sənəd
                             </a>
                             <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Sablonlar"
                                class="fn-nav-item @(currentController == "Sened" && currentAction == "Sablonlar" ? "active" : "")">
@@ -675,28 +667,16 @@
                         </div>
                     </div>
 
-                    <div class="fn-nav-g @(swiftActive ? "open" : "")">
+                    <div class="fn-nav-g">
                         <button type="button" class="fn-nav-g-head">
                             <span>Swift</span>
                             <i class="bi bi-chevron-down"></i>
                         </button>
                         <div class="fn-nav-g-body">
-                            <div class="fn-nav-g @(odenisTapsirigiActive ? "open" : "")">
-                                <button type="button" class="fn-nav-g-head">
-                                    <span>Ödəniş tapşırığı</span>
-                                    <i class="bi bi-chevron-down"></i>
-                                </button>
-                                <div class="fn-nav-g-body">
-                                    <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Siyahi"
-                                       class="fn-nav-item @(currentController == "OdenisTapsirigi" && currentAction == "Siyahi" ? "active" : "")">
-                                        <i class="bi bi-list-ul"></i> Ödəniş siyahısı
-                                    </a>
-                                    <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Create"
-                                       class="fn-nav-item @(currentController == "OdenisTapsirigi" && currentAction == "Create" ? "active" : "")">
-                                        <i class="bi bi-plus-circle"></i> Yeni ödəniş
-                                    </a>
-                                </div>
-                            </div>
+                            <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Siyahi"
+                               class="fn-nav-item @(currentController == "OdenisTapsirigi" ? "active" : "")">
+                                <i class="bi bi-list-ul"></i> Ödəniş tapşırığı
+                            </a>
                             <a asp-area="PR_Odenis_Tapsirigi" asp-controller="Bank" asp-action="Index"
                                class="fn-nav-item @(currentController == "Bank" ? "active" : "")">
                                 <i class="bi bi-bank"></i> Banklar
