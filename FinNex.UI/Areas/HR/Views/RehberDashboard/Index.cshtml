@@ -581,19 +581,72 @@
         </div>
     </div>
 
-    @* Sıra 2: Departament + Vəzifə — geniş chart kartları *@
+    @* Sıra 2: Departament + Vəzifə — modern ranking list (heç bir rainbow yoxdur) *@
     <div class="rd-chart-row">
         <div class="fn-card">
             <div class="fn-card-head">
-                <div class="fn-card-title">Departament üzrə işçilər</div>
+                <div class="fn-card-title">
+                    <i class="bi bi-diagram-3" style="color:#2d6cdf"></i>
+                    Departament üzrə işçilər
+                </div>
+                <span class="rd-card-meta">@Model.DepartamentStat.Count departament</span>
             </div>
-            <div class="rd-chart-wrap rd-chart-wrap--lg"><canvas id="chartDept"></canvas></div>
+            @{
+                int deptMax = Model.DepartamentStat.Any() ? Model.DepartamentStat.Max(x => x.IsciSayi) : 1;
+            }
+            <div class="rd-ranklist">
+                @for (int i = 0; i < Model.DepartamentStat.Count; i++)
+                {
+                    var d = Model.DepartamentStat[i];
+                    var pct = deptMax > 0 ? (int)Math.Round((double)d.IsciSayi / deptMax * 100) : 0;
+                    var topCls = i < 3 ? "rd-rank--top" : "";
+                    <div class="rd-rank @topCls">
+                        <div class="rd-rank-num">@(i + 1)</div>
+                        <div class="rd-rank-body">
+                            <div class="rd-rank-row">
+                                <span class="rd-rank-name" title="@d.Ad">@d.Ad</span>
+                                <span class="rd-rank-val">@d.IsciSayi</span>
+                            </div>
+                            <div class="rd-rank-track">
+                                <div class="rd-rank-fill" style="width:@pct%"></div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
         </div>
+
         <div class="fn-card">
             <div class="fn-card-head">
-                <div class="fn-card-title">Vəzifə paylanması (Top 10)</div>
+                <div class="fn-card-title">
+                    <i class="bi bi-person-badge" style="color:#7c3aed"></i>
+                    Vəzifə paylanması <small style="color:#9aa3b5;font-weight:500;font-size:10px;">Top 10</small>
+                </div>
+                <span class="rd-card-meta">@Model.VezifeStat.Count vəzifə</span>
             </div>
-            <div class="rd-chart-wrap rd-chart-wrap--lg"><canvas id="chartVezife"></canvas></div>
+            @{
+                int vezMax = Model.VezifeStat.Any() ? Model.VezifeStat.Max(x => x.IsciSayi) : 1;
+            }
+            <div class="rd-ranklist rd-ranklist--alt">
+                @for (int i = 0; i < Model.VezifeStat.Count; i++)
+                {
+                    var v = Model.VezifeStat[i];
+                    var pct = vezMax > 0 ? (int)Math.Round((double)v.IsciSayi / vezMax * 100) : 0;
+                    var topCls = i < 3 ? "rd-rank--top" : "";
+                    <div class="rd-rank @topCls">
+                        <div class="rd-rank-num">@(i + 1)</div>
+                        <div class="rd-rank-body">
+                            <div class="rd-rank-row">
+                                <span class="rd-rank-name" title="@v.Ad">@v.Ad</span>
+                                <span class="rd-rank-val">@v.IsciSayi</span>
+                            </div>
+                            <div class="rd-rank-track">
+                                <div class="rd-rank-fill" style="width:@pct%"></div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
         </div>
     </div>
 
@@ -701,89 +754,16 @@
         Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
         Chart.defaults.font.size = 11;
         Chart.defaults.color = '#6b7589';
-        Chart.defaults.plugins.legend.display = false;
-        Chart.defaults.plugins.tooltip.backgroundColor = '#1a2332';
-        Chart.defaults.plugins.tooltip.titleColor = '#fff';
-        Chart.defaults.plugins.tooltip.bodyColor = '#cbd1dc';
-        Chart.defaults.plugins.tooltip.padding = 10;
-        Chart.defaults.plugins.tooltip.cornerRadius = 8;
-        Chart.defaults.plugins.tooltip.displayColors = false;
-        Chart.defaults.plugins.tooltip.titleFont = { weight: '600', size: 12 };
 
-        // Şaquli/üfüqi qrafiklər üçün gradient köməkçi
-        function vGrad(ctx, top, bottom) {
-            const { chart: { ctx: c, chartArea } } = ctx;
-            if (!chartArea) return top;
-            const g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-            g.addColorStop(0, top); g.addColorStop(1, bottom);
-            return g;
-        }
-        function hGrad(ctx, left, right) {
-            const { chart: { ctx: c, chartArea } } = ctx;
-            if (!chartArea) return left;
-            const g = c.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
-            g.addColorStop(0, left); g.addColorStop(1, right);
-            return g;
-        }
-
-        // Pal cütlükləri (start → end)
-        const palPairs = [
-            ['#2d6cdf','#5a91f0'], ['#1e9b6b','#4ec99a'], ['#d4920a','#f0b94d'],
-            ['#c83838','#e36b6b'], ['#7c3aed','#a06bf2'], ['#0ea5e9','#48c0f5'],
-            ['#ec4899','#f57bb5'], ['#f59e0b','#fbb951'], ['#6366f1','#8c8ff5'],
-            ['#1e2a3b','#3a4a63']
-        ];
-        const palStart = palPairs.map(p => p[0]);
-        const palEnd   = palPairs.map(p => p[1]);
-
-        // ── Departament üzrə işçilər ──
-        new Chart(document.getElementById('chartDept'), {
-            type: 'bar',
-            data: {
-                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DepartamentStat.Select(x => x.Ad))),
-                datasets: [{
-                    label: 'İşçi sayı',
-                    data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DepartamentStat.Select(x => x.IsciSayi))),
-                    backgroundColor: ctx => hGrad(ctx, palStart[ctx.dataIndex % palStart.length], palEnd[ctx.dataIndex % palEnd.length]),
-                    borderRadius: 6, barThickness: 22, hoverBackgroundColor: '#1a2332'
-                }]
-            },
-            options: {
-                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                scales: {
-                    x: { grid: { color: '#f3f4f8', drawBorder: false }, ticks: { precision: 0 } },
-                    y: { grid: { display: false, drawBorder: false } }
-                }
-            }
-        });
-
-        // ── Kişi / Qadın ──
+        // Yalnız Kişi/Qadın donut qaldı — qalan analitika Razor ilə render olunur
         new Chart(document.getElementById('chartGender'), {
             type: 'doughnut',
             data: { labels: ['Kişi','Qadın'], datasets: [{ data: [@Model.KisiSayi, @Model.QadinSayi], backgroundColor: ['#2d6cdf', '#ec4899'], borderWidth: 3, borderColor: '#fff', hoverOffset: 6 }] },
             options: {
                 responsive: true, maintainAspectRatio: false, cutout: '72%',
-                plugins: { legend: { display: false } }
-            }
-        });
-
-        // ── Vəzifə paylanması ──
-        new Chart(document.getElementById('chartVezife'), {
-            type: 'bar',
-            data: {
-                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.VezifeStat.Select(x => x.Ad))),
-                datasets: [{
-                    label: 'İşçi sayı',
-                    data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.VezifeStat.Select(x => x.IsciSayi))),
-                    backgroundColor: ctx => hGrad(ctx, palStart[ctx.dataIndex % palStart.length], palEnd[ctx.dataIndex % palEnd.length]),
-                    borderRadius: 6, barThickness: 20, hoverBackgroundColor: '#1a2332'
-                }]
-            },
-            options: {
-                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                scales: {
-                    x: { grid: { color: '#f3f4f8', drawBorder: false }, ticks: { precision: 0 } },
-                    y: { grid: { display: false, drawBorder: false } }
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { backgroundColor: '#1a2332', padding: 10, cornerRadius: 8, displayColors: false }
                 }
             }
         });
