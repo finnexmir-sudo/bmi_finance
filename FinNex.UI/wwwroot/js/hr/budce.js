@@ -115,9 +115,13 @@
             qeyd: document.getElementById('editQeyd').value
         };
 
+        var csrfToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
         fetch('/HR/Budce/Create', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': csrfToken
+            },
             body: JSON.stringify(payload)
         })
             .then(r => {

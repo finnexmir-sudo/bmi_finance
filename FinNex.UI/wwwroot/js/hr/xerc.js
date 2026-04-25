@@ -136,9 +136,13 @@
             return;
         }
 
+        var csrfToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
         fetch('/HR/Xerc/Imtina?id=' + id, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': csrfToken
+            },
             body: JSON.stringify({ sebeb: sebeb })
         })
             .then(r => {

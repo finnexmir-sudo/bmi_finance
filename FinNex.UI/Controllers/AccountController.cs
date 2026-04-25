@@ -9,7 +9,9 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace FinNex.UI.Controllers
 {
-    [AllowAnonymous]
+    // Class səviyyəsində [AllowAnonymous] silindi — hər action özünə uyğun
+    // [AllowAnonymous] və ya [Authorize] daşıyır. Bu, Register kimi həssas
+    // əməliyyatların təsadüfən anonim qalmamasını təmin edir.
     public class AccountController : Controller
     {
         private readonly UserManager<AppUser> _userManager;
@@ -33,6 +35,7 @@ namespace FinNex.UI.Controllers
         // LOGIN (GET)
         // ======================
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Login()
         {
             var lastUser = Request.Cookies["LastUserName"] ?? "";
@@ -42,6 +45,7 @@ namespace FinNex.UI.Controllers
         // ======================
         // LOGIN (POST)
         [HttpPost]
+        [AllowAnonymous]
         [EnableRateLimiting("login")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginDto dto)
@@ -113,18 +117,21 @@ namespace FinNex.UI.Controllers
 
 
         // ======================
-        // REGISTER (GET)
+        // REGISTER (GET) — yalnız Admin
         // ======================
         [HttpGet]
+        [Authorize(Roles = RoleNames.Admin)]
         public IActionResult Register()
         {
             return View(new RegisterDto());
         }
 
         // ======================
-        // REGISTER (POST)
+        // REGISTER (POST) — yalnız Admin
+        // Bank-internal sistemdə anonim hesab açılışı qadağan edildi.
         // ======================
         [HttpPost]
+        [Authorize(Roles = RoleNames.Admin)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
@@ -178,30 +185,42 @@ namespace FinNex.UI.Controllers
         // ======================
         // ACCESS DENIED
         // ======================
+        [AllowAnonymous]
         public IActionResult AccessDenied()
         {
             return View();
         }
 
-        // GET
+        // GET — istifadəçi öz şifrəsini login olmadan dəyişə bilsin
+        // (mövcud parolu bilməlidir; Identity ChangePasswordAsync yoxlayır).
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult ChangePassword()
         {
             return View(new UI.DTO.ChangePasswordDto());
         }
 
-        // POST
+        // POST — anonim qalır (mövcud parolu bilmək tələb olunur),
+        // amma rate-limit + LoginLogs ilə brute-force-dən qorunur.
         [HttpPost]
+        [AllowAnonymous]
+        [EnableRateLimiting("changepassword")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangePassword(UI.DTO.ChangePasswordDto dto)
         {
             if (!ModelState.IsValid)
                 return View(dto);
 
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = Request.Headers.UserAgent.ToString();
+            if (userAgent.Length > 500) userAgent = userAgent[..500];
+
             // İstifadəçi adına görə user tap
             var user = await _userManager.FindByNameAsync(dto.UserName);
             if (user == null)
             {
+                await LogLoginAttempt(dto.UserName, null, ip, userAgent, false,
+                    "Şifrə dəyişdirmə cəhdi: istifadəçi tapılmadı");
                 ModelState.AddModelError(nameof(dto.UserName), "Bu istifadəçi adı tapılmadı.");
                 return View(dto);
             }
@@ -220,9 +239,15 @@ namespace FinNex.UI.Controllers
 
             if (result.Succeeded)
             {
+                await LogLoginAttempt(dto.UserName, $"{user.Ad} {user.Soyad}", ip, userAgent, true,
+                    "Şifrə dəyişdirildi");
                 TempData["SuccessMessage"] = "Şifrəniz uğurla yeniləndi. Yeni şifrə ilə daxil olun.";
                 return RedirectToAction("Login");
             }
+
+            // Uğursuz şifrə dəyişdirmə → log + generic xəta
+            await LogLoginAttempt(dto.UserName, $"{user.Ad} {user.Soyad}", ip, userAgent, false,
+                "Şifrə dəyişdirmə uğursuz: cari şifrə yanlış");
 
             foreach (var error in result.Errors)
                 ModelState.AddModelError(string.Empty, error.Description);

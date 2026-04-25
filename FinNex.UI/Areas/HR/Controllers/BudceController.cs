@@ -74,6 +74,7 @@ public class BudceController : Controller
 
     // ── POST /HR/Budce/Create ───────────────────────────────
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create([FromBody] BudceCreateDto dto)
     {
         if (dto.DepartamentId <= 0 || dto.Ay < 1 || dto.Ay > 12 || dto.Il < 2020)
