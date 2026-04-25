@@ -2,6 +2,18 @@
 @{
     ViewData["Title"] = "Hesabat";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    Func<int, string> hsbPageUrl = p => Url.Action("Index", new
+    {
+        Model.Filter.BaslamaTarixFrom,
+        Model.Filter.BaslamaTarixTo,
+        Model.Filter.DepartamentId,
+        Model.Filter.Nov,
+        Model.Filter.Status,
+        Model.Filter.Axtaris,
+        Model.Filter.PageSize,
+        Page = p
+    }) ?? "#";
 }
 
 @section Styles {
@@ -284,29 +296,17 @@
             @* ── Səhifələmə ── *@
             @if (Model.TotalPages > 1)
             {
-                string PageUrl(int p) => Url.Action("Index", new
-                {
-                    Model.Filter.BaslamaTarixFrom,
-                    Model.Filter.BaslamaTarixTo,
-                    Model.Filter.DepartamentId,
-                    Model.Filter.Nov,
-                    Model.Filter.Status,
-                    Model.Filter.Axtaris,
-                    Model.Filter.PageSize,
-                    Page = p
-                }) ?? "#";
-
-                int win = 2;
-                int pageFrom = Math.Max(1, Model.CurrentPage - win);
-                int pageTo = Math.Min(Model.TotalPages, Model.CurrentPage + win);
+                var pagerWin = 2;
+                var pageFrom = Math.Max(1, Model.CurrentPage - pagerWin);
+                var pageTo = Math.Min(Model.TotalPages, Model.CurrentPage + pagerWin);
 
                 <div class="hsb-pager">
                     <a class="hsb-page-btn @(Model.CurrentPage <= 1 ? "is-disabled" : "")"
-                       href="@(Model.CurrentPage > 1 ? PageUrl(Model.CurrentPage - 1) : "#")">‹ Əvvəl</a>
+                       href="@(Model.CurrentPage > 1 ? hsbPageUrl(Model.CurrentPage - 1) : "#")">‹ Əvvəl</a>
 
                     @if (pageFrom > 1)
                     {
-                        <a class="hsb-page-num" href="@PageUrl(1)">1</a>
+                        <a class="hsb-page-num" href="@hsbPageUrl(1)">1</a>
                         if (pageFrom > 2)
                         {
                             <span class="hsb-page-dots">…</span>
@@ -316,7 +316,7 @@
                     @for (int p = pageFrom; p <= pageTo; p++)
                     {
                         <a class="hsb-page-num @(p == Model.CurrentPage ? "is-active" : "")"
-                           href="@PageUrl(p)">@p</a>
+                           href="@hsbPageUrl(p)">@p</a>
                     }
 
                     @if (pageTo < Model.TotalPages)
@@ -325,11 +325,11 @@
                         {
                             <span class="hsb-page-dots">…</span>
                         }
-                        <a class="hsb-page-num" href="@PageUrl(Model.TotalPages)">@Model.TotalPages</a>
+                        <a class="hsb-page-num" href="@hsbPageUrl(Model.TotalPages)">@Model.TotalPages</a>
                     }
 
                     <a class="hsb-page-btn @(Model.CurrentPage >= Model.TotalPages ? "is-disabled" : "")"
-                       href="@(Model.CurrentPage < Model.TotalPages ? PageUrl(Model.CurrentPage + 1) : "#")">Sonra ›</a>
+                       href="@(Model.CurrentPage < Model.TotalPages ? hsbPageUrl(Model.CurrentPage + 1) : "#")">Sonra ›</a>
                 </div>
             }
         }
