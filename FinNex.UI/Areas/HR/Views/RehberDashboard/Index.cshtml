@@ -6,6 +6,11 @@
     var faiz = Model.DavamiyyetFaizi;
     var faizCls = faiz >= 90 ? "#1e9b6b" : faiz >= 75 ? "#d4920a" : "#c83838";
     var umumiIsci = Model.UmumiIsciSayi > 0 ? Model.UmumiIsciSayi : 1;
+
+    int actionTotal = Model.GozleyenMezuniyyetTesdiqi + Model.GozleyenIcazeTesdiqi
+                    + Model.GozleyenAvansSayi + Model.MaasLayiheSayi
+                    + Model.GozleyenSenedSayi + Model.KritikMezBalansSayi
+                    + Model.MaasHesablanmamisSayi;
 }
 
 @section Styles {
@@ -21,81 +26,246 @@
 
 <div class="fn-dashboard rd">
 
-    <!-- ═══ KPI KARTLARI ═══ -->
-    <div class="rd-kpi-grid">
-        <div class="rd-kpi">
+    <!-- ═══ 1. ACTION CENTER — Diqqət Tələb Edən İşlər ═══ -->
+    <div class="rd-section-head rd-section-head--action">
+        <span class="rd-action-pulse"></span> Diqqət tələb edir
+        @if (actionTotal > 0)
+        {
+            <span class="rd-action-total">@actionTotal element</span>
+        }
+        else
+        {
+            <span class="rd-action-total rd-action-total--ok">Hər şey nizamdadır</span>
+        }
+    </div>
+    <div class="rd-action-grid">
+        <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Index"
+           class="rd-action-tile @(Model.GozleyenMezuniyyetTesdiqi > 0 ? "rd-action-tile--alert" : "")">
+            <i class="bi bi-tree"></i>
+            <div class="rd-action-num">@Model.GozleyenMezuniyyetTesdiqi</div>
+            <div class="rd-action-lbl">Məzuniyyət təsdiqi</div>
+        </a>
+        <a asp-area="HR" asp-controller="Icaze" asp-action="Index"
+           class="rd-action-tile @(Model.GozleyenIcazeTesdiqi > 0 ? "rd-action-tile--alert" : "")">
+            <i class="bi bi-hourglass-split"></i>
+            <div class="rd-action-num">@Model.GozleyenIcazeTesdiqi</div>
+            <div class="rd-action-lbl">İcazə təsdiqi</div>
+        </a>
+        <a asp-area="HR" asp-controller="Avans" asp-action="Index"
+           class="rd-action-tile @(Model.GozleyenAvansSayi > 0 ? "rd-action-tile--alert" : "")">
+            <i class="bi bi-cash-coin"></i>
+            <div class="rd-action-num">@Model.GozleyenAvansSayi</div>
+            <div class="rd-action-lbl">Avans müraciəti</div>
+        </a>
+        <a asp-area="HR" asp-controller="Maas" asp-action="Index"
+           class="rd-action-tile @(Model.MaasLayiheSayi > 0 ? "rd-action-tile--info" : "")">
+            <i class="bi bi-file-earmark-check"></i>
+            <div class="rd-action-num">@Model.MaasLayiheSayi</div>
+            <div class="rd-action-lbl">Maaş təsdiqi gözləyir</div>
+        </a>
+        <a asp-area="HR" asp-controller="Maas" asp-action="Index"
+           class="rd-action-tile @(Model.MaasHesablanmamisSayi > 0 ? "rd-action-tile--warn" : "")">
+            <i class="bi bi-exclamation-circle"></i>
+            <div class="rd-action-num">@Model.MaasHesablanmamisSayi</div>
+            <div class="rd-action-lbl">Bu ay maaş yoxdur</div>
+        </a>
+        <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
+           class="rd-action-tile @(Model.GozleyenSenedSayi > 0 ? "rd-action-tile--info" : "")">
+            <i class="bi bi-folder-symlink"></i>
+            <div class="rd-action-num">@Model.GozleyenSenedSayi</div>
+            <div class="rd-action-lbl">Sənəd yoxlanılır</div>
+        </a>
+        <a href="#kritikBalans"
+           class="rd-action-tile @(Model.KritikMezBalansSayi > 0 ? "rd-action-tile--warn" : "")">
+            <i class="bi bi-battery-low"></i>
+            <div class="rd-action-num">@Model.KritikMezBalansSayi</div>
+            <div class="rd-action-lbl">Məz. balansı kritik</div>
+        </a>
+    </div>
+
+    <!-- ═══ 2. BUGÜNKÜ DAVAMİYYƏT — Detallı ═══ -->
+    <div class="rd-section-head">
+        <span class="rd-live-dot"></span> Bugünkü davamiyyət
+        <span class="rd-section-meta">@DateTime.Today.ToString("dd MMMM yyyy")</span>
+    </div>
+
+    @if (!Model.BugunQeydVar)
+    {
+        <div class="rd-empty-state">
+            <i class="bi bi-calendar2-x"></i>
+            <div class="rd-empty-title">Bu gün üçün hələ qeyd yoxdur</div>
+            <div class="rd-empty-sub">İşçilər hələ giriş etməyiblər və ya davamiyyət sistemi açılmayıb.</div>
+        </div>
+    }
+    else
+    {
+        <div class="rd-att-stats">
+            <div class="rd-att-stat rd-att-stat--green">
+                <div class="rd-att-num">@Model.BugunIshde</div>
+                <div class="rd-att-lbl">İşdə</div>
+            </div>
+            <div class="rd-att-stat rd-att-stat--amber">
+                <div class="rd-att-num">@Model.BugunGeciken</div>
+                <div class="rd-att-lbl">Gecikən</div>
+            </div>
+            <div class="rd-att-stat rd-att-stat--red">
+                <div class="rd-att-num">@Model.BugunQayib</div>
+                <div class="rd-att-lbl">Qayıb</div>
+            </div>
+            <div class="rd-att-stat rd-att-stat--blue">
+                <div class="rd-att-num">@Model.BugunMezuniyyetde</div>
+                <div class="rd-att-lbl">Məzuniyyətdə</div>
+            </div>
+            <div class="rd-att-stat rd-att-stat--purple">
+                <div class="rd-att-num">@Model.BugunIcazeli</div>
+                <div class="rd-att-lbl">İcazəli</div>
+            </div>
+            <div class="rd-att-stat rd-att-stat--gauge">
+                <div class="rd-att-num" style="color:@faizCls">@faiz%</div>
+                <div class="rd-att-lbl">Davamiyyət (bu ay)</div>
+                <div class="rd-progress" style="margin-top:6px">
+                    <div class="rd-progress-fill" style="width:@faiz%;background:@faizCls"></div>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.BugunGecikenIsciler.Any() || Model.BugunQayibIsciler.Any())
+        {
+            <div class="rd-att-detail-grid">
+                @if (Model.BugunGecikenIsciler.Any())
+                {
+                    <div class="fn-card rd-att-detail">
+                        <div class="fn-card-head">
+                            <div class="fn-card-title">
+                                <i class="bi bi-clock-history" style="color:#d4920a"></i>
+                                Gecikən işçilər
+                            </div>
+                            <span class="rd-count-badge rd-count-badge--amber">@Model.BugunGecikenIsciler.Count</span>
+                        </div>
+                        @foreach (var g in Model.BugunGecikenIsciler)
+                        {
+                            <div class="rd-list-item">
+                                <div class="rd-avatar rd-avatar--amber">@(g.AdSoyad.Length > 0 ? g.AdSoyad[0] : '?')</div>
+                                <div class="rd-list-info">
+                                    <div class="rd-list-name">@g.AdSoyad</div>
+                                    <div class="rd-list-meta">@g.Departament</div>
+                                </div>
+                                @if (g.GirisVaxti != null)
+                                {
+                                    <span class="rd-time rd-time--in">@g.GirisVaxti</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                @if (Model.BugunQayibIsciler.Any())
+                {
+                    <div class="fn-card rd-att-detail">
+                        <div class="fn-card-head">
+                            <div class="fn-card-title">
+                                <i class="bi bi-x-circle" style="color:#c83838"></i>
+                                Qayıb işçilər
+                            </div>
+                            <span class="rd-count-badge rd-count-badge--red">@Model.BugunQayibIsciler.Count</span>
+                        </div>
+                        @foreach (var g in Model.BugunQayibIsciler)
+                        {
+                            <div class="rd-list-item">
+                                <div class="rd-avatar rd-avatar--red">@(g.AdSoyad.Length > 0 ? g.AdSoyad[0] : '?')</div>
+                                <div class="rd-list-info">
+                                    <div class="rd-list-name">@g.AdSoyad</div>
+                                    <div class="rd-list-meta">@g.Departament</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    <!-- ═══ 3. KPI KARTLARI — Maliyyə + Personel ═══ -->
+    <div class="rd-section-head">
+        <i class="bi bi-graph-up"></i> Əsas göstəricilər
+    </div>
+    <div class="rd-kpi-grid rd-kpi-grid--rich">
+        <div class="rd-kpi rd-kpi--primary">
             <div class="rd-kpi-icon rd-kpi-icon--dark"><i class="bi bi-people-fill"></i></div>
-            <div>
+            <div class="rd-kpi-body">
                 <div class="rd-kpi-label">Ümumi işçi</div>
                 <div class="rd-kpi-value">@Model.UmumiIsciSayi</div>
                 <div class="rd-kpi-hint">@Model.AktivIsciSayi aktiv · @Model.IshdenCixanSayi ayrılıb</div>
             </div>
         </div>
+
         <div class="rd-kpi">
             <div class="rd-kpi-icon rd-kpi-icon--pink"><i class="bi bi-gender-ambiguous"></i></div>
-            <div>
+            <div class="rd-kpi-body">
                 <div class="rd-kpi-label">Kişi / Qadın</div>
                 <div class="rd-kpi-value">@Model.KisiSayi <span class="rd-kpi-slash">/</span> @Model.QadinSayi</div>
                 <div class="rd-kpi-hint">@((int)((double)Model.KisiSayi / umumiIsci * 100))% · @((int)((double)Model.QadinSayi / umumiIsci * 100))%</div>
             </div>
         </div>
+
         <div class="rd-kpi">
             <div class="rd-kpi-icon rd-kpi-icon--green"><i class="bi bi-person-plus-fill"></i></div>
-            <div>
+            <div class="rd-kpi-body">
                 <div class="rd-kpi-label">Bu ay işə qəbul</div>
                 <div class="rd-kpi-value">@Model.BuAyIsheQebulSayi</div>
                 <div class="rd-kpi-hint">@Model.BuAyIshdenAyrilanSayi ayrıldı</div>
             </div>
         </div>
-        <div class="rd-kpi">
-            <div class="rd-kpi-icon rd-kpi-icon--amber"><i class="bi bi-bell-fill"></i></div>
-            <div>
-                <div class="rd-kpi-label">Gözləyən təsdiqlər</div>
-                <div class="rd-kpi-value">@(Model.GozleyenMezuniyyetTesdiqi + Model.GozleyenIcazeTesdiqi)</div>
-                <div class="rd-kpi-hint">@Model.GozleyenMezuniyyetTesdiqi məz. · @Model.GozleyenIcazeTesdiqi icazə</div>
+
+        <div class="rd-kpi rd-kpi--primary">
+            <div class="rd-kpi-icon rd-kpi-icon--gold"><i class="bi bi-cash-stack"></i></div>
+            <div class="rd-kpi-body">
+                <div class="rd-kpi-label">Bu ayın maaş fondu</div>
+                <div class="rd-kpi-value">@Model.UmumiBrutMaas.ToString("N0") <small>₼</small></div>
+                <div class="rd-kpi-hint">Net: @Model.UmumiNetMaas.ToString("N0") ₼ · Orta: @Model.OrtaMaas.ToString("N0") ₼</div>
             </div>
         </div>
+
         <div class="rd-kpi">
-            <div class="rd-kpi-icon rd-kpi-icon--blue"><i class="bi bi-graph-up-arrow"></i></div>
-            <div>
-                <div class="rd-kpi-label">Davamiyyət faizi</div>
-                <div class="rd-kpi-value">@faiz%</div>
-                <div class="rd-progress"><div class="rd-progress-fill" style="width:@faiz%;background:@faizCls"></div></div>
+            <div class="rd-kpi-icon rd-kpi-icon--purple"><i class="bi bi-wallet2"></i></div>
+            <div class="rd-kpi-body">
+                <div class="rd-kpi-label">Avans (bu ay)</div>
+                <div class="rd-kpi-value">@Model.BuAyAvansCemi.ToString("N0") <small>₼</small></div>
+                <div class="rd-kpi-hint">@Model.BuAyAvansSayi əməliyyat · @Model.GozleyenAvansSayi gözləyir</div>
+            </div>
+        </div>
+
+        <div class="rd-kpi">
+            <div class="rd-kpi-icon rd-kpi-icon--blue"><i class="bi bi-bank2"></i></div>
+            <div class="rd-kpi-body">
+                <div class="rd-kpi-label">Swift / Ödəniş tapşırığı</div>
+                <div class="rd-kpi-value">@Model.BuAyOdenisTapsirigiSayi</div>
+                <div class="rd-kpi-hint">@Model.BuAyOdenisTapsirigiMebleg.ToString("N0") ₼ bu ay</div>
+            </div>
+        </div>
+
+        <div class="rd-kpi">
+            <div class="rd-kpi-icon rd-kpi-icon--teal"><i class="bi bi-folder2"></i></div>
+            <div class="rd-kpi-body">
+                <div class="rd-kpi-label">Sənəd dövriyyəsi</div>
+                <div class="rd-kpi-value">@Model.AktivSenedSayi</div>
+                <div class="rd-kpi-hint">@Model.BuAySenedSayi yeni bu ay · @Model.GozleyenSenedSayi yoxlanılır</div>
+            </div>
+        </div>
+
+        <div class="rd-kpi">
+            <div class="rd-kpi-icon rd-kpi-icon--amber"><i class="bi bi-tree-fill"></i></div>
+            <div class="rd-kpi-body">
+                <div class="rd-kpi-label">Məzuniyyətdə</div>
+                <div class="rd-kpi-value">@Model.HazirdaMezuniyyetde</div>
+                <div class="rd-kpi-hint">@Model.BuHefteBitenMezuniyyet bu həftə bitir</div>
             </div>
         </div>
     </div>
 
-    <!-- ═══ BUGÜNKÜ DAVAMİYYƏT ═══ -->
-    <div class="rd-section-head">
-        <span class="rd-live-dot"></span> Bugünkü davamiyyət
-    </div>
-    <div class="rd-stat-row">
-        <div class="rd-stat rd-stat--green">
-            <div class="rd-stat-num">@Model.BugunIshde</div>
-            <div class="rd-stat-lbl">İşdə</div>
-        </div>
-        <div class="rd-stat rd-stat--amber">
-            <div class="rd-stat-num">@Model.BugunGeciken</div>
-            <div class="rd-stat-lbl">Gecikən</div>
-        </div>
-        <div class="rd-stat rd-stat--red">
-            <div class="rd-stat-num">@Model.BugunQayib</div>
-            <div class="rd-stat-lbl">Qayıb</div>
-        </div>
-        <div class="rd-stat rd-stat--blue">
-            <div class="rd-stat-num">@Model.BugunMezuniyyetde</div>
-            <div class="rd-stat-lbl">Məzuniyyətdə</div>
-        </div>
-        <div class="rd-stat rd-stat--purple">
-            <div class="rd-stat-num">@Model.BugunIcazeli</div>
-            <div class="rd-stat-lbl">İcazəli</div>
-        </div>
-    </div>
-
-    <!-- ═══ 3 SÜTUNLU BLOK ═══ -->
+    <!-- ═══ 4. SİYAHILAR — 3 sütun ═══ -->
     <div class="rd-grid3">
 
-        <!-- Gözləyən Təsdiqlər -->
+        <!-- Gözləyən təsdiqlər (məz + icazə + avans qısa siyahısı) -->
         <div class="fn-card">
             <div class="fn-card-head">
                 <div class="fn-card-title">Gözləyən təsdiqlər</div>
@@ -107,10 +277,10 @@
                 @foreach (var m in Model.GozleyenMezuniyyetler)
                 {
                     <div class="rd-list-item">
-                        <div class="rd-avatar">@(m.AdSoyad?.Length > 0 ? m.AdSoyad[0] : '?')</div>
+                        <div class="rd-avatar">@(m.AdSoyad.Length > 0 ? m.AdSoyad[0] : '?')</div>
                         <div class="rd-list-info">
-                            <div class="rd-list-name">@(m.AdSoyad ?? "—")</div>
-                            <div class="rd-list-meta">@(m.Departament ?? "—") · @(m.Tarix ?? "—")</div>
+                            <div class="rd-list-name">@m.AdSoyad</div>
+                            <div class="rd-list-meta">@m.Departament · @m.Tarix</div>
                         </div>
                         <span class="fn-badge fn-badge--wait">Məz.</span>
                     </div>
@@ -122,10 +292,10 @@
                 @foreach (var ic in Model.GozleyenIcazeler)
                 {
                     <div class="rd-list-item">
-                        <div class="rd-avatar">@(ic.AdSoyad?.Length > 0 ? ic.AdSoyad[0] : '?')</div>
+                        <div class="rd-avatar">@(ic.AdSoyad.Length > 0 ? ic.AdSoyad[0] : '?')</div>
                         <div class="rd-list-info">
-                            <div class="rd-list-name">@(ic.AdSoyad ?? "—")</div>
-                            <div class="rd-list-meta">@(ic.Departament ?? "—") · @(ic.Tarix ?? "—")</div>
+                            <div class="rd-list-name">@ic.AdSoyad</div>
+                            <div class="rd-list-meta">@ic.Departament · @ic.Tarix</div>
                         </div>
                         <span class="fn-badge fn-badge--review">İcazə</span>
                     </div>
@@ -148,10 +318,10 @@
                 @foreach (var m in Model.MezuniyyetdeOlanlar)
                 {
                     <div class="rd-list-item">
-                        <div class="rd-avatar rd-avatar--amber">@(m.AdSoyad?.Length > 0 ? m.AdSoyad[0] : '?')</div>
+                        <div class="rd-avatar rd-avatar--amber">@(m.AdSoyad.Length > 0 ? m.AdSoyad[0] : '?')</div>
                         <div class="rd-list-info">
-                            <div class="rd-list-name">@(m.AdSoyad ?? "—")</div>
-                            <div class="rd-list-meta">@(m.Departament ?? "—") · @(m.Nov ?? "—")</div>
+                            <div class="rd-list-name">@m.AdSoyad</div>
+                            <div class="rd-list-meta">@m.Departament · @m.Nov</div>
                         </div>
                         <div class="rd-date-tag">@m.BitmeTarixi.ToString("dd.MM")</div>
                     </div>
@@ -169,45 +339,75 @@
             </div>
         </div>
 
-        <!-- Son girişlər -->
-        <div class="fn-card">
-            <div class="fn-card-head">
-                <div class="fn-card-title">Son girişlər</div>
-            </div>
-            <div class="rd-scroll-area">
-                @if (Model.SonGirisler.Any())
+        <!-- Kritik məzuniyyət balansı + Son girişlər (alt-alta) -->
+        <div class="rd-stack">
+            <div class="fn-card" id="kritikBalans">
+                <div class="fn-card-head">
+                    <div class="fn-card-title">
+                        <i class="bi bi-battery-low" style="color:#c83838"></i>
+                        Məzuniyyət balansı kritik
+                    </div>
+                    <span class="rd-count-badge rd-count-badge--red">@Model.KritikMezBalansSayi</span>
+                </div>
+                @if (Model.KritikBalansIsciler.Any())
                 {
-                    @foreach (var g in Model.SonGirisler)
+                    @foreach (var k in Model.KritikBalansIsciler)
                     {
-                        var cls = g.Status == 1 ? "fn-badge--done" :
-                                  g.Status == 2 ? "fn-badge--wait" :
-                                  g.Status == 3 ? "fn-badge--rejected" : "fn-badge--review";
-                        var lbl = g.Status == 1 ? "İşdə" :
-                                  g.Status == 2 ? "Gecikdi" :
-                                  g.Status == 3 ? "Qayıb" : "İcazəli";
                         <div class="rd-list-item">
-                            <div class="rd-avatar rd-avatar--blue">@(g.Ad?.Length > 0 ? g.Ad[0] : '?')</div>
+                            <div class="rd-avatar rd-avatar--red">@(k.AdSoyad.Length > 0 ? k.AdSoyad[0] : '?')</div>
                             <div class="rd-list-info">
-                                <div class="rd-list-name">@(g.Ad ?? "—")</div>
-                                <div class="rd-list-meta">@(g.Departament ?? "—")</div>
+                                <div class="rd-list-name">@k.AdSoyad</div>
+                                <div class="rd-list-meta">@k.Departament</div>
                             </div>
-                            <div class="rd-time-group">
-                                @if (g.GirisVaxti != null) { <span class="rd-time rd-time--in">@g.GirisVaxti</span> }
-                                @if (g.CixisVaxti != null) { <span class="rd-time rd-time--out">@g.CixisVaxti</span> }
-                            </div>
-                            <span class="fn-badge @cls">@lbl</span>
+                            <span class="rd-date-tag rd-date-tag--red">@k.QalanGun gün</span>
                         </div>
                     }
                 }
                 else
                 {
-                    <div class="rd-empty">Bugün hələ qeyd yoxdur</div>
+                    <div class="rd-empty">Kritik balans yoxdur</div>
                 }
+            </div>
+
+            <div class="fn-card">
+                <div class="fn-card-head">
+                    <div class="fn-card-title">Son girişlər</div>
+                </div>
+                <div class="rd-scroll-area">
+                    @if (Model.SonGirisler.Any())
+                    {
+                        @foreach (var g in Model.SonGirisler)
+                        {
+                            var cls = g.Status == 1 ? "fn-badge--done" :
+                                      g.Status == 2 ? "fn-badge--wait" :
+                                      g.Status == 3 ? "fn-badge--rejected" : "fn-badge--review";
+                            var lbl = g.Status == 1 ? "İşdə" :
+                                      g.Status == 2 ? "Gecikdi" :
+                                      g.Status == 3 ? "Qayıb" : "İcazəli";
+                            <div class="rd-list-item">
+                                <div class="rd-avatar rd-avatar--blue">@(g.Ad.Length > 0 ? g.Ad[0] : '?')</div>
+                                <div class="rd-list-info">
+                                    <div class="rd-list-name">@g.Ad</div>
+                                    <div class="rd-list-meta">@g.Departament</div>
+                                </div>
+                                <div class="rd-time-group">
+                                    @if (g.GirisVaxti != null) { <span class="rd-time rd-time--in">@g.GirisVaxti</span> }
+                                    @if (g.CixisVaxti != null) { <span class="rd-time rd-time--out">@g.CixisVaxti</span> }
+                                </div>
+                                <span class="fn-badge @cls">@lbl</span>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="rd-empty">Bugün hələ qeyd yoxdur</div>
+                    }
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- ═══ ANALİTİKA — Qrafiklər ═══ -->
+    <!-- ═══ 5. ANALİTİKA — Qrafiklər ═══ -->
     <div class="rd-section-head">
         <i class="bi bi-bar-chart-line-fill"></i> Analitika
     </div>
@@ -230,14 +430,23 @@
         </div>
     </div>
 
-    <!-- ═══ MALİYYƏ ═══ -->
+    <!-- ═══ 6. MAAŞ STATUSU + DƏYİŞİKLİKLƏR ═══ -->
     <div class="rd-section-head">
-        <i class="bi bi-cash-stack"></i> Maaş / Maliyyə
+        <i class="bi bi-cash-stack"></i> Maaş statusu
     </div>
     <div class="fn-grid2">
         <div class="fn-card">
-            <div class="fn-card-head"><div class="fn-card-title">Bu ayın maaş fondu</div></div>
-            <div class="rd-fin-grid">
+            <div class="fn-card-head"><div class="fn-card-title">Bu ayın hesablama vəziyyəti</div></div>
+            <div class="rd-maas-pills">
+                <span class="rd-pill rd-pill--gray">Layihə: @Model.MaasLayihe</span>
+                <span class="rd-pill rd-pill--blue">Təsdiqlənib: @Model.MaasTesdiqlendi</span>
+                <span class="rd-pill rd-pill--green">Ödənildi: @Model.MaasOdenildi</span>
+                @if (Model.MaasHesablanmamisSayi > 0)
+                {
+                    <span class="rd-pill rd-pill--red">Hesablanmamış: @Model.MaasHesablanmamisSayi</span>
+                }
+            </div>
+            <div class="rd-fin-grid" style="margin-top:14px">
                 <div class="rd-fin-box">
                     <div class="rd-fin-lbl">Gross fond</div>
                     <div class="rd-fin-val">@Model.UmumiBrutMaas.ToString("N0") <small>AZN</small></div>
@@ -250,11 +459,6 @@
                     <div class="rd-fin-lbl">Orta maaş</div>
                     <div class="rd-fin-val">@Model.OrtaMaas.ToString("N0") <small>AZN</small></div>
                 </div>
-            </div>
-            <div class="rd-maas-pills">
-                <span class="rd-pill rd-pill--gray">Layihə: @Model.MaasLayihe</span>
-                <span class="rd-pill rd-pill--blue">Təsdiqlənib: @Model.MaasTesdiqlendi</span>
-                <span class="rd-pill rd-pill--green">Ödənildi: @Model.MaasOdenildi</span>
             </div>
         </div>
         <div class="fn-card">
@@ -287,7 +491,7 @@
         </div>
     </div>
 
-    <!-- ═══ DEPARTAMENT CƏDVƏLİ ═══ -->
+    <!-- ═══ 7. DEPARTAMENT CƏDVƏLİ ═══ -->
     @if (Model.DepartamentStat.Any())
     {
         <div class="rd-section-head">
