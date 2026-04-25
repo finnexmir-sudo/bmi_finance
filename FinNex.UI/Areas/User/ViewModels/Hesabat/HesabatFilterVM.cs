@@ -9,6 +9,8 @@ public class HesabatFilterVM
     public string? Nov { get; set; }        // "Mezuniyyet" | "Icaze" | null
     public int? Status { get; set; }
     public string? Axtaris { get; set; }    // işçi adı
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 25;
 }
 
 public class HesabatIndexVM
@@ -25,6 +27,12 @@ public class HesabatIndexVM
     public int ImtinaEdildi { get; set; }
     public int BuAyMezuniyyet { get; set; }
     public int BuAyIcaze { get; set; }
+
+    // Səhifələmə
+    public int TotalCount { get; set; }
+    public int CurrentPage { get; set; } = 1;
+    public int TotalPages { get; set; } = 1;
+    public int PageSize { get; set; } = 25;
 
     // Dropdown-lar üçün
     public List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> Departamentler { get; set; } = new();
