@@ -630,56 +630,84 @@
                 break;
 
             case "umumi":
-                <div class="fn-nav-label">Sənəd Dövriyyəsi</div>
-                <a asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index"
-                   class="fn-nav-item @(currentController == "Dashboard" && currentArea == "SenedDovriyyesi" ? "active" : "")">
-                    <i class="bi bi-grid"></i> Dashboard
-                </a>
-                <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
-                   class="fn-nav-item @(currentController == "Sened" && currentAction == "Index" ? "active" : "")">
-                    <i class="bi bi-folder"></i> Sənədlər
-                </a>
-                <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Yarat"
-                   class="fn-nav-item @(currentController == "Sened" && currentAction == "Yarat" ? "active" : "")">
-                    <i class="bi bi-plus-circle"></i> Yeni sənəd
-                </a>
-                <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Sablonlar"
-                   class="fn-nav-item @(currentController == "Sened" && currentAction == "Sablonlar" ? "active" : "")">
-                    <i class="bi bi-file-earmark-text"></i> Şablonlar
-                </a>
-                <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="SenedNovleri"
-                   class="fn-nav-item @(currentController == "Sened" && currentAction == "SenedNovleri" ? "active" : "")">
-                    <i class="bi bi-tags"></i> Sənəd növləri
-                </a>
-                @if (isAdmin)
                 {
-                    <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Silinmisler"
-                       class="fn-nav-item @(currentController == "Sened" && currentAction == "Silinmisler" ? "active" : "")">
-                        <i class="bi bi-trash"></i> Silinmişlər
-                    </a>
-                    <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Icazeler"
-                       class="fn-nav-item @(currentController == "Sened" && currentAction == "Icazeler" ? "active" : "")">
-                        <i class="bi bi-shield-check"></i> İcazələr
-                    </a>
-                }
+                    var senedActive = currentArea == "SenedDovriyyesi";
+                    var swiftActive = currentArea == "PR_Odenis_Tapsirigi";
+                    var odenisTapsirigiActive = currentController == "OdenisTapsirigi";
 
-                <div class="fn-nav-label">Swift / Ödəniş</div>
-                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Siyahi"
-                   class="fn-nav-item @(currentController == "OdenisTapsirigi" && currentAction == "Siyahi" ? "active" : "")">
-                    <i class="bi bi-list-ul"></i> Ödəniş siyahısı
-                </a>
-                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Create"
-                   class="fn-nav-item @(currentController == "OdenisTapsirigi" && currentAction == "Create" ? "active" : "")">
-                    <i class="bi bi-plus-circle"></i> Yeni ödəniş
-                </a>
-                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="Bank" asp-action="Index"
-                   class="fn-nav-item @(currentController == "Bank" ? "active" : "")">
-                    <i class="bi bi-bank"></i> Banklar
-                </a>
-                <a asp-area="PR_Odenis_Tapsirigi" asp-controller="Musteri" asp-action="Index"
-                   class="fn-nav-item @(currentController == "Musteri" ? "active" : "")">
-                    <i class="bi bi-person-vcard"></i> Müştərilər
-                </a>
+                    <div class="fn-nav-g @(senedActive || !swiftActive ? "open" : "")">
+                        <button type="button" class="fn-nav-g-head">
+                            <span>Sənəd Dövriyyəsi</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="fn-nav-g-body">
+                            <a asp-area="SenedDovriyyesi" asp-controller="Dashboard" asp-action="Index"
+                               class="fn-nav-item @(currentController == "Dashboard" && currentArea == "SenedDovriyyesi" ? "active" : "")">
+                                <i class="bi bi-grid"></i> Dashboard
+                            </a>
+                            <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
+                               class="fn-nav-item @(currentController == "Sened" && currentAction == "Index" ? "active" : "")">
+                                <i class="bi bi-folder"></i> Sənədlər
+                            </a>
+                            <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Yarat"
+                               class="fn-nav-item @(currentController == "Sened" && currentAction == "Yarat" ? "active" : "")">
+                                <i class="bi bi-plus-circle"></i> Yeni sənəd
+                            </a>
+                            <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Sablonlar"
+                               class="fn-nav-item @(currentController == "Sened" && currentAction == "Sablonlar" ? "active" : "")">
+                                <i class="bi bi-file-earmark-text"></i> Şablonlar
+                            </a>
+                            <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="SenedNovleri"
+                               class="fn-nav-item @(currentController == "Sened" && currentAction == "SenedNovleri" ? "active" : "")">
+                                <i class="bi bi-tags"></i> Sənəd növləri
+                            </a>
+                            @if (isAdmin)
+                            {
+                                <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Silinmisler"
+                                   class="fn-nav-item @(currentController == "Sened" && currentAction == "Silinmisler" ? "active" : "")">
+                                    <i class="bi bi-trash"></i> Silinmişlər
+                                </a>
+                                <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Icazeler"
+                                   class="fn-nav-item @(currentController == "Sened" && currentAction == "Icazeler" ? "active" : "")">
+                                    <i class="bi bi-shield-check"></i> İcazələr
+                                </a>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="fn-nav-g @(swiftActive ? "open" : "")">
+                        <button type="button" class="fn-nav-g-head">
+                            <span>Swift</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="fn-nav-g-body">
+                            <div class="fn-nav-g @(odenisTapsirigiActive ? "open" : "")">
+                                <button type="button" class="fn-nav-g-head">
+                                    <span>Ödəniş tapşırığı</span>
+                                    <i class="bi bi-chevron-down"></i>
+                                </button>
+                                <div class="fn-nav-g-body">
+                                    <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Siyahi"
+                                       class="fn-nav-item @(currentController == "OdenisTapsirigi" && currentAction == "Siyahi" ? "active" : "")">
+                                        <i class="bi bi-list-ul"></i> Ödəniş siyahısı
+                                    </a>
+                                    <a asp-area="PR_Odenis_Tapsirigi" asp-controller="OdenisTapsirigi" asp-action="Create"
+                                       class="fn-nav-item @(currentController == "OdenisTapsirigi" && currentAction == "Create" ? "active" : "")">
+                                        <i class="bi bi-plus-circle"></i> Yeni ödəniş
+                                    </a>
+                                </div>
+                            </div>
+                            <a asp-area="PR_Odenis_Tapsirigi" asp-controller="Bank" asp-action="Index"
+                               class="fn-nav-item @(currentController == "Bank" ? "active" : "")">
+                                <i class="bi bi-bank"></i> Banklar
+                            </a>
+                            <a asp-area="PR_Odenis_Tapsirigi" asp-controller="Musteri" asp-action="Index"
+                               class="fn-nav-item @(currentController == "Musteri" ? "active" : "")">
+                                <i class="bi bi-person-vcard"></i> Müştərilər
+                            </a>
+                        </div>
+                    </div>
+                }
                 break;
 
             case "hesabat":
