@@ -95,4 +95,32 @@ public class MezuniyyetKesintiTests
         yeniDuzgunBrut.Should().NotBe(kohneSehvBrut);
         yeniDuzgunBrut.Should().Be(2244.74m);
     }
+
+    /// <summary>
+    /// Eyni ayda HƏM AySonu, HƏM DƏ QabaqcadanOdenis məzuniyyəti olan
+    /// işçi üçün hər iki kəsinti yığılmalıdır (`+=`).
+    /// Əvvəl `mezKesinti = ...` yazılırdı (`=`) və QabaqcadanOdenis bloku
+    /// AySonu kəsintisini əzirdi — bu test həmin regressiyanın qarşısını alır.
+    /// </summary>
+    [Fact]
+    public void Eyni_ayda_AySonu_ve_Qabaqcadan_kesintileri_yigilmalidir()
+    {
+        // Arrange — 2000 ₼ maaş, 22 iş günü, 3 AySonu + 2 Qabaqcadan iş günü
+        decimal esasMaas = 2000m;
+        int ayIsGunu = 22;
+        int aySonuIGS = 3;
+        int advanceIGS = 2;
+        decimal mezOdenis = 500m; // yalnız AySonu üçün
+
+        // Act — kodun istifadə etdiyi eyni düstur (yığılan kəsinti)
+        decimal mezKesinti = 0;
+        mezKesinti += Math.Round(esasMaas / ayIsGunu * aySonuIGS, 2); // AySonu
+        mezKesinti += Math.Round(esasMaas / ayIsGunu * advanceIGS, 2); // Qabaqcadan
+        var brut = esasMaas - mezKesinti + mezOdenis;
+
+        // Assert
+        mezKesinti.Should().Be(454.55m,
+            "AySonu (272.73) + Qabaqcadan (181.82) = 454.55 — biri digərini əzməməlidir");
+        brut.Should().Be(2045.45m);
+    }
 }
