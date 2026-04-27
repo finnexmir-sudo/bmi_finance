@@ -113,8 +113,10 @@ namespace FinNex.UI.Areas.User.Controllers
 
             foreach (var s in hesablama.AySliceleri)
             {
-                // İşlənmiş iş günləri = ayın iş günü − məzuniyyət iş günü.
-                int islenmisIsGun = Math.Max(0, s.AyIsGun - s.IsGun);
+                // İşlənmiş iş günü = ayın iş günü − məzuniyyətin FAKTİKİ iş günü.
+                // (s.IsGun PR #352 ilə həftəsonu daxildir, həftəsonu işçinin işləməyəcəyi
+                // gün olduğundan kəsintidə nəzərə alınmır — yalnız HaqiqiIsGun istifadə olunur.)
+                int islenmisIsGun = Math.Max(0, s.AyIsGun - s.HaqiqiIsGun);
                 decimal islenmisMaas = (cariMaas > 0 && s.AyIsGun > 0)
                     ? Math.Round(cariMaas / s.AyIsGun * islenmisIsGun, 2)
                     : 0;
