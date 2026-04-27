@@ -303,7 +303,7 @@
                 {
                     var emekPortalActive = currentController is "Davamiyyet" or "Takvim" or "Mezuniyyet" or "Icaze" or "Muraciet" or "Tapshiriq" or "Gorush";
                     var emekMaliyyeActive = currentArea == "User" && (currentController == "Maas" || currentController == "Avans" || currentController == "Xerc");
-                    <div class="fn-nav-g @(emekPortalActive || !emekMaliyyeActive ? "open" : "")">
+                    <div class="fn-nav-g @(emekPortalActive ? "open" : "")">
                         <button type="button" class="fn-nav-g-head">
                             <span>Əməkdaş Portalı</span>
                             <i class="bi bi-chevron-down"></i>
@@ -420,7 +420,7 @@
                     var hrDigerActive = currentArea == "HR" && currentController is "Hesabat" or "Elan";
                     var hrAnyActive = hrAsasActive || hrKadrActive || hrDMActive || hrQymetActive || hrDigerActive;
 
-                    <div class="fn-nav-g @(hrAsasActive || !hrAnyActive ? "open" : "")">
+                    <div class="fn-nav-g @(hrAsasActive ? "open" : "")">
                         <button type="button" class="fn-nav-g-head">
                             <span>Əsas</span>
                             <i class="bi bi-chevron-down"></i>
@@ -557,7 +557,7 @@
                     var mhMaliyyeActive = currentController == "Budce" || (currentController == "Xerc" && currentArea == "HR");
                     var mhAnyActive = mhMaasActive || mhParamActive || mhMaliyyeActive;
 
-                    <div class="fn-nav-g @(mhMaasActive || !mhAnyActive ? "open" : "")">
+                    <div class="fn-nav-g @(mhMaasActive ? "open" : "")">
                         <button type="button" class="fn-nav-g-head">
                             <span>Əmək Haqqı</span>
                             <i class="bi bi-chevron-down"></i>
