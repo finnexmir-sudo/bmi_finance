@@ -192,8 +192,10 @@ namespace FinNex.Application.Services.HR
 
             if (mezGun > 0)
             {
-                // AySonu tipli qeydlər üçün məzuniyyət ödənişi həmin ayın maaşına daxil edilir
-                var (aySonuGS, aySonuIGS, _) = await MezuniyyetAyGunleriFiltreliSayAsync(
+                // AySonu tipli qeydlər üçün məzuniyyət ödənişi həmin ayın maaşına daxil edilir.
+                // aySonuIGS    — bütün məzuniyyət günləri (PR #352, həftəsonu daxil): ödəniş üçün
+                // aySonuHIGS   — yalnız real iş günü (həftəsonu/bayram çıxılır): kəsinti üçün
+                var (aySonuGS, aySonuIGS, aySonuHIGS, _) = await MezuniyyetAyGunleriFiltreliSayAsync(
                     input.IsciId, input.Il, input.Ay, MezuniyyetOdenisTipi.AySonuOdenis);
 
                 if (aySonuIGS > 0 || aySonuGS > 0)
@@ -203,21 +205,21 @@ namespace FinNex.Application.Services.HR
                     izahatlar.Add(new HesablamaIzahiDto
                     {
                         Addim = "Mezuniyyet Odenisi",
-                        Izah = $"MAX(Maas/{ayIsGunu}, S/12/30.4) × {aySonuIGS} iş günü — " +
-                               "böyük gündəlik dərəcə götürülür; əsas maaşdan həmin günlər çıxılır, ödəniş ayrıca əlavə olunur",
+                        Izah = $"MAX(Maas/{ayIsGunu}, S/12/30.4) × {aySonuIGS} məzuniyyət günü — " +
+                               "böyük gündəlik dərəcə bütün məzuniyyət günlərinə (həftəsonu daxil) vurulur",
                         Mebleg = mezOdenis,
                         Tip = "gelir"
                     });
 
-                    if (aySonuIGS > 0)
+                    if (aySonuHIGS > 0)
                     {
-                        var aySonuKesinti = Math.Round(esasMaas / ayIsGunu * aySonuIGS, 2);
+                        var aySonuKesinti = Math.Round(esasMaas / ayIsGunu * aySonuHIGS, 2);
                         mezKesinti += aySonuKesinti;
                         izahatlar.Add(new HesablamaIzahiDto
                         {
                             Addim = "Mezuniyyet Kesintisi (ay sonu ödəniş)",
-                            Izah = $"{esasMaas:N2} / {ayIsGunu} iş günü × {aySonuIGS} məzuniyyət iş günü. " +
-                                   "İşçi həmin günlər işləməyib — əsas maaşdan çıxılır, məzuniyyət ödənişi ayrıca verilir.",
+                            Izah = $"{esasMaas:N2} / {ayIsGunu} iş günü × {aySonuHIGS} faktiki iş günü " +
+                                   "(işçinin məzuniyyətdə işləməyəcəyi günlər; həftəsonu skip).",
                             Mebleg = aySonuKesinti,
                             Tip = "kesinti"
                         });
@@ -225,18 +227,18 @@ namespace FinNex.Application.Services.HR
                 }
 
                 // Qabaqcadan ödənilən məzuniyyətlər — ödəniş ayrıca edildiyi üçün
-                // yalnız həmin günlərə görə əsas maaşdan proporsional kəsinti tutulur.
-                var (_, advanceIGS, advanceQeydler) = await MezuniyyetAyGunleriFiltreliSayAsync(
+                // yalnız həmin günlərə görə əsas maaşdan proporsional kəsinti tutulur (faktiki iş günü).
+                var (_, _, advanceHIGS, advanceQeydler) = await MezuniyyetAyGunleriFiltreliSayAsync(
                     input.IsciId, input.Il, input.Ay, MezuniyyetOdenisTipi.QabaqcadanOdenis);
 
-                if (advanceIGS > 0)
+                if (advanceHIGS > 0)
                 {
-                    mezKesinti += Math.Round(esasMaas / ayIsGunu * advanceIGS, 2);
+                    mezKesinti += Math.Round(esasMaas / ayIsGunu * advanceHIGS, 2);
                     izahatlar.Add(new HesablamaIzahiDto
                     {
                         Addim = "Mezuniyyet Kesintisi (qabaqcadan ödənilən günlər)",
-                        Izah = $"{esasMaas:N2} / {ayIsGunu} iş günü × {advanceIGS} qabaqcadan ödənilmiş iş günü. " +
-                               "Ödəniş ayrıca edildiyi üçün əsas maaşdan bu günlər çıxılır.",
+                        Izah = $"{esasMaas:N2} / {ayIsGunu} iş günü × {advanceHIGS} faktiki iş günü " +
+                               "(qabaqcadan ödənilmiş; ödəniş ayrıca edildiyi üçün əsas maaşdan çıxılır).",
                         Mebleg = mezKesinti,
                         Tip = "kesinti"
                     });
@@ -841,16 +843,22 @@ namespace FinNex.Application.Services.HR
         // ─────────────────────────────────────────────────────────
         public async Task<(int TeqvimGun, int IsGun)> MezuniyyetGunleriniSayGenisAsync(int isciId, int il, int ay)
         {
-            var (tg, ig, _) = await MezuniyyetAyGunleriFiltreliSayAsync(isciId, il, ay, null);
+            var (tg, ig, _, _) = await MezuniyyetAyGunleriFiltreliSayAsync(isciId, il, ay, null);
             return (tg, ig);
         }
 
         /// <summary>
         /// Verilmiş ay üçün məzuniyyət günlərini sayır. Əgər <paramref name="odenisTipi"/>
-        /// verilibsə, yalnız həmin ödəniş tipinə sahib qeydlər sayılır. Həmçinin
-        /// tapılmış məzuniyyət qeydlərinin siyahısını qaytarır (info üçün).
+        /// verilibsə, yalnız həmin ödəniş tipinə sahib qeydlər sayılır.
+        ///
+        /// İki fərqli sayğac qaytarılır:
+        ///   <c>IsGun</c>            — bütün məzuniyyət günləri (PR #352: həftəsonu daxil,
+        ///                              yalnız hesablanmayan bayram skip). Ödəniş və balans üçün.
+        ///   <c>HaqiqiIsGunu</c>     — yalnız real iş günləri (cari iş təqviminə görə —
+        ///                              həftəsonu/bayram çıxılır). Maaş kəsintisi üçün:
+        ///                              işçi yalnız faktiki işləyəcəyi günləri itirir.
         /// </summary>
-        private async Task<(int TeqvimGun, int IsGun, List<Mezuniyyet> Qeydler)>
+        private async Task<(int TeqvimGun, int IsGun, int HaqiqiIsGunu, List<Mezuniyyet> Qeydler)>
             MezuniyyetAyGunleriFiltreliSayAsync(int isciId, int il, int ay, MezuniyyetOdenisTipi? odenisTipi)
         {
             var ayBaslangic = new DateTime(il, ay, 1);
@@ -870,23 +878,31 @@ namespace FinNex.Application.Services.HR
 
             var mezuniyyetler = await query.ToListAsync();
 
-            if (!mezuniyyetler.Any()) return (0, 0, mezuniyyetler);
+            if (!mezuniyyetler.Any()) return (0, 0, 0, mezuniyyetler);
 
-            // Məzuniyyət gün sayımı PR #352 qaydası ilə (MezuniyyetService.HesablaIsGunuAsync ilə eyni):
-            // həftəsonu sayılır, yalnız MezuniyyetdeHesablanir=false olan Bayram günləri skip edilir.
-            // Bu, balans azalması ilə maaş hesablamasında uyğunsuzluğu aradan qaldırır.
-            var skipBayramSet = (await _unitOfWork.Repository<BayramGunu>()
+            // BayramGunu cədvəlində ay üçün bütün xüsusi günlər (Bayram + IsGunu override).
+            var ozelGunler = await _unitOfWork.Repository<BayramGunu>()
                 .HamisiniGetirAsync(x =>
                     x.Tarix >= ayBaslangic &&
                     x.Tarix <= ayBitis &&
-                    !x.Silinib &&
-                    x.Tip == GunTipi.Bayram &&
-                    !x.MezuniyyetdeHesablanir))
+                    !x.Silinib);
+
+            // Məzuniyyət sayğacı (PR #352): yalnız hesablanmayan bayram skip,
+            // həftəsonu sayılır → balans üçün də, ödəniş üçün də.
+            var skipBayramSet = ozelGunler
+                .Where(x => x.Tip == GunTipi.Bayram && !x.MezuniyyetdeHesablanir)
                 .Select(x => x.Tarix.Date)
                 .ToHashSet();
 
+            // Real iş günü təqvimi (kəsinti üçün): həftəsonu/Bayram çıxılır,
+            // BayramGunu.Tip == IsGunu olanda günü iş günü kimi sayılır.
+            var ozelTipDict = ozelGunler
+                .GroupBy(x => x.Tarix.Date)
+                .ToDictionary(g => g.Key, g => g.First().Tip);
+
             int teqvimGun = 0;
             int isGun = 0;
+            int haqiqiIsGunu = 0;
             foreach (var m in mezuniyyetler)
             {
                 var baslama = m.BaslamaTarixi < ayBaslangic ? ayBaslangic : m.BaslamaTarixi;
@@ -895,12 +911,19 @@ namespace FinNex.Application.Services.HR
                 for (var t = baslama; t <= bitis; t = t.AddDays(1))
                 {
                     teqvimGun++;
-                    if (skipBayramSet.Contains(t.Date)) continue; // hesablanmayan bayram — skip
-                    isGun++; // qalan hər gün (həftəsonu daxil) sayılır
+                    if (!skipBayramSet.Contains(t.Date)) isGun++;
+
+                    // Real iş günü: həftəsonu və bayram skip; BayramGunu.IsGunu override
+                    bool realIsGunu;
+                    if (ozelTipDict.TryGetValue(t.Date, out var tip))
+                        realIsGunu = tip == GunTipi.IsGunu;
+                    else
+                        realIsGunu = t.DayOfWeek != DayOfWeek.Saturday && t.DayOfWeek != DayOfWeek.Sunday;
+                    if (realIsGunu) haqiqiIsGunu++;
                 }
             }
 
-            return (teqvimGun, isGun, mezuniyyetler);
+            return (teqvimGun, isGun, haqiqiIsGunu, mezuniyyetler);
         }
 
         // ─────────────────────────────────────────────────────────
@@ -1362,25 +1385,36 @@ namespace FinNex.Application.Services.HR
                 var sliceBaslama = baslama > ayBaslangic ? baslama : ayBaslangic;
                 var sliceBitis = bitme < ayBitis ? bitme : ayBitis;
 
-                // Məzuniyyət gün sayımı PR #352 qaydası ilə (MezuniyyetService.HesablaIsGunuAsync ilə eyni):
-                // həftəsonu sayılır, yalnız MezuniyyetdeHesablanir=false olan Bayram günləri skip edilir.
-                var skipBayramSet = (await _unitOfWork.Repository<BayramGunu>()
+                // İki sayğac:
+                //   igs       — bütün məzuniyyət günü (PR #352, həftəsonu daxil) — ödəniş və balans üçün
+                //   haqiqiIs  — yalnız real iş günü (həftəsonu/bayram çıxılır)   — maaş kəsintisi üçün
+                var ozelGunler = await _unitOfWork.Repository<BayramGunu>()
                     .HamisiniGetirAsync(x =>
                         x.Tarix >= ayBaslangic &&
                         x.Tarix <= ayBitis &&
-                        !x.Silinib &&
-                        x.Tip == GunTipi.Bayram &&
-                        !x.MezuniyyetdeHesablanir))
+                        !x.Silinib);
+                var skipBayramSet = ozelGunler
+                    .Where(x => x.Tip == GunTipi.Bayram && !x.MezuniyyetdeHesablanir)
                     .Select(x => x.Tarix.Date)
                     .ToHashSet();
+                var ozelTipDict = ozelGunler
+                    .GroupBy(x => x.Tarix.Date)
+                    .ToDictionary(g => g.Key, g => g.First().Tip);
 
-                int gs = 0;  // teqvim gün
-                int igs = 0; // iş gün (həftəsonu daxil; yalnız hesablanmayan bayramlar çıxılır)
+                int gs = 0;
+                int igs = 0;
+                int haqiqiIs = 0;
                 for (var t = sliceBaslama.Date; t <= sliceBitis.Date; t = t.AddDays(1))
                 {
                     gs++;
-                    if (skipBayramSet.Contains(t)) continue;
-                    igs++;
+                    if (!skipBayramSet.Contains(t)) igs++;
+
+                    bool realIsGunu;
+                    if (ozelTipDict.TryGetValue(t, out var tip))
+                        realIsGunu = tip == GunTipi.IsGunu;
+                    else
+                        realIsGunu = t.DayOfWeek != DayOfWeek.Saturday && t.DayOfWeek != DayOfWeek.Sunday;
+                    if (realIsGunu) haqiqiIs++;
                 }
 
                 int ayIsGun = await AyinIsGunleriniHesablaAsync(il, ay);
@@ -1403,6 +1437,7 @@ namespace FinNex.Application.Services.HR
                     AyAdi = $"{azAyAdlari[ay]} {il}",
                     TeqvimGun = gs,
                     IsGun = igs,
+                    HaqiqiIsGun = haqiqiIs,
                     AyIsGun = ayIsGun,
                     MH = MH,
                     EH = EH,
@@ -1458,28 +1493,29 @@ namespace FinNex.Application.Services.HR
                 .GetirAsync(x => x.IsciId == isciId && !x.Silinib);
             if (maliye == null) return (0, 0, 0);
 
-            var (_, toplamIsGun, _) = await MezuniyyetAyGunleriFiltreliSayAsync(isciId, il, ay, null);
+            var (_, toplamIsGun, _, _) = await MezuniyyetAyGunleriFiltreliSayAsync(isciId, il, ay, null);
             if (toplamIsGun == 0) return (0, 0, 0);
 
             int ayIsGunu = await AyinIsGunleriniHesablaAsync(il, ay);
 
-            // Qabaqcadan ödənilmiş günlər — kəsinti tətbiq olunur
-            var (_, advanceIGS, _) = await MezuniyyetAyGunleriFiltreliSayAsync(
+            // Qabaqcadan ödənilmiş günlər — kəsinti yalnız faktiki iş günləri üçün tutulur
+            var (_, _, advanceHIGS, _) = await MezuniyyetAyGunleriFiltreliSayAsync(
                 isciId, il, ay, MezuniyyetOdenisTipi.QabaqcadanOdenis);
-            decimal kesinti = (ayIsGunu > 0 && advanceIGS > 0)
-                ? Math.Round(maliye.CariMaas / ayIsGunu * advanceIGS, 2)
+            decimal kesinti = (ayIsGunu > 0 && advanceHIGS > 0)
+                ? Math.Round(maliye.CariMaas / ayIsGunu * advanceHIGS, 2)
                 : 0;
 
-            // AySonu günləri — həm ödəniş əlavə olunur, həm də iş günü
-            // mütənasib kəsinti tutulur (ikiqat ödəmənin qarşısını almaq üçün)
-            var (aySonuGS, aySonuIGS, _) = await MezuniyyetAyGunleriFiltreliSayAsync(
+            // AySonu günləri:
+            //   ödəniş — bütün məzuniyyət günü (PR #352, həftəsonu daxil) × per-day dərəcə
+            //   kəsinti — yalnız faktiki iş günü (işçi yalnız faktiki itirdiyi günü itirir)
+            var (aySonuGS, aySonuIGS, aySonuHIGS, _) = await MezuniyyetAyGunleriFiltreliSayAsync(
                 isciId, il, ay, MezuniyyetOdenisTipi.AySonuOdenis);
             decimal aySonuOdenisi = (aySonuGS > 0 || aySonuIGS > 0)
                 ? await MezuniyyetOdenisiniHesablaV2Async(isciId, il, ay, aySonuGS, aySonuIGS)
                 : 0;
 
-            if (ayIsGunu > 0 && aySonuIGS > 0)
-                kesinti += Math.Round(maliye.CariMaas / ayIsGunu * aySonuIGS, 2);
+            if (ayIsGunu > 0 && aySonuHIGS > 0)
+                kesinti += Math.Round(maliye.CariMaas / ayIsGunu * aySonuHIGS, 2);
 
             return (toplamIsGun, kesinti, aySonuOdenisi);
         }

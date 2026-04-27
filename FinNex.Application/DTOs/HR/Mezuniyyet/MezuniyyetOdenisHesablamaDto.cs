@@ -53,8 +53,9 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         public int Ay { get; set; }
         public string AyAdi { get; set; } = string.Empty;
 
-        public int TeqvimGun { get; set; }   // GS — bu ay üçün
-        public int IsGun { get; set; }       // İGS — bu ay üçün
+        public int TeqvimGun { get; set; }   // GS — bu ay üçün (təqvim günü)
+        public int IsGun { get; set; }       // İGS — məzuniyyət günü (PR #352, həftəsonu daxil); ödəniş və balans üçün
+        public int HaqiqiIsGun { get; set; } // Faktiki iş günü (həftəsonu/bayram çıxılıb); maaş kəsintisi üçün
         public int AyIsGun { get; set; }     // Həmin ayın iş gün sayı (reference)
 
         // MH = S / 12 / 30.4 × GS (bu ay üçün GS)
