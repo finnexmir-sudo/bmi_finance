@@ -231,7 +231,7 @@ namespace FinNex.Application.Services.HR
 
                 if (advanceIGS > 0)
                 {
-                    mezKesinti = Math.Round(esasMaas / ayIsGunu * advanceIGS, 2);
+                    mezKesinti += Math.Round(esasMaas / ayIsGunu * advanceIGS, 2);
                     izahatlar.Add(new HesablamaIzahiDto
                     {
                         Addim = "Mezuniyyet Kesintisi (qabaqcadan ödənilən günlər)",
