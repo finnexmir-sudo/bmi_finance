@@ -872,14 +872,18 @@ namespace FinNex.Application.Services.HR
 
             if (!mezuniyyetler.Any()) return (0, 0, mezuniyyetler);
 
-            var ozelGunler = await _unitOfWork.Repository<BayramGunu>()
+            // Məzuniyyət gün sayımı PR #352 qaydası ilə (MezuniyyetService.HesablaIsGunuAsync ilə eyni):
+            // həftəsonu sayılır, yalnız MezuniyyetdeHesablanir=false olan Bayram günləri skip edilir.
+            // Bu, balans azalması ilə maaş hesablamasında uyğunsuzluğu aradan qaldırır.
+            var skipBayramSet = (await _unitOfWork.Repository<BayramGunu>()
                 .HamisiniGetirAsync(x =>
                     x.Tarix >= ayBaslangic &&
                     x.Tarix <= ayBitis &&
-                    !x.Silinib);
-            var ozelDict = ozelGunler
-                .GroupBy(x => x.Tarix.Date)
-                .ToDictionary(g => g.Key, g => g.First().Tip);
+                    !x.Silinib &&
+                    x.Tip == GunTipi.Bayram &&
+                    !x.MezuniyyetdeHesablanir))
+                .Select(x => x.Tarix.Date)
+                .ToHashSet();
 
             int teqvimGun = 0;
             int isGun = 0;
@@ -891,13 +895,8 @@ namespace FinNex.Application.Services.HR
                 for (var t = baslama; t <= bitis; t = t.AddDays(1))
                 {
                     teqvimGun++;
-                    bool isIsGunu;
-                    if (ozelDict.TryGetValue(t.Date, out var tip))
-                        isIsGunu = tip == GunTipi.IsGunu;
-                    else
-                        isIsGunu = t.DayOfWeek != DayOfWeek.Saturday && t.DayOfWeek != DayOfWeek.Sunday;
-
-                    if (isIsGunu) isGun++;
+                    if (skipBayramSet.Contains(t.Date)) continue; // hesablanmayan bayram — skip
+                    isGun++; // qalan hər gün (həftəsonu daxil) sayılır
                 }
             }
 
@@ -1363,28 +1362,25 @@ namespace FinNex.Application.Services.HR
                 var sliceBaslama = baslama > ayBaslangic ? baslama : ayBaslangic;
                 var sliceBitis = bitme < ayBitis ? bitme : ayBitis;
 
-                // Bu ayın BayramGunu qeydlərini tap (override dəstəklənir)
-                var ozelGunler = await _unitOfWork.Repository<BayramGunu>()
+                // Məzuniyyət gün sayımı PR #352 qaydası ilə (MezuniyyetService.HesablaIsGunuAsync ilə eyni):
+                // həftəsonu sayılır, yalnız MezuniyyetdeHesablanir=false olan Bayram günləri skip edilir.
+                var skipBayramSet = (await _unitOfWork.Repository<BayramGunu>()
                     .HamisiniGetirAsync(x =>
                         x.Tarix >= ayBaslangic &&
                         x.Tarix <= ayBitis &&
-                        !x.Silinib);
-                var ozelDict = ozelGunler
-                    .GroupBy(x => x.Tarix.Date)
-                    .ToDictionary(g => g.Key, g => g.First().Tip);
+                        !x.Silinib &&
+                        x.Tip == GunTipi.Bayram &&
+                        !x.MezuniyyetdeHesablanir))
+                    .Select(x => x.Tarix.Date)
+                    .ToHashSet();
 
                 int gs = 0;  // teqvim gün
-                int igs = 0; // iş gün (şənbə/bazar + bayram çıxıldı)
+                int igs = 0; // iş gün (həftəsonu daxil; yalnız hesablanmayan bayramlar çıxılır)
                 for (var t = sliceBaslama.Date; t <= sliceBitis.Date; t = t.AddDays(1))
                 {
                     gs++;
-                    bool isIsGunu;
-                    if (ozelDict.TryGetValue(t, out var tip))
-                        isIsGunu = tip == GunTipi.IsGunu;
-                    else
-                        isIsGunu = t.DayOfWeek != DayOfWeek.Saturday &&
-                                   t.DayOfWeek != DayOfWeek.Sunday;
-                    if (isIsGunu) igs++;
+                    if (skipBayramSet.Contains(t)) continue;
+                    igs++;
                 }
 
                 int ayIsGun = await AyinIsGunleriniHesablaAsync(il, ay);
