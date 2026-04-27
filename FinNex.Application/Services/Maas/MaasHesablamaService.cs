@@ -203,8 +203,8 @@ namespace FinNex.Application.Services.HR
                     izahatlar.Add(new HesablamaIzahiDto
                     {
                         Addim = "Mezuniyyet Odenisi",
-                        Izah = $"2026 qaydası: MAX(S/12/30.4×{aySonuGS}, Maas/{ayIsGunu}×{aySonuIGS}) — " +
-                               "əsas maaşdan həmin günlər çıxılır, ödəniş ayrıca əlavə olunur",
+                        Izah = $"MAX(Maas/{ayIsGunu}, S/12/30.4) × {aySonuIGS} iş günü — " +
+                               "böyük gündəlik dərəcə götürülür; əsas maaşdan həmin günlər çıxılır, ödəniş ayrıca əlavə olunur",
                         Mebleg = mezOdenis,
                         Tip = "gelir"
                     });
@@ -905,26 +905,30 @@ namespace FinNex.Application.Services.HR
         }
 
         // ─────────────────────────────────────────────────────────
-        // MEZUNIYYET ODENISI -- 2026 QAYDASI (Yeni formula)
+        // MEZUNIYYET ODENISI -- per-gün dərəcəsi əsasında
         //
-        // S    = Son 12 ayın cəmi qazancı (IsciAyliqQazanc cədvəlindən)
-        // MH   = S / 12 / 30.4 × GS    (təqvim günü əsaslı)
-        // ƏH   = CariMaas / AyİşGün × İGS  (iş günü əsaslı)
-        // Ödəniş = MAX(MH, ƏH)
+        // Per-gün dərəcəsi əsasında müqayisə (BMI Finance qaydası):
+        //   gunlukMaas    = CariMaas / AyİşGün         (maaş / iş gününə)
+        //   gunlukMezPul  = S / 12 / 30.4              (12 aylıq orta gündəlik)
+        //   gunlukDerece  = MAX(gunlukMaas, gunlukMezPul)
+        //   Ödəniş        = gunlukDerece × İGS         (məzuniyyətin iş günü sayı)
+        //
+        // Niyə iş günü? Əsas maaşdan kəsinti də iş günü əsasında tutulur
+        // (esasMaas / AyİşGün × İGS); ödənişin də eyni bazada olması iki
+        // hesablama arasında uyğunsuzluğu (həftəsonu padding-i) aradan qaldırır.
         // ─────────────────────────────────────────────────────────
         public async Task<decimal> MezuniyyetOdenisiniHesablaAsync(
             int isciId, int il, int ay, int isGunSayi)
         {
-            // Geri uyğunluq üçün — yalnız İGS verilibsə, GS-i tap
             var (teqvimGun, _) = await MezuniyyetGunleriniSayGenisAsync(isciId, il, ay);
             return await MezuniyyetOdenisiniHesablaV2Async(isciId, il, ay, teqvimGun, isGunSayi);
         }
 
-        // Əsas hesablama — həm GS, həm İGS qəbul edir (artıq ARTIM ƏMSALLIDIR)
+        // Əsas hesablama — yalnız İGS əhəmiyyətlidir (teqvimGun geri uyğunluq üçün saxlanır)
         public async Task<decimal> MezuniyyetOdenisiniHesablaV2Async(
             int isciId, int il, int ay, int teqvimGun, int isGun)
         {
-            if (teqvimGun <= 0 && isGun <= 0) return 0;
+            if (isGun <= 0) return 0;
 
             // 1. Cari maaş
             decimal cariMaas = (await _unitOfWork.Repository<IsciMaliye>()
@@ -936,22 +940,14 @@ namespace FinNex.Application.Services.HR
             // 3. Cari ayın iş gün sayı
             int ayIsGun = await AyinIsGunleriniHesablaAsync(il, ay);
 
-            // 4. MH = S_düzəlmiş / 12 / 30.4 × GS
-            decimal MH = 0;
-            if (S > 0 && teqvimGun > 0)
-            {
-                MH = Math.Round(S / 12m / 30.4m * teqvimGun, 2);
-            }
+            // 4. Gündəlik dərəcələr — hansısa biri 0 ola bilər (məs. tarixçə yoxdur)
+            decimal gunlukMaas = (cariMaas > 0 && ayIsGun > 0) ? cariMaas / ayIsGun : 0m;
+            decimal gunlukMezPul = (S > 0) ? S / 12m / 30.4m : 0m;
 
-            // 5. ƏH = CariMaas / AyİşGün × İGS  (cari maaş əsaslı iş günü)
-            decimal EH = 0;
-            if (cariMaas > 0 && ayIsGun > 0 && isGun > 0)
-            {
-                EH = Math.Round(cariMaas / ayIsGun * isGun, 2);
-            }
+            decimal gunlukDerece = Math.Max(gunlukMaas, gunlukMezPul);
+            if (gunlukDerece <= 0) return 0;
 
-            // 6. MAX(MH, ƏH)
-            return Math.Max(MH, EH);
+            return Math.Round(gunlukDerece * isGun, 2);
         }
 
         /// <summary>
@@ -1344,10 +1340,10 @@ namespace FinNex.Application.Services.HR
             result.IzahatAddimlari.Add(
                 $"Son 12 ayın artım əmsallı düzəlmiş cəmi qazancı: {sDuzelmis:N2} ₼");
             result.IzahatAddimlari.Add(
-                "Hesablama məntiqi: hər ay üçün iki rəqəm tapılır — TARİXİ ORTA " +
-                "(düzəlmiş cəm ÷ 12 ÷ 30.4 × təqvim günü) və CARİ MAAŞ HESABI " +
-                "(cari maaş ÷ ay iş günü × məzuniyyət iş günü). Hansı böyükdürsə, " +
-                "məzuniyyət ödənişi olaraq götürülür.");
+                "Hesablama məntiqi: hər ay üçün iki GÜNDƏLİK dərəcə tapılır — " +
+                "TARİXİ ORTA (düzəlmiş cəm ÷ 12 ÷ 30.4) və CARİ MAAŞ HESABI " +
+                "(cari maaş ÷ ay iş günü). Hansı gündəlik dərəcə böyükdürsə, " +
+                "o, məzuniyyətin iş günü sayına vurulur.");
 
             // Məzuniyyət periodunu aylar üzrə böl
             var cursorAy = new DateTime(baslama.Year, baslama.Month, 1);
@@ -1393,16 +1389,16 @@ namespace FinNex.Application.Services.HR
 
                 int ayIsGun = await AyinIsGunleriniHesablaAsync(il, ay);
 
-                decimal MH = 0;
-                if (S > 0 && gs > 0)
-                    MH = Math.Round(S / 12m / 30.4m * gs, 2);
+                // Gündəlik dərəcələr — yalnız böyüyü iş günü sayına vurulur.
+                // Bu, ödənişlə kəsintini eyni bazada saxlayır (hər ikisi İGS əsaslı).
+                decimal gunlukMezPul = (S > 0) ? S / 12m / 30.4m : 0m;
+                decimal gunlukMaas = (cariMaas > 0 && ayIsGun > 0) ? cariMaas / ayIsGun : 0m;
+                decimal gunlukDerece = Math.Max(gunlukMezPul, gunlukMaas);
 
-                decimal EH = 0;
-                if (cariMaas > 0 && ayIsGun > 0 && igs > 0)
-                    EH = Math.Round(cariMaas / ayIsGun * igs, 2);
-
-                decimal secilen = Math.Max(MH, EH);
-                string qalib = MH >= EH ? "MH" : "ƏH";
+                decimal MH = (igs > 0) ? Math.Round(gunlukMezPul * igs, 2) : 0m;
+                decimal EH = (igs > 0) ? Math.Round(gunlukMaas * igs, 2) : 0m;
+                decimal secilen = (igs > 0) ? Math.Round(gunlukDerece * igs, 2) : 0m;
+                string qalib = gunlukMezPul >= gunlukMaas ? "MH" : "ƏH";
 
                 var slice = new MezuniyyetOdenisAySliceDto
                 {
@@ -1425,12 +1421,14 @@ namespace FinNex.Application.Services.HR
                     $"    Bu ayın məzuniyyəti: {gs} təqvim günü, {igs} iş günü " +
                     $"(ayın ümumi iş günü sayı: {ayIsGun})");
                 result.IzahatAddimlari.Add(
-                    $"    Tarixi orta: {S:N2} ÷ 12 ÷ 30.4 × {gs} = {MH:N2} ₼");
+                    $"    Gündəlik məzuniyyət pulu: {S:N2} ÷ 12 ÷ 30.4 = {gunlukMezPul:N4} ₼/gün " +
+                    $"→ × {igs} iş günü = {MH:N2} ₼");
                 result.IzahatAddimlari.Add(
-                    $"    Cari maaş hesabı: {cariMaas:N2} ÷ {ayIsGun} × {igs} = {EH:N2} ₼");
+                    $"    Gündəlik maaş: {cariMaas:N2} ÷ {ayIsGun} = {gunlukMaas:N4} ₼/gün " +
+                    $"→ × {igs} iş günü = {EH:N2} ₼");
                 result.IzahatAddimlari.Add(
-                    $"    Məzuniyyət ödənişi (böyüyü götürülür): {secilen:N2} ₼ " +
-                    $"({(qalib == "MH" ? "tarixi orta üstündür" : "cari maaş hesabı üstündür")})");
+                    $"    Məzuniyyət ödənişi (böyük gündəlik götürülür): {secilen:N2} ₼ " +
+                    $"({(qalib == "MH" ? "gündəlik məzuniyyət pulu üstündür" : "gündəlik maaş üstündür")})");
 
                 umumiGS += gs;
                 umumiIGS += igs;
