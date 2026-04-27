@@ -179,8 +179,9 @@ namespace FinNex.Application.Services.HR
             // 6. Mezuniyyet gunleri ve odenisi (2026 qaydası: GS + İGS)
             //    QAYDA (BMI Finance biznes qərarı):
             //      - AySonuOdenis qeydləri → bu ayın maaşına ödəniş əlavə olunur,
-            //        əsas maaşdan KƏSİNTİ TƏTBİQ OLUNMUR. İşçi tam əsas maaş +
-            //        məzuniyyət haqqı alır.
+            //        həm də həmin günlər üçün əsas maaşdan iş günü mütənasib
+            //        KƏSİNTİ tutulur. İşçi (işlədiyi günlərə görə maaş) +
+            //        məzuniyyət haqqı alır — ikiqat ödəmənin qarşısı alınır.
             //      - QabaqcadanOdenis qeydləri → Mühasib ayrıca ödəyib göndərib;
             //        bu ay üçün əsas maaşdan iş günü mütənasib KƏSİNTİ tutulur
             //        (ikiqat ödəməyə yol verməmək üçün) və ödəniş əlavə olunmur.
@@ -203,10 +204,24 @@ namespace FinNex.Application.Services.HR
                     {
                         Addim = "Mezuniyyet Odenisi",
                         Izah = $"2026 qaydası: MAX(S/12/30.4×{aySonuGS}, Maas/{ayIsGunu}×{aySonuIGS}) — " +
-                               "əsas maaş tam qalır, ödəniş üzərinə əlavə olunur",
+                               "əsas maaşdan həmin günlər çıxılır, ödəniş ayrıca əlavə olunur",
                         Mebleg = mezOdenis,
                         Tip = "gelir"
                     });
+
+                    if (aySonuIGS > 0)
+                    {
+                        var aySonuKesinti = Math.Round(esasMaas / ayIsGunu * aySonuIGS, 2);
+                        mezKesinti += aySonuKesinti;
+                        izahatlar.Add(new HesablamaIzahiDto
+                        {
+                            Addim = "Mezuniyyet Kesintisi (ay sonu ödəniş)",
+                            Izah = $"{esasMaas:N2} / {ayIsGunu} iş günü × {aySonuIGS} məzuniyyət iş günü. " +
+                                   "İşçi həmin günlər işləməyib — əsas maaşdan çıxılır, məzuniyyət ödənişi ayrıca verilir.",
+                            Mebleg = aySonuKesinti,
+                            Tip = "kesinti"
+                        });
+                    }
                 }
 
                 // Qabaqcadan ödənilən məzuniyyətlər — ödəniş ayrıca edildiyi üçün
