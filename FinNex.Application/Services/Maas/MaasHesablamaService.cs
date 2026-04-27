@@ -27,11 +27,14 @@ namespace FinNex.Application.Services.HR
     /// 10. NET = BRUT - Tutulmalar
     /// 11. Sirket xerclerini hesabla (DSMF 22%, issizlik 0.5%) -- melumati, tutulmur
     ///
-    /// 2026 MEZUNIYYET QAYDASI:
-    ///   Son 12 ayin yalniz islenmis (BrutMebleg > 0) aylari goturulur.
-    ///   avgDaily = totalBrut / islenmis_ay_sayi / 30
-    ///   minDaily = cariMaas / 30
-    ///   Netice   = Max(avgDaily, minDaily) x gunSayi
+    /// MEZUNIYYET QAYDASI (per-gün dərəcəsi əsasında):
+    ///   gunlukMezPul = S(12 ay düzəlmiş) / 12 / 30.4   (günlük məzuniyyət pulu)
+    ///   gunlukMaas   = CariMaas / AyİşGün             (maaş / iş gününə)
+    ///   Netice       = MAX(gunlukMezPul, gunlukMaas) × İGS  (məzuniyyətin iş günü sayı)
+    ///
+    /// XESTELIK ODENISI VERGI BAZASI:
+    ///   - Gəlir vergisi: ŞAMİL OLUR (sick pay vergiyə cəlb olunur)
+    ///   - DSMF / İşsizlik / İTSS: AZADDIR (heç bir sosial töhmətə cəlb olunmur)
     /// </summary>
     public class MaasHesablamaService : IMaasHesablamaService
     {
@@ -203,8 +206,8 @@ namespace FinNex.Application.Services.HR
                     izahatlar.Add(new HesablamaIzahiDto
                     {
                         Addim = "Mezuniyyet Odenisi",
-                        Izah = $"2026 qaydası: MAX(S/12/30.4×{aySonuGS}, Maas/{ayIsGunu}×{aySonuIGS}) — " +
-                               "əsas maaşdan həmin günlər çıxılır, ödəniş ayrıca əlavə olunur",
+                        Izah = $"MAX(Maas/{ayIsGunu}, S/12/30.4) × {aySonuIGS} iş günü — " +
+                               "böyük gündəlik dərəcə götürülür; əsas maaşdan həmin günlər çıxılır, ödəniş ayrıca əlavə olunur",
                         Mebleg = mezOdenis,
                         Tip = "gelir"
                     });
@@ -449,16 +452,33 @@ namespace FinNex.Application.Services.HR
             });
 
             // 9.0.1 Vergi bazaları — əsas brüt (işəgötürən HYS daxil deyil) üzrə hesablanır
-            decimal vergiDsmfBazasi = Math.Max(0, esasBrut - hysMebleg);
-            decimal itssBazasi = esasBrut; // İTSS/İşsizlik əsas brüt üzrə (HYS çıxılmır)
+            //
+            // XƏSTƏLİK ÖDƏNİŞİ: yalnız gəlir vergisinə cəlb olunur, DSMF/İşsizlik/İTSS
+            // hesablamasından AZAD edilir. Bu səbəbdən sosial töhmət bazaları
+            // əsas brüt-dən xəstəlik şirkət ödənişini çıxır.
+            decimal vergiBazasi = Math.Max(0, esasBrut - hysMebleg);                       // Gəlir vergisi (xəstəlik daxil)
+            decimal dsmfBazasi = Math.Max(0, esasBrut - hysMebleg - xestelikSirketOdenis); // DSMF (HYS + xəstəlik çıxılıb)
+            decimal itssBazasi = Math.Max(0, esasBrut - xestelikSirketOdenis);             // İTSS / İşsizlik (xəstəlik çıxılıb, HYS qalır)
 
             if (hysMebleg > 0)
             {
                 izahatlar.Add(new HesablamaIzahiDto
                 {
-                    Addim = "Vergi+DSMF bazası (HYS çıxılıb)",
-                    Izah = $"Əsas brüt ({esasBrut:N2}) − HYS ({hysMebleg:N2}) = {vergiDsmfBazasi:N2}",
-                    Mebleg = vergiDsmfBazasi,
+                    Addim = "Vergi bazası (HYS çıxılıb)",
+                    Izah = $"Əsas brüt ({esasBrut:N2}) − HYS ({hysMebleg:N2}) = {vergiBazasi:N2}",
+                    Mebleg = vergiBazasi,
+                    Tip = "melumati"
+                });
+            }
+
+            if (xestelikSirketOdenis > 0)
+            {
+                izahatlar.Add(new HesablamaIzahiDto
+                {
+                    Addim = "DSMF/İşsizlik/İTSS bazası (xəstəlik çıxılıb)",
+                    Izah = $"Xəstəlik ödənişi ({xestelikSirketOdenis:N2}) sosial töhmətlərdən azaddır — " +
+                           $"DSMF bazası: {dsmfBazasi:N2}, İTSS/İşsizlik bazası: {itssBazasi:N2}",
+                    Mebleg = xestelikSirketOdenis,
                     Tip = "melumati"
                 });
             }
@@ -523,11 +543,11 @@ namespace FinNex.Application.Services.HR
             // Məs: maaş 2400 + işv.HYS 150 = GROSS 2550 > 2500 → güzəşt yoxdur
             decimal standartGuzest = brutMaas <= firstBracketMax ? p.VergiGuzestiMeblegi : 0m;
 
-            decimal vergilenecek = Math.Max(0, vergiDsmfBazasi - standartGuzest - maxIsciGuzesti);
+            decimal vergilenecek = Math.Max(0, vergiBazasi - standartGuzest - maxIsciGuzesti);
 
             var vergiIzahHisseleri = new List<string> { $"Brüt: {brutMaas:N2}" };
             if (hysMebleg > 0)
-                vergiIzahHisseleri.Add($"− HYS: {hysMebleg:N2} → Vergi bazası: {vergiDsmfBazasi:N2}");
+                vergiIzahHisseleri.Add($"− HYS: {hysMebleg:N2} → Vergi bazası: {vergiBazasi:N2}");
             if (standartGuzest > 0)
                 vergiIzahHisseleri.Add($"− Standart güzəşt: {standartGuzest:N2} (baza ≤ {firstBracketMax:N0})");
             else
@@ -567,17 +587,21 @@ namespace FinNex.Application.Services.HR
                 return Math.Round(mebleg * (flatFaiz / 100m), 2);
             }
 
-            // HYS: Gəlir vergisi və DSMF — vergiDsmfBazası üzrə hesablanır (HYS çıxılıb)
-            //      İTSS və İşsizlik — itssBazası (= tam brüt) üzrə hesablanır
-            decimal gelirVergisi   = HesablaTutulma(vergilenecek,    MaasParametrNovu.GelirVergisiFaizi,         p.GelirVergisiFaizi,         out var gvIzah);
-            decimal dsmfIsci       = HesablaTutulma(vergiDsmfBazasi, MaasParametrNovu.DsmfFaizi,                 p.DsmfFaizi,                 out var dsmfIzah);
-            decimal issizlikIsci   = Math.Round(itssBazasi * (p.IssizlikSigortasiFaizi / 100m), 2); // flat — tam brüt
-            decimal itss           = HesablaTutulma(itssBazasi,      MaasParametrNovu.IcbariTibbiSigortaFaizi,   p.IcbariTibbiSigortaFaizi,   out var itssIzah);
+            // Bazalar:
+            //   Gəlir vergisi — vergiBazasi (HYS çıxılıb, xəstəlik DAXİL)
+            //   DSMF          — dsmfBazasi  (HYS + xəstəlik çıxılıb)
+            //   İTSS/İşsizlik — itssBazasi  (xəstəlik çıxılıb, HYS qalır)
+            decimal gelirVergisi   = HesablaTutulma(vergilenecek, MaasParametrNovu.GelirVergisiFaizi,       p.GelirVergisiFaizi,       out var gvIzah);
+            decimal dsmfIsci       = HesablaTutulma(dsmfBazasi,   MaasParametrNovu.DsmfFaizi,               p.DsmfFaizi,               out var dsmfIzah);
+            decimal issizlikIsci   = Math.Round(itssBazasi * (p.IssizlikSigortasiFaizi / 100m), 2);
+            decimal itss           = HesablaTutulma(itssBazasi,   MaasParametrNovu.IcbariTibbiSigortaFaizi, p.IcbariTibbiSigortaFaizi, out var itssIzah);
 
+            string xstNote = xestelikSirketOdenis > 0 ? " (xəstəlik azaddır)" : "";
+            string hysNote = hysMebleg > 0 ? " (HYS çıxılıb)" : "";
             izahatlar.Add(new HesablamaIzahiDto { Addim = "Gelir Vergisi",              Izah = $"{gvIzah} (guzest: {p.VergiGuzestiMeblegi} AZN)", Mebleg = gelirVergisi, Tip = "vergi" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isci)",                Izah = $"{dsmfIzah}{(hysMebleg > 0 ? " (HYS çıxılıb)" : "")}",  Mebleg = dsmfIsci,     Tip = "vergi" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "Issizlik Sigortas (Isci)",   Izah = $"{itssBazasi:N2} x {p.IssizlikSigortasiFaizi}% (tam brüt)", Mebleg = issizlikIsci, Tip = "vergi" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "ITSS (Isci)",                Izah = $"{itssIzah}{(hysMebleg > 0 ? " (tam brüt)" : "")}",        Mebleg = itss,         Tip = "vergi" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isci)",                Izah = $"{dsmfIzah}{hysNote}{xstNote}",                   Mebleg = dsmfIsci,     Tip = "vergi" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "Issizlik Sigortas (Isci)",   Izah = $"{itssBazasi:N2} x {p.IssizlikSigortasiFaizi}%{xstNote}", Mebleg = issizlikIsci, Tip = "vergi" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "ITSS (Isci)",                Izah = $"{itssIzah}{xstNote}",                            Mebleg = itss,         Tip = "vergi" });
 
             // 11. NET maas — HYS də NET-dən tutulur (çünki işçinin öz payıdır)
             // HYS: brüt-ə hysIsegoturen daxildir, deməli NET-dən çıxılmalıdır
@@ -604,18 +628,18 @@ namespace FinNex.Application.Services.HR
                 Tip = "melumati"
             });
 
-            // 12. Sirket xercleri — pilləli (2026 qaydaları)
-            // HYS: DSMF işəgötürən — vergiDsmfBazası (HYS çıxılıb)
-            //       İTSS/İşsizlik işəgötürən — itssBazası (tam brüt)
-            decimal dsmfIsegoturen     = HesablaTutulma(vergiDsmfBazasi, MaasParametrNovu.DsmfIsegoturenFaizi,             p.DsmfIsegotürenFaizi,     out var dsmfIsvIzah);
-            decimal issizlikIsegoturen = Math.Round(itssBazasi * (p.IssizlikIsegotürenFaizi / 100m), 2); // flat — tam brüt
+            // 12. Sirket xercleri — eyni bazalardan istifadə olunur
+            //   DSMF işəgötürən     — dsmfBazasi  (HYS + xəstəlik çıxılıb)
+            //   İşsizlik/İTSS işəg. — itssBazasi  (xəstəlik çıxılıb)
+            decimal dsmfIsegoturen     = HesablaTutulma(dsmfBazasi, MaasParametrNovu.DsmfIsegoturenFaizi,             p.DsmfIsegotürenFaizi,     out var dsmfIsvIzah);
+            decimal issizlikIsegoturen = Math.Round(itssBazasi * (p.IssizlikIsegotürenFaizi / 100m), 2);
             decimal itssIsegoturen     = HesablaTutulma(itssBazasi, MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi, p.IcbariTibbiSigortaFaizi, out var itssIsvIzah);
 
             // HYS işəgötürən payı artıq 8.6-da hesablanıb (hysIsegoturen)
 
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isegoturen)",              Izah = $"{dsmfIsvIzah}{(hysMebleg > 0 ? " (HYS çıxılıb)" : "")} -- isciden tutulmur", Mebleg = dsmfIsegoturen,     Tip = "sirket" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "Issizlik Sigortas (Isegoturen)", Izah = $"{itssBazasi:N2} x {p.IssizlikIsegotürenFaizi}% (tam brüt) -- isciden tutulmur", Mebleg = issizlikIsegoturen, Tip = "sirket" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "ITSS (Isegoturen)",              Izah = $"{itssIsvIzah}{(hysMebleg > 0 ? " (tam brüt)" : "")} -- isciden tutulmur",     Mebleg = itssIsegoturen,     Tip = "sirket" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isegoturen)",              Izah = $"{dsmfIsvIzah}{hysNote}{xstNote} -- isciden tutulmur",                       Mebleg = dsmfIsegoturen,     Tip = "sirket" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "Issizlik Sigortas (Isegoturen)", Izah = $"{itssBazasi:N2} x {p.IssizlikIsegotürenFaizi}%{xstNote} -- isciden tutulmur", Mebleg = issizlikIsegoturen, Tip = "sirket" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "ITSS (Isegoturen)",              Izah = $"{itssIsvIzah}{xstNote} -- isciden tutulmur",                                Mebleg = itssIsegoturen,     Tip = "sirket" });
             if (hysIsegoturen > 0)
             {
                 izahatlar.Add(new HesablamaIzahiDto
@@ -874,17 +898,21 @@ namespace FinNex.Application.Services.HR
         }
 
         // ─────────────────────────────────────────────────────────
-        // MEZUNIYYET ODENISI -- 2026 QAYDASI (Yeni formula)
+        // MEZUNIYYET ODENISI -- 2026 QAYDASI
         //
-        // S    = Son 12 ayın cəmi qazancı (IsciAyliqQazanc cədvəlindən)
-        // MH   = S / 12 / 30.4 × GS    (təqvim günü əsaslı)
-        // ƏH   = CariMaas / AyİşGün × İGS  (iş günü əsaslı)
-        // Ödəniş = MAX(MH, ƏH)
+        // Per-gün dərəcəsi əsasında müqayisə (BMI Finance qaydası):
+        //   gunlukMaas    = CariMaas / AyİşGün         (maaş / iş gününə)
+        //   gunlukMezPul  = S / 12 / 30.4              (12 aylıq orta gündəlik)
+        //   gunlukDerece  = MAX(gunlukMaas, gunlukMezPul)   (hansı çoxdursa)
+        //   Ödəniş        = gunlukDerece × İGS         (məzuniyyətin iş günü sayı)
+        //
+        // Niyə iş günü? Əsas maaşdan kəsinti də iş günü əsasında tutulur
+        // (esasMaas / AyİşGün × İGS); ödənişin də eyni bazada olması iki
+        // hesablama arasında uyğunsuzluğu aradan qaldırır.
         // ─────────────────────────────────────────────────────────
         public async Task<decimal> MezuniyyetOdenisiniHesablaAsync(
             int isciId, int il, int ay, int isGunSayi)
         {
-            // Geri uyğunluq üçün — yalnız İGS verilibsə, GS-i tap
             var (teqvimGun, _) = await MezuniyyetGunleriniSayGenisAsync(isciId, il, ay);
             return await MezuniyyetOdenisiniHesablaV2Async(isciId, il, ay, teqvimGun, isGunSayi);
         }
@@ -893,7 +921,7 @@ namespace FinNex.Application.Services.HR
         public async Task<decimal> MezuniyyetOdenisiniHesablaV2Async(
             int isciId, int il, int ay, int teqvimGun, int isGun)
         {
-            if (teqvimGun <= 0 && isGun <= 0) return 0;
+            if (isGun <= 0) return 0;
 
             // 1. Cari maaş
             decimal cariMaas = (await _unitOfWork.Repository<IsciMaliye>()
@@ -905,22 +933,14 @@ namespace FinNex.Application.Services.HR
             // 3. Cari ayın iş gün sayı
             int ayIsGun = await AyinIsGunleriniHesablaAsync(il, ay);
 
-            // 4. MH = S_düzəlmiş / 12 / 30.4 × GS
-            decimal MH = 0;
-            if (S > 0 && teqvimGun > 0)
-            {
-                MH = Math.Round(S / 12m / 30.4m * teqvimGun, 2);
-            }
+            // 4. Gündəlik dərəcələr — hansısa biri 0 ola bilər (məs. tarixçə yoxdur)
+            decimal gunlukMaas = (cariMaas > 0 && ayIsGun > 0) ? cariMaas / ayIsGun : 0m;
+            decimal gunlukMezPul = (S > 0) ? S / 12m / 30.4m : 0m;
 
-            // 5. ƏH = CariMaas / AyİşGün × İGS  (cari maaş əsaslı iş günü)
-            decimal EH = 0;
-            if (cariMaas > 0 && ayIsGun > 0 && isGun > 0)
-            {
-                EH = Math.Round(cariMaas / ayIsGun * isGun, 2);
-            }
+            decimal gunlukDerece = Math.Max(gunlukMaas, gunlukMezPul);
+            if (gunlukDerece <= 0) return 0;
 
-            // 6. MAX(MH, ƏH)
-            return Math.Max(MH, EH);
+            return Math.Round(gunlukDerece * isGun, 2);
         }
 
         /// <summary>
@@ -1313,10 +1333,10 @@ namespace FinNex.Application.Services.HR
             result.IzahatAddimlari.Add(
                 $"Son 12 ayın artım əmsallı düzəlmiş cəmi qazancı: {sDuzelmis:N2} ₼");
             result.IzahatAddimlari.Add(
-                "Hesablama məntiqi: hər ay üçün iki rəqəm tapılır — TARİXİ ORTA " +
-                "(düzəlmiş cəm ÷ 12 ÷ 30.4 × təqvim günü) və CARİ MAAŞ HESABI " +
-                "(cari maaş ÷ ay iş günü × məzuniyyət iş günü). Hansı böyükdürsə, " +
-                "məzuniyyət ödənişi olaraq götürülür.");
+                "Hesablama məntiqi: hər ay üçün iki GÜNDƏLİK dərəcə tapılır — " +
+                "TARİXİ ORTA (düzəlmiş cəm ÷ 12 ÷ 30.4) və CARİ MAAŞ HESABI " +
+                "(cari maaş ÷ ay iş günü). Hansı gündəlik dərəcə böyükdürsə, " +
+                "o, məzuniyyətin iş günü sayına vurulur.");
 
             // Məzuniyyət periodunu aylar üzrə böl
             var cursorAy = new DateTime(baslama.Year, baslama.Month, 1);
@@ -1362,16 +1382,15 @@ namespace FinNex.Application.Services.HR
 
                 int ayIsGun = await AyinIsGunleriniHesablaAsync(il, ay);
 
-                decimal MH = 0;
-                if (S > 0 && gs > 0)
-                    MH = Math.Round(S / 12m / 30.4m * gs, 2);
+                // Gündəlik dərəcələr — yalnız böyüyü iş günü sayına vurulur.
+                decimal gunlukMezPul = (S > 0) ? S / 12m / 30.4m : 0m;
+                decimal gunlukMaas = (cariMaas > 0 && ayIsGun > 0) ? cariMaas / ayIsGun : 0m;
+                decimal gunlukDerece = Math.Max(gunlukMezPul, gunlukMaas);
 
-                decimal EH = 0;
-                if (cariMaas > 0 && ayIsGun > 0 && igs > 0)
-                    EH = Math.Round(cariMaas / ayIsGun * igs, 2);
-
-                decimal secilen = Math.Max(MH, EH);
-                string qalib = MH >= EH ? "MH" : "ƏH";
+                decimal MH = (igs > 0) ? Math.Round(gunlukMezPul * igs, 2) : 0m;
+                decimal EH = (igs > 0) ? Math.Round(gunlukMaas * igs, 2) : 0m;
+                decimal secilen = (igs > 0) ? Math.Round(gunlukDerece * igs, 2) : 0m;
+                string qalib = gunlukMezPul >= gunlukMaas ? "MH" : "ƏH";
 
                 var slice = new MezuniyyetOdenisAySliceDto
                 {
@@ -1394,12 +1413,14 @@ namespace FinNex.Application.Services.HR
                     $"    Bu ayın məzuniyyəti: {gs} təqvim günü, {igs} iş günü " +
                     $"(ayın ümumi iş günü sayı: {ayIsGun})");
                 result.IzahatAddimlari.Add(
-                    $"    Tarixi orta: {S:N2} ÷ 12 ÷ 30.4 × {gs} = {MH:N2} ₼");
+                    $"    Gündəlik məzuniyyət pulu: {S:N2} ÷ 12 ÷ 30.4 = {gunlukMezPul:N4} ₼/gün " +
+                    $"→ × {igs} iş günü = {MH:N2} ₼");
                 result.IzahatAddimlari.Add(
-                    $"    Cari maaş hesabı: {cariMaas:N2} ÷ {ayIsGun} × {igs} = {EH:N2} ₼");
+                    $"    Gündəlik maaş: {cariMaas:N2} ÷ {ayIsGun} = {gunlukMaas:N4} ₼/gün " +
+                    $"→ × {igs} iş günü = {EH:N2} ₼");
                 result.IzahatAddimlari.Add(
-                    $"    Məzuniyyət ödənişi (böyüyü götürülür): {secilen:N2} ₼ " +
-                    $"({(qalib == "MH" ? "tarixi orta üstündür" : "cari maaş hesabı üstündür")})");
+                    $"    Məzuniyyət ödənişi (böyük gündəlik götürülür): {secilen:N2} ₼ " +
+                    $"({(qalib == "MH" ? "gündəlik məzuniyyət pulu üstündür" : "gündəlik maaş üstündür")})");
 
                 umumiGS += gs;
                 umumiIGS += igs;
