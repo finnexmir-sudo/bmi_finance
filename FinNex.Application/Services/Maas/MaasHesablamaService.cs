@@ -449,16 +449,36 @@ namespace FinNex.Application.Services.HR
             });
 
             // 9.0.1 Vergi bazaları — əsas brüt (işəgötürən HYS daxil deyil) üzrə hesablanır
-            decimal vergiDsmfBazasi = Math.Max(0, esasBrut - hysMebleg);
-            decimal itssBazasi = esasBrut; // İTSS/İşsizlik əsas brüt üzrə (HYS çıxılmır)
+            //
+            // QAYDA: Xəstəlik vərəqəsi üzrə şirkət ödənişi YALNIZ gəlir vergisinə cəlb olunur,
+            // DSMF / İşsizlik / İTSS-dən azaddır (AR Vergi Məcəlləsi və sosial sığorta qanunları).
+            //   - vergiBazasi   = esasBrut − HYS                (gəlir vergisi üçün; xəstəlik daxildir)
+            //   - dsmfBazasi    = esasBrut − HYS − Xəstəlik     (DSMF işçi/işəgötürən)
+            //   - itssBazasi    = esasBrut − Xəstəlik           (İTSS + İşsizlik; HYS çıxılmır)
+            decimal vergiBazasi = Math.Max(0, esasBrut - hysMebleg);
+            decimal dsmfBazasi  = Math.Max(0, vergiBazasi - xestelikSirketOdenis);
+            decimal itssBazasi  = Math.Max(0, esasBrut - xestelikSirketOdenis);
 
             if (hysMebleg > 0)
             {
                 izahatlar.Add(new HesablamaIzahiDto
                 {
-                    Addim = "Vergi+DSMF bazası (HYS çıxılıb)",
-                    Izah = $"Əsas brüt ({esasBrut:N2}) − HYS ({hysMebleg:N2}) = {vergiDsmfBazasi:N2}",
-                    Mebleg = vergiDsmfBazasi,
+                    Addim = "Vergi bazası (HYS çıxılıb)",
+                    Izah = $"Əsas brüt ({esasBrut:N2}) − HYS ({hysMebleg:N2}) = {vergiBazasi:N2}",
+                    Mebleg = vergiBazasi,
+                    Tip = "melumati"
+                });
+            }
+
+            if (xestelikSirketOdenis > 0)
+            {
+                izahatlar.Add(new HesablamaIzahiDto
+                {
+                    Addim = "DSMF/İşsizlik/İTSS bazası (xəstəlik çıxılıb)",
+                    Izah = $"Xəstəlik vərəqəsi şirkət ödənişi ({xestelikSirketOdenis:N2}) " +
+                           "yalnız gəlir vergisinə cəlb olunur — DSMF, İşsizlik, İTSS bazalarından çıxılır. " +
+                           $"DSMF bazası: {dsmfBazasi:N2}, İTSS/İşsizlik bazası: {itssBazasi:N2}",
+                    Mebleg = xestelikSirketOdenis,
                     Tip = "melumati"
                 });
             }
@@ -523,11 +543,11 @@ namespace FinNex.Application.Services.HR
             // Məs: maaş 2400 + işv.HYS 150 = GROSS 2550 > 2500 → güzəşt yoxdur
             decimal standartGuzest = brutMaas <= firstBracketMax ? p.VergiGuzestiMeblegi : 0m;
 
-            decimal vergilenecek = Math.Max(0, vergiDsmfBazasi - standartGuzest - maxIsciGuzesti);
+            decimal vergilenecek = Math.Max(0, vergiBazasi - standartGuzest - maxIsciGuzesti);
 
             var vergiIzahHisseleri = new List<string> { $"Brüt: {brutMaas:N2}" };
             if (hysMebleg > 0)
-                vergiIzahHisseleri.Add($"− HYS: {hysMebleg:N2} → Vergi bazası: {vergiDsmfBazasi:N2}");
+                vergiIzahHisseleri.Add($"− HYS: {hysMebleg:N2} → Vergi bazası: {vergiBazasi:N2}");
             if (standartGuzest > 0)
                 vergiIzahHisseleri.Add($"− Standart güzəşt: {standartGuzest:N2} (baza ≤ {firstBracketMax:N0})");
             else
@@ -567,17 +587,27 @@ namespace FinNex.Application.Services.HR
                 return Math.Round(mebleg * (flatFaiz / 100m), 2);
             }
 
-            // HYS: Gəlir vergisi və DSMF — vergiDsmfBazası üzrə hesablanır (HYS çıxılıb)
-            //      İTSS və İşsizlik — itssBazası (= tam brüt) üzrə hesablanır
-            decimal gelirVergisi   = HesablaTutulma(vergilenecek,    MaasParametrNovu.GelirVergisiFaizi,         p.GelirVergisiFaizi,         out var gvIzah);
-            decimal dsmfIsci       = HesablaTutulma(vergiDsmfBazasi, MaasParametrNovu.DsmfFaizi,                 p.DsmfFaizi,                 out var dsmfIzah);
-            decimal issizlikIsci   = Math.Round(itssBazasi * (p.IssizlikSigortasiFaizi / 100m), 2); // flat — tam brüt
-            decimal itss           = HesablaTutulma(itssBazasi,      MaasParametrNovu.IcbariTibbiSigortaFaizi,   p.IcbariTibbiSigortaFaizi,   out var itssIzah);
+            // Bazalar:
+            //   Gəlir vergisi  — vergiBazasi (esasBrut − HYS); xəstəlik DAXİL
+            //   DSMF (işçi)    — dsmfBazasi (esasBrut − HYS − Xəstəlik)
+            //   İşsizlik+İTSS  — itssBazasi (esasBrut − Xəstəlik)
+            decimal gelirVergisi   = HesablaTutulma(vergilenecek, MaasParametrNovu.GelirVergisiFaizi,       p.GelirVergisiFaizi,       out var gvIzah);
+            decimal dsmfIsci       = HesablaTutulma(dsmfBazasi,   MaasParametrNovu.DsmfFaizi,               p.DsmfFaizi,               out var dsmfIzah);
+            decimal issizlikIsci   = Math.Round(itssBazasi * (p.IssizlikSigortasiFaizi / 100m), 2);
+            decimal itss           = HesablaTutulma(itssBazasi,   MaasParametrNovu.IcbariTibbiSigortaFaizi, p.IcbariTibbiSigortaFaizi, out var itssIzah);
 
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "Gelir Vergisi",              Izah = $"{gvIzah} (guzest: {p.VergiGuzestiMeblegi} AZN)", Mebleg = gelirVergisi, Tip = "vergi" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isci)",                Izah = $"{dsmfIzah}{(hysMebleg > 0 ? " (HYS çıxılıb)" : "")}",  Mebleg = dsmfIsci,     Tip = "vergi" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "Issizlik Sigortas (Isci)",   Izah = $"{itssBazasi:N2} x {p.IssizlikSigortasiFaizi}% (tam brüt)", Mebleg = issizlikIsci, Tip = "vergi" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "ITSS (Isci)",                Izah = $"{itssIzah}{(hysMebleg > 0 ? " (tam brüt)" : "")}",        Mebleg = itss,         Tip = "vergi" });
+            string dsmfAzadIzahi()
+            {
+                var hisseler = new List<string>();
+                if (hysMebleg > 0) hisseler.Add("HYS çıxılıb");
+                if (xestelikSirketOdenis > 0) hisseler.Add("xəstəlik çıxılıb");
+                return hisseler.Count > 0 ? $" ({string.Join(", ", hisseler)})" : "";
+            }
+
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "Gelir Vergisi",              Izah = $"{gvIzah} (guzest: {p.VergiGuzestiMeblegi} AZN)",                                Mebleg = gelirVergisi, Tip = "vergi" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isci)",                Izah = $"{dsmfIzah}{dsmfAzadIzahi()}",                                                   Mebleg = dsmfIsci,     Tip = "vergi" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "Issizlik Sigortas (Isci)",   Izah = $"{itssBazasi:N2} x {p.IssizlikSigortasiFaizi}%{(xestelikSirketOdenis > 0 ? " (xəstəlik çıxılıb)" : "")}", Mebleg = issizlikIsci, Tip = "vergi" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "ITSS (Isci)",                Izah = $"{itssIzah}{(xestelikSirketOdenis > 0 ? " (xəstəlik çıxılıb)" : "")}",            Mebleg = itss,         Tip = "vergi" });
 
             // 11. NET maas — HYS də NET-dən tutulur (çünki işçinin öz payıdır)
             // HYS: brüt-ə hysIsegoturen daxildir, deməli NET-dən çıxılmalıdır
@@ -605,17 +635,18 @@ namespace FinNex.Application.Services.HR
             });
 
             // 12. Sirket xercleri — pilləli (2026 qaydaları)
-            // HYS: DSMF işəgötürən — vergiDsmfBazası (HYS çıxılıb)
-            //       İTSS/İşsizlik işəgötürən — itssBazası (tam brüt)
-            decimal dsmfIsegoturen     = HesablaTutulma(vergiDsmfBazasi, MaasParametrNovu.DsmfIsegoturenFaizi,             p.DsmfIsegotürenFaizi,     out var dsmfIsvIzah);
-            decimal issizlikIsegoturen = Math.Round(itssBazasi * (p.IssizlikIsegotürenFaizi / 100m), 2); // flat — tam brüt
+            // İşəgötürən payları işçi paylarıyla eyni bazalardan hesablanır:
+            //   DSMF işəgötürən           — dsmfBazasi (HYS + xəstəlik çıxılıb)
+            //   İşsizlik+İTSS işəgötürən  — itssBazasi (xəstəlik çıxılıb)
+            decimal dsmfIsegoturen     = HesablaTutulma(dsmfBazasi, MaasParametrNovu.DsmfIsegoturenFaizi,             p.DsmfIsegotürenFaizi,     out var dsmfIsvIzah);
+            decimal issizlikIsegoturen = Math.Round(itssBazasi * (p.IssizlikIsegotürenFaizi / 100m), 2);
             decimal itssIsegoturen     = HesablaTutulma(itssBazasi, MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi, p.IcbariTibbiSigortaFaizi, out var itssIsvIzah);
 
             // HYS işəgötürən payı artıq 8.6-da hesablanıb (hysIsegoturen)
 
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isegoturen)",              Izah = $"{dsmfIsvIzah}{(hysMebleg > 0 ? " (HYS çıxılıb)" : "")} -- isciden tutulmur", Mebleg = dsmfIsegoturen,     Tip = "sirket" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "Issizlik Sigortas (Isegoturen)", Izah = $"{itssBazasi:N2} x {p.IssizlikIsegotürenFaizi}% (tam brüt) -- isciden tutulmur", Mebleg = issizlikIsegoturen, Tip = "sirket" });
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "ITSS (Isegoturen)",              Izah = $"{itssIsvIzah}{(hysMebleg > 0 ? " (tam brüt)" : "")} -- isciden tutulmur",     Mebleg = itssIsegoturen,     Tip = "sirket" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isegoturen)",              Izah = $"{dsmfIsvIzah}{dsmfAzadIzahi()} -- isciden tutulmur",                                                                 Mebleg = dsmfIsegoturen,     Tip = "sirket" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "Issizlik Sigortas (Isegoturen)", Izah = $"{itssBazasi:N2} x {p.IssizlikIsegotürenFaizi}%{(xestelikSirketOdenis > 0 ? " (xəstəlik çıxılıb)" : "")} -- isciden tutulmur", Mebleg = issizlikIsegoturen, Tip = "sirket" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "ITSS (Isegoturen)",              Izah = $"{itssIsvIzah}{(xestelikSirketOdenis > 0 ? " (xəstəlik çıxılıb)" : "")} -- isciden tutulmur",                              Mebleg = itssIsegoturen,     Tip = "sirket" });
             if (hysIsegoturen > 0)
             {
                 izahatlar.Add(new HesablamaIzahiDto
