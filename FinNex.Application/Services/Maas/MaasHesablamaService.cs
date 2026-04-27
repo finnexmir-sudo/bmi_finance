@@ -1422,7 +1422,8 @@ namespace FinNex.Application.Services.HR
         // MEZUNIYYET PREVIEW -- toplu hesablama ekranında GROSS/NET-i
         // serverlə eyni rəqəmlərlə göstərmək üçün. FerdiHesablaAsync-dəki
         // məzuniyyət bloku ilə eyni formuldur.
-        //  - AySonuOdenis günləri → ödəniş əlavə olunur, kəsinti YOX.
+        //  - AySonuOdenis günləri → ödəniş əlavə olunur, həm də həmin
+        //    günlərə görə əsas maaşdan iş günü mütənasib KƏSİNTİ tutulur.
         //  - QabaqcadanOdenis günləri → kəsinti tətbiq olunur, ödəniş YOX.
         // ─────────────────────────────────────────────────────────
         public async Task<(int IsGun, decimal Kesinti, decimal AySonuOdenisi)>
@@ -1437,19 +1438,23 @@ namespace FinNex.Application.Services.HR
 
             int ayIsGunu = await AyinIsGunleriniHesablaAsync(il, ay);
 
-            // Qabaqcadan ödənilmiş günlər — yalnız onlara görə kəsinti tətbiq olunur
+            // Qabaqcadan ödənilmiş günlər — kəsinti tətbiq olunur
             var (_, advanceIGS, _) = await MezuniyyetAyGunleriFiltreliSayAsync(
                 isciId, il, ay, MezuniyyetOdenisTipi.QabaqcadanOdenis);
             decimal kesinti = (ayIsGunu > 0 && advanceIGS > 0)
                 ? Math.Round(maliye.CariMaas / ayIsGunu * advanceIGS, 2)
                 : 0;
 
-            // AySonu günləri — yalnız onlara görə ödəniş əlavə olunur (kəsinti yox)
+            // AySonu günləri — həm ödəniş əlavə olunur, həm də iş günü
+            // mütənasib kəsinti tutulur (ikiqat ödəmənin qarşısını almaq üçün)
             var (aySonuGS, aySonuIGS, _) = await MezuniyyetAyGunleriFiltreliSayAsync(
                 isciId, il, ay, MezuniyyetOdenisTipi.AySonuOdenis);
             decimal aySonuOdenisi = (aySonuGS > 0 || aySonuIGS > 0)
                 ? await MezuniyyetOdenisiniHesablaV2Async(isciId, il, ay, aySonuGS, aySonuIGS)
                 : 0;
+
+            if (ayIsGunu > 0 && aySonuIGS > 0)
+                kesinti += Math.Round(maliye.CariMaas / ayIsGunu * aySonuIGS, 2);
 
             return (toplamIsGun, kesinti, aySonuOdenisi);
         }
