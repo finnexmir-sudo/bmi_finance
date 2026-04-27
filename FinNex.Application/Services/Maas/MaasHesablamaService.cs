@@ -448,16 +448,25 @@ namespace FinNex.Application.Services.HR
                 Tip = "melumati"
             });
 
-            // 9.0.1 Vergi bazaları — əsas brüt (işəgötürən HYS daxil deyil) üzrə hesablanır
-            decimal vergiDsmfBazasi = Math.Max(0, esasBrut - hysMebleg);
-            decimal itssBazasi = esasBrut; // İTSS/İşsizlik əsas brüt üzrə (HYS çıxılmır)
+            // 9.0.1 Vergi bazaları
+            //   QAYDA: Xəstəlik vərəqi ödənişi gəlir vergisinə daxildir,
+            //   amma DSMF / İşsizlik / İTSS-dən AZADIR (AR Vergi Məcəlləsi).
+            //   - gelirVergiBazasi = brüt − HYS  (xəstəlik DAXİL)
+            //   - dsmfBazasi       = brüt − HYS − xəstəlik
+            //   - itssBazasi       = brüt − xəstəlik (HYS çıxılmır)
+            decimal gelirVergiBazasi = Math.Max(0, esasBrut - hysMebleg);
+            decimal vergiDsmfBazasi = Math.Max(0, esasBrut - hysMebleg - xestelikSirketOdenis);
+            decimal itssBazasi = Math.Max(0, esasBrut - xestelikSirketOdenis);
 
-            if (hysMebleg > 0)
+            if (hysMebleg > 0 || xestelikSirketOdenis > 0)
             {
+                var bazaIzah = new List<string> { $"Əsas brüt ({esasBrut:N2})" };
+                if (hysMebleg > 0) bazaIzah.Add($"− HYS ({hysMebleg:N2})");
+                if (xestelikSirketOdenis > 0) bazaIzah.Add($"− Xəstəlik ({xestelikSirketOdenis:N2}) [DSMF/İTSS/İşsizlikdən azad]");
                 izahatlar.Add(new HesablamaIzahiDto
                 {
-                    Addim = "Vergi+DSMF bazası (HYS çıxılıb)",
-                    Izah = $"Əsas brüt ({esasBrut:N2}) − HYS ({hysMebleg:N2}) = {vergiDsmfBazasi:N2}",
+                    Addim = "Sığorta bazaları (xəstəlik və HYS çıxılıb)",
+                    Izah = string.Join(" ", bazaIzah) + $" → DSMF bazası: {vergiDsmfBazasi:N2}, İTSS/İşsizlik bazası: {itssBazasi:N2}",
                     Mebleg = vergiDsmfBazasi,
                     Tip = "melumati"
                 });
@@ -523,11 +532,11 @@ namespace FinNex.Application.Services.HR
             // Məs: maaş 2400 + işv.HYS 150 = GROSS 2550 > 2500 → güzəşt yoxdur
             decimal standartGuzest = brutMaas <= firstBracketMax ? p.VergiGuzestiMeblegi : 0m;
 
-            decimal vergilenecek = Math.Max(0, vergiDsmfBazasi - standartGuzest - maxIsciGuzesti);
+            decimal vergilenecek = Math.Max(0, gelirVergiBazasi - standartGuzest - maxIsciGuzesti);
 
             var vergiIzahHisseleri = new List<string> { $"Brüt: {brutMaas:N2}" };
             if (hysMebleg > 0)
-                vergiIzahHisseleri.Add($"− HYS: {hysMebleg:N2} → Vergi bazası: {vergiDsmfBazasi:N2}");
+                vergiIzahHisseleri.Add($"− HYS: {hysMebleg:N2} → Gəlir vergisi bazası: {gelirVergiBazasi:N2}");
             if (standartGuzest > 0)
                 vergiIzahHisseleri.Add($"− Standart güzəşt: {standartGuzest:N2} (baza ≤ {firstBracketMax:N0})");
             else
@@ -889,7 +898,9 @@ namespace FinNex.Application.Services.HR
             return await MezuniyyetOdenisiniHesablaV2Async(isciId, il, ay, teqvimGun, isGunSayi);
         }
 
-        // Əsas hesablama — həm GS, həm İGS qəbul edir (artıq ARTIM ƏMSALLIDIR)
+        // Əsas hesablama — günlük məbləğlər müqayisə olunur (Excel mühasibat
+        // düsturu ilə eyni): günlükMH = S / işləmiş_ay / 30.4, günlükƏH =
+        // CariMaas / AyIşGünü. MAX(günlük) × GS (təqvim günü) = ödəniş.
         public async Task<decimal> MezuniyyetOdenisiniHesablaV2Async(
             int isciId, int il, int ay, int teqvimGun, int isGun)
         {
@@ -899,36 +910,35 @@ namespace FinNex.Application.Services.HR
             decimal cariMaas = (await _unitOfWork.Repository<IsciMaliye>()
                 .GetirAsync(x => x.IsciId == isciId))?.CariMaas ?? 0;
 
-            // 2. Son 12 ay qazancları + artım əmsalı (K) ilə düzəlmiş cəm
-            decimal S = await Son12AyDuzelmisCeminiHesablaAsync(isciId, cariMaas);
+            // 2. Son 12 aya bax — işlənmiş (qazancı > 0) ay sayı və düzəlmiş cəm
+            var (S, islenmisAy) = await Son12AyDuzelmisCemAsync(isciId, cariMaas);
 
             // 3. Cari ayın iş gün sayı
             int ayIsGun = await AyinIsGunleriniHesablaAsync(il, ay);
 
-            // 4. MH = S_düzəlmiş / 12 / 30.4 × GS
-            decimal MH = 0;
-            if (S > 0 && teqvimGun > 0)
-            {
-                MH = Math.Round(S / 12m / 30.4m * teqvimGun, 2);
-            }
+            // 4. Günlük MH (məzuniyyət ortalaması üzrə) — Excel: E25 / COUNTIF(>0) / 30.4
+            decimal gunlukMH = (S > 0 && islenmisAy > 0)
+                ? S / islenmisAy / 30.4m
+                : 0;
 
-            // 5. ƏH = CariMaas / AyİşGün × İGS  (cari maaş əsaslı iş günü)
-            decimal EH = 0;
-            if (cariMaas > 0 && ayIsGun > 0 && isGun > 0)
-            {
-                EH = Math.Round(cariMaas / ayIsGun * isGun, 2);
-            }
+            // 5. Günlük ƏH (cari maaş üzrə iş günü)
+            decimal gunlukEH = (cariMaas > 0 && ayIsGun > 0)
+                ? cariMaas / ayIsGun
+                : 0;
 
-            // 6. MAX(MH, ƏH)
-            return Math.Max(MH, EH);
+            // 6. MAX(günlük) × GS  — günlüklər müqayisə olunur, sonra
+            //    təqvim gün sayına vurulur (mühasibat qaydası)
+            decimal gunlukSecilmis = Math.Max(gunlukMH, gunlukEH);
+            int gunSayi = teqvimGun > 0 ? teqvimGun : isGun;
+            return Math.Round(gunlukSecilmis * gunSayi, 2);
         }
 
         /// <summary>
-        /// Son 12 ayın DÜZƏLMİŞ cəmi qazancı (artım əmsallı).
-        /// K_i = MAX(1.0, CariStatMaas / StatMaas_i) — yalnız maaş artımı
-        /// köhnə ayları qaldırır; azalma halda əmsal 1.0 qalır.
+        /// Son 12 ayın DÜZƏLMİŞ cəmi qazancı (artım əmsallı) və işlənmiş
+        /// (qazancı > 0) ay sayı. K_i = MAX(1.0, CariStatMaas / StatMaas_i).
         /// </summary>
-        private async Task<decimal> Son12AyDuzelmisCeminiHesablaAsync(int isciId, decimal cariMaas)
+        private async Task<(decimal Cemi, int IslenmisAy)> Son12AyDuzelmisCemAsync(
+            int isciId, decimal cariMaas)
         {
             var son12 = await _unitOfWork.Repository<IsciAyliqQazanc>()
                 .Query()
@@ -938,8 +948,10 @@ namespace FinNex.Application.Services.HR
                 .ToListAsync();
 
             decimal cemi = 0;
+            int islenmisAy = 0;
             foreach (var q in son12)
             {
+                if (q.Qazanc <= 0) continue;
                 var ayBitis = new DateTime(q.Il, q.Ay, 1).AddMonths(1).AddDays(-1);
                 decimal statMaas = await StatMaasiTarixeGoreTapAsync(isciId, ayBitis);
                 if (statMaas <= 0) statMaas = cariMaas;
@@ -950,7 +962,15 @@ namespace FinNex.Application.Services.HR
                 if (emsal < 1m) emsal = 1m;
 
                 cemi += Math.Round(q.Qazanc * emsal, 2);
+                islenmisAy++;
             }
+            return (cemi, islenmisAy);
+        }
+
+        // Geriyə uyğunluq üçün — köhnə imza yalnız cəmi qaytarır
+        private async Task<decimal> Son12AyDuzelmisCeminiHesablaAsync(int isciId, decimal cariMaas)
+        {
+            var (cemi, _) = await Son12AyDuzelmisCemAsync(isciId, cariMaas);
             return cemi;
         }
 
