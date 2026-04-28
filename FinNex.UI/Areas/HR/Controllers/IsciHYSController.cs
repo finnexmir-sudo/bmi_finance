@@ -59,7 +59,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
-            [Bind("IsciId,Mebleg,BaslamaTarixi,BitmeTarixi,Qeyd")] IsciHYS model)
+            [Bind("IsciId,Sirket,Mebleg,BaslamaTarixi,BitmeTarixi,Qeyd")] IsciHYS model)
         {
             ModelState.Remove(nameof(model.Isci));
 
@@ -94,19 +94,25 @@ namespace FinNex.UI.Areas.HR.Controllers
                 }
             }
 
-            // Eyni isci ucun kesisen dovrde ikinci HYS olmasin
+            // İşçi bir neçə şirkətdə HYS aça bilər. Yalnız EYNİ İŞÇİ + EYNİ ŞİRKƏT
+            // dövr kəsişməsi qadağandır (dublikat). Şirkət boşdursa, eyni cür
+            // boş olan başqa qeydlərlə dövr kəsişməsinə icazə verilmir.
             if (ModelState.IsValid)
             {
+                var sirketNorm = string.IsNullOrWhiteSpace(model.Sirket) ? null : model.Sirket.Trim();
                 var mevcud = await _unitOfWork.Repository<IsciHYS>()
                     .Query()
                     .AnyAsync(x =>
                         !x.Silinib &&
                         x.IsciId == model.IsciId &&
+                        x.Sirket == sirketNorm &&
                         x.BaslamaTarixi <= (model.BitmeTarixi ?? DateTime.MaxValue) &&
                         (x.BitmeTarixi ?? DateTime.MaxValue) >= model.BaslamaTarixi);
                 if (mevcud)
-                    ModelState.AddModelError(nameof(model.IsciId),
-                        "Bu işçi üçün seçilən dövrdə artıq HYS təyinatı mövcuddur.");
+                    ModelState.AddModelError(nameof(model.Sirket),
+                        sirketNorm == null
+                            ? "Bu işçi üçün şirkəti göstərilməyən HYS-də artıq dövr kəsişməsi var. Şirkət adını daxil edin."
+                            : $"Bu işçi üçün \"{sirketNorm}\" şirkətində seçilən dövrdə artıq HYS mövcuddur.");
             }
 
             if (!ModelState.IsValid)
@@ -118,6 +124,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var entity = new IsciHYS
             {
                 IsciId = model.IsciId,
+                Sirket = string.IsNullOrWhiteSpace(model.Sirket) ? null : model.Sirket.Trim(),
                 Mebleg = model.Mebleg,
                 BaslamaTarixi = model.BaslamaTarixi.Date,
                 BitmeTarixi = model.BitmeTarixi?.Date,
@@ -151,7 +158,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id,
-            [Bind("Id,IsciId,Mebleg,BaslamaTarixi,BitmeTarixi,Qeyd")] IsciHYS model)
+            [Bind("Id,IsciId,Sirket,Mebleg,BaslamaTarixi,BitmeTarixi,Qeyd")] IsciHYS model)
         {
             ModelState.Remove(nameof(model.Isci));
 
@@ -184,20 +191,25 @@ namespace FinNex.UI.Areas.HR.Controllers
                 }
             }
 
-            // Kesisen dovr yoxlamasi (ozunu istisna et)
+            // Eyni işçi + eyni şirkət birləşməsində dövr kəsişməsi yoxlanılır
+            // (özünü istisna et). Fərqli şirkətlər ilə dövr kəsişməsinə icazə var.
             if (ModelState.IsValid)
             {
+                var sirketNorm = string.IsNullOrWhiteSpace(model.Sirket) ? null : model.Sirket.Trim();
                 var mevcud = await _unitOfWork.Repository<IsciHYS>()
                     .Query()
                     .AnyAsync(x =>
                         !x.Silinib &&
                         x.Id != id &&
                         x.IsciId == model.IsciId &&
+                        x.Sirket == sirketNorm &&
                         x.BaslamaTarixi <= (model.BitmeTarixi ?? DateTime.MaxValue) &&
                         (x.BitmeTarixi ?? DateTime.MaxValue) >= model.BaslamaTarixi);
                 if (mevcud)
-                    ModelState.AddModelError(nameof(model.IsciId),
-                        "Bu işçi üçün seçilən dövrdə artıq HYS təyinatı mövcuddur.");
+                    ModelState.AddModelError(nameof(model.Sirket),
+                        sirketNorm == null
+                            ? "Bu işçi üçün şirkəti göstərilməyən başqa HYS qeydi ilə dövr kəsişir."
+                            : $"Bu işçi üçün \"{sirketNorm}\" şirkətində seçilən dövrdə artıq HYS mövcuddur.");
             }
 
             if (!ModelState.IsValid)
@@ -213,6 +225,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            entity.Sirket = string.IsNullOrWhiteSpace(model.Sirket) ? null : model.Sirket.Trim();
             entity.Mebleg = model.Mebleg;
             entity.BaslamaTarixi = model.BaslamaTarixi.Date;
             entity.BitmeTarixi = model.BitmeTarixi?.Date;

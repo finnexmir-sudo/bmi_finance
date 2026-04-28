@@ -393,7 +393,8 @@ namespace FinNex.Application.Services.HR
                     Tip = "kesinti"
                 });
 
-            // 8.5. HYS (Həyat Yığım Sığortası) — işçiyə təyin olunmuş aktiv HYS-ı tap
+            // 8.5. HYS (Həyat Yığım Sığortası) — işçiyə təyin olunmuş bütün aktiv HYS-lər
+            // İşçi bir neçə şirkətdə HYS aça bilər; hamısının cəmi maaş bazasından çıxılır.
             var hysAyBitis = new DateTime(input.Il, input.Ay, 1).AddMonths(1).AddDays(-1);
             var isciHysList = await _unitOfWork.Repository<IsciHYS>()
                 .Query()
@@ -404,8 +405,8 @@ namespace FinNex.Application.Services.HR
                     (x.BitmeTarixi == null || x.BitmeTarixi >= hesabTarixi))
                 .ToListAsync();
 
-            // Aktiv dövrdə yalnız bir HYS olmalıdır, amma əgər çoxdursa birincini götür
-            decimal hysMebleg = isciHysList.FirstOrDefault()?.Mebleg ?? 0;
+            // Bütün aktiv HYS qeydlərinin cəm məbləği — vergi+DSMF bazasından çıxılır.
+            decimal hysMebleg = isciHysList.Sum(x => x.Mebleg);
 
             // 8.6. İşəgötürən HYS payını əvvəlcədən hesabla (GROSS-a daxildir)
             decimal hysIsegoturenFaizi = 0;
@@ -422,10 +423,29 @@ namespace FinNex.Application.Services.HR
                     .FirstOrDefault()?.Deyer ?? 15m;
                 hysIsegoturen = Math.Round(hysMebleg * (hysIsegoturenFaizi / 100m), 2);
 
+                // Çoxlu HYS varsa hər birini izahatda göstər
+                string hysBolmesi;
+                if (isciHysList.Count == 1)
+                {
+                    var tek = isciHysList[0];
+                    hysBolmesi = string.IsNullOrWhiteSpace(tek.Sirket)
+                        ? $"Aylıq HYS: {hysMebleg:N2} ₼"
+                        : $"Aylıq HYS ({tek.Sirket}): {hysMebleg:N2} ₼";
+                }
+                else
+                {
+                    var detallar = isciHysList.Select(x =>
+                    {
+                        var ad = string.IsNullOrWhiteSpace(x.Sirket) ? "(şirkət göstərilməyib)" : x.Sirket;
+                        return $"{ad}: {x.Mebleg:N2}";
+                    });
+                    hysBolmesi = $"Aylıq HYS ({isciHysList.Count} şirkət) — cəm {hysMebleg:N2} ₼ [{string.Join("; ", detallar)}]";
+                }
+
                 izahatlar.Add(new HesablamaIzahiDto
                 {
                     Addim = "HYS (İşçi payı)",
-                    Izah = $"Aylıq HYS: {hysMebleg:N2} ₼ — vergi+DSMF bazasından çıxılır, İTSS/İşsizlik bazasında tam qalır",
+                    Izah = $"{hysBolmesi} — vergi+DSMF bazasından çıxılır, İTSS/İşsizlik bazasında tam qalır",
                     Mebleg = hysMebleg,
                     Tip = "kesinti"
                 });
@@ -1199,22 +1219,21 @@ namespace FinNex.Application.Services.HR
                 }
             }
 
-            // HYS — işçinin aktiv HYS-ını tap (vergi+DSMF bazasından çıxılır)
+            // HYS — bütün aktiv qeydlərin cəmi (işçi bir neçə şirkətdə HYS aça bilər)
             decimal hysMebleg = 0;
             decimal hysIsv = 0;
             if (isciId.HasValue)
             {
                 var ayBaslangicHys = new DateTime(tarix.Year, tarix.Month, 1);
                 var ayBitisHys = ayBaslangicHys.AddMonths(1).AddDays(-1);
-                var isciHys = await _unitOfWork.Repository<IsciHYS>()
+                hysMebleg = await _unitOfWork.Repository<IsciHYS>()
                     .Query()
                     .Where(x =>
                         !x.Silinib &&
                         x.IsciId == isciId.Value &&
                         x.BaslamaTarixi <= ayBitisHys &&
                         (x.BitmeTarixi == null || x.BitmeTarixi >= ayBaslangicHys))
-                    .FirstOrDefaultAsync();
-                hysMebleg = isciHys?.Mebleg ?? 0;
+                    .SumAsync(x => (decimal?)x.Mebleg) ?? 0m;
                 if (hysMebleg > 0)
                 {
                     var hysIsvParam = await _unitOfWork.Repository<MaasParametri>()

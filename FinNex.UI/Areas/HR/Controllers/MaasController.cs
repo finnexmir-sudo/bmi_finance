@@ -430,9 +430,10 @@ namespace FinNex.UI.Areas.HR.Controllers
                     (x.BitmeTarixi == null || x.BitmeTarixi >= hesabTarixi))
                 .ToListAsync();
 
+            // İşçi bir neçə şirkətdə HYS aça bilər — hər işçi üçün cəm məbləği
             var isciHysMap = isciHysList
                 .GroupBy(x => x.IsciId)
-                .ToDictionary(g => g.Key, g => g.First().Mebleg);
+                .ToDictionary(g => g.Key, g => g.Sum(h => h.Mebleg));
 
             // HYS işəgötürən faizi (parametrdən)
             var hysIsvFaiz = flatParamlar.FirstOrDefault(x => x.Nov == MaasParametrNovu.HysIsegoturenFaizi)?.Deyer ?? 15m;

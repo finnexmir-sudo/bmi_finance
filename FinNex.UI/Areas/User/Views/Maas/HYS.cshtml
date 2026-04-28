@@ -30,6 +30,7 @@
             <table class="ih-table">
                 <thead>
                     <tr>
+                        <th>Sığorta şirkəti</th>
                         <th class="ih-num">Aylıq HYS</th>
                         <th>Başlama</th>
                         <th>Bitmə</th>
@@ -42,6 +43,7 @@
                     {
                         bool aktivDovr = x.BaslamaTarixi <= today && (x.BitmeTarixi == null || x.BitmeTarixi >= today);
                         <tr>
+                            <td>@(string.IsNullOrWhiteSpace(x.Sirket) ? "—" : x.Sirket)</td>
                             <td class="ih-num">@x.Mebleg.ToString("N2") ₼</td>
                             <td>@x.BaslamaTarixi.ToString("dd.MM.yyyy")</td>
                             <td>@(x.BitmeTarixi?.ToString("dd.MM.yyyy") ?? "—")</td>

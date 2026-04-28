@@ -33,10 +33,18 @@
             </div>
 
             <div class="ih-form-group">
+                <label asp-for="Sirket" class="ih-label">Sığorta şirkəti <span class="ih-hint">(istəyə bağlı, lakin tövsiyə olunur)</span></label>
+                <input asp-for="Sirket" type="text" maxlength="200" class="ih-input"
+                       placeholder="Məs: Pasha Sığorta, AzInsurance, ABC Sığorta..." />
+                <span class="ih-hint-text">İşçi bir neçə şirkətdə HYS aça bilər — hər biri ayrıca qeyd olunur, hamısının cəmi maaşa tətbiq edilir</span>
+                <span asp-validation-for="Sirket" class="ih-err"></span>
+            </div>
+
+            <div class="ih-form-group">
                 <label asp-for="Mebleg" class="ih-label">Aylıq HYS məbləği (₼) <span class="ih-req">*</span></label>
                 <input asp-for="Mebleg" type="number" step="0.01" min="0.01" class="ih-input"
                        placeholder="Məs: 1000.00" />
-                <span class="ih-hint-text">İşçinin aylıq brüt maaşından tutulacaq HYS məbləği</span>
+                <span class="ih-hint-text">Bu şirkət üçün aylıq HYS məbləği</span>
                 <span asp-validation-for="Mebleg" class="ih-err"></span>
             </div>
 
