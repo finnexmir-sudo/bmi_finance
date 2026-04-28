@@ -2,7 +2,11 @@
 
 .chat-page {
     padding: 12px !important;
-    height: calc(100vh - 56px);
+    /* Layout chrome: topnav (~56) + fn-topbar-wrap (~46) + fn-main2 padding (~46)
+       + chat-page padding (~24) ≈ 172px. Bu hündürlüklə chat tam ekrana sığışır
+       və mesaj yazma sahəsi həmişə görünən qalır. */
+    height: calc(100vh - 172px);
+    min-height: 460px;
 }
 
 .chat-container {
