@@ -1540,10 +1540,6 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<DateTime?>("SilinmeTarixi")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Sirket")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
                     b.Property<int?>("YaradanIcraciId")
                         .HasColumnType("int");
 
