@@ -1492,6 +1492,20 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 var qeydMetni = sebebTrim == null
                     ? "[Geriyə qeyd — HR]"
                     : $"[Geriyə qeyd — HR] {sebebTrim}";
+
+                // ── Əmr nömrəsi avtomatik təyin et (geriyə məzuniyyət üçün) ──
+                // EmrRegem normal seriyada (illik) ardıcıl artır; suffiks DTO-dan
+                // gəlir (default "G" = Geriyə). EmrIl = HR təsdiq tarixinin ili.
+                // Beləliklə əmr nömrəsi "K/M 13G 2026" kimi formalaşır və
+                // normal məzuniyyətdən asanca fərqləndirilir.
+                var emrIl = indi.Year;
+                var sonRegem = await _unitOfWork.Repository<Mezuniyyet>().Query()
+                    .Where(x => !x.Silinib && x.EmrIl == emrIl && x.EmrRegem != null)
+                    .MaxAsync(x => (int?)x.EmrRegem) ?? 0;
+                var suffiks = string.IsNullOrWhiteSpace(dto.EmrSuffiks)
+                    ? "G"
+                    : dto.EmrSuffiks.Trim().ToUpperInvariant();
+
                 var entity = new Mezuniyyet
                 {
                     IsciId = dto.IsciId,
@@ -1503,6 +1517,9 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     Status = MezuniyyetStatus.Tesdiqlenib,
                     OdenisTipi = MezuniyyetOdenisTipi.AySonuOdenis,
                     OdenisStatus = MezuniyyetOdenisStatus.TetbiqEdilmir,
+                    EmrRegem = sonRegem + 1,
+                    EmrIl = emrIl,
+                    EmrSuffiks = suffiks,
                     // Geriyə qeyd — təsdiq axını keçmir; yalnız HR addımı rəsmi
                     // olaraq "rəsmiləşdirən" kimi qeyd olunur (audit).
                     // SobeReisi/Rəhbər boş qalır, çünki onlar həqiqətən təsdiq
