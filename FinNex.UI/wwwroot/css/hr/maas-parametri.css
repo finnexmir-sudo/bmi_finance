@@ -568,3 +568,188 @@
     .mp-f-note { display: none; }
     .mp-section-sub { display: none; }
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   Hesablama Mexanizmi paneli
+   ───────────────────────────────────────────────────────────────── */
+.mp-mexanizm {
+    background: #fff;
+    border: 1px solid #e2e6ef;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(15,26,46,.04);
+}
+
+.mp-mexanizm-head {
+    list-style: none;
+    cursor: pointer;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: .92rem;
+    font-weight: 700;
+    color: #1a2332;
+    user-select: none;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    transition: background .12s ease;
+}
+
+.mp-mexanizm-head::-webkit-details-marker { display: none; }
+
+.mp-mexanizm-head:hover { background: linear-gradient(135deg, #f1f5f9, #e2e8f0); }
+
+.mp-mexanizm-head > i.bi-diagram-3 {
+    color: #6366f1;
+    font-size: 18px;
+}
+
+.mp-mexanizm-hint {
+    margin-left: auto;
+    font-size: .72rem;
+    font-weight: 500;
+    color: #94a3b8;
+    font-style: italic;
+}
+
+.mp-mexanizm-chevron {
+    color: #94a3b8;
+    font-size: 14px;
+    transition: transform .2s ease;
+}
+
+.mp-mexanizm[open] .mp-mexanizm-chevron {
+    transform: rotate(180deg);
+}
+
+.mp-mexanizm-body {
+    padding: 4px 18px 18px;
+    border-top: 1px solid #e8eaef;
+    background: #fff;
+}
+
+.mp-mex-section {
+    padding: 14px 0;
+    border-bottom: 1px dashed #e8eaef;
+}
+
+.mp-mex-section:last-child { border-bottom: 0; }
+
+.mp-mex-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: .82rem;
+    font-weight: 700;
+    color: #1a2332;
+    margin-bottom: 8px;
+}
+
+.mp-mex-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #6366f1;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.mp-mex-formula {
+    background: #f8fafc;
+    border-left: 3px solid #6366f1;
+    padding: 10px 14px;
+    border-radius: 0 8px 8px 0;
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: .78rem;
+    color: #1e293b;
+    line-height: 1.7;
+    margin-bottom: 8px;
+}
+
+.mp-mex-formula strong {
+    background: #e0e7ff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #4338ca;
+}
+
+.mp-mex-note {
+    font-size: .76rem;
+    color: #64748b;
+    line-height: 1.55;
+    padding-left: 14px;
+    border-left: 2px solid #e8eaef;
+}
+
+.mp-mex-list {
+    list-style: none;
+    padding: 0;
+    margin: 6px 0 0;
+}
+
+.mp-mex-list li {
+    padding: 6px 0 6px 22px;
+    font-size: .8rem;
+    color: #334155;
+    position: relative;
+}
+
+.mp-mex-list li::before {
+    content: '▸';
+    position: absolute;
+    left: 4px;
+    color: #6366f1;
+    font-weight: 700;
+}
+
+.mp-mex-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .78rem;
+    margin-bottom: 8px;
+}
+
+.mp-mex-table thead th {
+    background: #f1f5f9;
+    color: #475569;
+    font-size: .72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid #cbd5e1;
+}
+
+.mp-mex-table tbody td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eef2f6;
+    color: #1e293b;
+    vertical-align: top;
+}
+
+.mp-mex-table tbody tr:last-child td { border-bottom: 0; }
+
+.mp-mex-table code {
+    background: #f8fafc;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: .85em;
+    color: #6366f1;
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.mp-mex-check {
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.mp-mex-cross {
+    color: #94a3b8;
+    font-style: italic;
+}
