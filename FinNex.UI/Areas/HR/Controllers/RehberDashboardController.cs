@@ -42,13 +42,20 @@ namespace FinNex.UI.Areas.HR.Controllers
             _logger = logger;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(DateTime? tarix = null)
         {
           try
           {
             var bugun = DateTime.Today;
+            // Davamiyyət bölməsi üçün seçilmiş tarix (rəhbər keçmiş günlərə baxa bilsin).
+            // Default — bugün; gələcək tarixlər icazə verilmir; ən köhnə hədd 12 ay geri.
+            var davTarix = (tarix?.Date ?? bugun);
+            if (davTarix > bugun) davTarix = bugun;
+            if (davTarix < bugun.AddMonths(-12)) davTarix = bugun.AddMonths(-12);
+
             var buAyBaslangic = new DateTime(bugun.Year, bugun.Month, 1);
             var vm = new RehberDashboardVM();
+            vm.DavamiyyetTarixi = davTarix;
 
             // ═══════════════════════════════════════════════════
             // 1. İŞÇİLƏR — Ümumi Statistika
@@ -108,7 +115,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             // ═══════════════════════════════════════════════════
             // 2. DAVAMIYYƏT
             // ═══════════════════════════════════════════════════
-            var bugunkuDav = await _davamiyyetService.TarixUzreAsync(bugun);
+            var bugunkuDav = await _davamiyyetService.TarixUzreAsync(davTarix);
             var davlar = bugunkuDav?.ToList() ?? new();
 
             vm.BugunQeydVar = davlar.Any();
@@ -125,7 +132,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Query()
                 .Where(x => !x.Silinib
                          && x.Status == IcazeStatus.Tesdiqlenib
-                         && x.IcazeTarixi.Date == bugun)
+                         && x.IcazeTarixi.Date == davTarix)
                 .Include(x => x.Isci).ThenInclude(i => i.IsciTeyinatlari).ThenInclude(t => t.Departament)
                 .ToListAsync();
             vm.BugunIcazeli = bugunIcazeler.Count;
@@ -250,11 +257,11 @@ namespace FinNex.UI.Areas.HR.Controllers
                 NovText = NovText(m.Nov)
             }).ToList();
 
-            // Hazırda məzuniyyətdə olanlar
+            // Seçilmiş tarixdə məzuniyyətdə olanlar (davTarix = bugün və ya keçmiş gün)
             var hazirdaMez = mezler.Where(x =>
                 x.Status == MezuniyyetStatus.Tesdiqlenib &&
-                x.BaslamaTarixi.Date <= bugun &&
-                x.BitmeTarixi.Date >= bugun).ToList();
+                x.BaslamaTarixi.Date <= davTarix &&
+                x.BitmeTarixi.Date >= davTarix).ToList();
 
             vm.HazirdaMezuniyyetde = hazirdaMez.Count;
             vm.BugunMezuniyyetde = hazirdaMez.Count;

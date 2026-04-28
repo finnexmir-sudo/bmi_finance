@@ -172,18 +172,42 @@
         </a>
     </div>
 
-    <!-- ═══ 2. BUGÜNKÜ DAVAMİYYƏT — Detallı ═══ -->
-    <div class="rd-section-head">
-        <span class="rd-live-dot"></span> Bugünkü davamiyyət
-        <span class="rd-section-meta">@DateTime.Today.ToString("dd MMMM yyyy")</span>
+    <!-- ═══ 2. DAVAMİYYƏT — Detallı (tarix seçimli) ═══ -->
+    @{
+        var davTarixIsToday = Model.DavamiyyetTarixi.Date == DateTime.Today;
+        var davTarixMaxStr = DateTime.Today.ToString("yyyy-MM-dd");
+        var davTarixMinStr = DateTime.Today.AddMonths(-12).ToString("yyyy-MM-dd");
+        var davTarixValStr = Model.DavamiyyetTarixi.ToString("yyyy-MM-dd");
+    }
+    <div class="rd-section-head rd-section-head--with-picker">
+        <span class="@(davTarixIsToday ? "rd-live-dot" : "rd-live-dot rd-live-dot--past")"></span>
+        @(davTarixIsToday ? "Bugünkü davamiyyət" : "Davamiyyət")
+        <span class="rd-section-meta">@Model.DavamiyyetTarixi.ToString("dd MMMM yyyy")</span>
+
+        <form method="get" action="@Url.Action("Index", "RehberDashboard", new { area = "HR" })"
+              class="rd-date-picker" id="rdDateForm">
+            @if (!davTarixIsToday)
+            {
+                <a href="@Url.Action("Index", "RehberDashboard", new { area = "HR" })"
+                   class="rd-date-today" title="Bugünə qayıt">
+                    <i class="bi bi-arrow-counterclockwise"></i> Bugün
+                </a>
+            }
+            <label for="rdDateInput" class="rd-date-label">
+                <i class="bi bi-calendar3"></i>
+            </label>
+            <input type="date" id="rdDateInput" name="tarix"
+                   value="@davTarixValStr" min="@davTarixMinStr" max="@davTarixMaxStr"
+                   onchange="document.getElementById('rdDateForm').submit()" />
+        </form>
     </div>
 
     @if (!Model.BugunQeydVar)
     {
         <div class="rd-empty-state">
             <i class="bi bi-calendar2-x"></i>
-            <div class="rd-empty-title">Bu gün üçün hələ qeyd yoxdur</div>
-            <div class="rd-empty-sub">İşçilər hələ giriş etməyiblər və ya davamiyyət sistemi açılmayıb.</div>
+            <div class="rd-empty-title">@(davTarixIsToday ? "Bu gün üçün hələ qeyd yoxdur" : $"{Model.DavamiyyetTarixi:dd MMMM yyyy} tarixində davamiyyət qeydi yoxdur")</div>
+            <div class="rd-empty-sub">@(davTarixIsToday ? "İşçilər hələ giriş etməyiblər və ya davamiyyət sistemi açılmayıb." : "Həmin gün üçün heç bir davamiyyət qeydiyyatı edilməyib.")</div>
         </div>
     }
     else

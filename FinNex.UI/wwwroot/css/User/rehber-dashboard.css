@@ -1151,6 +1151,71 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────
+   Davamiyyət bölməsində tarix seçici
+   ───────────────────────────────────────────────────────────────── */
+.rd-section-head--with-picker {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.rd-live-dot--past {
+    background: #d4920a !important; /* keçmiş günlərdə sarı (real-time deyil) */
+}
+
+.rd-date-picker {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rd-date-today {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #2d6cdf;
+    background: #eaf1ff;
+    padding: 5px 10px;
+    border-radius: 7px;
+    text-decoration: none;
+    transition: background .12s ease;
+}
+
+.rd-date-today:hover { background: #d8e4fb; color: #1b4dbc; }
+
+.rd-date-label {
+    display: inline-flex;
+    align-items: center;
+    color: #6b7280;
+    font-size: 14px;
+    margin: 0;
+    cursor: pointer;
+}
+
+#rdDateInput {
+    border: 1px solid #d8dde5;
+    border-radius: 7px;
+    padding: 5px 9px;
+    font-size: 12.5px;
+    font-family: inherit;
+    color: #1a2332;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color .12s ease, box-shadow .12s ease;
+}
+
+#rdDateInput:hover { border-color: #2d6cdf; }
+#rdDateInput:focus {
+    outline: none;
+    border-color: #2d6cdf;
+    box-shadow: 0 0 0 3px rgba(45, 108, 223, .12);
+}
+
+/* ─────────────────────────────────────────────────────────────────
    Davamiyyət kartları + inline accordion cədvəli (HR cədvəl tərzi)
    ───────────────────────────────────────────────────────────────── */
 .rd-att-stat--btn {
