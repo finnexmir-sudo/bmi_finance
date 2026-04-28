@@ -31,6 +31,26 @@
     };
     var bugun = DateTime.Today;
     var tarixStr = $"{gunAdlar[bugun.DayOfWeek]}, {bugun.Day} {ayAdlar[bugun.Month]} {bugun.Year}";
+
+    // Davamiyyət kart klik modalı üçün — JSON-da camelCase açar adları
+    // istifadə etmək üçün anonymous obyektə map et və yuxarıda hazırla
+    // (Razor `else { ... }` daxilində generic Func<List<>> sintaksisi
+    // parser üçün problemli olduğundan burada yerləşdirilir).
+    System.Func<List<FinNex.UI.Areas.HR.ViewModels.DavamiyyetIsciDto>, object> rdMapItems = list =>
+        list.Select(x => new {
+            adSoyad = x.AdSoyad,
+            departament = x.Departament,
+            girisVaxti = x.GirisVaxti
+        }).ToList();
+
+    var rdAttListsJson = System.Text.Json.JsonSerializer.Serialize(new
+    {
+        ishde      = new { title = "İşdə olanlar",        icon = "bi-check2-circle",   color = "#1e9b6b", items = rdMapItems(Model.BugunIshdeIsciler) },
+        geciken    = new { title = "Gecikən işçilər",     icon = "bi-clock-history",   color = "#d4920a", items = rdMapItems(Model.BugunGecikenIsciler) },
+        qayib      = new { title = "Qayıb işçilər",        icon = "bi-x-circle",        color = "#c83838", items = rdMapItems(Model.BugunQayibIsciler) },
+        mezuniyyet = new { title = "Məzuniyyətdə olanlar", icon = "bi-calendar2-check", color = "#2563eb", items = rdMapItems(Model.BugunMezuniyyetdeIsciler) },
+        icaze      = new { title = "İcazəli işçilər",      icon = "bi-person-check",    color = "#7c3aed", items = rdMapItems(Model.BugunIcazeliIsciler) }
+    });
 }
 
 @section Styles {
@@ -221,24 +241,7 @@
             </div>
         </div>
 
-        @{
-            System.Func<List<FinNex.UI.Areas.HR.ViewModels.DavamiyyetIsciDto>, object> mapItems = list =>
-                list.Select(x => new {
-                    adSoyad = x.AdSoyad,
-                    departament = x.Departament,
-                    girisVaxti = x.GirisVaxti
-                }).ToList();
-
-            var listsJson = System.Text.Json.JsonSerializer.Serialize(new
-            {
-                ishde      = new { title = "İşdə olanlar",        icon = "bi-check2-circle",   color = "#1e9b6b", items = mapItems(Model.BugunIshdeIsciler) },
-                geciken    = new { title = "Gecikən işçilər",     icon = "bi-clock-history",   color = "#d4920a", items = mapItems(Model.BugunGecikenIsciler) },
-                qayib      = new { title = "Qayıb işçilər",        icon = "bi-x-circle",        color = "#c83838", items = mapItems(Model.BugunQayibIsciler) },
-                mezuniyyet = new { title = "Məzuniyyətdə olanlar", icon = "bi-calendar2-check", color = "#2563eb", items = mapItems(Model.BugunMezuniyyetdeIsciler) },
-                icaze      = new { title = "İcazəli işçilər",      icon = "bi-person-check",    color = "#7c3aed", items = mapItems(Model.BugunIcazeliIsciler) }
-            });
-        }
-        <script type="application/json" id="rdAttListsData">@Html.Raw(listsJson)</script>
+        <script type="application/json" id="rdAttListsData">@Html.Raw(rdAttListsJson)</script>
 
         @* Gecikən/Qayıb statik bloku silindi — bütün kartlar artıq klik etdikdə
            modal-da müvafiq siyahını göstərir (yuxarıda rdAttModal). *@
