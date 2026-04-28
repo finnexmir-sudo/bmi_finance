@@ -4,6 +4,7 @@
     {
         SobeReisi = 1,
         Rehber = 2,
-        Hr = 3
+        Hr = 3,
+        Muhasib = 4
     }
 }

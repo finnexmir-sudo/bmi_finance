@@ -35,6 +35,7 @@ public class StrukturRoluController : Controller
         StrukturRolTipi.SobeReisi => RoleNames.SobeReisi,
         StrukturRolTipi.Rehber    => RoleNames.Rehber,
         StrukturRolTipi.Hr        => RoleNames.HR,
+        StrukturRolTipi.Muhasib   => RoleNames.Muhasib,
         _ => null
     };
 
@@ -80,7 +81,8 @@ public class StrukturRoluController : Controller
             UmumiSayi = list.Count,
             SobeReisiSayi = list.Count(x => x.RolTipi == StrukturRolTipi.SobeReisi && x.Aktivdir),
             RehberSayi = list.Count(x => x.RolTipi == StrukturRolTipi.Rehber && x.Aktivdir),
-            HrSayi = list.Count(x => x.RolTipi == StrukturRolTipi.Hr && x.Aktivdir)
+            HrSayi = list.Count(x => x.RolTipi == StrukturRolTipi.Hr && x.Aktivdir),
+            MuhasibSayi = list.Count(x => x.RolTipi == StrukturRolTipi.Muhasib && x.Aktivdir)
         };
 
         ViewData["Title"] = "Struktur Rolları";

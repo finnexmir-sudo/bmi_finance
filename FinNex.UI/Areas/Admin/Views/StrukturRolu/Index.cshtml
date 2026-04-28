@@ -10,6 +10,7 @@
         StrukturRolTipi.SobeReisi => "Şöbə Rəisi",
         StrukturRolTipi.Rehber => "Rəhbər",
         StrukturRolTipi.Hr => "HR",
+        StrukturRolTipi.Muhasib => "Mühasib",
         _ => r.ToString()
     };
 
@@ -18,6 +19,7 @@
         StrukturRolTipi.SobeReisi => "primary",
         StrukturRolTipi.Rehber => "warning",
         StrukturRolTipi.Hr => "info",
+        StrukturRolTipi.Muhasib => "success",
         _ => "secondary"
     };
 }
@@ -88,6 +90,14 @@
                 <div class="card-body">
                     <h6 class="text-muted mb-2">Aktiv HR</h6>
                     <h2 class="fw-bold mb-0 text-info">@Model.HrSayi</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 border-start border-success border-4">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Aktiv Mühasib</h6>
+                    <h2 class="fw-bold mb-0 text-success">@Model.MuhasibSayi</h2>
                 </div>
             </div>
         </div>
