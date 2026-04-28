@@ -17,6 +17,8 @@ namespace FinNex.UI.Areas.HR.ViewModels
         public int BuAyIshdenAyrilanSayi { get; set; }
 
         // ── Davamiyyət ──
+        // Davamiyyət bölməsində göstərilən tarix (default=today; rəhbər keçmiş günlərə baxa bilər)
+        public DateTime DavamiyyetTarixi { get; set; } = DateTime.Today;
         public int BugunIshde { get; set; }
         public int BugunGeciken { get; set; }
         public int BugunQayib { get; set; }
