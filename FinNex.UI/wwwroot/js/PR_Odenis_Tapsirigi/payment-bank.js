@@ -56,8 +56,55 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     /* ================================================================
-       ÖDÜYƏN MÜŞTƏRİ
+       ÖDÜYƏN MÜŞTƏRİ — radio/readonly/manual UI (Alan müştəri ilə eyni)
     ================================================================ */
+    function renderOduyenMusteriHesab(hesablar) {
+        const list = el('OduyenMusteriHesabRadioList');
+        const wrapper = el('OduyenMusteriHesabRadioWrapper');
+        const manual = el('OduyenMusteriHesab');
+
+        if (!list || !wrapper) return;
+        list.innerHTML = '';
+        wrapper.style.display = 'none';
+        if (manual) { manual.style.display = 'none'; manual.readOnly = false; manual.value = ''; }
+
+        if (!hesablar || hesablar.length === 0) {
+            if (manual) { manual.style.display = ''; }
+            return;
+        }
+        if (hesablar.length === 1) {
+            if (manual) { manual.style.display = ''; manual.value = hesablar[0].iban; manual.readOnly = true; }
+            setVal('OduyenHesabIdHidden', hesablar[0].id);
+            return;
+        }
+
+        if (manual) manual.style.display = 'none';
+        wrapper.style.display = '';
+        hesablar.forEach((h, i) => {
+            const opt = document.createElement('div');
+            opt.className = 'hesab-radio-option' + (i === 0 ? ' active' : '');
+            if (i !== 0) opt.style.display = 'none';
+            opt.innerHTML = `
+                <div class="hesab-radio-dot"><div class="hesab-radio-dot-inner"></div></div>
+                <span class="hesab-radio-iban" title="${h.iban}">${h.iban}</span>
+                <span class="hesab-radio-tag ${i === 0 ? 'esass' : 'elave'}">${i === 0 ? 'Əsas' : 'Əlavə'}</span>`;
+            opt.addEventListener('click', () => {
+                const all = list.querySelectorAll('.hesab-radio-option');
+                if (opt.classList.contains('active') && all.length > 1) {
+                    all.forEach(o => { o.style.display = ''; });
+                } else {
+                    all.forEach(o => { o.classList.remove('active'); o.style.display = 'none'; });
+                    opt.classList.add('active'); opt.style.display = '';
+                    setVal('OduyenHesabIdHidden', h.id);
+                    setVal('OduyenMusteriHesab', h.iban);
+                }
+            });
+            list.appendChild(opt);
+        });
+        setVal('OduyenHesabIdHidden', hesablar[0].id);
+        setVal('OduyenMusteriHesab', hesablar[0].iban);
+    }
+
     async function oduyenMusteriAxtar() {
         xeta('OduyenMusteriXeta', '');
         const voen = (el('OduyenMusteriVoenSearch')?.value ?? '').trim();
@@ -69,18 +116,19 @@ document.addEventListener('DOMContentLoaded', function () {
             const d = await r.json();
 
             if (!d.tapildi) {
-                xeta('OduyenMusteriXeta', '"' + voen + '" VOEN-li müştəri tapılmadı.');
-                ['OduyenMusteriIdHidden', 'OduyenMusteriAd', 'OduyenMusteriVoen',
-                    'OduyenHesabIdHidden', 'OduyenMusteriHesab'].forEach(id => setVal(id, ''));
+                xeta('OduyenMusteriXeta', '"' + voen + '" tapılmadı. Məlumatları əl ilə daxil edin.');
+                setVal('OduyenMusteriIdHidden', '');
+                ['OduyenMusteriAd', 'OduyenMusteriVoen', 'OduyenMusteriHesab']
+                    .forEach(id => { const e = el(id); if (e) { e.value = ''; e.style.display = ''; e.readOnly = false; } });
+                setVal('OduyenMusteriVoen', voen);
+                renderOduyenMusteriHesab([]);
                 return;
             }
+
             setVal('OduyenMusteriIdHidden', d.id);
             setVal('OduyenMusteriAd', d.ad);
             setVal('OduyenMusteriVoen', d.voen);
-            if (d.hesablar?.length > 0) {
-                setVal('OduyenHesabIdHidden', d.hesablar[0].id);
-                setVal('OduyenMusteriHesab', d.hesablar[0].iban);
-            }
+            renderOduyenMusteriHesab(d.hesablar ?? []);
         } catch (e) { xeta('OduyenMusteriXeta', 'Xəta: ' + e.message); }
     }
 
