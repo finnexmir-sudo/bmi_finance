@@ -223,28 +223,34 @@
             </div>
         </div>
 
-        @* ── Davamiyyət siyahı modal — kart klikləndikdə göstərilir ───────── *@
-        <div id="rdAttModal" class="rd-att-modal" hidden>
-            <div class="rd-att-modal__backdrop" data-rd-close></div>
-            <div class="rd-att-modal__panel" role="dialog" aria-modal="true" aria-labelledby="rdAttModalTitle">
-                <div class="rd-att-modal__head">
-                    <div class="rd-att-modal__title">
-                        <i class="bi" id="rdAttModalIcon"></i>
-                        <span id="rdAttModalTitle">—</span>
-                        <span id="rdAttModalCount" class="rd-att-modal__count">0</span>
-                    </div>
-                    <button type="button" class="rd-att-modal__close" data-rd-close aria-label="Bağla">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
+        @* ── Inline accordion panel — kart klikləndikdə altda cədvəl açılır ──── *@
+        <div id="rdAttPanel" class="rd-att-panel" hidden>
+            <div class="rd-att-panel__head">
+                <div class="rd-att-panel__title">
+                    <i class="bi" id="rdAttPanelIcon"></i>
+                    <span id="rdAttPanelTitle">—</span>
+                    <span id="rdAttPanelCount" class="rd-att-panel__count">0</span>
                 </div>
-                <div id="rdAttModalBody" class="rd-att-modal__body"></div>
+                <button type="button" class="rd-att-panel__close" data-rd-close aria-label="Bağla">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="rd-att-panel__body">
+                <table class="rd-att-table">
+                    <thead>
+                        <tr>
+                            <th class="rd-att-table__num">#</th>
+                            <th>Ad Soyad</th>
+                            <th>Departament</th>
+                            <th id="rdAttPanelTimeHeader" class="rd-att-table__time">Giriş vaxtı</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rdAttPanelTbody"></tbody>
+                </table>
             </div>
         </div>
 
         <script type="application/json" id="rdAttListsData">@Html.Raw(rdAttListsJson)</script>
-
-        @* Gecikən/Qayıb statik bloku silindi — bütün kartlar artıq klik etdikdə
-           modal-da müvafiq siyahını göstərir (yuxarıda rdAttModal). *@
     }
 
     <!-- ═══ 3. KPI KARTLARI — Maliyyə + Personel ═══ -->
@@ -762,83 +768,90 @@
             }
         });
 
-        // ── Davamiyyət kartları → siyahı modalı ──────────────────────
+        // ── Davamiyyət kartları → inline accordion cədvəli ───────────
         (function () {
             const dataEl = document.getElementById('rdAttListsData');
-            const modal  = document.getElementById('rdAttModal');
-            if (!dataEl || !modal) return;
+            const panel  = document.getElementById('rdAttPanel');
+            if (!dataEl || !panel) return;
 
             let lists;
             try { lists = JSON.parse(dataEl.textContent); }
             catch { return; }
 
-            const titleEl = document.getElementById('rdAttModalTitle');
-            const iconEl  = document.getElementById('rdAttModalIcon');
-            const countEl = document.getElementById('rdAttModalCount');
-            const bodyEl  = document.getElementById('rdAttModalBody');
+            const titleEl  = document.getElementById('rdAttPanelTitle');
+            const iconEl   = document.getElementById('rdAttPanelIcon');
+            const countEl  = document.getElementById('rdAttPanelCount');
+            const tbody    = document.getElementById('rdAttPanelTbody');
+            const timeHead = document.getElementById('rdAttPanelTimeHeader');
 
-            const palette = {
-                ishde:      ['#1e9b6b', '#22c997'],
-                geciken:    ['#d4920a', '#f5b042'],
-                qayib:      ['#c83838', '#e25656'],
-                mezuniyyet: ['#2563eb', '#4f86f7'],
-                icaze:      ['#7c3aed', '#a06bf2']
+            const timeLabels = {
+                ishde:      'Giriş vaxtı',
+                geciken:    'Giriş vaxtı',
+                qayib:      '—',
+                mezuniyyet: 'Tarix aralığı',
+                icaze:      '—'
             };
+
+            const buttons = Array.from(document.querySelectorAll('[data-rd-list]'));
+            let activeKey = null;
 
             function escape(s) {
                 return String(s ?? '').replace(/[&<>"']/g, c =>
                     ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]);
             }
 
+            function setActive(key) {
+                buttons.forEach(b => b.classList.toggle('is-active', b.dataset.rdList === key));
+                activeKey = key;
+            }
+
             function open(key) {
                 const data = lists[key];
                 if (!data) return;
-                const [c1, c2] = palette[key] || ['#4b5566', '#6b7280'];
 
-                iconEl.className  = 'bi ' + data.icon;
+                iconEl.className   = 'bi ' + data.icon;
                 iconEl.style.color = data.color;
                 titleEl.textContent = data.title;
                 countEl.textContent = data.items.length;
+                timeHead.textContent = timeLabels[key] || '';
 
                 if (!data.items.length) {
-                    bodyEl.innerHTML = '<div class="rd-att-modal__empty">Siyahı boşdur.</div>';
+                    tbody.innerHTML = `<tr><td colspan="4" class="rd-att-table__empty">Siyahı boşdur.</td></tr>`;
                 } else {
-                    bodyEl.innerHTML = data.items.map(item => {
-                        const initial = (item.adSoyad || '?').trim().charAt(0).toUpperCase();
-                        const time = item.girisVaxti
-                            ? `<span class="rd-att-modal__time" style="color:${c1};background:${c1}1a">${escape(item.girisVaxti)}</span>`
-                            : '';
-                        return `
-                            <div class="rd-att-modal__row">
-                                <div class="rd-att-modal__avatar" style="background:linear-gradient(135deg,${c1},${c2})">${escape(initial)}</div>
-                                <div class="rd-att-modal__info">
-                                    <div class="rd-att-modal__name">${escape(item.adSoyad)}</div>
-                                    <div class="rd-att-modal__dept">${escape(item.departament)}</div>
-                                </div>
-                                ${time}
-                            </div>`;
-                    }).join('');
+                    tbody.innerHTML = data.items.map((item, i) => `
+                        <tr>
+                            <td class="rd-att-table__num">${i + 1}</td>
+                            <td class="rd-att-table__name">${escape(item.adSoyad)}</td>
+                            <td class="rd-att-table__dept">${escape(item.departament)}</td>
+                            <td class="rd-att-table__time">${item.girisVaxti ? escape(item.girisVaxti) : '<span class="rd-att-table__dash">—</span>'}</td>
+                        </tr>`).join('');
                 }
 
-                modal.hidden = false;
-                document.body.style.overflow = 'hidden';
+                panel.hidden = false;
+                setActive(key);
+                // İlk açılışda görünməsi üçün rahatca scroll et
+                panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
 
             function close() {
-                modal.hidden = true;
-                document.body.style.overflow = '';
+                panel.hidden = true;
+                setActive(null);
             }
 
-            document.querySelectorAll('[data-rd-list]').forEach(btn => {
-                btn.addEventListener('click', () => open(btn.dataset.rdList));
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const key = btn.dataset.rdList;
+                    if (activeKey === key) close();
+                    else open(key);
+                });
             });
 
-            modal.querySelectorAll('[data-rd-close]').forEach(el => {
+            panel.querySelectorAll('[data-rd-close]').forEach(el => {
                 el.addEventListener('click', close);
             });
 
             document.addEventListener('keydown', e => {
-                if (e.key === 'Escape' && !modal.hidden) close();
+                if (e.key === 'Escape' && !panel.hidden) close();
             });
         })();
     </script>
