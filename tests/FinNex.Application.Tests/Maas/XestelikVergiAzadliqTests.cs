@@ -128,4 +128,24 @@ public class XestelikVergiAzadliqTests
         yeniDsmf.Should().Be(51.00m,  "yeni kod 1700 × 3% = 51 verir (xəstəlik üzərinə DSMF tutulmur)");
         yeniDsmf.Should().BeLessThan(kohneDsmf, "yeni qayda işçinin xeyrinədir");
     }
+
+    /// <summary>
+    /// REGRESSION TEST — 28 Aprel 2026:
+    /// İşəgötürən HYS payı İTSS və İşsizlik bazasına DAXİL edilməlidir.
+    /// Köhnə kod onu vergi bazalarından kənarda saxlayırdı (yalnız display brüt-ə əlavə);
+    /// nəticədə işəgötürən HYS payı sosial töhmətlərdən tam azad olurdu.
+    /// </summary>
+    [Theory]
+    // (esasBrut, hysIsv, xestelik, gözl_itssBazasi)
+    [InlineData(1900, 30,  0,   1930)] // HYS işv 30 → İTSS bazası 1930
+    [InlineData(2000, 60,  300, 1760)] // HYS işv 60, xəstəlik 300 → 2000+60−300 = 1760
+    [InlineData(1500, 0,   0,   1500)] // HYS işv yox → dəyişiklik yox
+    public void Isegoturen_HYS_ITSS_Issizlik_bazasina_daxil_edilir(
+        decimal esasBrut, decimal hysIsv, decimal xestelik, decimal gozl)
+    {
+        // Yeni qayda — server və JS preview eyni düstur
+        decimal itssBazasi = System.Math.Max(0, esasBrut + hysIsv - xestelik);
+        itssBazasi.Should().Be(gozl,
+            "İşəgötürən HYS payı İTSS+İşsizlik bazasına DAXİLDİR (vergi+DSMF-dən isə AZAD)");
+    }
 }

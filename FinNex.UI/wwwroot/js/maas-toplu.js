@@ -120,12 +120,17 @@
         // Vergi bazaları — server (FerdiHesablaAsync) ilə eyni:
         //   Xəstəlik vərəqəsi şirkət ödənişi YALNIZ gəlir vergisinə cəlb olunur,
         //   DSMF / İşsizlik / İTSS bazalarından çıxılır.
+        //
+        //   HYS:
+        //     - İşçi HYS payı: vergi+DSMF-dən AZAD, İTSS+İşsizlikdən cəlb olunur.
+        //     - İşəgötürən HYS payı: vergi+DSMF-dən AZAD, İTSS+İşsizlikdən cəlb OLUNUR.
+        //
         //     vergiBazasi = esasBrut − HYS                 (gəlir vergisi; xəstəlik daxil)
         //     dsmfBazasi  = esasBrut − HYS − Xəstəlik      (DSMF işçi/işəgötürən)
-        //     itssBazasi  = esasBrut − Xəstəlik            (İTSS + İşsizlik; HYS çıxılmır)
+        //     itssBazasi  = esasBrut + HYSişv − Xəstəlik   (İTSS+İşsizlik; işəgötürən HYS DAXİL)
         const vergiBazasi = Math.max(0, esasBrut - hys);
         const dsmfBazasi  = Math.max(0, vergiBazasi - xesSirketOdenis);
-        const itssBazasi  = Math.max(0, esasBrut - xesSirketOdenis);
+        const itssBazasi  = Math.max(0, esasBrut + hysIsv - xesSirketOdenis);
 
         // Standart güzəşt — GROSS (maaş + işəgötürən HYS) ≤ 2500 olmalıdır
         const standartGuzest = brut > 0 && brut <= FIRST_BRACKET_MAX ? VERGI_GUZESTI : 0;

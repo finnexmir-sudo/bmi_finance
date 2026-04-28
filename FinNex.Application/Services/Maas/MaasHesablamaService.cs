@@ -432,7 +432,7 @@ namespace FinNex.Application.Services.HR
                 izahatlar.Add(new HesablamaIzahiDto
                 {
                     Addim = "HYS (İşəgötürən payı)",
-                    Izah = $"{hysMebleg:N2} × {hysIsegoturenFaizi:G29}% = {hysIsegoturen:N2} — işçinin gəlirinə əlavə olunur",
+                    Izah = $"{hysMebleg:N2} × {hysIsegoturenFaizi:G29}% = {hysIsegoturen:N2} — işçinin gəlirinə əlavə olunur (İTSS/İşsizlik bazasına daxildir)",
                     Mebleg = hysIsegoturen,
                     Tip = "gelir"
                 });
@@ -468,12 +468,19 @@ namespace FinNex.Application.Services.HR
             //
             // QAYDA: Xəstəlik vərəqəsi üzrə şirkət ödənişi YALNIZ gəlir vergisinə cəlb olunur,
             // DSMF / İşsizlik / İTSS-dən azaddır (AR Vergi Məcəlləsi və sosial sığorta qanunları).
+            //
+            // HYS:
+            //   - İşçi HYS payı (maaşdan tutulan): Gəlir vergisi və DSMF-dən AZAD,
+            //     İTSS və İşsizlikdən cəlb olunur.
+            //   - İşəgötürən HYS payı: Gəlir vergisi və DSMF-dən AZAD,
+            //     İTSS və İşsizlikdən cəlb OLUNUR (işçinin qazancına əlavə kimi sayılır).
+            //
             //   - vergiBazasi   = esasBrut − HYS                (gəlir vergisi üçün; xəstəlik daxildir)
             //   - dsmfBazasi    = esasBrut − HYS − Xəstəlik     (DSMF işçi/işəgötürən)
-            //   - itssBazasi    = esasBrut − Xəstəlik           (İTSS + İşsizlik; HYS çıxılmır)
+            //   - itssBazasi    = esasBrut + HYSişv − Xəstəlik  (İTSS+İşsizlik; işəgötürən HYS DAXİL)
             decimal vergiBazasi = Math.Max(0, esasBrut - hysMebleg);
             decimal dsmfBazasi  = Math.Max(0, vergiBazasi - xestelikSirketOdenis);
-            decimal itssBazasi  = Math.Max(0, esasBrut - xestelikSirketOdenis);
+            decimal itssBazasi  = Math.Max(0, esasBrut + hysIsegoturen - xestelikSirketOdenis);
 
             if (hysMebleg > 0)
             {

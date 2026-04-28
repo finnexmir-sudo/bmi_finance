@@ -62,6 +62,123 @@
         </div>
     </div>
 
+    @* ── Hesablama Mexanizmi (mərcəyi izahatı) ─────────────── *@
+    <details class="mp-mexanizm">
+        <summary class="mp-mexanizm-head">
+            <i class="bi bi-diagram-3"></i>
+            <span>Hesablama Mexanizmi — bütün düsturlar bir baxışda</span>
+            <span class="mp-mexanizm-hint">(klik açmaq üçün)</span>
+            <i class="bi bi-chevron-down mp-mexanizm-chevron"></i>
+        </summary>
+        <div class="mp-mexanizm-body">
+
+            <div class="mp-mex-section">
+                <div class="mp-mex-title"><span class="mp-mex-num">1</span> Əsas Brüt (təbii brüt)</div>
+                <div class="mp-mex-formula">
+                    Əsas Brüt = Əsas maaş − Məz. kəsintisi + Məz. ödənişi + Xst. ödənişi − Xst. kəsintisi − Qayıb kəsintisi + Bonus + Fərqli gəlir − Cərimə
+                </div>
+                <div class="mp-mex-note">İşəgötürən HYS payı bura DAXİL DEYİL — yalnız bütün vergi bazaları hesablandıqdan sonra göstərilən "Brüt"-ə əlavə olunur.</div>
+            </div>
+
+            <div class="mp-mex-section">
+                <div class="mp-mex-title"><span class="mp-mex-num">2</span> Vergi bazaları (3 ayrı baza)</div>
+                <table class="mp-mex-table">
+                    <thead>
+                        <tr><th>Tutulma</th><th>Baza düsturu</th><th>HYS işçi</th><th>HYS işəgötürən</th><th>Xəstəlik</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Gəlir vergisi</td>
+                            <td><code>esasBrut − HYSişçi</code></td>
+                            <td class="mp-mex-cross">azad</td>
+                            <td class="mp-mex-cross">azad (yox)</td>
+                            <td class="mp-mex-check">daxil</td>
+                        </tr>
+                        <tr>
+                            <td>DSMF (işçi + işəgötürən)</td>
+                            <td><code>esasBrut − HYSişçi − Xəstəlik</code></td>
+                            <td class="mp-mex-cross">azad</td>
+                            <td class="mp-mex-cross">azad (yox)</td>
+                            <td class="mp-mex-cross">azad</td>
+                        </tr>
+                        <tr>
+                            <td>İşsizlik (işçi + işəgötürən)</td>
+                            <td><code>esasBrut + HYSişv − Xəstəlik</code></td>
+                            <td class="mp-mex-check">daxil</td>
+                            <td class="mp-mex-check">daxil</td>
+                            <td class="mp-mex-cross">azad</td>
+                        </tr>
+                        <tr>
+                            <td>İTSS (işçi + işəgötürən)</td>
+                            <td><code>esasBrut + HYSişv − Xəstəlik</code></td>
+                            <td class="mp-mex-check">daxil</td>
+                            <td class="mp-mex-check">daxil</td>
+                            <td class="mp-mex-cross">azad</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="mp-mex-note">
+                    Standart 200 AZN güzəşti yalnız <strong>brüt birinci pillədə</strong> (≤ 2.500 AZN) tətbiq olunur. İşçi güzəşti də (varsa) gəlir vergisi bazasından çıxılır.
+                </div>
+            </div>
+
+            <div class="mp-mex-section">
+                <div class="mp-mex-title"><span class="mp-mex-num">3</span> Məzuniyyət Ödənişi (per-gün dərəcəsi)</div>
+                <div class="mp-mex-formula">
+                    günlükMaaş = CariMaaş ÷ AyİşGün <br />
+                    günlükMezPul = S(12 ay düzəlmiş) ÷ 12 ÷ 30.4 <br />
+                    <strong>Ödəniş = MAX(günlükMaaş, günlükMezPul) × İGS</strong>
+                </div>
+                <div class="mp-mex-note">
+                    İGS — məzuniyyətin iş günü sayı (PR #352 ilə həftəsonu daxil; yalnız MezuniyyetdeHesablanir=false olan bayramlar skip).
+                    Kəsinti yalnız faktiki iş günü üzrə tutulur (həftəsonu skip), beləliklə işçi məzuniyyət üçün əlavə pul itirmir.
+                </div>
+            </div>
+
+            <div class="mp-mex-section">
+                <div class="mp-mex-title"><span class="mp-mex-num">4</span> Xəstəlik Ödənişi (S − X) / (D − Y) düsturu</div>
+                <div class="mp-mex-formula">
+                    Bir gün = (S − X) ÷ (D − Y) × stajFaizi <br />
+                    Şirkət ödənişi = Bir gün × min(bülletən_iş_günü, 14) <br />
+                    DSMF ödənişi = Bir gün × qalan günlər
+                </div>
+                <div class="mp-mex-note">
+                    S = son 12 ay qazancı, X = son 12 ay xəstəlik ödənişi, D = son 12 ay iş günü, Y = son 12 ay xəstəlik günü.
+                    Staj faizi: &lt;8 il→60%, 8–12 il→80%, ≥12 il→100%. Hər bülletən üçün max 14 iş günü şirkət ödəyir, qalanı DSMF.
+                </div>
+            </div>
+
+            <div class="mp-mex-section">
+                <div class="mp-mex-title"><span class="mp-mex-num">5</span> Pilləli Tutulma Düsturu (DSMF, İTSS, Gəlir vergisi)</div>
+                <div class="mp-mex-formula">
+                    Tutulma = SabitMəbləğ + (məbləğ − AşağıHədd) × Faiz%
+                </div>
+                <div class="mp-mex-note">
+                    Misal — DSMF: 0–200 AZN için 3%, 200+ üçün 6 + 10% × (məbləğ − 200).
+                    Pillə cədvəlləri yuxarıdakı bölmələrdə "Pillə" düyməsi ilə idarə olunur.
+                </div>
+            </div>
+
+            <div class="mp-mex-section">
+                <div class="mp-mex-title"><span class="mp-mex-num">6</span> Əlavə Gəlir Növləri</div>
+                <ul class="mp-mex-list">
+                    <li><strong>Bonus / Mükafat</strong> — brüt-ə daxil, tam vergiyə cəlb olunur (gəlir + DSMF + İşsizlik + İTSS)</li>
+                    <li><strong>Fərqli Gəlir</strong> — bonus kimi davranır, ayrıca xəttdə uçotlanır</li>
+                    <li><strong>Avans</strong> — brüt-ə daxil DEYİL, NET-dən çıxılır (artıq aldığı pul)</li>
+                </ul>
+            </div>
+
+            <div class="mp-mex-section">
+                <div class="mp-mex-title"><span class="mp-mex-num">7</span> NET Maaş</div>
+                <div class="mp-mex-formula">
+                    NET = Brüt − (Gəlir vergisi + DSMF işçi + İşsizlik işçi + İTSS işçi + HYS işçi + HYS işəgötürən + Avans)
+                </div>
+                <div class="mp-mex-note">HYS işəgötürən payı brüt-ə daxil edilib, sonra NET-dən çıxılır — beləliklə işçinin əlinə yatan məbləğ dəyişməz qalır, sadəcə HYS hesabına yönləndirilir.</div>
+            </div>
+
+        </div>
+    </details>
+
     @{
         // Tax row helper — pilləli və flat növlər üçün universal renderer
         void RenderTaxRow(
