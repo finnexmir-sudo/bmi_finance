@@ -87,7 +87,9 @@ namespace FinNex.Application.Services.HR
                     BonusMeblegi = elave?.BonusMeblegi ?? 0,
                     BonusAciqlama = elave?.BonusAciqlama,
                     CerimeMeblegi = elave?.CerimeMeblegi ?? 0,
-                    CerimeAciqlama = elave?.CerimeAciqlama
+                    CerimeAciqlama = elave?.CerimeAciqlama,
+                    FerqliGelirMeblegi = elave?.FerqliGelirMeblegi ?? 0,
+                    FerqliGelirAciqlama = elave?.FerqliGelirAciqlama
                 };
 
                 var r = await FerdiHesablaAsync(ferdiInput);
@@ -348,6 +350,17 @@ namespace FinNex.Application.Services.HR
                     Tip = "gelir"
                 });
 
+            // 7.1 Fərqli gəlir — bəzi işçilərdə bonusdan ayrı gəlir kimi ödənilir;
+            // bonus kimi vergiyə cəlb olunur və brüt-ə daxil edilir, ayrıca xəttdə uçota düşür.
+            if (input.FerqliGelirMeblegi > 0)
+                izahatlar.Add(new HesablamaIzahiDto
+                {
+                    Addim = "Fərqli Gəlir",
+                    Izah = input.FerqliGelirAciqlama ?? "El ile daxil edilib",
+                    Mebleg = input.FerqliGelirMeblegi,
+                    Tip = "gelir"
+                });
+
             // 8. Cerime
             if (input.CerimeMeblegi > 0)
                 izahatlar.Add(new HesablamaIzahiDto
@@ -433,6 +446,7 @@ namespace FinNex.Application.Services.HR
                 - xestelikKesinti
                 - qayibKesinti
                 + input.BonusMeblegi
+                + input.FerqliGelirMeblegi
                 - input.CerimeMeblegi;
 
             if (esasBrut < 0) esasBrut = 0;
@@ -709,6 +723,7 @@ namespace FinNex.Application.Services.HR
                 DetayEkle("Məzuniyyət Ödənişi",                MaasDetayTipi.Gelir,           mezOdenis,          mezGun > 0 ? $"{mezGun} gün" : null),
                 DetayEkle("Xəstəlik Ödənişi",                  MaasDetayTipi.Gelir,           xestelikSirketOdenis, xestelikSirketGun > 0 ? $"{xestelikSirketGun} iş günü (şirkət payı)" : null),
                 DetayEkle("Bonus/Mükafat",                     MaasDetayTipi.Gelir,           input.BonusMeblegi, input.BonusAciqlama),
+                DetayEkle("Fərqli Gəlir",                      MaasDetayTipi.Gelir,           input.FerqliGelirMeblegi, input.FerqliGelirAciqlama),
                 // Kəsintilər
                 DetayEkle("Davamiyyət Kəsintisi",              MaasDetayTipi.Tutulma,         umumiDavamKesinti,  davamAciq),
                 DetayEkle("Gecikdirmə Cəriməsi",               MaasDetayTipi.Tutulma,         input.CerimeMeblegi, input.CerimeAciqlama),

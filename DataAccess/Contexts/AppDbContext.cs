@@ -1043,7 +1043,8 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             new MaasNovu { Id = 10, Ad = "DSMF (İşəgötürən)", Tip = MaasDetayTipi.IsegoturenXerci, Aktivdir = true },
             new MaasNovu { Id = 11, Ad = "İşsizlik Sığortası (İşəgötürən)", Tip = MaasDetayTipi.IsegoturenXerci, Aktivdir = true },
             new MaasNovu { Id = 12, Ad = "İTSS (İşəgötürən)", Tip = MaasDetayTipi.IsegoturenXerci, Aktivdir = true },
-            new MaasNovu { Id = 13, Ad = "Xəstəlik Ödənişi", Tip = MaasDetayTipi.Gelir, Aktivdir = true }
+            new MaasNovu { Id = 13, Ad = "Xəstəlik Ödənişi", Tip = MaasDetayTipi.Gelir, Aktivdir = true },
+            new MaasNovu { Id = 14, Ad = "Fərqli Gəlir", Tip = MaasDetayTipi.Gelir, Aktivdir = true }
         );
 
         // ── MaasParametri Seed Data ───────────────────────────────
