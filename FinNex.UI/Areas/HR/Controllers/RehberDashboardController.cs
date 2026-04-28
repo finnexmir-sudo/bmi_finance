@@ -115,9 +115,20 @@ namespace FinNex.UI.Areas.HR.Controllers
             vm.BugunIshde = davlar.Count(x => x.Status == DavamiyyetStatus.Isde);
             vm.BugunGeciken = davlar.Count(x => x.Status == DavamiyyetStatus.Gecikme);
             vm.BugunQayib = davlar.Count(x => x.Status == DavamiyyetStatus.Qayib);
-            vm.BugunIcazeli = davlar.Count(x => x.Status == DavamiyyetStatus.Icazeli
-                                              || x.Status == DavamiyyetStatus.Xestelik
-                                              || x.Status == DavamiyyetStatus.Ezamiyyet);
+
+            // ── İcazəli (saat icazəsi) — Icaze entity-dən bugünə təsdiqli olanlar
+            // Diqqət: keçmişdə davamiyyət status = Icazeli istifadə olunurdu, lakin o
+            // status həm məzuniyyət, həm xəstəlik, həm ezamiyyət üçün ümumi olduğundan
+            // dashboardda kartlar üst-üstə düşürdü. İcazə (Icaze) entity ayrı şeydir —
+            // saatlıq icazə (BaslamaSaati / BitisSaati). Burada yalnız o sayılır.
+            var bugunIcazeler = await _uow.Repository<Icaze>()
+                .Query()
+                .Where(x => !x.Silinib
+                         && x.Status == IcazeStatus.Tesdiqlenib
+                         && x.IcazeTarixi.Date == bugun)
+                .Include(x => x.Isci).ThenInclude(i => i.IsciTeyinatlari).ThenInclude(t => t.Departament)
+                .ToListAsync();
+            vm.BugunIcazeli = bugunIcazeler.Count;
 
             // Adlı siyahılar — rəhbərə "kim?" sualına dərhal cavab vermək üçün
             vm.BugunIshdeIsciler = davlar
@@ -156,16 +167,18 @@ namespace FinNex.UI.Areas.HR.Controllers
             // Məzuniyyətdə olanların siyahısı bir az aşağıda, məzuniyyət bloku
             // emal edilərkən doldurulur (hazirdaMez-dan).
 
-            vm.BugunIcazeliIsciler = davlar
-                .Where(x => x.Status == DavamiyyetStatus.Icazeli
-                         || x.Status == DavamiyyetStatus.Xestelik
-                         || x.Status == DavamiyyetStatus.Ezamiyyet)
-                .OrderBy(x => x.IsciTamAd)
+            // İcazəli işçilər siyahısı — saat icazəsi sahibləri (Icaze entity)
+            // Saat aralığını GirisVaxti sahəsində göstəririk (məs. "09:00 – 11:00").
+            vm.BugunIcazeliIsciler = bugunIcazeler
+                .OrderBy(x => x.BaslamaSaati)
                 .Select(x => new DavamiyyetIsciDto
                 {
-                    AdSoyad = x.IsciTamAd ?? "—",
-                    Departament = x.DepartamentAd ?? "—",
-                    GirisVaxti = null
+                    AdSoyad = x.Isci?.TamAd ?? "—",
+                    Departament = x.Isci?.IsciTeyinatlari?
+                        .Where(t => t.Aktivdir && !t.Silinib)
+                        .Select(t => t.Departament?.Ad)
+                        .FirstOrDefault(s => !string.IsNullOrEmpty(s)) ?? "—",
+                    GirisVaxti = $"{x.BaslamaSaati:hh\\:mm} – {x.BitisSaati:hh\\:mm}"
                 })
                 .ToList();
 
