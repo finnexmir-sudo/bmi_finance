@@ -94,7 +94,9 @@
         const chk = row.querySelector('.mth-checkbox');
         const bInp = row.querySelector('.mth-inp--b');
         const cInp = row.querySelector('.mth-inp--c');
-        const fgInp = row.querySelector('.mth-inp--fg');
+        // Fərqli gəlir input əsas sırada deyil, əlaqəli detail sırasında yerləşir
+        const detailRow = document.querySelector(`tr.mth-detail-row[data-detail-for="${row.dataset.isci}"]`);
+        const fgInp = detailRow?.querySelector('.mth-inp--fg');
         const done = row.classList.contains('done');
 
         const bonus = parseFloat(bInp?.value || 0) || 0;
@@ -320,9 +322,10 @@
             updateFooter();
         });
 
+        const detailRowForInput = getDetailRow(row);
         [row.querySelector('.mth-inp--b'),
          row.querySelector('.mth-inp--c'),
-         row.querySelector('.mth-inp--fg')].forEach(inp => {
+         detailRowForInput?.querySelector('.mth-inp--fg')].forEach(inp => {
             inp?.addEventListener('input', () => { updateRow(row); updateFooter(); });
         });
 
