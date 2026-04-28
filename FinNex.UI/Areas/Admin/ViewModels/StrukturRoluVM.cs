@@ -31,6 +31,7 @@ public class StrukturRoluIndexVM
     public int SobeReisiSayi { get; set; }
     public int RehberSayi { get; set; }
     public int HrSayi { get; set; }
+    public int MuhasibSayi { get; set; }
 }
 
 public class StrukturRoluFormVM
