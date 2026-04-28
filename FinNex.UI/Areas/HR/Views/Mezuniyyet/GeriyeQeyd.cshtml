@@ -97,6 +97,18 @@
                         <small style="font-size:11px;color:#94a3b8;margin-top:4px;display:block">Verilərsə, audit üçün qeydə alınır</small>
                     </div>
 
+                    @* ── Əmr suffiksi (frekans) ── *@
+                    <div class="fn-form-group">
+                        <label asp-for="EmrSuffiks" class="fn-label">
+                            Əmr suffiksi <span class="fn-label-hint">(frekans)</span>
+                        </label>
+                        <select asp-for="EmrSuffiks" asp-items="Model.SuffiksSecimleri" class="fn-select"></select>
+                        <span asp-validation-for="EmrSuffiks" class="fn-val-msg"></span>
+                        <small style="font-size:11px;color:#94a3b8;margin-top:4px;display:block">
+                            Əmr nömrəsində qeyd olunur (məs. <strong>K/M&nbsp;13G&nbsp;@DateTime.Today.Year</strong>) — geriyə qeydləri normal əmrlərdən fərqləndirmək üçün
+                        </small>
+                    </div>
+
                     @* ── Düymələr ── *@
                     <div class="fn-form-actions">
                         <a asp-action="Hr" class="fn-btn fn-btn--outline">Ləğv et</a>

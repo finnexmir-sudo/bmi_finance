@@ -28,5 +28,14 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
 
         [MaxLength(500)]
         public string? Sebeb { get; set; }
+
+        /// <summary>
+        /// Əmr nömrəsi suffiksi ("frekans") — geriyə məzuniyyəti normal seriyadan
+        /// fərqləndirmək üçün. Default "G" (Geriyə). HR seçimə uyğun dəyişdirə bilər
+        /// (məs. "X" — xüsusi hal, "T" — təcili). EmrRegem avtomatik artırılır,
+        /// EmrSuffiks isə bu sahədən gəlir → əmr nömrəsi: "K/M 13G 2026" kimi.
+        /// </summary>
+        [MaxLength(4, ErrorMessage = "Suffiks ən çox 4 simvol ola bilər.")]
+        public string? EmrSuffiks { get; set; } = "G";
     }
 }

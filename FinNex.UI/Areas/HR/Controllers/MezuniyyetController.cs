@@ -314,7 +314,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Nov = vm.Nov,
                 BaslamaTarixi = vm.BaslamaTarixi,
                 BitmeTarixi = vm.BitmeTarixi,
-                Sebeb = vm.Sebeb
+                Sebeb = vm.Sebeb,
+                EmrSuffiks = vm.EmrSuffiks
             };
 
             var result = await _mezuniyyetService.GeriyeQeydEtAsync(dto, hrIsciId.Value);
