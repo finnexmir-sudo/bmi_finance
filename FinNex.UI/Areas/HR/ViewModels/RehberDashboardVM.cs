@@ -26,8 +26,11 @@ namespace FinNex.UI.Areas.HR.ViewModels
         public bool BugunQeydVar { get; set; }   // bugün üçün heç bir davamiyyət qeydi varmı
 
         // Bu günün adlı siyahıları (rəhbərin "kim?" sualına cavab vermək üçün)
+        public List<DavamiyyetIsciDto> BugunIshdeIsciler { get; set; } = new();
         public List<DavamiyyetIsciDto> BugunGecikenIsciler { get; set; } = new();
         public List<DavamiyyetIsciDto> BugunQayibIsciler { get; set; } = new();
+        public List<DavamiyyetIsciDto> BugunMezuniyyetdeIsciler { get; set; } = new();
+        public List<DavamiyyetIsciDto> BugunIcazeliIsciler { get; set; } = new();
 
         // ── Action Center (rəhbərin diqqət tələb edən işləri) ──
         public int GozleyenAvansSayi { get; set; }            // Avans.Status = Gozlemede
