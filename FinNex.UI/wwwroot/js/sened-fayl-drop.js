@@ -1,6 +1,8 @@
 // wwwroot/js/sened-fayl-drop.js
 // Bir və ya bir neçə fayl seçməyi dəstəkləyir.
-// Drag&drop hər dəfə YENİ faylları siyahıya ƏLAVƏ edir (əvəz etmir).
+// Həm drag&drop, həm də klik (file dialog) hər dəfə YENİ faylları siyahıya
+// ƏLAVƏ edir (əvəz etmir). Bu, klik etdikdən sonra Cancel basıldıqda əvvəlki
+// faylların itirilməsinin qarşısını alır.
 
 document.addEventListener('DOMContentLoaded', function () {
     var zone = document.getElementById('faylZone');
@@ -12,9 +14,45 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!zone || !input) return;
 
-    // File input change (click → file dialog) — mövcud faylları əvəz edir
+    // Click etmədən əvvəl input.files-in snapshot-u — Cancel halında bərpa
+    // etmək, dialog OK halında isə yenilərini bunların üstünə əlavə etmək üçün.
+    var beforeOpenSnapshot = [];
+
+    function snapshotFiles() {
+        beforeOpenSnapshot = [];
+        if (input.files) {
+            for (var i = 0; i < input.files.length; i++) {
+                beforeOpenSnapshot.push(input.files[i]);
+            }
+        }
+    }
+
+    // File input change — köhnə faylları qoruyub yenilərini əlavə et
     input.addEventListener('change', function () {
-        render(this.files);
+        var newFiles = input.files;
+        var dt = new DataTransfer();
+
+        // 1) Əvvəlkiləri saxla (dialog açılmadan əvvəlki snapshot)
+        for (var i = 0; i < beforeOpenSnapshot.length; i++) {
+            dt.items.add(beforeOpenSnapshot[i]);
+        }
+
+        // 2) Yenilərini əlavə et — dublikatları atla (ad + ölçüsü görə)
+        // Əgər Cancel basılıbsa, newFiles boş olar — beforeOpenSnapshot olduğu kimi bərpa olunur.
+        if (newFiles && newFiles.length > 0) {
+            for (var j = 0; j < newFiles.length; j++) {
+                var nf = newFiles[j];
+                var exists = false;
+                for (var k = 0; k < beforeOpenSnapshot.length; k++) {
+                    var ex = beforeOpenSnapshot[k];
+                    if (ex.name === nf.name && ex.size === nf.size) { exists = true; break; }
+                }
+                if (!exists) dt.items.add(nf);
+            }
+        }
+
+        input.files = dt.files;
+        render(input.files);
     });
 
     // Drag over
@@ -61,6 +99,9 @@ document.addEventListener('DOMContentLoaded', function () {
     zone.addEventListener('click', function (e) {
         if (e.target === input) return;
         if (e.target && e.target.classList && e.target.classList.contains('fayl-remove')) return;
+        // Klikdən əvvəl mövcud faylları snapshot al — Cancel halında bərpa,
+        // OK halında yeni seçilmişlərlə birləşdirmə üçün.
+        snapshotFiles();
         input.click();
     });
 
