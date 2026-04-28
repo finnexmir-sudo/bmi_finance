@@ -447,8 +447,10 @@
                     </div>
                     <div id="yvFaylInfo" style="display:none;padding:12px;background:#f0f4ff;border-radius:8px;margin-bottom:16px;">
                         <div style="display:flex;align-items:center;gap:8px;">
-                            <span id="yvFaylAd" style="font-size:13px;font-weight:600;color:#1a2332;"></span>
-                            <span id="yvFaylOlcu" style="font-size:12px;color:#8a93a8;margin-left:auto;"></span>
+                            <span id="yvFaylAd" style="font-size:13px;font-weight:600;color:#1a2332;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+                            <span id="yvFaylOlcu" style="font-size:12px;color:#8a93a8;"></span>
+                            <button type="button" id="yvFaylRemove" title="Faylı sil"
+                                    style="border:none;background:transparent;color:#ef4444;font-size:18px;line-height:1;cursor:pointer;padding:0 4px;">×</button>
                         </div>
                     </div>
                     <div style="font-size:12px;color:#8a93a8;line-height:1.5;">
@@ -478,17 +480,51 @@
             var info = document.getElementById('yvFaylInfo');
             var ad = document.getElementById('yvFaylAd');
             var olcu = document.getElementById('yvFaylOlcu');
+            var removeBtn = document.getElementById('yvFaylRemove');
+
+            // Klik etmədən əvvəlki snapshot (Cancel halında bərpa üçün)
+            var beforeSnapshot = null;
+
+            function refreshInfo() {
+                if (input.files && input.files.length > 0) {
+                    var f = input.files[0];
+                    ad.textContent = f.name;
+                    var kb = f.size / 1024;
+                    olcu.textContent = kb < 1024 ? kb.toFixed(1) + ' KB' : (kb / 1024).toFixed(1) + ' MB';
+                    info.style.display = 'block';
+                } else {
+                    info.style.display = 'none';
+                }
+            }
+
             if (input) {
+                input.addEventListener('click', function () {
+                    // Snapshot — file picker açılır, Cancel halında köhnə fayl bərpa olunsun
+                    beforeSnapshot = (input.files && input.files.length > 0) ? input.files[0] : null;
+                });
+
                 input.addEventListener('change', function () {
-                    if (this.files && this.files.length > 0) {
-                        var f = this.files[0];
-                        ad.textContent = f.name;
-                        var kb = f.size / 1024;
-                        olcu.textContent = kb < 1024 ? kb.toFixed(1) + ' KB' : (kb / 1024).toFixed(1) + ' MB';
-                        info.style.display = 'block';
+                    if (input.files && input.files.length > 0) {
+                        // Yeni fayl seçilib — info göstər
+                        refreshInfo();
+                    } else if (beforeSnapshot) {
+                        // Cancel basılıb — əvvəlki faylı bərpa et
+                        var dt = new DataTransfer();
+                        dt.items.add(beforeSnapshot);
+                        input.files = dt.files;
+                        refreshInfo();
                     } else {
                         info.style.display = 'none';
                     }
+                });
+            }
+
+            // Silmə düyməsi — seçilmiş faylı təmizlə
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function () {
+                    input.value = '';
+                    info.style.display = 'none';
+                    beforeSnapshot = null;
                 });
             }
         })();
