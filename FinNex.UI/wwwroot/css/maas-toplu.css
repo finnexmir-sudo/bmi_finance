@@ -800,7 +800,10 @@
 
 .mth-detail-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    /* 4 sabit sütun — kiçik kartlar (Məzuniyyət, Xəstəlik, Fərqli gəlir,
+       Vergi güzəşti) 1-ci sıraya, İşçi tutulmaları (wide=2 sütun) 2-ci
+       sıraya düşsün. Ekran daralanda media query 2 sütuna keçir. */
+    grid-template-columns: repeat(4, 1fr);
     gap: 12px;
     align-items: stretch;
 }
@@ -816,9 +819,38 @@
     flex-direction: column;
 }
 
-/* İşçi tutulmaları 2 sütun genişlikdə olsun */
+/* İşçi tutulmaları 2 sütun genişlikdə olsun və yeni sıradan başlasın */
 .mth-detail-card--wide {
-    grid-column: span 2;
+    grid-column: 1 / span 2;
+}
+
+/* Fərqli gəlir kartı — input vertikal layout, tam enlikdə */
+.mth-detail-card--ferqli .mth-detail-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mth-ferqli-lbl {
+    font-size: 11px;
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.mth-ferqli-inp {
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mth-ferqli-inp .mth-inp {
+    flex: 1;
+    width: 100%;
+}
+
+.mth-ferqli-hint {
+    font-size: 10.5px;
+    color: #8a93a8;
+    font-style: italic;
 }
 
 .mth-detail-card--action {
