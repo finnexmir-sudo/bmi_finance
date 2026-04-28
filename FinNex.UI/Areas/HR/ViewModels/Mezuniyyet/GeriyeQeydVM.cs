@@ -36,6 +36,21 @@ namespace FinNex.UI.Areas.HR.ViewModels.Mezuniyyet
         [Display(Name = "Əmr suffiksi")]
         public string? EmrSuffiks { get; set; } = "G";
 
+        /// <summary>
+        /// İSTƏGƏ BAĞLI — mövcud əmr nömrəsinə "araya əlavə et" rejimi.
+        /// Boş qaldıqda: avtomatik son+1 yeni nömrə verilir.
+        /// Doldurulduqda: bu nömrəyə suffiks əlavə olunur (məs. K/M 5G 2026).
+        /// </summary>
+        [Display(Name = "Mövcud əmr nömrəsi")]
+        public int? EmrRegem { get; set; }
+
+        /// <summary>
+        /// İSTƏGƏ BAĞLI — yalnız <see cref="EmrRegem"/> verilibsə əhəmiyyətli.
+        /// Default: cari il.
+        /// </summary>
+        [Display(Name = "Mövcud əmr ili")]
+        public int? EmrIl { get; set; }
+
         public List<SelectListItem> Isciler { get; set; } = new();
 
         /// <summary>Suffiks variantları üçün seçim siyahısı (UI-da dropdown).</summary>

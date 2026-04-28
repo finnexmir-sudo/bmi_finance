@@ -37,5 +37,18 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         /// </summary>
         [MaxLength(4, ErrorMessage = "Suffiks ən çox 4 simvol ola bilər.")]
         public string? EmrSuffiks { get; set; } = "G";
+
+        /// <summary>
+        /// İSTƏGƏ BAĞLI — mövcud əmr nömrəsindən sonra "araya əlavə" rejimi.
+        /// Doldurulduqda: bu nömrəyə suffiks əlavə olunur (məs. K/M 5G 2026 — K/M 5
+        /// və K/M 6 arasında sıralanır). Boş qalsa: avtomatik son+1 yeni nömrə verilir.
+        /// </summary>
+        public int? EmrRegem { get; set; }
+
+        /// <summary>
+        /// İSTƏGƏ BAĞLI — yalnız <see cref="EmrRegem"/> verilibsə əhəmiyyətli;
+        /// hansı il-in seriyasına əlavə olunduğu (default: cari il).
+        /// </summary>
+        public int? EmrIl { get; set; }
     }
 }

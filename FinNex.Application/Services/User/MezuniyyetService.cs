@@ -1493,18 +1493,59 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     ? "[Geriyə qeyd — HR]"
                     : $"[Geriyə qeyd — HR] {sebebTrim}";
 
-                // ── Əmr nömrəsi avtomatik təyin et (geriyə məzuniyyət üçün) ──
-                // EmrRegem normal seriyada (illik) ardıcıl artır; suffiks DTO-dan
-                // gəlir (default "G" = Geriyə). EmrIl = HR təsdiq tarixinin ili.
-                // Beləliklə əmr nömrəsi "K/M 13G 2026" kimi formalaşır və
-                // normal məzuniyyətdən asanca fərqləndirilir.
-                var emrIl = indi.Year;
-                var sonRegem = await _unitOfWork.Repository<Mezuniyyet>().Query()
-                    .Where(x => !x.Silinib && x.EmrIl == emrIl && x.EmrRegem != null)
-                    .MaxAsync(x => (int?)x.EmrRegem) ?? 0;
+                // ── Əmr nömrəsi: 2 rejim ──────────────────────────────────
+                // 1) AVTOMATIK (DTO.EmrRegem null): cari il sırasının son+1 nömrəsi
+                //    + DTO-dan gələn suffiks (default "G"). Yeni əmr olur.
+                // 2) ARAYA ƏLAVƏ (DTO.EmrRegem dolu): HR mövcud nömrəni göstərir,
+                //    sistem yalnız (EmrIl, EmrRegem, EmrSuffiks) üçlüyünün
+                //    unikallığını yoxlayır. Əmr "K/M 5G 2026" kimi formalaşır
+                //    və sıralamada K/M 5 ilə K/M 6 arasında qalır.
                 var suffiks = string.IsNullOrWhiteSpace(dto.EmrSuffiks)
                     ? "G"
                     : dto.EmrSuffiks.Trim().ToUpperInvariant();
+
+                int emrIl;
+                int emrRegem;
+
+                if (dto.EmrRegem.HasValue && dto.EmrRegem.Value > 0)
+                {
+                    // Manuel rejim — araya əlavə
+                    emrIl = dto.EmrIl.HasValue && dto.EmrIl.Value > 0
+                        ? dto.EmrIl.Value
+                        : indi.Year;
+                    emrRegem = dto.EmrRegem.Value;
+
+                    // Suffiks olmadan dublikat ola bilməz: əgər suffiks boşdursa,
+                    // əsas nömrəni mövcud normal əmrlə qarışdırmağa imkan yoxdur.
+                    if (string.IsNullOrEmpty(suffiks))
+                    {
+                        return Result<MezuniyyetDto>.Fail(
+                            "Mövcud əmr nömrəsinə əlavə edərkən suffiks mütləq olmalıdır " +
+                            "(məs: G, X, T) — yoxsa mövcud əmrlə dublikat olar.");
+                    }
+
+                    var konflikt = await _unitOfWork.Repository<Mezuniyyet>()
+                        .MovcuddurmuAsync(x =>
+                            !x.Silinib &&
+                            x.EmrIl == emrIl &&
+                            x.EmrRegem == emrRegem &&
+                            x.EmrSuffiks == suffiks);
+                    if (konflikt)
+                    {
+                        return Result<MezuniyyetDto>.Fail(
+                            $"K/M {emrRegem}{suffiks} {emrIl} əmr nömrəsi artıq mövcuddur. " +
+                            "Başqa suffiks seçin (məs. X, T) və ya başqa nömrə göstərin.");
+                    }
+                }
+                else
+                {
+                    // Avtomatik rejim — yeni sıra
+                    emrIl = indi.Year;
+                    var sonRegem = await _unitOfWork.Repository<Mezuniyyet>().Query()
+                        .Where(x => !x.Silinib && x.EmrIl == emrIl && x.EmrRegem != null)
+                        .MaxAsync(x => (int?)x.EmrRegem) ?? 0;
+                    emrRegem = sonRegem + 1;
+                }
 
                 var entity = new Mezuniyyet
                 {
@@ -1517,7 +1558,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     Status = MezuniyyetStatus.Tesdiqlenib,
                     OdenisTipi = MezuniyyetOdenisTipi.AySonuOdenis,
                     OdenisStatus = MezuniyyetOdenisStatus.TetbiqEdilmir,
-                    EmrRegem = sonRegem + 1,
+                    EmrRegem = emrRegem,
                     EmrIl = emrIl,
                     EmrSuffiks = suffiks,
                     // Geriyə qeyd — təsdiq axını keçmir; yalnız HR addımı rəsmi

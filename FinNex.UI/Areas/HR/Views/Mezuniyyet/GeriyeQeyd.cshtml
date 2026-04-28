@@ -109,6 +109,41 @@
                         </small>
                     </div>
 
+                    @* ── Mövcud əmr nömrəsinə araya əlavə (ixtiyari) ── *@
+                    <details class="fn-form-group" style="border:1px dashed #cbd5e1;border-radius:8px;padding:10px 14px;background:#f8fafc">
+                        <summary style="cursor:pointer;font-size:13px;font-weight:600;color:#475569;list-style:none;display:flex;align-items:center;gap:6px">
+                            <i class="bi bi-arrow-bar-up" style="color:#6366f1"></i>
+                            Mövcud əmr sırasına əlavə et
+                            <span class="fn-label-hint">(ixtiyari — sıralamağa görə)</span>
+                            <i class="bi bi-chevron-down" style="margin-left:auto;font-size:11px;color:#94a3b8"></i>
+                        </summary>
+                        <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                            <div>
+                                <label asp-for="EmrRegem" class="fn-label" style="font-size:12px">
+                                    Mövcud nömrə
+                                </label>
+                                <input asp-for="EmrRegem" type="number" min="1" class="fn-input"
+                                       placeholder="məs. 5" />
+                                <span asp-validation-for="EmrRegem" class="fn-val-msg"></span>
+                            </div>
+                            <div>
+                                <label asp-for="EmrIl" class="fn-label" style="font-size:12px">
+                                    Mövcud il
+                                </label>
+                                <input asp-for="EmrIl" type="number" min="2020" max="2099" class="fn-input"
+                                       placeholder="@DateTime.Today.Year" />
+                                <span asp-validation-for="EmrIl" class="fn-val-msg"></span>
+                            </div>
+                        </div>
+                        <small style="font-size:11px;color:#64748b;margin-top:8px;display:block;line-height:1.55">
+                            <strong>Boş buraxın</strong> — avtomatik yeni nömrə (sonuncu + 1) verilir.<br />
+                            <strong>Dolduran zaman</strong> — geriyə qeyd həmin nömrəyə suffikslə əlavə olunur,
+                            sıralamada mövcud K/M&nbsp;{nömrə} ilə K/M&nbsp;{nömrə+1} arasında qalır
+                            (məs. <strong>K/M&nbsp;5G&nbsp;@DateTime.Today.Year</strong>).
+                            <em>Suffiks mütləq olmalıdır</em> ki, mövcud əmrlə dublikat olmasın.
+                        </small>
+                    </details>
+
                     @* ── Düymələr ── *@
                     <div class="fn-form-actions">
                         <a asp-action="Hr" class="fn-btn fn-btn--outline">Ləğv et</a>
