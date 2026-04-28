@@ -120,8 +120,20 @@ namespace FinNex.UI.Areas.HR.Controllers
                                               || x.Status == DavamiyyetStatus.Ezamiyyet);
 
             // Adlı siyahılar — rəhbərə "kim?" sualına dərhal cavab vermək üçün
+            vm.BugunIshdeIsciler = davlar
+                .Where(x => x.Status == DavamiyyetStatus.Isde)
+                .OrderBy(x => x.IsciTamAd)
+                .Select(x => new DavamiyyetIsciDto
+                {
+                    AdSoyad = x.IsciTamAd ?? "—",
+                    Departament = x.DepartamentAd ?? "—",
+                    GirisVaxti = x.GirisVaxti?.ToString("HH:mm")
+                })
+                .ToList();
+
             vm.BugunGecikenIsciler = davlar
                 .Where(x => x.Status == DavamiyyetStatus.Gecikme)
+                .OrderBy(x => x.IsciTamAd)
                 .Select(x => new DavamiyyetIsciDto
                 {
                     AdSoyad = x.IsciTamAd ?? "—",
@@ -132,6 +144,23 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             vm.BugunQayibIsciler = davlar
                 .Where(x => x.Status == DavamiyyetStatus.Qayib)
+                .OrderBy(x => x.IsciTamAd)
+                .Select(x => new DavamiyyetIsciDto
+                {
+                    AdSoyad = x.IsciTamAd ?? "—",
+                    Departament = x.DepartamentAd ?? "—",
+                    GirisVaxti = null
+                })
+                .ToList();
+
+            // Məzuniyyətdə olanların siyahısı bir az aşağıda, məzuniyyət bloku
+            // emal edilərkən doldurulur (hazirdaMez-dan).
+
+            vm.BugunIcazeliIsciler = davlar
+                .Where(x => x.Status == DavamiyyetStatus.Icazeli
+                         || x.Status == DavamiyyetStatus.Xestelik
+                         || x.Status == DavamiyyetStatus.Ezamiyyet)
+                .OrderBy(x => x.IsciTamAd)
                 .Select(x => new DavamiyyetIsciDto
                 {
                     AdSoyad = x.IsciTamAd ?? "—",
@@ -186,6 +215,17 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             vm.HazirdaMezuniyyetde = hazirdaMez.Count;
             vm.BugunMezuniyyetde = hazirdaMez.Count;
+
+            // Məzuniyyətdə olanların adlı siyahısı (davamiyyət kartı klik edildikdə göstərilir)
+            vm.BugunMezuniyyetdeIsciler = hazirdaMez
+                .OrderBy(x => x.IsciAdSoyad)
+                .Select(x => new DavamiyyetIsciDto
+                {
+                    AdSoyad = x.IsciAdSoyad ?? "—",
+                    Departament = x.SobeAdi ?? "—",
+                    GirisVaxti = $"{x.BaslamaTarixi:dd.MM} – {x.BitmeTarixi:dd.MM}"
+                })
+                .ToList();
 
             vm.MezuniyyetdeOlanlar = hazirdaMez
                 .Take(10)

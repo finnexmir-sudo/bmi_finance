@@ -1074,12 +1074,12 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             new VergiPille { Id = 8, Nov = MaasParametrNovu.DsmfIsegoturenFaizi, Sira = 3, AsagiHedd = 8000m, YuxariHedd = null,  Faiz = 11m, SabitMebleg = 1214m, Aciqlama = "2026: 8000+ AZN → 1214+11%",     BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
 
             // İTSS (İşçi): 0-8000 → 2%; 8000+ → 160+0.5%
-            new VergiPille { Id = 9,  Nov = MaasParametrNovu.IcbariTibbiSigortaFaizi, Sira = 1, AsagiHedd = 0m,    YuxariHedd = 8000m, Faiz = 2m,   SabitMebleg = 0m,   Aciqlama = "2026: 0–8000 AZN → 2%",        BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
-            new VergiPille { Id = 10, Nov = MaasParametrNovu.IcbariTibbiSigortaFaizi, Sira = 2, AsagiHedd = 8000m, YuxariHedd = null,  Faiz = 0.5m, SabitMebleg = 160m, Aciqlama = "2026: 8000+ AZN → 160+0.5%",  BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+            new VergiPille { Id = 9,  Nov = MaasParametrNovu.IcbariTibbiSigortaFaizi, Sira = 1, AsagiHedd = 0m,    YuxariHedd = 2500m, Faiz = 2m,   SabitMebleg = 0m,  Aciqlama = "2026: 0–2500 AZN → 2%",       BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+            new VergiPille { Id = 10, Nov = MaasParametrNovu.IcbariTibbiSigortaFaizi, Sira = 2, AsagiHedd = 2500m, YuxariHedd = null,  Faiz = 0.5m, SabitMebleg = 50m, Aciqlama = "2026: 2500+ AZN → 50+0.5%",   BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
 
-            // İTSS (İşəgötürən): 0-8000 → 2%; 8000+ → 160+0.5%  (işçi ilə eynidir)
-            new VergiPille { Id = 11, Nov = MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi, Sira = 1, AsagiHedd = 0m,    YuxariHedd = 8000m, Faiz = 2m,   SabitMebleg = 0m,   Aciqlama = "2026: 0–8000 AZN → 2%",        BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
-            new VergiPille { Id = 12, Nov = MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi, Sira = 2, AsagiHedd = 8000m, YuxariHedd = null,  Faiz = 0.5m, SabitMebleg = 160m, Aciqlama = "2026: 8000+ AZN → 160+0.5%",  BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true }
+            // İTSS (İşəgötürən): 0-2500 → 2%; 2500+ → 50+0.5%  (işçi ilə eynidir)
+            new VergiPille { Id = 11, Nov = MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi, Sira = 1, AsagiHedd = 0m,    YuxariHedd = 2500m, Faiz = 2m,   SabitMebleg = 0m,  Aciqlama = "2026: 0–2500 AZN → 2%",       BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
+            new VergiPille { Id = 12, Nov = MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi, Sira = 2, AsagiHedd = 2500m, YuxariHedd = null,  Faiz = 0.5m, SabitMebleg = 50m, Aciqlama = "2026: 2500+ AZN → 50+0.5%",   BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true }
         );
 
     }

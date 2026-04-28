@@ -169,26 +169,31 @@
     else
     {
         <div class="rd-att-stats">
-            <div class="rd-att-stat rd-att-stat--green">
+            <button type="button" class="rd-att-stat rd-att-stat--green rd-att-stat--btn"
+                    data-rd-list="ishde" @(Model.BugunIshde == 0 ? "disabled" : "")>
                 <div class="rd-att-num">@Model.BugunIshde</div>
                 <div class="rd-att-lbl">İşdə</div>
-            </div>
-            <div class="rd-att-stat rd-att-stat--amber">
+            </button>
+            <button type="button" class="rd-att-stat rd-att-stat--amber rd-att-stat--btn"
+                    data-rd-list="geciken" @(Model.BugunGeciken == 0 ? "disabled" : "")>
                 <div class="rd-att-num">@Model.BugunGeciken</div>
                 <div class="rd-att-lbl">Gecikən</div>
-            </div>
-            <div class="rd-att-stat rd-att-stat--red">
+            </button>
+            <button type="button" class="rd-att-stat rd-att-stat--red rd-att-stat--btn"
+                    data-rd-list="qayib" @(Model.BugunQayib == 0 ? "disabled" : "")>
                 <div class="rd-att-num">@Model.BugunQayib</div>
                 <div class="rd-att-lbl">Qayıb</div>
-            </div>
-            <div class="rd-att-stat rd-att-stat--blue">
+            </button>
+            <button type="button" class="rd-att-stat rd-att-stat--blue rd-att-stat--btn"
+                    data-rd-list="mezuniyyet" @(Model.BugunMezuniyyetde == 0 ? "disabled" : "")>
                 <div class="rd-att-num">@Model.BugunMezuniyyetde</div>
                 <div class="rd-att-lbl">Məzuniyyətdə</div>
-            </div>
-            <div class="rd-att-stat rd-att-stat--purple">
+            </button>
+            <button type="button" class="rd-att-stat rd-att-stat--purple rd-att-stat--btn"
+                    data-rd-list="icaze" @(Model.BugunIcazeli == 0 ? "disabled" : "")>
                 <div class="rd-att-num">@Model.BugunIcazeli</div>
                 <div class="rd-att-lbl">İcazəli</div>
-            </div>
+            </button>
             <div class="rd-att-stat rd-att-stat--gauge">
                 <div class="rd-att-num" style="color:@faizCls">@faiz%</div>
                 <div class="rd-att-lbl">Davamiyyət (bu ay)</div>
@@ -198,59 +203,45 @@
             </div>
         </div>
 
-        @if (Model.BugunGecikenIsciler.Any() || Model.BugunQayibIsciler.Any())
-        {
-            <div class="rd-att-detail-grid">
-                @if (Model.BugunGecikenIsciler.Any())
-                {
-                    <div class="fn-card rd-att-detail">
-                        <div class="fn-card-head">
-                            <div class="fn-card-title">
-                                <i class="bi bi-clock-history" style="color:#d4920a"></i>
-                                Gecikən işçilər
-                            </div>
-                            <span class="rd-count-badge rd-count-badge--amber">@Model.BugunGecikenIsciler.Count</span>
-                        </div>
-                        @foreach (var g in Model.BugunGecikenIsciler)
-                        {
-                            <div class="rd-list-item">
-                                <div class="rd-avatar rd-avatar--amber">@(g.AdSoyad.Length > 0 ? g.AdSoyad[0] : '?')</div>
-                                <div class="rd-list-info">
-                                    <div class="rd-list-name">@g.AdSoyad</div>
-                                    <div class="rd-list-meta">@g.Departament</div>
-                                </div>
-                                @if (g.GirisVaxti != null)
-                                {
-                                    <span class="rd-time rd-time--in">@g.GirisVaxti</span>
-                                }
-                            </div>
-                        }
+        @* ── Davamiyyət siyahı modal — kart klikləndikdə göstərilir ───────── *@
+        <div id="rdAttModal" class="rd-att-modal" hidden>
+            <div class="rd-att-modal__backdrop" data-rd-close></div>
+            <div class="rd-att-modal__panel" role="dialog" aria-modal="true" aria-labelledby="rdAttModalTitle">
+                <div class="rd-att-modal__head">
+                    <div class="rd-att-modal__title">
+                        <i class="bi" id="rdAttModalIcon"></i>
+                        <span id="rdAttModalTitle">—</span>
+                        <span id="rdAttModalCount" class="rd-att-modal__count">0</span>
                     </div>
-                }
-                @if (Model.BugunQayibIsciler.Any())
-                {
-                    <div class="fn-card rd-att-detail">
-                        <div class="fn-card-head">
-                            <div class="fn-card-title">
-                                <i class="bi bi-x-circle" style="color:#c83838"></i>
-                                Qayıb işçilər
-                            </div>
-                            <span class="rd-count-badge rd-count-badge--red">@Model.BugunQayibIsciler.Count</span>
-                        </div>
-                        @foreach (var g in Model.BugunQayibIsciler)
-                        {
-                            <div class="rd-list-item">
-                                <div class="rd-avatar rd-avatar--red">@(g.AdSoyad.Length > 0 ? g.AdSoyad[0] : '?')</div>
-                                <div class="rd-list-info">
-                                    <div class="rd-list-name">@g.AdSoyad</div>
-                                    <div class="rd-list-meta">@g.Departament</div>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                }
+                    <button type="button" class="rd-att-modal__close" data-rd-close aria-label="Bağla">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div id="rdAttModalBody" class="rd-att-modal__body"></div>
             </div>
+        </div>
+
+        @{
+            System.Func<List<FinNex.UI.Areas.HR.ViewModels.DavamiyyetIsciDto>, object> mapItems = list =>
+                list.Select(x => new {
+                    adSoyad = x.AdSoyad,
+                    departament = x.Departament,
+                    girisVaxti = x.GirisVaxti
+                }).ToList();
+
+            var listsJson = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                ishde      = new { title = "İşdə olanlar",        icon = "bi-check2-circle",   color = "#1e9b6b", items = mapItems(Model.BugunIshdeIsciler) },
+                geciken    = new { title = "Gecikən işçilər",     icon = "bi-clock-history",   color = "#d4920a", items = mapItems(Model.BugunGecikenIsciler) },
+                qayib      = new { title = "Qayıb işçilər",        icon = "bi-x-circle",        color = "#c83838", items = mapItems(Model.BugunQayibIsciler) },
+                mezuniyyet = new { title = "Məzuniyyətdə olanlar", icon = "bi-calendar2-check", color = "#2563eb", items = mapItems(Model.BugunMezuniyyetdeIsciler) },
+                icaze      = new { title = "İcazəli işçilər",      icon = "bi-person-check",    color = "#7c3aed", items = mapItems(Model.BugunIcazeliIsciler) }
+            });
         }
+        <script type="application/json" id="rdAttListsData">@Html.Raw(listsJson)</script>
+
+        @* Gecikən/Qayıb statik bloku silindi — bütün kartlar artıq klik etdikdə
+           modal-da müvafiq siyahını göstərir (yuxarıda rdAttModal). *@
     }
 
     <!-- ═══ 3. KPI KARTLARI — Maliyyə + Personel ═══ -->
@@ -767,5 +758,85 @@
                 }
             }
         });
+
+        // ── Davamiyyət kartları → siyahı modalı ──────────────────────
+        (function () {
+            const dataEl = document.getElementById('rdAttListsData');
+            const modal  = document.getElementById('rdAttModal');
+            if (!dataEl || !modal) return;
+
+            let lists;
+            try { lists = JSON.parse(dataEl.textContent); }
+            catch { return; }
+
+            const titleEl = document.getElementById('rdAttModalTitle');
+            const iconEl  = document.getElementById('rdAttModalIcon');
+            const countEl = document.getElementById('rdAttModalCount');
+            const bodyEl  = document.getElementById('rdAttModalBody');
+
+            const palette = {
+                ishde:      ['#1e9b6b', '#22c997'],
+                geciken:    ['#d4920a', '#f5b042'],
+                qayib:      ['#c83838', '#e25656'],
+                mezuniyyet: ['#2563eb', '#4f86f7'],
+                icaze:      ['#7c3aed', '#a06bf2']
+            };
+
+            function escape(s) {
+                return String(s ?? '').replace(/[&<>"']/g, c =>
+                    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]);
+            }
+
+            function open(key) {
+                const data = lists[key];
+                if (!data) return;
+                const [c1, c2] = palette[key] || ['#4b5566', '#6b7280'];
+
+                iconEl.className  = 'bi ' + data.icon;
+                iconEl.style.color = data.color;
+                titleEl.textContent = data.title;
+                countEl.textContent = data.items.length;
+
+                if (!data.items.length) {
+                    bodyEl.innerHTML = '<div class="rd-att-modal__empty">Siyahı boşdur.</div>';
+                } else {
+                    bodyEl.innerHTML = data.items.map(item => {
+                        const initial = (item.adSoyad || '?').trim().charAt(0).toUpperCase();
+                        const time = item.girisVaxti
+                            ? `<span class="rd-att-modal__time" style="color:${c1};background:${c1}1a">${escape(item.girisVaxti)}</span>`
+                            : '';
+                        return `
+                            <div class="rd-att-modal__row">
+                                <div class="rd-att-modal__avatar" style="background:linear-gradient(135deg,${c1},${c2})">${escape(initial)}</div>
+                                <div class="rd-att-modal__info">
+                                    <div class="rd-att-modal__name">${escape(item.adSoyad)}</div>
+                                    <div class="rd-att-modal__dept">${escape(item.departament)}</div>
+                                </div>
+                                ${time}
+                            </div>`;
+                    }).join('');
+                }
+
+                modal.hidden = false;
+                document.body.style.overflow = 'hidden';
+            }
+
+            function close() {
+                modal.hidden = true;
+                document.body.style.overflow = '';
+            }
+
+            document.querySelectorAll('[data-rd-list]').forEach(btn => {
+                btn.addEventListener('click', () => open(btn.dataset.rdList));
+            });
+
+            modal.querySelectorAll('[data-rd-close]').forEach(el => {
+                el.addEventListener('click', close);
+            });
+
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape' && !modal.hidden) close();
+            });
+        })();
     </script>
 }
