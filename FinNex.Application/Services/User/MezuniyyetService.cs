@@ -1524,13 +1524,13 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                             "(məs: G, X, T) — yoxsa mövcud əmrlə dublikat olar.");
                     }
 
-                    var konflikt = await _unitOfWork.Repository<Mezuniyyet>()
+                    var emrKonflikt = await _unitOfWork.Repository<Mezuniyyet>()
                         .MovcuddurmuAsync(x =>
                             !x.Silinib &&
                             x.EmrIl == emrIl &&
                             x.EmrRegem == emrRegem &&
                             x.EmrSuffiks == suffiks);
-                    if (konflikt)
+                    if (emrKonflikt)
                     {
                         return Result<MezuniyyetDto>.Fail(
                             $"K/M {emrRegem}{suffiks} {emrIl} əmr nömrəsi artıq mövcuddur. " +
