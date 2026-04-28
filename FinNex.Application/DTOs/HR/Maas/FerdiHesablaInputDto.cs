@@ -11,6 +11,11 @@ namespace FinNex.Application.DTOs.HR.Maas
         public string? BonusAciqlama { get; set; }
         public decimal CerimeMeblegi { get; set; } = 0;
         public string? CerimeAciqlama { get; set; }
+
+        // Bonusdan ayrı gəlir növü — bəzi işçilərdə ödənilir, vergiyə cəlb olunur
+        // və brüt-ə bonus kimi əlavə edilir, lakin ayrıca xəttdə uçota alınır.
+        public decimal FerqliGelirMeblegi { get; set; } = 0;
+        public string? FerqliGelirAciqlama { get; set; }
     }
 
     public class FerdiElaveDto
@@ -20,5 +25,7 @@ namespace FinNex.Application.DTOs.HR.Maas
         public string? BonusAciqlama { get; set; }
         public decimal CerimeMeblegi { get; set; } = 0;
         public string? CerimeAciqlama { get; set; }
+        public decimal FerqliGelirMeblegi { get; set; } = 0;
+        public string? FerqliGelirAciqlama { get; set; }
     }
 }

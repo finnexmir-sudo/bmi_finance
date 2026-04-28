@@ -293,6 +293,7 @@
                                 <th class="col-name left">Ad Soyad</th>
                                 <th class="col-status center">Status</th>
                                 <th class="col-bonus">+ Bonus</th>
+                                <th class="col-ferqli" title="Bonusdan ayrı, vergiyə cəlb olunan əlavə gəlir">+ Fərqli gəlir</th>
                                 <th class="col-cerime">− Cərimə</th>
                                 <th class="col-esas">Əsas Maaş</th>
                                 <th class="col-brut">
@@ -426,6 +427,17 @@
                                         </div>
                                     </td>
 
+                                    @* + Fərqli gəlir *@
+                                    <td class="col-ferqli">
+                                        <div class="mth-inp-wrap">
+                                            <span class="mth-inp-pfx mth-inp-pfx--plus">+</span>
+                                            <input type="number" class="mth-inp mth-inp--fg"
+                                                   name="ferdiElaveler[@i].FerqliGelirMeblegi"
+                                                   min="0" step="0.01" placeholder="0.00"
+                                                   @(isDone?"readonly":"")/>
+                                        </div>
+                                    </td>
+
                                     @* − Cərimə *@
                                     <td class="col-cerime">
                                         <div class="mth-inp-wrap">
@@ -462,7 +474,7 @@
 
                                 @* ── Expandable detail panel ───────────────── *@
                                 <tr class="mth-detail-row" data-detail-for="@isci.Id">
-                                    <td colspan="9">
+                                    <td colspan="10">
                                         <div class="mth-detail-panel">
                                             <div class="mth-detail-grid">
 
@@ -660,7 +672,7 @@
                         @* ── Cəmi sətri ────────────────────────────────── *@
                         <tfoot>
                             <tr>
-                                <td class="left" colspan="5" style="font-weight:700;font-size:12px;color:#3d4557;padding:11px 10px;">
+                                <td class="left" colspan="6" style="font-weight:700;font-size:12px;color:#3d4557;padding:11px 10px;">
                                     CƏMİ — @isciList.Count işçi
                                 </td>
                                 <td><span class="n">@Fmt(isciList.Sum(x=>GetEsas(x.Id)))</span></td>

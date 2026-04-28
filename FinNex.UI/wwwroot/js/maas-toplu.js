@@ -94,22 +94,24 @@
         const chk = row.querySelector('.mth-checkbox');
         const bInp = row.querySelector('.mth-inp--b');
         const cInp = row.querySelector('.mth-inp--c');
+        const fgInp = row.querySelector('.mth-inp--fg');
         const done = row.classList.contains('done');
 
         const bonus = parseFloat(bInp?.value || 0) || 0;
         const cerime = parseFloat(cInp?.value || 0) || 0;
+        const ferqliGelir = parseFloat(fgInp?.value || 0) || 0;
 
         // İşəgötürən HYS payı (əvvəlcə hesablanır — brüt-ə daxildir)
         const hysIsv  = Math.round(hys * (HYS_ISV_FAIZ / 100) * 100) / 100;
 
         // GROSS = əsas maaş − məzuniyyət kəsintisi + məzuniyyət ödənişi
         //        + xəstəlik şirkət ödənişi − xəstəlik kəsintisi
-        //        + bonus − cərimə + işəgötürən HYS payı
+        //        + bonus + fərqli gəlir − cərimə + işəgötürən HYS payı
         // (FerdiHesablaAsync ilə eyni düstur — preview həqiqi nəticə ilə üst-üstə düşür)
         const esasBrut = Math.max(
             esas - mezKesinti + mezOdenis
                  - xesKesinti + xesSirketOdenis
-                 + bonus - cerime,
+                 + bonus + ferqliGelir - cerime,
             0);
         const brut = esasBrut + hysIsv;
 
@@ -143,7 +145,7 @@
         const sirketCemi = dsmfIsv + issIsv + itssIsv + hysIsv;
 
         return {
-            esas, bonus, cerime, brut, vergilenecek,
+            esas, bonus, cerime, ferqliGelir, brut, vergilenecek,
             vergiBazasi, dsmfBazasi, itssBazasi,
             standartGuzest, isciGuzest, isciGuzestAd,
             hys, hysIsv, avans,
@@ -318,7 +320,9 @@
             updateFooter();
         });
 
-        [row.querySelector('.mth-inp--b'), row.querySelector('.mth-inp--c')].forEach(inp => {
+        [row.querySelector('.mth-inp--b'),
+         row.querySelector('.mth-inp--c'),
+         row.querySelector('.mth-inp--fg')].forEach(inp => {
             inp?.addEventListener('input', () => { updateRow(row); updateFooter(); });
         });
 
