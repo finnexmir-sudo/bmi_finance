@@ -202,10 +202,40 @@ namespace FinNex.UI.Areas.HR.Controllers
             // ═══════════════════════════════════════════════════
             // 3. MƏZUNİYYƏT & İCAZƏ
             // ═══════════════════════════════════════════════════
-            var mezResult = await _mezuniyyetService.GetListAsync();
-            var mezler = mezResult.Success && mezResult.Data != null
-                ? mezResult.Data.ToList()
-                : new();
+            // Mezuniyyet siyahısını direct sorğu ilə alırıq — Departament/Vezife
+            // Include-ları açıq olsun deyə (servisin GetListAsync-i bunları
+            // yükləmir, ona görə dashboard-da ad/şöbə "—" çıxırdı).
+            var mezEntities = await _uow.Repository<Mezuniyyet>()
+                .Query()
+                .Where(x => !x.Silinib)
+                .Include(m => m.Isci).ThenInclude(i => i.IsciTeyinatlari).ThenInclude(t => t.Departament)
+                .ToListAsync();
+
+            string SobeAd(Mezuniyyet m) => m.Isci?.IsciTeyinatlari?
+                .Where(t => t.Aktivdir && !t.Silinib)
+                .Select(t => t.Departament?.Ad)
+                .FirstOrDefault(s => !string.IsNullOrEmpty(s)) ?? "—";
+
+            string NovText(MezuniyyetNovu n) => n switch
+            {
+                MezuniyyetNovu.Illik => "İllik məzuniyyət",
+                MezuniyyetNovu.Xestelik => "Xəstəlik məzuniyyəti",
+                MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
+                _ => n.ToString()
+            };
+
+            var mezler = mezEntities.Select(m => new
+            {
+                m.Id,
+                m.Status,
+                m.Nov,
+                m.BaslamaTarixi,
+                m.BitmeTarixi,
+                m.IsGunlerininSayi,
+                IsciAdSoyad = m.Isci?.TamAd ?? "—",
+                SobeAdi = SobeAd(m),
+                NovText = NovText(m.Nov)
+            }).ToList();
 
             // Hazırda məzuniyyətdə olanlar
             var hazirdaMez = mezler.Where(x =>
