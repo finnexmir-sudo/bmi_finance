@@ -66,17 +66,16 @@ namespace FinNex.UI.Areas.User.Controllers
             decimal cariMaas = hesablama.CariMaas;
             bool qabaqcadan = odenisTipi == (int)MezuniyyetOdenisTipi.QabaqcadanOdenis;
 
-            // HYS — işçinin aktiv HYS-ını tap
+            // HYS — bütün aktiv qeydlərin cəmi (işçi bir neçə şirkətdə HYS aça bilər)
             var hysAyBitis = new DateTime(baslama.Year, baslama.Month, 1).AddMonths(1).AddDays(-1);
-            var isciHys = await _unitOfWork.Repository<IsciHYS>()
+            decimal hysMebleg = await _unitOfWork.Repository<IsciHYS>()
                 .Query()
                 .Where(x =>
                     !x.Silinib &&
                     x.IsciId == isciId.Value &&
                     x.BaslamaTarixi <= hysAyBitis &&
                     (x.BitmeTarixi == null || x.BitmeTarixi >= new DateTime(baslama.Year, baslama.Month, 1)))
-                .FirstOrDefaultAsync();
-            decimal hysMebleg = isciHys?.Mebleg ?? 0;
+                .SumAsync(x => (decimal?)x.Mebleg) ?? 0m;
 
             // İşəgötürən HYS faizi
             var hysIsvParam = await _unitOfWork.Repository<MaasParametri>()

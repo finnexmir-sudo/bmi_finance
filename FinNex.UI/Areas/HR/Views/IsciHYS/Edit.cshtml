@@ -28,6 +28,13 @@
             </div>
 
             <div class="ih-form-group">
+                <label asp-for="Sirket" class="ih-label">Sığorta şirkəti</label>
+                <input asp-for="Sirket" type="text" maxlength="200" class="ih-input"
+                       placeholder="Məs: Pasha Sığorta" />
+                <span asp-validation-for="Sirket" class="ih-err"></span>
+            </div>
+
+            <div class="ih-form-group">
                 <label asp-for="Mebleg" class="ih-label">Aylıq HYS məbləği (₼) <span class="ih-req">*</span></label>
                 <input asp-for="Mebleg" type="number" step="0.01" min="0.01" class="ih-input" />
                 <span asp-validation-for="Mebleg" class="ih-err"></span>

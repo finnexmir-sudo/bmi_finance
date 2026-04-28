@@ -110,15 +110,15 @@ namespace FinNex.UI.Areas.HR.Controllers
             var islenmisTax = await _maasHesablamaService
                 .TutulmalariHesablaAsync(islenmisMaas, new DateTime(mezIl, mezAy, 1), mez.IsciId);
 
-            // HYS
+            // HYS — bütün aktiv qeydlərin cəmi (işçi bir neçə şirkətdə HYS aça bilər)
             var hysAyBitis = new DateTime(mezIl, mezAy, 1).AddMonths(1).AddDays(-1);
-            var isciHys = await _unitOfWork.Repository<IsciHYS>()
+            decimal hysMebleg = await _unitOfWork.Repository<IsciHYS>()
                 .Query()
-                .FirstOrDefaultAsync(x =>
+                .Where(x =>
                     !x.Silinib && x.IsciId == mez.IsciId &&
                     x.BaslamaTarixi <= hysAyBitis &&
-                    (x.BitmeTarixi == null || x.BitmeTarixi >= new DateTime(mezIl, mezAy, 1)));
-            decimal hysMebleg = isciHys?.Mebleg ?? 0;
+                    (x.BitmeTarixi == null || x.BitmeTarixi >= new DateTime(mezIl, mezAy, 1)))
+                .SumAsync(x => (decimal?)x.Mebleg) ?? 0m;
 
             // Avans
             var avanslar = await _unitOfWork.Repository<Avans>()
