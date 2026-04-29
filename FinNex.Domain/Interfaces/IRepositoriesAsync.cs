@@ -39,6 +39,10 @@ namespace FinNex.Domain.Interfaces
         Task<int> SayAsync(Expression<Func<T, bool>>? predicate = null);
         IQueryable<T> Query();
         IQueryable<T> QueryDeleted();
+        /// <summary>
+        /// Silinmiş və silinməmiş bütün qeydlər (audit/unique-key yoxlamaları üçün).
+        /// </summary>
+        IQueryable<T> QueryAll();
         Task<bool> AnyAsync(Expression<Func<T, bool>> predicate);
 
 

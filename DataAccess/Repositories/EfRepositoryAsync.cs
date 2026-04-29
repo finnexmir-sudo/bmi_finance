@@ -126,6 +126,10 @@ public class EfRepositoryAsync<T> : IRepositoryAsync<T> where T : BaseEntity
     {
         return _context.Set<T>().Where(x => x.Silinib);
     }
+    public IQueryable<T> QueryAll()
+    {
+        return _context.Set<T>();
+    }
     public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
     {
         return await _dbSet.AnyAsync(predicate);
