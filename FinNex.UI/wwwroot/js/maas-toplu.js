@@ -356,6 +356,178 @@
 
     updateFooter();
 
+    /* ── Excel export — mühasibin yoxlaması üçün ──────────────────
+       Bütün işçilərin real-time hesablanmış məlumatlarını HTML cədvəl
+       şəklində Blob kimi download edir (.xls). Excel HTML import-u
+       formatlama ilə birlikdə dəstəkləyir, əlavə kitabxana lazım deyil. */
+    const btnExcel = document.getElementById('mthBtnExcel');
+    btnExcel?.addEventListener('click', () => {
+        const dovr = document.querySelector('.mth-period-bar')?.querySelector('select')?.parentElement?.textContent?.trim() || '';
+        const ay = (document.querySelector('[data-period-ay]')?.dataset?.periodAy) || '';
+        const il = (document.querySelector('[data-period-il]')?.dataset?.periodIl) || '';
+
+        const headers = [
+            '#', 'Ad Soyad', 'Departament', 'Əsas maaş',
+            'Bonus', 'Fərqli gəlir', 'Cərimə',
+            'Məz. günü', 'Məz. ödəniş', 'Məz. kəsinti',
+            'Xəs. şirkət gün', 'Xəs. şirkət ödəniş', 'Xəs. DSMF gün', 'Xəs. DSMF ödəniş', 'Xəs. kəsinti',
+            'GROSS',
+            'Standart güzəşt', 'İşçi güzəşti', 'Vergilənəcək',
+            'Gəlir V.', 'DSMF', 'İşsizlik', 'İTSS', 'HYS işçi', 'Avans', 'Cəmi tutulma',
+            'NET',
+            'DSMF işv.', 'İşsizlik işv.', 'İTSS işv.', 'HYS işv.', 'Ümumi şirkət xərci'
+        ];
+
+        const num = v => (v && v > 0) ? Number(v).toFixed(2).replace('.', ',') : '0,00';
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+            ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]);
+
+        let totals = {
+            esas: 0, bonus: 0, ferqli: 0, cerime: 0,
+            mezOdenis: 0, mezKesinti: 0, xesSirket: 0, xesDsmf: 0, xesKesinti: 0,
+            brut: 0, gelirV: 0, dsmf: 0, iss: 0, itss: 0, hys: 0, avans: 0, tutulma: 0, net: 0,
+            dsmfIsv: 0, issIsv: 0, itssIsv: 0, hysIsv: 0, sirketCemi: 0
+        };
+
+        const visibleRows = rows.filter(r => !r.classList.contains('mth-hidden'));
+        let bodyRows = visibleRows.map((row, i) => {
+            const d = rd(row);
+            const ad = row.querySelector('.mth-name-primary')?.textContent?.trim() || '';
+            const dept = row.querySelector('.mth-name-dept')?.textContent?.trim() || '';
+
+            totals.esas += d.esas;
+            totals.bonus += d.bonus;
+            totals.ferqli += d.ferqliGelir;
+            totals.cerime += d.cerime;
+            totals.mezOdenis += d.mezOdenis;
+            totals.mezKesinti += d.mezKesinti;
+            totals.xesSirket += d.xesSirketOdenis;
+            totals.xesDsmf += d.xesDsmfOdenis;
+            totals.xesKesinti += d.xesKesinti;
+            totals.brut += d.brut;
+            totals.gelirV += d.gelirV;
+            totals.dsmf += d.dsmf;
+            totals.iss += d.iss;
+            totals.itss += d.itss;
+            totals.hys += d.hys;
+            totals.avans += d.avans;
+            totals.tutulma += d.tutulma;
+            totals.net += d.net;
+            totals.dsmfIsv += d.dsmfIsv;
+            totals.issIsv += d.issIsv;
+            totals.itssIsv += d.itssIsv;
+            totals.hysIsv += d.hysIsv;
+            totals.sirketCemi += d.sirketCemi;
+
+            return `<tr>
+                <td style="text-align:center">${i + 1}</td>
+                <td>${esc(ad)}</td>
+                <td>${esc(dept)}</td>
+                <td style="text-align:right">${num(d.esas)}</td>
+                <td style="text-align:right">${num(d.bonus)}</td>
+                <td style="text-align:right">${num(d.ferqliGelir)}</td>
+                <td style="text-align:right">${num(d.cerime)}</td>
+                <td style="text-align:center">${d.mezGun || ''}</td>
+                <td style="text-align:right">${num(d.mezOdenis)}</td>
+                <td style="text-align:right">${num(d.mezKesinti)}</td>
+                <td style="text-align:center">${d.xesSirketGun || ''}</td>
+                <td style="text-align:right">${num(d.xesSirketOdenis)}</td>
+                <td style="text-align:center">${d.xesDsmfGun || ''}</td>
+                <td style="text-align:right">${num(d.xesDsmfOdenis)}</td>
+                <td style="text-align:right">${num(d.xesKesinti)}</td>
+                <td style="text-align:right;font-weight:bold;background:#e8f5ee">${num(d.brut)}</td>
+                <td style="text-align:right">${num(d.standartGuzest)}</td>
+                <td style="text-align:right">${num(d.isciGuzest)}</td>
+                <td style="text-align:right">${num(d.vergilenecek)}</td>
+                <td style="text-align:right">${num(d.gelirV)}</td>
+                <td style="text-align:right">${num(d.dsmf)}</td>
+                <td style="text-align:right">${num(d.iss)}</td>
+                <td style="text-align:right">${num(d.itss)}</td>
+                <td style="text-align:right">${num(d.hys)}</td>
+                <td style="text-align:right">${num(d.avans)}</td>
+                <td style="text-align:right;color:#c83838">${num(d.tutulma)}</td>
+                <td style="text-align:right;font-weight:bold;background:#fff7e0">${num(d.net)}</td>
+                <td style="text-align:right">${num(d.dsmfIsv)}</td>
+                <td style="text-align:right">${num(d.issIsv)}</td>
+                <td style="text-align:right">${num(d.itssIsv)}</td>
+                <td style="text-align:right">${num(d.hysIsv)}</td>
+                <td style="text-align:right;font-weight:bold">${num(d.sirketCemi)}</td>
+            </tr>`;
+        }).join('');
+
+        const totalRow = `<tr style="background:#f1f5f9;font-weight:bold">
+            <td colspan="3" style="text-align:right">CƏMİ — ${visibleRows.length} işçi</td>
+            <td style="text-align:right">${num(totals.esas)}</td>
+            <td style="text-align:right">${num(totals.bonus)}</td>
+            <td style="text-align:right">${num(totals.ferqli)}</td>
+            <td style="text-align:right">${num(totals.cerime)}</td>
+            <td></td>
+            <td style="text-align:right">${num(totals.mezOdenis)}</td>
+            <td style="text-align:right">${num(totals.mezKesinti)}</td>
+            <td></td>
+            <td style="text-align:right">${num(totals.xesSirket)}</td>
+            <td></td>
+            <td style="text-align:right">${num(totals.xesDsmf)}</td>
+            <td style="text-align:right">${num(totals.xesKesinti)}</td>
+            <td style="text-align:right;background:#e8f5ee">${num(totals.brut)}</td>
+            <td colspan="3"></td>
+            <td style="text-align:right">${num(totals.gelirV)}</td>
+            <td style="text-align:right">${num(totals.dsmf)}</td>
+            <td style="text-align:right">${num(totals.iss)}</td>
+            <td style="text-align:right">${num(totals.itss)}</td>
+            <td style="text-align:right">${num(totals.hys)}</td>
+            <td style="text-align:right">${num(totals.avans)}</td>
+            <td style="text-align:right;color:#c83838">${num(totals.tutulma)}</td>
+            <td style="text-align:right;background:#fff7e0">${num(totals.net)}</td>
+            <td style="text-align:right">${num(totals.dsmfIsv)}</td>
+            <td style="text-align:right">${num(totals.issIsv)}</td>
+            <td style="text-align:right">${num(totals.itssIsv)}</td>
+            <td style="text-align:right">${num(totals.hysIsv)}</td>
+            <td style="text-align:right">${num(totals.sirketCemi)}</td>
+        </tr>`;
+
+        const headerRow = '<tr style="background:#1a2332;color:#fff;font-weight:bold">' +
+            headers.map(h => `<th style="padding:8px;border:1px solid #ccc">${esc(h)}</th>`).join('') + '</tr>';
+
+        const dovrText = document.querySelector('.mth-period-current')?.textContent?.trim() ||
+                         document.querySelector('h1')?.textContent?.trim() || 'Toplu Maaş';
+        const indi = new Date();
+        const tarixStr = indi.toLocaleDateString('az-AZ');
+
+        const html = `<!DOCTYPE html>
+<html xmlns:x="urn:schemas-microsoft-com:office:excel">
+<head>
+<meta charset="utf-8" />
+<title>Toplu Maaş Hesablaması</title>
+<!--[if gte mso 9]><xml>
+<x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+<x:Name>Toplu Maas</x:Name>
+<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook>
+</xml><![endif]-->
+</head>
+<body>
+<h2 style="font-family:Arial">Toplu Maaş Hesablaması — ${esc(dovrText)}</h2>
+<p style="font-family:Arial;color:#6b7280;font-size:12px">İxrac tarixi: ${tarixStr} · ${visibleRows.length} işçi</p>
+<table style="border-collapse:collapse;font-family:Arial;font-size:11px">
+<thead>${headerRow}</thead>
+<tbody>${bodyRows}${totalRow}</tbody>
+</table>
+</body></html>`;
+
+        // UTF-8 BOM ilə Blob — Excel düzgün açsın
+        const bom = '﻿';
+        const blob = new Blob([bom + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const fileName = `Toplu_Maas_${dovrText.replace(/\s+/g, '_').replace(/[^\w]/g, '')}_${indi.getFullYear()}${String(indi.getMonth()+1).padStart(2,'0')}${String(indi.getDate()).padStart(2,'0')}.xls`;
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+    });
+
     /* ── Open confirm modal ───────────────────────────────────── */
     btnCalc?.addEventListener('click', () => {
         const sel = rows.filter(r => rd(r).checked);
