@@ -125,29 +125,30 @@ namespace FinNex.Application.Services
                     };
                 }).ToList();
 
-                // ── 4. Məzuniyyət balansı (hər növ üçün MezuniyyetBalans-dan) ─
-                var balanslari = isci.MezuniyyetBalanslari?.Where(b => b.Il == buIl).ToList()
-                    ?? new List<MezuniyyetBalans>();
+                // ── 4. Məzuniyyət balansı (BÜTÜN illərin CƏMİ — keçmiş illərdən
+                // qalan günlər də cari ilə əlavə olunur, beləliklə işçi əvvəl
+                // istifadə etmədiyi günləri görür və müraciət edə bilər) ─
+                var bAll = isci.MezuniyyetBalanslari?.ToList() ?? new List<MezuniyyetBalans>();
 
-                var illikBalans = balanslari.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Illik);
-                if (illikBalans != null)
+                var illikBalanslar = bAll.Where(b => b.Nov == MezuniyyetNovu.Illik).ToList();
+                if (illikBalanslar.Any())
                 {
-                    dto.IllikToplamGun = illikBalans.ToplamGun;
-                    dto.IllikIstifadeGun = illikBalans.IstifadeOlunanGun;
+                    dto.IllikToplamGun = illikBalanslar.Sum(b => b.ToplamGun);
+                    dto.IllikIstifadeGun = illikBalanslar.Sum(b => b.IstifadeOlunanGun);
                 }
 
-                var xestelikBalans = balanslari.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Xestelik);
-                if (xestelikBalans != null)
+                var xestelikBalanslar = bAll.Where(b => b.Nov == MezuniyyetNovu.Xestelik).ToList();
+                if (xestelikBalanslar.Any())
                 {
-                    dto.XestelikToplamGun = xestelikBalans.ToplamGun;
-                    dto.XestelikIstifadeGun = xestelikBalans.IstifadeOlunanGun;
+                    dto.XestelikToplamGun = xestelikBalanslar.Sum(b => b.ToplamGun);
+                    dto.XestelikIstifadeGun = xestelikBalanslar.Sum(b => b.IstifadeOlunanGun);
                 }
 
-                var ezamiyyetBalans = balanslari.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Ezamiyyet);
-                if (ezamiyyetBalans != null)
+                var ezamiyyetBalanslar = bAll.Where(b => b.Nov == MezuniyyetNovu.Ezamiyyet).ToList();
+                if (ezamiyyetBalanslar.Any())
                 {
-                    dto.EzamiyyetToplamGun = ezamiyyetBalans.ToplamGun;
-                    dto.EzamiyyetIstifadeGun = ezamiyyetBalans.IstifadeOlunanGun;
+                    dto.EzamiyyetToplamGun = ezamiyyetBalanslar.Sum(b => b.ToplamGun);
+                    dto.EzamiyyetIstifadeGun = ezamiyyetBalanslar.Sum(b => b.IstifadeOlunanGun);
                 }
 
                 // ── 5. Son ödənişlər (son 3 ay) ──────────────────────────
