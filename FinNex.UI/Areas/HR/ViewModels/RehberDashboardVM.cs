@@ -16,24 +16,6 @@ namespace FinNex.UI.Areas.HR.ViewModels
         public int BuAyIsheQebulSayi { get; set; }
         public int BuAyIshdenAyrilanSayi { get; set; }
 
-        // ── Davamiyyət ──
-        // Davamiyyət bölməsində göstərilən tarix (default=today; rəhbər keçmiş günlərə baxa bilər)
-        public DateTime DavamiyyetTarixi { get; set; } = DateTime.Today;
-        public int BugunIshde { get; set; }
-        public int BugunGeciken { get; set; }
-        public int BugunQayib { get; set; }
-        public int BugunIcazeli { get; set; }
-        public int BugunMezuniyyetde { get; set; }
-        public int DavamiyyetFaizi { get; set; }
-        public bool BugunQeydVar { get; set; }   // bugün üçün heç bir davamiyyət qeydi varmı
-
-        // Bu günün adlı siyahıları (rəhbərin "kim?" sualına cavab vermək üçün)
-        public List<DavamiyyetIsciDto> BugunIshdeIsciler { get; set; } = new();
-        public List<DavamiyyetIsciDto> BugunGecikenIsciler { get; set; } = new();
-        public List<DavamiyyetIsciDto> BugunQayibIsciler { get; set; } = new();
-        public List<DavamiyyetIsciDto> BugunMezuniyyetdeIsciler { get; set; } = new();
-        public List<DavamiyyetIsciDto> BugunIcazeliIsciler { get; set; } = new();
-
         // ── Action Center (rəhbərin diqqət tələb edən işləri) ──
         public int GozleyenAvansSayi { get; set; }            // Avans.Status = Gozlemede
         public int MaasLayiheSayi { get; set; }               // Bu ay Layihə statusunda olan maaşlar
@@ -141,13 +123,6 @@ namespace FinNex.UI.Areas.HR.ViewModels
         public string? GirisVaxti { get; set; }
         public string? CixisVaxti { get; set; }
         public int Status { get; set; }
-    }
-
-    public class DavamiyyetIsciDto
-    {
-        public string AdSoyad { get; set; } = null!;
-        public string Departament { get; set; } = null!;
-        public string? GirisVaxti { get; set; }
     }
 
     public class KritikBalansDto

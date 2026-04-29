@@ -558,102 +558,71 @@
 }
 
 /* ───────────────────────────────────────────────
-   Davamiyyət — yeni layout
+   Davamiyyət — HR-dakı tam səhifəyə keçid kartı
    ─────────────────────────────────────────────── */
-.rd-section-meta {
-    margin-left: auto;
-    font-size: 10px;
-    font-weight: 600;
-    color: #8a93a8;
-    text-transform: none;
-    letter-spacing: 0;
-}
-
-.rd-att-stats {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 10px;
-    margin-bottom: 12px;
-}
-
-.rd-att-stat {
-    background: #fff;
-    border: 1px solid #e4e8f0;
-    border-radius: 10px;
-    padding: 12px 14px;
-    text-align: center;
-}
-
-.rd-att-num {
-    font-size: 22px;
-    font-weight: 700;
-    line-height: 1;
-}
-
-.rd-att-lbl {
-    font-size: 10px;
-    font-weight: 600;
-    color: #8a93a8;
-    margin-top: 4px;
-    text-transform: uppercase;
-    letter-spacing: .3px;
-}
-
-.rd-att-stat--green  .rd-att-num { color: #1e9b6b; }
-.rd-att-stat--amber  .rd-att-num { color: #d4920a; }
-.rd-att-stat--red    .rd-att-num { color: #c83838; }
-.rd-att-stat--blue   .rd-att-num { color: #2d6cdf; }
-.rd-att-stat--purple .rd-att-num { color: #7c3aed; }
-
-.rd-att-stat--gauge {
-    grid-column: span 1;
-    text-align: left;
-    padding: 12px 14px 14px;
-}
-
-.rd-att-detail-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin-bottom: 22px;
-}
-
-.rd-att-detail .fn-card-title {
+.rd-att-redirect {
     display: flex;
     align-items: center;
-    gap: 6px;
-}
-
-/* ───────────────────────────────────────────────
-   Empty state — bugün heç bir qeyd yoxdur
-   ─────────────────────────────────────────────── */
-.rd-empty-state {
-    background: #fff;
-    border: 1px dashed #d8dde8;
-    border-radius: 12px;
-    padding: 36px 24px;
-    text-align: center;
+    gap: 16px;
+    padding: 18px 20px;
+    background: linear-gradient(135deg, #1e2a3b 0%, #2d6cdf 100%);
+    border-radius: 14px;
+    color: #fff;
+    text-decoration: none;
+    box-shadow: 0 6px 20px rgba(30, 42, 59, .14);
+    transition: transform .15s ease, box-shadow .15s ease;
     margin-bottom: 22px;
 }
 
-.rd-empty-state i {
-    font-size: 32px;
-    color: #b8c0d0;
-    display: block;
-    margin-bottom: 10px;
+.rd-att-redirect:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(30, 42, 59, .22);
+    color: #fff;
+    text-decoration: none;
 }
 
-.rd-empty-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #3d4557;
+.rd-att-redirect__icon {
+    flex: 0 0 auto;
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .14);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.rd-att-redirect__body {
+    flex: 1;
+    min-width: 0;
+}
+
+.rd-att-redirect__title {
+    font-size: 15px;
+    font-weight: 700;
     margin-bottom: 4px;
 }
 
-.rd-empty-sub {
-    font-size: 12px;
-    color: #8a93a8;
+.rd-att-redirect__sub {
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, .82);
+    line-height: 1.45;
 }
+
+.rd-att-redirect__cta {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .14);
+}
+
+.rd-att-redirect__cta i { font-size: 18px; }
 
 /* ───────────────────────────────────────────────
    KPI variantları (zəngin görünüş)
@@ -700,20 +669,18 @@
 @media (max-width: 1200px) {
     .rd-action-grid { grid-template-columns: repeat(4, 1fr); }
     .rd-kpi-grid--rich { grid-template-columns: repeat(3, 1fr); }
-    .rd-att-stats { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 900px) {
     .rd-action-grid { grid-template-columns: repeat(3, 1fr); }
     .rd-kpi-grid--rich { grid-template-columns: repeat(2, 1fr); }
-    .rd-att-stats { grid-template-columns: repeat(2, 1fr); }
-    .rd-att-detail-grid { grid-template-columns: 1fr; }
+    .rd-att-redirect { flex-wrap: wrap; }
+    .rd-att-redirect__cta { margin-left: auto; }
 }
 
 @media (max-width: 576px) {
     .rd-action-grid { grid-template-columns: repeat(2, 1fr); }
     .rd-kpi-grid--rich { grid-template-columns: 1fr; }
-    .rd-att-stats { grid-template-columns: 1fr 1fr; }
 }
 
 /* ───────────────────────────────────────────────
@@ -1150,238 +1117,3 @@
     background: linear-gradient(90deg, #1e2a3b, #7c3aed);
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   Davamiyyət bölməsində tarix seçici
-   ───────────────────────────────────────────────────────────────── */
-.rd-section-head--with-picker {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.rd-live-dot--past {
-    background: #d4920a !important; /* keçmiş günlərdə sarı (real-time deyil) */
-}
-
-.rd-date-picker {
-    margin-left: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.rd-date-today {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #2d6cdf;
-    background: #eaf1ff;
-    padding: 5px 10px;
-    border-radius: 7px;
-    text-decoration: none;
-    transition: background .12s ease;
-}
-
-.rd-date-today:hover { background: #d8e4fb; color: #1b4dbc; }
-
-.rd-date-label {
-    display: inline-flex;
-    align-items: center;
-    color: #6b7280;
-    font-size: 14px;
-    margin: 0;
-    cursor: pointer;
-}
-
-#rdDateInput {
-    border: 1px solid #d8dde5;
-    border-radius: 7px;
-    padding: 5px 9px;
-    font-size: 12.5px;
-    font-family: inherit;
-    color: #1a2332;
-    background: #fff;
-    cursor: pointer;
-    transition: border-color .12s ease, box-shadow .12s ease;
-}
-
-#rdDateInput:hover { border-color: #2d6cdf; }
-#rdDateInput:focus {
-    outline: none;
-    border-color: #2d6cdf;
-    box-shadow: 0 0 0 3px rgba(45, 108, 223, .12);
-}
-
-/* ─────────────────────────────────────────────────────────────────
-   Davamiyyət kartları + inline accordion cədvəli (HR cədvəl tərzi)
-   ───────────────────────────────────────────────────────────────── */
-.rd-att-stat--btn {
-    border: 0;
-    font: inherit;
-    color: inherit;
-    cursor: pointer;
-    text-align: inherit;
-    position: relative;
-    transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
-}
-
-.rd-att-stat--btn:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(30, 42, 59, .12);
-}
-
-.rd-att-stat--btn:focus-visible {
-    outline: 2px solid #2d6cdf;
-    outline-offset: 2px;
-}
-
-.rd-att-stat--btn:disabled {
-    cursor: default;
-    opacity: .55;
-}
-
-.rd-att-stat--btn.is-active {
-    box-shadow: 0 6px 22px rgba(30, 42, 59, .14);
-    transform: translateY(-1px);
-}
-
-/* Aktiv kartın altında kiçik üçbucaq — paneldə hansı kartın açıq olduğunu göstərir */
-.rd-att-stat--btn.is-active::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    bottom: -10px;
-    width: 14px;
-    height: 14px;
-    background: #fff;
-    border-left: 1px solid #e5e7eb;
-    border-top: 1px solid #e5e7eb;
-    transform: translateX(-50%) rotate(45deg);
-    z-index: 2;
-}
-
-.rd-att-panel {
-    margin-top: 18px;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    overflow: hidden;
-    animation: rdPanelSlide .18s cubic-bezier(.22, .61, .36, 1);
-}
-
-.rd-att-panel[hidden] { display: none; }
-
-.rd-att-panel__head {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    border-bottom: 1px solid #eef0f4;
-    background: #fafbfc;
-}
-
-.rd-att-panel__title {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 14px;
-    font-weight: 700;
-    color: #1a2332;
-}
-
-.rd-att-panel__title i { font-size: 17px; }
-
-.rd-att-panel__count {
-    background: #1a2332;
-    color: #fff;
-    font-size: 11.5px;
-    font-weight: 700;
-    padding: 2px 10px;
-    border-radius: 999px;
-    line-height: 1.6;
-}
-
-.rd-att-panel__close {
-    border: 0;
-    background: transparent;
-    color: #6b7280;
-    width: 30px; height: 30px;
-    border-radius: 8px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: background .12s ease, color .12s ease;
-}
-
-.rd-att-panel__close:hover { background: #eef0f4; color: #1a2332; }
-
-.rd-att-panel__body {
-    overflow-x: auto;
-}
-
-/* Cədvəl — HR səhifələrindəki tərz */
-.rd-att-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-}
-
-.rd-att-table thead th {
-    background: #f6f8fb;
-    color: #6b7280;
-    font-weight: 600;
-    font-size: 11.5px;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    text-align: left;
-    padding: 10px 14px;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.rd-att-table tbody td {
-    padding: 11px 14px;
-    border-bottom: 1px solid #f1f4f9;
-    color: #1a2332;
-    vertical-align: middle;
-}
-
-.rd-att-table tbody tr:last-child td { border-bottom: 0; }
-
-.rd-att-table tbody tr:hover td { background: #f9fafb; }
-
-.rd-att-table__num {
-    width: 48px;
-    color: #9ca3af;
-    font-weight: 600;
-    text-align: center;
-}
-
-.rd-att-table__name { font-weight: 600; }
-
-.rd-att-table__dept { color: #6b7280; }
-
-.rd-att-table__time {
-    width: 140px;
-    text-align: right;
-    color: #4b5566;
-    font-variant-numeric: tabular-nums;
-}
-
-.rd-att-table__dash { color: #c4c8d0; }
-
-.rd-att-table__empty {
-    padding: 28px;
-    text-align: center;
-    color: #6b7280;
-    font-size: 13px;
-}
-
-@keyframes rdPanelSlide {
-    from { opacity: 0; transform: translateY(-6px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
