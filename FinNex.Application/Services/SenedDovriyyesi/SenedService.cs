@@ -225,7 +225,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                  .Where(x => !x.Silinib )
                  .Include(x => x.Department)
                  .Include(x => x.SenedNovu)
-                 .Include(x => x.Fayllar);
+                 .Include(x => x.Fayllar.Where(f => !f.Silinib));
 
             query = query.Where(x => icazeliSobeIdleri.Contains(x.DepartmentId));
 
@@ -281,7 +281,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                  .Where(x => x.Silinib)
                  .Include(x => x.Department)
                  .Include(x => x.SenedNovu)
-                 .Include(x => x.Fayllar);
+                 .Include(x => x.Fayllar.Where(f => !f.Silinib));
 
             query = query.Where(x => icazeliSobeIdleri.Contains(x.DepartmentId));
 
@@ -322,7 +322,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             var query = _uow.Repository<Sened>()
                 .Query()
                 .Include(x => x.Department)
-                .Include(x => x.Fayllar)
+                .Include(x => x.Fayllar.Where(f => !f.Silinib))
                 .Include(x => x.SenedTagMaps.Where(m => !m.Silinib))
                     .ThenInclude(m => m.Tag)
                 .AsQueryable();
@@ -354,7 +354,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             var query = _uow.Repository<Sened>()
                 .QueryDeleted()
                 .Include(x => x.Department)
-                .Include(x => x.Fayllar)
+                .Include(x => x.Fayllar.Where(f => !f.Silinib))
                 .AsQueryable();
 
             if (!isAdmin)
@@ -385,7 +385,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             var query = _uow.Repository<Sened>()
                 .Query()
                 .Include(x => x.Department)
-                .Include(x => x.Fayllar)
+                .Include(x => x.Fayllar.Where(f => !f.Silinib))
                 .AsQueryable();
 
             if (!isAdmin)
@@ -412,7 +412,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             var sonSenedler = await query
                 .Include(x => x.Department)
                 .Include(x => x.SenedNovu)
-                .Include(x => x.Fayllar)
+                .Include(x => x.Fayllar.Where(f => !f.Silinib))
                 .OrderByDescending(x => x.YaradilmaTarixi)
                 .Take(10)
                 .ToListAsync();
@@ -783,7 +783,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 .Repository<Sened>()
                 .GetirAsync(x => x.Id == id,
                     include: q => q
-                        .Include(x => x.Fayllar).Include(a => a.Department));
+                        .Include(x => x.Fayllar.Where(f => !f.Silinib)).Include(a => a.Department));
 
 
             if (entity == null)
