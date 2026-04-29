@@ -1,0 +1,348 @@
+@using FinNex.Application.DTOs.HR.Davamiyyet
+@using FinNex.Domain.Entities.HR
+@model IList<DavamiyyetListDto>
+@{
+    ViewData["Title"] = "Davamiyyət";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    var list = Model ?? new List<DavamiyyetListDto>();
+    var bugun = DateTime.Today;
+
+    var gelibSayi = list.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
+    var gecikmeSayi = list.Count(x => x.Status == DavamiyyetStatus.Gecikme);
+    var qayibSayi = list.Count(x => x.Status == DavamiyyetStatus.Qayib);
+    var icazeliSayi = list.Count(x => x.Status == DavamiyyetStatus.Icazeli);
+    var xestelikSayi = list.Count(x => x.Status == DavamiyyetStatus.Xestelik);
+    var ezamiyyetSayi = list.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
+    var cemi = list.Count;
+
+    var aktivIsciSayi = ViewBag.AktivIsciSayi as int? ?? 0;
+    var gozlenilenSayi = aktivIsciSayi - cemi;
+    if (gozlenilenSayi < 0) gozlenilenSayi = 0;
+
+    var iseSaatleri = list
+        .Where(x => x.GirisVaxti.HasValue && x.CixisVaxti.HasValue)
+        .Select(x => (x.CixisVaxti!.Value - x.GirisVaxti!.Value).TotalHours)
+        .ToList();
+    var ortaIsSaati = iseSaatleri.Any() ? Math.Round(iseSaatleri.Average(), 1) : 0;
+}
+
+@*
+    Bu səhifə HR/Davamiyyet/Index ilə eyni dizayn və davranışa malikdir.
+    Fərq: endpoint URL-ləri RehberDashboard controller-ə yönləndirilib —
+    rəhbərin HR controller-lərinə icazəsi olmasa belə işləyir.
+    JS endpoint-ləri data-endpoint-* atributlarından oxuyur.
+*@
+<div class="hrd-page"
+     data-endpoint-getbytarix="@Url.Action("DavamiyyetGetByTarix", "RehberDashboard", new { area = "HR" })"
+     data-endpoint-getgozlenilen="@Url.Action("DavamiyyetGetGozlenilen", "RehberDashboard", new { area = "HR" })"
+     data-endpoint-isciaxtar="@Url.Action("DavamiyyetIsciAxtar", "RehberDashboard", new { area = "HR" })"
+     data-endpoint-exportexcel="@Url.Action("DavamiyyetExportExcel", "RehberDashboard", new { area = "HR" })"
+     data-endpoint-devicestatus="">
+
+    @* ── Başlıq ── *@
+    <div class="hrd-head">
+        <div>
+            <h2 class="hrd-title">Davamiyyət</h2>
+            <p class="hrd-sub">Giriş-çıxış qeydləri, gecikmə analizi və fərdi axtarış</p>
+        </div>
+        <div class="hrd-head-right">
+            <a asp-area="HR" asp-controller="RehberDashboard" asp-action="Index"
+               class="hrd-btn" title="Rəhbər panelinə qayıt">
+                <i class="bi bi-arrow-left"></i> Geri
+            </a>
+            <button id="hrdExport" class="hrd-btn hrd-btn--export" title="Excel-ə ixrac et">
+                <i class="bi bi-file-earmark-excel"></i> Excel
+            </button>
+        </div>
+    </div>
+
+    @* ── KPI Kartlar ── *@
+    <div class="hrd-kpi-row">
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="1,2" title="Gəlib (İşdə + Gecikən)">
+            <div class="hrd-kpi-icon hrd-kpi-icon--green">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <div class="hrd-kpi-body">
+                <div class="hrd-kpi-val" id="kpiGelib">@gelibSayi</div>
+                <div class="hrd-kpi-lbl">Gəlib</div>
+            </div>
+        </div>
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="2" title="Gecikənlər">
+            <div class="hrd-kpi-icon hrd-kpi-icon--amber">
+                <i class="bi bi-clock-fill"></i>
+            </div>
+            <div class="hrd-kpi-body">
+                <div class="hrd-kpi-val" id="kpiGecikme">@gecikmeSayi</div>
+                <div class="hrd-kpi-lbl">Gecikmə</div>
+            </div>
+        </div>
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="3" title="Qayıblar">
+            <div class="hrd-kpi-icon hrd-kpi-icon--red">
+                <i class="bi bi-x-circle-fill"></i>
+            </div>
+            <div class="hrd-kpi-body">
+                <div class="hrd-kpi-val" id="kpiQayib">@qayibSayi</div>
+                <div class="hrd-kpi-lbl">Qayıb</div>
+            </div>
+        </div>
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="4" title="İcazəlilər">
+            <div class="hrd-kpi-icon hrd-kpi-icon--blue">
+                <i class="bi bi-card-checklist"></i>
+            </div>
+            <div class="hrd-kpi-body">
+                <div class="hrd-kpi-val" id="kpiIcazeli">@icazeliSayi</div>
+                <div class="hrd-kpi-lbl">İcazəli</div>
+            </div>
+        </div>
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="5" title="Xəstə">
+            <div class="hrd-kpi-icon hrd-kpi-icon--purple" style="background:rgba(168,85,247,.12);color:#a855f7;">
+                <i class="bi bi-hospital"></i>
+            </div>
+            <div class="hrd-kpi-body">
+                <div class="hrd-kpi-val" id="kpiXestelik">@xestelikSayi</div>
+                <div class="hrd-kpi-lbl">Xəstəlik</div>
+            </div>
+        </div>
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="6" title="Ezamiyyətdə">
+            <div class="hrd-kpi-icon hrd-kpi-icon--orange" style="background:rgba(249,115,22,.12);color:#f97316;">
+                <i class="bi bi-briefcase"></i>
+            </div>
+            <div class="hrd-kpi-body">
+                <div class="hrd-kpi-val" id="kpiEzamiyyet">@ezamiyyetSayi</div>
+                <div class="hrd-kpi-lbl">Ezamiyyət</div>
+            </div>
+        </div>
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="gozlenilen" title="Hələ qeydə alınmamış işçilər — kliklə gör">
+            <div class="hrd-kpi-icon hrd-kpi-icon--indigo">
+                <i class="bi bi-hourglass-split"></i>
+            </div>
+            <div class="hrd-kpi-body">
+                <div class="hrd-kpi-val" id="kpiGozlenilen">@gozlenilenSayi</div>
+                <div class="hrd-kpi-lbl">Gözlənilir</div>
+            </div>
+        </div>
+        <div class="hrd-kpi hrd-kpi--stat">
+            <div class="hrd-kpi-icon hrd-kpi-icon--teal">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <div class="hrd-kpi-body">
+                <div class="hrd-kpi-val" id="kpiOrtaSaat">@ortaIsSaati</div>
+                <div class="hrd-kpi-lbl">Ort. iş saatı</div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Tab + Filtr paneli ── *@
+    <div class="hrd-toolbar">
+        <div class="hrd-tabs">
+            <button class="hrd-tab active" data-mode="tarix">Tarixə görə</button>
+            <button class="hrd-tab" data-mode="araliq">Tarix aralığı</button>
+            <button class="hrd-tab" data-mode="isci">İşçi axtarışı</button>
+        </div>
+    </div>
+
+    @* ── Filtr forması ── *@
+    <div class="hrd-filter-panel">
+
+        @* Tarixə görə *@
+        <div class="hrd-filter-row" id="filterTarix">
+            <div class="hrd-filter-group">
+                <label class="hrd-filter-lbl">Tarix</label>
+                <input type="date" id="hrdTarix" class="hrd-input" value="@bugun.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="hrd-filter-group">
+                <label class="hrd-filter-lbl">Status</label>
+                <select id="hrdStatus" class="hrd-select">
+                    <option value="">Hamısı</option>
+                    <option value="1">İşdə</option>
+                    <option value="2">Gecikmə</option>
+                    <option value="3">Qayıb</option>
+                    <option value="4">İcazəli</option>
+                    <option value="5">Xəstəlik</option>
+                    <option value="6">Ezamiyyət</option>
+                </select>
+            </div>
+            <button id="hrdAxtar" class="hrd-btn hrd-btn--primary"><i class="bi bi-search"></i> Axtar</button>
+        </div>
+
+        @* Tarix aralığı *@
+        <div class="hrd-filter-row" id="filterAraliq" style="display:none">
+            <div class="hrd-filter-group">
+                <label class="hrd-filter-lbl">Başlanğıc</label>
+                <input type="date" id="hrdBaslangic" class="hrd-input" />
+            </div>
+            <div class="hrd-filter-group">
+                <label class="hrd-filter-lbl">Son</label>
+                <input type="date" id="hrdSon" class="hrd-input" />
+            </div>
+            <div class="hrd-filter-group">
+                <label class="hrd-filter-lbl">Status</label>
+                <select id="hrdStatusAraliq" class="hrd-select">
+                    <option value="">Hamısı</option>
+                    <option value="1">İşdə</option>
+                    <option value="2">Gecikmə</option>
+                    <option value="3">Qayıb</option>
+                    <option value="4">İcazəli</option>
+                    <option value="5">Xəstəlik</option>
+                    <option value="6">Ezamiyyət</option>
+                </select>
+            </div>
+            <button id="hrdAraliqAxtar" class="hrd-btn hrd-btn--primary"><i class="bi bi-search"></i> Axtar</button>
+        </div>
+
+        @* İşçi axtarışı *@
+        <div class="hrd-filter-row" id="filterIsci" style="display:none">
+            <div class="hrd-filter-group hrd-filter-group--wide">
+                <label class="hrd-filter-lbl">İşçi adı</label>
+                <div class="hrd-search-wrap">
+                    <input type="text" id="hrdIsciAxtar" class="hrd-input" placeholder="Ad və ya soyad yazın..." autocomplete="off" />
+                    <div class="hrd-search-results" id="hrdIsciResults" style="display:none"></div>
+                </div>
+            </div>
+            <div class="hrd-filter-group">
+                <label class="hrd-filter-lbl">Başlanğıc</label>
+                <input type="date" id="hrdIsciBaslangic" class="hrd-input" />
+            </div>
+            <div class="hrd-filter-group">
+                <label class="hrd-filter-lbl">Son</label>
+                <input type="date" id="hrdIsciSon" class="hrd-input" />
+            </div>
+            <div class="hrd-filter-group">
+                <label class="hrd-filter-lbl">Seçilmiş</label>
+                <div class="hrd-selected-isci" id="hrdSelectedIsci">
+                    <span class="hrd-no-selection">Heç kim seçilməyib</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Əlavə statistika ── *@
+    <div class="hrd-extra-stats" id="hrdExtraStats">
+        <div class="hrd-es-item">
+            <span class="hrd-es-lbl">Ən çox gecikən şöbə:</span>
+            <strong id="hrdEnCoxGeciken">—</strong>
+        </div>
+    </div>
+
+    @* ── Cədvəl ── *@
+    <div class="hrd-table-card">
+        <div class="hrd-table-head">
+            <div class="hrd-table-title">
+                <i class="bi bi-table"></i> Davamiyyət cədvəli
+            </div>
+            <div class="hrd-table-meta">
+                <span class="hrd-record-count" id="hrdRecordCount">@cemi qeyd</span>
+            </div>
+        </div>
+
+        <div class="hrd-table-wrap">
+            <table class="hrd-table">
+                <thead>
+                    <tr>
+                        <th>İşçi</th>
+                        <th>Departament</th>
+                        <th>Tarix</th>
+                        <th>Giriş</th>
+                        <th>Çıxış</th>
+                        <th>İş saatı</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="hrdTableBody">
+                    @if (list.Any())
+                    {
+                        @foreach (var item in list.OrderBy(x => x.IsciTamAd))
+                        {
+                            var isLate = item.GirisVaxti.HasValue &&
+                                (item.GirisVaxti.Value.Hour > 9 || (item.GirisVaxti.Value.Hour == 9 && item.GirisVaxti.Value.Minute > 5));
+                            <tr>
+                                <td>
+                                    <div class="hrd-emp">
+                                        <div class="hrd-emp-av">@item.IsciTamAd.Substring(0, Math.Min(2, item.IsciTamAd.Length)).ToUpper()</div>
+                                        <div class="hrd-emp-name">@item.IsciTamAd</div>
+                                    </div>
+                                </td>
+                                <td><span class="hrd-dept">@(item.DepartamentAd ?? "-")</span></td>
+                                <td><div class="hrd-date">@item.Tarix.ToString("dd.MM.yyyy")</div></td>
+                                <td>
+                                    @if (item.GirisVaxti.HasValue)
+                                    {
+                                        <span class="hrd-time @(isLate ? "hrd-time--late" : "")">@item.GirisVaxti.Value.ToString("HH:mm")</span>
+                                    }
+                                    else { <span class="hrd-nodata">--:--</span> }
+                                </td>
+                                <td>
+                                    @if (item.CixisVaxti.HasValue)
+                                    {
+                                        <span class="hrd-time">@item.CixisVaxti.Value.ToString("HH:mm")</span>
+                                    }
+                                    else { <span class="hrd-nodata">--:--</span> }
+                                </td>
+                                <td>
+                                    @if (item.GirisVaxti.HasValue && item.CixisVaxti.HasValue)
+                                    {
+                                        var dur = item.CixisVaxti.Value - item.GirisVaxti.Value;
+                                        var cls = dur.TotalHours < 8 ? "hrd-dur--short" : "hrd-dur--ok";
+                                        <span class="hrd-dur @cls">@dur.Hours s @dur.Minutes d</span>
+                                    }
+                                    else { <span class="hrd-nodata">---</span> }
+                                </td>
+                                <td>
+                                    @if (item.CixisVaxti.HasValue && (item.Status == DavamiyyetStatus.Isde || item.Status == DavamiyyetStatus.Gecikme))
+                                    {
+                                        <span class="hrd-badge hrd-badge--getdi" style="background:rgba(107,114,128,.1);color:#6b7280;"><span class="hrd-badge-dot" style="background:#6b7280;"></span>Getdi</span>
+                                    }
+                                    else
+                                    {
+                                        switch (item.Status)
+                                        {
+                                            case DavamiyyetStatus.Isde:
+                                                <span class="hrd-badge hrd-badge--isde"><span class="hrd-badge-dot"></span>İşdə</span>
+                                                break;
+                                            case DavamiyyetStatus.Gecikme:
+                                                <span class="hrd-badge hrd-badge--gecikme"><span class="hrd-badge-dot"></span>Gecikmə</span>
+                                                break;
+                                            case DavamiyyetStatus.Qayib:
+                                                <span class="hrd-badge hrd-badge--qayib"><span class="hrd-badge-dot"></span>Qayıb</span>
+                                                break;
+                                            case DavamiyyetStatus.Icazeli:
+                                                <span class="hrd-badge hrd-badge--icazeli"><span class="hrd-badge-dot"></span>İcazəli</span>
+                                                break;
+                                            case DavamiyyetStatus.Xestelik:
+                                                <span class="hrd-badge hrd-badge--xestelik" style="background:rgba(168,85,247,.1);color:#a855f7;"><span class="hrd-badge-dot" style="background:#a855f7;"></span>Xəstəlik</span>
+                                                break;
+                                            case DavamiyyetStatus.Ezamiyyet:
+                                                <span class="hrd-badge hrd-badge--ezamiyyet" style="background:rgba(249,115,22,.1);color:#f97316;"><span class="hrd-badge-dot" style="background:#f97316;"></span>Ezamiyyət</span>
+                                                break;
+                                        }
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7">
+                                <div class="hrd-empty">
+                                    <i class="bi bi-inbox"></i>
+                                    <div>Bugün hələ davamiyyət qeydi yoxdur</div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/hr-davamiyyet.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/hr/hr-davamiyyet.js" asp-append-version="true"></script>
+}
