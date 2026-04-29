@@ -34,13 +34,26 @@
     var stajYears = stajTotalMonths / 12;
     var stajMonths = stajTotalMonths % 12;
 
-    // Mezuniyyet balances for current year
-    var currentYear = DateTime.Now.Year;
-    var balances = Model.MezuniyyetBalanslari?.Where(b => b.Il == currentYear).ToList()
-                   ?? new List<MezuniyyetBalans>();
-    var illik = balances.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Illik);
-    var xestelik = balances.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Xestelik);
-    var ezamiyyet = balances.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Ezamiyyet);
+    // Məzuniyyət balansları — BÜTÜN illərin CƏMİ (keçmiş illərdən qalan
+    // günlər cari ilin balansına əlavə olunur). Hər növ üçün mock obyekt
+    // yaradılır ki, RenderLeaveItem helper-i dəyişməsin.
+    var balansAll = Model.MezuniyyetBalanslari?.ToList() ?? new List<MezuniyyetBalans>();
+
+    MezuniyyetBalans? CemBalans(MezuniyyetNovu nov)
+    {
+        var liste = balansAll.Where(b => b.Nov == nov).ToList();
+        if (!liste.Any()) return null;
+        return new MezuniyyetBalans
+        {
+            Nov = nov,
+            ToplamGun = liste.Sum(b => b.ToplamGun),
+            IstifadeOlunanGun = liste.Sum(b => b.IstifadeOlunanGun)
+        };
+    }
+
+    var illik = CemBalans(MezuniyyetNovu.Illik);
+    var xestelik = CemBalans(MezuniyyetNovu.Xestelik);
+    var ezamiyyet = CemBalans(MezuniyyetNovu.Ezamiyyet);
 }
 
 @section Styles {
