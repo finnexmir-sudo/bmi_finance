@@ -459,20 +459,16 @@
                 <div class="modal-body">
                     <div style="margin-bottom:16px;">
                         <label style="font-size:13px;font-weight:600;color:#1a2332;display:block;margin-bottom:6px;">
-                            Fayl seç
+                            Fayl seç <small style="color:#8a93a8;font-weight:500;">(birdəfə bir neçə fayl seçə bilərsiniz)</small>
                         </label>
-                        <input type="file" name="fayl" id="yeniVersiyaFayl" required class="form-control" />
+                        <input type="file" name="fayllar" id="yeniVersiyaFayl" multiple required class="form-control" />
                     </div>
-                    <div id="yvFaylInfo" style="display:none;padding:12px;background:#f0f4ff;border-radius:8px;margin-bottom:16px;">
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <span id="yvFaylAd" style="font-size:13px;font-weight:600;color:#1a2332;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
-                            <span id="yvFaylOlcu" style="font-size:12px;color:#8a93a8;"></span>
-                            <button type="button" id="yvFaylRemove" title="Faylı sil"
-                                    style="border:none;background:transparent;color:#ef4444;font-size:18px;line-height:1;cursor:pointer;padding:0 4px;">×</button>
-                        </div>
+                    <div id="yvFaylInfo" style="display:none;padding:8px;background:#f0f4ff;border-radius:8px;margin-bottom:16px;">
+                        <ul id="yvFaylList" style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;"></ul>
+                        <div id="yvFaylCount" style="font-size:11px;color:#8a93a8;margin-top:6px;text-align:center;"></div>
                     </div>
                     <div style="font-size:12px;color:#8a93a8;line-height:1.5;">
-                        Yeni versiya yükləndikdə köhnə versiya avtomatik deaktiv ediləcək.
+                        Hər fayl ardıcıl yeni versiya kimi yüklənəcək. Sonuncu yüklənən fayl aktiv versiya olur.
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -496,55 +492,77 @@
         (function () {
             var input = document.getElementById('yeniVersiyaFayl');
             var info = document.getElementById('yvFaylInfo');
-            var ad = document.getElementById('yvFaylAd');
-            var olcu = document.getElementById('yvFaylOlcu');
-            var removeBtn = document.getElementById('yvFaylRemove');
+            var listEl = document.getElementById('yvFaylList');
+            var countEl = document.getElementById('yvFaylCount');
+            if (!input) return;
 
-            // Klik etmədən əvvəlki snapshot (Cancel halında bərpa üçün)
-            var beforeSnapshot = null;
+            // Klik etmədən əvvəlki snapshot (Cancel halında bərpa + təkrar klikdə birləşmə üçün)
+            var snapshot = [];
 
-            function refreshInfo() {
-                if (input.files && input.files.length > 0) {
-                    var f = input.files[0];
-                    ad.textContent = f.name;
-                    var kb = f.size / 1024;
-                    olcu.textContent = kb < 1024 ? kb.toFixed(1) + ' KB' : (kb / 1024).toFixed(1) + ' MB';
-                    info.style.display = 'block';
-                } else {
+            function fmtSize(bytes) {
+                var kb = bytes / 1024;
+                return kb < 1024 ? kb.toFixed(1) + ' KB' : (kb / 1024).toFixed(2) + ' MB';
+            }
+
+            function render() {
+                listEl.innerHTML = '';
+                if (!input.files || input.files.length === 0) {
                     info.style.display = 'none';
+                    countEl.textContent = '';
+                    return;
                 }
-            }
-
-            if (input) {
-                input.addEventListener('click', function () {
-                    // Snapshot — file picker açılır, Cancel halında köhnə fayl bərpa olunsun
-                    beforeSnapshot = (input.files && input.files.length > 0) ? input.files[0] : null;
-                });
-
-                input.addEventListener('change', function () {
-                    if (input.files && input.files.length > 0) {
-                        // Yeni fayl seçilib — info göstər
-                        refreshInfo();
-                    } else if (beforeSnapshot) {
-                        // Cancel basılıb — əvvəlki faylı bərpa et
+                for (var i = 0; i < input.files.length; i++) {
+                    (function (f, idx) {
+                        var li = document.createElement('li');
+                        li.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);border-radius:6px;';
+                        li.innerHTML =
+                            '<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M3 2h6l2 2v8H3V2z" stroke="#6366f1" stroke-width="1.1" stroke-linejoin="round"/></svg>' +
+                            '<span style="flex:1;font-size:12px;font-weight:600;color:#1a2332;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + f.name + '</span>' +
+                            '<span style="font-size:11px;color:#8a93a8;">' + fmtSize(f.size) + '</span>' +
+                            '<button type="button" class="yv-remove" data-idx="' + idx + '" title="Sil" ' +
+                            'style="border:none;background:transparent;color:#ef4444;font-size:15px;line-height:1;cursor:pointer;padding:0 4px;">×</button>';
+                        listEl.appendChild(li);
+                    })(input.files[i], i);
+                }
+                Array.prototype.forEach.call(listEl.querySelectorAll('.yv-remove'), function (btn) {
+                    btn.addEventListener('click', function () {
+                        var idx = parseInt(btn.getAttribute('data-idx'), 10);
                         var dt = new DataTransfer();
-                        dt.items.add(beforeSnapshot);
+                        for (var i = 0; i < input.files.length; i++) {
+                            if (i !== idx) dt.items.add(input.files[i]);
+                        }
                         input.files = dt.files;
-                        refreshInfo();
-                    } else {
-                        info.style.display = 'none';
-                    }
+                        render();
+                    });
                 });
+                countEl.textContent = input.files.length + ' fayl seçildi';
+                info.style.display = 'block';
             }
 
-            // Silmə düyməsi — seçilmiş faylı təmizlə
-            if (removeBtn) {
-                removeBtn.addEventListener('click', function () {
-                    input.value = '';
-                    info.style.display = 'none';
-                    beforeSnapshot = null;
-                });
-            }
+            input.addEventListener('click', function () {
+                // Klikdən əvvəl mövcud faylları snapshot al — Cancel halında bərpa,
+                // OK halında yenilərini bunların üstünə birləşdir
+                snapshot = [];
+                if (input.files) {
+                    for (var i = 0; i < input.files.length; i++) snapshot.push(input.files[i]);
+                }
+            });
+
+            input.addEventListener('change', function () {
+                var dt = new DataTransfer();
+                // 1) Əvvəlkilər saxlansın
+                snapshot.forEach(function (f) { dt.items.add(f); });
+                // 2) Yenilərini əlavə et — dublikatları atla (ad + ölçü)
+                if (input.files && input.files.length > 0) {
+                    for (var j = 0; j < input.files.length; j++) {
+                        var nf = input.files[j];
+                        var exists = snapshot.some(function (ex) { return ex.name === nf.name && ex.size === nf.size; });
+                        if (!exists) dt.items.add(nf);
+                    }
+                }
+                input.files = dt.files;
+                render();
+            });
         })();
     </script>
 }
