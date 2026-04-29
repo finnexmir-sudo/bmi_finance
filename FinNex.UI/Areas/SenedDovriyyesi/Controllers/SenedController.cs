@@ -462,6 +462,71 @@ public class SenedController : Controller
         return RedirectToAction(nameof(Detal), new { id = senedId });
     }
 
+    // ── VERSİYA SİL ────────────────────────────────────────────────
+    // Səhvən yüklənmiş versiyanı silmək üçün. Aktiv versiya silinərsə,
+    // qalan ən sonuncu silinməmiş versiya avtomatik aktiv olur.
+    // Sənədin son qalan versiyasını silmək olmur — bu halda sənədin
+    // özünü silmək lazımdır.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> VersiyaSil(int id)
+    {
+        var fayl = await _unitOf.Repository<SenedFayl>()
+            .GetirAsync(x => x.Id == id && !x.Silinib);
+        if (fayl == null)
+        {
+            TempData["Error"] = "Fayl versiyası tapılmadı.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var sened = await _senedService.IdIleGetirAsync(fayl.SenedId);
+        if (!sened.Success || sened.Data == null)
+        {
+            TempData["Error"] = "Sənəd tapılmadı.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // İcazə: Admin / şöbədə TamIcazə sahibi / və ya sənədi yaradan özü
+        var userId = GetUserId();
+        if (!await TamIcazeVarAsync(sened.Data.DepartmentId)
+            && sened.Data.YaradanIcraciId != userId)
+        {
+            TempData["Error"] = "Bu fayl versiyasını silmək icazəniz yoxdur.";
+            return RedirectToAction(nameof(Detal), new { id = fayl.SenedId });
+        }
+
+        // Sənədin bütün silinməmiş versiyaları
+        var qalanVersiyalar = await _unitOf.Repository<SenedFayl>()
+            .Query()
+            .Where(x => x.SenedId == fayl.SenedId && !x.Silinib)
+            .OrderByDescending(x => x.VersiyaNo)
+            .ToListAsync();
+
+        if (qalanVersiyalar.Count <= 1)
+        {
+            TempData["Error"] = "Sənədin son qalan versiyasını silmək olmaz. Sənədin özünü silmək lazımdır.";
+            return RedirectToAction(nameof(Detal), new { id = fayl.SenedId });
+        }
+
+        // Soft-delete
+        fayl.Silinib = true;
+        fayl.SilinmeTarixi = DateTime.UtcNow;
+        fayl.SilenIcraciId = userId;
+
+        // Əgər aktiv versiyanı silirik — qalanlardan ən sonuncusu aktiv olsun
+        if (fayl.AktivVersiya)
+        {
+            fayl.AktivVersiya = false;
+            var yeniAktiv = qalanVersiyalar.FirstOrDefault(x => x.Id != fayl.Id);
+            if (yeniAktiv != null) yeniAktiv.AktivVersiya = true;
+        }
+
+        await _unitOf.YaddaSaxlaAsync();
+
+        TempData["Success"] = $"v{fayl.VersiyaNo} ({fayl.OriginalAd}) silindi.";
+        return RedirectToAction(nameof(Detal), new { id = fayl.SenedId });
+    }
+
     // ── STATUS DƏYİŞDİR (yalnız Admin → Arxiv) ────────────────────
     [HttpPost]
     [ValidateAntiForgeryToken]
