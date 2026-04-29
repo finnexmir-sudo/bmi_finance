@@ -268,10 +268,11 @@
                                                 @if (Model.Fayllar.Count > 1)
                                                 {
                                                     <form asp-area="SenedDovriyyesi" asp-controller="Sened"
-                                                          asp-action="VersiyaSil" asp-route-id="@f.Id" method="post"
+                                                          asp-action="VersiyaSil" method="post"
                                                           style="display:inline"
                                                           onsubmit="return confirm('v@(f.VersiyaNo) (@f.OriginalAd) versiyasını silmək istəyirsiniz?\n\nBu əməliyyatı geri qaytarmaq olmaz.@(f.AktivVersiya ? "\nAktiv versiya silindiyi üçün ən sonuncu köhnə versiya avtomatik aktiv olacaq." : "")');">
                                                         @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@f.Id" />
                                                         <button type="submit"
                                                                 class="isci-action-btn"
                                                                 style="color:#ef4444;border-color:#fecaca"
