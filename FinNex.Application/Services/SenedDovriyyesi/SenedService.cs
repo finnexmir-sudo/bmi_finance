@@ -447,9 +447,13 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 await _uow.Repository<SenedFayl>().YenileAsync(f);
             }
 
-            // versiya no
+            // Versiya nömrəsi — UNİKAL (SenedId, VersiyaNo) DB indeksi soft-deleted
+            // qeydləri də saxlayır. Beləliklə silinmiş v2 olsa belə, yeni v2 yaratmaq
+            // mümkün deyil. Buna görə MAX-ı SİLİNMİŞLƏR DAXİL OLMAQLA götürürük və
+            // həmişə artıq istifadə edilməmiş yeni nömrə veririk.
             var maxVersiya = await _uow.Repository<SenedFayl>().Query()
-                .Where(x => x.SenedId == dto.SenedId && !x.Silinib)
+                .IgnoreQueryFilters()
+                .Where(x => x.SenedId == dto.SenedId)
                 .Select(x => (int?)x.VersiyaNo)
                 .MaxAsync() ?? 0;
 
