@@ -42,20 +42,12 @@ namespace FinNex.UI.Areas.HR.Controllers
             _logger = logger;
         }
 
-        public async Task<IActionResult> Index(DateTime? tarix = null)
+        public async Task<IActionResult> Index()
         {
           try
           {
             var bugun = DateTime.Today;
-            // Davamiyyət bölməsi üçün seçilmiş tarix (rəhbər keçmiş günlərə baxa bilsin).
-            // Default — bugün; gələcək tarixlər icazə verilmir; ən köhnə hədd 12 ay geri.
-            var davTarix = (tarix?.Date ?? bugun);
-            if (davTarix > bugun) davTarix = bugun;
-            if (davTarix < bugun.AddMonths(-12)) davTarix = bugun.AddMonths(-12);
-
-            var buAyBaslangic = new DateTime(bugun.Year, bugun.Month, 1);
             var vm = new RehberDashboardVM();
-            vm.DavamiyyetTarixi = davTarix;
 
             // ═══════════════════════════════════════════════════
             // 1. İŞÇİLƏR — Ümumi Statistika
@@ -113,98 +105,12 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             // ═══════════════════════════════════════════════════
-            // 2. DAVAMIYYƏT
+            // 2. DAVAMIYYƏT — Son girişlər (qısa siyahı)
+            // Tam davamiyyət hesabatı HR/Davamiyyet səhifəsindədir.
             // ═══════════════════════════════════════════════════
-            var bugunkuDav = await _davamiyyetService.TarixUzreAsync(davTarix);
+            var bugunkuDav = await _davamiyyetService.TarixUzreAsync(bugun);
             var davlar = bugunkuDav?.ToList() ?? new();
 
-            vm.BugunQeydVar = davlar.Any();
-            vm.BugunIshde = davlar.Count(x => x.Status == DavamiyyetStatus.Isde);
-            vm.BugunGeciken = davlar.Count(x => x.Status == DavamiyyetStatus.Gecikme);
-            vm.BugunQayib = davlar.Count(x => x.Status == DavamiyyetStatus.Qayib);
-
-            // ── İcazəli (saat icazəsi) — Icaze entity-dən bugünə təsdiqli olanlar
-            // Diqqət: keçmişdə davamiyyət status = Icazeli istifadə olunurdu, lakin o
-            // status həm məzuniyyət, həm xəstəlik, həm ezamiyyət üçün ümumi olduğundan
-            // dashboardda kartlar üst-üstə düşürdü. İcazə (Icaze) entity ayrı şeydir —
-            // saatlıq icazə (BaslamaSaati / BitisSaati). Burada yalnız o sayılır.
-            var bugunIcazeler = await _uow.Repository<Icaze>()
-                .Query()
-                .Where(x => !x.Silinib
-                         && x.Status == IcazeStatus.Tesdiqlenib
-                         && x.IcazeTarixi.Date == davTarix)
-                .Include(x => x.Isci).ThenInclude(i => i.IsciTeyinatlari).ThenInclude(t => t.Departament)
-                .ToListAsync();
-            vm.BugunIcazeli = bugunIcazeler.Count;
-
-            // Adlı siyahılar — rəhbərə "kim?" sualına dərhal cavab vermək üçün
-            vm.BugunIshdeIsciler = davlar
-                .Where(x => x.Status == DavamiyyetStatus.Isde)
-                .OrderBy(x => x.IsciTamAd)
-                .Select(x => new DavamiyyetIsciDto
-                {
-                    AdSoyad = x.IsciTamAd ?? "—",
-                    Departament = x.DepartamentAd ?? "—",
-                    GirisVaxti = x.GirisVaxti?.ToString("HH:mm")
-                })
-                .ToList();
-
-            vm.BugunGecikenIsciler = davlar
-                .Where(x => x.Status == DavamiyyetStatus.Gecikme)
-                .OrderBy(x => x.IsciTamAd)
-                .Select(x => new DavamiyyetIsciDto
-                {
-                    AdSoyad = x.IsciTamAd ?? "—",
-                    Departament = x.DepartamentAd ?? "—",
-                    GirisVaxti = x.GirisVaxti?.ToString("HH:mm")
-                })
-                .ToList();
-
-            vm.BugunQayibIsciler = davlar
-                .Where(x => x.Status == DavamiyyetStatus.Qayib)
-                .OrderBy(x => x.IsciTamAd)
-                .Select(x => new DavamiyyetIsciDto
-                {
-                    AdSoyad = x.IsciTamAd ?? "—",
-                    Departament = x.DepartamentAd ?? "—",
-                    GirisVaxti = null
-                })
-                .ToList();
-
-            // Məzuniyyətdə olanların siyahısı bir az aşağıda, məzuniyyət bloku
-            // emal edilərkən doldurulur (hazirdaMez-dan).
-
-            // İcazəli işçilər siyahısı — saat icazəsi sahibləri (Icaze entity)
-            // Saat aralığını GirisVaxti sahəsində göstəririk (məs. "09:00 – 11:00").
-            vm.BugunIcazeliIsciler = bugunIcazeler
-                .OrderBy(x => x.BaslamaSaati)
-                .Select(x => new DavamiyyetIsciDto
-                {
-                    AdSoyad = x.Isci?.TamAd ?? "—",
-                    Departament = x.Isci?.IsciTeyinatlari?
-                        .Where(t => t.Aktivdir && !t.Silinib)
-                        .Select(t => t.Departament?.Ad)
-                        .FirstOrDefault(s => !string.IsNullOrEmpty(s)) ?? "—",
-                    GirisVaxti = $"{x.BaslamaSaati:hh\\:mm} – {x.BitisSaati:hh\\:mm}"
-                })
-                .ToList();
-
-            // Davamiyyət faizi (bu ay)
-            var isGunleriSayi = 0;
-            for (var d = buAyBaslangic; d <= bugun; d = d.AddDays(1))
-                if (d.DayOfWeek != DayOfWeek.Saturday && d.DayOfWeek != DayOfWeek.Sunday)
-                    isGunleriSayi++;
-
-            var buAyDav = await _davamiyyetService.AraliqUzreAsync(buAyBaslangic, bugun);
-            var buAyDavlar = buAyDav?.ToList() ?? new();
-            var gelmelerSayi = buAyDavlar.Count(x =>
-                x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
-            var maxGelmeMumkun = vm.AktivIsciSayi * isGunleriSayi;
-            vm.DavamiyyetFaizi = maxGelmeMumkun > 0
-                ? (int)((double)gelmelerSayi / maxGelmeMumkun * 100)
-                : 0;
-
-            // Son girişlər
             vm.SonGirisler = davlar
                 .Where(x => x.GirisVaxti != null)
                 .OrderByDescending(x => x.GirisVaxti)
@@ -257,25 +163,13 @@ namespace FinNex.UI.Areas.HR.Controllers
                 NovText = NovText(m.Nov)
             }).ToList();
 
-            // Seçilmiş tarixdə məzuniyyətdə olanlar (davTarix = bugün və ya keçmiş gün)
+            // Bu gün məzuniyyətdə olanlar
             var hazirdaMez = mezler.Where(x =>
                 x.Status == MezuniyyetStatus.Tesdiqlenib &&
-                x.BaslamaTarixi.Date <= davTarix &&
-                x.BitmeTarixi.Date >= davTarix).ToList();
+                x.BaslamaTarixi.Date <= bugun &&
+                x.BitmeTarixi.Date >= bugun).ToList();
 
             vm.HazirdaMezuniyyetde = hazirdaMez.Count;
-            vm.BugunMezuniyyetde = hazirdaMez.Count;
-
-            // Məzuniyyətdə olanların adlı siyahısı (davamiyyət kartı klik edildikdə göstərilir)
-            vm.BugunMezuniyyetdeIsciler = hazirdaMez
-                .OrderBy(x => x.IsciAdSoyad)
-                .Select(x => new DavamiyyetIsciDto
-                {
-                    AdSoyad = x.IsciAdSoyad ?? "—",
-                    Departament = x.SobeAdi ?? "—",
-                    GirisVaxti = $"{x.BaslamaTarixi:dd.MM} – {x.BitmeTarixi:dd.MM}"
-                })
-                .ToList();
 
             vm.MezuniyyetdeOlanlar = hazirdaMez
                 .Take(10)

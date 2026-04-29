@@ -3,8 +3,6 @@
     ViewData["Title"] = "Rəhbər Dashboard";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 
-    var faiz = Model.DavamiyyetFaizi;
-    var faizCls = faiz >= 90 ? "#1e9b6b" : faiz >= 75 ? "#d4920a" : "#c83838";
     var umumiIsci = Model.UmumiIsciSayi > 0 ? Model.UmumiIsciSayi : 1;
 
     int actionTotal = Model.GozleyenMezuniyyetTesdiqi + Model.GozleyenIcazeTesdiqi
@@ -31,26 +29,6 @@
     };
     var bugun = DateTime.Today;
     var tarixStr = $"{gunAdlar[bugun.DayOfWeek]}, {bugun.Day} {ayAdlar[bugun.Month]} {bugun.Year}";
-
-    // Davamiyyət kart klik modalı üçün — JSON-da camelCase açar adları
-    // istifadə etmək üçün anonymous obyektə map et və yuxarıda hazırla
-    // (Razor `else { ... }` daxilində generic Func<List<>> sintaksisi
-    // parser üçün problemli olduğundan burada yerləşdirilir).
-    System.Func<List<FinNex.UI.Areas.HR.ViewModels.DavamiyyetIsciDto>, object> rdMapItems = list =>
-        list.Select(x => new {
-            adSoyad = x.AdSoyad,
-            departament = x.Departament,
-            girisVaxti = x.GirisVaxti
-        }).ToList();
-
-    var rdAttListsJson = System.Text.Json.JsonSerializer.Serialize(new
-    {
-        ishde      = new { title = "İşdə olanlar",        icon = "bi-check2-circle",   color = "#1e9b6b", items = rdMapItems(Model.BugunIshdeIsciler) },
-        geciken    = new { title = "Gecikən işçilər",     icon = "bi-clock-history",   color = "#d4920a", items = rdMapItems(Model.BugunGecikenIsciler) },
-        qayib      = new { title = "Qayıb işçilər",        icon = "bi-x-circle",        color = "#c83838", items = rdMapItems(Model.BugunQayibIsciler) },
-        mezuniyyet = new { title = "Məzuniyyətdə olanlar", icon = "bi-calendar2-check", color = "#2563eb", items = rdMapItems(Model.BugunMezuniyyetdeIsciler) },
-        icaze      = new { title = "İcazəli işçilər",      icon = "bi-person-check",    color = "#7c3aed", items = rdMapItems(Model.BugunIcazeliIsciler) }
-    });
 }
 
 @section Styles {
@@ -172,110 +150,26 @@
         </a>
     </div>
 
-    <!-- ═══ 2. DAVAMİYYƏT — Detallı (tarix seçimli) ═══ -->
-    @{
-        var davTarixIsToday = Model.DavamiyyetTarixi.Date == DateTime.Today;
-        var davTarixMaxStr = DateTime.Today.ToString("yyyy-MM-dd");
-        var davTarixMinStr = DateTime.Today.AddMonths(-12).ToString("yyyy-MM-dd");
-        var davTarixValStr = Model.DavamiyyetTarixi.ToString("yyyy-MM-dd");
-    }
-    <div class="rd-section-head rd-section-head--with-picker">
-        <span class="@(davTarixIsToday ? "rd-live-dot" : "rd-live-dot rd-live-dot--past")"></span>
-        @(davTarixIsToday ? "Bugünkü davamiyyət" : "Davamiyyət")
-        <span class="rd-section-meta">@Model.DavamiyyetTarixi.ToString("dd MMMM yyyy")</span>
-
-        <form method="get" action="@Url.Action("Index", "RehberDashboard", new { area = "HR" })"
-              class="rd-date-picker" id="rdDateForm">
-            @if (!davTarixIsToday)
-            {
-                <a href="@Url.Action("Index", "RehberDashboard", new { area = "HR" })"
-                   class="rd-date-today" title="Bugünə qayıt">
-                    <i class="bi bi-arrow-counterclockwise"></i> Bugün
-                </a>
-            }
-            <label for="rdDateInput" class="rd-date-label">
-                <i class="bi bi-calendar3"></i>
-            </label>
-            <input type="date" id="rdDateInput" name="tarix"
-                   value="@davTarixValStr" min="@davTarixMinStr" max="@davTarixMaxStr"
-                   onchange="document.getElementById('rdDateForm').submit()" />
-        </form>
+    <!-- ═══ 2. DAVAMİYYƏT — HR-dakı tam səhifəyə keçid ═══ -->
+    <div class="rd-section-head">
+        <i class="bi bi-stopwatch"></i> Davamiyyət
     </div>
-
-    @if (!Model.BugunQeydVar)
-    {
-        <div class="rd-empty-state">
-            <i class="bi bi-calendar2-x"></i>
-            <div class="rd-empty-title">@(davTarixIsToday ? "Bu gün üçün hələ qeyd yoxdur" : $"{Model.DavamiyyetTarixi:dd MMMM yyyy} tarixində davamiyyət qeydi yoxdur")</div>
-            <div class="rd-empty-sub">@(davTarixIsToday ? "İşçilər hələ giriş etməyiblər və ya davamiyyət sistemi açılmayıb." : "Həmin gün üçün heç bir davamiyyət qeydiyyatı edilməyib.")</div>
+    <a asp-area="HR" asp-controller="Davamiyyet" asp-action="Index" class="rd-att-redirect">
+        <div class="rd-att-redirect__icon">
+            <i class="bi bi-calendar-check"></i>
         </div>
-    }
-    else
-    {
-        <div class="rd-att-stats">
-            <button type="button" class="rd-att-stat rd-att-stat--green rd-att-stat--btn"
-                    data-rd-list="ishde" @(Model.BugunIshde == 0 ? "disabled" : "")>
-                <div class="rd-att-num">@Model.BugunIshde</div>
-                <div class="rd-att-lbl">İşdə</div>
-            </button>
-            <button type="button" class="rd-att-stat rd-att-stat--amber rd-att-stat--btn"
-                    data-rd-list="geciken" @(Model.BugunGeciken == 0 ? "disabled" : "")>
-                <div class="rd-att-num">@Model.BugunGeciken</div>
-                <div class="rd-att-lbl">Gecikən</div>
-            </button>
-            <button type="button" class="rd-att-stat rd-att-stat--red rd-att-stat--btn"
-                    data-rd-list="qayib" @(Model.BugunQayib == 0 ? "disabled" : "")>
-                <div class="rd-att-num">@Model.BugunQayib</div>
-                <div class="rd-att-lbl">Qayıb</div>
-            </button>
-            <button type="button" class="rd-att-stat rd-att-stat--blue rd-att-stat--btn"
-                    data-rd-list="mezuniyyet" @(Model.BugunMezuniyyetde == 0 ? "disabled" : "")>
-                <div class="rd-att-num">@Model.BugunMezuniyyetde</div>
-                <div class="rd-att-lbl">Məzuniyyətdə</div>
-            </button>
-            <button type="button" class="rd-att-stat rd-att-stat--purple rd-att-stat--btn"
-                    data-rd-list="icaze" @(Model.BugunIcazeli == 0 ? "disabled" : "")>
-                <div class="rd-att-num">@Model.BugunIcazeli</div>
-                <div class="rd-att-lbl">İcazəli</div>
-            </button>
-            <div class="rd-att-stat rd-att-stat--gauge">
-                <div class="rd-att-num" style="color:@faizCls">@faiz%</div>
-                <div class="rd-att-lbl">Davamiyyət (bu ay)</div>
-                <div class="rd-progress" style="margin-top:6px">
-                    <div class="rd-progress-fill" style="width:@faiz%;background:@faizCls"></div>
-                </div>
+        <div class="rd-att-redirect__body">
+            <div class="rd-att-redirect__title">Davamiyyət hesabatına keçid</div>
+            <div class="rd-att-redirect__sub">
+                İşçilərin giriş-çıxış qeydləri, gecikmə analizi, fərdi axtarış və Excel ixracı —
+                tam davamiyyət səhifəsində.
             </div>
         </div>
-
-        @* ── Inline accordion panel — kart klikləndikdə altda cədvəl açılır ──── *@
-        <div id="rdAttPanel" class="rd-att-panel" hidden>
-            <div class="rd-att-panel__head">
-                <div class="rd-att-panel__title">
-                    <i class="bi" id="rdAttPanelIcon"></i>
-                    <span id="rdAttPanelTitle">—</span>
-                    <span id="rdAttPanelCount" class="rd-att-panel__count">0</span>
-                </div>
-                <button type="button" class="rd-att-panel__close" data-rd-close aria-label="Bağla">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-            <div class="rd-att-panel__body">
-                <table class="rd-att-table">
-                    <thead>
-                        <tr>
-                            <th class="rd-att-table__num">#</th>
-                            <th>Ad Soyad</th>
-                            <th>Departament</th>
-                            <th id="rdAttPanelTimeHeader" class="rd-att-table__time">Giriş vaxtı</th>
-                        </tr>
-                    </thead>
-                    <tbody id="rdAttPanelTbody"></tbody>
-                </table>
-            </div>
+        <div class="rd-att-redirect__cta">
+            <span>Aç</span>
+            <i class="bi bi-arrow-right-circle-fill"></i>
         </div>
-
-        <script type="application/json" id="rdAttListsData">@Html.Raw(rdAttListsJson)</script>
-    }
+    </a>
 
     <!-- ═══ 3. KPI KARTLARI — Maliyyə + Personel ═══ -->
     <div class="rd-section-head">
@@ -792,91 +686,5 @@
             }
         });
 
-        // ── Davamiyyət kartları → inline accordion cədvəli ───────────
-        (function () {
-            const dataEl = document.getElementById('rdAttListsData');
-            const panel  = document.getElementById('rdAttPanel');
-            if (!dataEl || !panel) return;
-
-            let lists;
-            try { lists = JSON.parse(dataEl.textContent); }
-            catch { return; }
-
-            const titleEl  = document.getElementById('rdAttPanelTitle');
-            const iconEl   = document.getElementById('rdAttPanelIcon');
-            const countEl  = document.getElementById('rdAttPanelCount');
-            const tbody    = document.getElementById('rdAttPanelTbody');
-            const timeHead = document.getElementById('rdAttPanelTimeHeader');
-
-            const timeLabels = {
-                ishde:      'Giriş vaxtı',
-                geciken:    'Giriş vaxtı',
-                qayib:      '—',
-                mezuniyyet: 'Tarix aralığı',
-                icaze:      'Saat aralığı'
-            };
-
-            const buttons = Array.from(document.querySelectorAll('[data-rd-list]'));
-            let activeKey = null;
-
-            function escape(s) {
-                return String(s ?? '').replace(/[&<>"']/g, c =>
-                    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]);
-            }
-
-            function setActive(key) {
-                buttons.forEach(b => b.classList.toggle('is-active', b.dataset.rdList === key));
-                activeKey = key;
-            }
-
-            function open(key) {
-                const data = lists[key];
-                if (!data) return;
-
-                iconEl.className   = 'bi ' + data.icon;
-                iconEl.style.color = data.color;
-                titleEl.textContent = data.title;
-                countEl.textContent = data.items.length;
-                timeHead.textContent = timeLabels[key] || '';
-
-                if (!data.items.length) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="rd-att-table__empty">Siyahı boşdur.</td></tr>`;
-                } else {
-                    tbody.innerHTML = data.items.map((item, i) => `
-                        <tr>
-                            <td class="rd-att-table__num">${i + 1}</td>
-                            <td class="rd-att-table__name">${escape(item.adSoyad)}</td>
-                            <td class="rd-att-table__dept">${escape(item.departament)}</td>
-                            <td class="rd-att-table__time">${item.girisVaxti ? escape(item.girisVaxti) : '<span class="rd-att-table__dash">—</span>'}</td>
-                        </tr>`).join('');
-                }
-
-                panel.hidden = false;
-                setActive(key);
-                // İlk açılışda görünməsi üçün rahatca scroll et
-                panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-
-            function close() {
-                panel.hidden = true;
-                setActive(null);
-            }
-
-            buttons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const key = btn.dataset.rdList;
-                    if (activeKey === key) close();
-                    else open(key);
-                });
-            });
-
-            panel.querySelectorAll('[data-rd-close]').forEach(el => {
-                el.addEventListener('click', close);
-            });
-
-            document.addEventListener('keydown', e => {
-                if (e.key === 'Escape' && !panel.hidden) close();
-            });
-        })();
     </script>
 }
