@@ -1,3 +1,4 @@
+using ClosedXML.Excel;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
@@ -23,6 +24,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IDavamiyyetService _davamiyyetService;
         private readonly IMezuniyyetService _mezuniyyetService;
         private readonly IIcazeService _icazeService;
+        private readonly IIsciService _isciService;
         private readonly UserManager<AppUser> _userManager;
         private readonly ILogger<RehberDashboardController> _logger;
 
@@ -31,6 +33,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             IDavamiyyetService davamiyyetService,
             IMezuniyyetService mezuniyyetService,
             IIcazeService icazeService,
+            IIsciService isciService,
             UserManager<AppUser> userManager,
             ILogger<RehberDashboardController> logger)
         {
@@ -38,6 +41,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             _davamiyyetService = davamiyyetService;
             _mezuniyyetService = mezuniyyetService;
             _icazeService = icazeService;
+            _isciService = isciService;
             _userManager = userManager;
             _logger = logger;
         }
@@ -399,6 +403,265 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.ErrorMessage = "Dashboard yüklənmədi: " + ex.Message;
             return View("~/Areas/HR/Views/RehberDashboard/Index.cshtml", new RehberDashboardVM());
           }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // Davamiyyət — rəhbər üçün ayrıca səhifə (HR Davamiyyət-in eynisi)
+        // Belə ki, rəhbərin HR controller-ə icazəsi olmasa belə davamiyyəti
+        // görə bilsin. JS eyni faylı işlədir; URL-ləri view-dakı data-*
+        // atributlarından oxuyur.
+        // ═══════════════════════════════════════════════════════════════
+        public async Task<IActionResult> Davamiyyet()
+        {
+            var bugun = DateTime.Today;
+            var list = await _davamiyyetService.TarixUzreAsync(bugun);
+
+            list = list
+                .OrderBy(x => x.GirisVaxti == null)
+                .ThenBy(x => x.GirisVaxti)
+                .ThenBy(x => x.IsciTamAd)
+                .ToList();
+
+            var aktivIsciSayi = await _uow.Repository<Isci>()
+                .Query()
+                .CountAsync(x => !x.Silinib && x.Status == IsciStatus.Aktiv);
+            ViewBag.AktivIsciSayi = aktivIsciSayi;
+
+            ViewData["Title"] = "Davamiyyət";
+            return View(list);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DavamiyyetGetByTarix(DateTime? tarix, DateTime? baslangic, DateTime? son, int? isciId, int? status)
+        {
+            try
+            {
+                var umumi = await GetDavamiyyetFilteredData(tarix, baslangic, son, isciId, null);
+                var result = status.HasValue
+                    ? umumi.Where(x => (int)x.Status == status.Value).ToList()
+                    : umumi;
+
+                var data = result.Select(x => new
+                {
+                    id = x.Id,
+                    isciTamAd = x.IsciTamAd ?? "-",
+                    departamentAd = x.DepartamentAd ?? "-",
+                    tarix = x.Tarix,
+                    girisVaxti = x.GirisVaxti,
+                    cixisVaxti = x.CixisVaxti,
+                    status = (int)x.Status
+                }).OrderByDescending(x => x.tarix).ThenBy(x => x.isciTamAd).ToList();
+
+                var gelib = umumi.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
+                var gecikme = umumi.Count(x => x.Status == DavamiyyetStatus.Gecikme);
+                var qayib = umumi.Count(x => x.Status == DavamiyyetStatus.Qayib);
+                var icazeli = umumi.Count(x => x.Status == DavamiyyetStatus.Icazeli);
+                var xestelik = umumi.Count(x => x.Status == DavamiyyetStatus.Xestelik);
+                var ezamiyyet = umumi.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
+
+                var iseSaatleri = umumi
+                    .Where(x => x.GirisVaxti.HasValue && x.CixisVaxti.HasValue)
+                    .Select(x => (x.CixisVaxti!.Value - x.GirisVaxti!.Value).TotalHours)
+                    .ToList();
+                var ortaIsSaati = iseSaatleri.Any() ? Math.Round(iseSaatleri.Average(), 1) : 0;
+
+                var enCoxGecikenDept = umumi
+                    .Where(x => x.Status == DavamiyyetStatus.Gecikme)
+                    .GroupBy(x => x.DepartamentAd ?? "-")
+                    .OrderByDescending(g => g.Count())
+                    .Select(g => new { ad = g.Key, say = g.Count() })
+                    .FirstOrDefault();
+
+                return Json(new
+                {
+                    records = data,
+                    stats = new
+                    {
+                        gelib,
+                        gecikme,
+                        qayib,
+                        icazeli,
+                        xestelik,
+                        ezamiyyet,
+                        cemi = umumi.Count,
+                        ortaIsSaati,
+                        enCoxGecikenDept = enCoxGecikenDept?.ad ?? "-",
+                        enCoxGecikenDeptSay = enCoxGecikenDept?.say ?? 0
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "RehberDashboard.DavamiyyetGetByTarix xətası");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DavamiyyetGetGozlenilen(DateTime? tarix)
+        {
+            var hedef = (tarix ?? DateTime.Today).Date;
+
+            var aktivIsciler = await _uow.Repository<Isci>()
+                .Query()
+                .AsNoTracking()
+                .Where(x => !x.Silinib && x.Status == IsciStatus.Aktiv)
+                .Include(i => i.IsciTeyinatlari.Where(t => !t.Silinib))
+                    .ThenInclude(t => t.Departament)
+                .ToListAsync();
+
+            var qeydiOlanlar = await _uow.Repository<Davamiyyet>()
+                .Query()
+                .AsNoTracking()
+                .Where(x => !x.Silinib && x.Tarix.Date == hedef)
+                .Select(x => x.IsciId)
+                .ToListAsync();
+
+            var gozlenilenler = aktivIsciler
+                .Where(i => !qeydiOlanlar.Contains(i.Id))
+                .Select(i =>
+                {
+                    var esasTeyinat = i.IsciTeyinatlari
+                        .Where(t => t.Esasdir && !t.Silinib)
+                        .FirstOrDefault()
+                        ?? i.IsciTeyinatlari.FirstOrDefault(t => !t.Silinib);
+                    return new
+                    {
+                        id = 0,
+                        isciId = i.Id,
+                        isciTamAd = i.Ad + " " + i.Soyad,
+                        departamentAd = esasTeyinat?.Departament?.Ad ?? "-",
+                        tarix = hedef,
+                        girisVaxti = (DateTime?)null,
+                        cixisVaxti = (DateTime?)null,
+                        status = hedef < DateTime.Today ? 3 : 0
+                    };
+                })
+                .OrderBy(x => x.isciTamAd)
+                .ToList();
+
+            return Json(new
+            {
+                records = gozlenilenler,
+                count = gozlenilenler.Count,
+                tarix = hedef
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DavamiyyetIsciAxtar(string q)
+        {
+            if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
+                return Json(new List<object>());
+
+            var isciler = await _isciService.HamisiniGetirAsync(
+                x => x.Status == IsciStatus.Aktiv &&
+                     (x.Ad.Contains(q) || x.Soyad.Contains(q)),
+                izlemeden: true);
+
+            var result = isciler.Success
+                ? isciler.Data!.Take(10).Select(x => new { id = x.Id, tamAd = x.TamAd, sobe = x.SobeAdi ?? "-" })
+                : Enumerable.Empty<object>();
+
+            return Json(result);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DavamiyyetExportExcel(DateTime? tarix, DateTime? baslangic, DateTime? son, int? isciId, int? status)
+        {
+            var result = await GetDavamiyyetFilteredData(tarix, baslangic, son, isciId, status);
+            var sorted = result.OrderByDescending(x => x.Tarix).ThenBy(x => x.IsciTamAd).ToList();
+
+            using var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add("Davamiyyət");
+
+            ws.Cell(1, 1).Value = "İşçi";
+            ws.Cell(1, 2).Value = "Departament";
+            ws.Cell(1, 3).Value = "Tarix";
+            ws.Cell(1, 4).Value = "Giriş";
+            ws.Cell(1, 5).Value = "Çıxış";
+            ws.Cell(1, 6).Value = "İş saatı";
+            ws.Cell(1, 7).Value = "Status";
+
+            var headerRange = ws.Range(1, 1, 1, 7);
+            headerRange.Style.Font.Bold = true;
+            headerRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#1e2a3b");
+            headerRange.Style.Font.FontColor = XLColor.White;
+
+            for (int i = 0; i < sorted.Count; i++)
+            {
+                var r = sorted[i];
+                var row = i + 2;
+
+                ws.Cell(row, 1).Value = r.IsciTamAd;
+                ws.Cell(row, 2).Value = r.DepartamentAd ?? "-";
+                ws.Cell(row, 3).Value = r.Tarix.ToString("dd.MM.yyyy");
+                ws.Cell(row, 4).Value = r.GirisVaxti?.ToString("HH:mm") ?? "--:--";
+                ws.Cell(row, 5).Value = r.CixisVaxti?.ToString("HH:mm") ?? "--:--";
+
+                if (r.GirisVaxti.HasValue && r.CixisVaxti.HasValue)
+                {
+                    var dur = r.CixisVaxti.Value - r.GirisVaxti.Value;
+                    ws.Cell(row, 6).Value = $"{dur.Hours} s {dur.Minutes} d";
+                }
+                else
+                    ws.Cell(row, 6).Value = "---";
+
+                ws.Cell(row, 7).Value = r.Status switch
+                {
+                    DavamiyyetStatus.Isde => "İşdə",
+                    DavamiyyetStatus.Gecikme => "Gecikmə",
+                    DavamiyyetStatus.Qayib => "Qayıb",
+                    DavamiyyetStatus.Icazeli => "İcazəli",
+                    DavamiyyetStatus.Xestelik => "Xəstəlik",
+                    DavamiyyetStatus.Ezamiyyet => "Ezamiyyət",
+                    _ => "-"
+                };
+            }
+
+            ws.Columns().AdjustToContents();
+
+            using var ms = new MemoryStream();
+            wb.SaveAs(ms);
+            var fileName = $"Davamiyyet_{DateTime.Now:yyyy-MM-dd_HHmm}.xlsx";
+            return File(ms.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
+        // ── Köməkçi: filter logic (HR DavamiyyetController-dakı ilə eyni) ──
+        private async Task<IList<Application.DTOs.HR.Davamiyyet.DavamiyyetListDto>> GetDavamiyyetFilteredData(
+            DateTime? tarix, DateTime? baslangic, DateTime? son, int? isciId, int? status)
+        {
+            IList<Application.DTOs.HR.Davamiyyet.DavamiyyetListDto> result;
+
+            if (isciId.HasValue)
+            {
+                result = await _davamiyyetService.IsciUzreAsync(isciId.Value);
+                if (baslangic.HasValue && son.HasValue)
+                {
+                    result = result
+                        .Where(x => x.Tarix.Date >= baslangic.Value.Date && x.Tarix.Date <= son.Value.Date)
+                        .ToList();
+                }
+            }
+            else if (baslangic.HasValue && son.HasValue)
+            {
+                result = await _davamiyyetService.AraliqUzreAsync(baslangic.Value, son.Value);
+            }
+            else if (tarix.HasValue)
+            {
+                result = await _davamiyyetService.TarixUzreAsync(tarix.Value);
+            }
+            else
+            {
+                result = await _davamiyyetService.TarixUzreAsync(DateTime.Today);
+            }
+
+            if (status.HasValue)
+            {
+                result = result.Where(x => (int)x.Status == status.Value).ToList();
+            }
+
+            return result;
         }
     }
 }

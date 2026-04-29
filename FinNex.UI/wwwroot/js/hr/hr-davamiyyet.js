@@ -1,5 +1,26 @@
 document.addEventListener('DOMContentLoaded', function () {
 
+    // ── Endpoint URL-ləri ──────────────────────────────────────────
+    // Səhifənin kök elementində `data-endpoint-*` atributu varsa onun dəyəri
+    // istifadə olunur (boş dəyər → endpoint deaktiv); yoxdursa default HR
+    // Davamiyyet controller-ə yönəlir. Bu yolla eyni JS həm
+    // `/HR/Davamiyyet/Index`, həm də `/HR/RehberDashboard/Davamiyyet`
+    // səhifələrində işləyir — rəhbərin HR-a girişi olmasa belə.
+    var pageEl = document.querySelector('.hrd-page');
+    function endpoint(name, defaultUrl) {
+        if (pageEl && pageEl.hasAttribute('data-endpoint-' + name)) {
+            return pageEl.getAttribute('data-endpoint-' + name);
+        }
+        return defaultUrl;
+    }
+    var endpoints = {
+        getByTarix:    endpoint('getbytarix',    '/HR/Davamiyyet/GetByTarix'),
+        getGozlenilen: endpoint('getgozlenilen', '/HR/Davamiyyet/GetGozlenilen'),
+        isciAxtar:     endpoint('isciaxtar',     '/HR/Davamiyyet/IsciAxtar'),
+        exportExcel:   endpoint('exportexcel',   '/HR/Davamiyyet/ExportExcel'),
+        deviceStatus:  endpoint('devicestatus',  '/HR/ADMSTest/GetRecentLogs')
+    };
+
     // ── DOM Elements ──
     var tabs = document.querySelectorAll('.hrd-tab');
     var filterTarix = document.getElementById('filterTarix');
@@ -92,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Gözlənilən işçiləri yüklə ──
     function loadGozlenilen() {
         var tarix = inputTarix.value || new Date().toISOString().split('T')[0];
-        var url = '/HR/Davamiyyet/GetGozlenilen?tarix=' + encodeURIComponent(tarix);
+        var url = endpoints.getGozlenilen + '?tarix=' + encodeURIComponent(tarix);
 
         tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><div class="spinner-border spinner-border-sm text-muted"></div><div style="margin-top:8px">Yüklənir...</div></div></td></tr>';
 
@@ -135,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (q.length < 2) { isciResults.style.display = 'none'; return; }
 
         searchTimeout = setTimeout(function () {
-            fetch('/HR/Davamiyyet/IsciAxtar?q=' + encodeURIComponent(q))
+            fetch(endpoints.isciAxtar + '?q=' + encodeURIComponent(q))
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     if (data.length === 0) {
@@ -205,13 +226,13 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Excel Export ──
     btnExport.addEventListener('click', function () {
         var params = new URLSearchParams(currentParams).toString();
-        window.location.href = '/HR/Davamiyyet/ExportExcel?' + params;
+        window.location.href = endpoints.exportExcel + '?' + params;
     });
 
     // ── Data loading ──
     function loadData(params, clientFilterStatuses) {
         currentParams = params;
-        var url = '/HR/Davamiyyet/GetByTarix?' + new URLSearchParams(params).toString();
+        var url = endpoints.getByTarix + '?' + new URLSearchParams(params).toString();
 
         tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><div class="spinner-border spinner-border-sm text-muted"></div><div style="margin-top:8px">Yüklənir...</div></div></td></tr>';
 
@@ -328,7 +349,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Device status check ──
     function checkDevice() {
-        fetch('/HR/ADMSTest/GetRecentLogs')
+        // Cihaz status — endpoint və ya UI elementi yoxdursa keç
+        if (!endpoints.deviceStatus || !deviceStatus || !deviceText) return;
+        fetch(endpoints.deviceStatus)
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (data.isOnline) {
@@ -345,6 +368,8 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    checkDevice();
-    setInterval(checkDevice, 30000);
+    if (deviceStatus && deviceText) {
+        checkDevice();
+        setInterval(checkDevice, 30000);
+    }
 });
