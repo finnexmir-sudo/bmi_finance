@@ -37,6 +37,7 @@
     // Məzuniyyət balansları — BÜTÜN illərin CƏMİ (keçmiş illərdən qalan
     // günlər cari ilin balansına əlavə olunur). Hər növ üçün mock obyekt
     // yaradılır ki, RenderLeaveItem helper-i dəyişməsin.
+    var currentYear = DateTime.Now.Year;
     var balansAll = Model.MezuniyyetBalanslari?.ToList() ?? new List<MezuniyyetBalans>();
 
     MezuniyyetBalans? CemBalans(MezuniyyetNovu nov)
