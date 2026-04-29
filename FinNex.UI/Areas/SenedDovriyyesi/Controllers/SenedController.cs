@@ -419,13 +419,23 @@ public class SenedController : Controller
     }
 
     // ── YENİ VERSİYA YÜKLƏ ─────────────────────────────────────────
+    // Bir və ya bir neçə fayl qəbul edir — hər biri ardıcıl yeni versiya
+    // kimi yüklənir (v3, v4, v5...). Geriyə uyğunluq üçün köhnə tək-fayl
+    // 'fayl' parametri də saxlanır.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> YeniVersiya(int senedId, IFormFile fayl)
+    public async Task<IActionResult> YeniVersiya(int senedId, List<IFormFile>? fayllar, IFormFile? fayl)
     {
-        if (fayl == null || fayl.Length == 0)
+        // Əvvəl 'fayllar' siyahısını yığ; köhnə tək-fayl form-u üçün də dəstək
+        var faylSiyahisi = (fayllar ?? new List<IFormFile>())
+            .Where(f => f != null && f.Length > 0)
+            .ToList();
+        if (fayl != null && fayl.Length > 0 && !faylSiyahisi.Any(f => f.FileName == fayl.FileName && f.Length == fayl.Length))
+            faylSiyahisi.Add(fayl);
+
+        if (faylSiyahisi.Count == 0)
         {
-            TempData["Error"] = "Fayl seçilməlidir.";
+            TempData["Error"] = "Ən azı bir fayl seçilməlidir.";
             return RedirectToAction(nameof(Detal), new { id = senedId });
         }
 
@@ -446,19 +456,36 @@ public class SenedController : Controller
             return RedirectToAction(nameof(Detal), new { id = senedId });
         }
 
-        using var stream = fayl.OpenReadStream();
-        var uploadDto = new SenedFaylUploadDto
+        // Hər fayl üçün ayrı-ayrı yeni versiya yüklə (UploadNewVersionAsync
+        // hər çağırışda növbəti VersiyaNo veriri və köhnə aktivi deaktivləşdirir
+        // — sonuncu yüklənən fayl həmişə aktiv olur)
+        var ugurluSayi = 0;
+        var xetalar = new List<string>();
+        foreach (var f in faylSiyahisi)
         {
-            SenedId = senedId,
-            OriginalAd = fayl.FileName,
-            ContentType = fayl.ContentType,
-            OlcuBytes = fayl.Length,
-            Stream = stream
-        };
+            using var stream = f.OpenReadStream();
+            var uploadDto = new SenedFaylUploadDto
+            {
+                SenedId = senedId,
+                OriginalAd = f.FileName,
+                ContentType = f.ContentType,
+                OlcuBytes = f.Length,
+                Stream = stream
+            };
+            var r = await _senedService.UploadNewVersionAsync(uploadDto, userId, GetIp());
+            if (r.Success) ugurluSayi++;
+            else xetalar.Add($"{f.FileName}: {r.Message}");
+        }
 
-        var result = await _senedService.UploadNewVersionAsync(uploadDto, userId, GetIp());
+        if (ugurluSayi > 0 && xetalar.Count == 0)
+            TempData["Success"] = ugurluSayi == 1
+                ? "Yeni versiya uğurla yükləndi."
+                : $"{ugurluSayi} yeni versiya uğurla yükləndi.";
+        else if (ugurluSayi > 0)
+            TempData["Success"] = $"{ugurluSayi} fayl yükləndi. Xətalar: {string.Join("; ", xetalar)}";
+        else
+            TempData["Error"] = "Heç bir fayl yüklənə bilmədi: " + string.Join("; ", xetalar);
 
-        TempData[result.Success ? "Success" : "Error"] = result.Message;
         return RedirectToAction(nameof(Detal), new { id = senedId });
     }
 
