@@ -265,6 +265,23 @@
                                                         <path d="M2 11h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
                                                     </svg>
                                                 </a>
+                                                @if (Model.Fayllar.Count > 1)
+                                                {
+                                                    <form asp-area="SenedDovriyyesi" asp-controller="Sened"
+                                                          asp-action="VersiyaSil" asp-route-id="@f.Id" method="post"
+                                                          style="display:inline"
+                                                          onsubmit="return confirm('v@(f.VersiyaNo) (@f.OriginalAd) versiyasını silmək istəyirsiniz?\n\nBu əməliyyatı geri qaytarmaq olmaz.@(f.AktivVersiya ? "\nAktiv versiya silindiyi üçün ən sonuncu köhnə versiya avtomatik aktiv olacaq." : "")');">
+                                                        @Html.AntiForgeryToken()
+                                                        <button type="submit"
+                                                                class="isci-action-btn"
+                                                                style="color:#ef4444;border-color:#fecaca"
+                                                                title="Bu versiyanı sil">
+                                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                                <path d="M3 4h8M5 4V2.5h4V4M4 4l.5 8h5L10 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                                                            </svg>
+                                                        </button>
+                                                    </form>
+                                                }
                                             </div>
                                         </td>
                                     </tr>
