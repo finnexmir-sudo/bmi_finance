@@ -86,14 +86,24 @@
                                 }
                             </td>
                             <td class="text-right">
-                                <form asp-action="Delete" method="post" style="display:inline;"
-                                      onsubmit="return confirm('Bu xəstəlik qeydini silmək istədiyinizə əminsiniz? Ödəniş qeydləri də silinəcək.');">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@x.Id"/>
-                                    <button type="submit" class="xst-btn-icon">
-                                        <i class="bi bi-trash3"></i>
+                                @if (x.SilineBilir)
+                                {
+                                    <form asp-action="Delete" method="post" style="display:inline;"
+                                          onsubmit="return confirm('Bu xəstəlik qeydini silmək istədiyinizə əminsiniz? Ödəniş qeydləri də silinəcək.');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@x.Id"/>
+                                        <button type="submit" class="xst-btn-icon" title="Sil">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <button type="button" class="xst-btn-icon xst-btn-icon--disabled"
+                                            title="@x.SilinmemeSebebi" disabled>
+                                        <i class="bi bi-lock"></i>
                                     </button>
-                                </form>
+                                }
                             </td>
                         </tr>
                     }
@@ -143,5 +153,7 @@
 
         .xst-btn-icon { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e6ef; background: #fff; color: #8a93a8; cursor: pointer; }
         .xst-btn-icon:hover { background: rgba(239,68,68,.08); color: #dc2626; border-color: rgba(239,68,68,.3); }
+        .xst-btn-icon--disabled { color: #c8cdd8; cursor: not-allowed; background: #f7f8fc; }
+        .xst-btn-icon--disabled:hover { background: #f7f8fc; color: #c8cdd8; border-color: #e2e6ef; }
     </style>
 }
