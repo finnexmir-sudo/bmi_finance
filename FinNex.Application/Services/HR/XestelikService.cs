@@ -64,20 +64,58 @@ namespace FinNex.Application.Services.HR
                     .OrderByDescending(x => x.BaslamaTarixi)
                     .ToListAsync();
 
-                var dtos = list.Select(x => new XestelikDto
+                // Hansı (IsciId, İl, Ay) cütlərinin maaşı hesablanıb — toplu yüklə
+                var isciIdler = list.Select(x => x.IsciId).Distinct().ToList();
+                var hesablanmisMaaslar = await _unitOfWork.Repository<Maas>()
+                    .Query()
+                    .Where(m => !m.Silinib &&
+                                isciIdler.Contains(m.IsciId) &&
+                                (m.Status == MaasStatus.Tesdiqlendi || m.Status == MaasStatus.Odenildi))
+                    .Select(m => new { m.IsciId, m.Il, m.Ay })
+                    .ToListAsync();
+
+                var today = DateTime.Today;
+
+                var dtos = list.Select(x =>
                 {
-                    Id = x.Id,
-                    IsciId = x.IsciId,
-                    IsciAdSoyad = x.Isci != null ? $"{x.Isci.Ad} {x.Isci.Soyad}" : "",
-                    BaslamaTarixi = x.BaslamaTarixi,
-                    BitmeTarixi = x.BitmeTarixi,
-                    IsGunSayi = x.IsGunSayi,
-                    BulletenNomresi = x.BulletenNomresi,
-                    MualiceMuessisesi = x.MualiceMuessisesi,
-                    Qeyd = x.Qeyd,
-                    Status = (int)x.Status,
-                    HrTesdiqTarixi = x.HrTesdiqTarixi,
-                    UmumiSirketOdenisi = x.Odenisler.Sum(o => o.SirketOdenis)
+                    string? sebeb = null;
+
+                    if (x.BitmeTarixi.Date < today)
+                        sebeb = $"Bitmə tarixi keçib ({x.BitmeTarixi:dd.MM.yyyy})";
+                    else
+                    {
+                        // Bülletenin əhatə etdiyi ayları yoxla
+                        var cur = new DateTime(x.BaslamaTarixi.Year, x.BaslamaTarixi.Month, 1);
+                        var son = new DateTime(x.BitmeTarixi.Year, x.BitmeTarixi.Month, 1);
+                        while (cur <= son)
+                        {
+                            if (hesablanmisMaaslar.Any(m =>
+                                    m.IsciId == x.IsciId && m.Il == cur.Year && m.Ay == cur.Month))
+                            {
+                                sebeb = $"{cur:MM.yyyy} ayının əmək haqqı artıq hesablanıb";
+                                break;
+                            }
+                            cur = cur.AddMonths(1);
+                        }
+                    }
+
+                    return new XestelikDto
+                    {
+                        Id = x.Id,
+                        IsciId = x.IsciId,
+                        IsciAdSoyad = x.Isci != null ? $"{x.Isci.Ad} {x.Isci.Soyad}" : "",
+                        BaslamaTarixi = x.BaslamaTarixi,
+                        BitmeTarixi = x.BitmeTarixi,
+                        IsGunSayi = x.IsGunSayi,
+                        BulletenNomresi = x.BulletenNomresi,
+                        MualiceMuessisesi = x.MualiceMuessisesi,
+                        Qeyd = x.Qeyd,
+                        Status = (int)x.Status,
+                        HrTesdiqTarixi = x.HrTesdiqTarixi,
+                        UmumiSirketOdenisi = x.Odenisler.Sum(o => o.SirketOdenis),
+                        SilineBilir = sebeb == null,
+                        SilinmemeSebebi = sebeb,
+                    };
                 }).ToList();
 
                 return Result<IList<XestelikDto>>.Ok(dtos);
@@ -188,6 +226,36 @@ namespace FinNex.Application.Services.HR
                     .FirstOrDefaultAsync();
 
                 if (entity == null) return Result.Fail("Tapılmadı.");
+
+                // ── Qoruma 1: Bitmə tarixi keçibsə silmək olmaz ──
+                if (entity.BitmeTarixi.Date < DateTime.Today)
+                    return Result.Fail(
+                        $"Bu xəstəlik bülletəninin bitmə tarixi keçib " +
+                        $"({entity.BitmeTarixi:dd.MM.yyyy}). Keçmiş dövrə aid qeydlər silinə bilməz.");
+
+                // ── Qoruma 2: Bülletenin əhatə etdiyi ayların əmək haqqı hesablanıbsa silmək olmaz ──
+                var aylar = new List<(int Il, int Ay)>();
+                var cur = new DateTime(entity.BaslamaTarixi.Year, entity.BaslamaTarixi.Month, 1);
+                var son = new DateTime(entity.BitmeTarixi.Year, entity.BitmeTarixi.Month, 1);
+                while (cur <= son)
+                {
+                    aylar.Add((cur.Year, cur.Month));
+                    cur = cur.AddMonths(1);
+                }
+
+                var hesablanmisAy = await _unitOfWork.Repository<Maas>()
+                    .Query()
+                    .AnyAsync(m =>
+                        m.IsciId == entity.IsciId &&
+                        !m.Silinib &&
+                        (m.Status == MaasStatus.Tesdiqlendi || m.Status == MaasStatus.Odenildi) &&
+                        aylar.Select(a => a.Il).Contains(m.Il) &&
+                        aylar.Select(a => a.Ay).Contains(m.Ay));
+
+                if (hesablanmisAy)
+                    return Result.Fail(
+                        "Bu bülletənin əhatə etdiyi ayın əmək haqqı artıq hesablanıb. " +
+                        "Silinmə mümkün deyil.");
 
                 // Ödəniş qeydlərini də sil
                 foreach (var o in entity.Odenisler)

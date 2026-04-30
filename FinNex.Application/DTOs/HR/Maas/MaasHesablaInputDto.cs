@@ -30,6 +30,9 @@ namespace FinNex.Application.DTOs.HR.Maas
         public int Status { get; set; }
         public DateTime? HrTesdiqTarixi { get; set; }
         public decimal? UmumiSirketOdenisi { get; set; }
+
+        public bool SilineBilir { get; set; }
+        public string? SilinmemeSebebi { get; set; }
     }
 
     public class XestelikCreateDto
