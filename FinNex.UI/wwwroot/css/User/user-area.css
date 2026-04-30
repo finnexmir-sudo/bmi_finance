@@ -182,6 +182,16 @@ body {
     background: rgba(232,184,75,0.15);
 }
 
+.fn-nav-item--sub {
+    font-size: 11.5px;
+    padding: 5px 10px 5px 28px;
+    color: rgba(255,255,255,0.38);
+    margin-bottom: 0;
+}
+.fn-nav-item--sub i { font-size: 12px; }
+.fn-nav-item--sub:hover { color: rgba(255,255,255,0.7); }
+.fn-nav-item--sub.active { color: #e8b84b; }
+
 /* ── 3-Level Accordion Groups ─────────────── */
 .fn-nav-group {
     margin-bottom: 1px;
