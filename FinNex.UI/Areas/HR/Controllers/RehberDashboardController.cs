@@ -5,8 +5,11 @@ using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
 using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Entities.Structure;
 using FinNex.Domain.Interfaces;
+using FinNex.Application.DTOs.HR.Icaze;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Maas_If;
+using FinNex.Application.Interfaces.Structur;
+using FinNex.UI.Areas.User.ViewModels.Icaze;
 using FinNex.UI.Areas.HR.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -25,6 +28,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IMezuniyyetService _mezuniyyetService;
         private readonly IIcazeService _icazeService;
         private readonly IIsciService _isciService;
+        private readonly IDepartmentService _departamentService;
         private readonly UserManager<AppUser> _userManager;
         private readonly ILogger<RehberDashboardController> _logger;
 
@@ -34,6 +38,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             IMezuniyyetService mezuniyyetService,
             IIcazeService icazeService,
             IIsciService isciService,
+            IDepartmentService departamentService,
             UserManager<AppUser> userManager,
             ILogger<RehberDashboardController> logger)
         {
@@ -42,6 +47,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             _mezuniyyetService = mezuniyyetService;
             _icazeService = icazeService;
             _isciService = isciService;
+            _departamentService = departamentService;
             _userManager = userManager;
             _logger = logger;
         }
@@ -429,6 +435,66 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             ViewData["Title"] = "Davamiyyət";
             return View(list);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // İcazə İzləmə — rəhbər üçün işçi icazə statistikası
+        // ═══════════════════════════════════════════════════════════════
+        public async Task<IActionResult> IcazeIzleme(
+            DateTime? tarixFrom,
+            DateTime? tarixTo,
+            int? departamentId,
+            string? axtaris,
+            int? status,
+            string? sirala)
+        {
+            var filtr = new IcazeIzlemeFiltrDto
+            {
+                TarixFrom = tarixFrom,
+                TarixTo = tarixTo,
+                DepartamentId = departamentId,
+                Axtaris = axtaris,
+                Status = status,
+            };
+
+            var result = await _icazeService.GetIsciIzlemeAsync(filtr);
+            var depResult = await _departamentService.HamisiniGetirAsync();
+
+            var departamentler = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+            {
+                new("Bütün şöbələr", "")
+            };
+            if (depResult.Success && depResult.Data != null)
+            {
+                departamentler.AddRange(depResult.Data
+                    .OrderBy(d => d.Ad)
+                    .Select(d => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(d.Ad, d.Id.ToString())));
+            }
+
+            var isciler = result.Success ? result.Data!.ToList() : new();
+
+            isciler = sirala switch
+            {
+                "cemi"   => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
+                "saat"   => isciler.OrderByDescending(x => x.TesdiqSaat).ToList(),
+                "imtina" => isciler.OrderByDescending(x => x.ImtinaEdildiSayi).ToList(),
+                _        => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
+            };
+
+            var vm = new IcazeIzlemeVM
+            {
+                IsciIstatistikler = isciler,
+                Filtr = filtr,
+                Departamentler = departamentler,
+            };
+
+            ViewData["Sirala"] = sirala ?? "cemi";
+            ViewData["Title"] = "İcazə İzləmə";
+
+            if (!result.Success)
+                TempData["Error"] = result.Message;
+
+            return View(vm);
         }
 
         [HttpGet]

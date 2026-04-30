@@ -165,7 +165,8 @@ namespace FinNex.UI.Areas.User.Controllers
             DateTime? tarixTo,
             int? departamentId,
             string? axtaris,
-            int? status)
+            int? status,
+            string? sirala)
         {
             var filtr = new IcazeIzlemeFiltrDto
             {
@@ -190,12 +191,23 @@ namespace FinNex.UI.Areas.User.Controllers
                     .Select(d => new SelectListItem(d.Ad, d.Id.ToString())));
             }
 
+            var isciler = result.Success ? result.Data!.ToList() : new();
+            isciler = sirala switch
+            {
+                "cemi"   => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
+                "saat"   => isciler.OrderByDescending(x => x.TesdiqSaat).ToList(),
+                "imtina" => isciler.OrderByDescending(x => x.ImtinaEdildiSayi).ToList(),
+                _        => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
+            };
+
             var vm = new IcazeIzlemeVM
             {
-                IsciIstatistikler = result.Success ? result.Data!.ToList() : new(),
+                IsciIstatistikler = isciler,
                 Filtr = filtr,
                 Departamentler = departamentler,
             };
+
+            ViewData["Sirala"] = sirala ?? "cemi";
 
             if (!result.Success)
                 TempData["Error"] = result.Message;

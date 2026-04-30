@@ -274,8 +274,16 @@
                 @if (isRehberRol)
                 {
                     <a asp-area="HR" asp-controller="RehberDashboard" asp-action="Index"
-                       class="fn-nav-item @(currentController == "RehberDashboard" ? "active" : "")">
+                       class="fn-nav-item @(currentController == "RehberDashboard" && currentAction == "Index" ? "active" : "")">
                         <i class="bi bi-speedometer2"></i> Rəhbər Panel
+                    </a>
+                    <a asp-area="HR" asp-controller="RehberDashboard" asp-action="Davamiyyet"
+                       class="fn-nav-item fn-nav-item--sub @(currentController == "RehberDashboard" && currentAction == "Davamiyyet" ? "active" : "")">
+                        <i class="bi bi-calendar-check"></i> Davamiyyət
+                    </a>
+                    <a asp-area="HR" asp-controller="RehberDashboard" asp-action="IcazeIzleme"
+                       class="fn-nav-item fn-nav-item--sub @(currentController == "RehberDashboard" && currentAction == "IcazeIzleme" ? "active" : "")">
+                        <i class="bi bi-bar-chart-line"></i> İcazə İzləmə
                     </a>
                 }
                 @if (isHR)
