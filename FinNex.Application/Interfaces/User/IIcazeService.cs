@@ -5,6 +5,7 @@ namespace FinNex.Application.Interfaces
 {
     public interface IIcazeService
     {
+        Task<Result<IList<IcazeIsciIstatistikDto>>> GetIsciIzlemeAsync(IcazeIzlemeFiltrDto filtr);
         Task<Result<IList<IcazeListDto>>> GetIsciIcazeleriAsync(int isciId);
         Task<Result<IcazeListDto>> YaratAsync(IcazeCreateDto dto);
         Task<Result> LegvEtAsync(int icazeId, int isciId);

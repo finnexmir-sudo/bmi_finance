@@ -1,5 +1,6 @@
 using FinNex.Application.DTOs.HR.Icaze;
 using FinNex.Application.Interfaces;
+using FinNex.Application.Interfaces.Structur;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.UI.Areas.User.ViewModels.Icaze;
@@ -16,15 +17,18 @@ namespace FinNex.UI.Areas.User.Controllers
     {
         private readonly IIcazeService _icazeService;
         private readonly IIsciService _isciService;
+        private readonly IDepartmentService _departamentService;
         private readonly UserManager<AppUser> _userManager;
 
         public IcazeController(
             IIcazeService icazeService,
             IIsciService isciService,
+            IDepartmentService departamentService,
             UserManager<AppUser> userManager)
         {
             _icazeService = icazeService;
             _isciService = isciService;
+            _departamentService = departamentService;
             _userManager = userManager;
         }
 
@@ -152,6 +156,51 @@ namespace FinNex.UI.Areas.User.Controllers
             }
 
             return View(result.Data!);
+        }
+
+        // ── GET /User/Icaze/Izleme ─────────────────────────────
+        [Authorize(Roles = $"{RoleNames.HR},{RoleNames.Rehber},{RoleNames.SobeReisi},{RoleNames.Admin}")]
+        public async Task<IActionResult> Izleme(
+            DateTime? tarixFrom,
+            DateTime? tarixTo,
+            int? departamentId,
+            string? axtaris,
+            int? status)
+        {
+            var filtr = new IcazeIzlemeFiltrDto
+            {
+                TarixFrom = tarixFrom,
+                TarixTo = tarixTo,
+                DepartamentId = departamentId,
+                Axtaris = axtaris,
+                Status = status,
+            };
+
+            var result = await _icazeService.GetIsciIzlemeAsync(filtr);
+            var depResult = await _departamentService.HamisiniGetirAsync();
+
+            var departamentler = new List<SelectListItem>
+            {
+                new SelectListItem("Bütün şöbələr", "")
+            };
+            if (depResult.Success && depResult.Data != null)
+            {
+                departamentler.AddRange(depResult.Data
+                    .OrderBy(d => d.Ad)
+                    .Select(d => new SelectListItem(d.Ad, d.Id.ToString())));
+            }
+
+            var vm = new IcazeIzlemeVM
+            {
+                IsciIstatistikler = result.Success ? result.Data!.ToList() : new(),
+                Filtr = filtr,
+                Departamentler = departamentler,
+            };
+
+            if (!result.Success)
+                TempData["Error"] = result.Message;
+
+            return View(vm);
         }
 
         // ── POST /User/Icaze/Legv ──────────────────────────────

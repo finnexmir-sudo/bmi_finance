@@ -1,0 +1,289 @@
+/* =============================================
+   İcazə İzləmə — User Area
+   ============================================= */
+
+/* ── KPI sıra ── */
+.iz-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 1100px) { .iz-kpi-row { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 640px)  { .iz-kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+.iz-kpi {
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 12px;
+    padding: 16px 14px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow .15s;
+}
+.iz-kpi:hover { box-shadow: 0 2px 12px rgba(30,42,59,.07); }
+.iz-kpi::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 12px 12px 0 0;
+}
+.iz-kpi--blue::before   { background: #3b82f6; }
+.iz-kpi--green::before  { background: #22c55e; }
+.iz-kpi--amber::before  { background: #f59e0b; }
+.iz-kpi--red::before    { background: #ef4444; }
+.iz-kpi--teal::before   { background: #14b8a6; }
+.iz-kpi--indigo::before { background: #6366f1; }
+
+.iz-kpi-val {
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: #1a2334;
+    line-height: 1.2;
+}
+.iz-kpi-lbl {
+    font-size: .72rem;
+    color: #8590a6;
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+/* ── Filtr kartı ── */
+.iz-filter-card {
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+}
+
+.iz-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 10px 14px;
+    margin-bottom: 12px;
+}
+
+.iz-filter-lbl {
+    display: block;
+    font-size: .7rem;
+    font-weight: 600;
+    color: #7a8499;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 4px;
+}
+
+.iz-input {
+    width: 100%;
+    padding: 7px 10px;
+    font-size: .82rem;
+    border: 1px solid #dde2ec;
+    border-radius: 8px;
+    background: #fafbfc;
+    color: #1a2334;
+    transition: border-color .15s, box-shadow .15s;
+    outline: none;
+}
+.iz-input:focus {
+    border-color: #4f8ef7;
+    box-shadow: 0 0 0 3px rgba(79,142,247,.12);
+    background: #fff;
+}
+
+.iz-filter-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.iz-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+    transition: opacity .15s, box-shadow .15s;
+}
+.iz-btn:hover { opacity: .87; }
+.iz-btn--primary { background: #2563eb; color: #fff; }
+.iz-btn--ghost   { background: #f1f3f8; color: #4a5568; border: 1px solid #dde2ec; }
+
+/* ── Cədvəl kartı ── */
+.iz-table-card {
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.iz-table-header {
+    padding: 12px 18px;
+    border-bottom: 1px solid #f0f2f7;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.iz-table-count {
+    font-size: .8rem;
+    color: #8590a6;
+    font-weight: 500;
+}
+
+.iz-table-wrap { overflow-x: auto; }
+
+.iz-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .82rem;
+}
+
+.iz-table thead th {
+    background: #f7f8fc;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: .7rem;
+    font-weight: 700;
+    color: #7a8499;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    white-space: nowrap;
+    border-bottom: 1px solid #edf0f7;
+}
+
+.iz-table tbody tr {
+    border-bottom: 1px solid #f3f4f8;
+    transition: background .12s;
+    cursor: pointer;
+}
+.iz-table tbody tr:hover { background: #f8f9fd; }
+.iz-table tbody tr:last-child { border-bottom: none; }
+
+.iz-table td {
+    padding: 11px 14px;
+    vertical-align: middle;
+    color: #2d3748;
+}
+
+.iz-isci-name {
+    font-weight: 600;
+    color: #1a2334;
+    font-size: .84rem;
+}
+.iz-isci-sub {
+    font-size: .73rem;
+    color: #8590a6;
+    margin-top: 2px;
+}
+
+/* ── Say badgelər ── */
+.iz-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 20px;
+    padding: 0 7px;
+    border-radius: 10px;
+    font-size: .72rem;
+    font-weight: 700;
+    line-height: 1;
+}
+.iz-badge--total  { background: #eff6ff; color: #2563eb; }
+.iz-badge--ok     { background: #f0fdf4; color: #16a34a; }
+.iz-badge--wait   { background: #fffbeb; color: #b45309; }
+.iz-badge--reject { background: #fef2f2; color: #dc2626; }
+
+/* ── Saat göstərici ── */
+.iz-saat {
+    font-weight: 700;
+    color: #2563eb;
+    font-size: .9rem;
+}
+.iz-saat-lbl {
+    font-size: .7rem;
+    color: #8590a6;
+    font-weight: 400;
+}
+
+/* ── Genişlənmiş sıra (icazə siyahısı) ── */
+.iz-detail-row { display: none; background: #f9fafc; }
+.iz-detail-row.is-open { display: table-row; }
+
+.iz-detail-inner {
+    padding: 14px 18px 14px 36px;
+}
+
+.iz-detail-title {
+    font-size: .75rem;
+    font-weight: 700;
+    color: #7a8499;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 10px;
+}
+
+.iz-mini-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .78rem;
+}
+.iz-mini-table th {
+    text-align: left;
+    padding: 5px 10px;
+    color: #8590a6;
+    font-weight: 600;
+    font-size: .7rem;
+    text-transform: uppercase;
+    border-bottom: 1px solid #edf0f7;
+}
+.iz-mini-table td {
+    padding: 7px 10px;
+    color: #2d3748;
+    border-bottom: 1px solid #f3f4f8;
+    vertical-align: middle;
+}
+.iz-mini-table tr:last-child td { border-bottom: none; }
+
+.iz-status-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+.iz-status-dot--ok     { background: #22c55e; }
+.iz-status-dot--wait   { background: #f59e0b; }
+.iz-status-dot--reject { background: #ef4444; }
+
+/* ── Boş vəziyyət ── */
+.iz-empty {
+    text-align: center;
+    padding: 48px 20px;
+    color: #8590a6;
+}
+.iz-empty-icon { margin-bottom: 12px; }
+.iz-empty-title { font-size: .9rem; font-weight: 600; color: #5a6478; margin-bottom: 4px; }
+.iz-empty-sub   { font-size: .78rem; }
+
+/* ── Expand chevron ── */
+.iz-expand-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 4px;
+    color: #8590a6;
+    transition: transform .2s, color .15s;
+}
+.iz-expand-btn:hover { color: #2563eb; }
+.iz-expand-btn.is-open { transform: rotate(90deg); color: #2563eb; }

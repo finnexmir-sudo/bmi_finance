@@ -635,6 +635,77 @@ namespace FinNex.Application.Services
             HrTesdiq = icaze.HrTesdiq,
             HrTesdiqTarixi = icaze.HrTesdiqTarixi,
         };
+        public async Task<Result<IList<IcazeIsciIstatistikDto>>> GetIsciIzlemeAsync(IcazeIzlemeFiltrDto filtr)
+        {
+            try
+            {
+                var list = await _unitOfWork.Repository<Icaze>()
+                    .HamisiniGetirAsync(
+                        predicate: x =>
+                            (filtr.TarixFrom == null || x.IcazeTarixi >= filtr.TarixFrom) &&
+                            (filtr.TarixTo == null || x.IcazeTarixi <= filtr.TarixTo) &&
+                            (filtr.Status == null || (int)x.Status == filtr.Status) &&
+                            (filtr.DepartamentId == null || x.Isci.IsciTeyinatlari
+                                .Any(t => t.Aktivdir && t.DepartamentId == filtr.DepartamentId)) &&
+                            (filtr.Axtaris == null || x.Isci.Ad.Contains(filtr.Axtaris) ||
+                                x.Isci.Soyad.Contains(filtr.Axtaris)),
+                        include: q => q
+                            .Include(i => i.Isci)
+                                .ThenInclude(i => i.IsciTeyinatlari)
+                                    .ThenInclude(t => t.Departament)
+                            .Include(i => i.Isci)
+                                .ThenInclude(i => i.IsciTeyinatlari)
+                                    .ThenInclude(t => t.Vezife)
+                            .Include(i => i.EvezEdenIsci),
+                        izlemeden: true);
+
+                var grouped = list
+                    .GroupBy(x => x.IsciId)
+                    .Select(g =>
+                    {
+                        var ilk = g.First();
+                        var aktivTeyinat = ilk.Isci?.IsciTeyinatlari?
+                            .FirstOrDefault(t => t.Aktivdir);
+
+                        var icazeListDtos = g
+                            .OrderByDescending(x => x.IcazeTarixi)
+                            .Select(MapToListDto)
+                            .ToList();
+
+                        return new IcazeIsciIstatistikDto
+                        {
+                            IsciId = g.Key,
+                            IsciAdSoyad = ilk.Isci?.TamAd ?? $"İşçi #{g.Key}",
+                            SobeAdi = aktivTeyinat?.Departament?.Ad ?? "-",
+                            VezifeAdi = aktivTeyinat?.Vezife?.Ad,
+                            CemiMuraciet = g.Count(),
+                            TesdiqlenibSayi = g.Count(x => x.Status == IcazeStatus.Tesdiqlenib),
+                            GozlemeSayi = g.Count(x =>
+                                x.Status == IcazeStatus.Gozlemede ||
+                                x.Status == IcazeStatus.SobeReisiTesdiqinde ||
+                                x.Status == IcazeStatus.RehberTesdiqinde ||
+                                x.Status == IcazeStatus.HrTesdiqinde),
+                            ImtinaEdildiSayi = g.Count(x => x.Status == IcazeStatus.ImtinaEdildi),
+                            UmumSaat = g.Sum(x => x.IcazeSaati),
+                            TesdiqSaat = g
+                                .Where(x => x.Status == IcazeStatus.Tesdiqlenib)
+                                .Sum(x => x.IcazeSaati),
+                            SonIcazeTarixi = g.Max(x => (DateTime?)x.IcazeTarixi),
+                            Icazeler = icazeListDtos,
+                        };
+                    })
+                    .OrderBy(x => x.SobeAdi)
+                    .ThenBy(x => x.IsciAdSoyad)
+                    .ToList();
+
+                return Result<IList<IcazeIsciIstatistikDto>>.Ok(grouped);
+            }
+            catch (Exception ex)
+            {
+                return Result<IList<IcazeIsciIstatistikDto>>.Fail($"İzləmə məlumatları gətirilmədi: {ex.Message}");
+            }
+        }
+
         public async Task<Result<IList<IcazeListDto>>> GetFiltrliAsync(
     DateTime? tarixFrom,
     DateTime? tarixTo,
