@@ -545,7 +545,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Il = il,
                 Ay = ay,
                 FerdiElaveler = ferdiElaveler.Where(x =>
-                    x.BonusMeblegi > 0 || x.CerimeMeblegi > 0 || x.FerqliGelirMeblegi > 0).ToList()
+                    x.BonusMeblegi > 0 || x.CerimeMeblegi > 0 || x.IH07Meblegi > 0 || x.VM9821Meblegi > 0).ToList()
             };
 
             var r = await _hesablamaService.TopluHesablaAsync(input);

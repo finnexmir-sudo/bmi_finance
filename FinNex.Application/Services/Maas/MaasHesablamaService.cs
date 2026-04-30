@@ -88,8 +88,8 @@ namespace FinNex.Application.Services.HR
                     BonusAciqlama = elave?.BonusAciqlama,
                     CerimeMeblegi = elave?.CerimeMeblegi ?? 0,
                     CerimeAciqlama = elave?.CerimeAciqlama,
-                    FerqliGelirMeblegi = elave?.FerqliGelirMeblegi ?? 0,
-                    FerqliGelirAciqlama = elave?.FerqliGelirAciqlama
+                    IH07Meblegi = elave?.IH07Meblegi ?? 0,
+                    VM9821Meblegi = elave?.VM9821Meblegi ?? 0
                 };
 
                 var r = await FerdiHesablaAsync(ferdiInput);
@@ -350,14 +350,23 @@ namespace FinNex.Application.Services.HR
                     Tip = "gelir"
                 });
 
-            // 7.1 Fərqli gəlir — bəzi işçilərdə bonusdan ayrı gəlir kimi ödənilir;
-            // bonus kimi vergiyə cəlb olunur və brüt-ə daxil edilir, ayrıca xəttdə uçota düşür.
-            if (input.FerqliGelirMeblegi > 0)
+            // 7.1 IH-07 əlavə təminat (18.02.2016 tarixli əmr) — vergiyə cəlb olunur, brüt-ə əlavə edilir
+            if (input.IH07Meblegi > 0)
                 izahatlar.Add(new HesablamaIzahiDto
                 {
-                    Addim = "Fərqli Gəlir",
-                    Izah = input.FerqliGelirAciqlama ?? "El ile daxil edilib",
-                    Mebleg = input.FerqliGelirMeblegi,
+                    Addim = "IH-07 Əlavə Təminat",
+                    Izah = "18.02.2016 tarixli IH-07 saylı əmrlə əlavə təminat",
+                    Mebleg = input.IH07Meblegi,
+                    Tip = "gelir"
+                });
+
+            // 7.2 VM 98.2.1 — vergiyə cəlb olunan gəlirlər
+            if (input.VM9821Meblegi > 0)
+                izahatlar.Add(new HesablamaIzahiDto
+                {
+                    Addim = "VM 98.2.1 Gəlirləri",
+                    Izah = "VM-nin 98.2.1-ci maddəsinə əsasən vergiyə cəlb olunan gəlirlər",
+                    Mebleg = input.VM9821Meblegi,
                     Tip = "gelir"
                 });
 
@@ -466,7 +475,8 @@ namespace FinNex.Application.Services.HR
                 - xestelikKesinti
                 - qayibKesinti
                 + input.BonusMeblegi
-                + input.FerqliGelirMeblegi
+                + input.IH07Meblegi
+                + input.VM9821Meblegi
                 - input.CerimeMeblegi;
 
             if (esasBrut < 0) esasBrut = 0;
@@ -750,7 +760,8 @@ namespace FinNex.Application.Services.HR
                 DetayEkle("Məzuniyyət Ödənişi",                MaasDetayTipi.Gelir,           mezOdenis,          mezGun > 0 ? $"{mezGun} gün" : null),
                 DetayEkle("Xəstəlik Ödənişi",                  MaasDetayTipi.Gelir,           xestelikSirketOdenis, xestelikSirketGun > 0 ? $"{xestelikSirketGun} iş günü (şirkət payı)" : null),
                 DetayEkle("Bonus/Mükafat",                     MaasDetayTipi.Gelir,           input.BonusMeblegi, input.BonusAciqlama),
-                DetayEkle("Fərqli Gəlir",                      MaasDetayTipi.Gelir,           input.FerqliGelirMeblegi, input.FerqliGelirAciqlama),
+                DetayEkle("IH-07 Əlavə Təminat",               MaasDetayTipi.Gelir,           input.IH07Meblegi,        "18.02.2016 tarixli IH-07 saylı əmrlə əlavə təminat"),
+                DetayEkle("VM 98.2.1 Gəlirləri",              MaasDetayTipi.Gelir,           input.VM9821Meblegi,      "VM-nin 98.2.1-ci maddəsinə əsasən vergiyə cəlb olunan gəlirlər"),
                 // Kəsintilər
                 DetayEkle("Davamiyyət Kəsintisi",              MaasDetayTipi.Tutulma,         umumiDavamKesinti,  davamAciq),
                 DetayEkle("Gecikdirmə Cəriməsi",               MaasDetayTipi.Tutulma,         input.CerimeMeblegi, input.CerimeAciqlama),

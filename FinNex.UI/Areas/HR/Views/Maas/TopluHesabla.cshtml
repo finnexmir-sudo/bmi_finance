@@ -519,24 +519,45 @@
                                                     </div>
                                                 </div>
 
-                                                @* Fərqli gəlir — bonusdan ayrı, vergiyə cəlb olunan əlavə gəlir *@
+                                                @* IH-07 Əlavə Təminat (18.02.2016 tarixli əmr) *@
                                                 <div class="mth-detail-card mth-detail-card--ferqli">
                                                     <div class="mth-detail-card-head" style="color:#0ea5e9;">
                                                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                                                             <path d="M3 7h8M7 3v8" stroke="#0ea5e9" stroke-width="1.3" stroke-linecap="round"/>
                                                         </svg>
-                                                        <span>Fərqli gəlir</span>
+                                                        <span>IH-07 Əlavə Təminat</span>
                                                     </div>
                                                     <div class="mth-detail-card-body">
                                                         <div class="mth-ferqli-lbl">Məbləğ</div>
                                                         <div class="mth-inp-wrap mth-ferqli-inp">
                                                             <span class="mth-inp-pfx mth-inp-pfx--plus">+</span>
                                                             <input type="number" class="mth-inp mth-inp--fg"
-                                                                   name="ferdiElaveler[@i].FerqliGelirMeblegi"
+                                                                   name="ferdiElaveler[@i].IH07Meblegi"
                                                                    min="0" step="0.01" placeholder="0.00"
                                                                    @(isDone?"readonly":"")/>
                                                         </div>
-                                                        <div class="mth-ferqli-hint">Bonus kimi vergiyə cəlb olunur</div>
+                                                        <div class="mth-ferqli-hint">18.02.2016 tarixli IH-07 saylı əmr</div>
+                                                    </div>
+                                                </div>
+
+                                                @* VM 98.2.1 — vergiyə cəlb olunan gəlirlər *@
+                                                <div class="mth-detail-card mth-detail-card--ferqli">
+                                                    <div class="mth-detail-card-head" style="color:#7c3aed;">
+                                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                            <path d="M3 7h8M7 3v8" stroke="#7c3aed" stroke-width="1.3" stroke-linecap="round"/>
+                                                        </svg>
+                                                        <span>VM 98.2.1 Gəlirləri</span>
+                                                    </div>
+                                                    <div class="mth-detail-card-body">
+                                                        <div class="mth-ferqli-lbl">Məbləğ</div>
+                                                        <div class="mth-inp-wrap mth-ferqli-inp">
+                                                            <span class="mth-inp-pfx mth-inp-pfx--plus">+</span>
+                                                            <input type="number" class="mth-inp mth-inp--fg"
+                                                                   name="ferdiElaveler[@i].VM9821Meblegi"
+                                                                   min="0" step="0.01" placeholder="0.00"
+                                                                   @(isDone?"readonly":"")/>
+                                                        </div>
+                                                        <div class="mth-ferqli-hint">VM-nin 98.2.1-ci maddəsi üzrə gəlir</div>
                                                     </div>
                                                 </div>
 
