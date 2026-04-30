@@ -5,38 +5,33 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FinNex.DataAccess.Migrations
 {
     /// <summary>
-    /// "Fərqli Gəlir" (Id=14) əvəzinə iki yeni MaasNovu əlavə edir:
-    ///   Id=15 — 18.02.2016 tarixli IH-07 saylı əmrlə əlavə təminat
-    ///   Id=16 — VM-nin 98.2.1-ci maddəsinə əsasən vergiyə cəlb olunan gəlirlər
-    /// Hər ikisi Tip=Gelir(1). İdempotent: artıq mövcuddursa keçir.
+    /// İki yeni MaasNovu əlavə edir (Id=17, Id=18):
+    ///   Id=17 — 18.02.2016 tarixli IH-07 saylı əmrlə əlavə təminat
+    ///   Id=18 — VM-nin 98.2.1-ci maddəsinə əsasən vergiyə cəlb olunan gəlirlər
+    /// Hər ikisi Tip=Gelir(1). İdempotent: ad üzrə yoxlanılır, təkrarlanmaz.
     /// </summary>
     public partial class ReplaceIH07VM9821MaasNovu : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Köhnə "Fərqli Gəlir" girişini deaktiv et (mövcud MaasDetay qeydlərini qorumaq üçün silmirik)
+            // IH-07 Əlavə Təminat (Id=17)
             migrationBuilder.Sql(@"
-                UPDATE MaasNovleri SET Aktivdir = 0 WHERE Id = 14 AND Ad = N'Fərqli Gəlir';
-            ");
-
-            // IH-07 Əlavə Təminat
-            migrationBuilder.Sql(@"
-                IF NOT EXISTS (SELECT 1 FROM MaasNovleri WHERE Id = 15)
+                IF NOT EXISTS (SELECT 1 FROM MaasNovleri WHERE Ad = N'IH-07 Əlavə Təminat')
                 BEGIN
                     SET IDENTITY_INSERT MaasNovleri ON;
                     INSERT INTO MaasNovleri (Id, Ad, Tip, Aktivdir, Silinib, YaradilmaTarixi)
-                    VALUES (15, N'IH-07 Əlavə Təminat', 1, 1, 0, GETDATE());
+                    VALUES (17, N'IH-07 Əlavə Təminat', 1, 1, 0, GETDATE());
                     SET IDENTITY_INSERT MaasNovleri OFF;
                 END
             ");
 
-            // VM 98.2.1 Gəlirləri
+            // VM 98.2.1 Gəlirləri (Id=18)
             migrationBuilder.Sql(@"
-                IF NOT EXISTS (SELECT 1 FROM MaasNovleri WHERE Id = 16)
+                IF NOT EXISTS (SELECT 1 FROM MaasNovleri WHERE Ad = N'VM 98.2.1 Gəlirləri')
                 BEGIN
                     SET IDENTITY_INSERT MaasNovleri ON;
                     INSERT INTO MaasNovleri (Id, Ad, Tip, Aktivdir, Silinib, YaradilmaTarixi)
-                    VALUES (16, N'VM 98.2.1 Gəlirləri', 1, 1, 0, GETDATE());
+                    VALUES (18, N'VM 98.2.1 Gəlirləri', 1, 1, 0, GETDATE());
                     SET IDENTITY_INSERT MaasNovleri OFF;
                 END
             ");
@@ -45,8 +40,7 @@ namespace FinNex.DataAccess.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.Sql(@"
-                UPDATE MaasNovleri SET Aktivdir = 1 WHERE Id = 14 AND Ad = N'Fərqli Gəlir';
-                DELETE FROM MaasNovleri WHERE Id IN (15, 16);
+                DELETE FROM MaasNovleri WHERE Ad IN (N'IH-07 Əlavə Təminat', N'VM 98.2.1 Gəlirləri');
             ");
         }
     }
