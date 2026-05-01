@@ -744,6 +744,76 @@ namespace FinNex.UI.Areas.HR.Controllers
             return RedirectToAction(nameof(Index), new { il, ay });
         }
 
+        // ── POST /HR/Maas/TopluGeriGonder ───────────────────────
+        // Rəhbər hesablamanı geri qaytarır: Layihə → LəğvEdildi + Mühasibə bildiriş
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.Rehber + "," + RoleNames.Admin)]
+        public async Task<IActionResult> TopluGeriGonder(int il, int ay, string? sebeb)
+        {
+            var maaslar = await _unitOfWork.Repository<Maas>()
+                .Query()
+                .Where(x => x.Il == il && x.Ay == ay && !x.Silinib && x.Status == MaasStatus.Layihe)
+                .ToListAsync();
+
+            if (!maaslar.Any())
+            {
+                TempData["Error"] = "Geri göndəriləcək layihə statusunda maaş tapılmadı.";
+                return RedirectToAction(nameof(Index), new { il, ay });
+            }
+
+            int ugurlu = 0, xeta = 0;
+            foreach (var m in maaslar)
+            {
+                var r = await _maasService.StatusDeyisAsync(m.Id, MaasStatus.LegvEdildi);
+                if (r.Success) ugurlu++;
+                else xeta++;
+            }
+
+            if (ugurlu > 0)
+                await BildirisGonderHesablamaUcunAsync(il, ay, ugurlu, sebeb);
+
+            TempData[xeta > 0 ? "Error" : "Success"] =
+                $"Hesablama geri qaytarıldı: {ugurlu} maaş ləğv edildi, mühasib yenidən hesablamağa dəvət edildi"
+                + (xeta > 0 ? $", {xeta} xətalı." : ".");
+            return RedirectToAction(nameof(Index), new { il, ay });
+        }
+
+        // ── HELPER: Mühasib/HR-ə yenidən hesablama bildirişi göndər ──
+        private async Task BildirisGonderHesablamaUcunAsync(int il, int ay, int sayi, string? sebeb)
+        {
+            try
+            {
+                var ayAdlar = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+                                      "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+                var dovr = $"{ayAdlar[ay]} {il}";
+                var redirectUrl = Url.Action("TopluHesabla", "Maas", new { area = "HR", il, ay });
+
+                var muhasibler = await _userManager.GetUsersInRoleAsync(RoleNames.Muhasib);
+                var hrler      = await _userManager.GetUsersInRoleAsync(RoleNames.HR);
+                var adminler   = await _userManager.GetUsersInRoleAsync(RoleNames.Admin);
+                var alicilar   = muhasibler.Concat(hrler).Concat(adminler)
+                    .Where(u => u.IsciId.HasValue)
+                    .GroupBy(u => u.IsciId!.Value)
+                    .Select(g => g.First())
+                    .ToList();
+
+                var metn = string.IsNullOrWhiteSpace(sebeb)
+                    ? $"{sayi} işçi üçün {dovr} maaşı yenidən hesablanması tələb edildi."
+                    : $"{sayi} işçi üçün {dovr} maaşı yenidən hesablanması tələb edildi. Səbəb: {sebeb}";
+
+                foreach (var u in alicilar)
+                {
+                    await _bildirisService.YaratAsync(
+                        isciId: u.IsciId!.Value,
+                        nov: BildirisNovu.TesdiqSorgusu,
+                        bashliq: $"Maaş hesablaması geri qaytarıldı — {dovr}",
+                        metn: metn,
+                        redirectUrl: redirectUrl);
+                }
+            }
+            catch { }
+        }
+
         // ── HELPER: Mühasiblərə bildiriş göndər ──
         private async Task BildirisGonderMuhasibleriAsync(int il, int ay, int sayi)
         {
