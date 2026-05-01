@@ -1,10 +1,14 @@
+using FinNex.DataAccess.Contexts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace FinNex.DataAccess.Migrations
 {
-    /// <inheritdoc />
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20260501100000_AddDavamiyyetQayibFields")]
     public partial class AddDavamiyyetQayibFields : Migration
     {
         /// <inheritdoc />
