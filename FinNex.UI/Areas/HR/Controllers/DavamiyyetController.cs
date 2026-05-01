@@ -253,9 +253,18 @@ namespace FinNex.UI.Areas.HR.Controllers
             if (entity == null)
                 return BadRequest(new { error = "Qayıb qeydi tapılmadı." });
 
+            var maasOdenilib = await _unitOfWork.Repository<Maas>()
+                .Query()
+                .AnyAsync(m => !m.Silinib && m.IsciId == entity.IsciId
+                    && m.Il == entity.Tarix.Year && m.Ay == entity.Tarix.Month
+                    && m.Status == MaasStatus.Odenildi);
+
+            if (maasOdenilib)
+                return BadRequest(new { error = "Bu ayın maaşı artıq ödənildiyi üçün dəyişiklik edilə bilməz." });
+
             entity.MaasdanKes = req.MaasdanKes;
             entity.QayibSebebi = req.QayibSebebi?.Trim();
-            await _unitOfWork.SaveAsync();
+            await _unitOfWork.YaddaSaxlaAsync();
 
             return Ok(new { message = "Yeniləndi." });
         }
@@ -267,6 +276,15 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return BadRequest(new { error = "Məlumat natamamdır." });
 
             var tarix = req.Tarix.Date;
+
+            var maasOdenilib = await _unitOfWork.Repository<Maas>()
+                .Query()
+                .AnyAsync(m => !m.Silinib && m.IsciId == req.IsciId
+                    && m.Il == tarix.Year && m.Ay == tarix.Month
+                    && m.Status == MaasStatus.Odenildi);
+
+            if (maasOdenilib)
+                return BadRequest(new { error = "Bu ayın maaşı artıq ödənildiyi üçün dəyişiklik edilə bilməz." });
 
             var movcut = await _davamiyyetService.BuGunMovcuddurmuAsync(req.IsciId, tarix);
             if (movcut)
