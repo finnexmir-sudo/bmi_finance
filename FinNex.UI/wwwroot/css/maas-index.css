@@ -1022,6 +1022,28 @@
 }
 .mi-btn--green svg { color: #fff; }
 
+.mi-btn--orange {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #d97706, #b45309);
+    color: #fff;
+    border: 1px solid #b45309;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .15s;
+}
+.mi-btn--orange:hover {
+    background: linear-gradient(135deg, #b45309, #92400e);
+    box-shadow: 0 4px 12px rgba(180, 83, 9, 0.25);
+    transform: translateY(-1px);
+}
+.mi-btn--orange svg { color: #fff; }
+
 /* Footer cəmi sətri — vurğulu */
 .mi-tfoot-cemi {
     background: linear-gradient(180deg, #fef3c7, #fffbeb) !important;
