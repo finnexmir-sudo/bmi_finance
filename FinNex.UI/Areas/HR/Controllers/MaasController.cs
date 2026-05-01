@@ -686,6 +686,36 @@ namespace FinNex.UI.Areas.HR.Controllers
         // Bütün Layihə statuslu maaşları bir kliklə təsdiqlə
         [HttpPost, ValidateAntiForgeryToken]
         [Authorize(Roles = RoleNames.Rehber + "," + RoleNames.Admin)]
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> TopluLegvEt(int il, int ay)
+        {
+            var maaslar = await _unitOfWork.Repository<Maas>()
+                .Query()
+                .Where(x => x.Il == il && x.Ay == ay && !x.Silinib && x.Status == MaasStatus.Layihe)
+                .ToListAsync();
+
+            if (!maaslar.Any())
+            {
+                TempData["Error"] = "Ləğv ediləcək layihə statusunda maaş tapılmadı.";
+                return RedirectToAction(nameof(Index), new { il, ay });
+            }
+
+            int ugurlu = 0, xeta = 0;
+            foreach (var m in maaslar)
+            {
+                var r = await _maasService.StatusDeyisAsync(m.Id, MaasStatus.LegvEdildi);
+                if (r.Success) ugurlu++;
+                else xeta++;
+            }
+
+            TempData[xeta > 0 ? "Error" : "Success"] =
+                $"Toplu ləğv: {ugurlu} maaş ləğv edildi" + (xeta > 0 ? $", {xeta} xətalı." : ".");
+            return RedirectToAction(nameof(Index), new { il, ay });
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.Rehber + "," + RoleNames.Admin)]
         public async Task<IActionResult> TopluTesdiqle(int il, int ay)
         {
             var maaslar = await _unitOfWork.Repository<Maas>()
