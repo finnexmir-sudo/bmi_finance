@@ -15,6 +15,9 @@ namespace FinNex.Application.DTOs.HR.Davamiyyet
 
         public DavamiyyetStatus Status { get; set; }
         public string? DepartamentAd { get; set; }
+
+        public bool MaasdanKes { get; set; }
+        public string? QayibSebebi { get; set; }
     }
 
 }

@@ -238,6 +238,34 @@ namespace FinNex.UI.Areas.HR.Controllers
             });
         }
 
+        [HttpPost]
+        public async Task<IActionResult> QayibYaz([FromBody] QayibYazRequest req)
+        {
+            if (req == null || req.IsciId <= 0)
+                return BadRequest(new { error = "Məlumat natamamdır." });
+
+            var tarix = req.Tarix.Date;
+
+            var movcut = await _davamiyyetService.BuGunMovcuddurmuAsync(req.IsciId, tarix);
+            if (movcut)
+                return BadRequest(new { error = "Bu tarix üçün davamiyyət qeydi artıq mövcuddur." });
+
+            var dto = new Application.DTOs.HR.Davamiyyet.DavamiyyetCreateDto
+            {
+                IsciId = req.IsciId,
+                Tarix = tarix,
+                Status = DavamiyyetStatus.Qayib,
+                MaasdanKes = req.MaasdanKes,
+                QayibSebebi = req.QayibSebebi?.Trim()
+            };
+
+            var result = await _davamiyyetService.ElavEtAsync(dto);
+            if (!result.Success)
+                return BadRequest(new { error = result.Message });
+
+            return Ok(new { message = "Qayıb uğurla qeyd edildi." });
+        }
+
         [HttpGet]
         public async Task<IActionResult> IsciAxtar(string q)
         {
@@ -292,5 +320,13 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             return result;
         }
+    }
+
+    public class QayibYazRequest
+    {
+        public int IsciId { get; set; }
+        public DateTime Tarix { get; set; }
+        public bool MaasdanKes { get; set; }
+        public string? QayibSebebi { get; set; }
     }
 }

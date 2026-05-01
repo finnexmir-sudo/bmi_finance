@@ -952,6 +952,13 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<int>("IsciId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("MaasdanKes")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("QayibSebebi")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<int?>("SilenIcraciId")
                         .HasColumnType("int");
 

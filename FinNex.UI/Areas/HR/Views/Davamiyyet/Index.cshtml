@@ -329,6 +329,56 @@
 
 </div>
 
+@* ── Qayıb Yaz Modal ── *@
+<div class="modal fade" id="qayibModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:12px;border:none;box-shadow:0 20px 60px rgba(0,0,0,.18);">
+            <div class="modal-header" style="border-bottom:1px solid #f1f5f9;padding:20px 24px 16px;">
+                <h5 class="modal-title" style="font-size:15px;font-weight:600;color:#1e293b;">
+                    <i class="bi bi-x-circle-fill text-danger me-2"></i>Qayıb qeyd et
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:24px;">
+                <input type="hidden" id="qayibIsciId" />
+                <input type="hidden" id="qayibTarix" />
+
+                <div class="mb-3">
+                    <label class="form-label" style="font-size:13px;font-weight:500;color:#64748b;">İşçi</label>
+                    <div id="qayibIsciAd" style="font-weight:600;color:#1e293b;font-size:14px;padding:8px 12px;background:#f8fafc;border-radius:8px;"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" style="font-size:13px;font-weight:500;color:#64748b;">Tarix</label>
+                    <div id="qayibTarixGoster" style="font-size:14px;color:#334155;padding:8px 12px;background:#f8fafc;border-radius:8px;"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" style="font-size:13px;font-weight:500;color:#64748b;">Səbəb (ixtiyari)</label>
+                    <input type="text" id="qayibSebeb" class="form-control" placeholder="Məs: Xəbərsiz gəlmədi" maxlength="200"
+                           style="font-size:13px;border-radius:8px;border-color:#e2e8f0;" />
+                </div>
+
+                <div class="form-check" style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 12px 12px 36px;">
+                    <input class="form-check-input" type="checkbox" id="qayibMaasdanKes" style="margin-left:-20px;" />
+                    <label class="form-check-label" for="qayibMaasdanKes" style="font-size:13px;font-weight:500;color:#dc2626;">
+                        Maaşdan kəsilsin
+                        <span style="display:block;font-weight:400;color:#ef4444;font-size:12px;margin-top:2px;">
+                            Bu gün əmək haqqından düşüləcək
+                        </span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top:1px solid #f1f5f9;padding:16px 24px;">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="font-size:13px;border-radius:8px;">Ləğv et</button>
+                <button type="button" id="qayibYazBtn" class="btn btn-danger" style="font-size:13px;border-radius:8px;min-width:120px;">
+                    <i class="bi bi-check-lg me-1"></i>Qayıb yaz
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Styles {
     <link rel="stylesheet" href="~/css/hr/hr-davamiyyet.css" asp-append-version="true" />
 }

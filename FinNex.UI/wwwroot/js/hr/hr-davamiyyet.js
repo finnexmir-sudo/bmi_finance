@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var searchTimeout = null;
     var currentParams = {};
     var currentMode = 'tarix';
+    var isGozlenilenMode = false;
 
     // ── Tab switching ──
     tabs.forEach(function (tab) {
@@ -116,11 +117,12 @@ document.addEventListener('DOMContentLoaded', function () {
         var url = endpoints.getGozlenilen + '?tarix=' + encodeURIComponent(tarix);
 
         tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><div class="spinner-border spinner-border-sm text-muted"></div><div style="margin-top:8px">Yüklənir...</div></div></td></tr>';
+        isGozlenilenMode = true;
 
         fetch(url)
             .then(function (r) { return r.json(); })
             .then(function (data) {
-                renderTable(data.records || []);
+                renderTable(data.records || [], true);
                 recordCount.textContent = (data.count || 0) + ' gözlənilən işçi';
                 extraStats.style.display = 'none';
             })
@@ -129,6 +131,45 @@ document.addEventListener('DOMContentLoaded', function () {
                 tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><i class="bi bi-exclamation-triangle"></i><div>Xəta baş verdi</div></div></td></tr>';
             });
     }
+
+    // ── Qayıb Yaz Modal ──
+    var qayibModal = new bootstrap.Modal(document.getElementById('qayibModal'));
+    var qayibYazBtn = document.getElementById('qayibYazBtn');
+
+    document.getElementById('qayibModal').addEventListener('show.bs.modal', function () {
+        document.getElementById('qayibSebeb').value = '';
+        document.getElementById('qayibMaasdanKes').checked = false;
+    });
+
+    qayibYazBtn.addEventListener('click', function () {
+        var isciId = parseInt(document.getElementById('qayibIsciId').value);
+        var tarix = document.getElementById('qayibTarix').value;
+        var maasdanKes = document.getElementById('qayibMaasdanKes').checked;
+        var sebeb = document.getElementById('qayibSebeb').value.trim();
+
+        qayibYazBtn.disabled = true;
+        qayibYazBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saxlanılır...';
+
+        fetch('/HR/Davamiyyet/QayibYaz', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isciId: isciId, tarix: tarix, maasdanKes: maasdanKes, qayibSebebi: sebeb })
+        })
+            .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+            .then(function (res) {
+                if (res.ok) {
+                    qayibModal.hide();
+                    loadGozlenilen();
+                } else {
+                    alert(res.data.error || 'Xəta baş verdi.');
+                }
+            })
+            .catch(function () { alert('Şəbəkə xətası.'); })
+            .finally(function () {
+                qayibYazBtn.disabled = false;
+                qayibYazBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Qayıb yaz';
+            });
+    });
 
     // ── Tarixə görə axtarış ──
     btnAxtar.addEventListener('click', function () {
@@ -231,6 +272,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Data loading ──
     function loadData(params, clientFilterStatuses) {
+        isGozlenilenMode = false;
         currentParams = params;
         var url = endpoints.getByTarix + '?' + new URLSearchParams(params).toString();
 
@@ -246,7 +288,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     records = records.filter(function (r) { return clientFilterStatuses.indexOf(r.status) >= 0; });
                 }
 
-                renderTable(records);
+                renderTable(records, false);
                 recordCount.textContent = records.length + ' qeyd';
 
                 // Extra stats
@@ -277,10 +319,24 @@ document.addEventListener('DOMContentLoaded', function () {
         if (kpiOrtaSaat) kpiOrtaSaat.textContent = stats.ortaIsSaati ?? 0;
     }
 
-    function renderTable(records) {
+    function renderTable(records, showQayibBtn) {
         if (records.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><i class="bi bi-inbox"></i><div>Heç bir davamiyyət qeydi tapılmadı</div></div></td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="' + (showQayibBtn ? 8 : 7) + '"><div class="hrd-empty"><i class="bi bi-inbox"></i><div>Heç bir davamiyyət qeydi tapılmadı</div></div></td></tr>';
             return;
+        }
+
+        // Başlıq — Qayıb Yaz sütunu varsa əlavə et
+        var thead = document.querySelector('.hrd-table thead tr');
+        if (showQayibBtn) {
+            if (!document.getElementById('thQayibYaz')) {
+                var th = document.createElement('th');
+                th.id = 'thQayibYaz';
+                th.textContent = 'Əməliyyat';
+                thead.appendChild(th);
+            }
+        } else {
+            var existing = document.getElementById('thQayibYaz');
+            if (existing) existing.remove();
         }
 
         var html = '';
@@ -308,6 +364,19 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             var badge = getStatusBadge(r.status);
+            var tarixRaw = r.tarix ? new Date(r.tarix).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+
+            var actionCell = '';
+            if (showQayibBtn && r.status === 0) {
+                actionCell = '<td><button class="btn btn-sm btn-outline-danger qayib-yaz-btn" ' +
+                    'data-isci-id="' + r.isciId + '" ' +
+                    'data-isci-ad="' + r.isciTamAd + '" ' +
+                    'data-tarix="' + tarixRaw + '" ' +
+                    'style="font-size:12px;border-radius:6px;padding:4px 10px;">' +
+                    '<i class="bi bi-x-circle me-1"></i>Qayıb yaz</button></td>';
+            } else if (showQayibBtn) {
+                actionCell = '<td></td>';
+            }
 
             html += '<tr>' +
                 '<td><div class="hrd-emp"><div class="hrd-emp-av">' + initials + '</div><div class="hrd-emp-name">' + r.isciTamAd + '</div></div></td>' +
@@ -317,9 +386,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 '<td><span class="hrd-time">' + cixis + '</span></td>' +
                 '<td>' + duration + '</td>' +
                 '<td>' + badge + '</td>' +
+                actionCell +
                 '</tr>';
         });
         tableBody.innerHTML = html;
+
+        // "Qayıb yaz" düymələrinin klik hadisəsi
+        tableBody.querySelectorAll('.qayib-yaz-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.getElementById('qayibIsciId').value = btn.getAttribute('data-isci-id');
+                document.getElementById('qayibTarix').value = btn.getAttribute('data-tarix');
+                document.getElementById('qayibIsciAd').textContent = btn.getAttribute('data-isci-ad');
+                var d = new Date(btn.getAttribute('data-tarix'));
+                document.getElementById('qayibTarixGoster').textContent =
+                    pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear();
+                qayibModal.show();
+            });
+        });
     }
 
     function getStatusBadge(status) {
