@@ -508,6 +508,14 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (res.ok) {
                             var p = getBaseParams();
                             loadData(p);
+                            // Qayıb silindi → həmin işçi gözlənilənə qayıdır, KPI-ı yenilə
+                            var tarix = inputTarix.value || toLocalDateStr(new Date());
+                            fetch(endpoints.getGozlenilen + '?tarix=' + encodeURIComponent(tarix))
+                                .then(function (r) { return r.json(); })
+                                .then(function (data) {
+                                    var kpiGoz = document.getElementById('kpiGozlenilen');
+                                    if (kpiGoz) kpiGoz.textContent = data.count || 0;
+                                });
                         } else {
                             alert(res.data.error || 'Xəta baş verdi.');
                             btn.disabled = false;
@@ -578,4 +586,13 @@ document.addEventListener('DOMContentLoaded', function () {
         checkDevice();
         setInterval(checkDevice, 30000);
     }
+
+    // Səhifə ilk açılanda JS render ilə yüklə ki, redaktə/sil düymələri görünsün
+    loadData({ tarix: inputTarix.value || toLocalDateStr(new Date()) });
+    fetch(endpoints.getGozlenilen + '?tarix=' + encodeURIComponent(inputTarix.value || toLocalDateStr(new Date())))
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            var kpiGoz = document.getElementById('kpiGozlenilen');
+            if (kpiGoz) kpiGoz.textContent = data.count || 0;
+        });
 });
