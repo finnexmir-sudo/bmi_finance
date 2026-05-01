@@ -319,6 +319,22 @@
                         </button>
                     </form>
                 }
+                @if (canLegv && layiheliSayi > 0)
+                {
+                    <form asp-area="HR" asp-controller="Maas" asp-action="TopluLegvEt"
+                          method="post" style="display:inline;margin-left:8px;"
+                          onsubmit="return confirm('@layiheliSayi layihə statuslu maaşın hamısını ləğv etmək istədiyinizə əminsiniz?');">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="il" value="@il"/>
+                        <input type="hidden" name="ay" value="@ay"/>
+                        <button type="submit" class="mi-btn mi-btn--outline mi-btn--sm" style="color:#dc2626;border-color:#dc2626;">
+                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                <path d="M2 2l9 9M11 2l-9 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            Hamısını Ləğv Et (@layiheliSayi)
+                        </button>
+                    </form>
+                }
                 @if (canOdeme && tesdiqliSayi > 0)
                 {
                     <form asp-area="HR" asp-controller="Maas" asp-action="TopluOdenis"
