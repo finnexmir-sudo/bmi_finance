@@ -873,6 +873,7 @@ namespace FinNex.Application.Services.HR
                     x.IsciId == isciId &&
                     !x.Silinib &&
                     x.Status == DavamiyyetStatus.Qayib &&
+                    x.MaasdanKes &&
                     x.Tarix >= ayBaslangic &&
                     x.Tarix <= ayBitis)
                 .CountAsync();
