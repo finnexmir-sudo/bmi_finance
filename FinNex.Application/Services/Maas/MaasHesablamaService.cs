@@ -73,7 +73,8 @@ namespace FinNex.Application.Services.HR
                         x.IsciId == isci.Id &&
                         x.Il == input.Il &&
                         x.Ay == input.Ay &&
-                        !x.Silinib);
+                        !x.Silinib &&
+                        x.Status != MaasStatus.LegvEdildi);
 
                 if (movcud) { netice.AtlananSayi++; continue; }
 
