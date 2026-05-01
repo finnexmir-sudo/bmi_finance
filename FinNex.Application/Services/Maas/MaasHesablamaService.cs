@@ -136,13 +136,14 @@ namespace FinNex.Application.Services.HR
                 return Result<MaasHesablaNeticesiDto>.Fail(
                     $"{isci.Ad} {isci.Soyad} ucun maliyye melumatları tapilmadi. Evvelce maas melumatlarini doldurun.");
 
-            // 2. Artiq hesablanibmi?
+            // 2. Artiq hesablanibmi? (LegvEdildi sayilmir — yeniden hesablanabilir)
             var movcud = await _unitOfWork.Repository<Maas>()
                 .MovcuddurmuAsync(x =>
                     x.IsciId == input.IsciId &&
                     x.Il == input.Il &&
                     x.Ay == input.Ay &&
-                    !x.Silinib);
+                    !x.Silinib &&
+                    x.Status != MaasStatus.LegvEdildi);
 
             if (movcud)
                 return Result<MaasHesablaNeticesiDto>.Fail(
