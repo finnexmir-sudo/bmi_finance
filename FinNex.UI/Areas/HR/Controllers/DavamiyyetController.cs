@@ -306,6 +306,34 @@ namespace FinNex.UI.Areas.HR.Controllers
             return Ok(new { message = "Qayıb uğurla qeyd edildi." });
         }
 
+        [HttpPost]
+        public async Task<IActionResult> QayibSil([FromBody] QayibSilRequest req)
+        {
+            if (req == null || req.Id <= 0)
+                return BadRequest(new { error = "Məlumat natamamdır." });
+
+            var entity = await _unitOfWork.Repository<Davamiyyet>()
+                .Query()
+                .FirstOrDefaultAsync(x => x.Id == req.Id && !x.Silinib && x.Status == DavamiyyetStatus.Qayib);
+
+            if (entity == null)
+                return BadRequest(new { error = "Qayıb qeydi tapılmadı." });
+
+            var maasOdenilib = await _unitOfWork.Repository<Maas>()
+                .Query()
+                .AnyAsync(m => !m.Silinib && m.IsciId == entity.IsciId
+                    && m.Il == entity.Tarix.Year && m.Ay == entity.Tarix.Month
+                    && m.Status == MaasStatus.Odenildi);
+
+            if (maasOdenilib)
+                return BadRequest(new { error = "Bu ayın maaşı artıq ödənildiyi üçün silinmə edilə bilməz." });
+
+            entity.Silinib = true;
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            return Ok(new { message = "Qayıb qeydi silindi." });
+        }
+
         [HttpGet]
         public async Task<IActionResult> IsciAxtar(string q)
         {
@@ -375,5 +403,10 @@ namespace FinNex.UI.Areas.HR.Controllers
         public DateTime Tarix { get; set; }
         public bool MaasdanKes { get; set; }
         public string? QayibSebebi { get; set; }
+    }
+
+    public class QayibSilRequest
+    {
+        public int Id { get; set; }
     }
 }
