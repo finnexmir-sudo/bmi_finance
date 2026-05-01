@@ -304,7 +304,7 @@
                     var tesdiqliSayi = list.Count(x => x.Status == MaasStatus.Tesdiqlendi);
                     var legvSayi     = list.Count(x => x.Status == MaasStatus.LegvEdildi);
                 }
-                @if ((isHR || isAdmin) && legvSayi > 0 && layiheliSayi == 0 && tesdiqliSayi == 0)
+                @if ((isRehber || isAdmin) && legvSayi > 0 && layiheliSayi == 0 && tesdiqliSayi == 0)
                 {
                     <a asp-area="HR" asp-controller="Maas" asp-action="TopluHesabla"
                        asp-route-il="@il" asp-route-ay="@ay"
