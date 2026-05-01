@@ -897,11 +897,24 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
             else if (yeniStatus == MaasStatus.LegvEdildi)
             {
-                // Yalnız Admin ləğv edə bilər
-                if (!isAdmin)
+                // Admin həmişə ləğv edə bilər.
+                // HR yalnız Layihe statusundakı maaşı ləğv edə bilər
+                // (hesablamada səhv olduqda rəhbərliyə sorğu getməzdən geri ala bilsin).
+                if (!isAdmin && !isHR)
                 {
-                    TempData["Error"] = "Maaşı yalnız Admin ləğv edə bilər.";
+                    TempData["Error"] = "Maaşı yalnız Admin və ya HR ləğv edə bilər.";
                     return RedirectToAction(nameof(Index), new { il, ay });
+                }
+                if (isHR && !isAdmin)
+                {
+                    var movcut = await _unitOfWork.Repository<Maas>()
+                        .Query()
+                        .FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
+                    if (movcut == null || movcut.Status != MaasStatus.Layihe)
+                    {
+                        TempData["Error"] = "HR yalnız 'Layihə' statusundakı maaşı ləğv edə bilər.";
+                        return RedirectToAction(nameof(Index), new { il, ay });
+                    }
                 }
             }
 
