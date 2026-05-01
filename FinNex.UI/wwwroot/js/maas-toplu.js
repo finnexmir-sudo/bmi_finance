@@ -91,6 +91,8 @@
         const xesSirketOdenis = parseFloat(row.dataset.xesSirketOdenis || 0) || 0;
         const xesDsmfOdenis = parseFloat(row.dataset.xesDsmfOdenis || 0) || 0;
         const xesKesinti = parseFloat(row.dataset.xesKesinti || 0) || 0;
+        const qayibGun = parseInt(row.dataset.qayibGun || 0) || 0;
+        const qayibKesinti = parseFloat(row.dataset.qayibKesinti || 0) || 0;
         const chk = row.querySelector('.mth-checkbox');
         const bInp = row.querySelector('.mth-inp--b');
         const cInp = row.querySelector('.mth-inp--c');
@@ -113,6 +115,7 @@
         const esasBrut = Math.max(
             esas - mezKesinti + mezOdenis
                  - xesKesinti + xesSirketOdenis
+                 - qayibKesinti
                  + bonus + ferqliGelir - cerime,
             0);
         const brut = esasBrut + hysIsv;
@@ -158,6 +161,7 @@
             hys, hysIsv, avans,
             mezGun, mezOdenis, mezKesinti,
             xesSirketGun, xesDsmfGun, xesSirketOdenis, xesDsmfOdenis, xesKesinti,
+            qayibGun, qayibKesinti,
             gelirV, dsmf, iss, itss, tutulma, net,
             dsmfIsv, issIsv, itssIsv, sirketCemi,
             checked: !!chk?.checked && !done, done
@@ -205,6 +209,8 @@
         set('[data-p="mezgun"]', d.mezGun > 0 ? d.mezGun + ' gün' : '—', d.mezGun > 0 ? 'n n--b' : 'n n--d');
         set('[data-p="mez"]', fmt(d.mezOdenis), d.mezOdenis > 0 ? 'n n--b' : 'n n--d');
         set('[data-p="mezkes"]', fmt(d.mezKesinti), d.mezKesinti > 0 ? 'n n--r' : 'n n--d');
+        set('[data-p="qayibgun"]', d.qayibGun > 0 ? d.qayibGun + ' gün' : '—', d.qayibGun > 0 ? 'n n--r' : 'n n--d');
+        set('[data-p="qayibkes"]', fmt(d.qayibKesinti), d.qayibKesinti > 0 ? 'n n--r' : 'n n--d');
 
         // Xəstəlik
         const xesSirketText = d.xesSirketGun > 0
