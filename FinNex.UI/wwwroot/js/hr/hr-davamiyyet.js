@@ -415,7 +415,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var badge = getStatusBadge(r.status);
             var tarixRaw = r.tarix ? toLocalDateStr(r.tarix) : toLocalDateStr(new Date());
 
-            // Qayıb sıralarında kəsinti indikatoru + düzəliş düyməsi
+            // Qayıb sıralarında kəsinti indikatoru + düzəliş + sil düymələri
             var qayibExtra = '';
             if (r.status === 3) {
                 var kesIcon = r.maasdanKes
@@ -429,7 +429,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     'data-maasdan-kes="' + (r.maasdanKes ? '1' : '0') + '" ' +
                     'data-sebeb="' + (r.qayibSebebi || '') + '" ' +
                     'style="font-size:11px;padding:2px 7px;margin-left:6px;border:1px solid #6366f1;color:#6366f1;border-radius:5px;" ' +
-                    'title="Düzəliş et"><i class="bi bi-pencil"></i></button>';
+                    'title="Düzəliş et"><i class="bi bi-pencil"></i></button>' +
+                    '<button class="btn btn-sm qayib-sil-btn" ' +
+                    'data-id="' + r.id + '" ' +
+                    'data-isci-ad="' + r.isciTamAd + '" ' +
+                    'style="font-size:11px;padding:2px 7px;margin-left:4px;border:1px solid #dc2626;color:#dc2626;border-radius:5px;" ' +
+                    'title="Sil"><i class="bi bi-trash"></i></button>';
             }
 
             var actionCell = '';
@@ -481,6 +486,37 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('duzeltTarixGoster').textContent =
                     pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear();
                 qayibDuzeltModal.show();
+            });
+        });
+
+        // "Sil" düymələrinin klik hadisəsi
+        tableBody.querySelectorAll('.qayib-sil-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var isciAd = btn.getAttribute('data-isci-ad');
+                if (!confirm(isciAd + ' üçün qayıb qeydini silmək istədiyinizə əminsiniz?')) return;
+
+                var id = parseInt(btn.getAttribute('data-id'));
+                btn.disabled = true;
+
+                fetch('/HR/Davamiyyet/QayibSil', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id })
+                })
+                    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+                    .then(function (res) {
+                        if (res.ok) {
+                            var p = getBaseParams();
+                            loadData(p);
+                        } else {
+                            alert(res.data.error || 'Xəta baş verdi.');
+                            btn.disabled = false;
+                        }
+                    })
+                    .catch(function () {
+                        alert('Şəbəkə xətası.');
+                        btn.disabled = false;
+                    });
             });
         });
     }
