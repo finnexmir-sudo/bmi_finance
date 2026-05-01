@@ -4,6 +4,7 @@ using FinNex.DataAccess.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FinNex.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260430112421_AddIH07AndVM9821MaasNovu")]
+    partial class AddIH07AndVM9821MaasNovu
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -951,13 +954,6 @@ namespace FinNex.DataAccess.Migrations
 
                     b.Property<int>("IsciId")
                         .HasColumnType("int");
-
-                    b.Property<bool>("MaasdanKes")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("QayibSebebi")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
 
                     b.Property<int?>("SilenIcraciId")
                         .HasColumnType("int");
@@ -1918,7 +1914,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(403)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5838)
                         },
                         new
                         {
@@ -1927,7 +1923,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(403)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5838)
                         },
                         new
                         {
@@ -1936,7 +1932,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(408)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5838)
                         },
                         new
                         {
@@ -1945,7 +1941,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Silinib = false,
                             Tip = 2,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(408)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5838)
                         },
                         new
                         {
@@ -1954,7 +1950,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Silinib = false,
                             Tip = 2,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(408)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5843)
                         },
                         new
                         {
@@ -1963,7 +1959,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Silinib = false,
                             Tip = 2,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(408)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5843)
                         },
                         new
                         {
@@ -1972,7 +1968,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Silinib = false,
                             Tip = 2,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(408)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5843)
                         },
                         new
                         {
@@ -1981,7 +1977,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Silinib = false,
                             Tip = 2,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(413)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5843)
                         },
                         new
                         {
@@ -1990,7 +1986,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Silinib = false,
                             Tip = 2,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(413)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5843)
                         },
                         new
                         {
@@ -1999,7 +1995,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Silinib = false,
                             Tip = 3,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(413)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5848)
                         },
                         new
                         {
@@ -2008,7 +2004,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Silinib = false,
                             Tip = 3,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(413)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5848)
                         },
                         new
                         {
@@ -2017,7 +2013,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Silinib = false,
                             Tip = 3,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(413)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5848)
                         },
                         new
                         {
@@ -2026,7 +2022,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(413)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5848)
                         },
                         new
                         {
@@ -2035,25 +2031,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(418)
-                        },
-                        new
-                        {
-                            Id = 17,
-                            Ad = "IH-07 Əlavə Təminat",
-                            Aktivdir = true,
-                            Silinib = false,
-                            Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(418)
-                        },
-                        new
-                        {
-                            Id = 18,
-                            Ad = "VM 98.2.1 Gəlirləri",
-                            Aktivdir = true,
-                            Silinib = false,
-                            Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(418)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5848)
                         });
                 });
 
@@ -2127,7 +2105,7 @@ namespace FinNex.DataAccess.Migrations
                             Nov = 1,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(447)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5896)
                         },
                         new
                         {
@@ -2139,7 +2117,7 @@ namespace FinNex.DataAccess.Migrations
                             Nov = 2,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(452)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5901)
                         },
                         new
                         {
@@ -2151,7 +2129,7 @@ namespace FinNex.DataAccess.Migrations
                             Nov = 3,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(452)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5906)
                         },
                         new
                         {
@@ -2163,7 +2141,7 @@ namespace FinNex.DataAccess.Migrations
                             Nov = 4,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(457)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5906)
                         },
                         new
                         {
@@ -2175,7 +2153,7 @@ namespace FinNex.DataAccess.Migrations
                             Nov = 5,
                             Silinib = false,
                             Tip = 2,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(457)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5906)
                         },
                         new
                         {
@@ -2187,7 +2165,7 @@ namespace FinNex.DataAccess.Migrations
                             Nov = 6,
                             Silinib = false,
                             Tip = 2,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(457)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5911)
                         });
                 });
 
@@ -2870,7 +2848,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 0m,
                             Silinib = false,
                             Sira = 1,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(510),
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5930),
                             YuxariHedd = 2500m
                         },
                         new
@@ -2885,7 +2863,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 75m,
                             Silinib = false,
                             Sira = 2,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(520),
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5935),
                             YuxariHedd = 8000m
                         },
                         new
@@ -2900,7 +2878,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 625m,
                             Silinib = false,
                             Sira = 3,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(529)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5940)
                         },
                         new
                         {
@@ -2914,7 +2892,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 0m,
                             Silinib = false,
                             Sira = 1,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(544),
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5940),
                             YuxariHedd = 200m
                         },
                         new
@@ -2929,7 +2907,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 6m,
                             Silinib = false,
                             Sira = 2,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(544)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5940)
                         },
                         new
                         {
@@ -2943,7 +2921,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 0m,
                             Silinib = false,
                             Sira = 1,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(544),
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5945),
                             YuxariHedd = 200m
                         },
                         new
@@ -2958,7 +2936,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 44m,
                             Silinib = false,
                             Sira = 2,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(549),
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5945),
                             YuxariHedd = 8000m
                         },
                         new
@@ -2973,7 +2951,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 1214m,
                             Silinib = false,
                             Sira = 3,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(554)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5949)
                         },
                         new
                         {
@@ -2987,7 +2965,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 0m,
                             Silinib = false,
                             Sira = 1,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(554),
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5949),
                             YuxariHedd = 2500m
                         },
                         new
@@ -3002,7 +2980,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 50m,
                             Silinib = false,
                             Sira = 2,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(558)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5949)
                         },
                         new
                         {
@@ -3016,7 +2994,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 0m,
                             Silinib = false,
                             Sira = 1,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(558),
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5954),
                             YuxariHedd = 2500m
                         },
                         new
@@ -3031,7 +3009,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 50m,
                             Silinib = false,
                             Sira = 2,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(563)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5954)
                         });
                 });
 
@@ -3213,7 +3191,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Ikon = "bi-taxi-front",
                             Silinib = false,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(234)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5663)
                         },
                         new
                         {
@@ -3222,7 +3200,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Ikon = "bi-cup-hot",
                             Silinib = false,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(248)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5678)
                         },
                         new
                         {
@@ -3231,7 +3209,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Ikon = "bi-printer",
                             Silinib = false,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(248)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5678)
                         },
                         new
                         {
@@ -3240,7 +3218,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Ikon = "bi-airplane",
                             Silinib = false,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(253)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5678)
                         },
                         new
                         {
@@ -3249,7 +3227,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Ikon = "bi-three-dots",
                             Silinib = false,
-                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 39, 55, 799, DateTimeKind.Local).AddTicks(253)
+                            YaradilmaTarixi = new DateTime(2026, 4, 30, 15, 24, 21, 73, DateTimeKind.Local).AddTicks(5678)
                         });
                 });
 
