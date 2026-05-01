@@ -497,6 +497,29 @@ namespace FinNex.UI.Areas.HR.Controllers
                         );
                     });
 
+            // Qayıb kəsintisi preview — MaasdanKes=true olan qayıb günlərini say
+            var qayibQeydler = await _unitOfWork.Repository<Davamiyyet>()
+                .Query()
+                .Where(x =>
+                    !x.Silinib &&
+                    isciIdler.Contains(x.IsciId) &&
+                    x.Status == DavamiyyetStatus.Qayib &&
+                    x.MaasdanKes &&
+                    x.Tarix.Year == cIl && x.Tarix.Month == cAy)
+                .ToListAsync();
+
+            var isciQayibMap = qayibQeydler
+                .GroupBy(x => x.IsciId)
+                .ToDictionary(g => g.Key, g =>
+                {
+                    int gun = g.Count();
+                    decimal esas = cariMaasMap.TryGetValue(g.Key, out var m) ? m : 0m;
+                    decimal kesinti = ayIsGunu > 0
+                        ? Math.Round(esas / ayIsGunu * gun, 2)
+                        : 0m;
+                    return (gun, kesinti);
+                });
+
             ViewBag.Hesablanmis = hesablanmis;
             ViewBag.CariMaasMap = cariMaasMap;
             ViewBag.IbanMap = ibanMap;
@@ -509,6 +532,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.IsciAvansMap = isciAvansMap;
             ViewBag.IsciMezuniyyetMap = isciMezuniyyetMap;
             ViewBag.IsciXestelikMap = isciXestelikMap;
+            ViewBag.IsciQayibMap = isciQayibMap;
             ViewBag.Iller = IlSiyahisi(cIl);
             ViewBag.Aylar = AySiyahisi(cAy);
 

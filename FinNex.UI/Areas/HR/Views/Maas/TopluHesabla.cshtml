@@ -302,6 +302,7 @@
                                 <th class="col-status center">Status</th>
                                 <th class="col-bonus">+ Bonus</th>
                                 <th class="col-cerime">− Cərimə</th>
+                                <th class="col-davam" style="color:#dc2626;">− Davamiyyət</th>
                                 <th class="col-esas">Əsas Maaş</th>
                                 <th class="col-brut">
                                     <span style="color:#1e9b6b;">GROSS</span>
@@ -370,6 +371,14 @@
                                 var xDsmfOdStr = xDsmfOd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
                                 var xKesintiStr = xKesinti.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
 
+                                // Qayıb kəsintisi preview
+                                var qayibMap = ViewBag.IsciQayibMap as Dictionary<int, (int gun, decimal kesinti)>
+                                               ?? new Dictionary<int, (int gun, decimal kesinti)>();
+                                int qayibGun = 0; decimal qayibKesinti = 0m;
+                                if (qayibMap.TryGetValue(isci.Id, out var qayibVal))
+                                { qayibGun = qayibVal.gun; qayibKesinti = qayibVal.kesinti; }
+                                var qayibKesintiStr = qayibKesinti.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
                                 <tr data-isci="@isci.Id"
                                     data-esas="@esas.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
                                     data-isci-guzest="@isciGuzestMeblegStr"
@@ -384,6 +393,8 @@
                                     data-xes-sirket-odenis="@xSirketOdStr"
                                     data-xes-dsmf-odenis="@xDsmfOdStr"
                                     data-xes-kesinti="@xKesintiStr"
+                                    data-qayib-gun="@qayibGun"
+                                    data-qayib-kesinti="@qayibKesintiStr"
                                     class="mth-row @(isDone ? "done" : "")">
 
                                     @* Checkbox *@
@@ -445,6 +456,18 @@
                                         </div>
                                     </td>
 
+                                    @* Davamiyyət kəsintisi *@
+                                    <td class="col-davam">
+                                        @if (qayibGun > 0)
+                                        {
+                                            <span class="n n--r" title="@qayibGun qayıb gün">−@Fmt(qayibKesinti)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="n n--d">—</span>
+                                        }
+                                    </td>
+
                                     @* Əsas Maaş *@
                                     <td class="col-esas"><span class="n">@Fmt(esas)</span></td>
 
@@ -470,7 +493,7 @@
 
                                 @* ── Expandable detail panel ───────────────── *@
                                 <tr class="mth-detail-row" data-detail-for="@isci.Id">
-                                    <td colspan="9">
+                                    <td colspan="10">
                                         <div class="mth-detail-panel">
                                             <div class="mth-detail-grid">
 
@@ -515,6 +538,27 @@
                                                         <div class="mth-detail-item">
                                                             <span class="mth-detail-lbl">DSMF gün / ödəniş</span>
                                                             <span class="n n--d" data-p="xesdsmf">—</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                @* Davamiyyət kəsintisi *@
+                                                <div class="mth-detail-card">
+                                                    <div class="mth-detail-card-head" style="color:#dc2626;">
+                                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                            <circle cx="7" cy="7" r="5.5" stroke="#dc2626" stroke-width="1.2"/>
+                                                            <path d="M7 4v4M7 9.5v.5" stroke="#dc2626" stroke-width="1.1" stroke-linecap="round"/>
+                                                        </svg>
+                                                        <span>Davamiyyət</span>
+                                                    </div>
+                                                    <div class="mth-detail-card-body">
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">Qayıb gün</span>
+                                                            <span class="n n--d" data-p="qayibgun">—</span>
+                                                        </div>
+                                                        <div class="mth-detail-item">
+                                                            <span class="mth-detail-lbl">Kəsinti</span>
+                                                            <span class="n n--d" data-p="qayibkes">—</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -699,7 +743,7 @@
                         @* ── Cəmi sətri ────────────────────────────────── *@
                         <tfoot>
                             <tr>
-                                <td class="left" colspan="5" style="font-weight:700;font-size:12px;color:#3d4557;padding:11px 10px;">
+                                <td class="left" colspan="6" style="font-weight:700;font-size:12px;color:#3d4557;padding:11px 10px;">
                                     CƏMİ — @isciList.Count işçi
                                 </td>
                                 <td><span class="n">@Fmt(isciList.Sum(x=>GetEsas(x.Id)))</span></td>
