@@ -259,7 +259,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 QayibSebebi = req.QayibSebebi?.Trim()
             };
 
-            var result = await _davamiyyetService.ElavEtAsync(dto);
+            var result = await _davamiyyetService.YaratAsync(dto);
             if (!result.Success)
                 return BadRequest(new { error = result.Message });
 
