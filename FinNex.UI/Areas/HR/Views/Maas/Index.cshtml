@@ -22,9 +22,10 @@
 
     // Toplu Hesabla düyməsinin görünmə şərti:
     //   - İstifadəçinin toplu hesablama icazəsi var
-    //   - VƏ hələ hesablanmamış aktiv işçi qalıb
+    //   - VƏ hələ hesablanmamış (və ya ləğv edilmiş) aktiv işçi qalıb
     var aktivIsciSayi = (int)(ViewBag.AktivIsciSayi ?? 0);
-    var hesablanmamisVar = list.Count < aktivIsciSayi;
+    var aktivHesablanmis = list.Count(x => x.Status != MaasStatus.LegvEdildi);
+    var hesablanmamisVar = aktivHesablanmis < aktivIsciSayi;
     var showHesabla = canTopluHesabla && hesablanmamisVar;
     var canSil      = isHR || isAdmin;                  // Layihe statusunda silinə bilər
 
@@ -145,7 +146,7 @@
             }
             @if (showHesabla)
             {
-                var qalanSayi = aktivIsciSayi - list.Count;
+                var qalanSayi = aktivIsciSayi - aktivHesablanmis;
                 <a asp-area="HR" asp-controller="Maas" asp-action="TopluHesabla"
                    asp-route-il="@il" asp-route-ay="@ay"
                    class="mi-btn mi-btn--outline" title="@qalanSayi işçi hələ hesablanmayıb">
@@ -305,7 +306,7 @@
                     var tesdiqliSayi = list.Count(x => x.Status == MaasStatus.Tesdiqlendi);
                     var legvSayi     = list.Count(x => x.Status == MaasStatus.LegvEdildi);
                 }
-                @if ((isRehber || isAdmin) && legvSayi > 0 && layiheliSayi == 0 && tesdiqliSayi == 0)
+                @if (canTopluHesabla && legvSayi > 0 && layiheliSayi == 0 && tesdiqliSayi == 0)
                 {
                     <a asp-area="HR" asp-controller="Maas" asp-action="TopluHesabla"
                        asp-route-il="@il" asp-route-ay="@ay"
