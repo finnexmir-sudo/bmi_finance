@@ -18,6 +18,243 @@
     }
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/kredit-muraciet.css" asp-append-version="true" />
+    <style>
+        /* ── Trudovoy Modal ─────────────────────────────────────── */
+        .tr-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.55);
+            z-index: 9000;
+            align-items: center;
+            justify-content: center;
+        }
+        .tr-overlay.active { display: flex; }
+
+        .tr-modal {
+            background: #1a2234;
+            border: 1px solid #2d3a52;
+            border-radius: 14px;
+            width: 620px;
+            max-width: 96vw;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 24px 60px rgba(0,0,0,.6);
+            overflow: hidden;
+        }
+
+        .tr-modal-head {
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid #2d3a52;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .tr-modal-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #e2e8f0;
+            line-height: 1.3;
+        }
+        .tr-modal-sub {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 3px;
+        }
+        .tr-modal-close {
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .tr-modal-close:hover { color: #e2e8f0; }
+
+        .tr-modal-body {
+            padding: 20px 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* Period rows */
+        .tr-periods { display: flex; flex-direction: column; gap: 10px; }
+
+        .tr-period-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr auto;
+            align-items: center;
+            gap: 8px;
+            background: #131c2e;
+            border: 1px solid #2d3a52;
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+        .tr-period-arrow {
+            color: #475569;
+            font-size: 16px;
+            text-align: center;
+            padding: 0 4px;
+        }
+        .tr-period-result {
+            font-size: 12px;
+            font-weight: 600;
+            color: #94a3b8;
+            min-width: 120px;
+            text-align: right;
+        }
+        .tr-period-result.filled { color: #60a5fa; }
+        .tr-period-del {
+            background: none;
+            border: 1px solid #374151;
+            color: #64748b;
+            border-radius: 6px;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+            transition: all .15s;
+        }
+        .tr-period-del:hover { background: #3f1f1f; border-color: #dc2626; color: #dc2626; }
+
+        .tr-date-input {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 7px;
+            color: #e2e8f0;
+            font-size: 12.5px;
+            padding: 7px 10px;
+            outline: none;
+            transition: border-color .15s;
+        }
+        .tr-date-input:focus { border-color: #3b82f6; }
+        .tr-date-label {
+            font-size: 10.5px;
+            color: #475569;
+            margin-bottom: 4px;
+        }
+
+        .tr-add-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: none;
+            border: 1px dashed #2d3a52;
+            border-radius: 8px;
+            color: #475569;
+            font-size: 12.5px;
+            padding: 9px 14px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 8px;
+            transition: all .15s;
+        }
+        .tr-add-btn:hover { border-color: #3b82f6; color: #60a5fa; background: #0f1a2e; }
+
+        /* Total card */
+        .tr-total {
+            background: linear-gradient(135deg, #0f2240, #0d1b35);
+            border: 1px solid #1e40af;
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .tr-total-label { font-size: 12px; color: #93c5fd; font-weight: 600; }
+        .tr-total-val {
+            font-size: 20px;
+            font-weight: 800;
+            color: #60a5fa;
+            letter-spacing: .3px;
+        }
+        .tr-total-val span { font-size: 13px; font-weight: 500; color: #93c5fd; margin-left: 2px; }
+
+        .tr-modal-foot {
+            padding: 16px 24px;
+            border-top: 1px solid #2d3a52;
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .tr-btn {
+            padding: 9px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all .15s;
+        }
+        .tr-btn--ghost {
+            background: none;
+            border: 1px solid #2d3a52;
+            color: #94a3b8;
+        }
+        .tr-btn--ghost:hover { background: #1e2a3f; color: #e2e8f0; }
+        .tr-btn--apply {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            color: #fff;
+        }
+        .tr-btn--apply:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            box-shadow: 0 4px 14px rgba(59,130,246,.35);
+            transform: translateY(-1px);
+        }
+
+        /* Trudovoy button in table */
+        .tr-open-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            background: #0f172a;
+            border: 1px solid #2d3a52;
+            border-radius: 6px;
+            color: #60a5fa;
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .15s;
+            margin-left: 6px;
+        }
+        .tr-open-btn:hover { background: #1e2a3f; border-color: #3b82f6; }
+
+        /* 3 new columns */
+        .tr-col {
+            font-size: 13px;
+            font-weight: 700;
+            color: #60a5fa;
+            text-align: center;
+        }
+        .tr-col.empty { color: #2d3a52; font-weight: 400; font-size: 12px; }
+        .tr-col-head {
+            text-align: center;
+            color: #60a5fa;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+        }
+
+        /* Period row input wrappers */
+        .tr-field { display: flex; flex-direction: column; }
+    </style>
+}
+
 <div class="fn-page">
     <div class="fn-page-head">
         <div>
@@ -51,19 +288,31 @@
         <span>&lt; 8 il → 60%</span> ·
         <span>8 – 12 il → 80%</span> ·
         <span>≥ 12 il → 100%</span>
+        &nbsp;·&nbsp;
+        <strong style="color:#1d4ed8">Trudovoy</strong> düyməsi ilə hər işçi üçün əvvəlki iş dövrlərini daxil edib ümumi stajı hesablayın.
     </div>
 
-    <div class="fn-card" style="padding:0;overflow:hidden">
-        <table class="km-table">
+    <div class="fn-card" style="padding:0;overflow:hidden;overflow-x:auto">
+        <table class="km-table" style="min-width:900px">
             <thead>
                 <tr>
-                    <th style="min-width:220px">İşçi</th>
+                    <th style="min-width:200px">İşçi</th>
                     <th>Departament</th>
-                    <th style="width:140px">Bu bankda işə gəlmə</th>
-                    <th style="width:180px">Ümumi staj başlanğıcı</th>
-                    <th style="width:150px">Cari staj</th>
-                    <th style="width:90px">Faiz</th>
-                    <th style="width:110px">Əməliyyat</th>
+                    <th style="width:130px">Bu bankda işə gəlmə</th>
+                    <th style="width:165px">Ümumi staj başlanğıcı</th>
+                    <th style="width:130px">Cari staj</th>
+                    <th colspan="3" class="tr-col-head" style="width:150px;background:#0f1a2e;border-left:1px solid #1e3a5f;border-right:1px solid #1e3a5f">
+                        Trudovoy staj
+                    </th>
+                    <th style="width:80px">Faiz</th>
+                    <th style="width:140px">Əməliyyat</th>
+                </tr>
+                <tr style="background:#0a1120;font-size:10px;color:#475569">
+                    <td colspan="5" style="padding:4px 0"></td>
+                    <td class="tr-col-head" style="width:50px;background:#0a1525;border-left:1px solid #1e3a5f;padding:4px 8px">İL</td>
+                    <td class="tr-col-head" style="width:50px;background:#0a1525;padding:4px 8px">AY</td>
+                    <td class="tr-col-head" style="width:50px;background:#0a1525;border-right:1px solid #1e3a5f;padding:4px 8px">GÜN</td>
+                    <td colspan="2" style="padding:4px 0"></td>
                 </tr>
             </thead>
             <tbody>
@@ -94,6 +343,12 @@
                             <span class="cari-staj" style="font-weight:700;color:#0f172a;font-size:13px">@il il @ay ay</span>
                             <div style="font-size:10px;color:#94a3b8">mənbə: <span class="staj-menbe">@menbe</span></div>
                         </td>
+
+                        @* ── 3 new trudovoy columns ── *@
+                        <td class="tr-col empty tr-il" style="background:#070e1c;border-left:1px solid #1e3a5f">—</td>
+                        <td class="tr-col empty tr-ay" style="background:#070e1c">—</td>
+                        <td class="tr-col empty tr-gun" style="background:#070e1c;border-right:1px solid #1e3a5f">—</td>
+
                         <td>
                             <span class="cari-faiz" style="display:inline-block;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700;
                                   background:@(faiz == 100 ? "#dcfce7" : faiz == 80 ? "#fef3c7" : "#fee2e2");
@@ -105,6 +360,15 @@
                             <button type="button" class="fn-btn fn-btn--primary fn-btn--sm staj-save-btn" data-isci-id="@i.Id">
                                 Saxla
                             </button>
+                            <button type="button" class="tr-open-btn"
+                                    data-isci-id="@i.Id"
+                                    data-isci-ad="@i.Ad @i.Soyad">
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                    <rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.3"/>
+                                    <path d="M3 4h6M3 6h6M3 8h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                </svg>
+                                Trudovoy
+                            </button>
                         </td>
                     </tr>
                 }
@@ -113,60 +377,269 @@
     </div>
 </div>
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/User/kredit-muraciet.css" asp-append-version="true" />
-}
+@* ── Trudovoy Modal ──────────────────────────────────────── *@
+<div class="tr-overlay" id="trOverlay">
+    <div class="tr-modal">
+        <div class="tr-modal-head">
+            <div>
+                <div class="tr-modal-title" id="trModalTitle">Trudovoy Staj Hesablaması</div>
+                <div class="tr-modal-sub">Əvvəlki iş yerlərindəki dövrləri daxil edin — sistem ümumi stajı hesablayacaq</div>
+            </div>
+            <button class="tr-modal-close" id="trClose" title="Bağla">✕</button>
+        </div>
+
+        <div class="tr-modal-body">
+            <div class="tr-periods" id="trPeriods">
+                @* Rows injected by JS *@
+            </div>
+            <button class="tr-add-btn" id="trAddBtn" type="button">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                Dövr əlavə et
+            </button>
+
+            <div class="tr-total" id="trTotal">
+                <div class="tr-total-label">Ümumi trudovoy staj</div>
+                <div class="tr-total-val" id="trTotalVal">
+                    <span>—</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="tr-modal-foot">
+            <button class="tr-btn tr-btn--ghost" id="trCancelBtn" type="button">İmtina</button>
+            <button class="tr-btn tr-btn--apply" id="trApplyBtn" type="button">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="margin-right:4px;vertical-align:middle">
+                    <path d="M2 6.5l3 3 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Tətbiq et
+            </button>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
 <script>
-    (function () {
-        function showToast(msg, ok) {
-            var t = document.createElement('div');
-            t.style.cssText = 'position:fixed;top:20px;right:20px;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;' +
-                (ok ? 'background:#16a34a;color:#fff' : 'background:#dc2626;color:#fff');
-            t.textContent = msg;
-            document.body.appendChild(t);
-            setTimeout(function () { t.remove(); }, 3000);
-        }
+(function () {
+    /* ── helpers ───────────────────────────────────────────── */
+    function dateDiff(startStr, endStr) {
+        if (!startStr || !endStr) return null;
+        var s = new Date(startStr), e = new Date(endStr);
+        if (isNaN(s) || isNaN(e) || e <= s) return null;
+        var y = e.getFullYear() - s.getFullYear();
+        var m = e.getMonth()    - s.getMonth();
+        var d = e.getDate()     - s.getDate();
+        if (d < 0) { m--; var pm = new Date(e.getFullYear(), e.getMonth(), 0); d += pm.getDate(); }
+        if (m < 0) { y--; m += 12; }
+        return { y: y, m: m, d: d };
+    }
 
-        document.querySelectorAll('.staj-save-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var id = btn.dataset.isciId;
-                var row = btn.closest('tr');
-                var input = row.querySelector('.staj-input');
-                btn.disabled = true;
+    function sumDiffs(diffs) {
+        var td = 0, tm = 0, ty = 0;
+        diffs.forEach(function(r) { if (r) { ty += r.y; tm += r.m; td += r.d; } });
+        tm += Math.floor(td / 30);  td = td % 30;
+        ty += Math.floor(tm / 12);  tm = tm % 12;
+        return { y: ty, m: tm, d: td };
+    }
 
-                var formData = new FormData();
-                formData.append('isciId', id);
-                if (input.value) formData.append('umumiIsStajiBaslangic', input.value);
+    function fmtDiff(r) {
+        if (!r) return null;
+        var parts = [];
+        if (r.y) parts.push(r.y + ' il');
+        if (r.m) parts.push(r.m + ' ay');
+        if (r.d) parts.push(r.d + ' gün');
+        return parts.length ? parts.join(' ') : '0 gün';
+    }
 
-                var csrf = document.querySelector('input[name="__RequestVerificationToken"]');
-                if (csrf) formData.append('__RequestVerificationToken', csrf.value);
+    /* ── modal state ───────────────────────────────────────── */
+    var currentRow = null;
+    var periods = [];     // [{s, e}]
+    var overlay  = document.getElementById('trOverlay');
+    var periodsEl = document.getElementById('trPeriods');
+    var totalValEl = document.getElementById('trTotalVal');
 
-                fetch('/HR/IsciStaji/Update', { method: 'POST', body: formData })
-                    .then(function (r) { return r.json(); })
-                    .then(function (d) {
-                        if (d.success) {
-                            showToast(d.message, true);
-                            var cariSpan = row.querySelector('.cari-staj');
-                            var menbeSpan = row.querySelector('.staj-menbe');
-                            var faizSpan = row.querySelector('.cari-faiz');
-                            cariSpan.textContent = d.stajIl + ' il ' + d.stajAy + ' ay';
-                            menbeSpan.textContent = d.menbe;
-                            faizSpan.textContent = d.faiz + '%';
-                            var bg = d.faiz === 100 ? '#dcfce7' : d.faiz === 80 ? '#fef3c7' : '#fee2e2';
-                            var c = d.faiz === 100 ? '#166534' : d.faiz === 80 ? '#92400e' : '#991b1b';
-                            faizSpan.style.background = bg;
-                            faizSpan.style.color = c;
-                        } else {
-                            showToast(d.message, false);
-                        }
-                    })
-                    .catch(function () { showToast('Server xətası.', false); })
-                    .finally(function () { btn.disabled = false; });
+    function openModal(row, name) {
+        currentRow = row;
+        document.getElementById('trModalTitle').textContent = 'Trudovoy Staj — ' + name;
+        // restore saved periods if any
+        var saved = row.dataset.trPeriods ? JSON.parse(row.dataset.trPeriods) : [{ s: '', e: '' }];
+        periods = saved;
+        renderPeriods();
+        recalc();
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+        currentRow = null;
+    }
+
+    /* ── render ────────────────────────────────────────────── */
+    function renderPeriods() {
+        periodsEl.innerHTML = '';
+        periods.forEach(function(p, idx) {
+            var diff = dateDiff(p.s, p.e);
+            var resText = fmtDiff(diff) || '—';
+            var resClass = diff ? 'tr-period-result filled' : 'tr-period-result';
+
+            var row = document.createElement('div');
+            row.className = 'tr-period-row';
+            row.innerHTML =
+                '<div class="tr-field">' +
+                    '<div class="tr-date-label">Başlanğıc</div>' +
+                    '<input type="date" class="tr-date-input tr-start" data-idx="' + idx + '" value="' + (p.s||'') + '" max="' + today() + '" />' +
+                '</div>' +
+                '<div class="tr-period-arrow">→</div>' +
+                '<div class="tr-field">' +
+                    '<div class="tr-date-label">Bitmə</div>' +
+                    '<input type="date" class="tr-date-input tr-end" data-idx="' + idx + '" value="' + (p.e||'') + '" max="' + today() + '" />' +
+                '</div>' +
+                '<div class="' + resClass + ' tr-res" data-idx="' + idx + '">' + resText + '</div>' +
+                '<button type="button" class="tr-period-del" data-idx="' + idx + '" title="Sil">' +
+                    '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>' +
+                '</button>';
+
+            row.querySelectorAll('.tr-start,.tr-end').forEach(function(inp) {
+                inp.addEventListener('input', function() {
+                    var i = +inp.dataset.idx;
+                    if (inp.classList.contains('tr-start')) periods[i].s = inp.value;
+                    else periods[i].e = inp.value;
+                    updateRowResult(i);
+                    recalc();
+                });
             });
+
+            row.querySelector('.tr-period-del').addEventListener('click', function() {
+                var i = +this.dataset.idx;
+                if (periods.length === 1) { periods[0] = { s:'', e:'' }; renderPeriods(); recalc(); return; }
+                periods.splice(i, 1);
+                renderPeriods();
+                recalc();
+            });
+
+            periodsEl.appendChild(row);
         });
-    })();
+    }
+
+    function updateRowResult(idx) {
+        var diff = dateDiff(periods[idx].s, periods[idx].e);
+        var el = periodsEl.querySelector('.tr-res[data-idx="' + idx + '"]');
+        if (!el) return;
+        var txt = fmtDiff(diff) || '—';
+        el.textContent = txt;
+        el.className = diff ? 'tr-period-result filled tr-res' : 'tr-period-result tr-res';
+        el.setAttribute('data-idx', idx);
+    }
+
+    function recalc() {
+        var diffs = periods.map(function(p) { return dateDiff(p.s, p.e); });
+        var valid = diffs.filter(Boolean);
+        if (!valid.length) {
+            totalValEl.innerHTML = '<span>—</span>';
+            return;
+        }
+        var tot = sumDiffs(valid);
+        totalValEl.innerHTML =
+            (tot.y ? '<strong>' + tot.y + '</strong><span> il</span> ' : '') +
+            (tot.m ? '<strong>' + tot.m + '</strong><span> ay</span> ' : '') +
+            '<strong>' + tot.d + '</strong><span> gün</span>';
+    }
+
+    function today() {
+        return new Date().toISOString().slice(0,10);
+    }
+
+    /* ── apply ─────────────────────────────────────────────── */
+    document.getElementById('trApplyBtn').addEventListener('click', function() {
+        if (!currentRow) return;
+        var diffs = periods.map(function(p) { return dateDiff(p.s, p.e); }).filter(Boolean);
+        if (!diffs.length) { closeModal(); return; }
+        var tot = sumDiffs(diffs);
+        // save to row for re-open
+        currentRow.dataset.trPeriods = JSON.stringify(periods);
+        // update 3 columns
+        var ilEl  = currentRow.querySelector('.tr-il');
+        var ayEl  = currentRow.querySelector('.tr-ay');
+        var gunEl = currentRow.querySelector('.tr-gun');
+        ilEl.textContent  = tot.y;  ilEl.className  = 'tr-col tr-il';
+        ayEl.textContent  = tot.m;  ayEl.className  = 'tr-col tr-ay';
+        gunEl.textContent = tot.d;  gunEl.className = 'tr-col tr-gun';
+        closeModal();
+    });
+
+    /* ── add period ────────────────────────────────────────── */
+    document.getElementById('trAddBtn').addEventListener('click', function() {
+        periods.push({ s:'', e:'' });
+        renderPeriods();
+    });
+
+    /* ── close ─────────────────────────────────────────────── */
+    document.getElementById('trClose').addEventListener('click', closeModal);
+    document.getElementById('trCancelBtn').addEventListener('click', closeModal);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) closeModal(); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+
+    /* ── open triggers ─────────────────────────────────────── */
+    document.querySelectorAll('.tr-open-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var id = btn.dataset.isciId;
+            var name = btn.dataset.isciAd;
+            var row = document.querySelector('tr[data-isci-id="' + id + '"]');
+            openModal(row, name);
+        });
+    });
+
+    /* ── existing staj-save-btn logic ──────────────────────── */
+    function showToast(msg, ok) {
+        var t = document.createElement('div');
+        t.style.cssText = 'position:fixed;top:20px;right:20px;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;' +
+            (ok ? 'background:#16a34a;color:#fff' : 'background:#dc2626;color:#fff');
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(function () { t.remove(); }, 3000);
+    }
+
+    document.querySelectorAll('.staj-save-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id = btn.dataset.isciId;
+            var row = btn.closest('tr');
+            var input = row.querySelector('.staj-input');
+            btn.disabled = true;
+
+            var formData = new FormData();
+            formData.append('isciId', id);
+            if (input.value) formData.append('umumiIsStajiBaslangic', input.value);
+
+            var csrf = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (csrf) formData.append('__RequestVerificationToken', csrf.value);
+
+            fetch('/HR/IsciStaji/Update', { method: 'POST', body: formData })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d.success) {
+                        showToast(d.message, true);
+                        var cariSpan = row.querySelector('.cari-staj');
+                        var menbeSpan = row.querySelector('.staj-menbe');
+                        var faizSpan = row.querySelector('.cari-faiz');
+                        cariSpan.textContent = d.stajIl + ' il ' + d.stajAy + ' ay';
+                        menbeSpan.textContent = d.menbe;
+                        faizSpan.textContent = d.faiz + '%';
+                        var bg = d.faiz === 100 ? '#dcfce7' : d.faiz === 80 ? '#fef3c7' : '#fee2e2';
+                        var c = d.faiz === 100 ? '#166534' : d.faiz === 80 ? '#92400e' : '#991b1b';
+                        faizSpan.style.background = bg;
+                        faizSpan.style.color = c;
+                    } else {
+                        showToast(d.message, false);
+                    }
+                })
+                .catch(function () { showToast('Server xətası.', false); })
+                .finally(function () { btn.disabled = false; });
+        });
+    });
+})();
 </script>
 
 @Html.AntiForgeryToken()
