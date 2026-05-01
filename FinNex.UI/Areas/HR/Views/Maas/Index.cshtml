@@ -332,6 +332,41 @@
                         </button>
                     </form>
                 }
+                @if (canTesdiq && layiheliSayi > 0)
+                {
+                    <button type="button" class="mi-btn mi-btn--sm mi-btn--orange" style="margin-left:8px;"
+                            onclick="document.getElementById('geriGonderModal').style.display='flex'">
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                            <path d="M2 6.5h7M6 3.5l-4 3 4 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Geri Göndər (@layiheliSayi)
+                    </button>
+
+                    <div id="geriGonderModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
+                        <div style="background:#1e2130;border:1px solid #2d3348;border-radius:12px;padding:28px 32px;width:420px;max-width:94vw;">
+                            <div style="font-size:15px;font-weight:600;color:#e2e8f0;margin-bottom:6px;">Hesablamanı geri qaytır</div>
+                            <div style="font-size:13px;color:#8a93a8;margin-bottom:18px;">
+                                @layiheliSayi layihə statuslu maaş ləğv ediləcək və mühasib yenidən hesablamağa dəvət ediləcək.
+                            </div>
+                            <form asp-area="HR" asp-controller="Maas" asp-action="TopluGeriGonder" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="il" value="@il"/>
+                                <input type="hidden" name="ay" value="@ay"/>
+                                <label style="font-size:12px;color:#8a93a8;display:block;margin-bottom:6px;">Səbəb (istəyə bağlı)</label>
+                                <textarea name="sebeb" rows="3"
+                                    placeholder="Nə yenidən hesablanmalıdır?..."
+                                    style="width:100%;box-sizing:border-box;background:#131722;border:1px solid #2d3348;border-radius:8px;color:#e2e8f0;font-size:13px;padding:9px 12px;resize:vertical;outline:none;margin-bottom:16px;"></textarea>
+                                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                                    <button type="button" class="mi-btn mi-btn--outline mi-btn--sm"
+                                            onclick="document.getElementById('geriGonderModal').style.display='none'">Ləğv et</button>
+                                    <button type="submit" class="mi-btn mi-btn--sm mi-btn--orange">
+                                        Geri Göndər
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                }
                 @if (canLegv && layiheliSayi > 0)
                 {
                     <form asp-area="HR" asp-controller="Maas" asp-action="TopluLegvEt"
