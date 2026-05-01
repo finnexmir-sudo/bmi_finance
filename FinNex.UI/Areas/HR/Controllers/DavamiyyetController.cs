@@ -69,7 +69,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                     tarix = x.Tarix,
                     girisVaxti = x.GirisVaxti,
                     cixisVaxti = x.CixisVaxti,
-                    status = (int)x.Status
+                    status = (int)x.Status,
+                    maasdanKes = x.MaasdanKes,
+                    qayibSebebi = x.QayibSebebi ?? ""
                 }).OrderByDescending(x => x.tarix).ThenBy(x => x.isciTamAd).ToList();
 
                 // Stats — umumi üzərindən (filter olsa belə bütün KPI-lar görünsün)
@@ -239,6 +241,26 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> QayibDuzelt([FromBody] QayibDuzeltRequest req)
+        {
+            if (req == null || req.Id <= 0)
+                return BadRequest(new { error = "Məlumat natamamdır." });
+
+            var entity = await _unitOfWork.Repository<Davamiyyet>()
+                .Query()
+                .FirstOrDefaultAsync(x => x.Id == req.Id && !x.Silinib && x.Status == DavamiyyetStatus.Qayib);
+
+            if (entity == null)
+                return BadRequest(new { error = "Qayıb qeydi tapılmadı." });
+
+            entity.MaasdanKes = req.MaasdanKes;
+            entity.QayibSebebi = req.QayibSebebi?.Trim();
+            await _unitOfWork.SaveAsync();
+
+            return Ok(new { message = "Yeniləndi." });
+        }
+
+        [HttpPost]
         public async Task<IActionResult> QayibYaz([FromBody] QayibYazRequest req)
         {
             if (req == null || req.IsciId <= 0)
@@ -320,6 +342,13 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             return result;
         }
+    }
+
+    public class QayibDuzeltRequest
+    {
+        public int Id { get; set; }
+        public bool MaasdanKes { get; set; }
+        public string? QayibSebebi { get; set; }
     }
 
     public class QayibYazRequest
