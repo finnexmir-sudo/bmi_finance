@@ -14,18 +14,19 @@
     var isHR      = User.IsInRole(RoleNames.HR);
     var isRehber  = User.IsInRole(RoleNames.Rehber);
     var isMuhasib = User.IsInRole(RoleNames.Muhasib);
-    var canHesabla = isHR || isAdmin;        // Hesablama (fərdi + toplu)
-    var canTesdiq  = isRehber || isAdmin;    // Layihe → Tesdiqlendi
-    var canOdeme   = isMuhasib || isAdmin;   // Tesdiqlendi → Odenildi
-    var canLegv    = isHR || isAdmin;        // Layihe → LegvEdildi
+    var canHesabla      = isHR || isAdmin;              // Fərdi hesablama
+    var canTopluHesabla = isHR || isMuhasib || isAdmin; // Toplu hesablama (Muhasib ilkin hesablama üçün)
+    var canTesdiq       = isRehber || isAdmin;          // Layihe → Tesdiqlendi
+    var canOdeme        = isMuhasib || isAdmin;         // Tesdiqlendi → Odenildi
+    var canLegv         = isHR || isAdmin;              // Layihe → LegvEdildi
 
     // Toplu Hesabla düyməsinin görünmə şərti:
-    //   - İstifadəçinin hesablama icazəsi var
+    //   - İstifadəçinin toplu hesablama icazəsi var
     //   - VƏ hələ hesablanmamış aktiv işçi qalıb
     var aktivIsciSayi = (int)(ViewBag.AktivIsciSayi ?? 0);
     var hesablanmamisVar = list.Count < aktivIsciSayi;
-    var showHesabla = canHesabla && hesablanmamisVar;
-    var canSil     = isHR || isAdmin;        // Layihe statusunda silinə bilər
+    var showHesabla = canTopluHesabla && hesablanmamisVar;
+    var canSil      = isHR || isAdmin;                  // Layihe statusunda silinə bilər
 
     decimal umumiNet      = list.Sum(x => x.NetMebleg);
     decimal umumiBrut     = list.Sum(x => x.BrutMaas);
@@ -393,7 +394,7 @@
                 </div>
                 <div class="mi-empty-title">Bu dövr üçün maaş tapılmadı</div>
                 <div class="mi-empty-sub">Toplu hesablama aparın</div>
-                @if (canHesabla)
+                @if (canTopluHesabla)
                 {
                     <a asp-area="HR" asp-controller="Maas" asp-action="TopluHesabla"
                        asp-route-il="@il" asp-route-ay="@ay"
