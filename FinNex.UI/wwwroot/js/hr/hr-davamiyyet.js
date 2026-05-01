@@ -159,12 +159,21 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(function (res) {
                 if (res.ok) {
                     qayibModal.hide();
-                    // KPI saylarını yenilə, sonra Gözlənilir siyahısını yenilə
                     var tarix = inputTarix.value || toLocalDateStr(new Date());
+                    // KPI-ları yenilə (Qayıb artır)
                     fetch(endpoints.getByTarix + '?tarix=' + encodeURIComponent(tarix))
                         .then(function (r) { return r.json(); })
                         .then(function (data) { updateKPI(data.stats); });
-                    loadGozlenilen();
+                    // Gözlənilir siyahısını yenilə (işçi çıxır, KPI azalır)
+                    fetch(endpoints.getGozlenilen + '?tarix=' + encodeURIComponent(tarix))
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            var kpiGoz = document.getElementById('kpiGozlenilen');
+                            if (kpiGoz) kpiGoz.textContent = data.count || 0;
+                            renderTable(data.records || [], true);
+                            recordCount.textContent = (data.count || 0) + ' gözlənilən işçi';
+                            extraStats.style.display = 'none';
+                        });
                 } else {
                     alert(res.data.error || 'Xəta baş verdi.');
                 }
@@ -173,6 +182,41 @@ document.addEventListener('DOMContentLoaded', function () {
             .finally(function () {
                 qayibYazBtn.disabled = false;
                 qayibYazBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Qayıb yaz';
+            });
+    });
+
+    // ── Qayıb Düzəliş Modal ──
+    var qayibDuzeltModal = new bootstrap.Modal(document.getElementById('qayibDuzeltModal'));
+    var duzeltSaxlaBtn = document.getElementById('duzeltSaxlaBtn');
+
+    duzeltSaxlaBtn.addEventListener('click', function () {
+        var id = parseInt(document.getElementById('duzeltId').value);
+        var maasdanKes = document.getElementById('duzeltMaasdanKes').checked;
+        var sebeb = document.getElementById('duzeltSebeb').value.trim();
+
+        duzeltSaxlaBtn.disabled = true;
+        duzeltSaxlaBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saxlanılır...';
+
+        fetch('/HR/Davamiyyet/QayibDuzelt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, maasdanKes: maasdanKes, qayibSebebi: sebeb })
+        })
+            .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+            .then(function (res) {
+                if (res.ok) {
+                    qayibDuzeltModal.hide();
+                    // Cədvəli cari parametrlərlə yenilə
+                    var p = getBaseParams();
+                    loadData(p);
+                } else {
+                    alert(res.data.error || 'Xəta baş verdi.');
+                }
+            })
+            .catch(function () { alert('Şəbəkə xətası.'); })
+            .finally(function () {
+                duzeltSaxlaBtn.disabled = false;
+                duzeltSaxlaBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Saxla';
             });
     });
 
@@ -371,6 +415,23 @@ document.addEventListener('DOMContentLoaded', function () {
             var badge = getStatusBadge(r.status);
             var tarixRaw = r.tarix ? toLocalDateStr(r.tarix) : toLocalDateStr(new Date());
 
+            // Qayıb sıralarında kəsinti indikatoru + düzəliş düyməsi
+            var qayibExtra = '';
+            if (r.status === 3) {
+                var kesIcon = r.maasdanKes
+                    ? '<span title="Maaşdan kəsilir" style="color:#dc2626;font-size:11px;margin-left:6px;"><i class="bi bi-scissors"></i> Kəsilir</span>'
+                    : '<span title="Maaşdan kəsilmir" style="color:#94a3b8;font-size:11px;margin-left:6px;"><i class="bi bi-dash-circle"></i> Kəsilmir</span>';
+                badge += kesIcon +
+                    '<button class="btn btn-sm qayib-duzelt-btn" ' +
+                    'data-id="' + r.id + '" ' +
+                    'data-isci-ad="' + r.isciTamAd + '" ' +
+                    'data-tarix-raw="' + tarixRaw + '" ' +
+                    'data-maasdan-kes="' + (r.maasdanKes ? '1' : '0') + '" ' +
+                    'data-sebeb="' + (r.qayibSebebi || '') + '" ' +
+                    'style="font-size:11px;padding:2px 7px;margin-left:6px;border:1px solid #6366f1;color:#6366f1;border-radius:5px;" ' +
+                    'title="Düzəliş et"><i class="bi bi-pencil"></i></button>';
+            }
+
             var actionCell = '';
             if (showQayibBtn && r.status === 0) {
                 actionCell = '<td><button class="btn btn-sm btn-outline-danger qayib-yaz-btn" ' +
@@ -406,6 +467,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('qayibTarixGoster').textContent =
                     pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear();
                 qayibModal.show();
+            });
+        });
+
+        // "Düzəliş et" düymələrinin klik hadisəsi
+        tableBody.querySelectorAll('.qayib-duzelt-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.getElementById('duzeltId').value = btn.getAttribute('data-id');
+                document.getElementById('duzeltIsciAd').textContent = btn.getAttribute('data-isci-ad');
+                document.getElementById('duzeltMaasdanKes').checked = btn.getAttribute('data-maasdan-kes') === '1';
+                document.getElementById('duzeltSebeb').value = btn.getAttribute('data-sebeb') || '';
+                var d = new Date(btn.getAttribute('data-tarix-raw'));
+                document.getElementById('duzeltTarixGoster').textContent =
+                    pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear();
+                qayibDuzeltModal.show();
             });
         });
     }
