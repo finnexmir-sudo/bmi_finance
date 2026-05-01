@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Gözlənilən işçiləri yüklə ──
     function loadGozlenilen() {
-        var tarix = inputTarix.value || new Date().toISOString().split('T')[0];
+        var tarix = inputTarix.value || toLocalDateStr(new Date());
         var url = endpoints.getGozlenilen + '?tarix=' + encodeURIComponent(tarix);
 
         tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><div class="spinner-border spinner-border-sm text-muted"></div><div style="margin-top:8px">Yüklənir...</div></div></td></tr>';
@@ -159,9 +159,12 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(function (res) {
                 if (res.ok) {
                     qayibModal.hide();
-                    // Əsas cədvəli yenilə — yeni Qayıb qeydi görünsün
-                    var tarix = inputTarix.value || new Date().toISOString().split('T')[0];
-                    loadData({ tarix: tarix });
+                    // KPI saylarını yenilə, sonra Gözlənilir siyahısını yenilə
+                    var tarix = inputTarix.value || toLocalDateStr(new Date());
+                    fetch(endpoints.getByTarix + '?tarix=' + encodeURIComponent(tarix))
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) { updateKPI(data.stats); });
+                    loadGozlenilen();
                 } else {
                     alert(res.data.error || 'Xəta baş verdi.');
                 }
@@ -248,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function clearSelectedIsci() {
         selectedIsciId = null;
         selectedIsciEl.innerHTML = '<span class="hrd-no-selection">Heç kim seçilməyib</span>';
-        loadData({ tarix: inputTarix.value || new Date().toISOString().split('T')[0] });
+        loadData({ tarix: inputTarix.value || toLocalDateStr(new Date()) });
     }
 
     function getBaseParams() {
@@ -263,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (inputIsciSon.value) p.son = inputIsciSon.value;
             return p;
         }
-        return { tarix: inputTarix.value || new Date().toISOString().split('T')[0] };
+        return { tarix: inputTarix.value || toLocalDateStr(new Date()) };
     }
 
     // ── Excel Export ──
@@ -366,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             var badge = getStatusBadge(r.status);
-            var tarixRaw = r.tarix ? new Date(r.tarix).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+            var tarixRaw = r.tarix ? toLocalDateStr(r.tarix) : toLocalDateStr(new Date());
 
             var actionCell = '';
             if (showQayibBtn && r.status === 0) {
@@ -431,6 +434,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+    // toISOString() UTC-yə çevirir — UTC+4-də tarix 1 gün geri düşür.
+    // Bu funksiya lokal tarix komponentlərindən yyyy-MM-dd düzəldir.
+    function toLocalDateStr(date) {
+        var d = (typeof date === 'string') ? new Date(date) : date;
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    }
 
     // ── Device status check ──
     function checkDevice() {
