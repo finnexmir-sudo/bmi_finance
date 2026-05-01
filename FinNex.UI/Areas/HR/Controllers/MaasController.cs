@@ -363,10 +363,10 @@ namespace FinNex.UI.Areas.HR.Controllers
             var cariMaasMap = maliyeler.ToDictionary(x => x.IsciId, x => x.CariMaas);
             var ibanMap = maliyeler.ToDictionary(x => x.IsciId, x => x.BankHesabNo);
 
-            // Artıq hesablanmışları işarələ
+            // Artıq hesablanmışları işarələ — LegvEdildi sayılmır, yenidən hesablanabilər
             var hesablanmis = await _unitOfWork.Repository<Maas>()
                 .Query()
-                .Where(x => x.Il == cIl && x.Ay == cAy && !x.Silinib)
+                .Where(x => x.Il == cIl && x.Ay == cAy && !x.Silinib && x.Status != MaasStatus.LegvEdildi)
                 .Select(x => x.IsciId)
                 .ToListAsync();
 
