@@ -159,7 +159,9 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(function (res) {
                 if (res.ok) {
                     qayibModal.hide();
-                    loadGozlenilen();
+                    // Əsas cədvəli yenilə — yeni Qayıb qeydi görünsün
+                    var tarix = inputTarix.value || new Date().toISOString().split('T')[0];
+                    loadData({ tarix: tarix });
                 } else {
                     alert(res.data.error || 'Xəta baş verdi.');
                 }
