@@ -36,9 +36,9 @@
                 <circle cx="6.5" cy="13" r="1.5" fill="#1e9b6b"/>
               </svg>`
         },
-        'LeğvEdildi': {
+        'LegvEdildi': {
             title: 'Maaşı ləğv et',
-            sub: 'Bu maaş ləğv edilsin? Layihə statusundakı maaşlar silinə bilər.',
+            sub: 'Bu maaş ləğv edilsin? Hesablamada səhv olarsa Layihə statusunu geri ala bilərsiniz.',
             icon: 'orange',
             iconSvg: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <circle cx="10" cy="10" r="8" stroke="#d85a30" stroke-width="1.5"/>
