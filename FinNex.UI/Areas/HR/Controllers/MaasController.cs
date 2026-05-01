@@ -682,10 +682,6 @@ namespace FinNex.UI.Areas.HR.Controllers
             return RedirectToAction(nameof(Index), new { il, ay });
         }
 
-        // ── POST /HR/Maas/TopluTesdiqle ──────────────────────────
-        // Bütün Layihə statuslu maaşları bir kliklə təsdiqlə
-        [HttpPost, ValidateAntiForgeryToken]
-        [Authorize(Roles = RoleNames.Rehber + "," + RoleNames.Admin)]
         [HttpPost, ValidateAntiForgeryToken]
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
         public async Task<IActionResult> TopluLegvEt(int il, int ay)
