@@ -319,7 +319,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // ── GET /HR/Maas/TopluHesabla ────────────────────────────
         [HttpGet]
-        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Rehber + "," + RoleNames.Admin)]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Muhasib + "," + RoleNames.Rehber + "," + RoleNames.Admin)]
         public async Task<IActionResult> TopluHesabla(int? il, int? ay)
         {
             var cIl = il ?? DateTime.Now.Year;
@@ -542,7 +542,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // ── POST /HR/Maas/TopluHesablaEt ─────────────────────────
         [HttpPost, ValidateAntiForgeryToken]
-        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Rehber + "," + RoleNames.Admin)]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Muhasib + "," + RoleNames.Rehber + "," + RoleNames.Admin)]
         public async Task<IActionResult> TopluHesablaEt(
             int il, int ay,
             [FromForm] List<FerdiElaveDto> ferdiElaveler)
