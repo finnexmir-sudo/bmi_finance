@@ -21,12 +21,56 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/User/kredit-muraciet.css" asp-append-version="true" />
     <style>
-        /* ── Trudovoy Modal ─────────────────────────────────────── */
+        .tr-group-head {
+            background: #eef2ff !important;
+            color: #3730a3 !important;
+            border-left: 2px solid #c7d2fe !important;
+            border-right: 2px solid #c7d2fe !important;
+            text-align: center !important;
+        }
+        .tr-sub-head {
+            background: #f5f3ff !important;
+            color: #4338ca !important;
+            font-size: 10px !important;
+            text-align: center !important;
+            padding: 5px 8px !important;
+            border-bottom: 2px solid #c7d2fe !important;
+        }
+        .tr-val {
+            text-align: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: #3730a3;
+        }
+        .tr-val.empty { color: #cbd5e1; font-weight: 400; font-size: 12px; }
+        .tr-val-l { border-left: 2px solid #e0e7ff !important; }
+        .tr-val-r { border-right: 2px solid #e0e7ff !important; }
+
+        .tr-open-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            background: #fff;
+            border: 1px solid #c7d2fe;
+            border-radius: 6px;
+            color: #4338ca;
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .15s;
+            white-space: nowrap;
+            margin-left: 6px;
+        }
+        .tr-open-btn:hover { background: #eef2ff; border-color: #818cf8; }
+        .tr-open-btn.has-data { background: #eef2ff; border-color: #818cf8; }
+
+        /* ── Modal ── */
         .tr-overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,.55);
+            background: rgba(15,23,42,.55);
             z-index: 9000;
             align-items: center;
             justify-content: center;
@@ -34,224 +78,101 @@
         .tr-overlay.active { display: flex; }
 
         .tr-modal {
-            background: #1a2234;
-            border: 1px solid #2d3a52;
-            border-radius: 14px;
-            width: 620px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            width: 600px;
             max-width: 96vw;
             max-height: 90vh;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 24px 60px rgba(0,0,0,.6);
+            box-shadow: 0 20px 60px rgba(15,23,42,.2);
             overflow: hidden;
         }
-
         .tr-modal-head {
             padding: 20px 24px 16px;
-            border-bottom: 1px solid #2d3a52;
+            border-bottom: 1px solid #f1f5f9;
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
             gap: 12px;
+            background: #f8f9fb;
         }
-        .tr-modal-title {
-            font-size: 15px;
-            font-weight: 700;
-            color: #e2e8f0;
-            line-height: 1.3;
-        }
-        .tr-modal-sub {
-            font-size: 12px;
-            color: #64748b;
-            margin-top: 3px;
-        }
+        .tr-modal-title { font-size: 15px; font-weight: 700; color: #1a2332; }
+        .tr-modal-sub   { font-size: 12px; color: #64748b; margin-top: 3px; }
         .tr-modal-close {
             background: none;
-            border: none;
-            color: #64748b;
-            font-size: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            color: #94a3b8;
+            font-size: 16px;
             cursor: pointer;
-            padding: 0 4px;
-            line-height: 1;
+            padding: 2px 8px;
+            line-height: 1.4;
             flex-shrink: 0;
         }
-        .tr-modal-close:hover { color: #e2e8f0; }
+        .tr-modal-close:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
 
-        .tr-modal-body {
-            padding: 20px 24px;
-            overflow-y: auto;
-            flex: 1;
-        }
+        .tr-modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
 
-        /* Period rows */
-        .tr-periods { display: flex; flex-direction: column; gap: 10px; }
+        .tr-periods { display: flex; flex-direction: column; gap: 8px; }
 
         .tr-period-row {
             display: grid;
-            grid-template-columns: 1fr auto 1fr auto;
-            align-items: center;
+            grid-template-columns: 1fr 20px 1fr 1fr 28px;
+            align-items: end;
             gap: 8px;
-            background: #131c2e;
-            border: 1px solid #2d3a52;
+            background: #f8f9fb;
+            border: 1px solid #e2e8f0;
             border-radius: 10px;
             padding: 12px 14px;
         }
-        .tr-period-arrow {
-            color: #475569;
-            font-size: 16px;
-            text-align: center;
-            padding: 0 4px;
-        }
-        .tr-period-result {
-            font-size: 12px;
-            font-weight: 600;
-            color: #94a3b8;
-            min-width: 120px;
-            text-align: right;
-        }
-        .tr-period-result.filled { color: #60a5fa; }
+        .tr-period-arrow { color: #94a3b8; font-size: 15px; text-align: center; padding-bottom: 6px; }
+        .tr-period-result { font-size: 12px; font-weight: 600; color: #94a3b8; padding-bottom: 6px; white-space: nowrap; }
+        .tr-period-result.filled { color: #4338ca; }
         .tr-period-del {
-            background: none;
-            border: 1px solid #374151;
-            color: #64748b;
-            border-radius: 6px;
-            width: 28px;
-            height: 28px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            flex-shrink: 0;
-            transition: all .15s;
+            background: none; border: 1px solid #e2e8f0; color: #94a3b8;
+            border-radius: 6px; width: 28px; height: 28px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: all .15s;
         }
-        .tr-period-del:hover { background: #3f1f1f; border-color: #dc2626; color: #dc2626; }
+        .tr-period-del:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
 
+        .tr-field { display: flex; flex-direction: column; gap: 4px; }
+        .tr-date-label { font-size: 10.5px; color: #64748b; font-weight: 500; }
         .tr-date-input {
-            width: 100%;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 7px;
-            color: #e2e8f0;
-            font-size: 12.5px;
-            padding: 7px 10px;
-            outline: none;
-            transition: border-color .15s;
+            width: 100%; background: #fff; border: 1px solid #d1d5db; border-radius: 7px;
+            color: #1a2332; font-size: 12.5px; padding: 6px 10px; outline: none;
+            transition: border-color .15s; box-sizing: border-box;
         }
-        .tr-date-input:focus { border-color: #3b82f6; }
-        .tr-date-label {
-            font-size: 10.5px;
-            color: #475569;
-            margin-bottom: 4px;
-        }
+        .tr-date-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.08); }
 
         .tr-add-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: none;
-            border: 1px dashed #2d3a52;
-            border-radius: 8px;
-            color: #475569;
-            font-size: 12.5px;
-            padding: 9px 14px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 8px;
-            transition: all .15s;
+            display: flex; align-items: center; gap: 6px; background: none;
+            border: 1px dashed #c7d2fe; border-radius: 8px; color: #6366f1;
+            font-size: 12.5px; font-weight: 500; padding: 9px 14px;
+            cursor: pointer; width: 100%; margin-top: 8px; transition: all .15s;
         }
-        .tr-add-btn:hover { border-color: #3b82f6; color: #60a5fa; background: #0f1a2e; }
+        .tr-add-btn:hover { background: #eef2ff; border-color: #818cf8; color: #4338ca; }
 
-        /* Total card */
         .tr-total {
-            background: linear-gradient(135deg, #0f2240, #0d1b35);
-            border: 1px solid #1e40af;
-            border-radius: 10px;
-            padding: 14px 18px;
-            margin-top: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 10px;
+            padding: 14px 20px; margin-top: 16px;
+            display: flex; align-items: center; justify-content: space-between;
         }
-        .tr-total-label { font-size: 12px; color: #93c5fd; font-weight: 600; }
-        .tr-total-val {
-            font-size: 20px;
-            font-weight: 800;
-            color: #60a5fa;
-            letter-spacing: .3px;
-        }
-        .tr-total-val span { font-size: 13px; font-weight: 500; color: #93c5fd; margin-left: 2px; }
+        .tr-total-label { font-size: 12px; color: #4338ca; font-weight: 600; }
+        .tr-total-val { font-size: 18px; font-weight: 800; color: #3730a3; }
+        .tr-total-val span { font-size: 12px; font-weight: 500; color: #6366f1; margin-left: 1px; }
 
         .tr-modal-foot {
-            padding: 16px 24px;
-            border-top: 1px solid #2d3a52;
-            display: flex;
-            gap: 8px;
-            justify-content: flex-end;
+            padding: 14px 24px; border-top: 1px solid #f1f5f9;
+            display: flex; gap: 8px; justify-content: flex-end; background: #f8f9fb;
         }
-
-        .tr-btn {
-            padding: 9px 20px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            transition: all .15s;
-        }
-        .tr-btn--ghost {
-            background: none;
-            border: 1px solid #2d3a52;
-            color: #94a3b8;
-        }
-        .tr-btn--ghost:hover { background: #1e2a3f; color: #e2e8f0; }
-        .tr-btn--apply {
-            background: linear-gradient(135deg, #1d4ed8, #1e40af);
-            color: #fff;
-        }
-        .tr-btn--apply:hover {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            box-shadow: 0 4px 14px rgba(59,130,246,.35);
-            transform: translateY(-1px);
-        }
-
-        /* Trudovoy button in table */
-        .tr-open-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 5px 10px;
-            background: #0f172a;
-            border: 1px solid #2d3a52;
-            border-radius: 6px;
-            color: #60a5fa;
-            font-size: 11.5px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all .15s;
-            margin-left: 6px;
-        }
-        .tr-open-btn:hover { background: #1e2a3f; border-color: #3b82f6; }
-
-        /* 3 new columns */
-        .tr-col {
-            font-size: 13px;
-            font-weight: 700;
-            color: #60a5fa;
-            text-align: center;
-        }
-        .tr-col.empty { color: #2d3a52; font-weight: 400; font-size: 12px; }
-        .tr-col-head {
-            text-align: center;
-            color: #60a5fa;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: .5px;
-            text-transform: uppercase;
-        }
-
-        /* Period row input wrappers */
-        .tr-field { display: flex; flex-direction: column; }
+        .tr-btn { padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; }
+        .tr-btn--ghost { background: #fff; border: 1px solid #e2e8f0; color: #64748b; }
+        .tr-btn--ghost:hover { background: #f1f5f9; color: #1a2332; }
+        .tr-btn--apply { background: #4338ca; border: none; color: #fff; }
+        .tr-btn--apply:hover { background: #3730a3; box-shadow: 0 4px 12px rgba(67,56,202,.3); }
     </style>
 }
 
@@ -270,7 +191,6 @@
     @if (TempData["Success"] != null) { <div class="fn-alert fn-alert--success">@TempData["Success"]</div> }
     @if (TempData["Error"] != null) { <div style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Error"]</div> }
 
-    @* ── Axtarış ── *@
     <form method="get" asp-action="Index" style="display:flex;gap:8px;margin-bottom:16px">
         <input type="text" name="axtaris" value="@axtaris" placeholder="İşçi adı, soyadı və ya FİN..."
                style="flex:1;max-width:420px;padding:9px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:13px" />
@@ -288,31 +208,29 @@
         <span>&lt; 8 il → 60%</span> ·
         <span>8 – 12 il → 80%</span> ·
         <span>≥ 12 il → 100%</span>
-        &nbsp;·&nbsp;
-        <strong style="color:#1d4ed8">Trudovoy</strong> düyməsi ilə hər işçi üçün əvvəlki iş dövrlərini daxil edib ümumi stajı hesablayın.
+        &nbsp;&nbsp;·&nbsp;&nbsp;
+        <strong style="color:#3730a3">Trudovoy</strong> düyməsi ilə əvvəlki iş dövrlərini daxil edib ümumi stajı hesablayın.
     </div>
 
-    <div class="fn-card" style="padding:0;overflow:hidden;overflow-x:auto">
-        <table class="km-table" style="min-width:900px">
+    <div class="fn-card" style="padding:0;overflow:hidden">
+        <table class="km-table" style="table-layout:auto">
             <thead>
                 <tr>
                     <th style="min-width:200px">İşçi</th>
                     <th>Departament</th>
                     <th style="width:130px">Bu bankda işə gəlmə</th>
-                    <th style="width:165px">Ümumi staj başlanğıcı</th>
-                    <th style="width:130px">Cari staj</th>
-                    <th colspan="3" class="tr-col-head" style="width:150px;background:#0f1a2e;border-left:1px solid #1e3a5f;border-right:1px solid #1e3a5f">
-                        Trudovoy staj
-                    </th>
+                    <th style="width:160px">Ümumi staj başlanğıcı</th>
+                    <th style="width:120px">Cari staj</th>
+                    <th colspan="3" class="tr-group-head" style="width:150px">Trudovoy staj</th>
                     <th style="width:80px">Faiz</th>
-                    <th style="width:140px">Əməliyyat</th>
+                    <th style="width:160px">Əməliyyat</th>
                 </tr>
-                <tr style="background:#0a1120;font-size:10px;color:#475569">
-                    <td colspan="5" style="padding:4px 0"></td>
-                    <td class="tr-col-head" style="width:50px;background:#0a1525;border-left:1px solid #1e3a5f;padding:4px 8px">İL</td>
-                    <td class="tr-col-head" style="width:50px;background:#0a1525;padding:4px 8px">AY</td>
-                    <td class="tr-col-head" style="width:50px;background:#0a1525;border-right:1px solid #1e3a5f;padding:4px 8px">GÜN</td>
-                    <td colspan="2" style="padding:4px 0"></td>
+                <tr>
+                    <th colspan="5" style="background:#f8f9fb;padding:0;border:none;height:0"></th>
+                    <th class="tr-sub-head tr-val-l" style="width:50px">İL</th>
+                    <th class="tr-sub-head" style="width:50px">AY</th>
+                    <th class="tr-sub-head tr-val-r" style="width:50px">GÜN</th>
+                    <th colspan="2" style="background:#f8f9fb;padding:0;border:none;height:0"></th>
                 </tr>
             </thead>
             <tbody>
@@ -321,7 +239,6 @@
                     var (il, ay, faiz, menbe) = HesablaStaj(i);
                     var teyinat = i.IsciTeyinatlari?.FirstOrDefault(t => t.BitmeTarixi == null);
                     var deptAd = teyinat?.Departament?.Ad ?? "—";
-
                     <tr class="km-row" data-isci-id="@i.Id">
                         <td class="km-td-name">
                             <div style="font-weight:600">@i.Ad @i.Soyad</div>
@@ -343,26 +260,19 @@
                             <span class="cari-staj" style="font-weight:700;color:#0f172a;font-size:13px">@il il @ay ay</span>
                             <div style="font-size:10px;color:#94a3b8">mənbə: <span class="staj-menbe">@menbe</span></div>
                         </td>
-
-                        @* ── 3 new trudovoy columns ── *@
-                        <td class="tr-col empty tr-il" style="background:#070e1c;border-left:1px solid #1e3a5f">—</td>
-                        <td class="tr-col empty tr-ay" style="background:#070e1c">—</td>
-                        <td class="tr-col empty tr-gun" style="background:#070e1c;border-right:1px solid #1e3a5f">—</td>
-
+                        <td class="tr-val tr-val-l empty tr-il">—</td>
+                        <td class="tr-val empty tr-ay">—</td>
+                        <td class="tr-val tr-val-r empty tr-gun">—</td>
                         <td>
                             <span class="cari-faiz" style="display:inline-block;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700;
-                                  background:@(faiz == 100 ? "#dcfce7" : faiz == 80 ? "#fef3c7" : "#fee2e2");
-                                  color:@(faiz == 100 ? "#166534" : faiz == 80 ? "#92400e" : "#991b1b")">
+                                  background:@(faiz==100?"#dcfce7":faiz==80?"#fef3c7":"#fee2e2");
+                                  color:@(faiz==100?"#166534":faiz==80?"#92400e":"#991b1b")">
                                 @faiz%
                             </span>
                         </td>
-                        <td>
-                            <button type="button" class="fn-btn fn-btn--primary fn-btn--sm staj-save-btn" data-isci-id="@i.Id">
-                                Saxla
-                            </button>
-                            <button type="button" class="tr-open-btn"
-                                    data-isci-id="@i.Id"
-                                    data-isci-ad="@i.Ad @i.Soyad">
+                        <td style="white-space:nowrap">
+                            <button type="button" class="fn-btn fn-btn--primary fn-btn--sm staj-save-btn" data-isci-id="@i.Id">Saxla</button>
+                            <button type="button" class="tr-open-btn" data-isci-id="@i.Id" data-isci-ad="@i.Ad @i.Soyad">
                                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                                     <rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.3"/>
                                     <path d="M3 4h6M3 6h6M3 8h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
@@ -377,44 +287,31 @@
     </div>
 </div>
 
-@* ── Trudovoy Modal ──────────────────────────────────────── *@
 <div class="tr-overlay" id="trOverlay">
     <div class="tr-modal">
         <div class="tr-modal-head">
             <div>
                 <div class="tr-modal-title" id="trModalTitle">Trudovoy Staj Hesablaması</div>
-                <div class="tr-modal-sub">Əvvəlki iş yerlərindəki dövrləri daxil edin — sistem ümumi stajı hesablayacaq</div>
+                <div class="tr-modal-sub">Hər dövr üçün başlanğıc və bitmə tarixini daxil edin</div>
             </div>
-            <button class="tr-modal-close" id="trClose" title="Bağla">✕</button>
+            <button class="tr-modal-close" id="trClose">✕</button>
         </div>
-
         <div class="tr-modal-body">
-            <div class="tr-periods" id="trPeriods">
-                @* Rows injected by JS *@
-            </div>
+            <div class="tr-periods" id="trPeriods"></div>
             <button class="tr-add-btn" id="trAddBtn" type="button">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path d="M6.5 2v9M2 6.5h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                 </svg>
                 Dövr əlavə et
             </button>
-
-            <div class="tr-total" id="trTotal">
+            <div class="tr-total">
                 <div class="tr-total-label">Ümumi trudovoy staj</div>
-                <div class="tr-total-val" id="trTotalVal">
-                    <span>—</span>
-                </div>
+                <div class="tr-total-val" id="trTotalVal"><span>—</span></div>
             </div>
         </div>
-
         <div class="tr-modal-foot">
             <button class="tr-btn tr-btn--ghost" id="trCancelBtn" type="button">İmtina</button>
-            <button class="tr-btn tr-btn--apply" id="trApplyBtn" type="button">
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="margin-right:4px;vertical-align:middle">
-                    <path d="M2 6.5l3 3 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Tətbiq et
-            </button>
+            <button class="tr-btn tr-btn--apply" id="trApplyBtn" type="button">Tətbiq et</button>
         </div>
     </div>
 </div>
@@ -422,225 +319,153 @@
 @section Scripts {
 <script>
 (function () {
-    /* ── helpers ───────────────────────────────────────────── */
-    function dateDiff(startStr, endStr) {
-        if (!startStr || !endStr) return null;
-        var s = new Date(startStr), e = new Date(endStr);
-        if (isNaN(s) || isNaN(e) || e <= s) return null;
-        var y = e.getFullYear() - s.getFullYear();
-        var m = e.getMonth()    - s.getMonth();
-        var d = e.getDate()     - s.getDate();
-        if (d < 0) { m--; var pm = new Date(e.getFullYear(), e.getMonth(), 0); d += pm.getDate(); }
+    function dateDiff(s, e) {
+        if (!s || !e) return null;
+        var sd = new Date(s), ed = new Date(e);
+        if (isNaN(sd) || isNaN(ed) || ed <= sd) return null;
+        var y = ed.getFullYear()-sd.getFullYear(), m = ed.getMonth()-sd.getMonth(), d = ed.getDate()-sd.getDate();
+        if (d < 0) { m--; d += new Date(ed.getFullYear(), ed.getMonth(), 0).getDate(); }
         if (m < 0) { y--; m += 12; }
-        return { y: y, m: m, d: d };
+        return { y:y, m:m, d:d };
     }
-
-    function sumDiffs(diffs) {
-        var td = 0, tm = 0, ty = 0;
-        diffs.forEach(function(r) { if (r) { ty += r.y; tm += r.m; td += r.d; } });
-        tm += Math.floor(td / 30);  td = td % 30;
-        ty += Math.floor(tm / 12);  tm = tm % 12;
-        return { y: ty, m: tm, d: td };
+    function sumAll(diffs) {
+        var ty=0,tm=0,td=0;
+        diffs.forEach(function(r){if(r){ty+=r.y;tm+=r.m;td+=r.d;}});
+        tm+=Math.floor(td/30); td%=30; ty+=Math.floor(tm/12); tm%=12;
+        return {y:ty,m:tm,d:td};
     }
-
-    function fmtDiff(r) {
-        if (!r) return null;
-        var parts = [];
-        if (r.y) parts.push(r.y + ' il');
-        if (r.m) parts.push(r.m + ' ay');
-        if (r.d) parts.push(r.d + ' gün');
-        return parts.length ? parts.join(' ') : '0 gün';
+    function fmt(r) {
+        if(!r) return null;
+        var p=[];
+        if(r.y) p.push(r.y+' il');
+        if(r.m) p.push(r.m+' ay');
+        p.push(r.d+' gün');
+        return p.join(' ');
     }
+    function todayStr(){ return new Date().toISOString().slice(0,10); }
 
-    /* ── modal state ───────────────────────────────────────── */
-    var currentRow = null;
-    var periods = [];     // [{s, e}]
-    var overlay  = document.getElementById('trOverlay');
-    var periodsEl = document.getElementById('trPeriods');
-    var totalValEl = document.getElementById('trTotalVal');
+    var currentRow=null, periods=[];
+    var overlay=document.getElementById('trOverlay');
+    var periodsEl=document.getElementById('trPeriods');
+    var totalValEl=document.getElementById('trTotalVal');
 
     function openModal(row, name) {
-        currentRow = row;
-        document.getElementById('trModalTitle').textContent = 'Trudovoy Staj — ' + name;
-        // restore saved periods if any
-        var saved = row.dataset.trPeriods ? JSON.parse(row.dataset.trPeriods) : [{ s: '', e: '' }];
-        periods = saved;
-        renderPeriods();
-        recalc();
+        currentRow=row;
+        document.getElementById('trModalTitle').textContent=name+' — Trudovoy Staj';
+        periods=row.dataset.trPeriods?JSON.parse(row.dataset.trPeriods):[{s:'',e:''}];
+        render(); recalc();
         overlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
+        document.body.style.overflow='hidden';
     }
-
     function closeModal() {
         overlay.classList.remove('active');
-        document.body.style.overflow = '';
-        currentRow = null;
+        document.body.style.overflow='';
+        currentRow=null;
     }
 
-    /* ── render ────────────────────────────────────────────── */
-    function renderPeriods() {
-        periodsEl.innerHTML = '';
-        periods.forEach(function(p, idx) {
-            var diff = dateDiff(p.s, p.e);
-            var resText = fmtDiff(diff) || '—';
-            var resClass = diff ? 'tr-period-result filled' : 'tr-period-result';
-
-            var row = document.createElement('div');
-            row.className = 'tr-period-row';
-            row.innerHTML =
-                '<div class="tr-field">' +
-                    '<div class="tr-date-label">Başlanğıc</div>' +
-                    '<input type="date" class="tr-date-input tr-start" data-idx="' + idx + '" value="' + (p.s||'') + '" max="' + today() + '" />' +
-                '</div>' +
-                '<div class="tr-period-arrow">→</div>' +
-                '<div class="tr-field">' +
-                    '<div class="tr-date-label">Bitmə</div>' +
-                    '<input type="date" class="tr-date-input tr-end" data-idx="' + idx + '" value="' + (p.e||'') + '" max="' + today() + '" />' +
-                '</div>' +
-                '<div class="' + resClass + ' tr-res" data-idx="' + idx + '">' + resText + '</div>' +
-                '<button type="button" class="tr-period-del" data-idx="' + idx + '" title="Sil">' +
-                    '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>' +
-                '</button>';
-
-            row.querySelectorAll('.tr-start,.tr-end').forEach(function(inp) {
-                inp.addEventListener('input', function() {
-                    var i = +inp.dataset.idx;
-                    if (inp.classList.contains('tr-start')) periods[i].s = inp.value;
-                    else periods[i].e = inp.value;
-                    updateRowResult(i);
+    function render() {
+        periodsEl.innerHTML='';
+        periods.forEach(function(p,idx){
+            var diff=dateDiff(p.s,p.e);
+            var div=document.createElement('div');
+            div.className='tr-period-row';
+            div.innerHTML=
+                '<div class="tr-field"><div class="tr-date-label">Başlanğıc tarixi</div>'+
+                '<input type="date" class="tr-date-input tr-s" data-idx="'+idx+'" value="'+(p.s||'')+'" max="'+todayStr()+'"></div>'+
+                '<div class="tr-period-arrow">→</div>'+
+                '<div class="tr-field"><div class="tr-date-label">Bitmə tarixi</div>'+
+                '<input type="date" class="tr-date-input tr-e" data-idx="'+idx+'" value="'+(p.e||'')+'" max="'+todayStr()+'"></div>'+
+                '<div class="tr-period-result'+(diff?' filled':'')+' tr-res" data-idx="'+idx+'">'+(diff?fmt(diff):'—')+'</div>'+
+                '<button type="button" class="tr-period-del" data-idx="'+idx+'">'+
+                '<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>';
+            div.querySelectorAll('.tr-s,.tr-e').forEach(function(inp){
+                inp.addEventListener('input',function(){
+                    var i=+inp.dataset.idx;
+                    inp.classList.contains('tr-s')?periods[i].s=inp.value:periods[i].e=inp.value;
+                    var d2=dateDiff(periods[i].s,periods[i].e);
+                    var el=periodsEl.querySelector('.tr-res[data-idx="'+i+'"]');
+                    if(el){el.textContent=d2?fmt(d2):'—';el.className='tr-period-result'+(d2?' filled':'')+' tr-res';el.dataset.idx=i;}
                     recalc();
                 });
             });
-
-            row.querySelector('.tr-period-del').addEventListener('click', function() {
-                var i = +this.dataset.idx;
-                if (periods.length === 1) { periods[0] = { s:'', e:'' }; renderPeriods(); recalc(); return; }
-                periods.splice(i, 1);
-                renderPeriods();
-                recalc();
+            div.querySelector('.tr-period-del').addEventListener('click',function(){
+                var i=+this.dataset.idx;
+                if(periods.length===1){periods[0]={s:'',e:''};render();recalc();return;}
+                periods.splice(i,1);render();recalc();
             });
-
-            periodsEl.appendChild(row);
+            periodsEl.appendChild(div);
         });
-    }
-
-    function updateRowResult(idx) {
-        var diff = dateDiff(periods[idx].s, periods[idx].e);
-        var el = periodsEl.querySelector('.tr-res[data-idx="' + idx + '"]');
-        if (!el) return;
-        var txt = fmtDiff(diff) || '—';
-        el.textContent = txt;
-        el.className = diff ? 'tr-period-result filled tr-res' : 'tr-period-result tr-res';
-        el.setAttribute('data-idx', idx);
     }
 
     function recalc() {
-        var diffs = periods.map(function(p) { return dateDiff(p.s, p.e); });
-        var valid = diffs.filter(Boolean);
-        if (!valid.length) {
-            totalValEl.innerHTML = '<span>—</span>';
-            return;
+        var valid=periods.map(function(p){return dateDiff(p.s,p.e);}).filter(Boolean);
+        if(!valid.length){totalValEl.innerHTML='<span>—</span>';return;}
+        var t=sumAll(valid);
+        totalValEl.innerHTML=(t.y?'<strong>'+t.y+'</strong><span> il</span> ':'')+
+            (t.m?'<strong>'+t.m+'</strong><span> ay</span> ':'')+
+            '<strong>'+t.d+'</strong><span> gün</span>';
+    }
+
+    document.getElementById('trApplyBtn').addEventListener('click',function(){
+        if(!currentRow) return;
+        var valid=periods.map(function(p){return dateDiff(p.s,p.e);}).filter(Boolean);
+        if(!valid.length){closeModal();return;}
+        var tot=sumAll(valid);
+        currentRow.dataset.trPeriods=JSON.stringify(periods);
+        function setCol(cls,val){
+            var el=currentRow.querySelector(cls);
+            el.textContent=val;
+            el.className=el.className.replace(' empty','');
         }
-        var tot = sumDiffs(valid);
-        totalValEl.innerHTML =
-            (tot.y ? '<strong>' + tot.y + '</strong><span> il</span> ' : '') +
-            (tot.m ? '<strong>' + tot.m + '</strong><span> ay</span> ' : '') +
-            '<strong>' + tot.d + '</strong><span> gün</span>';
-    }
-
-    function today() {
-        return new Date().toISOString().slice(0,10);
-    }
-
-    /* ── apply ─────────────────────────────────────────────── */
-    document.getElementById('trApplyBtn').addEventListener('click', function() {
-        if (!currentRow) return;
-        var diffs = periods.map(function(p) { return dateDiff(p.s, p.e); }).filter(Boolean);
-        if (!diffs.length) { closeModal(); return; }
-        var tot = sumDiffs(diffs);
-        // save to row for re-open
-        currentRow.dataset.trPeriods = JSON.stringify(periods);
-        // update 3 columns
-        var ilEl  = currentRow.querySelector('.tr-il');
-        var ayEl  = currentRow.querySelector('.tr-ay');
-        var gunEl = currentRow.querySelector('.tr-gun');
-        ilEl.textContent  = tot.y;  ilEl.className  = 'tr-col tr-il';
-        ayEl.textContent  = tot.m;  ayEl.className  = 'tr-col tr-ay';
-        gunEl.textContent = tot.d;  gunEl.className = 'tr-col tr-gun';
+        setCol('.tr-il',tot.y); setCol('.tr-ay',tot.m); setCol('.tr-gun',tot.d);
+        currentRow.querySelector('.tr-open-btn').classList.add('has-data');
         closeModal();
     });
+    document.getElementById('trAddBtn').addEventListener('click',function(){periods.push({s:'',e:''});render();});
+    document.getElementById('trClose').addEventListener('click',closeModal);
+    document.getElementById('trCancelBtn').addEventListener('click',closeModal);
+    overlay.addEventListener('click',function(e){if(e.target===overlay)closeModal();});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
 
-    /* ── add period ────────────────────────────────────────── */
-    document.getElementById('trAddBtn').addEventListener('click', function() {
-        periods.push({ s:'', e:'' });
-        renderPeriods();
-    });
-
-    /* ── close ─────────────────────────────────────────────── */
-    document.getElementById('trClose').addEventListener('click', closeModal);
-    document.getElementById('trCancelBtn').addEventListener('click', closeModal);
-    overlay.addEventListener('click', function(e) { if (e.target === overlay) closeModal(); });
-    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
-
-    /* ── open triggers ─────────────────────────────────────── */
-    document.querySelectorAll('.tr-open-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var id = btn.dataset.isciId;
-            var name = btn.dataset.isciAd;
-            var row = document.querySelector('tr[data-isci-id="' + id + '"]');
-            openModal(row, name);
+    document.querySelectorAll('.tr-open-btn').forEach(function(btn){
+        btn.addEventListener('click',function(){
+            var row=document.querySelector('tr[data-isci-id="'+btn.dataset.isciId+'"]');
+            openModal(row,btn.dataset.isciAd);
         });
     });
 
-    /* ── existing staj-save-btn logic ──────────────────────── */
-    function showToast(msg, ok) {
-        var t = document.createElement('div');
-        t.style.cssText = 'position:fixed;top:20px;right:20px;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;' +
-            (ok ? 'background:#16a34a;color:#fff' : 'background:#dc2626;color:#fff');
-        t.textContent = msg;
-        document.body.appendChild(t);
-        setTimeout(function () { t.remove(); }, 3000);
+    function showToast(msg,ok){
+        var t=document.createElement('div');
+        t.style.cssText='position:fixed;top:20px;right:20px;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.15);'+(ok?'background:#16a34a;color:#fff':'background:#dc2626;color:#fff');
+        t.textContent=msg; document.body.appendChild(t); setTimeout(function(){t.remove();},3000);
     }
-
-    document.querySelectorAll('.staj-save-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            var id = btn.dataset.isciId;
-            var row = btn.closest('tr');
-            var input = row.querySelector('.staj-input');
-            btn.disabled = true;
-
-            var formData = new FormData();
-            formData.append('isciId', id);
-            if (input.value) formData.append('umumiIsStajiBaslangic', input.value);
-
-            var csrf = document.querySelector('input[name="__RequestVerificationToken"]');
-            if (csrf) formData.append('__RequestVerificationToken', csrf.value);
-
-            fetch('/HR/IsciStaji/Update', { method: 'POST', body: formData })
-                .then(function (r) { return r.json(); })
-                .then(function (d) {
-                    if (d.success) {
-                        showToast(d.message, true);
-                        var cariSpan = row.querySelector('.cari-staj');
-                        var menbeSpan = row.querySelector('.staj-menbe');
-                        var faizSpan = row.querySelector('.cari-faiz');
-                        cariSpan.textContent = d.stajIl + ' il ' + d.stajAy + ' ay';
-                        menbeSpan.textContent = d.menbe;
-                        faizSpan.textContent = d.faiz + '%';
-                        var bg = d.faiz === 100 ? '#dcfce7' : d.faiz === 80 ? '#fef3c7' : '#fee2e2';
-                        var c = d.faiz === 100 ? '#166534' : d.faiz === 80 ? '#92400e' : '#991b1b';
-                        faizSpan.style.background = bg;
-                        faizSpan.style.color = c;
-                    } else {
-                        showToast(d.message, false);
-                    }
+    document.querySelectorAll('.staj-save-btn').forEach(function(btn){
+        btn.addEventListener('click',function(){
+            var id=btn.dataset.isciId, row=btn.closest('tr'), input=row.querySelector('.staj-input');
+            btn.disabled=true;
+            var fd=new FormData();
+            fd.append('isciId',id);
+            if(input.value) fd.append('umumiIsStajiBaslangic',input.value);
+            var csrf=document.querySelector('input[name="__RequestVerificationToken"]');
+            if(csrf) fd.append('__RequestVerificationToken',csrf.value);
+            fetch('/HR/IsciStaji/Update',{method:'POST',body:fd})
+                .then(function(r){return r.json();})
+                .then(function(d){
+                    if(d.success){
+                        showToast(d.message,true);
+                        row.querySelector('.cari-staj').textContent=d.stajIl+' il '+d.stajAy+' ay';
+                        row.querySelector('.staj-menbe').textContent=d.menbe;
+                        var fs=row.querySelector('.cari-faiz');
+                        fs.textContent=d.faiz+'%';
+                        fs.style.background=d.faiz===100?'#dcfce7':d.faiz===80?'#fef3c7':'#fee2e2';
+                        fs.style.color=d.faiz===100?'#166534':d.faiz===80?'#92400e':'#991b1b';
+                    } else {showToast(d.message,false);}
                 })
-                .catch(function () { showToast('Server xətası.', false); })
-                .finally(function () { btn.disabled = false; });
+                .catch(function(){showToast('Server xətası.',false);})
+                .finally(function(){btn.disabled=false;});
         });
     });
 })();
 </script>
-
 @Html.AntiForgeryToken()
 }
