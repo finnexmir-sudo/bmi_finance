@@ -484,7 +484,7 @@
                         {
                             var hasIban = !string.IsNullOrEmpty(m.BankHesabNo);
                             var tutulma = m.GelirVergisi + m.DsmfIsci + m.IssizlikIsci + m.Itss;
-                            var isLegv = m.Status == MaasStatus.LegvEdildi;
+                            var isLegv = false; // Ləğv edilmişlər artıq soft-delete olduğu üçün buraya çatmır
                             <tr class="mi-tr">
                                 @* Status *@
                                 <td class="center">
