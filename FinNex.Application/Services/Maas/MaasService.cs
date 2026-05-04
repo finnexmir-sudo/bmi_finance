@@ -87,7 +87,17 @@ public class MaasService : ServiceAsync<Maas, MaasListDto, MaasCreateDto, MaasUp
             {
                 var now = DateTime.UtcNow;
 
-                // 1. MaasDetay-ları soft-delete et
+                // 1. XestelikOdenisleri — MaasId FK
+                var xestelikler = await _unitOfWork.Repository<XestelikOdenis>()
+                    .Query()
+                    .Where(x => x.MaasId == maasId && !x.Silinib)
+                    .ToListAsync();
+                foreach (var x in xestelikler)
+                {
+                    x.MaasId = null;
+                }
+
+                // 2. MaasDetay-ları soft-delete et
                 var detallar = await _unitOfWork.Repository<MaasDetay>()
                     .Query()
                     .Where(d => d.MaasId == maasId && !d.Silinib)
@@ -98,7 +108,7 @@ public class MaasService : ServiceAsync<Maas, MaasListDto, MaasCreateDto, MaasUp
                     d.SilinmeTarixi = now;
                 }
 
-                // 2. AyliqQazanc qeydini sil (sistem tərəfindən yazılmışsa)
+                // 3. AyliqQazanc qeydini sil (sistem tərəfindən yazılmışsa)
                 var qazancQeyd = await _unitOfWork.Repository<IsciAyliqQazanc>()
                     .Query()
                     .FirstOrDefaultAsync(x => x.IsciId == entity.IsciId
@@ -112,7 +122,7 @@ public class MaasService : ServiceAsync<Maas, MaasListDto, MaasCreateDto, MaasUp
                     qazancQeyd.SilinmeTarixi = now;
                 }
 
-                // 3. Maaş qeydi özünü soft-delete et
+                // 4. Maaş qeydi özünü soft-delete et
                 entity.Silinib = true;
                 entity.SilinmeTarixi = now;
 
