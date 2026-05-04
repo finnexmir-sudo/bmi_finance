@@ -136,34 +136,18 @@ namespace FinNex.Application.Services.HR
                 return Result<MaasHesablaNeticesiDto>.Fail(
                     $"{isci.Ad} {isci.Soyad} ucun maliyye melumatları tapilmadi. Evvelce maas melumatlarini doldurun.");
 
-            // 2. Artiq hesablanibmi? (LegvEdildi sayilmir — yeniden hesablanabilir)
+            // 2. Artiq hesablanibmi? Legv edilmisler soft-delete olduğu üçün
+            //    !x.Silinib şərti kifayətdir — ayrıca Status yoxlaması lazım deyil.
             var movcud = await _unitOfWork.Repository<Maas>()
                 .MovcuddurmuAsync(x =>
                     x.IsciId == input.IsciId &&
                     x.Il == input.Il &&
                     x.Ay == input.Ay &&
-                    !x.Silinib &&
-                    x.Status != MaasStatus.LegvEdildi);
+                    !x.Silinib);
 
             if (movcud)
                 return Result<MaasHesablaNeticesiDto>.Fail(
                     $"{input.Il}/{input.Ay:D2} ayi ucun artiq hesablama movcuddur.");
-
-            // LegvEdildi qeyd varsa — unique index conflict-in qarsisini al: sil
-            var legvQeyd = await _unitOfWork.Repository<Maas>()
-                .Query()
-                .Where(x =>
-                    x.IsciId == input.IsciId &&
-                    x.Il == input.Il &&
-                    x.Ay == input.Ay &&
-                    !x.Silinib &&
-                    x.Status == MaasStatus.LegvEdildi)
-                .FirstOrDefaultAsync();
-            if (legvQeyd != null)
-            {
-                await _unitOfWork.Repository<Maas>().DeleteAsync(legvQeyd.Id);
-                await _unitOfWork.YaddaSaxlaAsync();
-            }
 
             // 3. Vergi parametrlerini getir (hamisi DB-den, hec ne hardcode deyil)
             var hesabTarixi = new DateTime(input.Il, input.Ay, 1);
@@ -1029,7 +1013,7 @@ namespace FinNex.Application.Services.HR
                 .GetirAsync(x => x.IsciId == isciId))?.CariMaas ?? 0;
 
             // 2. Son 12 ay qazancları + artım əmsalı (K) ilə düzəlmiş cəm
-            decimal S = await Son12AyDuzelmisCeminiHesablaAsync(isciId, cariMaas);
+            decimal S = await Son12AyDuzelmisCeminiHesablaAsync(isciId, cariMaas, il, ay);
 
             // 3. Cari ayın iş gün sayı
             int ayIsGun = await AyinIsGunleriniHesablaAsync(il, ay);
@@ -1049,11 +1033,13 @@ namespace FinNex.Application.Services.HR
         /// K_i = MAX(1.0, CariStatMaas / StatMaas_i) — yalnız maaş artımı
         /// köhnə ayları qaldırır; azalma halda əmsal 1.0 qalır.
         /// </summary>
-        private async Task<decimal> Son12AyDuzelmisCeminiHesablaAsync(int isciId, decimal cariMaas)
+        private async Task<decimal> Son12AyDuzelmisCeminiHesablaAsync(int isciId, decimal cariMaas, int il, int ay)
         {
+            // Seçilmiş aydan əvvəlki 12 ay götürülür — cari tarix yox, seçilmiş ay əsas götürülür
+            int refKey = il * 12 + ay;
             var son12 = await _unitOfWork.Repository<IsciAyliqQazanc>()
                 .Query()
-                .Where(x => x.IsciId == isciId && !x.Silinib)
+                .Where(x => x.IsciId == isciId && !x.Silinib && (x.Il * 12 + x.Ay) < refKey)
                 .OrderByDescending(x => x.Il * 12 + x.Ay)
                 .Take(12)
                 .ToListAsync();
