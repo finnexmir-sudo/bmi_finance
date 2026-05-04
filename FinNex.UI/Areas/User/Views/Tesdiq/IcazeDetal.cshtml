@@ -166,7 +166,7 @@
                     {
                         var s2Class = Model.RehberTesdiq == true ? "done"
                             : Model.RehberTesdiq == false ? "rejected"
-                            : (Model.SobeReisiTesdiq == true || !sobeReisiAddimi) ? "active" : "";
+                            : (Model.SobeReisiTesdiq == true || !Model.SobeReisiTesdiq.HasValue) ? "active" : "";
                     <div class="tsd-wf-step @s2Class">
                         <div class="tsd-wf-dot">
                             @if (Model.RehberTesdiq == true)
@@ -181,7 +181,7 @@
                                     <path d="M3 3l6 6M9 3l-6 6" stroke="#fff" stroke-width="1.3" stroke-linecap="round" />
                                 </svg>
                             }
-                            else { <text>@(sobeReisiAddimi ? "2" : "1")</text> }
+                            else { <text>@(Model.SobeReisiTesdiq.HasValue ? "2" : "1")</text> }
                         </div>
                         <div class="tsd-wf-info">
                             <div class="tsd-wf-role">Rəhbər Təsdiqi</div>
@@ -211,7 +211,7 @@
 
                         // Görünən addım sayını hesabla — HR-ın nömrəsi düzgün dursun
                         int hrNo = 1;
-                        if (sobeReisiAddimi) hrNo++;
+                        if (Model.SobeReisiTesdiq.HasValue) hrNo++;
                         if (rehberAddimi) hrNo++;
                     }
                     @if (hrAddimi)
