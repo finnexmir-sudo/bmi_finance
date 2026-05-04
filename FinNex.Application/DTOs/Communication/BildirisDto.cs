@@ -19,5 +19,9 @@ namespace FinNex.Application.DTOs.Communication
 
         // Bildiriş icazəyə bağlıdırsa, icazənin cari statusu
         public IcazeStatus? IcazeStatus { get; set; }
+
+        // Bu bildirişi alan şəxs artıq öz addımını tamamlayıbsa true
+        // (məs. Rəhbər tesdiq etdisə, status HrTesdiqinde olur → TesdiqEdildi = true)
+        public bool? TesdiqEdildi { get; set; }
     }
 }

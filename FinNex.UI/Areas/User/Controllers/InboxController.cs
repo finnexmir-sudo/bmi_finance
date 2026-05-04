@@ -75,9 +75,24 @@ namespace FinNex.UI.Areas.User.Controllers
                 var icazeler = await _unitOfWork.Repository<Icaze>()
                     .HamisiniGetirAsync(x => icazeIds.Contains(x.Id), izlemeden: true);
                 var statusMap = icazeler.ToDictionary(x => x.Id, x => x.Status);
+
+                bool isRehber = User.IsInRole(RoleNames.Rehber);
+                bool isHr     = User.IsInRole(RoleNames.HR);
+
                 foreach (var b in vm.Bildirisler)
-                    if (b.IcazeId.HasValue && statusMap.TryGetValue(b.IcazeId.Value, out var s))
-                        b.IcazeStatus = s;
+                {
+                    if (!b.IcazeId.HasValue || !statusMap.TryGetValue(b.IcazeId.Value, out var s))
+                        continue;
+
+                    b.IcazeStatus = s;
+
+                    // Rəhbər üçün: status HrTesdiqinde/Tesdiqlenib/ImtinaEdildi = Rəhbər artıq tesdiq etdi
+                    if (isRehber)
+                        b.TesdiqEdildi = s != IcazeStatus.RehberTesdiqinde;
+                    // HR üçün: status Tesdiqlenib/ImtinaEdildi = HR artıq tesdiq etdi
+                    else if (isHr)
+                        b.TesdiqEdildi = s == IcazeStatus.Tesdiqlenib || s == IcazeStatus.ImtinaEdildi;
+                }
             }
 
             // ── Gözlənənlər: mənim gözləyən müraciətlərim ──
