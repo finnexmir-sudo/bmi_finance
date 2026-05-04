@@ -120,7 +120,6 @@ namespace FinNex.UI.Areas.User.Controllers
             }
 
             ViewData["Title"] = "Gələn Qutusu";
-            ViewData["HideBackButton"] = true;
             return View(vm);
         }
 
