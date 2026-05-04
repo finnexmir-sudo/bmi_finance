@@ -172,7 +172,8 @@ namespace FinNex.Application.Services
                 var aktivMuracietler = await _unitOfWork.Repository<Mezuniyyet>()
                     .HamisiniGetirAsync(
                         x => x.IsciId == isci.Id
-                          && x.Status != MezuniyyetStatus.ImtinaEdildi,
+                          && x.Status != MezuniyyetStatus.ImtinaEdildi
+                          && x.Status != MezuniyyetStatus.Tesdiqlenib,
                         include: q => q.Include(m => m.EvezEdenIsci),
                         izlemeden: true);
 
@@ -194,7 +195,8 @@ namespace FinNex.Application.Services
                 var aktivIcazeler = await _unitOfWork.Repository<Icaze>()
                     .HamisiniGetirAsync(
                         x => x.IsciId == isci.Id
-                          && x.Status != IcazeStatus.ImtinaEdildi,
+                          && x.Status != IcazeStatus.ImtinaEdildi
+                          && x.Status != IcazeStatus.Tesdiqlenib,
                         include: q => q.Include(i => i.EvezEdenIsci),
                         izlemeden: true);
 
