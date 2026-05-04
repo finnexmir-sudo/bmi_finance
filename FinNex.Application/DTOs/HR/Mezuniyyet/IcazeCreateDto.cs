@@ -89,7 +89,7 @@ namespace FinNex.Application.DTOs.HR.Icaze
         public string CixisGirisStatusText => CixisGirisStatus switch
         {
             IcazeCixisGirisStatus.Gozlenir   => "Gözlənir",
-            IcazeCixisGirisStatus.Cixdi      => "Çıxdı",
+            IcazeCixisGirisStatus.Cixdi      => "İşdən kənarda",
             IcazeCixisGirisStatus.Tamamlandi => "Tamamlandı",
             IcazeCixisGirisStatus.LegvEdildi => "Ləğv edildi",
             _                                 => "—"
@@ -130,7 +130,7 @@ namespace FinNex.Application.DTOs.HR.Icaze
         public string CixisStatusText => CixisStatus switch
         {
             IcazeCixisGirisStatus.Gozlenir   => "Gözlənir",
-            IcazeCixisGirisStatus.Cixdi      => "Çıxdı",
+            IcazeCixisGirisStatus.Cixdi      => "İşdən kənarda",
             IcazeCixisGirisStatus.Tamamlandi => "Tamamlandı",
             IcazeCixisGirisStatus.LegvEdildi => "Ləğv edildi",
             _                                 => "—"
