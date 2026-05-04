@@ -165,7 +165,10 @@ namespace FinNex.Application.Services.HR
 
             if (list.Count <= MAX_QEYD_SAYI) return;
 
-            var silinecekler = list.Skip(MAX_QEYD_SAYI).ToList();
+            // Manuel qeydlər (ElileDaxilEdilib=True) silinmir — yalnız sistem qeydləri
+            var silinecekler = list.Skip(MAX_QEYD_SAYI)
+                .Where(x => !x.ElIleDaxilEdilib)
+                .ToList();
             foreach (var item in silinecekler)
             {
                 item.Silinib = true;
