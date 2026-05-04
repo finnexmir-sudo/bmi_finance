@@ -136,8 +136,8 @@ namespace FinNex.Application.Services.HR
                 return Result<MaasHesablaNeticesiDto>.Fail(
                     $"{isci.Ad} {isci.Soyad} ucun maliyye melumatları tapilmadi. Evvelce maas melumatlarini doldurun.");
 
-            // 2. Artiq hesablanibmi? Legv edilmisler soft-delete olduğu üçün
-            //    !x.Silinib şərti kifayətdir — ayrıca Status yoxlaması lazım deyil.
+            // 2. Artiq hesablanibmi? LegvEdildi qeydlər hard-delete olunduğu üçün
+            //    DB-də qalmır — !x.Silinib şərti kifayətdir.
             var movcud = await _unitOfWork.Repository<Maas>()
                 .MovcuddurmuAsync(x =>
                     x.IsciId == input.IsciId &&
