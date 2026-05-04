@@ -136,34 +136,18 @@ namespace FinNex.Application.Services.HR
                 return Result<MaasHesablaNeticesiDto>.Fail(
                     $"{isci.Ad} {isci.Soyad} ucun maliyye melumatları tapilmadi. Evvelce maas melumatlarini doldurun.");
 
-            // 2. Artiq hesablanibmi? (LegvEdildi sayilmir — yeniden hesablanabilir)
+            // 2. Artiq hesablanibmi? Legv edilmisler soft-delete olduğu üçün
+            //    !x.Silinib şərti kifayətdir — ayrıca Status yoxlaması lazım deyil.
             var movcud = await _unitOfWork.Repository<Maas>()
                 .MovcuddurmuAsync(x =>
                     x.IsciId == input.IsciId &&
                     x.Il == input.Il &&
                     x.Ay == input.Ay &&
-                    !x.Silinib &&
-                    x.Status != MaasStatus.LegvEdildi);
+                    !x.Silinib);
 
             if (movcud)
                 return Result<MaasHesablaNeticesiDto>.Fail(
                     $"{input.Il}/{input.Ay:D2} ayi ucun artiq hesablama movcuddur.");
-
-            // LegvEdildi qeyd varsa — unique index conflict-in qarsisini al: sil
-            var legvQeyd = await _unitOfWork.Repository<Maas>()
-                .Query()
-                .Where(x =>
-                    x.IsciId == input.IsciId &&
-                    x.Il == input.Il &&
-                    x.Ay == input.Ay &&
-                    !x.Silinib &&
-                    x.Status == MaasStatus.LegvEdildi)
-                .FirstOrDefaultAsync();
-            if (legvQeyd != null)
-            {
-                await _unitOfWork.Repository<Maas>().DeleteAsync(legvQeyd.Id);
-                await _unitOfWork.YaddaSaxlaAsync();
-            }
 
             // 3. Vergi parametrlerini getir (hamisi DB-den, hec ne hardcode deyil)
             var hesabTarixi = new DateTime(input.Il, input.Ay, 1);

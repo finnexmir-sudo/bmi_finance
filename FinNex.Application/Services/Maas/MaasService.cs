@@ -74,26 +74,31 @@ public class MaasService : ServiceAsync<Maas, MaasListDto, MaasCreateDto, MaasUp
             if (entity == null)
                 return Result.Fail("Maas tapilmadi.");
 
-            // Tesdiqlenmis maas Layihe-ye qaytarila bilmez
             if (entity.Status == MaasStatus.Tesdiqlendi && yeniStatus == MaasStatus.Layihe)
                 return Result.Fail("Tesdiqlenmis maas Layihe statusuna qaytarila bilmez.");
 
-            // Odenilmis maas artiq deyisdirile bilmez
             if (entity.Status == MaasStatus.Odenildi)
                 return Result.Fail("Odenilmis maasda status deyisikliyine icaze verilmir.");
 
-            entity.Status = yeniStatus;
-
-            if (yeniStatus == MaasStatus.Tesdiqlendi)
-                entity.TesdiqTarixi = DateTime.UtcNow;
-
-            if (yeniStatus == MaasStatus.Odenildi)
-                entity.OdenisTarixi = DateTime.UtcNow;
-
+            // Ləğv = layihə birdəfəlik atılır: Maas + MaasDetay + AyliqQazanc silinir.
+            // Silinib=true olduğu üçün bütün sorğulardan avtomatik çıxır —
+            // növbəti hesablamada işçi "yeni" kimi görünür.
             if (yeniStatus == MaasStatus.LegvEdildi)
             {
-                // Aylıq qazanc qeydi yanlış məlumat kimi silinir ki
-                // məzuniyyət hesablaması bu ayı nəzərə almasın.
+                var now = DateTime.UtcNow;
+
+                // 1. MaasDetay-ları soft-delete et
+                var detallar = await _unitOfWork.Repository<MaasDetay>()
+                    .Query()
+                    .Where(d => d.MaasId == maasId && !d.Silinib)
+                    .ToListAsync();
+                foreach (var d in detallar)
+                {
+                    d.Silinib = true;
+                    d.SilinmeTarixi = now;
+                }
+
+                // 2. AyliqQazanc qeydini sil (sistem tərəfindən yazılmışsa)
                 var qazancQeyd = await _unitOfWork.Repository<IsciAyliqQazanc>()
                     .Query()
                     .FirstOrDefaultAsync(x => x.IsciId == entity.IsciId
@@ -104,9 +109,24 @@ public class MaasService : ServiceAsync<Maas, MaasListDto, MaasCreateDto, MaasUp
                 if (qazancQeyd != null)
                 {
                     qazancQeyd.Silinib = true;
-                    qazancQeyd.SilinmeTarixi = DateTime.UtcNow;
+                    qazancQeyd.SilinmeTarixi = now;
                 }
+
+                // 3. Maaş qeydi özünü soft-delete et
+                entity.Silinib = true;
+                entity.SilinmeTarixi = now;
+
+                await _unitOfWork.YaddaSaxlaAsync();
+                return Result.Ok("Maaş ləğv edildi və bazadan silindi.");
             }
+
+            entity.Status = yeniStatus;
+
+            if (yeniStatus == MaasStatus.Tesdiqlendi)
+                entity.TesdiqTarixi = DateTime.UtcNow;
+
+            if (yeniStatus == MaasStatus.Odenildi)
+                entity.OdenisTarixi = DateTime.UtcNow;
 
             await repo.YenileAsync(entity);
             await _unitOfWork.YaddaSaxlaAsync();
