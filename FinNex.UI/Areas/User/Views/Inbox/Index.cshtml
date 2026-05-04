@@ -84,6 +84,41 @@
     <div class="ibx-panel @(Model.AktivTab == "bildirisler" ? "" : "ibx-hidden")"
          data-panel="bildirisler">
 
+        @* ── İkona izahı ── *@
+        <div style="display:flex;align-items:center;gap:14px;padding:8px 12px;margin-bottom:8px;background:#f8f9fb;border-radius:8px;font-size:11px;color:#6b7280;flex-wrap:wrap">
+            <span style="font-weight:600;color:#374151;margin-right:2px">İkonlar:</span>
+            <span style="display:flex;align-items:center;gap:4px">
+                <span style="width:18px;height:18px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center">
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="#1e9b6b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                Təsdiqləndi / Tamamlandı
+            </span>
+            <span style="display:flex;align-items:center;gap:4px">
+                <span style="width:18px;height:18px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center">
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#d97706" stroke-width="1.3"/><path d="M8 5v3.5l2 1.5" stroke="#d97706" stroke-width="1.3" stroke-linecap="round"/></svg>
+                </span>
+                Tesdiq gözlənilir
+            </span>
+            <span style="display:flex;align-items:center;gap:4px">
+                <span style="width:18px;height:18px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center">
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="#c0392b" stroke-width="2" stroke-linecap="round"/></svg>
+                </span>
+                İmtina / Rədd
+            </span>
+            <span style="display:flex;align-items:center;gap:4px">
+                <span style="width:18px;height:18px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center">
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3" width="13" height="10" rx="2" stroke="#2d6cdf" stroke-width="1.3"/><path d="M2 4l6 4.5L14 4" stroke="#2d6cdf" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                Mesaj
+            </span>
+            <span style="display:flex;align-items:center;gap:4px">
+                <span style="width:18px;height:18px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center">
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M8 1.5a4.5 4.5 0 014.5 4.5c0 4 1.5 5 1.5 5H2s1.5-1 1.5-5A4.5 4.5 0 018 1.5z" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/><path d="M6 11.5a2 2 0 004 0" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/></svg>
+                </span>
+                Ümumi xəbərdarlıq
+            </span>
+        </div>
+
         @if (Model.OxunmamisBildiris > 0)
         {
             <div class="ibx-panel-actions">
@@ -105,8 +140,8 @@
                 {
                     <div class="ibx-item @(b.Oxunub ? "" : "ibx-item--unread")"
                          data-bildiris-id="@b.Id">
-                        <div class="ibx-item-icon @GetBildirisIconClass(b.Nov, b.IcazeStatus)">
-                            @Html.Raw(GetBildirisIcon(b.Nov, b.IcazeStatus))
+                        <div class="ibx-item-icon @GetBildirisIconClass(b.Nov, b.IcazeStatus, b.TesdiqEdildi)">
+                            @Html.Raw(GetBildirisIcon(b.Nov, b.IcazeStatus, b.TesdiqEdildi))
                         </div>
                         <div class="ibx-item-body">
                             <div class="ibx-item-title">@b.Bashliq</div>
@@ -337,38 +372,72 @@
         };
     }
 
-    // SVG ikona: IcazeMuraciet üçün cari statusa görə fərqli ikona
-    string GetBildirisIcon(BildirisNovu nov, IcazeStatus? icazeStatus)
+    // İkona rəngi — TesdiqEdildi varsa ona görə, yoxsa icazeStatus-a görə
+    string GetBildirisIconClass(BildirisNovu nov, IcazeStatus? icazeStatus, bool? tesdiqEdildi)
     {
-        const string checkSvg    = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M3 8l3 3 7-7' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>";
-        const string xSvg        = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M4 4l8 8M12 4l-8 8' stroke='currentColor' stroke-width='2' stroke-linecap='round'/></svg>";
-        const string clockSvg    = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><circle cx='8' cy='8' r='6' stroke='currentColor' stroke-width='1.3'/><path d='M8 5v3.5l2 1.5' stroke='currentColor' stroke-width='1.3' stroke-linecap='round'/></svg>";
-        const string docSvg      = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><rect x='3' y='1.5' width='10' height='13' rx='1.5' stroke='currentColor' stroke-width='1.3'/><path d='M6 5.5h4M6 8h3' stroke='currentColor' stroke-width='1.2' stroke-linecap='round'/></svg>";
-        const string bellSvg     = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M8 1.5a4.5 4.5 0 014.5 4.5c0 4 1.5 5 1.5 5H2s1.5-1 1.5-5A4.5 4.5 0 018 1.5z' stroke='currentColor' stroke-width='1.3' stroke-linecap='round'/><path d='M6 11.5a2 2 0 004 0' stroke='currentColor' stroke-width='1.3' stroke-linecap='round'/></svg>";
-        const string rotateSvg   = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M2 8a6 6 0 0111.5-2M14 8a6 6 0 01-11.5 2' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/><path d='M11 3l2.5 3L11 6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>";
-        const string mailSvg     = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><rect x='1.5' y='3' width='13' height='10' rx='2' stroke='currentColor' stroke-width='1.3'/><path d='M2 4l6 4.5L14 4' stroke='currentColor' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+        if (nov == BildirisNovu.IcazeMuraciet || nov == BildirisNovu.IcazeTesdiq || nov == BildirisNovu.IcazeImtina)
+        {
+            if (tesdiqEdildi.HasValue)
+                return tesdiqEdildi.Value
+                    ? (icazeStatus == IcazeStatus.ImtinaEdildi ? "ibx-icon--red" : "ibx-icon--green")
+                    : "ibx-icon--amber";
+            return icazeStatus switch
+            {
+                IcazeStatus.Tesdiqlenib  => "ibx-icon--green",
+                IcazeStatus.ImtinaEdildi => "ibx-icon--red",
+                null                     => "ibx-icon--gray",
+                _                        => "ibx-icon--amber"
+            };
+        }
+        return nov switch
+        {
+            BildirisNovu.MezuniyyetTesdiq  => "ibx-icon--green",
+            BildirisNovu.MezuniyyetImtina  => "ibx-icon--red",
+            BildirisNovu.IcazeImtina       => "ibx-icon--red",
+            BildirisNovu.EvezediciSorgu    => "ibx-icon--amber",
+            BildirisNovu.EvezediciQebul    => "ibx-icon--green",
+            BildirisNovu.EvezediciRedd     => "ibx-icon--red",
+            BildirisNovu.YeniMesaj         => "ibx-icon--blue",
+            _                              => "ibx-icon--gray"
+        };
+    }
+
+    // SVG ikona
+    string GetBildirisIcon(BildirisNovu nov, IcazeStatus? icazeStatus, bool? tesdiqEdildi)
+    {
+        const string checkSvg  = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M3 8l3 3 7-7' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+        const string xSvg      = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M4 4l8 8M12 4l-8 8' stroke='currentColor' stroke-width='2' stroke-linecap='round'/></svg>";
+        const string clockSvg  = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><circle cx='8' cy='8' r='6' stroke='currentColor' stroke-width='1.3'/><path d='M8 5v3.5l2 1.5' stroke='currentColor' stroke-width='1.3' stroke-linecap='round'/></svg>";
+        const string docSvg    = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><rect x='3' y='1.5' width='10' height='13' rx='1.5' stroke='currentColor' stroke-width='1.3'/><path d='M6 5.5h4M6 8h3' stroke='currentColor' stroke-width='1.2' stroke-linecap='round'/></svg>";
+        const string bellSvg   = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M8 1.5a4.5 4.5 0 014.5 4.5c0 4 1.5 5 1.5 5H2s1.5-1 1.5-5A4.5 4.5 0 018 1.5z' stroke='currentColor' stroke-width='1.3' stroke-linecap='round'/><path d='M6 11.5a2 2 0 004 0' stroke='currentColor' stroke-width='1.3' stroke-linecap='round'/></svg>";
+        const string rotateSvg = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M2 8a6 6 0 0111.5-2M14 8a6 6 0 01-11.5 2' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/><path d='M11 3l2.5 3L11 6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+        const string mailSvg   = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><rect x='1.5' y='3' width='13' height='10' rx='2' stroke='currentColor' stroke-width='1.3'/><path d='M2 4l6 4.5L14 4' stroke='currentColor' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/></svg>";
 
         if (nov == BildirisNovu.IcazeMuraciet || nov == BildirisNovu.IcazeTesdiq || nov == BildirisNovu.IcazeImtina)
         {
+            if (tesdiqEdildi.HasValue)
+                return tesdiqEdildi.Value
+                    ? (icazeStatus == IcazeStatus.ImtinaEdildi ? xSvg : checkSvg)
+                    : clockSvg;
             return icazeStatus switch
             {
                 IcazeStatus.Tesdiqlenib  => checkSvg,
                 IcazeStatus.ImtinaEdildi => xSvg,
                 null                     => bellSvg,
-                _                        => clockSvg   // gözləyir
+                _                        => clockSvg
             };
         }
 
         return nov switch
         {
-            BildirisNovu.MezuniyyetTesdiq  => checkSvg,
-            BildirisNovu.MezuniyyetImtina  => xSvg,
+            BildirisNovu.MezuniyyetTesdiq   => checkSvg,
+            BildirisNovu.MezuniyyetImtina   => xSvg,
             BildirisNovu.MezuniyyetMuraciet => docSvg,
-            BildirisNovu.EvezediciSorgu    => rotateSvg,
-            BildirisNovu.EvezediciQebul    => checkSvg,
-            BildirisNovu.EvezediciRedd     => xSvg,
-            BildirisNovu.YeniMesaj         => mailSvg,
-            _                              => bellSvg
+            BildirisNovu.EvezediciSorgu     => rotateSvg,
+            BildirisNovu.EvezediciQebul     => checkSvg,
+            BildirisNovu.EvezediciRedd      => xSvg,
+            BildirisNovu.YeniMesaj          => mailSvg,
+            _                               => bellSvg
         };
     }
 }
