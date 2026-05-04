@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Maas;
+using FinNex.Application.Interfaces.HR;
 using FinNex.Application.Interfaces.Maas_If;
 using FinNex.Application.Services;
 using FinNex.Domain.Entities.HR;
@@ -11,9 +12,13 @@ using Microsoft.Extensions.Logging;
 public class MaasService : ServiceAsync<Maas, MaasListDto, MaasCreateDto, MaasUpdateDto>, IMaasService
 {
     private readonly ILogger<MaasService> _logger;
-    public MaasService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<MaasService> logger) : base(unitOfWork, mapper)
+    private readonly IIsciAyliqQazancService _ayliqQazancService;
+
+    public MaasService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<MaasService> logger,
+        IIsciAyliqQazancService ayliqQazancService) : base(unitOfWork, mapper)
     {
         _logger = logger;
+        _ayliqQazancService = ayliqQazancService;
     }
 
     public async Task<Result<IList<MaasDto>>> IsciyeGoreGetirAsync(int isciId)
@@ -84,6 +89,24 @@ public class MaasService : ServiceAsync<Maas, MaasListDto, MaasCreateDto, MaasUp
 
             if (yeniStatus == MaasStatus.Odenildi)
                 entity.OdenisTarixi = DateTime.UtcNow;
+
+            if (yeniStatus == MaasStatus.LegvEdildi)
+            {
+                // Aylıq qazanc qeydi yanlış məlumat kimi silinir ki
+                // məzuniyyət hesablaması bu ayı nəzərə almasın.
+                var qazancQeyd = await _unitOfWork.Repository<IsciAyliqQazanc>()
+                    .Query()
+                    .FirstOrDefaultAsync(x => x.IsciId == entity.IsciId
+                                           && x.Il == entity.Il
+                                           && x.Ay == entity.Ay
+                                           && !x.Silinib
+                                           && !x.ElIleDaxilEdilib);
+                if (qazancQeyd != null)
+                {
+                    qazancQeyd.Silinib = true;
+                    qazancQeyd.SilinmeTarixi = DateTime.UtcNow;
+                }
+            }
 
             await repo.YenileAsync(entity);
             await _unitOfWork.YaddaSaxlaAsync();
