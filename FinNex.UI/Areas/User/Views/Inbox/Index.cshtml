@@ -81,6 +81,15 @@
     </div>
 
     @* ── Bildirişlər Paneli ── *@
+    @{
+        var bugun = DateTime.Today;
+        var aktifBildirisler = Model.Bildirisler
+            .Where(b => b.YaradilmaTarixi.Date == bugun || !b.Oxunub)
+            .ToList();
+        var kohBildirisler = Model.Bildirisler
+            .Where(b => b.YaradilmaTarixi.Date < bugun && b.Oxunub)
+            .ToList();
+    }
     <div class="ibx-panel @(Model.AktivTab == "bildirisler" ? "" : "ibx-hidden")"
          data-panel="bildirisler">
 
@@ -135,30 +144,86 @@
         }
         else
         {
-            <div class="ibx-list">
-                @foreach (var b in Model.Bildirisler)
-                {
-                    <div class="ibx-item @(b.Oxunub ? "" : "ibx-item--unread")"
-                         data-bildiris-id="@b.Id">
-                        <div class="ibx-item-icon @GetBildirisIconClass(b.Nov, b.IcazeStatus, b.TesdiqEdildi)">
-                            @Html.Raw(GetBildirisIcon(b.Nov, b.IcazeStatus, b.TesdiqEdildi))
+            @* ── Bu gün və oxunmamışlar ── *@
+            @if (aktifBildirisler.Any())
+            {
+                <div class="ibx-section-label">Bu gün və oxunmamışlar</div>
+                <div class="ibx-list">
+                    @foreach (var b in aktifBildirisler)
+                    {
+                        <div class="ibx-item @(b.Oxunub ? "" : "ibx-item--unread")"
+                             data-bildiris-id="@b.Id">
+                            <div class="ibx-item-icon @GetBildirisIconClass(b.Nov, b.IcazeStatus, b.TesdiqEdildi)">
+                                @Html.Raw(GetBildirisIcon(b.Nov, b.IcazeStatus, b.TesdiqEdildi))
+                            </div>
+                            <div class="ibx-item-body">
+                                <div class="ibx-item-title">@b.Bashliq</div>
+                                <div class="ibx-item-sub">@b.Metn</div>
+                                <div class="ibx-item-time">@b.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</div>
+                            </div>
+                            @if (!b.Oxunub) { <div class="ibx-unread-dot"></div> }
+                            @if (!string.IsNullOrEmpty(b.RedirectUrl))
+                            {
+                                <a href="@b.RedirectUrl" class="ibx-item-link" data-bildiris-id="@b.Id">Bax →</a>
+                            }
                         </div>
-                        <div class="ibx-item-body">
-                            <div class="ibx-item-title">@b.Bashliq</div>
-                            <div class="ibx-item-sub">@b.Metn</div>
-                            <div class="ibx-item-time">@b.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="ibx-empty" style="padding:16px 0">
+                    <div class="ibx-empty-title" style="font-size:13px;color:#8a93a8">Bu gün yeni bildiriş yoxdur</div>
+                </div>
+            }
+
+            @* ── Köhnə bildirişlər ── *@
+            @if (kohBildirisler.Any())
+            {
+                <button class="ibx-kohn-toggle" id="kohneBildirisToggle"
+                        aria-expanded="false">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" id="kohneBildirisArrow">
+                        <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Köhnə bildirişlər
+                    <span class="ibx-kohn-count">@kohBildirisler.Count</span>
+                </button>
+                <div class="ibx-kohn-body ibx-hidden" id="kohneBildirisBody">
+                    @* ── Tarixə görə qruplaşdır ── *@
+                    @{
+                        var qruplar = kohBildirisler
+                            .GroupBy(b => b.YaradilmaTarixi.Date)
+                            .OrderByDescending(g => g.Key);
+                    }
+                    @foreach (var qrup in qruplar)
+                    {
+                        <div class="ibx-date-divider">
+                            @qrup.Key.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-Latn-AZ"))
                         </div>
-                        @if (!b.Oxunub)
-                        {
-                            <div class="ibx-unread-dot"></div>
-                        }
-                        @if (!string.IsNullOrEmpty(b.RedirectUrl))
-                        {
-                            <a href="@b.RedirectUrl" class="ibx-item-link" data-bildiris-id="@b.Id">Bax →</a>
-                        }
-                    </div>
-                }
-            </div>
+                        <div class="ibx-list" style="margin-bottom:4px">
+                            @foreach (var b in qrup)
+                            {
+                                <div class="ibx-item @(b.Oxunub ? "" : "ibx-item--unread")"
+                                     data-bildiris-id="@b.Id">
+                                    <div class="ibx-item-icon @GetBildirisIconClass(b.Nov, b.IcazeStatus, b.TesdiqEdildi)">
+                                        @Html.Raw(GetBildirisIcon(b.Nov, b.IcazeStatus, b.TesdiqEdildi))
+                                    </div>
+                                    <div class="ibx-item-body">
+                                        <div class="ibx-item-title">@b.Bashliq</div>
+                                        <div class="ibx-item-sub">@b.Metn</div>
+                                        <div class="ibx-item-time">@b.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</div>
+                                    </div>
+                                    @if (!b.Oxunub) { <div class="ibx-unread-dot"></div> }
+                                    @if (!string.IsNullOrEmpty(b.RedirectUrl))
+                                    {
+                                        <a href="@b.RedirectUrl" class="ibx-item-link" data-bildiris-id="@b.Id">Bax →</a>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
         }
     </div>
 
