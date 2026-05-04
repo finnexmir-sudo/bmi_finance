@@ -87,26 +87,21 @@ public class MaasService : ServiceAsync<Maas, MaasListDto, MaasCreateDto, MaasUp
             {
                 var now = DateTime.UtcNow;
 
-                // 1. XestelikOdenisleri — MaasId FK
+                // 1. XestelikOdenisleri MaasId linkini qır (qeyd qalır, link NULL olur)
                 var xestelikler = await _unitOfWork.Repository<XestelikOdenis>()
                     .Query()
-                    .Where(x => x.MaasId == maasId && !x.Silinib)
+                    .Where(x => x.MaasId == maasId)
                     .ToListAsync();
                 foreach (var x in xestelikler)
-                {
                     x.MaasId = null;
-                }
 
-                // 2. MaasDetay-ları soft-delete et
+                // 2. MaasDetay-ları sil
                 var detallar = await _unitOfWork.Repository<MaasDetay>()
                     .Query()
-                    .Where(d => d.MaasId == maasId && !d.Silinib)
+                    .Where(d => d.MaasId == maasId)
                     .ToListAsync();
                 foreach (var d in detallar)
-                {
-                    d.Silinib = true;
-                    d.SilinmeTarixi = now;
-                }
+                    await _unitOfWork.Repository<MaasDetay>().DeleteAsync(d.Id);
 
                 // 3. AyliqQazanc qeydini sil (sistem tərəfindən yazılmışsa)
                 var qazancQeyd = await _unitOfWork.Repository<IsciAyliqQazanc>()
@@ -122,9 +117,8 @@ public class MaasService : ServiceAsync<Maas, MaasListDto, MaasCreateDto, MaasUp
                     qazancQeyd.SilinmeTarixi = now;
                 }
 
-                // 4. Maaş qeydi özünü soft-delete et
-                entity.Silinib = true;
-                entity.SilinmeTarixi = now;
+                // 4. Maaş qeydini hard-delete et (unique index conflict-in qarsisini al)
+                await _unitOfWork.Repository<Maas>().DeleteAsync(entity.Id);
 
                 await _unitOfWork.YaddaSaxlaAsync();
                 return Result.Ok("Maaş ləğv edildi və bazadan silindi.");
