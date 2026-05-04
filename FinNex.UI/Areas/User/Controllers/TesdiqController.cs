@@ -77,6 +77,7 @@ namespace FinNex.UI.Areas.User.Controllers
             };
 
             ViewData["Title"] = "Şöbə Rəhbəri Paneli";
+            ViewData["HideBackButton"] = true;
             return View(vm);
         }
 
@@ -102,6 +103,7 @@ namespace FinNex.UI.Areas.User.Controllers
             };
 
             ViewData["Title"] = "Rəhbər Paneli";
+            ViewData["HideBackButton"] = true;
             return View(vm);
         }
 
@@ -127,6 +129,7 @@ namespace FinNex.UI.Areas.User.Controllers
             };
 
             ViewData["Title"] = "HR Paneli";
+            ViewData["HideBackButton"] = true;
             return View(vm);
         }
 
@@ -193,6 +196,7 @@ namespace FinNex.UI.Areas.User.Controllers
             ViewBag.Rol = rol;
             ViewData["Title"] = "Məzuniyyət Detalı";
             ViewData["TopbarTarix"] = dto.BaslamaTarixi.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-Latn-AZ"));
+            ViewData["HideBackButton"] = true;
             return View(vm);
         }
 
@@ -244,6 +248,7 @@ namespace FinNex.UI.Areas.User.Controllers
             ViewBag.Rol = rol;
             ViewData["Title"] = "İcazə Detalı";
             ViewData["TopbarTarix"] = dto.IcazeTarixi.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-Latn-AZ"));
+            ViewData["HideBackButton"] = true;
             return View(vm);
         }
 
