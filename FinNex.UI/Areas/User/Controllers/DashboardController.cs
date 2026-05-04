@@ -68,6 +68,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 ViewBag.BadgeSaylari = badgeResult;
             }
 
+            ViewData["HideBackButton"] = true;
             return View(viewModel);
         }
 
