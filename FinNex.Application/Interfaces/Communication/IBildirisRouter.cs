@@ -54,5 +54,20 @@ namespace FinNex.Application.Interfaces.Communication
             int? mezuniyyetId = null,
             int? icazeId = null,
             int? exceptIsciId = null);
+
+        /// <summary>
+        /// Departament fərqi olmadan müəyyən struktur rolunu daşıyan
+        /// bütün aktiv işçilərə bildiriş göndərir.
+        /// AppUser.IsciId əlaqəsinə ehtiyac yoxdur — birbaşa IsciStrukturRolu istifadə edir.
+        /// </summary>
+        Task NotifyStrukturRoluAsync(
+            StrukturRolTipi rolTipi,
+            BildirisNovu nov,
+            string bashliq,
+            string metn,
+            string? redirectUrl = null,
+            int? mezuniyyetId = null,
+            int? icazeId = null,
+            int? exceptIsciId = null);
     }
 }
