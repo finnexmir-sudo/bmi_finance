@@ -38,6 +38,16 @@ document.getElementById('hamisiniOxuBtn')?.addEventListener('click', async () =>
     });
 });
 
+// Köhnə bildirişlər toggle
+document.getElementById('kohneBildirisToggle')?.addEventListener('click', function () {
+    const body  = document.getElementById('kohneBildirisBody');
+    const arrow = document.getElementById('kohneBildirisArrow');
+    const open  = !body.classList.contains('ibx-hidden');
+    body.classList.toggle('ibx-hidden', open);
+    arrow.style.transform = open ? '' : 'rotate(180deg)';
+    this.setAttribute('aria-expanded', String(!open));
+});
+
 // Rədd modal
 function openReddModal(id) {
     document.getElementById('reddSorguId').value = id;
