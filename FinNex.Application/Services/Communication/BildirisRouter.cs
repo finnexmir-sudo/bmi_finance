@@ -105,6 +105,45 @@ namespace FinNex.Application.Services.Communication
             }
         }
 
+        public async Task NotifyStrukturRoluAsync(
+            StrukturRolTipi rolTipi,
+            BildirisNovu nov,
+            string bashliq,
+            string metn,
+            string? redirectUrl = null,
+            int? mezuniyyetId = null,
+            int? icazeId = null,
+            int? exceptIsciId = null)
+        {
+            try
+            {
+                var rollar = await _unitOfWork.Repository<IsciStrukturRolu>()
+                    .HamisiniGetirAsync(
+                        predicate: x => x.Aktivdir
+                                       && x.RolTipi == rolTipi
+                                       && (x.BitmeTarixi == null || x.BitmeTarixi >= DateTime.Now),
+                        izlemeden: true);
+
+                foreach (var r in rollar)
+                {
+                    if (exceptIsciId.HasValue && r.IsciId == exceptIsciId.Value) continue;
+
+                    await _bildirisService.YaratAsync(
+                        isciId: r.IsciId,
+                        nov: nov,
+                        bashliq: bashliq,
+                        metn: metn,
+                        redirectUrl: redirectUrl,
+                        mezuniyyetId: mezuniyyetId,
+                        icazeId: icazeId);
+                }
+            }
+            catch
+            {
+                // Bildiriş xətası əsas əməliyyatı pozmasın.
+            }
+        }
+
         public async Task NotifyDepartmentRoleAsync(
             int departamentId,
             StrukturRolTipi rolTipi,
