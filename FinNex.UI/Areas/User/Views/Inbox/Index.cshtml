@@ -1,5 +1,6 @@
 ﻿@model FinNex.UI.Areas.User.ViewModels.Inbox.InboxIndexVM
 @using FinNex.Domain.Entities.Communication
+@using FinNex.Domain.Entities.HR
 @{
     ViewData["Title"] = "Gələn Qutusu";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
@@ -65,6 +66,18 @@
                 data-tab="gonderilenler">
             Göndərilənlər
         </button>
+        <button class="ibx-tab @(Model.AktivTab == "gozlenenler" ? "active" : "")"
+                data-tab="gozlenenler">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.1"/>
+                <path d="M6.5 3.5v3l2 1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+            </svg>
+            Gözlənənlər
+            @if (Model.GozleyenIcaze > 0)
+            {
+                <span class="ibx-tab-dot ibx-tab-dot--amber">@Model.GozleyenIcaze</span>
+            }
+        </button>
     </div>
 
     @* ── Bildirişlər Paneli ── *@
@@ -92,8 +105,8 @@
                 {
                     <div class="ibx-item @(b.Oxunub ? "" : "ibx-item--unread")"
                          data-bildiris-id="@b.Id">
-                        <div class="ibx-item-icon @GetBildirisIconClass(b.Nov)">
-                            @Html.Raw(GetBildirisIcon(b.Nov))
+                        <div class="ibx-item-icon @GetBildirisIconClass(b.Nov, b.IcazeStatus)">
+                            @Html.Raw(GetBildirisIcon(b.Nov, b.IcazeStatus))
                         </div>
                         <div class="ibx-item-body">
                             <div class="ibx-item-title">@b.Bashliq</div>
@@ -165,6 +178,75 @@
         }
     </div>
 
+    @* ── Gözlənənlər Paneli ── *@
+    <div class="ibx-panel @(Model.AktivTab == "gozlenenler" ? "" : "ibx-hidden")"
+         data-panel="gozlenenler">
+
+        @* ── Mənim müraciətlərim gözlənir ── *@
+        <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;padding:0 2px">
+            Mənim tesdiqimi gözləyən müraciətlərim
+        </div>
+
+        @if (!Model.MenimGozleyenIcazelarim.Any())
+        {
+            <div class="ibx-empty" style="padding:16px 0">
+                <div class="ibx-empty-title" style="font-size:13px;color:#8a93a8">Gözlənən müraciət yoxdur</div>
+            </div>
+        }
+        else
+        {
+            <div class="ibx-list" style="margin-bottom:20px">
+                @foreach (var ic in Model.MenimGozleyenIcazelarim)
+                {
+                    <a href="/User/Icaze/Detail/@ic.Id" class="ibx-item ibx-item--link"
+                       style="text-decoration:none">
+                        <div class="ibx-item-icon ibx-icon--amber">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/>
+                                <path d="M8 5v3.5l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="ibx-item-body">
+                            <div class="ibx-item-title">@ic.IcazeTarixi.ToString("dd.MM.yyyy") &nbsp; @ic.BaslamaSaati.ToString(@"hh\:mm")–@ic.BitisSaati.ToString(@"hh\:mm")</div>
+                            <div class="ibx-item-sub">@ic.WorkflowMerhele</div>
+                            <div class="ibx-item-time">@ic.IcazeSaati.ToString("0.#") saat</div>
+                        </div>
+                        <span style="font-size:11px;color:#8a93a8">Bax →</span>
+                    </a>
+                }
+            </div>
+        }
+
+        @* ── Mənim tesdiq etmeyim gərəkənlər ── *@
+        @if (Model.TesdiqEtmeyimGerekenler.Any())
+        {
+            <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;padding:0 2px;margin-top:4px">
+                Mənim tesdiq etmeyim gərəkən müraciətlər
+            </div>
+            <div class="ibx-list">
+                @foreach (var ic in Model.TesdiqEtmeyimGerekenler)
+                {
+                    var tesdiqRol = ic.Status == IcazeStatus.RehberTesdiqinde ? "Rehber" : "Hr";
+                    <a href="/User/Tesdiq/IcazeDetal/@ic.Id?rol=@tesdiqRol" class="ibx-item ibx-item--link"
+                       style="text-decoration:none">
+                        <div class="ibx-item-icon ibx-icon--blue">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <rect x="2" y="1.5" width="12" height="13" rx="2" stroke="currentColor" stroke-width="1.3"/>
+                                <path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="ibx-item-body">
+                            <div class="ibx-item-title">@ic.IsciAdSoyad</div>
+                            <div class="ibx-item-sub">@ic.IcazeTarixi.ToString("dd.MM.yyyy") · @ic.BaslamaSaati.ToString(@"hh\:mm")–@ic.BitisSaati.ToString(@"hh\:mm") (@ic.IcazeSaati.ToString("0.#") saat)</div>
+                            <div class="ibx-item-time">@ic.SobeAdi</div>
+                        </div>
+                        <span style="font-size:11px;padding:3px 8px;background:#e8f0fd;color:#2d6cdf;border-radius:6px;font-weight:500">Tesdiq et</span>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+
     @* ── Göndərilənlər Paneli ── *@
     <div class="ibx-panel @(Model.AktivTab == "gonderilenler" ? "" : "ibx-hidden")"
          data-panel="gonderilenler">
@@ -229,28 +311,66 @@
 </div>
 
 @functions {
-    string GetBildirisIconClass(BildirisNovu nov) => nov switch
+    // İkona rəngi: IcazeMuraciet üçün cari status, digərləri üçün növ
+    string GetBildirisIconClass(BildirisNovu nov, IcazeStatus? icazeStatus)
     {
-        BildirisNovu.MezuniyyetTesdiq => "ibx-icon--green",
-        BildirisNovu.MezuniyyetImtina => "ibx-icon--red",
-        BildirisNovu.EvezediciSorgu => "ibx-icon--amber",
-        BildirisNovu.EvezediciQebul => "ibx-icon--green",
-        BildirisNovu.EvezediciRedd => "ibx-icon--red",
-        BildirisNovu.YeniMesaj => "ibx-icon--blue",
-        _ => "ibx-icon--gray"
-    };
+        if (nov == BildirisNovu.IcazeMuraciet || nov == BildirisNovu.IcazeTesdiq)
+        {
+            return icazeStatus switch
+            {
+                IcazeStatus.Tesdiqlenib  => "ibx-icon--green",
+                IcazeStatus.ImtinaEdildi => "ibx-icon--red",
+                null                     => "ibx-icon--gray",
+                _                        => "ibx-icon--amber"  // gözləyir
+            };
+        }
+        return nov switch
+        {
+            BildirisNovu.MezuniyyetTesdiq  => "ibx-icon--green",
+            BildirisNovu.MezuniyyetImtina  => "ibx-icon--red",
+            BildirisNovu.IcazeImtina       => "ibx-icon--red",
+            BildirisNovu.EvezediciSorgu    => "ibx-icon--amber",
+            BildirisNovu.EvezediciQebul    => "ibx-icon--green",
+            BildirisNovu.EvezediciRedd     => "ibx-icon--red",
+            BildirisNovu.YeniMesaj         => "ibx-icon--blue",
+            _                              => "ibx-icon--gray"
+        };
+    }
 
-    string GetBildirisIcon(BildirisNovu nov) => nov switch
+    // SVG ikona: IcazeMuraciet üçün cari statusa görə fərqli ikona
+    string GetBildirisIcon(BildirisNovu nov, IcazeStatus? icazeStatus)
     {
-        BildirisNovu.MezuniyyetTesdiq => "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M3 8l3 3 7-7' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>",
-        BildirisNovu.MezuniyyetImtina => "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M4 4l8 8M12 4l-8 8' stroke='currentColor' stroke-width='2' stroke-linecap='round'/></svg>",
-        BildirisNovu.EvezediciSorgu => "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M2 8a6 6 0 0111.5-2M14 8a6 6 0 01-11.5 2' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/><path d='M11 3l2.5 3L11 6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>",
-        BildirisNovu.EvezediciQebul => "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M3 8l3 3 7-7' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>",
-        BildirisNovu.EvezediciRedd => "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M4 4l8 8M12 4l-8 8' stroke='currentColor' stroke-width='2' stroke-linecap='round'/></svg>",
-        BildirisNovu.YeniMesaj => "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><rect x='1.5' y='3' width='13' height='10' rx='2' stroke='currentColor' stroke-width='1.3'/><path d='M2 4l6 4.5L14 4' stroke='currentColor' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/></svg>",
-        BildirisNovu.MezuniyyetMuraciet => "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><rect x='3' y='1.5' width='10' height='13' rx='1.5' stroke='currentColor' stroke-width='1.3'/><path d='M6 5.5h4M6 8h3' stroke='currentColor' stroke-width='1.2' stroke-linecap='round'/></svg>",
-        _ => "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M8 1.5a4.5 4.5 0 014.5 4.5c0 4 1.5 5 1.5 5H2s1.5-1 1.5-5A4.5 4.5 0 018 1.5z' stroke='currentColor' stroke-width='1.3' stroke-linecap='round'/><path d='M6 11.5a2 2 0 004 0' stroke='currentColor' stroke-width='1.3' stroke-linecap='round'/></svg>"
-    };
+        const string checkSvg    = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M3 8l3 3 7-7' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+        const string xSvg        = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M4 4l8 8M12 4l-8 8' stroke='currentColor' stroke-width='2' stroke-linecap='round'/></svg>";
+        const string clockSvg    = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><circle cx='8' cy='8' r='6' stroke='currentColor' stroke-width='1.3'/><path d='M8 5v3.5l2 1.5' stroke='currentColor' stroke-width='1.3' stroke-linecap='round'/></svg>";
+        const string docSvg      = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><rect x='3' y='1.5' width='10' height='13' rx='1.5' stroke='currentColor' stroke-width='1.3'/><path d='M6 5.5h4M6 8h3' stroke='currentColor' stroke-width='1.2' stroke-linecap='round'/></svg>";
+        const string bellSvg     = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M8 1.5a4.5 4.5 0 014.5 4.5c0 4 1.5 5 1.5 5H2s1.5-1 1.5-5A4.5 4.5 0 018 1.5z' stroke='currentColor' stroke-width='1.3' stroke-linecap='round'/><path d='M6 11.5a2 2 0 004 0' stroke='currentColor' stroke-width='1.3' stroke-linecap='round'/></svg>";
+        const string rotateSvg   = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M2 8a6 6 0 0111.5-2M14 8a6 6 0 01-11.5 2' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/><path d='M11 3l2.5 3L11 6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+        const string mailSvg     = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><rect x='1.5' y='3' width='13' height='10' rx='2' stroke='currentColor' stroke-width='1.3'/><path d='M2 4l6 4.5L14 4' stroke='currentColor' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+
+        if (nov == BildirisNovu.IcazeMuraciet || nov == BildirisNovu.IcazeTesdiq || nov == BildirisNovu.IcazeImtina)
+        {
+            return icazeStatus switch
+            {
+                IcazeStatus.Tesdiqlenib  => checkSvg,
+                IcazeStatus.ImtinaEdildi => xSvg,
+                null                     => bellSvg,
+                _                        => clockSvg   // gözləyir
+            };
+        }
+
+        return nov switch
+        {
+            BildirisNovu.MezuniyyetTesdiq  => checkSvg,
+            BildirisNovu.MezuniyyetImtina  => xSvg,
+            BildirisNovu.MezuniyyetMuraciet => docSvg,
+            BildirisNovu.EvezediciSorgu    => rotateSvg,
+            BildirisNovu.EvezediciQebul    => checkSvg,
+            BildirisNovu.EvezediciRedd     => xSvg,
+            BildirisNovu.YeniMesaj         => mailSvg,
+            _                              => bellSvg
+        };
+    }
 }
 
 @section Scripts {

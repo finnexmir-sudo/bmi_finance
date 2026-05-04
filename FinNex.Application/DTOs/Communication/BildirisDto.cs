@@ -1,4 +1,5 @@
 ﻿using FinNex.Domain.Entities.Communication;
+using FinNex.Domain.Entities.HR;
 
 namespace FinNex.Application.DTOs.Communication
 {
@@ -15,5 +16,8 @@ namespace FinNex.Application.DTOs.Communication
         public int? MezuniyyetId { get; set; }
         public int? IcazeId { get; set; }
         public int? MesajId { get; set; }
+
+        // Bildiriş icazəyə bağlıdırsa, icazənin cari statusu
+        public IcazeStatus? IcazeStatus { get; set; }
     }
 }
