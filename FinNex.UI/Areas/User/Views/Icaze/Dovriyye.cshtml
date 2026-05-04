@@ -1,0 +1,194 @@
+@model List<FinNex.Application.DTOs.HR.Icaze.IcazeDovriyyeDto>
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = "İcazə Dövriyyəsi";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    string StatusBadge(IcazeCixisGirisStatus s) => s switch
+    {
+        IcazeCixisGirisStatus.Gozlenir   => "fn-badge fn-badge--wait",
+        IcazeCixisGirisStatus.Cixdi      => "fn-badge fn-badge--review",
+        IcazeCixisGirisStatus.Tamamlandi => "fn-badge fn-badge--done",
+        IcazeCixisGirisStatus.LegvEdildi => "fn-badge fn-badge--rejected",
+        _                                 => "fn-badge"
+    };
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">İcazə Dövriyyəsi</div>
+            <div class="fn-page-sub">Təsdiqlənmiş icazələrin cihaz çıxış/qayıdış izlənməsi</div>
+        </div>
+    </div>
+
+    @* ── Filtr ── *@
+    <form method="get" asp-area="User" asp-controller="Icaze" asp-action="Dovriyye"
+          class="fn-filter-bar" style="flex-wrap:wrap;gap:10px">
+
+        <div class="fn-filter-group">
+            <label class="fn-filter-lbl">Başlanğıc</label>
+            <input type="date" name="tarixFrom" value="@ViewBag.TarixFrom"
+                   class="fn-select fn-select--sm" onchange="this.form.submit()" />
+        </div>
+
+        <div class="fn-filter-group">
+            <label class="fn-filter-lbl">Son tarix</label>
+            <input type="date" name="tarixTo" value="@ViewBag.TarixTo"
+                   class="fn-select fn-select--sm" onchange="this.form.submit()" />
+        </div>
+
+        <div class="fn-filter-group">
+            <label class="fn-filter-lbl">Şöbə</label>
+            <select name="departamentId" class="fn-select fn-select--sm" onchange="this.form.submit()">
+                @foreach (var dep in (List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Departamentler)
+                {
+                    <option value="@dep.Value"
+                            selected="@(dep.Value == ViewBag.DepartamentId?.ToString())">
+                        @dep.Text
+                    </option>
+                }
+            </select>
+        </div>
+
+        <div class="fn-filter-group">
+            <label class="fn-filter-lbl">Axtarış</label>
+            <input type="text" name="axtaris" value="@ViewBag.Axtaris"
+                   placeholder="Ad Soyad..." class="fn-select fn-select--sm"
+                   style="min-width:160px" />
+        </div>
+
+        <button type="submit" class="fn-btn fn-btn--primary fn-btn--sm">Axtar</button>
+
+        @if (ViewBag.TarixFrom != null || ViewBag.TarixTo != null ||
+             ViewBag.DepartamentId != null || !string.IsNullOrEmpty(ViewBag.Axtaris as string))
+        {
+            <a asp-area="User" asp-controller="Icaze" asp-action="Dovriyye"
+               class="fn-btn fn-btn--outline fn-btn--sm">Sıfırla</a>
+        }
+    </form>
+
+    @* ── Xülasə kartları ── *@
+    @{
+        var hamisi    = Model.Count;
+        var gozlenir  = Model.Count(x => x.CixisStatus == IcazeCixisGirisStatus.Gozlenir);
+        var cixdi     = Model.Count(x => x.CixisStatus == IcazeCixisGirisStatus.Cixdi);
+        var tamamlandi = Model.Count(x => x.CixisStatus == IcazeCixisGirisStatus.Tamamlandi);
+    }
+    <div class="fn-stat-row" style="margin-bottom:16px">
+        <div class="fn-stat">
+            <div class="fn-stat-val">@hamisi</div>
+            <div class="fn-stat-lbl">Cəmi</div>
+        </div>
+        <div class="fn-stat">
+            <div class="fn-stat-val" style="color:#c9900a">@gozlenir</div>
+            <div class="fn-stat-lbl">Gözlənir</div>
+        </div>
+        <div class="fn-stat">
+            <div class="fn-stat-val" style="color:#2d6cdf">@cixdi</div>
+            <div class="fn-stat-lbl">Bayırdadır</div>
+        </div>
+        <div class="fn-stat">
+            <div class="fn-stat-val" style="color:#1e9b6b">@tamamlandi</div>
+            <div class="fn-stat-lbl">Tamamlandı</div>
+        </div>
+    </div>
+
+    @* ── Cədvəl ── *@
+    @if (!Model.Any())
+    {
+        <div class="fn-empty-state">
+            <div class="fn-empty-icon">
+                <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+                    <rect x="7" y="8" width="30" height="28" rx="4" stroke="#dde1ea" stroke-width="2" />
+                    <path d="M7 15h30M15 8v6M29 8v6M15 22h14M15 28h10" stroke="#dde1ea" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+            </div>
+            <div class="fn-empty-title">Dövriyyə qeydi tapılmadı</div>
+        </div>
+    }
+    else
+    {
+        <div class="fn-card" style="padding:0;overflow:hidden">
+            <table class="km-table" style="font-size:13px">
+                <thead>
+                    <tr>
+                        <th>İşçi</th>
+                        <th>Şöbə</th>
+                        <th>İcazə tarixi</th>
+                        <th>Planlaşdırılan</th>
+                        <th>Çıxış vaxtı</th>
+                        <th>Qayıdış vaxtı</th>
+                        <th>Faktiki saat</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td style="font-weight:600;color:#1a2332">@item.IsciAdSoyad</td>
+                            <td style="color:#6b7280">@item.SobeAdi</td>
+                            <td>@item.IcazeTarixi.ToString("dd.MM.yyyy")</td>
+                            <td>
+                                <span style="color:#374151">
+                                    @item.BaslamaSaati.ToString(@"hh\:mm")–@item.BitisSaati.ToString(@"hh\:mm")
+                                </span>
+                                <span style="color:#8a93a8;font-size:11px;margin-left:4px">
+                                    (@item.PlanlananSaat.ToString("0.#") saat)
+                                </span>
+                                @if (item.Birdefelik)
+                                {
+                                    <span style="margin-left:4px;padding:1px 6px;border-radius:8px;background:#fef3c7;color:#92400e;font-size:10px;font-weight:600">1-dəfəlik</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.CixisVaxt.HasValue)
+                                {
+                                    <span style="color:#1a2332;font-weight:500">@item.CixisVaxt.Value.ToString("HH:mm")</span>
+                                }
+                                else
+                                {
+                                    <span style="color:#cbd5e1">—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.QayidisVaxt.HasValue)
+                                {
+                                    <span style="color:#1a2332;font-weight:500">@item.QayidisVaxt.Value.ToString("HH:mm")</span>
+                                }
+                                else if (item.Birdefelik)
+                                {
+                                    <span style="color:#8a93a8;font-size:11px">1-dəfəlik</span>
+                                }
+                                else
+                                {
+                                    <span style="color:#cbd5e1">—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.FaktikiSaat.HasValue)
+                                {
+                                    var fark = item.FaktikiSaat.Value - item.PlanlananSaat;
+                                    var farkColor = Math.Abs(fark) < 0.25 ? "#1e9b6b" : fark > 0 ? "#c0392b" : "#2d6cdf";
+                                    <span style="font-weight:600;color:@farkColor">
+                                        @item.FaktikiSaat.Value.ToString("0.##") saat
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="color:#cbd5e1">—</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="@StatusBadge(item.CixisStatus)">@item.CixisStatusText</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+</div>

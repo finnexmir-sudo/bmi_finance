@@ -32,5 +32,10 @@
         public int? HrId { get; set; }
         public Isci? HrTesdiqleyen { get; set; }
         public DateTime? HrTesdiqTarixi { get; set; }
+
+        // HR tərəfindən işarələnir: işçi geri dönmür (günün qalan hissəsini bitirir)
+        public bool Birdefelik { get; set; } = false;
+
+        public IcazeCixisGiris? CixisGiris { get; set; }
     }
 }

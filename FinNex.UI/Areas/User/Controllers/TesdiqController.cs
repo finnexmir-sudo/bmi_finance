@@ -280,10 +280,8 @@ namespace FinNex.UI.Areas.User.Controllers
         // POST /User/Tesdiq/IcazeTesdiq
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> IcazeTesdiq(int id, bool status, string? qeyd, string rol)
+        public async Task<IActionResult> IcazeTesdiq(int id, bool status, string? qeyd, string rol, bool birdefelik = false)
         {
-            // Təsdiqləyənin IsciId-sini müəyyən et — audit üçün lazımdır.
-            // Əvvəl service-ə 0 keçirdi, buna görə "kim təsdiq etdi" qeydi yarım qalırdı.
             var appUser = await _userManager.GetUserAsync(User);
             var tesdiqciIsciId = appUser?.IsciId ?? 0;
 
@@ -297,7 +295,7 @@ namespace FinNex.UI.Areas.User.Controllers
                     result = await _icazeService.RehberTesdiqAsync(id, status, qeyd, tesdiqciIsciId);
                     break;
                 case "Hr":
-                    result = await _icazeService.HrTesdiqAsync(id, status, qeyd, tesdiqciIsciId);
+                    result = await _icazeService.HrTesdiqAsync(id, status, qeyd, tesdiqciIsciId, birdefelik);
                     break;
                 default:
                     TempData["Error"] = "Naməlum rol.";

@@ -215,6 +215,37 @@ namespace FinNex.UI.Areas.User.Controllers
             return View(vm);
         }
 
+        // ── GET /User/Icaze/Dovriyye ──────────────────────────
+        [Authorize(Roles = $"{RoleNames.HR},{RoleNames.Rehber},{RoleNames.SobeReisi},{RoleNames.Admin}")]
+        public async Task<IActionResult> Dovriyye(
+            DateTime? tarixFrom,
+            DateTime? tarixTo,
+            int? departamentId,
+            string? axtaris)
+        {
+            var result = await _icazeService.GetDovriyyeAsync(tarixFrom, tarixTo, departamentId, axtaris);
+            var depResult = await _departamentService.HamisiniGetirAsync();
+
+            var departamentler = new List<SelectListItem> { new("Bütün şöbələr", "") };
+            if (depResult.Success && depResult.Data != null)
+            {
+                departamentler.AddRange(depResult.Data
+                    .OrderBy(d => d.Ad)
+                    .Select(d => new SelectListItem(d.Ad, d.Id.ToString())));
+            }
+
+            ViewBag.Departamentler = departamentler;
+            ViewBag.TarixFrom = tarixFrom?.ToString("yyyy-MM-dd");
+            ViewBag.TarixTo = tarixTo?.ToString("yyyy-MM-dd");
+            ViewBag.DepartamentId = departamentId;
+            ViewBag.Axtaris = axtaris;
+
+            if (!result.Success)
+                TempData["Error"] = result.Message;
+
+            return View(result.Success ? result.Data!.ToList() : new());
+        }
+
         // ── POST /User/Icaze/Legv ──────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
