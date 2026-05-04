@@ -34,7 +34,7 @@
                             <rect x="1" y="1.5" width="12" height="11" rx="2" stroke="#2d6cdf" stroke-width="1.2" />
                             <path d="M1 5h12" stroke="#2d6cdf" stroke-width="1.2" />
                         </svg>
-                        <strong>İllik məzuniyyət</strong> — Qalıq: <strong>@Model.IllikQaligGun</strong> / @Model.IllikToplamGun gün
+                        <strong>İllik məzuniyyət</strong> — Qalıq: <strong>@Model.IllikQaligGun</strong> gün
                     </div>
 
                     @* ── Tarixlər ── *@
@@ -583,7 +583,7 @@
                         <div class="fn-lb-track">
                             <div class="fn-lb-fill" style="width:@(Model.IllikToplamGun > 0 ? (int)((double)Model.IllikQaligGun / Model.IllikToplamGun * 100) : 0)%;background:#1e9b6b"></div>
                         </div>
-                        <span class="fn-sbi-val" style="color:#1e9b6b">@Model.IllikQaligGun / @Model.IllikToplamGun gün</span>
+                        <span class="fn-sbi-val" style="color:#1e9b6b">@Model.IllikQaligGun gün qalıb</span>
                     </div>
                 </div>
 
