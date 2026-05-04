@@ -484,6 +484,7 @@
                         {
                             var hasIban = !string.IsNullOrEmpty(m.BankHesabNo);
                             var tutulma = m.GelirVergisi + m.DsmfIsci + m.IssizlikIsci + m.Itss;
+                            var isLegv = m.Status == MaasStatus.LegvEdildi;
                             <tr class="mi-tr">
                                 @* Status *@
                                 <td class="center">
@@ -569,15 +570,15 @@
                                 </td>
 
                                 @* Gəlirlər *@
-                                <td><span class="n">@Fmt(m.EsasMaas) ₼</span></td>
+                                <td><span class="n @(isLegv ? "n--dim" : "")">@(isLegv ? "—" : Fmt(m.EsasMaas) + " ₼")</span></td>
                                 <td>
-                                    @if (m.BonusMeblegi > 0)
+                                    @if (!isLegv && m.BonusMeblegi > 0)
                                     { <span class="n n--green">+@m.BonusMeblegi.ToString("N2") ₼</span> }
                                     else
                                     { <span class="n n--dim">—</span> }
                                 </td>
                                 <td class="col-sep">
-                                    @if (m.MezuniyyetOdenisi > 0)
+                                    @if (!isLegv && m.MezuniyyetOdenisi > 0)
                                     { <span class="n n--blue">@m.MezuniyyetOdenisi.ToString("N2") ₼</span> }
                                     else
                                     { <span class="n n--dim">—</span> }
@@ -585,21 +586,21 @@
 
                                 @* Kəsinti *@
                                 <td class="col-sep">
-                                    @if (m.CerimeMeblegi > 0)
+                                    @if (!isLegv && m.CerimeMeblegi > 0)
                                     { <span class="n n--red">−@m.CerimeMeblegi.ToString("N2") ₼</span> }
                                     else
                                     { <span class="n n--dim">—</span> }
                                 </td>
 
                                 @* Tutulmalar *@
-                                <td><span class="n n--red">@Fmt(m.GelirVergisi) ₼</span></td>
-                                <td><span class="n n--purple">@Fmt(m.DsmfIsci) ₼</span></td>
-                                <td><span class="n">@Fmt(m.IssizlikIsci) ₼</span></td>
-                                <td class="col-sep"><span class="n">@Fmt(m.Itss) ₼</span></td>
+                                <td><span class="n n--red">@(isLegv ? "—" : Fmt(m.GelirVergisi) + " ₼")</span></td>
+                                <td><span class="n n--purple">@(isLegv ? "—" : Fmt(m.DsmfIsci) + " ₼")</span></td>
+                                <td><span class="n">@(isLegv ? "—" : Fmt(m.IssizlikIsci) + " ₼")</span></td>
+                                <td class="col-sep"><span class="n">@(isLegv ? "—" : Fmt(m.Itss) + " ₼")</span></td>
 
                                 @* NET *@
                                 <td>
-                                    <span class="n n--gold">@m.NetMebleg.ToString("N2") ₼</span>
+                                    <span class="n @(isLegv ? "n--dim" : "n--gold")">@(isLegv ? "—" : m.NetMebleg.ToString("N2") + " ₼")</span>
                                 </td>
 
                                 @* Ödəniş Tarixi *@
