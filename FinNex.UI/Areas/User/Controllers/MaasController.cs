@@ -21,6 +21,9 @@ namespace FinNex.UI.Areas.User.Controllers
             _userManager = userManager;
         }
 
+        // ── GET /User/Maas (köhnə bildiriş linklər üçün) ───────
+        public IActionResult Index() => RedirectToAction(nameof(Tarixce));
+
         // ── GET /User/Maas/Tarixce ──────────────────────────
         public IActionResult Tarixce()
         {
