@@ -98,12 +98,12 @@
         const cInp = row.querySelector('.mth-inp--c');
         // Fərqli gəlir input əsas sırada deyil, əlaqəli detail sırasında yerləşir
         const detailRow = document.querySelector(`tr.mth-detail-row[data-detail-for="${row.dataset.isci}"]`);
-        const fgInp = detailRow?.querySelector('.mth-inp--fg');
+        const fgInps = detailRow ? Array.from(detailRow.querySelectorAll('.mth-inp--fg')) : [];
         const done = row.classList.contains('done');
 
         const bonus = parseFloat(bInp?.value || 0) || 0;
         const cerime = parseFloat(cInp?.value || 0) || 0;
-        const ferqliGelir = parseFloat(fgInp?.value || 0) || 0;
+        const ferqliGelir = fgInps.reduce((s, inp) => s + (parseFloat(inp.value || 0) || 0), 0);
 
         // İşəgötürən HYS payı (əvvəlcə hesablanır — brüt-ə daxildir)
         const hysIsv  = Math.round(hys * (HYS_ISV_FAIZ / 100) * 100) / 100;
@@ -334,9 +334,12 @@
         });
 
         const detailRowForInput = getDetailRow(row);
+        const fgInpsForEvent = detailRowForInput
+            ? Array.from(detailRowForInput.querySelectorAll('.mth-inp--fg'))
+            : [];
         [row.querySelector('.mth-inp--b'),
          row.querySelector('.mth-inp--c'),
-         detailRowForInput?.querySelector('.mth-inp--fg')].forEach(inp => {
+         ...fgInpsForEvent].forEach(inp => {
             inp?.addEventListener('input', () => { updateRow(row); updateFooter(); });
         });
 
