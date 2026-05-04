@@ -2,7 +2,6 @@
 @{
     ViewData["Title"] = "Müraciət Detayı";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-    ViewData["UserRole"] = User.IsInRole(RoleNames.Operator) ? RoleNames.Operator : "";
 
     // Geriyə qeyd: HR normal axını atlamaqla birbaşa qeyd etdiyi müraciət.
     // İşçiyə saxta workflow göstərməyək — xüsusi banner kifayət edir.

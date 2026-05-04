@@ -2,7 +2,6 @@
 @{
     ViewData["Title"] = "Müraciətlərim";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-    ViewData["UserRole"] = User.IsInRole(RoleNames.Operator) ? RoleNames.Operator : "";
 
     bool mezTab  = Model.AktivTab == "mezuniyyet";
     bool icazeTab = Model.AktivTab == "icaze";
