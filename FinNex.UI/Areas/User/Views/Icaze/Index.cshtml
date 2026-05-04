@@ -2,7 +2,6 @@
 @{
     ViewData["Title"] = "İcazələrim";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-    ViewData["UserRole"] = User.IsInRole(RoleNames.Operator) ? RoleNames.Operator : "";
 
     // Workflow addım nömrəsinə çevir (string, entity enum yox)
     int WorkflowStep(string merhele) => merhele switch

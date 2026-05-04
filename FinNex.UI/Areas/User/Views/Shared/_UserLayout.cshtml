@@ -1,3 +1,4 @@
+@inject FinNex.Application.Interfaces.IDashboardService _layoutDashSvc
 @{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     var currentArea = ViewContext.RouteData.Values["area"]?.ToString();
@@ -15,6 +16,12 @@
     var hrGorunur = isHR || isRehberRol;
 
     var _layoutVezife = ViewData["UserRole"] as string ?? "";
+    if (string.IsNullOrEmpty(_layoutVezife) && User.Identity?.IsAuthenticated == true)
+    {
+        var _dashRes = await _layoutDashSvc.GetDashboardAsync(User.Identity.Name!);
+        if (_dashRes.Success && _dashRes.Data != null)
+            _layoutVezife = _dashRes.Data.VezifeAdi ?? "";
+    }
 
     // Hangı modul aktivdir — top tab-ı vurğulamaq + contextual sidebar üçün
     bool IsAccountingCtrl()
