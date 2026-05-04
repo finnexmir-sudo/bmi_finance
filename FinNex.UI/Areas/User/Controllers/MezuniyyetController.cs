@@ -283,6 +283,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 vm.XestelikIstifadeGun = dashResult.Data.XestelikIstifadeGun;
                 vm.EzamiyyetToplamGun = dashResult.Data.EzamiyyetToplamGun;
                 vm.EzamiyyetIstifadeGun = dashResult.Data.EzamiyyetIstifadeGun;
+                vm.VezifeAdi = dashResult.Data.VezifeAdi;
             }
 
             return View(vm);
