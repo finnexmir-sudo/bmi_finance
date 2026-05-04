@@ -60,6 +60,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<MezuniyyetBalans> MezuniyyetBalanslari { get; set; }
     public DbSet<BayramGunu> BayramGunleri { get; set; }
     public DbSet<Icaze> Icazeler { get; set; }
+    public DbSet<IcazeCixisGiris> IcazeCixisGirisler { get; set; }
 
     public DbSet<IsciTeyinat> IsciTeyinatlari { get; set; }
     public DbSet<IsciStrukturRolu> IsciStrukturRollari { get; set; }
