@@ -532,16 +532,28 @@ namespace FinNex.Application.Services
             switch (ic.Status)
             {
                 case IcazeStatus.RehberTesdiqinde:
-                    await _bildirisRouter.NotifyRolesAsync(
-                        new[] { RoleNames.Rehber, RoleNames.Admin },
+                    // Directly use structural role — doesn't require AppUser.IsciId link
+                    await _bildirisRouter.NotifyStrukturRoluAsync(
+                        StrukturRolTipi.Rehber,
+                        BildirisNovu.IcazeMuraciet, bashliq, metn,
+                        redirectUrl: $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Rehber",
+                        icazeId: ic.Id, exceptIsciId: ic.IsciId);
+                    // Also notify Admin via Identity role
+                    await _bildirisRouter.NotifyRoleAsync(
+                        RoleNames.Admin,
                         BildirisNovu.IcazeMuraciet, bashliq, metn,
                         redirectUrl: $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Rehber",
                         icazeId: ic.Id, exceptIsciId: ic.IsciId);
                     break;
 
                 case IcazeStatus.HrTesdiqinde:
-                    await _bildirisRouter.NotifyRolesAsync(
-                        new[] { RoleNames.HR, RoleNames.Admin },
+                    await _bildirisRouter.NotifyStrukturRoluAsync(
+                        StrukturRolTipi.Hr,
+                        BildirisNovu.IcazeMuraciet, bashliq, metn,
+                        redirectUrl: $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Hr",
+                        icazeId: ic.Id, exceptIsciId: ic.IsciId);
+                    await _bildirisRouter.NotifyRoleAsync(
+                        RoleNames.Admin,
                         BildirisNovu.IcazeMuraciet, bashliq, metn,
                         redirectUrl: $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Hr",
                         icazeId: ic.Id, exceptIsciId: ic.IsciId);
@@ -554,8 +566,8 @@ namespace FinNex.Application.Services
         {
             var isciAd = await GetIsciAdAsync(ic.IsciId);
             var dovr = $"{ic.IcazeTarixi:dd.MM.yyyy} {ic.BaslamaSaati:hh\\:mm}–{ic.BitisSaati:hh\\:mm}";
-            await _bildirisRouter.NotifyRolesAsync(
-                new[] { RoleNames.SobeReisi, RoleNames.Admin },
+            await _bildirisRouter.NotifyStrukturRoluAsync(
+                StrukturRolTipi.SobeReisi,
                 BildirisNovu.IcazeTesdiq,
                 "İcazə təsdiqləndi — məlumat",
                 $"{isciAd} ({dovr}) icazəsi təsdiqləndi.",
@@ -568,8 +580,8 @@ namespace FinNex.Application.Services
         {
             var isciAd = await GetIsciAdAsync(ic.IsciId);
             var dovr = $"{ic.IcazeTarixi:dd.MM.yyyy} {ic.BaslamaSaati:hh\\:mm}–{ic.BitisSaati:hh\\:mm}";
-            await _bildirisRouter.NotifyRolesAsync(
-                new[] { RoleNames.HR, RoleNames.Admin },
+            await _bildirisRouter.NotifyStrukturRoluAsync(
+                StrukturRolTipi.Hr,
                 BildirisNovu.IcazeTesdiq,
                 "İcazə təsdiqləndi — məlumat",
                 $"{isciAd} ({dovr}) icazəsi rəhbər tərəfindən təsdiqləndi.",
@@ -581,8 +593,8 @@ namespace FinNex.Application.Services
         {
             var isciAd = await GetIsciAdAsync(ic.IsciId);
             var dovr = $"{ic.IcazeTarixi:dd.MM.yyyy} {ic.BaslamaSaati:hh\\:mm}–{ic.BitisSaati:hh\\:mm}";
-            await _bildirisRouter.NotifyRolesAsync(
-                new[] { RoleNames.Rehber, RoleNames.Admin },
+            await _bildirisRouter.NotifyStrukturRoluAsync(
+                StrukturRolTipi.Rehber,
                 BildirisNovu.IcazeMuraciet,
                 "İcazə müraciəti — Rəhbər təsdiqi gözləyir",
                 $"{isciAd} ({dovr}) icazəsi şöbə rəisi tərəfindən təsdiqlənib.",
@@ -594,8 +606,8 @@ namespace FinNex.Application.Services
         {
             var isciAd = await GetIsciAdAsync(ic.IsciId);
             var dovr = $"{ic.IcazeTarixi:dd.MM.yyyy} {ic.BaslamaSaati:hh\\:mm}–{ic.BitisSaati:hh\\:mm}";
-            await _bildirisRouter.NotifyRolesAsync(
-                new[] { RoleNames.HR, RoleNames.Admin },
+            await _bildirisRouter.NotifyStrukturRoluAsync(
+                StrukturRolTipi.Hr,
                 BildirisNovu.IcazeMuraciet,
                 "İcazə müraciəti — HR təsdiqi gözləyir",
                 $"{isciAd} ({dovr}) icazəsi rəhbər tərəfindən təsdiqlənib.",
