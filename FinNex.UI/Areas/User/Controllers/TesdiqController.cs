@@ -192,6 +192,7 @@ namespace FinNex.UI.Areas.User.Controllers
 
             ViewBag.Rol = rol;
             ViewData["Title"] = "Məzuniyyət Detalı";
+            ViewData["TopbarTarix"] = dto.BaslamaTarixi.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-Latn-AZ"));
             return View(vm);
         }
 
@@ -242,6 +243,7 @@ namespace FinNex.UI.Areas.User.Controllers
 
             ViewBag.Rol = rol;
             ViewData["Title"] = "İcazə Detalı";
+            ViewData["TopbarTarix"] = dto.IcazeTarixi.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-Latn-AZ"));
             return View(vm);
         }
 

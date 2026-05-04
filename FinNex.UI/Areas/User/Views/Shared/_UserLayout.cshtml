@@ -738,7 +738,7 @@
         <div class="fn-topbar-wrap">
             <div>
                 <div class="fn-topbar-title">@ViewData["Title"]</div>
-                <div class="fn-topbar-sub">@DateTime.Now.ToString("dd MMMM yyyy") · @_layoutVezife</div>
+                <div class="fn-topbar-sub">@(ViewData["TopbarTarix"] ?? (object)DateTime.Now.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-Latn-AZ")))</div>
             </div>
         </div>
 
