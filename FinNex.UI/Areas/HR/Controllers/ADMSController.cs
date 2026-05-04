@@ -2,6 +2,7 @@ using FinNex.DataAccess.Contexts;
 using FinNex.Domain.Entities.HR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace FinNex.UI.Areas.HR.Controllers;
 
@@ -172,10 +173,82 @@ public class ADMSController : Controller
             _logger.LogInformation(
                 "Davamiyyət yazıldı: IsciId={IsciId}, Tarix={Tarix}, {Nov}={Vaxt}",
                 isciId, tarix, girisdir ? "Giriş" : "Çıxış", vaxt);
+
+            // Paralel: İcazə çıxış/qayıdış izlənməsi
+            await ProcessIcazeCixisGirisAsync(isciId, vaxt);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "AttLog parse xətası: {Line}", line);
+        }
+    }
+
+    // İşçinin aktiv təsdiqlənmiş icazəsi varsa çıxış/qayıdış vaxtını qeyd edir.
+    // Davamiyyət məntiqi ilə toqquşmur — həmin skan paralel olaraq hər iki cədvələ yazılır.
+    private async Task ProcessIcazeCixisGirisAsync(int isciId, DateTime vaxt)
+    {
+        try
+        {
+            var tarix = vaxt.Date;
+
+            // Bu günün Tesdiqlenib icazəsi
+            var icaze = await _db.Icazeler
+                .Where(x =>
+                    x.IsciId == isciId &&
+                    !x.Silinib &&
+                    x.Status == IcazeStatus.Tesdiqlenib &&
+                    x.IcazeTarixi.Date == tarix)
+                .Include(x => x.CixisGiris)
+                .FirstOrDefaultAsync();
+
+            if (icaze?.CixisGiris == null) return;
+
+            var cg = icaze.CixisGiris;
+
+            if (cg.Status == IcazeCixisGirisStatus.LegvEdildi ||
+                cg.Status == IcazeCixisGirisStatus.Tamamlandi)
+                return;
+
+            if (cg.CixisVaxt == null)
+            {
+                // İlk skan icazə başlama saatından sonradırsa çıxış say
+                var icazeBaslamaDateTime = tarix + icaze.BaslamaSaati;
+                if (vaxt >= icazeBaslamaDateTime.AddMinutes(-15))
+                {
+                    cg.CixisVaxt = vaxt;
+                    cg.Status = cg.Birdefelik
+                        ? IcazeCixisGirisStatus.Tamamlandi
+                        : IcazeCixisGirisStatus.Cixdi;
+
+                    _db.Update(cg);
+                    await _db.SaveChangesAsync();
+
+                    _logger.LogInformation(
+                        "İcazə çıxışı qeydə alındı: IsciId={IsciId}, IcazeId={IcazeId}, Vaxt={Vaxt}",
+                        isciId, icaze.Id, vaxt);
+                }
+            }
+            else if (cg.QayidisVaxt == null && !cg.Birdefelik)
+            {
+                // İkinci skan — qayıdış
+                // Çıxışdan ən az 5 dəqiqə sonra olmalıdır ki, duplikat skan sayılmasın
+                if (vaxt > cg.CixisVaxt.Value.AddMinutes(5))
+                {
+                    cg.QayidisVaxt = vaxt;
+                    cg.Status = IcazeCixisGirisStatus.Tamamlandi;
+
+                    _db.Update(cg);
+                    await _db.SaveChangesAsync();
+
+                    _logger.LogInformation(
+                        "İcazə qayıdışı qeydə alındı: IsciId={IsciId}, IcazeId={IcazeId}, Vaxt={Vaxt}",
+                        isciId, icaze.Id, vaxt);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "İcazə çıxış/qayıdış izlənmə xətası: IsciId={IsciId}", isciId);
         }
     }
 
