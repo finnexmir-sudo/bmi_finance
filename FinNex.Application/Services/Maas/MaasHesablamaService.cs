@@ -1325,10 +1325,11 @@ namespace FinNex.Application.Services.HR
             decimal cariMaas = maliye?.CariMaas ?? 0;
             result.CariMaas = cariMaas;
 
-            // Son 12 ayın qazancları (ən yeni → ən köhnəyə doğru)
+            // Son 12 ayın qazancları — məzuniyyət başlama ayından əvvəlki 12 ay
+            int baslamaRefKey = baslama.Year * 12 + baslama.Month;
             var son12Qazanc = await _unitOfWork.Repository<IsciAyliqQazanc>()
                 .Query()
-                .Where(x => x.IsciId == isciId && !x.Silinib)
+                .Where(x => x.IsciId == isciId && !x.Silinib && (x.Il * 12 + x.Ay) < baslamaRefKey)
                 .OrderByDescending(x => x.Il * 12 + x.Ay)
                 .Take(12)
                 .ToListAsync();
