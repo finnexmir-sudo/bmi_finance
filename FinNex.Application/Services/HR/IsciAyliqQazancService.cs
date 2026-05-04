@@ -97,7 +97,14 @@ namespace FinNex.Application.Services.HR
 
         public async Task<Result> AutoInsertFromMaasAsync(int isciId, int il, int ay, decimal qazanc)
         {
-            // Avtomatik əlavə — eyni metoddan istifadə edir, sadəcə elIle = false
+            // Əl ilə daxil edilmiş qeyd varsa üzərinə yazmır — manual data prioritetlidir.
+            var movcud = await _unitOfWork.Repository<IsciAyliqQazanc>()
+                .Query()
+                .FirstOrDefaultAsync(x => x.IsciId == isciId && x.Il == il && x.Ay == ay && !x.Silinib);
+
+            if (movcud != null && movcud.ElIleDaxilEdilib)
+                return Result.Ok("Əl ilə daxil edilmiş qeyd saxlanıldı.");
+
             return await AddOrUpdateAsync(isciId, il, ay, qazanc, elIle: false,
                 qeyd: $"Sistem tərəfindən {DateTime.Now:dd.MM.yyyy HH:mm} avtomatik əlavə edildi");
         }
