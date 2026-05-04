@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.UI.Areas.User.Controllers
 {
@@ -21,6 +22,7 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly IBildirisService _bildirisService;
         private readonly IEvezediciTesdiqService _evezediciTesdiqService;
         private readonly IIsciService _isciService;
+        private readonly IIcazeService _icazeService;
         private readonly UserManager<AppUser> _userManager;
         private readonly IUnitOfWork _unitOfWork;
 
@@ -29,6 +31,7 @@ namespace FinNex.UI.Areas.User.Controllers
             IBildirisService bildirisService,
             IEvezediciTesdiqService evezediciTesdiqService,
             IIsciService isciService,
+            IIcazeService icazeService,
             UserManager<AppUser> userManager,
             IUnitOfWork unitOfWork)
         {
@@ -36,6 +39,7 @@ namespace FinNex.UI.Areas.User.Controllers
             _bildirisService = bildirisService;
             _evezediciTesdiqService = evezediciTesdiqService;
             _isciService = isciService;
+            _icazeService = icazeService;
             _userManager = userManager;
             _unitOfWork = unitOfWork;
         }
@@ -46,7 +50,7 @@ namespace FinNex.UI.Areas.User.Controllers
             var isciId = await GetIsciIdAsync();
             if (isciId == null) return RedirectToLogin();
 
-            var bildirisler = await _bildirisService.GetIscibildirisleriAsync(isciId.Value);
+            var bildirislerResult = await _bildirisService.GetIscibildirisleriAsync(isciId.Value);
             var gelenler = await _mesajService.GetGelenlerAsync(isciId.Value);
             var gonderilenler = await _mesajService.GetGonderilenlerAsync(isciId.Value);
             var evezediciSorgular = await _evezediciTesdiqService.GetGozleyenlerAsync(isciId.Value);
@@ -54,11 +58,51 @@ namespace FinNex.UI.Areas.User.Controllers
             var vm = new InboxIndexVM
             {
                 AktivTab = tab,
-                Bildirisler = bildirisler.Success ? bildirisler.Data!.ToList() : new(),
+                Bildirisler = bildirislerResult.Success ? bildirislerResult.Data!.ToList() : new(),
                 GelenMesajlar = gelenler.Success ? gelenler.Data!.ToList() : new(),
                 GonderilenMesajlar = gonderilenler.Success ? gonderilenler.Data!.ToList() : new(),
                 EvezediciSorgular = evezediciSorgular.Success ? evezediciSorgular.Data!.ToList() : new(),
             };
+
+            // ── İcazə statusunu bildirişlərə əlavə et (ikona üçün) ──
+            var icazeIds = vm.Bildirisler
+                .Where(b => b.IcazeId.HasValue)
+                .Select(b => b.IcazeId!.Value)
+                .Distinct().ToList();
+
+            if (icazeIds.Any())
+            {
+                var icazeler = await _unitOfWork.Repository<Icaze>()
+                    .HamisiniGetirAsync(x => icazeIds.Contains(x.Id), izlemeden: true);
+                var statusMap = icazeler.ToDictionary(x => x.Id, x => x.Status);
+                foreach (var b in vm.Bildirisler)
+                    if (b.IcazeId.HasValue && statusMap.TryGetValue(b.IcazeId.Value, out var s))
+                        b.IcazeStatus = s;
+            }
+
+            // ── Gözlənənlər: mənim gözləyən müraciətlərim ──
+            var menimResult = await _icazeService.GetIsciIcazeleriAsync(isciId.Value);
+            if (menimResult.Success)
+            {
+                vm.MenimGozleyenIcazelarim = menimResult.Data!
+                    .Where(x => x.Status == IcazeStatus.RehberTesdiqinde
+                             || x.Status == IcazeStatus.HrTesdiqinde
+                             || x.Status == IcazeStatus.SobeReisiTesdiqinde
+                             || x.Status == IcazeStatus.Gozlemede)
+                    .ToList();
+            }
+
+            // ── Gözlənənlər: mənim tesdiq etmeyim gərəkənlər ──
+            if (User.IsInRole(RoleNames.Rehber))
+            {
+                var r = await _icazeService.GetRehberTesdiqindeAsync();
+                if (r.Success) vm.TesdiqEtmeyimGerekenler = r.Data!.ToList();
+            }
+            else if (User.IsInRole(RoleNames.HR))
+            {
+                var r = await _icazeService.GetHrTesdiqindeAsync();
+                if (r.Success) vm.TesdiqEtmeyimGerekenler = r.Data!.ToList();
+            }
 
             ViewData["Title"] = "Gələn Qutusu";
             return View(vm);

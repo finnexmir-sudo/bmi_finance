@@ -1,5 +1,6 @@
 ﻿// Areas/User/ViewModels/Inbox/InboxIndexVM.cs
 using FinNex.Application.DTOs.Communication;
+using FinNex.Application.DTOs.HR.Icaze;
 
 namespace FinNex.UI.Areas.User.ViewModels.Inbox
 {
@@ -11,10 +12,15 @@ namespace FinNex.UI.Areas.User.ViewModels.Inbox
         public List<MesajListDto> GonderilenMesajlar { get; set; } = new();
         public List<EvezediciTesdiqDto> EvezediciSorgular { get; set; } = new();
 
+        // Gözlənənlər tab
+        public List<IcazeListDto> MenimGozleyenIcazelarim { get; set; } = new();
+        public List<IcazeListDto> TesdiqEtmeyimGerekenler { get; set; } = new();
+
         public int OxunmamisBildiris => Bildirisler.Count(x => !x.Oxunub);
         public int OxunmamisMesaj => GelenMesajlar.Count(x => !x.Oxunub);
         public int GozleyenSorgu => EvezediciSorgular.Count;
         public int CemiOxunmamis => OxunmamisBildiris + OxunmamisMesaj + GozleyenSorgu;
+        public int GozleyenIcaze => MenimGozleyenIcazelarim.Count + TesdiqEtmeyimGerekenler.Count;
     }
 
     public class MesajDetailPageVM
