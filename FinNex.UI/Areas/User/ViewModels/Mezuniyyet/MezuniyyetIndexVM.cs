@@ -41,6 +41,9 @@ namespace FinNex.UI.Areas.User.ViewModels.Mezuniyyet
         public string? FilterNov { get; set; }
         public string? FilterStatus { get; set; }
 
+        // ── İstifadəçi vəzifəsi (header üçün) ────────────────
+        public string? VezifeAdi { get; set; }
+
         public IEnumerable<MezuniyyetListDto> FilteredList => Mezuniyyetler
             .Where(x => string.IsNullOrEmpty(FilterNov) || x.NovText == FilterNov)
             .Where(x => string.IsNullOrEmpty(FilterStatus) || x.WorkflowMerhele == FilterStatus);

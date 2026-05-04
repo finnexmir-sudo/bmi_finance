@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = "Məzuniyyətlərim";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-    ViewData["UserRole"] = User.IsInRole(RoleNames.Operator) ? RoleNames.Operator : "";
+    ViewData["UserRole"] = Model.VezifeAdi ?? "";
 
     // Workflow addım nömrəsinə çevir (string → int, entity enum yox)
     int WorkflowStep(string merhele) => merhele switch
@@ -60,7 +60,7 @@
                 <div class="fn-bc-nums">
                     <span class="fn-bc-big" style="color:#1e9b6b">@Model.IllikQaligGun</span>
                     <span class="fn-bc-slash">/</span>
-                    <span class="fn-bc-total">@Model.IllikToplamGun gün qalıb</span>
+                    <span class="fn-bc-total">gün qalıb</span>
                 </div>
                 <div class="fn-lb-track" style="margin-top:6px">
                     <div class="fn-lb-fill" style="width:@(Model.IllikToplamGun > 0 ? (int)((double)Model.IllikQaligGun / Model.IllikToplamGun * 100) : 0)%;background:#1e9b6b"></div>
