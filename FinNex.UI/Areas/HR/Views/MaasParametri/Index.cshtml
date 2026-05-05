@@ -19,6 +19,7 @@
     var xstStaj8     = Flat(MaasParametrNovu.XestelikStaj8YasagidaFaizi);
     var xstStaj812   = Flat(MaasParametrNovu.XestelikStaj8_12IlFaizi);
     var xstStaj12    = Flat(MaasParametrNovu.XestelikStaj12YuxariFaizi);
+    var xstDsmfEmsal = Flat(MaasParametrNovu.XestelikDsmfEmsali);
 
     List<VergiPille> Pilleler(MaasParametrNovu n) =>
         pilleler.Where(x => x.Nov == n && x.Aktivdir).OrderBy(x => x.Sira).ToList();
@@ -39,6 +40,7 @@
         MaasParametrNovu.XestelikStaj8YasagidaFaizi => "Xəstəlik: Staj < 8 il faizi",
         MaasParametrNovu.XestelikStaj8_12IlFaizi => "Xəstəlik: Staj 8–12 il faizi",
         MaasParametrNovu.XestelikStaj12YuxariFaizi => "Xəstəlik: Staj ≥ 12 il faizi",
+        MaasParametrNovu.XestelikDsmfEmsali => "Xəstəlik: DSMF Əmsalı",
         _ => n.ToString()
     };
 }
@@ -541,6 +543,52 @@
         </div>
     </div>
 
+    @* ═══════════ BÖLMƏ 6: XƏSTƏLİK ÖDƏNİŞ DÜSTURU (DSMF ƏMSALI) ═══════════ *@
+    <div class="mp-section">
+        <div class="mp-section-head">
+            <i class="bi bi-calculator"></i>
+            <h2>Xəstəlik Ödənişi — DSMF Əmsalı</h2>
+            <span class="mp-section-sub">Yeni düstur (May 2026+): GünlükPul = ((Σ DSMF işçi + Σ DSMF şirkət) × Əmsal) ÷ (son 12 ay təqvim günü − xəstəlik təqvim günü)</span>
+        </div>
+
+        <div class="mp-guzesht-grid">
+            <div class="mp-guzesht-card">
+                <div class="mp-guzesht-head">
+                    <i class="bi bi-asterisk"></i>
+                    <div>
+                        <div class="mp-guzesht-name">DSMF Əmsalı</div>
+                        <div class="mp-guzesht-desc">Son 12 ay DSMF cəmi neçə dəfəyə vurulur (default 4)</div>
+                    </div>
+                    @if (xstDsmfEmsal != null)
+                    {
+                        <button class="mp-card-btn mp-card-btn--edit" data-edit-id="@xstDsmfEmsal.Id">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="mp-card-btn mp-card-btn--edit"
+                                data-create-nov="@((int)MaasParametrNovu.XestelikDsmfEmsali)"
+                                data-create-deyer="4"
+                                title="Yarat">
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                    }
+                </div>
+                <div class="mp-guzesht-value">
+                    <span class="mp-guzesht-num">@(xstDsmfEmsal?.Deyer.ToString("G29") ?? "4")</span>
+                    <span class="mp-guzesht-suffix">×</span>
+                </div>
+                @if (xstDsmfEmsal == null)
+                {
+                    <div class="mp-guzesht-desc" style="margin-top:8px;color:#999;font-size:11px;">
+                        (default — DB-də qeyd yoxdur)
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
     @* ── Flat parametr modal ── *@
     <div id="mpModalOverlay" class="mp-modal-overlay">
         <div class="mp-modal">
@@ -564,6 +612,7 @@
                             <option value="14">Xəstəlik: Staj &lt; 8 il faizi</option>
                             <option value="15">Xəstəlik: Staj 8–12 il faizi</option>
                             <option value="16">Xəstəlik: Staj ≥ 12 il faizi</option>
+                            <option value="17">Xəstəlik: DSMF Əmsalı</option>
                         </select>
                     </div>
 

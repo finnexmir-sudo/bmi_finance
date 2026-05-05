@@ -822,7 +822,12 @@ namespace FinNex.Application.Services.HR
                 decimal qazanc = brutMaas - mezOdenis - xestelikSirketOdenis
                                  - input.IH07Meblegi - input.VM9821Meblegi;
                 if (qazanc < 0) qazanc = 0;
-                await _ayliqQazancService.AutoInsertFromMaasAsync(input.IsciId, input.Il, input.Ay, qazanc);
+
+                // Xəstəlik ödənişinin yeni DSMF-əsaslı düsturu üçün DSMF məbləğləri də saxlanılır.
+                await _ayliqQazancService.AutoInsertFromMaasAsync(
+                    input.IsciId, input.Il, input.Ay, qazanc,
+                    dsmfIsci: dsmfIsci,
+                    dsmfIsegoturen: dsmfIsegoturen);
             }
             catch { /* avtomatik sync xətası əsas əməliyyatı pozmasın */ }
 

@@ -20,7 +20,8 @@ const MaasParametri = (() => {
         11: 1, // HysMaxMaasFaizi -> Faiz
         14: 1, // XestelikStaj8YasagidaFaizi -> Faiz
         15: 1, // XestelikStaj8_12IlFaizi -> Faiz
-        16: 1  // XestelikStaj12YuxariFaizi -> Faiz
+        16: 1, // XestelikStaj12YuxariFaizi -> Faiz
+        17: 2  // XestelikDsmfEmsali -> Mebleg (sırf rəqəm, faiz deyil)
     };
 
     function openCreate() {

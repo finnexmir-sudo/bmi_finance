@@ -45,7 +45,8 @@ namespace FinNex.Application.Services.HR
             }
         }
 
-        public async Task<Result> AddOrUpdateAsync(int isciId, int il, int ay, decimal qazanc, bool elIle, string? qeyd = null)
+        public async Task<Result> AddOrUpdateAsync(int isciId, int il, int ay, decimal qazanc, bool elIle, string? qeyd = null,
+            decimal dsmfIsci = 0, decimal dsmfIsegoturen = 0)
         {
             try
             {
@@ -63,6 +64,8 @@ namespace FinNex.Application.Services.HR
                 if (movcud != null)
                 {
                     movcud.Qazanc = qazanc;
+                    movcud.DsmfIsci = dsmfIsci;
+                    movcud.DsmfIsegoturen = dsmfIsegoturen;
                     movcud.ElIleDaxilEdilib = elIle;
                     movcud.Qeyd = qeyd;
                     await _unitOfWork.YaddaSaxlaAsync();
@@ -76,6 +79,8 @@ namespace FinNex.Application.Services.HR
                     Il = il,
                     Ay = ay,
                     Qazanc = qazanc,
+                    DsmfIsci = dsmfIsci,
+                    DsmfIsegoturen = dsmfIsegoturen,
                     ElIleDaxilEdilib = elIle,
                     Qeyd = qeyd
                 };
@@ -90,7 +95,8 @@ namespace FinNex.Application.Services.HR
             }
         }
 
-        public async Task<Result> AutoInsertFromMaasAsync(int isciId, int il, int ay, decimal qazanc)
+        public async Task<Result> AutoInsertFromMaasAsync(int isciId, int il, int ay, decimal qazanc,
+            decimal dsmfIsci = 0, decimal dsmfIsegoturen = 0)
         {
             // Aktiv qeydi yoxla — manual olarsa toxunma.
             var movcud = await _unitOfWork.Repository<IsciAyliqQazanc>()
@@ -103,6 +109,8 @@ namespace FinNex.Application.Services.HR
             if (movcud != null)
             {
                 movcud.Qazanc = qazanc;
+                movcud.DsmfIsci = dsmfIsci;
+                movcud.DsmfIsegoturen = dsmfIsegoturen;
                 movcud.Qeyd = $"Sistem tərəfindən {DateTime.Now:dd.MM.yyyy HH:mm} avtomatik yeniləndi";
                 await _unitOfWork.YaddaSaxlaAsync();
                 return Result.Ok("Qeyd yeniləndi.");
@@ -122,13 +130,16 @@ namespace FinNex.Application.Services.HR
                 silinmis.Silinib = false;
                 silinmis.SilinmeTarixi = null;
                 silinmis.Qazanc = qazanc;
+                silinmis.DsmfIsci = dsmfIsci;
+                silinmis.DsmfIsegoturen = dsmfIsegoturen;
                 silinmis.Qeyd = $"Sistem tərəfindən {DateTime.Now:dd.MM.yyyy HH:mm} bərpa edildi";
                 await _unitOfWork.YaddaSaxlaAsync();
                 return Result.Ok("Silinmiş qeyd bərpa edildi.");
             }
 
             return await AddOrUpdateAsync(isciId, il, ay, qazanc, elIle: false,
-                qeyd: $"Sistem tərəfindən {DateTime.Now:dd.MM.yyyy HH:mm} avtomatik əlavə edildi");
+                qeyd: $"Sistem tərəfindən {DateTime.Now:dd.MM.yyyy HH:mm} avtomatik əlavə edildi",
+                dsmfIsci: dsmfIsci, dsmfIsegoturen: dsmfIsegoturen);
         }
 
         public async Task<Result> DeleteAsync(int id)
