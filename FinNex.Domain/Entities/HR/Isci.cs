@@ -21,10 +21,17 @@
 
         /// <summary>
         /// Ümumi iş stajı başlanğıc tarixi (əvvəlki iş yerləri daxil).
-        /// Null olarsa — IsheQebulTarixi istifadə olunur (yalnız bu bank).
-        /// Xəstəlik ödənişində staj faizi (60/80/100%) bu tarixdən hesablanır.
+        /// LEGACY — köhnə hesablamalar üçün saxlanılır.
+        /// Yeni yanaşma: EvvelkiStajPeriodlari (kitabçə) + bank tenure.
         /// </summary>
         public DateTime? UmumiIsStajiBaslangic { get; set; }
+
+        /// <summary>
+        /// İşçinin əvvəlki iş yerlərində iş dövrləri (əmək kitabçası).
+        /// JSON: [{"s":"2010-01-15","e":"2015-06-30"}, ...]
+        /// Cari ümumi staj = bu dövrlərin cəmi + bu bankda staj (IsheQebulTarixi → bu gün).
+        /// </summary>
+        public string? EvvelkiStajPeriodlari { get; set; }
 
         // Sistem əlaqəsi
         public int? AppUserId { get; set; }
