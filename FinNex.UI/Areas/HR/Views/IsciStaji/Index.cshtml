@@ -1,21 +1,10 @@
 @model IList<FinNex.Domain.Entities.HR.Isci>
+@using FinNex.Application.Services.HR
 @{
     ViewData["Title"] = "İşçi Stajı";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     var axtaris = ViewBag.Axtaris as string;
     var bugun = DateTime.Today;
-
-    (int il, int ay, int faiz, string menbe) HesablaStaj(FinNex.Domain.Entities.HR.Isci i)
-    {
-        var bas = i.UmumiIsStajiBaslangic ?? i.IsheQebulTarixi;
-        int il = bugun.Year - bas.Year;
-        int ay = bugun.Month - bas.Month;
-        if (bugun.Day < bas.Day) ay--;
-        if (ay < 0) { il--; ay += 12; }
-        int faiz = il < 8 ? 60 : il < 12 ? 80 : 100;
-        string menbe = i.UmumiIsStajiBaslangic.HasValue ? "ümumi" : "bank";
-        return (il, ay, faiz, menbe);
-    }
 }
 
 @section Styles {
@@ -181,9 +170,10 @@
         <div>
             <div class="fn-page-title">İşçi Stajı</div>
             <div class="fn-page-sub">
-                Xəstəlik ödənişində istifadə olunan ümumi iş stajı.
-                Default olaraq <strong>bu banka işə gəlmə tarixi</strong> götürülür.
-                Əgər işçi əvvəl başqa yerlərdə işləyibsə, ümumi staj başlanğıcı daxil edin.
+                Ümumi iş stajı = <strong>bu bankda staj</strong> (işə gəlmə tarixindən bu günə)
+                + <strong>əmək kitabçası</strong> (əvvəlki iş dövrləri).
+                <strong>Ə/K</strong> düyməsi ilə əvvəlki dövrləri daxil edin və "Tətbiq et" deyin —
+                avtomatik DB-də saxlanılır.
             </div>
         </div>
     </div>
@@ -209,7 +199,8 @@
         <span>8 – 12 il → 80%</span> ·
         <span>≥ 12 il → 100%</span>
         &nbsp;&nbsp;·&nbsp;&nbsp;
-        <strong style="color:#3730a3">Ə/K</strong> düyməsi ilə əvvəlki iş dövrlərini daxil edib ümumi stajı hesablayın.
+        <strong style="color:#3730a3">Ə/K</strong> düyməsi ilə əvvəlki iş dövrlərini daxil edin —
+        ümumi staj avtomatik (bank + kitabçə) hesablanıb saxlanılır.
     </div>
 
     <div class="fn-card" style="padding:0;overflow:hidden">
@@ -219,28 +210,27 @@
                     <th style="min-width:200px">İşçi</th>
                     <th>Departament</th>
                     <th style="width:130px">Bu bankda işə gəlmə</th>
-                    <th style="width:160px">Ümumi staj başlanğıcı</th>
-                    <th style="width:120px">Cari staj</th>
+                    <th style="width:160px">Ümumi staj</th>
                     <th colspan="4" class="tr-group-head" style="width:200px">Əmək Kitabçası</th>
                     <th style="width:80px">Faiz</th>
-                    <th style="width:100px">Əməliyyat</th>
                 </tr>
                 <tr>
-                    <th colspan="5" style="background:#f8f9fb;padding:0;border:none;height:0"></th>
+                    <th colspan="4" style="background:#f8f9fb;padding:0;border:none;height:0"></th>
                     <th class="tr-sub-head tr-val-l" style="width:45px">İL</th>
                     <th class="tr-sub-head" style="width:45px">AY</th>
                     <th class="tr-sub-head" style="width:45px">GÜN</th>
                     <th class="tr-sub-head tr-val-r" style="width:65px"></th>
-                    <th colspan="2" style="background:#f8f9fb;padding:0;border:none;height:0"></th>
+                    <th style="background:#f8f9fb;padding:0;border:none;height:0"></th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var i in Model)
                 {
-                    var (il, ay, faiz, menbe) = HesablaStaj(i);
+                    var staj = IsciStajHelper.Hesabla(i, bugun);
                     var teyinat = i.IsciTeyinatlari?.FirstOrDefault(t => t.BitmeTarixi == null);
                     var deptAd = teyinat?.Departament?.Ad ?? "—";
-                    <tr class="km-row" data-isci-id="@i.Id">
+                    var hasKitabce = !string.IsNullOrWhiteSpace(i.EvvelkiStajPeriodlari);
+                    <tr class="km-row" data-isci-id="@i.Id" data-tr-periods="@(i.EvvelkiStajPeriodlari ?? "")">
                         <td class="km-td-name">
                             <div style="font-weight:600">@i.Ad @i.Soyad</div>
                             <div style="font-size:10.5px;color:#94a3b8">FİN: @i.FIN</div>
@@ -248,24 +238,22 @@
                         <td><span style="font-size:12px;color:#475569">@deptAd</span></td>
                         <td style="font-size:12px">@i.IsheQebulTarixi.ToString("dd.MM.yyyy")</td>
                         <td>
-                            <input type="date" class="staj-input" data-isci-id="@i.Id"
-                                   value="@(i.UmumiIsStajiBaslangic?.ToString("yyyy-MM-dd"))"
-                                   max="@DateTime.Today.ToString("yyyy-MM-dd")"
-                                   style="padding:5px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;width:140px" />
-                            @if (!i.UmumiIsStajiBaslangic.HasValue)
-                            {
-                                <div style="font-size:10px;color:#94a3b8;margin-top:2px">default: bank tarixi</div>
-                            }
+                            <span class="cari-staj" style="font-weight:700;color:#0f172a;font-size:13px">
+                                @staj.Il il @staj.Ay ay @staj.Gun gün
+                            </span>
+                            <div style="font-size:10px;color:#94a3b8">
+                                bank: <span class="staj-bank">@staj.BankIl il @staj.BankAy ay</span>
+                                @if (hasKitabce)
+                                {
+                                    <span> + kitabçə: <span class="staj-evvelki">@staj.EvvelkiIl il @staj.EvvelkiAy ay</span></span>
+                                }
+                            </div>
                         </td>
-                        <td>
-                            <span class="cari-staj" style="font-weight:700;color:#0f172a;font-size:13px">@il il @ay ay</span>
-                            <div style="font-size:10px;color:#94a3b8">mənbə: <span class="staj-menbe">@menbe</span></div>
-                        </td>
-                        <td class="tr-val tr-val-l empty tr-il">—</td>
-                        <td class="tr-val empty tr-ay">—</td>
-                        <td class="tr-val empty tr-gun">—</td>
+                        <td class="tr-val tr-val-l @(hasKitabce ? "" : "empty") tr-il">@(hasKitabce ? staj.EvvelkiIl.ToString() : "—")</td>
+                        <td class="tr-val @(hasKitabce ? "" : "empty") tr-ay">@(hasKitabce ? staj.EvvelkiAy.ToString() : "—")</td>
+                        <td class="tr-val @(hasKitabce ? "" : "empty") tr-gun">@(hasKitabce ? staj.EvvelkiGun.ToString() : "—")</td>
                         <td class="tr-val tr-val-r" style="padding:8px 10px">
-                            <button type="button" class="tr-open-btn" data-isci-id="@i.Id" data-isci-ad="@i.Ad @i.Soyad">
+                            <button type="button" class="tr-open-btn @(hasKitabce ? "has-data" : "")" data-isci-id="@i.Id" data-isci-ad="@i.Ad @i.Soyad">
                                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                                     <rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.3"/>
                                     <path d="M3 4h6M3 6h6M3 8h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
@@ -275,13 +263,10 @@
                         </td>
                         <td>
                             <span class="cari-faiz" style="display:inline-block;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700;
-                                  background:@(faiz==100?"#dcfce7":faiz==80?"#fef3c7":"#fee2e2");
-                                  color:@(faiz==100?"#166534":faiz==80?"#92400e":"#991b1b")">
-                                @faiz%
+                                  background:@(staj.Faiz==100?"#dcfce7":staj.Faiz==80?"#fef3c7":"#fee2e2");
+                                  color:@(staj.Faiz==100?"#166534":staj.Faiz==80?"#92400e":"#991b1b")">
+                                @staj.Faiz%
                             </span>
-                        </td>
-                        <td>
-                            <button type="button" class="fn-btn fn-btn--primary fn-btn--sm staj-save-btn" data-isci-id="@i.Id">Saxla</button>
                         </td>
                     </tr>
                 }
@@ -409,20 +394,58 @@
             '<strong>'+t.d+'</strong><span> gün</span>';
     }
 
+    function showToast(msg,ok){
+        var t=document.createElement('div');
+        t.style.cssText='position:fixed;top:20px;right:20px;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.15);'+(ok?'background:#16a34a;color:#fff':'background:#dc2626;color:#fff');
+        t.textContent=msg; document.body.appendChild(t); setTimeout(function(){t.remove();},3000);
+    }
+
     document.getElementById('trApplyBtn').addEventListener('click',function(){
         if(!currentRow) return;
-        var valid=periods.map(function(p){return dateDiff(p.s,p.e);}).filter(Boolean);
-        if(!valid.length){closeModal();return;}
-        var tot=sumAll(valid);
-        currentRow.dataset.trPeriods=JSON.stringify(periods);
-        function setCol(cls,val){
-            var el=currentRow.querySelector(cls);
-            el.textContent=val;
-            el.className=el.className.replace(' empty','');
-        }
-        setCol('.tr-il',tot.y); setCol('.tr-ay',tot.m); setCol('.tr-gun',tot.d);
-        currentRow.querySelector('.tr-open-btn').classList.add('has-data');
-        closeModal();
+        var btn=this;
+        var valid=periods.filter(function(p){return dateDiff(p.s,p.e);});
+        var payload=valid.length?JSON.stringify(valid):'';
+
+        var fd=new FormData();
+        fd.append('isciId',currentRow.dataset.isciId);
+        if(payload) fd.append('periodlar',payload);
+        var csrf=document.querySelector('input[name="__RequestVerificationToken"]');
+        if(csrf) fd.append('__RequestVerificationToken',csrf.value);
+
+        btn.disabled=true;
+        fetch('/HR/IsciStaji/Update',{method:'POST',body:fd})
+            .then(function(r){return r.json();})
+            .then(function(d){
+                if(!d.success){showToast(d.message||'Xəta',false);return;}
+
+                // DB-də saxlandı, sıralarını yenilə
+                currentRow.dataset.trPeriods=payload;
+                function setCol(cls,val,hasData){
+                    var el=currentRow.querySelector(cls);
+                    el.textContent=hasData?val:'—';
+                    el.className=el.className.replace(' empty','')+(hasData?'':' empty');
+                }
+                var hasKitabce=!!payload;
+                setCol('.tr-il',d.evvelkiIl,hasKitabce);
+                setCol('.tr-ay',d.evvelkiAy,hasKitabce);
+                setCol('.tr-gun',d.evvelkiGun,hasKitabce);
+
+                var openBtn=currentRow.querySelector('.tr-open-btn');
+                if(hasKitabce) openBtn.classList.add('has-data'); else openBtn.classList.remove('has-data');
+
+                currentRow.querySelector('.cari-staj').textContent=d.stajIl+' il '+d.stajAy+' ay '+d.stajGun+' gün';
+
+                // Faiz badge
+                var fs=currentRow.querySelector('.cari-faiz');
+                fs.textContent=d.faiz+'%';
+                fs.style.background=d.faiz===100?'#dcfce7':d.faiz===80?'#fef3c7':'#fee2e2';
+                fs.style.color=d.faiz===100?'#166534':d.faiz===80?'#92400e':'#991b1b';
+
+                showToast(d.message||'Saxlandı',true);
+                closeModal();
+            })
+            .catch(function(){showToast('Server xətası.',false);})
+            .finally(function(){btn.disabled=false;});
     });
     document.getElementById('trAddBtn').addEventListener('click',function(){periods.push({s:'',e:''});render();});
     document.getElementById('trClose').addEventListener('click',closeModal);
@@ -437,37 +460,6 @@
         });
     });
 
-    function showToast(msg,ok){
-        var t=document.createElement('div');
-        t.style.cssText='position:fixed;top:20px;right:20px;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.15);'+(ok?'background:#16a34a;color:#fff':'background:#dc2626;color:#fff');
-        t.textContent=msg; document.body.appendChild(t); setTimeout(function(){t.remove();},3000);
-    }
-    document.querySelectorAll('.staj-save-btn').forEach(function(btn){
-        btn.addEventListener('click',function(){
-            var id=btn.dataset.isciId, row=btn.closest('tr'), input=row.querySelector('.staj-input');
-            btn.disabled=true;
-            var fd=new FormData();
-            fd.append('isciId',id);
-            if(input.value) fd.append('umumiIsStajiBaslangic',input.value);
-            var csrf=document.querySelector('input[name="__RequestVerificationToken"]');
-            if(csrf) fd.append('__RequestVerificationToken',csrf.value);
-            fetch('/HR/IsciStaji/Update',{method:'POST',body:fd})
-                .then(function(r){return r.json();})
-                .then(function(d){
-                    if(d.success){
-                        showToast(d.message,true);
-                        row.querySelector('.cari-staj').textContent=d.stajIl+' il '+d.stajAy+' ay';
-                        row.querySelector('.staj-menbe').textContent=d.menbe;
-                        var fs=row.querySelector('.cari-faiz');
-                        fs.textContent=d.faiz+'%';
-                        fs.style.background=d.faiz===100?'#dcfce7':d.faiz===80?'#fef3c7':'#fee2e2';
-                        fs.style.color=d.faiz===100?'#166534':d.faiz===80?'#92400e':'#991b1b';
-                    } else {showToast(d.message,false);}
-                })
-                .catch(function(){showToast('Server xətası.',false);})
-                .finally(function(){btn.disabled=false;});
-        });
-    });
 })();
 </script>
 @Html.AntiForgeryToken()

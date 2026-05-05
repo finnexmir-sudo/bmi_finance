@@ -1,3 +1,5 @@
+using System.Text.Json;
+using FinNex.Application.Services.HR;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
@@ -8,14 +10,12 @@ using Microsoft.EntityFrameworkCore;
 namespace FinNex.UI.Areas.HR.Controllers
 {
     /// <summary>
-    /// İşçilərin ümumi iş stajı idarəetməsi. Default olaraq bankda işə gəlmə
-    /// tarixi (IsheQebulTarixi) istifadə olunur. Əgər işçi bu banka gəlməzdən
-    /// əvvəl başqa yerlərdə işləyibsə, HR burada UmumiIsStajiBaslangic-ı daxil
-    /// edir — xəstəlik ödənişində staj faizi (60/80/100%) bu tarixə əsasən
-    /// hesablanır.
+    /// İşçilərin ümumi iş stajı idarəetməsi.
+    /// Total staj = bu bankda staj (IsheQebulTarixi → bu gün) + əvvəlki iş dövrləri (kitabçə).
+    /// Əvvəlki dövrlər Isci.EvvelkiStajPeriodlari (JSON) sahəsində saxlanılır.
     /// </summary>
     [Area("HR")]
-    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Muhasib)]
     public class IsciStajiController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -50,40 +50,66 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         // POST /HR/IsciStaji/Update
+        // Əvvəlki iş dövrlərini (kitabçə) qəbul edir, JSON kimi saxlayır,
+        // total stajı (bank + kitabçə) hesablayır və geriyə qaytarır.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Update(int isciId, DateTime? umumiIsStajiBaslangic)
+        public async Task<IActionResult> Update(int isciId, string? periodlar)
         {
             try
             {
                 var isci = await _unitOfWork.Repository<Isci>().IdIleGetirAsync(isciId);
                 if (isci == null) return Json(new { success = false, message = "İşçi tapılmadı." });
 
-                if (umumiIsStajiBaslangic.HasValue && umumiIsStajiBaslangic.Value > DateTime.Today)
-                    return Json(new { success = false, message = "Staj başlanğıc tarixi gələcəkdə ola bilməz." });
+                // periodlar: JSON array `[{"s":"...","e":"..."}, ...]` və ya null/boş
+                if (string.IsNullOrWhiteSpace(periodlar))
+                {
+                    isci.EvvelkiStajPeriodlari = null;
+                }
+                else
+                {
+                    // Validate: parse edilirmi
+                    try
+                    {
+                        var liste = JsonSerializer.Deserialize<List<IsciStajHelper.Period>>(periodlar);
+                        // Boş və ya yararsız dövrləri at
+                        var temizlenmis = liste?
+                            .Where(p =>
+                                DateTime.TryParse(p.s, out var s) &&
+                                DateTime.TryParse(p.e, out var en) &&
+                                en > s)
+                            .ToList() ?? new();
 
-                isci.UmumiIsStajiBaslangic = umumiIsStajiBaslangic;
+                        isci.EvvelkiStajPeriodlari = temizlenmis.Count > 0
+                            ? JsonSerializer.Serialize(temizlenmis)
+                            : null;
+                    }
+                    catch
+                    {
+                        return Json(new { success = false, message = "Periodlar yanlış formatdadır." });
+                    }
+                }
+
                 isci.YenilenmeTarixi = DateTime.Now;
                 await _unitOfWork.Repository<Isci>().YenileAsync(isci);
                 await _unitOfWork.YaddaSaxlaAsync();
 
-                // Güncəl staj göstəriş üçün
-                var bas = isci.UmumiIsStajiBaslangic ?? isci.IsheQebulTarixi;
-                var ref_ = DateTime.Today;
-                int il = ref_.Year - bas.Year;
-                int ay = ref_.Month - bas.Month;
-                if (ref_.Day < bas.Day) ay--;
-                if (ay < 0) { il--; ay += 12; }
-                int faiz = il < 8 ? 60 : il < 12 ? 80 : 100;
+                var staj = IsciStajHelper.Hesabla(isci, DateTime.Today);
 
                 return Json(new
                 {
                     success = true,
                     message = "Staj yeniləndi.",
-                    stajIl = il,
-                    stajAy = ay,
-                    faiz,
-                    menbe = isci.UmumiIsStajiBaslangic.HasValue ? "ümumi" : "bank"
+                    stajIl = staj.Il,
+                    stajAy = staj.Ay,
+                    stajGun = staj.Gun,
+                    evvelkiIl = staj.EvvelkiIl,
+                    evvelkiAy = staj.EvvelkiAy,
+                    evvelkiGun = staj.EvvelkiGun,
+                    bankIl = staj.BankIl,
+                    bankAy = staj.BankAy,
+                    bankGun = staj.BankGun,
+                    faiz = staj.Faiz
                 });
             }
             catch (Exception ex)

@@ -1435,6 +1435,9 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<DateTime?>("UmumiIsStajiBaslangic")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("EvvelkiStajPeriodlari")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Unvan")
                         .HasColumnType("nvarchar(max)");
 
