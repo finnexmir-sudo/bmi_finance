@@ -150,7 +150,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // ── GET /HR/Maas/Hesabla ─────────────────────────────────
         [HttpGet]
-        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Muhasib)]
         public async Task<IActionResult> Hesabla(int? isciId)
         {
             await HesablaFormSiyahilariDoldur();
@@ -166,7 +166,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // ── POST /HR/Maas/Hesabla ────────────────────────────────
         [HttpPost, ValidateAntiForgeryToken]
-        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Muhasib)]
         public async Task<IActionResult> Hesabla(FerdiHesablaInputDto input)
         {
             if (!ModelState.IsValid)
@@ -683,7 +683,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Muhasib)]
         public async Task<IActionResult> TopluLegvEt(int il, int ay)
         {
             var maaslar = await _unitOfWork.Repository<Maas>()
@@ -1073,7 +1073,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // ── POST /HR/Maas/Sil ────────────────────────────────────
         [HttpPost, ValidateAntiForgeryToken]
-        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Muhasib)]
         public async Task<IActionResult> Sil(int id, int il, int ay)
         {
             var maas = await _unitOfWork.Repository<Maas>().IdIleGetirAsync(id);
