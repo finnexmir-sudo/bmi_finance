@@ -103,19 +103,17 @@ public class MaasService : ServiceAsync<Maas, MaasListDto, MaasCreateDto, MaasUp
                 foreach (var d in detallar)
                     await _unitOfWork.Repository<MaasDetay>().DeleteAsync(d.Id);
 
-                // 3. AyliqQazanc qeydini sil (sistem tərəfindən yazılmışsa)
+                // 3. AyliqQazanc qeydini sil (sistem tərəfindən yazılmışsa) — hard-delete,
+                //    yenidən hesablamada INSERT unique constraint-i pozmasın.
+                //    Manual (ElIleDaxilEdilib=true) qeydlərə toxunmur.
                 var qazancQeyd = await _unitOfWork.Repository<IsciAyliqQazanc>()
                     .Query()
                     .FirstOrDefaultAsync(x => x.IsciId == entity.IsciId
                                            && x.Il == entity.Il
                                            && x.Ay == entity.Ay
-                                           && !x.Silinib
                                            && !x.ElIleDaxilEdilib);
                 if (qazancQeyd != null)
-                {
-                    qazancQeyd.Silinib = true;
-                    qazancQeyd.SilinmeTarixi = now;
-                }
+                    await _unitOfWork.Repository<IsciAyliqQazanc>().DeleteAsync(qazancQeyd.Id);
 
                 // 4. Maaş qeydini hard-delete et (unique index conflict-in qarsisini al)
                 await _unitOfWork.Repository<Maas>().DeleteAsync(entity.Id);
