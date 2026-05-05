@@ -29,6 +29,10 @@
         // Mühasib lazım gələndə bu faizləri dəyişə bilər (məs. hamı 100%).
         XestelikStaj8YasagidaFaizi = 14,   // staj < 8 il → default 60%
         XestelikStaj8_12IlFaizi = 15,      // 8 ≤ staj < 12 il → default 80%
-        XestelikStaj12YuxariFaizi = 16     // staj ≥ 12 il → default 100%
+        XestelikStaj12YuxariFaizi = 16,    // staj ≥ 12 il → default 100%
+
+        // Xəstəlik ödənişinin yeni DSMF-əsaslı düsturu (May 2026+):
+        // GünlükPul = (son 12 ay (DSMF işçi + DSMF şirkət) × Əmsal) ÷ (son 12 ay təqvim günü − xəstəlik təqvim günü)
+        XestelikDsmfEmsali = 17            // default 4
     }
 }

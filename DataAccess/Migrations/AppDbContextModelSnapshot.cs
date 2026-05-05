@@ -1473,6 +1473,14 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<int>("Ay")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("DsmfIsci")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("DsmfIsegoturen")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<bool>("ElIleDaxilEdilib")
                         .HasColumnType("bit");
 
