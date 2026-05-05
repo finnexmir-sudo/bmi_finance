@@ -387,7 +387,7 @@ namespace FinNex.Application.Services.HR
             decimal numerator = dsmfCem * emsal;
             izah.Add(new XestelikIzahDto
             {
-                Addim = "4. Numerator (sürət)",
+                Addim = "4. Bölünən cəm (DSMF × əmsal)",
                 Izah = $"({dsmfIsciCem:N2} + {dsmfIsvCem:N2}) × {emsal:G29} = {numerator:N2}",
                 Mebleg = Math.Round(numerator, 2)
             });
@@ -414,7 +414,7 @@ namespace FinNex.Application.Services.HR
             });
             izah.Add(new XestelikIzahDto
             {
-                Addim = "7. Denominator (məxrəc)",
+                Addim = "7. Bölən gün sayı",
                 Izah = $"{son12AyTeqvimGun} − {son12XstTeqvimGun} = {denominator}",
                 Mebleg = denominator
             });
@@ -423,7 +423,7 @@ namespace FinNex.Application.Services.HR
             decimal birGunluk = denominator > 0 ? numerator / denominator : 0;
             izah.Add(new XestelikIzahDto
             {
-                Addim = "8. Bir günlük ödəniş",
+                Addim = "8. Bir günlük ödəniş (bölünən ÷ bölən)",
                 Izah = $"{numerator:N2} ÷ {denominator} = {birGunluk:N4} ₼/gün",
                 Mebleg = Math.Round(birGunluk, 4)
             });
