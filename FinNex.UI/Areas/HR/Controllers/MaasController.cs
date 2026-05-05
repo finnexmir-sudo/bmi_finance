@@ -224,13 +224,12 @@ namespace FinNex.UI.Areas.HR.Controllers
                 // Cari əsas maaş
                 decimal cariMaas = isci.Maliye?.CariMaas ?? 0;
 
-                // Staj (xəstəlik üçün)
-                var stajBas = isci.UmumiIsStajiBaslangic ?? isci.IsheQebulTarixi;
-                var ref_ = new DateTime(il, ay, 1);
-                int stajIl = ref_.Year - stajBas.Year;
-                int stajAy = ref_.Month - stajBas.Month;
-                if (stajAy < 0) { stajIl--; stajAy += 12; }
-                int stajFaiz = stajIl < 8 ? 60 : stajIl < 12 ? 80 : 100;
+                // Staj (informativ — yeni xəstəlik düsturu staj faizini istifadə etmir,
+                // lakin UI-da göstərmək üçün hesablanır). Bank + əmək kitabçası.
+                var staj = FinNex.Application.Services.HR.IsciStajHelper.Hesabla(isci, new DateTime(il, ay, 1));
+                int stajIl = staj.Il;
+                int stajAy = staj.Ay;
+                int stajFaiz = staj.Faiz;
 
                 var ayBaslangic = new DateTime(il, ay, 1);
                 var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
