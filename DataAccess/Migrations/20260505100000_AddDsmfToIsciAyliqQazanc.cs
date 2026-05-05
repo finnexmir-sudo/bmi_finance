@@ -1,3 +1,6 @@
+using FinNex.DataAccess.Contexts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -19,6 +22,8 @@ namespace FinNex.DataAccess.Migrations
     ///
     /// İdempotentdir.
     /// </summary>
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20260505100000_AddDsmfToIsciAyliqQazanc")]
     public partial class AddDsmfToIsciAyliqQazanc : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
