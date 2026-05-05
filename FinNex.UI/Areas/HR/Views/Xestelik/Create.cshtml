@@ -326,6 +326,9 @@
             isciInp?.addEventListener('change', refresh);
             baslamaInp?.addEventListener('change', refresh);
             bitmeInp?.addEventListener('change', refresh);
+
+            // Səhifə açılanda formda artıq dəyər varsa preview-i göstər
+            refresh();
         })();
     </script>
 }
