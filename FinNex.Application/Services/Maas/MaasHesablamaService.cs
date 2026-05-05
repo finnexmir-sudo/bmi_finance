@@ -817,9 +817,10 @@ namespace FinNex.Application.Services.HR
             // hesablamada bu hissələr çıxılır — qeyri-müəyyən gücləndirməyə yol verməmək üçün)
             try
             {
-                // Bazaya düşən gəlir = brüt - məzuniyyət - xəstəlik + işəgötürən HYS payı
-                // brutMaas artıq hysIsegoturen daxildir, ayrıca əlavə etmək lazım deyil
-                decimal qazanc = brutMaas - mezOdenis - xestelikSirketOdenis;
+                // Bazaya düşən gəlir = brüt - məzuniyyət - xəstəlik - IH07 - VM9821
+                // IH-07 və VM 98.2.1 birdəfəlik ödənişdir — məzuniyyət bazasına daxil edilmir.
+                decimal qazanc = brutMaas - mezOdenis - xestelikSirketOdenis
+                                 - input.IH07Meblegi - input.VM9821Meblegi;
                 if (qazanc < 0) qazanc = 0;
                 await _ayliqQazancService.AutoInsertFromMaasAsync(input.IsciId, input.Il, input.Ay, qazanc);
             }
