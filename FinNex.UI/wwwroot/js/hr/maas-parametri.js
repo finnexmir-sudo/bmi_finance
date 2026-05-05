@@ -17,7 +17,10 @@ const MaasParametri = (() => {
         7: 1, // DsmfIsegoturenFaizi -> Faiz
         8: 1, // IssizlikIsegoturenFaizi -> Faiz
         10: 1, // HysIsegoturenFaizi -> Faiz
-        11: 1  // HysMaxMaasFaizi -> Faiz
+        11: 1, // HysMaxMaasFaizi -> Faiz
+        14: 1, // XestelikStaj8YasagidaFaizi -> Faiz
+        15: 1, // XestelikStaj8_12IlFaizi -> Faiz
+        16: 1  // XestelikStaj12YuxariFaizi -> Faiz
     };
 
     function openCreate() {
@@ -343,6 +346,19 @@ const MaasParametri = (() => {
             if (editBtn) { openEdit(parseInt(editBtn.getAttribute('data-edit-id'))); return; }
             const deleteBtn = e.target.closest('[data-delete-id]');
             if (deleteBtn) { remove(parseInt(deleteBtn.getAttribute('data-delete-id'))); return; }
+
+            // Yeni parametr (default dəyərlə) yaratma — DB-də qeyd yoxdursa
+            const createBtn = e.target.closest('[data-create-nov]');
+            if (createBtn) {
+                openCreate();
+                const nov = createBtn.getAttribute('data-create-nov');
+                const deyer = createBtn.getAttribute('data-create-deyer');
+                document.getElementById('mpNov').value = nov;
+                if (deyer) document.getElementById('mpDeyer').value = deyer;
+                document.getElementById('mpBaslamaTarixi').value = new Date().toISOString().split('T')[0];
+                updateSuffix();
+                return;
+            }
 
             // Tax row-dan "Pillə əlavə et" — növ öncədən seçilir
             const addPilleBtn = e.target.closest('[data-add-pille-nov]');

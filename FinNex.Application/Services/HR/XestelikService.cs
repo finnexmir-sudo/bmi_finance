@@ -35,21 +35,42 @@ namespace FinNex.Application.Services.HR
         // ─────────────────────────────────────────────────────────
         // STAJ — ümumi iş stajı ilə (əvvəlki iş yerləri daxil), staj
         // başlanğıcı yoxdursa bu banka gəlmə tarixini istifadə edir.
-        // Qanun üzrə faizlər:
+        // Qanun üzrə default faizlər:
         //   < 8 il: 60%, 8–12 il: 80%, ≥ 12 il: 100%
+        // Bu faizlər MaasParametri cədvəlində konfiqurasiya edilə bilər
+        // (XestelikStaj8YasagidaFaizi / XestelikStaj8_12IlFaizi / XestelikStaj12YuxariFaizi).
+        // Parametr yoxdursa default-a düşür.
         // ─────────────────────────────────────────────────────────
-        private static (int il, int ay, decimal faiz) HesablaStaj(Isci isci, DateTime referansTarix)
+        private async Task<(int il, int ay, decimal faiz)> HesablaStajAsync(Isci isci, DateTime referansTarix)
         {
             var bas = isci.UmumiIsStajiBaslangic ?? isci.IsheQebulTarixi;
-            if (bas > referansTarix) return (0, 0, 0.60m);
+
+            decimal faizAsagi  = await GetStajFaiziAsync(MaasParametrNovu.XestelikStaj8YasagidaFaizi, referansTarix, 60m) / 100m;
+            decimal faizOrta   = await GetStajFaiziAsync(MaasParametrNovu.XestelikStaj8_12IlFaizi,   referansTarix, 80m) / 100m;
+            decimal faizYuxari = await GetStajFaiziAsync(MaasParametrNovu.XestelikStaj12YuxariFaizi,  referansTarix, 100m) / 100m;
+
+            if (bas > referansTarix) return (0, 0, faizAsagi);
 
             int il = referansTarix.Year - bas.Year;
             int ay = referansTarix.Month - bas.Month;
             if (referansTarix.Day < bas.Day) ay--;
             if (ay < 0) { il--; ay += 12; }
 
-            decimal faiz = il < 8 ? 0.60m : il < 12 ? 0.80m : 1.00m;
+            decimal faiz = il < 8 ? faizAsagi : il < 12 ? faizOrta : faizYuxari;
             return (il, ay, faiz);
+        }
+
+        private async Task<decimal> GetStajFaiziAsync(MaasParametrNovu nov, DateTime referansTarix, decimal defaultFaiz)
+        {
+            var p = (await _unitOfWork.Repository<MaasParametri>()
+                .HamisiniGetirAsync(x =>
+                    x.Aktivdir && !x.Silinib &&
+                    x.Nov == nov &&
+                    x.BaslamaTarixi <= referansTarix &&
+                    (x.BitmeTarixi == null || x.BitmeTarixi >= referansTarix)))
+                .OrderByDescending(x => x.BaslamaTarixi)
+                .FirstOrDefault();
+            return p?.Deyer ?? defaultFaiz;
         }
 
         public async Task<Result<IList<XestelikDto>>> GetListAsync()
@@ -336,7 +357,7 @@ namespace FinNex.Application.Services.HR
                 decimal birGunluk = effektivIsGun > 0 ? SEffektiv / effektivIsGun : 0;
 
                 // ── Staj ──
-                var (stajIl, stajAy, stajFaizi) = HesablaStaj(isci, baslama);
+                var (stajIl, stajAy, stajFaizi) = await HesablaStajAsync(isci, baslama);
 
                 // ── 14 gün per-bülletən limit (illik deyil) ──
                 int sirketGun = Math.Min(isGunSayi, SIRKET_MAX_GUN);
@@ -520,7 +541,7 @@ namespace FinNex.Application.Services.HR
             decimal birGunluk = effektivIsGun > 0 ? SEffektiv / effektivIsGun : 0;
 
             // Staj faizi
-            var (_, _, stajFaizi) = HesablaStaj(isci, xestelik.BaslamaTarixi);
+            var (_, _, stajFaizi) = await HesablaStajAsync(isci, xestelik.BaslamaTarixi);
 
             // 14 gün per-bülletən limit
             int limitQalan = SIRKET_MAX_GUN;

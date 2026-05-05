@@ -23,6 +23,12 @@
 
         // Avans
         AvansMaxFaizi = 12,         // maasin max nece %-i avans ola biler: 30%
-        AvansGunu = 13              // ayin nece-ci gunu avans verilir: 15
+        AvansGunu = 13,             // ayin nece-ci gunu avans verilir: 15
+
+        // Xestelik odenisi staj faizleri (qanun: <8 il→60%, 8–12 il→80%, ≥12 il→100%)
+        // Mühasib lazım gələndə bu faizləri dəyişə bilər (məs. hamı 100%).
+        XestelikStaj8YasagidaFaizi = 14,   // staj < 8 il → default 60%
+        XestelikStaj8_12IlFaizi = 15,      // 8 ≤ staj < 12 il → default 80%
+        XestelikStaj12YuxariFaizi = 16     // staj ≥ 12 il → default 100%
     }
 }
