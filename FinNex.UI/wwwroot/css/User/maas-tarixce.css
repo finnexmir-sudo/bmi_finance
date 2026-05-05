@@ -133,3 +133,60 @@
         height: 280px !important;
     }
 }
+
+/* ── Tək ay görünüşü (1 data point) ──────────────────── */
+.mt-single {
+    padding: 32px 24px;
+    text-align: center;
+}
+.mt-single-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #6366f1;
+    background: #eef2ff;
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 20px;
+    margin-bottom: 24px;
+}
+.mt-single-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    max-width: 720px;
+    margin: 0 auto;
+}
+.mt-single-item {
+    background: #f8f9fb;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px 16px;
+}
+.mt-single-name {
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+.mt-single-val {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a2332;
+}
+.mt-single-val--blue { color: #4338ca; }
+.mt-single-val--green { color: #16a34a; }
+.mt-single-val--red { color: #dc2626; }
+.mt-single-hint {
+    margin-top: 20px;
+    font-size: 12px;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+@media (max-width: 768px) {
+    .mt-single-grid { grid-template-columns: 1fr; }
+}
