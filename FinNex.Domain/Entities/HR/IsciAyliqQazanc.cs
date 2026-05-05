@@ -30,6 +30,18 @@ namespace FinNex.Domain.Entities.HR
         public decimal Qazanc { get; set; }
 
         /// <summary>
+        /// İşçidən tutulan aylıq DSMF məbləği. Xəstəlik ödənişinin yeni
+        /// hesablamasında istifadə olunur.
+        /// </summary>
+        public decimal DsmfIsci { get; set; }
+
+        /// <summary>
+        /// Şirkətin (işəgötürənin) işçi üçün ödədiyi aylıq DSMF məbləği.
+        /// Xəstəlik ödənişinin yeni hesablamasında istifadə olunur.
+        /// </summary>
+        public decimal DsmfIsegoturen { get; set; }
+
+        /// <summary>
         /// true = HR əl ilə daxil edib (tarixi məlumat)
         /// false = sistem avtomatik əlavə edib (yeni hesablama nəticəsi)
         /// </summary>

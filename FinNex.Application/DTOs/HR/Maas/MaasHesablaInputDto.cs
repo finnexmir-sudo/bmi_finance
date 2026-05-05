@@ -47,37 +47,59 @@ namespace FinNex.Application.DTOs.HR.Maas
 
     public class XestelikPreviewDto
     {
-        public int IsGunSayi { get; set; }
+        // Cari bülletənə aid sahələr
+        public int IsGunSayi { get; set; }                     // Köhnə uyğunluq üçün (iş günü)
+        public int TeqvimGunSayi { get; set; }                 // Cari bülletən təqvim günü (yeni qayda)
 
-        // ── Gəlir (S) ──────────────────────────────────────────
-        public decimal S { get; set; }                         // Son 12 ay cəmi qazanc (ham)
-        public decimal Son12XestelikOdenisi { get; set; }      // Bu müddətdə alınmış xəstəlik (çıxılır)
-        public decimal SEffektiv => S - Son12XestelikOdenisi;  // Formulada istifadə olunan gəlir
+        // ── Yeni DSMF-əsaslı düstur sahələri ──────────────────
+        public decimal DsmfIsciCem { get; set; }               // Son 12 ay işçi DSMF cəmi
+        public decimal DsmfIsegoturenCem { get; set; }         // Son 12 ay şirkət DSMF cəmi
+        public decimal DsmfEmsali { get; set; }                // ×4 (parametrdən)
+        public decimal Numerator => (DsmfIsciCem + DsmfIsegoturenCem) * DsmfEmsali;
 
-        // ── İş günləri ─────────────────────────────────────────
-        public int Son12AyIsGunu { get; set; }                 // Son 12 ay iş günü (ham)
-        public int Son12AyXestelikGunu { get; set; }           // Bu müddətdəki xəstəlik günü (çıxılır)
+        public int Son12AyTeqvimGunu { get; set; }             // ~365
+        public int Son12AyXestelikTeqvimGunu { get; set; }     // bu müddətdə xəstəlik təqvim günü
+        public int Denominator => Son12AyTeqvimGunu - Son12AyXestelikTeqvimGunu;
+
+        // ── Köhnə qayda üçün uyğunluq (S, iş günü) ────────────
+        public decimal S { get; set; }
+        public decimal Son12XestelikOdenisi { get; set; }
+        public decimal SEffektiv => S - Son12XestelikOdenisi;
+
+        public int Son12AyIsGunu { get; set; }
+        public int Son12AyXestelikGunu { get; set; }
         public int Son12AyEffektivIsGunu => Son12AyIsGunu - Son12AyXestelikGunu;
 
-        // ── 12 ay intervalı (breakdown göstəriş üçün) ─────────
+        // ── 12 ay intervalı ────────────────────────────────────
         public DateTime? Son12AyBaslangic { get; set; }
         public DateTime? Son12AyBitis { get; set; }
 
-        // ── Bir günlük və ödəniş hesablaması ───────────────────
+        // ── Bir günlük və ödəniş ───────────────────────────────
         public decimal BirGunluk { get; set; }
 
-        // ── Staj və faiz ───────────────────────────────────────
+        // ── Staj (köhnə qayda üçün; yeni qaydada tətbiq olunmur) ──
         public int StajIl { get; set; }
-        public int StajAy { get; set; }                        // 9 il 3 ay göstərmək üçün
-        public decimal StajFaizi { get; set; }                 // 0.60 / 0.80 / 1.00
+        public int StajAy { get; set; }
+        public decimal StajFaizi { get; set; }
 
         // ── Ödəniş bölgüsü ─────────────────────────────────────
         public int SirketGun { get; set; }
         public int DsmfGun { get; set; }
-        public decimal SirketOdenis { get; set; }              // staj faizi tətbiq olunmuş
-        public decimal DsmfOdenis { get; set; }                // staj faizi tətbiq olunmuş (informativ)
+        public decimal SirketOdenis { get; set; }
+        public decimal DsmfOdenis { get; set; }
+
+        // ── Addım-addım izahat (göstəriş üçün) ────────────────
+        public List<XestelikIzahDto> Addimlar { get; set; } = new();
+        public string? Duslar { get; set; }                    // Yığcam düstur sətri
 
         public string? Xeberdarliq { get; set; }
+    }
+
+    public class XestelikIzahDto
+    {
+        public string Addim { get; set; } = "";
+        public string Izah { get; set; } = "";
+        public decimal? Mebleg { get; set; }
     }
 
     // ── TOPLU INPUT ───────────────────────────────────────────────

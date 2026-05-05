@@ -46,6 +46,7 @@ namespace FinNex.Application.DTOs.HR.MaasNovuDtos
             MaasParametrNovu.XestelikStaj8YasagidaFaizi => "Xəstəlik: Staj < 8 il faizi",
             MaasParametrNovu.XestelikStaj8_12IlFaizi => "Xəstəlik: Staj 8–12 il faizi",
             MaasParametrNovu.XestelikStaj12YuxariFaizi => "Xəstəlik: Staj ≥ 12 il faizi",
+            MaasParametrNovu.XestelikDsmfEmsali => "Xəstəlik: DSMF Əmsalı",
             _ => Nov.ToString()
         };
         public MaasParametrTipi Tip { get; set; }
