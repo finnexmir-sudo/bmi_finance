@@ -13,10 +13,7 @@
         <a asp-action="Index" asp-controller="Maas" asp-area="HR" class="fn-btn fn-btn--outline fn-btn--sm">← Maaş siyahısına qayıt</a>
     </div>
 
-    @if (TempData["Error"] != null)
-    {
-        <div class="fn-alert fn-alert--danger">@TempData["Error"]</div>
-    }
+    @* Success/Error _UserLayout.cshtml-də render olunur — burada təkrar etmirik. *@
 
     <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;">
 
