@@ -10,8 +10,6 @@ namespace FinNex.Application.Services.HR
     public class IsciAyliqQazancService : IIsciAyliqQazancService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private const int MAX_QEYD_SAYI = 12;
-
         public IsciAyliqQazancService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
@@ -84,9 +82,6 @@ namespace FinNex.Application.Services.HR
                 await _unitOfWork.Repository<IsciAyliqQazanc>().YaratAsync(entity);
                 await _unitOfWork.YaddaSaxlaAsync();
 
-                // Sliding window: 12-dən çoxsa ən köhnələri sil
-                await SlidingWindowTetbiqEtAsync(isciId);
-
                 return Result.Ok("Qeyd əlavə edildi.");
             }
             catch (Exception ex)
@@ -152,29 +147,5 @@ namespace FinNex.Application.Services.HR
                 .CountAsync();
         }
 
-        // ─────────────────────────────────────────────────────────
-        // SLIDING WINDOW: ən köhnələri silir ki 12 qeyd qalsın
-        // ─────────────────────────────────────────────────────────
-        private async Task SlidingWindowTetbiqEtAsync(int isciId)
-        {
-            var list = await _unitOfWork.Repository<IsciAyliqQazanc>()
-                .Query()
-                .Where(x => x.IsciId == isciId && !x.Silinib)
-                .OrderByDescending(x => x.Il * 12 + x.Ay)
-                .ToListAsync();
-
-            if (list.Count <= MAX_QEYD_SAYI) return;
-
-            // Manuel qeydlər (ElileDaxilEdilib=True) silinmir — yalnız sistem qeydləri
-            var silinecekler = list.Skip(MAX_QEYD_SAYI)
-                .Where(x => !x.ElIleDaxilEdilib)
-                .ToList();
-            foreach (var item in silinecekler)
-            {
-                item.Silinib = true;
-                item.SilinmeTarixi = DateTime.Now;
-            }
-            await _unitOfWork.YaddaSaxlaAsync();
-        }
     }
 }
