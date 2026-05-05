@@ -92,13 +92,40 @@ namespace FinNex.Application.Services.HR
 
         public async Task<Result> AutoInsertFromMaasAsync(int isciId, int il, int ay, decimal qazanc)
         {
-            // Əl ilə daxil edilmiş qeyd varsa üzərinə yazmır — manual data prioritetlidir.
+            // Aktiv qeydi yoxla — manual olarsa toxunma.
             var movcud = await _unitOfWork.Repository<IsciAyliqQazanc>()
                 .Query()
                 .FirstOrDefaultAsync(x => x.IsciId == isciId && x.Il == il && x.Ay == ay && !x.Silinib);
 
             if (movcud != null && movcud.ElIleDaxilEdilib)
                 return Result.Ok("Əl ilə daxil edilmiş qeyd saxlanıldı.");
+
+            if (movcud != null)
+            {
+                movcud.Qazanc = qazanc;
+                movcud.Qeyd = $"Sistem tərəfindən {DateTime.Now:dd.MM.yyyy HH:mm} avtomatik yeniləndi";
+                await _unitOfWork.YaddaSaxlaAsync();
+                return Result.Ok("Qeyd yeniləndi.");
+            }
+
+            // LegvEdildi sonrası Silinib=1 qeyd qalır — unique constraint-i pozmamaq üçün
+            // yeni INSERT etmək əvəzinə həmin qeydi bərpa et.
+            var silinmis = await _unitOfWork.Repository<IsciAyliqQazanc>()
+                .Query()
+                .FirstOrDefaultAsync(x => x.IsciId == isciId && x.Il == il && x.Ay == ay && x.Silinib);
+
+            if (silinmis != null && silinmis.ElIleDaxilEdilib)
+                return Result.Ok("Əl ilə daxil edilmiş silinmiş qeyd saxlanıldı.");
+
+            if (silinmis != null)
+            {
+                silinmis.Silinib = false;
+                silinmis.SilinmeTarixi = null;
+                silinmis.Qazanc = qazanc;
+                silinmis.Qeyd = $"Sistem tərəfindən {DateTime.Now:dd.MM.yyyy HH:mm} bərpa edildi";
+                await _unitOfWork.YaddaSaxlaAsync();
+                return Result.Ok("Silinmiş qeyd bərpa edildi.");
+            }
 
             return await AddOrUpdateAsync(isciId, il, ay, qazanc, elIle: false,
                 qeyd: $"Sistem tərəfindən {DateTime.Now:dd.MM.yyyy HH:mm} avtomatik əlavə edildi");
