@@ -129,8 +129,8 @@
                     </div>
                 </div>
 
-                @* ── DSMF ── *@
-                <div class="xstc-payment xstc-payment--dsmf">
+                @* ── DSMF (yalnız 14 gündən artıq xəstəlikdə görünür) ── *@
+                <div class="xstc-payment xstc-payment--dsmf" id="ppDsmfBlock" style="display:none;">
                     <div class="xstc-pay-head">
                         <i class="bi bi-bank"></i>
                         DSMF (informativ — 14 gündən sonrası)
@@ -311,6 +311,7 @@
                             `${fmt(d.birGunluk).replace(' ₼','')} × ${d.sirketGun}`;
                         document.getElementById('ppDsmfGun').textContent = d.dsmfGun;
                         document.getElementById('ppDsmfOdenis').textContent = fmt(d.dsmfOdenis);
+                        document.getElementById('ppDsmfBlock').style.display = (d.dsmfGun > 0) ? 'block' : 'none';
 
                         if (d.xeberdarliq) {
                             document.getElementById('ppWarn').style.display = 'flex';
