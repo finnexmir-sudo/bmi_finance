@@ -43,6 +43,9 @@ namespace FinNex.Application.DTOs.HR.MaasNovuDtos
             MaasParametrNovu.HysMaxMaasFaizi => "HYS Max Maaş Faizi",
             MaasParametrNovu.AvansMaxFaizi => "Avans Max Faizi",
             MaasParametrNovu.AvansGunu => "Avans Günü",
+            MaasParametrNovu.XestelikStaj8YasagidaFaizi => "Xəstəlik: Staj < 8 il faizi",
+            MaasParametrNovu.XestelikStaj8_12IlFaizi => "Xəstəlik: Staj 8–12 il faizi",
+            MaasParametrNovu.XestelikStaj12YuxariFaizi => "Xəstəlik: Staj ≥ 12 il faizi",
             _ => Nov.ToString()
         };
         public MaasParametrTipi Tip { get; set; }
