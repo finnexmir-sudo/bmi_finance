@@ -3,6 +3,7 @@ using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Entities.Structure;
 using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,26 +13,32 @@ using System.Security.Claims;
 namespace FinNex.UI.Areas.HR.Controllers;
 
 [Area("HR")]
-[Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Rehber + "," + RoleNames.SobeReisi)]
+[Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Rehber + ","
+                 + RoleNames.SobeReisi + "," + RoleNames.Muhasib)]
 public class XercController : Controller
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IBildirisRouter _bildirisRouter;
+    private readonly IWebHostEnvironment _env;
 
-    public XercController(IUnitOfWork unitOfWork, IBildirisRouter bildirisRouter)
+    public XercController(IUnitOfWork unitOfWork, IBildirisRouter bildirisRouter, IWebHostEnvironment env)
     {
         _unitOfWork = unitOfWork;
         _bildirisRouter = bildirisRouter;
+        _env = env;
     }
 
-    // ── GET /HR/Xerc ────────────────────────────────────────
+    // ── GET /HR/Xerc ─────────────────────────────────────────
     public IActionResult Index()
     {
-        ViewData["Title"] = "Xerc Idareetmesi";
+        ViewData["Title"] = "Xərc İdarəetməsi";
+        var isMuhasib = User.IsInRole(RoleNames.Muhasib) || User.IsInRole(RoleNames.Admin)
+                     || User.IsInRole(RoleNames.HR);
+        ViewBag.CanManualCreate = isMuhasib;
         return View();
     }
 
-    // ── GET /HR/Xerc/GetData ────────────────────────────────
+    // ── GET /HR/Xerc/GetData ─────────────────────────────────
     [HttpGet]
     public async Task<IActionResult> GetData(int? status, string? axtaris)
     {
@@ -40,6 +47,7 @@ public class XercController : Controller
             .Where(x => !x.Silinib)
             .Include(x => x.Isci)
             .Include(x => x.Kateqoriya)
+            .Include(x => x.Departament)
             .Include(x => x.TesdiqleyenIsci)
             .AsQueryable();
 
@@ -48,18 +56,22 @@ public class XercController : Controller
 
         if (!string.IsNullOrWhiteSpace(axtaris))
             query = query.Where(x =>
-                x.Isci.Ad.Contains(axtaris) ||
-                x.Isci.Soyad.Contains(axtaris) ||
+                (x.Isci != null && (x.Isci.Ad.Contains(axtaris) || x.Isci.Soyad.Contains(axtaris))) ||
+                (x.Departament != null && x.Departament.Ad.Contains(axtaris)) ||
                 x.Tesvir.Contains(axtaris));
 
         var xercler = await query
             .OrderByDescending(x => x.XercTarixi)
             .ToListAsync();
 
+        var isMuhasibOrAdmin = User.IsInRole(RoleNames.Muhasib) || User.IsInRole(RoleNames.Admin);
+
         var data = xercler.Select(x => new
         {
             id = x.Id,
-            isciAd = x.Isci != null ? $"{x.Isci.Ad} {x.Isci.Soyad}" : "-",
+            isciAd = x.Isci != null ? $"{x.Isci.Ad} {x.Isci.Soyad}" : null,
+            departamentAd = x.Departament?.Ad,
+            manualGiris = x.ManualGiris,
             kateqoriya = x.Kateqoriya?.Ad ?? "-",
             tesvir = x.Tesvir,
             mebleg = x.Mebleg,
@@ -67,35 +79,35 @@ public class XercController : Controller
             status = (int)x.Status,
             statusAd = x.Status switch
             {
-                XercStatus.Muraciet => "Muraciet",
-                XercStatus.SobeReisiTesdiq => "Sobe reisi tesdiq",
-                XercStatus.HrTesdiq => "HR tesdiq",
-                XercStatus.Odenildi => "Odenildi",
-                XercStatus.ImtinaEdildi => "Imtina edildi",
+                XercStatus.Muraciet       => "Müraciət",
+                XercStatus.SobeReisiTesdiq => "Şöbə reisi təsdiq",
+                XercStatus.HrTesdiq       => "HR təsdiq",
+                XercStatus.Odenildi       => "Ödənildi",
+                XercStatus.ImtinaEdildi   => "İmtina edildi",
                 _ => "-"
             },
-            tesdiqleyenAd = x.TesdiqleyenIsci != null ? $"{x.TesdiqleyenIsci.Ad} {x.TesdiqleyenIsci.Soyad}" : null,
+            tesdiqleyenAd = x.TesdiqleyenIsci != null
+                ? $"{x.TesdiqleyenIsci.Ad} {x.TesdiqleyenIsci.Soyad}" : null,
             tesdiqTarixi = x.TesdiqTarixi?.ToString("dd.MM.yyyy"),
             imtinaSebebi = x.ImtinaSebebi,
-            qebzFaylYolu = x.QebzFaylYolu
+            qebzFaylYolu = x.QebzFaylYolu,
+            canOde = isMuhasibOrAdmin
         });
 
         return Json(new { xercler = data });
     }
 
-    // ── POST /HR/Xerc/Tesdiqle ──────────────────────────────
+    // ── POST /HR/Xerc/Tesdiqle ───────────────────────────────
     [HttpPost]
     public async Task<IActionResult> Tesdiqle(int id)
     {
         var xerc = await _unitOfWork.Repository<Xerc>().IdIleGetirAsync(id);
-        if (xerc == null)
-            return NotFound(new { message = "Xerc tapilmadi." });
+        if (xerc == null) return NotFound(new { message = "Xərc tapılmadı." });
 
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var tesdiqIsci = await _unitOfWork.Repository<Isci>()
             .GetirAsync(x => x.AppUserId == userId && !x.Silinib);
 
-        // Advance status based on current
         var oncekiStatus = xerc.Status;
         if (xerc.Status == XercStatus.Muraciet)
             xerc.Status = XercStatus.SobeReisiTesdiq;
@@ -108,18 +120,18 @@ public class XercController : Controller
         await _unitOfWork.Repository<Xerc>().YenileAsync(xerc);
         await _unitOfWork.YaddaSaxlaAsync();
 
-        // İşçiyə mərhələ bildirişi
-        var isciRedirect = Url.Action("Index", "Xerc", new { area = "User" });
-        var mərhələ = xerc.Status == XercStatus.SobeReisiTesdiq ? "Şöbə rəisi" :
-                      xerc.Status == XercStatus.HrTesdiq ? "HR" : "Təsdiqçi";
-        await _bildirisRouter.NotifyIsciAsync(
-            xerc.IsciId,
-            BildirisNovu.XercTesdiq,
-            $"Xərc müraciəti — {mərhələ} təsdiqi",
-            $"{xerc.Mebleg:N2} ₼ xərc müraciətiniz {mərhələ} tərəfindən təsdiqləndi.",
-            redirectUrl: isciRedirect);
+        if (xerc.IsciId.HasValue)
+        {
+            var mərhələ = xerc.Status == XercStatus.SobeReisiTesdiq ? "Şöbə rəisi" :
+                          xerc.Status == XercStatus.HrTesdiq ? "HR" : "Təsdiqçi";
+            await _bildirisRouter.NotifyIsciAsync(
+                xerc.IsciId.Value,
+                BildirisNovu.XercTesdiq,
+                $"Xərc müraciəti — {mərhələ} təsdiqi",
+                $"{xerc.Mebleg:N2} ₼ xərc müraciətiniz {mərhələ} tərəfindən təsdiqləndi.",
+                redirectUrl: Url.Action("Index", "Xerc", new { area = "User" }));
+        }
 
-        // SobeReisi mərhələsindən keçib HR-a gedibsə, HR-a bildiriş
         if (oncekiStatus == XercStatus.Muraciet && xerc.Status == XercStatus.SobeReisiTesdiq)
         {
             await _bildirisRouter.NotifyRolesAsync(
@@ -130,7 +142,6 @@ public class XercController : Controller
                 redirectUrl: Url.Action("Index", "Xerc", new { area = "HR" }),
                 exceptIsciId: xerc.IsciId);
         }
-        // HR mərhələsinə keçibsə, Mühasibə ödəniş sorğusu
         else if (xerc.Status == XercStatus.HrTesdiq)
         {
             await _bildirisRouter.NotifyRolesAsync(
@@ -142,17 +153,16 @@ public class XercController : Controller
                 exceptIsciId: xerc.IsciId);
         }
 
-        return Ok(new { message = "Xerc tesdiqlendi." });
+        return Ok(new { message = "Xərc təsdiqləndi." });
     }
 
-    // ── POST /HR/Xerc/Imtina ────────────────────────────────
+    // ── POST /HR/Xerc/Imtina ─────────────────────────────────
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Imtina(int id, [FromBody] ImtinaDto dto)
     {
         var xerc = await _unitOfWork.Repository<Xerc>().IdIleGetirAsync(id);
-        if (xerc == null)
-            return NotFound(new { message = "Xerc tapilmadi." });
+        if (xerc == null) return NotFound(new { message = "Xərc tapılmadı." });
 
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var tesdiqIsci = await _unitOfWork.Repository<Isci>()
@@ -166,24 +176,29 @@ public class XercController : Controller
         await _unitOfWork.Repository<Xerc>().YenileAsync(xerc);
         await _unitOfWork.YaddaSaxlaAsync();
 
-        var sebebMetn = string.IsNullOrWhiteSpace(dto.Sebeb) ? "" : $" Səbəb: {dto.Sebeb}";
-        await _bildirisRouter.NotifyIsciAsync(
-            xerc.IsciId,
-            BildirisNovu.XercImtina,
-            "Xərc müraciəti rədd edildi",
-            $"{xerc.Mebleg:N2} ₼ xərc müraciətiniz rədd edildi.{sebebMetn}",
-            redirectUrl: Url.Action("Index", "Xerc", new { area = "User" }));
+        if (xerc.IsciId.HasValue)
+        {
+            var sebebMetn = string.IsNullOrWhiteSpace(dto.Sebeb) ? "" : $" Səbəb: {dto.Sebeb}";
+            await _bildirisRouter.NotifyIsciAsync(
+                xerc.IsciId.Value,
+                BildirisNovu.XercImtina,
+                "Xərc müraciəti rədd edildi",
+                $"{xerc.Mebleg:N2} ₼ xərc müraciətiniz rədd edildi.{sebebMetn}",
+                redirectUrl: Url.Action("Index", "Xerc", new { area = "User" }));
+        }
 
-        return Ok(new { message = "Xerc imtina edildi." });
+        return Ok(new { message = "Xərc imtina edildi." });
     }
 
-    // ── POST /HR/Xerc/Ode ───────────────────────────────────
+    // ── POST /HR/Xerc/Ode ────────────────────────────────────
     [HttpPost]
     public async Task<IActionResult> Ode(int id)
     {
+        if (!User.IsInRole(RoleNames.Muhasib) && !User.IsInRole(RoleNames.Admin))
+            return Forbid();
+
         var xerc = await _unitOfWork.Repository<Xerc>().IdIleGetirAsync(id);
-        if (xerc == null)
-            return NotFound(new { message = "Xerc tapilmadi." });
+        if (xerc == null) return NotFound(new { message = "Xərc tapılmadı." });
 
         xerc.Status = XercStatus.Odenildi;
         xerc.TesdiqTarixi = DateTime.Now;
@@ -191,17 +206,107 @@ public class XercController : Controller
         await _unitOfWork.Repository<Xerc>().YenileAsync(xerc);
         await _unitOfWork.YaddaSaxlaAsync();
 
-        await _bildirisRouter.NotifyIsciAsync(
-            xerc.IsciId,
-            BildirisNovu.XercOdenis,
-            "Xərc ödənişi edildi",
-            $"{xerc.Mebleg:N2} ₼ xərc ödənişiniz Mühasibiyyat tərəfindən həyata keçirildi.",
-            redirectUrl: Url.Action("Index", "Xerc", new { area = "User" }));
+        if (xerc.IsciId.HasValue)
+        {
+            await _bildirisRouter.NotifyIsciAsync(
+                xerc.IsciId.Value,
+                BildirisNovu.XercOdenis,
+                "Xərc ödənişi edildi",
+                $"{xerc.Mebleg:N2} ₼ xərc ödənişiniz Mühasibiyyat tərəfindən həyata keçirildi.",
+                redirectUrl: Url.Action("Index", "Xerc", new { area = "User" }));
+        }
 
-        return Ok(new { message = "Xerc odenildi kimi isharelendi." });
+        return Ok(new { message = "Xərc ödənildi kimi işarələndi." });
     }
 
-    // ── GET /HR/Xerc/ExportExcel ────────────────────────────
+    // ── GET /HR/Xerc/ManualCreate ────────────────────────────
+    [HttpGet]
+    public async Task<IActionResult> ManualCreate()
+    {
+        if (!User.IsInRole(RoleNames.Muhasib) && !User.IsInRole(RoleNames.Admin)
+            && !User.IsInRole(RoleNames.HR))
+            return Forbid();
+
+        ViewData["Title"] = "Manual Xərc Girişi";
+        ViewBag.Kateqoriyalar = await _unitOfWork.Repository<XercKateqoriyasi>()
+            .Query().Where(x => x.Aktivdir && !x.Silinib).OrderBy(x => x.Ad).ToListAsync();
+        ViewBag.Departamentler = await _unitOfWork.Repository<Departament>()
+            .Query().Where(x => !x.Silinib).OrderBy(x => x.Ad).ToListAsync();
+        return View();
+    }
+
+    // ── POST /HR/Xerc/ManualCreate ───────────────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ManualCreate(ManualXercCreateDto dto, IFormFile? faktura)
+    {
+        if (!User.IsInRole(RoleNames.Muhasib) && !User.IsInRole(RoleNames.Admin)
+            && !User.IsInRole(RoleNames.HR))
+            return Forbid();
+
+        if (!ModelState.IsValid)
+        {
+            ViewData["Title"] = "Manual Xərc Girişi";
+            ViewBag.Kateqoriyalar = await _unitOfWork.Repository<XercKateqoriyasi>()
+                .Query().Where(x => x.Aktivdir && !x.Silinib).OrderBy(x => x.Ad).ToListAsync();
+            ViewBag.Departamentler = await _unitOfWork.Repository<Departament>()
+                .Query().Where(x => !x.Silinib).OrderBy(x => x.Ad).ToListAsync();
+            return View(dto);
+        }
+
+        string? faylYolu = null;
+        if (faktura != null && faktura.Length > 0)
+        {
+            var ext = Path.GetExtension(faktura.FileName).ToLowerInvariant();
+            var allowed = new[] { ".pdf", ".jpg", ".jpeg", ".png" };
+            if (!allowed.Contains(ext))
+            {
+                ModelState.AddModelError("", "Yalnız PDF, JPG, PNG faylları qəbul edilir.");
+                goto ReturnView;
+            }
+            if (faktura.Length > 10 * 1024 * 1024)
+            {
+                ModelState.AddModelError("", "Fayl ölçüsü 10MB-dan çox ola bilməz.");
+                goto ReturnView;
+            }
+            var dir = Path.Combine(_env.WebRootPath, "uploads", "fakturalar");
+            Directory.CreateDirectory(dir);
+            var fileName = $"{Guid.NewGuid()}{ext}";
+            using var stream = new FileStream(Path.Combine(dir, fileName), FileMode.Create);
+            await faktura.CopyToAsync(stream);
+            faylYolu = $"/uploads/fakturalar/{fileName}";
+        }
+
+        var xerc = new Xerc
+        {
+            IsciId = null,
+            DepartamentId = dto.DepartamentId,
+            ManualGiris = true,
+            KateqoriyaId = dto.KateqoriyaId,
+            Tesvir = dto.Tesvir.Trim(),
+            Mebleg = dto.Mebleg,
+            XercTarixi = dto.XercTarixi,
+            QebzFaylYolu = faylYolu,
+            Status = XercStatus.Odenildi,
+            TesdiqTarixi = DateTime.Now
+        };
+
+        await _unitOfWork.Repository<Xerc>().EleveEtAsync(xerc);
+        await _unitOfWork.YaddaSaxlaAsync();
+
+        TempData["Success"] = "Xərc uğurla qeydə alındı.";
+        return RedirectToAction(nameof(Index));
+
+        ReturnView:
+        ViewData["Title"] = "Manual Xərc Girişi";
+        ViewBag.Kateqoriyalar = await _unitOfWork.Repository<XercKateqoriyasi>()
+            .Query().Where(x => x.Aktivdir && !x.Silinib).OrderBy(x => x.Ad).ToListAsync();
+        ViewBag.Departamentler = await _unitOfWork.Repository<Departament>()
+            .Query().Where(x => !x.Silinib).OrderBy(x => x.Ad).ToListAsync();
+        return View(dto);
+    }
+
+    // ── GET /HR/Xerc/ExportExcel ─────────────────────────────
     [HttpGet]
     public async Task<IActionResult> ExportExcel(int? status)
     {
@@ -210,26 +315,26 @@ public class XercController : Controller
             .Where(x => !x.Silinib)
             .Include(x => x.Isci)
             .Include(x => x.Kateqoriya)
+            .Include(x => x.Departament)
             .AsQueryable();
 
         if (status.HasValue && status >= 0)
             query = query.Where(x => (int)x.Status == status.Value);
 
-        var xercler = await query
-            .OrderByDescending(x => x.XercTarixi)
-            .ToListAsync();
+        var xercler = await query.OrderByDescending(x => x.XercTarixi).ToListAsync();
 
         using var wb = new XLWorkbook();
         var ws = wb.Worksheets.Add("Xercler");
 
-        ws.Cell(1, 1).Value = "Isci";
+        ws.Cell(1, 1).Value = "İşçi / Şöbə";
         ws.Cell(1, 2).Value = "Kateqoriya";
-        ws.Cell(1, 3).Value = "Tesvir";
-        ws.Cell(1, 4).Value = "Mebleg (AZN)";
-        ws.Cell(1, 5).Value = "Xerc Tarixi";
+        ws.Cell(1, 3).Value = "Təsvir";
+        ws.Cell(1, 4).Value = "Məbləğ (AZN)";
+        ws.Cell(1, 5).Value = "Xərc tarixi";
         ws.Cell(1, 6).Value = "Status";
+        ws.Cell(1, 7).Value = "Növ";
 
-        var headerRange = ws.Range(1, 1, 1, 6);
+        var headerRange = ws.Range(1, 1, 1, 7);
         headerRange.Style.Font.Bold = true;
         headerRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#1e2a3b");
         headerRange.Style.Font.FontColor = XLColor.White;
@@ -237,17 +342,29 @@ public class XercController : Controller
         int row = 2;
         foreach (var x in xercler)
         {
-            ws.Cell(row, 1).Value = x.Isci != null ? $"{x.Isci.Ad} {x.Isci.Soyad}" : "-";
+            var kim = x.ManualGiris
+                ? (x.Departament?.Ad ?? "—")
+                : (x.Isci != null ? $"{x.Isci.Ad} {x.Isci.Soyad}" : "—");
+            ws.Cell(row, 1).Value = kim;
             ws.Cell(row, 2).Value = x.Kateqoriya?.Ad ?? "-";
             ws.Cell(row, 3).Value = x.Tesvir;
             ws.Cell(row, 4).Value = x.Mebleg;
             ws.Cell(row, 4).Style.NumberFormat.Format = "#,##0.00";
             ws.Cell(row, 5).Value = x.XercTarixi.ToString("dd.MM.yyyy");
-            ws.Cell(row, 6).Value = x.Status.ToString();
+            ws.Cell(row, 6).Value = x.Status switch
+            {
+                XercStatus.Muraciet        => "Müraciət",
+                XercStatus.SobeReisiTesdiq => "Şöbə reisi təsdiq",
+                XercStatus.HrTesdiq        => "HR təsdiq",
+                XercStatus.Odenildi        => "Ödənildi",
+                XercStatus.ImtinaEdildi    => "İmtina edildi",
+                _ => "-"
+            };
+            ws.Cell(row, 7).Value = x.ManualGiris ? "Manual" : "İşçi müraciəti";
             row++;
         }
 
-        ws.Cell(row, 1).Value = "CEMI";
+        ws.Cell(row, 1).Value = "CƏMİ";
         ws.Cell(row, 1).Style.Font.Bold = true;
         ws.Cell(row, 4).Value = xercler.Sum(x => x.Mebleg);
         ws.Cell(row, 4).Style.NumberFormat.Format = "#,##0.00";
@@ -257,13 +374,22 @@ public class XercController : Controller
 
         using var ms = new MemoryStream();
         wb.SaveAs(ms);
-        var fileName = $"Xercler_Hesabat.xlsx";
         return File(ms.ToArray(),
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "Xercler_Hesabat.xlsx");
     }
 }
 
 public class ImtinaDto
 {
     public string Sebeb { get; set; } = null!;
+}
+
+public class ManualXercCreateDto
+{
+    public int KateqoriyaId { get; set; }
+    public int? DepartamentId { get; set; }
+    public string Tesvir { get; set; } = null!;
+    public decimal Mebleg { get; set; }
+    public DateTime XercTarixi { get; set; } = DateTime.Today;
 }

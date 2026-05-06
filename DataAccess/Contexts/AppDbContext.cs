@@ -855,6 +855,14 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasOne(x => x.Isci)
             .WithMany()
             .HasForeignKey(x => x.IsciId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<Xerc>()
+            .HasOne(x => x.Departament)
+            .WithMany()
+            .HasForeignKey(x => x.DepartamentId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.NoAction);
 
         builder.Entity<Xerc>()
