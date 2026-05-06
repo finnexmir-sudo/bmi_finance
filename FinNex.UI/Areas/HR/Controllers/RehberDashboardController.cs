@@ -617,12 +617,12 @@ namespace FinNex.UI.Areas.HR.Controllers
         [HttpGet]
         public async Task<IActionResult> DavamiyyetIsciAxtar(string q)
         {
-            if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
+            if (string.IsNullOrWhiteSpace(q))
                 return Json(new List<object>());
 
             var isciler = await _isciService.HamisiniGetirAsync(
                 x => x.Status == IsciStatus.Aktiv &&
-                     (x.Ad.Contains(q) || x.Soyad.Contains(q)),
+                     (x.Ad.StartsWith(q) || x.Soyad.StartsWith(q)),
                 izlemeden: true);
 
             var result = isciler.Success
