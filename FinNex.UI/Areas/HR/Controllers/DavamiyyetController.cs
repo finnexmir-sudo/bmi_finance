@@ -189,46 +189,53 @@ namespace FinNex.UI.Areas.HR.Controllers
         [HttpPost]
         public async Task<IActionResult> SaveIsParametri([FromBody] IsParametriDto dto)
         {
-            if (dto == null)
-                return BadRequest(new { error = "Məlumat natamamdır." });
-
-            if (!TimeSpan.TryParse(dto.GirisVaxti, out var giris) ||
-                !TimeSpan.TryParse(dto.CixisVaxti, out var cixis))
-                return BadRequest(new { error = "Vaxt formatı düzgün deyil (HH:mm)." });
-
-            if (dto.GecikmeTolerans < 0 || dto.GecikmeTolerans > 60)
-                return BadRequest(new { error = "Gecikme toleransı 0-60 dəqiqə arasında olmalıdır." });
-
-            if (dto.TezCixmaTolerans < 0 || dto.TezCixmaTolerans > 60)
-                return BadRequest(new { error = "Tez çıxma toleransı 0-60 dəqiqə arasında olmalıdır." });
-
-            var entity = await _unitOfWork.Repository<IsParametri>()
-                .Query()
-                .Where(x => !x.Silinib)
-                .FirstOrDefaultAsync();
-
-            if (entity == null)
+            try
             {
-                entity = new IsParametri
+                if (dto == null)
+                    return BadRequest(new { error = "Məlumat natamamdır." });
+
+                if (!TimeSpan.TryParse(dto.GirisVaxti, out var giris) ||
+                    !TimeSpan.TryParse(dto.CixisVaxti, out var cixis))
+                    return BadRequest(new { error = "Vaxt formatı düzgün deyil (HH:mm)." });
+
+                if (dto.GecikmeTolerans < 0 || dto.GecikmeTolerans > 60)
+                    return BadRequest(new { error = "Gecikme toleransı 0-60 dəqiqə arasında olmalıdır." });
+
+                if (dto.TezCixmaTolerans < 0 || dto.TezCixmaTolerans > 60)
+                    return BadRequest(new { error = "Tez çıxma toleransı 0-60 dəqiqə arasında olmalıdır." });
+
+                var entity = await _unitOfWork.Repository<IsParametri>()
+                    .Query()
+                    .Where(x => !x.Silinib)
+                    .FirstOrDefaultAsync();
+
+                if (entity == null)
                 {
-                    StandartGirisVaxti = giris,
-                    StandartCixisVaxti = cixis,
-                    GecikmeToleransDeqiqe = dto.GecikmeTolerans,
-                    TezCixmaToleransDeqiqe = dto.TezCixmaTolerans
-                };
-                await _unitOfWork.Repository<IsParametri>().YaratAsync(entity);
-            }
-            else
-            {
-                entity.StandartGirisVaxti = giris;
-                entity.StandartCixisVaxti = cixis;
-                entity.GecikmeToleransDeqiqe = dto.GecikmeTolerans;
-                entity.TezCixmaToleransDeqiqe = dto.TezCixmaTolerans;
-                entity.YenilenmeTarixi = DateTime.Now;
-            }
+                    entity = new IsParametri
+                    {
+                        StandartGirisVaxti = giris,
+                        StandartCixisVaxti = cixis,
+                        GecikmeToleransDeqiqe = dto.GecikmeTolerans,
+                        TezCixmaToleransDeqiqe = dto.TezCixmaTolerans
+                    };
+                    await _unitOfWork.Repository<IsParametri>().YaratAsync(entity);
+                }
+                else
+                {
+                    entity.StandartGirisVaxti = giris;
+                    entity.StandartCixisVaxti = cixis;
+                    entity.GecikmeToleransDeqiqe = dto.GecikmeTolerans;
+                    entity.TezCixmaToleransDeqiqe = dto.TezCixmaTolerans;
+                    entity.YenilenmeTarixi = DateTime.Now;
+                }
 
-            await _unitOfWork.YaddaSaxlaAsync();
-            return Ok(new { message = "İş parametrləri yadda saxlandı." });
+                await _unitOfWork.YaddaSaxlaAsync();
+                return Ok(new { message = "İş parametrləri yadda saxlandı." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = "Yadda saxlama xətası: " + ex.Message });
+            }
         }
 
         [HttpGet]
@@ -463,15 +470,21 @@ namespace FinNex.UI.Areas.HR.Controllers
             return Json(result);
         }
 
-        // ── Helper: İsParametri — mövcuddursa yüklə, yoxdursa default qaytır ──
+        // ── Helper: İsParametri — mövcuddursa yüklə, yoxdursa (cədvəl olmasa belə) default qaytır ──
         private async Task<IsParametri> GetIsParametriEntity()
         {
-            var entity = await _unitOfWork.Repository<IsParametri>()
-                .Query().AsNoTracking()
-                .Where(x => !x.Silinib)
-                .FirstOrDefaultAsync();
-
-            return entity ?? new IsParametri();
+            try
+            {
+                var entity = await _unitOfWork.Repository<IsParametri>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib)
+                    .FirstOrDefaultAsync();
+                return entity ?? new IsParametri();
+            }
+            catch
+            {
+                return new IsParametri();
+            }
         }
 
         // ── Helper: shared filtering logic ──

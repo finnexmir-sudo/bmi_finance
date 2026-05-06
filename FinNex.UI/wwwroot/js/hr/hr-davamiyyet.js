@@ -445,6 +445,10 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch(url)
             .then(function (r) { return r.json(); })
             .then(function (data) {
+                if (!data || !data.stats) {
+                    tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><i class="bi bi-exclamation-triangle"></i><div>Serverdən cavab alınmadı. Zəhmət olmasa yenidən cəhd edin.</div></div></td></tr>';
+                    return;
+                }
                 if (data.isParametri) {
                     isParametriData = data.isParametri;
                 }
