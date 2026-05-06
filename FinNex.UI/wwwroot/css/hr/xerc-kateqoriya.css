@@ -135,6 +135,45 @@
     flex-shrink: 0;
 }
 
+/* İkon grid seçici */
+.xk-ikon-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+.xk-ikon-item {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8f9fb;
+    cursor: pointer;
+    font-size: 17px;
+    color: #475569;
+    transition: all 0.15s;
+    padding: 0;
+}
+.xk-ikon-item:hover {
+    border-color: #667eea;
+    background: #eef2ff;
+    color: #667eea;
+    transform: scale(1.1);
+}
+.xk-ikon-item--selected {
+    border-color: #667eea !important;
+    background: #667eea !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px rgba(102,126,234,0.35);
+}
+.xk-ikon-item--none {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
 /* Aktiv checkbox */
 .xk-checkbox-label {
     display: flex;
