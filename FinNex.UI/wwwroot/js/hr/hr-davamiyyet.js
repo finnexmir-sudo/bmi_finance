@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function () {
     inputIsciAxtar.addEventListener('input', function () {
         clearTimeout(searchTimeout);
         var q = inputIsciAxtar.value.trim();
-        if (q.length < 2) { isciResults.style.display = 'none'; return; }
+        if (q.length < 1) { isciResults.style.display = 'none'; return; }
 
         searchTimeout = setTimeout(function () {
             fetch(endpoints.isciAxtar + '?q=' + encodeURIComponent(q))
