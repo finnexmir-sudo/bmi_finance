@@ -269,7 +269,7 @@ public class XercController : Controller
             TesdiqTarixi = DateTime.Now
         };
 
-        await _unitOfWork.Repository<Xerc>().EleveEtAsync(xerc);
+        await _unitOfWork.Repository<Xerc>().YaratAsync(xerc);
         await _unitOfWork.YaddaSaxlaAsync();
 
         TempData["Success"] = "Xərc uğurla qeydə alındı.";
