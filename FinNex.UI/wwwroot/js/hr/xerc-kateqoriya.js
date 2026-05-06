@@ -1,42 +1,50 @@
-// ── Xərc Kateqoriyaları JS ───────────────────────────────
+// Xerc Kateqoriyalari JS
 
 (function () {
     'use strict';
 
-    var modal   = document.getElementById('katModal');
-    var form    = document.getElementById('katForm');
-    var title   = document.getElementById('katModalTitle');
-    var idInput = document.getElementById('katId');
-    var adInput = document.getElementById('katAd');
+    var modal      = document.getElementById('katModal');
+    var form       = document.getElementById('katForm');
+    var title      = document.getElementById('katModalTitle');
+    var idInput    = document.getElementById('katId');
+    var adInput    = document.getElementById('katAd');
     var ikonInput  = document.getElementById('katIkon');
-    var ikonPreview = document.getElementById('ikonPreview');
     var aktivRow   = document.getElementById('aktivRow');
     var aktivCheck = document.getElementById('katAktivdir');
+
+    // Seçilmiş ikonu grid-də işarələ
+    function selectIkon(val) {
+        ikonInput.value = val || '';
+        document.querySelectorAll('.xk-ikon-item').forEach(function (btn) {
+            btn.classList.toggle('xk-ikon-item--selected', btn.dataset.ikon === (val || ''));
+        });
+    }
 
     function openModal(isEdit, data) {
         form.action = isEdit
             ? '/HR/XercKateqoriya/Yenile'
             : '/HR/XercKateqoriya/Yarat';
 
-        title.textContent = isEdit ? 'Kateqoriyanı redaktə et' : 'Yeni kateqoriya';
-        idInput.value  = data?.id   ?? 0;
-        adInput.value  = data?.ad   ?? '';
-        ikonInput.value = data?.ikon ?? '';
-        aktivCheck.checked = data?.aktiv !== 'false';
+        title.textContent  = isEdit ? 'Kateqoriyanı redaktə et' : 'Yeni kateqoriya';
+        idInput.value      = data && data.id   ? data.id   : 0;
+        adInput.value      = data && data.ad   ? data.ad   : '';
+        aktivCheck.checked = !data || data.aktiv !== 'false';
         aktivRow.style.display = isEdit ? 'block' : 'none';
-        updatePreview();
+        selectIkon(data && data.ikon ? data.ikon : '');
         modal.style.display = 'flex';
-        adInput.focus();
+        setTimeout(function () { adInput.focus(); }, 50);
     }
 
     function closeModal() {
         modal.style.display = 'none';
     }
 
-    function updatePreview() {
-        var val = ikonInput.value.trim();
-        ikonPreview.className = 'bi xk-ikon-preview ' + (val || 'bi-tag');
-    }
+    // İkon grid — klik ilə seç
+    document.querySelectorAll('.xk-ikon-item').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            selectIkon(this.dataset.ikon);
+        });
+    });
 
     // Yeni düyməsi
     document.getElementById('btnYeniKat').addEventListener('click', function () {
@@ -47,16 +55,13 @@
     document.querySelectorAll('.xk-edit-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
             openModal(true, {
-                id:   this.dataset.id,
-                ad:   this.dataset.ad,
-                ikon: this.dataset.ikon,
+                id   : this.dataset.id,
+                ad   : this.dataset.ad,
+                ikon : this.dataset.ikon,
                 aktiv: this.dataset.aktiv
             });
         });
     });
-
-    // İkon önizləmə
-    ikonInput.addEventListener('input', updatePreview);
 
     // Modal bağla
     document.getElementById('katModalClose').addEventListener('click', closeModal);
@@ -64,8 +69,6 @@
     modal.addEventListener('click', function (e) {
         if (e.target === this) closeModal();
     });
-
-    // Klaviatura
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && modal.style.display !== 'none') closeModal();
     });

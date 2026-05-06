@@ -118,14 +118,31 @@
             </div>
 
             <div class="fn-form-group" style="padding:12px 24px 0">
-                <label class="fn-label">Bootstrap ikonu <span class="fn-label-hint">(isteğe bağlı)</span></label>
-                <div class="xk-ikon-wrap">
-                    <input type="text" name="ikon" id="katIkon" class="fn-input"
-                           placeholder="bi-tag, bi-car-front, bi-airplane ..." />
-                    <i class="bi xk-ikon-preview" id="ikonPreview"></i>
-                </div>
-                <div class="fn-hint">
-                    <a href="https://icons.getbootstrap.com" target="_blank">Bootstrap Icons</a> siyahısından seçin
+                <label class="fn-label">İkon <span class="fn-label-hint">(isteğe bağlı)</span></label>
+                <input type="hidden" name="ikon" id="katIkon" value="" />
+                <div class="xk-ikon-grid" id="ikonGrid">
+                    <button type="button" class="xk-ikon-item xk-ikon-item--none" data-ikon="" title="İkonsuz">
+                        <span style="font-size:11px;color:#94a3b8">—</span>
+                    </button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-tag-fill"            title="Ümumi"><i class="bi bi-tag-fill"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-cash-stack"          title="Nağd pul"><i class="bi bi-cash-stack"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-car-front-fill"      title="Nəqliyyat"><i class="bi bi-car-front-fill"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-house-fill"          title="İcarə / Ofis"><i class="bi bi-house-fill"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-lightbulb-fill"      title="Kommunal"><i class="bi bi-lightbulb-fill"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-laptop-fill"         title="Texnika"><i class="bi bi-laptop-fill"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-telephone-fill"      title="Rabitə"><i class="bi bi-telephone-fill"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-people-fill"         title="İşçilər"><i class="bi bi-people-fill"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-bag-fill"            title="Alış-veriş"><i class="bi bi-bag-fill"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-tools"               title="Təmir / Texniki"><i class="bi bi-tools"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-heart-pulse-fill"    title="Tibbi"><i class="bi bi-heart-pulse-fill"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-mortarboard-fill"    title="Təlim / Təhsil"><i class="bi bi-mortarboard-fill"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-airplane-fill"       title="Ezamiyyət"><i class="bi bi-airplane-fill"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-graph-up-arrow"      title="Marketinq"><i class="bi bi-graph-up-arrow"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-shield-fill-check"   title="Sığorta"><i class="bi bi-shield-fill-check"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-printer-fill"        title="Çap / Kanselyariya"><i class="bi bi-printer-fill"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-box-seam-fill"       title="Anbar / Material"><i class="bi bi-box-seam-fill"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-cup-hot-fill"        title="Yemək / İçki"><i class="bi bi-cup-hot-fill"></i></button>
+                    <button type="button" class="xk-ikon-item" data-ikon="bi-three-dots"          title="Digər"><i class="bi bi-three-dots"></i></button>
                 </div>
             </div>
 
