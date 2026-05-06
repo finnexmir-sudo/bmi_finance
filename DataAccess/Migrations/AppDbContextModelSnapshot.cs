@@ -957,7 +957,22 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<bool>("Silinib")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("SilenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("SilinmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YaradanIcraciId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("YaradilmaTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YenileyenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("YenilenmeTarixi")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
