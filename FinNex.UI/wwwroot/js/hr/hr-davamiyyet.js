@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var kpiOrtaSaat = document.getElementById('kpiOrtaSaat');
     var kpiXestelik = document.getElementById('kpiXestelik');
     var kpiEzamiyyet = document.getElementById('kpiEzamiyyet');
+    var kpiTezCixan = document.getElementById('kpiTezCixan');
 
     var deviceStatus = document.getElementById('hrdDeviceStatus');
     var deviceText = document.getElementById('hrdDeviceText');
@@ -66,6 +67,26 @@ document.addEventListener('DOMContentLoaded', function () {
     var currentParams = {};
     var currentMode = 'tarix';
     var isGozlenilenMode = false;
+
+    // İş parametrləri — default dəyərlər, GetByTarix cavabında yenilənir
+    var isParametriData = {
+        girisVaxti: '09:00',
+        cixisVaxti: '17:45',
+        gecikmeTolerans: 5,
+        tezCixmaTolerans: 15
+    };
+
+    // "HH:MM" → {hours, minutes}
+    function parseTime(str) {
+        var parts = (str || '00:00').split(':');
+        return { hours: parseInt(parts[0], 10), minutes: parseInt(parts[1], 10) };
+    }
+
+    // DateTime string → "HH:MM" lokal vaxt
+    function toTimeStr(dateStr) {
+        var d = new Date(dateStr);
+        return pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
 
     // ── Tab switching ──
     tabs.forEach(function (tab) {
@@ -88,20 +109,20 @@ document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.hrd-kpi--clickable').forEach(function (k) { k.classList.remove('hrd-kpi--active'); });
 
             if (statusVal === 'gozlenilen') {
-                // Gözlənilən işçilər — ayrı endpoint
                 kpi.classList.add('hrd-kpi--active');
                 loadGozlenilen();
             } else if (statusVal === '') {
-                // "Cəmi" — hamısını göstər, filtr sil
                 selectStatus.value = '';
                 var p = getBaseParams();
                 loadData(p);
             } else if (statusVal === '1,2') {
-                // "Gəlib" — İşdə + Gecikme
                 kpi.classList.add('hrd-kpi--active');
-                // Custom: load without status filter, then client-filter for 1,2
                 var p = getBaseParams();
                 loadData(p, [1, 2]);
+            } else if (statusVal === 'tezCixan') {
+                kpi.classList.add('hrd-kpi--active');
+                var p = getBaseParams();
+                loadData(p, null, true);
             } else {
                 kpi.classList.add('hrd-kpi--active');
                 selectStatus.value = statusVal;
@@ -412,7 +433,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ── Data loading ──
-    function loadData(params, clientFilterStatuses) {
+    // clientFilterStatuses: array of status ints (e.g. [1,2]) or null
+    // filterTezCixan: if true, show only records where cixisVaxti < effective end - tolerans
+    function loadData(params, clientFilterStatuses, filterTezCixan) {
         isGozlenilenMode = false;
         currentParams = params;
         var url = endpoints.getByTarix + '?' + new URLSearchParams(params).toString();
@@ -422,17 +445,30 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch(url)
             .then(function (r) { return r.json(); })
             .then(function (data) {
+                if (data.isParametri) {
+                    isParametriData = data.isParametri;
+                }
                 updateKPI(data.stats);
 
                 var records = data.records;
                 if (clientFilterStatuses && clientFilterStatuses.length > 0) {
                     records = records.filter(function (r) { return clientFilterStatuses.indexOf(r.status) >= 0; });
                 }
+                if (filterTezCixan) {
+                    var cp = parseTime(isParametriData.cixisVaxti);
+                    var cixisTotal = cp.hours * 60 + cp.minutes;
+                    var hedd = cixisTotal - (isParametriData.tezCixmaTolerans || 15);
+                    records = records.filter(function (r) {
+                        if (!r.cixisVaxti) return false;
+                        var d = new Date(r.cixisVaxti);
+                        var dTotal = d.getHours() * 60 + d.getMinutes();
+                        return dTotal < hedd;
+                    });
+                }
 
                 renderTable(records, false);
                 recordCount.textContent = records.length + ' qeyd';
 
-                // Extra stats
                 if (data.stats.enCoxGecikenDept && data.stats.enCoxGecikenDeptSay > 0) {
                     enCoxGecikenEl.textContent = data.stats.enCoxGecikenDept + ' (' + data.stats.enCoxGecikenDeptSay + ' nəfər)';
                     extraStats.style.display = 'flex';
@@ -441,21 +477,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch(function (err) {
-                console.error('Davamiyyət yüklənmədi:', err);
-                tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><i class="bi bi-exclamation-triangle"></i><div>Xəta baş verdi</div></div></td></tr>';
+                console.error('Davamiyyat yuklanmadi:', err);
+                tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><i class="bi bi-exclamation-triangle"></i><div>Xeta bas verdi</div></div></td></tr>';
             });
     }
 
     function updateKPI(stats) {
-        // Null-safe: bütün KPI element-ləri səhifədə mövcud olmaya bilər
-        // (məs. kpiCemi markup-dan çıxarılıb) — guard olmasa .textContent
-        // null üzərində TypeError atır və fetch-in .catch-ı tetiklənir.
         if (kpiGelib) kpiGelib.textContent = stats.gelib ?? 0;
         if (kpiGecikme) kpiGecikme.textContent = stats.gecikme ?? 0;
         if (kpiQayib) kpiQayib.textContent = stats.qayib ?? 0;
         if (kpiIcazeli) kpiIcazeli.textContent = stats.icazeli ?? 0;
         if (kpiXestelik) kpiXestelik.textContent = stats.xestelik ?? 0;
         if (kpiEzamiyyet) kpiEzamiyyet.textContent = stats.ezamiyyet ?? 0;
+        if (kpiTezCixan) kpiTezCixan.textContent = stats.tezCixan ?? 0;
         if (kpiCemi) kpiCemi.textContent = stats.cemi ?? 0;
         if (kpiOrtaSaat) kpiOrtaSaat.textContent = stats.ortaIsSaati ?? 0;
     }
@@ -490,8 +524,25 @@ document.addEventListener('DOMContentLoaded', function () {
             var girisClass = 'hrd-time';
             if (r.girisVaxti) {
                 var gt = new Date(r.girisVaxti);
-                if (gt.getHours() > 9 || (gt.getHours() === 9 && gt.getMinutes() > 5)) {
+                var gp = parseTime(isParametriData.girisVaxti);
+                var gecTolerans = isParametriData.gecikmeTolerans || 5;
+                var hedefDeq = gp.hours * 60 + gp.minutes + gecTolerans;
+                var girisDaq = gt.getHours() * 60 + gt.getMinutes();
+                if (girisDaq > hedefDeq) {
                     girisClass = 'hrd-time hrd-time--late';
+                }
+            }
+
+            // Tez çıxma qeyd — çıxış vaxtı var VƏ erkəndir
+            var cixisClass = 'hrd-time';
+            if (r.cixisVaxti) {
+                var ct = new Date(r.cixisVaxti);
+                var cp2 = parseTime(isParametriData.cixisVaxti);
+                var tezTolerans = isParametriData.tezCixmaTolerans || 15;
+                var cixisHedd = cp2.hours * 60 + cp2.minutes - tezTolerans;
+                var cixisDaq = ct.getHours() * 60 + ct.getMinutes();
+                if (cixisDaq < cixisHedd) {
+                    cixisClass = 'hrd-time hrd-time--early';
                 }
             }
 
@@ -546,7 +597,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 '<td><span class="hrd-dept">' + r.departamentAd + '</span></td>' +
                 '<td><div class="hrd-date">' + tarix + '</div></td>' +
                 '<td><span class="' + girisClass + '">' + giris + '</span></td>' +
-                '<td><span class="hrd-time">' + cixis + '</span></td>' +
+                '<td><span class="' + cixisClass + '">' + cixis + '</span></td>' +
                 '<td>' + duration + '</td>' +
                 '<td>' + badge + '</td>' +
                 actionCell +
@@ -678,6 +729,112 @@ document.addEventListener('DOMContentLoaded', function () {
         checkDevice();
         setInterval(checkDevice, 30000);
     }
+
+    // ── İş Parametrləri Modal ────────────────────────────────────
+    var isParametriModal = document.getElementById('isParametriModal');
+    var btnIsParametri = document.getElementById('btnIsParametri');
+
+    function openIsParametriModal() {
+        var ipGiris = document.getElementById('ipGirisVaxti');
+        var ipCixis = document.getElementById('ipCixisVaxti');
+        var ipGec = document.getElementById('ipGecikmeTolerans');
+        var ipTez = document.getElementById('ipTezCixmaTolerans');
+        var msg = document.getElementById('isParametriMsg');
+        if (ipGiris) ipGiris.value = isParametriData.girisVaxti || '09:00';
+        if (ipCixis) ipCixis.value = isParametriData.cixisVaxti || '17:45';
+        if (ipGec) ipGec.value = isParametriData.gecikmeTolerans ?? 5;
+        if (ipTez) ipTez.value = isParametriData.tezCixmaTolerans ?? 15;
+        if (msg) { msg.style.display = 'none'; msg.textContent = ''; }
+        if (isParametriModal) isParametriModal.style.display = 'flex';
+    }
+
+    function closeIsParametriModal() {
+        if (isParametriModal) isParametriModal.style.display = 'none';
+    }
+
+    if (btnIsParametri) {
+        btnIsParametri.addEventListener('click', openIsParametriModal);
+    }
+    var ipCloseBtn = document.getElementById('isParametriClose');
+    var ipCancelBtn = document.getElementById('isParametriCancel');
+    if (ipCloseBtn) ipCloseBtn.addEventListener('click', closeIsParametriModal);
+    if (ipCancelBtn) ipCancelBtn.addEventListener('click', closeIsParametriModal);
+    if (isParametriModal) {
+        isParametriModal.addEventListener('click', function (e) {
+            if (e.target === isParametriModal) closeIsParametriModal();
+        });
+    }
+
+    var ipSaveBtn = document.getElementById('isParametriSave');
+    if (ipSaveBtn) {
+        ipSaveBtn.addEventListener('click', function () {
+            var giris = (document.getElementById('ipGirisVaxti') || {}).value || '09:00';
+            var cixis = (document.getElementById('ipCixisVaxti') || {}).value || '17:45';
+            var gecTol = parseInt((document.getElementById('ipGecikmeTolerans') || {}).value || '5', 10);
+            var tezTol = parseInt((document.getElementById('ipTezCixmaTolerans') || {}).value || '15', 10);
+            var msg = document.getElementById('isParametriMsg');
+
+            ipSaveBtn.disabled = true;
+            ipSaveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saxlanilir...';
+
+            fetch('/HR/Davamiyyet/SaveIsParametri', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ girisVaxti: giris, cixisVaxti: cixis, gecikmeTolerans: gecTol, tezCixmaTolerans: tezTol })
+            })
+                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+                .then(function (res) {
+                    if (res.ok) {
+                        isParametriData.girisVaxti = giris;
+                        isParametriData.cixisVaxti = cixis;
+                        isParametriData.gecikmeTolerans = gecTol;
+                        isParametriData.tezCixmaTolerans = tezTol;
+                        if (msg) {
+                            msg.style.display = 'block';
+                            msg.style.background = '#f0fdf4';
+                            msg.style.border = '1px solid #bbf7d0';
+                            msg.style.color = '#16a34a';
+                            msg.textContent = res.data.message || 'Yadda saxlandi.';
+                        }
+                        // Reload current data with new thresholds
+                        var p = getBaseParams();
+                        loadData(p);
+                        setTimeout(closeIsParametriModal, 1200);
+                    } else {
+                        if (msg) {
+                            msg.style.display = 'block';
+                            msg.style.background = '#fef2f2';
+                            msg.style.border = '1px solid #fecaca';
+                            msg.style.color = '#dc2626';
+                            msg.textContent = res.data.error || 'Xeta bas verdi.';
+                        }
+                    }
+                })
+                .catch(function () {
+                    if (msg) {
+                        msg.style.display = 'block';
+                        msg.style.color = '#dc2626';
+                        msg.textContent = 'Sebeke xetasi.';
+                    }
+                })
+                .finally(function () {
+                    ipSaveBtn.disabled = false;
+                    ipSaveBtn.innerHTML = '<i class="bi bi-save"></i> Yadda saxla';
+                });
+        });
+    }
+
+    // Fetch IsParametri on page load to get current settings before first data load
+    fetch('/HR/Davamiyyet/GetIsParametri')
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            isParametriData = {
+                girisVaxti: d.girisVaxti || '09:00',
+                cixisVaxti: d.cixisVaxti || '17:45',
+                gecikmeTolerans: d.gecikmeTolerans ?? 5,
+                tezCixmaTolerans: d.tezCixmaTolerans ?? 15
+            };
+        });
 
     // Səhifə ilk açılanda JS render ilə yüklə ki, redaktə/sil düymələri görünsün
     loadData({ tarix: inputTarix.value || toLocalDateStr(new Date()) });

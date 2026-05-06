@@ -39,6 +39,9 @@
             <button id="hrdExport" class="hrd-btn hrd-btn--export" title="Excel-ə ixrac et">
                 <i class="bi bi-file-earmark-excel"></i> Excel
             </button>
+            <button id="btnIsParametri" class="hrd-btn hrd-btn--settings" title="İş saatı parametrləri">
+                <i class="bi bi-gear-fill"></i> Parametrlər
+            </button>
             <div class="hrd-live-pill" id="hrdDeviceStatus">
                 <span class="hrd-live-dot"></span>
                 <span id="hrdDeviceText">Cihaz yoxlanılır...</span>
@@ -109,6 +112,15 @@
             <div class="hrd-kpi-body">
                 <div class="hrd-kpi-val" id="kpiGozlenilen">@gozlenilenSayi</div>
                 <div class="hrd-kpi-lbl">Gözlənilir</div>
+            </div>
+        </div>
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="tezCixan" title="İş saatı bitməmişdən əvvəl çıxanlar">
+            <div class="hrd-kpi-icon" style="background:rgba(234,88,12,.12);color:#ea580c;">
+                <i class="bi bi-box-arrow-right"></i>
+            </div>
+            <div class="hrd-kpi-body">
+                <div class="hrd-kpi-val" id="kpiTezCixan">0</div>
+                <div class="hrd-kpi-lbl">Tez çıxan</div>
             </div>
         </div>
         <div class="hrd-kpi hrd-kpi--stat">
@@ -420,6 +432,49 @@
                     <i class="bi bi-check-lg me-1"></i>Qayıb yaz
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+@* ── İş Parametrləri Modal ── *@
+<div class="xk-modal-overlay" id="isParametriModal" style="display:none">
+    <div class="xk-modal" style="width:480px">
+        <div class="xk-modal-head">
+            <span><i class="bi bi-gear-fill me-2" style="color:#6366f1;"></i>İş saatı parametrləri</span>
+            <button type="button" class="xk-modal-close" id="isParametriClose">&times;</button>
+        </div>
+        <div style="padding:20px 24px 0">
+            <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#4338ca;">
+                <i class="bi bi-info-circle me-1"></i>
+                Bu parametrlər gecikmə və tez çıxma hesablamalarında istifadə olunur. Bəzi günlər üçün xüsusi saatlar <strong>Bayram Günləri</strong> bölməsindən təyin edilə bilər.
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="fn-form-group">
+                    <label class="fn-label">Giriş vaxtı <span class="fn-required">*</span></label>
+                    <input type="time" id="ipGirisVaxti" class="fn-input" value="09:00" />
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Çıxış vaxtı <span class="fn-required">*</span></label>
+                    <input type="time" id="ipCixisVaxti" class="fn-input" value="17:45" />
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Gecikmə toleransı (dəq)</label>
+                    <input type="number" id="ipGecikmeTolerans" class="fn-input" value="5" min="0" max="60" />
+                    <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Giriş vaxtından bu qədər sonra gecikmiş sayılır</div>
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Tez çıxma toleransı (dəq)</label>
+                    <input type="number" id="ipTezCixmaTolerans" class="fn-input" value="15" min="0" max="60" />
+                    <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Çıxış vaxtından bu qədər əvvəl tez çıxmış sayılır</div>
+                </div>
+            </div>
+            <div id="isParametriMsg" style="display:none;margin-top:12px;font-size:13px;padding:10px 14px;border-radius:8px;"></div>
+        </div>
+        <div class="xk-modal-foot">
+            <button type="button" class="fn-btn fn-btn--outline" id="isParametriCancel">Ləğv</button>
+            <button type="button" class="fn-btn fn-btn--primary" id="isParametriSave">
+                <i class="bi bi-save"></i> Yadda saxla
+            </button>
         </div>
     </div>
 </div>
