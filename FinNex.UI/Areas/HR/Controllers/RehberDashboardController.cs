@@ -636,10 +636,11 @@ namespace FinNex.UI.Areas.HR.Controllers
         [HttpGet]
         public async Task<IActionResult> DavamiyyetMovcudTarixler()
         {
+            var bugun = DateTime.Today;
             var tarixler = await _uow.Repository<Davamiyyet>()
                 .Query()
                 .AsNoTracking()
-                .Where(x => !x.Silinib)
+                .Where(x => !x.Silinib && x.Tarix.Date <= bugun)
                 .Select(x => x.Tarix.Date)
                 .Distinct()
                 .OrderByDescending(x => x)
