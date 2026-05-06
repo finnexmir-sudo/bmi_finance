@@ -873,6 +873,12 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<int?>("YenileyenIcraciId")
                         .HasColumnType("int");
 
+                    b.Property<TimeSpan?>("XususiBaslayisVaxti")
+                        .HasColumnType("time(7)");
+
+                    b.Property<TimeSpan?>("XususiBitisVaxti")
+                        .HasColumnType("time(7)");
+
                     b.HasKey("Id");
 
                     b.ToTable("BayramGunleri");
@@ -933,6 +939,52 @@ namespace FinNex.DataAccess.Migrations
                         .IsUnique();
 
                     b.ToTable("Budceler");
+                });
+
+            modelBuilder.Entity("FinNex.Domain.Entities.HR.IsParametri", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("GecikmeToleransDeqiqe")
+                        .HasColumnType("int");
+
+                    b.Property<TimeSpan>("StandartCixisVaxti")
+                        .HasColumnType("time(7)");
+
+                    b.Property<TimeSpan>("StandartGirisVaxti")
+                        .HasColumnType("time(7)");
+
+                    b.Property<int>("TezCixmaToleransDeqiqe")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SilenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Silinib")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SilinmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YaradanIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("YaradilmaTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YenileyenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("YenilenmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("IsParametrleri");
                 });
 
             modelBuilder.Entity("FinNex.Domain.Entities.HR.SirketBudcesi", b =>

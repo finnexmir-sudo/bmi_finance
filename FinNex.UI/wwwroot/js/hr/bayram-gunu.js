@@ -68,6 +68,10 @@ const bgModal = {
                 if (this.mezuniyyetdeHesablanirField) {
                     this.mezuniyyetdeHesablanirField.checked = !!data.mezuniyyetdeHesablanir;
                 }
+                const bgBaslayis = document.getElementById('bgXususiBaslayis');
+                const bgBitis = document.getElementById('bgXususiBitis');
+                if (bgBaslayis) bgBaslayis.value = data.xususiBaslayisVaxti || '';
+                if (bgBitis) bgBitis.value = data.xususiBitisVaxti || '';
                 // Set tip radio
                 const tipId = data.tip === 2 ? 'bgTip2' : 'bgTip1';
                 const radio = document.getElementById(tipId);

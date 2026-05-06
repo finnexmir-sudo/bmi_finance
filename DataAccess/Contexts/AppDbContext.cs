@@ -112,6 +112,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     // Büdcə
     public DbSet<Budce> Budceler { get; set; }
     public DbSet<SirketBudcesi> SirketBudceleri { get; set; }
+    public DbSet<IsParametri> IsParametrler { get; set; }
 
     // Elan
     public DbSet<Elan> Elanlar { get; set; }
