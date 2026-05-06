@@ -42,6 +42,44 @@
 
     @Html.AntiForgeryToken()
 
+    @* ── Şirkət büdcəsi paneli ── *@
+    <div class="sirket-panel fn-card" id="sirketPanel">
+        <div class="sirket-panel-left">
+            <div class="sirket-panel-icon"><i class="bi bi-building"></i></div>
+            <div class="sirket-panel-info">
+                <div class="sirket-panel-title">Şirkət Büdcəsi <span class="sirket-panel-il" id="sirketIlLabel"></span></div>
+                <div class="sirket-panel-sub" id="sirketSub">Yüklənir...</div>
+            </div>
+        </div>
+        <div class="sirket-panel-center" id="sirketCenter" style="display:none">
+            <div class="sirket-stat">
+                <div class="sirket-stat-lbl">Ümumi</div>
+                <div class="sirket-stat-val" id="sirketMebleg">—</div>
+            </div>
+            <div class="sirket-divider"></div>
+            <div class="sirket-stat">
+                <div class="sirket-stat-lbl">Bölüşdürülüb</div>
+                <div class="sirket-stat-val sirket-stat-val--used" id="sirketBolusdurulub">—</div>
+            </div>
+            <div class="sirket-divider"></div>
+            <div class="sirket-stat">
+                <div class="sirket-stat-lbl">Qalıq</div>
+                <div class="sirket-stat-val" id="sirketQaliq">—</div>
+            </div>
+            <div class="sirket-bar-wrap">
+                <div class="sirket-bar">
+                    <div class="sirket-bar-fill" id="sirketBarFill" style="width:0%"></div>
+                </div>
+                <span class="sirket-faiz" id="sirketFaiz">0%</span>
+            </div>
+        </div>
+        <div class="sirket-panel-right">
+            <button type="button" class="fn-btn fn-btn--outline sirket-edit-btn" id="btnSirketEdit">
+                <i class="bi bi-pencil"></i> Büdcəni təyin et
+            </button>
+        </div>
+    </div>
+
     @* ── Xülasə kartlar ── *@
     <div class="budce-summary" id="summaryCards" style="display:none">
         <div class="fn-card budce-sum-card">
@@ -172,6 +210,10 @@
             <div class="budce-modal-info">
                 <div><span class="budce-modal-lbl">Departament:</span> <span id="editDeptAd" style="font-weight:600"></span></div>
                 <div id="editAyRow"><span class="budce-modal-lbl">Ay:</span> <span id="editAyAd" style="font-weight:600"></span></div>
+                <div id="editQaliqRow" style="display:none;margin-top:4px;padding-top:4px;border-top:1px solid #e2e8f0">
+                    <span class="budce-modal-lbl">Şirkət büdcəsindən qalıq:</span>
+                    <span id="editQaliqMebleg" style="font-weight:700;color:#16a34a"></span>
+                </div>
             </div>
             <div class="fn-form-group" style="margin-top:16px">
                 <label class="fn-label">Plan məbləği (AZN) <span class="fn-required">*</span></label>
@@ -195,6 +237,62 @@
         <div class="budce-modal-footer">
             <button type="button" class="fn-btn fn-btn--outline" id="btnModalCancel">Ləğv</button>
             <button type="button" class="fn-btn fn-btn--primary" id="btnModalSave">
+                <i class="bi bi-save"></i> Yadda saxla
+            </button>
+        </div>
+    </div>
+</div>
+
+@* ── Şirkət büdcəsi modalı ── *@
+<div class="budce-modal-overlay" id="sirketModal" style="display:none">
+    <div class="budce-modal">
+        <div class="budce-modal-header">
+            <div>
+                <h3 style="margin:0;font-size:16px;font-weight:700;color:#1a1d21">Şirkət Büdcəsi</h3>
+                <p style="margin:4px 0 0;font-size:12px;color:#64748b" id="sirketModalSub">İllik büdcəni daxil edin</p>
+            </div>
+            <button type="button" class="xk-modal-close" id="btnSirketModalClose">&times;</button>
+        </div>
+        <div class="budce-modal-body">
+            <div class="fn-form-group">
+                <label class="fn-label">Şirkət büdcəsi (AZN) <span class="fn-required">*</span></label>
+                <input type="number" id="sirketMeblegInput" class="fn-input" step="0.01" min="0" placeholder="0.00" />
+                <div class="fn-hint">Bu məbləğ şöbə planlarının cəmi ilə müqayisə ediləcək</div>
+            </div>
+            <div class="fn-form-group">
+                <label class="fn-label">Qeyd <span class="fn-label-hint">(isteğe bağlı)</span></label>
+                <textarea id="sirketQeydInput" class="fn-input" rows="2" placeholder="Büdcənin mənbəyi, qeydlər..."></textarea>
+            </div>
+            <div class="sirket-modal-dist" id="sirketModalDistWrap" style="display:none">
+                <div class="sirket-modal-dist-title">
+                    <i class="bi bi-diagram-3"></i> Şöbələrə bölüşdür
+                </div>
+                <p class="sirket-modal-dist-desc">
+                    Seçilmiş məbləği bütün şöbələrə bərabər bölmək istəyirsiniz?
+                </p>
+                <div class="fn-form-row" style="gap:10px;align-items:flex-end">
+                    <div class="fn-form-group" style="flex:1;margin-bottom:0">
+                        <label class="fn-label">Ay</label>
+                        <select id="bereberAy" class="fn-input">
+                            <option value="0">— Bütün aylar —</option>
+                            <option value="1">Yanvar</option><option value="2">Fevral</option>
+                            <option value="3">Mart</option><option value="4">Aprel</option>
+                            <option value="5">May</option><option value="6">İyun</option>
+                            <option value="7">İyul</option><option value="8">Avqust</option>
+                            <option value="9">Sentyabr</option><option value="10">Oktyabr</option>
+                            <option value="11">Noyabr</option><option value="12">Dekabr</option>
+                        </select>
+                    </div>
+                    <button type="button" class="fn-btn fn-btn--outline" id="btnBereberBol" style="margin-bottom:0">
+                        <i class="bi bi-distribute-vertical"></i> Bərabər böl
+                    </button>
+                </div>
+                <div id="bereberBolResult" style="margin-top:8px;font-size:12px;color:#16a34a;display:none"></div>
+            </div>
+        </div>
+        <div class="budce-modal-footer">
+            <button type="button" class="fn-btn fn-btn--outline" id="btnSirketModalCancel">Ləğv</button>
+            <button type="button" class="fn-btn fn-btn--primary" id="btnSirketModalSave">
                 <i class="bi bi-save"></i> Yadda saxla
             </button>
         </div>

@@ -935,6 +935,39 @@ namespace FinNex.DataAccess.Migrations
                     b.ToTable("Budceler");
                 });
 
+            modelBuilder.Entity("FinNex.Domain.Entities.HR.SirketBudcesi", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Il")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Mebleg")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Qeyd")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("Silinib")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("YaradilmaTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Il")
+                        .IsUnique();
+
+                    b.ToTable("SirketBudceleri");
+                });
+
             modelBuilder.Entity("FinNex.Domain.Entities.HR.Davamiyyet", b =>
                 {
                     b.Property<int>("Id")

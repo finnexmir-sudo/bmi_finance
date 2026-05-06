@@ -111,6 +111,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
 
     // Büdcə
     public DbSet<Budce> Budceler { get; set; }
+    public DbSet<SirketBudcesi> SirketBudceleri { get; set; }
 
     // Elan
     public DbSet<Elan> Elanlar { get; set; }
@@ -898,6 +899,11 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .Property(x => x.PlanMebleg).HasPrecision(18, 2);
         builder.Entity<Budce>()
             .Property(x => x.FaktikiMebleg).HasPrecision(18, 2);
+
+        builder.Entity<SirketBudcesi>()
+            .HasIndex(x => x.Il).IsUnique();
+        builder.Entity<SirketBudcesi>()
+            .Property(x => x.Mebleg).HasPrecision(18, 2);
 
         // ── Elan ──────────────────────────────────────────────
         builder.Entity<Elan>()
