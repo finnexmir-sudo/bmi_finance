@@ -19,12 +19,17 @@ namespace FinNex.DataAccess.Migrations
                 )
                 BEGIN
                     CREATE TABLE SirketBudceleri (
-                        Id          INT IDENTITY(1,1) PRIMARY KEY,
-                        Il          INT            NOT NULL,
-                        Mebleg      DECIMAL(18,2)  NOT NULL DEFAULT 0,
-                        Qeyd        NVARCHAR(500)  NULL,
-                        Silinib     BIT            NOT NULL DEFAULT 0,
-                        YaradilmaTarixi DATETIME2  NOT NULL DEFAULT GETDATE()
+                        Id                  INT IDENTITY(1,1) PRIMARY KEY,
+                        Il                  INT            NOT NULL,
+                        Mebleg              DECIMAL(18,2)  NOT NULL DEFAULT 0,
+                        Qeyd                NVARCHAR(500)  NULL,
+                        Silinib             BIT            NOT NULL DEFAULT 0,
+                        YaradilmaTarixi     DATETIME2      NOT NULL DEFAULT GETDATE(),
+                        YaradanIcraciId     INT            NULL,
+                        YenileyenIcraciId   INT            NULL,
+                        SilenIcraciId       INT            NULL,
+                        YenilenmeTarixi     DATETIME2      NULL,
+                        SilinmeTarixi       DATETIME2      NULL
                     );
 
                     CREATE UNIQUE INDEX UX_SirketBudceleri_Il
