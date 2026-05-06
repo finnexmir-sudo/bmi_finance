@@ -53,10 +53,38 @@ namespace FinNex.UI.Areas.HR.Controllers
         {
             try
             {
+                var parametri = await GetIsParametriEntity();
+                var standartCixis = parametri.StandartCixisVaxti;
+                var tezCixmaTolerans = TimeSpan.FromMinutes(parametri.TezCixmaToleransDeqiqe);
+                var efektivCixisHeddi = standartCixis - tezCixmaTolerans;
+
                 // KPI-lar filter-dən ƏVVƏL hesablanır ki, status filtri cədvələ təsir
-                // etsə də, yuxarıdakı statistika sabit qalsın (istifadəçi filtrlə işləyəndə
-                // bütün KPI-ların sıfra düşməsi pis UX-dir).
+                // etsə də, yuxarıdakı statistika sabit qalsın.
                 var umumi = await GetFilteredData(tarix, baslangic, son, isciId, null);
+
+                // Tez çıxanlar: çıxış vaxtı var VƏ efektiv bitmə həddindən əvvəl çıxıb
+                // Bayram günləri üçün xüsusi bitmə saatı varsa onu nəzərə al
+                var tezCixanSayi = 0;
+                if (tarix.HasValue)
+                {
+                    var hedefTarix = tarix.Value.Date;
+                    var bayram = await _unitOfWork.Repository<BayramGunu>()
+                        .Query().AsNoTracking()
+                        .Where(x => !x.Silinib && x.Tarix.Date == hedefTarix && x.XususiBitisVaxti.HasValue)
+                        .FirstOrDefaultAsync();
+                    var gunCixis = bayram?.XususiBitisVaxti ?? standartCixis;
+                    var gunHedd = gunCixis - tezCixmaTolerans;
+                    tezCixanSayi = umumi.Count(x =>
+                        x.CixisVaxti.HasValue &&
+                        x.CixisVaxti.Value.TimeOfDay < gunHedd);
+                }
+                else
+                {
+                    tezCixanSayi = umumi.Count(x =>
+                        x.CixisVaxti.HasValue &&
+                        x.CixisVaxti.Value.TimeOfDay < efektivCixisHeddi);
+                }
+
                 var result = status.HasValue
                     ? umumi.Where(x => (int)x.Status == status.Value).ToList()
                     : umumi;
@@ -74,7 +102,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                     qayibSebebi = x.QayibSebebi ?? ""
                 }).OrderByDescending(x => x.tarix).ThenBy(x => x.isciTamAd).ToList();
 
-                // Stats — umumi üzərindən (filter olsa belə bütün KPI-lar görünsün)
+                // Stats — umumi üzərindən
                 var gelib = umumi.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
                 var gecikme = umumi.Count(x => x.Status == DavamiyyetStatus.Gecikme);
                 var qayib = umumi.Count(x => x.Status == DavamiyyetStatus.Qayib);
@@ -106,18 +134,84 @@ namespace FinNex.UI.Areas.HR.Controllers
                         icazeli,
                         xestelik,
                         ezamiyyet,
+                        tezCixan = tezCixanSayi,
                         cemi = umumi.Count,
                         ortaIsSaati,
                         enCoxGecikenDept = enCoxGecikenDept?.ad ?? "-",
                         enCoxGecikenDeptSay = enCoxGecikenDept?.say ?? 0
+                    },
+                    isParametri = new
+                    {
+                        girisVaxti = parametri.StandartGirisVaxti.ToString(@"hh\:mm"),
+                        cixisVaxti = parametri.StandartCixisVaxti.ToString(@"hh\:mm"),
+                        gecikmeTolerans = parametri.GecikmeToleransDeqiqe,
+                        tezCixmaTolerans = parametri.TezCixmaToleransDeqiqe
                     }
                 });
             }
             catch (Exception ex)
             {
-                // Server-side log — prod-da ILogger istifadə olunmalıdır
                 return StatusCode(500, new { error = ex.Message });
             }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetIsParametri()
+        {
+            var p = await GetIsParametriEntity();
+            return Json(new
+            {
+                id = p.Id,
+                girisVaxti = p.StandartGirisVaxti.ToString(@"hh\:mm"),
+                cixisVaxti = p.StandartCixisVaxti.ToString(@"hh\:mm"),
+                gecikmeTolerans = p.GecikmeToleransDeqiqe,
+                tezCixmaTolerans = p.TezCixmaToleransDeqiqe
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveIsParametri([FromBody] IsParametriDto dto)
+        {
+            if (dto == null)
+                return BadRequest(new { error = "Məlumat natamamdır." });
+
+            if (!TimeSpan.TryParse(dto.GirisVaxti, out var giris) ||
+                !TimeSpan.TryParse(dto.CixisVaxti, out var cixis))
+                return BadRequest(new { error = "Vaxt formatı düzgün deyil (HH:mm)." });
+
+            if (dto.GecikmeTolerans < 0 || dto.GecikmeTolerans > 60)
+                return BadRequest(new { error = "Gecikme toleransı 0-60 dəqiqə arasında olmalıdır." });
+
+            if (dto.TezCixmaTolerans < 0 || dto.TezCixmaTolerans > 60)
+                return BadRequest(new { error = "Tez çıxma toleransı 0-60 dəqiqə arasında olmalıdır." });
+
+            var entity = await _unitOfWork.Repository<IsParametri>()
+                .Query()
+                .Where(x => !x.Silinib)
+                .FirstOrDefaultAsync();
+
+            if (entity == null)
+            {
+                entity = new IsParametri
+                {
+                    StandartGirisVaxti = giris,
+                    StandartCixisVaxti = cixis,
+                    GecikmeToleransDeqiqe = dto.GecikmeTolerans,
+                    TezCixmaToleransDeqiqe = dto.TezCixmaTolerans
+                };
+                await _unitOfWork.Repository<IsParametri>().YaratAsync(entity);
+            }
+            else
+            {
+                entity.StandartGirisVaxti = giris;
+                entity.StandartCixisVaxti = cixis;
+                entity.GecikmeToleransDeqiqe = dto.GecikmeTolerans;
+                entity.TezCixmaToleransDeqiqe = dto.TezCixmaTolerans;
+                entity.YenilenmeTarixi = DateTime.Now;
+            }
+
+            await _unitOfWork.YaddaSaxlaAsync();
+            return Ok(new { message = "İş parametrləri yadda saxlandı." });
         }
 
         [HttpGet]
@@ -352,6 +446,17 @@ namespace FinNex.UI.Areas.HR.Controllers
             return Json(result);
         }
 
+        // ── Helper: İsParametri — mövcuddursa yüklə, yoxdursa default qaytır ──
+        private async Task<IsParametri> GetIsParametriEntity()
+        {
+            var entity = await _unitOfWork.Repository<IsParametri>()
+                .Query().AsNoTracking()
+                .Where(x => !x.Silinib)
+                .FirstOrDefaultAsync();
+
+            return entity ?? new IsParametri();
+        }
+
         // ── Helper: shared filtering logic ──
         private async Task<IList<Application.DTOs.HR.Davamiyyet.DavamiyyetListDto>> GetFilteredData(
             DateTime? tarix, DateTime? baslangic, DateTime? son, int? isciId, int? status)
@@ -408,5 +513,13 @@ namespace FinNex.UI.Areas.HR.Controllers
     public class QayibSilRequest
     {
         public int Id { get; set; }
+    }
+
+    public class IsParametriDto
+    {
+        public string GirisVaxti { get; set; } = "09:00";
+        public string CixisVaxti { get; set; } = "17:45";
+        public int GecikmeTolerans { get; set; } = 5;
+        public int TezCixmaTolerans { get; set; } = 15;
     }
 }

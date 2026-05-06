@@ -65,7 +65,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                 tarix = entity.Tarix.ToString("yyyy-MM-dd"),
                 herIlTeyinOlunur = entity.HerIlTeyinOlunur,
                 mezuniyyetdeHesablanir = entity.MezuniyyetdeHesablanir,
-                tip = (int)entity.Tip
+                tip = (int)entity.Tip,
+                xususiBaslayisVaxti = entity.XususiBaslayisVaxti.HasValue ? entity.XususiBaslayisVaxti.Value.ToString(@"hh\:mm") : "",
+                xususiBitisVaxti = entity.XususiBitisVaxti.HasValue ? entity.XususiBitisVaxti.Value.ToString(@"hh\:mm") : ""
             });
         }
 
@@ -73,7 +75,8 @@ namespace FinNex.UI.Areas.HR.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([FromForm] string ad, [FromForm] DateTime baslangicTarix,
             [FromForm] DateTime? bitisTarix, [FromForm] bool herIlTeyinOlunur,
-            [FromForm] bool mezuniyyetdeHesablanir = false, [FromForm] int tip = 1)
+            [FromForm] bool mezuniyyetdeHesablanir = false, [FromForm] int tip = 1,
+            [FromForm] string? xususiBaslayisVaxti = null, [FromForm] string? xususiBitisVaxti = null)
         {
             if (string.IsNullOrWhiteSpace(ad))
                 return Json(new { success = false, message = "Ad daxil edin." });
@@ -83,6 +86,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return Json(new { success = false, message = "Bitis tarixi baslangicdan evvel ola bilmez." });
 
             var gunTipi = tip == 2 ? GunTipi.IsGunu : GunTipi.Bayram;
+            TimeSpan? basVaxt = string.IsNullOrWhiteSpace(xususiBaslayisVaxti) ? null : TimeSpan.TryParse(xususiBaslayisVaxti, out var bv) ? bv : null;
+            TimeSpan? bitVaxt = string.IsNullOrWhiteSpace(xususiBitisVaxti) ? null : TimeSpan.TryParse(xususiBitisVaxti, out var biv) ? biv : null;
 
             var repo = _unitOfWork.Repository<BayramGunu>();
             int sayi = 0;
@@ -95,7 +100,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                     Tarix = gun,
                     HerIlTeyinOlunur = herIlTeyinOlunur,
                     MezuniyyetdeHesablanir = mezuniyyetdeHesablanir,
-                    Tip = gunTipi
+                    Tip = gunTipi,
+                    XususiBaslayisVaxti = basVaxt,
+                    XususiBitisVaxti = bitVaxt
                 };
                 await repo.YaratAsync(entity);
                 sayi++;
@@ -111,7 +118,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit([FromForm] int id, [FromForm] string ad, [FromForm] DateTime baslangicTarix,
             [FromForm] bool herIlTeyinOlunur, [FromForm] bool mezuniyyetdeHesablanir = false,
-            [FromForm] int tip = 1)
+            [FromForm] int tip = 1, [FromForm] string? xususiBaslayisVaxti = null, [FromForm] string? xususiBitisVaxti = null)
         {
             if (string.IsNullOrWhiteSpace(ad))
                 return Json(new { success = false, message = "Ad daxil edin." });
@@ -127,6 +134,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             entity.HerIlTeyinOlunur = herIlTeyinOlunur;
             entity.MezuniyyetdeHesablanir = mezuniyyetdeHesablanir;
             entity.Tip = tip == 2 ? GunTipi.IsGunu : GunTipi.Bayram;
+            entity.XususiBaslayisVaxti = string.IsNullOrWhiteSpace(xususiBaslayisVaxti) ? null : TimeSpan.TryParse(xususiBaslayisVaxti, out var bv) ? bv : null;
+            entity.XususiBitisVaxti = string.IsNullOrWhiteSpace(xususiBitisVaxti) ? null : TimeSpan.TryParse(xususiBitisVaxti, out var biv) ? biv : null;
             entity.YenilenmeTarixi = DateTime.Now;
 
             await repo.YenileAsync(entity);

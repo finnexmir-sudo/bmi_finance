@@ -729,3 +729,21 @@
     color: #667eea;
     font-weight: 600;
 }
+
+/* ── Tez çıxma vaxt rengi ────────────────────────────── */
+.hrd-time--early {
+    color: #ea580c;
+    font-weight: 600;
+}
+
+/* ── Parametrlər düyməsi ─────────────────────────────── */
+.hrd-btn--settings {
+    background: #f8faff;
+    color: #6366f1;
+    border: 1.5px solid #c7d2fe;
+    gap: 6px;
+}
+.hrd-btn--settings:hover {
+    background: #eef2ff;
+    border-color: #818cf8;
+}
