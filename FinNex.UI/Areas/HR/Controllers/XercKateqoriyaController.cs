@@ -21,6 +21,7 @@ public class XercKateqoriyaController : Controller
         ViewData["Title"] = "Xərc Kateqoriyaları";
         var list = await _uow.Repository<XercKateqoriyasi>()
             .Query().Where(x => !x.Silinib)
+            .Include(x => x.Xercler)
             .OrderBy(x => x.Ad).ToListAsync();
         return View(list);
     }
