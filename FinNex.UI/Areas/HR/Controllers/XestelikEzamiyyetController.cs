@@ -60,7 +60,13 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> Create()
         {
             await FillCreateViewBagsAsync();
-            return View(new MezuniyyetCreateDto { Nov = MezuniyyetNovu.Ezamiyyet });
+            var today = DateTime.Today;
+            return View(new MezuniyyetCreateDto
+            {
+                Nov = MezuniyyetNovu.Ezamiyyet,
+                BaslamaTarixi = today,
+                BitmeTarixi = today
+            });
         }
 
         [HttpPost]
