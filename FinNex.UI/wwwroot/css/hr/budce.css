@@ -1,5 +1,139 @@
 /* ── Büdcə Planlaması ────────────────────────────────── */
 
+/* ── Şirkət büdcəsi paneli ── */
+.sirket-panel {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 18px 24px;
+    margin-bottom: 16px;
+    border-left: 4px solid #667eea;
+    flex-wrap: wrap;
+}
+.sirket-panel-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+}
+.sirket-panel-icon {
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+.sirket-panel-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1d21;
+}
+.sirket-panel-il {
+    font-size: 12px;
+    font-weight: 600;
+    color: #667eea;
+    background: #eef2ff;
+    padding: 1px 7px;
+    border-radius: 20px;
+    margin-left: 4px;
+}
+.sirket-panel-sub {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.sirket-panel-center {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex: 1;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.sirket-stat {
+    text-align: center;
+    padding: 0 20px;
+}
+.sirket-stat-lbl {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 3px;
+}
+.sirket-stat-val {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a1d21;
+    white-space: nowrap;
+}
+.sirket-stat-val--used { color: #7c3aed; }
+.sirket-divider {
+    width: 1px;
+    height: 36px;
+    background: #e2e8f0;
+    flex-shrink: 0;
+}
+.sirket-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 20px;
+    flex: 1;
+    min-width: 140px;
+}
+.sirket-bar {
+    flex: 1;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+}
+.sirket-bar-fill {
+    height: 100%;
+    background: #667eea;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+.sirket-bar-fill--warn { background: #f59e0b; }
+.sirket-bar-fill--over { background: #dc2626; }
+.sirket-faiz {
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    white-space: nowrap;
+}
+
+.sirket-panel-right { flex-shrink: 0; margin-left: auto; }
+.sirket-edit-btn { font-size: 13px; }
+
+/* Bölüşdür bölməsi modal içində */
+.sirket-modal-dist {
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+}
+.sirket-modal-dist-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #15803d;
+    margin-bottom: 6px;
+}
+.sirket-modal-dist-desc {
+    font-size: 12px;
+    color: #166534;
+    margin: 0 0 12px;
+}
+
 .budce-actions {
     display: flex;
     align-items: center;

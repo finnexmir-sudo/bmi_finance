@@ -209,6 +209,107 @@ public class BudceController : Controller
         return Ok(new { message = msg });
     }
 
+    // ── GET /HR/Budce/GetSirketBudce?il=2026 ───────────────────
+    [HttpGet]
+    public async Task<IActionResult> GetSirketBudce(int il)
+    {
+        var sb = await _unitOfWork.Repository<SirketBudcesi>()
+            .GetirAsync(x => !x.Silinib && x.Il == il);
+
+        var umumiMebleg = sb?.Mebleg ?? 0;
+
+        var bolusdurulub = await _unitOfWork.Repository<Budce>()
+            .Query()
+            .Where(x => !x.Silinib && x.Il == il)
+            .SumAsync(x => (decimal?)x.PlanMebleg) ?? 0;
+
+        var qaliq = umumiMebleg - bolusdurulub;
+
+        return Json(new
+        {
+            yoxdur       = umumiMebleg == 0,
+            mebleg       = umumiMebleg,
+            bolusdurulub,
+            qaliq,
+            faiz         = umumiMebleg > 0 ? Math.Round(bolusdurulub / umumiMebleg * 100, 1) : 0m,
+            qeyd         = sb?.Qeyd
+        });
+    }
+
+    // ── POST /HR/Budce/SetSirketBudce ───────────────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetSirketBudce([FromBody] SirketBudcesiDto dto)
+    {
+        if (dto.Il < 2020 || dto.Mebleg < 0)
+            return BadRequest(new { message = "Yanlış məlumat." });
+
+        var existing = await _unitOfWork.Repository<SirketBudcesi>()
+            .GetirAsync(x => !x.Silinib && x.Il == dto.Il);
+
+        if (existing != null)
+        {
+            existing.Mebleg = dto.Mebleg;
+            existing.Qeyd   = dto.Qeyd;
+            await _unitOfWork.Repository<SirketBudcesi>().YenileAsync(existing);
+        }
+        else
+        {
+            await _unitOfWork.Repository<SirketBudcesi>().YaratAsync(new SirketBudcesi
+            {
+                Il     = dto.Il,
+                Mebleg = dto.Mebleg,
+                Qeyd   = dto.Qeyd
+            });
+        }
+
+        await _unitOfWork.YaddaSaxlaAsync();
+        return Ok(new { message = "Şirkət büdcəsi yadda saxlanıldı." });
+    }
+
+    // ── POST /HR/Budce/BereberBol ───────────────────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> BereberBol([FromBody] BereberBolDto dto)
+    {
+        if (dto.Il < 2020 || dto.Ay < 1 || dto.Ay > 12 || dto.Mebleg <= 0)
+            return BadRequest(new { message = "Yanlış məlumat." });
+
+        var departamentlar = await _unitOfWork.Repository<Departament>()
+            .Query().Where(x => !x.Silinib).ToListAsync();
+
+        if (departamentlar.Count == 0)
+            return Ok(new { message = "Departament tapılmadı." });
+
+        var pay = Math.Round(dto.Mebleg / departamentlar.Count, 2);
+
+        foreach (var d in departamentlar)
+        {
+            var existing = await _unitOfWork.Repository<Budce>()
+                .GetirAsync(x => !x.Silinib && x.DepartamentId == d.Id && x.Il == dto.Il && x.Ay == dto.Ay);
+
+            if (existing != null)
+            {
+                existing.PlanMebleg = pay;
+                await _unitOfWork.Repository<Budce>().YenileAsync(existing);
+            }
+            else
+            {
+                await _unitOfWork.Repository<Budce>().YaratAsync(new Budce
+                {
+                    DepartamentId = d.Id,
+                    Il            = dto.Il,
+                    Ay            = dto.Ay,
+                    PlanMebleg    = pay,
+                    FaktikiMebleg = 0
+                });
+            }
+        }
+
+        await _unitOfWork.YaddaSaxlaAsync();
+        return Ok(new { message = $"{departamentlar.Count} şöbəyə {pay:N2} ₼ paylandı." });
+    }
+
     // ── GET /HR/Budce/ExportExcel?il=2026 ───────────────────
     [HttpGet]
     public async Task<IActionResult> ExportExcel(int il)
@@ -337,4 +438,18 @@ public class BudceCreateDto
     public decimal PlanMebleg    { get; set; }
     public string? Qeyd          { get; set; }
     public bool    TopluTetbiq   { get; set; }
+}
+
+public class SirketBudcesiDto
+{
+    public int     Il     { get; set; }
+    public decimal Mebleg { get; set; }
+    public string? Qeyd   { get; set; }
+}
+
+public class BereberBolDto
+{
+    public int     Il     { get; set; }
+    public int     Ay     { get; set; }
+    public decimal Mebleg { get; set; }
 }
