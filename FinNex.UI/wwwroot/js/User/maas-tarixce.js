@@ -53,13 +53,13 @@
                     }).join('');
                 }
 
-                function section(title, icon, arr, sign, colorClass, bgClass) {
+                function section(title, icon, arr, sign, colorClass, bgClass, hideTotal) {
                     if (arr.length === 0) return '';
                     var total = arr.reduce(function (s, x) { return s + x.mebleg; }, 0);
                     return '<div class="mt-detay-section ' + bgClass + '">' +
                         '<div class="mt-detay-section-head">' +
                             '<span><i class="bi ' + icon + '"></i> ' + title + '</span>' +
-                            '<span class="mt-detay-section-total ' + colorClass + '"><span class="mt-detay-section-cem">Cəmi:</span> ' + sign + formatMoney(total) + ' ₼</span>' +
+                            (hideTotal ? '' : '<span class="mt-detay-section-total ' + colorClass + '"><span class="mt-detay-section-cem">Cəmi:</span> ' + sign + formatMoney(total) + ' ₼</span>') +
                         '</div>' +
                         rows(arr, sign, colorClass) +
                     '</div>';
@@ -77,7 +77,7 @@
                     section('Gəlirlər', 'bi-plus-circle-fill', gelirlər, '+', 'mt-val-green', 'mt-section-green') +
                     section('Tutulmalar (işçidən)', 'bi-dash-circle-fill', kesintilər, '−', 'mt-val-red', 'mt-section-red') +
                     section('İşəgötürən xərcləri', 'bi-building', sirket, '', 'mt-val-gray', 'mt-section-gray') +
-                    section('Məlumat üçün', 'bi-info-circle', melumat, '', 'mt-val-blue', 'mt-section-blue') +
+                    section('Məlumat üçün', 'bi-info-circle', melumat, '', 'mt-val-blue', 'mt-section-blue', true) +
 
                     '<div class="mt-detay-summary">' +
                         '<div class="mt-detay-sum-row">' +
