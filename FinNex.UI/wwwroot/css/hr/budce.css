@@ -111,8 +111,29 @@
     white-space: nowrap;
 }
 
-.sirket-panel-right { flex-shrink: 0; margin-left: auto; }
+.sirket-panel-right {
+    flex-shrink: 0;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
 .sirket-edit-btn { font-size: 13px; }
+.sirket-undo-btn {
+    font-size: 12px;
+    padding: 6px 12px;
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1.5px solid #fed7aa;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.15s;
+}
+.sirket-undo-btn:hover {
+    background: #ffedd5;
+    border-color: #fb923c;
+}
 
 /* Bölüşdür bölməsi modal içində */
 .sirket-modal-dist {
