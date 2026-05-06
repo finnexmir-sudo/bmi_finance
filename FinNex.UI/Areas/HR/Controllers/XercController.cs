@@ -227,12 +227,7 @@ public class XercController : Controller
             && !User.IsInRole(RoleNames.HR))
             return Forbid();
 
-        ViewData["Title"] = "Manual Xərc Girişi";
-        ViewBag.Kateqoriyalar = await _unitOfWork.Repository<XercKateqoriyasi>()
-            .Query().Where(x => x.Aktivdir && !x.Silinib).OrderBy(x => x.Ad).ToListAsync();
-        ViewBag.Departamentler = await _unitOfWork.Repository<Departament>()
-            .Query().Where(x => !x.Silinib).OrderBy(x => x.Ad).ToListAsync();
-        return View();
+        return await ManualCreateViewAsync();
     }
 
     // ── POST /HR/Xerc/ManualCreate ───────────────────────────
@@ -244,38 +239,21 @@ public class XercController : Controller
             && !User.IsInRole(RoleNames.HR))
             return Forbid();
 
-        if (!ModelState.IsValid)
-        {
-            ViewData["Title"] = "Manual Xərc Girişi";
-            ViewBag.Kateqoriyalar = await _unitOfWork.Repository<XercKateqoriyasi>()
-                .Query().Where(x => x.Aktivdir && !x.Silinib).OrderBy(x => x.Ad).ToListAsync();
-            ViewBag.Departamentler = await _unitOfWork.Repository<Departament>()
-                .Query().Where(x => !x.Silinib).OrderBy(x => x.Ad).ToListAsync();
-            return View(dto);
-        }
-
         string? faylYolu = null;
         if (faktura != null && faktura.Length > 0)
         {
             var ext = Path.GetExtension(faktura.FileName).ToLowerInvariant();
             var allowed = new[] { ".pdf", ".jpg", ".jpeg", ".png" };
             if (!allowed.Contains(ext))
-            {
                 ModelState.AddModelError("", "Yalnız PDF, JPG, PNG faylları qəbul edilir.");
-                goto ReturnView;
-            }
-            if (faktura.Length > 10 * 1024 * 1024)
-            {
+            else if (faktura.Length > 10 * 1024 * 1024)
                 ModelState.AddModelError("", "Fayl ölçüsü 10MB-dan çox ola bilməz.");
-                goto ReturnView;
-            }
-            var dir = Path.Combine(_env.WebRootPath, "uploads", "fakturalar");
-            Directory.CreateDirectory(dir);
-            var fileName = $"{Guid.NewGuid()}{ext}";
-            using var stream = new FileStream(Path.Combine(dir, fileName), FileMode.Create);
-            await faktura.CopyToAsync(stream);
-            faylYolu = $"/uploads/fakturalar/{fileName}";
+            else
+                faylYolu = await SaveFakturaAsync(faktura, ext);
         }
+
+        if (!ModelState.IsValid)
+            return await ManualCreateViewAsync(dto);
 
         var xerc = new Xerc
         {
@@ -296,14 +274,26 @@ public class XercController : Controller
 
         TempData["Success"] = "Xərc uğurla qeydə alındı.";
         return RedirectToAction(nameof(Index));
+    }
 
-        ReturnView:
+    private async Task<string> SaveFakturaAsync(IFormFile faktura, string ext)
+    {
+        var dir = Path.Combine(_env.WebRootPath, "uploads", "fakturalar");
+        Directory.CreateDirectory(dir);
+        var fileName = $"{Guid.NewGuid()}{ext}";
+        using var stream = new FileStream(Path.Combine(dir, fileName), FileMode.Create);
+        await faktura.CopyToAsync(stream);
+        return $"/uploads/fakturalar/{fileName}";
+    }
+
+    private async Task<IActionResult> ManualCreateViewAsync(ManualXercCreateDto? dto = null)
+    {
         ViewData["Title"] = "Manual Xərc Girişi";
         ViewBag.Kateqoriyalar = await _unitOfWork.Repository<XercKateqoriyasi>()
             .Query().Where(x => x.Aktivdir && !x.Silinib).OrderBy(x => x.Ad).ToListAsync();
         ViewBag.Departamentler = await _unitOfWork.Repository<Departament>()
             .Query().Where(x => !x.Silinib).OrderBy(x => x.Ad).ToListAsync();
-        return View(dto);
+        return View("ManualCreate", dto);
     }
 
     // ── GET /HR/Xerc/ExportExcel ─────────────────────────────
