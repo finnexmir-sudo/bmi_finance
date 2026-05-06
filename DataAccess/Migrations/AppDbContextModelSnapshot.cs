@@ -3167,8 +3167,14 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<string>("ImtinaSebebi")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("IsciId")
+                    b.Property<int?>("IsciId")
                         .HasColumnType("int");
+
+                    b.Property<int?>("DepartamentId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("ManualGiris")
+                        .HasColumnType("bit");
 
                     b.Property<int>("KateqoriyaId")
                         .HasColumnType("int");
@@ -3220,6 +3226,8 @@ namespace FinNex.DataAccess.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("IsciId");
+
+                    b.HasIndex("DepartamentId");
 
                     b.HasIndex("KateqoriyaId");
 
@@ -5768,8 +5776,12 @@ namespace FinNex.DataAccess.Migrations
                     b.HasOne("FinNex.Domain.Entities.HR.Isci", "Isci")
                         .WithMany()
                         .HasForeignKey("IsciId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("FinNex.Domain.Entities.Structure.Departament", "Departament")
+                        .WithMany()
+                        .HasForeignKey("DepartamentId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("FinNex.Domain.Entities.HR.XercKateqoriyasi", "Kateqoriya")
                         .WithMany("Xercler")
@@ -5781,6 +5793,8 @@ namespace FinNex.DataAccess.Migrations
                         .WithMany()
                         .HasForeignKey("TesdiqleyenIsciId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Departament");
 
                     b.Navigation("Isci");
 
