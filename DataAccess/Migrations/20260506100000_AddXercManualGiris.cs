@@ -40,8 +40,8 @@ namespace FinNex.DataAccess.Migrations
                 BEGIN
                     ALTER TABLE Xercler ADD DepartamentId int NULL;
                     ALTER TABLE Xercler
-                        ADD CONSTRAINT FK_Xercler_Departamentler_DepartamentId
-                        FOREIGN KEY (DepartamentId) REFERENCES Departamentler(Id);
+                        ADD CONSTRAINT FK_Xercler_Departament_DepartamentId
+                        FOREIGN KEY (DepartamentId) REFERENCES Departament(Id);
                 END
 
                 -- 3. ManualGiris sütunu
@@ -60,9 +60,9 @@ namespace FinNex.DataAccess.Migrations
             migrationBuilder.Sql(@"
                 IF EXISTS (
                     SELECT 1 FROM sys.foreign_keys
-                    WHERE name = 'FK_Xercler_Departamentler_DepartamentId'
+                    WHERE name = 'FK_Xercler_Departament_DepartamentId'
                 )
-                    ALTER TABLE Xercler DROP CONSTRAINT FK_Xercler_Departamentler_DepartamentId;
+                    ALTER TABLE Xercler DROP CONSTRAINT FK_Xercler_Departament_DepartamentId;
 
                 IF EXISTS (
                     SELECT 1 FROM sys.columns
