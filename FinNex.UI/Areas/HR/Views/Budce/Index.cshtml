@@ -277,8 +277,14 @@
                     <i class="bi bi-diagram-3"></i> Şöbələrə bölüşdür
                 </div>
                 <p class="sirket-modal-dist-desc">
-                    Seçilmiş məbləği bütün şöbələrə bərabər bölmək istəyirsiniz?
+                    Bölüşdürüləcək məbləği daxil edin (boş buraxsanız tam büdcə bölünür).
                 </p>
+                <div class="fn-form-group" style="margin-bottom:10px">
+                    <label class="fn-label">Bölüşdürüləcək məbləğ (AZN)</label>
+                    <input type="number" id="bereberMebleg" class="fn-input" step="0.01" min="0.01"
+                           placeholder="Boş = tam büdcə" />
+                    <div class="fn-hint" id="bereberMeblegHint"></div>
+                </div>
                 <div class="fn-form-row" style="gap:10px;align-items:flex-end">
                     <div class="fn-form-group" style="flex:1;margin-bottom:0">
                         <label class="fn-label">Ay</label>
