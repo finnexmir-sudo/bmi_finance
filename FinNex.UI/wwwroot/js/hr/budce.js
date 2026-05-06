@@ -10,6 +10,7 @@
     var cachedSirket    = null;
     var currentIl       = null;
     var undoSnapshot    = null;   // bölüşdürmədən əvvəlki planlar
+    var UNDO_KEY        = 'budce_undo_snapshot';
 
     function fmt(val) {
         var n = Number(val) || 0;
@@ -39,6 +40,8 @@
             renderTable(cachedData);
             renderSummary(cachedData);
             renderSirketPanel(cachedSirket);
+            // localStorage-da undo varsa düyməni göstər
+            showUndoBtn(!!loadUndo());
         }).catch(function () {
             body.innerHTML = '<tr><td colspan="' + TOTAL_COLS + '" class="budce-empty">Xeta bas verdi</td></tr>';
         });
@@ -131,6 +134,29 @@
         });
     }
 
+    // localStorage undo idarəsi
+    function saveUndo(snap) {
+        try { localStorage.setItem(UNDO_KEY, JSON.stringify({ il: currentIl, snap: snap })); } catch(e) {}
+        showUndoBtn(true);
+    }
+    function loadUndo() {
+        try {
+            var raw = localStorage.getItem(UNDO_KEY);
+            if (!raw) return null;
+            var obj = JSON.parse(raw);
+            return (obj && obj.il == currentIl) ? obj.snap : null;
+        } catch(e) { return null; }
+    }
+    function clearUndo() {
+        try { localStorage.removeItem(UNDO_KEY); } catch(e) {}
+        showUndoBtn(false);
+        document.getElementById('bereberBolResult').style.display = 'none';
+    }
+    function showUndoBtn(show) {
+        var wrap = document.getElementById('sirketUndoWrap');
+        if (wrap) wrap.style.display = show ? 'block' : 'none';
+    }
+
     // Snapshot çək — bölüşdürmədən əvvəl cari planları yadda saxla
     function snapshotPlans(aylar) {
         if (!cachedData || !cachedData.departamentlar) return [];
@@ -172,8 +198,9 @@
         document.getElementById('btnTesdiqBeli').onclick = function () {
             tesdiqEl.style.display = 'none';
 
-            // Snapshot saxla
+            // Snapshot saxla — localStorage-da da
             undoSnapshot = snapshotPlans(aylar);
+            saveUndo(undoSnapshot);
 
             var btn = document.getElementById('btnBereberBol');
             btn.disabled = true;
@@ -205,7 +232,12 @@
     }
 
     function geriQaytar() {
-        if (!undoSnapshot || undoSnapshot.length === 0) return;
+        // localStorage-dan da yoxla
+        if (!undoSnapshot) undoSnapshot = loadUndo();
+        if (!undoSnapshot || undoSnapshot.length === 0) {
+            alert('Geri qaytarılacaq plan tapılmadı. Yalnız bu seansda edilən son bölüşdürmə geri qaytarıla bilər.');
+            return;
+        }
 
         var btn = document.getElementById('btnGeriQaytar');
         btn.disabled = true;
@@ -219,7 +251,7 @@
         .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
         .then(function () {
             undoSnapshot = null;
-            document.getElementById('bereberBolResult').style.display = 'none';
+            clearUndo();
             loadData();
         })
         .catch(function () { alert('Bərpa zamanı xeta bas verdi.'); })
@@ -474,6 +506,7 @@
     document.getElementById('btnSirketModalSave').addEventListener('click', saveSirketBudce);
     document.getElementById('btnBereberBol').addEventListener('click', bereberBol);
     document.getElementById('btnGeriQaytar').addEventListener('click', geriQaytar);
+    document.getElementById('btnGeriQaytarPanel').addEventListener('click', geriQaytar);
 
     document.getElementById('editModal').addEventListener('click', function (e) {
         if (e.target === this) closeModal();
