@@ -906,6 +906,9 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         builder.Entity<SirketBudcesi>()
             .Property(x => x.Mebleg).HasPrecision(18, 2);
 
+        builder.Entity<IsParametri>()
+            .ToTable("IsParametrleri");
+
         // ── Elan ──────────────────────────────────────────────
         builder.Entity<Elan>()
             .HasOne(x => x.GonderenIsci)
