@@ -194,8 +194,56 @@
     padding: 0 24px 20px;
 }
 
+.xerc-badge--manual {
+    background: #f0f9ff;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+.xerc-tesvir {
+    max-width: 240px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.xerc-alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+.xerc-alert--success {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+.xerc-alert--error {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.xerc-manual-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #15803d;
+    margin-bottom: 4px;
+}
+
 @media (max-width: 768px) {
-    .xerc-hr-actions {
-        flex-wrap: wrap;
-    }
+    .xerc-hr-actions { flex-wrap: wrap; }
+    .xerc-tesvir { max-width: 160px; }
 }
