@@ -1,0 +1,138 @@
+@model FinNex.UI.Areas.HR.Controllers.ManualXercCreateDto
+@{
+    ViewData["Title"] = "Manual Xərc Girişi";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var kateqoriyalar = ViewBag.Kateqoriyalar as List<FinNex.Domain.Entities.HR.XercKateqoriyasi>;
+    var departamentler = ViewBag.Departamentler as List<FinNex.Domain.Entities.Structure.Departament>;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/xerc.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hr/xerc.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Manual Xərc Girişi</div>
+            <div class="fn-page-sub">Şirkətin şöbə üzrə xərclərini birbaşa qeydə alın</div>
+        </div>
+        <a asp-area="HR" asp-controller="Xerc" asp-action="Index"
+           class="fn-btn fn-btn--outline">&#8592; Geri</a>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+    {
+        <div class="xerc-alert xerc-alert--error">
+            @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <div>@err.ErrorMessage</div>
+            }
+        </div>
+    }
+
+    <div class="fn-form-wrap">
+        <form asp-area="HR" asp-controller="Xerc" asp-action="ManualCreate"
+              method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+
+            <div class="fn-card fn-card--form">
+
+                @* Şöbə *@
+                <div class="fn-form-group">
+                    <label class="fn-label">
+                        Şöbə <span class="fn-required">*</span>
+                    </label>
+                    <select name="DepartamentId" class="fn-input" required>
+                        <option value="">— Seçin —</option>
+                        @if (departamentler != null)
+                        {
+                            foreach (var d in departamentler)
+                            {
+                                <option value="@d.Id"
+                                    @(Model?.DepartamentId == d.Id ? "selected" : "")>@d.Ad</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                @* Kateqoriya *@
+                <div class="fn-form-group">
+                    <label class="fn-label">
+                        Kateqoriya <span class="fn-required">*</span>
+                    </label>
+                    <select name="KateqoriyaId" class="fn-input" required>
+                        <option value="">— Seçin —</option>
+                        @if (kateqoriyalar != null)
+                        {
+                            foreach (var k in kateqoriyalar)
+                            {
+                                <option value="@k.Id"
+                                    @(Model?.KateqoriyaId == k.Id ? "selected" : "")>@k.Ad</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                @* Məbləğ + Tarix *@
+                <div class="fn-form-row">
+                    <div class="fn-form-group">
+                        <label class="fn-label">
+                            Məbləğ (AZN) <span class="fn-required">*</span>
+                        </label>
+                        <input type="number" name="Mebleg" class="fn-input"
+                               step="0.01" min="0.01" required placeholder="0.00"
+                               value="@(Model != null && Model.Mebleg > 0 ? Model.Mebleg.ToString("F2") : "")" />
+                    </div>
+                    <div class="fn-form-group">
+                        <label class="fn-label">
+                            Xərc tarixi <span class="fn-required">*</span>
+                        </label>
+                        <input type="date" name="XercTarixi" class="fn-input" required
+                               value="@((Model?.XercTarixi ?? DateTime.Today).ToString("yyyy-MM-dd"))" />
+                    </div>
+                </div>
+
+                @* Təsvir *@
+                <div class="fn-form-group">
+                    <label class="fn-label">
+                        Təsvir <span class="fn-required">*</span>
+                    </label>
+                    <textarea name="Tesvir" class="fn-input" rows="3" required
+                              placeholder="Xərcin məqsədi, təchizatçı, faktura nömrəsi və s...">@(Model?.Tesvir)</textarea>
+                </div>
+
+                @* Faktura *@
+                <div class="fn-form-group">
+                    <label class="fn-label">
+                        Faktura / Sənəd
+                        <span class="fn-label-hint">(isteğe bağlı)</span>
+                    </label>
+                    <input type="file" name="faktura" class="fn-input"
+                           accept=".pdf,.jpg,.jpeg,.png" />
+                    <div class="fn-hint">PDF, JPG, PNG (max 10MB)</div>
+                </div>
+
+                @* Info *@
+                <div class="fn-info-box xerc-manual-info">
+                    <i class="bi bi-check-circle-fill" style="color:#16a34a;font-size:15px;flex-shrink:0"></i>
+                    <div>
+                        <strong>Birbaşa qeydiyyat:</strong> Bu xərc işçi müraciəti olmadan bilavasitə
+                        <em>Ödənildi</em> statusu ilə qeydə alınır. Heç bir təsdiq addımı tələb olunmur.
+                    </div>
+                </div>
+
+                @* Düymələr *@
+                <div class="fn-form-actions">
+                    <a asp-area="HR" asp-controller="Xerc" asp-action="Index"
+                       class="fn-btn fn-btn--outline">Ləğv et</a>
+                    <button type="submit" class="fn-btn fn-btn--primary">
+                        <i class="bi bi-save"></i> Qeydə al
+                    </button>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>

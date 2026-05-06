@@ -1,9 +1,16 @@
+using FinNex.Domain.Entities.Structure;
+
 namespace FinNex.Domain.Entities.HR
 {
     public class Xerc : BaseEntity
     {
-        public int IsciId { get; set; }
-        public Isci Isci { get; set; } = null!;
+        public int? IsciId { get; set; }
+        public Isci? Isci { get; set; }
+
+        public int? DepartamentId { get; set; }
+        public Departament? Departament { get; set; }
+
+        public bool ManualGiris { get; set; } = false;
 
         public int KateqoriyaId { get; set; }
         public XercKateqoriyasi Kateqoriya { get; set; } = null!;
