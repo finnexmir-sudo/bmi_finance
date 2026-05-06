@@ -276,7 +276,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     dpText.textContent = pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear();
                     dpClose();
                     document.querySelectorAll('.hrd-kpi--clickable').forEach(function (k) { k.classList.remove('hrd-kpi--active'); });
-                    loadData({ tarix: iso });
+                    var params = { tarix: iso };
+                    if (selectStatus.value) params.status = selectStatus.value;
+                    loadData(params);
                 });
             });
         }
