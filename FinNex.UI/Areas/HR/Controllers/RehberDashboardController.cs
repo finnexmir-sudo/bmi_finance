@@ -633,6 +633,22 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         [HttpGet]
+        [HttpGet]
+        public async Task<IActionResult> DavamiyyetMovcudTarixler()
+        {
+            var tarixler = await _uow.Repository<Davamiyyet>()
+                .Query()
+                .AsNoTracking()
+                .Where(x => !x.Silinib)
+                .Select(x => x.Tarix.Date)
+                .Distinct()
+                .OrderByDescending(x => x)
+                .Take(365)
+                .ToListAsync();
+
+            return Json(tarixler.Select(t => t.ToString("yyyy-MM-dd")).ToList());
+        }
+
         public async Task<IActionResult> DavamiyyetExportExcel(DateTime? tarix, DateTime? baslangic, DateTime? son, int? isciId, int? status)
         {
             var result = await GetDavamiyyetFilteredData(tarix, baslangic, son, isciId, status);
