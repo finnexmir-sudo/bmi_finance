@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = "Manual Xərc Girişi";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-    var kateqoriyalar = ViewBag.Kateqoriyalar as List<FinNex.Domain.Entities.HR.XercKateqoriyasi>;
+    var kateqoriyalar  = ViewBag.Kateqoriyalar  as List<FinNex.Domain.Entities.HR.XercKateqoriyasi>;
     var departamentler = ViewBag.Departamentler as List<FinNex.Domain.Entities.Structure.Departament>;
 }
 
@@ -44,7 +44,7 @@
                     <label class="fn-label">
                         Şöbə <span class="fn-required">*</span>
                     </label>
-                    <select name="DepartamentId" class="fn-input" required>
+                    <select name="DepartamentId" id="manualDeptId" class="fn-input" required>
                         <option value="">— Seçin —</option>
                         @if (departamentler != null)
                         {
@@ -93,7 +93,7 @@
                         <label class="fn-label">
                             Məbləğ (AZN) <span class="fn-required">*</span>
                         </label>
-                        <input type="number" name="Mebleg" class="fn-input"
+                        <input type="number" name="Mebleg" id="manualMebleg" class="fn-input"
                                step="0.01" min="0.01" required placeholder="0.00"
                                value="@(Model != null && Model.Mebleg > 0 ? Model.Mebleg.ToString("F2") : "")" />
                     </div>
@@ -101,10 +101,13 @@
                         <label class="fn-label">
                             Xərc tarixi <span class="fn-required">*</span>
                         </label>
-                        <input type="date" name="XercTarixi" class="fn-input" required
+                        <input type="date" name="XercTarixi" id="manualTarix" class="fn-input" required
                                value="@((Model?.XercTarixi ?? DateTime.Today).ToString("yyyy-MM-dd"))" />
                     </div>
                 </div>
+
+                @* Büdcə xəbərdarı *@
+                <div id="budceXeberdar" style="display:none;margin-bottom:12px;border-radius:10px;padding:12px 16px;font-size:13px"></div>
 
                 @* Təsvir *@
                 <div class="fn-form-group">
@@ -148,3 +151,65 @@
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+    (function () {
+        var deptEl   = document.getElementById('manualDeptId');
+        var tarixEl  = document.getElementById('manualTarix');
+        var meblegEl = document.getElementById('manualMebleg');
+        var boxEl    = document.getElementById('budceXeberdar');
+
+        function fmt(v) {
+            return Number(v).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function showLimit(data, meblegVal) {
+            var mebleg = parseFloat(meblegVal) || 0;
+            if (data.yoxdur) {
+                boxEl.style.display    = 'block';
+                boxEl.style.background = '#f8f9fb';
+                boxEl.style.border     = '1px solid #e2e8f0';
+                boxEl.style.color      = '#64748b';
+                boxEl.innerHTML = '<i class="bi bi-info-circle"></i> Bu şöbə üçün bu ay büdcə planı daxil edilməyib.';
+                return;
+            }
+
+            var isOver = (data.qaliq - mebleg) < 0;
+            var isWarn = !isOver && data.faiz > 79;
+            var bg     = isOver ? '#fef2f2' : isWarn ? '#fffbeb' : '#f0fdf4';
+            var border = isOver ? '#fecaca' : isWarn ? '#fde68a' : '#bbf7d0';
+            var color  = isOver ? '#dc2626' : isWarn ? '#92400e' : '#16a34a';
+            var icon   = isOver ? 'bi-exclamation-triangle-fill' : isWarn ? 'bi-exclamation-circle' : 'bi-check-circle';
+
+            boxEl.style.display    = 'block';
+            boxEl.style.background = bg;
+            boxEl.style.border     = '1px solid ' + border;
+            boxEl.style.color      = color;
+            boxEl.innerHTML = '<i class="bi ' + icon + '"></i> ' +
+                '<strong>Büdcə:</strong> Plan <strong>' + fmt(data.plan) + ' ₼</strong> · ' +
+                'İstifadə <strong>' + fmt(data.faktiki) + ' ₼</strong> · ' +
+                'Qalıq <strong>' + fmt(data.qaliq) + ' ₼</strong>' +
+                (isOver ? ' — <strong>Bu xərc büdcəni aşır!</strong>' : '');
+        }
+
+        function loadLimit() {
+            var deptId = deptEl.value;
+            var tarix  = tarixEl.value;
+            if (!deptId || !tarix) { boxEl.style.display = 'none'; return; }
+            var d = new Date(tarix);
+            fetch('/HR/Budce/GetLimitInfo?departamentId=' + deptId +
+                  '&il=' + d.getFullYear() + '&ay=' + (d.getMonth() + 1))
+                .then(function (r) { return r.json(); })
+                .then(function (data) { showLimit(data, meblegEl.value); });
+        }
+
+        deptEl.addEventListener('change', loadLimit);
+        tarixEl.addEventListener('change', loadLimit);
+        meblegEl.addEventListener('input', loadLimit);
+
+        // İlkin yükləmə (redaktə zamanı)
+        if (deptEl.value && tarixEl.value) loadLimit();
+    })();
+    </script>
+}

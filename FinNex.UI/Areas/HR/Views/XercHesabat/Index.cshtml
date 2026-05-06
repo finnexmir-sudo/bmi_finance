@@ -1,0 +1,184 @@
+@{
+    ViewData["Title"] = "Xərc Hesabatı";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var departamentler = ViewBag.Departamentler as List<FinNex.Domain.Entities.Structure.Departament>;
+    var kateqoriyalar  = ViewBag.Kateqoriyalar  as List<FinNex.Domain.Entities.HR.XercKateqoriyasi>;
+    int? filterDept    = ViewBag.FilterDepartamentId;
+    int? filterAy      = ViewBag.FilterAy;
+    int  filterIl      = ViewBag.FilterIl ?? DateTime.Now.Year;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/xerc-hesabat.css" asp-append-version="true" />
+}
+
+@* Drill-down parametrləri üçün hidden input-lar *@
+<input type="hidden" id="initDeptId" value="@(filterDept?.ToString() ?? "")" />
+<input type="hidden" id="initAy"     value="@(filterAy?.ToString() ?? "")" />
+<input type="hidden" id="initIl"     value="@filterIl" />
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Xərc Hesabatı</div>
+            <div class="fn-page-sub">Filtrləyərək ətraflı xərc məlumatlarına baxın</div>
+        </div>
+        <div style="display:flex;gap:10px">
+            <a href="/HR/Budce" class="fn-btn fn-btn--outline">
+                <i class="bi bi-grid-3x3-gap"></i> Büdcə
+            </a>
+            <button id="btnExcel" class="fn-btn fn-btn--outline" type="button">
+                <i class="bi bi-file-earmark-excel"></i> Excel
+            </button>
+        </div>
+    </div>
+
+    @* ── Filtrlər ── *@
+    <div class="fn-card xh-filter-card">
+        <div class="xh-filters">
+            <div class="xh-filter-group">
+                <label class="fn-label">Başlanğıc tarix</label>
+                <input type="date" id="fBasTarix" class="fn-input" />
+            </div>
+            <div class="xh-filter-group">
+                <label class="fn-label">Son tarix</label>
+                <input type="date" id="fSonTarix" class="fn-input" />
+            </div>
+            <div class="xh-filter-group">
+                <label class="fn-label">Şöbə</label>
+                <select id="fDept" class="fn-input">
+                    <option value="">— Hamısı —</option>
+                    @if (departamentler != null)
+                    {
+                        foreach (var d in departamentler)
+                        {
+                            if (filterDept == d.Id)
+                            {
+                                <option value="@d.Id" selected>@d.Ad</option>
+                            }
+                            else
+                            {
+                                <option value="@d.Id">@d.Ad</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="xh-filter-group">
+                <label class="fn-label">Kateqoriya</label>
+                <select id="fKat" class="fn-input">
+                    <option value="">— Hamısı —</option>
+                    @if (kateqoriyalar != null)
+                    {
+                        foreach (var k in kateqoriyalar)
+                        {
+                            <option value="@k.Id">@k.Ad</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="xh-filter-group">
+                <label class="fn-label">Status</label>
+                <select id="fStatus" class="fn-input">
+                    <option value="">— Hamısı —</option>
+                    <option value="0">Müraciət</option>
+                    <option value="1">Şöbə rəisi</option>
+                    <option value="2">HR təsdiqi</option>
+                    <option value="3">Ödənildi</option>
+                    <option value="4">İmtina</option>
+                </select>
+            </div>
+            <div class="xh-filter-group xh-filter-group--search">
+                <label class="fn-label">Axtarış</label>
+                <input type="text" id="fAxtaris" class="fn-input" placeholder="İşçi, şöbə, kateqoriya, təsvir..." />
+            </div>
+        </div>
+        <div class="xh-filter-actions">
+            <button id="btnAxtar" class="fn-btn fn-btn--primary">
+                <i class="bi bi-search"></i> Axtar
+            </button>
+            <button id="btnSifirla" class="fn-btn fn-btn--outline">
+                <i class="bi bi-arrow-counterclockwise"></i> Sıfırla
+            </button>
+        </div>
+    </div>
+
+    @* ── Xülasə kartlar ── *@
+    <div class="xh-summary" id="xhSummary" style="display:none">
+        <div class="xh-sum-card xh-sum-card--total">
+            <div class="xh-sum-icon"><i class="bi bi-receipt"></i></div>
+            <div>
+                <div class="xh-sum-val" id="xhSay">0</div>
+                <div class="xh-sum-lbl">Ümumi say</div>
+            </div>
+        </div>
+        <div class="xh-sum-card xh-sum-card--odenildi">
+            <div class="xh-sum-icon"><i class="bi bi-check-circle"></i></div>
+            <div>
+                <div class="xh-sum-val" id="xhOdenildi">0.00 ₼</div>
+                <div class="xh-sum-lbl">Ödənildi cəmi</div>
+            </div>
+        </div>
+        <div class="xh-sum-card xh-sum-card--gozleme">
+            <div class="xh-sum-icon"><i class="bi bi-hourglass-split"></i></div>
+            <div>
+                <div class="xh-sum-val" id="xhGozleme">0.00 ₼</div>
+                <div class="xh-sum-lbl">Gözləmədə</div>
+            </div>
+        </div>
+        <div class="xh-sum-card xh-sum-card--imtina">
+            <div class="xh-sum-icon"><i class="bi bi-x-circle"></i></div>
+            <div>
+                <div class="xh-sum-val" id="xhImtina">0</div>
+                <div class="xh-sum-lbl">İmtina edildi</div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Breakdown cədvəlləri ── *@
+    <div class="xh-breakdown" id="xhBreakdown" style="display:none">
+        <div class="fn-card xh-bk-card">
+            <div class="xh-bk-title"><i class="bi bi-tags"></i> Kateqoriya üzrə (ödənildi)</div>
+            <div id="xhKatBreakdown"></div>
+        </div>
+        <div class="fn-card xh-bk-card">
+            <div class="xh-bk-title"><i class="bi bi-building"></i> Şöbə üzrə (ödənildi)</div>
+            <div id="xhSobeBreakdown"></div>
+        </div>
+    </div>
+
+    @* ── Əsas cədvəl ── *@
+    <div class="fn-card" style="padding:0;overflow:hidden">
+        <div class="xh-table-wrap">
+            <table class="xh-table" id="xhTable">
+                <thead>
+                    <tr>
+                        <th>Tarix</th>
+                        <th>İşçi / Şöbə</th>
+                        <th>Şöbə</th>
+                        <th>Kateqoriya</th>
+                        <th>Təsvir</th>
+                        <th>Məbləğ</th>
+                        <th>Status</th>
+                        <th>Növ</th>
+                        <th>Sənəd</th>
+                    </tr>
+                </thead>
+                <tbody id="xhBody">
+                    <tr>
+                        <td colspan="9" class="xh-empty">
+                            <i class="bi bi-search" style="font-size:2rem;display:block;margin-bottom:10px;color:#cbd5e1"></i>
+                            Filtrlər seçib "Axtar" düyməsini basın
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="~/js/hr/xerc-hesabat.js" asp-append-version="true"></script>
+}
