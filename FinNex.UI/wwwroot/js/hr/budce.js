@@ -504,6 +504,30 @@
     document.getElementById('btnSirketModalClose').addEventListener('click', closeSirketModal);
     document.getElementById('btnSirketModalCancel').addEventListener('click', closeSirketModal);
     document.getElementById('btnSirketModalSave').addEventListener('click', saveSirketBudce);
+    // ── Planları sıfırla ─────────────────────────────────────
+    function sifirlaPlans() {
+        var deptSay = cachedData && cachedData.departamentlar ? cachedData.departamentlar.length : '?';
+        if (!confirm(currentIl + ' ili üçün ' + deptSay + ' şöbənin bütün aylıq plan məbləğləri 0-a çəkiləcək.\n\nDavam etmək istəyirsiniz?')) return;
+
+        var btn = document.getElementById('btnSifirla');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Sıfırlanır...';
+
+        fetch('/HR/Budce/SifirlaPlans', {
+            method  : 'POST',
+            headers : { 'Content-Type': 'application/json', 'RequestVerificationToken': token() },
+            body    : JSON.stringify({ il: parseInt(currentIl) })
+        })
+        .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+        .then(function () { clearUndo(); loadData(); })
+        .catch(function () { alert('Xeta bas verdi.'); })
+        .finally(function () {
+            btn.disabled  = false;
+            btn.innerHTML = '<i class="bi bi-trash3"></i> Planları sıfırla';
+        });
+    }
+
+    document.getElementById('btnSifirla').addEventListener('click', sifirlaPlans);
     document.getElementById('btnBereberBol').addEventListener('click', bereberBol);
     document.getElementById('btnGeriQaytar').addEventListener('click', geriQaytar);
     document.getElementById('btnGeriQaytarPanel').addEventListener('click', geriQaytar);
