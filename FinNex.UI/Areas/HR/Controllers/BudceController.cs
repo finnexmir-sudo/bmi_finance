@@ -310,6 +310,26 @@ public class BudceController : Controller
         return Ok(new { message = $"{departamentlar.Count} şöbəyə {pay:N2} ₼ paylandı." });
     }
 
+    // ── POST /HR/Budce/SifirlaPlans ─────────────────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SifirlaPlans([FromBody] SifirlaDto dto)
+    {
+        if (dto.Il < 2020) return BadRequest();
+
+        var planlar = await _unitOfWork.Repository<Budce>()
+            .Query().Where(x => !x.Silinib && x.Il == dto.Il).ToListAsync();
+
+        foreach (var p in planlar)
+        {
+            p.PlanMebleg = 0;
+            await _unitOfWork.Repository<Budce>().YenileAsync(p);
+        }
+
+        await _unitOfWork.YaddaSaxlaAsync();
+        return Ok(new { message = $"{planlar.Count} plan sıfırlandı." });
+    }
+
     // ── POST /HR/Budce/RestorePlans ──────────────────────────────
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -492,6 +512,8 @@ public class BereberBolDto
     public int     Ay     { get; set; }
     public decimal Mebleg { get; set; }
 }
+
+public class SifirlaDto { public int Il { get; set; } }
 
 public class RestorePlanItem
 {
