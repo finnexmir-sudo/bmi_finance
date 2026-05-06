@@ -6,12 +6,96 @@
     var chartWrap = document.getElementById('chartWrap');
     var canvas = document.getElementById('maasChart');
     var summaryCard = document.getElementById('summaryCard');
+    var detayPanel = document.getElementById('detayPanel');
 
     function formatMoney(val) {
         return Number(val).toLocaleString('az-AZ', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
+    }
+
+    // ── Detay panelini aç ─────────────────────────────────
+    function showDetay(il, ay, etiket) {
+        detayPanel.innerHTML =
+            '<div class="mt-detay-loading"><i class="bi bi-arrow-repeat"></i> Yüklənir...</div>';
+        detayPanel.style.display = 'block';
+        detayPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        fetch('/User/Maas/GetDetay?il=' + il + '&ay=' + ay)
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                if (!res.success) {
+                    detayPanel.innerHTML = '<div class="mt-detay-err"><i class="bi bi-exclamation-triangle"></i> Məlumat tapılmadı.</div>';
+                    return;
+                }
+
+                var gelirlər = (res.addimlar || []).filter(function (x) { return x.tip === 'gelir'; });
+                var kesintilər = (res.addimlar || []).filter(function (x) { return x.tip === 'kesinti' || x.tip === 'vergi'; });
+                var sirket = (res.addimlar || []).filter(function (x) { return x.tip === 'sirket'; });
+                var melumat = (res.addimlar || []).filter(function (x) { return x.tip === 'melumati'; });
+
+                function rows(arr, sign, colorClass) {
+                    return arr.map(function (x) {
+                        return '<div class="mt-detay-row">' +
+                            '<div class="mt-detay-row-left">' +
+                                '<span class="mt-detay-row-name">' + x.addim + '</span>' +
+                                (x.izah ? '<span class="mt-detay-row-izah">' + x.izah + '</span>' : '') +
+                            '</div>' +
+                            '<span class="mt-detay-row-val ' + colorClass + '">' + sign + formatMoney(x.mebleg) + ' ₼</span>' +
+                        '</div>';
+                    }).join('');
+                }
+
+                function section(title, icon, arr, sign, colorClass, bgClass) {
+                    if (arr.length === 0) return '';
+                    var total = arr.reduce(function (s, x) { return s + x.mebleg; }, 0);
+                    return '<div class="mt-detay-section ' + bgClass + '">' +
+                        '<div class="mt-detay-section-head">' +
+                            '<span><i class="bi ' + icon + '"></i> ' + title + '</span>' +
+                            '<span class="mt-detay-section-total ' + colorClass + '">' + sign + formatMoney(total) + ' ₼</span>' +
+                        '</div>' +
+                        rows(arr, sign, colorClass) +
+                    '</div>';
+                }
+
+                var tutulma = res.brut - res.net;
+                var html =
+                    '<div class="mt-detay-header">' +
+                        '<div class="mt-detay-title">' +
+                            '<i class="bi bi-receipt"></i> ' + etiket + ' — Hesablama detalı' +
+                        '</div>' +
+                        '<button class="mt-detay-close" id="detayClose"><i class="bi bi-x-lg"></i></button>' +
+                    '</div>' +
+
+                    section('Gəlirlər', 'bi-plus-circle-fill', gelirlər, '+', 'mt-val-green', 'mt-section-green') +
+                    section('Tutulmalar (işçidən)', 'bi-dash-circle-fill', kesintilər, '−', 'mt-val-red', 'mt-section-red') +
+                    section('İşəgötürən xərcləri', 'bi-building', sirket, '', 'mt-val-gray', 'mt-section-gray') +
+                    section('Məlumat üçün', 'bi-info-circle', melumat, '', 'mt-val-blue', 'mt-section-blue') +
+
+                    '<div class="mt-detay-summary">' +
+                        '<div class="mt-detay-sum-row">' +
+                            '<span>Gross (Brüt) maaş</span>' +
+                            '<span class="mt-val-blue">' + formatMoney(res.brut) + ' ₼</span>' +
+                        '</div>' +
+                        '<div class="mt-detay-sum-row">' +
+                            '<span>Tutulmalar</span>' +
+                            '<span class="mt-val-red">− ' + formatMoney(tutulma) + ' ₼</span>' +
+                        '</div>' +
+                        '<div class="mt-detay-sum-row mt-detay-sum-row--net">' +
+                            '<span>Net (ələ keçən)</span>' +
+                            '<span class="mt-val-green">' + formatMoney(res.net) + ' ₼</span>' +
+                        '</div>' +
+                    '</div>';
+
+                detayPanel.innerHTML = html;
+                document.getElementById('detayClose').addEventListener('click', function () {
+                    detayPanel.style.display = 'none';
+                });
+            })
+            .catch(function () {
+                detayPanel.innerHTML = '<div class="mt-detay-err"><i class="bi bi-exclamation-triangle"></i> Xəta baş verdi.</div>';
+            });
     }
 
     fetch('/User/Maas/GetTarixceData')
@@ -48,18 +132,27 @@
                                 '<div class="mt-single-val mt-single-val--red">' + formatMoney(d.brut - d.net) + ' ₼</div>' +
                             '</div>' +
                         '</div>' +
+                        '<button class="mt-detay-btn" data-il="' + d.il + '" data-ay="' + d.ay + '" data-etiket="' + d.etiket + '">' +
+                            '<i class="bi bi-receipt"></i> Hesablama detalını gör' +
+                        '</button>' +
                         '<div class="mt-single-hint">' +
                             '<i class="bi bi-info-circle"></i> ' +
                             'Növbəti aylarda daha çox məlumat toplandıqca burada dinamika qrafiki görünəcək.' +
                         '</div>' +
                     '</div>';
+
+                document.querySelector('.mt-detay-btn').addEventListener('click', function (e) {
+                    var btn = e.currentTarget;
+                    showDetay(parseInt(btn.dataset.il), parseInt(btn.dataset.ay), btn.dataset.etiket);
+                });
+
             } else {
                 // 2+ ay → normal qrafik
                 chartWrap.style.display = 'none';
                 canvas.style.display = 'block';
 
                 var ctx = canvas.getContext('2d');
-                new Chart(ctx, {
+                var chart = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: labels,
@@ -93,6 +186,12 @@
                         responsive: true,
                         maintainAspectRatio: false,
                         interaction: { mode: 'index', intersect: false },
+                        onClick: function (evt, elements) {
+                            if (!elements || elements.length === 0) return;
+                            var idx = elements[0].index;
+                            var d = result.data[idx];
+                            showDetay(d.il, d.ay, d.etiket);
+                        },
                         plugins: {
                             legend: {
                                 position: 'top',
@@ -107,6 +206,9 @@
                                     label: function (context) {
                                         return context.dataset.label + ': ' +
                                             formatMoney(context.raw) + ' AZN';
+                                    },
+                                    footer: function () {
+                                        return 'Detalı görmək üçün klikləyin';
                                     }
                                 }
                             }
@@ -129,6 +231,7 @@
                         }
                     }
                 });
+                canvas.style.cursor = 'pointer';
             }
 
             // İcmal statistika (həmişə göstər — 1 ay olsa belə cari rəqəmlər)
