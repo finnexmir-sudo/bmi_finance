@@ -1,23 +1,25 @@
-// ── HR Büdcə JS ──────────────────────────────────────────
+// HR Buedce JS
 
 (function () {
     'use strict';
 
-    const ayAdlari = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'İyun',
-                      'İyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
-    let cachedData = null;
-    let currentIl  = null;
+    var ayAdlari = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
+                    'Iyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
+    var TOTAL_COLS = 41; // 1 dept + 12*3 month cells + 4 totals
+    var cachedData = null;
+    var currentIl  = null;
 
     function fmt(val) {
-        var n = Number(val);
+        var n = Number(val) || 0;
         return n.toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    // ── Yüklə ────────────────────────────────────────────
+    // -- Yuekle -----------------------------------------------
     function loadData() {
         currentIl = document.getElementById('budceIl').value;
         var body  = document.getElementById('budceBody');
-        body.innerHTML = '<tr><td colspan="28" class="budce-empty"><i class="bi bi-hourglass-split"></i> Yüklənir...</td></tr>';
+        body.innerHTML = '<tr><td colspan="' + TOTAL_COLS + '" class="budce-empty">' +
+            '<i class="bi bi-hourglass-split"></i> Yueklenilir...</td></tr>';
         closeDetay();
 
         fetch('/HR/Budce/GetData?il=' + currentIl)
@@ -28,16 +30,16 @@
                 renderSummary(data);
             })
             .catch(function () {
-                body.innerHTML = '<tr><td colspan="28" class="budce-empty">Xəta baş verdi</td></tr>';
+                body.innerHTML = '<tr><td colspan="' + TOTAL_COLS + '" class="budce-empty">Xeta bas verdi</td></tr>';
             });
     }
 
-    // ── Cədvəl render ────────────────────────────────────
+    // -- Cedvel render ----------------------------------------
     function renderTable(data) {
         var body = document.getElementById('budceBody');
 
         if (!data.departamentlar || data.departamentlar.length === 0) {
-            body.innerHTML = '<tr><td colspan="28" class="budce-empty">Məlumat tapılmadı</td></tr>';
+            body.innerHTML = '<tr><td colspan="' + TOTAL_COLS + '" class="budce-empty">Melumat tapilmadi</td></tr>';
             return;
         }
 
@@ -50,89 +52,118 @@
                     dept.departamentAd + '</a></td>';
 
             dept.aylar.forEach(function (a) {
+                // P cell - Plan
                 var planCls = a.plan === 0 ? 'budce-cell--zero' : 'budce-cell--plan';
-                var faktCls = a.faktiki === 0 ? 'budce-cell--zero'
-                            : (a.plan > 0 && a.faktiki > a.plan) ? 'budce-cell--over'
-                            : 'budce-cell--fakt';
+                html += '<td class="' + planCls + ' budce-plan-cell" onclick="openEdit(' +
+                        dept.departamentId + ',\'' + dept.departamentAd.replace(/'/g, "\\'") + '\',' +
+                        a.ay + ',' + a.plan + ')" title="Plani redakte et">' +
+                        fmt(a.plan) + '</td>';
 
-                var pct = a.plan > 0 ? Math.min(Math.round(a.faktiki / a.plan * 100), 100) : 0;
-                var barCls = a.faktiki > a.plan && a.plan > 0 ? 'budce-bar-fill--over'
-                           : pct > 80 ? 'budce-bar-fill--warn' : '';
-                var bar = a.plan > 0
+                // F cell - Faktiki, progress bar uses faiz = (faktiki+rezerv)/plan
+                var faktCls = a.faktiki === 0 ? 'budce-cell--zero'
+                            : (a.plan > 0 && a.faiz >= 100) ? 'budce-cell--over'
+                            : 'budce-cell--fakt';
+                var pct    = Math.min(Number(a.faiz) || 0, 100);
+                var barCls = Number(a.faiz) >= 100 ? 'budce-bar-fill--over'
+                           : Number(a.faiz) > 79   ? 'budce-bar-fill--warn' : '';
+                var bar    = a.plan > 0
                     ? '<div class="budce-bar"><div class="budce-bar-fill ' + barCls + '" style="width:' + pct + '%"></div></div>'
                     : '';
 
-                html += '<td class="' + planCls + ' budce-plan-cell" onclick="openEdit(' +
-                        dept.departamentId + ',\'' + dept.departamentAd.replace(/'/g, "\\'") + '\',' +
-                        a.ay + ',' + a.plan + ')" title="Planı redaktə et">' +
-                        fmt(a.plan) + '</td>';
-
                 html += '<td class="' + faktCls + ' budce-fakt-cell" onclick="openDetay(' +
                         dept.departamentId + ',\'' + dept.departamentAd.replace(/'/g, "\\'") + '\',' +
-                        a.ay + ')" title="Xərcləri gör">' +
+                        a.ay + ')" title="Xercleri goer">' +
                         fmt(a.faktiki) + bar + '</td>';
+
+                // R cell - Rezerv (approved, not paid)
+                var rezervVal = Number(a.rezerv) || 0;
+                var rezervCls = rezervVal === 0 ? 'budce-cell--zero' : 'budce-cell--rezerv';
+                html += '<td class="' + rezervCls + '" title="Rezerv - tesdiqlenib, odenil'+"'"+'meyib">' +
+                        fmt(rezervVal) + '</td>';
             });
 
-            var topFerq = dept.toplamPlan - dept.toplamFaktiki;
+            // Totals
+            var azadVal = Number(dept.toplamAzad) || 0;
+            var rezervTotal = Number(dept.toplamRezerv) || 0;
             html += '<td class="budce-cell--total">' + fmt(dept.toplamPlan) + '</td>';
-            html += '<td class="budce-cell--total ' + (dept.toplamFaktiki > dept.toplamPlan && dept.toplamPlan > 0 ? 'budce-cell--over' : '') + '">' + fmt(dept.toplamFaktiki) + '</td>';
-            html += '<td class="budce-cell--ferq ' + (topFerq < 0 ? 'budce-cell--neg' : (topFerq === 0 ? '' : 'budce-cell--pos')) + '">' + fmt(topFerq) + '</td>';
+            html += '<td class="budce-cell--total">' + fmt(dept.toplamFaktiki) + '</td>';
+            html += '<td class="budce-cell--total budce-cell--rezerv-total">' + fmt(rezervTotal) + '</td>';
+            html += '<td class="budce-cell--ferq ' + (azadVal < 0 ? 'budce-cell--neg' : (azadVal === 0 ? '' : 'budce-cell--pos')) + '">' + fmt(azadVal) + '</td>';
             html += '</tr>';
         });
 
-        var totalFerq = data.umumiPlan - data.umumiFaktiki;
+        // Summary row
         html += '<tr class="budce-summary-row">';
-        html += '<td>CƏMİ</td>';
-        for (var i = 0; i < 24; i++) html += '<td></td>';
+        html += '<td>CEMI</td>';
+        for (var i = 0; i < 36; i++) html += '<td></td>';
         html += '<td>' + fmt(data.umumiPlan) + '</td>';
         html += '<td>' + fmt(data.umumiFaktiki) + '</td>';
-        html += '<td class="' + (totalFerq < 0 ? 'budce-cell--neg' : 'budce-cell--pos') + '">' + fmt(totalFerq) + '</td>';
+        html += '<td>' + fmt(Number(data.umumiRezerv) || 0) + '</td>';
+        var totalAzad = Number(data.umumiAzad) || 0;
+        html += '<td class="' + (totalAzad < 0 ? 'budce-cell--neg' : 'budce-cell--pos') + '">' + fmt(totalAzad) + '</td>';
         html += '</tr>';
 
         body.innerHTML = html;
     }
 
-    // ── Xülasə kartlar ──────────────────────────────────
+    // -- Xuelase kartlar --------------------------------------
     function renderSummary(data) {
         document.getElementById('summaryCards').style.display = 'grid';
-        document.getElementById('umumiPlan').textContent    = fmt(data.umumiPlan) + ' ₼';
-        document.getElementById('umumiFaktiki').textContent = fmt(data.umumiFaktiki) + ' ₼';
-        var ferq   = data.umumiPlan - data.umumiFaktiki;
-        var ferqEl = document.getElementById('umumiFerq');
-        ferqEl.textContent = fmt(ferq) + ' ₼';
-        ferqEl.style.color = ferq >= 0 ? '#16a34a' : '#dc2626';
+        document.getElementById('umumiPlan').textContent     = fmt(data.umumiPlan) + ' ₼';
+        document.getElementById('umumiFaktiki').textContent  = fmt(data.umumiFaktiki) + ' ₼';
+
+        var rezervEl = document.getElementById('umumiRezerv');
+        if (rezervEl) rezervEl.textContent = fmt(Number(data.umumiRezerv) || 0) + ' ₼';
+
+        var azad   = Number(data.umumiAzad) || 0;
+        var azadEl = document.getElementById('umumiAzad');
+        if (azadEl) {
+            azadEl.textContent = fmt(azad) + ' ₼';
+            azadEl.style.color = azad >= 0 ? '#16a34a' : '#dc2626';
+        }
     }
 
-    // ── Plan redaktə modalı ──────────────────────────────
+    // -- Plan redakte modali ----------------------------------
     window.openEdit = function (deptId, deptAd, ay, plan) {
         document.getElementById('editDeptId').value = deptId;
         document.getElementById('editAy').value     = ay;
-        document.getElementById('editDeptAd').value = deptAd;
-        document.getElementById('editAyAd').value   = ayAdlari[ay - 1] + ' ' + currentIl;
-        document.getElementById('editPlan').value   = plan;
+        document.getElementById('editDeptAd').textContent = deptAd;
+        document.getElementById('editAyAd').textContent   = ayAdlari[ay - 1] + ' ' + currentIl;
+        document.getElementById('editAyRow').style.display = '';
+        document.getElementById('editPlan').value   = plan || '';
         document.getElementById('editQeyd').value   = '';
+        document.getElementById('editTopluTetbiq').checked = false;
         document.getElementById('editModal').style.display = 'flex';
         setTimeout(function () { document.getElementById('editPlan').select(); }, 50);
     };
 
     function closeModal() {
         document.getElementById('editModal').style.display = 'none';
+        document.getElementById('editTopluTetbiq').checked = false;
     }
 
     function saveModal() {
+        var planVal = parseFloat(document.getElementById('editPlan').value);
+        if (isNaN(planVal) || planVal < 0) {
+            document.getElementById('editPlan').focus();
+            return;
+        }
+
+        var topluTetbiq = document.getElementById('editTopluTetbiq').checked;
         var btn = document.getElementById('btnModalSave');
         btn.disabled = true;
-        btn.textContent = 'Saxlanır...';
+        btn.textContent = 'Saxlanir...';
 
         var payload = {
             departamentId : parseInt(document.getElementById('editDeptId').value),
             il            : parseInt(currentIl),
             ay            : parseInt(document.getElementById('editAy').value),
-            planMebleg    : parseFloat(document.getElementById('editPlan').value) || 0,
-            qeyd          : document.getElementById('editQeyd').value
+            planMebleg    : planVal,
+            qeyd          : document.getElementById('editQeyd').value,
+            topluTetbiq   : topluTetbiq
         };
 
-        var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+        var token = (document.querySelector('input[name="__RequestVerificationToken"]') || {}).value || '';
         fetch('/HR/Budce/Create', {
             method  : 'POST',
             headers : { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
@@ -140,21 +171,26 @@
         })
         .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
         .then(function () { closeModal(); loadData(); })
-        .catch(function () { alert('Yadda saxlama zamanı xəta baş verdi.'); })
+        .catch(function () { alert('Yadda saxlama zamani xeta bas verdi.'); })
         .finally(function () {
-            btn.disabled    = false;
-            btn.innerHTML   = '<i class="bi bi-save"></i> Yadda saxla';
+            btn.disabled  = false;
+            btn.innerHTML = '<i class="bi bi-save"></i> Yadda saxla';
         });
     }
 
-    // ── Detay panel ──────────────────────────────────────
+    // TopluTetbiq checkbox - ay satirini gizlet/goester
+    document.getElementById('editTopluTetbiq').addEventListener('change', function () {
+        document.getElementById('editAyRow').style.display = this.checked ? 'none' : '';
+    });
+
+    // -- Detay panel ------------------------------------------
     window.openDetay = function (deptId, deptAd, ay) {
         var panel = document.getElementById('detayPanel');
         panel.classList.add('budce-detay--open');
         document.getElementById('detayTitle').textContent =
             deptAd + '  ·  ' + ayAdlari[ay - 1] + ' ' + currentIl;
         document.getElementById('detayBody').innerHTML =
-            '<tr><td colspan="5" class="budce-empty"><i class="bi bi-hourglass-split"></i> Yüklənir...</td></tr>';
+            '<tr><td colspan="5" class="budce-empty"><i class="bi bi-hourglass-split"></i> Yueklenilir...</td></tr>';
         document.getElementById('detayFooter').style.display = 'none';
         document.getElementById('detayHesabatLink').href =
             '/HR/XercHesabat?departamentId=' + deptId;
@@ -164,7 +200,7 @@
             .then(function (data) { renderDetay(data); })
             .catch(function () {
                 document.getElementById('detayBody').innerHTML =
-                    '<tr><td colspan="5" class="budce-empty">Xəta baş verdi</td></tr>';
+                    '<tr><td colspan="5" class="budce-empty">Xeta bas verdi</td></tr>';
             });
     };
 
@@ -174,7 +210,7 @@
         if (!data.xercler || data.xercler.length === 0) {
             body.innerHTML = '<tr><td colspan="5" class="budce-empty">' +
                 '<i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>' +
-                'Bu ay üçün xərc tapılmadı</td></tr>';
+                'Bu ay ucun xerc tapilmadi</td></tr>';
             document.getElementById('detayFooter').style.display = 'none';
             return;
         }
@@ -186,22 +222,27 @@
             var badge = '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;' +
                         'background:' + renk + '20;color:' + renk + '">' + x.statusAd + '</span>';
             var qebz  = x.qebzYolu
-                ? ' <a href="' + x.qebzYolu + '" target="_blank" style="color:#667eea" title="Sənəd"><i class="bi bi-paperclip"></i></a>'
+                ? ' <a href="' + x.qebzYolu + '" target="_blank" style="color:#667eea" title="Senad"><i class="bi bi-paperclip"></i></a>'
                 : '';
             var manual = x.manualGiris
                 ? '<span style="font-size:10px;background:#dbeafe;color:#1d4ed8;padding:1px 5px;border-radius:4px;margin-right:4px">M</span>'
                 : '';
-            html += '<tr>' +
+            // Rezerv rows get a subtle amber background indicator
+            var rowStyle = x.isRezerv ? ' style="background:#fffbeb"' : '';
+            html += '<tr' + rowStyle + '>' +
                 '<td style="white-space:nowrap;color:#64748b">' + x.tarix + '</td>' +
                 '<td>' + manual + x.isci + '</td>' +
                 '<td>' + x.kateqoriya + '</td>' +
-                '<td class="budce-detay-tesvir" title="' + x.tesvir.replace(/"/g, '&quot;') + '">' + x.tesvir + badge + qebz + '</td>' +
+                '<td class="budce-detay-tesvir" title="' + String(x.tesvir).replace(/"/g, '&quot;') + '">' + x.tesvir + ' ' + badge + qebz + '</td>' +
                 '<td style="text-align:right;font-weight:600;white-space:nowrap">' + fmt(x.mebleg) + ' ₼</td>' +
                 '</tr>';
         });
         body.innerHTML = html;
 
-        document.getElementById('detayToplam').textContent = fmt(data.odenilenToplam) + ' ₼';
+        var odenilenEl = document.getElementById('detayToplam');
+        var rezervEl   = document.getElementById('detayRezervToplam');
+        if (odenilenEl) odenilenEl.textContent = fmt(data.odenilenToplam) + ' ₼';
+        if (rezervEl)   rezervEl.textContent   = fmt(Number(data.rezervToplam) || 0) + ' ₼';
         document.getElementById('detayFooter').style.display = 'flex';
     }
 
@@ -210,17 +251,17 @@
         if (panel) panel.classList.remove('budce-detay--open');
     }
 
-    // ── Şöbə hesabatına keç ──────────────────────────────
+    // -- Sobe hesabatina kec ----------------------------------
     window.openHesabat = function (deptId) {
         window.location.href = '/HR/XercHesabat?departamentId=' + deptId;
     };
 
-    // ── Excel ────────────────────────────────────────────
+    // -- Excel ------------------------------------------------
     function exportExcel() {
         window.location.href = '/HR/Budce/ExportExcel?il=' + currentIl;
     }
 
-    // ── Event listeners ──────────────────────────────────
+    // -- Event listeners --------------------------------------
     document.getElementById('btnYukle').addEventListener('click', loadData);
     document.getElementById('btnExcel').addEventListener('click', exportExcel);
     document.getElementById('btnModalClose').addEventListener('click', closeModal);

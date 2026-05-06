@@ -10,11 +10,12 @@
 /* ── Xülasə kartlar ── */
 .budce-summary {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 16px;
     margin-bottom: 16px;
 }
 .budce-sum-card { text-align: center; padding: 20px; }
+.budce-sum-card--rezerv { border-top: 3px solid #f59e0b; }
 .budce-sum-label {
     font-size: 11px;
     font-weight: 700;
@@ -43,10 +44,11 @@
     margin-right: 4px;
     vertical-align: middle;
 }
-.budce-legend-dot--plan { background: #dbeafe; border: 1px solid #93c5fd; }
-.budce-legend-dot--fakt { background: #ede9fe; border: 1px solid #c4b5fd; }
-.budce-legend-dot--over { background: #fef2f2; border: 1px solid #fca5a5; }
-.budce-legend-sep       { color: #e2e8f0; }
+.budce-legend-dot--plan   { background: #dbeafe; border: 1px solid #93c5fd; }
+.budce-legend-dot--fakt   { background: #ede9fe; border: 1px solid #c4b5fd; }
+.budce-legend-dot--rezerv { background: #fef3c7; border: 1px solid #fcd34d; }
+.budce-legend-dot--over   { background: #fef2f2; border: 1px solid #fca5a5; }
+.budce-legend-sep         { color: #e2e8f0; }
 
 /* ── Cədvəl ── */
 .budce-table-wrap {
@@ -55,7 +57,7 @@
 }
 .budce-table {
     width: 100%;
-    min-width: 1600px;
+    min-width: 2100px;
     border-collapse: separate;
     border-spacing: 0;
     font-size: 12px;
@@ -64,7 +66,7 @@
     background: #f8f9fb;
     color: #4a5568;
     font-weight: 600;
-    padding: 9px 6px;
+    padding: 9px 5px;
     text-align: center;
     border-bottom: 2px solid #e2e8f0;
     white-space: nowrap;
@@ -83,16 +85,17 @@
 }
 .budce-sub-header th {
     font-size: 10px;
-    padding: 4px 6px;
+    padding: 4px 5px;
     color: #94a3b8;
     border-bottom: 1px solid #e2e8f0;
 }
-.budce-th-plan { color: #2563eb; }
-.budce-th-fakt { color: #7c3aed; }
+.budce-th-plan   { color: #2563eb; }
+.budce-th-fakt   { color: #7c3aed; }
+.budce-th-rezerv { color: #d97706; }
 
 /* ── Hüceyrələr ── */
 .budce-table tbody td {
-    padding: 6px;
+    padding: 6px 5px;
     text-align: center;
     border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
@@ -125,16 +128,18 @@
 .budce-table tbody tr:hover .budce-td-dept { background: #f8fafc; }
 
 /* Rəng kodlaması */
-.budce-cell--plan { color: #2563eb; }
-.budce-cell--fakt { color: #7c3aed; }
-.budce-cell--zero { color: #cbd5e1; }
-.budce-cell--over { color: #dc2626 !important; font-weight: 600; background: #fff5f5 !important; }
-.budce-cell--total { font-weight: 700; background: #f8f9fb !important; cursor: default !important; }
-.budce-cell--ferq  { font-weight: 700; cursor: default !important; }
-.budce-cell--pos   { color: #16a34a; }
-.budce-cell--neg   { color: #dc2626; }
+.budce-cell--plan        { color: #2563eb; }
+.budce-cell--fakt        { color: #7c3aed; }
+.budce-cell--rezerv      { color: #d97706; background: #fffbeb; }
+.budce-cell--rezerv-total{ color: #d97706 !important; }
+.budce-cell--zero        { color: #cbd5e1; }
+.budce-cell--over        { color: #dc2626 !important; font-weight: 600; background: #fff5f5 !important; }
+.budce-cell--total       { font-weight: 700; background: #f8f9fb !important; cursor: default !important; }
+.budce-cell--ferq        { font-weight: 700; cursor: default !important; }
+.budce-cell--pos         { color: #16a34a; }
+.budce-cell--neg         { color: #dc2626; }
 
-/* Progress bar */
+/* Progress bar — faiz = (faktiki + rezerv) / plan */
 .budce-bar {
     height: 3px;
     background: #e2e8f0;
@@ -248,12 +253,24 @@
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: 12px;
+    gap: 24px;
     padding: 12px 20px;
     border-top: 1px solid #f1f5f9;
     background: #fafbfc;
+    flex-wrap: wrap;
 }
-.budce-detay-toplam { font-size: 16px; font-weight: 700; color: #16a34a; }
+.budce-detay-stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.budce-detay-stat-lbl {
+    font-size: 12px;
+    color: #64748b;
+}
+.budce-detay-toplam              { font-size: 15px; font-weight: 700; }
+.budce-detay-toplam--odenildi    { color: #16a34a; }
+.budce-detay-toplam--rezerv      { color: #d97706; }
 
 /* ── Modal ── */
 .budce-modal-overlay {
@@ -268,7 +285,7 @@
 .budce-modal {
     background: #fff;
     border-radius: 14px;
-    width: 440px;
+    width: 460px;
     max-width: 95vw;
     box-shadow: 0 20px 60px rgba(0,0,0,0.15);
 }
@@ -299,7 +316,46 @@
     border-top: 1px solid #f1f5f9;
 }
 
+/* ── Toplu tətbiq checkbox ── */
+.budce-toplu-wrap {
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+}
+.budce-toplu-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+}
+.budce-toplu-check {
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    accent-color: #d97706;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.budce-toplu-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.budce-toplu-text strong {
+    font-size: 13px;
+    color: #92400e;
+}
+.budce-toplu-hint {
+    font-size: 11px;
+    color: #b45309;
+}
+
 /* ── Responsive ── */
+@media (max-width: 900px) {
+    .budce-summary { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 768px) {
     .budce-summary { grid-template-columns: 1fr; }
     .budce-actions { flex-wrap: wrap; }
