@@ -18,7 +18,8 @@ document.addEventListener('DOMContentLoaded', function () {
         getGozlenilen: endpoint('getgozlenilen', '/HR/Davamiyyet/GetGozlenilen'),
         isciAxtar:     endpoint('isciaxtar',     '/HR/Davamiyyet/IsciAxtar'),
         exportExcel:   endpoint('exportexcel',   '/HR/Davamiyyet/ExportExcel'),
-        deviceStatus:  endpoint('devicestatus',  '/HR/ADMSTest/GetRecentLogs')
+        deviceStatus:  endpoint('devicestatus',  '/HR/ADMSTest/GetRecentLogs'),
+        tarixler:      endpoint('tarixler',      '')
     };
 
     // ── DOM Elements ──
@@ -225,6 +226,87 @@ document.addEventListener('DOMContentLoaded', function () {
                 duzeltSaxlaBtn.disabled = false;
                 duzeltSaxlaBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Saxla';
             });
+        });
+    }
+
+    // ── Custom tarix seçici (yalnız mövcud tarixlər) ──
+    var datepickWrap = document.getElementById('hrdTarixPick');
+    if (datepickWrap && endpoints.tarixler) {
+        var dpDisplay  = document.getElementById('hrdTarixDisplay');
+        var dpText     = document.getElementById('hrdTarixText');
+        var dpPanel    = document.getElementById('hrdTarixPanel');
+        var dpSearch   = document.getElementById('hrdTarixSearch');
+        var dpList     = document.getElementById('hrdTarixList');
+        var dpOpen     = false;
+        var dpAllDates = [];
+        var DAY_AZ     = ['Bazar', 'B.ertəsi', 'Çərt.ertəsi', 'Çərşənbə', 'Cümə.axş.', 'Cümə', 'Şənbə'];
+
+        function dpFormatDisplay(iso) {
+            var d = new Date(iso + 'T00:00:00');
+            return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear()
+                + ' — ' + DAY_AZ[d.getDay()];
+        }
+
+        function dpRender(q) {
+            var filter = (q || '').trim().toLowerCase();
+            var list = filter
+                ? dpAllDates.filter(function (iso) {
+                    var d = new Date(iso + 'T00:00:00');
+                    var txt = pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear();
+                    return txt.includes(filter) || iso.includes(filter);
+                })
+                : dpAllDates;
+
+            if (list.length === 0) {
+                dpList.innerHTML = '<div style="padding:14px;text-align:center;color:#94a3b8;font-size:13px;">Nəticə tapılmadı</div>';
+                return;
+            }
+            var cur = inputTarix.value;
+            var html = '';
+            list.forEach(function (iso) {
+                html += '<div class="hrd-datepick-item' + (iso === cur ? ' active' : '') + '" data-iso="' + iso + '">'
+                    + dpFormatDisplay(iso) + '</div>';
+            });
+            dpList.innerHTML = html;
+            dpList.querySelectorAll('.hrd-datepick-item').forEach(function (item) {
+                item.addEventListener('click', function () {
+                    var iso = item.getAttribute('data-iso');
+                    inputTarix.value = iso;
+                    var d = new Date(iso + 'T00:00:00');
+                    dpText.textContent = pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear();
+                    dpClose();
+                    document.querySelectorAll('.hrd-kpi--clickable').forEach(function (k) { k.classList.remove('hrd-kpi--active'); });
+                    loadData({ tarix: iso });
+                });
+            });
+        }
+
+        function dpOpen2() {
+            dpPanel.style.display = 'block';
+            dpDisplay.classList.add('open');
+            dpSearch.value = '';
+            dpOpen = true;
+            dpSearch.focus();
+            if (dpAllDates.length === 0) {
+                fetch(endpoints.tarixler)
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) { dpAllDates = data; dpRender(''); });
+            } else {
+                dpRender('');
+            }
+        }
+
+        function dpClose() {
+            dpPanel.style.display = 'none';
+            dpDisplay.classList.remove('open');
+            dpOpen = false;
+        }
+
+        dpDisplay.addEventListener('click', function () { dpOpen ? dpClose() : dpOpen2(); });
+        dpSearch.addEventListener('input', function () { dpRender(dpSearch.value); });
+        dpSearch.addEventListener('keydown', function (e) { if (e.key === 'Escape') dpClose(); });
+        document.addEventListener('click', function (e) {
+            if (dpOpen && !datepickWrap.contains(e.target)) dpClose();
         });
     }
 
