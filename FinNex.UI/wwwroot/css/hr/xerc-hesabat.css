@@ -1,0 +1,200 @@
+/* ── Xərc Hesabatı ───────────────────────────────────── */
+
+/* ── Filtrlər ── */
+.xh-filter-card { padding: 20px 24px 16px; }
+.xh-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px;
+    margin-bottom: 14px;
+}
+.xh-filter-group { display: flex; flex-direction: column; gap: 4px; }
+.xh-filter-group--search { grid-column: span 2; }
+.xh-filter-actions { display: flex; gap: 10px; }
+
+/* ── Xülasə kartlar ── */
+.xh-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 16px;
+}
+.xh-sum-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.xh-sum-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+.xh-sum-card--total   .xh-sum-icon { background: #f1f5f9; color: #64748b; }
+.xh-sum-card--odenildi .xh-sum-icon { background: #dcfce7; color: #15803d; }
+.xh-sum-card--gozleme  .xh-sum-icon { background: #fef9c3; color: #92400e; }
+.xh-sum-card--imtina   .xh-sum-icon { background: #fee2e2; color: #b91c1c; }
+.xh-sum-val { font-size: 20px; font-weight: 700; color: #1a1d21; }
+.xh-sum-lbl { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+/* ── Breakdown ── */
+.xh-breakdown {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.xh-bk-card { padding: 16px 20px; }
+.xh-bk-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.xh-bk-row {
+    display: grid;
+    grid-template-columns: 160px 1fr 100px;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.xh-bk-ad {
+    font-size: 13px;
+    color: #334155;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.xh-bk-say { color: #94a3b8; font-size: 11px; }
+.xh-bk-bar-wrap {
+    height: 8px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.xh-bk-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+.xh-bk-mebleg {
+    text-align: right;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1d21;
+    white-space: nowrap;
+}
+
+/* ── Əsas cədvəl ── */
+.xh-table-wrap { overflow-x: auto; }
+.xh-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+}
+.xh-table thead th {
+    background: #f8f9fb;
+    color: #4a5568;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+}
+.xh-table tbody td {
+    padding: 11px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: middle;
+}
+.xh-table tbody tr:hover td { background: #f8fafc; }
+
+.xh-tesvir {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.xh-manual-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #dbeafe;
+    color: #1d4ed8;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+.xh-kat-badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    color: #475569;
+    white-space: nowrap;
+}
+
+.xh-dept-link {
+    color: #667eea;
+    text-decoration: none;
+    cursor: pointer;
+    border-bottom: 1px dashed #c7d2fe;
+}
+.xh-dept-link:hover { color: #4f46e5; border-bottom-color: #4f46e5; }
+
+.xh-qebz-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #667eea;
+    text-decoration: none;
+    padding: 2px 8px;
+    border: 1px solid #e0e7ff;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+.xh-qebz-btn:hover { background: #eef2ff; }
+
+.xh-empty {
+    text-align: center !important;
+    padding: 56px 20px !important;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+    .xh-summary   { grid-template-columns: repeat(2, 1fr); }
+    .xh-breakdown { grid-template-columns: 1fr; }
+    .xh-bk-row    { grid-template-columns: 130px 1fr 90px; }
+}
+@media (max-width: 640px) {
+    .xh-summary          { grid-template-columns: 1fr 1fr; }
+    .xh-filter-group--search { grid-column: span 1; }
+    .xh-filters          { grid-template-columns: 1fr 1fr; }
+}

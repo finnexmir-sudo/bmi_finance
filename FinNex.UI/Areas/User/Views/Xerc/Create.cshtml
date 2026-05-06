@@ -1,15 +1,16 @@
 @{
-    ViewData["Title"] = "Yeni Xerc Muraciet";
+    ViewData["Title"] = "Yeni Xərc Müraciəti";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     var kateqoriyalar = ViewBag.Kateqoriyalar as List<FinNex.Domain.Entities.HR.XercKateqoriyasi>;
+    int? myDeptId     = ViewBag.DepartamentId;
 }
 
 <div class="fn-page">
 
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">Yeni xerc muraciet</div>
-            <div class="fn-page-sub">Xerc muracietinizi gonderin</div>
+            <div class="fn-page-title">Yeni xərc müraciəti</div>
+            <div class="fn-page-sub">Xərc müraciətinizi göndərin</div>
         </div>
         <a asp-area="User" asp-controller="Xerc" asp-action="Index"
            class="fn-btn fn-btn--outline">&#8592; Geri</a>
@@ -19,6 +20,10 @@
         <form asp-area="User" asp-controller="Xerc" asp-action="Create"
               method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
+            @if (myDeptId.HasValue)
+            {
+                <input type="hidden" id="myDeptId" value="@myDeptId" />
+            }
 
             <div class="fn-card fn-card--form">
 
@@ -28,7 +33,7 @@
                         Kateqoriya <span class="fn-required">*</span>
                     </label>
                     <select name="KateqoriyaId" class="fn-input" required>
-                        <option value="">&#8212; Sechin &#8212;</option>
+                        <option value="">&#8212; Seçin &#8212;</option>
                         @if (kateqoriyalar != null)
                         {
                             foreach (var k in kateqoriyalar)
@@ -43,34 +48,40 @@
                 <div class="fn-form-row">
                     <div class="fn-form-group">
                         <label class="fn-label">
-                            Mebleg (AZN) <span class="fn-required">*</span>
+                            Məbləğ (AZN) <span class="fn-required">*</span>
                         </label>
-                        <input type="number" name="Mebleg" class="fn-input"
+                        <input type="number" name="Mebleg" id="xercMebleg" class="fn-input"
                                step="0.01" min="0.01" required placeholder="0.00" />
                     </div>
                     <div class="fn-form-group">
                         <label class="fn-label">
-                            Xerc tarixi <span class="fn-required">*</span>
+                            Xərc tarixi <span class="fn-required">*</span>
                         </label>
-                        <input type="date" name="XercTarixi" class="fn-input"
+                        <input type="date" name="XercTarixi" id="xercTarix" class="fn-input"
                                value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
                     </div>
                 </div>
 
+                @* ── Büdcə xəbərdarı ── *@
+                @if (myDeptId.HasValue)
+                {
+                    <div id="budceXeberdar" style="display:none;margin-bottom:12px;border-radius:10px;padding:12px 16px;font-size:13px"></div>
+                }
+
                 @* ── Tesvir ── *@
                 <div class="fn-form-group">
                     <label class="fn-label">
-                        Tesvir <span class="fn-required">*</span>
+                        Təsvir <span class="fn-required">*</span>
                     </label>
                     <textarea name="Tesvir" class="fn-input" rows="3" required
-                              placeholder="Xercin tesville bagli qisa melumat..."></textarea>
+                              placeholder="Xərcin təsviri ilə bağlı qısa məlumat..."></textarea>
                 </div>
 
                 @* ── Qebz fayl ── *@
                 <div class="fn-form-group">
                     <label class="fn-label">
-                        Qebz / Fayl
-                        <span class="fn-label-hint">(isteye bagli)</span>
+                        Qəbz / Fayl
+                        <span class="fn-label-hint">(isteğe bağlı)</span>
                     </label>
                     <input type="file" name="qebzFayl" class="fn-input"
                            accept=".pdf,.jpg,.jpeg,.png" />
@@ -83,15 +94,15 @@
                         <circle cx="7" cy="7" r="5.5" stroke="#c9900a" stroke-width="1.2" />
                         <path d="M7 4.5v3M7 9v.5" stroke="#c9900a" stroke-width="1.2" stroke-linecap="round" />
                     </svg>
-                    Muracietiniz sobe reisi ve HR terafinden tesdiqlenecek.
+                    Müraciətiniz şöbə rəisi və HR tərəfindən təsdiqlənəcək.
                 </div>
 
-                @* ── Duymeler ── *@
+                @* ── Düymeler ── *@
                 <div class="fn-form-actions">
                     <a asp-area="User" asp-controller="Xerc" asp-action="Index"
-                       class="fn-btn fn-btn--outline">Legv et</a>
+                       class="fn-btn fn-btn--outline">Ləğv et</a>
                     <button type="submit" class="fn-btn fn-btn--primary">
-                        Muraciet gonder
+                        Müraciət göndər
                     </button>
                 </div>
             </div>
@@ -101,4 +112,76 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/User/xerc.css" asp-append-version="true" />
+}
+
+@if (myDeptId.HasValue)
+{
+    @section Scripts {
+        <script>
+        (function () {
+            var deptEl   = document.getElementById('myDeptId');
+            var tarixEl  = document.getElementById('xercTarix');
+            var meblegEl = document.getElementById('xercMebleg');
+            var boxEl    = document.getElementById('budceXeberdar');
+            if (!deptEl || !boxEl) return;
+
+            function loadLimit() {
+                var deptId = deptEl.value;
+                var tarix  = tarixEl.value;
+                if (!deptId || !tarix) return;
+                var d  = new Date(tarix);
+                var il = d.getFullYear();
+                var ay = d.getMonth() + 1;
+                fetch('/HR/Budce/GetLimitInfo?departamentId=' + deptId + '&il=' + il + '&ay=' + ay)
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) { showLimit(data, meblegEl.value); });
+            }
+
+            function showLimit(data, meblegVal) {
+                var mebleg = parseFloat(meblegVal) || 0;
+                function fmt(v) { return Number(v).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+                if (data.yoxdur) {
+                    boxEl.style.display = 'block';
+                    boxEl.style.background = '#f8f9fb';
+                    boxEl.style.border     = '1px solid #e2e8f0';
+                    boxEl.style.color      = '#64748b';
+                    boxEl.innerHTML = '<i class="bi bi-info-circle"></i> Bu ay üçün büdcə planı daxil edilməyib.';
+                    return;
+                }
+
+                var qaliq       = data.qaliq - mebleg;
+                var isOver      = qaliq < 0;
+                var isWarn      = !isOver && data.faiz > 79;
+                var bg    = isOver ? '#fef2f2' : isWarn ? '#fffbeb' : '#f0fdf4';
+                var border = isOver ? '#fecaca' : isWarn ? '#fde68a' : '#bbf7d0';
+                var color  = isOver ? '#dc2626' : isWarn ? '#92400e' : '#16a34a';
+                var icon   = isOver ? 'bi-exclamation-triangle-fill' : isWarn ? 'bi-exclamation-circle' : 'bi-check-circle';
+
+                boxEl.style.display    = 'block';
+                boxEl.style.background = bg;
+                boxEl.style.border     = '1px solid ' + border;
+                boxEl.style.color      = color;
+                boxEl.innerHTML = '<i class="bi ' + icon + '"></i> ' +
+                    '<strong>Büdcə:</strong> Plan <strong>' + fmt(data.plan) + ' ₼</strong> · ' +
+                    'İstifadə <strong>' + fmt(data.faktiki) + ' ₼</strong> · ' +
+                    'Qalıq <strong>' + fmt(data.qaliq) + ' ₼</strong>' +
+                    (isOver ? ' — <strong>Bu xərc büdcəni aşır!</strong>' : '');
+            }
+
+            tarixEl.addEventListener('change', loadLimit);
+            meblegEl.addEventListener('input', function () {
+                var tarix = tarixEl.value;
+                if (!tarix) return;
+                var d = new Date(tarix);
+                fetch('/HR/Budce/GetLimitInfo?departamentId=' + deptEl.value +
+                      '&il=' + d.getFullYear() + '&ay=' + (d.getMonth() + 1))
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) { showLimit(data, meblegEl.value); });
+            });
+
+            loadLimit();
+        })();
+        </script>
+    }
 }

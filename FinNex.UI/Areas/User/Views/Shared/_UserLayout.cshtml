@@ -30,6 +30,8 @@
             || currentController == "MaasParametri"
             || currentController == "Budce"
             || currentController == "Xerc"
+            || currentController == "XercKateqoriya"
+            || currentController == "XercHesabat"
             || currentController == "IsciAyliqQazanc"
             || currentController == "MezuniyyetOdenis"
             || currentController == "Guzest"
@@ -578,7 +580,7 @@
                     var mhMaasActive = currentController is "Maas" or "MezuniyyetOdenis" or "IsciAyliqQazanc"
                                        || (currentController == "Avans" && currentArea == "HR");
                     var mhParamActive = currentController is "MaasParametri" or "Guzest" or "IsciGuzest" or "IsciHYS";
-                    var mhMaliyyeActive = currentController == "Budce" || (currentArea == "HR" && (currentController == "Xerc" || currentController == "XercKateqoriya"));
+                    var mhMaliyyeActive = currentController == "Budce" || (currentArea == "HR" && (currentController == "Xerc" || currentController == "XercKateqoriya" || currentController == "XercHesabat"));
                     var mhAnyActive = mhMaasActive || mhParamActive || mhMaliyyeActive;
 
                     <div class="fn-nav-g @(mhMaasActive ? "open" : "")">
@@ -646,6 +648,10 @@
                                 <a asp-area="HR" asp-controller="Xerc" asp-action="Index"
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "Xerc" ? "active" : "")">
                                     <i class="bi bi-receipt"></i> Xərc İdarəetmə
+                                </a>
+                                <a asp-area="HR" asp-controller="XercHesabat" asp-action="Index"
+                                   class="fn-nav-item @(currentArea == "HR" && currentController == "XercHesabat" ? "active" : "")">
+                                    <i class="bi bi-bar-chart-line"></i> Xərc Hesabatı
                                 </a>
                                 <a asp-area="HR" asp-controller="XercKateqoriya" asp-action="Index"
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "XercKateqoriya" ? "active" : "")">

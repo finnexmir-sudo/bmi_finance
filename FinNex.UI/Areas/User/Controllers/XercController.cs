@@ -34,15 +34,21 @@ public class XercController : Controller
     [HttpGet]
     public async Task<IActionResult> Create()
     {
-        ViewData["Title"] = "Yeni Xerc Muraciet";
+        ViewData["Title"] = "Yeni Xərc Müraciəti";
 
-        var kateqoriyalar = await _unitOfWork.Repository<XercKateqoriyasi>()
-            .Query()
-            .Where(x => !x.Silinib && x.Aktivdir)
-            .OrderBy(x => x.Ad)
-            .ToListAsync();
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var isci = await _unitOfWork.Repository<Isci>()
+            .GetirAsync(x => x.AppUserId == userId && !x.Silinib);
 
-        ViewBag.Kateqoriyalar = kateqoriyalar;
+        var teyinat = isci != null
+            ? await _unitOfWork.Repository<IsciTeyinat>()
+                .GetirAsync(x => x.IsciId == isci.Id && x.Aktivdir, izlemeden: true)
+            : null;
+
+        ViewBag.Kateqoriyalar = await _unitOfWork.Repository<XercKateqoriyasi>()
+            .Query().Where(x => !x.Silinib && x.Aktivdir).OrderBy(x => x.Ad).ToListAsync();
+        ViewBag.DepartamentId = teyinat?.DepartamentId;
+
         return View();
     }
 
@@ -70,9 +76,13 @@ public class XercController : Controller
             faylYolu = $"/uploads/xercler/{faylAd}";
         }
 
+        var teyinat = await _unitOfWork.Repository<IsciTeyinat>()
+            .GetirAsync(x => x.IsciId == isci.Id && x.Aktivdir, izlemeden: true);
+
         var xerc = new Xerc
         {
             IsciId = isci.Id,
+            DepartamentId = teyinat?.DepartamentId,
             KateqoriyaId = dto.KateqoriyaId,
             Tesvir = dto.Tesvir,
             Mebleg = dto.Mebleg,
@@ -83,10 +93,6 @@ public class XercController : Controller
 
         await _unitOfWork.Repository<Xerc>().YaratAsync(xerc);
         await _unitOfWork.YaddaSaxlaAsync();
-
-        // Bildiriş — işçinin aktiv şöbəsində Şöbə Rəisi, yoxdursa HR/Rəhbər/Admin
-        var teyinat = await _unitOfWork.Repository<IsciTeyinat>()
-            .GetirAsync(x => x.IsciId == isci.Id && x.Aktivdir, izlemeden: true);
 
         var bashliq = "Yeni xərc müraciəti";
         var metn = $"{isci.TamAd} {xerc.Mebleg:N2} ₼ xərc müraciəti göndərdi: {xerc.Tesvir}";
