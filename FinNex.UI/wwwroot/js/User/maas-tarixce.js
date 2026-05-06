@@ -53,7 +53,7 @@
                     return '<div class="mt-detay-section ' + bgClass + '">' +
                         '<div class="mt-detay-section-head">' +
                             '<span><i class="bi ' + icon + '"></i> ' + title + '</span>' +
-                            '<span class="mt-detay-section-total ' + colorClass + '">' + sign + formatMoney(total) + ' ₼</span>' +
+                            '<span class="mt-detay-section-total ' + colorClass + '"><span class="mt-detay-section-cem">Cəmi:</span> ' + sign + formatMoney(total) + ' ₼</span>' +
                         '</div>' +
                         rows(arr, sign, colorClass) +
                     '</div>';
