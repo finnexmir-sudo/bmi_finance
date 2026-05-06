@@ -341,6 +341,20 @@ function chatDeleteMsg(msgId) {
         var empty = container.querySelector('.chat-empty-state');
         if (empty) empty.remove();
 
+        // Tarix ayırıcısı — bu gün üçün separator yoxdursa əlavə et
+        var now = new Date();
+        var todayStr = ('0' + now.getDate()).slice(-2) + '.' +
+                       ('0' + (now.getMonth() + 1)).slice(-2) + '.' +
+                       now.getFullYear();
+        var seps = container.querySelectorAll('.chat-date-sep');
+        var lastSepText = seps.length > 0 ? seps[seps.length - 1].textContent.trim() : '';
+        if (lastSepText !== todayStr) {
+            var sep = document.createElement('div');
+            sep.className = 'chat-date-sep';
+            sep.textContent = todayStr;
+            container.appendChild(sep);
+        }
+
         var cls = isMine ? 'chat-msg--mine' : 'chat-msg--other';
         var div = document.createElement('div');
         div.className = 'chat-msg ' + cls;
