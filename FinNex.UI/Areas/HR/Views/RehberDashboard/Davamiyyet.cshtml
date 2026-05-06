@@ -38,6 +38,7 @@
      data-endpoint-getgozlenilen="@Url.Action("DavamiyyetGetGozlenilen", "RehberDashboard", new { area = "HR" })"
      data-endpoint-isciaxtar="@Url.Action("DavamiyyetIsciAxtar", "RehberDashboard", new { area = "HR" })"
      data-endpoint-exportexcel="@Url.Action("DavamiyyetExportExcel", "RehberDashboard", new { area = "HR" })"
+     data-endpoint-tarixler="@Url.Action("DavamiyyetMovcudTarixler", "RehberDashboard", new { area = "HR" })"
      data-endpoint-devicestatus="">
 
     @* ── Başlıq ── *@
@@ -149,7 +150,23 @@
         <div class="hrd-filter-row" id="filterTarix">
             <div class="hrd-filter-group">
                 <label class="hrd-filter-lbl">Tarix</label>
-                <input type="date" id="hrdTarix" class="hrd-input" value="@bugun.ToString("yyyy-MM-dd")" />
+                <input type="hidden" id="hrdTarix" value="@bugun.ToString("yyyy-MM-dd")" />
+                <div class="hrd-datepick-wrap" id="hrdTarixPick">
+                    <div class="hrd-datepick-display" id="hrdTarixDisplay">
+                        <i class="bi bi-calendar3" style="color:#667eea;font-size:13px;"></i>
+                        <span id="hrdTarixText">@bugun.ToString("dd.MM.yyyy")</span>
+                        <i class="bi bi-chevron-down" style="margin-left:auto;font-size:11px;color:#94a3b8;"></i>
+                    </div>
+                    <div class="hrd-datepick-panel" id="hrdTarixPanel" style="display:none">
+                        <input type="text" id="hrdTarixSearch" class="hrd-datepick-search"
+                               placeholder="Gün yazın: 03, 05.2026 ..." autocomplete="off" />
+                        <div class="hrd-datepick-list" id="hrdTarixList">
+                            <div style="padding:14px;text-align:center;color:#94a3b8;font-size:13px;">
+                                <i class="bi bi-arrow-repeat"></i> Yüklənir...
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="hrd-filter-group">
                 <label class="hrd-filter-lbl">Status</label>
