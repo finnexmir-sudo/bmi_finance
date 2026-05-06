@@ -1,0 +1,153 @@
+@model List<FinNex.Domain.Entities.HR.XercKateqoriyasi>
+@{
+    ViewData["Title"] = "Xərc Kateqoriyaları";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/xerc-kateqoriya.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Xərc Kateqoriyaları</div>
+            <div class="fn-page-sub">Xərc növlərini idarə edin</div>
+        </div>
+        <button class="fn-btn fn-btn--primary" id="btnYeniKat">
+            <i class="bi bi-plus-lg"></i> Yeni kateqoriya
+        </button>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="xk-alert xk-alert--success">
+            <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="xk-alert xk-alert--error">
+            <i class="bi bi-exclamation-circle-fill"></i> @TempData["Error"]
+        </div>
+    }
+
+    <div class="fn-card">
+        @if (!Model.Any())
+        {
+            <div class="xk-empty">
+                <i class="bi bi-tags"></i>
+                <p>Hələ kateqoriya əlavə olunmayıb</p>
+            </div>
+        }
+        else
+        {
+            <table class="xk-table">
+                <thead>
+                    <tr>
+                        <th>İkon</th>
+                        <th>Ad</th>
+                        <th>Status</th>
+                        <th>Xərc sayı</th>
+                        <th class="xk-act">Əməliyyat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var k in Model)
+                    {
+                        <tr class="@(!k.Aktivdir ? "xk-row--deaktiv" : "")">
+                            <td><i class="bi @(k.Ikon ?? "bi-tag")" style="font-size:18px;color:#667eea"></i></td>
+                            <td class="xk-ad">@k.Ad</td>
+                            <td>
+                                @if (k.Aktivdir)
+                                {
+                                    <span class="xk-badge xk-badge--aktiv">Aktiv</span>
+                                }
+                                else
+                                {
+                                    <span class="xk-badge xk-badge--deaktiv">Deaktiv</span>
+                                }
+                            </td>
+                            <td class="xk-say">@k.Xercler.Count(x => !x.Silinib)</td>
+                            <td>
+                                <div class="xk-btns">
+                                    <button class="fn-btn fn-btn--outline xk-edit-btn"
+                                            data-id="@k.Id"
+                                            data-ad="@k.Ad"
+                                            data-ikon="@(k.Ikon ?? "bi-tag")"
+                                            data-aktiv="@k.Aktivdir.ToString().ToLower()">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    @if (k.Xercler.Count(x => !x.Silinib) == 0)
+                                    {
+                                        <form asp-action="Sil" asp-route-id="@k.Id" method="post"
+                                              style="display:inline"
+                                              onsubmit="return confirm('@k.Ad kateqoriyasını silmək istəyirsiniz?')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="fn-btn fn-btn--danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@* ── Yeni / Redaktə Modal ── *@
+<div class="xk-modal-overlay" id="katModal" style="display:none">
+    <div class="xk-modal">
+        <div class="xk-modal-head">
+            <span id="katModalTitle">Yeni kateqoriya</span>
+            <button type="button" class="xk-modal-close" id="katModalClose">&times;</button>
+        </div>
+        <form id="katForm" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="katId" name="id" value="0" />
+
+            <div class="fn-form-group" style="padding:20px 24px 0">
+                <label class="fn-label">Ad <span class="fn-required">*</span></label>
+                <input type="text" name="ad" id="katAd" class="fn-input" required
+                       placeholder="Kateqoriya adı..." maxlength="100" />
+            </div>
+
+            <div class="fn-form-group" style="padding:12px 24px 0">
+                <label class="fn-label">Bootstrap ikonu <span class="fn-label-hint">(isteğe bağlı)</span></label>
+                <div class="xk-ikon-wrap">
+                    <input type="text" name="ikon" id="katIkon" class="fn-input"
+                           placeholder="bi-tag, bi-car-front, bi-airplane ..." />
+                    <i class="bi xk-ikon-preview" id="ikonPreview"></i>
+                </div>
+                <div class="fn-hint">
+                    <a href="https://icons.getbootstrap.com" target="_blank">Bootstrap Icons</a> siyahısından seçin
+                </div>
+            </div>
+
+            <div class="fn-form-group xk-aktiv-row" id="aktivRow" style="padding:12px 24px 0;display:none">
+                <label class="xk-checkbox-label">
+                    <input type="checkbox" name="aktivdir" id="katAktivdir" value="true" />
+                    <span>Aktiv</span>
+                </label>
+            </div>
+
+            <div class="xk-modal-foot">
+                <button type="button" class="fn-btn fn-btn--outline" id="katModalCancel">Ləğv</button>
+                <button type="submit" class="fn-btn fn-btn--primary" id="katModalSave">
+                    <i class="bi bi-save"></i> Yadda saxla
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script src="~/js/hr/xerc-kateqoriya.js" asp-append-version="true"></script>
+}
