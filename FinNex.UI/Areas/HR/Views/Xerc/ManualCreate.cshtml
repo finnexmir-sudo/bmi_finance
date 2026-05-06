@@ -50,8 +50,14 @@
                         {
                             foreach (var d in departamentler)
                             {
-                                <option value="@d.Id"
-                                    @(Model?.DepartamentId == d.Id ? "selected" : "")>@d.Ad</option>
+                                if (Model?.DepartamentId == d.Id)
+                                {
+                                    <option value="@d.Id" selected>@d.Ad</option>
+                                }
+                                else
+                                {
+                                    <option value="@d.Id">@d.Ad</option>
+                                }
                             }
                         }
                     </select>
@@ -68,8 +74,14 @@
                         {
                             foreach (var k in kateqoriyalar)
                             {
-                                <option value="@k.Id"
-                                    @(Model?.KateqoriyaId == k.Id ? "selected" : "")>@k.Ad</option>
+                                if (Model?.KateqoriyaId == k.Id)
+                                {
+                                    <option value="@k.Id" selected>@k.Ad</option>
+                                }
+                                else
+                                {
+                                    <option value="@k.Id">@k.Ad</option>
+                                }
                             }
                         }
                     </select>
