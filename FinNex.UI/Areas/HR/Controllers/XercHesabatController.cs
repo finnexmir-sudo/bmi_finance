@@ -150,7 +150,7 @@ public class XercHesabatController : Controller
         string? basTarix, string? sonTarix,
         int? departamentId, int? kateqoriyaId, int? status)
     {
-        var query = _uow.Repository<Xerc>()
+        IQueryable<Xerc> query = _uow.Repository<Xerc>()
             .Query()
             .Where(x => !x.Silinib)
             .Include(x => x.Kateqoriya)
