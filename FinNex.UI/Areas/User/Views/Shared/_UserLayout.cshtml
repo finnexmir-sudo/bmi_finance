@@ -578,7 +578,7 @@
                     var mhMaasActive = currentController is "Maas" or "MezuniyyetOdenis" or "IsciAyliqQazanc"
                                        || (currentController == "Avans" && currentArea == "HR");
                     var mhParamActive = currentController is "MaasParametri" or "Guzest" or "IsciGuzest" or "IsciHYS";
-                    var mhMaliyyeActive = currentController == "Budce" || (currentController == "Xerc" && currentArea == "HR");
+                    var mhMaliyyeActive = currentController == "Budce" || (currentArea == "HR" && (currentController == "Xerc" || currentController == "XercKateqoriya"));
                     var mhAnyActive = mhMaasActive || mhParamActive || mhMaliyyeActive;
 
                     <div class="fn-nav-g @(mhMaasActive ? "open" : "")">
@@ -646,6 +646,10 @@
                                 <a asp-area="HR" asp-controller="Xerc" asp-action="Index"
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "Xerc" ? "active" : "")">
                                     <i class="bi bi-receipt"></i> Xərc İdarəetmə
+                                </a>
+                                <a asp-area="HR" asp-controller="XercKateqoriya" asp-action="Index"
+                                   class="fn-nav-item @(currentArea == "HR" && currentController == "XercKateqoriya" ? "active" : "")">
+                                    <i class="bi bi-tags"></i> Xərc Kateqoriyaları
                                 </a>
                             </div>
                         </div>
