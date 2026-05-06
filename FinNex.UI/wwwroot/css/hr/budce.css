@@ -1,220 +1,307 @@
-/* ── Budce Planlamasi ─────────────────────────────────── */
+/* ── Büdcə Planlaması ────────────────────────────────── */
 
 .budce-actions {
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
-/* ── Summary Cards ── */
+/* ── Xülasə kartlar ── */
 .budce-summary {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 }
-
-.budce-sum-card {
-    text-align: center;
-    padding: 20px;
-}
-
+.budce-sum-card { text-align: center; padding: 20px; }
 .budce-sum-label {
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 700;
     color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 6px;
 }
+.budce-sum-val { font-size: 22px; font-weight: 700; color: #1a1d21; }
 
-.budce-sum-val {
-    font-size: 22px;
-    font-weight: 700;
-    color: #1a1d21;
+/* ── Legend ── */
+.budce-legend {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
 }
+.budce-legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+.budce-legend-dot--plan { background: #dbeafe; border: 1px solid #93c5fd; }
+.budce-legend-dot--fakt { background: #ede9fe; border: 1px solid #c4b5fd; }
+.budce-legend-dot--over { background: #fef2f2; border: 1px solid #fca5a5; }
+.budce-legend-sep       { color: #e2e8f0; }
 
-/* ── Table Wrapper ── */
+/* ── Cədvəl ── */
 .budce-table-wrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
 }
-
 .budce-table {
     width: 100%;
-    min-width: 1400px;
+    min-width: 1600px;
     border-collapse: separate;
     border-spacing: 0;
     font-size: 12px;
 }
-
 .budce-table thead th {
     background: #f8f9fb;
     color: #4a5568;
     font-weight: 600;
-    padding: 10px 8px;
+    padding: 9px 6px;
     text-align: center;
     border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
     position: sticky;
     top: 0;
     z-index: 1;
-    white-space: nowrap;
 }
-
 .budce-th-dept {
     text-align: left !important;
-    min-width: 160px;
+    min-width: 170px;
     position: sticky;
     left: 0;
     background: #f8f9fb !important;
     z-index: 2 !important;
+    padding-left: 14px !important;
 }
-
 .budce-sub-header th {
     font-size: 10px;
-    padding: 4px 8px;
+    padding: 4px 6px;
     color: #94a3b8;
     border-bottom: 1px solid #e2e8f0;
 }
-
 .budce-th-plan { color: #2563eb; }
 .budce-th-fakt { color: #7c3aed; }
 
+/* ── Hüceyrələr ── */
 .budce-table tbody td {
-    padding: 8px;
+    padding: 6px;
     text-align: center;
     border-bottom: 1px solid #f1f5f9;
-    cursor: pointer;
-    transition: background 0.15s;
+    vertical-align: middle;
+    line-height: 1.2;
 }
-
-.budce-table tbody td:first-child {
-    text-align: left;
+.budce-td-dept {
+    text-align: left !important;
     font-weight: 600;
     color: #1e293b;
     position: sticky;
     left: 0;
     background: #fff;
-    cursor: default;
+    padding-left: 14px !important;
+    z-index: 1;
 }
-
-.budce-table tbody tr:hover td {
-    background: #f8fafc;
+.budce-dept-link {
+    color: #1e293b;
+    text-decoration: none;
+    cursor: pointer;
+    border-bottom: 1px dashed #cbd5e1;
+    transition: color 0.15s;
 }
+.budce-dept-link:hover { color: #667eea; border-bottom-color: #667eea; }
 
-.budce-table tbody td:first-child:hover {
-    background: #f8fafc;
+.budce-plan-cell { cursor: pointer; }
+.budce-plan-cell:hover { background: #eff6ff !important; }
+.budce-fakt-cell { cursor: pointer; }
+.budce-fakt-cell:hover { background: #f5f3ff !important; }
+
+.budce-table tbody tr:hover .budce-td-dept { background: #f8fafc; }
+
+/* Rəng kodlaması */
+.budce-cell--plan { color: #2563eb; }
+.budce-cell--fakt { color: #7c3aed; }
+.budce-cell--zero { color: #cbd5e1; }
+.budce-cell--over { color: #dc2626 !important; font-weight: 600; background: #fff5f5 !important; }
+.budce-cell--total { font-weight: 700; background: #f8f9fb !important; cursor: default !important; }
+.budce-cell--ferq  { font-weight: 700; cursor: default !important; }
+.budce-cell--pos   { color: #16a34a; }
+.budce-cell--neg   { color: #dc2626; }
+
+/* Progress bar */
+.budce-bar {
+    height: 3px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    margin-top: 3px;
+    overflow: hidden;
 }
-
-/* Color coding */
-.budce-cell--under {
-    color: #16a34a;
-    font-weight: 500;
+.budce-bar-fill {
+    height: 100%;
+    background: #7c3aed;
+    border-radius: 2px;
+    transition: width 0.3s;
 }
+.budce-bar-fill--warn { background: #f59e0b; }
+.budce-bar-fill--over { background: #dc2626; }
 
-.budce-cell--over {
-    color: #dc2626;
-    font-weight: 600;
-    background: #fef2f2 !important;
-}
-
-.budce-cell--plan {
-    color: #2563eb;
-}
-
-.budce-cell--fakt {
-    color: #7c3aed;
-}
-
-.budce-cell--zero {
-    color: #cbd5e1;
-}
-
-.budce-cell--total {
-    font-weight: 700;
-    background: #f8f9fb !important;
-}
-
-.budce-empty {
-    text-align: center !important;
-    color: #94a3b8;
-    padding: 40px !important;
-    font-size: 14px;
-    cursor: default !important;
-}
-
-/* ── Summary Row ── */
+/* Cəm sətri */
 .budce-summary-row td {
     font-weight: 700 !important;
     background: #f1f5f9 !important;
     border-top: 2px solid #e2e8f0;
     cursor: default !important;
 }
+.budce-empty {
+    text-align: center !important;
+    color: #94a3b8;
+    padding: 48px 20px !important;
+    font-size: 14px;
+    cursor: default !important;
+}
+
+/* ── Detay panel ── */
+.budce-detay {
+    display: none;
+    flex-direction: column;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fff;
+    margin-top: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    animation: slideUp 0.2s ease;
+}
+.budce-detay--open { display: flex; }
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.budce-detay-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    background: #fafbfc;
+}
+.budce-detay-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1d21;
+}
+.budce-detay-link {
+    font-size: 12px;
+    color: #667eea;
+    text-decoration: none;
+    margin-top: 4px;
+    display: inline-block;
+}
+.budce-detay-link:hover { text-decoration: underline; }
+
+.budce-detay-body {
+    overflow-x: auto;
+    flex: 1;
+}
+.budce-detay-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.budce-detay-table thead th {
+    background: #f8f9fb;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 9px 14px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+.budce-detay-table tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f8fafc;
+    color: #334155;
+    vertical-align: middle;
+}
+.budce-detay-table tbody tr:hover td { background: #fafbfc; }
+.budce-detay-tesvir {
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.budce-detay-foot {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    border-top: 1px solid #f1f5f9;
+    background: #fafbfc;
+}
+.budce-detay-toplam { font-size: 16px; font-weight: 700; color: #16a34a; }
 
 /* ── Modal ── */
 .budce-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0,0,0,0.4);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
 }
-
 .budce-modal {
     background: #fff;
-    border-radius: 12px;
-    width: 480px;
+    border-radius: 14px;
+    width: 440px;
     max-width: 95vw;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
 }
-
 .budce-modal-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 20px 24px 0;
+    align-items: flex-start;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #f1f5f9;
 }
-
-.budce-modal-header h3 {
-    font-size: 16px;
-    font-weight: 700;
-    color: #1a1d21;
-    margin: 0;
-}
-
-.budce-modal-close {
-    background: none;
-    border: none;
-    font-size: 22px;
-    color: #94a3b8;
-    cursor: pointer;
-    line-height: 1;
-}
-
-.budce-modal-close:hover {
+.budce-modal-info {
+    background: #f8f9fb;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
     color: #475569;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
-
-.budce-modal-body {
-    padding: 20px 24px;
-}
-
+.budce-modal-lbl { color: #94a3b8; font-size: 12px; }
+.budce-modal-body { padding: 16px 24px; }
 .budce-modal-footer {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    padding: 0 24px 20px;
+    padding: 12px 24px 20px;
+    border-top: 1px solid #f1f5f9;
 }
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
-    .budce-summary {
-        grid-template-columns: 1fr;
-    }
-
-    .budce-actions {
-        flex-wrap: wrap;
-    }
+    .budce-summary { grid-template-columns: 1fr; }
+    .budce-actions { flex-wrap: wrap; }
+    .budce-legend  { display: none; }
 }

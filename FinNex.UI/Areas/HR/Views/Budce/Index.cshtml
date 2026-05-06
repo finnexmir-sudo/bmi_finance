@@ -1,22 +1,26 @@
 @{
-    ViewData["Title"] = "Budce Planlamasi";
+    ViewData["Title"] = "Büdcə Planlaması";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/budce.css" asp-append-version="true" />
 }
 
 <div class="fn-page">
 
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">Budce Planlamasi</div>
-            <div class="fn-page-sub">Departament budcelerinin illik plan ve faktiki gostericileri</div>
+            <div class="fn-page-title">Büdcə Planlaması</div>
+            <div class="fn-page-sub">Departament büdcələrinin illik plan və faktiki göstəriciləri</div>
         </div>
         <div class="budce-actions">
-            <select id="budceIl" class="fn-input" style="width:120px;display:inline-block">
+            <select id="budceIl" class="fn-input" style="width:110px">
                 @for (int y = DateTime.Now.Year + 1; y >= 2022; y--)
                 {
                     if (y == DateTime.Now.Year)
                     {
-                        <option value="@y" selected="selected">@y</option>
+                        <option value="@y" selected>@y</option>
                     }
                     else
                     {
@@ -24,116 +28,156 @@
                     }
                 }
             </select>
-            <button id="btnYukle" class="fn-btn fn-btn--primary" type="button">Goster</button>
+            <button id="btnYukle" class="fn-btn fn-btn--primary" type="button">
+                <i class="bi bi-bar-chart-line"></i> Göstər
+            </button>
+            <a href="/HR/XercHesabat" class="fn-btn fn-btn--outline">
+                <i class="bi bi-list-ul"></i> Xərc Hesabatı
+            </a>
             <button id="btnExcel" class="fn-btn fn-btn--outline" type="button">
                 <i class="bi bi-file-earmark-excel"></i> Excel
             </button>
         </div>
     </div>
 
-    @* ── Summary Cards ── *@
+    @Html.AntiForgeryToken()
+
+    @* ── Xülasə kartlar ── *@
     <div class="budce-summary" id="summaryCards" style="display:none">
         <div class="fn-card budce-sum-card">
-            <div class="budce-sum-label">Umumi Plan</div>
+            <div class="budce-sum-label">Ümumi Plan</div>
             <div class="budce-sum-val" id="umumiPlan">0.00</div>
         </div>
         <div class="fn-card budce-sum-card">
-            <div class="budce-sum-label">Umumi Faktiki</div>
+            <div class="budce-sum-label">Ümumi Faktiki</div>
             <div class="budce-sum-val" id="umumiFaktiki">0.00</div>
         </div>
         <div class="fn-card budce-sum-card">
-            <div class="budce-sum-label">Ferq</div>
+            <div class="budce-sum-label">Qalıq</div>
             <div class="budce-sum-val" id="umumiFerq">0.00</div>
         </div>
     </div>
 
-    @* ── Budget Grid ── *@
-    <div class="fn-card">
+    @* ── Legend ── *@
+    <div class="budce-legend">
+        <span><span class="budce-legend-dot budce-legend-dot--plan"></span> Plan <small>(klikləyin → redaktə)</small></span>
+        <span><span class="budce-legend-dot budce-legend-dot--fakt"></span> Faktiki <small>(klikləyin → xərclər)</small></span>
+        <span><span class="budce-legend-dot budce-legend-dot--over"></span> Limit aşılıb</span>
+        <span class="budce-legend-sep">|</span>
+        <span style="color:#667eea;font-size:12px"><i class="bi bi-cursor"></i> Şöbə adına klikləyin — tam hesabat</span>
+    </div>
+
+    @* ── Büdcə grid ── *@
+    <div class="fn-card" style="padding:0;overflow:hidden">
         <div class="budce-table-wrap">
             <table class="budce-table" id="budceTable">
                 <thead>
                     <tr>
-                        <th class="budce-th-dept">Departament</th>
+                        <th class="budce-th-dept" rowspan="2">Departament</th>
                         <th colspan="2">Yan</th>
                         <th colspan="2">Fev</th>
                         <th colspan="2">Mar</th>
                         <th colspan="2">Apr</th>
                         <th colspan="2">May</th>
-                        <th colspan="2">Iyn</th>
-                        <th colspan="2">Iyl</th>
+                        <th colspan="2">İyn</th>
+                        <th colspan="2">İyl</th>
                         <th colspan="2">Avq</th>
                         <th colspan="2">Sen</th>
                         <th colspan="2">Okt</th>
                         <th colspan="2">Noy</th>
                         <th colspan="2">Dek</th>
-                        <th>Toplam Plan</th>
-                        <th>Toplam Faktiki</th>
+                        <th rowspan="2">Top. Plan</th>
+                        <th rowspan="2">Top. Fakt.</th>
+                        <th rowspan="2">Fərq</th>
                     </tr>
                     <tr class="budce-sub-header">
-                        <th></th>
                         @for (int i = 0; i < 12; i++)
                         {
-                            <th class="budce-th-plan">P</th>
-                            <th class="budce-th-fakt">F</th>
+                            <th class="budce-th-plan" title="Plan — klikləyin redaktə üçün">P</th>
+                            <th class="budce-th-fakt" title="Faktiki — klikləyin xərcləri görmək üçün">F</th>
                         }
-                        <th></th>
-                        <th></th>
                     </tr>
                 </thead>
                 <tbody id="budceBody">
                     <tr>
-                        <td colspan="27" class="budce-empty">Yuklemek uchun "Goster" duymesini basin</td>
+                        <td colspan="28" class="budce-empty">
+                            <i class="bi bi-bar-chart" style="font-size:2rem;display:block;margin-bottom:8px;color:#cbd5e1"></i>
+                            Yükləmək üçün "Göstər" düyməsini basın
+                        </td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    @* ── Edit Modal ── *@
-    <div class="budce-modal-overlay" id="editModal" style="display:none">
-        <div class="budce-modal">
-            <div class="budce-modal-header">
-                <h3>Budce Redakte</h3>
-                <button type="button" class="budce-modal-close" id="btnModalClose">&times;</button>
+    @* ── Detay panel ── *@
+    <div class="budce-detay" id="detayPanel">
+        <div class="budce-detay-head">
+            <div>
+                <div class="budce-detay-title" id="detayTitle">Xərclər</div>
+                <a id="detayHesabatLink" href="/HR/XercHesabat" class="budce-detay-link">
+                    <i class="bi bi-box-arrow-up-right"></i> Tam hesabata keç
+                </a>
             </div>
-            <div class="budce-modal-body">
-                <input type="hidden" id="editDeptId" />
-                <input type="hidden" id="editAy" />
+            <button type="button" class="xk-modal-close" id="btnDetayClose">&times;</button>
+        </div>
+        <div class="budce-detay-body">
+            <table class="budce-detay-table">
+                <thead>
+                    <tr>
+                        <th>Tarix</th>
+                        <th>İşçi / Giriş</th>
+                        <th>Kateqoriya</th>
+                        <th>Təsvir / Status</th>
+                        <th style="text-align:right">Məbləğ</th>
+                    </tr>
+                </thead>
+                <tbody id="detayBody"></tbody>
+            </table>
+        </div>
+        <div class="budce-detay-foot" id="detayFooter" style="display:none">
+            <span style="color:#64748b;font-size:13px">Ödənildi cəmi:</span>
+            <span class="budce-detay-toplam" id="detayToplam">0.00 ₼</span>
+        </div>
+    </div>
 
-                <div class="fn-form-group">
-                    <label class="fn-label">Departament</label>
-                    <input type="text" id="editDeptAd" class="fn-input" readonly />
-                </div>
-                <div class="fn-form-group">
-                    <label class="fn-label">Ay</label>
-                    <input type="text" id="editAyAd" class="fn-input" readonly />
-                </div>
-                <div class="fn-form-row">
-                    <div class="fn-form-group">
-                        <label class="fn-label">Plan Mebleg</label>
-                        <input type="number" id="editPlan" class="fn-input" step="0.01" min="0" />
-                    </div>
-                    <div class="fn-form-group">
-                        <label class="fn-label">Faktiki Mebleg</label>
-                        <input type="number" id="editFaktiki" class="fn-input" step="0.01" min="0" />
-                    </div>
-                </div>
-                <div class="fn-form-group">
-                    <label class="fn-label">Qeyd</label>
-                    <textarea id="editQeyd" class="fn-input" rows="2"></textarea>
-                </div>
+</div>
+
+@* ── Plan redaktə modalı ── *@
+<div class="budce-modal-overlay" id="editModal" style="display:none">
+    <div class="budce-modal">
+        <div class="budce-modal-header">
+            <div>
+                <h3 style="margin:0;font-size:16px;font-weight:700;color:#1a1d21">Büdcə Planı</h3>
+                <p style="margin:4px 0 0;font-size:12px;color:#64748b">Plan məbləğini daxil edin</p>
             </div>
-            <div class="budce-modal-footer">
-                <button type="button" class="fn-btn fn-btn--outline" id="btnModalCancel">Legv</button>
-                <button type="button" class="fn-btn fn-btn--primary" id="btnModalSave">Yadda Saxla</button>
+            <button type="button" class="xk-modal-close" id="btnModalClose">&times;</button>
+        </div>
+        <div class="budce-modal-body">
+            <input type="hidden" id="editDeptId" />
+            <input type="hidden" id="editAy" />
+            <div class="budce-modal-info">
+                <div><span class="budce-modal-lbl">Departament:</span> <span id="editDeptAd" style="font-weight:600"></span></div>
+                <div><span class="budce-modal-lbl">Ay:</span> <span id="editAyAd" style="font-weight:600"></span></div>
             </div>
+            <div class="fn-form-group" style="margin-top:16px">
+                <label class="fn-label">Plan məbləği (AZN) <span class="fn-required">*</span></label>
+                <input type="number" id="editPlan" class="fn-input" step="0.01" min="0" placeholder="0.00" />
+                <div class="fn-hint">Faktiki xərclər avtomatik hesablanır</div>
+            </div>
+            <div class="fn-form-group">
+                <label class="fn-label">Qeyd <span class="fn-label-hint">(isteğe bağlı)</span></label>
+                <textarea id="editQeyd" class="fn-input" rows="2" placeholder="Bu ay büdcəsi haqqında qeyd..."></textarea>
+            </div>
+        </div>
+        <div class="budce-modal-footer">
+            <button type="button" class="fn-btn fn-btn--outline" id="btnModalCancel">Ləğv</button>
+            <button type="button" class="fn-btn fn-btn--primary" id="btnModalSave">
+                <i class="bi bi-save"></i> Yadda saxla
+            </button>
         </div>
     </div>
 </div>
-
-@section Styles {
-    <link rel="stylesheet" href="~/css/hr/budce.css" asp-append-version="true" />
-}
 
 @section Scripts {
     <script src="~/js/hr/budce.js" asp-append-version="true"></script>
