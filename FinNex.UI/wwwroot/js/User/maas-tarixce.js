@@ -9,9 +9,11 @@
     var detayPanel = document.getElementById('detayPanel');
 
     function formatMoney(val) {
-        return Number(val).toLocaleString('az-AZ', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
+        var n = Number(val);
+        var dec = n % 1 === 0 ? 0 : 2;
+        return n.toLocaleString('az-AZ', {
+            minimumFractionDigits: dec,
+            maximumFractionDigits: dec
         });
     }
 
@@ -35,12 +37,16 @@
                 var sirket = (res.addimlar || []).filter(function (x) { return x.tip === 'sirket'; });
                 var melumat = (res.addimlar || []).filter(function (x) { return x.tip === 'melumati'; });
 
+                function cleanIzah(s) {
+                    // "200,0000" → "200", "1.900,00" → "1.900" (tam ədəddən sıfır ondalıqları sil)
+                    return s.replace(/,0+(?=\D|$)/g, '');
+                }
                 function rows(arr, sign, colorClass) {
                     return arr.map(function (x) {
                         return '<div class="mt-detay-row">' +
                             '<div class="mt-detay-row-left">' +
                                 '<span class="mt-detay-row-name">' + x.addim + '</span>' +
-                                (x.izah ? '<span class="mt-detay-row-izah">' + x.izah + '</span>' : '') +
+                                (x.izah ? '<span class="mt-detay-row-izah">' + cleanIzah(x.izah) + '</span>' : '') +
                             '</div>' +
                             '<span class="mt-detay-row-val ' + colorClass + '">' + sign + formatMoney(x.mebleg) + ' ₼</span>' +
                         '</div>';
