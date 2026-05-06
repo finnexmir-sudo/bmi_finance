@@ -119,6 +119,23 @@
     gap: 8px;
 }
 .sirket-edit-btn { font-size: 13px; }
+.sirket-reset-btn {
+    font-size: 12px;
+    padding: 6px 12px;
+    background: #fff;
+    color: #94a3b8;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.15s;
+}
+.sirket-reset-btn:hover {
+    color: #dc2626;
+    border-color: #fca5a5;
+    background: #fff5f5;
+}
+
 .sirket-undo-btn {
     font-size: 12px;
     padding: 6px 12px;
