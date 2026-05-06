@@ -287,7 +287,27 @@
                         <i class="bi bi-distribute-vertical"></i> Bərabər böl
                     </button>
                 </div>
-                <div id="bereberBolResult" style="margin-top:8px;font-size:12px;color:#16a34a;display:none"></div>
+
+                @* Təsdiq paneli *@
+                <div id="bereberTesdiq" class="bereberTesdiq" style="display:none">
+                    <div class="bereberTesdiq-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                    <div class="bereberTesdiq-body">
+                        <div class="bereberTesdiq-msg" id="bereberTesdiqMsg"></div>
+                        <div class="bereberTesdiq-warn">Mövcud planlar üzərinə yazılacaq!</div>
+                    </div>
+                    <div class="bereberTesdiq-btns">
+                        <button type="button" class="fn-btn fn-btn--sm fn-btn--outline" id="btnTesdiqXeyr">Xeyr</button>
+                        <button type="button" class="fn-btn fn-btn--sm fn-btn--primary" id="btnTesdiqBeli">Bəli, paylat</button>
+                    </div>
+                </div>
+
+                @* Nəticə + Geri qaytar *@
+                <div id="bereberBolResult" class="bereberBolResult" style="display:none">
+                    <span id="bereberBolMsg"></span>
+                    <button type="button" class="fn-btn fn-btn--sm bereberBolResult-undo" id="btnGeriQaytar">
+                        <i class="bi bi-arrow-counterclockwise"></i> Geri qaytar
+                    </button>
+                </div>
             </div>
         </div>
         <div class="budce-modal-footer">

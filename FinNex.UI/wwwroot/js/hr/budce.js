@@ -9,6 +9,7 @@
     var cachedData      = null;
     var cachedSirket    = null;
     var currentIl       = null;
+    var undoSnapshot    = null;   // bölüşdürmədən əvvəlki planlar
 
     function fmt(val) {
         var n = Number(val) || 0;
@@ -130,40 +131,102 @@
         });
     }
 
+    // Snapshot çək — bölüşdürmədən əvvəl cari planları yadda saxla
+    function snapshotPlans(aylar) {
+        if (!cachedData || !cachedData.departamentlar) return [];
+        var snap = [];
+        cachedData.departamentlar.forEach(function (dept) {
+            aylar.forEach(function (ay) {
+                var a = dept.aylar.find(function (x) { return x.ay === ay; });
+                snap.push({
+                    departamentId : dept.departamentId,
+                    il            : parseInt(currentIl),
+                    ay            : ay,
+                    planMebleg    : a ? (Number(a.plan) || 0) : 0
+                });
+            });
+        });
+        return snap;
+    }
+
     function bereberBol() {
-        var ayVal = parseInt(document.getElementById('bereberAy').value);
+        var ayVal     = parseInt(document.getElementById('bereberAy').value);
         var meblegVal = parseFloat(document.getElementById('sirketMeblegInput').value);
-        if (isNaN(meblegVal) || meblegVal <= 0) { alert('Əvvəlcə büdcəni yadda saxlayın.'); return; }
+        if (isNaN(meblegVal) || meblegVal <= 0) { alert('Evvelce budceni yadda saxlayin.'); return; }
 
-        var btn = document.getElementById('btnBereberBol');
-        btn.disabled = true;
-
-        var requests = [];
-        // payPerAy = ümumi büdcə / ay sayı (şöbə sayına bölmə server tərəfindədir)
         var aylar    = ayVal === 0 ? [1,2,3,4,5,6,7,8,9,10,11,12] : [ayVal];
         var payPerAy = Math.round((meblegVal / aylar.length) * 100) / 100;
 
-        aylar.forEach(function (ay) {
-            requests.push(
-                fetch('/HR/Budce/BereberBol', {
+        // Əvvəlcə təsdiq göstər
+        var tesdiqEl = document.getElementById('bereberTesdiq');
+        var msgEl    = document.getElementById('bereberTesdiqMsg');
+        var ayLabel  = ayVal === 0 ? 'bütün 12 ay' : ayAdlari[ayVal - 1];
+        var deptSay  = cachedData && cachedData.departamentlar ? cachedData.departamentlar.length : '?';
+
+        msgEl.innerHTML = '<strong>' + ayLabel + '</strong> üzrə <strong>' + deptSay +
+            '</strong> şöbəyə hər birinə <strong>' + fmt(payPerAy) + ' ₼</strong> paylanacaq.';
+        document.getElementById('bereberBolResult').style.display = 'none';
+        tesdiqEl.style.display = 'flex';
+
+        // Təsdiq — Bəli
+        document.getElementById('btnTesdiqBeli').onclick = function () {
+            tesdiqEl.style.display = 'none';
+
+            // Snapshot saxla
+            undoSnapshot = snapshotPlans(aylar);
+
+            var btn = document.getElementById('btnBereberBol');
+            btn.disabled = true;
+
+            var requests = aylar.map(function (ay) {
+                return fetch('/HR/Budce/BereberBol', {
                     method  : 'POST',
                     headers : { 'Content-Type': 'application/json', 'RequestVerificationToken': token() },
                     body    : JSON.stringify({ il: parseInt(currentIl), ay: ay, mebleg: payPerAy })
-                }).then(function (r) { return r.json(); })
-            );
-        });
+                }).then(function (r) { return r.json(); });
+            });
 
-        Promise.all(requests)
-            .then(function () {
-                var resultEl = document.getElementById('bereberBolResult');
-                resultEl.style.display = 'block';
-                resultEl.textContent = ayVal === 0
-                    ? 'Bütün 12 ay: hər aya ' + fmt(payPerAy / 1) + ' ₼ bərabər paylandı.'
-                    : ayAdlari[ayVal - 1] + ': hər şöbəyə ' + fmt(payPerAy) + ' ₼ paylandı.';
-                loadData();
-            })
-            .catch(function () { alert('Xeta bas verdi.'); })
-            .finally(function () { btn.disabled = false; });
+            Promise.all(requests)
+                .then(function () {
+                    var resultEl = document.getElementById('bereberBolResult');
+                    var msgBoxEl = document.getElementById('bereberBolMsg');
+                    msgBoxEl.textContent = ayLabel + ': hər şöbəyə ' + fmt(payPerAy) + ' ₼ paylandı.';
+                    resultEl.style.display = 'flex';
+                    loadData();
+                })
+                .catch(function () { alert('Xeta bas verdi.'); undoSnapshot = null; })
+                .finally(function () { btn.disabled = false; });
+        };
+
+        // Təsdiq — Xeyr
+        document.getElementById('btnTesdiqXeyr').onclick = function () {
+            tesdiqEl.style.display = 'none';
+        };
+    }
+
+    function geriQaytar() {
+        if (!undoSnapshot || undoSnapshot.length === 0) return;
+
+        var btn = document.getElementById('btnGeriQaytar');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Bərpa edilir...';
+
+        fetch('/HR/Budce/RestorePlans', {
+            method  : 'POST',
+            headers : { 'Content-Type': 'application/json', 'RequestVerificationToken': token() },
+            body    : JSON.stringify(undoSnapshot)
+        })
+        .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+        .then(function () {
+            undoSnapshot = null;
+            document.getElementById('bereberBolResult').style.display = 'none';
+            loadData();
+        })
+        .catch(function () { alert('Bərpa zamanı xeta bas verdi.'); })
+        .finally(function () {
+            btn.disabled  = false;
+            btn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i> Geri qaytar';
+        });
     }
 
     // ── Cədvəl render ────────────────────────────────────────
@@ -410,6 +473,7 @@
     document.getElementById('btnSirketModalCancel').addEventListener('click', closeSirketModal);
     document.getElementById('btnSirketModalSave').addEventListener('click', saveSirketBudce);
     document.getElementById('btnBereberBol').addEventListener('click', bereberBol);
+    document.getElementById('btnGeriQaytar').addEventListener('click', geriQaytar);
 
     document.getElementById('editModal').addEventListener('click', function (e) {
         if (e.target === this) closeModal();

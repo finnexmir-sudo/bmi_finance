@@ -310,6 +310,45 @@ public class BudceController : Controller
         return Ok(new { message = $"{departamentlar.Count} şöbəyə {pay:N2} ₼ paylandı." });
     }
 
+    // ── POST /HR/Budce/RestorePlans ──────────────────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RestorePlans([FromBody] List<RestorePlanItem> items)
+    {
+        if (items == null || items.Count == 0)
+            return BadRequest(new { message = "Bərpa məlumatı yoxdur." });
+
+        foreach (var item in items)
+        {
+            if (item.DepartamentId <= 0 || item.Il < 2020 || item.Ay < 1 || item.Ay > 12) continue;
+
+            var existing = await _unitOfWork.Repository<Budce>()
+                .GetirAsync(x => !x.Silinib
+                    && x.DepartamentId == item.DepartamentId
+                    && x.Il == item.Il && x.Ay == item.Ay);
+
+            if (existing != null)
+            {
+                existing.PlanMebleg = item.PlanMebleg;
+                await _unitOfWork.Repository<Budce>().YenileAsync(existing);
+            }
+            else if (item.PlanMebleg > 0)
+            {
+                await _unitOfWork.Repository<Budce>().YaratAsync(new Budce
+                {
+                    DepartamentId = item.DepartamentId,
+                    Il            = item.Il,
+                    Ay            = item.Ay,
+                    PlanMebleg    = item.PlanMebleg,
+                    FaktikiMebleg = 0
+                });
+            }
+        }
+
+        await _unitOfWork.YaddaSaxlaAsync();
+        return Ok(new { message = "Planlar bərpa edildi." });
+    }
+
     // ── GET /HR/Budce/ExportExcel?il=2026 ───────────────────
     [HttpGet]
     public async Task<IActionResult> ExportExcel(int il)
@@ -452,4 +491,12 @@ public class BereberBolDto
     public int     Il     { get; set; }
     public int     Ay     { get; set; }
     public decimal Mebleg { get; set; }
+}
+
+public class RestorePlanItem
+{
+    public int     DepartamentId { get; set; }
+    public int     Il            { get; set; }
+    public int     Ay            { get; set; }
+    public decimal PlanMebleg    { get; set; }
 }
