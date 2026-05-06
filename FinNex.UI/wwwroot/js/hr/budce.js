@@ -82,6 +82,23 @@
         document.getElementById('sirketMeblegInput').value = cachedSirket && !cachedSirket.yoxdur ? cachedSirket.mebleg : '';
         document.getElementById('sirketQeydInput').value   = (cachedSirket && cachedSirket.qeyd) || '';
         document.getElementById('bereberBolResult').style.display = 'none';
+        document.getElementById('bereberTesdiq').style.display = 'none';
+
+        // Bölüşdürmə sahəsini qalıq məbləğlə əvvəlcədən doldur
+        var bereberMeblegEl   = document.getElementById('bereberMebleg');
+        var bereberMeblegHint = document.getElementById('bereberMeblegHint');
+        if (cachedSirket && !cachedSirket.yoxdur) {
+            var qaliq = Number(cachedSirket.qaliq) || 0;
+            bereberMeblegEl.value       = qaliq > 0 ? qaliq : '';
+            bereberMeblegEl.placeholder = qaliq > 0
+                ? 'Qalıq: ' + fmt(qaliq) + ' ₼'
+                : 'Boş = tam büdcə (' + fmt(cachedSirket.mebleg) + ' ₼)';
+            bereberMeblegHint.textContent = qaliq > 0
+                ? 'Qalıq ' + fmt(qaliq) + ' ₼ avtomatik dolduruldu. İstədiyiniz məbləği dəyişə bilərsiniz.'
+                : '';
+        } else {
+            bereberMeblegEl.value = '';
+        }
 
         var distWrap = document.getElementById('sirketModalDistWrap');
         distWrap.style.display = cachedSirket && !cachedSirket.yoxdur ? 'block' : 'none';
@@ -176,9 +193,17 @@
     }
 
     function bereberBol() {
-        var ayVal     = parseInt(document.getElementById('bereberAy').value);
-        var meblegVal = parseFloat(document.getElementById('sirketMeblegInput').value);
-        if (isNaN(meblegVal) || meblegVal <= 0) { alert('Evvelce budceni yadda saxlayin.'); return; }
+        var sirketVal = parseFloat(document.getElementById('sirketMeblegInput').value);
+        if (isNaN(sirketVal) || sirketVal <= 0) { alert('Evvelce budceni yadda saxlayin.'); return; }
+
+        // İstifadəçinin daxil etdiyi məbləğ — boşsa tam büdcə
+        var customVal = parseFloat(document.getElementById('bereberMebleg').value);
+        var meblegVal = (!isNaN(customVal) && customVal > 0) ? customVal : sirketVal;
+
+        if (meblegVal > sirketVal) {
+            alert('Bölüşdürüləcək məbləğ (' + fmt(meblegVal) + ' ₼) şirkət büdcəsini (' + fmt(sirketVal) + ' ₼) aşa bilməz.');
+            return;
+        }
 
         var aylar    = ayVal === 0 ? [1,2,3,4,5,6,7,8,9,10,11,12] : [ayVal];
         var payPerAy = Math.round((meblegVal / aylar.length) * 100) / 100;
