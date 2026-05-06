@@ -15,10 +15,7 @@ public class BudceController : Controller
 {
     private readonly IUnitOfWork _unitOfWork;
 
-    public BudceController(IUnitOfWork unitOfWork)
-    {
-        _unitOfWork = unitOfWork;
-    }
+    public BudceController(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
 
     // ── GET /HR/Budce ───────────────────────────────────────
     public IActionResult Index()
@@ -32,24 +29,26 @@ public class BudceController : Controller
     public async Task<IActionResult> GetData(int il)
     {
         var budceler = await _unitOfWork.Repository<Budce>()
-            .Query()
-            .Where(x => !x.Silinib && x.Il == il)
-            .Include(x => x.Departament)
-            .ToListAsync();
+            .Query().Where(x => !x.Silinib && x.Il == il)
+            .Include(x => x.Departament).ToListAsync();
 
         var departamentlar = await _unitOfWork.Repository<Departament>()
-            .Query()
-            .Where(x => !x.Silinib)
-            .OrderBy(x => x.Ad)
-            .ToListAsync();
+            .Query().Where(x => !x.Silinib).OrderBy(x => x.Ad).ToListAsync();
 
-        // Faktiki — real-time ödənilmiş xərclər
+        // Ödənilmiş xərclər — Faktiki
         var odenilenXercler = await _unitOfWork.Repository<Xerc>()
             .Query()
+            .Where(x => !x.Silinib && x.Status == XercStatus.Odenildi
+                     && x.XercTarixi.Year == il && x.DepartamentId.HasValue)
+            .Select(x => new { x.DepartamentId, x.Mebleg, Month = x.XercTarixi.Month })
+            .ToListAsync();
+
+        // Təsdiqlənmiş amma ödənilməmiş — Rezerv
+        var rezervXercler = await _unitOfWork.Repository<Xerc>()
+            .Query()
             .Where(x => !x.Silinib
-                     && x.Status == XercStatus.Odenildi
-                     && x.XercTarixi.Year == il
-                     && x.DepartamentId.HasValue)
+                     && (x.Status == XercStatus.SobeReisiTesdiq || x.Status == XercStatus.HrTesdiq)
+                     && x.XercTarixi.Year == il && x.DepartamentId.HasValue)
             .Select(x => new { x.DepartamentId, x.Mebleg, Month = x.XercTarixi.Month })
             .ToListAsync();
 
@@ -57,29 +56,35 @@ public class BudceController : Controller
         {
             var aylar = Enumerable.Range(1, 12).Select(ay =>
             {
-                var b = budceler.FirstOrDefault(x => x.DepartamentId == d.Id && x.Ay == ay);
-                var plan = b?.PlanMebleg ?? 0;
-                var faktiki = odenilenXercler
-                    .Where(x => x.DepartamentId == d.Id && x.Month == ay)
-                    .Sum(x => x.Mebleg);
-                var faiz = plan > 0 ? Math.Round(faktiki / plan * 100, 1) : 0m;
-                return new { ay, plan, faktiki, faiz };
+                var b       = budceler.FirstOrDefault(x => x.DepartamentId == d.Id && x.Ay == ay);
+                var plan    = b?.PlanMebleg ?? 0;
+                var faktiki = odenilenXercler.Where(x => x.DepartamentId == d.Id && x.Month == ay).Sum(x => x.Mebleg);
+                var rezerv  = rezervXercler.Where(x => x.DepartamentId == d.Id && x.Month == ay).Sum(x => x.Mebleg);
+                var azad    = plan - faktiki - rezerv;
+                var faiz    = plan > 0 ? Math.Round((faktiki + rezerv) / plan * 100, 1) : 0m;
+                return new { ay, plan, faktiki, rezerv, azad, faiz };
             }).ToList();
 
             return new
             {
-                departamentId = d.Id,
-                departamentAd = d.Ad,
+                departamentId  = d.Id,
+                departamentAd  = d.Ad,
                 aylar,
-                toplamPlan = aylar.Sum(a => a.plan),
-                toplamFaktiki = aylar.Sum(a => a.faktiki)
+                toplamPlan     = aylar.Sum(a => a.plan),
+                toplamFaktiki  = aylar.Sum(a => a.faktiki),
+                toplamRezerv   = aylar.Sum(a => a.rezerv),
+                toplamAzad     = aylar.Sum(a => a.azad)
             };
         }).ToList();
 
-        var umumiPlan = data.Sum(x => x.toplamPlan);
-        var umumiFaktiki = data.Sum(x => x.toplamFaktiki);
-
-        return Json(new { departamentlar = data, umumiPlan, umumiFaktiki });
+        return Json(new
+        {
+            departamentlar = data,
+            umumiPlan      = data.Sum(x => x.toplamPlan),
+            umumiFaktiki   = data.Sum(x => x.toplamFaktiki),
+            umumiRezerv    = data.Sum(x => x.toplamRezerv),
+            umumiAzad      = data.Sum(x => x.toplamAzad)
+        });
     }
 
     // ── GET /HR/Budce/GetLimitInfo ──────────────────────────
@@ -87,25 +92,29 @@ public class BudceController : Controller
     public async Task<IActionResult> GetLimitInfo(int departamentId, int il, int ay)
     {
         var budce = await _unitOfWork.Repository<Budce>()
-            .GetirAsync(x => !x.Silinib
-                          && x.DepartamentId == departamentId
-                          && x.Il == il && x.Ay == ay);
+            .GetirAsync(x => !x.Silinib && x.DepartamentId == departamentId && x.Il == il && x.Ay == ay);
 
         var plan = budce?.PlanMebleg ?? 0;
 
         var faktiki = await _unitOfWork.Repository<Xerc>()
             .Query()
-            .Where(x => !x.Silinib
-                     && x.Status == XercStatus.Odenildi
+            .Where(x => !x.Silinib && x.Status == XercStatus.Odenildi
                      && x.DepartamentId == departamentId
-                     && x.XercTarixi.Year == il
-                     && x.XercTarixi.Month == ay)
+                     && x.XercTarixi.Year == il && x.XercTarixi.Month == ay)
             .SumAsync(x => (decimal?)x.Mebleg) ?? 0;
 
-        var qaliq = plan - faktiki;
-        var faiz = plan > 0 ? Math.Round(faktiki / plan * 100, 1) : 0m;
+        var rezerv = await _unitOfWork.Repository<Xerc>()
+            .Query()
+            .Where(x => !x.Silinib
+                     && (x.Status == XercStatus.SobeReisiTesdiq || x.Status == XercStatus.HrTesdiq)
+                     && x.DepartamentId == departamentId
+                     && x.XercTarixi.Year == il && x.XercTarixi.Month == ay)
+            .SumAsync(x => (decimal?)x.Mebleg) ?? 0;
 
-        return Json(new { plan, faktiki, qaliq, faiz, yoxdur = plan == 0 });
+        var azad = plan - faktiki - rezerv;
+        var faiz = plan > 0 ? Math.Round((faktiki + rezerv) / plan * 100, 1) : 0m;
+
+        return Json(new { plan, faktiki, rezerv, azad, faiz, yoxdur = plan == 0 });
     }
 
     // ── GET /HR/Budce/GetDetay ──────────────────────────────
@@ -114,10 +123,8 @@ public class BudceController : Controller
     {
         var xercler = await _unitOfWork.Repository<Xerc>()
             .Query()
-            .Where(x => !x.Silinib
-                     && x.DepartamentId == departamentId
-                     && x.XercTarixi.Year == il
-                     && x.XercTarixi.Month == ay)
+            .Where(x => !x.Silinib && x.DepartamentId == departamentId
+                     && x.XercTarixi.Year == il && x.XercTarixi.Month == ay)
             .Include(x => x.Kateqoriya)
             .Include(x => x.Isci)
             .OrderByDescending(x => x.XercTarixi)
@@ -125,29 +132,33 @@ public class BudceController : Controller
 
         var data = xercler.Select(x => new
         {
-            id = x.Id,
-            tarix = x.XercTarixi.ToString("dd.MM.yyyy"),
+            id       = x.Id,
+            tarix    = x.XercTarixi.ToString("dd.MM.yyyy"),
             kateqoriya = x.Kateqoriya?.Ad ?? "—",
-            tesvir = x.Tesvir,
-            mebleg = x.Mebleg,
-            status = (int)x.Status,
+            tesvir   = x.Tesvir,
+            mebleg   = x.Mebleg,
+            status   = (int)x.Status,
             statusAd = x.Status switch
             {
-                XercStatus.Muraciet       => "Müraciət",
+                XercStatus.Muraciet        => "Müraciət",
                 XercStatus.SobeReisiTesdiq => "Şöbə rəisi təsdiqi",
-                XercStatus.HrTesdiq       => "HR təsdiqi",
-                XercStatus.Odenildi       => "Ödənildi",
-                XercStatus.ImtinaEdildi   => "İmtina",
+                XercStatus.HrTesdiq        => "HR təsdiqi",
+                XercStatus.Odenildi        => "Ödənildi",
+                XercStatus.ImtinaEdildi    => "İmtina",
                 _ => "—"
             },
-            isci = x.Isci != null ? x.Isci.TamAd : (x.ManualGiris ? "Manual giriş" : "—"),
+            isRezerv    = x.Status == XercStatus.SobeReisiTesdiq || x.Status == XercStatus.HrTesdiq,
+            isci     = x.Isci != null ? x.Isci.TamAd : (x.ManualGiris ? "Manual giriş" : "—"),
             manualGiris = x.ManualGiris,
             qebzYolu = x.QebzFaylYolu
         }).ToList();
 
-        var toplam = xercler.Where(x => x.Status == XercStatus.Odenildi).Sum(x => x.Mebleg);
-
-        return Json(new { xercler = data, odenilenToplam = toplam });
+        return Json(new
+        {
+            xercler        = data,
+            odenilenToplam = xercler.Where(x => x.Status == XercStatus.Odenildi).Sum(x => x.Mebleg),
+            rezervToplam   = xercler.Where(x => x.Status == XercStatus.SobeReisiTesdiq || x.Status == XercStatus.HrTesdiq).Sum(x => x.Mebleg)
+        });
     }
 
     // ── POST /HR/Budce/Create ───────────────────────────────
@@ -155,37 +166,47 @@ public class BudceController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create([FromBody] BudceCreateDto dto)
     {
-        if (dto.DepartamentId <= 0 || dto.Ay < 1 || dto.Ay > 12 || dto.Il < 2020)
+        if (dto.DepartamentId <= 0 || dto.Il < 2020)
             return BadRequest(new { message = "Xəta: yanlış məlumat." });
 
-        var existing = await _unitOfWork.Repository<Budce>()
-            .GetirAsync(x => !x.Silinib
-                && x.DepartamentId == dto.DepartamentId
-                && x.Il == dto.Il
-                && x.Ay == dto.Ay);
+        var aylar = dto.TopluTetbiq
+            ? Enumerable.Range(1, 12)
+            : Enumerable.Range(dto.Ay, 1);
 
-        if (existing != null)
+        foreach (var ay in aylar)
         {
-            existing.PlanMebleg = dto.PlanMebleg;
-            existing.Qeyd = dto.Qeyd;
-            await _unitOfWork.Repository<Budce>().YenileAsync(existing);
-        }
-        else
-        {
-            var budce = new Budce
+            if (ay < 1 || ay > 12) continue;
+
+            var existing = await _unitOfWork.Repository<Budce>()
+                .GetirAsync(x => !x.Silinib
+                    && x.DepartamentId == dto.DepartamentId
+                    && x.Il == dto.Il && x.Ay == ay);
+
+            if (existing != null)
             {
-                DepartamentId = dto.DepartamentId,
-                Il = dto.Il,
-                Ay = dto.Ay,
-                PlanMebleg = dto.PlanMebleg,
-                FaktikiMebleg = 0,
-                Qeyd = dto.Qeyd
-            };
-            await _unitOfWork.Repository<Budce>().YaratAsync(budce);
+                existing.PlanMebleg = dto.PlanMebleg;
+                existing.Qeyd       = dto.Qeyd;
+                await _unitOfWork.Repository<Budce>().YenileAsync(existing);
+            }
+            else
+            {
+                await _unitOfWork.Repository<Budce>().YaratAsync(new Budce
+                {
+                    DepartamentId = dto.DepartamentId,
+                    Il            = dto.Il,
+                    Ay            = ay,
+                    PlanMebleg    = dto.PlanMebleg,
+                    FaktikiMebleg = 0,
+                    Qeyd          = dto.Qeyd
+                });
+            }
         }
 
         await _unitOfWork.YaddaSaxlaAsync();
-        return Ok(new { message = "Uğurla yadda saxlanıldı." });
+        var msg = dto.TopluTetbiq
+            ? $"Bütün 12 ay üçün {dto.PlanMebleg:N2} ₼ plan yadda saxlanıldı."
+            : "Uğurla yadda saxlanıldı.";
+        return Ok(new { message = msg });
     }
 
     // ── GET /HR/Budce/ExportExcel?il=2026 ───────────────────
@@ -193,117 +214,127 @@ public class BudceController : Controller
     public async Task<IActionResult> ExportExcel(int il)
     {
         var budceler = await _unitOfWork.Repository<Budce>()
-            .Query()
-            .Where(x => !x.Silinib && x.Il == il)
-            .Include(x => x.Departament)
-            .ToListAsync();
+            .Query().Where(x => !x.Silinib && x.Il == il)
+            .Include(x => x.Departament).ToListAsync();
 
         var departamentlar = await _unitOfWork.Repository<Departament>()
-            .Query()
-            .Where(x => !x.Silinib)
-            .OrderBy(x => x.Ad)
-            .ToListAsync();
+            .Query().Where(x => !x.Silinib).OrderBy(x => x.Ad).ToListAsync();
 
         var odenilenXercler = await _unitOfWork.Repository<Xerc>()
             .Query()
+            .Where(x => !x.Silinib && x.Status == XercStatus.Odenildi
+                     && x.XercTarixi.Year == il && x.DepartamentId.HasValue)
+            .Select(x => new { x.DepartamentId, x.Mebleg, Month = x.XercTarixi.Month })
+            .ToListAsync();
+
+        var rezervXercler = await _unitOfWork.Repository<Xerc>()
+            .Query()
             .Where(x => !x.Silinib
-                     && x.Status == XercStatus.Odenildi
-                     && x.XercTarixi.Year == il
-                     && x.DepartamentId.HasValue)
+                     && (x.Status == XercStatus.SobeReisiTesdiq || x.Status == XercStatus.HrTesdiq)
+                     && x.XercTarixi.Year == il && x.DepartamentId.HasValue)
             .Select(x => new { x.DepartamentId, x.Mebleg, Month = x.XercTarixi.Month })
             .ToListAsync();
 
         using var wb = new XLWorkbook();
-        var ws = wb.Worksheets.Add($"Budce {il}");
+        var ws = wb.Worksheets.Add($"Büdcə {il}");
 
-        string[] ayAdlari = { "Yan", "Fev", "Mar", "Apr", "May", "Iyn", "Iyl", "Avq", "Sen", "Okt", "Noy", "Dek" };
+        string[] ayAdlari = { "Yan", "Fev", "Mar", "Apr", "May", "İyn", "İyl", "Avq", "Sen", "Okt", "Noy", "Dek" };
 
+        // Header
         ws.Cell(1, 1).Value = "Departament";
         for (int i = 0; i < 12; i++)
         {
-            ws.Cell(1, 2 + i * 3).Value = $"{ayAdlari[i]} Plan";
-            ws.Cell(1, 3 + i * 3).Value = $"{ayAdlari[i]} Faktiki";
-            ws.Cell(1, 4 + i * 3).Value = $"{ayAdlari[i]} Fərq";
+            ws.Cell(1, 2 + i * 4).Value = $"{ayAdlari[i]} Plan";
+            ws.Cell(1, 3 + i * 4).Value = $"{ayAdlari[i]} Faktiki";
+            ws.Cell(1, 4 + i * 4).Value = $"{ayAdlari[i]} Rezerv";
+            ws.Cell(1, 5 + i * 4).Value = $"{ayAdlari[i]} Azad";
         }
-        ws.Cell(1, 38).Value = "Toplam Plan";
-        ws.Cell(1, 39).Value = "Toplam Faktiki";
-        ws.Cell(1, 40).Value = "Toplam Fərq";
+        int lastCol = 50;
+        ws.Cell(1, lastCol).Value     = "Cəmi Plan";
+        ws.Cell(1, lastCol + 1).Value = "Cəmi Faktiki";
+        ws.Cell(1, lastCol + 2).Value = "Cəmi Rezerv";
+        ws.Cell(1, lastCol + 3).Value = "Cəmi Azad";
 
-        var headerRange = ws.Range(1, 1, 1, 40);
-        headerRange.Style.Font.Bold = true;
-        headerRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#1e2a3b");
-        headerRange.Style.Font.FontColor = XLColor.White;
+        var hRange = ws.Range(1, 1, 1, lastCol + 3);
+        hRange.Style.Font.Bold = true;
+        hRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#1e2a3b");
+        hRange.Style.Font.FontColor = XLColor.White;
 
         int row = 2;
-        decimal umumiPlan = 0, umumiFaktiki = 0;
+        decimal gtPlan = 0, gtFakt = 0, gtRezерv = 0;
 
         foreach (var d in departamentlar)
         {
             ws.Cell(row, 1).Value = d.Ad;
-            decimal topPlan = 0, topFakt = 0;
+            decimal topPlan = 0, topFakt = 0, topRez = 0;
 
             for (int ay = 1; ay <= 12; ay++)
             {
-                var b = budceler.FirstOrDefault(x => x.DepartamentId == d.Id && x.Ay == ay);
-                var plan = b?.PlanMebleg ?? 0;
-                var fakt = odenilenXercler
-                    .Where(x => x.DepartamentId == d.Id && x.Month == ay)
-                    .Sum(x => x.Mebleg);
-                var ferq = plan - fakt;
+                var b       = budceler.FirstOrDefault(x => x.DepartamentId == d.Id && x.Ay == ay);
+                var plan    = b?.PlanMebleg ?? 0;
+                var fakt    = odenilenXercler.Where(x => x.DepartamentId == d.Id && x.Month == ay).Sum(x => x.Mebleg);
+                var rez     = rezervXercler.Where(x => x.DepartamentId == d.Id && x.Month == ay).Sum(x => x.Mebleg);
+                var azad    = plan - fakt - rez;
+                int col     = 2 + (ay - 1) * 4;
 
-                int col = 2 + (ay - 1) * 3;
-                ws.Cell(row, col).Value = plan;
-                ws.Cell(row, col).Style.NumberFormat.Format = "#,##0.00";
-                ws.Cell(row, col + 1).Value = fakt;
-                ws.Cell(row, col + 1).Style.NumberFormat.Format = "#,##0.00";
-                ws.Cell(row, col + 2).Value = ferq;
-                ws.Cell(row, col + 2).Style.NumberFormat.Format = "#,##0.00";
-                if (ferq < 0) ws.Cell(row, col + 2).Style.Font.FontColor = XLColor.Red;
+                SetNum(ws, row, col,     plan);
+                SetNum(ws, row, col + 1, fakt);
+                SetNum(ws, row, col + 2, rez);
+                SetNum(ws, row, col + 3, azad);
 
-                topPlan += plan;
-                topFakt += fakt;
+                // Şərti rəngləmə
+                if (plan > 0)
+                {
+                    var pct = (fakt + rez) / plan;
+                    if (pct >= 1m)      ws.Cell(row, col + 3).Style.Fill.BackgroundColor = XLColor.FromHtml("#FEE2E2");
+                    else if (pct >= 0.8m) ws.Cell(row, col + 3).Style.Fill.BackgroundColor = XLColor.FromHtml("#FEF9C3");
+                }
+                if (azad < 0) ws.Cell(row, col + 3).Style.Font.FontColor = XLColor.Red;
+
+                topPlan += plan; topFakt += fakt; topRez += rez;
             }
 
-            ws.Cell(row, 38).Value = topPlan;
-            ws.Cell(row, 38).Style.NumberFormat.Format = "#,##0.00";
-            ws.Cell(row, 39).Value = topFakt;
-            ws.Cell(row, 39).Style.NumberFormat.Format = "#,##0.00";
-            ws.Cell(row, 40).Value = topPlan - topFakt;
-            ws.Cell(row, 40).Style.NumberFormat.Format = "#,##0.00";
-            if (topPlan - topFakt < 0) ws.Cell(row, 40).Style.Font.FontColor = XLColor.Red;
+            SetNum(ws, row, lastCol,     topPlan);
+            SetNum(ws, row, lastCol + 1, topFakt);
+            SetNum(ws, row, lastCol + 2, topRez);
+            var topAzad = topPlan - topFakt - topRez;
+            SetNum(ws, row, lastCol + 3, topAzad);
+            if (topAzad < 0) ws.Cell(row, lastCol + 3).Style.Font.FontColor = XLColor.Red;
 
-            umumiPlan += topPlan;
-            umumiFaktiki += topFakt;
+            gtPlan += topPlan; gtFakt += topFakt; gtRezерv += topRez;
             row++;
         }
 
+        // Cəm sətri
         ws.Cell(row, 1).Value = "CƏMİ";
         ws.Cell(row, 1).Style.Font.Bold = true;
-        ws.Cell(row, 38).Value = umumiPlan;
-        ws.Cell(row, 38).Style.NumberFormat.Format = "#,##0.00";
-        ws.Cell(row, 38).Style.Font.Bold = true;
-        ws.Cell(row, 39).Value = umumiFaktiki;
-        ws.Cell(row, 39).Style.NumberFormat.Format = "#,##0.00";
-        ws.Cell(row, 39).Style.Font.Bold = true;
-        ws.Cell(row, 40).Value = umumiPlan - umumiFaktiki;
-        ws.Cell(row, 40).Style.NumberFormat.Format = "#,##0.00";
-        ws.Cell(row, 40).Style.Font.Bold = true;
+        SetNum(ws, row, lastCol,     gtPlan,   bold: true);
+        SetNum(ws, row, lastCol + 1, gtFakt,   bold: true);
+        SetNum(ws, row, lastCol + 2, gtRezерv, bold: true);
+        SetNum(ws, row, lastCol + 3, gtPlan - gtFakt - gtRezерv, bold: true);
 
         ws.Columns().AdjustToContents();
-
         using var ms = new MemoryStream();
         wb.SaveAs(ms);
         return File(ms.ToArray(),
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            $"Budce_Hesabat_{il}.xlsx");
+            $"Budce_{il}.xlsx");
+    }
+
+    private static void SetNum(IXLWorksheet ws, int row, int col, decimal val, bool bold = false)
+    {
+        ws.Cell(row, col).Value = val;
+        ws.Cell(row, col).Style.NumberFormat.Format = "#,##0.00";
+        if (bold) ws.Cell(row, col).Style.Font.Bold = true;
     }
 }
 
 public class BudceCreateDto
 {
-    public int DepartamentId { get; set; }
-    public int Il { get; set; }
-    public int Ay { get; set; }
-    public decimal PlanMebleg { get; set; }
-    public string? Qeyd { get; set; }
+    public int     DepartamentId { get; set; }
+    public int     Il            { get; set; }
+    public int     Ay            { get; set; }
+    public decimal PlanMebleg    { get; set; }
+    public string? Qeyd          { get; set; }
+    public bool    TopluTetbiq   { get; set; }
 }

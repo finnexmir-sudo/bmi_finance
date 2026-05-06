@@ -150,13 +150,17 @@
                     return;
                 }
 
-                var qaliq       = data.qaliq - mebleg;
-                var isOver      = qaliq < 0;
-                var isWarn      = !isOver && data.faiz > 79;
-                var bg    = isOver ? '#fef2f2' : isWarn ? '#fffbeb' : '#f0fdf4';
+                var azadAfter = data.azad - mebleg;
+                var isOver    = azadAfter < 0;
+                var isWarn    = !isOver && data.faiz > 79;
+                var bg     = isOver ? '#fef2f2' : isWarn ? '#fffbeb' : '#f0fdf4';
                 var border = isOver ? '#fecaca' : isWarn ? '#fde68a' : '#bbf7d0';
                 var color  = isOver ? '#dc2626' : isWarn ? '#92400e' : '#16a34a';
                 var icon   = isOver ? 'bi-exclamation-triangle-fill' : isWarn ? 'bi-exclamation-circle' : 'bi-check-circle';
+
+                var rezervPart = data.rezerv > 0
+                    ? ' · Rezerv <strong style="color:#d97706">' + fmt(data.rezerv) + ' ₼</strong>'
+                    : '';
 
                 boxEl.style.display    = 'block';
                 boxEl.style.background = bg;
@@ -164,9 +168,9 @@
                 boxEl.style.color      = color;
                 boxEl.innerHTML = '<i class="bi ' + icon + '"></i> ' +
                     '<strong>Büdcə:</strong> Plan <strong>' + fmt(data.plan) + ' ₼</strong> · ' +
-                    'İstifadə <strong>' + fmt(data.faktiki) + ' ₼</strong> · ' +
-                    'Qalıq <strong>' + fmt(data.qaliq) + ' ₼</strong>' +
-                    (isOver ? ' — <strong>Bu xərc büdcəni aşır!</strong>' : '');
+                    'Faktiki <strong>' + fmt(data.faktiki) + ' ₼</strong>' + rezervPart + ' · ' +
+                    'Azad <strong>' + fmt(data.azad) + ' ₼</strong>' +
+                    (isOver ? ' — <strong>Bu xərc azad büdcəni aşır!</strong>' : '');
             }
 
             tarixEl.addEventListener('change', loadLimit);

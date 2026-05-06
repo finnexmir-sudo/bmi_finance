@@ -12,7 +12,7 @@
     <div class="fn-page-head">
         <div>
             <div class="fn-page-title">Büdcə Planlaması</div>
-            <div class="fn-page-sub">Departament büdcələrinin illik plan və faktiki göstəriciləri</div>
+            <div class="fn-page-sub">Departament büdcələrinin illik plan, faktiki və rezerv göstəriciləri</div>
         </div>
         <div class="budce-actions">
             <select id="budceIl" class="fn-input" style="width:110px">
@@ -52,16 +52,21 @@
             <div class="budce-sum-label">Ümumi Faktiki</div>
             <div class="budce-sum-val" id="umumiFaktiki">0.00</div>
         </div>
+        <div class="fn-card budce-sum-card budce-sum-card--rezerv">
+            <div class="budce-sum-label">Rezerv <small style="font-weight:400;color:#b45309">(gözləmədə)</small></div>
+            <div class="budce-sum-val" id="umumiRezerv" style="color:#d97706">0.00</div>
+        </div>
         <div class="fn-card budce-sum-card">
-            <div class="budce-sum-label">Qalıq</div>
-            <div class="budce-sum-val" id="umumiFerq">0.00</div>
+            <div class="budce-sum-label">Azad Büdcə</div>
+            <div class="budce-sum-val" id="umumiAzad">0.00</div>
         </div>
     </div>
 
     @* ── Legend ── *@
     <div class="budce-legend">
-        <span><span class="budce-legend-dot budce-legend-dot--plan"></span> Plan <small>(klikləyin → redaktə)</small></span>
-        <span><span class="budce-legend-dot budce-legend-dot--fakt"></span> Faktiki <small>(klikləyin → xərclər)</small></span>
+        <span><span class="budce-legend-dot budce-legend-dot--plan"></span> P — Plan <small>(klikləyin → redaktə)</small></span>
+        <span><span class="budce-legend-dot budce-legend-dot--fakt"></span> F — Faktiki <small>(klikləyin → xərclər)</small></span>
+        <span><span class="budce-legend-dot budce-legend-dot--rezerv"></span> R — Rezerv <small>(təsdiqdə, ödənilməmiş)</small></span>
         <span><span class="budce-legend-dot budce-legend-dot--over"></span> Limit aşılıb</span>
         <span class="budce-legend-sep">|</span>
         <span style="color:#667eea;font-size:12px"><i class="bi bi-cursor"></i> Şöbə adına klikləyin — tam hesabat</span>
@@ -74,33 +79,35 @@
                 <thead>
                     <tr>
                         <th class="budce-th-dept" rowspan="2">Departament</th>
-                        <th colspan="2">Yan</th>
-                        <th colspan="2">Fev</th>
-                        <th colspan="2">Mar</th>
-                        <th colspan="2">Apr</th>
-                        <th colspan="2">May</th>
-                        <th colspan="2">İyn</th>
-                        <th colspan="2">İyl</th>
-                        <th colspan="2">Avq</th>
-                        <th colspan="2">Sen</th>
-                        <th colspan="2">Okt</th>
-                        <th colspan="2">Noy</th>
-                        <th colspan="2">Dek</th>
+                        <th colspan="3">Yan</th>
+                        <th colspan="3">Fev</th>
+                        <th colspan="3">Mar</th>
+                        <th colspan="3">Apr</th>
+                        <th colspan="3">May</th>
+                        <th colspan="3">İyn</th>
+                        <th colspan="3">İyl</th>
+                        <th colspan="3">Avq</th>
+                        <th colspan="3">Sen</th>
+                        <th colspan="3">Okt</th>
+                        <th colspan="3">Noy</th>
+                        <th colspan="3">Dek</th>
                         <th rowspan="2">Top. Plan</th>
                         <th rowspan="2">Top. Fakt.</th>
-                        <th rowspan="2">Fərq</th>
+                        <th rowspan="2">Top. Rez.</th>
+                        <th rowspan="2">Azad</th>
                     </tr>
                     <tr class="budce-sub-header">
                         @for (int i = 0; i < 12; i++)
                         {
                             <th class="budce-th-plan" title="Plan — klikləyin redaktə üçün">P</th>
                             <th class="budce-th-fakt" title="Faktiki — klikləyin xərcləri görmək üçün">F</th>
+                            <th class="budce-th-rezerv" title="Rezerv — təsdiqlənmiş, ödənilməmiş">R</th>
                         }
                     </tr>
                 </thead>
                 <tbody id="budceBody">
                     <tr>
-                        <td colspan="28" class="budce-empty">
+                        <td colspan="41" class="budce-empty">
                             <i class="bi bi-bar-chart" style="font-size:2rem;display:block;margin-bottom:8px;color:#cbd5e1"></i>
                             Yükləmək üçün "Göstər" düyməsini basın
                         </td>
@@ -136,8 +143,14 @@
             </table>
         </div>
         <div class="budce-detay-foot" id="detayFooter" style="display:none">
-            <span style="color:#64748b;font-size:13px">Ödənildi cəmi:</span>
-            <span class="budce-detay-toplam" id="detayToplam">0.00 ₼</span>
+            <span class="budce-detay-stat">
+                <span class="budce-detay-stat-lbl">Ödənildi:</span>
+                <span class="budce-detay-toplam budce-detay-toplam--odenildi" id="detayToplam">0.00 ₼</span>
+            </span>
+            <span class="budce-detay-stat">
+                <span class="budce-detay-stat-lbl">Gözləmədə (Rezerv):</span>
+                <span class="budce-detay-toplam budce-detay-toplam--rezerv" id="detayRezervToplam">0.00 ₼</span>
+            </span>
         </div>
     </div>
 
@@ -158,7 +171,7 @@
             <input type="hidden" id="editAy" />
             <div class="budce-modal-info">
                 <div><span class="budce-modal-lbl">Departament:</span> <span id="editDeptAd" style="font-weight:600"></span></div>
-                <div><span class="budce-modal-lbl">Ay:</span> <span id="editAyAd" style="font-weight:600"></span></div>
+                <div id="editAyRow"><span class="budce-modal-lbl">Ay:</span> <span id="editAyAd" style="font-weight:600"></span></div>
             </div>
             <div class="fn-form-group" style="margin-top:16px">
                 <label class="fn-label">Plan məbləği (AZN) <span class="fn-required">*</span></label>
@@ -168,6 +181,15 @@
             <div class="fn-form-group">
                 <label class="fn-label">Qeyd <span class="fn-label-hint">(isteğe bağlı)</span></label>
                 <textarea id="editQeyd" class="fn-input" rows="2" placeholder="Bu ay büdcəsi haqqında qeyd..."></textarea>
+            </div>
+            <div class="budce-toplu-wrap">
+                <label class="budce-toplu-label">
+                    <input type="checkbox" id="editTopluTetbiq" class="budce-toplu-check" />
+                    <span class="budce-toplu-text">
+                        <strong>Bütün aylara tətbiq et</strong>
+                        <span class="budce-toplu-hint">Eyni məbləği 12 aya (Yanvar–Dekabr) tətbiq edir</span>
+                    </span>
+                </label>
             </div>
         </div>
         <div class="budce-modal-footer">
