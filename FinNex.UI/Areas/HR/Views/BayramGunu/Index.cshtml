@@ -259,11 +259,11 @@
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                         <div>
                             <label style="font-size:12px;font-weight:500;color:#64748b;display:block;margin-bottom:4px;">Başlanğıc vaxtı</label>
-                            <input type="time" id="bgXususiBaslayis" name="xususiBaslayisVaxti" class="bg-input" placeholder="09:00" />
+                            <input type="text" id="bgXususiBaslayis" name="xususiBaslayisVaxti" class="bg-input" placeholder="09:00" pattern="^([01]\d|2[0-3]):[0-5]\d$" maxlength="5" />
                         </div>
                         <div>
                             <label style="font-size:12px;font-weight:500;color:#64748b;display:block;margin-bottom:4px;">Bitmə vaxtı</label>
-                            <input type="time" id="bgXususiBitis" name="xususiBitisVaxti" class="bg-input" placeholder="17:45" />
+                            <input type="text" id="bgXususiBitis" name="xususiBitisVaxti" class="bg-input" placeholder="17:45" pattern="^([01]\d|2[0-3]):[0-5]\d$" maxlength="5" />
                         </div>
                     </div>
                 </div>
