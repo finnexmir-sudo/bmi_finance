@@ -1,7 +1,7 @@
 @model FinNex.Application.DTOs.HR.Mezuniyyet.MezuniyyetCreateDto
 @using FinNex.Domain.Entities.HR
 @{
-    ViewData["Title"] = "Xəstəlik / Ezamiyyət Yazmaq";
+    ViewData["Title"] = "Ezamiyyət yazmaq";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 }
 
@@ -9,8 +9,8 @@
 
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">Xəstəlik / Ezamiyyət yazmaq</div>
-            <div class="fn-page-sub">İşçi üçün xəstəlik və ya ezamiyyət qeydi yaradın</div>
+            <div class="fn-page-title">Ezamiyyət yazmaq</div>
+            <div class="fn-page-sub">İşçi üçün ezamiyyət qeydi yaradın</div>
         </div>
     </div>
 
@@ -38,27 +38,7 @@
                         <span asp-validation-for="IsciId" class="fn-val-msg"></span>
                     </div>
 
-                    @* ── Növ seçimi: Xəstəlik / Ezamiyyət ── *@
-                    <div class="fn-form-group">
-                        <label class="fn-label">Qeyd növü <span class="fn-required">*</span></label>
-                        <div class="fn-nov-grid" style="grid-template-columns: repeat(2, 1fr);">
-                            <label class="fn-nov-card" id="card-xestelik">
-                                <input type="radio" name="Nov" value="@((int)MezuniyyetNovu.Xestelik)"
-                                       class="fn-nov-radio" id="type-xestelik" />
-                                <i class="bi bi-hospital" style="font-size:20px;color:#a855f7;"></i>
-                                Xəstəlik
-                                <small>Xəstəlik vərəqəsi</small>
-                            </label>
-                            <label class="fn-nov-card" id="card-ezamiyyet">
-                                <input type="radio" name="Nov" value="@((int)MezuniyyetNovu.Ezamiyyet)"
-                                       class="fn-nov-radio" id="type-ezamiyyet" />
-                                <i class="bi bi-briefcase" style="font-size:20px;color:#f97316;"></i>
-                                Ezamiyyət
-                                <small>Xidməti ezamiyyət</small>
-                            </label>
-                        </div>
-                        <span asp-validation-for="Nov" class="fn-val-msg"></span>
-                    </div>
+                    <input type="hidden" name="Nov" value="@((int)MezuniyyetNovu.Ezamiyyet)" />
 
                     @* ── Tarixlər ── *@
                     <div class="fn-form-row">
@@ -97,7 +77,7 @@
                         </label>
                         <textarea asp-for="Qeyd" rows="3"
                                   class="fn-textarea"
-                                  placeholder="Xəstəlik vərəqəsi nömrəsi, ezamiyyət məqsədi və s."></textarea>
+                                  placeholder="Ezamiyyət məqsədi, gedilən şəhər və s."></textarea>
                         <span asp-validation-for="Qeyd" class="fn-val-msg"></span>
                     </div>
 
@@ -151,7 +131,7 @@
                         </div>
                         <div class="fn-wi-text">
                             <strong>Gün limiti yoxdur</strong>
-                            <span>Xəstəlik və ezamiyyət üçün</span>
+                            <span>Ezamiyyət üçün</span>
                         </div>
                     </div>
                 </div>
@@ -165,15 +145,6 @@
     <partial name="_ValidationScriptsPartial" />
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Növ seçimi - kart aktiv etmə
-            var novCards = document.querySelectorAll('.fn-nov-card');
-            novCards.forEach(function (card) {
-                card.addEventListener('click', function () {
-                    novCards.forEach(function (c) { c.classList.remove('fn-nov-card--active'); });
-                    card.classList.add('fn-nov-card--active');
-                });
-            });
-
             // Tarix dəyişəndə iş günü hesabla
             var baslamaEl = document.getElementById('baslamaTarixi');
             var bitmeEl = document.getElementById('bitmeTarixi');

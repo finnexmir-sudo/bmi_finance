@@ -28,29 +28,7 @@
 
                 <div class="fn-card fn-card--form">
 
-                    @* ── Növ seçimi ── *@
-                    <div class="fn-form-group">
-                        <label class="fn-label">Qeyd növü <span class="fn-required">*</span></label>
-                        <div class="fn-nov-grid" style="grid-template-columns: repeat(2, 1fr);">
-                            <label class="fn-nov-card @(Model?.Nov == MezuniyyetNovu.Xestelik ? "fn-nov-card--active" : "")">
-                                <input type="radio" name="Nov" value="@((int)MezuniyyetNovu.Xestelik)"
-                                       class="fn-nov-radio"
-                                       @(Model?.Nov == MezuniyyetNovu.Xestelik ? "checked" : "") />
-                                <i class="bi bi-hospital" style="font-size:20px;color:#a855f7;"></i>
-                                Xəstəlik
-                                <small>Xəstəlik vərəqəsi</small>
-                            </label>
-                            <label class="fn-nov-card @(Model?.Nov == MezuniyyetNovu.Ezamiyyet ? "fn-nov-card--active" : "")">
-                                <input type="radio" name="Nov" value="@((int)MezuniyyetNovu.Ezamiyyet)"
-                                       class="fn-nov-radio"
-                                       @(Model?.Nov == MezuniyyetNovu.Ezamiyyet ? "checked" : "") />
-                                <i class="bi bi-briefcase" style="font-size:20px;color:#f97316;"></i>
-                                Ezamiyyət
-                                <small>Xidməti ezamiyyət</small>
-                            </label>
-                        </div>
-                        <span asp-validation-for="Nov" class="fn-val-msg"></span>
-                    </div>
+                    <input type="hidden" name="Nov" value="@((int)MezuniyyetNovu.Ezamiyyet)" />
 
                     @* ── Tarixlər ── *@
                     <div class="fn-form-row">
@@ -89,7 +67,7 @@
                         </label>
                         <textarea asp-for="Qeyd" rows="3"
                                   class="fn-textarea"
-                                  placeholder="Xəstəlik vərəqəsi nömrəsi, ezamiyyət məqsədi və s."></textarea>
+                                  placeholder="Ezamiyyət məqsədi, gedilən şəhər və s."></textarea>
                         <span asp-validation-for="Qeyd" class="fn-val-msg"></span>
                     </div>
 
@@ -124,7 +102,7 @@
                         </div>
                         <div class="fn-wi-text">
                             <strong>Gün limiti yoxdur</strong>
-                            <span>Xəstəlik və ezamiyyət üçün</span>
+                            <span>Ezamiyyət üçün</span>
                         </div>
                     </div>
                 </div>
@@ -138,15 +116,6 @@
     <partial name="_ValidationScriptsPartial" />
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Növ seçimi
-            var novCards = document.querySelectorAll('.fn-nov-card');
-            novCards.forEach(function (card) {
-                card.addEventListener('click', function () {
-                    novCards.forEach(function (c) { c.classList.remove('fn-nov-card--active'); });
-                    card.classList.add('fn-nov-card--active');
-                });
-            });
-
             // İş günü hesablama
             var baslamaEl = document.getElementById('baslamaTarixi');
             var bitmeEl = document.getElementById('bitmeTarixi');
