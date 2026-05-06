@@ -133,15 +133,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ── Qayıb Yaz Modal ──
-    var qayibModal = new bootstrap.Modal(document.getElementById('qayibModal'));
+    var qayibModalEl = document.getElementById('qayibModal');
+    var qayibModal = qayibModalEl ? new bootstrap.Modal(qayibModalEl) : null;
     var qayibYazBtn = document.getElementById('qayibYazBtn');
 
-    document.getElementById('qayibModal').addEventListener('show.bs.modal', function () {
-        document.getElementById('qayibSebeb').value = '';
-        document.getElementById('qayibMaasdanKes').checked = false;
-    });
+    if (qayibModalEl) {
+        document.getElementById('qayibModal').addEventListener('show.bs.modal', function () {
+            document.getElementById('qayibSebeb').value = '';
+            document.getElementById('qayibMaasdanKes').checked = false;
+        });
+    }
 
-    qayibYazBtn.addEventListener('click', function () {
+    if (qayibYazBtn && qayibModal) {
+        qayibYazBtn.addEventListener('click', function () {
         var isciId = parseInt(document.getElementById('qayibIsciId').value);
         var tarix = document.getElementById('qayibTarix').value;
         var maasdanKes = document.getElementById('qayibMaasdanKes').checked;
@@ -183,13 +187,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 qayibYazBtn.disabled = false;
                 qayibYazBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Qayıb yaz';
             });
-    });
+        });
+    }
 
     // ── Qayıb Düzəliş Modal ──
-    var qayibDuzeltModal = new bootstrap.Modal(document.getElementById('qayibDuzeltModal'));
+    var qayibDuzeltModalEl = document.getElementById('qayibDuzeltModal');
+    var qayibDuzeltModal = qayibDuzeltModalEl ? new bootstrap.Modal(qayibDuzeltModalEl) : null;
     var duzeltSaxlaBtn = document.getElementById('duzeltSaxlaBtn');
 
-    duzeltSaxlaBtn.addEventListener('click', function () {
+    if (duzeltSaxlaBtn && qayibDuzeltModal) {
+        duzeltSaxlaBtn.addEventListener('click', function () {
         var id = parseInt(document.getElementById('duzeltId').value);
         var maasdanKes = document.getElementById('duzeltMaasdanKes').checked;
         var sebeb = document.getElementById('duzeltSebeb').value.trim();
@@ -218,7 +225,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 duzeltSaxlaBtn.disabled = false;
                 duzeltSaxlaBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Saxla';
             });
-    });
+        });
+    }
 
     // ── Tarixə görə axtarış ──
     btnAxtar.addEventListener('click', function () {
