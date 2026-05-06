@@ -64,21 +64,31 @@ namespace FinNex.UI.Areas.HR.Controllers
 
                 // Tez çıxanlar: çıxış vaxtı var VƏ efektiv bitmə həddindən əvvəl çıxıb
                 // Bayram günləri üçün xüsusi bitmə saatı varsa onu nəzərə al
+                // Migration hələ tətbiq olunmayıbsa sütun yoxdur — standart istifadə et
                 var tezCixanSayi = 0;
-                if (tarix.HasValue)
+                try
                 {
-                    var hedefTarix = tarix.Value.Date;
-                    var bayram = await _unitOfWork.Repository<BayramGunu>()
-                        .Query().AsNoTracking()
-                        .Where(x => !x.Silinib && x.Tarix.Date == hedefTarix && x.XususiBitisVaxti.HasValue)
-                        .FirstOrDefaultAsync();
-                    var gunCixis = bayram?.XususiBitisVaxti ?? standartCixis;
-                    var gunHedd = gunCixis - tezCixmaTolerans;
-                    tezCixanSayi = umumi.Count(x =>
-                        x.CixisVaxti.HasValue &&
-                        x.CixisVaxti.Value.TimeOfDay < gunHedd);
+                    if (tarix.HasValue)
+                    {
+                        var hedefTarix = tarix.Value.Date;
+                        var bayram = await _unitOfWork.Repository<BayramGunu>()
+                            .Query().AsNoTracking()
+                            .Where(x => !x.Silinib && x.Tarix.Date == hedefTarix && x.XususiBitisVaxti.HasValue)
+                            .FirstOrDefaultAsync();
+                        var gunCixis = bayram?.XususiBitisVaxti ?? standartCixis;
+                        var gunHedd = gunCixis - tezCixmaTolerans;
+                        tezCixanSayi = umumi.Count(x =>
+                            x.CixisVaxti.HasValue &&
+                            x.CixisVaxti.Value.TimeOfDay < gunHedd);
+                    }
+                    else
+                    {
+                        tezCixanSayi = umumi.Count(x =>
+                            x.CixisVaxti.HasValue &&
+                            x.CixisVaxti.Value.TimeOfDay < efektivCixisHeddi);
+                    }
                 }
-                else
+                catch
                 {
                     tezCixanSayi = umumi.Count(x =>
                         x.CixisVaxti.HasValue &&
@@ -158,15 +168,22 @@ namespace FinNex.UI.Areas.HR.Controllers
         [HttpGet]
         public async Task<IActionResult> GetIsParametri()
         {
-            var p = await GetIsParametriEntity();
-            return Json(new
+            try
             {
-                id = p.Id,
-                girisVaxti = p.StandartGirisVaxti.ToString(@"hh\:mm"),
-                cixisVaxti = p.StandartCixisVaxti.ToString(@"hh\:mm"),
-                gecikmeTolerans = p.GecikmeToleransDeqiqe,
-                tezCixmaTolerans = p.TezCixmaToleransDeqiqe
-            });
+                var p = await GetIsParametriEntity();
+                return Json(new
+                {
+                    id = p.Id,
+                    girisVaxti = p.StandartGirisVaxti.ToString(@"hh\:mm"),
+                    cixisVaxti = p.StandartCixisVaxti.ToString(@"hh\:mm"),
+                    gecikmeTolerans = p.GecikmeToleransDeqiqe,
+                    tezCixmaTolerans = p.TezCixmaToleransDeqiqe
+                });
+            }
+            catch
+            {
+                return Json(new { id = 0, girisVaxti = "09:00", cixisVaxti = "17:45", gecikmeTolerans = 5, tezCixmaTolerans = 15 });
+            }
         }
 
         [HttpPost]
