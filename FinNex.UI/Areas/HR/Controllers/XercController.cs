@@ -252,6 +252,9 @@ public class XercController : Controller
                 faylYolu = await SaveFakturaAsync(faktura, ext);
         }
 
+        if (dto.Mebleg <= 0)
+            ModelState.AddModelError("Mebleg", "Məbləğ sıfırdan böyük olmalıdır.");
+
         if (!ModelState.IsValid)
             return await ManualCreateViewAsync(dto);
 

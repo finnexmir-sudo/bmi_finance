@@ -76,6 +76,17 @@ public class XercController : Controller
             faylYolu = $"/uploads/xercler/{faylAd}";
         }
 
+        if (dto.Mebleg <= 0)
+        {
+            ViewBag.Kateqoriyalar = await _unitOfWork.Repository<XercKateqoriyasi>()
+                .Query().Where(x => !x.Silinib && x.Aktivdir).OrderBy(x => x.Ad).ToListAsync();
+            var teyinatForView = await _unitOfWork.Repository<IsciTeyinat>()
+                .GetirAsync(x => x.IsciId == isci.Id && x.Aktivdir, izlemeden: true);
+            ViewBag.DepartamentId = teyinatForView?.DepartamentId;
+            ModelState.AddModelError("Mebleg", "Məbləğ sıfırdan böyük olmalıdır.");
+            return View();
+        }
+
         var teyinat = await _unitOfWork.Repository<IsciTeyinat>()
             .GetirAsync(x => x.IsciId == isci.Id && x.Aktivdir, izlemeden: true);
 
