@@ -659,7 +659,7 @@ namespace FinNex.Application.Services.HR
                 return hisseler.Count > 0 ? $" ({string.Join(", ", hisseler)})" : "";
             }
 
-            izahatlar.Add(new HesablamaIzahiDto { Addim = "Gelir Vergisi",              Izah = $"{gvIzah} (guzest: {p.VergiGuzestiMeblegi} AZN)",                                Mebleg = gelirVergisi, Tip = "vergi" });
+            izahatlar.Add(new HesablamaIzahiDto { Addim = "Gelir Vergisi",              Izah = $"{gvIzah} (guzest: {p.VergiGuzestiMeblegi:N2} AZN)",                                Mebleg = gelirVergisi, Tip = "vergi" });
             izahatlar.Add(new HesablamaIzahiDto { Addim = "DSMF (Isci)",                Izah = $"{dsmfIzah}{dsmfAzadIzahi()}",                                                   Mebleg = dsmfIsci,     Tip = "vergi" });
             izahatlar.Add(new HesablamaIzahiDto { Addim = "Issizlik Sigortas (Isci)",   Izah = $"{itssBazasi:N2} x {p.IssizlikSigortasiFaizi}%{(xestelikSirketOdenis > 0 ? " (xəstəlik çıxılıb)" : "")}", Mebleg = issizlikIsci, Tip = "vergi" });
             izahatlar.Add(new HesablamaIzahiDto { Addim = "ITSS (Isci)",                Izah = $"{itssIzah}{(xestelikSirketOdenis > 0 ? " (xəstəlik çıxılıb)" : "")}",            Mebleg = itss,         Tip = "vergi" });
