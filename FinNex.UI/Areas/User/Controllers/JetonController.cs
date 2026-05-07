@@ -13,11 +13,13 @@ namespace FinNex.UI.Areas.User.Controllers
     public class JetonController : Controller
     {
         private readonly IJetonService _jetonService;
+        private readonly IReytingService _reytingService;
         private readonly UserManager<AppUser> _userManager;
 
-        public JetonController(IJetonService jetonService, UserManager<AppUser> userManager)
+        public JetonController(IJetonService jetonService, IReytingService reytingService, UserManager<AppUser> userManager)
         {
             _jetonService = jetonService;
+            _reytingService = reytingService;
             _userManager = userManager;
         }
 
@@ -74,6 +76,18 @@ namespace FinNex.UI.Areas.User.Controllers
 
             var result = await _jetonService.RedimTelebiYaratAsync(appUser.IsciId.Value, dto);
             return Json(new { success = result.Success, message = result.Message });
+        }
+
+        // ── GET /User/Jeton/GetReyting ───────────────────────
+        [HttpGet]
+        public async Task<IActionResult> GetReyting()
+        {
+            var appUser = await _userManager.GetUserAsync(User);
+            if (appUser?.IsciId == null)
+                return Json(new { success = false });
+
+            var dto = await _reytingService.IsciCariReytinqiniGetirAsync(appUser.IsciId.Value);
+            return Json(new { success = true, data = dto });
         }
     }
 }

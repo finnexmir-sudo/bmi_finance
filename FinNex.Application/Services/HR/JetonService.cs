@@ -15,15 +15,18 @@ namespace FinNex.Application.Services.HR
         private readonly IUnitOfWork _unitOfWork;
         private readonly IBildirisRouter _bildirisRouter;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IReytingService _reytingService;
 
         public JetonService(
             IUnitOfWork unitOfWork,
             IBildirisRouter bildirisRouter,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IReytingService reytingService)
         {
             _unitOfWork = unitOfWork;
             _bildirisRouter = bildirisRouter;
             _userManager = userManager;
+            _reytingService = reytingService;
         }
 
         // ── Kataloq ──────────────────────────────────────────────────────────
@@ -202,7 +205,13 @@ namespace FinNex.Application.Services.HR
                 if (jetonlar.Count != dto.JetonIds.Count)
                     return Result.Fail("Seçilmiş jetonların bir hissəsi etibarsızdır.");
 
-                var cemiSaat = jetonlar.Sum(x => x.JetonTeyinati.SaatDeyeri);
+                var baseSaat = jetonlar.Sum(x => x.JetonTeyinati.SaatDeyeri);
+
+                // Reytinq əmsalını tətbiq et
+                var (pulAmsali, saatAmsali) = await _reytingService.IsciAmsallariGetirAsync(isciId);
+                var cemiSaat = dto.RedimNovu == RedimNovu.Icaze
+                    ? baseSaat * saatAmsali
+                    : baseSaat * pulAmsali;
 
                 var redim = new JetonRedimTelebi
                 {
@@ -235,7 +244,9 @@ namespace FinNex.Application.Services.HR
                     exceptIsciId: isciId);
 
                 var novLabel = dto.RedimNovu == RedimNovu.Icaze ? "İcazə" : "Maaşa əlavə";
-                return Result.Ok($"Redim sorğusu göndərildi. Cəmi: {cemiSaat} saat ({novLabel}).");
+                var amsalGoster = dto.RedimNovu == RedimNovu.Icaze ? saatAmsali : pulAmsali;
+                var amsalMetn = amsalGoster != 1.00m ? $" (reytinq əmsalı: {amsalGoster}x)" : "";
+                return Result.Ok($"Sorğu göndərildi. Cəmi: {cemiSaat:0.##} saat{amsalMetn} ({novLabel}).");
             }
             catch (Exception ex)
             {

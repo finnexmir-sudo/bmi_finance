@@ -449,7 +449,7 @@
                                   || (currentController == "Icaze" && currentAction == "Izleme");
                     var hrQymetActive = currentArea == "HR" && currentController is "Performans" or "Telim";
                     var hrDigerActive = currentArea == "HR" && currentController is "Hesabat" or "Elan";
-                    var hrMotivActive = currentArea == "HR" && (currentController == "Jeton" || currentController == "JetonAnalitika");
+                    var hrMotivActive = currentArea == "HR" && (currentController == "Jeton" || currentController == "JetonAnalitika" || currentController == "Reyting" || currentController == "ReytingParametr");
                     var hrAnyActive = hrAsasActive || hrKadrActive || hrDMActive || hrQymetActive || hrDigerActive || hrMotivActive;
 
                     <div class="fn-nav-g @(hrAsasActive ? "open" : "")">
@@ -583,6 +583,14 @@
                             <a asp-area="HR" asp-controller="JetonAnalitika" asp-action="Index"
                                class="fn-nav-item @(currentController == "JetonAnalitika" ? "active" : "")">
                                 <i class="bi bi-bar-chart-fill"></i> Jeton Analitika
+                            </a>
+                            <a asp-area="HR" asp-controller="Reyting" asp-action="Index"
+                               class="fn-nav-item @(currentController == "Reyting" ? "active" : "")">
+                                <i class="bi bi-star-fill"></i> İşçi Reytinqləri
+                            </a>
+                            <a asp-area="HR" asp-controller="ReytingParametr" asp-action="Index"
+                               class="fn-nav-item @(currentController == "ReytingParametr" ? "active" : "")">
+                                <i class="bi bi-sliders"></i> Reytinq Parametrləri
                             </a>
                         </div>
                     </div>

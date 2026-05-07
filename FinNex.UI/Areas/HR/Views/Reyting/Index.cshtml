@@ -1,0 +1,82 @@
+@{
+    ViewData["Title"] = "İşçi Reytinqləri";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<link rel="stylesheet" href="~/css/hr/hr-reyting.css" asp-append-version="true" />
+
+<div class="rr-page">
+
+    <!-- ── Başlıq ───────────────────────────────────────────── -->
+    <div class="rr-header">
+        <div class="rr-header-left">
+            <div class="rr-title-icon"><i class="bi bi-star-fill"></i></div>
+            <div>
+                <h1 class="rr-title">İşçi Reytinqləri</h1>
+                <p class="rr-subtitle">Aylıq xal hesablaması və kateqoriya bölgüsü</p>
+            </div>
+        </div>
+        <div class="rr-header-right">
+            <select id="rrIl" class="rr-select"></select>
+            <select id="rrAy" class="rr-select"></select>
+            <button class="rr-btn rr-btn--ghost" onclick="rrLoad()">
+                <i class="bi bi-search"></i> Göstər
+            </button>
+            <button class="rr-btn rr-btn--primary" onclick="rrHesabla(false)">
+                <i class="bi bi-calculator"></i> Hamısını hesabla
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Cədvəl ────────────────────────────────────────────── -->
+    <div class="rr-card">
+        <div id="rrTableWrap">
+            <div class="rr-empty">Ay seçib "Göstər" düyməsinə basın.</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── Manual Xal Modal ──────────────────────────────────── -->
+<div class="rr-overlay" id="rrManualOverlay" onclick="rrCloseManual()"></div>
+<div class="rr-modal" id="rrManualModal">
+    <div class="rr-modal-head">
+        <h4>Manual Xal Əlavə et</h4>
+        <button class="rr-modal-close" onclick="rrCloseManual()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="rr-modal-body">
+        <input type="hidden" id="rrManualIsciId" />
+        <input type="hidden" id="rrManualIl" />
+        <input type="hidden" id="rrManualAy" />
+        <div class="rr-modal-isci" id="rrManualIsciAd"></div>
+        <div class="rr-form-row">
+            <label>Xal miqdarı <span class="rr-req">*</span></label>
+            <input id="rrManualXal" type="number" class="rr-input" placeholder="Müsbət (+5) və ya mənfi (−10)" />
+            <span class="rr-hint">Mənfi rəqəm xal azaldır</span>
+        </div>
+        <div class="rr-form-row">
+            <label>Səbəb <span class="rr-req">*</span></label>
+            <textarea id="rrManualSebeb" class="rr-input rr-textarea" placeholder="Niyə bu xal əlavə edilir?"></textarea>
+        </div>
+    </div>
+    <div class="rr-modal-foot">
+        <button class="rr-btn rr-btn--ghost" onclick="rrCloseManual()">Ləğv et</button>
+        <button class="rr-btn rr-btn--primary" onclick="rrSubmitManual()">Saxla</button>
+    </div>
+</div>
+
+<!-- ── Tarixçə Modal ─────────────────────────────────────── -->
+<div class="rr-overlay" id="rrTarixOverlay" onclick="rrCloseTarix()"></div>
+<div class="rr-modal rr-modal--wide" id="rrTarixModal">
+    <div class="rr-modal-head">
+        <h4 id="rrTarixTitle">Manual Xal Tarixçəsi</h4>
+        <button class="rr-modal-close" onclick="rrCloseTarix()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="rr-modal-body" id="rrTarixBody">
+        <div class="rr-empty">Yüklənir…</div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/hr/hr-reyting.js" asp-append-version="true"></script>
+}

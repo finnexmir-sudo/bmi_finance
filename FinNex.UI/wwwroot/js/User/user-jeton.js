@@ -168,5 +168,28 @@ function ujToast(msg, type = 'info') {
     setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 350); }, 3000);
 }
 
+// ── Reytinq Widget ────────────────────────────────────────
+async function ujLoadReyting() {
+    try {
+        const res = await fetch('/User/Jeton/GetReyting');
+        const json = await res.json();
+        if (!json.success || !json.data) return;
+        const d = json.data;
+        const AY = ['', 'Yan', 'Fev', 'Mar', 'Apr', 'May', 'İyn',
+                    'İyl', 'Avq', 'Sep', 'Okt', 'Noy', 'Dek'];
+        document.getElementById('ujReytingXal').textContent = d.cemiXal + ' xal';
+        const katEl = document.getElementById('ujReytingKat');
+        katEl.textContent = d.kateqoriyaAd ?? '—';
+        if (d.kateqoriyaReng) katEl.style.color = d.kateqoriyaReng;
+        document.getElementById('ujReytingAy').textContent = `${AY[d.ay] ?? d.ay} ${d.il}`;
+        document.getElementById('ujReytingPul').textContent = d.pulAmsali + 'x';
+        document.getElementById('ujReytingSaat').textContent = d.saatAmsali + 'x';
+        document.getElementById('ujReytingWidget').style.display = 'flex';
+    } catch { /* reytinq yoxdursa widget gizli qalır */ }
+}
+
 // ── Init ──────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', ujLoadJetonlar);
+document.addEventListener('DOMContentLoaded', () => {
+    ujLoadJetonlar();
+    ujLoadReyting();
+});
