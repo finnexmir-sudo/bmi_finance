@@ -1,4 +1,5 @@
 using FinNex.Application.DTOs.HR.Reyting;
+using FinNex.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
