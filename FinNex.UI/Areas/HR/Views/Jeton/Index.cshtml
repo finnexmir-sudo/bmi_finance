@@ -2,7 +2,7 @@
     ViewData["Title"] = "Jeton İdarəetməsi";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     var teyinatlar = ViewBag.Teyinatlar as IList<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto> ?? new List<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto>();
-    var isciler = ViewBag.Isciler as IList<dynamic> ?? new List<dynamic>();
+    var isciler = ViewBag.Isciler as IList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
 }
 
 <link rel="stylesheet" href="~/css/hr/hr-jeton.css" asp-append-version="true" />
@@ -41,7 +41,7 @@
                 <option value="">— Bütün işçilər —</option>
                 @foreach (var i in isciler)
                 {
-                    <option value="@i.Id">@i.TamAd</option>
+                    <option value="@i.Value">@i.Text</option>
                 }
             </select>
             <button class="hj-btn hj-btn--ghost" onclick="hjLoadEmeliyyatlar()">
@@ -104,7 +104,7 @@
                 <option value="">— Seçin —</option>
                 @foreach (var i in isciler)
                 {
-                    <option value="@i.Id">@i.TamAd</option>
+                    <option value="@i.Value">@i.Text</option>
                 }
             </select>
         </div>
