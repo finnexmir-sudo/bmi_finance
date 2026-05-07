@@ -1,4 +1,4 @@
-﻿@model List<IsciListDto>
+@model List<IsciListDto>
 @using FinNex.Domain.Entities.HR
 @{
     ViewData["Title"] = "İşçilər";
@@ -23,24 +23,39 @@
         </a>
     </div>
 
+    @* Tab bar *@
+    <div class="isci-tabs">
+        <button class="isci-tab isci-tab--active" data-tab="aktiv">
+            Aktiv
+            <span class="isci-tab-count" id="aktiv-count">0</span>
+        </button>
+        <button class="isci-tab" data-tab="cixmis">
+            İşdən Çıxmış
+            <span class="isci-tab-count isci-tab-count--red" id="cixmis-count">0</span>
+        </button>
+    </div>
+
     <div class="fn-card" style="padding:0;overflow:hidden;">
-        <table class="isci-table">
+        <table class="isci-table" id="isci-table">
             <thead>
                 <tr>
                     <th>Ad Soyad</th>
                     <th>Şöbə</th>
                     <th>Vəzifə</th>
                     <th>Status</th>
+                    <th id="col-cixma-tarixi" style="display:none;">Ayrılma tarixi</th>
+                    <th id="col-sebeb" style="display:none;">Səbəb</th>
                     <th class="isci-th-right">Əməliyyat</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var item in Model)
                 {
-                    <tr>
+                    var isCixmis = item.Status == IsciStatus.IshtenCixib;
+                    <tr data-status="@(isCixmis ? "cixmis" : "aktiv")" class="@(isCixmis ? "isci-row-cixmis" : "")">
                         <td>
                             <div class="isci-info">
-                                <div class="isci-avatar">@item.TamAd.Substring(0, 1)</div>
+                                <div class="isci-avatar @(isCixmis ? "isci-avatar--cixmis" : "")">@item.TamAd.Substring(0, 1)</div>
                                 <div>
                                     <div class="isci-name">@item.TamAd</div>
                                     <div class="isci-email">@item.Email</div>
@@ -54,10 +69,22 @@
                             {
                                 <span class="fn-badge fn-badge--done">Aktiv</span>
                             }
+                            else if (item.Status == IsciStatus.Mezuniyyetde)
+                            {
+                                <span class="fn-badge fn-badge--pending">Məzuniyyətdə</span>
+                            }
                             else
                             {
-                                <span class="fn-badge fn-badge--rejected">Qeyri-aktiv</span>
+                                <span class="fn-badge fn-badge--rejected">İşdən Çıxmış</span>
                             }
+                        </td>
+                        <td class="isci-td-meta col-cixma-tarixi" style="display:none;">
+                            @(item.IsdenAyrilmaTarixi.HasValue ? item.IsdenAyrilmaTarixi.Value.ToString("dd.MM.yyyy") : "—")
+                        </td>
+                        <td class="isci-td-meta col-sebeb" style="display:none;">
+                            <span title="@item.FesihSebebi">
+                                @(string.IsNullOrEmpty(item.FesihSebebi) ? "—" : (item.FesihSebebi.Length > 40 ? item.FesihSebebi.Substring(0, 40) + "…" : item.FesihSebebi))
+                            </span>
                         </td>
                         <td class="isci-td-actions">
                             <a asp-action="Detail" asp-route-id="@item.Id" class="isci-action-btn" title="Bax">
@@ -66,27 +93,172 @@
                                     <circle cx="7" cy="7" r="1.8" stroke="currentColor" stroke-width="1.2" />
                                 </svg>
                             </a>
-                            <a asp-action="Edit" asp-route-id="@item.Id" class="isci-action-btn" title="Redaktə">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                    <path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
-                                </svg>
-                            </a>
-                            <a asp-action="TeyinatDeyis" asp-route-id="@item.Id" class="isci-action-btn isci-action-btn--blue" title="Təyinat Dəyiş">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                    <path d="M2 5h10M9 2l3 3-3 3M12 9H2M5 6l-3 3 3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
-                            </a>
-                            <a asp-action="MaasDeyis" asp-route-id="@item.Id" class="isci-action-btn isci-action-btn--green" title="Maaş Dəyiş">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                    <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2" />
-                                    <path d="M7 4v6M5 5.5h3a1 1 0 010 2H6a1 1 0 000 2h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
-                                </svg>
-                            </a>
+                            @if (!isCixmis)
+                            {
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="isci-action-btn" title="Redaktə">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
+                                    </svg>
+                                </a>
+                                <a asp-action="TeyinatDeyis" asp-route-id="@item.Id" class="isci-action-btn isci-action-btn--blue" title="Təyinat Dəyiş">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <path d="M2 5h10M9 2l3 3-3 3M12 9H2M5 6l-3 3 3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </a>
+                                <a asp-action="MaasDeyis" asp-route-id="@item.Id" class="isci-action-btn isci-action-btn--green" title="Maaş Dəyiş">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2" />
+                                        <path d="M7 4v6M5 5.5h3a1 1 0 010 2H6a1 1 0 000 2h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                    </svg>
+                                </a>
+                                <button class="isci-action-btn isci-action-btn--red"
+                                        title="İşdən Çıxar"
+                                        onclick="openIsdenCixarModal(@item.Id, '@Html.Raw(item.TamAd.Replace("'", "\\'"))')">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <path d="M9 2H5a1 1 0 00-1 1v8a1 1 0 001 1h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                        <path d="M11 7H6M9 5l2 2-2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="isci-action-btn isci-action-btn--green"
+                                        title="Yenidən Aktiv Et"
+                                        onclick="iseyiGeri(@item.Id, '@Html.Raw(item.TamAd.Replace("'", "\\'"))')">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <path d="M2 7a5 5 0 1010 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                        <path d="M2 4v3h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                            }
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
     </div>
-
 </div>
+
+@* İşdən Çıxar Modal *@
+<div id="isdenCixarModal" class="fn-modal-backdrop" style="display:none;">
+    <div class="fn-modal" style="max-width:460px;">
+        <div class="fn-modal-header">
+            <div class="fn-modal-title">İşdən Çıxar</div>
+            <button class="fn-modal-close" onclick="closeIsdenCixarModal()">×</button>
+        </div>
+        <div class="fn-modal-body">
+            <div class="isci-cixar-name" id="cixar-isci-name"></div>
+            <input type="hidden" id="cixar-isci-id" />
+            <div class="fn-form-group">
+                <label class="fn-label">İşdən ayrılma tarixi <span class="req">*</span></label>
+                <input type="date" id="cixar-tarix" class="fn-input" />
+            </div>
+            <div class="fn-form-group">
+                <label class="fn-label">Çıxma səbəbi <span class="req">*</span></label>
+                <textarea id="cixar-sebeb" class="fn-input" rows="3"
+                          placeholder="Öz arzusu ilə, müqavilənin bitməsi, intizam pozuntusu..."></textarea>
+            </div>
+            <div id="cixar-error" class="fn-alert fn-alert--danger" style="display:none;"></div>
+        </div>
+        <div class="fn-modal-footer">
+            <button class="fn-btn fn-btn--ghost" onclick="closeIsdenCixarModal()">Ləğv et</button>
+            <button class="fn-btn fn-btn--danger" onclick="submitIsdenCixar()" id="cixar-submit-btn">
+                İşdən Çıxar
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+// ── Tab filter ───────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+    const rows = document.querySelectorAll('#isci-table tbody tr');
+    const tabs = document.querySelectorAll('.isci-tab');
+
+    const aktivCount = [...rows].filter(r => r.dataset.status === 'aktiv').length;
+    const cixmisCount = [...rows].filter(r => r.dataset.status === 'cixmis').length;
+    document.getElementById('aktiv-count').textContent = aktivCount;
+    document.getElementById('cixmis-count').textContent = cixmisCount;
+
+    function switchTab(tab) {
+        tabs.forEach(t => t.classList.toggle('isci-tab--active', t.dataset.tab === tab));
+        const isCixmis = tab === 'cixmis';
+        rows.forEach(r => r.style.display = r.dataset.status === tab ? '' : 'none');
+        document.querySelectorAll('.col-cixma-tarixi').forEach(el => el.style.display = isCixmis ? '' : 'none');
+        document.querySelectorAll('.col-sebeb').forEach(el => el.style.display = isCixmis ? '' : 'none');
+        document.getElementById('col-cixma-tarixi').style.display = isCixmis ? '' : 'none';
+        document.getElementById('col-sebeb').style.display = isCixmis ? '' : 'none';
+    }
+
+    tabs.forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+    switchTab('aktiv'); // default
+});
+
+// ── İşdən Çıxar Modal ────────────────────────────────────
+function openIsdenCixarModal(isciId, tamAd) {
+    document.getElementById('cixar-isci-id').value = isciId;
+    document.getElementById('cixar-isci-name').textContent = tamAd;
+    document.getElementById('cixar-tarix').value = new Date().toISOString().split('T')[0];
+    document.getElementById('cixar-sebeb').value = '';
+    document.getElementById('cixar-error').style.display = 'none';
+    document.getElementById('isdenCixarModal').style.display = 'flex';
+}
+
+function closeIsdenCixarModal() {
+    document.getElementById('isdenCixarModal').style.display = 'none';
+}
+
+async function submitIsdenCixar() {
+    const isciId = parseInt(document.getElementById('cixar-isci-id').value);
+    const tarix = document.getElementById('cixar-tarix').value;
+    const sebeb = document.getElementById('cixar-sebeb').value.trim();
+    const errEl = document.getElementById('cixar-error');
+    const btn = document.getElementById('cixar-submit-btn');
+
+    errEl.style.display = 'none';
+    if (!tarix) { showCixarErr('Tarix seçilməlidir.'); return; }
+    if (!sebeb) { showCixarErr('Səbəb daxil edilməlidir.'); return; }
+
+    btn.disabled = true;
+    try {
+        const res = await fetch('@Url.Action("IsdenCixar", "Isci")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getToken() },
+            body: JSON.stringify({ isciId, tarix, sebeb })
+        });
+        const data = await res.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            showCixarErr(data.message);
+        }
+    } catch { showCixarErr('Xəta baş verdi.'); }
+    finally { btn.disabled = false; }
+}
+
+function showCixarErr(msg) {
+    const el = document.getElementById('cixar-error');
+    el.textContent = msg;
+    el.style.display = '';
+}
+
+async function iseyiGeri(isciId, tamAd) {
+    if (!confirm(`"${tamAd}" yenidən aktiv edilsin?`)) return;
+    try {
+        const res = await fetch('@Url.Action("IseyiGeri", "Isci")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getToken() },
+            body: JSON.stringify(isciId)
+        });
+        const data = await res.json();
+        if (data.success) location.reload();
+        else alert(data.message);
+    } catch { alert('Xəta baş verdi.'); }
+}
+
+function getToken() {
+    return document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+}
+</script>
+}

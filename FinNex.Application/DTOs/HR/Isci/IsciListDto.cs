@@ -19,5 +19,7 @@ namespace FinNex.Application.DTOs.HR.Isci
 
         public IsciStatus Status { get; set; }
         public Cins Cins { get; set; }
+        public DateTime? IsdenAyrilmaTarixi { get; set; }
+        public string? FesihSebebi { get; set; }
     }
 }
