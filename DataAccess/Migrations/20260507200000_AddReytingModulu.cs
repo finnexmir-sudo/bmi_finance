@@ -1,9 +1,14 @@
+using FinNex.DataAccess.Contexts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace DataAccess.Migrations
 {
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20260507200000_AddReytingModulu")]
     public partial class AddReytingModulu : Migration
     {
         protected override void Up(MigrationBuilder m)
@@ -21,7 +26,7 @@ BEGIN
         SaatAmsali   DECIMAL(5,2)      NOT NULL DEFAULT 1.00,
         Sira         INT               NOT NULL DEFAULT 99,
         Aktivdir     BIT               NOT NULL DEFAULT 1,
-        YaradilmaTarixi DATETIME2     NOT NULL DEFAULT GETDATE(),
+        YaradilmaTarixi DATETIME2      NOT NULL DEFAULT GETDATE(),
         Silinib      BIT               NOT NULL DEFAULT 0
     );
 END
