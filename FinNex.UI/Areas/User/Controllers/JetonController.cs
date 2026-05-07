@@ -1,5 +1,6 @@
 using FinNex.Application.DTOs.HR.Jeton;
 using FinNex.Application.Interfaces.HR;
+using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;

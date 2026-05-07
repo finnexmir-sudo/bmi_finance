@@ -137,7 +137,7 @@ namespace FinNex.Application.Services.HR
 
         public async Task<IList<IsciJetonuListDto>> JetonEmeliyyatlariGetirAsync(int? isciId = null)
         {
-            var query = _unitOfWork.Repository<IsciJetonu>()
+            IQueryable<IsciJetonu> query = _unitOfWork.Repository<IsciJetonu>()
                 .Query()
                 .Include(x => x.JetonTeyinati)
                 .Include(x => x.Isci);
@@ -234,7 +234,8 @@ namespace FinNex.Application.Services.HR
                     redirectUrl: "/HR/Jeton/Index",
                     exceptIsciId: isciId);
 
-                return Result.Ok($"Redim sorğusu göndərildi. Cəmi: {cemiSaat} saat ({dto.RedimNovu == RedimNovu.Icaze ? "İcazə" : "Maaşa əlavə"}).");
+                var novLabel = dto.RedimNovu == RedimNovu.Icaze ? "İcazə" : "Maaşa əlavə";
+                return Result.Ok($"Redim sorğusu göndərildi. Cəmi: {cemiSaat} saat ({novLabel}).");
             }
             catch (Exception ex)
             {
