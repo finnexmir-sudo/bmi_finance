@@ -35,7 +35,7 @@
 /* -- KPI Kartlar -- */
 .ud-kpi-row {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(7, 1fr);
     gap: 16px;
     margin-bottom: 28px;
 }
@@ -55,6 +55,20 @@
 .ud-kpi:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(15, 23, 42, .07);
+}
+
+.ud-kpi--clickable {
+    cursor: pointer;
+}
+
+.ud-kpi--clickable:hover {
+    border-color: #6366f1;
+}
+
+.ud-kpi--active {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, .15), 0 8px 24px rgba(15, 23, 42, .07) !important;
+    background: rgba(99, 102, 241, .02);
 }
 
 .ud-kpi-icon {
@@ -77,6 +91,7 @@
 .ud-kpi-icon--red    { background: linear-gradient(135deg, #ef4444, #f43f5e); box-shadow: 0 6px 16px rgba(239, 68, 68, .2); }
 .ud-kpi-icon--blue   { background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 6px 16px rgba(59, 130, 246, .2); }
 .ud-kpi-icon--orange { background: linear-gradient(135deg, #f97316, #ea580c); box-shadow: 0 6px 16px rgba(249, 115, 22, .2); }
+.ud-kpi-icon--slate  { background: linear-gradient(135deg, #64748b, #475569); box-shadow: 0 6px 16px rgba(100, 116, 139, .2); }
 .ud-kpi-icon--indigo { background: linear-gradient(135deg, #6366f1, #8b5cf6); box-shadow: 0 6px 16px rgba(99, 102, 241, .2); }
 
 .ud-kpi-val {
@@ -340,6 +355,7 @@
 
 .ud-intizam-chip--gecikme { background: rgba(245, 158, 11, .12); color: #b45309; }
 .ud-intizam-chip--tez     { background: rgba(249, 115, 22, .12); color: #c2410c; }
+.ud-intizam-chip--slate   { background: rgba(100, 116, 139, .12); color: #475569; }
 .ud-intizam-chip--qayib   { background: rgba(239, 68, 68, .12);  color: #b91c1c; }
 
 .ud-nodata {
@@ -393,9 +409,9 @@
 }
 
 /* -- Responsive -- */
-@media (max-width: 1300px) {
+@media (max-width: 1400px) {
     .ud-kpi-row {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
     }
 }
 

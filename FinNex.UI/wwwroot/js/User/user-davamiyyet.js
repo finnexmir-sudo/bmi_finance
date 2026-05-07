@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var kpiQayib = document.getElementById('kpiQayib');
     var kpiIcazeli = document.getElementById('kpiIcazeli');
     var kpiTezCixan = document.getElementById('kpiTezCixan');
+    var kpiCixisYox = document.getElementById('kpiCixisYox');
     var kpiCemi = document.getElementById('kpiCemi');
 
     var intizamSection = document.getElementById('udIntizamSection');
@@ -20,10 +21,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var ip = window.isParametriData || { girisVaxti: '09:00', cixisVaxti: '17:45', gecikmeTolerans: 5, tezCixmaTolerans: 15 };
 
+    // Default dates to today
+    var todayStr = new Date().toISOString().split('T')[0];
+    inputBaslangic.value = todayStr;
+    inputSon.value = todayStr;
+
     // Show intizam section on initial load
     if (window.udInitStats) {
-        updateIntizamSection(window.udInitStats.gecikme, window.udInitStats.tezCixan, window.udInitStats.qayib);
+        updateIntizamSection(window.udInitStats.gecikme, window.udInitStats.tezCixan, window.udInitStats.qayib, window.udInitStats.cixisYox);
     }
+
+    // KPI card click handlers
+    document.querySelectorAll('.ud-kpi--clickable').forEach(function (card) {
+        card.addEventListener('click', function () {
+            var filterVal = card.getAttribute('data-filter');
+            selectStatus.value = filterVal;
+            // Clear date range to show full year
+            inputBaslangic.value = '';
+            inputSon.value = '';
+            setActiveKpi(card);
+            var isTezCixan = filterVal === 'tezCixan';
+            var isCixisYox = filterVal === 'cixisYox';
+            var params = {};
+            if (!isTezCixan && !isCixisYox) params.status = filterVal;
+            loadData(params, isTezCixan, isCixisYox);
+        });
+    });
 
     btnAxtar.addEventListener('click', function () {
         var statusVal = selectStatus.value;
@@ -35,8 +58,16 @@ document.addEventListener('DOMContentLoaded', function () {
         if (inputSon.value) params.son = inputSon.value;
         if (statusVal && !isTezCixan && !isCixisYox) params.status = statusVal;
 
+        setActiveKpi(null);
         loadData(params, isTezCixan, isCixisYox);
     });
+
+    function setActiveKpi(activeCard) {
+        document.querySelectorAll('.ud-kpi--clickable').forEach(function (c) {
+            c.classList.remove('ud-kpi--active');
+        });
+        if (activeCard) activeCard.classList.add('ud-kpi--active');
+    }
 
     function loadData(params, filterTezCixan, filterCixisYox) {
         var url = '/User/Davamiyyet/GetMyRecords?' + new URLSearchParams(params).toString();
@@ -59,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 updateKPI(data.stats);
                 renderTable(records);
                 recordCount.textContent = records.length + ' qeyd';
-                updateIntizamSection(data.stats.gecikme || 0, data.stats.tezCixan || 0, data.stats.qayib || 0);
+                updateIntizamSection(data.stats.gecikme || 0, data.stats.tezCixan || 0, data.stats.qayib || 0, data.stats.cixisYox || 0);
             })
             .catch(function () {
                 tableBody.innerHTML = '<tr><td colspan="5"><div class="ud-empty"><i class="bi bi-exclamation-triangle"></i><div>Xəta baş verdi</div></div></td></tr>';
@@ -88,18 +119,20 @@ document.addEventListener('DOMContentLoaded', function () {
         kpiQayib.textContent = stats.qayib;
         kpiIcazeli.textContent = stats.icazeli;
         if (kpiTezCixan) kpiTezCixan.textContent = stats.tezCixan || 0;
+        if (kpiCixisYox) kpiCixisYox.textContent = stats.cixisYox || 0;
         kpiCemi.textContent = stats.cemi;
     }
 
-    function updateIntizamSection(gecikme, tezCixan, qayib) {
-        var total = gecikme + tezCixan + qayib;
+    function updateIntizamSection(gecikme, tezCixan, qayib, cixisYox) {
+        var total = gecikme + tezCixan + qayib + (cixisYox || 0);
         if (total === 0) {
             intizamSection.style.display = 'none';
             return;
         }
         var chips = '';
         if (gecikme > 0) chips += '<span class="ud-intizam-chip ud-intizam-chip--gecikme"><i class="bi bi-clock-fill"></i> Gecikmə: ' + gecikme + '</span>';
-        if (tezCixan > 0) chips += '<span class="ud-intizam-chip ud-intizam-chip--tez"><i class="bi bi-box-arrow-right"></i> Tez çıxan: ' + tezCixan + '</span>';
+        if (tezCixan > 0) chips += '<span class="ud-intizam-chip ud-intizam-chip--tez"><i class="bi bi-box-arrow-right"></i> Erkən çıxış: ' + tezCixan + '</span>';
+        if (cixisYox > 0) chips += '<span class="ud-intizam-chip ud-intizam-chip--slate"><i class="bi bi-door-open"></i> Çıxış yoxdur: ' + cixisYox + '</span>';
         if (qayib > 0) chips += '<span class="ud-intizam-chip ud-intizam-chip--qayib"><i class="bi bi-x-circle-fill"></i> Qayıb: ' + qayib + '</span>';
         intizamChips.innerHTML = chips;
         intizamSection.style.display = '';
