@@ -30,7 +30,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         {
             var teyinatlar = await _jetonService.JetonTeyinatlariGetirAsync();
             var isciler = await _unitOfWork.Repository<Isci>()
-                .GetAll()
+                .Query()
                 .Where(x => !x.Silinib)
                 .OrderBy(x => x.Soyad).ThenBy(x => x.Ad)
                 .Select(x => new { x.Id, TamAd = x.Ad + " " + x.Soyad })
@@ -59,7 +59,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return Json(new { success = false, message = "İstifadəçi tapılmadı." });
 
             var result = await _jetonService.JetonVerAsync(dto, appUser.Id);
-            return Json(new { success = result.Succeeded, message = result.Message });
+            return Json(new { success = result.Success, message = result.Message });
         }
 
         // ── POST /HR/Jeton/JetonLegvet ───────────────────────
@@ -67,7 +67,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> JetonLegvet([FromBody] JetonLegvetRequestDto dto)
         {
             var result = await _jetonService.JetonLegvetAsync(dto.IsciJetonuId, dto.Sebeb);
-            return Json(new { success = result.Succeeded, message = result.Message });
+            return Json(new { success = result.Success, message = result.Message });
         }
 
         // ── GET /HR/Jeton/GetRedimler ────────────────────────
@@ -97,7 +97,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return Json(new { success = false, message = "İstifadəçi tapılmadı." });
 
             var result = await _jetonService.RedimTelebiTesdiqleAsync(dto.RedimId, appUser.Id);
-            return Json(new { success = result.Succeeded, message = result.Message });
+            return Json(new { success = result.Success, message = result.Message });
         }
 
         // ── POST /HR/Jeton/ReddEtRedim ───────────────────────
@@ -109,7 +109,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return Json(new { success = false, message = "İstifadəçi tapılmadı." });
 
             var result = await _jetonService.RedimTelebiReddEtAsync(dto.RedimId, dto.Qeyd, appUser.Id);
-            return Json(new { success = result.Succeeded, message = result.Message });
+            return Json(new { success = result.Success, message = result.Message });
         }
     }
 
