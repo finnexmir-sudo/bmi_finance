@@ -123,5 +123,8 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IKreditZaminService, KreditZaminService>();
         services.AddScoped<IKreditRandevuService, KreditRandevuService>();
         services.AddScoped<IKreditSmsService, KreditSmsService>();
+
+        // ── Jeton (Gamification) Modulu ──────────────────────
+        services.AddScoped<IJetonService, JetonService>();
     }
 }

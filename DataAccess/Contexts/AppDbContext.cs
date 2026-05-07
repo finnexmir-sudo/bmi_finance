@@ -117,6 +117,13 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     // Elan
     public DbSet<Elan> Elanlar { get; set; }
 
+    // =====================
+    // Motivasiya / Jeton Modulu
+    // =====================
+    public DbSet<JetonTeyinati> JetonTeyinatlari { get; set; }
+    public DbSet<IsciJetonu> IsciJetonlari { get; set; }
+    public DbSet<JetonRedimTelebi> JetonRedimTelebieri { get; set; }
+
     // Chat
     public DbSet<ChatMesaj> ChatMesajlar { get; set; }
 
@@ -1038,6 +1045,45 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .WithMany()
             .HasForeignKey(x => x.GonderenIsciId)
             .OnDelete(DeleteBehavior.NoAction);
+
+        // ── Jeton Modulu ──────────────────────────────────────
+        builder.Entity<JetonTeyinati>()
+            .Property(x => x.SaatDeyeri).HasPrecision(5, 2);
+
+        builder.Entity<IsciJetonu>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<IsciJetonu>()
+            .HasOne(x => x.JetonTeyinati)
+            .WithMany(j => j.IsciJetonlari)
+            .HasForeignKey(x => x.JetonTeyinatiId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<IsciJetonu>()
+            .HasOne(x => x.RedimTelebi)
+            .WithMany(r => r.XerclenenJetonlar)
+            .HasForeignKey(x => x.RedimTelebiId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<JetonRedimTelebi>()
+            .Property(x => x.CemiSaat).HasPrecision(8, 2);
+
+        builder.Entity<JetonRedimTelebi>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        // ── JetonTeyinati Seed Data ───────────────────────────
+        builder.Entity<JetonTeyinati>().HasData(
+            new JetonTeyinati { Id = 1, Ad = "Bürünc Jeton", Nov = JetonNovu.Musbat, Rengi = JetonRengi.Burunc, SaatDeyeri = 0.5m, Ikon = "bi bi-award-fill", RengKodu = "#cd7f32", Tesvir = "Kiçik mükafat — 30 dəqiqə", Aktivdir = true, YaradilmaTarixi = new DateTime(2026, 1, 1), Silinib = false },
+            new JetonTeyinati { Id = 2, Ad = "Gümüş Jeton",  Nov = JetonNovu.Musbat, Rengi = JetonRengi.Gumus,  SaatDeyeri = 1m,   Ikon = "bi bi-award-fill", RengKodu = "#9ca3af", Tesvir = "Orta mükafat — 1 saat",    Aktivdir = true, YaradilmaTarixi = new DateTime(2026, 1, 1), Silinib = false },
+            new JetonTeyinati { Id = 3, Ad = "Qızıl Jeton",  Nov = JetonNovu.Musbat, Rengi = JetonRengi.Qizil,  SaatDeyeri = 4m,   Ikon = "bi bi-award-fill", RengKodu = "#f59e0b", Tesvir = "Böyük mükafat — 4 saat",  Aktivdir = true, YaradilmaTarixi = new DateTime(2026, 1, 1), Silinib = false },
+            new JetonTeyinati { Id = 4, Ad = "Qara Jeton",   Nov = JetonNovu.Menfi,  Rengi = JetonRengi.Qara,   SaatDeyeri = 0m,   Ikon = "bi bi-slash-circle-fill", RengKodu = "#1f2937", Tesvir = "İntizam cəzası — mükafat dondurulur", Aktivdir = true, YaradilmaTarixi = new DateTime(2026, 1, 1), Silinib = false }
+        );
 
         // ── XercKateqoriyasi Seed Data ────────────────────────
         builder.Entity<XercKateqoriyasi>().HasData(

@@ -1,0 +1,212 @@
+/* ── hr-jeton.css — HR Jeton İdarəetməsi ────────────────── */
+
+:root {
+    --hj-radius: 12px;
+    --hj-shadow: 0 2px 12px rgba(0,0,0,.07);
+    --hj-border: #e5e7eb;
+    --hj-bg: #f9fafb;
+    --hj-primary: #6366f1;
+    --hj-primary-h: #4f46e5;
+    --hj-success: #22c55e;
+    --hj-danger: #ef4444;
+    --hj-text: #111827;
+    --hj-muted: #6b7280;
+}
+
+/* ── Page ─────────────────────────────────────────────── */
+.hj-page { padding: 24px 28px; max-width: 1200px; }
+
+/* ── Header ───────────────────────────────────────────── */
+.hj-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px; gap: 16px; flex-wrap: wrap;
+}
+.hj-header-left { display: flex; align-items: center; gap: 14px; }
+.hj-title-icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: #fff; flex-shrink: 0;
+}
+.hj-title { margin: 0; font-size: 22px; font-weight: 700; color: var(--hj-text); }
+.hj-subtitle { margin: 2px 0 0; font-size: 13px; color: var(--hj-muted); }
+
+/* ── Buttons ──────────────────────────────────────────── */
+.hj-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; border-radius: 9px; font-size: 14px; font-weight: 600;
+    border: none; cursor: pointer; transition: background .18s, transform .1s;
+}
+.hj-btn:active { transform: scale(.97); }
+.hj-btn--primary { background: var(--hj-primary); color: #fff; }
+.hj-btn--primary:hover { background: var(--hj-primary-h); }
+.hj-btn--ghost { background: #f3f4f6; color: var(--hj-text); border: 1px solid var(--hj-border); }
+.hj-btn--ghost:hover { background: #e5e7eb; }
+.hj-btn--success { background: var(--hj-success); color: #fff; }
+.hj-btn--success:hover { background: #16a34a; }
+.hj-btn--danger { background: var(--hj-danger); color: #fff; }
+.hj-btn--danger:hover { background: #dc2626; }
+.hj-btn--sm { padding: 5px 11px; font-size: 12px; }
+
+/* ── Tabs ─────────────────────────────────────────────── */
+.hj-tabs {
+    display: flex; gap: 4px;
+    border-bottom: 2px solid var(--hj-border);
+    margin-bottom: 24px;
+}
+.hj-tab {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 18px; border: none; background: transparent;
+    font-size: 14px; font-weight: 500; color: var(--hj-muted);
+    cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -2px; border-radius: 6px 6px 0 0;
+    transition: color .18s, border-color .18s;
+}
+.hj-tab:hover { color: var(--hj-text); }
+.hj-tab--active { color: var(--hj-primary); border-bottom-color: var(--hj-primary); font-weight: 700; }
+.hj-badge {
+    background: var(--hj-danger); color: #fff;
+    font-size: 11px; font-weight: 700; border-radius: 999px;
+    padding: 1px 6px; min-width: 18px; text-align: center;
+}
+
+/* ── Panel ─────────────────────────────────────────────── */
+.hj-panel { animation: hjFadeIn .2s ease; }
+@keyframes hjFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ── Filter bar ───────────────────────────────────────── */
+.hj-filter-bar {
+    display: flex; gap: 10px; align-items: center;
+    margin-bottom: 16px; flex-wrap: wrap;
+}
+
+/* ── Form controls ────────────────────────────────────── */
+.hj-select, .hj-input, .hj-textarea {
+    border: 1.5px solid var(--hj-border); border-radius: 8px;
+    padding: 8px 12px; font-size: 14px; color: var(--hj-text);
+    background: #fff; outline: none; transition: border-color .18s;
+    font-family: inherit;
+}
+.hj-select:focus, .hj-input:focus, .hj-textarea:focus { border-color: var(--hj-primary); }
+.hj-select { min-width: 240px; }
+.hj-textarea { width: 100%; resize: vertical; min-height: 80px; }
+.hj-input { width: 100%; }
+
+/* ── Table ─────────────────────────────────────────────── */
+.hj-table-wrap {
+    background: #fff; border-radius: var(--hj-radius);
+    box-shadow: var(--hj-shadow); overflow: hidden;
+    border: 1px solid var(--hj-border);
+}
+.hj-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.hj-table thead tr { background: var(--hj-bg); }
+.hj-table th {
+    padding: 11px 14px; text-align: left;
+    font-size: 12px; font-weight: 700; color: var(--hj-muted);
+    text-transform: uppercase; letter-spacing: .5px;
+    border-bottom: 1px solid var(--hj-border);
+}
+.hj-table td {
+    padding: 12px 14px; border-bottom: 1px solid #f3f4f6;
+    color: var(--hj-text);
+}
+.hj-table tbody tr:last-child td { border-bottom: none; }
+.hj-table tbody tr:hover { background: #f9fafb; }
+.hj-empty { text-align: center; color: var(--hj-muted); padding: 32px; }
+
+/* ── Jeton badge ──────────────────────────────────────── */
+.hj-jeton-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 700;
+    color: #fff; white-space: nowrap;
+}
+
+/* ── Status badge ─────────────────────────────────────── */
+.hj-status {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 20px; font-size: 11.5px; font-weight: 600;
+}
+.hj-status--aktiv   { background: #d1fae5; color: #065f46; }
+.hj-status--istifade { background: #dbeafe; color: #1e40af; }
+.hj-status--legvedildi { background: #fee2e2; color: #991b1b; }
+.hj-status--gozlenilir { background: #fef3c7; color: #92400e; }
+.hj-status--tesdiqlendi { background: #d1fae5; color: #065f46; }
+.hj-status--redd    { background: #fee2e2; color: #991b1b; }
+
+/* ── Modal ─────────────────────────────────────────────── */
+.hj-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.35);
+    z-index: 1040; display: none;
+}
+.hj-overlay.hj-open { display: block; }
+
+.hj-modal {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -48%);
+    z-index: 1050; background: #fff; border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    width: 560px; max-width: 96vw;
+    max-height: 90vh; overflow-y: auto;
+    display: none; flex-direction: column;
+    animation: hjModalIn .2s ease;
+}
+.hj-modal.hj-open { display: flex; }
+.hj-modal--sm { width: 420px; }
+@keyframes hjModalIn { from { opacity: 0; transform: translate(-50%, -44%); } to { opacity: 1; transform: translate(-50%, -48%); } }
+
+.hj-modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 22px; border-bottom: 1px solid var(--hj-border);
+}
+.hj-modal-head h3 { margin: 0; font-size: 17px; font-weight: 700; color: var(--hj-text); }
+.hj-modal-close {
+    border: none; background: #f3f4f6; color: var(--hj-muted);
+    font-size: 20px; line-height: 1; width: 34px; height: 34px;
+    border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.hj-modal-close:hover { background: #e5e7eb; }
+
+.hj-modal-body { padding: 22px; flex: 1; }
+.hj-modal-foot {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding: 16px 22px; border-top: 1px solid var(--hj-border);
+}
+
+/* ── Field ─────────────────────────────────────────────── */
+.hj-field { margin-bottom: 18px; }
+.hj-field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #374151; }
+.hj-confirm-text { font-size: 14px; color: var(--hj-text); margin-bottom: 14px; }
+
+/* ── Jeton grid (modal pick) ──────────────────────────── */
+.hj-jeton-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+}
+.hj-jeton-card {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 5px; padding: 14px 10px; border-radius: 10px;
+    border: 2px solid var(--hj-border); cursor: pointer;
+    transition: border-color .18s, box-shadow .18s;
+    background: #fff;
+}
+.hj-jeton-card i { font-size: 28px; color: var(--jc, #9ca3af); }
+.hj-jeton-card-name { font-size: 12px; font-weight: 700; color: var(--hj-text); text-align: center; }
+.hj-jeton-card-saat { font-size: 11px; color: var(--hj-muted); }
+.hj-jeton-card-saat--menfi { color: var(--hj-danger); font-weight: 700; }
+.hj-jeton-card:hover { border-color: var(--jc, var(--hj-primary)); }
+.hj-jeton-card--selected {
+    border-color: var(--jc, var(--hj-primary)) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--jc, var(--hj-primary)) 25%, transparent);
+    background: color-mix(in srgb, var(--jc, var(--hj-primary)) 8%, #fff);
+}
+
+/* ── Redim detail info ─────────────────────────────────── */
+.hj-redim-info { display: grid; gap: 10px; }
+.hj-redim-row {
+    display: flex; gap: 10px;
+    font-size: 13.5px; color: var(--hj-text);
+}
+.hj-redim-row strong { min-width: 120px; color: var(--hj-muted); font-weight: 600; }
+
+.hj-qeyd-field { margin-top: 14px; }
+.hj-qeyd-field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #374151; }
