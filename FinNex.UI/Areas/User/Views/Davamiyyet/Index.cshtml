@@ -14,6 +14,22 @@
                                       || x.Status == DavamiyyetStatus.Xestelik
                                       || x.Status == DavamiyyetStatus.Ezamiyyet);
     var cemi = list.Count;
+
+    var girisVaxtiStr = ViewBag.GirisVaxti as string ?? "09:00";
+    var cixisVaxtiStr = ViewBag.CixisVaxti as string ?? "17:45";
+    int gecikmeTolerans = (int)(ViewBag.GecikmeTolerans ?? 5);
+    int tezCixmaTolerans = (int)(ViewBag.TezCixmaTolerans ?? 15);
+
+    var girisParts = girisVaxtiStr.Split(':');
+    int girisH = int.Parse(girisParts[0]), girisM = int.Parse(girisParts[1]);
+    int lateThreshMin = girisH * 60 + girisM + gecikmeTolerans;
+
+    var cixisParts = cixisVaxtiStr.Split(':');
+    int cixisH = int.Parse(cixisParts[0]), cixisM = int.Parse(cixisParts[1]);
+    int earlyThreshMin = cixisH * 60 + cixisM - tezCixmaTolerans;
+
+    var tezCixanSayi = list.Count(x => x.CixisVaxti.HasValue &&
+        (x.CixisVaxti.Value.Hour * 60 + x.CixisVaxti.Value.Minute) < earlyThreshMin);
 }
 
 <div class="ud-page">
@@ -62,6 +78,15 @@
                 <div class="ud-kpi-lbl">İcazəli</div>
             </div>
         </div>
+        <div class="ud-kpi">
+            <div class="ud-kpi-icon ud-kpi-icon--orange">
+                <i class="bi bi-box-arrow-right"></i>
+            </div>
+            <div class="ud-kpi-body">
+                <div class="ud-kpi-val" id="kpiTezCixan">@tezCixanSayi</div>
+                <div class="ud-kpi-lbl">Tez çıxan</div>
+            </div>
+        </div>
         <div class="ud-kpi ud-kpi--total">
             <div class="ud-kpi-icon ud-kpi-icon--indigo">
                 <i class="bi bi-people-fill"></i>
@@ -71,6 +96,14 @@
                 <div class="ud-kpi-lbl">Cəmi qeyd</div>
             </div>
         </div>
+    </div>
+
+    <div id="udIntizamSection" class="ud-intizam-section" style="display:none">
+        <div class="ud-intizam-head">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            İntizamsızlıq xülasəsi
+        </div>
+        <div class="ud-intizam-chips" id="udIntizamChips"></div>
     </div>
 
     <div class="ud-filter-panel">
@@ -91,6 +124,8 @@
                     <option value="2">Gecikmə</option>
                     <option value="3">Qayıb</option>
                     <option value="4">İcazəli</option>
+                    <option value="tezCixan">Tez çıxan</option>
+                    <option value="cixisYox">Çıxış yoxdur</option>
                 </select>
             </div>
             <button id="udAxtar" class="ud-btn ud-btn--primary">
@@ -126,7 +161,9 @@
                         @foreach (var item in list.OrderByDescending(x => x.Tarix))
                         {
                             var isLate = item.GirisVaxti.HasValue &&
-                                (item.GirisVaxti.Value.Hour > 9 || (item.GirisVaxti.Value.Hour == 9 && item.GirisVaxti.Value.Minute > 5));
+                                (item.GirisVaxti.Value.Hour * 60 + item.GirisVaxti.Value.Minute) > lateThreshMin;
+                            var isEarly = item.CixisVaxti.HasValue &&
+                                (item.CixisVaxti.Value.Hour * 60 + item.CixisVaxti.Value.Minute) < earlyThreshMin;
                             <tr>
                                 <td>
                                     <div class="ud-date">@item.Tarix.ToString("dd.MM.yyyy")</div>
@@ -146,7 +183,7 @@
                                 <td>
                                     @if (item.CixisVaxti.HasValue)
                                     {
-                                        <span class="ud-time">@item.CixisVaxti.Value.ToString("HH:mm")</span>
+                                        <span class="ud-time @(isEarly ? "ud-time--early" : "")">@item.CixisVaxti.Value.ToString("HH:mm")</span>
                                     }
                                     else
                                     {
@@ -214,5 +251,18 @@
 }
 
 @section Scripts {
+    <script>
+        window.isParametriData = {
+            girisVaxti: '@girisVaxtiStr',
+            cixisVaxti: '@cixisVaxtiStr',
+            gecikmeTolerans: @gecikmeTolerans,
+            tezCixmaTolerans: @tezCixmaTolerans
+        };
+        window.udInitStats = {
+            gecikme: @gecikmeSayi,
+            tezCixan: @tezCixanSayi,
+            qayib: @qayibSayi
+        };
+    </script>
     <script src="~/js/User/user-davamiyyet.js" asp-append-version="true"></script>
 }
