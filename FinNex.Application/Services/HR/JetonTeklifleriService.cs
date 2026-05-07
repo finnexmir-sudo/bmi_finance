@@ -1,6 +1,7 @@
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Jeton;
 using FinNex.Application.DTOs.HR.Motivasya;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -244,7 +245,8 @@ namespace FinNex.Application.Services.HR
         private static string IsciStatusAdGetir(IsciStatus s) => s switch
         {
             IsciStatus.Aktiv => "İşdədir",
-            IsciStatus.Arxivde => "Arxivdə",
+            IsciStatus.Mezuniyyetde => "Məzuniyyətdə",
+            IsciStatus.IshtenCixib => "İşdən çıxıb",
             _ => s.ToString()
         };
     }
