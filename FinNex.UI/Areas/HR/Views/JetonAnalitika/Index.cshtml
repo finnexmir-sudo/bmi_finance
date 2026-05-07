@@ -1,0 +1,104 @@
+@{
+    ViewData["Title"] = "Jeton Analitika";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<link rel="stylesheet" href="~/css/hr/hr-jeton-analitika.css" asp-append-version="true" />
+
+<div class="ja-page">
+
+    <!-- ── Başlıq ──────────────────────────────────────────── -->
+    <div class="ja-header">
+        <div class="ja-header-left">
+            <div class="ja-title-icon"><i class="bi bi-bar-chart-fill"></i></div>
+            <div>
+                <h1 class="ja-title">Jeton Analitika</h1>
+                <p class="ja-subtitle">Motivasiya sisteminin icraiyyə paneli · 1 saat = 1 AZN</p>
+            </div>
+        </div>
+        <button class="ja-btn ja-btn--ghost" onclick="jaRefresh()">
+            <i class="bi bi-arrow-clockwise"></i> Yenilə
+        </button>
+    </div>
+
+    <!-- ── KPI Kartları ────────────────────────────────────── -->
+    <div class="ja-kpi-grid" id="jaKpiGrid">
+        <div class="ja-kpi-skeleton"></div>
+        <div class="ja-kpi-skeleton"></div>
+        <div class="ja-kpi-skeleton"></div>
+        <div class="ja-kpi-skeleton"></div>
+        <div class="ja-kpi-skeleton"></div>
+        <div class="ja-kpi-skeleton"></div>
+    </div>
+
+    <!-- ── Yüksək Səlahiyyətli Xəbərdarlıq ───────────────── -->
+    <div class="ja-alert ja-alert--danger" id="jaYukselekAlert" style="display:none">
+        <i class="bi bi-shield-exclamation-fill"></i>
+        <span id="jaYukselekAlertText"></span>
+        <a href="/HR/Jeton" class="ja-alert-link">Sorğulara bax →</a>
+    </div>
+
+    <!-- ── Qrafik cərgəsi 1 ────────────────────────────────── -->
+    <div class="ja-charts-row">
+        <div class="ja-chart-card ja-chart-card--wide">
+            <div class="ja-chart-head">
+                <div>
+                    <h3>Aylıq Jeton Trendi</h3>
+                    <span class="ja-chart-sub">Son 6 ay — müsbət vs mənfi</span>
+                </div>
+            </div>
+            <canvas id="jaTrendChart"></canvas>
+        </div>
+        <div class="ja-chart-card">
+            <div class="ja-chart-head">
+                <div>
+                    <h3>Maliyyə Öhdəliyi</h3>
+                    <span class="ja-chart-sub">Aktiv jetonların dəyəri</span>
+                </div>
+            </div>
+            <canvas id="jaMaliyyeChart"></canvas>
+            <div class="ja-maliyye-info" id="jaMaliyyeInfo"></div>
+        </div>
+    </div>
+
+    <!-- ── Qrafik cərgəsi 2 ────────────────────────────────── -->
+    <div class="ja-charts-row">
+        <div class="ja-chart-card ja-chart-card--wide">
+            <div class="ja-chart-head">
+                <div>
+                    <h3>Departament Müqayisəsi</h3>
+                    <span class="ja-chart-sub">Müsbət mükafat vs İntizam qeydləri</span>
+                </div>
+            </div>
+            <canvas id="jaDeptChart"></canvas>
+        </div>
+        <div class="ja-chart-card">
+            <div class="ja-chart-head">
+                <div>
+                    <h3>Qara Jeton Səbəbləri</h3>
+                    <span class="ja-chart-sub">Üst 8 kateqoriya</span>
+                </div>
+            </div>
+            <canvas id="jaQaraChart"></canvas>
+        </div>
+    </div>
+
+    <!-- ── Anomaliya Cədvəli ───────────────────────────────── -->
+    <div class="ja-chart-card">
+        <div class="ja-chart-head">
+            <div>
+                <h3><i class="bi bi-exclamation-triangle-fill ja-icon--warn"></i> Anomaliya İzləmə</h3>
+                <span class="ja-chart-sub">Ayda 10-dan çox jeton paylayan istifadəçilər — Yüksək Risk</span>
+            </div>
+        </div>
+        <div id="jaAnomaliyaList">
+            <div class="ja-empty">Yüklənir…</div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="~/js/hr/hr-jeton-analitika.js" asp-append-version="true"></script>
+}
