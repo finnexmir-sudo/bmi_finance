@@ -73,7 +73,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 return Json(new { success = false, message = "İşçi tapılmadı." });
 
             var result = await _jetonService.RedimTelebiYaratAsync(appUser.IsciId.Value, dto);
-            return Json(new { success = result.Succeeded, message = result.Message });
+            return Json(new { success = result.Success, message = result.Message });
         }
     }
 }
