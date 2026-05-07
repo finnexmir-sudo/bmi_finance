@@ -35,7 +35,7 @@
 /* -- KPI Kartlar -- */
 .ud-kpi-row {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
     gap: 16px;
     margin-bottom: 28px;
 }
@@ -409,12 +409,6 @@
 }
 
 /* -- Responsive -- */
-@media (max-width: 1400px) {
-    .ud-kpi-row {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-
 @media (max-width: 768px) {
     .ud-kpi-row {
         grid-template-columns: repeat(2, 1fr);
