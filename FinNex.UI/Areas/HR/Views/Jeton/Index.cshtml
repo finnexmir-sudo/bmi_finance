@@ -1,6 +1,6 @@
 @{
     ViewData["Title"] = "Jeton İdarəetməsi";
-    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     var teyinatlar = ViewBag.Teyinatlar as IList<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto> ?? new List<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto>();
     var isciler = ViewBag.Isciler as IList<dynamic> ?? new List<dynamic>();
 }
