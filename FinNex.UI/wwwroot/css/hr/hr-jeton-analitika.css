@@ -85,6 +85,8 @@
 .ja-alert-link { color: inherit; font-weight: 700; text-decoration: underline; white-space: nowrap; }
 
 /* ── Chart layout ───────────────────────────────────────────── */
+.ja-canvas-wrap { position: relative; }
+
 .ja-charts-row {
     display: grid;
     grid-template-columns: 2fr 1fr;
