@@ -35,7 +35,7 @@
 /* -- KPI Kartlar -- */
 .ud-kpi-row {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 16px;
     margin-bottom: 28px;
 }
@@ -76,6 +76,7 @@
 .ud-kpi-icon--amber  { background: linear-gradient(135deg, #f59e0b, #eab308); box-shadow: 0 6px 16px rgba(245, 158, 11, .2); }
 .ud-kpi-icon--red    { background: linear-gradient(135deg, #ef4444, #f43f5e); box-shadow: 0 6px 16px rgba(239, 68, 68, .2); }
 .ud-kpi-icon--blue   { background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 6px 16px rgba(59, 130, 246, .2); }
+.ud-kpi-icon--orange { background: linear-gradient(135deg, #f97316, #ea580c); box-shadow: 0 6px 16px rgba(249, 115, 22, .2); }
 .ud-kpi-icon--indigo { background: linear-gradient(135deg, #6366f1, #8b5cf6); box-shadow: 0 6px 16px rgba(99, 102, 241, .2); }
 
 .ud-kpi-val {
@@ -290,6 +291,57 @@
     border-radius: 6px;
 }
 
+.ud-time--early {
+    color: #ea580c;
+    background: rgba(249, 115, 22, .08);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+}
+
+/* -- İntizamsızlıq bölməsi -- */
+.ud-intizam-section {
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, rgba(254, 242, 232, .8), rgba(255, 237, 213, .6));
+    border: 1.5px solid rgba(249, 115, 22, .25);
+    border-radius: 14px;
+    padding: 18px 24px;
+}
+
+.ud-intizam-head {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #c2410c;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.ud-intizam-head i {
+    color: #ea580c;
+}
+
+.ud-intizam-chips {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.ud-intizam-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    border-radius: 10px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.ud-intizam-chip--gecikme { background: rgba(245, 158, 11, .12); color: #b45309; }
+.ud-intizam-chip--tez     { background: rgba(249, 115, 22, .12); color: #c2410c; }
+.ud-intizam-chip--qayib   { background: rgba(239, 68, 68, .12);  color: #b91c1c; }
+
 .ud-nodata {
     color: #c0c8d8;
     font-style: italic;
@@ -341,7 +393,7 @@
 }
 
 /* -- Responsive -- */
-@media (max-width: 1200px) {
+@media (max-width: 1300px) {
     .ud-kpi-row {
         grid-template-columns: repeat(3, 1fr);
     }
