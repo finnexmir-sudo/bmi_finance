@@ -15,12 +15,14 @@ namespace FinNex.Application.Services.Communication
         private readonly IUnitOfWork _unitOfWork;
         private readonly IBildirisService _bildirisService;
         private readonly IMapper _mapper;
+        private readonly IJetonTeklifleriService _teklifService;
 
-        public TapshiriqService(IUnitOfWork unitOfWork, IBildirisService bildirisService,IMapper mapper)
+        public TapshiriqService(IUnitOfWork unitOfWork, IBildirisService bildirisService, IMapper mapper, IJetonTeklifleriService teklifService)
         {
             _unitOfWork = unitOfWork;
             _bildirisService = bildirisService;
             _mapper = mapper;
+            _teklifService = teklifService;
         }
 
         public async Task<Result<IList<TapshiriqListDto>>> GetMenimTapshiriqlarimAsync(int isciId)
