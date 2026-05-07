@@ -21,28 +21,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var ip = window.isParametriData || { girisVaxti: '09:00', cixisVaxti: '17:45', gecikmeTolerans: 5, tezCixmaTolerans: 15 };
 
-    // Default dates to today
-    var todayStr = new Date().toISOString().split('T')[0];
-    inputBaslangic.value = todayStr;
-    inputSon.value = todayStr;
+    var today = new Date();
+    var todayStr = today.toISOString().split('T')[0];
+    var yearStart = today.getFullYear() + '-01-01';
 
     // Show intizam section on initial load
     if (window.udInitStats) {
         updateIntizamSection(window.udInitStats.gecikme, window.udInitStats.tezCixan, window.udInitStats.qayib, window.udInitStats.cixisYox);
     }
 
-    // KPI card click handlers
+    // KPI card click: show full current year for that status
     document.querySelectorAll('.ud-kpi--clickable').forEach(function (card) {
         card.addEventListener('click', function () {
             var filterVal = card.getAttribute('data-filter');
             selectStatus.value = filterVal;
-            // Clear date range to show full year
-            inputBaslangic.value = '';
-            inputSon.value = '';
+            // Set date range to full current year so counts match
+            inputBaslangic.value = yearStart;
+            inputSon.value = todayStr;
             setActiveKpi(card);
             var isTezCixan = filterVal === 'tezCixan';
             var isCixisYox = filterVal === 'cixisYox';
-            var params = {};
+            var params = { baslangic: yearStart, son: todayStr };
             if (!isTezCixan && !isCixisYox) params.status = filterVal;
             loadData(params, isTezCixan, isCixisYox);
         });
