@@ -36,10 +36,10 @@ namespace FinNex.UI.Areas.User.Controllers
             var list = await _davamiyyetService.IsciUzreAsync(isciId.Value);
 
             var ip = await GetIsParametriEntity();
-            ViewBag.GirisVaxti = ip.GirisVaxti ?? "09:00";
-            ViewBag.CixisVaxti = ip.CixisVaxti ?? "17:45";
-            ViewBag.GecikmeTolerans = ip.GecikmeTolerans > 0 ? ip.GecikmeTolerans : 5;
-            ViewBag.TezCixmaTolerans = ip.TezCixmaTolerans > 0 ? ip.TezCixmaTolerans : 15;
+            ViewBag.GirisVaxti = ip.StandartGirisVaxti.ToString(@"hh\:mm");
+            ViewBag.CixisVaxti = ip.StandartCixisVaxti.ToString(@"hh\:mm");
+            ViewBag.GecikmeTolerans = ip.GecikmeToleransDeqiqe;
+            ViewBag.TezCixmaTolerans = ip.TezCixmaToleransDeqiqe;
 
             return View(list);
         }
@@ -90,16 +90,8 @@ namespace FinNex.UI.Areas.User.Controllers
             var ezamiyyet = result.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
 
             var ip = await GetIsParametriEntity();
-            int cixisThresholdMin = 17 * 60 + 45;
-            try
-            {
-                var parts = (ip.CixisVaxti ?? "17:45").Split(':');
-                cixisThresholdMin = int.Parse(parts[0]) * 60 + int.Parse(parts[1]);
-            }
-            catch { }
-            var tezCixanHedd = cixisThresholdMin - (ip.TezCixmaTolerans > 0 ? ip.TezCixmaTolerans : 15);
-            var tezCixan = result.Count(x => x.CixisVaxti.HasValue &&
-                (x.CixisVaxti.Value.Hour * 60 + x.CixisVaxti.Value.Minute) < tezCixanHedd);
+            var tezCixanHeddi = ip.StandartCixisVaxti - TimeSpan.FromMinutes(ip.TezCixmaToleransDeqiqe);
+            var tezCixan = result.Count(x => x.CixisVaxti.HasValue && x.CixisVaxti.Value.TimeOfDay < tezCixanHeddi);
             var cixisYox = result.Count(x => x.GirisVaxti.HasValue && !x.CixisVaxti.HasValue);
 
             return Json(new
