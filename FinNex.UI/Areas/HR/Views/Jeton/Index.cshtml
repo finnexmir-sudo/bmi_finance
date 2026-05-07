@@ -1,0 +1,192 @@
+@{
+    ViewData["Title"] = "Jeton İdarəetməsi";
+    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
+    var teyinatlar = ViewBag.Teyinatlar as IList<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto> ?? new List<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto>();
+    var isciler = ViewBag.Isciler as IList<dynamic> ?? new List<dynamic>();
+}
+
+<link rel="stylesheet" href="~/css/hr/hr-jeton.css" asp-append-version="true" />
+
+<div class="hj-page">
+
+    <!-- ── Başlıq + Tab naviqasiyası ─────────────────────── -->
+    <div class="hj-header">
+        <div class="hj-header-left">
+            <div class="hj-title-icon"><i class="bi bi-award-fill"></i></div>
+            <div>
+                <h1 class="hj-title">Motivasiya & Jeton</h1>
+                <p class="hj-subtitle">İşçilərə jeton ver, redim sorğularını idarə et</p>
+            </div>
+        </div>
+        <button class="hj-btn hj-btn--primary" onclick="hjOpenVerModal()">
+            <i class="bi bi-plus-lg"></i> Jeton Ver
+        </button>
+    </div>
+
+    <!-- ── Tabs ───────────────────────────────────────────── -->
+    <div class="hj-tabs">
+        <button class="hj-tab hj-tab--active" data-tab="emeliyyatlar" onclick="hjSwitchTab(this,'emeliyyatlar')">
+            <i class="bi bi-list-ul"></i> Əməliyyatlar
+        </button>
+        <button class="hj-tab" data-tab="redimler" onclick="hjSwitchTab(this,'redimler')">
+            <i class="bi bi-clock-history"></i> Redim Sorğuları
+            <span class="hj-badge" id="hjRedimBadge" style="display:none"></span>
+        </button>
+    </div>
+
+    <!-- ── Əməliyyatlar Panel ─────────────────────────────── -->
+    <div id="hjTabEmeliyyatlar" class="hj-panel">
+        <div class="hj-filter-bar">
+            <select id="hjIsciFilter" class="hj-select" onchange="hjLoadEmeliyyatlar()">
+                <option value="">— Bütün işçilər —</option>
+                @foreach (var i in isciler)
+                {
+                    <option value="@i.Id">@i.TamAd</option>
+                }
+            </select>
+            <button class="hj-btn hj-btn--ghost" onclick="hjLoadEmeliyyatlar()">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+
+        <div class="hj-table-wrap">
+            <table class="hj-table" id="hjEmeliyyatlarTable">
+                <thead>
+                    <tr>
+                        <th>İşçi</th>
+                        <th>Jeton</th>
+                        <th>Tarix</th>
+                        <th>Səbəb</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="hjEmeliyyatlarBody">
+                    <tr><td colspan="6" class="hj-empty">Yüklənir…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ── Redim Sorğuları Panel ──────────────────────────── -->
+    <div id="hjTabRedimler" class="hj-panel" style="display:none">
+        <div class="hj-table-wrap">
+            <table class="hj-table" id="hjRedimTable">
+                <thead>
+                    <tr>
+                        <th>İşçi</th>
+                        <th>Nov</th>
+                        <th>Cəmi saat</th>
+                        <th>Tarix</th>
+                        <th>Status</th>
+                        <th>Əməliyyat</th>
+                    </tr>
+                </thead>
+                <tbody id="hjRedimBody">
+                    <tr><td colspan="6" class="hj-empty">Yüklənir…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ── Jeton Ver Modal ────────────────────────────────── -->
+<div class="hj-overlay" id="hjVerOverlay" onclick="hjCloseVerModal()"></div>
+<div class="hj-modal" id="hjVerModal">
+    <div class="hj-modal-head">
+        <h3><i class="bi bi-award-fill"></i> Jeton Ver</h3>
+        <button class="hj-modal-close" onclick="hjCloseVerModal()">&times;</button>
+    </div>
+    <div class="hj-modal-body">
+        <div class="hj-field">
+            <label>İşçi</label>
+            <select id="hjVerIsci" class="hj-select">
+                <option value="">— Seçin —</option>
+                @foreach (var i in isciler)
+                {
+                    <option value="@i.Id">@i.TamAd</option>
+                }
+            </select>
+        </div>
+
+        <div class="hj-field">
+            <label>Jeton növü</label>
+            <div class="hj-jeton-grid" id="hjJetonGrid">
+                @foreach (var t in teyinatlar)
+                {
+                    <div class="hj-jeton-card" data-id="@t.Id" data-nov="@((int)t.Nov)"
+                         style="--jc:@t.RengKodu" onclick="hjSelectJeton(this)">
+                        <i class="@t.Ikon"></i>
+                        <span class="hj-jeton-card-name">@t.Ad</span>
+                        @if (t.SaatDeyeri > 0)
+                        {
+                            <span class="hj-jeton-card-saat">@t.SaatDeyeri saat</span>
+                        }
+                        else
+                        {
+                            <span class="hj-jeton-card-saat hj-jeton-card-saat--menfi">Cəza</span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="hj-field">
+            <label>Səbəb / Qeyd</label>
+            <textarea id="hjVerSebeb" class="hj-textarea" rows="3" placeholder="Nə üçün bu jeton verilir?"></textarea>
+        </div>
+    </div>
+    <div class="hj-modal-foot">
+        <button class="hj-btn hj-btn--ghost" onclick="hjCloseVerModal()">Ləğv et</button>
+        <button class="hj-btn hj-btn--primary" onclick="hjSubmitJetonVer()">
+            <i class="bi bi-check2"></i> Təsdiq et
+        </button>
+    </div>
+</div>
+
+<!-- ── Redim Detail Modal ─────────────────────────────── -->
+<div class="hj-overlay" id="hjRedimOverlay" onclick="hjCloseRedimModal()"></div>
+<div class="hj-modal" id="hjRedimModal">
+    <div class="hj-modal-head">
+        <h3><i class="bi bi-clock-history"></i> Redim Sorğusu</h3>
+        <button class="hj-modal-close" onclick="hjCloseRedimModal()">&times;</button>
+    </div>
+    <div class="hj-modal-body" id="hjRedimModalBody">
+        <!-- JS tərəfindən doldurulur -->
+    </div>
+    <div class="hj-modal-foot" id="hjRedimModalFoot">
+        <button class="hj-btn hj-btn--ghost" onclick="hjCloseRedimModal()">Bağla</button>
+        <button class="hj-btn hj-btn--danger" id="hjBtnRedd" onclick="hjReddEtRedim()">
+            <i class="bi bi-x-lg"></i> Rədd et
+        </button>
+        <button class="hj-btn hj-btn--success" id="hjBtnTesdiq" onclick="hjTesdiqleRedim()">
+            <i class="bi bi-check2"></i> Təsdiqlə
+        </button>
+    </div>
+</div>
+
+<!-- ── Legvet Confirm Modal ───────────────────────────── -->
+<div class="hj-overlay" id="hjLegvetOverlay" onclick="hjCloseLegvetModal()"></div>
+<div class="hj-modal hj-modal--sm" id="hjLegvetModal">
+    <div class="hj-modal-head">
+        <h3><i class="bi bi-trash3"></i> Jetonu Ləğv et</h3>
+        <button class="hj-modal-close" onclick="hjCloseLegvetModal()">&times;</button>
+    </div>
+    <div class="hj-modal-body">
+        <p class="hj-confirm-text">Bu jeton ləğv edilsin?</p>
+        <div class="hj-field">
+            <label>Səbəb</label>
+            <input type="text" id="hjLegvetSebeb" class="hj-input" placeholder="Ləğvetmə səbəbi" />
+        </div>
+    </div>
+    <div class="hj-modal-foot">
+        <button class="hj-btn hj-btn--ghost" onclick="hjCloseLegvetModal()">Ləğv et</button>
+        <button class="hj-btn hj-btn--danger" onclick="hjSubmitLegvet()">
+            <i class="bi bi-trash3"></i> Ləğv et
+        </button>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/hr/hr-jeton.js" asp-append-version="true"></script>
+}
