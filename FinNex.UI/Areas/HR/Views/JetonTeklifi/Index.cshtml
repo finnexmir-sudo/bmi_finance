@@ -1,0 +1,77 @@
+@{
+    ViewData["Title"] = "Motivasiya Paneli";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<link rel="stylesheet" href="~/css/hr/hr-jeton-teklifi.css" asp-append-version="true" />
+
+<div class="jt-page">
+
+    <!-- ── Başlıq ───────────────────────────────────────────── -->
+    <div class="jt-header">
+        <div class="jt-header-left">
+            <div class="jt-title-icon"><i class="bi bi-stars"></i></div>
+            <div>
+                <h1 class="jt-title">Motivasiya Paneli</h1>
+                <p class="jt-subtitle">Gözlənilən jeton tövsiyələri</p>
+            </div>
+        </div>
+        <div class="jt-header-right">
+            <span class="jt-badge" id="jtCount">0 tövsiyə</span>
+        </div>
+    </div>
+
+    <!-- ── Filter Tab-lar ────────────────────────────────────── -->
+    <div class="jt-tabs">
+        <button class="jt-tab active" data-filter="0">Hamısı</button>
+        <button class="jt-tab" data-filter="1">İş norması</button>
+        <button class="jt-tab" data-filter="2">Əvəzedici</button>
+        <button class="jt-tab" data-filter="3">Tapşırıq</button>
+        <button class="jt-tab" data-filter="4">Gecikme</button>
+    </div>
+
+    <!-- ── Kart Listi ─────────────────────────────────────────── -->
+    <div id="jtList" class="jt-list">
+        <div class="jt-empty" id="jtEmpty" style="display:none;">
+            <i class="bi bi-check2-circle"></i>
+            <p>Gözlənilən tövsiyə yoxdur</p>
+        </div>
+        <div class="jt-loading" id="jtLoading">
+            <div class="jt-spinner"></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── Jeton Ver Modal ────────────────────────────────────── -->
+<div class="jt-overlay" id="jtOverlay" onclick="jtCloseModal()"></div>
+<div class="jt-modal" id="jtModal">
+    <div class="jt-modal-head">
+        <h4>Jeton Ver</h4>
+        <button class="jt-modal-close" onclick="jtCloseModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="jt-modal-body">
+        <input type="hidden" id="jtTeklifId" />
+        <div class="jt-modal-info" id="jtModalInfo"></div>
+        <div class="jt-form-row">
+            <label>Jeton növü <span class="jt-req">*</span></label>
+            <select id="jtJetonTeyinatiId" class="jt-select">
+                <option value="">— Seçin —</option>
+            </select>
+        </div>
+        <div class="jt-form-row">
+            <label>Qeyd (isteğe bağlı)</label>
+            <textarea id="jtQeyd" class="jt-input jt-textarea" placeholder="Əlavə qeyd..."></textarea>
+        </div>
+    </div>
+    <div class="jt-modal-foot">
+        <button class="jt-btn jt-btn--ghost" onclick="jtCloseModal()">Ləğv et</button>
+        <button class="jt-btn jt-btn--success" onclick="jtSubmit()">
+            <i class="bi bi-award-fill"></i> Jeton Ver
+        </button>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/hr/hr-jeton-teklifi.js" asp-append-version="true"></script>
+}
