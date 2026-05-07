@@ -449,7 +449,7 @@
                                   || (currentController == "Icaze" && currentAction == "Izleme");
                     var hrQymetActive = currentArea == "HR" && currentController is "Performans" or "Telim";
                     var hrDigerActive = currentArea == "HR" && currentController is "Hesabat" or "Elan";
-                    var hrMotivActive = currentArea == "HR" && currentController == "Jeton";
+                    var hrMotivActive = currentArea == "HR" && (currentController == "Jeton" || currentController == "JetonAnalitika");
                     var hrAnyActive = hrAsasActive || hrKadrActive || hrDMActive || hrQymetActive || hrDigerActive || hrMotivActive;
 
                     <div class="fn-nav-g @(hrAsasActive ? "open" : "")">
@@ -577,8 +577,12 @@
                         </button>
                         <div class="fn-nav-g-body">
                             <a asp-area="HR" asp-controller="Jeton" asp-action="Index"
-                               class="fn-nav-item @(hrMotivActive ? "active" : "")">
+                               class="fn-nav-item @(currentArea == "HR" && currentController == "Jeton" ? "active" : "")">
                                 <i class="bi bi-award-fill"></i> Jeton İdarəetməsi
+                            </a>
+                            <a asp-area="HR" asp-controller="JetonAnalitika" asp-action="Index"
+                               class="fn-nav-item @(currentController == "JetonAnalitika" ? "active" : "")">
+                                <i class="bi bi-bar-chart-fill"></i> Jeton Analitika
                             </a>
                         </div>
                     </div>
