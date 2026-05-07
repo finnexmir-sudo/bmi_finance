@@ -3,11 +3,13 @@ using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Structur;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Interfaces;
 using FinNex.UI.Areas.HR.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.UI.Areas.HR.Controllers
 {
@@ -20,19 +22,22 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IVezifeService _vezifeService;
         private readonly IIsciTeyinatService _teyinatService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IUnitOfWork _unitOfWork;
 
         public IsciController(
             IIsciService isciService,
             IDepartmentService departmentService,
             IVezifeService vezifeService,
             IIsciTeyinatService teyinatService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IUnitOfWork unitOfWork)
         {
             _isciService = isciService;
             _departmentService = departmentService;
             _vezifeService = vezifeService;
             _teyinatService = teyinatService;
             _userManager = userManager;
+            _unitOfWork = unitOfWork;
         }
 
         // ─────────── INDEX ───────────
@@ -455,6 +460,51 @@ namespace FinNex.UI.Areas.HR.Controllers
             return RedirectToAction(nameof(Detail), new { id = vm.IsciId });
         }
 
+        // ─────────── İşdən Çıxarma ───────────
+
+        [HttpPost]
+        public async Task<IActionResult> IsdenCixar([FromBody] IsdenCixarRequest req)
+        {
+            if (req == null || req.IsciId <= 0)
+                return Json(new { success = false, message = "Məlumat natamamdır." });
+            if (string.IsNullOrWhiteSpace(req.Sebeb))
+                return Json(new { success = false, message = "Çıxma səbəbi daxil edilməlidir." });
+            if (req.Tarix == default)
+                return Json(new { success = false, message = "İşdən ayrılma tarixi daxil edilməlidir." });
+
+            var isci = await _unitOfWork.Repository<Isci>()
+                .Query().FirstOrDefaultAsync(x => x.Id == req.IsciId);
+            if (isci == null)
+                return Json(new { success = false, message = "İşçi tapılmadı." });
+            if (isci.Status == IsciStatus.IshtenCixib)
+                return Json(new { success = false, message = "İşçi artıq işdən çıxmış statusundadır." });
+
+            isci.Status = IsciStatus.IshtenCixib;
+            isci.IsdenAyrilmaTarixi = req.Tarix.Date;
+            isci.FesihSebebi = req.Sebeb.Trim();
+            await _unitOfWork.Repository<Isci>().YenileAsync(isci);
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            return Json(new { success = true, message = "İşçi işdən çıxarıldı." });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> IseyiGeri([FromBody] int isciId)
+        {
+            var isci = await _unitOfWork.Repository<Isci>()
+                .Query().FirstOrDefaultAsync(x => x.Id == isciId);
+            if (isci == null)
+                return Json(new { success = false, message = "İşçi tapılmadı." });
+
+            isci.Status = IsciStatus.Aktiv;
+            isci.IsdenAyrilmaTarixi = null;
+            isci.FesihSebebi = null;
+            await _unitOfWork.Repository<Isci>().YenileAsync(isci);
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            return Json(new { success = true, message = "İşçi yenidən aktiv edildi." });
+        }
+
         // ─────────── JSON Endpoints ───────────
         [HttpGet]
         public async Task<IActionResult> GetDepartamentler()
@@ -512,6 +562,15 @@ namespace FinNex.UI.Areas.HR.Controllers
                         .ToList();
                 }
             }
+        }
+
+        // ─────────── Request Models ───────────
+
+        public class IsdenCixarRequest
+        {
+            public int IsciId { get; set; }
+            public DateTime Tarix { get; set; }
+            public string Sebeb { get; set; } = null!;
         }
 
         private async Task ReloadTeyinatRedakteLists(TeyinatRedakteVM vm)
