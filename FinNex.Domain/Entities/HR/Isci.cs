@@ -17,6 +17,7 @@
         // İşçi statusu
         public DateTime IsheQebulTarixi { get; set; }
         public DateTime? IsdenAyrilmaTarixi { get; set; }
+        public string? FesihSebebi { get; set; }
         public IsciStatus Status { get; set; } = IsciStatus.Aktiv;
 
         /// <summary>

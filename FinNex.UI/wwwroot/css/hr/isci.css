@@ -934,3 +934,85 @@
     height: 16px;
     accent-color: #e8b84b;
 }
+
+/* ── İşdən Çıxarma ── */
+.isci-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.isci-tab {
+    padding: 7px 16px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all .15s;
+}
+
+.isci-tab--active {
+    background: #1e293b;
+    color: #fff;
+    border-color: #1e293b;
+}
+
+.isci-tab-count {
+    background: rgba(255,255,255,.2);
+    border-radius: 20px;
+    padding: 1px 7px;
+    font-size: 11px;
+}
+
+.isci-tab--active .isci-tab-count {
+    background: rgba(255,255,255,.25);
+}
+
+.isci-tab-count--red {
+    background: #fee2e2;
+    color: #dc2626;
+    border-radius: 20px;
+    padding: 1px 7px;
+    font-size: 11px;
+}
+
+.isci-tab--active .isci-tab-count--red {
+    background: rgba(239,68,68,.3);
+    color: #fca5a5;
+}
+
+.isci-action-btn--red {
+    color: #ef4444;
+}
+
+.isci-action-btn--red:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.isci-row-cixmis td {
+    opacity: .65;
+}
+
+.isci-avatar--cixmis {
+    background: #94a3b8 !important;
+}
+
+.isci-cixar-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.req {
+    color: #ef4444;
+}
