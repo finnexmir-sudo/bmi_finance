@@ -128,6 +128,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<ReytingParametri> ReytingParametrleri { get; set; }
     public DbSet<IsciReytinqi> IsciReytinqleri { get; set; }
     public DbSet<ManualReytingQeydi> ManualReytingQeydleri { get; set; }
+    public DbSet<JetonTeklifi> JetonTeklifleri { get; set; }
 
     // Chat
     public DbSet<ChatMesaj> ChatMesajlar { get; set; }
@@ -1117,6 +1118,13 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         builder.Entity<IsciReytinqi>()
             .HasIndex(x => new { x.IsciId, x.Il, x.Ay })
             .IsUnique();
+
+        // ── JetonTeklifi ────────────────────────────────────────
+        builder.Entity<JetonTeklifi>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.NoAction);
 
         // ── XercKateqoriyasi Seed Data ────────────────────────
         builder.Entity<XercKateqoriyasi>().HasData(
