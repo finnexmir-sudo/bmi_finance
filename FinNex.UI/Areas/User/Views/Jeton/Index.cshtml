@@ -30,14 +30,14 @@
             {
                 <div class="uj-balance-warn">
                     <i class="bi bi-exclamation-triangle-fill"></i>
-                    Qara jeton mövcuddur — redim bloklanıb
+                    Qara jeton mövcuddur — xərcləmə bloklanıb
                 </div>
             }
         </div>
         @if (!qaraVar && balans > 0)
         {
             <button class="uj-btn uj-btn--primary" onclick="ujOpenRedimModal()">
-                <i class="bi bi-send"></i> Redim et
+                <i class="bi bi-send"></i> Jeton xərclə
             </button>
         }
     </div>
@@ -48,7 +48,7 @@
             <i class="bi bi-award"></i> Jetonlarım
         </button>
         <button class="uj-tab" data-tab="redimler" onclick="ujSwitchTab(this,'redimler')">
-            <i class="bi bi-clock-history"></i> Redim Tarixçəsi
+            <i class="bi bi-clock-history"></i> Xərcləmə Tarixçəsi
         </button>
     </div>
 
@@ -84,7 +84,7 @@
 <div class="uj-overlay" id="ujRedimOverlay" onclick="ujCloseRedimModal()"></div>
 <div class="uj-modal" id="ujRedimModal">
     <div class="uj-modal-head">
-        <h3><i class="bi bi-send"></i> Redim Sorğusu</h3>
+        <h3><i class="bi bi-send"></i> Jeton Xərcləmə</h3>
         <button class="uj-modal-close" onclick="ujCloseRedimModal()">&times;</button>
     </div>
     <div class="uj-modal-body">
@@ -95,7 +95,7 @@
         </div>
 
         <div class="uj-field" style="margin-top:18px">
-            <label>Redim növü</label>
+            <label>Xərcləmə növü</label>
             <div class="uj-radio-group">
                 <label class="uj-radio">
                     <input type="radio" name="ujRedimNov" value="1" checked />

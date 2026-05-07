@@ -6,6 +6,7 @@ using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.UI.Areas.HR.Controllers
@@ -33,7 +34,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Query()
                 .Where(x => !x.Silinib)
                 .OrderBy(x => x.Soyad).ThenBy(x => x.Ad)
-                .Select(x => new { x.Id, TamAd = x.Ad + " " + x.Soyad })
+                .Select(x => new SelectListItem { Value = x.Id.ToString(), Text = x.Ad + " " + x.Soyad })
                 .ToListAsync();
 
             ViewBag.Teyinatlar = teyinatlar;

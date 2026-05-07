@@ -2,7 +2,7 @@
     ViewData["Title"] = "Jeton İdarəetməsi";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     var teyinatlar = ViewBag.Teyinatlar as IList<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto> ?? new List<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto>();
-    var isciler = ViewBag.Isciler as IList<dynamic> ?? new List<dynamic>();
+    var isciler = ViewBag.Isciler as IList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
 }
 
 <link rel="stylesheet" href="~/css/hr/hr-jeton.css" asp-append-version="true" />
@@ -15,7 +15,7 @@
             <div class="hj-title-icon"><i class="bi bi-award-fill"></i></div>
             <div>
                 <h1 class="hj-title">Motivasiya & Jeton</h1>
-                <p class="hj-subtitle">İşçilərə jeton ver, redim sorğularını idarə et</p>
+                <p class="hj-subtitle">İşçilərə jeton ver, xərcləmə sorğularını idarə et</p>
             </div>
         </div>
         <button class="hj-btn hj-btn--primary" onclick="hjOpenVerModal()">
@@ -29,7 +29,7 @@
             <i class="bi bi-list-ul"></i> Əməliyyatlar
         </button>
         <button class="hj-tab" data-tab="redimler" onclick="hjSwitchTab(this,'redimler')">
-            <i class="bi bi-clock-history"></i> Redim Sorğuları
+            <i class="bi bi-clock-history"></i> Xərcləmə Sorğuları
             <span class="hj-badge" id="hjRedimBadge" style="display:none"></span>
         </button>
     </div>
@@ -41,7 +41,7 @@
                 <option value="">— Bütün işçilər —</option>
                 @foreach (var i in isciler)
                 {
-                    <option value="@i.Id">@i.TamAd</option>
+                    <option value="@i.Value">@i.Text</option>
                 }
             </select>
             <button class="hj-btn hj-btn--ghost" onclick="hjLoadEmeliyyatlar()">
@@ -104,7 +104,7 @@
                 <option value="">— Seçin —</option>
                 @foreach (var i in isciler)
                 {
-                    <option value="@i.Id">@i.TamAd</option>
+                    <option value="@i.Value">@i.Text</option>
                 }
             </select>
         </div>
@@ -148,7 +148,7 @@
 <div class="hj-overlay" id="hjRedimOverlay" onclick="hjCloseRedimModal()"></div>
 <div class="hj-modal" id="hjRedimModal">
     <div class="hj-modal-head">
-        <h3><i class="bi bi-clock-history"></i> Redim Sorğusu</h3>
+        <h3><i class="bi bi-clock-history"></i> Jeton Xərcləmə Sorğusu</h3>
         <button class="hj-modal-close" onclick="hjCloseRedimModal()">&times;</button>
     </div>
     <div class="hj-modal-body" id="hjRedimModalBody">

@@ -49,7 +49,7 @@ async function ujLoadRedimler() {
         const res = await fetch('/User/Jeton/GetRedimTarixcesi');
         const json = await res.json();
         if (!json.success || !json.data.length) {
-            tbody.innerHTML = '<tr><td colspan="5" class="uj-empty">Redim tarixçəsi yoxdur.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="uj-empty">Xərcləmə tarixçəsi yoxdur.</td></tr>';
             return;
         }
         tbody.innerHTML = json.data.map(r => `
@@ -68,7 +68,7 @@ async function ujLoadRedimler() {
 // ── Redim Modal ───────────────────────────────────────────
 function ujOpenRedimModal() {
     if (window.ujQaraVar) {
-        ujToast('Qara jeton mövcuddur — redim etmək mümkün deyil.', 'error');
+        ujToast('Qara jeton mövcuddur — jeton xərcləmək mümkün deyil.', 'error');
         return;
     }
     ujSelectedIds.clear();
