@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else if (statusVal === 'tezCixan') {
                 kpi.classList.add('hrd-kpi--active');
                 var p = getBaseParams();
-                loadData(p, null, true);
+                loadData(p, null, true, false);
             } else {
                 kpi.classList.add('hrd-kpi--active');
                 selectStatus.value = statusVal;
@@ -333,23 +333,45 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Client-side xüsusi filterlər üçün helper
+    function applySpecialFilter(records, statusVal) {
+        if (statusVal === 'tezCixan') {
+            var cp = parseTime(isParametriData.cixisVaxti);
+            var cixisTotal = cp.hours * 60 + cp.minutes;
+            var hedd = cixisTotal - (isParametriData.tezCixmaTolerans || 15);
+            return records.filter(function (r) {
+                if (!r.cixisVaxti) return false;
+                var d = new Date(r.cixisVaxti);
+                return (d.getHours() * 60 + d.getMinutes()) < hedd;
+            });
+        }
+        if (statusVal === 'cixisYox') {
+            return records.filter(function (r) {
+                return r.girisVaxti && !r.cixisVaxti;
+            });
+        }
+        return null; // normal server-side filter
+    }
+
     // ── Tarixə görə axtarış ──
     btnAxtar.addEventListener('click', function () {
         document.querySelectorAll('.hrd-kpi--clickable').forEach(function (k) { k.classList.remove('hrd-kpi--active'); });
+        var sv = selectStatus.value;
         var params = {};
         if (inputTarix.value) params.tarix = inputTarix.value;
-        if (selectStatus.value) params.status = selectStatus.value;
-        loadData(params);
+        if (sv && sv !== 'tezCixan' && sv !== 'cixisYox') params.status = sv;
+        loadData(params, null, sv === 'tezCixan', sv === 'cixisYox');
     });
 
     // ── Tarix aralığı axtarışı ──
     btnAraliqAxtar.addEventListener('click', function () {
         document.querySelectorAll('.hrd-kpi--clickable').forEach(function (k) { k.classList.remove('hrd-kpi--active'); });
+        var sv = selectStatusAraliq.value;
         var params = {};
         if (inputBaslangic.value) params.baslangic = inputBaslangic.value;
         if (inputSon.value) params.son = inputSon.value;
-        if (selectStatusAraliq.value) params.status = selectStatusAraliq.value;
-        loadData(params);
+        if (sv && sv !== 'tezCixan' && sv !== 'cixisYox') params.status = sv;
+        loadData(params, null, sv === 'tezCixan', sv === 'cixisYox');
     });
 
     // ── İşçi axtarışı ──
@@ -434,8 +456,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Data loading ──
     // clientFilterStatuses: array of status ints (e.g. [1,2]) or null
-    // filterTezCixan: if true, show only records where cixisVaxti < effective end - tolerans
-    function loadData(params, clientFilterStatuses, filterTezCixan) {
+    // filterTezCixan: records where cixisVaxti < effective end - tolerans
+    // filterCixisYox: records where girisVaxti set but cixisVaxti null
+    function loadData(params, clientFilterStatuses, filterTezCixan, filterCixisYox) {
         isGozlenilenMode = false;
         currentParams = params;
         var url = endpoints.getByTarix + '?' + new URLSearchParams(params).toString();
@@ -467,6 +490,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         var d = new Date(r.cixisVaxti);
                         var dTotal = d.getHours() * 60 + d.getMinutes();
                         return dTotal < hedd;
+                    });
+                }
+                if (filterCixisYox) {
+                    records = records.filter(function (r) {
+                        return r.girisVaxti && !r.cixisVaxti;
                     });
                 }
 
