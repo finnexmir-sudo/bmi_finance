@@ -1,0 +1,129 @@
+@{
+    ViewData["Title"] = "Cüzdanım";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var balans = (decimal)(ViewBag.Balans ?? 0m);
+    var qaraVar = (bool)(ViewBag.QaraVar ?? false);
+    var musbetTeyinatlar = ViewBag.MusbetTeyinatlar as IList<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto>
+        ?? new List<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto>();
+}
+
+<link rel="stylesheet" href="~/css/User/user-jeton.css" asp-append-version="true" />
+
+<div class="uj-page">
+
+    <!-- ── Balans kartı ────────────────────────────────── -->
+    <div class="uj-balance-card @(qaraVar ? "uj-balance-card--blocked" : "")">
+        <div class="uj-balance-icon">
+            @if (qaraVar)
+            {
+                <i class="bi bi-slash-circle-fill"></i>
+            }
+            else
+            {
+                <i class="bi bi-award-fill"></i>
+            }
+        </div>
+        <div class="uj-balance-info">
+            <div class="uj-balance-label">Aktiv saat balansı</div>
+            <div class="uj-balance-val">@balans.ToString("0.##") saat</div>
+            @if (qaraVar)
+            {
+                <div class="uj-balance-warn">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    Qara jeton mövcuddur — redim bloklanıb
+                </div>
+            }
+        </div>
+        @if (!qaraVar && balans > 0)
+        {
+            <button class="uj-btn uj-btn--primary" onclick="ujOpenRedimModal()">
+                <i class="bi bi-send"></i> Redim et
+            </button>
+        }
+    </div>
+
+    <!-- ── Tabs ───────────────────────────────────────── -->
+    <div class="uj-tabs">
+        <button class="uj-tab uj-tab--active" data-tab="jetonlar" onclick="ujSwitchTab(this,'jetonlar')">
+            <i class="bi bi-award"></i> Jetonlarım
+        </button>
+        <button class="uj-tab" data-tab="redimler" onclick="ujSwitchTab(this,'redimler')">
+            <i class="bi bi-clock-history"></i> Redim Tarixçəsi
+        </button>
+    </div>
+
+    <!-- ── Jetonlar panel ──────────────────────────────── -->
+    <div id="ujTabJetonlar" class="uj-panel">
+        <div id="ujJetonList" class="uj-jeton-list">
+            <div class="uj-empty">Yüklənir…</div>
+        </div>
+    </div>
+
+    <!-- ── Redim tarixçəsi panel ──────────────────────── -->
+    <div id="ujTabRedimler" class="uj-panel" style="display:none">
+        <div class="uj-table-wrap">
+            <table class="uj-table">
+                <thead>
+                    <tr>
+                        <th>Nov</th>
+                        <th>Cəmi saat</th>
+                        <th>Tarix</th>
+                        <th>Status</th>
+                        <th>Qeyd</th>
+                    </tr>
+                </thead>
+                <tbody id="ujRedimBody">
+                    <tr><td colspan="5" class="uj-empty">Yüklənir…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ── Redim Modal ─────────────────────────────────────── -->
+<div class="uj-overlay" id="ujRedimOverlay" onclick="ujCloseRedimModal()"></div>
+<div class="uj-modal" id="ujRedimModal">
+    <div class="uj-modal-head">
+        <h3><i class="bi bi-send"></i> Redim Sorğusu</h3>
+        <button class="uj-modal-close" onclick="ujCloseRedimModal()">&times;</button>
+    </div>
+    <div class="uj-modal-body">
+        <p class="uj-help-text">İstifadə etmək istədiyiniz jetonları seçin:</p>
+
+        <div id="ujJetonSelectList" class="uj-jeton-select-list">
+            <!-- JS tərəfindən doldurulur -->
+        </div>
+
+        <div class="uj-field" style="margin-top:18px">
+            <label>Redim növü</label>
+            <div class="uj-radio-group">
+                <label class="uj-radio">
+                    <input type="radio" name="ujRedimNov" value="1" checked />
+                    <span><i class="bi bi-clock"></i> İcazə (erkən çıxış)</span>
+                </label>
+                <label class="uj-radio">
+                    <input type="radio" name="ujRedimNov" value="2" />
+                    <span><i class="bi bi-cash-coin"></i> Maaşa əlavə</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="uj-selected-info" id="ujSelectedInfo" style="display:none">
+            Seçilmiş: <strong id="ujSelectedSaat">0</strong> saat
+        </div>
+    </div>
+    <div class="uj-modal-foot">
+        <button class="uj-btn uj-btn--ghost" onclick="ujCloseRedimModal()">Ləğv et</button>
+        <button class="uj-btn uj-btn--primary" onclick="ujSubmitRedim()">
+            <i class="bi bi-send"></i> Göndər
+        </button>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+window.ujBalans = @balans;
+window.ujQaraVar = @(qaraVar ? "true" : "false");
+</script>
+<script src="~/js/User/user-jeton.js" asp-append-version="true"></script>
+}

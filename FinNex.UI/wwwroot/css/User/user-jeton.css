@@ -1,0 +1,213 @@
+/* ── user-jeton.css — User Cüzdanım ──────────────────────── */
+
+:root {
+    --uj-radius: 12px;
+    --uj-shadow: 0 2px 12px rgba(0,0,0,.07);
+    --uj-border: #e5e7eb;
+    --uj-bg: #f9fafb;
+    --uj-primary: #6366f1;
+    --uj-primary-h: #4f46e5;
+    --uj-danger: #ef4444;
+    --uj-text: #111827;
+    --uj-muted: #6b7280;
+}
+
+/* ── Page ─────────────────────────────────────────────── */
+.uj-page { padding: 24px 20px; max-width: 860px; margin: 0 auto; }
+
+/* ── Balans kartı ─────────────────────────────────────── */
+.uj-balance-card {
+    display: flex; align-items: center; gap: 18px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: #fff; border-radius: 16px; padding: 24px 28px;
+    margin-bottom: 28px; box-shadow: 0 6px 24px rgba(99,102,241,.28);
+    flex-wrap: wrap;
+}
+.uj-balance-card--blocked {
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+    box-shadow: 0 6px 24px rgba(31,41,55,.28);
+}
+.uj-balance-icon {
+    width: 60px; height: 60px; border-radius: 16px;
+    background: rgba(255,255,255,.18); display: flex;
+    align-items: center; justify-content: center;
+    font-size: 28px; flex-shrink: 0;
+}
+.uj-balance-info { flex: 1; }
+.uj-balance-label { font-size: 13px; opacity: .8; font-weight: 500; }
+.uj-balance-val { font-size: 30px; font-weight: 800; line-height: 1.1; }
+.uj-balance-warn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(239,68,68,.25); color: #fca5a5;
+    border-radius: 8px; padding: 4px 10px; font-size: 13px;
+    font-weight: 600; margin-top: 6px;
+}
+
+/* ── Buttons ──────────────────────────────────────────── */
+.uj-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; border-radius: 9px; font-size: 14px; font-weight: 600;
+    border: none; cursor: pointer; transition: background .18s, transform .1s;
+}
+.uj-btn:active { transform: scale(.97); }
+.uj-btn--primary { background: #fff; color: var(--uj-primary); }
+.uj-btn--primary:hover { background: #f5f3ff; }
+.uj-btn--ghost {
+    background: #f3f4f6; color: var(--uj-text);
+    border: 1px solid var(--uj-border);
+}
+.uj-btn--ghost:hover { background: #e5e7eb; }
+
+/* ── Tabs ─────────────────────────────────────────────── */
+.uj-tabs {
+    display: flex; gap: 4px;
+    border-bottom: 2px solid var(--uj-border); margin-bottom: 24px;
+}
+.uj-tab {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 18px; border: none; background: transparent;
+    font-size: 14px; font-weight: 500; color: var(--uj-muted);
+    cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -2px; border-radius: 6px 6px 0 0;
+    transition: color .18s, border-color .18s;
+}
+.uj-tab:hover { color: var(--uj-text); }
+.uj-tab--active { color: var(--uj-primary); border-bottom-color: var(--uj-primary); font-weight: 700; }
+
+/* ── Panel ─────────────────────────────────────────────── */
+.uj-panel { animation: ujFadeIn .2s ease; }
+@keyframes ujFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ── Jeton list (cards) ───────────────────────────────── */
+.uj-jeton-list {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+}
+.uj-jeton-item {
+    background: #fff; border-radius: var(--uj-radius);
+    border: 2px solid var(--uj-border);
+    box-shadow: var(--uj-shadow); padding: 18px;
+    display: flex; flex-direction: column; gap: 8px;
+    transition: border-color .18s;
+}
+.uj-jeton-item:hover { border-color: var(--jc, var(--uj-primary)); }
+.uj-jeton-item-icon {
+    font-size: 32px; color: var(--jc, #9ca3af);
+}
+.uj-jeton-item-name { font-size: 14px; font-weight: 700; color: var(--uj-text); }
+.uj-jeton-item-saat { font-size: 12px; color: var(--uj-muted); }
+.uj-jeton-item-date { font-size: 11px; color: var(--uj-muted); margin-top: 4px; }
+.uj-jeton-item-sebeb {
+    font-size: 12px; color: var(--uj-muted);
+    border-top: 1px solid var(--uj-border); padding-top: 8px; margin-top: 4px;
+    font-style: italic;
+}
+
+/* ── Table ─────────────────────────────────────────────── */
+.uj-table-wrap {
+    background: #fff; border-radius: var(--uj-radius);
+    box-shadow: var(--uj-shadow); overflow: hidden;
+    border: 1px solid var(--uj-border);
+}
+.uj-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.uj-table thead tr { background: var(--uj-bg); }
+.uj-table th {
+    padding: 10px 14px; text-align: left;
+    font-size: 12px; font-weight: 700; color: var(--uj-muted);
+    text-transform: uppercase; letter-spacing: .5px;
+    border-bottom: 1px solid var(--uj-border);
+}
+.uj-table td { padding: 12px 14px; border-bottom: 1px solid #f3f4f6; color: var(--uj-text); }
+.uj-table tbody tr:last-child td { border-bottom: none; }
+.uj-empty { text-align: center; color: var(--uj-muted); padding: 32px; }
+
+/* ── Status badge ─────────────────────────────────────── */
+.uj-status {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 20px; font-size: 11.5px; font-weight: 600;
+}
+.uj-status--gozlenilir { background: #fef3c7; color: #92400e; }
+.uj-status--tesdiqlendi { background: #d1fae5; color: #065f46; }
+.uj-status--redd { background: #fee2e2; color: #991b1b; }
+
+/* ── Modal ─────────────────────────────────────────────── */
+.uj-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.35);
+    z-index: 1040; display: none;
+}
+.uj-overlay.uj-open { display: block; }
+.uj-modal {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -48%);
+    z-index: 1050; background: #fff; border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    width: 500px; max-width: 96vw; max-height: 90vh; overflow-y: auto;
+    display: none; flex-direction: column;
+    animation: ujModalIn .2s ease;
+}
+.uj-modal.uj-open { display: flex; }
+@keyframes ujModalIn { from { opacity: 0; transform: translate(-50%, -44%); } to { opacity: 1; transform: translate(-50%, -48%); } }
+.uj-modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 22px; border-bottom: 1px solid var(--uj-border);
+}
+.uj-modal-head h3 { margin: 0; font-size: 17px; font-weight: 700; color: var(--uj-text); }
+.uj-modal-close {
+    border: none; background: #f3f4f6; color: var(--uj-muted);
+    font-size: 20px; line-height: 1; width: 34px; height: 34px;
+    border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.uj-modal-close:hover { background: #e5e7eb; }
+.uj-modal-body { padding: 22px; flex: 1; }
+.uj-modal-foot {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding: 16px 22px; border-top: 1px solid var(--uj-border);
+}
+
+/* ── Form ─────────────────────────────────────────────── */
+.uj-field { margin-bottom: 16px; }
+.uj-field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #374151; }
+.uj-help-text { font-size: 13px; color: var(--uj-muted); margin-bottom: 14px; }
+
+/* ── Jeton select in modal ────────────────────────────── */
+.uj-jeton-select-list { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
+.uj-jeton-select-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; border-radius: 10px;
+    border: 2px solid var(--uj-border); cursor: pointer;
+    transition: border-color .18s;
+}
+.uj-jeton-select-item:hover { border-color: var(--jc, var(--uj-primary)); }
+.uj-jeton-select-item--selected {
+    border-color: var(--jc, var(--uj-primary)) !important;
+    background: color-mix(in srgb, var(--jc, var(--uj-primary)) 8%, #fff);
+}
+.uj-jsi-icon { font-size: 22px; color: var(--jc, #9ca3af); flex-shrink: 0; }
+.uj-jsi-info { flex: 1; }
+.uj-jsi-name { font-size: 13px; font-weight: 700; color: var(--uj-text); }
+.uj-jsi-saat { font-size: 12px; color: var(--uj-muted); }
+.uj-jsi-check {
+    width: 20px; height: 20px; border-radius: 6px;
+    border: 2px solid var(--uj-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: transparent; flex-shrink: 0;
+    transition: background .18s, border-color .18s;
+}
+.uj-jeton-select-item--selected .uj-jsi-check {
+    background: var(--jc, var(--uj-primary));
+    border-color: var(--jc, var(--uj-primary));
+    color: #fff;
+}
+
+/* ── Radio group ──────────────────────────────────────── */
+.uj-radio-group { display: flex; gap: 14px; flex-wrap: wrap; }
+.uj-radio {
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer; font-size: 14px; color: var(--uj-text);
+}
+.uj-radio input { accent-color: var(--uj-primary); width: 16px; height: 16px; }
+
+/* ── Selected saat info ───────────────────────────────── */
+.uj-selected-info {
+    margin-top: 12px; padding: 10px 14px; border-radius: 8px;
+    background: #ede9fe; color: #4f46e5; font-size: 13.5px;
+}

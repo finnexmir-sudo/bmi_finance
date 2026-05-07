@@ -44,6 +44,12 @@ namespace FinNex.Domain.Entities.Communication
 
         // Məzuniyyət ödənişi işçiyə — planlı / icra edildi
         MezuniyyetOdenisPlanlandi = 30,
-        MezuniyyetOdenisIcraEdildi = 31
+        MezuniyyetOdenisIcraEdildi = 31,
+
+        // Jeton (Gamification) bildirişləri
+        JetonVerildi = 32,
+        QaraJetonVerildi = 33,
+        JetonRedimTesdiqlendi = 34,
+        JetonRedimReddEdildi = 35
     }
 }
