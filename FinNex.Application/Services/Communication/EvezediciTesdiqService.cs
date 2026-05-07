@@ -17,17 +17,20 @@ namespace FinNex.Application.Services.Communication
         private readonly IBildirisService _bildirisService;
         private readonly IBildirisRouter _bildirisRouter;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IJetonTeklifleriService _teklifService;
 
         public EvezediciTesdiqService(
             IUnitOfWork unitOfWork,
             IBildirisService bildirisService,
             IBildirisRouter bildirisRouter,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IJetonTeklifleriService teklifService)
         {
             _unitOfWork = unitOfWork;
             _bildirisService = bildirisService;
             _bildirisRouter = bildirisRouter;
             _userManager = userManager;
+            _teklifService = teklifService;
         }
 
         public async Task<Result<IList<EvezediciTesdiqDto>>> GetGozleyenlerAsync(int evezediciIsciId)
@@ -120,6 +123,8 @@ namespace FinNex.Application.Services.Communication
 
             // Növbəti mərhələ təsdiqçilərinə — indi müraciət aktiv mərhələyə düşdü
             await NotifyNextStageApproversAsync(e.Mezuniyyet);
+
+            _ = _teklifService.EvezediciQebulEdildiAsync(tesdiqId);
 
             return Result.Ok("Sorğu qəbul edildi.");
         }

@@ -449,7 +449,7 @@
                                   || (currentController == "Icaze" && currentAction == "Izleme");
                     var hrQymetActive = currentArea == "HR" && currentController is "Performans" or "Telim";
                     var hrDigerActive = currentArea == "HR" && currentController is "Hesabat" or "Elan";
-                    var hrMotivActive = currentArea == "HR" && (currentController == "Jeton" || currentController == "JetonAnalitika" || currentController == "Reyting" || currentController == "ReytingParametr");
+                    var hrMotivActive = currentArea == "HR" && (currentController == "Jeton" || currentController == "JetonAnalitika" || currentController == "Reyting" || currentController == "ReytingParametr" || currentController == "JetonTeklifi");
                     var hrAnyActive = hrAsasActive || hrKadrActive || hrDMActive || hrQymetActive || hrDigerActive || hrMotivActive;
 
                     <div class="fn-nav-g @(hrAsasActive ? "open" : "")">
@@ -591,6 +591,10 @@
                             <a asp-area="HR" asp-controller="ReytingParametr" asp-action="Index"
                                class="fn-nav-item @(currentController == "ReytingParametr" ? "active" : "")">
                                 <i class="bi bi-sliders"></i> Reytinq Parametrləri
+                            </a>
+                            <a asp-area="HR" asp-controller="JetonTeklifi" asp-action="Index"
+                               class="fn-nav-item @(currentController == "JetonTeklifi" ? "active" : "")">
+                                <i class="bi bi-stars"></i> Motivasiya Paneli
                             </a>
                         </div>
                     </div>

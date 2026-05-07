@@ -16,15 +16,18 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IDavamiyyetService _davamiyyetService;
         private readonly IIsciService _isciService;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IJetonTeklifleriService _teklifService;
 
         public DavamiyyetController(
             IDavamiyyetService davamiyyetService,
             IIsciService isciService,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IJetonTeklifleriService teklifService)
         {
             _davamiyyetService = davamiyyetService;
             _isciService = isciService;
             _unitOfWork = unitOfWork;
+            _teklifService = teklifService;
         }
 
         public async Task<IActionResult> Index()
@@ -420,6 +423,9 @@ namespace FinNex.UI.Areas.HR.Controllers
             var result = await _davamiyyetService.YaratAsync(dto);
             if (!result.Success)
                 return BadRequest(new { error = result.Message });
+
+            if (result.Data != null)
+                _ = _teklifService.DavamiyyetYoxlaAsync(result.Data.Id);
 
             return Ok(new { message = "Qayıb uğurla qeyd edildi." });
         }
