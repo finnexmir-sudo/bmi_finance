@@ -162,7 +162,7 @@ function hjOpenRedimModal(r) {
     document.getElementById('hjRedimModalBody').innerHTML = `
         <div class="hj-redim-info">
             <div class="hj-redim-row"><strong>İşçi</strong><span>${r.isciTamAd ?? '—'}</span></div>
-            <div class="hj-redim-row"><strong>Redim növü</strong><span>${hjRedimNov(r.redimNovu)}</span></div>
+            <div class="hj-redim-row"><strong>Xərcləmə növü</strong><span>${hjRedimNov(r.redimNovu)}</span></div>
             <div class="hj-redim-row"><strong>Cəmi saat</strong><span><b>${r.cemiSaat} saat</b></span></div>
             <div class="hj-redim-row"><strong>Sorğu tarixi</strong><span>${hjDate(r.telabTarixi)}</span></div>
             ${jetonList ? `<div class="hj-redim-row"><strong>Jetonlar</strong><ul style="margin:0;padding-left:18px">${jetonList}</ul></div>` : ''}
@@ -187,7 +187,7 @@ async function hjTesdiqleRedim() {
     });
     const json = await res.json();
     if (json.success) {
-        hjToast(json.message || 'Redim təsdiqləndi.', 'success');
+        hjToast(json.message || 'Xərcləmə sorğusu təsdiqləndi.', 'success');
         hjCloseRedimModal();
         hjLoadRedimler();
     } else {
@@ -205,7 +205,7 @@ async function hjReddEtRedim() {
     });
     const json = await res.json();
     if (json.success) {
-        hjToast(json.message || 'Redim rədd edildi.', 'success');
+        hjToast(json.message || 'Xərcləmə sorğusu rədd edildi.', 'success');
         hjCloseRedimModal();
         hjLoadRedimler();
     } else {
