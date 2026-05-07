@@ -123,7 +123,7 @@ function jaRenderTrend(trend) {
             ]
         },
         options: {
-            responsive: true, maintainAspectRatio: true,
+            responsive: true, maintainAspectRatio: false,
             plugins: { legend: { position: 'top' } },
             scales: {
                 y: { beginAtZero: true, ticks: { stepSize: 1 } }
@@ -146,7 +146,7 @@ function jaRenderMaliyye(kpi) {
             }]
         },
         options: {
-            responsive: true, cutout: '72%',
+            responsive: true, maintainAspectRatio: false, cutout: '72%',
             plugins: {
                 legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14 } }
             }
@@ -205,7 +205,6 @@ function jaRenderDept(departament) {
             }
         }
     });
-    ctx.style.minHeight = Math.max(200, departament.length * 44) + 'px';
 }
 
 // ── Qara jeton səbəb qrafiki (Doughnut) ──────────────────────
@@ -230,7 +229,7 @@ function jaRenderQara(sebebler) {
             }]
         },
         options: {
-            responsive: true, cutout: '60%',
+            responsive: true, maintainAspectRatio: false, cutout: '60%',
             plugins: {
                 legend: { position: 'right', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } }
             }
