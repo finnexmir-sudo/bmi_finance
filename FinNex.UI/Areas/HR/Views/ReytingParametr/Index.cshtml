@@ -1,0 +1,154 @@
+@{
+    ViewData["Title"] = "Reytinq Parametrləri";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<link rel="stylesheet" href="~/css/hr/hr-reyting-parametr.css" asp-append-version="true" />
+
+<div class="rp-page">
+
+    <!-- ── Başlıq ───────────────────────────────────────────── -->
+    <div class="rp-header">
+        <div class="rp-header-left">
+            <div class="rp-title-icon"><i class="bi bi-sliders"></i></div>
+            <div>
+                <h1 class="rp-title">Reytinq Parametrləri</h1>
+                <p class="rp-subtitle">Kateqoriyalar, xal hədləri, əmsallar və hadisə qaydaları</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── İki panel ────────────────────────────────────────── -->
+    <div class="rp-grid">
+
+        <!-- Sol: Kateqoriyalar -->
+        <div class="rp-card">
+            <div class="rp-card-head">
+                <div>
+                    <h3>Kateqoriyalar</h3>
+                    <span class="rp-sub">Xal hədləri və jeton əmsalları</span>
+                </div>
+                <button class="rp-btn rp-btn--primary" onclick="rpOpenKatModal(0)">
+                    <i class="bi bi-plus-lg"></i> Yeni
+                </button>
+            </div>
+            <div id="rpKatList"><div class="rp-empty">Yüklənir…</div></div>
+        </div>
+
+        <!-- Sağ: Hadisə parametrləri -->
+        <div class="rp-card">
+            <div class="rp-card-head">
+                <div>
+                    <h3>Hadisə Xalları</h3>
+                    <span class="rp-sub">Hər hadisənin reytinqə təsiri</span>
+                </div>
+                <button class="rp-btn rp-btn--primary" onclick="rpOpenParamModal(0)">
+                    <i class="bi bi-plus-lg"></i> Yeni
+                </button>
+            </div>
+            <div id="rpParamList"><div class="rp-empty">Yüklənir…</div></div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ── Kateqoriya Modal ──────────────────────────────────── -->
+<div class="rp-overlay" id="rpKatOverlay" onclick="rpCloseKatModal()"></div>
+<div class="rp-modal" id="rpKatModal">
+    <div class="rp-modal-head">
+        <h4 id="rpKatModalTitle">Kateqoriya</h4>
+        <button class="rp-modal-close" onclick="rpCloseKatModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="rp-modal-body">
+        <input type="hidden" id="rpKatId" value="0" />
+        <div class="rp-form-row">
+            <label>Ad <span class="rp-req">*</span></label>
+            <input id="rpKatAd" class="rp-input" placeholder="A+, A, B, C …" />
+        </div>
+        <div class="rp-form-row">
+            <label>Rəng kodu</label>
+            <div class="rp-color-row">
+                <input type="color" id="rpKatRengPicker" value="#6366f1" oninput="document.getElementById('rpKatReng').value=this.value" />
+                <input id="rpKatReng" class="rp-input" placeholder="#6366f1" oninput="document.getElementById('rpKatRengPicker').value=this.value" />
+            </div>
+        </div>
+        <div class="rp-form-2col">
+            <div class="rp-form-row">
+                <label>Min xal <span class="rp-req">*</span></label>
+                <input id="rpKatMin" type="number" class="rp-input" value="0" />
+            </div>
+            <div class="rp-form-row">
+                <label>Max xal <span class="rp-req">*</span></label>
+                <input id="rpKatMax" type="number" class="rp-input" value="9999" />
+            </div>
+        </div>
+        <div class="rp-form-2col">
+            <div class="rp-form-row">
+                <label>Pul əmsalı <span class="rp-req">*</span></label>
+                <input id="rpKatPul" type="number" step="0.01" class="rp-input" value="1.00" />
+                <span class="rp-hint">1.20 = +20%</span>
+            </div>
+            <div class="rp-form-row">
+                <label>Saat əmsalı <span class="rp-req">*</span></label>
+                <input id="rpKatSaat" type="number" step="0.01" class="rp-input" value="1.00" />
+                <span class="rp-hint">0.90 = −10%</span>
+            </div>
+        </div>
+        <div class="rp-form-2col">
+            <div class="rp-form-row">
+                <label>Sıra</label>
+                <input id="rpKatSira" type="number" class="rp-input" value="1" />
+            </div>
+            <div class="rp-form-row rp-form-row--center">
+                <label>Aktiv</label>
+                <input type="checkbox" id="rpKatAktiv" checked class="rp-check" />
+            </div>
+        </div>
+    </div>
+    <div class="rp-modal-foot">
+        <button class="rp-btn rp-btn--ghost" onclick="rpCloseKatModal()">Ləğv et</button>
+        <button class="rp-btn rp-btn--primary" onclick="rpSaveKat()">Saxla</button>
+    </div>
+</div>
+
+<!-- ── Parametr Modal ────────────────────────────────────── -->
+<div class="rp-overlay" id="rpParamOverlay" onclick="rpCloseParamModal()"></div>
+<div class="rp-modal" id="rpParamModal">
+    <div class="rp-modal-head">
+        <h4 id="rpParamModalTitle">Hadisə Parametri</h4>
+        <button class="rp-modal-close" onclick="rpCloseParamModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="rp-modal-body">
+        <input type="hidden" id="rpParamId" value="0" />
+        <div class="rp-form-row">
+            <label>Hadisə növü <span class="rp-req">*</span></label>
+            <select id="rpParamHadise" class="rp-input">
+                <option value="1">Müsbət jeton aldı</option>
+                <option value="2">Qara jeton aldı</option>
+                <option value="3">Gecikdi</option>
+                <option value="4">İcazəsiz qayıb</option>
+            </select>
+        </div>
+        <div class="rp-form-row">
+            <label>Adı <span class="rp-req">*</span></label>
+            <input id="rpParamAd" class="rp-input" placeholder="Məs: Gecikdiyinə görə −3 xal" />
+        </div>
+        <div class="rp-form-row">
+            <label>Xal dəyəri <span class="rp-req">*</span></label>
+            <input id="rpParamXal" type="number" class="rp-input" placeholder="Mənfi üçün: −5" />
+            <span class="rp-hint">Mənfi rəqəm xal azaldır</span>
+        </div>
+        <div class="rp-form-row rp-form-row--center">
+            <label>Aktiv</label>
+            <input type="checkbox" id="rpParamAktiv" checked class="rp-check" />
+        </div>
+    </div>
+    <div class="rp-modal-foot">
+        <button class="rp-btn rp-btn--ghost" onclick="rpCloseParamModal()">Ləğv et</button>
+        <button class="rp-btn rp-btn--primary" onclick="rpSaveParam()">Saxla</button>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/hr/hr-reyting-parametr.js" asp-append-version="true"></script>
+}

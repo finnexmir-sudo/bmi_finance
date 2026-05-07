@@ -1,0 +1,140 @@
+/* ── hr-reyting.css ─────────────────────────────────────── */
+
+:root {
+    --rr-radius: 14px;
+    --rr-shadow: 0 2px 16px rgba(0,0,0,.07);
+    --rr-border: #e5e7eb;
+    --rr-bg: #f9fafb;
+    --rr-primary: #6366f1;
+    --rr-text: #111827;
+    --rr-muted: #6b7280;
+    --rr-success: #22c55e;
+    --rr-danger: #ef4444;
+    --rr-warn: #f59e0b;
+}
+
+.rr-page { padding: 24px 28px; max-width: 1280px; display: flex; flex-direction: column; gap: 22px; }
+
+/* Header */
+.rr-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.rr-header-left { display: flex; align-items: center; gap: 14px; }
+.rr-header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rr-title-icon {
+    width: 50px; height: 50px; border-radius: 14px; flex-shrink: 0;
+    background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: #fff;
+}
+.rr-title    { margin: 0; font-size: 22px; font-weight: 700; color: var(--rr-text); }
+.rr-subtitle { margin: 2px 0 0; font-size: 13px; color: var(--rr-muted); }
+
+/* Select */
+.rr-select {
+    padding: 8px 12px; border: 1px solid var(--rr-border); border-radius: 8px;
+    font-size: 14px; color: var(--rr-text); background: #fff; cursor: pointer; outline: none;
+}
+
+/* Buttons */
+.rr-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 8px; font-size: 13.5px; font-weight: 600;
+    border: none; cursor: pointer; transition: background .18s;
+}
+.rr-btn--primary { background: var(--rr-primary); color: #fff; }
+.rr-btn--primary:hover { background: #4f46e5; }
+.rr-btn--ghost { background: #f3f4f6; color: var(--rr-text); border: 1px solid var(--rr-border); }
+.rr-btn--ghost:hover { background: #e5e7eb; }
+.rr-btn--success { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+.rr-btn--success:hover { background: #bbf7d0; }
+.rr-btn--sm { padding: 5px 10px; font-size: 12.5px; }
+
+/* Card */
+.rr-card {
+    background: #fff; border-radius: var(--rr-radius);
+    border: 1px solid var(--rr-border); box-shadow: var(--rr-shadow);
+    padding: 0; overflow: hidden;
+}
+
+/* Table */
+.rr-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.rr-table th {
+    padding: 10px 14px; text-align: left; font-size: 11.5px; font-weight: 700;
+    color: var(--rr-muted); text-transform: uppercase; letter-spacing: .4px;
+    border-bottom: 1px solid var(--rr-border); background: var(--rr-bg);
+}
+.rr-table td { padding: 12px 14px; border-bottom: 1px solid #f3f4f6; color: var(--rr-text); vertical-align: middle; }
+.rr-table tbody tr:last-child td { border-bottom: none; }
+.rr-table tbody tr:hover { background: #fafafa; }
+
+/* Kateqoriya badge */
+.rr-kat-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;
+}
+
+/* Xal pill */
+.rr-xal { font-size: 15px; font-weight: 800; }
+.rr-xal--pos { color: var(--rr-success); }
+.rr-xal--neg { color: var(--rr-danger); }
+.rr-xal--zero { color: var(--rr-muted); }
+
+/* Əmsal */
+.rr-amsal { font-size: 13px; font-weight: 700; color: var(--rr-primary); }
+
+/* Actions */
+.rr-actions { display: flex; gap: 6px; }
+
+/* Modal */
+.rr-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.45); z-index: 1040; backdrop-filter: blur(2px);
+}
+.rr-overlay.rr-open { display: block; }
+.rr-modal {
+    display: none; position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.18);
+    width: 460px; max-width: 96vw; z-index: 1050; overflow: hidden;
+}
+.rr-modal--wide { width: 640px; }
+.rr-modal.rr-open { display: block; }
+.rr-modal-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 22px; border-bottom: 1px solid var(--rr-border);
+}
+.rr-modal-head h4 { margin: 0; font-size: 16px; font-weight: 700; color: var(--rr-text); }
+.rr-modal-close { background: none; border: none; font-size: 18px; color: var(--rr-muted); cursor: pointer; }
+.rr-modal-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; max-height: 65vh; overflow-y: auto; }
+.rr-modal-foot {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding: 14px 22px; border-top: 1px solid var(--rr-border);
+}
+.rr-modal-isci { font-size: 15px; font-weight: 700; color: var(--rr-text); padding-bottom: 8px; border-bottom: 1px solid var(--rr-border); }
+
+/* Form */
+.rr-form-row { display: flex; flex-direction: column; gap: 5px; }
+.rr-form-row label { font-size: 12.5px; font-weight: 600; color: var(--rr-muted); }
+.rr-input {
+    padding: 8px 12px; border: 1px solid var(--rr-border); border-radius: 8px;
+    font-size: 14px; color: var(--rr-text); outline: none; width: 100%;
+    transition: border-color .15s; box-sizing: border-box;
+}
+.rr-input:focus { border-color: var(--rr-primary); }
+.rr-textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+.rr-hint { font-size: 11.5px; color: var(--rr-muted); }
+.rr-req { color: var(--rr-danger); }
+
+/* Tarixçə */
+.rr-tarix-list { display: flex; flex-direction: column; gap: 10px; }
+.rr-tarix-item {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 12px; border-radius: 10px; background: var(--rr-bg);
+    border: 1px solid var(--rr-border);
+}
+.rr-tarix-xal { font-size: 16px; font-weight: 800; min-width: 46px; text-align: center; padding-top: 2px; }
+.rr-tarix-info { flex: 1; }
+.rr-tarix-sebeb { font-size: 13.5px; color: var(--rr-text); font-weight: 500; }
+.rr-tarix-meta  { font-size: 12px; color: var(--rr-muted); margin-top: 3px; }
+
+/* Empty */
+.rr-empty { text-align: center; color: var(--rr-muted); padding: 32px; font-size: 14px; }

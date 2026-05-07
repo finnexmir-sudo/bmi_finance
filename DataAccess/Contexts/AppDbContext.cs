@@ -124,6 +124,11 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<IsciJetonu> IsciJetonlari { get; set; }
     public DbSet<JetonRedimTelebi> JetonRedimTelebieri { get; set; }
 
+    public DbSet<ReytingKateqoriyasi> ReytingKateqoriyalari { get; set; }
+    public DbSet<ReytingParametri> ReytingParametrleri { get; set; }
+    public DbSet<IsciReytinqi> IsciReytinqleri { get; set; }
+    public DbSet<ManualReytingQeydi> ManualReytingQeydleri { get; set; }
+
     // Chat
     public DbSet<ChatMesaj> ChatMesajlar { get; set; }
 
@@ -1084,6 +1089,34 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             new JetonTeyinati { Id = 3, Ad = "Qızıl Jeton",  Nov = JetonNovu.Musbat, Rengi = JetonRengi.Qizil,  SaatDeyeri = 4m,   Ikon = "bi bi-award-fill", RengKodu = "#f59e0b", Tesvir = "Böyük mükafat — 4 saat",  Aktivdir = true, YaradilmaTarixi = new DateTime(2026, 1, 1), Silinib = false },
             new JetonTeyinati { Id = 4, Ad = "Qara Jeton",   Nov = JetonNovu.Menfi,  Rengi = JetonRengi.Qara,   SaatDeyeri = 0m,   Ikon = "bi bi-slash-circle-fill", RengKodu = "#1f2937", Tesvir = "İntizam cəzası — mükafat dondurulur", Aktivdir = true, YaradilmaTarixi = new DateTime(2026, 1, 1), Silinib = false }
         );
+
+        // ── Reyting Modulu ───────────────────────────────────────
+        builder.Entity<IsciReytinqi>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<IsciReytinqi>()
+            .HasOne(x => x.Kateqoriya)
+            .WithMany(k => k.IsciReytinqleri)
+            .HasForeignKey(x => x.KateqoriyaId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<ManualReytingQeydi>()
+            .HasOne(x => x.IsciReytinqi)
+            .WithMany(r => r.ManualQeydler)
+            .HasForeignKey(x => x.IsciReytinqiId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<ReytingKateqoriyasi>()
+            .Property(x => x.PulAmsali).HasPrecision(5, 2);
+        builder.Entity<ReytingKateqoriyasi>()
+            .Property(x => x.SaatAmsali).HasPrecision(5, 2);
+
+        builder.Entity<IsciReytinqi>()
+            .HasIndex(x => new { x.IsciId, x.Il, x.Ay })
+            .IsUnique();
 
         // ── XercKateqoriyasi Seed Data ────────────────────────
         builder.Entity<XercKateqoriyasi>().HasData(

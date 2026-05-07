@@ -126,5 +126,6 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
 
         // ── Jeton (Gamification) Modulu ──────────────────────
         services.AddScoped<IJetonService, JetonService>();
+        services.AddScoped<IReytingService, ReytingService>();
     }
 }
