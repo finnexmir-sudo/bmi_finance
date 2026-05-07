@@ -33,7 +33,9 @@ namespace FinNex.UI.Areas.User.Controllers
             if (isciId == null)
                 return RedirectToAction("Login", "Account", new { area = "" });
 
-            var list = await _davamiyyetService.IsciUzreAsync(isciId.Value);
+            var cariIl = DateTime.Today.Year;
+            var all = await _davamiyyetService.IsciUzreAsync(isciId.Value);
+            var list = all.Where(x => x.Tarix.Year == cariIl).ToList();
 
             var ip = await GetIsParametriEntity();
             ViewBag.GirisVaxti = ip.StandartGirisVaxti.ToString(@"hh\:mm");
@@ -53,19 +55,18 @@ namespace FinNex.UI.Areas.User.Controllers
 
             IList<DavamiyyetListDto> result;
 
+            var allRecords = await _davamiyyetService.IsciUzreAsync(isciId.Value);
+
             if (baslangic.HasValue && son.HasValue)
             {
-                var all = await _davamiyyetService.AraliqUzreAsync(baslangic.Value, son.Value);
-                result = all.Where(x => x.Id != 0).ToList();
-                // Filter by employee - need to get by employee then filter by date
-                var isciData = await _davamiyyetService.IsciUzreAsync(isciId.Value);
-                result = isciData
+                result = allRecords
                     .Where(x => x.Tarix.Date >= baslangic.Value.Date && x.Tarix.Date <= son.Value.Date)
                     .ToList();
             }
             else
             {
-                result = await _davamiyyetService.IsciUzreAsync(isciId.Value);
+                var cariIl = DateTime.Today.Year;
+                result = allRecords.Where(x => x.Tarix.Year == cariIl).ToList();
             }
 
             if (status.HasValue)

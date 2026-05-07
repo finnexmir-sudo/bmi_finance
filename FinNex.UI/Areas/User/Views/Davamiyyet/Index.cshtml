@@ -30,6 +30,7 @@
 
     var tezCixanSayi = list.Count(x => x.CixisVaxti.HasValue &&
         (x.CixisVaxti.Value.Hour * 60 + x.CixisVaxti.Value.Minute) < earlyThreshMin);
+    var cixisYoxSayi = list.Count(x => x.GirisVaxti.HasValue && !x.CixisVaxti.HasValue);
 }
 
 <div class="ud-page">
@@ -37,12 +38,12 @@
     <div class="ud-head">
         <div>
             <h2 class="ud-title">Davamiyyətim</h2>
-            <p class="ud-sub">Giriş-çıxış qeydləriniz və davamiyyət statistikanız</p>
+            <p class="ud-sub">@DateTime.Today.Year-ci il üzrə giriş-çıxış qeydləri və statistika</p>
         </div>
     </div>
 
     <div class="ud-kpi-row">
-        <div class="ud-kpi">
+        <div class="ud-kpi ud-kpi--clickable" data-filter="1" title="İşdə olan günlərə bax">
             <div class="ud-kpi-icon ud-kpi-icon--green">
                 <i class="bi bi-check-circle-fill"></i>
             </div>
@@ -51,7 +52,7 @@
                 <div class="ud-kpi-lbl">İşdə</div>
             </div>
         </div>
-        <div class="ud-kpi">
+        <div class="ud-kpi ud-kpi--clickable" data-filter="2" title="Gecikdiyim günlərə bax">
             <div class="ud-kpi-icon ud-kpi-icon--amber">
                 <i class="bi bi-clock-fill"></i>
             </div>
@@ -60,7 +61,7 @@
                 <div class="ud-kpi-lbl">Gecikmə</div>
             </div>
         </div>
-        <div class="ud-kpi">
+        <div class="ud-kpi ud-kpi--clickable" data-filter="3" title="Qayib olduğum günlərə bax">
             <div class="ud-kpi-icon ud-kpi-icon--red">
                 <i class="bi bi-x-circle-fill"></i>
             </div>
@@ -69,7 +70,7 @@
                 <div class="ud-kpi-lbl">Qayıb</div>
             </div>
         </div>
-        <div class="ud-kpi">
+        <div class="ud-kpi ud-kpi--clickable" data-filter="4" title="İcazəli günlərə bax">
             <div class="ud-kpi-icon ud-kpi-icon--blue">
                 <i class="bi bi-card-checklist"></i>
             </div>
@@ -78,13 +79,22 @@
                 <div class="ud-kpi-lbl">İcazəli</div>
             </div>
         </div>
-        <div class="ud-kpi">
+        <div class="ud-kpi ud-kpi--clickable" data-filter="tezCixan" title="Erkən çıxdığım günlərə bax">
             <div class="ud-kpi-icon ud-kpi-icon--orange">
                 <i class="bi bi-box-arrow-right"></i>
             </div>
             <div class="ud-kpi-body">
                 <div class="ud-kpi-val" id="kpiTezCixan">@tezCixanSayi</div>
-                <div class="ud-kpi-lbl">Tez çıxan</div>
+                <div class="ud-kpi-lbl">Erkən çıxış</div>
+            </div>
+        </div>
+        <div class="ud-kpi ud-kpi--clickable" data-filter="cixisYox" title="Çıxış vurmadığım günlərə bax">
+            <div class="ud-kpi-icon ud-kpi-icon--slate">
+                <i class="bi bi-door-open"></i>
+            </div>
+            <div class="ud-kpi-body">
+                <div class="ud-kpi-val" id="kpiCixisYox">@cixisYoxSayi</div>
+                <div class="ud-kpi-lbl">Çıxış yoxdur</div>
             </div>
         </div>
         <div class="ud-kpi ud-kpi--total">
@@ -124,7 +134,7 @@
                     <option value="2">Gecikmə</option>
                     <option value="3">Qayıb</option>
                     <option value="4">İcazəli</option>
-                    <option value="tezCixan">Tez çıxan</option>
+                    <option value="tezCixan">Erkən çıxış</option>
                     <option value="cixisYox">Çıxış yoxdur</option>
                 </select>
             </div>
@@ -261,7 +271,8 @@
         window.udInitStats = {
             gecikme: @gecikmeSayi,
             tezCixan: @tezCixanSayi,
-            qayib: @qayibSayi
+            qayib: @qayibSayi,
+            cixisYox: @cixisYoxSayi
         };
     </script>
     <script src="~/js/User/user-davamiyyet.js" asp-append-version="true"></script>
