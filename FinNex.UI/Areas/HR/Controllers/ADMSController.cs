@@ -11,14 +11,16 @@ public class ADMSController : Controller
 {
     private readonly AppDbContext _db;
     private readonly ILogger<ADMSController> _logger;
+    private readonly IJetonTeklifleriService _teklifService;
 
     public static DateTime? SonElaqa { get; private set; }
     public static string? SonSN { get; private set; }
 
-    public ADMSController(AppDbContext db, ILogger<ADMSController> logger)
+    public ADMSController(AppDbContext db, ILogger<ADMSController> logger, IJetonTeklifleriService teklifService)
     {
         _db = db;
         _logger = logger;
+        _teklifService = teklifService;
     }
 
     [HttpGet("cdata")]
@@ -130,6 +132,8 @@ public class ADMSController : Controller
             // normal çıxış kimi tutulur.
             var isBaslamaVaxti = tarix.AddHours(9);
 
+            int? davamiyyetId = null;
+
             if (movcud == null)
             {
                 var yeni = new Davamiyyet
@@ -141,6 +145,8 @@ public class ADMSController : Controller
                     Status = HesablaStatus(vaxt, true)
                 };
                 await _db.Davamiyyetler.AddAsync(yeni);
+                await _db.SaveChangesAsync();
+                davamiyyetId = yeni.Id;
             }
             else
             {
@@ -149,6 +155,8 @@ public class ADMSController : Controller
                     // Giriş yazılmayıb və ya bu oxuma əvvəlkindən ERKƏNdir → girişi yenilə
                     movcud.GirisVaxti = vaxt;
                     movcud.Status = HesablaStatus(vaxt, true);
+                    await _db.SaveChangesAsync();
+                    davamiyyetId = movcud.Id;
                 }
                 else if (vaxt < isBaslamaVaxti)
                 {
@@ -164,11 +172,11 @@ public class ADMSController : Controller
                     if (movcud.CixisVaxti == null || vaxt > movcud.CixisVaxti)
                     {
                         movcud.CixisVaxti = vaxt;
+                        await _db.SaveChangesAsync();
+                        davamiyyetId = movcud.Id;
                     }
                 }
             }
-
-            await _db.SaveChangesAsync();
 
             _logger.LogInformation(
                 "Davamiyyət yazıldı: IsciId={IsciId}, Tarix={Tarix}, {Nov}={Vaxt}",
@@ -176,6 +184,10 @@ public class ADMSController : Controller
 
             // Paralel: İcazə çıxış/qayıdış izlənməsi
             await ProcessIcazeCixisGirisAsync(isciId, vaxt);
+
+            // Jeton tövsiyəsi yoxlaması (gecikme, iş norması aşma)
+            if (davamiyyetId.HasValue)
+                await _teklifService.DavamiyyetYoxlaAsync(davamiyyetId.Value);
         }
         catch (Exception ex)
         {
