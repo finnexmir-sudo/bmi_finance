@@ -12,6 +12,7 @@ namespace FinNex.Application.Services.HR
     {
         private readonly IUnitOfWork _uow;
         private readonly IJetonService _jetonService;
+        private const int NaharAraSiDeqiqe = 45;
 
         public JetonTeklifleriService(IUnitOfWork uow, IJetonService jetonService)
         {
@@ -19,9 +20,9 @@ namespace FinNex.Application.Services.HR
             _jetonService = jetonService;
         }
 
-        public async Task<IList<JetonTeklifiDto>> GetGozleyenlerAsync()
+        public async Task<IList<JetonTeklifiDto>> GetGozleyenlerAsync(int? departamentId = null)
         {
-            var list = await _uow.Repository<JetonTeklifi>()
+            var query = _uow.Repository<JetonTeklifi>()
                 .Query()
                 .Include(x => x.Isci)
                     .ThenInclude(i => i.IsciTeyinatlari.Where(t => t.Aktivdir))
@@ -29,7 +30,13 @@ namespace FinNex.Application.Services.HR
                 .Include(x => x.Isci)
                     .ThenInclude(i => i.IsciTeyinatlari.Where(t => t.Aktivdir))
                         .ThenInclude(t => t.Vezife)
-                .Where(x => x.Status == JetonTeklifinStatusu.Gozlenir)
+                .Where(x => x.Status == JetonTeklifinStatusu.Gozlenir);
+
+            if (departamentId.HasValue)
+                query = query.Where(x => x.Isci.IsciTeyinatlari
+                    .Any(t => t.Aktivdir && t.DepartamentId == departamentId.Value));
+
+            var list = await query
                 .OrderByDescending(x => x.YaradilmaTarixi)
                 .ToListAsync();
 
@@ -82,6 +89,7 @@ namespace FinNex.Application.Services.HR
                 .Include(x => x.TeyinOlunanIsci)
                 .FirstOrDefaultAsync(x => x.Id == tapshiriqId);
             if (t == null) return;
+            if (t.TeyinOlunanIsci?.Status == IsciStatus.IshtenCixib) return;
 
             // Avoid duplicates
             var artiqVar = await _uow.Repository<JetonTeklifi>()
@@ -105,10 +113,12 @@ namespace FinNex.Application.Services.HR
         {
             var e = await _uow.Repository<EvezediciTesdiq>()
                 .Query()
+                .Include(x => x.EvezediciIsci)
                 .Include(x => x.Mezuniyyet)
                     .ThenInclude(m => m.Isci)
                 .FirstOrDefaultAsync(x => x.Id == evezediciTesdiqId);
             if (e == null) return;
+            if (e.EvezediciIsci?.Status == IsciStatus.IshtenCixib) return;
 
             var artiqVar = await _uow.Repository<JetonTeklifi>()
                 .Query()
@@ -131,8 +141,11 @@ namespace FinNex.Application.Services.HR
         public async Task DavamiyyetYoxlaAsync(int davamiyyetId)
         {
             var d = await _uow.Repository<Davamiyyet>()
-                .Query().FirstOrDefaultAsync(x => x.Id == davamiyyetId);
+                .Query()
+                .Include(x => x.Isci)
+                .FirstOrDefaultAsync(x => x.Id == davamiyyetId);
             if (d == null) return;
+            if (d.Isci?.Status == IsciStatus.IshtenCixib) return;
 
             // 1. Work hours exceeded check
             if (d.GirisVaxti.HasValue && d.CixisVaxti.HasValue)
@@ -141,7 +154,7 @@ namespace FinNex.Application.Services.HR
                     .Query().FirstOrDefaultAsync() ?? new IsParametri();
 
                 var standartDaqiqe = (parametri.StandartCixisVaxti - parametri.StandartGirisVaxti).TotalMinutes;
-                var faktikiDaqiqe = (d.CixisVaxti.Value - d.GirisVaxti.Value).TotalMinutes - 45;
+                var faktikiDaqiqe = (d.CixisVaxti.Value - d.GirisVaxti.Value).TotalMinutes - NaharAraSiDeqiqe;
 
                 if (faktikiDaqiqe > standartDaqiqe)
                 {
