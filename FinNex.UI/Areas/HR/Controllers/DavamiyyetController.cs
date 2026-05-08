@@ -374,6 +374,44 @@ namespace FinNex.UI.Areas.HR.Controllers
             });
         }
 
+        // ── Məzuniyyətdə olan işçilər ─────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> GetMezuniyyetler(DateTime? tarix)
+        {
+            var hedef = (tarix ?? DateTime.Today).Date;
+
+            var mezuniyyetler = await _unitOfWork.Repository<Mezuniyyet>()
+                .Query()
+                .AsNoTracking()
+                .Where(x => !x.Silinib &&
+                             x.Status == MezuniyyetStatus.Tesdiqlenib &&
+                             x.BaslamaTarixi.Date <= hedef &&
+                             x.BitmeTarixi.Date >= hedef)
+                .Include(x => x.Isci)
+                    .ThenInclude(i => i.IsciTeyinatlari.Where(t => !t.Silinib))
+                        .ThenInclude(t => t.Departament)
+                .ToListAsync();
+
+            var records = mezuniyyetler.Select(m =>
+            {
+                var esasTeyinat = m.Isci?.IsciTeyinatlari?
+                    .Where(t => t.Esasdir && !t.Silinib)
+                    .FirstOrDefault()
+                    ?? m.Isci?.IsciTeyinatlari?.FirstOrDefault(t => !t.Silinib);
+                return new
+                {
+                    id = m.Id,
+                    isciTamAd = ((m.Isci?.Ad ?? "") + " " + (m.Isci?.Soyad ?? "")).Trim(),
+                    departamentAd = esasTeyinat?.Departament?.Ad ?? "-",
+                    baslamaTarixi = m.BaslamaTarixi,
+                    bitmeTarixi = m.BitmeTarixi,
+                    efektivGunSayi = m.EfektivGunSayi
+                };
+            }).OrderBy(x => x.isciTamAd).ToList();
+
+            return Json(new { records, count = records.Count, tarix = hedef });
+        }
+
         [HttpPost]
         public async Task<IActionResult> QayibDuzelt([FromBody] QayibDuzeltRequest req)
         {
