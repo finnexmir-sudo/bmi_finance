@@ -84,7 +84,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var appUser = await _userManager.GetUserAsync(User);
             if (appUser?.IsciId == null) return null;
 
-            var teyinat = await _uow.Repository<IsciTeyinati>()
+            var teyinat = await _uow.Repository<IsciTeyinat>()
                 .Query()
                 .Where(t => t.IsciId == appUser.IsciId.Value && t.Aktivdir)
                 .FirstOrDefaultAsync();
