@@ -369,7 +369,15 @@
                 </div>
             </div>
 
-            @* Approval Panel *@
+            @* Approval Panel — yalnız bu rolun növbəsi olduqda *@
+            @{
+                bool busRolNovbede =
+                    (rol == "SobeReisi" && Model.Status == (int)MezuniyyetStatus.SobeReisiTesdiqinde) ||
+                    (rol == "Rehber"    && Model.Status == (int)MezuniyyetStatus.RehberTesdiqinde) ||
+                    (rol == "Hr"        && Model.Status == (int)MezuniyyetStatus.HrTesdiqinde);
+            }
+            @if (busRolNovbede)
+            {
             <div class="tsd-approve-panel">
                 <div class="tsd-approve-title">Qərar Ver</div>
 
@@ -427,6 +435,16 @@
                     </div>
                 </form>
             </div>
+            }
+            else
+            {
+            <div class="tsd-approve-panel">
+                <div style="padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;color:#475569;font-size:13px;text-align:center">
+                    <div style="font-weight:600;margin-bottom:4px;color:#0f172a">Bu müraciət artıq emal edilib</div>
+                    <div style="font-size:12px">Cari status: <strong>@Model.StatusText</strong></div>
+                </div>
+            </div>
+            }
         </div>
 
     </div>
