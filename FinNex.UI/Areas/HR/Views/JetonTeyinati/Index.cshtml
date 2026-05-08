@@ -1,0 +1,114 @@
+@{
+    ViewData["Title"] = "Jeton Kataloqu";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var teyinatlar = ViewBag.Teyinatlar as IList<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto> ?? new List<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto>();
+}
+
+<link rel="stylesheet" href="~/css/hr/hr-jeton.css" asp-append-version="true" />
+
+<div class="hj-page">
+    <div class="hj-header">
+        <div class="hj-header-left">
+            <div class="hj-title-icon"><i class="bi bi-gear-fill"></i></div>
+            <div>
+                <h1 class="hj-title">Jeton Kataloqu</h1>
+                <p class="hj-subtitle">Jeton növlərinin saat dəyərlərini və adlarını idarə et</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="hj-table-wrap">
+        <table class="hj-table">
+            <thead>
+                <tr>
+                    <th>Növ</th>
+                    <th>Ad</th>
+                    <th>Saat dəyəri</th>
+                    <th>Təsvir</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="hjtBody">
+                @foreach (var t in teyinatlar)
+                {
+                    <tr data-id="@t.Id">
+                        <td>
+                            <span class="hj-jeton-badge" style="background:@t.RengKodu">
+                                <i class="@t.Ikon"></i> @t.Ad
+                            </span>
+                        </td>
+                        <td>@t.Ad</td>
+                        <td><strong>@t.SaatDeyeri.ToString("0.##") saat</strong></td>
+                        <td>@(t.Tesvir ?? "—")</td>
+                        <td>
+                            @if (t.Aktivdir)
+                            {
+                                <span class="hj-status hj-status--aktiv">Aktiv</span>
+                            }
+                            else
+                            {
+                                <span class="hj-status hj-status--legvedildi">Deaktiv</span>
+                            }
+                        </td>
+                        <td>
+                            <button class="hj-btn hj-btn--ghost hj-btn--sm"
+                                    onclick='hjtOpenEditModal(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(t)))'>
+                                <i class="bi bi-pencil"></i> Redaktə
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ── Edit Modal ───────────────────────────────────────── -->
+<div class="hj-overlay" id="hjtOverlay" onclick="hjtCloseEditModal()"></div>
+<div class="hj-modal" id="hjtModal">
+    <div class="hj-modal-head">
+        <h3><i class="bi bi-pencil-square"></i> Jeton növünü redaktə et</h3>
+        <button class="hj-modal-close" onclick="hjtCloseEditModal()">&times;</button>
+    </div>
+    <div class="hj-modal-body">
+        <input type="hidden" id="hjtId" />
+        <div class="hj-field">
+            <label>Ad</label>
+            <input type="text" id="hjtAd" class="hj-input" />
+        </div>
+        <div class="hj-field">
+            <label>Saat dəyəri</label>
+            <input type="number" step="0.25" id="hjtSaat" class="hj-input" />
+            <small style="color:#6b7280;font-size:12px">Cəza jetonları (Qara) üçün adətən 0 və ya mənfi.</small>
+        </div>
+        <div class="hj-field">
+            <label>Təsvir</label>
+            <textarea id="hjtTesvir" class="hj-textarea" rows="2"></textarea>
+        </div>
+        <div class="hj-field">
+            <label>İkon (Bootstrap class)</label>
+            <input type="text" id="hjtIkon" class="hj-input" placeholder="bi bi-award-fill" />
+        </div>
+        <div class="hj-field">
+            <label>Rəng kodu (HEX)</label>
+            <input type="text" id="hjtReng" class="hj-input" placeholder="#f59e0b" />
+        </div>
+        <div class="hj-field">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="hjtAktiv" />
+                <span>Aktivdir</span>
+            </label>
+        </div>
+    </div>
+    <div class="hj-modal-foot">
+        <button class="hj-btn hj-btn--ghost" onclick="hjtCloseEditModal()">Ləğv et</button>
+        <button class="hj-btn hj-btn--primary" onclick="hjtSubmitEdit()">
+            <i class="bi bi-check2"></i> Yadda saxla
+        </button>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/hr/hr-jeton-teyinati.js" asp-append-version="true"></script>
+}

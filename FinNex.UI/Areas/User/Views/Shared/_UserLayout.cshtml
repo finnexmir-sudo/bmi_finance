@@ -449,7 +449,7 @@
                                   || (currentController == "Icaze" && currentAction == "Izleme");
                     var hrQymetActive = currentArea == "HR" && currentController is "Performans" or "Telim";
                     var hrDigerActive = currentArea == "HR" && currentController is "Hesabat" or "Elan";
-                    var hrMotivActive = currentArea == "HR" && (currentController == "Jeton" || currentController == "JetonAnalitika" || currentController == "Reyting" || currentController == "ReytingParametr" || currentController == "JetonTeklifi");
+                    var hrMotivActive = currentArea == "HR" && (currentController == "Jeton" || currentController == "JetonAnalitika" || currentController == "Reyting" || currentController == "ReytingParametr" || currentController == "JetonTeklifi" || currentController == "JetonTeyinati");
                     var hrAnyActive = hrAsasActive || hrKadrActive || hrDMActive || hrQymetActive || hrDigerActive || hrMotivActive;
 
                     <div class="fn-nav-g @(hrAsasActive ? "open" : "")">
@@ -595,6 +595,10 @@
                             <a asp-area="HR" asp-controller="JetonTeklifi" asp-action="Index"
                                class="fn-nav-item @(currentController == "JetonTeklifi" ? "active" : "")">
                                 <i class="bi bi-stars"></i> Motivasiya Paneli
+                            </a>
+                            <a asp-area="HR" asp-controller="JetonTeyinati" asp-action="Index"
+                               class="fn-nav-item @(currentController == "JetonTeyinati" ? "active" : "")">
+                                <i class="bi bi-gear-fill"></i> Jeton Kataloqu
                             </a>
                         </div>
                     </div>

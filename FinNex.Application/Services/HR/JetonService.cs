@@ -59,34 +59,44 @@ namespace FinNex.Application.Services.HR
                 if (teyinat == null)
                     return Result.Fail("Jeton növü tapılmadı.");
 
-                var jeton = new IsciJetonu
-                {
-                    IsciId = dto.IsciId,
-                    JetonTeyinatiId = dto.JetonTeyinatiId,
-                    Sebeb = dto.Sebeb,
-                    VerenUserId = verenUserId,
-                    QazanmaTarixi = DateTime.Now,
-                    Status = IsciJetonuStatus.Aktiv
-                };
+                var eded = dto.Eded < 1 ? 1 : (dto.Eded > 50 ? 50 : dto.Eded);
 
-                await _unitOfWork.Repository<IsciJetonu>().YaratAsync(jeton);
+                // Qara jeton üçün eded həmişə 1 — intizam xəbərdarlığı dublicate edilməsin
+                if (teyinat.Nov == JetonNovu.Menfi) eded = 1;
+
+                for (int i = 0; i < eded; i++)
+                {
+                    var jeton = new IsciJetonu
+                    {
+                        IsciId = dto.IsciId,
+                        JetonTeyinatiId = dto.JetonTeyinatiId,
+                        Sebeb = dto.Sebeb,
+                        VerenUserId = verenUserId,
+                        QazanmaTarixi = DateTime.Now,
+                        Status = IsciJetonuStatus.Aktiv
+                    };
+                    await _unitOfWork.Repository<IsciJetonu>().YaratAsync(jeton);
+                }
                 await _unitOfWork.YaddaSaxlaAsync();
 
-                // Bildiriş
+                // Bildiriş — bir bildiriş çoxsaylı jetonu əhatə edir
                 var isQara = teyinat.Nov == JetonNovu.Menfi;
                 var nov = isQara ? BildirisNovu.QaraJetonVerildi : BildirisNovu.JetonVerildi;
+                var edSuffix = eded > 1 ? $" × {eded}" : "";
                 var bashliq = isQara
                     ? "⛔ Qara Jeton — İntizam xəbərdarlığı"
-                    : $"🏅 {teyinat.Ad} qazandınız!";
+                    : $"🏅 {teyinat.Ad}{edSuffix} qazandınız!";
                 var metn = isQara
                     ? $"Sizə intizam pozuntusu üçün Qara Jeton verilib: {dto.Sebeb}. Aktiv Qara jeton olduğu müddətdə jeton xərcləmə imkanınız məhduddur."
-                    : $"{teyinat.Ad} ({teyinat.SaatDeyeri} saat) qazandınız. Səbəb: {dto.Sebeb}";
+                    : $"{teyinat.Ad}{edSuffix} ({(teyinat.SaatDeyeri * eded):0.##} saat) qazandınız. Səbəb: {dto.Sebeb}";
 
                 await _bildirisRouter.NotifyIsciAsync(
                     dto.IsciId, nov, bashliq, metn,
                     redirectUrl: "/User/Jeton/Index");
 
-                return Result.Ok($"{teyinat.Ad} uğurla verildi.");
+                return Result.Ok(eded > 1
+                    ? $"{teyinat.Ad} × {eded} ({(teyinat.SaatDeyeri * eded):0.##} saat) uğurla verildi."
+                    : $"{teyinat.Ad} uğurla verildi.");
             }
             catch (Exception ex)
             {
@@ -240,7 +250,7 @@ namespace FinNex.Application.Services.HR
                     BildirisNovu.JetonVerildi,
                     "Yeni Jeton Redim Sorğusu",
                     $"İşçi {cemiSaat} saatlıq {jetonlar.Count} jetonu {redimNovuAd} kimi xərcləmək istəyir.",
-                    redirectUrl: "/HR/Jeton/Index",
+                    redirectUrl: "/HR/Jeton/Index?tab=redimler",
                     exceptIsciId: isciId);
 
                 var novLabel = dto.RedimNovu == RedimNovu.Icaze ? "İcazə" : "Maaşa əlavə";
@@ -372,6 +382,76 @@ namespace FinNex.Application.Services.HR
                 .ToListAsync();
 
             return list.Select(MapRedim).ToList();
+        }
+
+        public async Task<Result> JetonTeyinatiYenileAsync(JetonTeyinatiUpdateDto dto)
+        {
+            try
+            {
+                var teyinat = await _unitOfWork.Repository<JetonTeyinati>()
+                    .Query().FirstOrDefaultAsync(x => x.Id == dto.Id);
+                if (teyinat == null)
+                    return Result.Fail("Jeton növü tapılmadı.");
+
+                if (string.IsNullOrWhiteSpace(dto.Ad))
+                    return Result.Fail("Ad boş ola bilməz.");
+
+                // Müsbət jetonlar üçün SaatDeyeri 0-dan kiçik ola bilməz;
+                // mənfi (cəza) jetonlar 0 və ya mənfi olur
+                if (teyinat.Nov == JetonNovu.Musbet && dto.SaatDeyeri < 0)
+                    return Result.Fail("Müsbət jeton üçün saat dəyəri mənfi ola bilməz.");
+
+                teyinat.Ad = dto.Ad.Trim();
+                teyinat.SaatDeyeri = dto.SaatDeyeri;
+                teyinat.Tesvir = dto.Tesvir;
+                teyinat.Ikon = string.IsNullOrWhiteSpace(dto.Ikon) ? teyinat.Ikon : dto.Ikon.Trim();
+                teyinat.RengKodu = string.IsNullOrWhiteSpace(dto.RengKodu) ? teyinat.RengKodu : dto.RengKodu.Trim();
+                teyinat.Aktivdir = dto.Aktivdir;
+
+                await _unitOfWork.Repository<JetonTeyinati>().YenileAsync(teyinat);
+                await _unitOfWork.YaddaSaxlaAsync();
+
+                return Result.Ok($"{teyinat.Ad} yeniləndi.");
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail($"Xəta: {ex.Message}");
+            }
+        }
+
+        public async Task<IList<JetonRedimTelebiListDto>> ButunRedimlerTarixcesiAsync()
+        {
+            var list = await _unitOfWork.Repository<JetonRedimTelebi>()
+                .Query()
+                .Include(x => x.Isci)
+                .Include(x => x.XerclenenJetonlar)
+                    .ThenInclude(j => j.JetonTeyinati)
+                .OrderByDescending(x => x.TelabTarixi)
+                .ToListAsync();
+
+            // Təsdiqləyən/rədd edənlərin adlarını topla
+            var verenIds = list
+                .Where(x => x.TesdiqleyenUserId.HasValue)
+                .Select(x => x.TesdiqleyenUserId!.Value)
+                .Distinct()
+                .ToList();
+
+            var userMap = new Dictionary<int, string>();
+            if (verenIds.Count > 0)
+            {
+                var users = await _userManager.Users
+                    .Where(u => verenIds.Contains(u.Id))
+                    .ToListAsync();
+                userMap = users.ToDictionary(u => u.Id, u => u.UserName ?? "—");
+            }
+
+            return list.Select(x =>
+            {
+                var dto = MapRedim(x);
+                if (x.TesdiqleyenUserId.HasValue)
+                    dto.TesdiqleyenAd = userMap.GetValueOrDefault(x.TesdiqleyenUserId.Value, "—");
+                return dto;
+            }).ToList();
         }
 
         // ── Köməkçi mapper metodlar ───────────────────────────────────────────

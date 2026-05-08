@@ -12,6 +12,74 @@ function hjSwitchTab(btn, tab) {
     document.querySelectorAll('.hj-panel').forEach(p => p.style.display = 'none');
     document.getElementById('hjTab' + tab.charAt(0).toUpperCase() + tab.slice(1)).style.display = '';
     if (tab === 'redimler') hjLoadRedimler();
+    if (tab === 'tarixce') hjLoadTarixce();
+}
+
+// ── Sorğu tarixçəsi ───────────────────────────────────────
+async function hjLoadTarixce() {
+    const tbody = document.getElementById('hjTarixceBody');
+    const statusFilter = document.getElementById('hjTarixceStatusFilter').value;
+    tbody.innerHTML = '<tr><td colspan="9" class="hj-empty">Yüklənir…</td></tr>';
+
+    try {
+        const res = await fetch('/HR/Jeton/GetRedimTarixcesi');
+        const json = await res.json();
+        if (!json.success || !json.data.length) {
+            tbody.innerHTML = '<tr><td colspan="9" class="hj-empty">Tarixçə boşdur.</td></tr>';
+            return;
+        }
+
+        let data = json.data;
+        if (statusFilter) data = data.filter(r => String(r.status) === statusFilter);
+        if (!data.length) {
+            tbody.innerHTML = '<tr><td colspan="9" class="hj-empty">Filterə uyğun qeyd yoxdur.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(r => `
+            <tr>
+                <td>${r.isciTamAd ?? '—'}</td>
+                <td>${hjRedimNov(r.redimNovu)}</td>
+                <td><strong>${r.cemiSaat} saat</strong></td>
+                <td>${hjDate(r.telabTarixi)}</td>
+                <td>${r.neticeTarixi ? hjDate(r.neticeTarixi) : '—'}</td>
+                <td>${r.tesdiqleyenAd ?? '—'}</td>
+                <td>${hjStatusBadge(r.status + 10)}</td>
+                <td class="hj-td-sebeb">${r.qeyd ?? '—'}</td>
+                <td>
+                    <button class="hj-btn hj-btn--ghost hj-btn--sm" onclick='hjOpenTarixceDetay(${JSON.stringify(r).replace(/'/g,"&#39;")})'>
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </td>
+            </tr>`).join('');
+    } catch {
+        tbody.innerHTML = '<tr><td colspan="9" class="hj-empty">Xəta baş verdi.</td></tr>';
+    }
+}
+
+function hjOpenTarixceDetay(r) {
+    const jetonList = (r.xerclenenJetonlar || [])
+        .map(j => `<li>${hjBadge(j)} <small>— ${j.sebeb ?? ''}</small></li>`).join('');
+
+    document.getElementById('hjRedimModalBody').innerHTML = `
+        <div class="hj-redim-info">
+            <div class="hj-redim-row"><strong>İşçi</strong><span>${r.isciTamAd ?? '—'}</span></div>
+            <div class="hj-redim-row"><strong>Xərcləmə növü</strong><span>${hjRedimNov(r.redimNovu)}</span></div>
+            <div class="hj-redim-row"><strong>Cəmi saat</strong><span><b>${r.cemiSaat} saat</b></span></div>
+            <div class="hj-redim-row"><strong>Sorğu tarixi</strong><span>${hjDate(r.telabTarixi)}</span></div>
+            <div class="hj-redim-row"><strong>Cavab tarixi</strong><span>${r.neticeTarixi ? hjDate(r.neticeTarixi) : '—'}</span></div>
+            <div class="hj-redim-row"><strong>Cavab verən</strong><span>${r.tesdiqleyenAd ?? '—'}</span></div>
+            <div class="hj-redim-row"><strong>Status</strong><span>${hjStatusBadge(r.status + 10)}</span></div>
+            ${r.qeyd ? `<div class="hj-redim-row"><strong>Qeyd</strong><span>${r.qeyd}</span></div>` : ''}
+            ${jetonList ? `<div class="hj-redim-row"><strong>Jetonlar</strong><ul style="margin:0;padding-left:18px">${jetonList}</ul></div>` : ''}
+        </div>`;
+
+    // Tarixçə modalında təsdiq/rədd düymələri gizlənir — yalnız read-only
+    document.getElementById('hjBtnTesdiq').style.display = 'none';
+    document.getElementById('hjBtnRedd').style.display = 'none';
+
+    document.getElementById('hjRedimOverlay').classList.add('hj-open');
+    document.getElementById('hjRedimModal').classList.add('hj-open');
 }
 
 // ── Əməliyyatlar ──────────────────────────────────────────
@@ -89,6 +157,8 @@ function hjOpenVerModal() {
     document.querySelectorAll('.hj-jeton-card').forEach(c => c.classList.remove('hj-jeton-card--selected'));
     document.getElementById('hjVerIsci').value = '';
     document.getElementById('hjVerSebeb').value = '';
+    const edInp = document.getElementById('hjVerEded');
+    if (edInp) edInp.value = 1;
     document.getElementById('hjVerOverlay').classList.add('hj-open');
     document.getElementById('hjVerModal').classList.add('hj-open');
 }
@@ -104,6 +174,9 @@ function hjSelectJeton(card) {
 async function hjSubmitJetonVer() {
     const isciId = parseInt(document.getElementById('hjVerIsci').value);
     const sebeb = document.getElementById('hjVerSebeb').value.trim();
+    let eded = parseInt(document.getElementById('hjVerEded')?.value) || 1;
+    if (eded < 1) eded = 1;
+    if (eded > 50) eded = 50;
     if (!isciId) return hjToast('İşçi seçin.', 'warn');
     if (!hjSelectedJetonId) return hjToast('Jeton növü seçin.', 'warn');
     if (!sebeb) return hjToast('Səbəb daxil edin.', 'warn');
@@ -111,7 +184,7 @@ async function hjSubmitJetonVer() {
     const res = await fetch('/HR/Jeton/JetonVer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isciId, jetonTeyinatiId: hjSelectedJetonId, sebeb })
+        body: JSON.stringify({ isciId, jetonTeyinatiId: hjSelectedJetonId, sebeb, eded })
     });
     const json = await res.json();
     if (json.success) {
@@ -156,6 +229,9 @@ async function hjSubmitLegvet() {
 // ── Redim Modal ───────────────────────────────────────────
 function hjOpenRedimModal(r) {
     hjCurrentRedimId = r.id;
+    // Tarixçədən sonra modal açılarsa düymələri yenidən göstər
+    document.getElementById('hjBtnTesdiq').style.display = '';
+    document.getElementById('hjBtnRedd').style.display = '';
     const jetonList = (r.xerclenenJetonlar || [])
         .map(j => `<li>${hjBadge(j)}</li>`).join('');
 
@@ -273,4 +349,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 badge.style.display = 'inline-block';
             }
         }).catch(() => {});
+
+    // ?tab=redimler və ya ?tab=tarixce ilə müvafiq tab açılır
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab) {
+        const btn = document.querySelector(`.hj-tab[data-tab="${tab}"]`);
+        if (btn) hjSwitchTab(btn, tab);
+    }
 });
