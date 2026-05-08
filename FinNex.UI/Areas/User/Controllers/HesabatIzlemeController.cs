@@ -18,15 +18,18 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly IHesabatIzlemeService _service;
         private readonly IUnitOfWork _uow;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IJetonTeklifleriService _teklifService;
 
         public HesabatIzlemeController(
             IHesabatIzlemeService service,
             IUnitOfWork uow,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IJetonTeklifleriService teklifService)
         {
             _service = service;
             _uow = uow;
             _userManager = userManager;
+            _teklifService = teklifService;
         }
 
         public async Task<IActionResult> Index()
@@ -133,6 +136,8 @@ namespace FinNex.UI.Areas.User.Controllers
             }
 
             var result = await _service.TamamlaAsync(tapshiriqId, isciId.Value, qeyd);
+            if (result.Success)
+                _ = _teklifService.TapshiriqTamamlandiAsync(tapshiriqId);
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Index));
         }

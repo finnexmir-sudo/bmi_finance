@@ -25,6 +25,7 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly IIcazeService _icazeService;
         private readonly UserManager<AppUser> _userManager;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IJetonTeklifleriService _teklifService;
 
         public InboxController(
             IMesajService mesajService,
@@ -33,7 +34,8 @@ namespace FinNex.UI.Areas.User.Controllers
             IIsciService isciService,
             IIcazeService icazeService,
             UserManager<AppUser> userManager,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IJetonTeklifleriService teklifService)
         {
             _mesajService = mesajService;
             _bildirisService = bildirisService;
@@ -42,6 +44,7 @@ namespace FinNex.UI.Areas.User.Controllers
             _icazeService = icazeService;
             _userManager = userManager;
             _unitOfWork = unitOfWork;
+            _teklifService = teklifService;
         }
 
         // ── GET /User/Inbox ──────────────────────────────────
@@ -298,6 +301,8 @@ namespace FinNex.UI.Areas.User.Controllers
             if (isciId == null) return RedirectToLogin();
 
             var result = await _evezediciTesdiqService.QebulEtAsync(id, isciId.Value);
+            if (result.Success)
+                _ = _teklifService.EvezediciQebulEdildiAsync(id);
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Index), new { tab = "sorgular" });
         }
