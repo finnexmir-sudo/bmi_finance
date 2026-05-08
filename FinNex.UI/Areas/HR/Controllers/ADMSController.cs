@@ -122,6 +122,19 @@ public class ADMSController : Controller
 
             var tarix = vaxt.Date;
 
+            // İş parametrləri — gecikme toleransı
+            var parametri = await _db.Set<IsParametri>()
+                .Where(x => !x.Silinib).FirstOrDefaultAsync();
+            var standartGiris  = parametri?.StandartGirisVaxti  ?? new TimeSpan(9, 0, 0);
+            var gecikTolerans  = TimeSpan.FromMinutes(parametri?.GecikmeToleransDeqiqe ?? 5);
+
+            // Bu gün üçün təsdiqlənmiş İcazə varmı?
+            var bugunIcaze = await _db.Icazeler
+                .Where(x => x.IsciId == isciId && !x.Silinib &&
+                             x.Status == IcazeStatus.Tesdiqlenib &&
+                             x.IcazeTarixi.Date == tarix)
+                .FirstOrDefaultAsync();
+
             // Həmin işçi+tarix üçün mövcud davamiyyət qeydini tap
             var movcud = await _db.Davamiyyetler
                 .FirstOrDefaultAsync(x => x.IsciId == isciId && x.Tarix == tarix);
@@ -142,7 +155,7 @@ public class ADMSController : Controller
                     Tarix = tarix,
                     GirisVaxti = vaxt,
                     CixisVaxti = null,
-                    Status = HesablaStatus(vaxt, true)
+                    Status = HesablaStatus(vaxt, bugunIcaze, standartGiris, gecikTolerans)
                 };
                 await _db.Davamiyyetler.AddAsync(yeni);
                 await _db.SaveChangesAsync();
@@ -154,7 +167,7 @@ public class ADMSController : Controller
                 {
                     // Giriş yazılmayıb və ya bu oxuma əvvəlkindən ERKƏNdir → girişi yenilə
                     movcud.GirisVaxti = vaxt;
-                    movcud.Status = HesablaStatus(vaxt, true);
+                    movcud.Status = HesablaStatus(vaxt, bugunIcaze, standartGiris, gecikTolerans);
                     await _db.SaveChangesAsync();
                     davamiyyetId = movcud.Id;
                 }
@@ -264,13 +277,25 @@ public class ADMSController : Controller
         }
     }
 
-    private static DavamiyyetStatus HesablaStatus(DateTime girisVaxti, bool girisdir)
+    private static DavamiyyetStatus HesablaStatus(
+        DateTime girisVaxti,
+        Icaze? bugunIcaze,
+        TimeSpan standartGiris,
+        TimeSpan gecikTolerans)
     {
-        if (!girisdir) return DavamiyyetStatus.Isde;
+        var girisZaman = girisVaxti.TimeOfDay;
 
-        var isBaslamaVaxti = girisVaxti.Date.AddHours(9);
+        // Aktiv icazə varmı və giriş icazə dövrünə düşürmü?
+        // Şərt: giriş vaxtı [icazə.BaslamaSaati, icazə.BitisSaati + tolerans] aralığında
+        if (bugunIcaze != null &&
+            girisZaman >= bugunIcaze.BaslamaSaati &&
+            girisZaman <= bugunIcaze.BitisSaati + gecikTolerans)
+        {
+            return DavamiyyetStatus.Icazeli;
+        }
 
-        return girisVaxti > isBaslamaVaxti.AddMinutes(5)
+        // Normal gecikme yoxlaması
+        return girisZaman > standartGiris + gecikTolerans
             ? DavamiyyetStatus.Gecikme
             : DavamiyyetStatus.Isde;
     }
