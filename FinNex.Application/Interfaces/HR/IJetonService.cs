@@ -30,14 +30,27 @@ public interface IJetonService
     // İşçi: redim sorğusu göndər
     Task<Result> RedimTelebiYaratAsync(int isciId, JetonRedimTelebiCreateDto dto);
 
-    // HR: redim sorğusunu təsdiqlə
+    // Rəhbər: redim sorğusunu təsdiqlə (HR təsdiqindən əvvəl)
+    Task<Result> RedimRehberTesdiqleAsync(int redimId, int rehberUserId);
+
+    // Rəhbər: redim sorğusunu rədd et
+    Task<Result> RedimRehberReddEtAsync(int redimId, string qeyd, int rehberUserId);
+
+    // HR: redim sorğusunu təsdiqlə (yalnız Rəhbər təsdiqindən sonra)
     Task<Result> RedimTelebiTesdiqleAsync(int redimId, int tesdiqleyenUserId);
 
     // HR: redim sorğusunu rədd et
     Task<Result> RedimTelebiReddEtAsync(int redimId, string qeyd, int userId);
 
-    // HR: gözləyən redim sorğuları
-    Task<IList<JetonRedimTelebiListDto>> GozleyenRedimlerGetirAsync();
+    // Gözləyən redim sorğuları (rola görə filtrlənir):
+    //   Rehber → öz departamentinin RehberTesdiq=null olan sorğuları
+    //   HR/Admin → RehberTesdiq=true olan sorğular (rəhbər artıq təsdiqləyib)
+    Task<IList<JetonRedimTelebiListDto>> GozleyenRedimlerGetirAsync(int? rehberDepartamentId = null, bool rehberView = false);
+
+    // İcazə üçün FIFO ilə jeton xərclə (Variant 1 — Icaze formu yolu).
+    // İşçinin aktiv jetonlarından ən köhnədən başlayaraq tələb olunan saat qədər seçir,
+    // həmin jetonları "İstifadə olunub" edir. Tam xərclənir — qismən deyil.
+    Task<Result<decimal>> IcazeUcunFifoJetonXercleAsync(int isciId, decimal teleblesaat, int? icazeId = null);
 
     // İşçinin redim tarixçəsi
     Task<IList<JetonRedimTelebiListDto>> IsciRedimTarixcesiGetirAsync(int isciId);

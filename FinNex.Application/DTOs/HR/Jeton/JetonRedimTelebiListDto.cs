@@ -14,6 +14,18 @@ namespace FinNex.Application.DTOs.HR.Jeton
         public DateTime? NeticeTarixi { get; set; }
         public string? Qeyd { get; set; }
         public string? TesdiqleyenAd { get; set; }
+
+        // Icaze sorğusu detalları (yalnız RedimNovu == Icaze)
+        public DateTime? IcazeTarixi { get; set; }
+        public TimeSpan? BaslamaSaati { get; set; }
+        public TimeSpan? BitisSaati { get; set; }
+
+        // Rəhbər təsdiq mərhələsi
+        public bool? RehberTesdiq { get; set; }
+        public DateTime? RehberTesdiqTarixi { get; set; }
+        public string? RehberAd { get; set; }
+        public string? RehberQeyd { get; set; }
+
         public List<IsciJetonuListDto> XerclenenJetonlar { get; set; } = new();
     }
 }
