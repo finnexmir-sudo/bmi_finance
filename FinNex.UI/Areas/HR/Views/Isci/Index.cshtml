@@ -111,9 +111,10 @@
                                         <path d="M7 4v6M5 5.5h3a1 1 0 010 2H6a1 1 0 000 2h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
                                     </svg>
                                 </a>
-                                <button class="isci-action-btn isci-action-btn--red"
+                                <button class="isci-action-btn isci-action-btn--red btn-isden-cixar"
                                         title="İşdən Çıxar"
-                                        onclick="openIsdenCixarModal(@item.Id, '@Html.Raw(item.TamAd.Replace("'", "\\'"))')">
+                                        data-id="@item.Id"
+                                        data-ad="@item.TamAd">
                                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                                         <path d="M9 2H5a1 1 0 00-1 1v8a1 1 0 001 1h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                                         <path d="M11 7H6M9 5l2 2-2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -122,9 +123,10 @@
                             }
                             else
                             {
-                                <button class="isci-action-btn isci-action-btn--green"
+                                <button class="isci-action-btn isci-action-btn--green btn-isey-geri"
                                         title="Yenidən Aktiv Et"
-                                        onclick="iseyiGeri(@item.Id, '@Html.Raw(item.TamAd.Replace("'", "\\'"))')">
+                                        data-id="@item.Id"
+                                        data-ad="@item.TamAd">
                                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                                         <path d="M2 7a5 5 0 1010 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                                         <path d="M2 4v3h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -196,12 +198,26 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // ── İşdən Çıxar Modal ────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.btn-isden-cixar').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            openIsdenCixarModal(this.dataset.id, this.dataset.ad);
+        });
+    });
+    document.querySelectorAll('.btn-isey-geri').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            iseyiGeri(this.dataset.id, this.dataset.ad);
+        });
+    });
+});
+
 function openIsdenCixarModal(isciId, tamAd) {
     document.getElementById('cixar-isci-id').value = isciId;
     document.getElementById('cixar-isci-name').textContent = tamAd;
     document.getElementById('cixar-tarix').value = new Date().toISOString().split('T')[0];
     document.getElementById('cixar-sebeb').value = '';
-    document.getElementById('cixar-error').style.display = 'none';
+    var errEl = document.getElementById('cixar-error');
+    if (errEl) errEl.style.display = 'none';
     document.getElementById('isdenCixarModal').style.display = 'flex';
 }
 
