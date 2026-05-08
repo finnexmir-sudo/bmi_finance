@@ -20,6 +20,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     // Network-first — hər zaman serverdən götür, offline olanda fallback
     event.respondWith(
-        fetch(event.request).catch(() => caches.match(event.request))
+        fetch(event.request).catch(() =>
+            caches.match(event.request).then(r => r ?? new Response('', { status: 503, statusText: 'Offline' }))
+        )
     );
 });
