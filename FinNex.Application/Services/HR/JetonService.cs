@@ -426,7 +426,6 @@ namespace FinNex.Application.Services.HR
                         SobeReisiTesdiq = true,
                         SobeReisiTesdiqTarixi = DateTime.Now,
                         RehberTesdiq = true,
-                        RehberUserId = redim.RehberUserId,
                         RehberTesdiqTarixi = redim.RehberTesdiqTarixi,
                         HrTesdiq = true,
                         HrTesdiqTarixi = DateTime.Now,
