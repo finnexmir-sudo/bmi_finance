@@ -124,7 +124,7 @@ namespace FinNex.Application.Services.Communication
             // Növbəti mərhələ təsdiqçilərinə — indi müraciət aktiv mərhələyə düşdü
             await NotifyNextStageApproversAsync(e.Mezuniyyet);
 
-            _ = _teklifService.EvezediciQebulEdildiAsync(tesdiqId);
+            await _teklifService.EvezediciQebulEdildiAsync(tesdiqId);
 
             return Result.Ok("Sorğu qəbul edildi.");
         }

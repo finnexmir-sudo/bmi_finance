@@ -137,7 +137,7 @@ namespace FinNex.UI.Areas.User.Controllers
 
             var result = await _service.TamamlaAsync(tapshiriqId, isciId.Value, qeyd);
             if (result.Success)
-                _ = _teklifService.TapshiriqTamamlandiAsync(tapshiriqId);
+                await _teklifService.TapshiriqTamamlandiAsync(tapshiriqId);
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Index));
         }

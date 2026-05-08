@@ -230,7 +230,7 @@ namespace FinNex.Application.Services.Communication
                         bashliq: "Tapşırıq tamamlandı",
                         metn: $"'{t.Bashliq}' tapşırığı tamamlandı.",
                         redirectUrl: $"/User/Tapshiriq/Detay/{t.Id}");
-                    _ = _teklifService.TapshiriqTamamlandiAsync(t.Id);
+                    await _teklifService.TapshiriqTamamlandiAsync(t.Id);
                 }
                 else
                     t.TamamlanmaFaizi = dto.TamamlanmaFaizi;
