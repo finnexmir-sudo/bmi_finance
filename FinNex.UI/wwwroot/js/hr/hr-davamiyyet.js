@@ -357,6 +357,7 @@ document.addEventListener('DOMContentLoaded', function () {
     btnAxtar.addEventListener('click', function () {
         document.querySelectorAll('.hrd-kpi--clickable').forEach(function (k) { k.classList.remove('hrd-kpi--active'); });
         var sv = selectStatus.value;
+        if (sv === 'mezuniyyet') { window.location.href = '/HR/Mezuniyyet/Aktiv'; return; }
         var params = {};
         if (inputTarix.value) params.tarix = inputTarix.value;
         if (sv && sv !== 'tezCixan' && sv !== 'cixisYox') params.status = sv;
@@ -367,6 +368,7 @@ document.addEventListener('DOMContentLoaded', function () {
     btnAraliqAxtar.addEventListener('click', function () {
         document.querySelectorAll('.hrd-kpi--clickable').forEach(function (k) { k.classList.remove('hrd-kpi--active'); });
         var sv = selectStatusAraliq.value;
+        if (sv === 'mezuniyyet') { window.location.href = '/HR/Mezuniyyet/Aktiv'; return; }
         var params = {};
         if (inputBaslangic.value) params.baslangic = inputBaslangic.value;
         if (inputSon.value) params.son = inputSon.value;
