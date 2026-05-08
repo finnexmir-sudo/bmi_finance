@@ -425,7 +425,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return BadRequest(new { error = result.Message });
 
             if (result.Data != null)
-                _ = _teklifService.DavamiyyetYoxlaAsync(result.Data.Id);
+                await _teklifService.DavamiyyetYoxlaAsync(result.Data.Id);
 
             return Ok(new { message = "Qayıb uğurla qeyd edildi." });
         }

@@ -302,7 +302,7 @@ namespace FinNex.UI.Areas.User.Controllers
 
             var result = await _evezediciTesdiqService.QebulEtAsync(id, isciId.Value);
             if (result.Success)
-                _ = _teklifService.EvezediciQebulEdildiAsync(id);
+                await _teklifService.EvezediciQebulEdildiAsync(id);
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Index), new { tab = "sorgular" });
         }
