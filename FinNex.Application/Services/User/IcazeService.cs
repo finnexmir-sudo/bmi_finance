@@ -445,8 +445,11 @@ namespace FinNex.Application.Services
             if (icaze.Status != IcazeStatus.RehberTesdiqinde)
                 return Result.Fail($"Bu müraciət artıq emal edilib (status: {icaze.Status}).");
 
-            // Nahar çıxıldıqda effektiv saat 1 saat az olur
-            const decimal naharMuddet = 1.0m;
+            // Nahar müddəti IsParametri-dən oxunur (default 45 dəq)
+            var isParam = await _unitOfWork.Repository<IsParametri>()
+                .Query().Where(x => !x.Silinib).FirstOrDefaultAsync();
+            decimal naharMuddet = (isParam?.NaharMuddetDeqiqe ?? 45) / 60m;
+
             var icazeSaatiRaw = (decimal)icaze.IcazeSaati;
             var efektivSaat = naharNezereAlinmasin
                 ? Math.Max(0m, icazeSaatiRaw - naharMuddet)
