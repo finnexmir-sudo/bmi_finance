@@ -593,16 +593,19 @@ namespace FinNex.Application.Services
                     break;
 
                 case IcazeStatus.HrTesdiqinde:
+                    var hrUrl = $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Hr";
                     await _bildirisRouter.NotifyStrukturRoluAsync(
                         StrukturRolTipi.Hr,
                         BildirisNovu.IcazeMuraciet, bashliq, metn,
-                        redirectUrl: $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Hr",
-                        icazeId: ic.Id, exceptIsciId: ic.IsciId);
+                        redirectUrl: hrUrl, icazeId: ic.Id, exceptIsciId: ic.IsciId);
+                    await _bildirisRouter.NotifyRoleAsync(
+                        RoleNames.HR,
+                        BildirisNovu.IcazeMuraciet, bashliq, metn,
+                        redirectUrl: hrUrl, icazeId: ic.Id, exceptIsciId: ic.IsciId);
                     await _bildirisRouter.NotifyRoleAsync(
                         RoleNames.Admin,
                         BildirisNovu.IcazeMuraciet, bashliq, metn,
-                        redirectUrl: $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Hr",
-                        icazeId: ic.Id, exceptIsciId: ic.IsciId);
+                        redirectUrl: hrUrl, icazeId: ic.Id, exceptIsciId: ic.IsciId);
                     break;
             }
         }
@@ -652,13 +655,17 @@ namespace FinNex.Application.Services
         {
             var isciAd = await GetIsciAdAsync(ic.IsciId);
             var dovr = $"{ic.IcazeTarixi:dd.MM.yyyy} {ic.BaslamaSaati:hh\\:mm}–{ic.BitisSaati:hh\\:mm}";
+            var bashliq = "İcazə müraciəti — HR təsdiqi gözləyir";
+            var metn = $"{isciAd} ({dovr}) icazəsi rəhbər tərəfindən təsdiqlənib.";
+            var url = $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Hr";
             await _bildirisRouter.NotifyStrukturRoluAsync(
                 StrukturRolTipi.Hr,
-                BildirisNovu.IcazeMuraciet,
-                "İcazə müraciəti — HR təsdiqi gözləyir",
-                $"{isciAd} ({dovr}) icazəsi rəhbər tərəfindən təsdiqlənib.",
-                redirectUrl: $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Hr",
-                icazeId: ic.Id, exceptIsciId: ic.IsciId);
+                BildirisNovu.IcazeMuraciet, bashliq, metn,
+                redirectUrl: url, icazeId: ic.Id, exceptIsciId: ic.IsciId);
+            await _bildirisRouter.NotifyRoleAsync(
+                RoleNames.HR,
+                BildirisNovu.IcazeMuraciet, bashliq, metn,
+                redirectUrl: url, icazeId: ic.Id, exceptIsciId: ic.IsciId);
         }
 
         private async Task NotifyIsciProgressAsync(Icaze ic, string mərhələ, bool tesdiq, string? qeyd)

@@ -59,6 +59,7 @@
         if (currentController == "Tesdiq") return "tesdiq";
         if (currentController == "KreditMuraciet") return "kredit";
         if (currentController == "Hesabat" || currentController == "HesabatIzleme") return "hesabat";
+        if (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye") return "hr";
         if (currentController is "Davamiyyet" or "Takvim" or "Mezuniyyet" or "Muraciet"
             or "Tapshiriq" or "Gorush" or "Icaze" or "Maas" or "Xerc" or "Avans")
             return "emekdas";
@@ -446,7 +447,7 @@
                     var hrAsasActive = currentArea == "HR" && (currentController is "Dashboard" or "RehberDashboard");
                     var hrKadrActive = currentController is "Isci" or "Departament" or "Vezife" or "Organizasiya";
                     var hrDMActive = (currentArea == "HR" && currentController is "Davamiyyet" or "Mezuniyyet" or "BayramGunu" or "MezuniyyetBalans" or "Xestelik" or "XestelikEzamiyyet" or "IsciStaji")
-                                  || (currentController == "Icaze" && currentAction == "Izleme");
+                                  || (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye");
                     var hrQymetActive = currentArea == "HR" && currentController is "Performans" or "Telim";
                     var hrDigerActive = currentArea == "HR" && currentController is "Hesabat" or "Elan";
                     var hrMotivActive = currentArea == "HR" && (currentController == "Jeton" || currentController == "JetonAnalitika" || currentController == "Reyting" || currentController == "ReytingParametr" || currentController == "JetonTeklifi" || currentController == "JetonTeyinati");
