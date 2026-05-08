@@ -26,6 +26,9 @@ namespace FinNex.Application.DTOs.HR.Icaze
         public bool MuracietSahibiRehberdirmi { get; set; }
         public bool MuracietSahibiSobeReisidirmi { get; set; }
         public bool MuracietSahibiHrdirmi { get; set; }
+
+        // Rəhbər öz müraciəti üçün jetonla ödəmə saatı (0 = adi icazə)
+        public decimal JetonOdenenSaat { get; set; } = 0;
     }
 
     // ── Siyahı üçün ─────────────────────────────────────

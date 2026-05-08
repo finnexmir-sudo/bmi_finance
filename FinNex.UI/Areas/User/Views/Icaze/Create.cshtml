@@ -98,12 +98,31 @@
                     <span asp-validation-for="Sebeb" class="fn-val-msg"></span>
                 </div>
 
-                @* ── Jeton balansı (məlumat) ── *@
-                @if (ViewBag.JetonBalansi is decimal balans && balans > 0)
+                @* ── Jeton (yalnız Rəhbər üçün) ── *@
+                @if (User.IsInRole(FinNex.Domain.RoleNames.Rehber) && ViewBag.JetonBalansi is decimal balans && balans > 0)
+                {
+                    <div class="fn-info-box" style="background:#fff8e8;border-color:#f0d785;color:#8a6a18;margin-bottom:8px">
+                        <i class="bi bi-coin"></i>
+                        Aktiv jeton balansınız: <strong>@balans.ToString("0.##") saat</strong>.
+                    </div>
+                    <div class="fn-form-group">
+                        <label asp-for="JetonOdenenSaat" class="fn-label">
+                            Jetonu ödəmə saatı
+                            <span class="fn-label-hint">(0 = istifadə etmə)</span>
+                        </label>
+                        <input asp-for="JetonOdenenSaat" type="number" min="0" max="@balans.ToString("0.##")"
+                               step="0.5" class="fn-input" placeholder="0" />
+                        <span asp-validation-for="JetonOdenenSaat" class="fn-val-msg"></span>
+                        <small style="color:#6b7280;font-size:12px">
+                            Müraciət birbaşa təsdiqlənəcəyi üçün bu addımda jeton saatını özünüz təyin edin.
+                        </small>
+                    </div>
+                }
+                else if (ViewBag.JetonBalansi is decimal bal && bal > 0)
                 {
                     <div class="fn-info-box" style="background:#fff8e8;border-color:#f0d785;color:#8a6a18">
                         <i class="bi bi-coin"></i>
-                        Aktiv jeton balansınız: <strong>@balans.ToString("0.##") saat</strong>.
+                        Aktiv jeton balansınız: <strong>@bal.ToString("0.##") saat</strong>.
                         Rəhbər təsdiq zamanı bu icazənin neçə saatını jetonla ödənmiş kimi seçə bilər.
                     </div>
                 }

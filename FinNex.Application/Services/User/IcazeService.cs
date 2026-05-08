@@ -130,9 +130,31 @@ namespace FinNex.Application.Services
                 // Rəhbər özü müraciət edibsə — IcazeCixisGiris dərhal yarat
                 if (ilkinStatus == IcazeStatus.Tesdiqlenib)
                 {
+                    // Jeton ödəməsi varsa — yoxla və entityə yaz
+                    if (dto.JetonOdenenSaat > 0)
+                    {
+                        var icazeSaati = (decimal)(dto.BitisSaati - dto.BaslamaSaati).TotalHours;
+                        if (dto.JetonOdenenSaat > icazeSaati)
+                            return Result<IcazeListDto>.Fail(
+                                $"Jeton ödənişi ({dto.JetonOdenenSaat:0.##} saat) icazənin ümumi saatından ({icazeSaati:0.##} saat) çox ola bilməz.");
+                        var balans = await _jetonService.AktivSaatBalansiAsync(dto.IsciId);
+                        if (dto.JetonOdenenSaat > balans)
+                            return Result<IcazeListDto>.Fail(
+                                $"Jeton balansı kifayət etmir ({balans:0.##} saat mövcud, {dto.JetonOdenenSaat:0.##} saat tələb olundu).");
+                        entity.JetonOdenenSaat = dto.JetonOdenenSaat;
+                    }
                     entity.RehberTesdiq = true;
                     entity.RehberTesdiqTarixi = DateTime.Now;
+                    entity.HrTesdiq = true;
+                    entity.HrTesdiqTarixi = DateTime.Now;
                     await _unitOfWork.Repository<Icaze>().YenileAsync(entity);
+                    await _unitOfWork.YaddaSaxlaAsync();
+                    if (dto.JetonOdenenSaat > 0)
+                    {
+                        var jetonRes = await _ConsumeJetonsForIcazeAsync(entity);
+                        if (!jetonRes.Success)
+                            return Result<IcazeListDto>.Fail(jetonRes.Message ?? "Jeton xərclənmə xətası.");
+                    }
                     await _YaratCixisGirisAsync(entity.Id, false);
                     await NotifySobeReisiAsync(entity);
                     await NotifyHrMalumatAsync(entity);

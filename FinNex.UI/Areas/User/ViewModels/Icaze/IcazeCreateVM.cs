@@ -27,6 +27,9 @@ namespace FinNex.UI.Areas.User.ViewModels.Icaze
         [MaxLength(500, ErrorMessage = "Səbəb 500 simvoldan çox ola bilməz")]
         public string? Sebeb { get; set; }
 
+        [Range(0, 24, ErrorMessage = "Jeton saatı 0–24 aralığında olmalıdır")]
+        public decimal JetonOdenenSaat { get; set; } = 0;
+
         // Dropdown
         public List<SelectListItem> EvezEdenList { get; set; } = new();
     }
