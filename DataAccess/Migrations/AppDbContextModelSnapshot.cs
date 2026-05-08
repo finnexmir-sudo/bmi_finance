@@ -1385,6 +1385,14 @@ namespace FinNex.DataAccess.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
+                    b.Property<decimal>("JetonOdenenSaat")
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<bool>("NaharNezereAlinmasin")
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<TimeSpan>("BaslamaSaati")
                         .HasColumnType("time");
 
