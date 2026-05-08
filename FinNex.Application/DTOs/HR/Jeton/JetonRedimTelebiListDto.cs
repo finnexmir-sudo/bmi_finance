@@ -13,6 +13,7 @@ namespace FinNex.Application.DTOs.HR.Jeton
         public DateTime TelabTarixi { get; set; }
         public DateTime? NeticeTarixi { get; set; }
         public string? Qeyd { get; set; }
+        public string? TesdiqleyenAd { get; set; }
         public List<IsciJetonuListDto> XerclenenJetonlar { get; set; } = new();
     }
 }

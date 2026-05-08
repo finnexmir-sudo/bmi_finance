@@ -79,6 +79,14 @@ namespace FinNex.UI.Areas.HR.Controllers
             return Json(new { success = true, data = list });
         }
 
+        // ── GET /HR/Jeton/GetRedimTarixcesi ─────────────────
+        [HttpGet]
+        public async Task<IActionResult> GetRedimTarixcesi()
+        {
+            var list = await _jetonService.ButunRedimlerTarixcesiAsync();
+            return Json(new { success = true, data = list });
+        }
+
         // ── GET /HR/Jeton/GetIsciJetonlar ────────────────────
         [HttpGet]
         public async Task<IActionResult> GetIsciJetonlar(int isciId)
