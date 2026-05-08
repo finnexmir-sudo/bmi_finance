@@ -816,11 +816,15 @@ document.addEventListener('DOMContentLoaded', function () {
         var ipCixis = document.getElementById('ipCixisVaxti');
         var ipGec = document.getElementById('ipGecikmeTolerans');
         var ipTez = document.getElementById('ipTezCixmaTolerans');
+        var ipNaharB = document.getElementById('ipNaharBaslama');
+        var ipNaharM = document.getElementById('ipNaharMuddet');
         var msg = document.getElementById('isParametriMsg');
         if (ipGiris) ipGiris.value = isParametriData.girisVaxti || '09:00';
         if (ipCixis) ipCixis.value = isParametriData.cixisVaxti || '17:45';
         if (ipGec) ipGec.value = isParametriData.gecikmeTolerans ?? 5;
         if (ipTez) ipTez.value = isParametriData.tezCixmaTolerans ?? 15;
+        if (ipNaharB) ipNaharB.value = isParametriData.naharBaslamaSaati || '13:00';
+        if (ipNaharM) ipNaharM.value = isParametriData.naharMuddetDeqiqe ?? 45;
         if (msg) { msg.style.display = 'none'; msg.textContent = ''; }
         if (isParametriModal) isParametriModal.style.display = 'flex';
     }
@@ -849,6 +853,8 @@ document.addEventListener('DOMContentLoaded', function () {
             var cixis = (document.getElementById('ipCixisVaxti') || {}).value || '17:45';
             var gecTol = parseInt((document.getElementById('ipGecikmeTolerans') || {}).value || '5', 10);
             var tezTol = parseInt((document.getElementById('ipTezCixmaTolerans') || {}).value || '15', 10);
+            var naharB = (document.getElementById('ipNaharBaslama') || {}).value || '13:00';
+            var naharM = parseInt((document.getElementById('ipNaharMuddet') || {}).value || '45', 10);
             var msg = document.getElementById('isParametriMsg');
 
             ipSaveBtn.disabled = true;
@@ -857,7 +863,7 @@ document.addEventListener('DOMContentLoaded', function () {
             fetch('/HR/Davamiyyet/SaveIsParametri', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ girisVaxti: giris, cixisVaxti: cixis, gecikmeTolerans: gecTol, tezCixmaTolerans: tezTol })
+                body: JSON.stringify({ girisVaxti: giris, cixisVaxti: cixis, gecikmeTolerans: gecTol, tezCixmaTolerans: tezTol, naharBaslamaSaati: naharB, naharMuddetDeqiqe: naharM })
             })
                 .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
                 .then(function (res) {
@@ -866,6 +872,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         isParametriData.cixisVaxti = cixis;
                         isParametriData.gecikmeTolerans = gecTol;
                         isParametriData.tezCixmaTolerans = tezTol;
+                        isParametriData.naharBaslamaSaati = naharB;
+                        isParametriData.naharMuddetDeqiqe = naharM;
                         if (msg) {
                             msg.style.display = 'block';
                             msg.style.background = '#f0fdf4';
@@ -909,7 +917,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 girisVaxti: d.girisVaxti || '09:00',
                 cixisVaxti: d.cixisVaxti || '17:45',
                 gecikmeTolerans: d.gecikmeTolerans ?? 5,
-                tezCixmaTolerans: d.tezCixmaTolerans ?? 15
+                tezCixmaTolerans: d.tezCixmaTolerans ?? 15,
+                naharBaslamaSaati: d.naharBaslamaSaati || '13:00',
+                naharMuddetDeqiqe: d.naharMuddetDeqiqe ?? 45
             };
         });
 
