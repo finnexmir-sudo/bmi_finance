@@ -398,7 +398,7 @@ namespace FinNex.Application.Services.HR
 
                 // Müsbət jetonlar üçün SaatDeyeri 0-dan kiçik ola bilməz;
                 // mənfi (cəza) jetonlar 0 və ya mənfi olur
-                if (teyinat.Nov == JetonNovu.Musbet && dto.SaatDeyeri < 0)
+                if (teyinat.Nov == JetonNovu.Musbat && dto.SaatDeyeri < 0)
                     return Result.Fail("Müsbət jeton üçün saat dəyəri mənfi ola bilməz.");
 
                 teyinat.Ad = dto.Ad.Trim();
