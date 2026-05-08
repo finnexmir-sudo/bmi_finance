@@ -202,7 +202,11 @@
                             <div class="tsd-card-dates">
                                 @ic.IcazeTarixi.ToString("dd.MM.yyyy")
                                 · @ic.BaslamaSaati.ToString(@"hh\:mm") — @ic.BitisSaati.ToString(@"hh\:mm")
-                                · @ic.IcazeSaati.ToString("0.##") saat
+                                @{
+                                    var _tm = (int)Math.Round(ic.IcazeSaati * 60);
+                                    var _sh = _tm / 60; var _sm = _tm % 60;
+                                }
+                                · @_sh saat@(_sm > 0 ? $" {_sm} dəq" : "")
                             </div>
                         </div>
                         <div class="tsd-card-actions">

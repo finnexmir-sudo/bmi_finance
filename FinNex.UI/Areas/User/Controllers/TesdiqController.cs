@@ -222,6 +222,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 BaslamaSaati = dto.BaslamaSaati,
                 BitisSaati = dto.BitisSaati,
                 IcazeSaati = dto.IcazeSaati,
+                NaharNezereAlinmasin = dto.NaharNezereAlinmasin,
                 Sebeb = dto.Sebeb,
                 Status = (int)dto.Status,
                 StatusText = (int)dto.Status switch
@@ -289,7 +290,7 @@ namespace FinNex.UI.Areas.User.Controllers
         // POST /User/Tesdiq/IcazeTesdiq
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> IcazeTesdiq(int id, bool status, string? qeyd, string rol, bool birdefelik = false, decimal jetonOdenenSaat = 0)
+        public async Task<IActionResult> IcazeTesdiq(int id, bool status, string? qeyd, string rol, bool birdefelik = false, decimal jetonOdenenSaat = 0, bool naharNezereAlinmasin = false)
         {
             var appUser = await _userManager.GetUserAsync(User);
             var tesdiqciIsciId = appUser?.IsciId ?? 0;
@@ -301,7 +302,7 @@ namespace FinNex.UI.Areas.User.Controllers
                     result = await _icazeService.SobeReisiTesdiqAsync(id, status, qeyd, tesdiqciIsciId);
                     break;
                 case "Rehber":
-                    result = await _icazeService.RehberTesdiqAsync(id, status, qeyd, tesdiqciIsciId, jetonOdenenSaat);
+                    result = await _icazeService.RehberTesdiqAsync(id, status, qeyd, tesdiqciIsciId, jetonOdenenSaat, naharNezereAlinmasin);
                     break;
                 case "Hr":
                     result = await _icazeService.HrTesdiqAsync(id, status, qeyd, tesdiqciIsciId, birdefelik);
