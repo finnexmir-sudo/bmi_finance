@@ -72,11 +72,60 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         // ── GET /HR/Jeton/GetRedimler ────────────────────────
+        // Rehber → öz departamentinin baxılmamış sorğuları
+        // HR/Admin → rehber təsdiqindən keçmiş sorğular
         [HttpGet]
         public async Task<IActionResult> GetRedimler()
         {
-            var list = await _jetonService.GozleyenRedimlerGetirAsync();
-            return Json(new { success = true, data = list });
+            var rehberView = User.IsInRole(RoleNames.Rehber)
+                && !User.IsInRole(RoleNames.HR)
+                && !User.IsInRole(RoleNames.Admin);
+
+            int? departamentId = null;
+            if (rehberView)
+                departamentId = await GetRehberDepartamentIdAsync();
+
+            var list = await _jetonService.GozleyenRedimlerGetirAsync(departamentId, rehberView);
+            return Json(new { success = true, data = list, rehberView });
+        }
+
+        // ── POST /HR/Jeton/RehberTesdiq ──────────────────────
+        [HttpPost]
+        [Authorize(Roles = RoleNames.Rehber + "," + RoleNames.Admin)]
+        public async Task<IActionResult> RehberTesdiq([FromBody] RedimTesdiqRequestDto dto)
+        {
+            var appUser = await _userManager.GetUserAsync(User);
+            if (appUser == null) return Json(new { success = false, message = "İstifadəçi tapılmadı." });
+
+            var result = await _jetonService.RedimRehberTesdiqleAsync(dto.RedimId, appUser.Id);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+
+        // ── POST /HR/Jeton/RehberRedd ────────────────────────
+        [HttpPost]
+        [Authorize(Roles = RoleNames.Rehber + "," + RoleNames.Admin)]
+        public async Task<IActionResult> RehberRedd([FromBody] RedimReddRequestDto dto)
+        {
+            var appUser = await _userManager.GetUserAsync(User);
+            if (appUser == null) return Json(new { success = false, message = "İstifadəçi tapılmadı." });
+
+            var result = await _jetonService.RedimRehberReddEtAsync(dto.RedimId, dto.Qeyd, appUser.Id);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+
+        // Rəhbər (yalnız Rəhbər rolu, HR/Admin deyil) üçün öz departamentini
+        // tapır. HR/Admin null qaytarır → hamısını görür.
+        private async Task<int?> GetRehberDepartamentIdAsync()
+        {
+            var appUser = await _userManager.GetUserAsync(User);
+            if (appUser?.IsciId == null) return null;
+
+            var teyinat = await _unitOfWork.Repository<IsciTeyinat>()
+                .Query()
+                .Where(t => t.IsciId == appUser.IsciId.Value && t.Aktivdir)
+                .FirstOrDefaultAsync();
+
+            return teyinat?.DepartamentId;
         }
 
         // ── GET /HR/Jeton/GetRedimTarixcesi ─────────────────

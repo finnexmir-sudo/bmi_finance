@@ -124,10 +124,26 @@ function ujUpdateSelectedInfo() {
 async function ujSubmitRedim() {
     if (!ujSelectedIds.size) return ujToast('Jeton seçin.', 'warn');
     const redimNov = parseInt(document.querySelector('input[name="ujRedimNov"]:checked').value);
+
+    const body = { jetonIds: [...ujSelectedIds], redimNovu: redimNov };
+
+    // İcazə sorğusu üçün tarix və saat aralığı məcburidir
+    if (redimNov === 1) {
+        const tarix = document.getElementById('ujIcazeTarixi').value;
+        const bas = document.getElementById('ujBaslamaSaati').value;
+        const bitis = document.getElementById('ujBitisSaati').value;
+        if (!tarix) return ujToast('İcazə tarixini seçin.', 'warn');
+        if (!bas || !bitis) return ujToast('Saat aralığını daxil edin.', 'warn');
+        if (bas >= bitis) return ujToast('Bitmə saatı başlamadan sonra olmalıdır.', 'warn');
+        body.icazeTarixi = tarix;
+        body.baslamaSaati = bas;
+        body.bitisSaati = bitis;
+    }
+
     const res = await fetch('/User/Jeton/RedimGonder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jetonIds: [...ujSelectedIds], redimNovu: redimNov })
+        body: JSON.stringify(body)
     });
     const json = await res.json();
     if (json.success) {
@@ -137,6 +153,14 @@ async function ujSubmitRedim() {
     } else {
         ujToast(json.message || 'Xəta baş verdi.', 'error');
     }
+}
+
+// İcazə radio seçilərkən tarix/saat sahələrini göstərir
+function ujRedimNovChanged() {
+    const sel = document.querySelector('input[name="ujRedimNov"]:checked');
+    const fields = document.getElementById('ujIcazeFields');
+    if (!fields) return;
+    fields.style.display = sel && parseInt(sel.value) === 1 ? '' : 'none';
 }
 
 // ── Helpers ───────────────────────────────────────────────

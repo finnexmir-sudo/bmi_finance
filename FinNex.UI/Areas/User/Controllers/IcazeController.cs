@@ -1,6 +1,7 @@
 using FinNex.Application.DTOs.HR.Icaze;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Structur;
+using FinNex.Application.Interfaces.HR;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.UI.Areas.User.ViewModels.Icaze;
@@ -19,17 +20,20 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly IIsciService _isciService;
         private readonly IDepartmentService _departamentService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IJetonService _jetonService;
 
         public IcazeController(
             IIcazeService icazeService,
             IIsciService isciService,
             IDepartmentService departamentService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IJetonService jetonService)
         {
             _icazeService = icazeService;
             _isciService = isciService;
             _departamentService = departamentService;
             _userManager = userManager;
+            _jetonService = jetonService;
         }
 
         // ── GET /User/Icaze ────────────────────────────────────
@@ -76,6 +80,9 @@ namespace FinNex.UI.Areas.User.Controllers
                 BitisSaati = "11:00",
                 EvezEdenList = await BuildEvezEdenListAsync(isciId.Value),
             };
+
+            // Jeton balansı: rəhbər təsdiq zamanı görmək üçün məlumat olaraq göstərilir
+            ViewBag.JetonBalansi = await _jetonService.AktivSaatBalansiAsync(isciId.Value);
 
             return View(vm);
         }

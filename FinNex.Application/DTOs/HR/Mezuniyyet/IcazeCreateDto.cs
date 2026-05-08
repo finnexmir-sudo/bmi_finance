@@ -32,8 +32,11 @@ namespace FinNex.Application.DTOs.HR.Icaze
     public class IcazeListDto
     {
         public int Id { get; set; }
+        public int IsciId { get; set; }
         public string IsciAdSoyad { get; set; } = null!;
         public string SobeAdi { get; set; } = null!;
+        // Bu icazənin neçə saatı jetonla ödənilir (0 = adi icazə)
+        public decimal JetonOdenenSaat { get; set; } = 0;
 
         public string? EvezEdenAdSoyad { get; set; }
         public bool EvezediciSecildi => !string.IsNullOrEmpty(EvezEdenAdSoyad) && EvezEdenAdSoyad != "—";
