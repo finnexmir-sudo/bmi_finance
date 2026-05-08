@@ -32,6 +32,9 @@
             <i class="bi bi-clock-history"></i> Xərcləmə Sorğuları
             <span class="hj-badge" id="hjRedimBadge" style="display:none"></span>
         </button>
+        <button class="hj-tab" data-tab="tarixce" onclick="hjSwitchTab(this,'tarixce')">
+            <i class="bi bi-journal-text"></i> Sorğu Tarixçəsi
+        </button>
     </div>
 
     <!-- ── Əməliyyatlar Panel ─────────────────────────────── -->
@@ -63,6 +66,42 @@
                 </thead>
                 <tbody id="hjEmeliyyatlarBody">
                     <tr><td colspan="6" class="hj-empty">Yüklənir…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ── Sorğu Tarixçəsi Panel ──────────────────────────── -->
+    <div id="hjTabTarixce" class="hj-panel" style="display:none">
+        <div class="hj-filter-bar">
+            <select id="hjTarixceStatusFilter" class="hj-select" onchange="hjLoadTarixce()">
+                <option value="">— Bütün statuslar —</option>
+                <option value="1">Gözlənilir</option>
+                <option value="2">Təsdiqləndi</option>
+                <option value="3">Rədd edildi</option>
+            </select>
+            <button class="hj-btn hj-btn--ghost" onclick="hjLoadTarixce()">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+
+        <div class="hj-table-wrap">
+            <table class="hj-table" id="hjTarixceTable">
+                <thead>
+                    <tr>
+                        <th>İşçi</th>
+                        <th>Növ</th>
+                        <th>Cəmi saat</th>
+                        <th>Sorğu tarixi</th>
+                        <th>Cavab tarixi</th>
+                        <th>Cavab verən</th>
+                        <th>Status</th>
+                        <th>Qeyd</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="hjTarixceBody">
+                    <tr><td colspan="9" class="hj-empty">Yüklənir…</td></tr>
                 </tbody>
             </table>
         </div>
@@ -129,6 +168,12 @@
                     </div>
                 }
             </div>
+        </div>
+
+        <div class="hj-field">
+            <label>Ədəd</label>
+            <input type="number" id="hjVerEded" class="hj-input" min="1" max="50" value="1" />
+            <small style="color:#6b7280;font-size:12px">Qara Jeton üçün ədəd həmişə 1-dir.</small>
         </div>
 
         <div class="hj-field">

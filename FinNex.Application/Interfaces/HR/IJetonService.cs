@@ -6,6 +6,9 @@ public interface IJetonService
     // Jeton kataloqu
     Task<IList<JetonTeyinatiListDto>> JetonTeyinatlariGetirAsync();
 
+    // HR: jeton kataloqunu yenilə (saat dəyəri, ad, status və s.)
+    Task<Result> JetonTeyinatiYenileAsync(JetonTeyinatiUpdateDto dto);
+
     // HR: işçiyə jeton vermək
     Task<Result> JetonVerAsync(IsciJetonuCreateDto dto, int verenUserId);
 
@@ -38,4 +41,7 @@ public interface IJetonService
 
     // İşçinin redim tarixçəsi
     Task<IList<JetonRedimTelebiListDto>> IsciRedimTarixcesiGetirAsync(int isciId);
+
+    // HR: bütün redim tarixçəsi (audit üçün)
+    Task<IList<JetonRedimTelebiListDto>> ButunRedimlerTarixcesiAsync();
 }
