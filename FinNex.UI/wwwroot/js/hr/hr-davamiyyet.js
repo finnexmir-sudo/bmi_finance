@@ -14,12 +14,13 @@ document.addEventListener('DOMContentLoaded', function () {
         return defaultUrl;
     }
     var endpoints = {
-        getByTarix:    endpoint('getbytarix',    '/HR/Davamiyyet/GetByTarix'),
-        getGozlenilen: endpoint('getgozlenilen', '/HR/Davamiyyet/GetGozlenilen'),
-        isciAxtar:     endpoint('isciaxtar',     '/HR/Davamiyyet/IsciAxtar'),
-        exportExcel:   endpoint('exportexcel',   '/HR/Davamiyyet/ExportExcel'),
-        deviceStatus:  endpoint('devicestatus',  '/HR/ADMSTest/GetRecentLogs'),
-        tarixler:      endpoint('tarixler',      '')
+        getByTarix:       endpoint('getbytarix',       '/HR/Davamiyyet/GetByTarix'),
+        getGozlenilen:    endpoint('getgozlenilen',    '/HR/Davamiyyet/GetGozlenilen'),
+        getMezuniyyetler: endpoint('getmezuniyyetler', '/HR/Davamiyyet/GetMezuniyyetler'),
+        isciAxtar:        endpoint('isciaxtar',        '/HR/Davamiyyet/IsciAxtar'),
+        exportExcel:      endpoint('exportexcel',      '/HR/Davamiyyet/ExportExcel'),
+        deviceStatus:     endpoint('devicestatus',     '/HR/ADMSTest/GetRecentLogs'),
+        tarixler:         endpoint('tarixler',         '')
     };
 
     // ── DOM Elements ──
@@ -67,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var currentParams = {};
     var currentMode = 'tarix';
     var isGozlenilenMode = false;
+    var isMezuniyyetMode = false;
 
     // İş parametrləri — default dəyərlər, GetByTarix cavabında yenilənir
     var isParametriData = {
@@ -111,6 +113,9 @@ document.addEventListener('DOMContentLoaded', function () {
             if (statusVal === 'gozlenilen') {
                 kpi.classList.add('hrd-kpi--active');
                 loadGozlenilen();
+            } else if (statusVal === 'mezuniyyet') {
+                kpi.classList.add('hrd-kpi--active');
+                loadMezuniyyetler();
             } else if (statusVal === '') {
                 selectStatus.value = '';
                 var p = getBaseParams();
@@ -150,6 +155,54 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(function (err) {
                 console.error('Gözlənilən işçilər yüklənmədi:', err);
+                tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><i class="bi bi-exclamation-triangle"></i><div>Xəta baş verdi</div></div></td></tr>';
+            });
+    }
+
+    // ── Məzuniyyətdə olan işçilər ──
+    function loadMezuniyyetler() {
+        var tarix = inputTarix.value || toLocalDateStr(new Date());
+        var url = endpoints.getMezuniyyetler + '?tarix=' + encodeURIComponent(tarix);
+
+        tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><div class="spinner-border spinner-border-sm text-muted"></div><div style="margin-top:8px">Yüklənir...</div></div></td></tr>';
+        isMezuniyyetMode = true;
+        isGozlenilenMode = false;
+
+        // Remove extra "Əməliyyat" column if present
+        var thQayib = document.getElementById('thQayibYaz');
+        if (thQayib) thQayib.remove();
+
+        fetch(url)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var records = data.records || [];
+                recordCount.textContent = (data.count || 0) + ' məzuniyyətdə olan işçi';
+                extraStats.style.display = 'none';
+
+                if (records.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><i class="bi bi-inbox"></i><div>Bu tarixdə məzuniyyətdə olan işçi yoxdur</div></div></td></tr>';
+                    return;
+                }
+
+                var html = '';
+                records.forEach(function (r) {
+                    var initials = r.isciTamAd.substring(0, 2).toUpperCase();
+                    var baslama = formatDate(r.baslamaTarixi);
+                    var bitme = formatDate(r.bitmeTarixi);
+                    html += '<tr>' +
+                        '<td><div class="hrd-emp"><div class="hrd-emp-av">' + initials + '</div><div class="hrd-emp-name">' + r.isciTamAd + '</div></div></td>' +
+                        '<td><span class="hrd-dept">' + r.departamentAd + '</span></td>' +
+                        '<td><div class="hrd-date">' + baslama + ' – ' + bitme + '</div></td>' +
+                        '<td><span class="hrd-nodata">—</span></td>' +
+                        '<td><span class="hrd-nodata">—</span></td>' +
+                        '<td><span class="hrd-dur hrd-dur--ok">' + r.efektivGunSayi + ' gün</span></td>' +
+                        '<td><span class="hrd-badge" style="background:rgba(16,185,129,.1);color:#10b981;"><span class="hrd-badge-dot" style="background:#10b981;"></span>Məzuniyyət</span></td>' +
+                        '</tr>';
+                });
+                tableBody.innerHTML = html;
+            })
+            .catch(function (err) {
+                console.error('Məzuniyyət siyahısı yüklənmədi:', err);
                 tableBody.innerHTML = '<tr><td colspan="7"><div class="hrd-empty"><i class="bi bi-exclamation-triangle"></i><div>Xəta baş verdi</div></div></td></tr>';
             });
     }
@@ -357,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function () {
     btnAxtar.addEventListener('click', function () {
         document.querySelectorAll('.hrd-kpi--clickable').forEach(function (k) { k.classList.remove('hrd-kpi--active'); });
         var sv = selectStatus.value;
-        if (sv === 'mezuniyyet') { window.location.href = '/HR/Mezuniyyet/Aktiv'; return; }
+        if (sv === 'mezuniyyet') { loadMezuniyyetler(); return; }
         var params = {};
         if (inputTarix.value) params.tarix = inputTarix.value;
         if (sv && sv !== 'tezCixan' && sv !== 'cixisYox') params.status = sv;
@@ -368,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function () {
     btnAraliqAxtar.addEventListener('click', function () {
         document.querySelectorAll('.hrd-kpi--clickable').forEach(function (k) { k.classList.remove('hrd-kpi--active'); });
         var sv = selectStatusAraliq.value;
-        if (sv === 'mezuniyyet') { window.location.href = '/HR/Mezuniyyet/Aktiv'; return; }
+        if (sv === 'mezuniyyet') { loadMezuniyyetler(); return; }
         var params = {};
         if (inputBaslangic.value) params.baslangic = inputBaslangic.value;
         if (inputSon.value) params.son = inputSon.value;

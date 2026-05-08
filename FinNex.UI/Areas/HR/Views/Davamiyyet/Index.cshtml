@@ -106,17 +106,16 @@
                 <div class="hrd-kpi-lbl">Ezamiyyət</div>
             </div>
         </div>
-        <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Aktiv"
-           class="hrd-kpi hrd-kpi--clickable" style="text-decoration:none;color:inherit"
-           title="Bugün məzuniyyətdə olan işçilər — kliklə Aktiv Məzuniyyətlərə keç">
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="mezuniyyet"
+             title="Bugün məzuniyyətdə olan işçilər — kliklə siyahıya bax">
             <div class="hrd-kpi-icon" style="background:rgba(16,185,129,.12);color:#10b981;">
                 <i class="bi bi-tree"></i>
             </div>
             <div class="hrd-kpi-body">
-                <div class="hrd-kpi-val">@mezuniyyetSayi</div>
+                <div class="hrd-kpi-val" id="kpiMezuniyyet">@mezuniyyetSayi</div>
                 <div class="hrd-kpi-lbl">Məzuniyyət</div>
             </div>
-        </a>
+        </div>
         <div class="hrd-kpi hrd-kpi--clickable" data-status="gozlenilen" title="Hələ qeydə alınmamış işçilər — kliklə gör">
             <div class="hrd-kpi-icon hrd-kpi-icon--indigo">
                 <i class="bi bi-hourglass-split"></i>
@@ -174,7 +173,7 @@
                     <option value="4">İcazəli</option>
                     <option value="5">Xəstəlik</option>
                     <option value="6">Ezamiyyət</option>
-                    <option value="mezuniyyet">🌿 Məzuniyyət</option>
+                    <option value="mezuniyyet">Məzuniyyət</option>
                     <option value="tezCixan">Tez çıxan</option>
                     <option value="cixisYox">Çıxış yoxdur</option>
                 </select>
@@ -202,7 +201,7 @@
                     <option value="4">İcazəli</option>
                     <option value="5">Xəstəlik</option>
                     <option value="6">Ezamiyyət</option>
-                    <option value="mezuniyyet">🌿 Məzuniyyət</option>
+                    <option value="mezuniyyet">Məzuniyyət</option>
                     <option value="tezCixan">Tez çıxan</option>
                     <option value="cixisYox">Çıxış yoxdur</option>
                 </select>
