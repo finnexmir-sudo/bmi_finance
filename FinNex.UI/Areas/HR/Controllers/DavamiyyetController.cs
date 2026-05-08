@@ -186,12 +186,14 @@ namespace FinNex.UI.Areas.HR.Controllers
                     girisVaxti = p.StandartGirisVaxti.ToString(@"hh\:mm"),
                     cixisVaxti = p.StandartCixisVaxti.ToString(@"hh\:mm"),
                     gecikmeTolerans = p.GecikmeToleransDeqiqe,
-                    tezCixmaTolerans = p.TezCixmaToleransDeqiqe
+                    tezCixmaTolerans = p.TezCixmaToleransDeqiqe,
+                    naharBaslamaSaati = p.NaharBaslamaSaati.ToString(@"hh\:mm"),
+                    naharMuddetDeqiqe = p.NaharMuddetDeqiqe
                 });
             }
             catch
             {
-                return Json(new { id = 0, girisVaxti = "09:00", cixisVaxti = "17:45", gecikmeTolerans = 5, tezCixmaTolerans = 15 });
+                return Json(new { id = 0, girisVaxti = "09:00", cixisVaxti = "17:45", gecikmeTolerans = 5, tezCixmaTolerans = 15, naharBaslamaSaati = "13:00", naharMuddetDeqiqe = 45 });
             }
         }
 
@@ -213,6 +215,12 @@ namespace FinNex.UI.Areas.HR.Controllers
                 if (dto.TezCixmaTolerans < 0 || dto.TezCixmaTolerans > 60)
                     return BadRequest(new { error = "Tez çıxma toleransı 0-60 dəqiqə arasında olmalıdır." });
 
+                if (!TimeSpan.TryParse(dto.NaharBaslamaSaati, out var naharBaslama))
+                    naharBaslama = new TimeSpan(13, 0, 0);
+
+                if (dto.NaharMuddetDeqiqe < 0 || dto.NaharMuddetDeqiqe > 120)
+                    return BadRequest(new { error = "Nahar müddəti 0-120 dəqiqə arasında olmalıdır." });
+
                 var entity = await _unitOfWork.Repository<IsParametri>()
                     .Query()
                     .Where(x => !x.Silinib)
@@ -225,7 +233,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                         StandartGirisVaxti = giris,
                         StandartCixisVaxti = cixis,
                         GecikmeToleransDeqiqe = dto.GecikmeTolerans,
-                        TezCixmaToleransDeqiqe = dto.TezCixmaTolerans
+                        TezCixmaToleransDeqiqe = dto.TezCixmaTolerans,
+                        NaharBaslamaSaati = naharBaslama,
+                        NaharMuddetDeqiqe = dto.NaharMuddetDeqiqe
                     };
                     await _unitOfWork.Repository<IsParametri>().YaratAsync(entity);
                 }
@@ -235,6 +245,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                     entity.StandartCixisVaxti = cixis;
                     entity.GecikmeToleransDeqiqe = dto.GecikmeTolerans;
                     entity.TezCixmaToleransDeqiqe = dto.TezCixmaTolerans;
+                    entity.NaharBaslamaSaati = naharBaslama;
+                    entity.NaharMuddetDeqiqe = dto.NaharMuddetDeqiqe;
                     entity.YenilenmeTarixi = DateTime.Now;
                 }
 
@@ -601,5 +613,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         public string CixisVaxti { get; set; } = "17:45";
         public int GecikmeTolerans { get; set; } = 5;
         public int TezCixmaTolerans { get; set; } = 15;
+        public string NaharBaslamaSaati { get; set; } = "13:00";
+        public int NaharMuddetDeqiqe { get; set; } = 45;
     }
 }

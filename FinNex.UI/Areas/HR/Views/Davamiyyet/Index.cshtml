@@ -484,6 +484,16 @@
                     <input type="number" id="ipTezCixmaTolerans" class="fn-input" value="15" min="0" max="60" />
                     <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Çıxış vaxtından bu qədər əvvəl tez çıxmış sayılır</div>
                 </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Nahar başlama saatı</label>
+                    <input type="text" id="ipNaharBaslama" class="fn-input" value="13:00" placeholder="13:00" pattern="^([01]\d|2[0-3]):[0-5]\d$" maxlength="5" />
+                    <div style="font-size:11px;color:#94a3b8;margin-top:4px;">İcazə bu saata düşürsə rəhbərə nahar checkbox göstərilir</div>
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Nahar müddəti (dəq)</label>
+                    <input type="number" id="ipNaharMuddet" class="fn-input" value="45" min="0" max="120" />
+                    <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Naharı nəzərə alma seçildikdə bu qədər çıxılır</div>
+                </div>
             </div>
             <div id="isParametriMsg" style="display:none;margin-top:12px;font-size:13px;padding:10px 14px;border-radius:8px;"></div>
         </div>

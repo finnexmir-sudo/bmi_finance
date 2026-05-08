@@ -952,6 +952,14 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<int>("GecikmeToleransDeqiqe")
                         .HasColumnType("int");
 
+                    b.Property<TimeSpan>("NaharBaslamaSaati")
+                        .HasColumnType("time(7)")
+                        .HasDefaultValue(new TimeSpan(13, 0, 0));
+
+                    b.Property<int>("NaharMuddetDeqiqe")
+                        .HasColumnType("int")
+                        .HasDefaultValue(45);
+
                     b.Property<TimeSpan>("StandartCixisVaxti")
                         .HasColumnType("time(7)");
 

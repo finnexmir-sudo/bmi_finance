@@ -4,10 +4,12 @@ using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Interfaces;
 using FinNex.UI.Areas.User.ViewModels.Tesdiq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.UI.Areas.User.Controllers
 {
@@ -20,19 +22,22 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly IIsciStrukturRoluService _strukturRoluService;
         private readonly UserManager<AppUser> _userManager;
         private readonly IJetonService _jetonService;
+        private readonly IUnitOfWork _unitOfWork;
 
         public TesdiqController(
             IMezuniyyetService mezuniyyetService,
             IIcazeService icazeService,
             IIsciStrukturRoluService strukturRoluService,
             UserManager<AppUser> userManager,
-            IJetonService jetonService)
+            IJetonService jetonService,
+            IUnitOfWork unitOfWork)
         {
             _mezuniyyetService = mezuniyyetService;
             _icazeService = icazeService;
             _strukturRoluService = strukturRoluService;
             _userManager = userManager;
             _jetonService = jetonService;
+            _unitOfWork = unitOfWork;
         }
 
         // GET /User/Tesdiq/SobeReisi
@@ -246,10 +251,14 @@ namespace FinNex.UI.Areas.User.Controllers
             };
 
             ViewBag.Rol = rol;
-            // Rəhbər icazə təsdiqində işçinin aktiv jeton balansını göstər ki,
-            // jetonla ödəniş seçə bilsin (0 — toxunulmasın).
             ViewBag.JetonBalansi = await _jetonService.AktivSaatBalansiAsync(dto.IsciId);
             ViewBag.JetonOdenenSaat = dto.JetonOdenenSaat;
+
+            // Nahar parametrləri — rəhbər panelindəki checkbox üçün
+            var isParam = await _unitOfWork.Repository<IsParametri>()
+                .Query().Where(x => !x.Silinib).FirstOrDefaultAsync();
+            ViewBag.NaharBaslamaSaati = isParam?.NaharBaslamaSaati ?? new TimeSpan(13, 0, 0);
+            ViewBag.NaharMuddetDeqiqe = isParam?.NaharMuddetDeqiqe ?? 45;
             ViewData["Title"] = "İcazə Detalı";
             ViewData["TopbarTarix"] = dto.IcazeTarixi.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-Latn-AZ"));
             return View(vm);
