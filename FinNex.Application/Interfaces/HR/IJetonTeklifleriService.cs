@@ -3,7 +3,7 @@ using FinNex.Application.DTOs.HR.Motivasya;
 
 public interface IJetonTeklifleriService
 {
-    Task<IList<JetonTeklifiDto>> GetGozleyenlerAsync();
+    Task<IList<JetonTeklifiDto>> GetGozleyenlerAsync(int? departamentId = null);
     Task<Result> JetonVerAsync(JetonTeklifiVerDto dto, int verenUserId);
     Task<Result> ReddetAsync(int teklifId, int userId);
     Task TapshiriqTamamlandiAsync(int tapshiriqId);
