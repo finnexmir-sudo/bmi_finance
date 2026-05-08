@@ -133,6 +133,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 MuracietSahibiRehberdirmi = User.IsInRole(RoleNames.Rehber),
                 MuracietSahibiSobeReisidirmi = User.IsInRole(RoleNames.SobeReisi),
                 MuracietSahibiHrdirmi = User.IsInRole(RoleNames.HR),
+                JetonOdenenSaat = User.IsInRole(RoleNames.Rehber) ? vm.JetonOdenenSaat : 0,
             };
 
             var result = await _icazeService.YaratAsync(createDto);
