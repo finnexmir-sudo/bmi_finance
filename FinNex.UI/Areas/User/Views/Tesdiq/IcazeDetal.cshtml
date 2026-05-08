@@ -278,9 +278,9 @@
 
                     @if (rol == "Rehber")
                     {
-                        var balans = (decimal)(ViewBag.JetonBalansi ?? 0m);
-                        var icazeSaati = Model.IcazeSaati;
-                        var maxJeton = (decimal)Math.Min((double)balans, icazeSaati);
+                        decimal balans = ViewBag.JetonBalansi != null ? (decimal)ViewBag.JetonBalansi : 0m;
+                        decimal icazeSaati = (decimal)Model.IcazeSaati;
+                        decimal maxJeton = balans < icazeSaati ? balans : icazeSaati;
                         <div style="margin:14px 0;padding:12px;background:#fff8e8;border:1px solid #f0d785;border-radius:8px">
                             <div style="font-size:12px;color:#8a6a18;margin-bottom:6px">
                                 <strong>İşçinin aktiv jeton balansı:</strong> @balans.ToString("0.##") saat<br />
@@ -301,7 +301,7 @@
 
                     @if (rol == "Hr")
                     {
-                        var jetonOdenis = (decimal)(ViewBag.JetonOdenenSaat ?? 0m);
+                        decimal jetonOdenis = ViewBag.JetonOdenenSaat != null ? (decimal)ViewBag.JetonOdenenSaat : 0m;
                         if (jetonOdenis > 0)
                         {
                             <div style="margin:10px 0;padding:10px;background:#f0faf5;border:1px solid #a7e3c5;border-radius:8px;font-size:12px;color:#1e9b6b">
