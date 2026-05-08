@@ -36,6 +36,8 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="Id" />
                 <input type="hidden" asp-for="AppUserId" />
+                <input type="hidden" asp-for="Status" />
+                <input type="hidden" asp-for="IsdenAyrilmaTarixi" />
                 <div asp-validation-summary="ModelOnly" class="fn-alert fn-alert--error" style="margin:16px 24px 0;"></div>
 
                 <div class="isci-form-body">
@@ -124,17 +126,6 @@
                                 <input asp-for="IsheQebulTarixi" type="date" class="isci-input" />
                                 <small class="date-format-hint" style="color:#888;font-size:11px;"></small>
                                 <span asp-validation-for="IsheQebulTarixi" class="isci-error"></span>
-                            </div>
-                            <div class="isci-field">
-                                <label class="isci-label">İşdən Ayrılma Tarixi</label>
-                                <input asp-for="IsdenAyrilmaTarixi" type="date" class="isci-input" />
-                            </div>
-                            <div class="isci-field">
-                                <label class="isci-label">Status <span class="isci-required">*</span></label>
-                                <select asp-for="Status" class="isci-select">
-                                    <option value="0">Aktiv</option>
-                                    <option value="1">Qeyri-aktiv</option>
-                                </select>
                             </div>
                         </div>
                     </div>
