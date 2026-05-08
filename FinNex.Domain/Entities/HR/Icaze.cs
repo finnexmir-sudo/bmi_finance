@@ -36,6 +36,11 @@
         // HR tərəfindən işarələnir: işçi geri dönmür (günün qalan hissəsini bitirir)
         public bool Birdefelik { get; set; } = false;
 
+        // Bu icazənin neçə saatı jetonla ödənilir (0 = tam adi icazə).
+        // Adi icazə saatı = IcazeSaati - JetonOdenenSaat.
+        // HR final təsdiqdə işçinin aktiv jetonlarından FIFO ilə bu qədər saat tutulur.
+        public decimal JetonOdenenSaat { get; set; } = 0;
+
         public IcazeCixisGiris? CixisGiris { get; set; }
     }
 }

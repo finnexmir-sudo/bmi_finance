@@ -117,6 +117,8 @@ async function hjLoadEmeliyyatlar() {
 }
 
 // ── Redim sorğuları ───────────────────────────────────────
+let hjRehberView = false;
+
 async function hjLoadRedimler() {
     const tbody = document.getElementById('hjRedimBody');
     tbody.innerHTML = '<tr><td colspan="6" class="hj-empty">Yüklənir…</td></tr>';
@@ -125,8 +127,10 @@ async function hjLoadRedimler() {
         const res = await fetch('/HR/Jeton/GetRedimler');
         const json = await res.json();
         const badge = document.getElementById('hjRedimBadge');
+        hjRehberView = !!json.rehberView;
+
         if (!json.success || !json.data.length) {
-            tbody.innerHTML = '<tr><td colspan="6" class="hj-empty">Gözləyən sorğu yoxdur.</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="6" class="hj-empty">${hjRehberView ? 'Sizin departament üçün gözləyən sorğu yoxdur.' : 'Rəhbər təsdiqindən keçmiş sorğu yoxdur.'}</td></tr>`;
             badge.style.display = 'none';
             return;
         }
@@ -136,10 +140,10 @@ async function hjLoadRedimler() {
         tbody.innerHTML = json.data.map(r => `
             <tr>
                 <td>${r.isciTamAd ?? '—'}</td>
-                <td>${hjRedimNov(r.redimNovu)}</td>
+                <td>${hjRedimNov(r.redimNovu)}${r.icazeTarixi ? `<br><small style="color:#6b7280">${hjDate(r.icazeTarixi).split(',')[0]} ${r.baslamaSaati ?? ''}–${r.bitisSaati ?? ''}</small>` : ''}</td>
                 <td><strong>${r.cemiSaat} saat</strong></td>
                 <td>${hjDate(r.telabTarixi)}</td>
-                <td>${hjStatusBadge(r.status + 10)}</td>
+                <td>${hjStatusBadge(r.status + 10)}${r.rehberTesdiq ? '<br><small style="color:#16a34a">✓ Rəhbər</small>' : ''}</td>
                 <td>
                     <button class="hj-btn hj-btn--ghost hj-btn--sm" onclick="hjOpenRedimModal(${JSON.stringify(r).replace(/"/g,'&quot;')})">
                         <i class="bi bi-eye"></i> Bax
@@ -229,18 +233,28 @@ async function hjSubmitLegvet() {
 // ── Redim Modal ───────────────────────────────────────────
 function hjOpenRedimModal(r) {
     hjCurrentRedimId = r.id;
-    // Tarixçədən sonra modal açılarsa düymələri yenidən göstər
     document.getElementById('hjBtnTesdiq').style.display = '';
     document.getElementById('hjBtnRedd').style.display = '';
     const jetonList = (r.xerclenenJetonlar || [])
         .map(j => `<li>${hjBadge(j)}</li>`).join('');
+
+    const icazeBlock = r.redimNovu === 1 && r.icazeTarixi ? `
+            <div class="hj-redim-row"><strong>İcazə tarixi</strong><span>${hjDate(r.icazeTarixi).split(',')[0]}</span></div>
+            <div class="hj-redim-row"><strong>Saat aralığı</strong><span>${(r.baslamaSaati ?? '').slice(0,5)} – ${(r.bitisSaati ?? '').slice(0,5)}</span></div>
+        ` : '';
+
+    const rehberBlock = r.rehberTesdiq ? `
+            <div class="hj-redim-row"><strong>Rəhbər təsdiqi</strong><span>✅ ${r.rehberAd ?? ''} • ${hjDate(r.rehberTesdiqTarixi)}</span></div>
+        ` : '';
 
     document.getElementById('hjRedimModalBody').innerHTML = `
         <div class="hj-redim-info">
             <div class="hj-redim-row"><strong>İşçi</strong><span>${r.isciTamAd ?? '—'}</span></div>
             <div class="hj-redim-row"><strong>Xərcləmə növü</strong><span>${hjRedimNov(r.redimNovu)}</span></div>
             <div class="hj-redim-row"><strong>Cəmi saat</strong><span><b>${r.cemiSaat} saat</b></span></div>
+            ${icazeBlock}
             <div class="hj-redim-row"><strong>Sorğu tarixi</strong><span>${hjDate(r.telabTarixi)}</span></div>
+            ${rehberBlock}
             ${jetonList ? `<div class="hj-redim-row"><strong>Jetonlar</strong><ul style="margin:0;padding-left:18px">${jetonList}</ul></div>` : ''}
         </div>
         <div class="hj-qeyd-field">
@@ -256,14 +270,16 @@ function hjCloseRedimModal() {
     document.getElementById('hjRedimModal').classList.remove('hj-open');
 }
 async function hjTesdiqleRedim() {
-    const res = await fetch('/HR/Jeton/TesdiqleRedim', {
+    // Rəhbər görünüşündə RehberTesdiq endpointinə, HR-də mövcud TesdiqleRedim-ə gedir
+    const url = hjRehberView ? '/HR/Jeton/RehberTesdiq' : '/HR/Jeton/TesdiqleRedim';
+    const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ redimId: hjCurrentRedimId })
     });
     const json = await res.json();
     if (json.success) {
-        hjToast(json.message || 'Xərcləmə sorğusu təsdiqləndi.', 'success');
+        hjToast(json.message || 'Sorğu təsdiqləndi.', 'success');
         hjCloseRedimModal();
         hjLoadRedimler();
     } else {
@@ -274,14 +290,15 @@ async function hjReddEtRedim() {
     const qeyd = document.getElementById('hjRedimQeyd').value.trim();
     if (!qeyd) return hjToast('Rədd etmə səbəbini daxil edin.', 'warn');
 
-    const res = await fetch('/HR/Jeton/ReddEtRedim', {
+    const url = hjRehberView ? '/HR/Jeton/RehberRedd' : '/HR/Jeton/ReddEtRedim';
+    const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ redimId: hjCurrentRedimId, qeyd })
     });
     const json = await res.json();
     if (json.success) {
-        hjToast(json.message || 'Xərcləmə sorğusu rədd edildi.', 'success');
+        hjToast(json.message || 'Sorğu rədd edildi.', 'success');
         hjCloseRedimModal();
         hjLoadRedimler();
     } else {

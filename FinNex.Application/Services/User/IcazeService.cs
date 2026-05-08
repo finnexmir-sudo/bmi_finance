@@ -18,17 +18,20 @@ namespace FinNex.Application.Services
         private readonly UserManager<AppUser> _userManager;
         private readonly IMapper _mapper;
         private readonly IBildirisRouter _bildirisRouter;
+        private readonly IJetonService _jetonService;
 
         public IcazeService(
             IUnitOfWork unitOfWork,
             UserManager<AppUser> userManager,
             IMapper mapper,
-            IBildirisRouter bildirisRouter)
+            IBildirisRouter bildirisRouter,
+            IJetonService jetonService)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
             _mapper = mapper;
             _bildirisRouter = bildirisRouter;
+            _jetonService = jetonService;
         }
 
         public async Task<Result<IList<IcazeListDto>>> GetIsciIcazeleriAsync(int isciId)
@@ -215,6 +218,7 @@ namespace FinNex.Application.Services
                 var dto = new IcazeDetailDto
                 {
                     Id = icaze.Id,
+                    IsciId = icaze.IsciId,
                     IsciAdSoyad = icaze.Isci?.TamAd ?? "-",
                     SobeAdi = icaze.Isci?.IsciTeyinatlari?
                         .Where(t => t.Aktivdir && t.Departament != null)
@@ -229,6 +233,7 @@ namespace FinNex.Application.Services
                     Status = icaze.Status,
                     ImtinaSebebi = icaze.ImtinaSebebi,
                     Birdefelik = icaze.Birdefelik,
+                    JetonOdenenSaat = icaze.JetonOdenenSaat,
                     SobeReisiTesdiq = icaze.SobeReisiTesdiq,
                     SobeReisiTesdiqTarixi = icaze.SobeReisiTesdiqTarixi,
                     RehberTesdiq = icaze.RehberTesdiq,
@@ -409,7 +414,7 @@ namespace FinNex.Application.Services
         }
 
         // Rəhbər təsdiq edir → Tesdiqlenib + IcazeCixisGiris yaranır
-        public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0)
+        public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal jetonOdenenSaat = 0)
         {
             var icaze = await _unitOfWork.Repository<Icaze>().GetirAsync(x => x.Id == id);
             if (icaze == null) return Result.Fail("İcazə tapılmadı.");
@@ -417,9 +422,26 @@ namespace FinNex.Application.Services
             if (icaze.Status != IcazeStatus.RehberTesdiqinde)
                 return Result.Fail($"Bu müraciət artıq emal edilib (status: {icaze.Status}).");
 
+            // Jeton miqdarı yalnız təsdiq vəziyyətində manaza alınır
+            if (status && jetonOdenenSaat > 0)
+            {
+                var icazeSaati = (decimal)icaze.IcazeSaati;
+                if (jetonOdenenSaat > icazeSaati)
+                    return Result.Fail(
+                        $"Jeton ödənişi ({jetonOdenenSaat:0.##} saat) icazənin ümumi saatından " +
+                        $"({icazeSaati:0.##} saat) çox ola bilməz.");
+
+                var balans = await _jetonService.AktivSaatBalansiAsync(icaze.IsciId);
+                if (jetonOdenenSaat > balans)
+                    return Result.Fail(
+                        $"İşçinin aktiv jeton balansı kifayət etmir " +
+                        $"({balans:0.##} saat mövcud, {jetonOdenenSaat:0.##} saat tələb olundu).");
+            }
+
             icaze.RehberTesdiq = status;
             icaze.RehberId = rehberId > 0 ? rehberId : icaze.RehberId;
             icaze.RehberTesdiqTarixi = DateTime.Now;
+            icaze.JetonOdenenSaat = status ? jetonOdenenSaat : 0;
 
             if (!status)
             {
@@ -454,7 +476,12 @@ namespace FinNex.Application.Services
 
             if (icaze.Status == IcazeStatus.Tesdiqlenib)
             {
-                // HR müraciət edib, Rəhbər təsdiqlədi → birbaşa tesdiqlenib
+                // HR müraciət edib, Rəhbər təsdiqlədi → birbaşa tesdiqlenib.
+                // Jeton miqdarı varsa indicə FIFO ilə xərclənir.
+                var jetonRes = await _ConsumeJetonsForIcazeAsync(icaze);
+                if (!jetonRes.Success)
+                    return Result.Fail(jetonRes.Message ?? "Jeton xərclənmə xətası.");
+
                 await _YaratCixisGirisAsync(icaze.Id, icaze.Birdefelik);
                 await NotifySobeReisiAsync(icaze);
                 await NotifyHrMalumatAsync(icaze);
@@ -491,11 +518,30 @@ namespace FinNex.Application.Services
 
             if (status)
             {
+                // Jeton ödənişi rəhbər mərhələsində qeyd olunmuşsa, indi xərclənir
+                var jetonRes = await _ConsumeJetonsForIcazeAsync(icaze);
+                if (!jetonRes.Success)
+                    return Result.Fail(jetonRes.Message ?? "Jeton xərclənmə xətası.");
+
                 await _YaratCixisGirisAsync(icaze.Id, birdefelik);
                 await NotifySobeReisiAsync(icaze);
             }
 
             return Result.Ok("HR qərarı qeydə alındı.");
+        }
+
+        // İcazə tam təsdiq olduqdan sonra rəhbərin qeyd etdiyi miqdarı
+        // FIFO ilə işçinin aktiv jetonlarından xərcləyir. JetonOdenenSaat
+        // 0-dırsa heç nə edilmir.
+        private async Task<Result> _ConsumeJetonsForIcazeAsync(Icaze icaze)
+        {
+            if (icaze.JetonOdenenSaat <= 0) return Result.Ok();
+
+            var res = await _jetonService.IcazeUcunFifoJetonXercleAsync(
+                icaze.IsciId, icaze.JetonOdenenSaat, icaze.Id);
+
+            if (!res.Success) return Result.Fail(res.Message ?? "Jeton xərclənmədi.");
+            return Result.Ok();
         }
 
         // ════════════════════════════════════════════════════════

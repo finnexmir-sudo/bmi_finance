@@ -19,17 +19,20 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly IIcazeService _icazeService;
         private readonly IIsciStrukturRoluService _strukturRoluService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IJetonService _jetonService;
 
         public TesdiqController(
             IMezuniyyetService mezuniyyetService,
             IIcazeService icazeService,
             IIsciStrukturRoluService strukturRoluService,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IJetonService jetonService)
         {
             _mezuniyyetService = mezuniyyetService;
             _icazeService = icazeService;
             _strukturRoluService = strukturRoluService;
             _userManager = userManager;
+            _jetonService = jetonService;
         }
 
         // GET /User/Tesdiq/SobeReisi
@@ -242,6 +245,10 @@ namespace FinNex.UI.Areas.User.Controllers
             };
 
             ViewBag.Rol = rol;
+            // Rəhbər icazə təsdiqində işçinin aktiv jeton balansını göstər ki,
+            // jetonla ödəniş seçə bilsin (0 — toxunulmasın).
+            ViewBag.JetonBalansi = await _jetonService.AktivSaatBalansiAsync(dto.IsciId);
+            ViewBag.JetonOdenenSaat = dto.JetonOdenenSaat;
             ViewData["Title"] = "İcazə Detalı";
             ViewData["TopbarTarix"] = dto.IcazeTarixi.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-Latn-AZ"));
             return View(vm);
@@ -282,7 +289,7 @@ namespace FinNex.UI.Areas.User.Controllers
         // POST /User/Tesdiq/IcazeTesdiq
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> IcazeTesdiq(int id, bool status, string? qeyd, string rol, bool birdefelik = false)
+        public async Task<IActionResult> IcazeTesdiq(int id, bool status, string? qeyd, string rol, bool birdefelik = false, decimal jetonOdenenSaat = 0)
         {
             var appUser = await _userManager.GetUserAsync(User);
             var tesdiqciIsciId = appUser?.IsciId ?? 0;
@@ -294,7 +301,7 @@ namespace FinNex.UI.Areas.User.Controllers
                     result = await _icazeService.SobeReisiTesdiqAsync(id, status, qeyd, tesdiqciIsciId);
                     break;
                 case "Rehber":
-                    result = await _icazeService.RehberTesdiqAsync(id, status, qeyd, tesdiqciIsciId);
+                    result = await _icazeService.RehberTesdiqAsync(id, status, qeyd, tesdiqciIsciId, jetonOdenenSaat);
                     break;
                 case "Hr":
                     result = await _icazeService.HrTesdiqAsync(id, status, qeyd, tesdiqciIsciId, birdefelik);

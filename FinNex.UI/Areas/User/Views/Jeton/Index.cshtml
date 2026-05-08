@@ -123,14 +123,34 @@
             <label>Xərcləmə növü</label>
             <div class="uj-radio-group">
                 <label class="uj-radio">
-                    <input type="radio" name="ujRedimNov" value="1" checked />
+                    <input type="radio" name="ujRedimNov" value="1" checked onchange="ujRedimNovChanged()" />
                     <span><i class="bi bi-clock"></i> İcazə (erkən çıxış)</span>
                 </label>
                 <label class="uj-radio">
-                    <input type="radio" name="ujRedimNov" value="2" />
+                    <input type="radio" name="ujRedimNov" value="2" onchange="ujRedimNovChanged()" />
                     <span><i class="bi bi-cash-coin"></i> Maaşa əlavə</span>
                 </label>
             </div>
+        </div>
+
+        <div id="ujIcazeFields" style="margin-top:14px">
+            <div class="uj-field">
+                <label>İcazə tarixi</label>
+                <input type="date" id="ujIcazeTarixi" class="uj-input" />
+            </div>
+            <div style="display:flex;gap:12px">
+                <div class="uj-field" style="flex:1">
+                    <label>Başlama saatı</label>
+                    <input type="time" id="ujBaslamaSaati" class="uj-input" value="09:00" />
+                </div>
+                <div class="uj-field" style="flex:1">
+                    <label>Bitmə saatı</label>
+                    <input type="time" id="ujBitisSaati" class="uj-input" value="11:00" />
+                </div>
+            </div>
+            <small style="color:#6b7280;font-size:12px">
+                Sorğu rəhbər → HR təsdiqindən sonra avtomatik icazə qeydi yaranır.
+            </small>
         </div>
 
         <div class="uj-selected-info" id="ujSelectedInfo" style="display:none">
