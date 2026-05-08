@@ -620,18 +620,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
-            // Tez çıxma qeyd — çıxış vaxtı var VƏ erkəndir
-            var cixisClass = 'hrd-time';
-            if (r.cixisVaxti) {
-                var ct = new Date(r.cixisVaxti);
-                var cp2 = parseTime(isParametriData.cixisVaxti);
-                var tezTolerans = isParametriData.tezCixmaTolerans || 15;
-                var cixisHedd = cp2.hours * 60 + cp2.minutes - tezTolerans;
-                var cixisDaq = ct.getHours() * 60 + ct.getMinutes();
-                if (cixisDaq < cixisHedd) {
-                    cixisClass = 'hrd-time hrd-time--early';
-                }
-            }
+            // Tez çıxma qeyd — server tərəfdən hesablanır (BayramGünü xüsusi saatı nəzərə alır)
+            var cixisClass = (r.cixisVaxti && r.tezCixan) ? 'hrd-time hrd-time--early' : 'hrd-time';
 
             var duration = '<span class="hrd-nodata">---</span>';
             if (r.girisVaxti && r.cixisVaxti) {
