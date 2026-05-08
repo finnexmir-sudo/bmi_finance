@@ -2,6 +2,10 @@
     ViewData["Title"] = "Jeton Kataloqu";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     var teyinatlar = ViewBag.Teyinatlar as IList<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto> ?? new List<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto>();
+    var jsonOpts = new System.Text.Json.JsonSerializerOptions
+    {
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+    };
 }
 
 <link rel="stylesheet" href="~/css/hr/hr-jeton.css" asp-append-version="true" />
@@ -53,7 +57,7 @@
                         </td>
                         <td>
                             <button class="hj-btn hj-btn--ghost hj-btn--sm"
-                                    onclick='hjtOpenEditModal(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(t)))'>
+                                    onclick='hjtOpenEditModal(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(t, jsonOpts)))'>
                                 <i class="bi bi-pencil"></i> Redaktə
                             </button>
                         </td>
@@ -85,14 +89,6 @@
         <div class="hj-field">
             <label>Təsvir</label>
             <textarea id="hjtTesvir" class="hj-textarea" rows="2"></textarea>
-        </div>
-        <div class="hj-field">
-            <label>İkon (Bootstrap class)</label>
-            <input type="text" id="hjtIkon" class="hj-input" placeholder="bi bi-award-fill" />
-        </div>
-        <div class="hj-field">
-            <label>Rəng kodu (HEX)</label>
-            <input type="text" id="hjtReng" class="hj-input" placeholder="#f59e0b" />
         </div>
         <div class="hj-field">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
