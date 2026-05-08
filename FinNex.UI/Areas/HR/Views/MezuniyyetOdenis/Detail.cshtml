@@ -6,6 +6,7 @@
     bool odenilib = mez.OdenisStatus == FinNex.Domain.Entities.HR.MezuniyyetOdenisStatus.Odenilib;
     bool planli = mez.OdenisStatus == FinNex.Domain.Entities.HR.MezuniyyetOdenisStatus.PlanliOdenis;
     bool gozleyir = mez.OdenisStatus == FinNex.Domain.Entities.HR.MezuniyyetOdenisStatus.Gozleyir;
+    bool aySonu = mez.OdenisTipi == FinNex.Domain.Entities.HR.MezuniyyetOdenisTipi.AySonuOdenis;
 }
 
 @if (TempData["Success"] != null)
@@ -304,6 +305,19 @@
                         </button>
                     </div>
                 </form>
+            }
+            else if (aySonu)
+            {
+                <div class="mod-warn" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af;">
+                    <i class="bi bi-info-circle"></i>
+                    Bu məzuniyyət <b>ay sonu maaşla</b> ödəniş tipinə təyin olunub.
+                    Ayrıca ödəniş planlaşdırılmır — məzuniyyət pulu həmin ayın
+                    maaş hesablamasına avtomatik daxil ediləcək. Yuxarıdakı
+                    "İşçi maaş günü nə alacaq?" bloku informativ məqsəd daşıyır.
+                </div>
+                <div class="mod-form-actions" style="margin-top:10px;">
+                    <a asp-action="Index" class="mod-btn mod-btn--outline">Geri</a>
+                </div>
             }
             else
             {
