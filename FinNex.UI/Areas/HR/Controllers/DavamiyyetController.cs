@@ -48,6 +48,19 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .CountAsync(x => !x.Silinib && x.Status == IsciStatus.Aktiv);
             ViewBag.AktivIsciSayi = aktivIsciSayi;
 
+            // Bugün aktiv məzuniyyətdə olan işçi sayı
+            try
+            {
+                var mezuniyyetSayi = await _unitOfWork.Repository<Mezuniyyet>()
+                    .Query().AsNoTracking()
+                    .CountAsync(x => !x.Silinib &&
+                                     x.Status == MezuniyyetStatus.Tesdiqlenib &&
+                                     x.BaslamaTarixi.Date <= bugun &&
+                                     x.BitmeTarixi.Date >= bugun);
+                ViewBag.MezuniyyetSayi = mezuniyyetSayi;
+            }
+            catch { ViewBag.MezuniyyetSayi = 0; }
+
             return View(list);
         }
 
