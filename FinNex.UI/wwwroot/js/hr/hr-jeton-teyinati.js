@@ -1,14 +1,19 @@
 /* hr-jeton-teyinati.js — Jeton kataloqu idarəetməsi */
 'use strict';
 
+let hjtCurrentIkon = '';
+let hjtCurrentReng = '';
+
 function hjtOpenEditModal(t) {
     document.getElementById('hjtId').value = t.id;
     document.getElementById('hjtAd').value = t.ad ?? '';
     document.getElementById('hjtSaat').value = t.saatDeyeri ?? 0;
     document.getElementById('hjtTesvir').value = t.tesvir ?? '';
-    document.getElementById('hjtIkon').value = t.ikon ?? '';
-    document.getElementById('hjtReng').value = t.rengKodu ?? '';
     document.getElementById('hjtAktiv').checked = !!t.aktivdir;
+
+    // İkon və rəng dəyişdirilmir; mövcud dəyərləri saxlayırıq
+    hjtCurrentIkon = t.ikon ?? '';
+    hjtCurrentReng = t.rengKodu ?? '';
 
     document.getElementById('hjtOverlay').classList.add('hj-open');
     document.getElementById('hjtModal').classList.add('hj-open');
@@ -25,8 +30,8 @@ async function hjtSubmitEdit() {
         ad: document.getElementById('hjtAd').value.trim(),
         saatDeyeri: parseFloat(document.getElementById('hjtSaat').value) || 0,
         tesvir: document.getElementById('hjtTesvir').value.trim(),
-        ikon: document.getElementById('hjtIkon').value.trim(),
-        rengKodu: document.getElementById('hjtReng').value.trim(),
+        ikon: hjtCurrentIkon,
+        rengKodu: hjtCurrentReng,
         aktivdir: document.getElementById('hjtAktiv').checked
     };
 
