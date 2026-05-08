@@ -78,55 +78,48 @@ namespace FinNex.UI.Areas.HR.Controllers
                 // etsə də, yuxarıdakı statistika sabit qalsın.
                 var umumi = await GetFilteredData(tarix, baslangic, son, isciId, null);
 
-                // Tez çıxanlar: çıxış vaxtı var VƏ efektiv bitmə həddindən əvvəl çıxıb
-                // Bayram günləri üçün xüsusi bitmə saatı varsa onu nəzərə al
-                // Migration hələ tətbiq olunmayıbsa sütun yoxdur — standart istifadə et
+                // tezCixanSayi — per-record data hesablandıqdan sonra doldurulur
                 var tezCixanSayi = 0;
-                try
-                {
-                    if (tarix.HasValue)
-                    {
-                        var hedefTarix = tarix.Value.Date;
-                        var bayram = await _unitOfWork.Repository<BayramGunu>()
-                            .Query().AsNoTracking()
-                            .Where(x => !x.Silinib && x.Tarix.Date == hedefTarix && x.XususiBitisVaxti.HasValue)
-                            .FirstOrDefaultAsync();
-                        var gunCixis = bayram?.XususiBitisVaxti ?? standartCixis;
-                        var gunHedd = gunCixis - tezCixmaTolerans;
-                        tezCixanSayi = umumi.Count(x =>
-                            x.CixisVaxti.HasValue &&
-                            x.CixisVaxti.Value.TimeOfDay < gunHedd);
-                    }
-                    else
-                    {
-                        tezCixanSayi = umumi.Count(x =>
-                            x.CixisVaxti.HasValue &&
-                            x.CixisVaxti.Value.TimeOfDay < efektivCixisHeddi);
-                    }
-                }
-                catch
-                {
-                    tezCixanSayi = umumi.Count(x =>
-                        x.CixisVaxti.HasValue &&
-                        x.CixisVaxti.Value.TimeOfDay < efektivCixisHeddi);
-                }
 
                 var result = status.HasValue
                     ? umumi.Where(x => (int)x.Status == status.Value).ToList()
                     : umumi;
 
-                var data = result.Select(x => new
+                // Nəticədəki bütün tarixlər üçün BayramGunu xüsusi bitmə vaxtlarını toplu çək
+                var hedefTarixler = result.Select(x => x.Tarix.Date).Distinct().ToList();
+                var bayramDict = new Dictionary<DateTime, TimeSpan>();
+                try
                 {
-                    id = x.Id,
-                    isciTamAd = x.IsciTamAd ?? "-",
-                    departamentAd = x.DepartamentAd ?? "-",
-                    tarix = x.Tarix,
-                    girisVaxti = x.GirisVaxti,
-                    cixisVaxti = x.CixisVaxti,
-                    status = (int)x.Status,
-                    maasdanKes = x.MaasdanKes,
-                    qayibSebebi = x.QayibSebebi ?? ""
+                    var bayramlar = await _unitOfWork.Repository<BayramGunu>()
+                        .Query().AsNoTracking()
+                        .Where(x => !x.Silinib && hedefTarixler.Contains(x.Tarix.Date) && x.XususiBitisVaxti.HasValue)
+                        .ToListAsync();
+                    bayramDict = bayramlar.ToDictionary(x => x.Tarix.Date, x => x.XususiBitisVaxti!.Value);
+                }
+                catch { /* BayramGunu cədvəli mövcud deyilsə keç */ }
+
+                var data = result.Select(x =>
+                {
+                    var gunCixis = bayramDict.TryGetValue(x.Tarix.Date, out var bv) ? bv : standartCixis;
+                    var gunHedd  = gunCixis - tezCixmaTolerans;
+                    var tezCixanFlag = x.CixisVaxti.HasValue && x.CixisVaxti.Value.TimeOfDay < gunHedd;
+                    return new
+                    {
+                        id = x.Id,
+                        isciTamAd = x.IsciTamAd ?? "-",
+                        departamentAd = x.DepartamentAd ?? "-",
+                        tarix = x.Tarix,
+                        girisVaxti = x.GirisVaxti,
+                        cixisVaxti = x.CixisVaxti,
+                        status = (int)x.Status,
+                        maasdanKes = x.MaasdanKes,
+                        qayibSebebi = x.QayibSebebi ?? "",
+                        tezCixan = tezCixanFlag
+                    };
                 }).OrderByDescending(x => x.tarix).ThenBy(x => x.isciTamAd).ToList();
+
+                // tezCixanSayi artıq per-record hesablandığı üçün buradan da götürürük
+                tezCixanSayi = data.Count(x => x.tezCixan);
 
                 // Stats — umumi üzərindən
                 var gelib = umumi.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);

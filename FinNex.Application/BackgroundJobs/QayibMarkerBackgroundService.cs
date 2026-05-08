@@ -91,6 +91,19 @@ namespace FinNex.Infrastructure.BackgroundJobs
             var movcudSet = new HashSet<string>(
                 movcudQeydler.Select(x => $"{x.IsciId}|{x.Tarix:yyyy-MM-dd}"));
 
+            // Backfill dövründə təsdiqlənmiş saatlıq icazələr — bu günlər Icazeli yazılacaq
+            var icazeQeydler = await db.Set<Icaze>()
+                .AsNoTracking()
+                .Where(x => !x.Silinib &&
+                             x.Status == IcazeStatus.Tesdiqlenib &&
+                             x.IcazeTarixi.Date >= baslanic &&
+                             x.IcazeTarixi.Date <= bugun)
+                .Select(x => new { x.IsciId, Tarix = x.IcazeTarixi.Date })
+                .ToListAsync(ct);
+
+            var icazeSet = new HashSet<string>(
+                icazeQeydler.Select(x => $"{x.IsciId}|{x.Tarix:yyyy-MM-dd}"));
+
             var indi = DateTime.Now;
             var yeniQeydler = new List<Davamiyyet>();
 
@@ -112,13 +125,18 @@ namespace FinNex.Infrastructure.BackgroundJobs
                     var key = $"{isci.Id}|{gun:yyyy-MM-dd}";
                     if (movcudSet.Contains(key)) continue;
 
+                    // Həmin gün üçün təsdiqlənmiş icazə varsa Icazeli yaz, Qayib yox
+                    var status = icazeSet.Contains(key)
+                        ? DavamiyyetStatus.Icazeli
+                        : DavamiyyetStatus.Qayib;
+
                     yeniQeydler.Add(new Davamiyyet
                     {
                         IsciId = isci.Id,
                         Tarix = gun,
                         GirisVaxti = null,
                         CixisVaxti = null,
-                        Status = DavamiyyetStatus.Qayib,
+                        Status = status,
                         YaradilmaTarixi = indi,
                         Silinib = false
                     });
