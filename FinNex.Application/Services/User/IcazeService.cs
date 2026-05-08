@@ -256,6 +256,7 @@ namespace FinNex.Application.Services
                     ImtinaSebebi = icaze.ImtinaSebebi,
                     Birdefelik = icaze.Birdefelik,
                     JetonOdenenSaat = icaze.JetonOdenenSaat,
+                    NaharNezereAlinmasin = icaze.NaharNezereAlinmasin,
                     SobeReisiTesdiq = icaze.SobeReisiTesdiq,
                     SobeReisiTesdiqTarixi = icaze.SobeReisiTesdiqTarixi,
                     RehberTesdiq = icaze.RehberTesdiq,
@@ -436,7 +437,7 @@ namespace FinNex.Application.Services
         }
 
         // Rəhbər təsdiq edir → Tesdiqlenib + IcazeCixisGiris yaranır
-        public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal jetonOdenenSaat = 0)
+        public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal jetonOdenenSaat = 0, bool naharNezereAlinmasin = false)
         {
             var icaze = await _unitOfWork.Repository<Icaze>().GetirAsync(x => x.Id == id);
             if (icaze == null) return Result.Fail("İcazə tapılmadı.");
@@ -444,14 +445,20 @@ namespace FinNex.Application.Services
             if (icaze.Status != IcazeStatus.RehberTesdiqinde)
                 return Result.Fail($"Bu müraciət artıq emal edilib (status: {icaze.Status}).");
 
-            // Jeton miqdarı yalnız təsdiq vəziyyətində manaza alınır
+            // Nahar çıxıldıqda effektiv saat 1 saat az olur
+            const decimal naharMuddet = 1.0m;
+            var icazeSaatiRaw = (decimal)icaze.IcazeSaati;
+            var efektivSaat = naharNezereAlinmasin
+                ? Math.Max(0m, icazeSaatiRaw - naharMuddet)
+                : icazeSaatiRaw;
+
+            // Jeton miqdarı yalnız təsdiq vəziyyətində nəzərə alınır
             if (status && jetonOdenenSaat > 0)
             {
-                var icazeSaati = (decimal)icaze.IcazeSaati;
-                if (jetonOdenenSaat > icazeSaati)
+                if (jetonOdenenSaat > efektivSaat)
                     return Result.Fail(
-                        $"Jeton ödənişi ({jetonOdenenSaat:0.##} saat) icazənin ümumi saatından " +
-                        $"({icazeSaati:0.##} saat) çox ola bilməz.");
+                        $"Jeton ödənişi ({jetonOdenenSaat:0.##} saat) effektiv icazə saatından " +
+                        $"({efektivSaat:0.##} saat) çox ola bilməz.");
 
                 var balans = await _jetonService.AktivSaatBalansiAsync(icaze.IsciId);
                 if (jetonOdenenSaat > balans)
@@ -464,6 +471,7 @@ namespace FinNex.Application.Services
             icaze.RehberId = rehberId > 0 ? rehberId : icaze.RehberId;
             icaze.RehberTesdiqTarixi = DateTime.Now;
             icaze.JetonOdenenSaat = status ? jetonOdenenSaat : 0;
+            icaze.NaharNezereAlinmasin = status && naharNezereAlinmasin;
 
             if (!status)
             {
@@ -733,6 +741,7 @@ namespace FinNex.Application.Services
             BaslamaSaati = icaze.BaslamaSaati,
             BitisSaati = icaze.BitisSaati,
             IcazeSaati = icaze.IcazeSaati,
+            NaharNezereAlinmasin = icaze.NaharNezereAlinmasin,
             Sebeb = icaze.Sebeb,
             Status = icaze.Status,
             Birdefelik = icaze.Birdefelik,

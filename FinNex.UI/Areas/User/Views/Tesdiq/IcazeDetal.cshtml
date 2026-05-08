@@ -72,7 +72,22 @@
                 </div>
                 <div class="tsd-info-row">
                     <span class="tsd-info-lbl">İcazə saatı</span>
-                    <span class="tsd-info-val" style="font-weight:700;color:#1a2332">@Model.IcazeSaati?.ToString("0.##") saat</span>
+                    <span class="tsd-info-val" style="font-weight:700;color:#1a2332">
+                        @{
+                            var totalDeq = (int)Math.Round((Model.IcazeSaati ?? 0) * 60);
+                            var sH = totalDeq / 60; var sM = totalDeq % 60;
+                        }
+                        @sH saat@(sM > 0 ? $" {sM} dəqiqə" : "")
+                        @if (Model.NaharNezereAlinmasin)
+                        {
+                            var effDeq = Math.Max(0, totalDeq - 60);
+                            var eH = effDeq / 60; var eM = effDeq % 60;
+                            <span style="margin-left:8px;font-size:11px;background:#fef3c7;color:#92400e;
+                                         padding:2px 7px;border-radius:5px;font-weight:600">
+                                Nahar çıxıldı → @eH saat@(eM > 0 ? $" {eM} dəq" : "")
+                            </span>
+                        }
+                    </span>
                 </div>
                 @if (!string.IsNullOrEmpty(Model.Sebeb))
                 {
@@ -279,24 +294,74 @@
                     @if (rol == "Rehber")
                     {
                         decimal balans = ViewBag.JetonBalansi != null ? (decimal)ViewBag.JetonBalansi : 0m;
-                        decimal icazeSaati = (decimal)Model.IcazeSaati;
-                        decimal maxJeton = balans < icazeSaati ? balans : icazeSaati;
+                        decimal icazeSaatiRaw = (decimal)(Model.IcazeSaati ?? 0);
+                        decimal efektivSaat = Math.Max(0m, icazeSaatiRaw - 1m);
+                        decimal maxJeton = Math.Min(balans, icazeSaatiRaw);
+                        int rTotalDeq = (int)Math.Round((double)icazeSaatiRaw * 60);
+                        int rH = rTotalDeq / 60; int rM = rTotalDeq % 60;
+                        int eDeq = (int)Math.Round((double)efektivSaat * 60);
+                        int eH = eDeq / 60; int eM = eDeq % 60;
+
+                        <div style="margin:14px 0;padding:12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px">
+                            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:13px;color:#374151">
+                                <input type="checkbox" name="naharNezereAlinmasin" id="naharCheck" value="true"
+                                       style="width:15px;height:15px;margin-top:2px;accent-color:#0369a1;flex-shrink:0" />
+                                <span>
+                                    <strong>Naharı nəzərə alma</strong>
+                                    <span style="color:#6b7280;font-size:11px;display:block;margin-top:1px">
+                                        İşçi nahar fasiləsini götürməyib — 1 saat icazə müddətindən çıxılır
+                                    </span>
+                                    <span id="naharEfektiv" style="display:none;color:#0369a1;font-size:12px;font-weight:600;margin-top:3px;display:none">
+                                        Effektiv icazə: @eH saat@(eM > 0 ? $" {eM} dəq" : "")
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+
                         <div style="margin:14px 0;padding:12px;background:#fff8e8;border:1px solid #f0d785;border-radius:8px">
                             <div style="font-size:12px;color:#8a6a18;margin-bottom:6px">
                                 <strong>İşçinin aktiv jeton balansı:</strong> @balans.ToString("0.##") saat<br />
-                                <strong>İcazə müddəti:</strong> @icazeSaati.ToString("0.##") saat
+                                <strong>İcazə müddəti:</strong>
+                                <span id="icazeSaatDisplay">@rH saat@(rM > 0 ? $" {rM} dəq" : "")</span>
                             </div>
                             <label style="font-size:12px;color:#374151;display:block;margin-bottom:4px">
                                 Jetonla ödənən saat
-                                <small style="color:#8a93a8">(maks: @maxJeton.ToString("0.##"))</small>
+                                <small style="color:#8a93a8">(maks: <span id="maxJetonLabel">@maxJeton.ToString("0.##")</span>)</small>
                             </label>
-                            <input type="number" name="jetonOdenenSaat" value="0"
+                            <input type="number" name="jetonOdenenSaat" id="jetonInput" value="0"
                                    min="0" max="@maxJeton" step="0.25"
                                    style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px" />
                             <small style="color:#6b7280;font-size:11px;display:block;margin-top:4px">
                                 0 = tam adi icazə. Bu rəqəm təsdiqləndikdən sonra HR tərəfindən jetonlardan tutulur.
                             </small>
                         </div>
+
+                        <script>
+                        (function(){
+                            var rawSaat = @icazeSaatiRaw;
+                            var balans = @balans;
+                            function pad2(n){ return n < 10 ? '0'+n : ''+n; }
+                            function fmtSaat(h){
+                                var t = Math.round(h * 60);
+                                var s = Math.floor(t/60), m = t%60;
+                                return s + ' saat' + (m>0 ? ' '+m+' dəq':'');
+                            }
+                            var cb = document.getElementById('naharCheck');
+                            var maxLabel = document.getElementById('maxJetonLabel');
+                            var saatDisplay = document.getElementById('icazeSaatDisplay');
+                            var efektiv = document.getElementById('naharEfektiv');
+                            var inp = document.getElementById('jetonInput');
+                            cb.addEventListener('change', function(){
+                                var eff = cb.checked ? Math.max(0, rawSaat - 1) : rawSaat;
+                                var maxJ = Math.min(balans, eff);
+                                maxLabel.textContent = maxJ % 1 === 0 ? maxJ.toFixed(0) : maxJ.toFixed(2);
+                                inp.max = maxJ;
+                                if (parseFloat(inp.value) > maxJ) inp.value = maxJ;
+                                saatDisplay.textContent = fmtSaat(eff) + (cb.checked ? ' (nahar çıxıldı)' : '');
+                                efektiv.style.display = cb.checked ? 'block' : 'none';
+                            });
+                        })();
+                        </script>
                     }
 
                     @if (rol == "Hr")

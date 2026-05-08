@@ -41,6 +41,10 @@
         // HR final təsdiqdə işçinin aktiv jetonlarından FIFO ilə bu qədər saat tutulur.
         public decimal JetonOdenenSaat { get; set; } = 0;
 
+        // Rəhbər təsdiqindən işarələnir: işçi nahar fasiləsini götürməyib,
+        // buna görə 1 saat nahar icazə müddətindən çıxılır.
+        public bool NaharNezereAlinmasin { get; set; } = false;
+
         public IcazeCixisGiris? CixisGiris { get; set; }
     }
 }

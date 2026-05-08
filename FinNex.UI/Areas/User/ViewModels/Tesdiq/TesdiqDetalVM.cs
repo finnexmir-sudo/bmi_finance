@@ -27,6 +27,7 @@ namespace FinNex.UI.Areas.User.ViewModels.Tesdiq
         public TimeSpan? BaslamaSaati { get; set; }
         public TimeSpan? BitisSaati { get; set; }
         public double? IcazeSaati { get; set; }
+        public bool NaharNezereAlinmasin { get; set; }
         public string? Sebeb { get; set; }
 
         // Ümumi

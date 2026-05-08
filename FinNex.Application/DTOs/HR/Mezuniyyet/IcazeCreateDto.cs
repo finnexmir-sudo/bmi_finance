@@ -34,6 +34,7 @@ namespace FinNex.Application.DTOs.HR.Icaze
     // ── Siyahı üçün ─────────────────────────────────────
     public class IcazeListDto
     {
+        public bool NaharNezereAlinmasin { get; set; } = false;
         public int Id { get; set; }
         public int IsciId { get; set; }
         public string IsciAdSoyad { get; set; } = null!;
