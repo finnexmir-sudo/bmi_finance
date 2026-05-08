@@ -43,6 +43,21 @@ namespace FinNex.UI.Areas.User.Controllers
             ViewBag.GecikmeTolerans = ip.GecikmeToleransDeqiqe;
             ViewBag.TezCixmaTolerans = ip.TezCixmaToleransDeqiqe;
 
+            try
+            {
+                var mezuniyyetler = await _unitOfWork.Repository<Mezuniyyet>()
+                    .HamisiniGetirAsync(
+                        x => x.IsciId == isciId.Value &&
+                             x.BaslamaTarixi.Year == cariIl &&
+                             x.Status == MezuniyyetStatus.Tesdiqlenib,
+                        izlemeden: true);
+                ViewBag.MezuniyyetGun = mezuniyyetler.Sum(x => x.EfektivGunSayi);
+            }
+            catch
+            {
+                ViewBag.MezuniyyetGun = 0;
+            }
+
             return View(list);
         }
 
