@@ -197,6 +197,19 @@ namespace FinNex.Application.Services.HR
                 if (dto.JetonIds == null || !dto.JetonIds.Any())
                     return Result.Fail("Ən azı bir jeton seçilməlidir.");
 
+                // İcazə sorğularında tarix və saat məcburidir
+                if (dto.RedimNovu == RedimNovu.Icaze)
+                {
+                    if (dto.IcazeTarixi == null || dto.BaslamaSaati == null || dto.BitisSaati == null)
+                        return Result.Fail("İcazə sorğusunda tarix və saat aralığı daxil edilməlidir.");
+
+                    if (dto.IcazeTarixi.Value.Date < DateTime.Today)
+                        return Result.Fail("Keçmiş tarix üçün icazə tələb edilə bilməz.");
+
+                    if (dto.BitisSaati <= dto.BaslamaSaati)
+                        return Result.Fail("Bitmə saatı başlama saatından sonra olmalıdır.");
+                }
+
                 // Qara jeton blok yoxlaması
                 var qaraVar = await AktivQaraJetonuVarmiAsync(isciId);
                 if (qaraVar)
@@ -223,13 +236,26 @@ namespace FinNex.Application.Services.HR
                     ? baseSaat * saatAmsali
                     : baseSaat * pulAmsali;
 
+                // İcazə sorğusunda istənilən saat aralığı jeton balansından çox ola bilməz
+                if (dto.RedimNovu == RedimNovu.Icaze)
+                {
+                    var istenilenSaat = (decimal)(dto.BitisSaati!.Value - dto.BaslamaSaati!.Value).TotalHours;
+                    if (istenilenSaat > cemiSaat)
+                        return Result.Fail(
+                            $"Seçdiyiniz saat aralığı ({istenilenSaat:0.##} saat) " +
+                            $"jeton ödənişindən ({cemiSaat:0.##} saat) çoxdur.");
+                }
+
                 var redim = new JetonRedimTelebi
                 {
                     IsciId = isciId,
                     RedimNovu = dto.RedimNovu,
                     CemiSaat = cemiSaat,
                     Status = RedimStatus.Gozlenilir,
-                    TelabTarixi = DateTime.Now
+                    TelabTarixi = DateTime.Now,
+                    IcazeTarixi = dto.IcazeTarixi,
+                    BaslamaSaati = dto.BaslamaSaati,
+                    BitisSaati = dto.BitisSaati
                 };
 
                 await _unitOfWork.Repository<JetonRedimTelebi>().YaratAsync(redim);
@@ -243,13 +269,13 @@ namespace FinNex.Application.Services.HR
                 }
                 await _unitOfWork.YaddaSaxlaAsync();
 
-                // HR-ə bildiriş
+                // İlk növbədə Rəhbərə bildiriş gedir (HR yox — rəhbərdən sonra)
                 var redimNovuAd = dto.RedimNovu == RedimNovu.Icaze ? "icazə" : "maaş bonusu";
                 await _bildirisRouter.NotifyRolesAsync(
-                    new[] { RoleNames.HR, RoleNames.Admin, RoleNames.Rehber },
+                    new[] { RoleNames.Rehber },
                     BildirisNovu.JetonVerildi,
                     "Yeni Jeton Redim Sorğusu",
-                    $"İşçi {cemiSaat} saatlıq {jetonlar.Count} jetonu {redimNovuAd} kimi xərcləmək istəyir.",
+                    $"İşçi {cemiSaat:0.##} saatlıq {jetonlar.Count} jetonu {redimNovuAd} kimi xərcləmək istəyir.",
                     redirectUrl: "/HR/Jeton/Index?tab=redimler",
                     exceptIsciId: isciId);
 
@@ -257,6 +283,95 @@ namespace FinNex.Application.Services.HR
                 var amsalGoster = dto.RedimNovu == RedimNovu.Icaze ? saatAmsali : pulAmsali;
                 var amsalMetn = amsalGoster != 1.00m ? $" (reytinq əmsalı: {amsalGoster}x)" : "";
                 return Result.Ok($"Sorğu göndərildi. Cəmi: {cemiSaat:0.##} saat{amsalMetn} ({novLabel}).");
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail($"Xəta: {ex.Message}");
+            }
+        }
+
+        public async Task<Result> RedimRehberTesdiqleAsync(int redimId, int rehberUserId)
+        {
+            try
+            {
+                var redim = await _unitOfWork.Repository<JetonRedimTelebi>()
+                    .Query()
+                    .Include(x => x.Isci)
+                    .FirstOrDefaultAsync(x => x.Id == redimId);
+
+                if (redim == null) return Result.Fail("Redim sorğusu tapılmadı.");
+                if (redim.Status != RedimStatus.Gozlenilir)
+                    return Result.Fail("Bu sorğu artıq emal edilib.");
+                if (redim.RehberTesdiq.HasValue)
+                    return Result.Fail("Sorğu artıq rəhbər tərəfindən baxılıb.");
+
+                redim.RehberTesdiq = true;
+                redim.RehberUserId = rehberUserId;
+                redim.RehberTesdiqTarixi = DateTime.Now;
+
+                await _unitOfWork.Repository<JetonRedimTelebi>().YenileAsync(redim);
+                await _unitOfWork.YaddaSaxlaAsync();
+
+                // HR-ə bildiriş — rəhbər təsdiqlədi, sıra HR-də
+                var redimNovuAd = redim.RedimNovu == RedimNovu.Icaze ? "icazə" : "maaş bonusu";
+                await _bildirisRouter.NotifyRolesAsync(
+                    new[] { RoleNames.HR, RoleNames.Admin },
+                    BildirisNovu.JetonVerildi,
+                    "Rəhbər təsdiqindən keçdi",
+                    $"{redim.Isci.Ad} {redim.Isci.Soyad}-in {redim.CemiSaat:0.##} saatlıq {redimNovuAd} sorğusu rəhbər təsdiqindən keçib.",
+                    redirectUrl: "/HR/Jeton/Index?tab=redimler",
+                    exceptIsciId: redim.IsciId);
+
+                return Result.Ok("Sorğu təsdiqləndi və HR-ə göndərildi.");
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail($"Xəta: {ex.Message}");
+            }
+        }
+
+        public async Task<Result> RedimRehberReddEtAsync(int redimId, string qeyd, int rehberUserId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(qeyd))
+                    return Result.Fail("Rədd etmə səbəbi daxil edilməlidir.");
+
+                var redim = await _unitOfWork.Repository<JetonRedimTelebi>()
+                    .Query()
+                    .Include(x => x.XerclenenJetonlar)
+                    .Include(x => x.Isci)
+                    .FirstOrDefaultAsync(x => x.Id == redimId);
+
+                if (redim == null) return Result.Fail("Redim sorğusu tapılmadı.");
+                if (redim.Status != RedimStatus.Gozlenilir)
+                    return Result.Fail("Bu sorğu artıq emal edilib.");
+
+                redim.Status = RedimStatus.Redd;
+                redim.RehberTesdiq = false;
+                redim.RehberUserId = rehberUserId;
+                redim.RehberTesdiqTarixi = DateTime.Now;
+                redim.RehberQeyd = qeyd;
+                redim.NeticeTarixi = DateTime.Now;
+
+                // Jetonlar geri açılır
+                foreach (var j in redim.XerclenenJetonlar)
+                {
+                    j.RedimTelebiId = null;
+                    await _unitOfWork.Repository<IsciJetonu>().YenileAsync(j);
+                }
+
+                await _unitOfWork.Repository<JetonRedimTelebi>().YenileAsync(redim);
+                await _unitOfWork.YaddaSaxlaAsync();
+
+                await _bildirisRouter.NotifyIsciAsync(
+                    redim.IsciId,
+                    BildirisNovu.JetonRedimReddEdildi,
+                    "❌ Jeton sorğunuz rəhbər tərəfindən rədd edildi",
+                    $"Səbəb: {qeyd}",
+                    redirectUrl: "/User/Jeton/Index");
+
+                return Result.Ok("Sorğu rədd edildi.");
             }
             catch (Exception ex)
             {
@@ -498,6 +613,12 @@ namespace FinNex.Application.Services.HR
             TelabTarixi = x.TelabTarixi,
             NeticeTarixi = x.NeticeTarixi,
             Qeyd = x.Qeyd,
+            IcazeTarixi = x.IcazeTarixi,
+            BaslamaSaati = x.BaslamaSaati,
+            BitisSaati = x.BitisSaati,
+            RehberTesdiq = x.RehberTesdiq,
+            RehberTesdiqTarixi = x.RehberTesdiqTarixi,
+            RehberQeyd = x.RehberQeyd,
             XerclenenJetonlar = x.XerclenenJetonlar.Select(MapJeton).ToList()
         };
     }
