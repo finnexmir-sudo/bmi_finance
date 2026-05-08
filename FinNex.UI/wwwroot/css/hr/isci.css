@@ -1150,3 +1150,13 @@ textarea.fn-input { resize: vertical; }
 
 .fn-btn--danger:hover { background: #dc2626; }
 .fn-btn--danger:disabled { opacity: .6; cursor: not-allowed; }
+
+.isci-modal-error {
+    padding: 9px 13px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-top: 6px;
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
