@@ -193,6 +193,7 @@ namespace FinNex.Application.Services.HR
 
             decimal mezOdenis = 0;
             decimal mezKesinti = 0;
+            decimal mezuniyyetAvansBrutu = 0;  // 2500 güzəşt yoxlaması üçün — if bloku xaricindədir
 
             if (mezGun > 0)
             {
@@ -249,7 +250,6 @@ namespace FinNex.Application.Services.HR
                 }
 
                 // Qabaqcadan ödənilmiş avansın brütü — 2500 güzəşt yoxlaması üçün toplanır
-                decimal mezuniyyetAvansBrutu = 0;
                 foreach (var advanceMez in advanceQeydler)
                 {
                     if (advanceMez.OdenisStatus == MezuniyyetOdenisStatus.Odenilib)
