@@ -178,7 +178,10 @@ namespace FinNex.UI.Areas.User.Controllers
             decimal mezOdenisNetCemi = 0;
             foreach (var s in hesablama.AySliceleri)
             {
-                int ig = Math.Max(0, s.AyIsGun - s.IsGun);
+                // İşlənmiş günlər = AyIsGun − HaqiqiIsGun (faktiki iş günü).
+                // IsGun-da həftəsonu da var, ona görə istifadəsi səhv im verir və
+                // MezuniyyetOdenisController.Detail ilə uyğunsuzluq yaradırdı.
+                int ig = Math.Max(0, s.AyIsGun - s.HaqiqiIsGun);
                 decimal im = (cariMaas > 0 && s.AyIsGun > 0)
                     ? Math.Round(cariMaas / s.AyIsGun * ig, 2) : 0;
                 var itax = await _maasHesablamaService
