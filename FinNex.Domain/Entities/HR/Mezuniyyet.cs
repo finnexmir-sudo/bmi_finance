@@ -71,7 +71,8 @@ namespace FinNex.Domain.Entities.HR
 
         // HR təsdiq anında hesablanan tam məzuniyyət ödənişi məbləği.
         // Mühasib yoxlayıb düzəldə bilər (səhv olarsa).
-        public decimal? OdenenMebleg { get; set; }
+        public decimal? OdenenMebleg { get; set; }       // NET (bank köçürməsi)
+        public decimal? OdenenMeblegBrut { get; set; }   // Brüt (vergi bazası üçün)
         public DateTime? OdenilmeTarixi { get; set; }
         public int? OdeyenMuhasibId { get; set; }
         public Isci? OdeyenMuhasib { get; set; }

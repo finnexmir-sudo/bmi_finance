@@ -190,7 +190,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         // asılı olmayaraq manual olaraq icra etmək mümkündür.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Planla(int id, string? redakteEdilmisMebleg)
+        public async Task<IActionResult> Planla(int id, string? redakteEdilmisMebleg, string? odenenMeblegBrut)
         {
             var mez = await _unitOfWork.Repository<Mezuniyyet>()
                 .GetirAsync(x => x.Id == id);
@@ -251,6 +251,13 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             mez.OdenenMebleg = yekunMebleg;
             mez.OdenisStatus = MezuniyyetOdenisStatus.PlanliOdenis;
+            if (!string.IsNullOrWhiteSpace(odenenMeblegBrut))
+            {
+                var normBrut = odenenMeblegBrut.Trim().Replace(',', '.');
+                if (decimal.TryParse(normBrut, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var parsedBrut) && parsedBrut > 0)
+                    mez.OdenenMeblegBrut = Math.Round(parsedBrut, 2);
+            }
             mez.PlanliOdenisTarixi = planliTarix;
             mez.OdeyenMuhasibId = muhasibIsciId;
             mez.YenilenmeTarixi = DateTime.Now;

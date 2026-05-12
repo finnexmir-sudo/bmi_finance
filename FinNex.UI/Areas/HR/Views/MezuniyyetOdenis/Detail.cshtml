@@ -364,6 +364,7 @@
                 <form asp-action="Planla" method="post" class="mod-odenis-form">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@mez.Id" />
+                    <input type="hidden" name="odenenMeblegBrut" value="@Model.CemiOdenis.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" />
                     @{
                         // Qabaqcadan ödənişdə sahəyə NET məbləği göstər (bankda köçürülən)
                         decimal defaultMebleg = advNet > 0 ? advNet : (mez.OdenenMebleg ?? Model.CemiOdenis);

@@ -131,6 +131,35 @@ namespace FinNex.UI.Areas.HR.Controllers
                 };
             }).ToList();
 
+            // Qabaqcadan ödənilmiş məzuniyyət avansının vergiləri — maaş siyahısında birləşdirilmiş göstərmək üçün
+            var ayBasOdenis = new DateTime(cIl, cAy, 1);
+            var ayBitOdenis = ayBasOdenis.AddMonths(1).AddDays(-1);
+            var odənilmişAvanslar = await _unitOfWork.Repository<Mezuniyyet>()
+                .Query()
+                .Where(x => !x.Silinib
+                    && x.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis
+                    && x.OdenisStatus == MezuniyyetOdenisStatus.Odenilib
+                    && x.OdenenMeblegBrut != null && x.OdenenMeblegBrut > 0
+                    && x.BaslamaTarixi >= ayBasOdenis && x.BaslamaTarixi <= ayBitOdenis)
+                .ToListAsync();
+
+            foreach (var avans in odənilmişAvanslar)
+            {
+                var dto = listDto.FirstOrDefault(x => x.IsciId == avans.IsciId);
+                if (dto == null) continue;
+
+                var tarix = new DateTime(cIl, cAy, 1);
+                var salaryTax = await _hesablamaService.TutulmalariHesablaAsync(dto.BrutMaas, tarix, avans.IsciId);
+                var combinedTax = await _hesablamaService.TutulmalariHesablaAsync(dto.BrutMaas + avans.OdenenMeblegBrut!.Value, tarix, avans.IsciId);
+
+                dto.AvansBrut = avans.OdenenMeblegBrut.Value;
+                dto.AvansNet = avans.OdenenMebleg ?? 0;
+                dto.AvansGelirVergisi = combinedTax.GelirVergisi - salaryTax.GelirVergisi;
+                dto.AvansDsmfIsci     = combinedTax.DsmfIsci     - salaryTax.DsmfIsci;
+                dto.AvansIssizlikIsci = combinedTax.IssizlikIsci - salaryTax.IssizlikIsci;
+                dto.AvansItss         = combinedTax.Itss         - salaryTax.Itss;
+            }
+
             // Statistika
             ViewBag.UmumiNetMebleg = listDto.Sum(x => x.NetMebleg);
             ViewBag.LayiheSayi = listDto.Count(x => x.Status == MaasStatus.Layihe);
