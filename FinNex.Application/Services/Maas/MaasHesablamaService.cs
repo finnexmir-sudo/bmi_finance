@@ -1267,9 +1267,10 @@ namespace FinNex.Application.Services.HR
                 }
             }
 
-            // HYS bazaları: vergi+DSMF = brut − HYS, İTSS/İşsizlik = brut (tam)
+            // HYS bazaları: vergi+DSMF = brut − HYS, İTSS/İşsizlik = brut + işəgötürən HYS
+            // (FerdiHesablaAsync ilə eyni məntiq — hysIsv işçi gəlirinə daxildir)
             decimal vergiDsmfBazasi = Math.Max(0, brut - hysMebleg);
-            decimal itssBazasi = brut;
+            decimal itssBazasi = brut + hysIsv;
 
             // GROSS = brut + işəgötürən HYS (2500 güzəşt yoxlaması üçün)
             decimal grossForCheck = brut + hysIsv;
