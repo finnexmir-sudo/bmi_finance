@@ -321,6 +321,32 @@
             }
             else
             {
+                @{
+                    decimal advNet = ViewBag.AdvanceNet ?? 0m;
+                    decimal advTut = ViewBag.AdvanceTutulma ?? 0m;
+                }
+                @if (advNet > 0)
+                {
+                    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 18px;margin-bottom:16px;">
+                        <div style="font-size:13px;font-weight:600;color:#15803d;margin-bottom:10px;">
+                            <i class="bi bi-bank me-1"></i> İşçiyə köçürüləcək məbləğ (qabaqcadan)
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+                            <div style="text-align:center;background:#fff;border-radius:8px;padding:10px;">
+                                <div style="font-size:11px;color:#64748b;margin-bottom:2px;">Brüt məzuniyyət pulu</div>
+                                <div style="font-size:18px;font-weight:700;color:#334155;">@Model.CemiOdenis.ToString("N2") ₼</div>
+                            </div>
+                            <div style="text-align:center;background:#fff;border-radius:8px;padding:10px;">
+                                <div style="font-size:11px;color:#64748b;margin-bottom:2px;">Vergi tutulması</div>
+                                <div style="font-size:18px;font-weight:700;color:#dc2626;">− @advTut.ToString("N2") ₼</div>
+                            </div>
+                            <div style="text-align:center;background:#dcfce7;border-radius:8px;padding:10px;border:2px solid #16a34a;">
+                                <div style="font-size:11px;color:#15803d;margin-bottom:2px;font-weight:600;">İşçiyə köçürülən NET</div>
+                                <div style="font-size:22px;font-weight:700;color:#15803d;">@advNet.ToString("N2") ₼</div>
+                            </div>
+                        </div>
+                    </div>
+                }
                 <form asp-action="Planla" method="post" class="mod-odenis-form">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@mez.Id" />

@@ -129,6 +129,27 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .ToListAsync();
             decimal avansMebleg = avanslar.Sum(x => x.Mebleg);
 
+            // Qabaqcadan ödəniş: məzuniyyət pulu NET hesabla (mühasib üçün)
+            decimal advanceNet = 0;
+            decimal advanceTutulma = 0;
+            if (mez.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis && hesab.CemiOdenis > 0)
+            {
+                decimal mezOdenisNetCemi = 0;
+                foreach (var s in hesab.AySliceleri)
+                {
+                    int ig = Math.Max(0, s.AyIsGun - s.IsGun);
+                    decimal im = (cariMaas > 0 && s.AyIsGun > 0)
+                        ? Math.Round(cariMaas / s.AyIsGun * ig, 2) : 0;
+                    var itax = await _maasHesablamaService
+                        .TutulmalariHesablaAsync(im, new DateTime(s.Il, s.Ay, 1), mez.IsciId);
+                    var ftax = await _maasHesablamaService
+                        .TutulmalariHesablaAsync(im + s.Secilen, new DateTime(s.Il, s.Ay, 1), mez.IsciId);
+                    mezOdenisNetCemi += ftax.Net - itax.Net;
+                }
+                advanceNet = mezOdenisNetCemi;
+                advanceTutulma = hesab.CemiOdenis - advanceNet;
+            }
+
             // Maaş günü əlinə çatacaq
             decimal maasGuniNet = islenmisTax.Net - hysMebleg - avansMebleg - hesab.CemiOdenis;
 
@@ -142,6 +163,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.AvansMebleg = avansMebleg;
             ViewBag.MezPuluBrut = hesab.CemiOdenis;
             ViewBag.MaasGuniNet = maasGuniNet;
+            ViewBag.AdvanceNet = advanceNet;
+            ViewBag.AdvanceTutulma = advanceTutulma;
 
             ViewBag.Mezuniyyet = mez;
             return View(hesab);
