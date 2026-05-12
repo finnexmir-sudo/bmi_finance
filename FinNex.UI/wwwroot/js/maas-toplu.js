@@ -148,39 +148,39 @@
         const standartGuzest = brut > 0 && (brut + mavBrut) <= FIRST_BRACKET_MAX ? VERGI_GUZESTI : 0;
         const vergilenecek = Math.max(0, vergiBazasi - standartGuzest - isciGuzest);
 
-        // İşçidən tutulanlar — hər biri öz bazasından
-        const gelirV  = hesablaTutulma(vergilenecek, 1, 0);
-        const dsmf    = hesablaTutulma(dsmfBazasi,   2, 0);
-        const iss     = hesablaTutulma(itssBazasi,   3, FLAT.issizlik);
-        const itss    = hesablaTutulma(itssBazasi,   4, 0);
-
-        // NET MAAŞ — məzuniyyət avansı varsa, BIRLƏŞDİRİLMIŞ vergi əsasında hesablanır
-        // (FerdiHesablaAsync ilə eyni məntiq: aylıq cəmi gəlirə vergi tətbiq olunur,
-        //  vergi avans ödənişində NET çıxarılır, qalan hissə maaşda ödənilir).
-        //   salaryNet = combinedNet − mavNet  (faktiki ödənilmiş)
-        // Bu yanaşma standart güzəşt sərhədi və pillələrin istinaslı tətbiqini
-        // təmin edir → preview ilə üst-üstə düşür.
-        let net;
-        let tutulma;
+        // NET MAAŞ — məzuniyyət avansı varsa, BIRLƏŞDİRİLMIŞ vergi əsasında hesablanır.
+        // Fərdi vergilər də eyni əsasda tapılır: combined − mav (server-tərəfli).
+        //   salaryNet     = combinedNet − mavNet (faktiki ödənilmiş)
+        //   salaryGelirV  = cGelirV − mavGelirV
+        //   ... (hər növ üçün eyni düstur)
+        // Nəticə: novlər üzrə cəm + HYS + avans = Cəmi tutulma = brut − net  ✓
+        let gelirV, dsmf, iss, itss, tutulma, net;
         if (mavBrut > 0) {
-            const cVergiBazasi   = Math.max(0, esasBrut + mavBrut - hys);
-            const cDsmfBazasi    = Math.max(0, cVergiBazasi - xesSirketOdenis);
-            const cItssBazasi    = Math.max(0, esasBrut + mavBrut + hysIsv - xesSirketOdenis);
-            const cVergilenecek  = Math.max(0, cVergiBazasi - standartGuzest - isciGuzest);
+            const cVergiBazasi  = Math.max(0, esasBrut + mavBrut - hys);
+            const cDsmfBazasi   = Math.max(0, cVergiBazasi - xesSirketOdenis);
+            const cItssBazasi   = Math.max(0, esasBrut + mavBrut + hysIsv - xesSirketOdenis);
+            const cVergilenecek = Math.max(0, cVergiBazasi - standartGuzest - isciGuzest);
             const cGelirV = hesablaTutulma(cVergilenecek, 1, 0);
             const cDsmf   = hesablaTutulma(cDsmfBazasi,   2, 0);
             const cIss    = hesablaTutulma(cItssBazasi,   3, FLAT.issizlik);
             const cItss   = hesablaTutulma(cItssBazasi,   4, 0);
-            const cTaxes  = cGelirV + cDsmf + cIss + cItss;
-            // Cəmi əlinizə çatan (kombinasiyalı) = (esasBrut + mavBrut) − cTaxes − hysIsci
+            // Maaşa düşən hissə = cəmi − avans payı (server-tərəfli server side avans vergiləri)
+            gelirV = Math.max(0, Math.round((cGelirV - mavGelirV) * 100) / 100);
+            dsmf   = Math.max(0, Math.round((cDsmf   - mavDsmf)   * 100) / 100);
+            iss    = Math.max(0, Math.round((cIss    - mavIss)     * 100) / 100);
+            itss   = Math.max(0, Math.round((cItss   - mavItss)    * 100) / 100);
+            // Cəmi NET: kombinasiyalı − faktiki ödənilmiş avans NET
+            const cTaxes     = cGelirV + cDsmf + cIss + cItss;
             const combinedNet = (esasBrut + mavBrut) - cTaxes - hys;
-            // Maaş NET = kombinasiyalı NET − faktiki ödənilmiş avans NET
-            net = Math.max(combinedNet - mavNet - avans, 0);
-            // Tutulma görünüşü üçün: brut − net (avans daxil)
+            net     = Math.max(combinedNet - mavNet - avans, 0);
             tutulma = Math.max(brut - net, 0);
         } else {
+            gelirV  = hesablaTutulma(vergilenecek, 1, 0);
+            dsmf    = hesablaTutulma(dsmfBazasi,   2, 0);
+            iss     = hesablaTutulma(itssBazasi,   3, FLAT.issizlik);
+            itss    = hesablaTutulma(itssBazasi,   4, 0);
             tutulma = gelirV + dsmf + iss + itss + hys + hysIsv + avans;
-            net = Math.max(brut - tutulma, 0);
+            net     = Math.max(brut - tutulma, 0);
         }
 
         // İşəgötürən xərcləri — DSMF: dsmfBazası; İTSS/İşsizlik: itssBazası
