@@ -200,10 +200,19 @@
             net = Math.max(brut - tutulma - hys - hysIsv, 0);
         }
 
-        // İşəgötürən xərcləri — DSMF: dsmfBazası; İTSS/İşsizlik: itssBazası
-        const dsmfIsv = hesablaTutulma(dsmfBazasi, 7, 0);
-        const itssIsv = hesablaTutulma(itssBazasi, 9, 0);
-        const issIsv  = hesablaTutulma(itssBazasi, 8, FLAT.issizlikIsv);
+        // İşəgötürən xərcləri — məzuniyyət avansı varsa BIRLƏŞMIŞ baza üzərindən
+        // (FerdiHesablaAsync ilə eyni: aylıq cəmi gəlir 3088.23 → DSMF işv 429.52)
+        let dsmfIsvBaza, itssIsvBaza;
+        if (mavBrut > 0) {
+            dsmfIsvBaza = Math.max(0, esasBrut + mavBrut - hys - xesSirketOdenis);
+            itssIsvBaza = Math.max(0, esasBrut + mavBrut + hysIsv - xesSirketOdenis);
+        } else {
+            dsmfIsvBaza = dsmfBazasi;
+            itssIsvBaza = itssBazasi;
+        }
+        const dsmfIsv = hesablaTutulma(dsmfIsvBaza, 7, 0);
+        const itssIsv = hesablaTutulma(itssIsvBaza, 9, 0);
+        const issIsv  = hesablaTutulma(itssIsvBaza, 8, FLAT.issizlikIsv);
         const sirketCemi = dsmfIsv + issIsv + itssIsv + hysIsv;
 
         return {
