@@ -139,7 +139,6 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Where(x => !x.Silinib
                     && x.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis
                     && x.OdenisStatus == MezuniyyetOdenisStatus.Odenilib
-                    && x.OdenenMeblegBrut != null && x.OdenenMeblegBrut > 0
                     && x.BaslamaTarixi >= ayBasOdenis && x.BaslamaTarixi <= ayBitOdenis)
                 .ToListAsync();
 
@@ -148,12 +147,25 @@ namespace FinNex.UI.Areas.HR.Controllers
                 var dto = listDto.FirstOrDefault(x => x.IsciId == avans.IsciId);
                 if (dto == null) continue;
 
-                var tarix = new DateTime(cIl, cAy, 1);
-                var salaryTax = await _hesablamaService.TutulmalariHesablaAsync(dto.BrutMaas, tarix, avans.IsciId);
-                var combinedTax = await _hesablamaService.TutulmalariHesablaAsync(dto.BrutMaas + avans.OdenenMeblegBrut!.Value, tarix, avans.IsciId);
+                // OdenenMeblegBrut mövcud ödənişdə null ola bilər — canlı hesablama ilə əvəzlə
+                decimal avansBrut;
+                if (avans.OdenenMeblegBrut.HasValue && avans.OdenenMeblegBrut > 0)
+                {
+                    avansBrut = avans.OdenenMeblegBrut.Value;
+                }
+                else
+                {
+                    var hesab = await _hesablamaService.MezuniyyetOdenisiDetalliHesablaAsync(
+                        avans.IsciId, avans.BaslamaTarixi, avans.BitmeTarixi);
+                    avansBrut = hesab.CemiOdenis;
+                }
 
-                dto.AvansBrut = avans.OdenenMeblegBrut.Value;
-                dto.AvansNet = avans.OdenenMebleg ?? 0;
+                var tarix = new DateTime(cIl, cAy, 1);
+                var salaryTax  = await _hesablamaService.TutulmalariHesablaAsync(dto.BrutMaas, tarix, avans.IsciId);
+                var combinedTax = await _hesablamaService.TutulmalariHesablaAsync(dto.BrutMaas + avansBrut, tarix, avans.IsciId);
+
+                dto.AvansBrut         = avansBrut;
+                dto.AvansNet          = avans.OdenenMebleg ?? 0;
                 dto.AvansGelirVergisi = combinedTax.GelirVergisi - salaryTax.GelirVergisi;
                 dto.AvansDsmfIsci     = combinedTax.DsmfIsci     - salaryTax.DsmfIsci;
                 dto.AvansIssizlikIsci = combinedTax.IssizlikIsci - salaryTax.IssizlikIsci;
