@@ -1,0 +1,195 @@
+@model FinNex.Domain.Entities.HR.PerformansQiymetlendirme
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = $"Performans — {Model.Isci.Ad} {Model.Isci.Soyad}";
+    bool isIsci = ViewBag.IsIsci ?? false;
+    bool isSobeReisi = ViewBag.IsSobeReisi ?? false;
+    bool isRehber = ViewBag.IsRehber ?? false;
+    bool hasSobe = Model.SobeReisiId.HasValue;
+
+    string QiymetClass(decimal q) => q >= 4 ? "color:#059669;font-weight:700;" : q >= 3 ? "color:#d97706;font-weight:700;" : q > 0 ? "color:#dc2626;font-weight:700;" : "color:#94a3b8;";
+
+    bool rehberSirasi = hasSobe
+        ? Model.Status == PerformansStatus.SobeReisiQiymetlendirdi
+        : Model.Status == PerformansStatus.IsciQiymetlendirdi;
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">@Model.Isci.Ad @Model.Isci.Soyad — Performans</div>
+            <div class="fn-page-sub">
+                @(Model.DovrTipi == PerformansDovrTipi.Rublik ? $"Rüb {Model.Rubu}" : "İllik") @Model.Il
+            </div>
+        </div>
+        <a asp-area="User" asp-controller="Performans" asp-action="Index" style="background:#f1f5f9;color:#475569;padding:8px 16px;border-radius:8px;font-size:13px;text-decoration:none;">← Geri</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin-bottom:16px;color:#16a34a;font-size:13px;">
+            <i class="bi bi-check-circle me-1"></i>@TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:16px;color:#dc2626;font-size:13px;">
+            <i class="bi bi-exclamation-circle me-1"></i>@TempData["Error"]
+        </div>
+    }
+
+    @* Qiymət kartları *@
+    <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:120px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;text-align:center;">
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px;">İşçi</div>
+            <div style="font-size:22px;@QiymetClass(Model.IsciOrtalamaQiymet)">@(Model.IsciOrtalamaQiymet>0?Model.IsciOrtalamaQiymet.ToString("N2"):"—")</div>
+        </div>
+        @if (hasSobe)
+        {
+            <div style="flex:1;min-width:120px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;text-align:center;">
+                <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Şöbə Rəisi</div>
+                <div style="font-size:22px;@QiymetClass(Model.SobeReisiOrtalamaQiymet)">@(Model.SobeReisiOrtalamaQiymet>0?Model.SobeReisiOrtalamaQiymet.ToString("N2"):"—")</div>
+            </div>
+        }
+        <div style="flex:1;min-width:120px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;text-align:center;">
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Rəhbər</div>
+            <div style="font-size:22px;@QiymetClass(Model.MudirOrtalamaQiymet)">@(Model.MudirOrtalamaQiymet>0?Model.MudirOrtalamaQiymet.ToString("N2"):"—")</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:#6366f1;border-radius:10px;padding:14px 16px;text-align:center;">
+            <div style="font-size:11px;color:#c7d2fe;margin-bottom:4px;">Yekun</div>
+            <div style="font-size:22px;font-weight:700;color:#fff;">@(Model.YekunQiymet>0?Model.YekunQiymet.ToString("N2"):"—")</div>
+        </div>
+    </div>
+
+    @* İşçi qiymətləndirmə formu *@
+    @if (isIsci && Model.Status == PerformansStatus.Gozlemede)
+    {
+        <div style="background:#fff;border:1px solid #6366f1;border-radius:10px;padding:20px;margin-bottom:16px;">
+            <h6 style="font-size:14px;font-weight:600;color:#1e293b;margin-bottom:16px;"><i class="bi bi-person-check me-2" style="color:#6366f1;"></i>Özünüzü qiymətləndirin</h6>
+            <form asp-area="User" asp-controller="Performans" asp-action="IsciQiymetlendir" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="performansId" value="@Model.Id" />
+                @foreach (var k in Model.Kriteriyalar.OrderByDescending(x => x.Ceki))
+                {
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px;background:#f8fafc;border-radius:8px;">
+                        <div style="flex:1;font-size:13px;font-weight:500;color:#1e293b;">@k.KriteriyaAdi <span style="color:#94a3b8;font-size:11px;">(@k.Ceki%)</span></div>
+                        <input type="hidden" name="kriteriyaIds" value="@k.Id" />
+                        <select name="isciQiymetleri" style="width:140px;" class="form-select form-select-sm" required>
+                            <option value="">Qiymət...</option>
+                            <option value="1">1 - Çox zəif</option>
+                            <option value="2">2 - Zəif</option>
+                            <option value="3">3 - Orta</option>
+                            <option value="4">4 - Yaxşı</option>
+                            <option value="5">5 - Əla</option>
+                        </select>
+                        <input type="text" name="isciSherhler" style="width:180px;" class="form-control form-control-sm" placeholder="Şərh (ixtiyari)" />
+                    </div>
+                }
+                <div style="margin-top:12px;">
+                    <label style="font-size:12px;color:#64748b;display:block;margin-bottom:4px;">Ümumi Şərh</label>
+                    <textarea name="isciSherhi" class="form-control form-control-sm" rows="3" placeholder="Ümumi qeyd..."></textarea>
+                </div>
+                <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-lg me-1"></i>Qiymətləndirməni Göndər</button>
+                </div>
+            </form>
+        </div>
+    }
+
+    @* Şöbə Rəisi formu *@
+    @if (isSobeReisi && Model.Status == PerformansStatus.IsciQiymetlendirdi)
+    {
+        <div style="background:#fff;border:1px solid #f59e0b;border-radius:10px;padding:20px;margin-bottom:16px;">
+            <h6 style="font-size:14px;font-weight:600;color:#1e293b;margin-bottom:16px;"><i class="bi bi-person-badge me-2" style="color:#f59e0b;"></i>Şöbə Rəisi Qiymətləndirməsi</h6>
+            <form asp-area="User" asp-controller="Performans" asp-action="SobeReisiQiymetlendir" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="performansId" value="@Model.Id" />
+                @foreach (var k in Model.Kriteriyalar.OrderByDescending(x => x.Ceki))
+                {
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px;background:#f8fafc;border-radius:8px;">
+                        <div style="flex:1;font-size:13px;font-weight:500;color:#1e293b;">
+                            @k.KriteriyaAdi <span style="color:#94a3b8;font-size:11px;">(@k.Ceki%)</span>
+                            @if (k.IsciQiymeti.HasValue)
+                            { <span style="font-size:11px;color:#6366f1;margin-left:8px;">İşçi: @k.IsciQiymeti.Value.ToString("N1")</span> }
+                        </div>
+                        <input type="hidden" name="kriteriyaIds" value="@k.Id" />
+                        <select name="sobeReisiQiymetleri" style="width:140px;" class="form-select form-select-sm" required>
+                            <option value="">Qiymət...</option>
+                            <option value="1">1 - Çox zəif</option>
+                            <option value="2">2 - Zəif</option>
+                            <option value="3">3 - Orta</option>
+                            <option value="4">4 - Yaxşı</option>
+                            <option value="5">5 - Əla</option>
+                        </select>
+                        <input type="text" name="sobeReisiSherhler" style="width:180px;" class="form-control form-control-sm" placeholder="Şərh (ixtiyari)" />
+                    </div>
+                }
+                <div style="margin-top:12px;">
+                    <label style="font-size:12px;color:#64748b;display:block;margin-bottom:4px;">Ümumi Şərh</label>
+                    <textarea name="sobeReisiSherhi" class="form-control form-control-sm" rows="3" placeholder="Şöbə rəisi qeydi..."></textarea>
+                </div>
+                <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+                    <button type="submit" class="btn btn-warning btn-sm text-white"><i class="bi bi-check-lg me-1"></i>Qiymətləndirməni Göndər</button>
+                </div>
+            </form>
+        </div>
+    }
+
+    @* Rəhbər formu *@
+    @if (isRehber && rehberSirasi)
+    {
+        <div style="background:#fff;border:1px solid #8b5cf6;border-radius:10px;padding:20px;margin-bottom:16px;">
+            <h6 style="font-size:14px;font-weight:600;color:#1e293b;margin-bottom:16px;"><i class="bi bi-person-workspace me-2" style="color:#8b5cf6;"></i>Rəhbər Qiymətləndirməsi</h6>
+            <form asp-area="User" asp-controller="Performans" asp-action="RehberQiymetlendir" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="performansId" value="@Model.Id" />
+                @foreach (var k in Model.Kriteriyalar.OrderByDescending(x => x.Ceki))
+                {
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px;background:#f8fafc;border-radius:8px;">
+                        <div style="flex:1;font-size:13px;font-weight:500;color:#1e293b;">
+                            @k.KriteriyaAdi <span style="color:#94a3b8;font-size:11px;">(@k.Ceki%)</span>
+                            @if (k.IsciQiymeti.HasValue)
+                            { <span style="font-size:11px;color:#6366f1;margin-left:8px;">İşçi: @k.IsciQiymeti.Value.ToString("N1")</span> }
+                            @if (k.SobeReisiQiymeti.HasValue)
+                            { <span style="font-size:11px;color:#d97706;margin-left:4px;">| Ş.R.: @k.SobeReisiQiymeti.Value.ToString("N1")</span> }
+                        </div>
+                        <input type="hidden" name="kriteriyaIds" value="@k.Id" />
+                        <select name="mudirQiymetleri" style="width:140px;" class="form-select form-select-sm" required>
+                            <option value="">Qiymət...</option>
+                            <option value="1">1 - Çox zəif</option>
+                            <option value="2">2 - Zəif</option>
+                            <option value="3">3 - Orta</option>
+                            <option value="4">4 - Yaxşı</option>
+                            <option value="5">5 - Əla</option>
+                        </select>
+                        <input type="text" name="mudirSherhler" style="width:180px;" class="form-control form-control-sm" placeholder="Şərh (ixtiyari)" />
+                    </div>
+                }
+                <div style="margin-top:12px;">
+                    <label style="font-size:12px;color:#64748b;display:block;margin-bottom:4px;">Rəhbər Şərhi</label>
+                    <textarea name="mudirSherhi" class="form-control form-control-sm" rows="3" placeholder="Rəhbər qeydi..."></textarea>
+                </div>
+                <div style="margin-top:8px;">
+                    <label style="font-size:12px;color:#64748b;display:block;margin-bottom:4px;">İnkişaf Planı</label>
+                    <textarea name="inkisafPlani" class="form-control form-control-sm" rows="3" placeholder="İnkişaf təklifləri...">@Model.InkisafPlani</textarea>
+                </div>
+                <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-lg me-1"></i>Qiymətləndirməni Tamamla</button>
+                </div>
+            </form>
+        </div>
+    }
+
+    @* Yalnız baxış - forma yoxdur *@
+    @if (Model.Status == PerformansStatus.Tamamlandi ||
+         (isIsci && Model.Status != PerformansStatus.Gozlemede) ||
+         (isSobeReisi && Model.Status != PerformansStatus.IsciQiymetlendirdi) ||
+         (isRehber && !rehberSirasi))
+    {
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;text-align:center;color:#16a34a;font-size:13px;">
+            <i class="bi bi-check-circle-fill me-1"></i>
+            @(Model.Status == PerformansStatus.Tamamlandi ? "Qiymətləndirmə tamamlanıb." : "Sıranız gözlənilir.")
+        </div>
+    }
+</div>

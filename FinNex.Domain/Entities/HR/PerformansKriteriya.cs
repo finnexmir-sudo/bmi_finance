@@ -13,5 +13,8 @@ namespace FinNex.Domain.Entities.HR
 
         public string? IsciSherhi { get; set; }
         public string? MudirSherhi { get; set; }
+
+        public decimal? SobeReisiQiymeti { get; set; }
+        public string? SobeReisiSherhi { get; set; }
     }
 }

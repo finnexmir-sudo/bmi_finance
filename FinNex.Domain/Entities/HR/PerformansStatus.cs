@@ -4,7 +4,8 @@ namespace FinNex.Domain.Entities.HR
     {
         Gozlemede = 0,
         IsciQiymetlendirdi = 1,
-        MudirQiymetlendirdi = 2,
-        Tamamlandi = 3
+        SobeReisiQiymetlendirdi = 2,
+        RehberQiymetlendirdi = 3,
+        Tamamlandi = 4
     }
 }
