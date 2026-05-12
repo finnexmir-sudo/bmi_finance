@@ -93,13 +93,26 @@
         const xesKesinti = parseFloat(row.dataset.xesKesinti || 0) || 0;
         const qayibGun = parseInt(row.dataset.qayibGun || 0) || 0;
         const qayibKesinti = parseFloat(row.dataset.qayibKesinti || 0) || 0;
-        // Məzuniyyət avansı vergisi (server-tərəfi hesablanmış, ödənilmiş)
+        // Məzuniyyət avansı vergisi (server-tərəfi hesablanmış, ödənilmiş).
+        // Faktiki ödənilmiş NET-dən (mavNet) implied cəmi vergi (mavBrut − mavNet)
+        // server-in standalone hesabladığı vergi cəmindən fərqli ola bilər
+        // (TutulmalariHesablaAsync-in im üçün standartGuzest tətbiqi səbəbiylə).
+        // Burada növ üzrə dəyərləri uyğunlaşdırırıq ki, cəm = faktiki vergi olsun.
         const mavBrut   = parseFloat(row.dataset.mavBrut   || 0) || 0;
-        const mavGelirV = parseFloat(row.dataset.mavGelirv || 0) || 0;
-        const mavDsmf   = parseFloat(row.dataset.mavDsmf   || 0) || 0;
-        const mavIss    = parseFloat(row.dataset.mavIss    || 0) || 0;
-        const mavItss   = parseFloat(row.dataset.mavItss   || 0) || 0;
+        let   mavGelirV = parseFloat(row.dataset.mavGelirv || 0) || 0;
+        let   mavDsmf   = parseFloat(row.dataset.mavDsmf   || 0) || 0;
+        let   mavIss    = parseFloat(row.dataset.mavIss    || 0) || 0;
+        let   mavItss   = parseFloat(row.dataset.mavItss   || 0) || 0;
         const mavNet    = parseFloat(row.dataset.mavNet    || 0) || 0;
+        const _mavTaxRaw     = mavGelirV + mavDsmf + mavIss + mavItss;
+        const _mavTaxImplied = Math.max(0, mavBrut - mavNet);
+        if (mavBrut > 0 && _mavTaxRaw > 0 && _mavTaxImplied > 0) {
+            const _scale = _mavTaxImplied / _mavTaxRaw;
+            mavGelirV = Math.round(mavGelirV * _scale * 100) / 100;
+            mavDsmf   = Math.round(mavDsmf   * _scale * 100) / 100;
+            mavIss    = Math.round(mavIss    * _scale * 100) / 100;
+            mavItss   = Math.round(mavItss   * _scale * 100) / 100;
+        }
         const mavTutulma = mavGelirV + mavDsmf + mavIss + mavItss;
         const chk = row.querySelector('.mth-checkbox');
         const bInp = row.querySelector('.mth-inp--b');
