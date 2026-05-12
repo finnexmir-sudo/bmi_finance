@@ -753,7 +753,11 @@
                                             : `<span class="mp-ay-lbl">− İşçi güzəşti</span><span class="mp-ay-val" style="color:#8a93a8">təyin edilməyib</span>`}
                                         <span class="mp-ay-lbl"><strong>= Vergi tutulan məbləğ</strong></span><span class="mp-ay-val"><strong>${fmt(ay.vergilenecek)}</strong></span>
                                         <span class="mp-ay-sub" style="grid-column:1/-1">Bu məbləğ üzrə pilləli gəlir vergisi tətbiq olunur</span>
-                                        <span class="mp-ay-lbl">− Cəmi tutulmalar (gəlir vergisi + DSMF + İcbari Tibbi Sığorta + İşsizlik)</span><span class="mp-ay-val" style="color:#d43f3f">− ${fmt(ay.tutulmalarCemi)}</span>
+                                        <span class="mp-ay-lbl">− Gəlir vergisi</span><span class="mp-ay-val" style="color:#d43f3f">− ${fmt(ay.gelirVergisi)}</span>
+                                        <span class="mp-ay-lbl">− DSMF (işçi payı)</span><span class="mp-ay-val" style="color:#d43f3f">− ${fmt(ay.dsmfIsci)}</span>
+                                        <span class="mp-ay-lbl">− İcbari Tibbi Sığorta (İTSS)</span><span class="mp-ay-val" style="color:#d43f3f">− ${fmt(ay.itss)}</span>
+                                        <span class="mp-ay-lbl">− İşsizlik sığortası</span><span class="mp-ay-val" style="color:#d43f3f">− ${fmt(ay.issizlikIsci)}</span>
+                                        <span class="mp-ay-lbl" style="font-weight:600">= Cəmi tutulmalar</span><span class="mp-ay-val" style="color:#d43f3f;font-weight:600">− ${fmt(ay.tutulmalarCemi)}</span>
                                     </div>
                                     <div class="mp-ay-net">
                                         <span>Bu ayın net maaşı${data.qabaqcadan ? ' (məz. ödənişi ayrıca)' : ''}</span>
