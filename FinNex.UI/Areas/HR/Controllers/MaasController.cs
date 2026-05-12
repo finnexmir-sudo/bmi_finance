@@ -589,15 +589,31 @@ namespace FinNex.UI.Areas.HR.Controllers
                 }
                 if (avBrut <= 0) continue;
 
-                var tut = await _hesablamaService.TutulmalariHesablaAsync(avBrut, hesabTarixi, mav.IsciId);
-                decimal avNet = avBrut - tut.UmumiTutulma;
+                // Birləşdirilmiş vergi: (maaş + avans) − (yalnız maaş) = avansın vergi payı.
+                // Ayrıca hesablamaq 200 AZN standart güzəştini səhv tətbiq edir.
+                decimal cM = cariMaasMap.TryGetValue(mav.IsciId, out var cm_) ? cm_ : 0m;
+                int mezIsGun = isciMezuniyyetMap.TryGetValue(mav.IsciId, out var mi_) ? mi_.gun : 0;
+                int workedDays = Math.Max(0, ayIsGun - mezIsGun);
+                decimal im = (cM > 0 && ayIsGun > 0) ? Math.Round(cM / ayIsGun * workedDays, 2) : 0m;
+
+                var ftax = await _hesablamaService.TutulmalariHesablaAsync(im + avBrut, hesabTarixi, mav.IsciId);
+                var itax = await _hesablamaService.TutulmalariHesablaAsync(im,          hesabTarixi, mav.IsciId);
+
+                decimal avGelirV = ftax.GelirVergisi  - itax.GelirVergisi;
+                decimal avDsmf   = ftax.DsmfIsci       - itax.DsmfIsci;
+                decimal avIss    = ftax.IssizlikIsci   - itax.IssizlikIsci;
+                decimal avItss   = ftax.Itss           - itax.Itss;
+                // Faktiki ödənilmiş NET (saxlanılmışsa), yoxsa hesablanmış
+                decimal avNet    = (mav.OdenenMebleg > 0)
+                    ? mav.OdenenMebleg.Value
+                    : avBrut - (ftax.UmumiTutulma - itax.UmumiTutulma);
 
                 if (isciMezAvansMap.TryGetValue(mav.IsciId, out var ex))
-                    isciMezAvansMap[mav.IsciId] = (ex.brut + avBrut, ex.gelirV + tut.GelirVergisi,
-                        ex.dsmf + tut.DsmfIsci, ex.iss + tut.IssizlikIsci, ex.itss + tut.Itss, ex.net + avNet);
+                    isciMezAvansMap[mav.IsciId] = (ex.brut + avBrut,
+                        ex.gelirV + avGelirV, ex.dsmf + avDsmf, ex.iss + avIss,
+                        ex.itss + avItss, ex.net + avNet);
                 else
-                    isciMezAvansMap[mav.IsciId] = (avBrut, tut.GelirVergisi, tut.DsmfIsci,
-                        tut.IssizlikIsci, tut.Itss, avNet);
+                    isciMezAvansMap[mav.IsciId] = (avBrut, avGelirV, avDsmf, avIss, avItss, avNet);
             }
             ViewBag.IsciMezAvansMap = isciMezAvansMap;
 
