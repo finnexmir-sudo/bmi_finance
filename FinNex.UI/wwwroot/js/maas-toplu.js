@@ -186,14 +186,18 @@
             const cTaxes     = cGelirV + cDsmf + cIss + cItss;
             const combinedNet = (esasBrut + mavBrut) - cTaxes - hys;
             net     = Math.max(combinedNet - mavNet - avans, 0);
-            tutulma = Math.max(brut - net, 0);
+            // "Cəmi tutulma" = sıralanan 4 vergi + avans (HYS ayrı kartda göstərilir;
+            //  preview-da da "Cəmi tutulmalar" yalnız 4 vergidir).
+            tutulma = gelirV + dsmf + iss + itss + avans;
         } else {
             gelirV  = hesablaTutulma(vergilenecek, 1, 0);
             dsmf    = hesablaTutulma(dsmfBazasi,   2, 0);
             iss     = hesablaTutulma(itssBazasi,   3, FLAT.issizlik);
             itss    = hesablaTutulma(itssBazasi,   4, 0);
-            tutulma = gelirV + dsmf + iss + itss + hys + hysIsv + avans;
-            net     = Math.max(brut - tutulma, 0);
+            tutulma = gelirV + dsmf + iss + itss + avans;
+            // NET-də HYS işçi və hysIsv də çıxılır (brut süni olaraq hysIsv-i daxil edir,
+            // ona görə əks tərəfdə də çıxılır → nəticə nağd alınan məbləğdir).
+            net = Math.max(brut - tutulma - hys - hysIsv, 0);
         }
 
         // İşəgötürən xərcləri — DSMF: dsmfBazası; İTSS/İşsizlik: itssBazası
