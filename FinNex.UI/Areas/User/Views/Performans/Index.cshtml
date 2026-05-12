@@ -1,0 +1,82 @@
+@model IList<FinNex.Domain.Entities.HR.PerformansQiymetlendirme>
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = "Performans Qiymətləndirmə";
+    int currentIsciId = ViewBag.IsciId ?? 0;
+
+    string StatusText(PerformansStatus s) => s switch {
+        PerformansStatus.Gozlemede => "Gözləmədə",
+        PerformansStatus.IsciQiymetlendirdi => "İşçi qiymətləndirdi",
+        PerformansStatus.SobeReisiQiymetlendirdi => "Şöbə rəisi qiymətləndirdi",
+        PerformansStatus.RehberQiymetlendirdi => "Rəhbər qiymətləndirdi",
+        PerformansStatus.Tamamlandi => "Tamamlandı",
+        _ => "—"
+    };
+    string RolText(PerformansQiymetlendirme p) {
+        if (p.IsciId == currentIsciId) return "İşçi";
+        if (p.SobeReisiId == currentIsciId) return "Şöbə Rəisi";
+        if (p.QiymetlendirenIsciId == currentIsciId) return "Rəhbər";
+        return "—";
+    };
+    bool GozlemeDe(PerformansQiymetlendirme p) {
+        if (p.IsciId == currentIsciId && p.Status == PerformansStatus.Gozlemede) return true;
+        if (p.SobeReisiId == currentIsciId && p.Status == PerformansStatus.IsciQiymetlendirdi) return true;
+        if (p.QiymetlendirenIsciId == currentIsciId && (p.Status == PerformansStatus.IsciQiymetlendirdi || p.Status == PerformansStatus.SobeReisiQiymetlendirdi)) return true;
+        return false;
+    };
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Performans Qiymətləndirmə</div>
+            <div class="fn-page-sub">Sizdən gözlənilən qiymətləndirmələr</div>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div style="text-align:center;padding:60px 20px;color:#94a3b8;">
+            <i class="bi bi-star" style="font-size:40px;display:block;margin-bottom:12px;"></i>
+            <div>Hazırda sizə aid performans qiymətləndirməsi yoxdur</div>
+        </div>
+    }
+    else
+    {
+        <div style="display:flex;flex-direction:column;gap:12px;">
+            @foreach (var p in Model)
+            {
+                bool pending = GozlemeDe(p);
+                <div style="background:#fff;border:1px solid @(pending ? "#6366f1" : "#e2e8f0");border-left:4px solid @(pending ? "#6366f1" : "#cbd5e1");border-radius:10px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+                    <div>
+                        <div style="font-weight:600;font-size:14px;color:#1e293b;">
+                            @p.Isci.Ad @p.Isci.Soyad
+                            <span style="font-size:11px;background:#e0e7ff;color:#6366f1;padding:2px 8px;border-radius:20px;margin-left:8px;font-weight:500;">@RolText(p)</span>
+                            @if (pending)
+                            {
+                                <span style="font-size:11px;background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:20px;margin-left:4px;font-weight:500;">Növbəniz!</span>
+                            }
+                        </div>
+                        <div style="font-size:12px;color:#64748b;margin-top:4px;">
+                            @(p.DovrTipi == PerformansDovrTipi.Rublik ? $"Rüb {p.Rubu}" : "İllik") @p.Il ·
+                            Rəhbər: @(p.QiymetlendirenIsci?.Ad) @(p.QiymetlendirenIsci?.Soyad)
+                            @if (p.SobeReisiId.HasValue && p.SobeReisi != null)
+                            { <span> · Şöbə R.: @p.SobeReisi.Ad @p.SobeReisi.Soyad</span> }
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
+                        <span style="font-size:12px;font-weight:500;color:#64748b;">@StatusText(p.Status)</span>
+                        @if (p.YekunQiymet > 0)
+                        {
+                            <span style="font-size:18px;font-weight:700;color:@(p.YekunQiymet>=4?"#059669":p.YekunQiymet>=3?"#d97706":"#dc2626");">@p.YekunQiymet.ToString("N1")</span>
+                        }
+                        <a asp-area="User" asp-controller="Performans" asp-action="Detal" asp-route-id="@p.Id"
+                           style="background:#6366f1;color:#fff;padding:6px 14px;border-radius:7px;font-size:12px;font-weight:600;text-decoration:none;">
+                            @(pending ? "Qiymətləndir" : "Bax")
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

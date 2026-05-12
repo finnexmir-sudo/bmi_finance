@@ -336,6 +336,15 @@
                             Yuxarıdakı canlı hesablama nəticəsi: <strong>@Model.CemiOdenis.ToString("N2") ₼</strong>.
                             Səhv varsa burada düzəldə bilərsiniz.
                         </small>
+                        @if (mez.OdenenMebleg.HasValue && mez.OdenenMebleg != Model.CemiOdenis)
+                        {
+                            <div style="margin-top:6px;">
+                                <button type="button" onclick="document.querySelector('[name=redakteEdilmisMebleg]').value='@Model.CemiOdenis.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)'"
+                                        style="font-size:12px;padding:4px 10px;border:1px solid #6366f1;border-radius:6px;background:#f0f0ff;color:#4338ca;cursor:pointer;">
+                                    <i class="bi bi-arrow-repeat"></i> Canlı hesablamadan götür (@Model.CemiOdenis.ToString("N2") ₼)
+                                </button>
+                            </div>
+                        }
                     </div>
                     <div class="mod-warn" style="margin-bottom:10px;">
                         <i class="bi bi-info-circle"></i>
