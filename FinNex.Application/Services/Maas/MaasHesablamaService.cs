@@ -193,7 +193,8 @@ namespace FinNex.Application.Services.HR
 
             decimal mezOdenis = 0;
             decimal mezKesinti = 0;
-            decimal mezuniyyetAvansBrutu = 0;  // 2500 güzəşt yoxlaması üçün — if bloku xaricindədir
+            decimal mezuniyyetAvansBrutu = 0;     // birləşdirilmiş vergi bazası və 200 AZN güzəşt yoxlaması üçün
+            decimal mezuniyyetAvansNetPaid = 0;   // artıq ödənilmiş NET (umumiTutulma-dan çıxılır)
 
             if (mezGun > 0)
             {
@@ -263,6 +264,8 @@ namespace FinNex.Application.Services.HR
                                 advanceMez.IsciId, advanceMez.BaslamaTarixi, advanceMez.BitmeTarixi);
                             mezuniyyetAvansBrutu += mhes.CemiOdenis;
                         }
+                        if (advanceMez.OdenenMebleg.HasValue && advanceMez.OdenenMebleg > 0)
+                            mezuniyyetAvansNetPaid += advanceMez.OdenenMebleg.Value;
                         izahatlar.Add(new HesablamaIzahiDto
                         {
                             Addim = "Mezuniyyet (qabaqcadan ödənildi)",
@@ -521,9 +524,9 @@ namespace FinNex.Application.Services.HR
             //   - vergiBazasi   = esasBrut − HYS                (gəlir vergisi üçün; xəstəlik daxildir)
             //   - dsmfBazasi    = esasBrut − HYS − Xəstəlik     (DSMF işçi/işəgötürən)
             //   - itssBazasi    = esasBrut + HYSişv − Xəstəlik  (İTSS+İşsizlik; işəgötürən HYS DAXİL)
-            decimal vergiBazasi = Math.Max(0, esasBrut - hysMebleg);
+            decimal vergiBazasi = Math.Max(0, esasBrut + mezuniyyetAvansBrutu - hysMebleg);
             decimal dsmfBazasi  = Math.Max(0, vergiBazasi - xestelikSirketOdenis);
-            decimal itssBazasi  = Math.Max(0, esasBrut + hysIsegoturen - xestelikSirketOdenis);
+            decimal itssBazasi  = Math.Max(0, esasBrut + mezuniyyetAvansBrutu + hysIsegoturen - xestelikSirketOdenis);
 
             if (hysMebleg > 0)
             {
@@ -679,8 +682,16 @@ namespace FinNex.Application.Services.HR
             izahatlar.Add(new HesablamaIzahiDto { Addim = "ITSS (Isci)",                Izah = $"{itssIzah}{(xestelikSirketOdenis > 0 ? " (xəstəlik çıxılıb)" : "")}",            Mebleg = itss,         Tip = "vergi" });
 
             // 11. NET maas — HYS də NET-dən tutulur (çünki işçinin öz payıdır)
-            // HYS: brüt-ə hysIsegoturen daxildir, deməli NET-dən çıxılmalıdır
-            decimal umumiTutulma = gelirVergisi + dsmfIsci + issizlikIsci + itss + hysMebleg + hysIsegoturen + avansMebleg;
+            // HYS: brüt-ə hysIsegoturen daxildir, deməli NET-dən çıxılmalıdır.
+            //
+            // Məzuniyyət avansı (QabaqcadanOdenis) varsa: vergi cəmi (cTaxes) birləşmiş
+            // brüt üzərindən hesablanır (bax 9.0.1 bazaları). Avansın vergi payı artıq
+            // həmin ödəniş zamanı tutulub (mavBrut − mavNetPaid), ona görə cəmi
+            // tutulmadan çıxılır — beləliklə yalnız maaş hissəsinə düşən vergi qalır.
+            decimal mavImpliedTax = mezuniyyetAvansBrutu > 0 && mezuniyyetAvansNetPaid > 0
+                ? Math.Max(0, mezuniyyetAvansBrutu - mezuniyyetAvansNetPaid)
+                : 0m;
+            decimal umumiTutulma = gelirVergisi + dsmfIsci + issizlikIsci + itss + hysMebleg + hysIsegoturen + avansMebleg - mavImpliedTax;
             decimal netMaas = brutMaas - umumiTutulma;
 
             // Minimum əmək haqqı yoxlaması
