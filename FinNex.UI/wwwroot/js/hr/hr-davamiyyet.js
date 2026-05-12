@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var currentMode = 'tarix';
     var isGozlenilenMode = false;
     var isMezuniyyetMode = false;
+    var isAdminUser = window.isAdminUser === true;
 
     // İş parametrləri — default dəyərlər, GetByTarix cavabında yenilənir
     var isParametriData = {
@@ -300,6 +301,46 @@ document.addEventListener('DOMContentLoaded', function () {
                 duzeltSaxlaBtn.disabled = false;
                 duzeltSaxlaBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Saxla';
             });
+        });
+    }
+
+    // ── Admin Davamiyyət Düzəliş Modal ──
+    var adminDuzeltModalEl = document.getElementById('adminDuzeltModal');
+    var adminDuzeltModal = adminDuzeltModalEl ? new bootstrap.Modal(adminDuzeltModalEl) : null;
+    var adminDuzeltSaxlaBtn = document.getElementById('adminDuzeltSaxlaBtn');
+
+    if (adminDuzeltSaxlaBtn && adminDuzeltModal) {
+        adminDuzeltSaxlaBtn.addEventListener('click', function () {
+            var id = parseInt(document.getElementById('adminDuzeltId').value);
+            var giris = document.getElementById('adminDuzeltGiris').value.trim();
+            var cixis = document.getElementById('adminDuzeltCixis').value.trim();
+            var status = parseInt(document.getElementById('adminDuzeltStatus').value);
+            var maasdanKes = document.getElementById('adminDuzeltMaasdanKes').checked;
+            var sebeb = document.getElementById('adminDuzeltSebeb').value.trim();
+
+            adminDuzeltSaxlaBtn.disabled = true;
+            adminDuzeltSaxlaBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saxlanılır...';
+
+            fetch('/HR/Davamiyyet/AdminDavamiyyetDuzelt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id, girisVaxti: giris || null, cixisVaxti: cixis || null, status: status, maasdanKes: maasdanKes, qayibSebebi: sebeb || null })
+            })
+                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+                .then(function (res) {
+                    if (res.ok) {
+                        adminDuzeltModal.hide();
+                        var p = getBaseParams();
+                        loadData(p);
+                    } else {
+                        alert(res.data.error || 'Xəta baş verdi.');
+                    }
+                })
+                .catch(function () { alert('Şəbəkə xətası.'); })
+                .finally(function () {
+                    adminDuzeltSaxlaBtn.disabled = false;
+                    adminDuzeltSaxlaBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Saxla';
+                });
         });
     }
 
@@ -657,6 +698,23 @@ document.addEventListener('DOMContentLoaded', function () {
                     'title="Sil"><i class="bi bi-trash"></i></button>';
             }
 
+            // Admin düzəliş düyməsi — bütün qeydlər üçün
+            if (isAdminUser && r.id) {
+                var girisStr = r.girisVaxti ? formatTime(r.girisVaxti) : '';
+                var cixisStr = r.cixisVaxti ? formatTime(r.cixisVaxti) : '';
+                badge += '<button class="btn btn-sm admin-duzelt-btn" ' +
+                    'data-id="' + r.id + '" ' +
+                    'data-isci-ad="' + r.isciTamAd + '" ' +
+                    'data-tarix-raw="' + tarixRaw + '" ' +
+                    'data-giris="' + girisStr + '" ' +
+                    'data-cixis="' + cixisStr + '" ' +
+                    'data-status="' + r.status + '" ' +
+                    'data-maasdan-kes="' + (r.maasdanKes ? '1' : '0') + '" ' +
+                    'data-sebeb="' + (r.qayibSebebi || '') + '" ' +
+                    'style="font-size:11px;padding:2px 7px;margin-left:6px;border:1px solid #0891b2;color:#0891b2;border-radius:5px;" ' +
+                    'title="Admin düzəliş"><i class="bi bi-shield-lock"></i></button>';
+            }
+
             var actionCell = '';
             if (showQayibBtn && r.status === 0) {
                 actionCell = '<td><button class="btn btn-sm btn-outline-danger qayib-yaz-btn" ' +
@@ -706,6 +764,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('duzeltTarixGoster').textContent =
                     pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear();
                 qayibDuzeltModal.show();
+            });
+        });
+
+        // Admin düzəliş düymələrinin klik hadisəsi
+        tableBody.querySelectorAll('.admin-duzelt-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.getElementById('adminDuzeltId').value = btn.getAttribute('data-id');
+                document.getElementById('adminDuzeltIsciAd').textContent = btn.getAttribute('data-isci-ad');
+                document.getElementById('adminDuzeltGiris').value = btn.getAttribute('data-giris') || '';
+                document.getElementById('adminDuzeltCixis').value = btn.getAttribute('data-cixis') || '';
+                document.getElementById('adminDuzeltStatus').value = btn.getAttribute('data-status') || '1';
+                document.getElementById('adminDuzeltMaasdanKes').checked = btn.getAttribute('data-maasdan-kes') === '1';
+                document.getElementById('adminDuzeltSebeb').value = btn.getAttribute('data-sebeb') || '';
+                var d = new Date(btn.getAttribute('data-tarix-raw'));
+                document.getElementById('adminDuzeltTarixGoster').textContent =
+                    pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear();
+                adminDuzeltModal.show();
             });
         });
 
