@@ -143,8 +143,9 @@
         const dsmfBazasi  = Math.max(0, vergiBazasi - xesSirketOdenis);
         const itssBazasi  = Math.max(0, esasBrut + hysIsv - xesSirketOdenis);
 
-        // Standart güzəşt — GROSS (maaş + işəgötürən HYS) ≤ 2500 olmalıdır
-        const standartGuzest = brut > 0 && brut <= FIRST_BRACKET_MAX ? VERGI_GUZESTI : 0;
+        // Standart güzəşt — maaş + məz.avansı COMBINED brüt ≤ 2500 olmalıdır
+        // (FerdiHesablaAsync ilə eyni məntiq: brutMaasGuzestYoxlama = brutMaas + mezuniyyetAvansBrutu)
+        const standartGuzest = brut > 0 && (brut + mavBrut) <= FIRST_BRACKET_MAX ? VERGI_GUZESTI : 0;
         const vergilenecek = Math.max(0, vergiBazasi - standartGuzest - isciGuzest);
 
         // İşçidən tutulanlar — hər biri öz bazasından
