@@ -89,6 +89,35 @@ Pilleli(mebleg) = SabitMebleg + (mebleg − AsagiHedd) × (Faiz / 100)
 | İTSS işv. | ItssBazasi | Pillə əsaslı (Nov=9) |
 | HYS işv. | HYS məbləği × HysIsvFaiz% | (param: HysIsegoturenFaizi) |
 
+### 6.1 DSMF işəgötürən pilləsi (Mühasibin Excel düsturu ilə eyni)
+
+```
+Excel: =ROUND(IF(X<200, X*22%,
+              IF((X-200)<=8000, (X-200)*0.15+44,
+                                (X-8000)*0.11+1214)), 2)
+```
+
+| İnterval (X = DsmfBazasi) | Düstur |
+|---------------------------|--------|
+| 0 − 200 | `X × 22%` |
+| 200 − 8.200 | `44 + (X − 200) × 15%` |
+| 8.200+ | `1.214 + (X − 8.000) × 11%` |
+
+**Nümunə (Məhəmməd, May 2026):**
+- DsmfBazasi = 1,029.41 − 318.10 (HYS) − 0 (xəstəlik) = **711.31 ₼**
+- İkinci pillə: 44 + (711.31 − 200) × 15% = 44 + 76.70 = **120.70 ₼** ✓
+
+### 6.2 İTSS işəgötürən pilləsi
+
+| İnterval (X = ItssBazasi) | Düstur |
+|---------------------------|--------|
+| 0 − 2.500 | `X × 2%` |
+| 2.500+ | `50 + (X − 2.500) × 0.5%` |
+
+### 6.3 İşsizlik işəgötürən
+
+Flat 0.5% (ItssBazasi-dən).
+
 ## 7. Məzuniyyət ödəniş hesablaması
 
 ```
@@ -160,8 +189,12 @@ NET MAAŞ = EsasBrut − salary 4 taxes − HYSişçi − Avans
 
 ## 11. Açıq suallar (yoxlanmalı)
 
-- [ ] DSMF bazasından HYS çıxılır — qanunla doğrudurmu? (cari kod belə işləyir)
-- [ ] Şirkət xərcləri TopluHesabla-da yalnız maaş hissəsi göstərilir, avans
-      üçün ayrıca uçot olunmalıdır
-- [ ] Pillə strukturu (DSMF işv): 0-200 sabit 0 faiz 22%? 200-2500 sabit 44
-      faiz 15%? — DB-də yoxlanmalı
+- [x] **DSMF işv pilləsi:** Mühasibin Excel düsturu ilə tam üst-üstə düşür
+      (0-200 22%, 200-8200 44+15%, 8200+ 1214+11%). Bax bölmə 6.1.
+- [ ] **DSMF bazasından HYS işçi payı çıxılır** — bu cari koddur. Mühasibin
+      Excel düsturundakı `X = S26+O26+N26-M26-T26-L26-K26-U26` ifadəsində
+      bu sütunlar yoxlanılmalıdır ki, kod ilə eyni baza istifadə edildiyi
+      təsdiq olunsun. Hələlik nümunə üst-üstə düşür (711.31 → 120.70).
+- [ ] **Şirkət xərcləri TopluHesabla-da yalnız maaş hissəsi** göstərilir —
+      avans üçün ayrıca uçot olunmalıdır (cari kod belədir). Tələb varsa
+      birləşmiş aylıq cəm də göstərilə bilər.
