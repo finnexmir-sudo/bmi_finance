@@ -8,6 +8,12 @@ namespace FinNex.Domain.Entities.HR
         public int QiymetlendirenIsciId { get; set; }
         public Isci QiymetlendirenIsci { get; set; } = null!;
 
+        public int? SobeReisiId { get; set; }
+        public Isci? SobeReisi { get; set; }
+        public decimal SobeReisiOrtalamaQiymet { get; set; }
+        public string? SobeReisiSherhi { get; set; }
+        public DateTime? SobeReisiQiymetlendirmeTarixi { get; set; }
+
         public PerformansDovrTipi DovrTipi { get; set; }
         public int Il { get; set; }
         public int? Rubu { get; set; } // 1-4 (Rüblük üçün)

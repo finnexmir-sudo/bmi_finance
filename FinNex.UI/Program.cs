@@ -241,6 +241,28 @@ namespace FinNex.UI
                 }
                 catch { /* artıq tətbiq olunub */ }
 
+                // Performans çox səviyyəli qiymətləndirmə — SobeReisi sahələri
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='SobeReisiId')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD SobeReisiId INT NULL;
+                        IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name='FK_PerformansQiymetlendirmeler_Isciler_SobeReisiId')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD CONSTRAINT FK_PerformansQiymetlendirmeler_Isciler_SobeReisiId FOREIGN KEY (SobeReisiId) REFERENCES Isciler(Id);
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='SobeReisiOrtalamaQiymet')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD SobeReisiOrtalamaQiymet DECIMAL(5,2) NOT NULL DEFAULT 0;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='SobeReisiSherhi')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD SobeReisiSherhi NVARCHAR(MAX) NULL;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='SobeReisiQiymetlendirmeTarixi')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD SobeReisiQiymetlendirmeTarixi DATETIME2 NULL;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansKriteriyalar' AND COLUMN_NAME='SobeReisiQiymeti')
+                            ALTER TABLE PerformansKriteriyalar ADD SobeReisiQiymeti DECIMAL(5,2) NULL;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansKriteriyalar' AND COLUMN_NAME='SobeReisiSherhi')
+                            ALTER TABLE PerformansKriteriyalar ADD SobeReisiSherhi NVARCHAR(MAX) NULL;
+                    ");
+                }
+                catch { /* artıq tətbiq olunub */ }
+
                 // Avtomatik migration — sadəcə Migrate() çağır, xəta olsa logla amma crash etmə
                 try
                 {

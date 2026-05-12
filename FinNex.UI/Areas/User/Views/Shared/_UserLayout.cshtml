@@ -319,7 +319,7 @@
 
             case "emekdas":
                 {
-                    var emekPortalActive = currentController is "Davamiyyet" or "Takvim" or "Mezuniyyet" or "Icaze" or "Muraciet" or "Tapshiriq" or "Gorush";
+                    var emekPortalActive = currentController is "Davamiyyet" or "Takvim" or "Mezuniyyet" or "Icaze" or "Muraciet" or "Tapshiriq" or "Gorush" or "Performans";
                     var emekMaliyyeActive = currentArea == "User" && (currentController == "Maas" || currentController == "Avans" || currentController == "Xerc");
                     var emekJetonActive = currentArea == "User" && currentController == "Jeton";
                     <div class="fn-nav-g @(emekPortalActive ? "open" : "")">
@@ -355,6 +355,10 @@
                             <a asp-area="User" asp-controller="Gorush" asp-action="Index"
                                class="fn-nav-item @(currentController == "Gorush" ? "active" : "")">
                                 <i class="bi bi-calendar-event"></i> Görüşlər
+                            </a>
+                            <a asp-area="User" asp-controller="Performans" asp-action="Index"
+                               class="fn-nav-item @(currentArea == "User" && currentController == "Performans" ? "active" : "")">
+                                <i class="bi bi-star"></i> Performans
                             </a>
                         </div>
                     </div>

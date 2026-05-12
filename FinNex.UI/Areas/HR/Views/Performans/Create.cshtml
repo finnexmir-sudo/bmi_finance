@@ -24,7 +24,7 @@
                 <div class="prf-create-section-title">
                     <i class="bi bi-person"></i> İşçi və Müdir
                 </div>
-                <div class="prf-create-grid prf-create-grid--2">
+                <div class="prf-create-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
                     <div class="fn-form-row">
                         <label class="fn-label">İşçi <span style="color:#dc2626">*</span></label>
                         <select name="isciId" id="isciSelect" class="fn-input" required>
@@ -36,17 +36,31 @@
                         </select>
                     </div>
                     <div class="fn-form-row">
-                        <label class="fn-label">Qiymətləndirən (Müdir) <span style="color:#dc2626">*</span></label>
-                        <select name="qiymetlendirenIsciId" id="mudirSelect" class="fn-input" required>
-                            <option value="">Müdir seçin...</option>
+                        <label class="fn-label">Şöbə Rəisi <span style="color:#64748b;font-weight:400;">(avtomatik / ixtiyari)</span></label>
+                        <select name="sobeReisiId" id="sobeReisiSelect" class="fn-input">
+                            <option value="">— yoxdur —</option>
                             @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
                             {
                                 <option value="@item.Value">@item.Text</option>
                             }
                         </select>
-                        <div class="prf-mudir-hint" id="mudirHint" style="display:none;">
+                        <div class="prf-mudir-hint" id="sobeReisiHint" style="display:none;">
                             <i class="bi bi-info-circle"></i>
-                            <span id="mudirHintText"></span>
+                            <span id="sobeReisiHintText"></span>
+                        </div>
+                    </div>
+                    <div class="fn-form-row">
+                        <label class="fn-label">Rəhbər <span style="color:#dc2626">*</span></label>
+                        <select name="qiymetlendirenIsciId" id="rehberSelect" class="fn-input" required>
+                            <option value="">Rəhbər seçin...</option>
+                            @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        </select>
+                        <div class="prf-mudir-hint" id="rehberHint" style="display:none;">
+                            <i class="bi bi-info-circle"></i>
+                            <span id="rehberHintText"></span>
                         </div>
                     </div>
                 </div>
@@ -177,22 +191,30 @@
             document.getElementById('rubuRow').style.display = this.value === '2' ? 'none' : '';
         });
 
-        // İşçi seçiləndə avtomatik müdir tap
+        // İşçi seçiləndə avtomatik şöbə rəisi və rəhbər tap
         document.getElementById('isciSelect').addEventListener('change', function () {
             var isciId = this.value;
             if (!isciId) {
-                document.getElementById('mudirHint').style.display = 'none';
+                document.getElementById('sobeReisiHint').style.display = 'none';
+                document.getElementById('rehberHint').style.display = 'none';
                 return;
             }
             fetch('/HR/Performans/GetMudir?isciId=' + isciId)
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
-                    if (data.mudirId) {
-                        document.getElementById('mudirSelect').value = data.mudirId;
-                        document.getElementById('mudirHintText').textContent = 'Avtomatik: ' + data.mudirAd;
-                        document.getElementById('mudirHint').style.display = 'flex';
+                    if (data.sobeReisiId) {
+                        document.getElementById('sobeReisiSelect').value = data.sobeReisiId;
+                        document.getElementById('sobeReisiHintText').textContent = 'Avtomatik: ' + data.sobeReisiAd;
+                        document.getElementById('sobeReisiHint').style.display = 'flex';
                     } else {
-                        document.getElementById('mudirHint').style.display = 'none';
+                        document.getElementById('sobeReisiHint').style.display = 'none';
+                    }
+                    if (data.rehberId) {
+                        document.getElementById('rehberSelect').value = data.rehberId;
+                        document.getElementById('rehberHintText').textContent = 'Avtomatik: ' + data.rehberAd;
+                        document.getElementById('rehberHint').style.display = 'flex';
+                    } else {
+                        document.getElementById('rehberHint').style.display = 'none';
                     }
                 })
                 .catch(function() {});
