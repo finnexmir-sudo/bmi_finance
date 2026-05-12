@@ -153,10 +153,35 @@
         const dsmf    = hesablaTutulma(dsmfBazasi,   2, 0);
         const iss     = hesablaTutulma(itssBazasi,   3, FLAT.issizlik);
         const itss    = hesablaTutulma(itssBazasi,   4, 0);
-        // Tutulma = yalnız bu ayın maaş vergisi + HYS + kredit avansı
-        // (mavTutulma artıq ayrıca ödənilib — burada ikinci dəfə tutulmur)
-        const tutulma = gelirV + dsmf + iss + itss + hys + hysIsv + avans;
-        const net     = Math.max(brut - tutulma, 0);
+
+        // NET MAAŞ — məzuniyyət avansı varsa, BIRLƏŞDİRİLMIŞ vergi əsasında hesablanır
+        // (FerdiHesablaAsync ilə eyni məntiq: aylıq cəmi gəlirə vergi tətbiq olunur,
+        //  vergi avans ödənişində NET çıxarılır, qalan hissə maaşda ödənilir).
+        //   salaryNet = combinedNet − mavNet  (faktiki ödənilmiş)
+        // Bu yanaşma standart güzəşt sərhədi və pillələrin istinaslı tətbiqini
+        // təmin edir → preview ilə üst-üstə düşür.
+        let net;
+        let tutulma;
+        if (mavBrut > 0) {
+            const cVergiBazasi   = Math.max(0, esasBrut + mavBrut - hys);
+            const cDsmfBazasi    = Math.max(0, cVergiBazasi - xesSirketOdenis);
+            const cItssBazasi    = Math.max(0, esasBrut + mavBrut + hysIsv - xesSirketOdenis);
+            const cVergilenecek  = Math.max(0, cVergiBazasi - standartGuzest - isciGuzest);
+            const cGelirV = hesablaTutulma(cVergilenecek, 1, 0);
+            const cDsmf   = hesablaTutulma(cDsmfBazasi,   2, 0);
+            const cIss    = hesablaTutulma(cItssBazasi,   3, FLAT.issizlik);
+            const cItss   = hesablaTutulma(cItssBazasi,   4, 0);
+            const cTaxes  = cGelirV + cDsmf + cIss + cItss;
+            // Cəmi əlinizə çatan (kombinasiyalı) = (esasBrut + mavBrut) − cTaxes − hysIsci
+            const combinedNet = (esasBrut + mavBrut) - cTaxes - hys;
+            // Maaş NET = kombinasiyalı NET − faktiki ödənilmiş avans NET
+            net = Math.max(combinedNet - mavNet - avans, 0);
+            // Tutulma görünüşü üçün: brut − net (avans daxil)
+            tutulma = Math.max(brut - net, 0);
+        } else {
+            tutulma = gelirV + dsmf + iss + itss + hys + hysIsv + avans;
+            net = Math.max(brut - tutulma, 0);
+        }
 
         // İşəgötürən xərcləri — DSMF: dsmfBazası; İTSS/İşsizlik: itssBazası
         const dsmfIsv = hesablaTutulma(dsmfBazasi, 7, 0);
