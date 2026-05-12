@@ -98,19 +98,11 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .GetirAsync(x => x.IsciId == mez.IsciId);
             decimal cariMaas = maliye?.CariMaas ?? 0;
 
-            // Məzuniyyət iş günü sayı (bu ay üçün)
             var mezAy = mez.BaslamaTarixi.Month;
             var mezIl = mez.BaslamaTarixi.Year;
             int ayIsGun = hesab.AySliceleri.FirstOrDefault()?.AyIsGun ?? 22;
-            int mezIsGun = hesab.UmumiIsGun;
-            int islenmisGun = Math.Max(0, ayIsGun - mezIsGun);
-            decimal islenmisMaas = ayIsGun > 0 ? Math.Round(cariMaas / ayIsGun * islenmisGun, 2) : 0;
 
-            // NET (yalnız işlənmiş günlər)
-            var islenmisTax = await _maasHesablamaService
-                .TutulmalariHesablaAsync(islenmisMaas, new DateTime(mezIl, mezAy, 1), mez.IsciId);
-
-            // HYS — bütün aktiv qeydlərin cəmi (işçi bir neçə şirkətdə HYS aça bilər)
+            // HYS
             var hysAyBitis = new DateTime(mezIl, mezAy, 1).AddMonths(1).AddDays(-1);
             decimal hysMebleg = await _unitOfWork.Repository<IsciHYS>()
                 .Query()
@@ -129,38 +121,44 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .ToListAsync();
             decimal avansMebleg = avanslar.Sum(x => x.Mebleg);
 
-            // Qabaqcadan ödəniş: məzuniyyət pulu NET hesabla (mühasib üçün)
-            decimal advanceNet = 0;
-            decimal advanceTutulma = 0;
-            if (mez.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis && hesab.CemiOdenis > 0)
+            // Aylıq NET cəmi: işlənmiş günlər + məzuniyyət pulu (birlikdə vergi hesablanır)
+            // HaqiqiIsGun = faktiki iş günü (həftəsonu/bayram çıxılıb) — maaş üçün düzgün əsas
+            decimal islenmisNetCemi = 0;
+            decimal mezOdenisNetCemi = 0;
+            decimal islenmisMaas = 0;
+            int islenmisGun = 0;
+            foreach (var s in hesab.AySliceleri)
             {
-                decimal mezOdenisNetCemi = 0;
-                foreach (var s in hesab.AySliceleri)
-                {
-                    int ig = Math.Max(0, s.AyIsGun - s.IsGun);
-                    decimal im = (cariMaas > 0 && s.AyIsGun > 0)
-                        ? Math.Round(cariMaas / s.AyIsGun * ig, 2) : 0;
-                    var itax = await _maasHesablamaService
-                        .TutulmalariHesablaAsync(im, new DateTime(s.Il, s.Ay, 1), mez.IsciId);
-                    var ftax = await _maasHesablamaService
-                        .TutulmalariHesablaAsync(im + s.Secilen, new DateTime(s.Il, s.Ay, 1), mez.IsciId);
-                    mezOdenisNetCemi += ftax.Net - itax.Net;
-                }
-                advanceNet = mezOdenisNetCemi;
-                advanceTutulma = hesab.CemiOdenis - advanceNet;
+                int ig = Math.Max(0, s.AyIsGun - s.HaqiqiIsGun); // faktiki iş günü fərqi
+                decimal im = (cariMaas > 0 && s.AyIsGun > 0)
+                    ? Math.Round(cariMaas / s.AyIsGun * ig, 2) : 0;
+                var itax = await _maasHesablamaService
+                    .TutulmalariHesablaAsync(im, new DateTime(s.Il, s.Ay, 1), mez.IsciId);
+                var ftax = await _maasHesablamaService
+                    .TutulmalariHesablaAsync(im + s.Secilen, new DateTime(s.Il, s.Ay, 1), mez.IsciId);
+                islenmisNetCemi += itax.Net;
+                mezOdenisNetCemi += ftax.Net - itax.Net;
+                islenmisMaas += im;
+                islenmisGun += ig;
             }
+            decimal ayNetCemi = islenmisNetCemi + mezOdenisNetCemi;
 
-            // Maaş günü əlinə çatacaq
-            // Qabaqcadan ödənişdə işçiyə NET köçürülüb — maaş günündə NET çıxılmalıdır
-            decimal qabaqcadanDedukt = advanceNet > 0 ? advanceNet : hesab.CemiOdenis;
-            decimal maasGuniNet = islenmisTax.Net - hysMebleg - avansMebleg - qabaqcadanDedukt;
+            // Qabaqcadan ödəniş: məzuniyyət NET (vergidən sonra)
+            decimal advanceNet = mez.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis
+                ? mezOdenisNetCemi : 0;
+            decimal advanceTutulma = advanceNet > 0 ? hesab.CemiOdenis - advanceNet : 0;
+
+            // Maaş günü qalıq: aylıq NET - avans (artıq verilib) - HYS - avans kreditləri
+            decimal maasGuniNet = mez.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis
+                ? islenmisNetCemi - hysMebleg - avansMebleg
+                : ayNetCemi - hysMebleg - avansMebleg - hesab.CemiOdenis;
 
             ViewBag.CariMaas = cariMaas;
             ViewBag.AyIsGun = ayIsGun;
-            ViewBag.MezIsGun = mezIsGun;
+            ViewBag.MezIsGun = hesab.AySliceleri.FirstOrDefault()?.HaqiqiIsGun ?? hesab.UmumiIsGun;
             ViewBag.IslenmisGun = islenmisGun;
             ViewBag.IslenmisMaas = islenmisMaas;
-            ViewBag.IslenmisNet = islenmisTax.Net;
+            ViewBag.IslenmisNet = islenmisNetCemi;
             ViewBag.HysMebleg = hysMebleg;
             ViewBag.AvansMebleg = avansMebleg;
             ViewBag.MezPuluBrut = hesab.CemiOdenis;
