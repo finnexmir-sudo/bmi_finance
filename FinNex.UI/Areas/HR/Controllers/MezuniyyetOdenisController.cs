@@ -127,9 +127,10 @@ namespace FinNex.UI.Areas.HR.Controllers
             decimal mezOdenisNetCemi = 0;
             decimal islenmisMaas = 0;
             int islenmisGun = 0;
+            decimal gelirVergisi = 0, dsmfIsci = 0, issizlikIsci = 0, itssSum = 0, umumiTutulma = 0;
             foreach (var s in hesab.AySliceleri)
             {
-                int ig = Math.Max(0, s.AyIsGun - s.HaqiqiIsGun); // faktiki iş günü fərqi
+                int ig = Math.Max(0, s.AyIsGun - s.HaqiqiIsGun);
                 decimal im = (cariMaas > 0 && s.AyIsGun > 0)
                     ? Math.Round(cariMaas / s.AyIsGun * ig, 2) : 0;
                 var itax = await _maasHesablamaService
@@ -140,6 +141,12 @@ namespace FinNex.UI.Areas.HR.Controllers
                 mezOdenisNetCemi += ftax.Net - itax.Net;
                 islenmisMaas += im;
                 islenmisGun += ig;
+                // Aylıq cəmi tutulma komponentləri (birləşdirilmiş brüt üzrə)
+                gelirVergisi += ftax.GelirVergisi;
+                dsmfIsci += ftax.DsmfIsci;
+                issizlikIsci += ftax.IssizlikIsci;
+                itssSum += ftax.Itss;
+                umumiTutulma += ftax.UmumiTutulma;
             }
             decimal ayNetCemi = islenmisNetCemi + mezOdenisNetCemi;
 
@@ -165,6 +172,11 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.MaasGuniNet = maasGuniNet;
             ViewBag.AdvanceNet = advanceNet;
             ViewBag.AdvanceTutulma = advanceTutulma;
+            ViewBag.GelirVergisi = gelirVergisi;
+            ViewBag.DsmfIsci = dsmfIsci;
+            ViewBag.IssizlikIsci = issizlikIsci;
+            ViewBag.Itss = itssSum;
+            ViewBag.UmumiTutulma = umumiTutulma;
 
             ViewBag.Mezuniyyet = mez;
             return View(hesab);
