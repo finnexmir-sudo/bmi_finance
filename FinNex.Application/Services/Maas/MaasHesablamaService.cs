@@ -248,10 +248,21 @@ namespace FinNex.Application.Services.HR
                     });
                 }
 
+                // Qabaqcadan ödənilmiş avansın brütü — 2500 güzəşt yoxlaması üçün toplanır
+                decimal mezuniyyetAvansBrutu = 0;
                 foreach (var advanceMez in advanceQeydler)
                 {
                     if (advanceMez.OdenisStatus == MezuniyyetOdenisStatus.Odenilib)
                     {
+                        // Brüt sahəsi varsa istifadə et, yoxdursa canlı hesabla
+                        if (advanceMez.OdenenMeblegBrut.HasValue && advanceMez.OdenenMeblegBrut > 0)
+                            mezuniyyetAvansBrutu += advanceMez.OdenenMeblegBrut.Value;
+                        else
+                        {
+                            var mhes = await MezuniyyetOdenisiDetalliHesablaAsync(
+                                advanceMez.IsciId, advanceMez.BaslamaTarixi, advanceMez.BitmeTarixi);
+                            mezuniyyetAvansBrutu += mhes.CemiOdenis;
+                        }
                         izahatlar.Add(new HesablamaIzahiDto
                         {
                             Addim = "Mezuniyyet (qabaqcadan ödənildi)",
@@ -594,20 +605,23 @@ namespace FinNex.Application.Services.HR
 
             // 9.2 Standart 200 AZN güzəşti yalnız vergi bazası birinci pillə içindədirsə tətbiq olunur.
             //     HYS çıxıldıqdan sonrakı baza istifadə olunur.
-            // Standart güzəşt: GROSS (maaş + işəgötürən HYS) ≤ 2500 olmalıdır.
-            // Məs: maaş 2400 + işv.HYS 150 = GROSS 2550 > 2500 → güzəşt yoxdur
-            decimal standartGuzest = brutMaas <= firstBracketMax ? p.VergiGuzestiMeblegi : 0m;
+            // Standart güzəşt: GROSS (maaş + işv.HYS + məzuniyyət avansı brütü) ≤ 2500 olmalıdır.
+            // Məzuniyyət avansı ayrıca ödənilsə də, həmin ayın ümumi gəliri sayılır → threshold-a daxildir.
+            decimal brutMaasGuzestYoxlama = brutMaas + mezuniyyetAvansBrutu;
+            decimal standartGuzest = brutMaasGuzestYoxlama <= firstBracketMax ? p.VergiGuzestiMeblegi : 0m;
 
             decimal vergilenecek = Math.Max(0, vergiBazasi - standartGuzest - maxIsciGuzesti);
 
             var vergiIzahHisseleri = new List<string> { $"Brüt: {brutMaas:N2}" };
+            if (mezuniyyetAvansBrutu > 0)
+                vergiIzahHisseleri.Add($"+ Məzuniyyət avansı brütü: {mezuniyyetAvansBrutu:N2} → Cəm: {brutMaasGuzestYoxlama:N2} (güzəşt yoxlaması üçün)");
             if (hysMebleg > 0)
                 vergiIzahHisseleri.Add($"− HYS: {hysMebleg:N2} → Vergi bazası: {vergiBazasi:N2}");
             if (standartGuzest > 0)
-                vergiIzahHisseleri.Add($"− Standart güzəşt: {standartGuzest:N2} (baza ≤ {firstBracketMax:N0})");
+                vergiIzahHisseleri.Add($"− Standart güzəşt: {standartGuzest:N2} (cəm brüt ≤ {firstBracketMax:N0})");
             else
                 vergiIzahHisseleri.Add(
-                    $"Baza > {firstBracketMax:N0} — standart {p.VergiGuzestiMeblegi:N2} ₼ güzəşti tətbiq olunmur");
+                    $"Cəm brüt {brutMaasGuzestYoxlama:N2} > {firstBracketMax:N0} — standart {p.VergiGuzestiMeblegi:N2} ₼ güzəşti tətbiq olunmur");
             if (maxIsciGuzesti > 0)
                 vergiIzahHisseleri.Add($"− İşçi güzəşti: {maxIsciGuzesti:N2} ({maxIsciGuzestAd})");
             vergiIzahHisseleri.Add($"= Vergilənəcək: {vergilenecek:N2}");
