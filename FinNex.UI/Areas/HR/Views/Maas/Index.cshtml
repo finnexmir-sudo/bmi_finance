@@ -561,6 +561,11 @@
                                 <td class="col-sep">
                                     @if (!isLegv && m.MezuniyyetOdenisi > 0)
                                     { <span class="n n--blue">@m.MezuniyyetOdenisi.ToString("N2") ₼</span> }
+                                    else if (!isLegv && m.AvansBrut > 0)
+                                    {
+                                        <span class="n n--blue" title="Brüt: @m.AvansBrut.ToString("N2") ₼">@m.AvansNet.ToString("N2") ₼</span>
+                                        <span style="font-size:9px;color:#9ca3af;display:block">avans (NET)</span>
+                                    }
                                     else
                                     { <span class="n n--dim">—</span> }
                                 </td>
@@ -573,11 +578,33 @@
                                     { <span class="n n--dim">—</span> }
                                 </td>
 
-                                @* Tutulmalar *@
-                                <td><span class="n n--red">@(isLegv ? "—" : Fmt(m.GelirVergisi) + " ₼")</span></td>
-                                <td><span class="n n--purple">@(isLegv ? "—" : Fmt(m.DsmfIsci) + " ₼")</span></td>
-                                <td><span class="n">@(isLegv ? "—" : Fmt(m.IssizlikIsci) + " ₼")</span></td>
-                                <td class="col-sep"><span class="n">@(isLegv ? "—" : Fmt(m.Itss) + " ₼")</span></td>
+                                @* Tutulmalar (məzuniyyət avansı varsa birləşdirilmiş) *@
+                                @if (!isLegv && m.AvansBrut > 0)
+                                {
+                                    <td title="Maaş: @Fmt(m.GelirVergisi) + Avans: @Fmt(m.AvansGelirVergisi)">
+                                        <span class="n n--red">@Fmt(m.BirlesikGelirVergisi) ₼</span>
+                                        <span style="font-size:9px;color:#9ca3af;display:block">maaş+avans</span>
+                                    </td>
+                                    <td title="Maaş: @Fmt(m.DsmfIsci) + Avans: @Fmt(m.AvansDsmfIsci)">
+                                        <span class="n n--purple">@Fmt(m.BirlesikDsmfIsci) ₼</span>
+                                        <span style="font-size:9px;color:#9ca3af;display:block">maaş+avans</span>
+                                    </td>
+                                    <td title="Maaş: @Fmt(m.IssizlikIsci) + Avans: @Fmt(m.AvansIssizlikIsci)">
+                                        <span class="n">@Fmt(m.BirlesikIssizlik) ₼</span>
+                                        <span style="font-size:9px;color:#9ca3af;display:block">maaş+avans</span>
+                                    </td>
+                                    <td class="col-sep" title="Maaş: @Fmt(m.Itss) + Avans: @Fmt(m.AvansItss)">
+                                        <span class="n">@Fmt(m.BirlesikItss) ₼</span>
+                                        <span style="font-size:9px;color:#9ca3af;display:block">maaş+avans</span>
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td><span class="n n--red">@(isLegv ? "—" : Fmt(m.GelirVergisi) + " ₼")</span></td>
+                                    <td><span class="n n--purple">@(isLegv ? "—" : Fmt(m.DsmfIsci) + " ₼")</span></td>
+                                    <td><span class="n">@(isLegv ? "—" : Fmt(m.IssizlikIsci) + " ₼")</span></td>
+                                    <td class="col-sep"><span class="n">@(isLegv ? "—" : Fmt(m.Itss) + " ₼")</span></td>
+                                }
 
                                 @* NET *@
                                 <td>

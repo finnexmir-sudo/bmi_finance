@@ -193,6 +193,20 @@ namespace FinNex.Application.DTOs.HR.Maas
         public DateTime HesablanmaTarixi { get; set; }
         public DateTime? TesdiqTarixi { get; set; }
         public DateTime? OdenisTarixi { get; set; }
+
+        // Qabaqcadan ödəniş məzuniyyəti vergisi (ayrıca ödənilib, aylıq cəm üçün)
+        public decimal AvansGelirVergisi { get; set; }
+        public decimal AvansDsmfIsci { get; set; }
+        public decimal AvansIssizlikIsci { get; set; }
+        public decimal AvansItss { get; set; }
+        public decimal AvansBrut { get; set; }
+        public decimal AvansNet { get; set; }
+
+        public decimal BirlesikGelirVergisi => GelirVergisi + AvansGelirVergisi;
+        public decimal BirlesikDsmfIsci    => DsmfIsci + AvansDsmfIsci;
+        public decimal BirlesikIssizlik    => IssizlikIsci + AvansIssizlikIsci;
+        public decimal BirlesikItss        => Itss + AvansItss;
+        public decimal BirlesikTutulma     => BirlesikGelirVergisi + BirlesikDsmfIsci + BirlesikIssizlik + BirlesikItss + HysIsci;
     }
 
     // ── DETAL ────────────────────────────────────────────────────
