@@ -487,6 +487,41 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = RoleNames.Admin)]
+        public async Task<IActionResult> AdminDavamiyyetDuzelt([FromBody] AdminDuzeltRequest req)
+        {
+            if (req == null || req.Id <= 0)
+                return BadRequest(new { error = "Məlumat natamamdır." });
+
+            var entity = await _unitOfWork.Repository<Davamiyyet>()
+                .Query()
+                .FirstOrDefaultAsync(x => x.Id == req.Id && !x.Silinib);
+
+            if (entity == null)
+                return BadRequest(new { error = "Davamiyyət qeydi tapılmadı." });
+
+            if (!string.IsNullOrWhiteSpace(req.GirisVaxti) && TimeSpan.TryParse(req.GirisVaxti, out var girisTs))
+                entity.GirisVaxti = entity.Tarix.Date.Add(girisTs);
+            else if (string.IsNullOrWhiteSpace(req.GirisVaxti))
+                entity.GirisVaxti = null;
+
+            if (!string.IsNullOrWhiteSpace(req.CixisVaxti) && TimeSpan.TryParse(req.CixisVaxti, out var cixisTs))
+                entity.CixisVaxti = entity.Tarix.Date.Add(cixisTs);
+            else if (string.IsNullOrWhiteSpace(req.CixisVaxti))
+                entity.CixisVaxti = null;
+
+            if (Enum.IsDefined(typeof(DavamiyyetStatus), req.Status))
+                entity.Status = (DavamiyyetStatus)req.Status;
+
+            entity.MaasdanKes = req.MaasdanKes;
+            entity.QayibSebebi = req.QayibSebebi?.Trim();
+            entity.YenilenmeTarixi = DateTime.Now;
+
+            await _unitOfWork.YaddaSaxlaAsync();
+            return Ok(new { message = "Davamiyyət qeydi yeniləndi." });
+        }
+
+        [HttpPost]
         public async Task<IActionResult> QayibSil([FromBody] QayibSilRequest req)
         {
             if (req == null || req.Id <= 0)
@@ -585,6 +620,16 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             return result;
         }
+    }
+
+    public class AdminDuzeltRequest
+    {
+        public int Id { get; set; }
+        public string? GirisVaxti { get; set; }
+        public string? CixisVaxti { get; set; }
+        public int Status { get; set; }
+        public bool MaasdanKes { get; set; }
+        public string? QayibSebebi { get; set; }
     }
 
     public class QayibDuzeltRequest
