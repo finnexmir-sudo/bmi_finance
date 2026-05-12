@@ -29,6 +29,8 @@
     var isciHysMap = ViewBag.IsciHysMap as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
     var hysIsvFaiz = (decimal)(ViewBag.HysIsvFaiz ?? 15m);
     var isciAvansMap = ViewBag.IsciAvansMap as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+    var mezAvansMap  = ViewBag.IsciMezAvansMap as Dictionary<int, (decimal brut, decimal gelirV, decimal dsmf, decimal iss, decimal itss, decimal net)>
+                       ?? new Dictionary<int, (decimal brut, decimal gelirV, decimal dsmf, decimal iss, decimal itss, decimal net)>();
 
     var pilleConfigJson = System.Text.Json.JsonSerializer.Serialize(new
     {
@@ -360,6 +362,17 @@
                                 { qayibGun = qayibVal.gun; qayibKesinti = qayibVal.kesinti; }
                                 var qayibKesintiStr = qayibKesinti.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
 
+                                // Məzuniyyət avansı vergisi (ödənilmiş QabaqcadanOdenis)
+                                decimal mavBrut = 0m, mavGelirV = 0m, mavDsmf = 0m, mavIss = 0m, mavItss = 0m, mavNet = 0m;
+                                if (mezAvansMap.TryGetValue(isci.Id, out var mavVal))
+                                { mavBrut = mavVal.brut; mavGelirV = mavVal.gelirV; mavDsmf = mavVal.dsmf; mavIss = mavVal.iss; mavItss = mavVal.itss; mavNet = mavVal.net; }
+                                var mavBrutStr   = mavBrut.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                var mavGelirVStr = mavGelirV.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                var mavDsmfStr   = mavDsmf.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                var mavIssStr    = mavIss.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                var mavItssStr   = mavItss.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                var mavNetStr    = mavNet.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
                                 <tr data-isci="@isci.Id"
                                     data-esas="@esas.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
                                     data-isci-guzest="@isciGuzestMeblegStr"
@@ -376,6 +389,12 @@
                                     data-xes-kesinti="@xKesintiStr"
                                     data-qayib-gun="@qayibGun"
                                     data-qayib-kesinti="@qayibKesintiStr"
+                                    data-mav-brut="@mavBrutStr"
+                                    data-mav-gelirv="@mavGelirVStr"
+                                    data-mav-dsmf="@mavDsmfStr"
+                                    data-mav-iss="@mavIssStr"
+                                    data-mav-itss="@mavItssStr"
+                                    data-mav-net="@mavNetStr"
                                     class="mth-row @(isDone ? "done" : "")">
 
                                     @* Checkbox *@
@@ -646,7 +665,13 @@
                                                         </div>
                                                         <div class="mth-detail-sep"></div>
                                                         <div class="mth-detail-item mth-detail-item--total">
-                                                            <span class="mth-detail-lbl">Cəmi tutulma</span>
+                                                            <span class="mth-detail-lbl">
+                                                                Cəmi tutulma
+                                                                @if (mavBrut > 0)
+                                                                {
+                                                                    <small style="font-size:9px;color:#c9900a;font-weight:600;margin-left:3px;">(maaş+avans)</small>
+                                                                }
+                                                            </span>
                                                             <span class="n n--r" data-p="tutulma">—</span>
                                                         </div>
                                                     </div>
@@ -674,6 +699,47 @@
                                                             <div class="mth-detail-item">
                                                                 <span class="mth-detail-lbl">Vergi bazası (HYS sonrası)</span>
                                                                 <span class="n n--au" data-p="vergibazasi">—</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+
+                                                @* Məzuniyyət Avansı vergisi (ödənilmiş QabaqcadanOdenis) *@
+                                                @if (mavBrut > 0)
+                                                {
+                                                    <div class="mth-detail-card">
+                                                        <div class="mth-detail-card-head" style="color:#c9900a;">
+                                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                                <rect x="1.5" y="2" width="11" height="10" rx="1.5" stroke="#c9900a" stroke-width="1.2"/>
+                                                                <path d="M4.5 7h5M7 4.5v5" stroke="#c9900a" stroke-width="1" stroke-linecap="round"/>
+                                                            </svg>
+                                                            <span>Məz. Avansı (ödənilib)</span>
+                                                        </div>
+                                                        <div class="mth-detail-card-body">
+                                                            <div class="mth-detail-item">
+                                                                <span class="mth-detail-lbl">Brüt</span>
+                                                                <span class="n n--b" data-p="mav-brut">—</span>
+                                                            </div>
+                                                            <div class="mth-detail-item">
+                                                                <span class="mth-detail-lbl">Gəlir V.</span>
+                                                                <span class="n n--r" data-p="mav-gelirv">—</span>
+                                                            </div>
+                                                            <div class="mth-detail-item">
+                                                                <span class="mth-detail-lbl">DSMF</span>
+                                                                <span class="n n--p" data-p="mav-dsmf">—</span>
+                                                            </div>
+                                                            <div class="mth-detail-item">
+                                                                <span class="mth-detail-lbl">İşsizlik</span>
+                                                                <span class="n" data-p="mav-iss">—</span>
+                                                            </div>
+                                                            <div class="mth-detail-item">
+                                                                <span class="mth-detail-lbl">İTSS</span>
+                                                                <span class="n" data-p="mav-itss">—</span>
+                                                            </div>
+                                                            <div class="mth-detail-sep"></div>
+                                                            <div class="mth-detail-item mth-detail-item--total">
+                                                                <span class="mth-detail-lbl">NET (ödənilib)</span>
+                                                                <span class="n n--au" data-p="mav-net">—</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -790,6 +856,11 @@
                                 <div class="mth-ftotal">
                                     <span class="mth-ftotal-lbl">Avans</span>
                                     <span class="mth-ftotal-val" id="mthFootAvans">— ₼</span>
+                                </div>
+                                <div class="mth-footer-div"></div>
+                                <div class="mth-ftotal">
+                                    <span class="mth-ftotal-lbl" style="color:#c9900a;">Məz. Avansı Vergisi</span>
+                                    <span class="mth-ftotal-val" id="mthFootMavTutulma">— ₼</span>
                                 </div>
                                 <div class="mth-footer-div"></div>
                                 <div class="mth-ftotal">
