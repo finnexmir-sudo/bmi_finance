@@ -93,6 +93,14 @@
         const xesKesinti = parseFloat(row.dataset.xesKesinti || 0) || 0;
         const qayibGun = parseInt(row.dataset.qayibGun || 0) || 0;
         const qayibKesinti = parseFloat(row.dataset.qayibKesinti || 0) || 0;
+        // Məzuniyyət avansı vergisi (server-tərəfi hesablanmış, ödənilmiş)
+        const mavBrut   = parseFloat(row.dataset.mavBrut   || 0) || 0;
+        const mavGelirV = parseFloat(row.dataset.mavGelirv || 0) || 0;
+        const mavDsmf   = parseFloat(row.dataset.mavDsmf   || 0) || 0;
+        const mavIss    = parseFloat(row.dataset.mavIss    || 0) || 0;
+        const mavItss   = parseFloat(row.dataset.mavItss   || 0) || 0;
+        const mavNet    = parseFloat(row.dataset.mavNet    || 0) || 0;
+        const mavTutulma = mavGelirV + mavDsmf + mavIss + mavItss;
         const chk = row.querySelector('.mth-checkbox');
         const bInp = row.querySelector('.mth-inp--b');
         const cInp = row.querySelector('.mth-inp--c');
@@ -144,8 +152,8 @@
         const dsmf    = hesablaTutulma(dsmfBazasi,   2, 0);
         const iss     = hesablaTutulma(itssBazasi,   3, FLAT.issizlik);
         const itss    = hesablaTutulma(itssBazasi,   4, 0);
-        // Tutulma = vergilər + HYS + avans
-        const tutulma = gelirV + dsmf + iss + itss + hys + hysIsv + avans;
+        // Tutulma = maaş vergiləri + HYS + kredit avansı + məzuniyyət avansı vergiləri
+        const tutulma = gelirV + dsmf + iss + itss + hys + hysIsv + avans + mavTutulma;
         const net     = Math.max(brut - tutulma, 0);
 
         // İşəgötürən xərcləri — DSMF: dsmfBazası; İTSS/İşsizlik: itssBazası
@@ -162,6 +170,7 @@
             mezGun, mezOdenis, mezKesinti,
             xesSirketGun, xesDsmfGun, xesSirketOdenis, xesDsmfOdenis, xesKesinti,
             qayibGun, qayibKesinti,
+            mavBrut, mavGelirV, mavDsmf, mavIss, mavItss, mavNet, mavTutulma,
             gelirV, dsmf, iss, itss, tutulma, net,
             dsmfIsv, issIsv, itssIsv, sirketCemi,
             checked: !!chk?.checked && !done, done
@@ -233,8 +242,16 @@
         set('[data-p="itss"]', fmt(d.itss), d.itss > 0 ? 'n' : 'n n--d');
         set('[data-p="tutulma"]', fmt(d.tutulma), d.tutulma > 0 ? 'n n--r' : 'n n--d');
 
-        // Avans
+        // Avans (kredit)
         set('[data-p="avans"]', fmt(d.avans), d.avans > 0 ? 'n n--r' : 'n n--d');
+
+        // Məzuniyyət avansı vergisi (server-tərəfi, ödənilmiş)
+        set('[data-p="mav-brut"]',   fmt(d.mavBrut),   d.mavBrut   > 0 ? 'n n--b' : 'n n--d');
+        set('[data-p="mav-gelirv"]', fmt(d.mavGelirV), d.mavGelirV > 0 ? 'n n--r' : 'n n--d');
+        set('[data-p="mav-dsmf"]',   fmt(d.mavDsmf),   d.mavDsmf   > 0 ? 'n n--p' : 'n n--d');
+        set('[data-p="mav-iss"]',    fmt(d.mavIss),    d.mavIss    > 0 ? 'n'       : 'n n--d');
+        set('[data-p="mav-itss"]',   fmt(d.mavItss),   d.mavItss   > 0 ? 'n'       : 'n n--d');
+        set('[data-p="mav-net"]',    fmt(d.mavNet),    d.mavNet    > 0 ? 'n n--au' : 'n n--d');
 
         // HYS detail cells
         set('[data-p="hysisci"]', fmt(d.hys), d.hys > 0 ? 'n n--r' : 'n n--d');
@@ -255,15 +272,16 @@
         const t = sel.reduce((a, r) => {
             const d = rd(r);
             // İşçi tərəfi
-            a.brut     += d.brut;
-            a.gelirV   += d.gelirV;
-            a.dsmfIsci += d.dsmf;
-            a.issIsci  += d.iss;
-            a.itssIsci += d.itss;
-            a.hysIsci  += d.hys;
-            a.avans    += d.avans;
-            a.tutulma  += d.tutulma;
-            a.net      += d.net;
+            a.brut        += d.brut;
+            a.gelirV      += d.gelirV;
+            a.dsmfIsci    += d.dsmf;
+            a.issIsci     += d.iss;
+            a.itssIsci    += d.itss;
+            a.hysIsci     += d.hys;
+            a.avans       += d.avans;
+            a.mavTutulma  += d.mavTutulma;
+            a.tutulma     += d.tutulma;
+            a.net         += d.net;
             // Şirkət tərəfi
             a.dsmfIsv  += d.dsmfIsv;
             a.issIsv   += d.issIsv;
@@ -273,7 +291,7 @@
             a.sirket   += d.brut + d.sirketCemi;
             return a;
         }, {
-            brut: 0, gelirV: 0, dsmfIsci: 0, issIsci: 0, itssIsci: 0, hysIsci: 0, avans: 0, tutulma: 0, net: 0,
+            brut: 0, gelirV: 0, dsmfIsci: 0, issIsci: 0, itssIsci: 0, hysIsci: 0, avans: 0, mavTutulma: 0, tutulma: 0, net: 0,
             dsmfIsv: 0, issIsv: 0, itssIsv: 0, hysIsv: 0, sirketEx: 0, sirket: 0
         });
 
@@ -287,6 +305,7 @@
         s('mthFootItssIsci', fmt(t.itssIsci));
         s('mthFootHysIsci', fmt(t.hysIsci));
         s('mthFootAvans', fmt(t.avans));
+        s('mthFootMavTutulma', fmt(t.mavTutulma));
         s('mthFootTutulma', fmt(t.tutulma));
         s('mthFootNet', fmt(t.net));
         s('mthFootNet2', fmt(t.net));

@@ -560,6 +560,47 @@ namespace FinNex.UI.Areas.HR.Controllers
                     return (gun, kesinti);
                 });
 
+            // Məzuniyyət avansı (QabaqcadanOdenis, ödənilmiş) — vergi dağılımı ilə birlikdə
+            var mezuniyyetAvanslar = await _unitOfWork.Repository<Mezuniyyet>()
+                .Query()
+                .Where(x =>
+                    !x.Silinib &&
+                    isciIdler.Contains(x.IsciId) &&
+                    x.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis &&
+                    x.OdenisStatus == MezuniyyetOdenisStatus.Odenilib &&
+                    x.OdenilmeTarixi.HasValue &&
+                    x.OdenilmeTarixi.Value.Year == cIl &&
+                    x.OdenilmeTarixi.Value.Month == cAy)
+                .ToListAsync();
+
+            var isciMezAvansMap = new Dictionary<int, (decimal brut, decimal gelirV, decimal dsmf, decimal iss, decimal itss, decimal net)>();
+            foreach (var mav in mezuniyyetAvanslar)
+            {
+                decimal avBrut = mav.OdenenMeblegBrut ?? 0m;
+                if (avBrut <= 0)
+                {
+                    try
+                    {
+                        var dHesab = await _hesablamaService.MezuniyyetOdenisiDetalliHesablaAsync(
+                            mav.IsciId, mav.BaslamaTarixi, mav.BitmeTarixi);
+                        avBrut = dHesab.CemiOdenis;
+                    }
+                    catch { avBrut = mav.OdenenMebleg ?? 0m; }
+                }
+                if (avBrut <= 0) continue;
+
+                var tut = await _hesablamaService.TutulmalariHesablaAsync(avBrut, hesabTarixi, mav.IsciId);
+                decimal avNet = avBrut - tut.UmumiTutulma;
+
+                if (isciMezAvansMap.TryGetValue(mav.IsciId, out var ex))
+                    isciMezAvansMap[mav.IsciId] = (ex.brut + avBrut, ex.gelirV + tut.GelirVergisi,
+                        ex.dsmf + tut.DsmfIsci, ex.iss + tut.IssizlikIsci, ex.itss + tut.Itss, ex.net + avNet);
+                else
+                    isciMezAvansMap[mav.IsciId] = (avBrut, tut.GelirVergisi, tut.DsmfIsci,
+                        tut.IssizlikIsci, tut.Itss, avNet);
+            }
+            ViewBag.IsciMezAvansMap = isciMezAvansMap;
+
             ViewBag.Hesablanmis = hesablanmis;
             ViewBag.CariMaasMap = cariMaasMap;
             ViewBag.IbanMap = ibanMap;
