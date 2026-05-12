@@ -263,6 +263,22 @@ namespace FinNex.UI
                 }
                 catch { /* artıq tətbiq olunub */ }
 
+                // Icazeler.JetonOdenenSaat sütununu əlavə etmə (jeton ilə ödənilən icazə saatı)
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (
+                            SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                            WHERE TABLE_NAME = 'Icazeler'
+                              AND COLUMN_NAME = 'JetonOdenenSaat'
+                        )
+                        BEGIN
+                            ALTER TABLE [Icazeler] ADD [JetonOdenenSaat] DECIMAL(5,2) NOT NULL DEFAULT 0;
+                        END
+                    ");
+                }
+                catch { /* artıq tətbiq olunub */ }
+
                 // Avtomatik migration — sadəcə Migrate() çağır, xəta olsa logla amma crash etmə
                 try
                 {
