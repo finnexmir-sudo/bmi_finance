@@ -151,7 +151,9 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             // Maaş günü əlinə çatacaq
-            decimal maasGuniNet = islenmisTax.Net - hysMebleg - avansMebleg - hesab.CemiOdenis;
+            // Qabaqcadan ödənişdə işçiyə NET köçürülüb — maaş günündə NET çıxılmalıdır
+            decimal qabaqcadanDedukt = advanceNet > 0 ? advanceNet : hesab.CemiOdenis;
+            decimal maasGuniNet = islenmisTax.Net - hysMebleg - avansMebleg - qabaqcadanDedukt;
 
             ViewBag.CariMaas = cariMaas;
             ViewBag.AyIsGun = ayIsGun;

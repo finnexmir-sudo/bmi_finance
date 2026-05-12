@@ -248,8 +248,8 @@
                         <span>− Avans</span>
                         <strong style="color:#dc2626">− @avansMeblegVal.ToString("N2") ₼</strong>
                     }
-                    <span>− Məzuniyyət pulu (qabaqcadan verildi)</span>
-                    <strong style="color:#dc2626">− @mezPuluBrutVal.ToString("N2") ₼</strong>
+                    <span>− Məzuniyyət pulu (qabaqcadan verildi, NET)</span>
+                    <strong style="color:#dc2626">− @(advNet > 0 ? advNet : mezPuluBrutVal).ToString("N2") ₼</strong>
 
                     <span style="font-weight:800;font-size:14px;">Maaş günü işçi alacaq</span>
                     <strong style="font-size:16px;color:@(menfi ? "#dc2626" : "#1e9b6b")">@maasGuniNetVal.ToString("N2") ₼</strong>
@@ -348,24 +348,34 @@
                 <form asp-action="Planla" method="post" class="mod-odenis-form">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@mez.Id" />
+                    @{
+                        // Qabaqcadan ödənişdə sahəyə NET məbləği göstər (bankda köçürülən)
+                        decimal defaultMebleg = advNet > 0 ? advNet : (mez.OdenenMebleg ?? Model.CemiOdenis);
+                        decimal canliNet = advNet > 0 ? advNet : Model.CemiOdenis;
+                    }
                     <div class="mod-form-row">
-                        <label class="mod-label">Ödəniş məbləği (AZN)</label>
+                        <label class="mod-label">
+                            Ödəniş məbləği — köçürülən NET (AZN)
+                            @if (advNet > 0)
+                            {
+                                <span style="font-size:11px;color:#64748b;font-weight:400;"> (brüt @Model.CemiOdenis.ToString("N2") ₼ → vergi @advTut.ToString("N2") ₼ çıxılıb)</span>
+                            }
+                        </label>
                         <input type="number"
                                name="redakteEdilmisMebleg"
-                               value="@((mez.OdenenMebleg ?? Model.CemiOdenis).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))"
+                               value="@defaultMebleg.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
                                step="0.01" min="0"
                                class="mod-input" />
                         <small class="mod-hint">
-                            HR təsdiq anında hesablanan məbləğ: <strong>@((mez.OdenenMebleg ?? 0).ToString("N2")) ₼</strong>.
-                            Yuxarıdakı canlı hesablama nəticəsi: <strong>@Model.CemiOdenis.ToString("N2") ₼</strong>.
+                            Canlı hesablamaya görə köçürülən NET: <strong>@canliNet.ToString("N2") ₼</strong>.
                             Səhv varsa burada düzəldə bilərsiniz.
                         </small>
-                        @if (mez.OdenenMebleg.HasValue && mez.OdenenMebleg != Model.CemiOdenis)
+                        @if (defaultMebleg != canliNet)
                         {
                             <div style="margin-top:6px;">
-                                <button type="button" onclick="document.querySelector('[name=redakteEdilmisMebleg]').value='@Model.CemiOdenis.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)'"
+                                <button type="button" onclick="document.querySelector('[name=redakteEdilmisMebleg]').value='@canliNet.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)'"
                                         style="font-size:12px;padding:4px 10px;border:1px solid #6366f1;border-radius:6px;background:#f0f0ff;color:#4338ca;cursor:pointer;">
-                                    <i class="bi bi-arrow-repeat"></i> Canlı hesablamadan götür (@Model.CemiOdenis.ToString("N2") ₼)
+                                    <i class="bi bi-arrow-repeat"></i> Canlı hesablamadan götür (@canliNet.ToString("N2") ₼)
                                 </button>
                             </div>
                         }
