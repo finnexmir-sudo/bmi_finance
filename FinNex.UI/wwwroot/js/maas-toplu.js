@@ -131,15 +131,17 @@
 
         // GROSS = əsas maaş − məzuniyyət kəsintisi + məzuniyyət ödənişi
         //        + xəstəlik şirkət ödənişi − xəstəlik kəsintisi
-        //        + bonus + fərqli gəlir − cərimə + işəgötürən HYS payı
-        // (FerdiHesablaAsync ilə eyni düstur — preview həqiqi nəticə ilə üst-üstə düşür)
+        //        + bonus + fərqli gəlir − cərimə
+        // (FerdiHesablaAsync ilə eyni düstur. Diqqət: işəgötürən HYS payı GROSS-da
+        //  GÖSTƏRİLMİR — şirkət xərcidir, işçinin işlədiyi pul deyil. Yalnız bəzi
+        //  vergi bazalarında (İTSS, İşsizlik) süni olaraq nəzərə alınır.)
         const esasBrut = Math.max(
             esas - mezKesinti + mezOdenis
                  - xesKesinti + xesSirketOdenis
                  - qayibKesinti
                  + bonus + ferqliGelir - cerime,
             0);
-        const brut = esasBrut + hysIsv;
+        const brut = esasBrut;  // GROSS = işlədiyi məbləğ (preview ilə eyni)
 
         // Vergi bazaları — server (FerdiHesablaAsync) ilə eyni:
         //   Xəstəlik vərəqəsi şirkət ödənişi YALNIZ gəlir vergisinə cəlb olunur,
@@ -195,15 +197,24 @@
             iss     = hesablaTutulma(itssBazasi,   3, FLAT.issizlik);
             itss    = hesablaTutulma(itssBazasi,   4, 0);
             tutulma = gelirV + dsmf + iss + itss + avans;
-            // NET-də HYS işçi və hysIsv də çıxılır (brut süni olaraq hysIsv-i daxil edir,
-            // ona görə əks tərəfdə də çıxılır → nəticə nağd alınan məbləğdir).
-            net = Math.max(brut - tutulma - hys - hysIsv, 0);
+            // NET = brut (işlədiyi) − 4 vergi − HYS işçi − avans.
+            // hysIsv brut-da deyil, ona görə burada da çıxılmır (şirkət xərcidir).
+            net = Math.max(brut - tutulma - hys, 0);
         }
 
-        // İşəgötürən xərcləri — DSMF: dsmfBazası; İTSS/İşsizlik: itssBazası
-        const dsmfIsv = hesablaTutulma(dsmfBazasi, 7, 0);
-        const itssIsv = hesablaTutulma(itssBazasi, 9, 0);
-        const issIsv  = hesablaTutulma(itssBazasi, 8, FLAT.issizlikIsv);
+        // İşəgötürən xərcləri — məzuniyyət avansı varsa BIRLƏŞMIŞ baza üzərindən
+        // (FerdiHesablaAsync ilə eyni: aylıq cəmi gəlir 3088.23 → DSMF işv 429.52)
+        let dsmfIsvBaza, itssIsvBaza;
+        if (mavBrut > 0) {
+            dsmfIsvBaza = Math.max(0, esasBrut + mavBrut - hys - xesSirketOdenis);
+            itssIsvBaza = Math.max(0, esasBrut + mavBrut + hysIsv - xesSirketOdenis);
+        } else {
+            dsmfIsvBaza = dsmfBazasi;
+            itssIsvBaza = itssBazasi;
+        }
+        const dsmfIsv = hesablaTutulma(dsmfIsvBaza, 7, 0);
+        const itssIsv = hesablaTutulma(itssIsvBaza, 9, 0);
+        const issIsv  = hesablaTutulma(itssIsvBaza, 8, FLAT.issizlikIsv);
         const sirketCemi = dsmfIsv + issIsv + itssIsv + hysIsv;
 
         return {
