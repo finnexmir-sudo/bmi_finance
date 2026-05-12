@@ -207,6 +207,22 @@ namespace FinNex.UI
                 }
                 catch { /* artıq tətbiq olunub */ }
 
+                // Mezuniyyetler.OdenenMeblegBrut — qabaqcadan ödəniş brütü (vergi bazası üçün)
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (
+                            SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                            WHERE TABLE_NAME = 'Mezuniyyetler'
+                              AND COLUMN_NAME = 'OdenenMeblegBrut'
+                        )
+                        BEGIN
+                            ALTER TABLE [Mezuniyyetler] ADD [OdenenMeblegBrut] DECIMAL(18,2) NULL;
+                        END
+                    ");
+                }
+                catch { /* artıq tətbiq olunub */ }
+
                 // SenedSablonlar cədvəlini yaratmaq (şablon sistemi)
                 try
                 {
