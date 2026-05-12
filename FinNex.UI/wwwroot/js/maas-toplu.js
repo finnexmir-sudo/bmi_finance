@@ -152,8 +152,9 @@
         const dsmf    = hesablaTutulma(dsmfBazasi,   2, 0);
         const iss     = hesablaTutulma(itssBazasi,   3, FLAT.issizlik);
         const itss    = hesablaTutulma(itssBazasi,   4, 0);
-        // Tutulma = maaş vergiləri + HYS + kredit avansı + məzuniyyət avansı vergiləri
-        const tutulma = gelirV + dsmf + iss + itss + hys + hysIsv + avans + mavTutulma;
+        // Tutulma = yalnız bu ayın maaş vergisi + HYS + kredit avansı
+        // (mavTutulma artıq ayrıca ödənilib — burada ikinci dəfə tutulmur)
+        const tutulma = gelirV + dsmf + iss + itss + hys + hysIsv + avans;
         const net     = Math.max(brut - tutulma, 0);
 
         // İşəgötürən xərcləri — DSMF: dsmfBazası; İTSS/İşsizlik: itssBazası
@@ -244,6 +245,9 @@
 
         // Avans (kredit)
         set('[data-p="avans"]', fmt(d.avans), d.avans > 0 ? 'n n--r' : 'n n--d');
+
+        // Məzuniyyət avansı vergisi informasiya sətri (İşçi tutulmaları kartında)
+        set('[data-p="mav-tutulma-info"]', fmt(d.mavTutulma), d.mavTutulma > 0 ? 'n' : 'n n--d');
 
         // Məzuniyyət avansı vergisi (server-tərəfi, ödənilmiş)
         set('[data-p="mav-brut"]',   fmt(d.mavBrut),   d.mavBrut   > 0 ? 'n n--b' : 'n n--d');
