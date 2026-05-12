@@ -593,8 +593,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 // Ayrıca hesablamaq 200 AZN standart güzəştini səhv tətbiq edir.
                 decimal cM = cariMaasMap.TryGetValue(mav.IsciId, out var cm_) ? cm_ : 0m;
                 int mezIsGun = isciMezuniyyetMap.TryGetValue(mav.IsciId, out var mi_) ? mi_.gun : 0;
-                int workedDays = Math.Max(0, ayIsGun - mezIsGun);
-                decimal im = (cM > 0 && ayIsGun > 0) ? Math.Round(cM / ayIsGun * workedDays, 2) : 0m;
+                int workedDays = Math.Max(0, ayIsGunu - mezIsGun);
+                decimal im = (cM > 0 && ayIsGunu > 0) ? Math.Round(cM / ayIsGunu * workedDays, 2) : 0m;
 
                 var ftax = await _hesablamaService.TutulmalariHesablaAsync(im + avBrut, hesabTarixi, mav.IsciId);
                 var itax = await _hesablamaService.TutulmalariHesablaAsync(im,          hesabTarixi, mav.IsciId);
