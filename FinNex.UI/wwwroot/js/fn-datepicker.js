@@ -62,6 +62,8 @@
             this.popup = null;
             this.isOpen = false;
             this._iso = input.value || '';
+            this._min = input.getAttribute('min') || null;
+            this._max = input.getAttribute('max') || null;
 
             // Create a hidden companion that carries the ISO value for form
             // submission. The visible input shows dd-MM-yyyy; external JS can
@@ -284,12 +286,18 @@
                 if (sameDay(dateObj, today)) cell.classList.add('fn-dp-today');
                 if (sameDay(dateObj, selected)) cell.classList.add('fn-dp-selected');
 
-                cell.addEventListener('click', () => {
-                    this._setValue(toISO(dateObj));
-                    this.input.dispatchEvent(new Event('change', { bubbles: true }));
-                    this.input.dispatchEvent(new Event('input', { bubbles: true }));
-                    this.close();
-                });
+                const isoCell = toISO(dateObj);
+                const disabled = (this._min && isoCell < this._min) || (this._max && isoCell > this._max);
+                if (disabled) {
+                    cell.classList.add('fn-dp-cell--disabled');
+                } else {
+                    cell.addEventListener('click', () => {
+                        this._setValue(isoCell);
+                        this.input.dispatchEvent(new Event('change', { bubbles: true }));
+                        this.input.dispatchEvent(new Event('input', { bubbles: true }));
+                        this.close();
+                    });
+                }
                 this.gridEl.appendChild(cell);
             }
 
@@ -316,9 +324,8 @@
     }
 
     function initAll(root) {
-        // OPT-IN: yalnız data-fn-datepicker atributu olan inputlar
-        // Bu, mövcud səhifələrin native picker-ini pozmasın deyə
-        (root || document).querySelectorAll('input[data-fn-datepicker]').forEach(input => {
+        // OPT-OUT: bütün type=date inputlar alır; data-no-fn-dp olanlar native qalır
+        (root || document).querySelectorAll('input[type="date"]:not([data-no-fn-dp])').forEach(input => {
             new FnDatePicker(input);
         });
     }
