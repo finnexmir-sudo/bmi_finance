@@ -665,15 +665,16 @@
                                                         </div>
                                                         <div class="mth-detail-sep"></div>
                                                         <div class="mth-detail-item mth-detail-item--total">
-                                                            <span class="mth-detail-lbl">
-                                                                Cəmi tutulma
-                                                                @if (mavBrut > 0)
-                                                                {
-                                                                    <small style="font-size:9px;color:#c9900a;font-weight:600;margin-left:3px;">(maaş+avans)</small>
-                                                                }
-                                                            </span>
+                                                            <span class="mth-detail-lbl">Cəmi tutulma</span>
                                                             <span class="n n--r" data-p="tutulma">—</span>
                                                         </div>
+                                                        @if (mavBrut > 0)
+                                                        {
+                                                            <div class="mth-detail-item">
+                                                                <span class="mth-detail-lbl" style="color:#c9900a;font-size:10px;">+ Məz.avansı vergisi</span>
+                                                                <span class="n" style="color:#c9900a;font-size:11px;" data-p="mav-tutulma-info">—</span>
+                                                            </div>
+                                                        }
                                                     </div>
                                                 </div>
 
