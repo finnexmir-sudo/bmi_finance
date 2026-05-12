@@ -254,7 +254,7 @@
                         <strong style="color:#dc2626">− @avansMeblegVal.ToString("N2") ₼</strong>
                     }
                     <span>− Məzuniyyət pulu (qabaqcadan verildi, NET)</span>
-                    <strong style="color:#dc2626">− @(advNet > 0 ? advNet : mezPuluBrutVal).ToString("N2") ₼</strong>
+                    <strong style="color:#dc2626">− @((advNet > 0 ? advNet : mezPuluBrutVal).ToString("N2")) ₼</strong>
 
                     <span style="font-weight:800;font-size:14px;">Maaş günü işçi alacaq</span>
                     <strong style="font-size:16px;color:@(menfi ? "#dc2626" : "#1e9b6b")">@maasGuniNetVal.ToString("N2") ₼</strong>
