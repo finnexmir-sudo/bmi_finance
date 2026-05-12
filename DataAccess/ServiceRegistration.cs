@@ -46,6 +46,11 @@ namespace FinNex.DataAccess
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
 
+            // Eyni istifadəçi ilə paralel sessiya qadağası:
+            // SecurityStamp hər request-də yoxlanılır (gözləmə sıfırlanır).
+            services.Configure<SecurityStampValidatorOptions>(options =>
+                options.ValidationInterval = TimeSpan.Zero);
+
             // =========================
             // 3. Repository Pattern
             // =========================
