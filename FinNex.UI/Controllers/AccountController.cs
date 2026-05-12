@@ -69,6 +69,9 @@ namespace FinNex.UI.Controllers
                 return View(dto);
             }
 
+            // Yeni giriş zamanı köhnə bütün sessionları etibarsız et
+            await _userManager.UpdateSecurityStampAsync(user);
+
             var result = await _signInManager.PasswordSignInAsync(
                 user.UserName!,
                 dto.Password,
