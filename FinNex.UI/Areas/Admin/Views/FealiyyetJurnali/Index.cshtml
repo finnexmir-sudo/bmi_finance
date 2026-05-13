@@ -1,0 +1,218 @@
+@{
+    ViewData["Title"] = "Fəaliyyət Jurnalı";
+
+    var items     = ViewBag.Items     as List<FinNex.Domain.Entities.FealiyyetJurnali> ?? new();
+    var total     = (int)(ViewBag.Total     ?? 0);
+    var page      = (int)(ViewBag.Page      ?? 1);
+    var pageSize  = (int)(ViewBag.PageSize  ?? 50);
+    var pageCount = (int)(ViewBag.PageCount ?? 1);
+
+    var cedvellar  = ViewBag.Cedvellar as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var filterUser = ViewBag.FilterUser  as string ?? "";
+    var filterCedvel = ViewBag.FilterCedvel as string ?? "";
+    var filterEmel   = ViewBag.FilterEmel   as string ?? "";
+    var filterBas    = ViewBag.FilterBas    as string ?? "";
+    var filterSon    = ViewBag.FilterSon    as string ?? "";
+}
+
+<!-- Filter Bar -->
+<div class="admin-filter-bar">
+    <form method="get" asp-action="Index">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">İstifadəçi</label>
+                <input type="text" name="user" class="form-control form-control-sm"
+                       placeholder="Ad, soyad, login..." value="@filterUser" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">Cədvəl</label>
+                <select name="cedvel" class="form-select form-select-sm">
+                    <option value="">Hamısı</option>
+                    @foreach (var c in cedvellar)
+                    {
+                        <option value="@c.CedvelAdi" selected="@(filterCedvel == (string)c.CedvelAdi)">
+                            @c.CedvelFarsi
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">Əməliyyat</label>
+                <select name="emel" class="form-select form-select-sm">
+                    <option value="">Hamısı</option>
+                    <option value="C" selected="@(filterEmel == "C")">Yaratdı</option>
+                    <option value="U" selected="@(filterEmel == "U")">Yenilədi</option>
+                    <option value="D" selected="@(filterEmel == "D")">Sildi</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">Başlanğıc</label>
+                <input type="date" name="basTarix" class="form-control form-control-sm" value="@filterBas" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">Son tarix</label>
+                <input type="date" name="sonTarix" class="form-control form-control-sm" value="@filterSon" />
+            </div>
+            <div class="col-md-1 d-flex gap-1">
+                <button type="submit" class="btn btn-sm btn-primary w-100">
+                    <i class="bi bi-search"></i>
+                </button>
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary w-100">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Table Card -->
+<div class="admin-table-card">
+    <div class="card-header">
+        <h5><i class="bi bi-clock-history me-2"></i>Fəaliyyət Jurnalı</h5>
+        <span class="text-muted small">
+            Cəmi: <strong>@total</strong> qeyd
+            @if (pageCount > 1)
+            {
+                <span> · Səhifə @page / @pageCount</span>
+            }
+        </span>
+    </div>
+
+    @if (items.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="table table-sm admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:140px">Tarix</th>
+                        <th>İstifadəçi</th>
+                        <th>Cədvəl</th>
+                        <th style="width:90px">Əməliyyat</th>
+                        <th style="width:70px">ID</th>
+                        <th>Açıqlama</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in items)
+                    {
+                        var (badgeClass, badgeText) = item.Emeliyyat switch
+                        {
+                            "C" => ("badge-action-create", "Yaratdı"),
+                            "U" => ("badge-action-update", "Yenilədi"),
+                            "D" => ("badge-action-delete", "Sildi"),
+                            _   => ("badge-action-other",  item.Emeliyyat)
+                        };
+
+                        <tr>
+                            <td class="text-nowrap text-muted small">
+                                @item.Tarix.ToString("dd.MM.yyyy HH:mm")
+                            </td>
+                            <td>
+                                @if (item.User != null)
+                                {
+                                    <span class="fw-semibold">@item.User.Ad @item.User.Soyad</span>
+                                    <span class="text-muted small d-block">@item.User.UserName</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="fw-semibold">@item.CedvelFarsi</span>
+                                <span class="text-muted small d-block">@item.CedvelAdi</span>
+                            </td>
+                            <td>
+                                <span class="fj-badge @badgeClass">@badgeText</span>
+                            </td>
+                            <td class="text-muted small">
+                                @(item.RecordId > 0 ? item.RecordId.ToString() : "—")
+                            </td>
+                            <td class="text-muted small">@(item.Acıqlama ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (pageCount > 1)
+        {
+            <div class="card-footer">
+                <nav>
+                    <ul class="pagination admin-pagination justify-content-center mb-0">
+                        <li class="page-item @(page <= 1 ? "disabled" : "")">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-page="@(page - 1)"
+                               asp-route-user="@filterUser"
+                               asp-route-cedvel="@filterCedvel"
+                               asp-route-emel="@filterEmel"
+                               asp-route-basTarix="@filterBas"
+                               asp-route-sonTarix="@filterSon">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+
+                        @{
+                            var startP = Math.Max(1, page - 2);
+                            var endP   = Math.Min(pageCount, page + 2);
+                        }
+                        @for (int i = startP; i <= endP; i++)
+                        {
+                            <li class="page-item @(i == page ? "active" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="@i"
+                                   asp-route-user="@filterUser"
+                                   asp-route-cedvel="@filterCedvel"
+                                   asp-route-emel="@filterEmel"
+                                   asp-route-basTarix="@filterBas"
+                                   asp-route-sonTarix="@filterSon">
+                                    @i
+                                </a>
+                            </li>
+                        }
+
+                        <li class="page-item @(page >= pageCount ? "disabled" : "")">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-page="@(page + 1)"
+                               asp-route-user="@filterUser"
+                               asp-route-cedvel="@filterCedvel"
+                               asp-route-emel="@filterEmel"
+                               asp-route-basTarix="@filterBas"
+                               asp-route-sonTarix="@filterSon">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="p-5 text-center">
+            <i class="bi bi-clock-history d-block mb-3" style="font-size:2.5rem;color:var(--admin-text-muted)"></i>
+            <h6 class="text-muted">Qeyd tapılmadı</h6>
+            <p class="text-muted small mb-0">Seçilmiş filterlərə uyğun fəaliyyət qeydləri yoxdur.</p>
+        </div>
+    }
+</div>
+
+@section Styles {
+<style>
+.fj-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+}
+.badge-action-create { background: #d1fae5; color: #065f46; }
+.badge-action-update { background: #dbeafe; color: #1e40af; }
+.badge-action-delete { background: #fee2e2; color: #991b1b; }
+.badge-action-other  { background: #f3f4f6; color: #374151; }
+</style>
+}
