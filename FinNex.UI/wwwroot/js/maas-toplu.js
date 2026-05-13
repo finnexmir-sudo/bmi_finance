@@ -323,16 +323,28 @@
 
         // Məzuniyyət hesablama addımları (yalnız mavBrut > 0 olan işçilər üçün)
         if (d.mavBrut > 0) {
-            const gunlukTxt = d.mavGunluk > 0
-                ? d.mezGun + ' gün × ' + fmt(d.mavGunluk)
-                : '—';
-            set('[data-p="mav-h-gunluk"]',   gunlukTxt,                 'n n--b');
-            set('[data-p="mav-h-im"]',       fmt(d.brut),               d.brut > 0 ? 'n' : 'n n--d');
-            set('[data-p="mav-h-combined"]', fmt(d.mavCombined),        d.mavCombined > 0 ? 'n n--b' : 'n n--d');
-            set('[data-p="mav-h-vergibaz"]', fmt(d.mavCVergiBazasi),    d.mavCVergiBazasi > 0 ? 'n n--au' : 'n n--d');
-            set('[data-p="mav-h-sguzest"]',  fmt(d.standartGuzest),     d.standartGuzest > 0 ? 'n n--g' : 'n n--d');
-            set('[data-p="mav-h-ctaxes"]',   fmt(d.mavCTaxes),          d.mavCTaxes > 0 ? 'n n--r' : 'n n--d');
-            set('[data-p="mav-h-taxshare"]', fmt(d.mavTaxImplied),      d.mavTaxImplied > 0 ? 'n n--r' : 'n n--d');
+            const n2 = v => v.toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            set('[data-p="mav-h-gunluk"]',   d.mavGunluk > 0 ? fmt(d.mavGunluk) + '/gün' : '—', 'n n--b');
+            set('[data-p="mav-h-im"]',       fmt(d.brut),  d.brut > 0 ? 'n' : 'n n--d');
+            set('[data-p="mav-h-combined"]', fmt(d.mavCombined),     d.mavCombined > 0 ? 'n n--b' : 'n n--d');
+            set('[data-p="mav-h-vergibaz"]', fmt(d.mavCVergiBazasi), d.mavCVergiBazasi > 0 ? 'n n--au' : 'n n--d');
+            set('[data-p="mav-h-sguzest"]',  fmt(d.standartGuzest),  d.standartGuzest > 0 ? 'n n--g' : 'n n--d');
+            set('[data-p="mav-h-ctaxes"]',   fmt(d.mavCTaxes),       d.mavCTaxes > 0 ? 'n n--r' : 'n n--d');
+            set('[data-p="mav-h-taxshare"]', fmt(d.mavTaxImplied),   d.mavTaxImplied > 0 ? 'n n--r' : 'n n--d');
+            set('[data-p="mav-h-net"]',      fmt(d.mavNet),          d.mavNet > 0 ? 'n n--au' : 'n n--d');
+            // Formula açıqlamaları (hər addımda hesablamanın necə alındığını göstərir)
+            set('[data-p="mav-hf-1"]', d.mezGun > 0 && d.mavGunluk > 0
+                ? n2(d.mavBrut) + ' ÷ ' + d.mezGun + ' gün' : '');
+            set('[data-p="mav-hf-2"]', 'cariMaas / AyIsGün × işlənmiş gün');
+            set('[data-p="mav-hf-3"]', n2(d.brut) + ' + ' + n2(d.mavBrut));
+            set('[data-p="mav-hf-4"]', d.hys > 0
+                ? n2(d.mavCombined) + ' − ' + n2(d.hys) + ' (HYS)'
+                : n2(d.mavCombined) + ' (HYS yoxdur)');
+            set('[data-p="mav-hf-5"]', d.standartGuzest > 0
+                ? 'gəlir ' + n2(d.mavCombined) + ' ≤ ' + n2(FIRST_BRACKET_MAX)
+                : 'gəlir ' + n2(d.mavCombined) + ' > ' + n2(FIRST_BRACKET_MAX));
+            set('[data-p="mav-hf-7"]', n2(d.mavCTaxes) + ' (birləşmiş) − ' + n2(d.mavSalaryTaxes) + ' (maaş)');
+            set('[data-p="mav-hf-r"]', n2(d.mavBrut) + ' − ' + n2(d.mavTaxImplied));
         }
 
         // HYS detail cells
