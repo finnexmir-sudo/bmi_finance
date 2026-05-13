@@ -617,6 +617,17 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
             ViewBag.IsciMezAvansMap = isciMezAvansMap;
 
+            // Əvvəlki ay korreksiyası preview — mühasib öncədən görsün deyə
+            // (post-maaş daxil edilmiş xəstəlik/məzuniyyət üçün cari aya tətbiq olunacaq düzəliş)
+            var isciKorreksiyaMap = new Dictionary<int, (decimal kesinti, decimal gelir, string? aciq)>();
+            foreach (var id in isciIdler)
+            {
+                if (hesablanmis.Contains(id)) continue; // artıq hesablanıb — preview lazım deyil
+                var (k, g, a) = await _hesablamaService.EvvelkiAyKorreksiyasiPreviewAsync(id, cIl, cAy);
+                if (k > 0 || g > 0) isciKorreksiyaMap[id] = (k, g, a);
+            }
+            ViewBag.IsciKorreksiyaMap = isciKorreksiyaMap;
+
             ViewBag.Hesablanmis = hesablanmis;
             ViewBag.CariMaasMap = cariMaasMap;
             ViewBag.IbanMap = ibanMap;

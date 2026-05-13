@@ -362,6 +362,16 @@
                                 { qayibGun = qayibVal.gun; qayibKesinti = qayibVal.kesinti; }
                                 var qayibKesintiStr = qayibKesinti.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
 
+                                // Əvvəlki ay korreksiyası (post-maaş daxil edilmiş xəstəlik/məzuniyyət)
+                                var korrMap = ViewBag.IsciKorreksiyaMap as Dictionary<int, (decimal kesinti, decimal gelir, string? aciq)>
+                                              ?? new Dictionary<int, (decimal kesinti, decimal gelir, string? aciq)>();
+                                decimal korrKesinti = 0m, korrGelir = 0m;
+                                string? korrAciq = null;
+                                if (korrMap.TryGetValue(isci.Id, out var korrVal))
+                                { korrKesinti = korrVal.kesinti; korrGelir = korrVal.gelir; korrAciq = korrVal.aciq; }
+                                var korrKesintiStr = korrKesinti.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                var korrGelirStr   = korrGelir.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
                                 // Məzuniyyət avansı vergisi (ödənilmiş QabaqcadanOdenis)
                                 decimal mavBrut = 0m, mavGelirV = 0m, mavDsmf = 0m, mavIss = 0m, mavItss = 0m, mavNet = 0m;
                                 if (mezAvansMap.TryGetValue(isci.Id, out var mavVal))
@@ -562,6 +572,42 @@
                                                         </div>
                                                     </div>
                                                 </div>
+
+                                                @* Əvvəlki Ay Korreksiyası — yalnız aktualdır, sarı xəbərdarlıq stilindədir *@
+                                                @if (korrKesinti > 0 || korrGelir > 0)
+                                                {
+                                                    <div class="mth-detail-card" style="border:1.5px solid #f59e0b; background:#fffbeb;">
+                                                        <div class="mth-detail-card-head" style="color:#b45309;">
+                                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                                <path d="M7 1L13 12H1L7 1z" stroke="#b45309" stroke-width="1.2" stroke-linejoin="round"/>
+                                                                <path d="M7 5v3M7 9.5v.5" stroke="#b45309" stroke-width="1.2" stroke-linecap="round"/>
+                                                            </svg>
+                                                            <span>Əvvəlki Ay Korreksiyası</span>
+                                                        </div>
+                                                        <div class="mth-detail-card-body">
+                                                            <div class="mth-detail-item">
+                                                                <span class="mth-detail-lbl">Artıq ödəniş kəsintisi</span>
+                                                                <span class="n n--r">@korrKesinti.ToString("N2") ₼</span>
+                                                            </div>
+                                                            <div class="mth-detail-item">
+                                                                <span class="mth-detail-lbl">Kompensasiya (xəst./məz.)</span>
+                                                                <span class="n n--b">@korrGelir.ToString("N2") ₼</span>
+                                                            </div>
+                                                            <div class="mth-detail-item">
+                                                                <span class="mth-detail-lbl" style="font-weight:600;">Net təsir</span>
+                                                                <span class="n @(korrGelir >= korrKesinti ? "n--b" : "n--r")">
+                                                                    @((korrGelir - korrKesinti).ToString("N2")) ₼
+                                                                </span>
+                                                            </div>
+                                                            @if (!string.IsNullOrEmpty(korrAciq))
+                                                            {
+                                                                <div style="grid-column:1/-1;margin-top:6px;padding-top:6px;border-top:1px dashed #f59e0b;font-size:10.5px;color:#92400e;line-height:1.4;">
+                                                                    @korrAciq
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                }
 
                                                 @* IH-07 Əlavə Təminat (18.02.2016 tarixli əmr) *@
                                                 <div class="mth-detail-card mth-detail-card--ferqli">

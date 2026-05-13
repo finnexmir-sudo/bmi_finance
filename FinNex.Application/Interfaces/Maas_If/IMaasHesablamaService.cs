@@ -70,5 +70,16 @@ namespace FinNex.Application.Interfaces.Maas_If
         /// Verilmiş ay üçün iş günlərini sayır (BayramGunu + həftəsonu qaydaları ilə).
         /// </summary>
         Task<int> AyIsGunSayiniHesablaAsync(int il, int ay);
+
+        /// <summary>
+        /// Toplu hesablama preview üçün — əvvəlki ayın maaşı hesablandıqdan
+        /// sonra yaradılan xəstəlik/məzuniyyət qeydləri əsasında cari ayın maaşına
+        /// tətbiq olunacaq korreksiyanı qaytarır.
+        ///   - Kesinti: artıq ödənilmiş günlərə görə əvvəlki ay gündəlik dərəcəsi ilə kəsinti
+        ///   - Gelir:   həmin günlər üçün xəstəlik haqqı və/və ya məzuniyyət ödənişi
+        ///   - Aciq:    insan-oxuna izahat (UI-də göstərmək üçün)
+        /// </summary>
+        Task<(decimal Kesinti, decimal Gelir, string? Aciq)> EvvelkiAyKorreksiyasiPreviewAsync(
+            int isciId, int il, int ay);
     }
 }
