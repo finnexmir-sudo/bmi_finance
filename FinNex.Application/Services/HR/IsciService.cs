@@ -181,11 +181,11 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             };
             await _unitOfWork.Repository<IsciMaasTarixcesi>().YaratAsync(tarixce);
 
-            // Maliye yenilə — YenileAsync (Update) istifadə et
             if (maliye != null)
             {
                 maliye.CariMaas = yeniMaas;
                 maliye.YenilenmeTarixi = DateTime.Now;
+                await _unitOfWork.Repository<IsciMaliye>().YenileAsync(maliye);
             }
             else
             {

@@ -445,6 +445,12 @@ namespace FinNex.UI.Areas.HR.Controllers
             if (!ModelState.IsValid)
                 return View(vm);
 
+            if (vm.YeniMaas == vm.KohneMaas)
+            {
+                ModelState.AddModelError("YeniMaas", "Yeni maaş cari maaşla eyni ola bilməz.");
+                return View(vm);
+            }
+
             var result = await _isciService.UpdateSalaryWithHistoryAsync(
                 vm.IsciId,
                 vm.YeniMaas,
@@ -457,6 +463,81 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             TempData["Success"] = "Maaş uğurla yeniləndi.";
+            return RedirectToAction(nameof(Detail), new { id = vm.IsciId });
+        }
+
+        // ─────────── MAAS TARİXÇƏSİ REDAKTƏ GET ───────────
+        [HttpGet]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
+        public async Task<IActionResult> MaasTarixcesiRedakte(int id)
+        {
+            var tarixce = await _unitOfWork.Repository<IsciMaasTarixcesi>()
+                .IdIleGetirAsync(id);
+            if (tarixce == null)
+            {
+                TempData["Error"] = "Qeyd tapılmadı.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var isciDetail = await _isciService.GetIsciDetailsAsync(tarixce.IsciId);
+
+            // Bu işçinin ən son maaş qeydi mi?
+            var enSon = await _unitOfWork.Repository<IsciMaasTarixcesi>()
+                .SorguHazirla(x => x.IsciId == tarixce.IsciId, izlemeden: true)
+                .OrderByDescending(x => x.DeyismeTarixi)
+                .FirstOrDefaultAsync();
+
+            var vm = new MaasTarixcesiRedakteVM
+            {
+                Id            = tarixce.Id,
+                IsciId        = tarixce.IsciId,
+                IsciTamAd     = isciDetail?.TamAd,
+                KohneMaas     = tarixce.KohneMaas,
+                YeniMaas      = tarixce.YeniMaas,
+                EmrNomresi    = tarixce.EmrinNomresi,
+                DeyismeTarixi = tarixce.DeyismeTarixi,
+                EnSonQeyddirmi = enSon?.Id == tarixce.Id
+            };
+            return View(vm);
+        }
+
+        // ─────────── MAAS TARİXÇƏSİ REDAKTƏ POST ───────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
+        public async Task<IActionResult> MaasTarixcesiRedakte(MaasTarixcesiRedakteVM vm)
+        {
+            if (!ModelState.IsValid)
+                return View(vm);
+
+            var tarixce = await _unitOfWork.Repository<IsciMaasTarixcesi>()
+                .IdIleGetirAsync(vm.Id);
+            if (tarixce == null)
+            {
+                TempData["Error"] = "Qeyd tapılmadı.";
+                return RedirectToAction(nameof(Detail), new { id = vm.IsciId });
+            }
+
+            tarixce.YeniMaas      = vm.YeniMaas;
+            tarixce.EmrinNomresi  = vm.EmrNomresi;
+            tarixce.YenilenmeTarixi = DateTime.Now;
+            await _unitOfWork.Repository<IsciMaasTarixcesi>().YenileAsync(tarixce);
+
+            // Əgər bu ən son qeyddirsə, CariMaas-ı da yenilə
+            if (vm.EnSonQeyddirmi)
+            {
+                var maliye = await _unitOfWork.Repository<IsciMaliye>()
+                    .GetirAsync(x => x.IsciId == vm.IsciId);
+                if (maliye != null)
+                {
+                    maliye.CariMaas = vm.YeniMaas;
+                    maliye.YenilenmeTarixi = DateTime.Now;
+                    await _unitOfWork.Repository<IsciMaliye>().YenileAsync(maliye);
+                }
+            }
+
+            await _unitOfWork.YaddaSaxlaAsync();
+            TempData["Success"] = "Maaş qeydi uğurla yeniləndi.";
             return RedirectToAction(nameof(Detail), new { id = vm.IsciId });
         }
 
