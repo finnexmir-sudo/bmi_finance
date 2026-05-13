@@ -1380,7 +1380,7 @@
 .mth-step {
     display: grid;
     grid-template-columns: 20px 1fr auto;
-    align-items: center;
+    align-items: start;
     gap: 8px;
     padding: 6px 12px;
     border-bottom: 1px solid #f3f4f6;
@@ -1411,6 +1411,7 @@
     font-size: 10px;
     font-weight: 700;
     flex-shrink: 0;
+    margin-top: 1px;
 }
 
 .mth-step-num--result {
@@ -1419,9 +1420,25 @@
     font-size: 11px;
 }
 
+.mth-step-txt {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
 .mth-step-lbl {
     color: #4b5563;
     font-size: 11.5px;
+    line-height: 1.3;
+}
+
+.mth-step-eq {
+    font-size: 10.5px;
+    color: #9ca3af;
+    font-family: 'Courier New', monospace;
+    letter-spacing: -0.2px;
+    line-height: 1.3;
 }
 
 .mth-step-divider {
