@@ -123,10 +123,20 @@ public class ADMSController : Controller
             var tarix = vaxt.Date;
 
             // İş parametrləri — gecikme toleransı
-            var parametri = await _db.Set<IsParametri>()
-                .Where(x => !x.Silinib).FirstOrDefaultAsync();
-            var standartGiris  = parametri?.StandartGirisVaxti  ?? new TimeSpan(9, 0, 0);
-            var gecikTolerans  = TimeSpan.FromMinutes(parametri?.GecikmeToleransDeqiqe ?? 5);
+            TimeSpan standartGiris;
+            TimeSpan gecikTolerans;
+            try
+            {
+                var parametri = await _db.Set<IsParametri>()
+                    .Where(x => !x.Silinib).FirstOrDefaultAsync();
+                standartGiris = parametri?.StandartGirisVaxti ?? new TimeSpan(9, 0, 0);
+                gecikTolerans = TimeSpan.FromMinutes(parametri?.GecikmeToleransDeqiqe ?? 5);
+            }
+            catch
+            {
+                standartGiris = new TimeSpan(9, 0, 0);
+                gecikTolerans = TimeSpan.FromMinutes(5);
+            }
 
             // Bu gün üçün təsdiqlənmiş İcazə varmı?
             var bugunIcaze = await _db.Icazeler
