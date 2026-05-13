@@ -482,6 +482,22 @@ namespace FinNex.UI
                 }
                 catch { }
 
+                // IsParametrleri — NaharBaslamaSaati / NaharMuddetDeqiqe sütunları
+                // (migration-da cədvəl adı səhv idi, bu blok birbaşa düzəldir)
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                                       WHERE TABLE_NAME = 'IsParametrleri' AND COLUMN_NAME = 'NaharBaslamaSaati')
+                            ALTER TABLE IsParametrleri ADD NaharBaslamaSaati TIME NOT NULL DEFAULT '13:00:00';
+
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                                       WHERE TABLE_NAME = 'IsParametrleri' AND COLUMN_NAME = 'NaharMuddetDeqiqe')
+                            ALTER TABLE IsParametrleri ADD NaharMuddetDeqiqe INT NOT NULL DEFAULT 45;
+                    ");
+                }
+                catch { /* artıq mövcuddur */ }
+
                 // Avtomatik migration — sadəcə Migrate() çağır, xəta olsa logla amma crash etmə
                 try
                 {
