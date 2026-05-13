@@ -330,12 +330,13 @@
             set('[data-p="mav-h-vergibaz"]', fmt(d.mavCVergiBazasi), d.mavCVergiBazasi > 0 ? 'n n--au' : 'n n--d');
             set('[data-p="mav-h-sguzest"]',  fmt(d.standartGuzest),  d.standartGuzest > 0 ? 'n n--g' : 'n n--d');
             set('[data-p="mav-h-ctaxes"]',   fmt(d.mavCTaxes),       d.mavCTaxes > 0 ? 'n n--r' : 'n n--d');
-            set('[data-p="mav-h-taxshare"]', fmt(d.mavTaxImplied),   d.mavTaxImplied > 0 ? 'n n--r' : 'n n--d');
-            set('[data-p="mav-h-net"]',      fmt(d.mavNet),          d.mavNet > 0 ? 'n n--au' : 'n n--d');
+            set('[data-p="mav-h-salarytax"]', fmt(d.mavSalaryTaxes), d.mavSalaryTaxes > 0 ? 'n n--r' : 'n n--d');
+            set('[data-p="mav-h-taxshare"]', fmt(d.mavTaxImplied),  d.mavTaxImplied > 0 ? 'n n--r' : 'n n--d');
+            set('[data-p="mav-h-net"]',      fmt(d.mavNet),         d.mavNet > 0 ? 'n n--au' : 'n n--d');
             // Formula açıqlamaları (hər addımda hesablamanın necə alındığını göstərir)
             set('[data-p="mav-hf-1"]', d.mezGun > 0 && d.mavGunluk > 0
                 ? n2(d.mavBrut) + ' ÷ ' + d.mezGun + ' gün' : '');
-            set('[data-p="mav-hf-2"]', 'cariMaas / AyIsGün × işlənmiş gün');
+            set('[data-p="mav-hf-2"]', n2(d.esas) + ' / AyIsGün × işlənmiş gün');
             set('[data-p="mav-hf-3"]', n2(d.brut) + ' + ' + n2(d.mavBrut));
             set('[data-p="mav-hf-4"]', d.hys > 0
                 ? n2(d.mavCombined) + ' − ' + n2(d.hys) + ' (HYS)'
@@ -343,7 +344,8 @@
             set('[data-p="mav-hf-5"]', d.standartGuzest > 0
                 ? 'gəlir ' + n2(d.mavCombined) + ' ≤ ' + n2(FIRST_BRACKET_MAX)
                 : 'gəlir ' + n2(d.mavCombined) + ' > ' + n2(FIRST_BRACKET_MAX));
-            set('[data-p="mav-hf-7"]', n2(d.mavCTaxes) + ' (birləşmiş) − ' + n2(d.mavSalaryTaxes) + ' (maaş)');
+            set('[data-p="mav-hf-7"]', n2(d.gelirV) + ' + ' + n2(d.dsmf) + ' + ' + n2(d.iss) + ' + ' + n2(d.itss));
+            set('[data-p="mav-hf-8"]', n2(d.mavCTaxes) + ' − ' + n2(d.mavSalaryTaxes));
             set('[data-p="mav-hf-r"]', n2(d.mavBrut) + ' − ' + n2(d.mavTaxImplied));
         }
 
