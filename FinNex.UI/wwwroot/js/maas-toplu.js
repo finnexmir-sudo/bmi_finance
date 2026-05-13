@@ -170,6 +170,8 @@
         //   ... (hər növ üçün eyni düstur)
         // Nəticə: novlər üzrə cəm + HYS + avans = Cəmi tutulma = brut − net  ✓
         let gelirV, dsmf, iss, itss, tutulma, net;
+        // Hesablama addımları üçün ara dəyərlər (mav kartında göstərilir)
+        let mavCVergiBazasi = 0, mavCombined = 0, mavCTaxes = 0, mavSalaryTaxes = 0;
         if (mavBrut > 0) {
             const cVergiBazasi  = Math.max(0, esasBrut + mavBrut - hys);
             const cDsmfBazasi   = Math.max(0, cVergiBazasi - xesSirketOdenis);
@@ -191,6 +193,11 @@
             // "Cəmi tutulma" = sıralanan 4 vergi + avans (HYS ayrı kartda göstərilir;
             //  preview-da da "Cəmi tutulmalar" yalnız 4 vergidir).
             tutulma = gelirV + dsmf + iss + itss + avans;
+            // Hesablama addımları üçün
+            mavCVergiBazasi = cVergiBazasi;
+            mavCombined     = esasBrut + mavBrut;
+            mavCTaxes       = cTaxes;
+            mavSalaryTaxes  = Math.round((gelirV + dsmf + iss + itss) * 100) / 100;
         } else {
             gelirV  = hesablaTutulma(vergilenecek, 1, 0);
             dsmf    = hesablaTutulma(dsmfBazasi,   2, 0);
@@ -226,6 +233,9 @@
             xesSirketGun, xesDsmfGun, xesSirketOdenis, xesDsmfOdenis, xesKesinti,
             qayibGun, qayibKesinti,
             mavBrut, mavGelirV, mavDsmf, mavIss, mavItss, mavNet, mavTutulma,
+            mavGunluk: mezGun > 0 && mavBrut > 0 ? Math.round(mavBrut / mezGun * 100) / 100 : 0,
+            mavCombined, mavCVergiBazasi, mavCTaxes, mavSalaryTaxes,
+            mavTaxImplied: _mavTaxImplied,
             gelirV, dsmf, iss, itss, tutulma, net,
             dsmfIsv, issIsv, itssIsv, sirketCemi,
             checked: !!chk?.checked && !done, done
@@ -310,6 +320,20 @@
         set('[data-p="mav-iss"]',    fmt(d.mavIss),    d.mavIss    > 0 ? 'n'       : 'n n--d');
         set('[data-p="mav-itss"]',   fmt(d.mavItss),   d.mavItss   > 0 ? 'n'       : 'n n--d');
         set('[data-p="mav-net"]',    fmt(d.mavNet),    d.mavNet    > 0 ? 'n n--au' : 'n n--d');
+
+        // Məzuniyyət hesablama addımları (yalnız mavBrut > 0 olan işçilər üçün)
+        if (d.mavBrut > 0) {
+            const gunlukTxt = d.mavGunluk > 0
+                ? d.mezGun + ' gün × ' + fmt(d.mavGunluk)
+                : '—';
+            set('[data-p="mav-h-gunluk"]',   gunlukTxt,                 'n n--b');
+            set('[data-p="mav-h-im"]',       fmt(d.brut),               d.brut > 0 ? 'n' : 'n n--d');
+            set('[data-p="mav-h-combined"]', fmt(d.mavCombined),        d.mavCombined > 0 ? 'n n--b' : 'n n--d');
+            set('[data-p="mav-h-vergibaz"]', fmt(d.mavCVergiBazasi),    d.mavCVergiBazasi > 0 ? 'n n--au' : 'n n--d');
+            set('[data-p="mav-h-sguzest"]',  fmt(d.standartGuzest),     d.standartGuzest > 0 ? 'n n--g' : 'n n--d');
+            set('[data-p="mav-h-ctaxes"]',   fmt(d.mavCTaxes),          d.mavCTaxes > 0 ? 'n n--r' : 'n n--d');
+            set('[data-p="mav-h-taxshare"]', fmt(d.mavTaxImplied),      d.mavTaxImplied > 0 ? 'n n--r' : 'n n--d');
+        }
 
         // HYS detail cells
         set('[data-p="hysisci"]', fmt(d.hys), d.hys > 0 ? 'n n--r' : 'n n--d');
