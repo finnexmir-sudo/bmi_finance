@@ -411,33 +411,38 @@ namespace FinNex.Application.Services.HR
                                 $"kəsintisi {xstKesinti:N2} ₼ + xəstəlik haqqı {xstOdenis:N2} ₼");
                         }
 
-                        // Məzuniyyət: əvvəlki ayın maaşı hesablandıqdan sonra başlayan AySonuOdenis məzuniyyətlər
+                        // Məzuniyyət: əvvəlki ayın maaşı hesablandıqdan SONRA yaradılan AySonuOdenis məzuniyyətlər
+                        // (məzuniyyət günü əvvəlki ayda olsa da, qeyd sonradan əlavə edildiyi üçün
+                        //  o ayın maaşına düşməyib — indi korreksiya etmək lazımdır)
                         var postMezler = await _unitOfWork.Repository<Mezuniyyet>()
                             .Query()
                             .Where(x => x.IsciId == input.IsciId && !x.Silinib
                                 && x.Status == MezuniyyetStatus.Tesdiqlenib
                                 && x.OdenisTipi == MezuniyyetOdenisTipi.AySonuOdenis
-                                && x.BaslamaTarixi > prevMaas.HesablanmaTarixi
-                                && x.BaslamaTarixi <= prevAyBitis)
+                                && x.YaradilmaTarixi > prevMaas.HesablanmaTarixi
+                                && x.BaslamaTarixi <= prevAyBitis
+                                && x.BitmeTarixi >= prevAyBaslama)
                             .ToListAsync();
 
                         foreach (var mez in postMezler)
                         {
+                            // Yalnız əvvəlki aya düşən hissəni götür
+                            var mezPrevBaslama = mez.BaslamaTarixi < prevAyBaslama ? prevAyBaslama : mez.BaslamaTarixi;
                             var mezPrevBitis = mez.BitmeTarixi < prevAyBitis ? mez.BitmeTarixi : prevAyBitis;
-                            int mezIsGun = await IsGunleriniTariheGoereSayAsync(mez.BaslamaTarixi, mezPrevBitis);
+                            int mezIsGun = await IsGunleriniTariheGoereSayAsync(mezPrevBaslama, mezPrevBitis);
                             if (mezIsGun <= 0) continue;
 
                             decimal mezKes = Math.Round(prevGunluk * mezIsGun, 2);
                             korreksiyaKesinti += mezKes;
 
                             var mezHesab = await MezuniyyetOdenisiDetalliHesablaAsync(
-                                mez.IsciId, mez.BaslamaTarixi, mezPrevBitis);
+                                mez.IsciId, mezPrevBaslama, mezPrevBitis);
                             decimal mezOd = mezHesab.CemiOdenis;
                             korreksiyaGelir += mezOd;
 
                             korrHisseler.Add(
                                 $"{prevAy:D2}/{prevIl} məzuniyyət " +
-                                $"({mez.BaslamaTarixi:dd.MM.yyyy}–{mezPrevBitis:dd.MM.yyyy}): " +
+                                $"({mezPrevBaslama:dd.MM.yyyy}–{mezPrevBitis:dd.MM.yyyy}): " +
                                 $"{mezIsGun} gün kəsinti {mezKes:N2} ₼ + məzuniyyət haqqı {mezOd:N2} ₼");
                         }
 
