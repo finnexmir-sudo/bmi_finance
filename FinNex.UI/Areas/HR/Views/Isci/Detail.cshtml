@@ -315,8 +315,10 @@
                         <th></th>
                     </tr>
                 </thead>
+                @{
+                    var enSonMaasId = Model.MaasTarixcesi.FirstOrDefault()?.Id;
+                }
                 <tbody>
-                    @{ var ilkSira = true; }
                     @foreach (var m in Model.MaasTarixcesi)
                     {
                         var ferg = m.YeniMaas - m.KohneMaas;
@@ -331,7 +333,7 @@
                             </td>
                             <td style="color:#8a93a8;font-size:12px;">@(m.EmrinNomresi ?? "—")</td>
                             <td>
-                                @if (ilkSira)
+                                @if (m.Id == enSonMaasId)
                                 {
                                     <a asp-action="MaasTarixcesiRedakte" asp-route-id="@m.Id"
                                        style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#2d6cdf;font-weight:600;text-decoration:none;">
@@ -343,7 +345,6 @@
                                 }
                             </td>
                         </tr>
-                        @{ ilkSira = false; }
                     }
                 </tbody>
             </table>
