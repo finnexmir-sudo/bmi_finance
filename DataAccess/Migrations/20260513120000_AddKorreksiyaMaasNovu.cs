@@ -9,8 +9,8 @@ namespace DataAccess.Migrations
 {
     /// <summary>
     /// MaasNovleri cədvəlinə əvvəlki ay korreksiyası üçün iki yeni növ əlavə edir:
-    ///   Id=15: "Əvvəlki Ay Artıq Ödəniş Kəsintisi"  (Tip=Tutulma=2)
-    ///   Id=16: "Əvvəlki Ay Kompensasiyası"           (Tip=Gelir=1)
+    ///   Id=19: "Əvvəlki Ay Artıq Ödəniş Kəsintisi"  (Tip=Tutulma=2)
+    ///   Id=20: "Əvvəlki Ay Kompensasiyası"           (Tip=Gelir=1)
     /// İdempotent: artıq mövcuddursa heç nə etmir.
     /// </summary>
     [DbContext(typeof(AppDbContext))]
@@ -22,13 +22,13 @@ namespace DataAccess.Migrations
             migrationBuilder.Sql(@"
                 SET IDENTITY_INSERT MaasNovleri ON;
 
-                IF NOT EXISTS (SELECT 1 FROM MaasNovleri WHERE Id = 15)
+                IF NOT EXISTS (SELECT 1 FROM MaasNovleri WHERE Ad = N'Əvvəlki Ay Artıq Ödəniş Kəsintisi')
                     INSERT INTO MaasNovleri (Id, Ad, Tip, Aktivdir, Silinib, YaradilmaTarixi)
-                    VALUES (15, N'Əvvəlki Ay Artıq Ödəniş Kəsintisi', 2, 1, 0, GETDATE());
+                    VALUES (19, N'Əvvəlki Ay Artıq Ödəniş Kəsintisi', 2, 1, 0, GETDATE());
 
-                IF NOT EXISTS (SELECT 1 FROM MaasNovleri WHERE Id = 16)
+                IF NOT EXISTS (SELECT 1 FROM MaasNovleri WHERE Ad = N'Əvvəlki Ay Kompensasiyası')
                     INSERT INTO MaasNovleri (Id, Ad, Tip, Aktivdir, Silinib, YaradilmaTarixi)
-                    VALUES (16, N'Əvvəlki Ay Kompensasiyası', 1, 1, 0, GETDATE());
+                    VALUES (20, N'Əvvəlki Ay Kompensasiyası', 1, 1, 0, GETDATE());
 
                 SET IDENTITY_INSERT MaasNovleri OFF;
             ");
@@ -37,7 +37,7 @@ namespace DataAccess.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.Sql(@"
-                DELETE FROM MaasNovleri WHERE Id IN (15, 16);
+                DELETE FROM MaasNovleri WHERE Id IN (19, 20);
             ");
         }
     }
