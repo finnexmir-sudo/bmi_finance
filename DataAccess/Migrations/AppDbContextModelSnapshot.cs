@@ -4249,6 +4249,38 @@ namespace FinNex.DataAccess.Migrations
                     b.ToTable("FealiyyetJurnali");
                 });
 
+            modelBuilder.Entity("FinNex.Domain.Entities.HR.DsmfTarixce", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Ay")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Il")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IsciId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("IsciDsmf")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal>("SirketDsmf")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsciId");
+
+                    b.HasIndex("Il", "Ay");
+
+                    b.ToTable("DsmfTarixceler");
+                });
+
             modelBuilder.Entity("FinNex.Domain.Entities.PR_Odenis_Tapsirigi.Bank", b =>
                 {
                     b.Property<int>("Id")
@@ -5346,6 +5378,17 @@ namespace FinNex.DataAccess.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("FinNex.Domain.Entities.HR.DsmfTarixce", b =>
+                {
+                    b.HasOne("FinNex.Domain.Entities.HR.Isci", "Isci")
+                        .WithMany()
+                        .HasForeignKey("IsciId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Isci");
                 });
 
             modelBuilder.Entity("FinNex.Domain.Entities.FealiyyetJurnali", b =>
