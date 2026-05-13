@@ -43,6 +43,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<SenedTagMap> SenedTagMaps { get; set; }
     public DbSet<SenedAccess> SenedAccessler { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<FealiyyetJurnali> FealiyyetJurnali { get; set; }
     public DbSet<SenedSablon> SenedSablonlar { get; set; }
 
     public DbSet<UserDepartment> UserDepartments { get; set; }
@@ -1204,37 +1205,70 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
 
     }
 
+    // İzlənəcək entity növləri və onların Azərbaycanca adları
+    private static readonly Dictionary<string, string> _izlenecekCedveller = new()
+    {
+        { "Isci",                 "İşçi" },
+        { "IsciMaasTarixcesi",    "Maaş Dəyişikliyi" },
+        { "IsciMaliye",           "İşçi Maliyyə" },
+        { "Mezuniyyet",           "Məzuniyyət" },
+        { "MezuniyyetOdenis",     "Məz. Ödənişi" },
+        { "Maas",                 "Maaş Hesablaması" },
+        { "Xestelik",             "Xəstəlik" },
+        { "IsciGuzest",           "İşçi Güzəşti" },
+        { "IsciTeyinat",          "İşçi Təyinat" },
+    };
+
     // ƏN VACİB HİSSƏ: SaveChanges zamanı avtomatik Audit məlumatlarının doldurulması
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        var entries = ChangeTracker.Entries<BaseEntity>();
+        var entries = ChangeTracker.Entries<BaseEntity>().ToList();
         var userId = GetCurrentUserId();
+        var now = DateTime.Now;
+
+        var logs = new List<FealiyyetJurnali>();
 
         foreach (var entry in entries)
         {
+            var typeName = entry.Entity.GetType().Name;
+
             switch (entry.State)
             {
                 case EntityState.Added:
-                    entry.Entity.YaradilmaTarixi = DateTime.Now;
+                    entry.Entity.YaradilmaTarixi = now;
                     entry.Entity.Silinib = false;
                     entry.Entity.YaradanIcraciId = userId;
+                    if (_izlenecekCedveller.TryGetValue(typeName, out var addFarsi))
+                        logs.Add(new FealiyyetJurnali { UserId = userId, Emeliyyat = "C",
+                            CedvelAdi = typeName, CedvelFarsi = addFarsi,
+                            RecordId = 0, Tarix = now });
                     break;
 
                 case EntityState.Modified:
                     if (entry.Entity.Silinib && entry.Entity.SilinmeTarixi == null)
                     {
-                        // Soft delete
-                        entry.Entity.SilinmeTarixi = DateTime.Now;
+                        entry.Entity.SilinmeTarixi = now;
                         entry.Entity.SilenIcraciId = userId;
+                        if (_izlenecekCedveller.TryGetValue(typeName, out var delFarsi))
+                            logs.Add(new FealiyyetJurnali { UserId = userId, Emeliyyat = "D",
+                                CedvelAdi = typeName, CedvelFarsi = delFarsi,
+                                RecordId = entry.Entity.Id, Tarix = now });
                     }
                     else if (!entry.Entity.Silinib)
                     {
-                        entry.Entity.YenilenmeTarixi = DateTime.Now;
+                        entry.Entity.YenilenmeTarixi = now;
                         entry.Entity.YenileyenIcraciId = userId;
+                        if (_izlenecekCedveller.TryGetValue(typeName, out var updFarsi))
+                            logs.Add(new FealiyyetJurnali { UserId = userId, Emeliyyat = "U",
+                                CedvelAdi = typeName, CedvelFarsi = updFarsi,
+                                RecordId = entry.Entity.Id, Tarix = now });
                     }
                     break;
             }
         }
+
+        if (logs.Count > 0)
+            FealiyyetJurnali.AddRange(logs);
 
         return base.SaveChangesAsync(cancellationToken);
     }
