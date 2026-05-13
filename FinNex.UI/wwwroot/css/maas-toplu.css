@@ -1446,3 +1446,80 @@
     background: #e5e7eb;
     margin: 4px 0;
 }
+
+/* ── Əvvəlki Ay Korreksiyası kartı ───────────────────── */
+.mth-korr-card {
+    border: 1.5px solid #f59e0b !important;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+    box-shadow: 0 1px 3px rgba(245, 158, 11, 0.15);
+}
+
+.mth-korr-head {
+    color: #b45309 !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.2px;
+}
+
+.mth-korr-body {
+    display: flex !important;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+}
+
+.mth-korr-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 3px 0;
+    font-size: 12px;
+}
+
+.mth-korr-row--total {
+    margin-top: 4px;
+    padding-top: 6px;
+    border-top: 1px dashed #d97706;
+}
+
+.mth-korr-lbl {
+    color: #78350f;
+    font-size: 11.5px;
+    flex: 1;
+}
+
+.mth-korr-lbl--bold {
+    font-weight: 700;
+    color: #451a03;
+    font-size: 12px;
+}
+
+.mth-korr-val {
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    white-space: nowrap;
+    margin-left: 8px;
+}
+
+.mth-korr-val--neg { color: #dc2626; }
+.mth-korr-val--pos { color: #059669; }
+
+.mth-korr-aciq {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #78350f;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+.mth-korr-aciq span {
+    flex: 1;
+}

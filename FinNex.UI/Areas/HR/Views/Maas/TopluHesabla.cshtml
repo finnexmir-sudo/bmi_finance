@@ -576,33 +576,38 @@
                                                 @* Əvvəlki Ay Korreksiyası — yalnız aktualdır, sarı xəbərdarlıq stilindədir *@
                                                 @if (korrKesinti > 0 || korrGelir > 0)
                                                 {
-                                                    <div class="mth-detail-card" style="border:1.5px solid #f59e0b; background:#fffbeb;">
-                                                        <div class="mth-detail-card-head" style="color:#b45309;">
+                                                    var netTesir = korrGelir - korrKesinti;
+                                                    <div class="mth-detail-card mth-korr-card">
+                                                        <div class="mth-detail-card-head mth-korr-head">
                                                             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                                                                 <path d="M7 1L13 12H1L7 1z" stroke="#b45309" stroke-width="1.2" stroke-linejoin="round"/>
                                                                 <path d="M7 5v3M7 9.5v.5" stroke="#b45309" stroke-width="1.2" stroke-linecap="round"/>
                                                             </svg>
                                                             <span>Əvvəlki Ay Korreksiyası</span>
                                                         </div>
-                                                        <div class="mth-detail-card-body">
-                                                            <div class="mth-detail-item">
-                                                                <span class="mth-detail-lbl">Artıq ödəniş kəsintisi</span>
-                                                                <span class="n n--r">@korrKesinti.ToString("N2") ₼</span>
+                                                        <div class="mth-detail-card-body mth-korr-body">
+                                                            <div class="mth-korr-row">
+                                                                <span class="mth-korr-lbl">− Artıq ödəniş kəsintisi</span>
+                                                                <span class="mth-korr-val mth-korr-val--neg">@korrKesinti.ToString("N2") ₼</span>
                                                             </div>
-                                                            <div class="mth-detail-item">
-                                                                <span class="mth-detail-lbl">Kompensasiya (xəst./məz.)</span>
-                                                                <span class="n n--b">@korrGelir.ToString("N2") ₼</span>
+                                                            <div class="mth-korr-row">
+                                                                <span class="mth-korr-lbl">+ Kompensasiya</span>
+                                                                <span class="mth-korr-val mth-korr-val--pos">@korrGelir.ToString("N2") ₼</span>
                                                             </div>
-                                                            <div class="mth-detail-item">
-                                                                <span class="mth-detail-lbl" style="font-weight:600;">Net təsir</span>
-                                                                <span class="n @(korrGelir >= korrKesinti ? "n--b" : "n--r")">
-                                                                    @((korrGelir - korrKesinti).ToString("N2")) ₼
+                                                            <div class="mth-korr-row mth-korr-row--total">
+                                                                <span class="mth-korr-lbl mth-korr-lbl--bold">Net təsir</span>
+                                                                <span class="mth-korr-val @(netTesir >= 0 ? "mth-korr-val--pos" : "mth-korr-val--neg")">
+                                                                    @(netTesir >= 0 ? "+" : "")@netTesir.ToString("N2") ₼
                                                                 </span>
                                                             </div>
                                                             @if (!string.IsNullOrEmpty(korrAciq))
                                                             {
-                                                                <div style="grid-column:1/-1;margin-top:6px;padding-top:6px;border-top:1px dashed #f59e0b;font-size:10.5px;color:#92400e;line-height:1.4;">
-                                                                    @korrAciq
+                                                                <div class="mth-korr-aciq">
+                                                                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style="flex-shrink:0;margin-top:1px;">
+                                                                        <circle cx="5.5" cy="5.5" r="4.5" stroke="#b45309" stroke-width="1"/>
+                                                                        <path d="M5.5 3v3M5.5 7.5v.5" stroke="#b45309" stroke-width="1" stroke-linecap="round"/>
+                                                                    </svg>
+                                                                    <span>@korrAciq</span>
                                                                 </div>
                                                             }
                                                         </div>
