@@ -316,6 +316,7 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @{ var ilkSira = true; }
                     @foreach (var m in Model.MaasTarixcesi)
                     {
                         var ferg = m.YeniMaas - m.KohneMaas;
@@ -330,15 +331,19 @@
                             </td>
                             <td style="color:#8a93a8;font-size:12px;">@(m.EmrinNomresi ?? "—")</td>
                             <td>
-                                <a asp-action="MaasTarixcesiRedakte" asp-route-id="@m.Id"
-                                   style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#2d6cdf;font-weight:600;text-decoration:none;">
-                                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                                        <path d="M7.5 1.5l2 2-6 6H1.5v-2l6-6z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
-                                    </svg>
-                                    Redaktə
-                                </a>
+                                @if (ilkSira)
+                                {
+                                    <a asp-action="MaasTarixcesiRedakte" asp-route-id="@m.Id"
+                                       style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#2d6cdf;font-weight:600;text-decoration:none;">
+                                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                            <path d="M7.5 1.5l2 2-6 6H1.5v-2l6-6z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+                                        </svg>
+                                        Redaktə
+                                    </a>
+                                }
                             </td>
                         </tr>
+                        @{ ilkSira = false; }
                     }
                 </tbody>
             </table>
