@@ -428,9 +428,10 @@ namespace FinNex.UI
                 }
                 catch { }
 
-                // DsmfTarixceler → IsciAyliqQazanclar kopyala (xəstəlik hesablaması üçün)
+                // DsmfTarixceler → IsciAyliqQazanclar sinxronizasiya (xəstəlik hesablaması üçün)
                 try
                 {
+                    // 1. Yeni qeydlər — IsciAyliqQazanclar-da olmayan ayları əlavə et
                     db.Database.ExecuteSqlRaw(@"
                         INSERT INTO IsciAyliqQazanclar
                             (IsciId, Il, Ay, Qazanc, DsmfIsci, DsmfIsegoturen,
@@ -445,6 +446,22 @@ namespace FinNex.UI
                               AND q.Ay     = d.Ay
                               AND q.Silinib = 0
                         )
+                    ");
+
+                    // 2. Mövcud qeydlər DsmfIsci=0 isə DsmfTarixceler-dən yenilə
+                    db.Database.ExecuteSqlRaw(@"
+                        UPDATE q
+                        SET q.DsmfIsci        = d.IsciDsmf,
+                            q.DsmfIsegoturen  = d.SirketDsmf,
+                            q.YenilenmeTarixi = GETDATE()
+                        FROM IsciAyliqQazanclar q
+                        JOIN DsmfTarixceler d
+                          ON d.IsciId = q.IsciId
+                         AND d.Il     = q.Il
+                         AND d.Ay     = q.Ay
+                        WHERE q.Silinib    = 0
+                          AND q.DsmfIsci   = 0
+                          AND q.DsmfIsegoturen = 0
                     ");
                 }
                 catch { }
