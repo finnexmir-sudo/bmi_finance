@@ -428,6 +428,27 @@ namespace FinNex.UI
                 }
                 catch { }
 
+                // DsmfTarixceler → IsciAyliqQazanclar kopyala (xəstəlik hesablaması üçün)
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        INSERT INTO IsciAyliqQazanclar
+                            (IsciId, Il, Ay, Qazanc, DsmfIsci, DsmfIsegoturen,
+                             ElIleDaxilEdilib, Silinib, YaradilmaTarixi)
+                        SELECT d.IsciId, d.Il, d.Ay, 0, d.IsciDsmf, d.SirketDsmf,
+                               1, 0, GETDATE()
+                        FROM DsmfTarixceler d
+                        WHERE NOT EXISTS (
+                            SELECT 1 FROM IsciAyliqQazanclar q
+                            WHERE q.IsciId = d.IsciId
+                              AND q.Il     = d.Il
+                              AND q.Ay     = d.Ay
+                              AND q.Silinib = 0
+                        )
+                    ");
+                }
+                catch { }
+
                 // Avtomatik migration — sadəcə Migrate() çağır, xəta olsa logla amma crash etmə
                 try
                 {
