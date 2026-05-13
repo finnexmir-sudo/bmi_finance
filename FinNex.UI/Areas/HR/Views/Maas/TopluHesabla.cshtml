@@ -746,6 +746,62 @@
                                                     </div>
                                                 }
 
+                                                @* Məzuniyyət hesablama addımları *@
+                                                @if (mavBrut > 0)
+                                                {
+                                                    <div class="mth-detail-card mth-detail-card--steps">
+                                                        <div class="mth-detail-card-head" style="color:#7c3aed;">
+                                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                                <path d="M2 3h10M2 7h7M2 11h5" stroke="#7c3aed" stroke-width="1.2" stroke-linecap="round"/>
+                                                            </svg>
+                                                            <span>Məz. Hesablama Addımları</span>
+                                                        </div>
+                                                        <div class="mth-detail-card-body mth-steps-body">
+                                                            <div class="mth-step">
+                                                                <span class="mth-step-num">1</span>
+                                                                <span class="mth-step-lbl">Günlük dərəcə × gün</span>
+                                                                <span class="n n--b" data-p="mav-h-gunluk">—</span>
+                                                            </div>
+                                                            <div class="mth-step">
+                                                                <span class="mth-step-num">2</span>
+                                                                <span class="mth-step-lbl">İşlənmiş maaş (bu ay)</span>
+                                                                <span class="n" data-p="mav-h-im">—</span>
+                                                            </div>
+                                                            <div class="mth-step mth-step--sum">
+                                                                <span class="mth-step-num">3</span>
+                                                                <span class="mth-step-lbl">Aylıq birlikdə (maaş + məz.)</span>
+                                                                <span class="n n--b" data-p="mav-h-combined">—</span>
+                                                            </div>
+                                                            <div class="mth-step">
+                                                                <span class="mth-step-num">4</span>
+                                                                <span class="mth-step-lbl">Vergi bazası (HYS sonrası)</span>
+                                                                <span class="n n--au" data-p="mav-h-vergibaz">—</span>
+                                                            </div>
+                                                            <div class="mth-step">
+                                                                <span class="mth-step-num">5</span>
+                                                                <span class="mth-step-lbl">Standart güzəşt</span>
+                                                                <span class="n n--g" data-p="mav-h-sguzest">—</span>
+                                                            </div>
+                                                            <div class="mth-step">
+                                                                <span class="mth-step-num">6</span>
+                                                                <span class="mth-step-lbl">Birləşmiş 4 vergi (cəmi)</span>
+                                                                <span class="n n--r" data-p="mav-h-ctaxes">—</span>
+                                                            </div>
+                                                            <div class="mth-step">
+                                                                <span class="mth-step-num">7</span>
+                                                                <span class="mth-step-lbl">Məz. vergi payı (birləşmiş − maaş)</span>
+                                                                <span class="n n--r" data-p="mav-h-taxshare">—</span>
+                                                            </div>
+                                                            <div class="mth-step-divider"></div>
+                                                            <div class="mth-step mth-step--result">
+                                                                <span class="mth-step-num mth-step-num--result">✓</span>
+                                                                <span class="mth-step-lbl" style="font-weight:700;">Məzuniyyət NET</span>
+                                                                <span class="n n--au" style="font-weight:700;font-size:13px;" data-p="mav-net">—</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+
                                                 @* Şirkət xərcləri *@
                                                 <div class="mth-detail-card">
                                                     <div class="mth-detail-card-head mth-detail-card-head--purple">
