@@ -356,6 +356,107 @@ namespace FinNex.Application.Services.HR
             }
             catch { /* xəstəlik xidməti xətası əsas hesablamanı pozmasın */ }
 
+            // 6.6. Əvvəlki ay post-maaş korreksiyası
+            // Əvvəlki ayın maaşı hesablandıqdan SONRA daxil edilmiş xəstəlik/məzuniyyət
+            // qeydlərini cari ayın maaşında düzəldirik:
+            //   a) Artıq ödənilmiş günlər — əvvəlki ay gündəlik dərəcəsi ilə kəsinti
+            //   b) Həmin günlər üçün xəstəlik/məzuniyyət haqqı gəlir kimi əlavə olunur
+            decimal korreksiyaKesinti = 0;
+            decimal korreksiyaGelir = 0;
+            string? korreksiyaAciq = null;
+            List<XestelikOdenis>? korreksiyaXstOdenisler = null;
+
+            try
+            {
+                var prevIl = input.Ay == 1 ? input.Il - 1 : input.Il;
+                var prevAy = input.Ay == 1 ? 12 : input.Ay - 1;
+                var prevAyBaslama = new DateTime(prevIl, prevAy, 1);
+                var prevAyBitis = prevAyBaslama.AddMonths(1).AddDays(-1);
+
+                var prevMaas = await _unitOfWork.Repository<Maas>()
+                    .Query()
+                    .Where(x => x.IsciId == input.IsciId && x.Il == prevIl && x.Ay == prevAy
+                        && !x.Silinib && x.Status != MaasStatus.LegvEdildi)
+                    .Include(x => x.Detallar).ThenInclude(d => d.MaasNovu)
+                    .FirstOrDefaultAsync();
+
+                if (prevMaas != null)
+                {
+                    int prevAyIsGunu = await AyinIsGunleriniHesablaAsync(prevIl, prevAy);
+                    decimal prevEsasMaas = prevMaas.Detallar
+                        .FirstOrDefault(d => !d.Silinib && d.MaasNovu?.Ad == "Əsas Əməkhaqqı")?.Mebleg ?? 0;
+
+                    if (prevEsasMaas > 0 && prevAyIsGunu > 0)
+                    {
+                        decimal prevGunluk = prevEsasMaas / prevAyIsGunu;
+                        var korrHisseler = new List<string>();
+
+                        // Xəstəlik: əvvəlki aya aid, heç bir maaşa bağlanmamış XestelikOdenis qeydlər
+                        korreksiyaXstOdenisler = await _unitOfWork.Repository<XestelikOdenis>()
+                            .Query()
+                            .Where(x => x.IsciId == input.IsciId
+                                && x.Il == prevIl && x.Ay == prevAy
+                                && !x.Silinib && x.MaasId == null && x.SirketGunSayi > 0)
+                            .ToListAsync();
+
+                        if (korreksiyaXstOdenisler.Any())
+                        {
+                            int xstGun = korreksiyaXstOdenisler.Sum(x => x.SirketGunSayi);
+                            decimal xstOdenis = korreksiyaXstOdenisler.Sum(x => x.SirketOdenis);
+                            decimal xstKesinti = Math.Round(prevGunluk * xstGun, 2);
+                            korreksiyaKesinti += xstKesinti;
+                            korreksiyaGelir += xstOdenis;
+                            korrHisseler.Add(
+                                $"{prevAy:D2}/{prevIl} xəstəlik: {xstGun} gün artıq ödəniş " +
+                                $"kəsintisi {xstKesinti:N2} ₼ + xəstəlik haqqı {xstOdenis:N2} ₼");
+                        }
+
+                        // Məzuniyyət: əvvəlki ayın maaşı hesablandıqdan sonra başlayan AySonuOdenis məzuniyyətlər
+                        var postMezler = await _unitOfWork.Repository<Mezuniyyet>()
+                            .Query()
+                            .Where(x => x.IsciId == input.IsciId && !x.Silinib
+                                && x.Status == MezuniyyetStatus.Tesdiqlenib
+                                && x.OdenisTipi == MezuniyyetOdenisTipi.AySonuOdenis
+                                && x.BaslamaTarixi > prevMaas.HesablanmaTarixi
+                                && x.BaslamaTarixi <= prevAyBitis)
+                            .ToListAsync();
+
+                        foreach (var mez in postMezler)
+                        {
+                            var mezPrevBitis = mez.BitmeTarixi < prevAyBitis ? mez.BitmeTarixi : prevAyBitis;
+                            int mezIsGun = await IsGunleriniTariheGoereSayAsync(mez.BaslamaTarixi, mezPrevBitis);
+                            if (mezIsGun <= 0) continue;
+
+                            decimal mezKes = Math.Round(prevGunluk * mezIsGun, 2);
+                            korreksiyaKesinti += mezKes;
+
+                            var mezHesab = await MezuniyyetOdenisiDetalliHesablaAsync(
+                                mez.IsciId, mez.BaslamaTarixi, mezPrevBitis);
+                            decimal mezOd = mezHesab.CemiOdenis;
+                            korreksiyaGelir += mezOd;
+
+                            korrHisseler.Add(
+                                $"{prevAy:D2}/{prevIl} məzuniyyət " +
+                                $"({mez.BaslamaTarixi:dd.MM.yyyy}–{mezPrevBitis:dd.MM.yyyy}): " +
+                                $"{mezIsGun} gün kəsinti {mezKes:N2} ₼ + məzuniyyət haqqı {mezOd:N2} ₼");
+                        }
+
+                        if (korrHisseler.Any())
+                        {
+                            korreksiyaAciq = string.Join("; ", korrHisseler);
+                            izahatlar.Add(new HesablamaIzahiDto
+                            {
+                                Addim = "Əvvəlki Ay Korreksiyası",
+                                Izah = korreksiyaAciq,
+                                Mebleg = Math.Abs(korreksiyaGelir - korreksiyaKesinti),
+                                Tip = korreksiyaGelir >= korreksiyaKesinti ? "gelir" : "kesinti"
+                            });
+                        }
+                    }
+                }
+            }
+            catch { /* koreksiya xətası əsas hesablamanı pozmasın */ }
+
             // 7. Bonus
             if (input.BonusMeblegi > 0)
                 izahatlar.Add(new HesablamaIzahiDto
@@ -493,7 +594,9 @@ namespace FinNex.Application.Services.HR
                 + input.BonusMeblegi
                 + input.IH07Meblegi
                 + input.VM9821Meblegi
-                - input.CerimeMeblegi;
+                - input.CerimeMeblegi
+                + korreksiyaGelir
+                - korreksiyaKesinti;
 
             if (esasBrut < 0) esasBrut = 0;
             decimal brutMaas = esasBrut + hysIsegoturen;
@@ -807,6 +910,9 @@ namespace FinNex.Application.Services.HR
                 DetayEkle("İTSS (İşəgötürən)",                 MaasDetayTipi.IsegoturenXerci, itssIsegoturen,     itssIsvIzah),
                 // HYS (işəgötürən payı — 15%)
                 DetayEkle("HYS (İşəgötürən)",                  MaasDetayTipi.IsegoturenXerci, hysIsegoturen,      hysIsegoturen > 0 ? $"{hysMebleg:N2} × {hysIsegoturenFaizi:G29}%" : null),
+                // Əvvəlki ay korreksiyası
+                DetayEkle("Əvvəlki Ay Artıq Ödəniş Kəsintisi", MaasDetayTipi.Tutulma,         korreksiyaKesinti, korreksiyaAciq),
+                DetayEkle("Əvvəlki Ay Kompensasiyası",          MaasDetayTipi.Gelir,           korreksiyaGelir,   korreksiyaAciq),
             };
 
             var ilkXeta = xetalar.FirstOrDefault(x => !x.Success);
@@ -833,6 +939,14 @@ namespace FinNex.Application.Services.HR
                         od.MaasId = maas.Id;
                     }
                 }
+
+                // Əvvəlki ay korreksiyasına daxil edilmiş XestelikOdenis qeydlərini də bağla
+                if (korreksiyaXstOdenisler?.Any() == true)
+                {
+                    foreach (var od in korreksiyaXstOdenisler)
+                        od.MaasId = maas.Id;
+                }
+
                 await _unitOfWork.YaddaSaxlaAsync();
             }
             catch { }
@@ -1649,6 +1763,38 @@ namespace FinNex.Application.Services.HR
             }
 
             return sayi > 0 ? sayi : 22; // fallback: 22 is gunu
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // VERİLMİŞ TARİX ARALIĞINDA İŞ GÜNLƏRİNİ SAY
+        // Koreksiya hesablaması üçün: iki tarix arası iş günlərini sayır
+        // ─────────────────────────────────────────────────────────
+        private async Task<int> IsGunleriniTariheGoereSayAsync(DateTime from, DateTime to)
+        {
+            var frm = from.Date;
+            var end = to.Date;
+            if (frm > end) return 0;
+
+            var ozelGunler = await _unitOfWork.Repository<BayramGunu>()
+                .HamisiniGetirAsync(x => x.Tarix >= frm && x.Tarix <= end && !x.Silinib);
+            var ozelDict = ozelGunler
+                .GroupBy(x => x.Tarix.Date)
+                .ToDictionary(g => g.Key, g => g.First().Tip);
+
+            int sayi = 0;
+            for (var d = frm; d <= end; d = d.AddDays(1))
+            {
+                if (ozelDict.TryGetValue(d, out var tip))
+                {
+                    if (tip == GunTipi.IsGunu) sayi++;
+                }
+                else
+                {
+                    if (d.DayOfWeek != DayOfWeek.Saturday && d.DayOfWeek != DayOfWeek.Sunday)
+                        sayi++;
+                }
+            }
+            return sayi;
         }
     }
 }

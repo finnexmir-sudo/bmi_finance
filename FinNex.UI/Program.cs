@@ -466,6 +466,22 @@ namespace FinNex.UI
                 }
                 catch { }
 
+                // MaasNovleri — koreksiya növlərini əlavə et (idempotent)
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        SET IDENTITY_INSERT MaasNovleri ON;
+                        IF NOT EXISTS (SELECT 1 FROM MaasNovleri WHERE Id = 15)
+                            INSERT INTO MaasNovleri (Id, Ad, Tip, Aktivdir, Silinib, YaradilmaTarixi)
+                            VALUES (15, N'Əvvəlki Ay Artıq Ödəniş Kəsintisi', 2, 1, 0, GETDATE());
+                        IF NOT EXISTS (SELECT 1 FROM MaasNovleri WHERE Id = 16)
+                            INSERT INTO MaasNovleri (Id, Ad, Tip, Aktivdir, Silinib, YaradilmaTarixi)
+                            VALUES (16, N'Əvvəlki Ay Kompensasiyası', 1, 1, 0, GETDATE());
+                        SET IDENTITY_INSERT MaasNovleri OFF;
+                    ");
+                }
+                catch { }
+
                 // Avtomatik migration — sadəcə Migrate() çağır, xəta olsa logla amma crash etmə
                 try
                 {
