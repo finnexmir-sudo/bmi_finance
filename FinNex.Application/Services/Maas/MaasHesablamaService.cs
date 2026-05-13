@@ -250,11 +250,32 @@ namespace FinNex.Application.Services.HR
                     });
                 }
 
-                // Qabaqcadan ödənilmiş avansın brütü — 2500 güzəşt yoxlaması üçün toplanır
+                // Qabaqcadan ödənilmiş avansın brütü — 2500 güzəşt yoxlaması üçün toplanır.
+                // VACIB: Çoxaylı QabaqcadanOdenis məzuniyyət üçün avans yalnız ÖDƏNİLMƏ ayında
+                // vergi bazasına daxil edilir; əks halda hər ay təkrar əlavə olunur və
+                // standart 200 AZN güzəşti yanlış olaraq itirilir.
                 foreach (var advanceMez in advanceQeydler)
                 {
                     if (advanceMez.OdenisStatus == MezuniyyetOdenisStatus.Odenilib)
                     {
+                        bool odenilmeBuAyda = advanceMez.OdenilmeTarixi.HasValue
+                            && advanceMez.OdenilmeTarixi.Value.Year == input.Il
+                            && advanceMez.OdenilmeTarixi.Value.Month == input.Ay;
+
+                        if (!odenilmeBuAyda)
+                        {
+                            izahatlar.Add(new HesablamaIzahiDto
+                            {
+                                Addim = "Mezuniyyet (qabaqcadan — başqa ayda ödənilib)",
+                                Izah = $"{advanceMez.BaslamaTarixi:dd.MM.yyyy}–{advanceMez.BitmeTarixi:dd.MM.yyyy} " +
+                                       $"məzuniyyəti {advanceMez.OdenilmeTarixi:dd.MM.yyyy} tarixində ödənilib. " +
+                                       "Vergi bazasına yalnız ödəniş ayında daxil edilir; bu ayda yalnız iş günü kəsintisi tətbiq olunur.",
+                                Mebleg = 0,
+                                Tip = "melumati"
+                            });
+                            continue;
+                        }
+
                         // Brüt sahəsi varsa istifadə et, yoxdursa canlı hesabla
                         if (advanceMez.OdenenMeblegBrut.HasValue && advanceMez.OdenenMeblegBrut > 0)
                             mezuniyyetAvansBrutu += advanceMez.OdenenMeblegBrut.Value;
