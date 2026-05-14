@@ -121,6 +121,12 @@
                 Mesaj
             </span>
             <span style="display:flex;align-items:center;gap:4px">
+                <span style="width:18px;height:18px;border-radius:50%;background:#ccfbf1;display:flex;align-items:center;justify-content:center">
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3" width="13" height="10" rx="2" stroke="#0f766e" stroke-width="1.3"/><path d="M2 4l6 4.5L14 4" stroke="#0f766e" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 11v3M6 12.5l2 1.5 2-1.5" stroke="#0f766e" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                Gələn mail
+            </span>
+            <span style="display:flex;align-items:center;gap:4px">
                 <span style="width:18px;height:18px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center">
                     <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M8 1.5a4.5 4.5 0 014.5 4.5c0 4 1.5 5 1.5 5H2s1.5-1 1.5-5A4.5 4.5 0 018 1.5z" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/><path d="M6 11.5a2 2 0 004 0" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/></svg>
                 </span>
@@ -478,7 +484,8 @@
         const string docSvg    = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><rect x='3' y='1.5' width='10' height='13' rx='1.5' stroke='currentColor' stroke-width='1.3'/><path d='M6 5.5h4M6 8h3' stroke='currentColor' stroke-width='1.2' stroke-linecap='round'/></svg>";
         const string bellSvg   = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M8 1.5a4.5 4.5 0 014.5 4.5c0 4 1.5 5 1.5 5H2s1.5-1 1.5-5A4.5 4.5 0 018 1.5z' stroke='currentColor' stroke-width='1.3' stroke-linecap='round'/><path d='M6 11.5a2 2 0 004 0' stroke='currentColor' stroke-width='1.3' stroke-linecap='round'/></svg>";
         const string rotateSvg = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M2 8a6 6 0 0111.5-2M14 8a6 6 0 01-11.5 2' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/><path d='M11 3l2.5 3L11 6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>";
-        const string mailSvg   = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><rect x='1.5' y='3' width='13' height='10' rx='2' stroke='currentColor' stroke-width='1.3'/><path d='M2 4l6 4.5L14 4' stroke='currentColor' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+        const string mailSvg      = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><rect x='1.5' y='3' width='13' height='10' rx='2' stroke='currentColor' stroke-width='1.3'/><path d='M2 4l6 4.5L14 4' stroke='currentColor' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+        const string gelenMailSvg = "<svg width='16' height='16' viewBox='0 0 16 16' fill='none'><rect x='1.5' y='2.5' width='13' height='9' rx='2' stroke='currentColor' stroke-width='1.3'/><path d='M2 3.5l6 4 6-4' stroke='currentColor' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/><path d='M8 13v-3.5M6 11l2 2 2-2' stroke='currentColor' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/></svg>";
 
         if (nov == BildirisNovu.IcazeMuraciet || nov == BildirisNovu.IcazeTesdiq || nov == BildirisNovu.IcazeImtina)
         {
@@ -504,7 +511,7 @@
             BildirisNovu.EvezediciQebul     => checkSvg,
             BildirisNovu.EvezediciRedd      => xSvg,
             BildirisNovu.YeniMesaj          => mailSvg,
-            BildirisNovu.YeniGelenMail      => mailSvg,
+            BildirisNovu.YeniGelenMail      => gelenMailSvg,
             _                               => bellSvg
         };
     }
