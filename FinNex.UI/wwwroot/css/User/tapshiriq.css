@@ -205,6 +205,19 @@
     background: #ef4444;
 }
 
+.tsk-priority--mail {
+    background: #6366f1;
+}
+
+.tsk-card--done-mail {
+    opacity: .7;
+}
+
+.tsk-mail-qeyd {
+    font-style: italic;
+    color: #6b7280 !important;
+}
+
 .tsk-status {
     padding: 3px 8px;
     border-radius: 5px;
