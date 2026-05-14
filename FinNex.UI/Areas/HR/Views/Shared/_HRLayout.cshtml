@@ -16,6 +16,8 @@
         currentController == "Mezuniyyet" ||
         currentController == "Maas";
 
+    var isTeklifOpen = currentController == "Teklif";
+
 }
 
 <!DOCTYPE html>
@@ -140,6 +142,17 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- Təkliflər -->
+                <a class="hr-nav-item @(isTeklifOpen ? "active" : "")"
+                   asp-area="HR"
+                   asp-controller="Teklif"
+                   asp-action="Index">
+                    <span class="hr-nav-ico">
+                        <i class="bi bi-lightbulb-fill"></i>
+                    </span>
+                    <span>Təkliflər</span>
+                </a>
 
             </nav>
 

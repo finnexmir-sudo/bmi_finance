@@ -50,6 +50,10 @@ namespace FinNex.Domain.Entities.Communication
         JetonVerildi = 32,
         QaraJetonVerildi = 33,
         JetonRedimTesdiqlendi = 34,
-        JetonRedimReddEdildi = 35
+        JetonRedimReddEdildi = 35,
+
+        // Teklif / Boşluq / Şikayət iş axını
+        TeklifGonderildi = 36,
+        TeklifCavab = 37
     }
 }

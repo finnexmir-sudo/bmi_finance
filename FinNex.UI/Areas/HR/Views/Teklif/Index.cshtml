@@ -1,0 +1,550 @@
+@using FinNex.Domain.Entities.HR
+@model List<Teklif>
+@{
+    ViewData["Title"] = "Təkliflər";
+    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
+
+    var cols = new[]
+    {
+        (Status: TeklifStatus.Gozlemede,  Label: "Gözlənilir",  Cls: "kn-col--gray",  Icon: "bi-hourglass-split"),
+        (Status: TeklifStatus.Baxilir,    Label: "Baxılır",     Cls: "kn-col--blue",  Icon: "bi-eye-fill"),
+        (Status: TeklifStatus.Tamamlandi, Label: "Tamamlandı",  Cls: "kn-col--green", Icon: "bi-check-circle-fill"),
+        (Status: TeklifStatus.ReddEdildi, Label: "Rədd edildi", Cls: "kn-col--red",   Icon: "bi-x-circle-fill"),
+    };
+
+    static string NovLabel(TeklifNov n) => n switch
+    {
+        TeklifNov.BosluqBildirisi => "Boşluq",
+        TeklifNov.Sikayat         => "Şikayət",
+        _                         => "Teklif"
+    };
+    static string NovCls(TeklifNov n) => n switch
+    {
+        TeklifNov.BosluqBildirisi => "kn-nov-bosluq",
+        TeklifNov.Sikayat         => "kn-nov-sikayat",
+        _                         => "kn-nov-teklif"
+    };
+    static string PrioritetLabel(TeklifPrioritet p) => p switch
+    {
+        TeklifPrioritet.Yuksek => "Yüksək",
+        TeklifPrioritet.Asagi  => "Aşağı",
+        _                      => "Orta"
+    };
+    static string PrioritetCls(TeklifPrioritet p) => p switch
+    {
+        TeklifPrioritet.Yuksek => "kn-pr-yuksek",
+        TeklifPrioritet.Asagi  => "kn-pr-asagi",
+        _                      => "kn-pr-orta"
+    };
+
+    static string Initials(string? ad, string? soyad)
+    {
+        var a = string.IsNullOrWhiteSpace(ad)    ? "?" : ad.Trim()[0].ToString().ToUpper();
+        var s = string.IsNullOrWhiteSpace(soyad) ? ""  : soyad.Trim()[0].ToString().ToUpper();
+        return a + s;
+    }
+    static string AvatarColor(string tamAd)
+    {
+        var colors = new[] { "#6366f1","#0ea5e9","#10b981","#f59e0b","#ec4899","#8b5cf6","#14b8a6","#f97316" };
+        var idx = Math.Abs(tamAd.GetHashCode()) % colors.Length;
+        return colors[idx];
+    }
+}
+
+<!-- Stat başlıq -->
+<div class="kn-topbar">
+    @foreach (var col in cols)
+    {
+        var cnt = Model.Count(x => x.Status == col.Status);
+        <div class="kn-stat kn-stat--@col.Cls.Split('-')[2]">
+            <i class="bi @col.Icon"></i>
+            <span class="kn-stat-n">@cnt</span>
+            <span class="kn-stat-lbl">@col.Label</span>
+        </div>
+    }
+    <div class="kn-stat kn-stat--total">
+        <i class="bi bi-collection-fill"></i>
+        <span class="kn-stat-n">@Model.Count</span>
+        <span class="kn-stat-lbl">Cəmi</span>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="kn-alert kn-alert-ok"><i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="kn-alert kn-alert-err"><i class="bi bi-exclamation-circle-fill me-2"></i>@TempData["Error"]</div>
+}
+
+<!-- Kanban lövhəsi -->
+<div class="kn-board">
+    @foreach (var col in cols)
+    {
+        var cards = Model.Where(x => x.Status == col.Status).ToList();
+        <div class="kn-col @col.Cls">
+            <div class="kn-col-hdr">
+                <i class="bi @col.Icon"></i>
+                <span>@col.Label</span>
+                <span class="kn-count">@cards.Count</span>
+            </div>
+            <div class="kn-col-body">
+                @if (!cards.Any())
+                {
+                    <div class="kn-empty-col">
+                        <i class="bi bi-inbox"></i>
+                        <span>Boşdur</span>
+                    </div>
+                }
+                @foreach (var item in cards)
+                {
+                    var av    = Initials(item.Isci?.Ad, item.Isci?.Soyad);
+                    var avClr = AvatarColor(item.Isci?.TamAd ?? "?");
+                    <div class="kn-card"
+                         data-id="@item.Id"
+                         data-bashliq="@item.Bashliq"
+                         data-mezmun="@item.Mezmun"
+                         data-isci="@(item.Isci?.TamAd ?? "")"
+                         data-nov="@((int)item.Nov)"
+                         data-nov-label="@NovLabel(item.Nov)"
+                         data-prioritet="@((int)item.Prioritet)"
+                         data-status="@((int)item.Status)"
+                         data-cavab="@(item.Cavab ?? "")"
+                         data-cavab-tarix="@(item.CavabTarixi?.ToString("dd.MM.yyyy HH:mm") ?? "")"
+                         data-cavab-veren="@(item.CavabVeren?.TamAd ?? "")"
+                         data-tarix="@item.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")"
+                         data-av="@av"
+                         data-av-clr="@avClr"
+                         onclick="acPanel(this)">
+                        <div class="kn-card-head">
+                            <span class="kn-nov @NovCls(item.Nov)">@NovLabel(item.Nov)</span>
+                            <span class="kn-pr @PrioritetCls(item.Prioritet)">@PrioritetLabel(item.Prioritet)</span>
+                        </div>
+                        <div class="kn-card-isci">
+                            <div class="kn-av" style="background:@avClr">@av</div>
+                            <div class="kn-isci-ad">@(item.Isci?.TamAd ?? "—")</div>
+                        </div>
+                        <div class="kn-card-bashliq">@item.Bashliq</div>
+                        <div class="kn-card-date"><i class="bi bi-calendar3 me-1"></i>@item.YaradilmaTarixi.ToString("dd.MM.yyyy")</div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Detail Offcanvas -->
+<div class="offcanvas offcanvas-end kn-panel" tabindex="-1" id="detailPanel" style="width:420px">
+    <div class="offcanvas-header kn-panel-hdr">
+        <div>
+            <div class="kn-panel-isci">
+                <div class="kn-av kn-av-lg" id="panel-av" style="background:#6366f1">??</div>
+                <div>
+                    <div class="kn-panel-isci-ad" id="panel-isci-ad">—</div>
+                    <span class="kn-nov" id="panel-nov-badge">—</span>
+                </div>
+            </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+
+    <div class="offcanvas-body kn-panel-body" style="overflow-y:auto">
+        <!-- Başlıq -->
+        <div class="kn-panel-bashliq" id="panel-bashliq">—</div>
+
+        <!-- Tarix + prioritet -->
+        <div class="kn-panel-meta">
+            <span id="panel-tarix" class="kn-panel-date"></span>
+        </div>
+
+        <!-- Məzmun -->
+        <div class="kn-panel-section-lbl">Məzmun</div>
+        <div class="kn-panel-mezmun" id="panel-mezmun">—</div>
+
+        <!-- Mövcud cavab (əgər varsa) -->
+        <div id="panel-cavab-block" style="display:none" class="kn-panel-cavab-existing">
+            <div class="kn-panel-section-lbl">
+                <i class="bi bi-chat-left-text-fill me-1"></i>Cavab
+                <span id="panel-cavab-tarix" class="kn-cavab-meta"></span>
+            </div>
+            <div class="kn-panel-cavab-text" id="panel-cavab-text">—</div>
+        </div>
+
+        <hr class="kn-divider" />
+
+        <!-- Form -->
+        <form method="post" asp-action="Saxla" id="panel-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="panel-id" />
+
+            <div class="mb-3">
+                <label class="kn-form-lbl">Status</label>
+                <select name="status" id="panel-status" class="form-select kn-select">
+                    <option value="0">⏳ Gözlənilir</option>
+                    <option value="1">👁 Baxılır</option>
+                    <option value="2">✅ Tamamlandı</option>
+                    <option value="3">❌ Rədd edildi</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="kn-form-lbl">Prioritet</label>
+                <select name="prioritet" id="panel-prioritet" class="form-select kn-select">
+                    <option value="0">⬇ Aşağı</option>
+                    <option value="1">➡ Orta</option>
+                    <option value="2">⬆ Yüksək</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="kn-form-lbl">Cavab <span class="text-muted fw-normal">(isteğe bağlı)</span></label>
+                <textarea name="cavab" id="panel-cavab" class="form-control kn-textarea"
+                          placeholder="İşçiyə cavab yazın..." rows="4"></textarea>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="kn-btn-save">
+                    <i class="bi bi-save2-fill me-1"></i>Yadda saxla
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="offcanvas">
+                    Ləğv et
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+const novLabels = ['Teklif', 'Boşluq', 'Şikayət'];
+const novClasses = ['kn-nov-teklif', 'kn-nov-bosluq', 'kn-nov-sikayat'];
+
+function acPanel(card) {
+    const d = card.dataset;
+
+    document.getElementById('panel-id').value        = d.id;
+    document.getElementById('panel-isci-ad').textContent = d.isci || '—';
+    document.getElementById('panel-bashliq').textContent = d.bashliq || '—';
+    document.getElementById('panel-mezmun').textContent  = d.mezmun || '—';
+    document.getElementById('panel-tarix').textContent   = d.tarix || '';
+    document.getElementById('panel-status').value    = d.status;
+    document.getElementById('panel-prioritet').value = d.prioritet;
+    document.getElementById('panel-cavab').value     = d.cavab || '';
+
+    // Avatar
+    const avEl = document.getElementById('panel-av');
+    avEl.textContent = d.av || '?';
+    avEl.style.background = d.avClr || '#6366f1';
+
+    // Nov badge
+    const nov = parseInt(d.nov || '0');
+    const badge = document.getElementById('panel-nov-badge');
+    badge.textContent = novLabels[nov] || 'Teklif';
+    badge.className   = 'kn-nov ' + (novClasses[nov] || 'kn-nov-teklif');
+
+    // Mövcud cavab
+    const cavabBlock = document.getElementById('panel-cavab-block');
+    if (d.cavab) {
+        cavabBlock.style.display = '';
+        document.getElementById('panel-cavab-text').textContent = d.cavab;
+        document.getElementById('panel-cavab-tarix').textContent =
+            d.cavabTarix ? '· ' + d.cavabTarix + (d.cavabVeren ? ' (' + d.cavabVeren + ')' : '') : '';
+    } else {
+        cavabBlock.style.display = 'none';
+    }
+
+    const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(
+        document.getElementById('detailPanel'));
+    offcanvas.show();
+}
+</script>
+}
+
+@section Styles {
+<style>
+/* ── Topbar stats ────────────────────────────────────── */
+.kn-topbar {
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.2rem;
+}
+.kn-stat {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    background: #fff;
+    border-radius: 10px;
+    padding: .5rem .9rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,.07);
+    font-size: .82rem;
+    color: #64748b;
+}
+.kn-stat i { font-size: 1rem; }
+.kn-stat-n   { font-size: 1.1rem; font-weight: 800; color: #1e293b; }
+.kn-stat-lbl { font-size: .75rem; }
+.kn-stat--gray  i { color: #94a3b8; }
+.kn-stat--blue  i { color: #3b82f6; }
+.kn-stat--green i { color: #22c55e; }
+.kn-stat--red   i { color: #ef4444; }
+.kn-stat--total i { color: #6366f1; }
+
+/* ── Alert ───────────────────────────────────────────── */
+.kn-alert {
+    border-radius: 8px;
+    padding: .7rem 1rem;
+    font-size: .88rem;
+    margin-bottom: 1rem;
+}
+.kn-alert-ok  { background: #d1fae5; color: #065f46; }
+.kn-alert-err { background: #fee2e2; color: #991b1b; }
+
+/* ── Kanban board ────────────────────────────────────── */
+.kn-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    align-items: start;
+}
+@media (max-width: 900px) {
+    .kn-board { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+    .kn-board { grid-template-columns: 1fr; }
+}
+
+/* ── Column ──────────────────────────────────────────── */
+.kn-col {
+    background: #f8fafc;
+    border-radius: 12px;
+    overflow: hidden;
+    min-height: 200px;
+}
+.kn-col-hdr {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .7rem 1rem;
+    font-size: .83rem;
+    font-weight: 700;
+    color: #fff;
+}
+.kn-col--gray  .kn-col-hdr { background: #64748b; }
+.kn-col--blue  .kn-col-hdr { background: #3b82f6; }
+.kn-col--green .kn-col-hdr { background: #16a34a; }
+.kn-col--red   .kn-col-hdr { background: #dc2626; }
+.kn-count {
+    margin-left: auto;
+    background: rgba(255,255,255,.25);
+    border-radius: 20px;
+    padding: 1px 8px;
+    font-size: .75rem;
+}
+.kn-col-body {
+    padding: .7rem;
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+}
+.kn-empty-col {
+    text-align: center;
+    padding: 1.5rem 0;
+    color: #cbd5e1;
+    font-size: .8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .3rem;
+}
+.kn-empty-col i { font-size: 1.5rem; }
+
+/* ── Card ────────────────────────────────────────────── */
+.kn-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: .85rem;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    transition: box-shadow .15s, transform .1s;
+    border: 1px solid #f1f5f9;
+}
+.kn-card:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,.12);
+    transform: translateY(-1px);
+}
+.kn-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: .5rem;
+}
+.kn-card-isci {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: .4rem;
+}
+.kn-isci-ad {
+    font-size: .8rem;
+    font-weight: 700;
+    color: #334155;
+}
+.kn-card-bashliq {
+    font-size: .83rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: .35rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.kn-card-date {
+    font-size: .72rem;
+    color: #94a3b8;
+}
+
+/* ── Avatar ──────────────────────────────────────────── */
+.kn-av {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .72rem;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+}
+.kn-av-lg {
+    width: 42px;
+    height: 42px;
+    font-size: .95rem;
+}
+
+/* ── Nov badges ──────────────────────────────────────── */
+.kn-nov {
+    font-size: .68rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 20px;
+}
+.kn-nov-teklif  { background: #ede9fe; color: #5b21b6; }
+.kn-nov-bosluq  { background: #fef3c7; color: #92400e; }
+.kn-nov-sikayat { background: #fee2e2; color: #991b1b; }
+
+/* ── Prioritet badges ────────────────────────────────── */
+.kn-pr {
+    font-size: .68rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 20px;
+}
+.kn-pr-yuksek { background: #fee2e2; color: #b91c1c; }
+.kn-pr-orta   { background: #fef9c3; color: #92400e; }
+.kn-pr-asagi  { background: #f1f5f9; color: #64748b; }
+
+/* ── Offcanvas panel ─────────────────────────────────── */
+.kn-panel { border-left: none; }
+.kn-panel-hdr {
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    color: #fff;
+    padding: 1rem 1.2rem;
+    border: none;
+    align-items: flex-start;
+}
+.kn-panel-isci {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+}
+.kn-panel-isci-ad {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: .2rem;
+}
+.kn-panel-body { padding: 1.2rem; }
+.kn-panel-bashliq {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin-bottom: .35rem;
+}
+.kn-panel-meta {
+    margin-bottom: .8rem;
+}
+.kn-panel-date {
+    font-size: .78rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+}
+.kn-panel-section-lbl {
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #94a3b8;
+    margin-bottom: .4rem;
+}
+.kn-panel-mezmun {
+    font-size: .85rem;
+    color: #334155;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    margin-bottom: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: .75rem;
+}
+.kn-panel-cavab-existing {
+    background: #ede9fe;
+    border-radius: 10px;
+    padding: .85rem 1rem;
+    margin-bottom: 1rem;
+}
+.kn-panel-cavab-text {
+    font-size: .85rem;
+    color: #3b0764;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    margin-top: .35rem;
+}
+.kn-cavab-meta { font-weight: 400; color: #7c3aed; font-size: .72rem; }
+.kn-divider { border-color: #e2e8f0; margin: 1rem 0; }
+
+.kn-form-lbl {
+    font-size: .82rem;
+    font-weight: 700;
+    color: #374151;
+    margin-bottom: .3rem;
+    display: block;
+}
+.kn-select, .kn-textarea {
+    border-radius: 8px;
+    border-color: #e2e8f0;
+    font-size: .85rem;
+}
+.kn-select:focus, .kn-textarea:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+}
+.kn-textarea { resize: vertical; min-height: 90px; }
+.kn-btn-save {
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: .45rem 1.1rem;
+    font-size: .85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+}
+.kn-btn-save:hover { opacity: .88; }
+</style>
+}
