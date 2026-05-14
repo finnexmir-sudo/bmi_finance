@@ -19,15 +19,18 @@ namespace FinNex.UI.Areas.User.Controllers
     {
         private readonly ITapshiriqService _tapshiriqService;
         private readonly IIsciService _isciService;
+        private readonly IGelenMailService _gelenMailService;
         private readonly UserManager<AppUser> _userManager;
 
         public TapshiriqController(
             ITapshiriqService tapshiriqService,
             IIsciService isciService,
+            IGelenMailService gelenMailService,
             UserManager<AppUser> userManager)
         {
             _tapshiriqService = tapshiriqService;
             _isciService = isciService;
+            _gelenMailService = gelenMailService;
             _userManager = userManager;
         }
 
@@ -39,12 +42,14 @@ namespace FinNex.UI.Areas.User.Controllers
 
             var menim = await _tapshiriqService.GetMenimTapshiriqlarimAsync(isciId.Value);
             var verdiklerim = await _tapshiriqService.GetVerdiklerimAsync(isciId.Value);
+            var mailTapshiriqlari = await _gelenMailService.GetMailTapshiriqlariAsync(isciId.Value);
 
             var vm = new TapshiriqIndexVM
             {
                 AktivTab = tab,
                 MenimTapshiriqlar = menim.Success ? menim.Data!.ToList() : new(),
                 VerdiklerimTapshiriqlar = verdiklerim.Success ? verdiklerim.Data!.ToList() : new(),
+                MailTapshiriqlari = mailTapshiriqlari,
             };
 
             ViewData["Title"] = "Tapşırıqlar";

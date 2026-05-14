@@ -9,6 +9,7 @@ namespace FinNex.UI.Areas.User.ViewModels.Tapshiriq
         public string AktivTab { get; set; } = "menim";
         public List<TapshiriqListDto> MenimTapshiriqlar { get; set; } = new();
         public List<TapshiriqListDto> VerdiklerimTapshiriqlar { get; set; } = new();
+        public List<GelenMailTapshiriqDto> MailTapshiriqlari { get; set; } = new();
 
         public int YeniSayi => MenimTapshiriqlar.Count(x =>
             x.Status == TapshiriqStatus.Yeni);
@@ -16,5 +17,5 @@ namespace FinNex.UI.Areas.User.ViewModels.Tapshiriq
             x.Status == TapshiriqStatus.DavamEdir);
         public int GecikmishSayi => MenimTapshiriqlar.Count(x => x.Gecikibmi);
     }
-    
+
 }
