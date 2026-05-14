@@ -1,0 +1,468 @@
+@using FinNex.Domain.Entities.HR
+@model List<Teklif>
+@{
+    ViewData["Title"] = "Mənim Təkliflərim";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    static string NovLabel(TeklifNov n) => n switch
+    {
+        TeklifNov.BosluqBildirisi => "Boşluq",
+        TeklifNov.Sikayat         => "Şikayət",
+        _                         => "Teklif"
+    };
+    static string NovIcon(TeklifNov n) => n switch
+    {
+        TeklifNov.BosluqBildirisi => "bi-exclamation-triangle-fill",
+        TeklifNov.Sikayat         => "bi-megaphone-fill",
+        _                         => "bi-lightbulb-fill"
+    };
+    static string NovCls(TeklifNov n) => n switch
+    {
+        TeklifNov.BosluqBildirisi => "tk-badge-bosluq",
+        TeklifNov.Sikayat         => "tk-badge-sikayat",
+        _                         => "tk-badge-teklif"
+    };
+    static string StatusLabel(TeklifStatus s) => s switch
+    {
+        TeklifStatus.Baxilir    => "Baxılır",
+        TeklifStatus.Tamamlandi => "Tamamlandı",
+        TeklifStatus.ReddEdildi => "Rədd edildi",
+        _                       => "Gözlənilir"
+    };
+    static string StatusCls(TeklifStatus s) => s switch
+    {
+        TeklifStatus.Baxilir    => "tk-status-baxilir",
+        TeklifStatus.Tamamlandi => "tk-status-tamamlandi",
+        TeklifStatus.ReddEdildi => "tk-status-redd",
+        _                       => "tk-status-gozleme"
+    };
+    static string PrioritetLabel(TeklifPrioritet p) => p switch
+    {
+        TeklifPrioritet.Yuksek => "Yüksək",
+        TeklifPrioritet.Asagi  => "Aşağı",
+        _                      => "Orta"
+    };
+    static string PrioritetCls(TeklifPrioritet p) => p switch
+    {
+        TeklifPrioritet.Yuksek => "tk-pr-yuksek",
+        TeklifPrioritet.Asagi  => "tk-pr-asagi",
+        _                      => "tk-pr-orta"
+    };
+
+    var gozlemede  = Model.Count(x => x.Status == TeklifStatus.Gozlemede);
+    var baxilir    = Model.Count(x => x.Status == TeklifStatus.Baxilir);
+    var cavablanib = Model.Count(x => x.Status is TeklifStatus.Tamamlandi or TeklifStatus.ReddEdildi);
+}
+
+<!-- Başlıq + düymə -->
+<div class="tk-header">
+    <div>
+        <h4 class="tk-page-title"><i class="bi bi-lightbulb me-2"></i>Mənim Təkliflərim</h4>
+        <div class="tk-stats">
+            <span class="tk-stat"><span class="tk-stat-n">@Model.Count</span> cəmi</span>
+            @if (gozlemede > 0)
+            {
+                <span class="tk-stat tk-stat--warn"><span class="tk-stat-n">@gozlemede</span> gözlənilir</span>
+            }
+            @if (baxilir > 0)
+            {
+                <span class="tk-stat tk-stat--info"><span class="tk-stat-n">@baxilir</span> baxılır</span>
+            }
+            @if (cavablanib > 0)
+            {
+                <span class="tk-stat tk-stat--ok"><span class="tk-stat-n">@cavablanib</span> cavablanıb</span>
+            }
+        </div>
+    </div>
+    <button class="tk-btn-new" data-bs-toggle="modal" data-bs-target="#yaratModal">
+        <i class="bi bi-plus-lg"></i> Yeni Teklif
+    </button>
+</div>
+
+<!-- TempData bildirişləri -->
+@if (TempData["Success"] != null)
+{
+    <div class="tk-alert tk-alert-ok"><i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="tk-alert tk-alert-err"><i class="bi bi-exclamation-circle-fill me-2"></i>@TempData["Error"]</div>
+}
+
+<!-- Kart siyahısı -->
+@if (!Model.Any())
+{
+    <div class="tk-empty">
+        <i class="bi bi-lightbulb tk-empty-icon"></i>
+        <div class="tk-empty-title">Hələ heç bir teklif yoxdur</div>
+        <div class="tk-empty-sub">Bank üçün fikir, boşluq və ya şikayətinizi paylaşın.</div>
+        <button class="tk-btn-new mt-3" data-bs-toggle="modal" data-bs-target="#yaratModal">
+            <i class="bi bi-plus-lg"></i> İlk Teklifinizi Yazın
+        </button>
+    </div>
+}
+else
+{
+    <div class="tk-list">
+        @foreach (var item in Model)
+        {
+            <div class="tk-card tk-card--@item.Status.ToString().ToLower()">
+                <div class="tk-card-head">
+                    <span class="tk-badge @NovCls(item.Nov)">
+                        <i class="bi @NovIcon(item.Nov) me-1"></i>@NovLabel(item.Nov)
+                    </span>
+                    <span class="tk-status @StatusCls(item.Status)">@StatusLabel(item.Status)</span>
+                </div>
+
+                <div class="tk-card-title">@item.Bashliq</div>
+                <div class="tk-card-mezmun">@item.Mezmun</div>
+
+                <div class="tk-card-foot">
+                    <span class="tk-prioritet @PrioritetCls(item.Prioritet)">
+                        <i class="bi bi-flag-fill me-1"></i>@PrioritetLabel(item.Prioritet)
+                    </span>
+                    <span class="tk-date"><i class="bi bi-calendar3 me-1"></i>@item.YaradilmaTarixi.ToString("dd.MM.yyyy")</span>
+
+                    @if (item.Status == TeklifStatus.Gozlemede)
+                    {
+                        <form method="post" asp-action="Legv" class="tk-legv-form"
+                              onsubmit="return confirm('Bu teklifinizi silmək istədiyinizə əminsiniz?')">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <button type="submit" class="tk-btn-legv" title="Sil">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </form>
+                    }
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(item.Cavab))
+                {
+                    <div class="tk-cavab-block">
+                        <div class="tk-cavab-label">
+                            <i class="bi bi-chat-left-text-fill me-1"></i>Cavab
+                            @if (item.CavabTarixi.HasValue)
+                            {
+                                <span class="tk-cavab-date">· @item.CavabTarixi.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                            }
+                        </div>
+                        <div class="tk-cavab-text">@item.Cavab</div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+<!-- Yeni Teklif Modal -->
+<div class="modal fade" id="yaratModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content tk-modal">
+            <div class="modal-header tk-modal-header">
+                <h5 class="modal-title"><i class="bi bi-lightbulb-fill me-2"></i>Yeni Teklif</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-action="Yarat">
+                @Html.AntiForgeryToken()
+                <div class="modal-body tk-modal-body">
+                    <!-- Növ seçimi -->
+                    <div class="tk-nov-grid">
+                        <label class="tk-nov-opt">
+                            <input type="radio" name="nov" value="0" checked />
+                            <div class="tk-nov-card">
+                                <i class="bi bi-lightbulb-fill"></i>
+                                <span>Teklif</span>
+                                <small>Yeni fikir, yaxşılaşdırma</small>
+                            </div>
+                        </label>
+                        <label class="tk-nov-opt">
+                            <input type="radio" name="nov" value="1" />
+                            <div class="tk-nov-card">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <span>Boşluq</span>
+                                <small>Çatışmayan, problemli yer</small>
+                            </div>
+                        </label>
+                        <label class="tk-nov-opt">
+                            <input type="radio" name="nov" value="2" />
+                            <div class="tk-nov-card">
+                                <i class="bi bi-megaphone-fill"></i>
+                                <span>Şikayət</span>
+                                <small>Narazılıq, inciklik</small>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="mb-3 mt-3">
+                        <label class="form-label fw-semibold">Başlıq <span class="text-danger">*</span></label>
+                        <input type="text" name="bashliq" class="form-control tk-input"
+                               placeholder="Qısa, aydın başlıq yazın..." maxlength="200" required />
+                    </div>
+
+                    <div class="mb-1">
+                        <label class="form-label fw-semibold">Məzmun <span class="text-danger">*</span></label>
+                        <textarea name="mezmun" class="form-control tk-input tk-textarea"
+                                  placeholder="Ətraflı izah edin — nə, niyə, necə..." rows="5" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer tk-modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ləğv et</button>
+                    <button type="submit" class="tk-btn-submit">
+                        <i class="bi bi-send-fill me-1"></i> Göndər
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+<style>
+/* ── Layout ──────────────────────────────────────────── */
+.tk-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: .75rem;
+}
+.tk-page-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0;
+    color: #1e293b;
+}
+.tk-stats {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin-top: .35rem;
+}
+.tk-stat {
+    font-size: .75rem;
+    background: #f1f5f9;
+    border-radius: 20px;
+    padding: 2px 10px;
+    color: #64748b;
+}
+.tk-stat--warn { background: #fef9c3; color: #92400e; }
+.tk-stat--info { background: #dbeafe; color: #1e40af; }
+.tk-stat--ok   { background: #d1fae5; color: #065f46; }
+.tk-stat-n     { font-weight: 700; }
+
+/* ── Buttons ─────────────────────────────────────────── */
+.tk-btn-new {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: .5rem 1.1rem;
+    font-size: .88rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    transition: opacity .15s;
+}
+.tk-btn-new:hover { opacity: .88; }
+
+/* ── Alert ───────────────────────────────────────────── */
+.tk-alert {
+    border-radius: 8px;
+    padding: .7rem 1rem;
+    font-size: .88rem;
+    margin-bottom: 1rem;
+}
+.tk-alert-ok  { background: #d1fae5; color: #065f46; }
+.tk-alert-err { background: #fee2e2; color: #991b1b; }
+
+/* ── Empty ───────────────────────────────────────────── */
+.tk-empty {
+    text-align: center;
+    padding: 4rem 1rem;
+    color: #94a3b8;
+}
+.tk-empty-icon { font-size: 3rem; display: block; margin-bottom: 1rem; color: #cbd5e1; }
+.tk-empty-title { font-size: 1rem; font-weight: 600; color: #475569; }
+.tk-empty-sub   { font-size: .85rem; margin-top: .3rem; }
+
+/* ── Card list ───────────────────────────────────────── */
+.tk-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.tk-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.1rem 1.2rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    border-left: 4px solid #e2e8f0;
+    transition: box-shadow .15s;
+}
+.tk-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+.tk-card--gozlemede { border-left-color: #94a3b8; }
+.tk-card--baxilir   { border-left-color: #3b82f6; }
+.tk-card--tamamlandi { border-left-color: #22c55e; }
+.tk-card--reddedildi { border-left-color: #ef4444; }
+
+.tk-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: .6rem;
+}
+.tk-card-title {
+    font-size: .97rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: .35rem;
+}
+.tk-card-mezmun {
+    font-size: .84rem;
+    color: #64748b;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: .8rem;
+}
+.tk-card-foot {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    flex-wrap: wrap;
+}
+.tk-date {
+    font-size: .77rem;
+    color: #94a3b8;
+    margin-left: auto;
+}
+.tk-legv-form { margin: 0; }
+.tk-btn-legv {
+    background: none;
+    border: none;
+    color: #cbd5e1;
+    cursor: pointer;
+    font-size: .9rem;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color .15s, background .15s;
+}
+.tk-btn-legv:hover { color: #ef4444; background: #fee2e2; }
+
+/* ── Cavab block ─────────────────────────────────────── */
+.tk-cavab-block {
+    margin-top: .8rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: .75rem 1rem;
+    border-left: 3px solid #6366f1;
+}
+.tk-cavab-label {
+    font-size: .78rem;
+    font-weight: 700;
+    color: #6366f1;
+    margin-bottom: .3rem;
+}
+.tk-cavab-date { font-weight: 400; color: #94a3b8; }
+.tk-cavab-text { font-size: .85rem; color: #334155; line-height: 1.5; }
+
+/* ── Badges ──────────────────────────────────────────── */
+.tk-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: .72rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+}
+.tk-badge-teklif  { background: #ede9fe; color: #5b21b6; }
+.tk-badge-bosluq  { background: #fef3c7; color: #92400e; }
+.tk-badge-sikayat { background: #fee2e2; color: #991b1b; }
+
+.tk-status {
+    font-size: .72rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+}
+.tk-status-gozleme  { background: #f1f5f9; color: #475569; }
+.tk-status-baxilir  { background: #dbeafe; color: #1e40af; }
+.tk-status-tamamlandi { background: #d1fae5; color: #065f46; }
+.tk-status-redd     { background: #fee2e2; color: #991b1b; }
+
+.tk-prioritet {
+    font-size: .72rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+}
+.tk-pr-yuksek { background: #fee2e2; color: #b91c1c; }
+.tk-pr-orta   { background: #fef9c3; color: #92400e; }
+.tk-pr-asagi  { background: #f1f5f9; color: #64748b; }
+
+/* ── Modal ───────────────────────────────────────────── */
+.tk-modal { border: none; border-radius: 14px; overflow: hidden; }
+.tk-modal-header {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: #fff;
+    border: none;
+    padding: 1rem 1.3rem;
+}
+.tk-modal-body   { padding: 1.3rem; }
+.tk-modal-footer { border: none; padding: .8rem 1.3rem; background: #f8fafc; }
+
+.tk-nov-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: .6rem;
+}
+.tk-nov-opt input { display: none; }
+.tk-nov-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: .7rem .5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+.tk-nov-card i {
+    font-size: 1.3rem;
+    display: block;
+    margin-bottom: .3rem;
+    color: #6366f1;
+}
+.tk-nov-card span  { font-size: .83rem; font-weight: 700; display: block; color: #1e293b; }
+.tk-nov-card small { font-size: .72rem; color: #94a3b8; }
+.tk-nov-opt input:checked + .tk-nov-card {
+    border-color: #6366f1;
+    background: #ede9fe;
+}
+.tk-input {
+    border-radius: 8px;
+    border-color: #e2e8f0;
+    font-size: .88rem;
+}
+.tk-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.15); }
+.tk-textarea { resize: vertical; min-height: 110px; }
+
+.tk-btn-submit {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: .45rem 1.2rem;
+    font-size: .88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+}
+.tk-btn-submit:hover { opacity: .88; }
+</style>
+}
