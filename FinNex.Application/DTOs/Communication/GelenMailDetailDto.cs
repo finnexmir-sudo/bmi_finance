@@ -32,6 +32,8 @@ public class GelenMailIsciDto
     public string AdSoyad { get; set; } = "";
     public DateTime TapalanTarix { get; set; }
     public string? Qeyd { get; set; }
+    public bool IcraOlundu { get; set; }
+    public DateTime? IcraOlunduTarix { get; set; }
 }
 
 public class GelenMailQosmaDto

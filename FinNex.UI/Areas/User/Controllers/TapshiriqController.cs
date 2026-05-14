@@ -159,6 +159,24 @@ namespace FinNex.UI.Areas.User.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // GET /User/Tapshiriq/MailGoruntusu/5
+        public async Task<IActionResult> MailGoruntusu(int mailId)
+        {
+            var isciId = await GetIsciIdAsync();
+            if (isciId == null) return RedirectToLogin();
+
+            var mail = await _gelenMailService.GetDetailAsync(mailId);
+            if (mail == null) return NotFound();
+
+            // Yalnız tapşırılan işçi görə bilər
+            var tapshirildi = mail.TapalanIsciler.Any(ti => ti.IsciId == isciId.Value);
+            if (!tapshirildi) return Forbid();
+
+            ViewBag.IsciId = isciId.Value;
+            ViewData["Title"] = mail.Movzu;
+            return View(mail);
+        }
+
         private async Task<TapshiriqYaratVM> BuildYaratVMAsync(int isciId)
         {
             var iscilerResult = await _isciService.HamisiniGetirAsync(

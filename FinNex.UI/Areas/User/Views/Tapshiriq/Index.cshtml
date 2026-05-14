@@ -176,7 +176,8 @@
             <div class="tsk-list">
                 @foreach (var m in Model.MailTapshiriqlari.OrderByDescending(x => x.TapalanTarix))
                 {
-                    <div class="tsk-card @(m.IcraOlundu ? "tsk-card--done-mail" : "")">
+                    <a asp-action="MailGoruntusu" asp-route-mailId="@m.MailId"
+                       class="tsk-card @(m.IcraOlundu ? "tsk-card--done-mail" : "")">
                         <div class="tsk-card-left">
                             <div class="tsk-priority tsk-priority--mail"></div>
                             <div>
@@ -205,7 +206,7 @@
                                 <span class="tsk-status tsk-status--new">Gözlənilir</span>
                             }
                         </div>
-                    </div>
+                    </a>
                 }
             </div>
         }
