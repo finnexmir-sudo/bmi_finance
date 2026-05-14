@@ -86,12 +86,14 @@ public class GelenMailService : IGelenMailService
             TapalanIsciAdSoyad = m.TapalanIsci != null ? $"{m.TapalanIsci.Ad} {m.TapalanIsci.Soyad}" : null,
             TapalanQeyd = m.TapalanQeyd,
             TapalanTarix = m.TapalanTarix,
-            TapalanIsciler = m.TapalanIsciler.Select(ti => new GelenMailIsciDto
+            TapalanIsciler = m.TapalanIsciler.Where(ti => !ti.Silinib).Select(ti => new GelenMailIsciDto
             {
                 IsciId = ti.IsciId,
                 AdSoyad = ti.Isci != null ? $"{ti.Isci.Ad} {ti.Isci.Soyad}" : "",
                 TapalanTarix = ti.TapalanTarix,
-                Qeyd = ti.Qeyd
+                Qeyd = ti.Qeyd,
+                IcraOlundu = ti.IcraOlundu,
+                IcraOlunduTarix = ti.IcraOlunduTarix
             }).ToList(),
             DedlaynTarix = m.DedlaynTarix,
             DedlaynNov = m.DedlaynNov,

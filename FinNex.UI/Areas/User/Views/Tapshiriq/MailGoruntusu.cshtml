@@ -1,0 +1,179 @@
+@model FinNex.Application.DTOs.Communication.GelenMailDetailDto
+@{
+    ViewData["Title"] = Model.Movzu;
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    var myAssignment = Model.TapalanIsciler
+        .FirstOrDefault(ti => ti.IsciId == (int)(ViewBag.IsciId ?? 0));
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/gelen-mail.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+
+    <div class="gm-detail-nav">
+        <a asp-action="Index" asp-route-tab="mail" class="gm-btn gm-btn-ghost">
+            <i class="bi bi-arrow-left"></i> Tapşırıqlara Qayıt
+        </a>
+    </div>
+
+    @* Deadline banneri *@
+    @if (Model.DedlaynTarix.HasValue)
+    {
+        var diff = (Model.DedlaynTarix.Value.Date - DateTime.Today).TotalDays;
+        var cls = diff < 0 ? "gm-dedlayn--kecib" : diff <= 2 ? "gm-dedlayn--bugun" : diff <= 7 ? "gm-dedlayn--yaxin" : "gm-dedlayn--gozle";
+        string novLabel = Model.DedlaynNov switch {
+            "Gorus" => "Görüş", "Hesabat" => "Hesabat",
+            "Muqavile" => "Müqavilə", "SonTarix" => "Son tarix", _ => "Deadline"
+        };
+        <div class="gm-dedlayn-banner @cls">
+            <i class="bi bi-alarm-fill"></i>
+            <strong>@novLabel:</strong>
+            @Model.DedlaynTarix.Value.ToString("dd MMMM yyyy")
+            @if (!string.IsNullOrWhiteSpace(Model.DedlaynQeyd))
+            {
+                <span class="gm-dedlayn-qeyd">— @Model.DedlaynQeyd</span>
+            }
+            @if (diff < 0)       { <span class="gm-dedlayn-chip gm-dedlayn-chip--red">@(-(int)diff) gün keçib</span> }
+            else if (diff == 0)  { <span class="gm-dedlayn-chip gm-dedlayn-chip--red">Bu gün!</span> }
+            else if (diff <= 7)  { <span class="gm-dedlayn-chip gm-dedlayn-chip--amber">@((int)diff) gün qaldı</span> }
+            else                 { <span class="gm-dedlayn-chip gm-dedlayn-chip--green">@((int)diff) gün qaldı</span> }
+        </div>
+    }
+
+    @* AI Xülasəsi *@
+    @if (!string.IsNullOrEmpty(Model.AIXulase))
+    {
+        <div class="gm-ai-hero">
+            <div class="gm-ai-hero-header">
+                <span class="gm-ai-hero-icon"><i class="bi bi-stars"></i></span>
+                <span class="gm-ai-hero-title">AI Xülasəsi</span>
+            </div>
+            <div class="gm-ai-hero-body">
+                <div class="gm-ai-text gm-markdown" id="aiMarkdown"></div>
+                <script>
+                    window.__aiRaw = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AIXulase));
+                </script>
+            </div>
+        </div>
+    }
+
+    @* Tapşırma qeydi *@
+    @if (myAssignment != null && !string.IsNullOrWhiteSpace(myAssignment.Qeyd))
+    {
+        <div class="gm-alert gm-alert--info" style="margin-bottom:12px">
+            <i class="bi bi-chat-left-text"></i>
+            <strong>Qeyd:</strong> @myAssignment.Qeyd
+        </div>
+    }
+
+    <div class="gm-detail-layout">
+
+        <div class="gm-detail-main">
+            <div class="gm-mail-header">
+                <h2 class="gm-mail-subject">@Model.Movzu</h2>
+                <div class="gm-mail-from">
+                    <div class="gm-mail-avatar">@(Model.KimdenAd.Length > 0 ? Model.KimdenAd[0].ToString().ToUpper() : "?")</div>
+                    <div>
+                        <div class="gm-mail-from-name">@(string.IsNullOrWhiteSpace(Model.KimdenAd) ? Model.KimdenEmail : Model.KimdenAd)</div>
+                        <div class="gm-mail-from-email">@Model.KimdenEmail</div>
+                    </div>
+                    <div class="gm-mail-date">@Model.AlinmaTarixi.ToString("dd MMMM yyyy, HH:mm")</div>
+                </div>
+            </div>
+
+            <div class="gm-mail-body">
+                @if (!string.IsNullOrWhiteSpace(Model.MetinHtml))
+                {
+                    <div class="gm-mail-html" id="mailHtmlBody">@Html.Raw(Model.MetinHtml)</div>
+                }
+                else
+                {
+                    <pre class="gm-mail-plain">@Model.MetinDuz</pre>
+                }
+            </div>
+
+            @if (Model.Qosmalar.Any())
+            {
+                <div class="gm-attachments">
+                    <h4 class="gm-attachments-title">
+                        <i class="bi bi-paperclip"></i> Qoşmalar (@Model.Qosmalar.Count)
+                    </h4>
+                    <div class="gm-attachments-list">
+                        @foreach (var q in Model.Qosmalar)
+                        {
+                            var ext = System.IO.Path.GetExtension(q.FaylAdi ?? "").ToLowerInvariant();
+                            string icon = ext switch {
+                                ".pdf" => "bi-file-earmark-pdf text-danger",
+                                ".docx" or ".doc" => "bi-file-earmark-word text-primary",
+                                ".xlsx" or ".xls" => "bi-file-earmark-excel text-success",
+                                _ => "bi-file-earmark text-secondary"
+                            };
+                            long b = q.OlcuBayt;
+                            string size = b < 1024 ? $"{b} B" : b < 1048576 ? $"{b/1024.0:F1} KB" : $"{b/1048576.0:F1} MB";
+
+                            <div class="gm-attachment-card">
+                                <div class="gm-attachment-icon">
+                                    <i class="bi @icon fs-2"></i>
+                                </div>
+                                <div class="gm-attachment-info">
+                                    <span class="gm-attachment-name">@q.FaylAdi</span>
+                                    <span class="gm-attachment-size">@size</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="gm-detail-sidebar">
+            <div class="gm-card">
+                <div class="gm-card-header"><i class="bi bi-info-circle"></i> Tapşırıq məlumatı</div>
+                <div class="gm-card-body" style="font-size:.82rem;color:#374151;line-height:1.8">
+                    <div><strong>Tapşırıldı:</strong>
+                        @(myAssignment?.TapalanTarix.ToString("dd.MM.yyyy HH:mm") ?? "-")
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(myAssignment?.Qeyd))
+                    {
+                        <div><strong>Qeyd:</strong> @myAssignment.Qeyd</div>
+                    }
+                    <div style="margin-top:8px">
+                        <strong>Status:</strong>
+                        @if (myAssignment?.IcraOlundu == true)
+                        {
+                            <span class="tsk-status tsk-status--done" style="font-size:.75rem">Tamamlandı</span>
+                        }
+                        else
+                        {
+                            <span class="tsk-status tsk-status--new" style="font-size:.75rem">Gözlənilir</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+(function () {
+    // Render AI markdown
+    if (window.__aiRaw) {
+        var el = document.getElementById('aiMarkdown');
+        if (el) el.innerHTML = marked.parse(window.__aiRaw);
+    }
+
+    // Remove CID images from mail body
+    var body = document.getElementById('mailHtmlBody');
+    if (body) {
+        body.querySelectorAll('img').forEach(function (img) {
+            var src = (img.getAttribute('src') || '').trim();
+            if (src.toLowerCase().startsWith('cid:')) { img.remove(); return; }
+            img.addEventListener('error', function () { this.style.display = 'none'; });
+        });
+    }
+})();
+</script>
