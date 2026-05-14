@@ -57,6 +57,7 @@
                 var unreadCls = !mail.Oxunub ? "gm-item--unread" : "";
                 var avatarChar = mail.KimdenAd.Length > 0 ? mail.KimdenAd[0].ToString().ToUpper() : "?";
                 var fromName = string.IsNullOrWhiteSpace(mail.KimdenAd) ? mail.KimdenEmail : mail.KimdenAd;
+                <div class="gm-item-wrap">
                 <a href="@detailUrl" class="gm-item @unreadCls">
                     <div class="gm-item-indicator"></div>
                     <div class="gm-item-avatar"><span>@avatarChar</span></div>
@@ -99,6 +100,15 @@
                         </div>
                     </div>
                 </a>
+                <form asp-action="Sil" method="post" class="gm-item-sil-form"
+                      onsubmit="return confirm('Silinsin?')">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@mail.Id" />
+                    <button type="submit" class="gm-item-sil-btn" title="Sil">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+                </div>
             }
         </div>
 
