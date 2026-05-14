@@ -303,4 +303,23 @@ document.querySelectorAll('.gm-isci-item input[type=checkbox]').forEach(function
         this.closest('.gm-isci-item').classList.toggle('gm-isci-item--checked', this.checked);
     });
 });
+
+// Email image cleanup — handle cid: and broken images
+(function () {
+    var body = document.querySelector('.gm-mail-html');
+    if (!body) return;
+    var imgs = body.querySelectorAll('img');
+    imgs.forEach(function (img) {
+        var src = (img.getAttribute('src') || '').trim();
+        // cid: images are inline MIME attachments we don't serve — remove silently
+        if (src.toLowerCase().startsWith('cid:')) {
+            img.remove();
+            return;
+        }
+        // For all other images: hide gracefully if broken
+        img.addEventListener('error', function () {
+            this.classList.add('gm-img-broken');
+        });
+    });
+})();
 </script>
