@@ -645,6 +645,20 @@ END
                 try
                 {
                     db.Database.ExecuteSqlRaw(@"
+                        IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'GelenMailIsciler')
+                        BEGIN
+                            IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailIsciler' AND COLUMN_NAME='YaradanIcraciId')
+                                ALTER TABLE [GelenMailIsciler] ADD [YaradanIcraciId] INT NULL;
+                            IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailIsciler' AND COLUMN_NAME='YenileyenIcraciId')
+                                ALTER TABLE [GelenMailIsciler] ADD [YenileyenIcraciId] INT NULL;
+                            IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailIsciler' AND COLUMN_NAME='SilenIcraciId')
+                                ALTER TABLE [GelenMailIsciler] ADD [SilenIcraciId] INT NULL;
+                            IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailIsciler' AND COLUMN_NAME='YenilenmeTarixi')
+                                ALTER TABLE [GelenMailIsciler] ADD [YenilenmeTarixi] DATETIME2 NULL;
+                            IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailIsciler' AND COLUMN_NAME='SilinmeTarixi')
+                                ALTER TABLE [GelenMailIsciler] ADD [SilinmeTarixi] DATETIME2 NULL;
+                        END
+
                         IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'GelenMailIsciler')
                         BEGIN
                             CREATE TABLE [GelenMailIsciler] (
