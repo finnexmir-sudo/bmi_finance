@@ -1,0 +1,217 @@
+@model FinNex.Application.DTOs.Communication.GelenMailDetailDto
+@using FinNex.Application.DTOs.HR.Isci
+@{
+    ViewData["Title"] = Model.Movzu;
+    var isciler = ViewBag.Isciler as IEnumerable<IsciListDto> ?? Enumerable.Empty<IsciListDto>();
+}
+
+<link rel="stylesheet" href="~/css/User/gelen-mail.css" asp-append-version="true" />
+
+<div class="gm-detail-page">
+
+    <div class="gm-detail-nav">
+        <a href="@Url.Action("Index", "GelenMail", new { area = "User" })" class="gm-btn gm-btn-ghost">
+            <i class="bi bi-arrow-left"></i> Geri
+        </a>
+        @if (TempData["Success"] != null)
+        {
+            <div class="gm-alert gm-alert--success">@TempData["Success"]</div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="gm-alert gm-alert--error">@TempData["Error"]</div>
+        }
+    </div>
+
+    <div class="gm-detail-layout">
+
+        <!-- ── Sol: Mail məzmunu ─────────────────────────── -->
+        <div class="gm-detail-main">
+            <div class="gm-mail-header">
+                <h2 class="gm-mail-subject">@Model.Movzu</h2>
+                <div class="gm-mail-from">
+                    <div class="gm-mail-avatar">@(Model.KimdenAd.Length > 0 ? Model.KimdenAd[0].ToString().ToUpper() : "?")</div>
+                    <div>
+                        <div class="gm-mail-from-name">@(string.IsNullOrWhiteSpace(Model.KimdenAd) ? Model.KimdenEmail : Model.KimdenAd)</div>
+                        <div class="gm-mail-from-email">@Model.KimdenEmail</div>
+                    </div>
+                    <div class="gm-mail-date">@Model.AlinmaTarixi.ToString("dd MMMM yyyy, HH:mm")</div>
+                </div>
+            </div>
+
+            <div class="gm-mail-body">
+                @if (!string.IsNullOrWhiteSpace(Model.MetinHtml))
+                {
+                    <div class="gm-mail-html">@Html.Raw(Model.MetinHtml)</div>
+                }
+                else
+                {
+                    <pre class="gm-mail-plain">@Model.MetinDuz</pre>
+                }
+            </div>
+
+            <!-- Qoşmalar -->
+            @if (Model.Qosmalar.Any())
+            {
+                <div class="gm-attachments">
+                    <h4 class="gm-attachments-title">
+                        <i class="bi bi-paperclip"></i> Qoşmalar (@Model.Qosmalar.Count)
+                    </h4>
+                    <div class="gm-attachments-list">
+                        @foreach (var q in Model.Qosmalar)
+                        {
+                            <div class="gm-attachment-card">
+                                <div class="gm-attachment-icon">
+                                    @{
+                                        var ext = Path.GetExtension(q.FaylAdi).ToLower();
+                                        var icon = ext switch {
+                                            ".pdf" => "bi-file-earmark-pdf text-danger",
+                                            ".docx" or ".doc" => "bi-file-earmark-word text-primary",
+                                            ".xlsx" or ".xls" => "bi-file-earmark-excel text-success",
+                                            _ => "bi-file-earmark text-secondary"
+                                        };
+                                    }
+                                    <i class="bi @icon fs-2"></i>
+                                </div>
+                                <div class="gm-attachment-info">
+                                    <span class="gm-attachment-name">@q.FaylAdi</span>
+                                    <span class="gm-attachment-size">@FormatBytes(q.OlcuBayt)</span>
+                                </div>
+                                <div class="gm-attachment-actions">
+                                    @if (!string.IsNullOrWhiteSpace(q.CixarilmisMetin))
+                                    {
+                                        <button class="gm-btn gm-btn-sm gm-btn-ghost"
+                                                onclick="toggleText('@q.Id')"
+                                                title="Mətn görüntülə">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    }
+                                    <form asp-action="SenedeCevir" method="post" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="mailId" value="@Model.Id" />
+                                        <input type="hidden" name="qosmaId" value="@q.Id" />
+                                        <button type="submit" class="gm-btn gm-btn-sm gm-btn-outline"
+                                                title="Sənəd Dövriyyəsinə əlavə et"
+                                                onclick="return confirm('Bu qoşmanı Sənəd Dövriyyəsinə əlavə etmək istəyirsiniz?')">
+                                            <i class="bi bi-file-earmark-arrow-up"></i> Sənədə
+                                        </button>
+                                    </form>
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(q.CixarilmisMetin))
+                                {
+                                    <div id="text-@q.Id" class="gm-attachment-text" style="display:none">
+                                        <pre>@q.CixarilmisMetin.Substring(0, Math.Min(q.CixarilmisMetin.Length, 2000))@(q.CixarilmisMetin.Length > 2000 ? "\n[...]" : "")</pre>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- ── Sağ: AI xülasəsi + Tapşırma ─────────────── -->
+        <div class="gm-detail-sidebar">
+
+            <!-- AI Analysis Card -->
+            <div class="gm-card gm-ai-card">
+                <div class="gm-card-header">
+                    <i class="bi bi-robot"></i> AI Təhlili
+                    @if (Model.AITahlilTarixi.HasValue)
+                    {
+                        <span class="gm-ai-date">@Model.AITahlilTarixi.Value.ToString("HH:mm")</span>
+                    }
+                </div>
+                <div class="gm-card-body">
+                    @if (!string.IsNullOrEmpty(Model.AIXulase))
+                    {
+                        <div class="gm-ai-text">@Html.Raw(Model.AIXulase.Replace("\n", "<br/>"))</div>
+                    }
+                    else
+                    {
+                        <div class="gm-ai-loading">
+                            <i class="bi bi-hourglass-split"></i> Təhlil aparılır...
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Assign Card -->
+            <div class="gm-card">
+                <div class="gm-card-header">
+                    <i class="bi bi-person-check"></i> İşçiyə Tapşır
+                </div>
+                <div class="gm-card-body">
+                    @if (Model.TapalanIsciId.HasValue)
+                    {
+                        <div class="gm-assigned-info">
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            <strong>@Model.TapalanIsciAdSoyad</strong> tapşırılıb
+                            @if (Model.TapalanTarix.HasValue)
+                            {
+                                <span>(@Model.TapalanTarix.Value.ToString("dd.MM HH:mm"))</span>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.TapalanQeyd))
+                            {
+                                <p class="gm-assigned-note">@Model.TapalanQeyd</p>
+                            }
+                        </div>
+                    }
+                    <form asp-action="Tapa" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="mailId" value="@Model.Id" />
+                        <div class="gm-form-group">
+                            <label>İşçi</label>
+                            <select name="isciId" class="gm-select" required>
+                                <option value="">Seçin...</option>
+                                @foreach (var isci in isciler)
+                                {
+                                    <option value="@isci.Id"
+                                            selected="@(Model.TapalanIsciId == isci.Id)">
+                                        @isci.TamAd
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                        <div class="gm-form-group">
+                            <label>Qeyd (ixtiyari)</label>
+                            <textarea name="qeyd" class="gm-textarea" rows="2"
+                                      placeholder="Tapşırıq haqqında qeyd...">@Model.TapalanQeyd</textarea>
+                        </div>
+                        <button type="submit" class="gm-btn gm-btn-primary w-100">
+                            <i class="bi bi-send"></i> Tapşır
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Status Card -->
+            @if (Model.SenedId.HasValue)
+            {
+                <div class="gm-card gm-status-card">
+                    <i class="bi bi-file-earmark-check-fill text-success"></i>
+                    Sənəd dövriyyəsinə əlavə edilib
+                    <a href="@Url.Action("Detail", "Sened", new { area = "User", id = Model.SenedId })"
+                       class="gm-btn gm-btn-sm gm-btn-outline">Sənədə Bax</a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    string FormatBytes(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / 1024.0 / 1024.0:F1} MB";
+    }
+}
+
+<script>
+function toggleText(id) {
+    const el = document.getElementById('text-' + id);
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+</script>

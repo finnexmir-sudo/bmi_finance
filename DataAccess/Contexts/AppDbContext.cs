@@ -84,6 +84,10 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<Avans> Avanslar { get; set; }
     public DbSet<Teklif> Teklifler { get; set; }
 
+    // Gələn Mail Modulu
+    public DbSet<GelenMail> GelenMailler { get; set; }
+    public DbSet<GelenMailQosma> GelenMailQosmalar { get; set; }
+
     public DbSet<Mesaj> Mesajlar { get; set; }
     public DbSet<Bildiris> Bildirisler { get; set; }
     public DbSet<EvezediciTesdiq> EvezediciTesdiqler { get; set; }
@@ -1218,6 +1222,23 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             new VergiPille { Id = 11, Nov = MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi, Sira = 1, AsagiHedd = 0m,    YuxariHedd = 2500m, Faiz = 2m,   SabitMebleg = 0m,  Aciqlama = "2026: 0–2500 AZN → 2%",       BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
             new VergiPille { Id = 12, Nov = MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi, Sira = 2, AsagiHedd = 2500m, YuxariHedd = null,  Faiz = 0.5m, SabitMebleg = 50m, Aciqlama = "2026: 2500+ AZN → 50+0.5%",   BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true }
         );
+
+        // ── Gələn Mail Modulu ─────────────────────────────────
+        builder.Entity<GelenMail>()
+            .HasIndex(x => x.MessageId)
+            .IsUnique();
+
+        builder.Entity<GelenMail>()
+            .HasOne(x => x.TapalanIsci)
+            .WithMany()
+            .HasForeignKey(x => x.TapalanIsciId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<GelenMailQosma>()
+            .HasOne(x => x.GelenMail)
+            .WithMany(x => x.Qosmalar)
+            .HasForeignKey(x => x.GelenMailId)
+            .OnDelete(DeleteBehavior.Cascade);
 
     }
 
