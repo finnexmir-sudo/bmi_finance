@@ -136,6 +136,7 @@ public class HRProfile : Profile
         // =========================
 
         CreateMap<Davamiyyet, DavamiyyetListDto>()
+            .ForMember(dest => dest.IsciId, opt => opt.MapFrom(src => src.IsciId))
             .ForMember(dest => dest.IsciTamAd,
                 opt => opt.MapFrom(src => src.Isci.Ad + " " + src.Isci.Soyad))
             .ForMember(d => d.DepartamentAd,

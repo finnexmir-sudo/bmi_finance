@@ -48,18 +48,21 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .CountAsync(x => !x.Silinib && x.Status == IsciStatus.Aktiv);
             ViewBag.AktivIsciSayi = aktivIsciSayi;
 
-            // Bugün aktiv məzuniyyətdə olan işçi sayı
+            // Bugün aktiv məzuniyyətdə olan işçi sayı + IsciId siyahısı
             try
             {
-                var mezuniyyetSayi = await _unitOfWork.Repository<Mezuniyyet>()
+                var mezuniyyetIsciIds = await _unitOfWork.Repository<Mezuniyyet>()
                     .Query().AsNoTracking()
-                    .CountAsync(x => !x.Silinib &&
-                                     x.Status == MezuniyyetStatus.Tesdiqlenib &&
-                                     x.BaslamaTarixi.Date <= bugun &&
-                                     x.BitmeTarixi.Date >= bugun);
-                ViewBag.MezuniyyetSayi = mezuniyyetSayi;
+                    .Where(x => !x.Silinib &&
+                                x.Status == MezuniyyetStatus.Tesdiqlenib &&
+                                x.BaslamaTarixi.Date <= bugun &&
+                                x.BitmeTarixi.Date >= bugun)
+                    .Select(x => x.IsciId)
+                    .ToListAsync();
+                ViewBag.MezuniyyetSayi = mezuniyyetIsciIds.Count;
+                ViewBag.MezuniyyetIsciIds = mezuniyyetIsciIds.ToHashSet();
             }
-            catch { ViewBag.MezuniyyetSayi = 0; }
+            catch { ViewBag.MezuniyyetSayi = 0; ViewBag.MezuniyyetIsciIds = new HashSet<int>(); }
 
             return View(list);
         }
