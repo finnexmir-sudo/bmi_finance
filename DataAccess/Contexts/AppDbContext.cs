@@ -1220,6 +1220,14 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         { "IsciTeyinat",          "İşçi Təyinat" },
     };
 
+    // Audit sahələri — bunlar dəyişiklik siyahısına daxil edilmir
+    private static readonly HashSet<string> _auditSaheleri = new()
+    {
+        "YaradilmaTarixi", "YenilenmeTarixi", "SilinmeTarixi",
+        "YaradanIcraciId", "YenileyenIcraciId", "SilenIcraciId",
+        "Silinib"
+    };
+
     // ƏN VACİB HİSSƏ: SaveChanges zamanı avtomatik Audit məlumatlarının doldurulması
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -1257,12 +1265,33 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
                     }
                     else if (!entry.Entity.Silinib)
                     {
+                        // Dəyişiklik detallarını audit sahələri xaric olaraq topla
+                        var deyisiklikler = entry.Properties
+                            .Where(p => p.IsModified && !_auditSaheleri.Contains(p.Metadata.Name))
+                            .Select(p =>
+                            {
+                                var kohneDeger = FormatDeger(p.OriginalValue);
+                                var yeniDeger  = FormatDeger(p.CurrentValue);
+                                return $"{p.Metadata.Name}: {kohneDeger} → {yeniDeger}";
+                            })
+                            .ToList();
+
                         entry.Entity.YenilenmeTarixi = now;
                         entry.Entity.YenileyenIcraciId = userId;
+
                         if (_izlenecekCedveller.TryGetValue(typeName, out var updFarsi))
-                            logs.Add(new FealiyyetJurnali { UserId = userId, Emeliyyat = "U",
-                                CedvelAdi = typeName, CedvelFarsi = updFarsi,
-                                RecordId = entry.Entity.Id, Tarix = now });
+                            logs.Add(new FealiyyetJurnali
+                            {
+                                UserId      = userId,
+                                Emeliyyat   = "U",
+                                CedvelAdi   = typeName,
+                                CedvelFarsi = updFarsi,
+                                RecordId    = entry.Entity.Id,
+                                Acıqlama    = deyisiklikler.Count > 0
+                                                  ? string.Join("\n", deyisiklikler)
+                                                  : null,
+                                Tarix = now
+                            });
                     }
                     break;
             }
@@ -1272,6 +1301,13 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             FealiyyetJurnali.AddRange(logs);
 
         return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private static string FormatDeger(object? deger)
+    {
+        if (deger == null) return "boş";
+        var s = deger.ToString() ?? "boş";
+        return s.Length > 120 ? s[..120] + "…" : s;
     }
 
     private int? GetCurrentUserId()
