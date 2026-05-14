@@ -5,8 +5,10 @@
     var oxunmamisFilter = ViewBag.OxunmamisFilter as bool?;
     var isciFilter = ViewBag.IsciFilter as int?;
     var oxunmamisSay = (int)(ViewBag.OxunmamisSay ?? 0);
-    var isciler = ViewBag.Isciler as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
-    var page = (int)(ViewBag.Page ?? 1);
+    var currentPage = (int)(ViewBag.Page ?? 1);
+
+    var prevUrl = Url.Action("Index", new { page = currentPage - 1, oxunmamis = oxunmamisFilter, isciId = isciFilter });
+    var nextUrl = Url.Action("Index", new { page = currentPage + 1, oxunmamis = oxunmamisFilter, isciId = isciFilter });
 }
 
 <link rel="stylesheet" href="~/css/User/gelen-mail.css" asp-append-version="true" />
@@ -51,24 +53,23 @@
         <div class="gm-list">
             @foreach (var mail in Model)
             {
-                <a href="@Url.Action("Detail", "GelenMail", new { area = "User", id = mail.Id })"
-                   class="gm-item @(!mail.Oxunub ? "gm-item--unread" : "")">
+                var detailUrl = Url.Action("Detail", "GelenMail", new { area = "User", id = mail.Id });
+                var unreadCls = !mail.Oxunub ? "gm-item--unread" : "";
+                var avatarChar = mail.KimdenAd.Length > 0 ? mail.KimdenAd[0].ToString().ToUpper() : "?";
+                var fromName = string.IsNullOrWhiteSpace(mail.KimdenAd) ? mail.KimdenEmail : mail.KimdenAd;
+                <a href="@detailUrl" class="gm-item @unreadCls">
                     <div class="gm-item-indicator"></div>
-                    <div class="gm-item-avatar">
-                        <span>@(mail.KimdenAd.Length > 0 ? mail.KimdenAd[0].ToString().ToUpper() : "?")</span>
-                    </div>
+                    <div class="gm-item-avatar"><span>@avatarChar</span></div>
                     <div class="gm-item-body">
                         <div class="gm-item-from">
-                            <span class="gm-from-name">@(string.IsNullOrWhiteSpace(mail.KimdenAd) ? mail.KimdenEmail : mail.KimdenAd)</span>
+                            <span class="gm-from-name">@fromName</span>
                             <span class="gm-from-email">@mail.KimdenEmail</span>
                         </div>
                         <div class="gm-item-subject">@mail.Movzu</div>
                         @if (!string.IsNullOrEmpty(mail.AIXulase))
                         {
-                            <div class="gm-item-ai">
-                                <i class="bi bi-robot"></i>
-                                @mail.AIXulase.Substring(0, Math.Min(mail.AIXulase.Length, 120))@(mail.AIXulase.Length > 120 ? "…" : "")
-                            </div>
+                            var aiPreview = mail.AIXulase.Length > 120 ? mail.AIXulase.Substring(0, 120) + "…" : mail.AIXulase;
+                            <div class="gm-item-ai"><i class="bi bi-robot"></i> @aiPreview</div>
                         }
                     </div>
                     <div class="gm-item-meta">
@@ -76,21 +77,15 @@
                         <div class="gm-item-tags">
                             @if (mail.QosmaCount > 0)
                             {
-                                <span class="gm-tag gm-tag--attach">
-                                    <i class="bi bi-paperclip"></i> @mail.QosmaCount
-                                </span>
+                                <span class="gm-tag gm-tag--attach"><i class="bi bi-paperclip"></i> @mail.QosmaCount</span>
                             }
                             @if (!string.IsNullOrEmpty(mail.TapalanIsciAdSoyad))
                             {
-                                <span class="gm-tag gm-tag--assigned" title="@mail.TapalanIsciAdSoyad">
-                                    <i class="bi bi-person-check"></i>
-                                </span>
+                                <span class="gm-tag gm-tag--assigned" title="@mail.TapalanIsciAdSoyad"><i class="bi bi-person-check"></i></span>
                             }
                             @if (mail.SenedId.HasValue)
                             {
-                                <span class="gm-tag gm-tag--sened" title="Sənədə əlavə edilib">
-                                    <i class="bi bi-file-earmark-check"></i>
-                                </span>
+                                <span class="gm-tag gm-tag--sened" title="Sənədə əlavə edilib"><i class="bi bi-file-earmark-check"></i></span>
                             }
                         </div>
                     </div>
@@ -101,14 +96,14 @@
         @if (Model.Count == 50)
         {
             <div class="gm-pagination">
-                @if (page > 1)
+                @if (currentPage > 1)
                 {
-                    <a href="@Url.Action("Index", new { page = page - 1, oxunmamis = oxunmamisFilter, isciId = isciFilter })" class="gm-btn gm-btn-outline">
+                    <a href="@prevUrl" class="gm-btn gm-btn-outline">
                         <i class="bi bi-chevron-left"></i> Əvvəlki
                     </a>
                 }
-                <span class="gm-page-info">Səhifə @page</span>
-                <a href="@Url.Action("Index", new { page = page + 1, oxunmamis = oxunmamisFilter, isciId = isciFilter })" class="gm-btn gm-btn-outline">
+                <span class="gm-page-info">Səhifə @(currentPage)</span>
+                <a href="@nextUrl" class="gm-btn gm-btn-outline">
                     Növbəti <i class="bi bi-chevron-right"></i>
                 </a>
             </div>
