@@ -301,6 +301,14 @@
                        class="fn-nav-item @(currentController == "Teklif" && currentAction == "Idare" ? "active" : "")">
                         <i class="bi bi-lightbulb-fill"></i> Təkliflər (İdarə)
                     </a>
+                    <a asp-area="User" asp-controller="GelenMail" asp-action="Index"
+                       class="fn-nav-item @(currentController == "GelenMail" ? "active" : "")">
+                        <i class="bi bi-envelope-fill"></i> Gələn Maillər
+                        @{
+                            var gmBadgeUrl = Url.Action("OxunmamisSay", "GelenMail", new { area = "User" });
+                        }
+                        <span class="fn-mail-badge" data-badge-url="@gmBadgeUrl" style="display:none"></span>
+                    </a>
                 }
                 @if (isHR)
                 {
@@ -906,6 +914,27 @@
     })();
 </script>
 @await RenderSectionAsync("Scripts", required: false)
+
+<script>
+(function () {
+    var badge = document.querySelector('.fn-mail-badge');
+    if (!badge) return;
+    var url = badge.getAttribute('data-badge-url');
+    if (!url) return;
+    function refreshBadge() {
+        fetch(url).then(function(r){ return r.json(); }).then(function(d){
+            if (d.say > 0) {
+                badge.textContent = d.say;
+                badge.style.display = 'inline-flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }).catch(function(){});
+    }
+    refreshBadge();
+    setInterval(refreshBadge, 120000);
+})();
+</script>
 
 </body>
 </html>

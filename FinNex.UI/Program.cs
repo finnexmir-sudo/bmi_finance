@@ -139,12 +139,24 @@ namespace FinNex.UI
             builder.Services.AddSignalR();
 
             // ==================================================
+            // 5.6 Gələn Mail / AI Servisləri
+            // ==================================================
+            builder.Services.AddHttpClient("Anthropic");
+            builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.IGelenMailService,
+                                        FinNex.Application.Services.Communication.GelenMailService>();
+            builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.IAnthropicService,
+                                        FinNex.Application.Services.Communication.AnthropicService>();
+            builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.IAttachmentTextExtractor,
+                                        FinNex.Application.Services.Communication.AttachmentTextExtractor>();
+
+            // ==================================================
             // 6. Background Services
             // ==================================================
             builder.Services.AddHostedService<FinNex.Application.BackgroundJobs.ZkTecoSdkService>();
             builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.XatirlatmaBackgroundService>();
             builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.MezuniyyetOdenisSchedulerService>();
             builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.QayibMarkerBackgroundService>();
+            builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.GelenMailSyncService>();
             // builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.ChatCleanupBackgroundService>();
             // builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.KreditMailBackgroundService>();
 

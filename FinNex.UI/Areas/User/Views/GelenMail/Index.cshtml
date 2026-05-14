@@ -1,0 +1,117 @@
+@model List<FinNex.Application.DTOs.Communication.GelenMailListDto>
+@using FinNex.Application.DTOs.Communication
+@{
+    ViewData["Title"] = "Gələn Maillər";
+    var oxunmamisFilter = ViewBag.OxunmamisFilter as bool?;
+    var isciFilter = ViewBag.IsciFilter as int?;
+    var oxunmamisSay = (int)(ViewBag.OxunmamisSay ?? 0);
+    var isciler = ViewBag.Isciler as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var page = (int)(ViewBag.Page ?? 1);
+}
+
+<link rel="stylesheet" href="~/css/User/gelen-mail.css" asp-append-version="true" />
+
+<div class="gm-page">
+    <div class="gm-header">
+        <div class="gm-header-left">
+            <h1 class="gm-title">
+                <i class="bi bi-envelope-fill"></i>
+                Gələn Maillər
+                @if (oxunmamisSay > 0)
+                {
+                    <span class="gm-badge-unread">@oxunmamisSay</span>
+                }
+            </h1>
+        </div>
+        <div class="gm-header-right">
+            <form method="get" class="gm-filter-form">
+                <div class="gm-filter-group">
+                    <label class="gm-filter-label">Vəziyyət</label>
+                    <select name="oxunmamis" class="gm-select" onchange="this.form.submit()">
+                        <option value="">Hamısı</option>
+                        <option value="true" selected="@(oxunmamisFilter == true)">Oxunmamış</option>
+                    </select>
+                </div>
+                <button type="submit" class="gm-btn gm-btn-outline">
+                    <i class="bi bi-funnel"></i> Filtr
+                </button>
+            </form>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="gm-empty">
+            <i class="bi bi-inbox"></i>
+            <p>Heç bir mail tapılmadı.</p>
+        </div>
+    }
+    else
+    {
+        <div class="gm-list">
+            @foreach (var mail in Model)
+            {
+                <a href="@Url.Action("Detail", "GelenMail", new { area = "User", id = mail.Id })"
+                   class="gm-item @(!mail.Oxunub ? "gm-item--unread" : "")">
+                    <div class="gm-item-indicator"></div>
+                    <div class="gm-item-avatar">
+                        <span>@(mail.KimdenAd.Length > 0 ? mail.KimdenAd[0].ToString().ToUpper() : "?")</span>
+                    </div>
+                    <div class="gm-item-body">
+                        <div class="gm-item-from">
+                            <span class="gm-from-name">@(string.IsNullOrWhiteSpace(mail.KimdenAd) ? mail.KimdenEmail : mail.KimdenAd)</span>
+                            <span class="gm-from-email">@mail.KimdenEmail</span>
+                        </div>
+                        <div class="gm-item-subject">@mail.Movzu</div>
+                        @if (!string.IsNullOrEmpty(mail.AIXulase))
+                        {
+                            <div class="gm-item-ai">
+                                <i class="bi bi-robot"></i>
+                                @mail.AIXulase.Substring(0, Math.Min(mail.AIXulase.Length, 120))@(mail.AIXulase.Length > 120 ? "…" : "")
+                            </div>
+                        }
+                    </div>
+                    <div class="gm-item-meta">
+                        <span class="gm-item-date">@mail.AlinmaTarixi.ToString("dd MMM HH:mm")</span>
+                        <div class="gm-item-tags">
+                            @if (mail.QosmaCount > 0)
+                            {
+                                <span class="gm-tag gm-tag--attach">
+                                    <i class="bi bi-paperclip"></i> @mail.QosmaCount
+                                </span>
+                            }
+                            @if (!string.IsNullOrEmpty(mail.TapalanIsciAdSoyad))
+                            {
+                                <span class="gm-tag gm-tag--assigned" title="@mail.TapalanIsciAdSoyad">
+                                    <i class="bi bi-person-check"></i>
+                                </span>
+                            }
+                            @if (mail.SenedId.HasValue)
+                            {
+                                <span class="gm-tag gm-tag--sened" title="Sənədə əlavə edilib">
+                                    <i class="bi bi-file-earmark-check"></i>
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </a>
+            }
+        </div>
+
+        @if (Model.Count == 50)
+        {
+            <div class="gm-pagination">
+                @if (page > 1)
+                {
+                    <a href="@Url.Action("Index", new { page = page - 1, oxunmamis = oxunmamisFilter, isciId = isciFilter })" class="gm-btn gm-btn-outline">
+                        <i class="bi bi-chevron-left"></i> Əvvəlki
+                    </a>
+                }
+                <span class="gm-page-info">Səhifə @page</span>
+                <a href="@Url.Action("Index", new { page = page + 1, oxunmamis = oxunmamisFilter, isciId = isciFilter })" class="gm-btn gm-btn-outline">
+                    Növbəti <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+        }
+    }
+</div>

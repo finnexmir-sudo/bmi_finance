@@ -2,6 +2,7 @@
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Communication;
+using FinNex.Application.Services.Communication;
 using FinNex.Application.Interfaces.HR;
 using FinNex.Application.Interfaces.Maas_If;
 using FinNex.Application.Interfaces.PR_Odenis_Tapsirigi;
@@ -128,5 +129,10 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IJetonService, JetonService>();
         services.AddScoped<IReytingService, ReytingService>();
         services.AddScoped<IJetonTeklifleriService, JetonTeklifleriService>();
+
+        // ── Gələn Mail Modulu ──────────────────────────────────
+        services.AddScoped<IGelenMailService, GelenMailService>();
+        services.AddScoped<IAnthropicService, AnthropicService>();
+        services.AddScoped<IAttachmentTextExtractor, AttachmentTextExtractor>();
     }
 }
