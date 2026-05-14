@@ -18,7 +18,7 @@ public class GelenMailService : IGelenMailService
 
     public async Task<List<GelenMailListDto>> GetListAsync(bool? oxunmamis = null, int? tapalanIsciId = null, int page = 1, int pageSize = 50)
     {
-        var query = _uow.Repository<GelenMail>().Query()
+        IQueryable<GelenMail> query = _uow.Repository<GelenMail>().Query()
             .AsNoTracking()
             .Where(x => !x.Silinib)
             .Include(x => x.TapalanIsci)
