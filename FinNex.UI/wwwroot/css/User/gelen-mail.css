@@ -521,3 +521,50 @@
 .gm-markdown ul,.gm-markdown ol { font-size: .82rem; color: #374151; padding-left: 18px; margin: 4px 0; }
 .gm-markdown li { margin-bottom: 2px; }
 .gm-markdown strong { color: #1a2332; }
+
+/* ── Sil düyməsi (siyahıda) ── */
+.gm-item-wrap { position: relative; }
+.gm-item-sil-form { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: none; }
+.gm-item-wrap:hover .gm-item-sil-form { display: block; }
+.gm-item-sil-btn {
+    background: #fee2e2; border: none; color: #dc2626;
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: .8rem;
+}
+.gm-item-sil-btn:hover { background: #fecaca; }
+
+/* Detail sil düyməsi */
+.gm-btn-danger-outline {
+    background: none; border: 1px solid #fca5a5; color: #dc2626;
+    padding: 5px 12px; border-radius: 7px; font-size: .8rem;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+}
+.gm-btn-danger-outline:hover { background: #fee2e2; }
+
+/* AI spinner */
+.gm-ai-spinner {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid #e3e6ea; border-top-color: #3b82f6;
+    animation: gm-spin .7s linear infinite; display: inline-block;
+}
+@keyframes gm-spin { to { transform: rotate(360deg); } }
+.gm-ai-loading { display: flex; align-items: center; gap: 8px; color: #9ca3af; font-size: .82rem; }
+
+/* Tapşırılan işçi kartı */
+.gm-tapilan-isci {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 0; border-bottom: 1px solid #f0f2f5; font-size: .82rem;
+}
+.gm-tapilan-isci:last-child { border-bottom: none; }
+.gm-tapilan-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #3b82f6; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .72rem; font-weight: 700; flex-shrink: 0;
+}
+.gm-tapilan-ad { font-weight: 600; color: #1a2332; }
+.gm-tapilan-tarix { font-size: .7rem; color: #9ca3af; }
+
+/* Form hint */
+.gm-form-hint { font-size: .72rem; color: #9ca3af; margin: 0 0 6px; }
