@@ -555,9 +555,32 @@ namespace FinNex.UI.Areas.HR.Controllers
             try
             {
                 var umumi = await GetDavamiyyetFilteredData(tarix, baslangic, son, isciId, null);
+
+                // Məzuniyyətdəki işçiləri İcazəli-dən ayır
+                var mzBaslangic = (baslangic ?? tarix ?? DateTime.Today).Date;
+                var mzSon       = (son       ?? tarix ?? DateTime.Today).Date;
+                HashSet<int> mezuniyyetIsciIds;
+                try
+                {
+                    var mzIds = await _uow.Repository<Mezuniyyet>()
+                        .Query().AsNoTracking()
+                        .Where(x => !x.Silinib &&
+                                    x.Status == MezuniyyetStatus.Tesdiqlenib &&
+                                    x.BaslamaTarixi.Date <= mzSon &&
+                                    x.BitmeTarixi.Date >= mzBaslangic)
+                        .Select(x => x.IsciId)
+                        .ToListAsync();
+                    mezuniyyetIsciIds = new HashSet<int>(mzIds);
+                }
+                catch { mezuniyyetIsciIds = new HashSet<int>(); }
+
                 var result = status.HasValue
                     ? umumi.Where(x => (int)x.Status == status.Value).ToList()
                     : umumi;
+
+                // status=4 (İcazəli) filtri zamanı məzuniyyətdəkiləri çıxar
+                if (status.HasValue && status.Value == (int)DavamiyyetStatus.Icazeli)
+                    result = result.Where(x => !mezuniyyetIsciIds.Contains(x.IsciId)).ToList();
 
                 var data = result.Select(x => new
                 {
@@ -573,7 +596,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 var gelib = umumi.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
                 var gecikme = umumi.Count(x => x.Status == DavamiyyetStatus.Gecikme);
                 var qayib = umumi.Count(x => x.Status == DavamiyyetStatus.Qayib);
-                var icazeli = umumi.Count(x => x.Status == DavamiyyetStatus.Icazeli);
+                var icazeli = umumi.Count(x => x.Status == DavamiyyetStatus.Icazeli && !mezuniyyetIsciIds.Contains(x.IsciId));
                 var xestelik = umumi.Count(x => x.Status == DavamiyyetStatus.Xestelik);
                 var ezamiyyet = umumi.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
 

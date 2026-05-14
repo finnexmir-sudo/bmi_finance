@@ -81,12 +81,34 @@ namespace FinNex.UI.Areas.HR.Controllers
                 // etsə də, yuxarıdakı statistika sabit qalsın.
                 var umumi = await GetFilteredData(tarix, baslangic, son, isciId, null);
 
+                // Məzuniyyətdəki işçiləri İcazəli-dən ayır
+                var mzBaslangic = (baslangic ?? tarix ?? DateTime.Today).Date;
+                var mzSon       = (son       ?? tarix ?? DateTime.Today).Date;
+                HashSet<int> mezuniyyetIsciIds;
+                try
+                {
+                    var mzIds = await _unitOfWork.Repository<Mezuniyyet>()
+                        .Query().AsNoTracking()
+                        .Where(x => !x.Silinib &&
+                                    x.Status == MezuniyyetStatus.Tesdiqlenib &&
+                                    x.BaslamaTarixi.Date <= mzSon &&
+                                    x.BitmeTarixi.Date >= mzBaslangic)
+                        .Select(x => x.IsciId)
+                        .ToListAsync();
+                    mezuniyyetIsciIds = new HashSet<int>(mzIds);
+                }
+                catch { mezuniyyetIsciIds = new HashSet<int>(); }
+
                 // tezCixanSayi — per-record data hesablandıqdan sonra doldurulur
                 var tezCixanSayi = 0;
 
                 var result = status.HasValue
                     ? umumi.Where(x => (int)x.Status == status.Value).ToList()
                     : umumi;
+
+                // status=4 (İcazəli) filtri zamanı məzuniyyətdəkiləri çıxar
+                if (status.HasValue && status.Value == (int)DavamiyyetStatus.Icazeli)
+                    result = result.Where(x => !mezuniyyetIsciIds.Contains(x.IsciId)).ToList();
 
                 // Nəticədəki bütün tarixlər üçün BayramGunu xüsusi bitmə vaxtlarını toplu çək
                 var hedefTarixler = result.Select(x => x.Tarix.Date).Distinct().ToList();
@@ -124,11 +146,11 @@ namespace FinNex.UI.Areas.HR.Controllers
                 // tezCixanSayi artıq per-record hesablandığı üçün buradan da götürürük
                 tezCixanSayi = data.Count(x => x.tezCixan);
 
-                // Stats — umumi üzərindən
+                // Stats — umumi üzərindən (məzuniyyətdəkilər İcazəli-dən çıxarılır)
                 var gelib = umumi.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
                 var gecikme = umumi.Count(x => x.Status == DavamiyyetStatus.Gecikme);
                 var qayib = umumi.Count(x => x.Status == DavamiyyetStatus.Qayib);
-                var icazeli = umumi.Count(x => x.Status == DavamiyyetStatus.Icazeli);
+                var icazeli = umumi.Count(x => x.Status == DavamiyyetStatus.Icazeli && !mezuniyyetIsciIds.Contains(x.IsciId));
                 var xestelik = umumi.Count(x => x.Status == DavamiyyetStatus.Xestelik);
                 var ezamiyyet = umumi.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
 
