@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FinNex.UI.Areas.HR.Controllers
 {
     [Area("HR")]
-    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Rehber + "," + RoleNames.SobeReisi)]
     public class TeklifController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
