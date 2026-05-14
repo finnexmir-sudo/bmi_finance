@@ -82,6 +82,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<IsciGuzest> IsciGuzestler { get; set; }
     public DbSet<IsciHYS> IsciHYSler { get; set; }
     public DbSet<Avans> Avanslar { get; set; }
+    public DbSet<Teklif> Teklifler { get; set; }
 
     public DbSet<Mesaj> Mesajlar { get; set; }
     public DbSet<Bildiris> Bildirisler { get; set; }
@@ -702,6 +703,20 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .Property(x => x.ImtinaSebebi)
             .HasMaxLength(500);
 
+        builder.Entity<Teklif>()
+            .ToTable("Teklifler")
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<Teklif>()
+            .HasOne(x => x.CavabVeren)
+            .WithMany()
+            .HasForeignKey(x => x.CavabVerenIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+        builder.Entity<Teklif>()
+            .Property(x => x.Bashliq).HasMaxLength(200);
+
         builder.Entity<IsciTeyinat>()
     .HasOne(x => x.Isci)
     .WithMany(x => x.IsciTeyinatlari)
@@ -1218,6 +1233,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         { "Xestelik",             "Xəstəlik" },
         { "IsciGuzest",           "İşçi Güzəşti" },
         { "IsciTeyinat",          "İşçi Təyinat" },
+        { "Teklif",               "Teklif/Boşluq/Şikayət" },
     };
 
     // Audit sahələri — bunlar dəyişiklik siyahısına daxil edilmir
