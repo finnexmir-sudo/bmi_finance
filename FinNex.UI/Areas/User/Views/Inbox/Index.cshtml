@@ -93,48 +93,7 @@
     <div class="ibx-panel @(Model.AktivTab == "bildirisler" ? "" : "ibx-hidden")"
          data-panel="bildirisler">
 
-        @* ── İkona izahı ── *@
-        <div style="display:flex;align-items:center;gap:14px;padding:8px 12px;margin-bottom:8px;background:#f8f9fb;border-radius:8px;font-size:11px;color:#6b7280;flex-wrap:wrap">
-            <span style="font-weight:600;color:#374151;margin-right:2px">İkonlar:</span>
-            <span style="display:flex;align-items:center;gap:4px">
-                <span style="width:18px;height:18px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center">
-                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="#1e9b6b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </span>
-                Təsdiqləndi / Tamamlandı
-            </span>
-            <span style="display:flex;align-items:center;gap:4px">
-                <span style="width:18px;height:18px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center">
-                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#d97706" stroke-width="1.3"/><path d="M8 5v3.5l2 1.5" stroke="#d97706" stroke-width="1.3" stroke-linecap="round"/></svg>
-                </span>
-                Tesdiq gözlənilir
-            </span>
-            <span style="display:flex;align-items:center;gap:4px">
-                <span style="width:18px;height:18px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center">
-                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="#c0392b" stroke-width="2" stroke-linecap="round"/></svg>
-                </span>
-                İmtina / Rədd
-            </span>
-            <span style="display:flex;align-items:center;gap:4px">
-                <span style="width:18px;height:18px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center">
-                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3" width="13" height="10" rx="2" stroke="#2d6cdf" stroke-width="1.3"/><path d="M2 4l6 4.5L14 4" stroke="#2d6cdf" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </span>
-                Mesaj
-            </span>
-            <span style="display:flex;align-items:center;gap:4px">
-                <span style="width:18px;height:18px;border-radius:50%;background:#ccfbf1;display:flex;align-items:center;justify-content:center">
-                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3" width="13" height="10" rx="2" stroke="#0f766e" stroke-width="1.3"/><path d="M2 4l6 4.5L14 4" stroke="#0f766e" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 11v3M6 12.5l2 1.5 2-1.5" stroke="#0f766e" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </span>
-                Gələn mail
-            </span>
-            <span style="display:flex;align-items:center;gap:4px">
-                <span style="width:18px;height:18px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center">
-                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M8 1.5a4.5 4.5 0 014.5 4.5c0 4 1.5 5 1.5 5H2s1.5-1 1.5-5A4.5 4.5 0 018 1.5z" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/><path d="M6 11.5a2 2 0 004 0" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/></svg>
-                </span>
-                Ümumi xəbərdarlıq
-            </span>
-        </div>
-
-        @if (Model.OxunmamisBildiris > 0)
+@if (Model.OxunmamisBildiris > 0)
         {
             <div class="ibx-panel-actions">
                 <button class="ibx-link" id="hamisiniOxuBtn">Hamısını oxundu işarələ</button>

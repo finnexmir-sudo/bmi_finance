@@ -412,6 +412,12 @@ body.theme-midnight .fn-topnav-dd-item--active {
     border: 2px solid var(--badge-border);
 }
 
+.fn-topnav-badge--teal {
+    background: #0f766e;
+    color: #fff;
+    border-color: #fff;
+}
+
 /* User menu */
 .fn-topnav-user {
     position: relative;
