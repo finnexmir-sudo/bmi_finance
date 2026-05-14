@@ -128,7 +128,32 @@
                             <td class="text-muted small">
                                 @(item.RecordId > 0 ? item.RecordId.ToString() : "—")
                             </td>
-                            <td class="text-muted small">@(item.Acıqlama ?? "—")</td>
+                            <td class="fj-aciq-cell">
+                                @if (!string.IsNullOrWhiteSpace(item.Acıqlama))
+                                {
+                                    var lines = item.Acıqlama.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                                    if (lines.Length == 1)
+                                    {
+                                        <span class="fj-deyis-satir">@lines[0]</span>
+                                    }
+                                    else
+                                    {
+                                        <details class="fj-details">
+                                            <summary class="fj-deyis-satir">@lines[0] <span class="fj-more">+@(lines.Length - 1) daha</span></summary>
+                                            <div class="fj-deyis-list mt-1">
+                                                @foreach (var ln in lines)
+                                                {
+                                                    <div class="fj-deyis-satir">@ln</div>
+                                                }
+                                            </div>
+                                        </details>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -214,5 +239,35 @@
 .badge-action-update { background: #dbeafe; color: #1e40af; }
 .badge-action-delete { background: #fee2e2; color: #991b1b; }
 .badge-action-other  { background: #f3f4f6; color: #374151; }
+
+.fj-aciq-cell { font-size: 0.78rem; }
+.fj-deyis-satir {
+    display: block;
+    color: #374151;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 380px;
+}
+.fj-details summary { cursor: pointer; list-style: none; }
+.fj-details summary::-webkit-details-marker { display: none; }
+.fj-more {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 0 5px;
+    background: #e0e7ff;
+    color: #3730a3;
+    border-radius: 3px;
+    font-size: 0.68rem;
+    font-family: inherit;
+    vertical-align: middle;
+}
+.fj-deyis-list .fj-deyis-satir {
+    padding: 1px 0;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9;
+}
 </style>
 }
