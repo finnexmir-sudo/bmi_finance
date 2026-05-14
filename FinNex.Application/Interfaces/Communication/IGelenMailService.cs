@@ -11,4 +11,5 @@ public interface IGelenMailService
     Task<int?> SenedeCevir(int mailId, int qosmaId, int yaradanUserId, string saxlamaKlasoru);
     Task<int> GetOxunmamisSayAsync();
     Task SaveAINeticAsync(int id, AIMailTahlilNetic netic);
+    Task SilAsync(int id);
 }

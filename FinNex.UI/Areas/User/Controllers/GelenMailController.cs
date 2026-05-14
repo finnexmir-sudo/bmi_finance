@@ -51,6 +51,7 @@ public class GelenMailController : Controller
         return View(mails);
     }
 
+    // Səhifəni dərhal qaytarır — AI ayrı endpoint ilə çağırılır
     public async Task<IActionResult> Detail(int id)
     {
         var mail = await _mailService.GetDetailAsync(id);
@@ -58,63 +59,75 @@ public class GelenMailController : Controller
 
         await _mailService.OxunduIsareEtAsync(id);
 
-        // AI analizi — yalnız ilk dəfə açılanda
-        if (string.IsNullOrEmpty(mail.AIXulase))
-        {
-            var qosmaMetinler = mail.Qosmalar
-                .Where(q => !string.IsNullOrWhiteSpace(q.CixarilmisMetin))
-                .Select(q => (q.FaylAdi, q.ContentType, q.CixarilmisMetin!))
-                .ToList();
-
-            var netic = await _ai.MailTahlilEtAsync(
-                $"{mail.KimdenAd} <{mail.KimdenEmail}>",
-                mail.Movzu,
-                mail.MetinDuz,
-                qosmaMetinler);
-
-            await _mailService.SaveAINeticAsync(id, netic);
-
-            mail.AIXulase = netic.Xulase;
-            mail.AITahlilTarixi = DateTime.Now;
-            mail.DedlaynTarix = netic.DedlaynTarix;
-            mail.DedlaynNov = netic.DedlaynNov;
-            mail.DedlaynQeyd = netic.DedlaynQeyd;
-
-            // Deadline tapıldısa Xatırlatma yarat
-            if (netic.DedlaynTarix.HasValue && netic.DedlaynTarix.Value > DateTime.Now)
-            {
-                var appUser = await _userManager.GetUserAsync(User);
-                if (appUser?.IsciId != null)
-                {
-                    var xatirlatmaTarix = netic.DedlaynTarix.Value.AddDays(-1).Date.AddHours(9);
-                    var novLabel = netic.DedlaynNov switch
-                    {
-                        "Gorus"    => "Görüş",
-                        "Hesabat"  => "Hesabat",
-                        "Muqavile" => "Müqavilə",
-                        "SonTarix" => "Son tarix",
-                        _          => "Deadline"
-                    };
-                    await _xatirlatmaService.SistemXatirlatmasiYaratAsync(new FinNex.Application.DTOs.Communication.XatirlatmaSistemCreateDto
-                    {
-                        IsciId = appUser.IsciId.Value,
-                        Bashliq = $"{novLabel}: {mail.Movzu}",
-                        Qeyd = netic.DedlaynQeyd ?? $"Mail dedlayni: {netic.DedlaynTarix.Value:dd.MM.yyyy}",
-                        XatirlatmaTarixi = xatirlatmaTarix,
-                        Nov = XatirlatmaNov.Sistem,
-                        EntityTipi = XatirlatmaEntityTipi.GelenMail,
-                        EntityId = id
-                    });
-                }
-            }
-        }
-
         var iscilerResult = await _isciService.HamisiniGetirAsync();
         var isciler = iscilerResult.Success ? iscilerResult.Data!.ToList() : new();
         ViewBag.Isciler = isciler;
         ViewData["Title"] = mail.Movzu;
 
         return View(mail);
+    }
+
+    // AJAX: AI analizi çağır (arxa planda)
+    [HttpPost]
+    public async Task<IActionResult> RunAI(int id)
+    {
+        var mail = await _mailService.GetDetailAsync(id);
+        if (mail == null) return NotFound();
+
+        if (!string.IsNullOrEmpty(mail.AIXulase))
+            return Json(new { xulase = mail.AIXulase, dedlaynTarix = mail.DedlaynTarix?.ToString("dd.MM.yyyy"), dedlaynNov = mail.DedlaynNov, dedlaynQeyd = mail.DedlaynQeyd });
+
+        var qosmaMetinler = mail.Qosmalar
+            .Where(q => !string.IsNullOrWhiteSpace(q.CixarilmisMetin))
+            .Select(q => (q.FaylAdi, q.ContentType, q.CixarilmisMetin!))
+            .ToList();
+
+        var netic = await _ai.MailTahlilEtAsync(
+            $"{mail.KimdenAd} <{mail.KimdenEmail}>",
+            mail.Movzu,
+            mail.MetinDuz,
+            qosmaMetinler);
+
+        await _mailService.SaveAINeticAsync(id, netic);
+
+        // Deadline tapıldısa Xatırlatma yarat
+        if (netic.DedlaynTarix.HasValue && netic.DedlaynTarix.Value > DateTime.Now)
+        {
+            var appUser = await _userManager.GetUserAsync(User);
+            if (appUser?.IsciId != null)
+            {
+                var novLabel = netic.DedlaynNov switch
+                {
+                    "Gorus"    => "Görüş",
+                    "Hesabat"  => "Hesabat",
+                    "Muqavile" => "Müqavilə",
+                    "SonTarix" => "Son tarix",
+                    _          => "Deadline"
+                };
+                try
+                {
+                    await _xatirlatmaService.SistemXatirlatmasiYaratAsync(new XatirlatmaSistemCreateDto
+                    {
+                        IsciId = appUser.IsciId.Value,
+                        Bashliq = $"{novLabel}: {mail.Movzu}",
+                        Qeyd = netic.DedlaynQeyd ?? $"Mail dedlayni: {netic.DedlaynTarix.Value:dd.MM.yyyy}",
+                        XatirlatmaTarixi = netic.DedlaynTarix.Value.AddDays(-1).Date.AddHours(9),
+                        Nov = XatirlatmaNov.Sistem,
+                        EntityTipi = XatirlatmaEntityTipi.GelenMail,
+                        EntityId = id
+                    });
+                }
+                catch { }
+            }
+        }
+
+        return Json(new
+        {
+            xulase = netic.Xulase,
+            dedlaynTarix = netic.DedlaynTarix?.ToString("dd.MM.yyyy"),
+            dedlaynNov = netic.DedlaynNov,
+            dedlaynQeyd = netic.DedlaynQeyd
+        });
     }
 
     [HttpPost]
@@ -131,10 +144,17 @@ public class GelenMailController : Controller
         if (appUser == null) return Unauthorized();
 
         await _mailService.TapaAsync(mailId, isciIds, qeyd, appUser.Id);
-
-        // Hər tapşırılan işçiyə bildiris (IBildirisService yoxdursa skip)
         TempData["Success"] = $"{isciIds.Count} işçiyə tapşırıldı.";
         return RedirectToAction(nameof(Detail), new { id = mailId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Sil(int id)
+    {
+        await _mailService.SilAsync(id);
+        TempData["Success"] = "Mail silindi.";
+        return RedirectToAction(nameof(Index));
     }
 
     [HttpPost]

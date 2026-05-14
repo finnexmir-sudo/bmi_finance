@@ -198,6 +198,17 @@ public class GelenMailService : IGelenMailService
             .CountAsync(x => !x.Silinib && !x.Oxunub);
     }
 
+    public async Task SilAsync(int id)
+    {
+        var mail = await _uow.Repository<GelenMail>().Query()
+            .Where(x => x.Id == id && !x.Silinib)
+            .FirstOrDefaultAsync();
+        if (mail == null) return;
+        mail.Silinib = true;
+        mail.SilinmeTarixi = DateTime.Now;
+        await _uow.YaddaSaxlaAsync();
+    }
+
     public async Task SaveAINeticAsync(int id, AIMailTahlilNetic netic)
     {
         var mail = await _uow.Repository<GelenMail>().Query()

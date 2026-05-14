@@ -8,18 +8,12 @@
 
     string DedlaynClass(DateTime? t) {
         if (!t.HasValue) return "";
-        var diff = (t.Value.Date - DateTime.Today).TotalDays;
-        if (diff < 0) return "gm-dedlayn--kecib";
-        if (diff <= 2) return "gm-dedlayn--bugun";
-        if (diff <= 7) return "gm-dedlayn--yaxin";
-        return "gm-dedlayn--gozle";
+        var d = (t.Value.Date - DateTime.Today).TotalDays;
+        return d < 0 ? "gm-dedlayn--kecib" : d <= 2 ? "gm-dedlayn--bugun" : d <= 7 ? "gm-dedlayn--yaxin" : "gm-dedlayn--gozle";
     }
     string DedlaynLabel(string? nov) => nov switch {
-        "Gorus"    => "Görüş",
-        "Hesabat"  => "Hesabat",
-        "Muqavile" => "Müqavilə",
-        "SonTarix" => "Son tarix",
-        _          => "Deadline"
+        "Gorus" => "Görüş", "Hesabat" => "Hesabat",
+        "Muqavile" => "Müqavilə", "SonTarix" => "Son tarix", _ => "Deadline"
     };
 }
 
@@ -31,6 +25,14 @@
         <a href="@Url.Action("Index", "GelenMail", new { area = "User" })" class="gm-btn gm-btn-ghost">
             <i class="bi bi-arrow-left"></i> Geri
         </a>
+        <form asp-action="Sil" method="post" style="margin-left:auto"
+              onsubmit="return confirm('Bu maili silmək istəyirsiniz?')">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button type="submit" class="gm-btn gm-btn-danger-outline">
+                <i class="bi bi-trash"></i> Sil
+            </button>
+        </form>
         @if (TempData["Success"] != null)
         {
             <div class="gm-alert gm-alert--success">@TempData["Success"]</div>
@@ -60,9 +62,11 @@
             }
         </div>
     }
+    <div id="dedlaynBanner" style="display:none"></div>
 
     <div class="gm-detail-layout">
 
+        <!-- Sol: mail mətni -->
         <div class="gm-detail-main">
             <div class="gm-mail-header">
                 <h2 class="gm-mail-subject">@Model.Movzu</h2>
@@ -107,8 +111,7 @@
                                 <div class="gm-attachment-actions">
                                     @if (!string.IsNullOrWhiteSpace(q.CixarilmisMetin))
                                     {
-                                        <button class="gm-btn gm-btn-sm gm-btn-ghost"
-                                                onclick="toggleText('@q.Id')" title="Mətn görüntülə">
+                                        <button class="gm-btn gm-btn-sm gm-btn-ghost" onclick="toggleText('@q.Id')">
                                             <i class="bi bi-eye"></i>
                                         </button>
                                     }
@@ -117,8 +120,7 @@
                                         <input type="hidden" name="mailId" value="@Model.Id" />
                                         <input type="hidden" name="qosmaId" value="@q.Id" />
                                         <button type="submit" class="gm-btn gm-btn-sm gm-btn-outline"
-                                                title="Sənəd Dövriyyəsinə əlavə et"
-                                                onclick="return confirm('Bu qoşmanı Sənəd Dövriyyəsinə əlavə etmək istəyirsiniz?')">
+                                                onclick="return confirm('Sənəd Dövriyyəsinə əlavə etmək istəyirsiniz?')">
                                             <i class="bi bi-file-earmark-arrow-up"></i> Sənədə
                                         </button>
                                     </form>
@@ -136,6 +138,7 @@
             }
         </div>
 
+        <!-- Sağ: sidebar -->
         <div class="gm-detail-sidebar">
 
             <!-- AI Card -->
@@ -150,14 +153,18 @@
                 <div class="gm-card-body">
                     @if (!string.IsNullOrEmpty(Model.AIXulase))
                     {
-                        <div class="gm-ai-text gm-markdown" id="aiMarkdown"
-                             data-raw="@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AIXulase))"></div>
+                        <div class="gm-ai-text gm-markdown" id="aiMarkdown"></div>
+                        <script>
+                            window.__aiRaw = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AIXulase));
+                        </script>
                     }
                     else
                     {
-                        <div class="gm-ai-loading">
-                            <i class="bi bi-hourglass-split"></i> Təhlil aparılır...
+                        <div class="gm-ai-loading" id="aiLoading">
+                            <div class="gm-ai-spinner"></div>
+                            <span>Təhlil edilir...</span>
                         </div>
+                        <div class="gm-ai-text gm-markdown" id="aiMarkdown" style="display:none"></div>
                     }
                 </div>
             </div>
@@ -167,61 +174,46 @@
             {
                 <div class="gm-card">
                     <div class="gm-card-header"><i class="bi bi-people-fill"></i> Tapşırılıb</div>
-                    <div class="gm-card-body" style="padding:10px 14px">
+                    <div class="gm-card-body" style="padding:8px 12px">
                         @foreach (var ti in Model.TapalanIsciler)
                         {
-                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.83rem">
-                                <div style="width:28px;height:28px;border-radius:50%;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem;flex-shrink:0">
-                                    @(ti.AdSoyad.Length > 0 ? ti.AdSoyad[0].ToString() : "?")
-                                </div>
+                            <div class="gm-tapilan-isci">
+                                <div class="gm-tapilan-avatar">@(ti.AdSoyad.Length > 0 ? ti.AdSoyad[0].ToString() : "?")</div>
                                 <div>
-                                    <div style="font-weight:600;color:#1a2332">@ti.AdSoyad</div>
-                                    <div style="font-size:.72rem;color:#9ca3af">@ti.TapalanTarix.ToString("dd.MM HH:mm")</div>
+                                    <div class="gm-tapilan-ad">@ti.AdSoyad</div>
+                                    <div class="gm-tapilan-tarix">@ti.TapalanTarix.ToString("dd.MM HH:mm")</div>
                                 </div>
+                                <i class="bi bi-check-circle-fill" style="color:#10b981;margin-left:auto;font-size:.85rem"></i>
                             </div>
                         }
                     </div>
                 </div>
             }
 
-            <!-- Assign Card — checkbox -->
+            <!-- Tapşırma formu -->
             <div class="gm-card">
-                <div class="gm-card-header">
-                    <i class="bi bi-person-check"></i> İşçiyə Tapşır
-                </div>
+                <div class="gm-card-header"><i class="bi bi-person-check"></i> İşçiyə Tapşır</div>
                 <div class="gm-card-body">
                     <form asp-action="Tapa" method="post">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="mailId" value="@Model.Id" />
 
-                        <div class="gm-form-group">
-                            <label style="font-size:.75rem;font-weight:600;color:#6b7280;margin-bottom:6px;display:block">
-                                İşçilər <span style="font-size:.7rem;font-weight:400">(bir neçə seçmək olar)</span>
-                            </label>
-                            <div class="gm-isci-list">
-                                @foreach (var isci in isciler)
-                                {
-                                    var isChecked = tapalanIds.Contains(isci.Id);
-                                    <label class="gm-isci-item @(isChecked ? "gm-isci-item--checked" : "")">
-                                        <input type="checkbox" name="isciIds" value="@isci.Id"
-                                               @(isChecked ? "checked" : "") />
-                                        <div class="gm-isci-avatar">@(isci.TamAd.Length > 0 ? isci.TamAd[0].ToString() : "?")</div>
-                                        <span class="gm-isci-ad">@isci.TamAd</span>
-                                        @if (isChecked)
-                                        {
-                                            <i class="bi bi-check-circle-fill" style="color:#10b981;margin-left:auto;font-size:.8rem"></i>
-                                        }
-                                    </label>
-                                }
-                            </div>
+                        <p class="gm-form-hint">Bir neçə işçi seçmək olar</p>
+                        <div class="gm-isci-list">
+                            @foreach (var isci in isciler)
+                            {
+                                var chk = tapalanIds.Contains(isci.Id);
+                                <label class="gm-isci-item @(chk ? "gm-isci-item--checked" : "")">
+                                    <input type="checkbox" name="isciIds" value="@isci.Id" @(chk ? "checked" : "") />
+                                    <div class="gm-isci-avatar">@(isci.TamAd.Length > 0 ? isci.TamAd[0].ToString() : "?")</div>
+                                    <span class="gm-isci-ad">@isci.TamAd</span>
+                                </label>
+                            }
                         </div>
 
-                        <div class="gm-form-group" style="margin-top:10px">
-                            <label style="font-size:.75rem;font-weight:600;color:#6b7280;margin-bottom:6px;display:block">Qeyd (ixtiyari)</label>
-                            <textarea name="qeyd" class="gm-textarea" rows="2"
-                                      placeholder="Tapşırıq haqqında qeyd...">@Model.TapalanQeyd</textarea>
-                        </div>
-                        <button type="submit" class="gm-btn gm-btn-primary w-100">
+                        <textarea name="qeyd" class="gm-textarea" rows="2"
+                                  placeholder="Qeyd (ixtiyari)..." style="margin-top:8px">@Model.TapalanQeyd</textarea>
+                        <button type="submit" class="gm-btn gm-btn-primary w-100" style="margin-top:8px">
                             <i class="bi bi-send"></i> Tapşır
                         </button>
                     </form>
@@ -242,35 +234,69 @@
 </div>
 
 @functions {
-    string FormatBytes(long bytes)
-    {
-        if (bytes < 1024) return $"{bytes} B";
-        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
-        return $"{bytes / 1024.0 / 1024.0:F1} MB";
-    }
+    string FormatBytes(long b) =>
+        b < 1024 ? $"{b} B" : b < 1048576 ? $"{b/1024.0:F1} KB" : $"{b/1048576.0:F1} MB";
 
-    string GetFileIcon(string fileName)
-    {
-        var ext = System.IO.Path.GetExtension(fileName ?? "").ToLowerInvariant();
-        if (ext == ".pdf") return "bi-file-earmark-pdf text-danger";
-        if (ext == ".docx" || ext == ".doc") return "bi-file-earmark-word text-primary";
-        if (ext == ".xlsx" || ext == ".xls") return "bi-file-earmark-excel text-success";
+    string GetFileIcon(string f) {
+        var e = Path.GetExtension(f ?? "").ToLowerInvariant();
+        if (e == ".pdf") return "bi-file-earmark-pdf text-danger";
+        if (e == ".docx" || e == ".doc") return "bi-file-earmark-word text-primary";
+        if (e == ".xlsx" || e == ".xls") return "bi-file-earmark-excel text-success";
         return "bi-file-earmark text-secondary";
     }
 }
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
+var __mailId = @Model.Id;
+var __token  = '@Html.AntiForgeryToken()'.match(/value="([^"]+)"/)?.[1] || '';
+
 function toggleText(id) {
-    const el = document.getElementById('text-' + id);
+    var el = document.getElementById('text-' + id);
     if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
-(function () {
+
+// AI render
+function renderAI(text) {
     var el = document.getElementById('aiMarkdown');
-    if (!el) return;
-    var raw = JSON.parse(el.getAttribute('data-raw') || '""');
-    if (raw) el.innerHTML = marked.parse(raw);
+    if (!el || !text) return;
+    el.innerHTML = marked.parse(text);
+    el.style.display = '';
+    var loading = document.getElementById('aiLoading');
+    if (loading) loading.style.display = 'none';
+}
+
+(function () {
+    // Əgər DB-dən gəlirsə — dərhal render
+    if (window.__aiRaw) {
+        renderAI(window.__aiRaw);
+        return;
+    }
+    // Yoxdursa — AJAX ilə çağır
+    var form = new FormData();
+    form.append('__RequestVerificationToken', document.querySelector('input[name=__RequestVerificationToken]')?.value || '');
+    fetch('/User/GelenMail/RunAI?id=' + __mailId, { method: 'POST', body: form })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            if (d.xulase) renderAI(d.xulase);
+            // Deadline banner-i göstər
+            if (d.dedlaynTarix) {
+                var b = document.getElementById('dedlaynBanner');
+                if (b) {
+                    b.innerHTML = '<div class="gm-dedlayn-banner gm-dedlayn--yaxin" style="margin-top:8px"><i class="bi bi-alarm-fill"></i> <strong>' +
+                        (d.dedlaynNov || 'Deadline') + ':</strong> ' + d.dedlaynTarix +
+                        (d.dedlaynQeyd ? ' — ' + d.dedlaynQeyd : '') + '</div>';
+                    b.style.display = '';
+                }
+            }
+        })
+        .catch(function () {
+            var loading = document.getElementById('aiLoading');
+            if (loading) loading.innerHTML = '<span style="color:#9ca3af;font-size:.8rem">AI cavabı alınmadı</span>';
+        });
 })();
+
+// Checkbox styling
 document.querySelectorAll('.gm-isci-item input[type=checkbox]').forEach(function (cb) {
     cb.addEventListener('change', function () {
         this.closest('.gm-isci-item').classList.toggle('gm-isci-item--checked', this.checked);
