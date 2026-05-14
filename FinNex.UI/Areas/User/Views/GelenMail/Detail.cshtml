@@ -146,10 +146,9 @@
                                     }
                                     @if (Model.SenedId.HasValue)
                                     {
-                                        <a href="@Url.Action("Detal", "Sened", new { area = "SenedDovriyyesi", id = Model.SenedId })"
-                                           class="gm-btn gm-btn-sm gm-btn-outline" target="_blank">
-                                            <i class="bi bi-file-earmark-check"></i> Sənəddə
-                                        </a>
+                                        <span class="gm-btn gm-btn-sm gm-sened-badge">
+                                            <i class="bi bi-file-earmark-check-fill"></i> Sənəd dövriyyəsindədir
+                                        </span>
                                     }
                                     else
                                     {
@@ -235,9 +234,7 @@
             {
                 <div class="gm-card gm-status-card">
                     <i class="bi bi-file-earmark-check-fill text-success"></i>
-                    Sənəd dövriyyəsinə əlavə edilib
-                    <a href="@Url.Action("Detal", "Sened", new { area = "SenedDovriyyesi", id = Model.SenedId })"
-                       class="gm-btn gm-btn-sm gm-btn-outline">Sənədə Bax</a>
+                    Sənəd dövriyyəsinə əlavə edilib (#@Model.SenedId)
                 </div>
             }
         </div>

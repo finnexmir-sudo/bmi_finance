@@ -613,6 +613,12 @@
 }
 .gm-item-sil-btn:hover { background: #fecaca; }
 
+/* Sənəd dövriyyəsindədir badge */
+.gm-sened-badge {
+    background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7;
+    cursor: default; font-size: .75rem;
+}
+
 /* Detail sil düyməsi */
 .gm-btn-danger-outline {
     background: none; border: 1px solid #fca5a5; color: #dc2626;
