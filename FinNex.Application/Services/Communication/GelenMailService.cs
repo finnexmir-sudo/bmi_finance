@@ -158,7 +158,7 @@ public class GelenMailService : IGelenMailService
         return true;
     }
 
-    public async Task<int?> SenedeCevir(int mailId, int qosmaId, int yaradanUserId, string saxlamaKlasoru)
+    public async Task<int?> SenedeCevir(int mailId, int qosmaId, int yaradanUserId, int departmentId)
     {
         var mail = await _uow.Repository<GelenMail>().Query()
             .Where(x => x.Id == mailId && !x.Silinib)
@@ -166,6 +166,9 @@ public class GelenMailService : IGelenMailService
             .FirstOrDefaultAsync();
 
         if (mail == null) return null;
+        // Duplikat: artıq sənəd dövriyyəsindədirsə əlavə etmə
+        if (mail.SenedId.HasValue) return null;
+
         var qosma = mail.Qosmalar.FirstOrDefault(q => q.Id == qosmaId && !q.Silinib);
         if (qosma == null || !File.Exists(qosma.FaylYolu)) return null;
 
@@ -178,17 +181,45 @@ public class GelenMailService : IGelenMailService
             ReferenceId = mail.Id,
             YaradilmaTarixi = DateTime.Now,
             YaradanIcraciId = yaradanUserId,
-            DepartmentId = 1,
+            DepartmentId = departmentId > 0 ? departmentId : 1,
             SenedNovuId = 1
         };
 
         await _uow.Repository<Sened>().YaratAsync(sened);
         await _uow.YaddaSaxlaAsync();
 
+        // SenedFayl: faylı sənəd dövriyyəsinə qoş
+        var fayl = new SenedFayl
+        {
+            SenedId     = sened.Id,
+            VersiyaNo   = 1,
+            OriginalAd  = qosma.FaylAdi,
+            StoredAd    = Path.GetFileName(qosma.FaylYolu),
+            ContentType = qosma.ContentType,
+            OlcuBytes   = qosma.OlcuBayt,
+            Sha256      = ComputeSha256(qosma.FaylYolu),
+            Yol         = qosma.FaylYolu,
+            AktivVersiya    = true,
+            StorageProvider = "Local",
+            YaradilmaTarixi = DateTime.Now
+        };
+        await _uow.Repository<SenedFayl>().YaratAsync(fayl);
+
         mail.SenedId = sened.Id;
         await _uow.YaddaSaxlaAsync();
 
         return sened.Id;
+    }
+
+    private static string ComputeSha256(string path)
+    {
+        try
+        {
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            using var stream = File.OpenRead(path);
+            return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
+        }
+        catch { return ""; }
     }
 
     public async Task<int> GetOxunmamisSayAsync()

@@ -7,6 +7,7 @@ using FinNex.Domain.Entities.HR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.UI.Areas.User.Controllers;
 
@@ -164,16 +165,28 @@ public class GelenMailController : Controller
         var appUser = await _userManager.GetUserAsync(User);
         if (appUser == null) return Unauthorized();
 
-        var storageDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "mail-qosmalar");
-        var senedId = await _mailService.SenedeCevir(mailId, qosmaId, appUser.Id, storageDir);
-
-        if (senedId.HasValue)
+        // Duplikat yoxlaması — əvvəlcədən sənəd dövriyyəsindədirsə əlavə etmə
+        var mailDetail = await _mailService.GetDetailAsync(mailId);
+        if (mailDetail?.SenedId.HasValue == true)
         {
-            TempData["Success"] = "Qoşma sənəd dövriyyəsinə əlavə edildi.";
-            return RedirectToAction("Detal", "Sened", new { area = "SenedDovriyyesi", id = senedId });
+            TempData["Error"] = "Bu mail artıq sənəd dövriyyəsindədir.";
+            return RedirectToAction(nameof(Detail), new { id = mailId });
         }
 
-        TempData["Error"] = "Sənədə çevirmə uğursuz oldu.";
+        // İstifadəçinin əsas şöbəsini tap
+        var deptId = await _userManager.Users
+            .Where(u => u.Id == appUser.Id)
+            .SelectMany(u => u.UserDepartments.Where(ud => ud.Esasdir))
+            .Select(ud => ud.DepartmentId)
+            .FirstOrDefaultAsync();
+
+        var senedId = await _mailService.SenedeCevir(mailId, qosmaId, appUser.Id, deptId);
+
+        if (senedId.HasValue)
+            TempData["Success"] = "Qoşma sənəd dövriyyəsinə əlavə edildi.";
+        else
+            TempData["Error"] = "Sənədə çevirmə uğursuz oldu. Fayl tapılmadı.";
+
         return RedirectToAction(nameof(Detail), new { id = mailId });
     }
 

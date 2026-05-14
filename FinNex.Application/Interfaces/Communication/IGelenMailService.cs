@@ -8,7 +8,7 @@ public interface IGelenMailService
     Task<GelenMailDetailDto?> GetDetailAsync(int id);
     Task OxunduIsareEtAsync(int id);
     Task<bool> TapaAsync(int mailId, List<int> isciIds, string? qeyd, int rehberUserId);
-    Task<int?> SenedeCevir(int mailId, int qosmaId, int yaradanUserId, string saxlamaKlasoru);
+    Task<int?> SenedeCevir(int mailId, int qosmaId, int yaradanUserId, int departmentId);
     Task<int> GetOxunmamisSayAsync();
     Task SaveAINeticAsync(int id, AIMailTahlilNetic netic);
     Task SilAsync(int id);
