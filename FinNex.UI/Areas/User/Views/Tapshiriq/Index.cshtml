@@ -1,4 +1,5 @@
 ﻿@model FinNex.UI.Areas.User.ViewModels.Tapshiriq.TapshiriqIndexVM
+@using FinNex.Application.DTOs.Communication
 @using FinNex.Domain.Entities.Communication
 @{
     ViewData["Title"] = "Tapşırıqlar";
@@ -56,6 +57,11 @@
                 data-tab="verdiklerim">
             Verdiklərim
             <span class="tsk-tab-count">@Model.VerdiklerimTapshiriqlar.Count</span>
+        </button>
+        <button class="tsk-tab @(Model.AktivTab == "mail" ? "active" : "")"
+                data-tab="mail">
+            Mail Tapşırıqları
+            <span class="tsk-tab-count">@Model.MailTapshiriqlari.Count</span>
         </button>
     </div>
 
@@ -150,6 +156,56 @@
                             </div>
                         </div>
                     </a>
+                }
+            </div>
+        }
+    </div>
+
+    @* ── Mail Tapşırıqları ── *@
+    <div class="tsk-panel @(Model.AktivTab == "mail" ? "" : "tsk-hidden")"
+         data-panel="mail">
+        @if (!Model.MailTapshiriqlari.Any())
+        {
+            <div class="tsk-empty">
+                <div class="tsk-empty-icon">✉️</div>
+                <div class="tsk-empty-title">Mail tapşırığı yoxdur</div>
+            </div>
+        }
+        else
+        {
+            <div class="tsk-list">
+                @foreach (var m in Model.MailTapshiriqlari.OrderByDescending(x => x.TapalanTarix))
+                {
+                    <div class="tsk-card @(m.IcraOlundu ? "tsk-card--done-mail" : "")">
+                        <div class="tsk-card-left">
+                            <div class="tsk-priority tsk-priority--mail"></div>
+                            <div>
+                                <div class="tsk-card-title">@m.Movzu</div>
+                                <div class="tsk-card-meta">
+                                    <span>✉️ @m.KimdenAd</span>
+                                    <span>Tapşırıldı: @m.TapalanTarix.ToString("dd.MM.yyyy HH:mm")</span>
+                                    @if (!string.IsNullOrWhiteSpace(m.Qeyd))
+                                    {
+                                        <span class="tsk-mail-qeyd">@m.Qeyd</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tsk-card-right">
+                            @if (m.IcraOlundu)
+                            {
+                                <span class="tsk-status tsk-status--done">Tamamlandı</span>
+                                @if (m.IcraOlunduTarix.HasValue)
+                                {
+                                    <span class="tsk-card-meta">@m.IcraOlunduTarix.Value.ToString("dd.MM.yyyy")</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="tsk-status tsk-status--new">Gözlənilir</span>
+                            }
+                        </div>
+                    </div>
                 }
             </div>
         }

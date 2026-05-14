@@ -19,6 +19,7 @@ public class GelenMailController : Controller
     private readonly IAnthropicService _ai;
     private readonly IIsciService _isciService;
     private readonly IXatirlatmaService _xatirlatmaService;
+    private readonly IBildirisService _bildirisService;
     private readonly UserManager<AppUser> _userManager;
 
     public GelenMailController(
@@ -26,12 +27,14 @@ public class GelenMailController : Controller
         IAnthropicService ai,
         IIsciService isciService,
         IXatirlatmaService xatirlatmaService,
+        IBildirisService bildirisService,
         UserManager<AppUser> userManager)
     {
         _mailService = mailService;
         _ai = ai;
         _isciService = isciService;
         _xatirlatmaService = xatirlatmaService;
+        _bildirisService = bildirisService;
         _userManager = userManager;
     }
 
@@ -144,7 +147,30 @@ public class GelenMailController : Controller
         var appUser = await _userManager.GetUserAsync(User);
         if (appUser == null) return Unauthorized();
 
+        var mail = await _mailService.GetDetailAsync(mailId);
         await _mailService.TapaAsync(mailId, isciIds, qeyd, appUser.Id);
+
+        // Hər tapşırılan işçiyə bildiris göndər
+        if (mail != null)
+        {
+            var senderName = string.IsNullOrWhiteSpace(appUser.Ad)
+                ? (User.Identity?.Name ?? "Rəhbər")
+                : $"{appUser.Ad} {appUser.Soyad}".Trim();
+            foreach (var isciId in isciIds)
+            {
+                try
+                {
+                    await _bildirisService.YaratAsync(
+                        isciId,
+                        BildirisNovu.YeniTapshiriq,
+                        "Sizə mail tapşırıldı",
+                        $"{senderName}: {mail.Movzu}" + (string.IsNullOrWhiteSpace(qeyd) ? "" : $" — {qeyd}"),
+                        "/User/Tapshiriq");
+                }
+                catch { }
+            }
+        }
+
         TempData["Success"] = $"{isciIds.Count} işçiyə tapşırıldı.";
         return RedirectToAction(nameof(Detail), new { id = mailId });
     }

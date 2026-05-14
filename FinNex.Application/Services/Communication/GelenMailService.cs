@@ -222,6 +222,29 @@ public class GelenMailService : IGelenMailService
         catch { return ""; }
     }
 
+    public async Task<List<GelenMailTapshiriqDto>> GetMailTapshiriqlariAsync(int isciId)
+    {
+        var records = await _uow.Repository<GelenMailIsci>().Query()
+            .AsNoTracking()
+            .Where(x => x.IsciId == isciId && !x.Silinib)
+            .Include(x => x.GelenMail)
+            .OrderByDescending(x => x.TapalanTarix)
+            .ToListAsync();
+
+        return records.Select(x => new GelenMailTapshiriqDto
+        {
+            MailId          = x.GelenMailId,
+            Movzu           = x.GelenMail.Movzu,
+            KimdenAd        = x.GelenMail.KimdenAd,
+            KimdenEmail     = x.GelenMail.KimdenEmail,
+            AlinmaTarixi    = x.GelenMail.AlinmaTarixi,
+            TapalanTarix    = x.TapalanTarix,
+            Qeyd            = x.Qeyd,
+            IcraOlundu      = x.IcraOlundu,
+            IcraOlunduTarix = x.IcraOlunduTarix
+        }).ToList();
+    }
+
     public async Task<int> GetOxunmamisSayAsync()
     {
         return await _uow.Repository<GelenMail>().Query()
