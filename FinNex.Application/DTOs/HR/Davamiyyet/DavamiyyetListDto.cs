@@ -6,6 +6,7 @@ namespace FinNex.Application.DTOs.HR.Davamiyyet
     public class DavamiyyetListDto
     {
         public int Id { get; set; }
+        public int IsciId { get; set; }
 
         public string IsciTamAd { get; set; } = null!;
         public DateTime Tarix { get; set; }

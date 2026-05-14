@@ -11,7 +11,8 @@
     var gelibSayi = list.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
     var gecikmeSayi = list.Count(x => x.Status == DavamiyyetStatus.Gecikme);
     var qayibSayi = list.Count(x => x.Status == DavamiyyetStatus.Qayib);
-    var icazeliSayi = list.Count(x => x.Status == DavamiyyetStatus.Icazeli);
+    var mezuniyyetIsciIds = ViewBag.MezuniyyetIsciIds as HashSet<int> ?? new HashSet<int>();
+    var icazeliSayi = list.Count(x => x.Status == DavamiyyetStatus.Icazeli && !mezuniyyetIsciIds.Contains(x.IsciId));
     var xestelikSayi = list.Count(x => x.Status == DavamiyyetStatus.Xestelik);
     var ezamiyyetSayi = list.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
     var mezuniyyetSayi = (int)(ViewBag.MezuniyyetSayi ?? 0);
