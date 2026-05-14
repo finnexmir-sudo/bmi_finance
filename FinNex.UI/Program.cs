@@ -655,6 +655,11 @@ END
                                 [TapalanTarix]            DATETIME2 NOT NULL,
                                 [Qeyd]                    NVARCHAR(1000) NULL,
                                 [YaradilmaTarixi]         DATETIME2 NOT NULL DEFAULT GETDATE(),
+                                [YaradanIcraciId]         INT NULL,
+                                [YenileyenIcraciId]       INT NULL,
+                                [SilenIcraciId]           INT NULL,
+                                [YenilenmeTarixi]         DATETIME2 NULL,
+                                [SilinmeTarixi]           DATETIME2 NULL,
                                 [Silinib]                 BIT NOT NULL DEFAULT 0,
                                 CONSTRAINT [FK_GelenMailIsciler_Mail]  FOREIGN KEY ([GelenMailId]) REFERENCES [GelenMailler]([Id]) ON DELETE CASCADE,
                                 CONSTRAINT [FK_GelenMailIsciler_Isci]  FOREIGN KEY ([IsciId])      REFERENCES [Isciler]([Id])
