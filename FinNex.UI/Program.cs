@@ -498,6 +498,14 @@ namespace FinNex.UI
                 }
                 catch { /* artıq mövcuddur */ }
 
+                // FealiyyetJurnali.Acıqlama sütununu NVARCHAR(MAX)-a genişləndir
+                try
+                {
+                    db.Database.ExecuteSqlRaw(
+                        "ALTER TABLE [FealiyyetJurnali] ALTER COLUMN [Acıqlama] NVARCHAR(MAX) NULL;");
+                }
+                catch { /* artıq MAX-dır */ }
+
                 // Avtomatik migration — sadəcə Migrate() çağır, xəta olsa logla amma crash etmə
                 try
                 {
