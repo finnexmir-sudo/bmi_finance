@@ -1,0 +1,15 @@
+using FinNex.Domain.Entities.HR;
+
+namespace FinNex.Domain.Entities.Communication;
+
+public class GelenMailIsci : BaseEntity
+{
+    public int GelenMailId { get; set; }
+    public int IsciId { get; set; }
+    public int TapalanIsciTarafindan { get; set; }  // rehber AppUser id
+    public DateTime TapalanTarix { get; set; }
+    public string? Qeyd { get; set; }
+
+    public virtual GelenMail GelenMail { get; set; } = null!;
+    public virtual Isci Isci { get; set; } = null!;
+}

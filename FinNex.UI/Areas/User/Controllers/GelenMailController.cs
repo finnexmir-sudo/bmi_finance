@@ -1,6 +1,8 @@
+using FinNex.Application.DTOs.Communication;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.Application.Interfaces.HR;
 using FinNex.Domain;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -15,21 +17,23 @@ public class GelenMailController : Controller
     private readonly IGelenMailService _mailService;
     private readonly IAnthropicService _ai;
     private readonly IIsciService _isciService;
+    private readonly IXatirlatmaService _xatirlatmaService;
     private readonly UserManager<AppUser> _userManager;
 
     public GelenMailController(
         IGelenMailService mailService,
         IAnthropicService ai,
         IIsciService isciService,
+        IXatirlatmaService xatirlatmaService,
         UserManager<AppUser> userManager)
     {
         _mailService = mailService;
         _ai = ai;
         _isciService = isciService;
+        _xatirlatmaService = xatirlatmaService;
         _userManager = userManager;
     }
 
-    // GET /User/GelenMail
     public async Task<IActionResult> Index(bool? oxunmamis, int? isciId, int page = 1)
     {
         var mails = await _mailService.GetListAsync(oxunmamis, isciId, page, 50);
@@ -47,16 +51,14 @@ public class GelenMailController : Controller
         return View(mails);
     }
 
-    // GET /User/GelenMail/Detail/5
     public async Task<IActionResult> Detail(int id)
     {
         var mail = await _mailService.GetDetailAsync(id);
         if (mail == null) return NotFound();
 
-        // Mark as read
         await _mailService.OxunduIsareEtAsync(id);
 
-        // Auto-run AI analysis if not done yet
+        // AI analizi — yalnız ilk dəfə açılanda
         if (string.IsNullOrEmpty(mail.AIXulase))
         {
             var qosmaMetinler = mail.Qosmalar
@@ -64,16 +66,47 @@ public class GelenMailController : Controller
                 .Select(q => (q.FaylAdi, q.ContentType, q.CixarilmisMetin!))
                 .ToList();
 
-            var xulase = await _ai.MailTahlilEtAsync(
+            var netic = await _ai.MailTahlilEtAsync(
                 $"{mail.KimdenAd} <{mail.KimdenEmail}>",
                 mail.Movzu,
                 mail.MetinDuz,
                 qosmaMetinler);
 
-            // Save AI result
-            await _mailService.SaveAIXulaseAsync(id, xulase);
-            mail.AIXulase = xulase;
+            await _mailService.SaveAINeticAsync(id, netic);
+
+            mail.AIXulase = netic.Xulase;
             mail.AITahlilTarixi = DateTime.Now;
+            mail.DedlaynTarix = netic.DedlaynTarix;
+            mail.DedlaynNov = netic.DedlaynNov;
+            mail.DedlaynQeyd = netic.DedlaynQeyd;
+
+            // Deadline tapıldısa Xatırlatma yarat
+            if (netic.DedlaynTarix.HasValue && netic.DedlaynTarix.Value > DateTime.Now)
+            {
+                var appUser = await _userManager.GetUserAsync(User);
+                if (appUser?.IsciId != null)
+                {
+                    var xatirlatmaTarix = netic.DedlaynTarix.Value.AddDays(-1).Date.AddHours(9);
+                    var novLabel = netic.DedlaynNov switch
+                    {
+                        "Gorus"    => "Görüş",
+                        "Hesabat"  => "Hesabat",
+                        "Muqavile" => "Müqavilə",
+                        "SonTarix" => "Son tarix",
+                        _          => "Deadline"
+                    };
+                    await _xatirlatmaService.SistemXatirlatmasiYaratAsync(new FinNex.Application.DTOs.Communication.XatirlatmaSistemCreateDto
+                    {
+                        IsciId = appUser.IsciId.Value,
+                        Bashliq = $"{novLabel}: {mail.Movzu}",
+                        Qeyd = netic.DedlaynQeyd ?? $"Mail dedlayni: {netic.DedlaynTarix.Value:dd.MM.yyyy}",
+                        XatirlatmaTarixi = xatirlatmaTarix,
+                        Nov = XatirlatmaNov.Sistem,
+                        EntityTipi = XatirlatmaEntityTipi.GelenMail,
+                        EntityId = id
+                    });
+                }
+            }
         }
 
         var iscilerResult = await _isciService.HamisiniGetirAsync();
@@ -84,20 +117,26 @@ public class GelenMailController : Controller
         return View(mail);
     }
 
-    // POST /User/GelenMail/Tapa
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Tapa(int mailId, int isciId, string? qeyd)
+    public async Task<IActionResult> Tapa(int mailId, List<int> isciIds, string? qeyd)
     {
+        if (isciIds == null || isciIds.Count == 0)
+        {
+            TempData["Error"] = "Ən az bir işçi seçin.";
+            return RedirectToAction(nameof(Detail), new { id = mailId });
+        }
+
         var appUser = await _userManager.GetUserAsync(User);
         if (appUser == null) return Unauthorized();
 
-        await _mailService.TapaAsync(mailId, isciId, qeyd, appUser.Id);
-        TempData["Success"] = "Mail işçiyə tapşırıldı.";
+        await _mailService.TapaAsync(mailId, isciIds, qeyd, appUser.Id);
+
+        // Hər tapşırılan işçiyə bildiris (IBildirisService yoxdursa skip)
+        TempData["Success"] = $"{isciIds.Count} işçiyə tapşırıldı.";
         return RedirectToAction(nameof(Detail), new { id = mailId });
     }
 
-    // POST /User/GelenMail/SenedeCevir
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SenedeCevir(int mailId, int qosmaId)
@@ -118,7 +157,6 @@ public class GelenMailController : Controller
         return RedirectToAction(nameof(Detail), new { id = mailId });
     }
 
-    // GET /User/GelenMail/OxunmamisSay (for badge refresh)
     [HttpGet]
     public async Task<IActionResult> OxunmamisSay()
     {

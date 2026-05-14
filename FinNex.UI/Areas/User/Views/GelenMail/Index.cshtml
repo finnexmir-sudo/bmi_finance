@@ -74,6 +74,15 @@
                     </div>
                     <div class="gm-item-meta">
                         <span class="gm-item-date">@mail.AlinmaTarixi.ToString("dd MMM HH:mm")</span>
+                        @if (mail.DedlaynTarix.HasValue)
+                        {
+                            var ddiff = (mail.DedlaynTarix.Value.Date - DateTime.Today).TotalDays;
+                            var dcls = ddiff < 0 ? "gm-tag--dedlayn-red" : ddiff <= 2 ? "gm-tag--dedlayn-red" : ddiff <= 7 ? "gm-tag--dedlayn-amber" : "gm-tag--dedlayn-green";
+                            var dlabel = ddiff < 0 ? $"{-(int)ddiff}g keçib" : ddiff == 0 ? "Bu gün!" : $"{(int)ddiff}g qaldı";
+                            <span class="gm-tag @dcls" title="@mail.DedlaynQeyd">
+                                <i class="bi bi-alarm"></i> @dlabel
+                            </span>
+                        }
                         <div class="gm-item-tags">
                             @if (mail.QosmaCount > 0)
                             {

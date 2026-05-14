@@ -24,12 +24,19 @@ public class GelenMail : BaseEntity
     // Sənəd dövriyyəsinə bağlantı (əgər əlavə edilibsə)
     public int? SenedId { get; set; }
 
-    // Tapşırılan işçi
+    // Tapşırılan işçi (əsas — geriyəuyğunluq üçün)
     public int? TapalanIsciId { get; set; }
-    public int? TapalanIsciTarafindan { get; set; }  // rehber app user id
+    public int? TapalanIsciTarafindan { get; set; }
     public DateTime? TapalanTarix { get; set; }
     public string? TapalanQeyd { get; set; }
 
+    // Deadline (AI tərəfindən aşkar edilir)
+    public DateTime? DedlaynTarix { get; set; }
+    public string? DedlaynNov { get; set; }   // Gorus / Hesabat / Muqavile / SonTarix / Diger
+    public string? DedlaynQeyd { get; set; }
+    public bool DedlaynXatirlatmaYaradildi { get; set; } = false;
+
     public virtual ICollection<GelenMailQosma> Qosmalar { get; set; } = new List<GelenMailQosma>();
+    public virtual ICollection<GelenMailIsci> TapalanIsciler { get; set; } = new List<GelenMailIsci>();
     public virtual Isci? TapalanIsci { get; set; }
 }
