@@ -13,6 +13,21 @@
 
 <link rel="stylesheet" href="~/css/User/gelen-mail.css" asp-append-version="true" />
 
+@functions {
+    static string StripMd(string s) {
+        if (string.IsNullOrEmpty(s)) return s;
+        // Remove markdown headers (## Title → Title)
+        s = System.Text.RegularExpressions.Regex.Replace(s, @"#{1,6}\s*", "");
+        // Remove bold/italic markers
+        s = System.Text.RegularExpressions.Regex.Replace(s, @"\*+", "");
+        // Remove list bullets
+        s = System.Text.RegularExpressions.Regex.Replace(s, @"(?m)^[-*+]\s+", "");
+        // Collapse whitespace/newlines to single space
+        s = System.Text.RegularExpressions.Regex.Replace(s, @"\s+", " ");
+        return s.Trim();
+    }
+}
+
 <div class="gm-page">
     <div class="gm-header">
         <div class="gm-header-left">
@@ -55,9 +70,10 @@
             {
                 var detailUrl = Url.Action("Detail", "GelenMail", new { area = "User", id = mail.Id });
                 var unreadCls = !mail.Oxunub ? "gm-item--unread" : "";
+                var wrapCls  = !mail.Oxunub ? "gm-item-wrap--unread" : "";
                 var avatarChar = mail.KimdenAd.Length > 0 ? mail.KimdenAd[0].ToString().ToUpper() : "?";
                 var fromName = string.IsNullOrWhiteSpace(mail.KimdenAd) ? mail.KimdenEmail : mail.KimdenAd;
-                <div class="gm-item-wrap">
+                <div class="gm-item-wrap @wrapCls">
                 <a href="@detailUrl" class="gm-item @unreadCls">
                     <div class="gm-item-indicator"></div>
                     <div class="gm-item-avatar"><span>@avatarChar</span></div>
@@ -69,7 +85,8 @@
                         <div class="gm-item-subject">@mail.Movzu</div>
                         @if (!string.IsNullOrEmpty(mail.AIXulase))
                         {
-                            var aiPreview = mail.AIXulase.Length > 120 ? mail.AIXulase.Substring(0, 120) + "…" : mail.AIXulase;
+                            var aiStripped = StripMd(mail.AIXulase);
+                            var aiPreview = aiStripped.Length > 120 ? aiStripped.Substring(0, 120) + "…" : aiStripped;
                             <div class="gm-item-ai"><i class="bi bi-robot"></i> @aiPreview</div>
                         }
                     </div>

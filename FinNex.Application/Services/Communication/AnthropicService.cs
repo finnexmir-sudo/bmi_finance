@@ -94,6 +94,7 @@ public class AnthropicService : IAnthropicService
     {
         var sb = new StringBuilder();
         sb.AppendLine("Siz şirkətin daxili AI köməkçisisiniz. Aşağıdakı e-poçtu Azərbaycan dilində təhlil edin.");
+        sb.AppendLine($"Bugünkü tarix: {DateTime.Now:yyyy-MM-dd} ({DateTime.Now:dddd}). Nisbi tarix ifadələrini (\"sabah\", \"gələn həftə\" və s.) bu tarixə görə hesablayın.");
         sb.AppendLine();
         sb.AppendLine("CAVABI MÜTLƏQ aşağıdakı JSON formatında verin (başqa heç nə yazmayın):");
         sb.AppendLine(@"{

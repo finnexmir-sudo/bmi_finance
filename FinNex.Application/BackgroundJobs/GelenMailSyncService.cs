@@ -22,6 +22,7 @@ public class GelenMailSyncService : BackgroundService
     private readonly IConfiguration _config;
     private readonly TimeSpan _interval;
     private readonly string _attachmentBaseDir;
+    private DateTime _lastEscalationDate = DateTime.MinValue;
 
     public GelenMailSyncService(
         IServiceScopeFactory scopeFactory,
@@ -49,8 +50,84 @@ public class GelenMailSyncService : BackgroundService
             try { await SyncAsync(stoppingToken); }
             catch (Exception ex) { _logger.LogError(ex, "GelenMailSyncService xətası"); }
 
+            // Səhər saat 9:00-9:10 arasında gündəlik eskalasiya hesabatı
+            try { await MaybeRunEscalationAsync(stoppingToken); }
+            catch (Exception ex) { _logger.LogError(ex, "Eskalasiya hesabatı xətası"); }
+
             try { await Task.Delay(_interval, stoppingToken); }
             catch (TaskCanceledException) { break; }
+        }
+    }
+
+    private async Task MaybeRunEscalationAsync(CancellationToken ct)
+    {
+        var now = DateTime.Now;
+        if (now.Date == _lastEscalationDate.Date) return;          // bu gün artıq göndərilib
+        if (now.Hour != 9 || now.Minute > 10) return;             // yalnız 09:00–09:10
+
+        _lastEscalationDate = now;
+
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var today = now.Date;
+        var inSevenDays = today.AddDays(7);
+
+        var deadlineMails = await db.Set<GelenMail>()
+            .AsNoTracking()
+            .Where(x => !x.Silinib && x.DedlaynTarix.HasValue)
+            .Select(x => new { x.Movzu, x.DedlaynTarix, x.KimdenAd, x.KimdenEmail })
+            .ToListAsync(ct);
+
+        var geciken    = deadlineMails.Where(m => m.DedlaynTarix!.Value.Date < today).ToList();
+        var yaxinlasan = deadlineMails.Where(m => m.DedlaynTarix!.Value.Date >= today && m.DedlaynTarix.Value.Date <= inSevenDays).ToList();
+
+        if (geciken.Count == 0 && yaxinlasan.Count == 0) return;
+
+        var lines = new System.Text.StringBuilder();
+        if (geciken.Count > 0)
+        {
+            lines.Append($"🔴 Gecikənlər ({geciken.Count}): ");
+            lines.Append(string.Join("; ", geciken.Take(3).Select(m => $"{m.Movzu} ({m.DedlaynTarix!.Value:dd.MM})")));
+            if (geciken.Count > 3) lines.Append($" +{geciken.Count - 3}");
+        }
+        if (yaxinlasan.Count > 0)
+        {
+            if (lines.Length > 0) lines.Append(" | ");
+            lines.Append($"🟡 Yaxınlaşanlar ({yaxinlasan.Count}): ");
+            lines.Append(string.Join("; ", yaxinlasan.Take(3).Select(m => $"{m.Movzu} ({m.DedlaynTarix!.Value:dd.MM})")));
+            if (yaxinlasan.Count > 3) lines.Append($" +{yaxinlasan.Count - 3}");
+        }
+
+        var metn = lines.ToString();
+        var bashliq = $"Dedlayn xülasəsi — {geciken.Count} gecikən, {yaxinlasan.Count} yaxınlaşan";
+
+        await SendEscalationBildirisAsync(scope, bashliq, metn, ct);
+    }
+
+    private async Task SendEscalationBildirisAsync(IServiceScope scope, string bashliq, string metn, CancellationToken ct)
+    {
+        try
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var bildirisService = scope.ServiceProvider.GetRequiredService<IBildirisService>();
+
+            var rehberUsers = await userManager.GetUsersInRoleAsync(FinNex.Domain.RoleNames.Rehber);
+            foreach (var user in rehberUsers)
+            {
+                if (user.IsciId is null) continue;
+                await bildirisService.YaratAsync(
+                    user.IsciId.Value,
+                    BildirisNovu.YeniGelenMail,
+                    bashliq,
+                    metn,
+                    "/User/GelenMail");
+            }
+            _logger.LogInformation("Eskalasiya hesabatı göndərildi.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Eskalasiya bildiris göndərmə xətası");
         }
     }
 

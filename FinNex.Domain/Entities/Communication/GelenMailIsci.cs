@@ -9,6 +9,8 @@ public class GelenMailIsci : BaseEntity
     public int TapalanIsciTarafindan { get; set; }  // rehber AppUser id
     public DateTime TapalanTarix { get; set; }
     public string? Qeyd { get; set; }
+    public bool IcraOlundu { get; set; }
+    public DateTime? IcraOlunduTarix { get; set; }
 
     public virtual GelenMail GelenMail { get; set; } = null!;
     public virtual Isci Isci { get; set; } = null!;
