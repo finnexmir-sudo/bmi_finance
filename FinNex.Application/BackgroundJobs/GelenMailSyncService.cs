@@ -1,8 +1,11 @@
+using FinNex.Application.Interfaces.Communication;
 using FinNex.DataAccess.Contexts;
+using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
 using MailKit;
 using MailKit.Net.Imap;
 using MailKit.Search;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -148,9 +151,53 @@ public class GelenMailSyncService : BackgroundService
             await db.Set<GelenMail>().AddRangeAsync(newMails, ct);
             await db.SaveChangesAsync(ct);
             _logger.LogInformation("GelenMailSync: {Count} yeni mail yükləndi.", newMails.Count);
+
+            await SendRehberBildirisAsync(scope, newMails, ct);
         }
 
         await client.DisconnectAsync(true, ct);
+    }
+
+    private async Task SendRehberBildirisAsync(IServiceScope scope, List<GelenMail> newMails, CancellationToken ct)
+    {
+        try
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var bildirisService = scope.ServiceProvider.GetRequiredService<IBildirisService>();
+
+            var rehberUsers = await userManager.GetUsersInRoleAsync(FinNex.Domain.RoleNames.Rehber);
+
+            string bashliq, metn;
+            if (newMails.Count == 1)
+            {
+                var m = newMails[0];
+                var kimden = string.IsNullOrWhiteSpace(m.KimdenAd) ? m.KimdenEmail : m.KimdenAd;
+                bashliq = "Yeni mail";
+                metn = $"{kimden} — {m.Movzu}";
+            }
+            else
+            {
+                bashliq = $"{newMails.Count} yeni mail";
+                metn = $"Gələn qutunuza {newMails.Count} yeni mail daxil oldu.";
+            }
+
+            var redirectUrl = "/User/GelenMail";
+
+            foreach (var user in rehberUsers)
+            {
+                if (user.IsciId is null) continue;
+                await bildirisService.YaratAsync(
+                    user.IsciId.Value,
+                    BildirisNovu.YeniGelenMail,
+                    bashliq,
+                    metn,
+                    redirectUrl);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Rehber bildiris göndərmə xətası");
+        }
     }
 
     private static string SanitizeFileName(string name)
