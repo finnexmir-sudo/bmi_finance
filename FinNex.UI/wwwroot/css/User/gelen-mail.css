@@ -68,11 +68,12 @@
     border-radius: 99px;
 }
 
-/* ── Filter ── */
+/* ── Filter / Search ── */
 .gm-filter-form {
     display: flex;
     gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
 }
 .gm-filter-group {
     display: flex;
@@ -84,6 +85,38 @@
     color: var(--gm-text-muted);
     white-space: nowrap;
 }
+
+.gm-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.gm-search-icon {
+    position: absolute;
+    left: 10px;
+    color: #9ca3af;
+    font-size: .85rem;
+    pointer-events: none;
+}
+.gm-search-input {
+    padding: 7px 32px 7px 30px;
+    border: 1px solid #d1d5db;
+    border-radius: 7px;
+    font-size: .82rem;
+    width: 220px;
+    outline: none;
+    transition: border-color .15s;
+}
+.gm-search-input:focus { border-color: var(--gm-accent); }
+.gm-search-clear {
+    position: absolute;
+    right: 8px;
+    color: #9ca3af;
+    font-size: .75rem;
+    text-decoration: none;
+    line-height: 1;
+}
+.gm-search-clear:hover { color: #ef4444; }
 
 /* ── List ── */
 .gm-list {
@@ -651,6 +684,17 @@
 }
 .gm-tapilan-ad { font-weight: 600; color: #1a2332; }
 .gm-tapilan-tarix { font-size: .7rem; color: #9ca3af; }
+.gm-tapilan-avatar--done { background: #10b981; }
+.gm-tapilan-progress {
+    margin-left: auto;
+    font-size: .72rem;
+    font-weight: 700;
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+    border-radius: 99px;
+    padding: 1px 8px;
+}
 
 /* Form hint */
 .gm-form-hint { font-size: .72rem; color: #9ca3af; margin: 0 0 6px; }
