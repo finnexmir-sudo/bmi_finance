@@ -2,14 +2,27 @@
 @using FinNex.Application.DTOs.Communication
 @{
     ViewData["Title"] = "Gələn Maillər";
-    var oxunmamisFilter = ViewBag.OxunmamisFilter as bool?;
-    var isciFilter = ViewBag.IsciFilter as int?;
-    var axtarisFilter = ViewBag.Axtaris as string;
-    var oxunmamisSay = (int)(ViewBag.OxunmamisSay ?? 0);
-    var currentPage = (int)(ViewBag.Page ?? 1);
+    var oxunmamisFilter  = ViewBag.OxunmamisFilter as bool?;
+    var isciFilter       = ViewBag.IsciFilter as int?;
+    var axtarisFilter    = ViewBag.Axtaris as string;
+    var tarixdenFilter   = ViewBag.Tarixden as string;
+    var tarixeFilter     = ViewBag.Tarixe as string;
+    var tapshirildiFlt   = ViewBag.Tapshirildi as bool?;
+    var qosmaliFlt       = ViewBag.Qosmali as bool?;
+    var deadlineFlt      = ViewBag.DeadlineFilter as string;
+    var oxunmamisSay     = (int)(ViewBag.OxunmamisSay ?? 0);
+    var currentPage      = (int)(ViewBag.Page ?? 1);
 
-    var prevUrl = Url.Action("Index", new { page = currentPage - 1, oxunmamis = oxunmamisFilter, isciId = isciFilter, q = axtarisFilter });
-    var nextUrl = Url.Action("Index", new { page = currentPage + 1, oxunmamis = oxunmamisFilter, isciId = isciFilter, q = axtarisFilter });
+    bool herhansiFilter = !string.IsNullOrWhiteSpace(axtarisFilter)
+        || oxunmamisFilter.HasValue
+        || !string.IsNullOrWhiteSpace(tarixdenFilter)
+        || !string.IsNullOrWhiteSpace(tarixeFilter)
+        || tapshirildiFlt.HasValue
+        || qosmaliFlt.HasValue
+        || !string.IsNullOrWhiteSpace(deadlineFlt);
+
+    var prevUrl = Url.Action("Index", new { page = currentPage - 1, oxunmamis = oxunmamisFilter, isciId = isciFilter, q = axtarisFilter, tarixden = tarixdenFilter, tarixe = tarixeFilter, tapshirildi = tapshirildiFlt, qosmali = qosmaliFlt, deadline = deadlineFlt });
+    var nextUrl = Url.Action("Index", new { page = currentPage + 1, oxunmamis = oxunmamisFilter, isciId = isciFilter, q = axtarisFilter, tarixden = tarixdenFilter, tarixe = tarixeFilter, tapshirildi = tapshirildiFlt, qosmali = qosmaliFlt, deadline = deadlineFlt });
 }
 
 <link rel="stylesheet" href="~/css/User/gelen-mail.css" asp-append-version="true" />
@@ -30,44 +43,130 @@
 }
 
 <div class="gm-page">
+
+    @* ── Başlıq ── *@
     <div class="gm-header">
-        <div class="gm-header-left">
-            <h1 class="gm-title">
-                <i class="bi bi-envelope-fill"></i>
-                Gələn Maillər
-                @if (oxunmamisSay > 0)
-                {
-                    <span class="gm-badge-unread">@oxunmamisSay</span>
-                }
-            </h1>
-        </div>
-        <div class="gm-header-right">
-            <form method="get" class="gm-filter-form" id="filterForm">
-                <div class="gm-search-wrap">
-                    <i class="bi bi-search gm-search-icon"></i>
-                    <input type="text" name="q" value="@axtarisFilter"
-                           class="gm-search-input" placeholder="Mövzu, göndərən axtar…"
-                           autocomplete="off" />
-                    @if (!string.IsNullOrWhiteSpace(axtarisFilter))
-                    {
-                        <a href="@Url.Action("Index", new { oxunmamis = oxunmamisFilter, isciId = isciFilter })"
-                           class="gm-search-clear" title="Axtarışı sıfırla">
-                            <i class="bi bi-x-lg"></i>
-                        </a>
-                    }
-                </div>
-                <div class="gm-filter-group">
-                    <select name="oxunmamis" class="gm-select" onchange="this.form.submit()">
-                        <option value="">Hamısı</option>
-                        <option value="true" selected="@(oxunmamisFilter == true)">Oxunmamış</option>
-                    </select>
-                </div>
-                <button type="submit" class="gm-btn gm-btn-outline">
-                    <i class="bi bi-search"></i>
-                </button>
-            </form>
-        </div>
+        <h1 class="gm-title">
+            <i class="bi bi-envelope-fill"></i>
+            Gələn Maillər
+            @if (oxunmamisSay > 0)
+            {
+                <span class="gm-badge-unread">@oxunmamisSay</span>
+            }
+        </h1>
     </div>
+
+    @* ── Filter paneli ── *@
+    <form method="get" id="filterForm" class="gm-filterbar">
+
+        @* Sıra 1: axtarış + vəziyyət + axtar düyməsi *@
+        <div class="gm-filterbar-row">
+            <div class="gm-search-wrap" style="flex:1;max-width:340px">
+                <i class="bi bi-search gm-search-icon"></i>
+                <input type="text" name="q" value="@axtarisFilter"
+                       class="gm-search-input" style="width:100%"
+                       placeholder="Mövzu, göndərən, email axtar…" autocomplete="off" />
+                @if (!string.IsNullOrWhiteSpace(axtarisFilter))
+                {
+                    <a href="@Url.Action("Index")" class="gm-search-clear" title="Sıfırla">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                }
+            </div>
+
+            <select name="oxunmamis" class="gm-select" onchange="this.form.submit()">
+                <option value="">Bütün vəziyyət</option>
+                <option value="true" selected="@(oxunmamisFilter == true)">Oxunmamış</option>
+            </select>
+
+            <button type="submit" class="gm-btn gm-btn-primary" style="white-space:nowrap">
+                <i class="bi bi-search"></i> Axtar
+            </button>
+
+            @if (herhansiFilter)
+            {
+                <a href="@Url.Action("Index")" class="gm-btn gm-btn-outline" style="white-space:nowrap">
+                    <i class="bi bi-x-circle"></i> Sıfırla
+                </a>
+            }
+        </div>
+
+        @* Sıra 2: əlavə filterlər *@
+        <div class="gm-filterbar-row gm-filterbar-extras">
+
+            <div class="gm-filter-chip-group">
+                <span class="gm-filter-chip-label"><i class="bi bi-calendar3"></i> Tarix</span>
+                <input type="date" name="tarixden" value="@tarixdenFilter"
+                       class="gm-input-date" title="Tarixdən" />
+                <span class="gm-filter-chip-sep">—</span>
+                <input type="date" name="tarixe" value="@tarixeFilter"
+                       class="gm-input-date" title="Tarixə" />
+            </div>
+
+            <div class="gm-filter-chip-group">
+                <span class="gm-filter-chip-label"><i class="bi bi-person-check"></i> Tapşırıldı</span>
+                <select name="tapshirildi" class="gm-select gm-select--sm">
+                    <option value="">Hamısı</option>
+                    <option value="true"  selected="@(tapshirildiFlt == true)">Tapşırılıb</option>
+                    <option value="false" selected="@(tapshirildiFlt == false)">Tapşırılmayıb</option>
+                </select>
+            </div>
+
+            <div class="gm-filter-chip-group">
+                <span class="gm-filter-chip-label"><i class="bi bi-alarm"></i> Deadline</span>
+                <select name="deadline" class="gm-select gm-select--sm">
+                    <option value="">Hamısı</option>
+                    <option value="var"     selected="@(deadlineFlt == "var")">Deadline var</option>
+                    <option value="kecib"   selected="@(deadlineFlt == "kecib")">Keçib</option>
+                    <option value="buhefte" selected="@(deadlineFlt == "buhefte")">Bu həftə</option>
+                </select>
+            </div>
+
+            <div class="gm-filter-chip-group">
+                <label class="gm-checkbox-label">
+                    <input type="checkbox" name="qosmali" value="true"
+                           @(qosmaliFlt == true ? "checked" : "")
+                           onchange="this.form.submit()" />
+                    <i class="bi bi-paperclip"></i> Qoşmalı
+                </label>
+            </div>
+
+        </div>
+
+        @* Aktiv filter chips *@
+        @if (herhansiFilter)
+        {
+            <div class="gm-active-chips">
+                @if (!string.IsNullOrWhiteSpace(axtarisFilter))
+                {
+                    <span class="gm-achip">🔍 @axtarisFilter</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(tarixdenFilter) || !string.IsNullOrWhiteSpace(tarixeFilter))
+                {
+                    <span class="gm-achip">📅 @(tarixdenFilter ?? "…") – @(tarixeFilter ?? "…")</span>
+                }
+                @if (tapshirildiFlt.HasValue)
+                {
+                    <span class="gm-achip">👤 @(tapshirildiFlt == true ? "Tapşırılıb" : "Tapşırılmayıb")</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(deadlineFlt))
+                {
+                    var dlbl = deadlineFlt switch { "kecib" => "Deadline keçib", "buhefte" => "Bu həftə", _ => "Deadline var" };
+                    <span class="gm-achip">⏰ @dlbl</span>
+                }
+                @if (qosmaliFlt == true)
+                {
+                    <span class="gm-achip">📎 Qoşmalı</span>
+                }
+                @if (oxunmamisFilter == true)
+                {
+                    <span class="gm-achip">✉️ Oxunmamış</span>
+                }
+                <span class="gm-achip-count">@Model.Count nəticə</span>
+            </div>
+        }
+
+    </form>
 
     @if (!Model.Any())
     {
