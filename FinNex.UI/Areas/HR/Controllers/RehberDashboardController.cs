@@ -433,6 +433,22 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .CountAsync(x => !x.Silinib && x.Status == IsciStatus.Aktiv);
             ViewBag.AktivIsciSayi = aktivIsciSayi;
 
+            // Bugün aktiv məzuniyyətdə olan işçi sayı + IsciId siyahısı
+            try
+            {
+                var mezuniyyetIsciIds = await _uow.Repository<Mezuniyyet>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib &&
+                                x.Status == MezuniyyetStatus.Tesdiqlenib &&
+                                x.BaslamaTarixi.Date <= bugun &&
+                                x.BitmeTarixi.Date >= bugun)
+                    .Select(x => x.IsciId)
+                    .ToListAsync();
+                ViewBag.MezuniyyetSayi = mezuniyyetIsciIds.Count;
+                ViewBag.MezuniyyetIsciIds = mezuniyyetIsciIds.ToHashSet();
+            }
+            catch { ViewBag.MezuniyyetSayi = 0; ViewBag.MezuniyyetIsciIds = new HashSet<int>(); }
+
             ViewData["Title"] = "Davamiyyət";
             return View(list);
         }
@@ -495,6 +511,42 @@ namespace FinNex.UI.Areas.HR.Controllers
                 TempData["Error"] = result.Message;
 
             return View(vm);
+        }
+
+        // ── Məzuniyyətdə olan işçilər (Rehber versiya) ──────────────
+        [HttpGet]
+        public async Task<IActionResult> GetMezuniyyetler(DateTime? tarix)
+        {
+            var hedef = (tarix ?? DateTime.Today).Date;
+
+            var mezuniyyetler = await _uow.Repository<Mezuniyyet>()
+                .Query().AsNoTracking()
+                .Where(x => !x.Silinib &&
+                             x.Status == MezuniyyetStatus.Tesdiqlenib &&
+                             x.BaslamaTarixi.Date <= hedef &&
+                             x.BitmeTarixi.Date >= hedef)
+                .Include(x => x.Isci)
+                    .ThenInclude(i => i.IsciTeyinatlari.Where(t => !t.Silinib))
+                        .ThenInclude(t => t.Departament)
+                .ToListAsync();
+
+            var records = mezuniyyetler.Select(m =>
+            {
+                var esasTeyinat = m.Isci?.IsciTeyinatlari?
+                    .Where(t => t.Esasdir && !t.Silinib).FirstOrDefault()
+                    ?? m.Isci?.IsciTeyinatlari?.FirstOrDefault(t => !t.Silinib);
+                return new
+                {
+                    id = m.Id,
+                    isciTamAd = ((m.Isci?.Ad ?? "") + " " + (m.Isci?.Soyad ?? "")).Trim(),
+                    departamentAd = esasTeyinat?.Departament?.Ad ?? "-",
+                    baslamaTarixi = m.BaslamaTarixi,
+                    bitmeTarixi = m.BitmeTarixi,
+                    efektivGunSayi = m.EfektivGunSayi
+                };
+            }).OrderBy(x => x.isciTamAd).ToList();
+
+            return Json(new { records, count = records.Count, tarix = hedef });
         }
 
         [HttpGet]

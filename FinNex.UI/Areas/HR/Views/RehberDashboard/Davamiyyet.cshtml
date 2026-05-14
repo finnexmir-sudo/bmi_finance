@@ -8,10 +8,12 @@
     var list = Model ?? new List<DavamiyyetListDto>();
     var bugun = DateTime.Today;
 
+    var mezuniyyetIsciIds = ViewBag.MezuniyyetIsciIds as HashSet<int> ?? new HashSet<int>();
+    var mezuniyyetSayi = (int)(ViewBag.MezuniyyetSayi ?? 0);
     var gelibSayi = list.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
     var gecikmeSayi = list.Count(x => x.Status == DavamiyyetStatus.Gecikme);
     var qayibSayi = list.Count(x => x.Status == DavamiyyetStatus.Qayib);
-    var icazeliSayi = list.Count(x => x.Status == DavamiyyetStatus.Icazeli);
+    var icazeliSayi = list.Count(x => x.Status == DavamiyyetStatus.Icazeli && !mezuniyyetIsciIds.Contains(x.IsciId));
     var xestelikSayi = list.Count(x => x.Status == DavamiyyetStatus.Xestelik);
     var ezamiyyetSayi = list.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
     var cemi = list.Count;
@@ -36,6 +38,7 @@
 <div class="hrd-page"
      data-endpoint-getbytarix="@Url.Action("DavamiyyetGetByTarix", "RehberDashboard", new { area = "HR" })"
      data-endpoint-getgozlenilen="@Url.Action("DavamiyyetGetGozlenilen", "RehberDashboard", new { area = "HR" })"
+     data-endpoint-getmezuniyyetler="@Url.Action("GetMezuniyyetler", "RehberDashboard", new { area = "HR" })"
      data-endpoint-isciaxtar="@Url.Action("DavamiyyetIsciAxtar", "RehberDashboard", new { area = "HR" })"
      data-endpoint-exportexcel="@Url.Action("DavamiyyetExportExcel", "RehberDashboard", new { area = "HR" })"
      data-endpoint-tarixler="@Url.Action("DavamiyyetMovcudTarixler", "RehberDashboard", new { area = "HR" })"
@@ -114,6 +117,16 @@
                 <div class="hrd-kpi-lbl">Ezamiyyət</div>
             </div>
         </div>
+        <div class="hrd-kpi hrd-kpi--clickable" data-status="mezuniyyet"
+             title="Bugün məzuniyyətdə olan işçilər — kliklə siyahıya bax">
+            <div class="hrd-kpi-icon" style="background:rgba(16,185,129,.12);color:#10b981;">
+                <i class="bi bi-tree"></i>
+            </div>
+            <div class="hrd-kpi-body">
+                <div class="hrd-kpi-val" id="kpiMezuniyyet">@mezuniyyetSayi</div>
+                <div class="hrd-kpi-lbl">Məzuniyyət</div>
+            </div>
+        </div>
         <div class="hrd-kpi hrd-kpi--clickable" data-status="gozlenilen" title="Hələ qeydə alınmamış işçilər — kliklə gör">
             <div class="hrd-kpi-icon hrd-kpi-icon--indigo">
                 <i class="bi bi-hourglass-split"></i>
@@ -178,6 +191,7 @@
                     <option value="4">İcazəli</option>
                     <option value="5">Xəstəlik</option>
                     <option value="6">Ezamiyyət</option>
+                    <option value="mezuniyyet">Məzuniyyət</option>
                 </select>
             </div>
             <button id="hrdAxtar" class="hrd-btn hrd-btn--primary"><i class="bi bi-search"></i> Axtar</button>
@@ -203,6 +217,7 @@
                     <option value="4">İcazəli</option>
                     <option value="5">Xəstəlik</option>
                     <option value="6">Ezamiyyət</option>
+                    <option value="mezuniyyet">Məzuniyyət</option>
                 </select>
             </div>
             <button id="hrdAraliqAxtar" class="hrd-btn hrd-btn--primary"><i class="bi bi-search"></i> Axtar</button>
