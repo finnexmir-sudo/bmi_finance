@@ -38,9 +38,9 @@ public class GelenMailController : Controller
         _userManager = userManager;
     }
 
-    public async Task<IActionResult> Index(bool? oxunmamis, int? isciId, int page = 1)
+    public async Task<IActionResult> Index(bool? oxunmamis, int? isciId, string? q, int page = 1)
     {
-        var mails = await _mailService.GetListAsync(oxunmamis, isciId, page, 50);
+        var mails = await _mailService.GetListAsync(oxunmamis, isciId, page, 50, q);
         var oxunmamisSay = await _mailService.GetOxunmamisSayAsync();
         var iscilerResult = await _isciService.HamisiniGetirAsync();
         var isciler = iscilerResult.Success ? iscilerResult.Data!.ToList() : new();
@@ -49,6 +49,7 @@ public class GelenMailController : Controller
         ViewBag.Isciler = isciler;
         ViewBag.OxunmamisFilter = oxunmamis;
         ViewBag.IsciFilter = isciId;
+        ViewBag.Axtaris = q;
         ViewBag.Page = page;
         ViewData["Title"] = "Gələn Maillər";
 
