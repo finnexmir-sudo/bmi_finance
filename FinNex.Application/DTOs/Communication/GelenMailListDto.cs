@@ -13,4 +13,7 @@ public class GelenMailListDto
     public string? TapalanIsciAdSoyad { get; set; }
     public bool CavabVerildi { get; set; }
     public int? SenedId { get; set; }
+    public DateTime? DedlaynTarix { get; set; }
+    public string? DedlaynNov { get; set; }
+    public string? DedlaynQeyd { get; set; }
 }

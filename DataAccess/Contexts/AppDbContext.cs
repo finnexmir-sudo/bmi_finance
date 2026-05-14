@@ -87,6 +87,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     // Gələn Mail Modulu
     public DbSet<GelenMail> GelenMailler { get; set; }
     public DbSet<GelenMailQosma> GelenMailQosmalar { get; set; }
+    public DbSet<GelenMailIsci> GelenMailIsciler { get; set; }
 
     public DbSet<Mesaj> Mesajlar { get; set; }
     public DbSet<Bildiris> Bildirisler { get; set; }
@@ -1239,6 +1240,18 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .WithMany(x => x.Qosmalar)
             .HasForeignKey(x => x.GelenMailId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<GelenMailIsci>()
+            .HasOne(x => x.GelenMail)
+            .WithMany(x => x.TapalanIsciler)
+            .HasForeignKey(x => x.GelenMailId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<GelenMailIsci>()
+            .HasOne(x => x.Isci)
+            .WithMany()
+            .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Restrict);
 
     }
 

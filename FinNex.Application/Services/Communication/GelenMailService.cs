@@ -22,12 +22,13 @@ public class GelenMailService : IGelenMailService
             .AsNoTracking()
             .Where(x => !x.Silinib)
             .Include(x => x.TapalanIsci)
+            .Include(x => x.TapalanIsciler).ThenInclude(ti => ti.Isci)
             .Include(x => x.Qosmalar);
 
         if (oxunmamis == true)
             query = query.Where(x => !x.Oxunub);
         if (tapalanIsciId.HasValue)
-            query = query.Where(x => x.TapalanIsciId == tapalanIsciId);
+            query = query.Where(x => x.TapalanIsciler.Any(ti => ti.IsciId == tapalanIsciId));
 
         var mails = await query
             .OrderByDescending(x => x.AlinmaTarixi)
@@ -47,7 +48,10 @@ public class GelenMailService : IGelenMailService
             QosmaCount = m.Qosmalar.Count(q => !q.Silinib),
             TapalanIsciAdSoyad = m.TapalanIsci != null ? $"{m.TapalanIsci.Ad} {m.TapalanIsci.Soyad}" : null,
             CavabVerildi = m.CavabVerildi,
-            SenedId = m.SenedId
+            SenedId = m.SenedId,
+            DedlaynTarix = m.DedlaynTarix,
+            DedlaynNov = m.DedlaynNov,
+            DedlaynQeyd = m.DedlaynQeyd
         }).ToList();
     }
 
@@ -57,6 +61,7 @@ public class GelenMailService : IGelenMailService
             .AsNoTracking()
             .Where(x => x.Id == id && !x.Silinib)
             .Include(x => x.TapalanIsci)
+            .Include(x => x.TapalanIsciler).ThenInclude(ti => ti.Isci)
             .Include(x => x.Qosmalar)
             .FirstOrDefaultAsync();
 
@@ -81,6 +86,16 @@ public class GelenMailService : IGelenMailService
             TapalanIsciAdSoyad = m.TapalanIsci != null ? $"{m.TapalanIsci.Ad} {m.TapalanIsci.Soyad}" : null,
             TapalanQeyd = m.TapalanQeyd,
             TapalanTarix = m.TapalanTarix,
+            TapalanIsciler = m.TapalanIsciler.Select(ti => new GelenMailIsciDto
+            {
+                IsciId = ti.IsciId,
+                AdSoyad = ti.Isci != null ? $"{ti.Isci.Ad} {ti.Isci.Soyad}" : "",
+                TapalanTarix = ti.TapalanTarix,
+                Qeyd = ti.Qeyd
+            }).ToList(),
+            DedlaynTarix = m.DedlaynTarix,
+            DedlaynNov = m.DedlaynNov,
+            DedlaynQeyd = m.DedlaynQeyd,
             Qosmalar = m.Qosmalar.Where(q => !q.Silinib).Select(q => new GelenMailQosmaDto
             {
                 Id = q.Id,
@@ -106,18 +121,39 @@ public class GelenMailService : IGelenMailService
         }
     }
 
-    public async Task<bool> TapaAsync(int mailId, int isciId, string? qeyd, int rehberUserId)
+    public async Task<bool> TapaAsync(int mailId, List<int> isciIds, string? qeyd, int rehberUserId)
     {
         var mail = await _uow.Repository<GelenMail>().Query()
             .Where(x => x.Id == mailId && !x.Silinib)
+            .Include(x => x.TapalanIsciler)
             .FirstOrDefaultAsync();
 
-        if (mail == null) return false;
+        if (mail == null || isciIds.Count == 0) return false;
 
-        mail.TapalanIsciId = isciId;
+        // Köhnə tapşırmaları sil
+        foreach (var old in mail.TapalanIsciler.ToList())
+            old.Silinib = true;
+
+        // Yeni tapşırmalar yarat
+        var now = DateTime.Now;
+        foreach (var isciId in isciIds)
+        {
+            mail.TapalanIsciler.Add(new GelenMailIsci
+            {
+                IsciId = isciId,
+                TapalanIsciTarafindan = rehberUserId,
+                TapalanTarix = now,
+                Qeyd = qeyd,
+                YaradilmaTarixi = now
+            });
+        }
+
+        // Əsas işçi — geriyəuyğunluq
+        mail.TapalanIsciId = isciIds.First();
         mail.TapalanIsciTarafindan = rehberUserId;
-        mail.TapalanTarix = DateTime.Now;
+        mail.TapalanTarix = now;
         mail.TapalanQeyd = qeyd;
+
         await _uow.YaddaSaxlaAsync();
         return true;
     }
@@ -133,7 +169,6 @@ public class GelenMailService : IGelenMailService
         var qosma = mail.Qosmalar.FirstOrDefault(q => q.Id == qosmaId && !q.Silinib);
         if (qosma == null || !File.Exists(qosma.FaylYolu)) return null;
 
-        // Create Sened record pointing to source file
         var sened = new Sened
         {
             Basliq = $"Mail qoşması: {qosma.FaylAdi}",
@@ -143,7 +178,6 @@ public class GelenMailService : IGelenMailService
             ReferenceId = mail.Id,
             YaradilmaTarixi = DateTime.Now,
             YaradanIcraciId = yaradanUserId,
-            // DepartmentId and SenedNovuId must be supplied by caller or set defaults — use 1 as fallback
             DepartmentId = 1,
             SenedNovuId = 1
         };
@@ -164,14 +198,23 @@ public class GelenMailService : IGelenMailService
             .CountAsync(x => !x.Silinib && !x.Oxunub);
     }
 
-    public async Task SaveAIXulaseAsync(int id, string xulase)
+    public async Task SaveAINeticAsync(int id, AIMailTahlilNetic netic)
     {
         var mail = await _uow.Repository<GelenMail>().Query()
             .Where(x => x.Id == id && !x.Silinib)
             .FirstOrDefaultAsync();
         if (mail == null) return;
-        mail.AIXulase = xulase;
+
+        mail.AIXulase = netic.Xulase;
         mail.AITahlilTarixi = DateTime.Now;
+
+        if (netic.DedlaynTarix.HasValue && netic.DedlaynTarix.Value > DateTime.Now)
+        {
+            mail.DedlaynTarix = netic.DedlaynTarix;
+            mail.DedlaynNov = netic.DedlaynNov;
+            mail.DedlaynQeyd = netic.DedlaynQeyd;
+        }
+
         await _uow.YaddaSaxlaAsync();
     }
 }
