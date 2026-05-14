@@ -370,7 +370,14 @@
     min-height: 200px;
 }
 .gm-mail-html { font-size: .9rem; line-height: 1.7; color: var(--gm-text); }
-.gm-mail-html img { max-width: 100%; }
+.gm-mail-html img { max-width: 100%; height: auto; }
+/* Hide broken/cid images cleanly */
+.gm-mail-html img.gm-img-broken { display: none; }
+.gm-img-blocked-note {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #f1f5f9; color: #64748b; border-radius: 6px;
+    padding: 3px 8px; font-size: .75rem; margin: 2px 0;
+}
 .gm-mail-plain { font-size: .85rem; white-space: pre-wrap; color: var(--gm-text); line-height: 1.6; font-family: inherit; }
 
 /* ── Attachments ── */
@@ -417,50 +424,53 @@
 
 /* ══ AI Hero Card (full-width, top of detail page) ══ */
 .gm-ai-hero {
-    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0c2d54 100%);
+    background: #ffffff;
+    border: 1.5px solid #e0e7ff;
+    border-left: 4px solid #6366f1;
     border-radius: var(--gm-radius);
     margin-bottom: 20px;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(15,23,42,.18);
+    box-shadow: 0 2px 8px rgba(99,102,241,.08);
 }
 .gm-ai-hero-header {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 14px 20px 10px;
-    border-bottom: 1px solid rgba(255,255,255,.1);
+    padding: 12px 18px 10px;
+    border-bottom: 1px solid #e0e7ff;
+    background: #f5f3ff;
 }
 .gm-ai-hero-icon {
-    width: 32px; height: 32px; border-radius: 8px;
+    width: 28px; height: 28px; border-radius: 7px;
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
     display: flex; align-items: center; justify-content: center;
-    color: #fff; font-size: 1rem; flex-shrink: 0;
+    color: #fff; font-size: .9rem; flex-shrink: 0;
 }
 .gm-ai-hero-title {
-    font-weight: 700; font-size: .95rem; color: #e2e8f0; letter-spacing: .02em;
+    font-weight: 700; font-size: .9rem; color: #3730a3; letter-spacing: .01em;
 }
 .gm-ai-hero-time {
-    margin-left: auto; font-size: .75rem; color: #94a3b8;
+    margin-left: auto; font-size: .75rem; color: #818cf8;
 }
 .gm-ai-hero-body {
-    padding: 18px 20px 20px;
+    padding: 16px 20px 18px;
 }
 
-/* Override markdown styles inside hero (light text on dark bg) */
+/* Markdown inside hero — dark text on white */
 .gm-ai-hero .gm-markdown h1,
 .gm-ai-hero .gm-markdown h2,
 .gm-ai-hero .gm-markdown h3 {
-    font-size: .92rem; font-weight: 700; color: #c7d2fe;
-    margin: 12px 0 5px; border-bottom: 1px solid rgba(255,255,255,.1); padding-bottom: 4px;
+    font-size: .9rem; font-weight: 700; color: #3730a3;
+    margin: 12px 0 5px; border-bottom: 1px solid #e0e7ff; padding-bottom: 3px;
 }
 .gm-ai-hero .gm-markdown h2:first-child { margin-top: 0; }
-.gm-ai-hero .gm-markdown p  { font-size: .88rem; color: #cbd5e1; margin: 5px 0; line-height: 1.65; }
+.gm-ai-hero .gm-markdown p  { font-size: .88rem; color: #374151; margin: 4px 0; line-height: 1.65; }
 .gm-ai-hero .gm-markdown ul,
-.gm-ai-hero .gm-markdown ol { font-size: .88rem; color: #cbd5e1; padding-left: 20px; margin: 5px 0; }
+.gm-ai-hero .gm-markdown ol { font-size: .88rem; color: #374151; padding-left: 20px; margin: 5px 0; }
 .gm-ai-hero .gm-markdown li { margin-bottom: 3px; }
-.gm-ai-hero .gm-markdown strong { color: #f1f5f9; }
-.gm-ai-hero .gm-ai-loading { color: #94a3b8; }
-.gm-ai-hero .gm-ai-spinner { border-color: rgba(255,255,255,.15); border-top-color: #818cf8; }
+.gm-ai-hero .gm-markdown strong { color: #1e1b4b; }
+.gm-ai-hero .gm-ai-loading { color: #818cf8; }
+.gm-ai-hero .gm-ai-spinner { border-color: #e0e7ff; border-top-color: #6366f1; }
 
 /* Two-column layout no longer needs AI card in sidebar */
 .gm-ai-card { display: none; }
