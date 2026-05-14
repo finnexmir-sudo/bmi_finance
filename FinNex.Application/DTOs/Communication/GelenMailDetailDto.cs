@@ -19,7 +19,19 @@ public class GelenMailDetailDto
     public string? TapalanIsciAdSoyad { get; set; }
     public string? TapalanQeyd { get; set; }
     public DateTime? TapalanTarix { get; set; }
+    public List<GelenMailIsciDto> TapalanIsciler { get; set; } = new();
+    public DateTime? DedlaynTarix { get; set; }
+    public string? DedlaynNov { get; set; }
+    public string? DedlaynQeyd { get; set; }
     public List<GelenMailQosmaDto> Qosmalar { get; set; } = new();
+}
+
+public class GelenMailIsciDto
+{
+    public int IsciId { get; set; }
+    public string AdSoyad { get; set; } = "";
+    public DateTime TapalanTarix { get; set; }
+    public string? Qeyd { get; set; }
 }
 
 public class GelenMailQosmaDto

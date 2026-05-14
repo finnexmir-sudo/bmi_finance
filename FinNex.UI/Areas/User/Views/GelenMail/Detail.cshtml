@@ -4,6 +4,23 @@
 @{
     ViewData["Title"] = Model.Movzu;
     var isciler = ViewBag.Isciler as IEnumerable<IsciListDto> ?? Enumerable.Empty<IsciListDto>();
+    var tapalanIds = Model.TapalanIsciler.Select(ti => ti.IsciId).ToHashSet();
+
+    string DedlaynClass(DateTime? t) {
+        if (!t.HasValue) return "";
+        var diff = (t.Value.Date - DateTime.Today).TotalDays;
+        if (diff < 0) return "gm-dedlayn--kecib";
+        if (diff <= 2) return "gm-dedlayn--bugun";
+        if (diff <= 7) return "gm-dedlayn--yaxin";
+        return "gm-dedlayn--gozle";
+    }
+    string DedlaynLabel(string? nov) => nov switch {
+        "Gorus"    => "Görüş",
+        "Hesabat"  => "Hesabat",
+        "Muqavile" => "Müqavilə",
+        "SonTarix" => "Son tarix",
+        _          => "Deadline"
+    };
 }
 
 <link rel="stylesheet" href="~/css/User/gelen-mail.css" asp-append-version="true" />
@@ -24,9 +41,28 @@
         }
     </div>
 
+    @if (Model.DedlaynTarix.HasValue)
+    {
+        <div class="gm-dedlayn-banner @DedlaynClass(Model.DedlaynTarix)">
+            <i class="bi bi-alarm-fill"></i>
+            <strong>@DedlaynLabel(Model.DedlaynNov):</strong>
+            @Model.DedlaynTarix.Value.ToString("dd MMMM yyyy")
+            @if (!string.IsNullOrWhiteSpace(Model.DedlaynQeyd))
+            {
+                <span class="gm-dedlayn-qeyd">— @Model.DedlaynQeyd</span>
+            }
+            @{
+                var diff = (Model.DedlaynTarix.Value.Date - DateTime.Today).TotalDays;
+                if (diff < 0)      { <span class="gm-dedlayn-chip gm-dedlayn-chip--red">@(-(int)diff) gün keçib</span> }
+                else if (diff == 0){ <span class="gm-dedlayn-chip gm-dedlayn-chip--red">Bu gün!</span> }
+                else if (diff <= 7){ <span class="gm-dedlayn-chip gm-dedlayn-chip--amber">@((int)diff) gün qaldı</span> }
+                else               { <span class="gm-dedlayn-chip gm-dedlayn-chip--green">@((int)diff) gün qaldı</span> }
+            }
+        </div>
+    }
+
     <div class="gm-detail-layout">
 
-        <!-- ── Sol: Mail məzmunu ─────────────────────────── -->
         <div class="gm-detail-main">
             <div class="gm-mail-header">
                 <h2 class="gm-mail-subject">@Model.Movzu</h2>
@@ -51,7 +87,6 @@
                 }
             </div>
 
-            <!-- Qoşmalar -->
             @if (Model.Qosmalar.Any())
             {
                 <div class="gm-attachments">
@@ -73,8 +108,7 @@
                                     @if (!string.IsNullOrWhiteSpace(q.CixarilmisMetin))
                                     {
                                         <button class="gm-btn gm-btn-sm gm-btn-ghost"
-                                                onclick="toggleText('@q.Id')"
-                                                title="Mətn görüntülə">
+                                                onclick="toggleText('@q.Id')" title="Mətn görüntülə">
                                             <i class="bi bi-eye"></i>
                                         </button>
                                     }
@@ -89,7 +123,6 @@
                                         </button>
                                     </form>
                                 </div>
-
                                 @if (!string.IsNullOrWhiteSpace(q.CixarilmisMetin))
                                 {
                                     <div id="text-@q.Id" class="gm-attachment-text" style="display:none">
@@ -103,10 +136,9 @@
             }
         </div>
 
-        <!-- ── Sağ: AI xülasəsi + Tapşırma ─────────────── -->
         <div class="gm-detail-sidebar">
 
-            <!-- AI Analysis Card -->
+            <!-- AI Card -->
             <div class="gm-card gm-ai-card">
                 <div class="gm-card-header">
                     <i class="bi bi-robot"></i> AI Təhlili
@@ -118,7 +150,8 @@
                 <div class="gm-card-body">
                     @if (!string.IsNullOrEmpty(Model.AIXulase))
                     {
-                        <div class="gm-ai-text">@Html.Raw(Model.AIXulase.Replace("\n", "<br/>"))</div>
+                        <div class="gm-ai-text gm-markdown" id="aiMarkdown"
+                             data-raw="@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AIXulase))"></div>
                     }
                     else
                     {
@@ -129,45 +162,62 @@
                 </div>
             </div>
 
-            <!-- Assign Card -->
+            <!-- Tapşırılmış işçilər -->
+            @if (Model.TapalanIsciler.Any())
+            {
+                <div class="gm-card">
+                    <div class="gm-card-header"><i class="bi bi-people-fill"></i> Tapşırılıb</div>
+                    <div class="gm-card-body" style="padding:10px 14px">
+                        @foreach (var ti in Model.TapalanIsciler)
+                        {
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.83rem">
+                                <div style="width:28px;height:28px;border-radius:50%;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem;flex-shrink:0">
+                                    @(ti.AdSoyad.Length > 0 ? ti.AdSoyad[0].ToString() : "?")
+                                </div>
+                                <div>
+                                    <div style="font-weight:600;color:#1a2332">@ti.AdSoyad</div>
+                                    <div style="font-size:.72rem;color:#9ca3af">@ti.TapalanTarix.ToString("dd.MM HH:mm")</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Assign Card — checkbox -->
             <div class="gm-card">
                 <div class="gm-card-header">
                     <i class="bi bi-person-check"></i> İşçiyə Tapşır
                 </div>
                 <div class="gm-card-body">
-                    @if (Model.TapalanIsciId.HasValue)
-                    {
-                        <div class="gm-assigned-info">
-                            <i class="bi bi-check-circle-fill text-success"></i>
-                            <strong>@Model.TapalanIsciAdSoyad</strong> tapşırılıb
-                            @if (Model.TapalanTarix.HasValue)
-                            {
-                                <span>(@Model.TapalanTarix.Value.ToString("dd.MM HH:mm"))</span>
-                            }
-                            @if (!string.IsNullOrEmpty(Model.TapalanQeyd))
-                            {
-                                <p class="gm-assigned-note">@Model.TapalanQeyd</p>
-                            }
-                        </div>
-                    }
                     <form asp-action="Tapa" method="post">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="mailId" value="@Model.Id" />
+
                         <div class="gm-form-group">
-                            <label>İşçi</label>
-                            <select name="isciId" class="gm-select" required>
-                                <option value="">Seçin...</option>
+                            <label style="font-size:.75rem;font-weight:600;color:#6b7280;margin-bottom:6px;display:block">
+                                İşçilər <span style="font-size:.7rem;font-weight:400">(bir neçə seçmək olar)</span>
+                            </label>
+                            <div class="gm-isci-list">
                                 @foreach (var isci in isciler)
                                 {
-                                    <option value="@isci.Id"
-                                            selected="@(Model.TapalanIsciId == isci.Id)">
-                                        @isci.TamAd
-                                    </option>
+                                    var isChecked = tapalanIds.Contains(isci.Id);
+                                    <label class="gm-isci-item @(isChecked ? "gm-isci-item--checked" : "")">
+                                        <input type="checkbox" name="isciIds" value="@isci.Id"
+                                               @(isChecked ? "checked" : "") />
+                                        <div class="gm-isci-avatar">@(isci.TamAd.Length > 0 ? isci.TamAd[0].ToString() : "?")</div>
+                                        <span class="gm-isci-ad">@isci.TamAd</span>
+                                        @if (isChecked)
+                                        {
+                                            <i class="bi bi-check-circle-fill" style="color:#10b981;margin-left:auto;font-size:.8rem"></i>
+                                        }
+                                    </label>
                                 }
-                            </select>
+                            </div>
                         </div>
-                        <div class="gm-form-group">
-                            <label>Qeyd (ixtiyari)</label>
+
+                        <div class="gm-form-group" style="margin-top:10px">
+                            <label style="font-size:.75rem;font-weight:600;color:#6b7280;margin-bottom:6px;display:block">Qeyd (ixtiyari)</label>
                             <textarea name="qeyd" class="gm-textarea" rows="2"
                                       placeholder="Tapşırıq haqqında qeyd...">@Model.TapalanQeyd</textarea>
                         </div>
@@ -178,7 +228,6 @@
                 </div>
             </div>
 
-            <!-- Status Card -->
             @if (Model.SenedId.HasValue)
             {
                 <div class="gm-card gm-status-card">
@@ -210,9 +259,21 @@
     }
 }
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
 function toggleText(id) {
     const el = document.getElementById('text-' + id);
     if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
+(function () {
+    var el = document.getElementById('aiMarkdown');
+    if (!el) return;
+    var raw = JSON.parse(el.getAttribute('data-raw') || '""');
+    if (raw) el.innerHTML = marked.parse(raw);
+})();
+document.querySelectorAll('.gm-isci-item input[type=checkbox]').forEach(function (cb) {
+    cb.addEventListener('change', function () {
+        this.closest('.gm-isci-item').classList.toggle('gm-isci-item--checked', this.checked);
+    });
+});
 </script>

@@ -622,6 +622,50 @@ END
                 }
                 catch { }
 
+                // GelenMailler — yeni sütunlar (deadline + xatirlatma flag)
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'GelenMailler')
+                        BEGIN
+                            IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailler' AND COLUMN_NAME='DedlaynTarix')
+                                ALTER TABLE [GelenMailler] ADD [DedlaynTarix] DATETIME2 NULL;
+                            IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailler' AND COLUMN_NAME='DedlaynNov')
+                                ALTER TABLE [GelenMailler] ADD [DedlaynNov] NVARCHAR(50) NULL;
+                            IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailler' AND COLUMN_NAME='DedlaynQeyd')
+                                ALTER TABLE [GelenMailler] ADD [DedlaynQeyd] NVARCHAR(500) NULL;
+                            IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailler' AND COLUMN_NAME='DedlaynXatirlatmaYaradildi')
+                                ALTER TABLE [GelenMailler] ADD [DedlaynXatirlatmaYaradildi] BIT NOT NULL DEFAULT 0;
+                        END
+                    ");
+                }
+                catch { }
+
+                // GelenMailIsciler cədvəli (çoxlu işçiyə tapşırma)
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'GelenMailIsciler')
+                        BEGIN
+                            CREATE TABLE [GelenMailIsciler] (
+                                [Id]                      INT IDENTITY(1,1) PRIMARY KEY,
+                                [GelenMailId]             INT NOT NULL,
+                                [IsciId]                  INT NOT NULL,
+                                [TapalanIsciTarafindan]   INT NOT NULL DEFAULT 0,
+                                [TapalanTarix]            DATETIME2 NOT NULL,
+                                [Qeyd]                    NVARCHAR(1000) NULL,
+                                [YaradilmaTarixi]         DATETIME2 NOT NULL DEFAULT GETDATE(),
+                                [Silinib]                 BIT NOT NULL DEFAULT 0,
+                                CONSTRAINT [FK_GelenMailIsciler_Mail]  FOREIGN KEY ([GelenMailId]) REFERENCES [GelenMailler]([Id]) ON DELETE CASCADE,
+                                CONSTRAINT [FK_GelenMailIsciler_Isci]  FOREIGN KEY ([IsciId])      REFERENCES [Isciler]([Id])
+                            );
+                            CREATE INDEX [IX_GelenMailIsciler_MailId] ON [GelenMailIsciler] ([GelenMailId]);
+                            CREATE INDEX [IX_GelenMailIsciler_IsciId] ON [GelenMailIsciler] ([IsciId]);
+                        END
+                    ");
+                }
+                catch { }
+
                 // TapalanIsci FK (ayrıca — GelenMailler cədvəli artıq mövcuddursa əlavə et)
                 try
                 {

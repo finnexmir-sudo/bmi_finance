@@ -34,6 +34,7 @@ namespace FinNex.Domain.Entities.Communication
         Gorush = 2,
         Mezuniyyet = 3,
         Icaze = 4,
-        Teyinat = 5       // İşçi təyinatı/müqavilə müddəti bitmə
+        Teyinat = 5,      // İşçi təyinatı/müqavilə müddəti bitmə
+        GelenMail = 6     // Gələn maildən aşkar edilmiş deadline
     }
 }
