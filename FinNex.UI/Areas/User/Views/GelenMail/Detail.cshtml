@@ -64,6 +64,35 @@
     }
     <div id="dedlaynBanner" style="display:none"></div>
 
+    <!-- AI Təhlili — tam genişlikdə, ən üstdə -->
+    <div class="gm-ai-hero" id="aiHeroCard">
+        <div class="gm-ai-hero-header">
+            <span class="gm-ai-hero-icon"><i class="bi bi-stars"></i></span>
+            <span class="gm-ai-hero-title">AI Təhlili</span>
+            @if (Model.AITahlilTarixi.HasValue)
+            {
+                <span class="gm-ai-hero-time">@Model.AITahlilTarixi.Value.ToString("HH:mm")</span>
+            }
+        </div>
+        <div class="gm-ai-hero-body">
+            @if (!string.IsNullOrEmpty(Model.AIXulase))
+            {
+                <div class="gm-ai-text gm-markdown" id="aiMarkdown"></div>
+                <script>
+                    window.__aiRaw = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AIXulase));
+                </script>
+            }
+            else
+            {
+                <div class="gm-ai-loading" id="aiLoading">
+                    <div class="gm-ai-spinner"></div>
+                    <span>Təhlil edilir...</span>
+                </div>
+                <div class="gm-ai-text gm-markdown" id="aiMarkdown" style="display:none"></div>
+            }
+        </div>
+    </div>
+
     <div class="gm-detail-layout">
 
         <!-- Sol: mail mətni -->
@@ -138,36 +167,8 @@
             }
         </div>
 
-        <!-- Sağ: sidebar -->
+        <!-- Sağ: sidebar (tapşırma + sənəd) -->
         <div class="gm-detail-sidebar">
-
-            <!-- AI Card -->
-            <div class="gm-card gm-ai-card">
-                <div class="gm-card-header">
-                    <i class="bi bi-robot"></i> AI Təhlili
-                    @if (Model.AITahlilTarixi.HasValue)
-                    {
-                        <span class="gm-ai-date">@Model.AITahlilTarixi.Value.ToString("HH:mm")</span>
-                    }
-                </div>
-                <div class="gm-card-body">
-                    @if (!string.IsNullOrEmpty(Model.AIXulase))
-                    {
-                        <div class="gm-ai-text gm-markdown" id="aiMarkdown"></div>
-                        <script>
-                            window.__aiRaw = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AIXulase));
-                        </script>
-                    }
-                    else
-                    {
-                        <div class="gm-ai-loading" id="aiLoading">
-                            <div class="gm-ai-spinner"></div>
-                            <span>Təhlil edilir...</span>
-                        </div>
-                        <div class="gm-ai-text gm-markdown" id="aiMarkdown" style="display:none"></div>
-                    }
-                </div>
-            </div>
 
             <!-- Tapşırılmış işçilər -->
             @if (Model.TapalanIsciler.Any())
