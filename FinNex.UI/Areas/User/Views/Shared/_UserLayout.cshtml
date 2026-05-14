@@ -295,12 +295,20 @@
                        class="fn-nav-item fn-nav-item--sub @(currentController == "RehberDashboard" && currentAction == "IcazeIzleme" ? "active" : "")">
                         <i class="bi bi-bar-chart-line"></i> İcazə İzləmə
                     </a>
+                    <a asp-area="HR" asp-controller="Teklif" asp-action="Index"
+                       class="fn-nav-item @(currentArea == "HR" && currentController == "Teklif" ? "active" : "")">
+                        <i class="bi bi-lightbulb-fill"></i> Təkliflər (İdarə)
+                    </a>
                 }
                 @if (isHR)
                 {
                     <a asp-area="HR" asp-controller="Dashboard" asp-action="Index"
                        class="fn-nav-item @(currentArea == "HR" && currentController == "Dashboard" ? "active" : "")">
                         <i class="bi bi-clipboard2-pulse"></i> HR Dashboard
+                    </a>
+                    <a asp-area="HR" asp-controller="Teklif" asp-action="Index"
+                       class="fn-nav-item @(currentArea == "HR" && currentController == "Teklif" ? "active" : "")">
+                        <i class="bi bi-lightbulb-fill"></i> Təkliflər (İdarə)
                     </a>
                 }
                 <a asp-area="User" asp-controller="Profile" asp-action="Index"
