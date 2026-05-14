@@ -170,7 +170,7 @@ public class GelenMailController : Controller
         if (senedId.HasValue)
         {
             TempData["Success"] = "Qoşma sənəd dövriyyəsinə əlavə edildi.";
-            return RedirectToAction("Detail", "Sened", new { area = "User", id = senedId });
+            return RedirectToAction("Detal", "Sened", new { area = "SenedDovriyyesi", id = senedId });
         }
 
         TempData["Error"] = "Sənədə çevirmə uğursuz oldu.";

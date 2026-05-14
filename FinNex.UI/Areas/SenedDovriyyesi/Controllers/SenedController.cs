@@ -1056,7 +1056,7 @@ public class SenedController : Controller
         YaradilmaTarixi = dto.YaradilmaTarixi,
         YenilenmeTarixi = dto.YenilenmeTarixi,
         Tags = dto.Tags,
-        Fayllar = dto.Fayllar.Select(f => new SenedFaylItemVM
+        Fayllar = (dto.Fayllar ?? new()).Select(f => new SenedFaylItemVM
         {
             Id = f.Id,
             VersiyaNo = f.VersiyaNo,
@@ -1067,7 +1067,7 @@ public class SenedController : Controller
             AktivVersiya = f.AktivVersiya,
             YaradilmaTarixi = f.YaradilmaTarixi
         }).ToList(),
-        AuditLogs = dto.AuditLogs.Select(l => new AuditLogItemVM
+        AuditLogs = (dto.AuditLogs ?? new()).Select(l => new AuditLogItemVM
         {
             Id = l.Id,
             UserId = l.UserId,
