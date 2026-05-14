@@ -54,6 +54,9 @@ namespace FinNex.Domain.Entities.Communication
 
         // Teklif / Boşluq / Şikayət iş axını
         TeklifGonderildi = 36,
-        TeklifCavab = 37
+        TeklifCavab = 37,
+
+        // Gələn Mail
+        YeniGelenMail = 38
     }
 }
