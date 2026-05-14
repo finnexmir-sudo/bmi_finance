@@ -238,7 +238,7 @@
         b < 1024 ? $"{b} B" : b < 1048576 ? $"{b/1024.0:F1} KB" : $"{b/1048576.0:F1} MB";
 
     string GetFileIcon(string f) {
-        var e = Path.GetExtension(f ?? "").ToLowerInvariant();
+        var e = System.IO.Path.GetExtension(f ?? "").ToLowerInvariant();
         if (e == ".pdf") return "bi-file-earmark-pdf text-danger";
         if (e == ".docx" || e == ".doc") return "bi-file-earmark-word text-primary";
         if (e == ".xlsx" || e == ".xls") return "bi-file-earmark-excel text-success";
