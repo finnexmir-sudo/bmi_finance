@@ -92,29 +92,42 @@
     gap: 4px;
 }
 
+/* Wrap handles border/bg/shadow; flex row so delete btn sits outside the link */
+.gm-item-wrap {
+    display: flex;
+    align-items: stretch;
+    background: var(--gm-surface);
+    border: 1px solid var(--gm-border);
+    border-radius: var(--gm-radius);
+    transition: box-shadow .15s, border-color .15s, transform .12s;
+}
+.gm-item-wrap:hover {
+    box-shadow: 0 4px 12px rgba(59,130,246,.12);
+    border-color: #93c5fd;
+    transform: translateY(-1px);
+}
+.gm-item-wrap--unread {
+    background: var(--gm-unread-bg);
+    border-color: #bfdbfe;
+}
+
 .gm-item {
     display: grid;
     grid-template-columns: 4px 44px 1fr auto;
     align-items: center;
     gap: 12px;
     padding: 14px 16px 14px 0;
-    background: var(--gm-surface);
-    border-radius: var(--gm-radius);
-    border: 1px solid var(--gm-border);
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--gm-radius) 0 0 var(--gm-radius);
     text-decoration: none;
     color: inherit;
-    transition: box-shadow .15s, border-color .15s, transform .12s;
 }
 .gm-item:hover {
-    box-shadow: 0 4px 12px rgba(59,130,246,.12);
-    border-color: #93c5fd;
-    transform: translateY(-1px);
     text-decoration: none;
     color: inherit;
-}
-.gm-item--unread {
-    background: var(--gm-unread-bg);
-    border-color: #bfdbfe;
 }
 .gm-item--unread .gm-item-indicator {
     background: var(--gm-unread-border);
@@ -523,12 +536,18 @@
 .gm-markdown strong { color: #1a2332; }
 
 /* ── Sil düyməsi (siyahıda) ── */
-.gm-item-wrap { position: relative; }
-.gm-item-sil-form { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: none; }
-.gm-item-wrap:hover .gm-item-sil-form { display: block; }
+.gm-item-sil-form {
+    display: none;
+    align-items: center;
+    padding: 0 10px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--gm-border);
+    border-radius: 0 var(--gm-radius) var(--gm-radius) 0;
+}
+.gm-item-wrap:hover .gm-item-sil-form { display: flex; }
 .gm-item-sil-btn {
     background: #fee2e2; border: none; color: #dc2626;
-    width: 28px; height: 28px; border-radius: 6px;
+    width: 30px; height: 30px; border-radius: 6px;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; font-size: .8rem;
 }

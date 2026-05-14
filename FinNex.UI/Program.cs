@@ -657,6 +657,10 @@ END
                                 ALTER TABLE [GelenMailIsciler] ADD [YenilenmeTarixi] DATETIME2 NULL;
                             IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailIsciler' AND COLUMN_NAME='SilinmeTarixi')
                                 ALTER TABLE [GelenMailIsciler] ADD [SilinmeTarixi] DATETIME2 NULL;
+                            IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailIsciler' AND COLUMN_NAME='IcraOlundu')
+                                ALTER TABLE [GelenMailIsciler] ADD [IcraOlundu] BIT NOT NULL DEFAULT 0;
+                            IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailIsciler' AND COLUMN_NAME='IcraOlunduTarix')
+                                ALTER TABLE [GelenMailIsciler] ADD [IcraOlunduTarix] DATETIME2 NULL;
                         END
 
                         IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'GelenMailIsciler')
@@ -674,6 +678,8 @@ END
                                 [SilenIcraciId]           INT NULL,
                                 [YenilenmeTarixi]         DATETIME2 NULL,
                                 [SilinmeTarixi]           DATETIME2 NULL,
+                                [IcraOlundu]              BIT NOT NULL DEFAULT 0,
+                                [IcraOlunduTarix]         DATETIME2 NULL,
                                 [Silinib]                 BIT NOT NULL DEFAULT 0,
                                 CONSTRAINT [FK_GelenMailIsciler_Mail]  FOREIGN KEY ([GelenMailId]) REFERENCES [GelenMailler]([Id]) ON DELETE CASCADE,
                                 CONSTRAINT [FK_GelenMailIsciler_Isci]  FOREIGN KEY ([IsciId])      REFERENCES [Isciler]([Id])
