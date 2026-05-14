@@ -61,7 +61,9 @@
         if (currentController == "Hesabat" || currentController == "HesabatIzleme") return "hesabat";
         if (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye") return "hr";
         if (currentController is "Davamiyyet" or "Takvim" or "Mezuniyyet" or "Muraciet"
-            or "Tapshiriq" or "Gorush" or "Icaze" or "Maas" or "Xerc" or "Avans" or "Teklif")
+            or "Tapshiriq" or "Gorush" or "Icaze" or "Maas" or "Xerc" or "Avans")
+            return "emekdas";
+        if (currentController == "Teklif" && currentAction != "Idare")
             return "emekdas";
         return "home";
     }
@@ -327,7 +329,8 @@
 
             case "emekdas":
                 {
-                    var emekPortalActive = currentController is "Davamiyyet" or "Takvim" or "Mezuniyyet" or "Icaze" or "Muraciet" or "Tapshiriq" or "Gorush" or "Performans" or "Teklif";
+                    var emekPortalActive = currentController is "Davamiyyet" or "Takvim" or "Mezuniyyet" or "Icaze" or "Muraciet" or "Tapshiriq" or "Gorush" or "Performans"
+                        || (currentController == "Teklif" && currentAction != "Idare");
                     var emekMaliyyeActive = currentArea == "User" && (currentController == "Maas" || currentController == "Avans" || currentController == "Xerc");
                     var emekJetonActive = currentArea == "User" && currentController == "Jeton";
                     <div class="fn-nav-g @(emekPortalActive ? "open" : "")">
@@ -369,7 +372,7 @@
                                 <i class="bi bi-star"></i> Performans
                             </a>
                             <a asp-area="User" asp-controller="Teklif" asp-action="Index"
-                               class="fn-nav-item @(currentController == "Teklif" ? "active" : "")">
+                               class="fn-nav-item @(currentController == "Teklif" && currentAction != "Idare" ? "active" : "")">
                                 <i class="bi bi-lightbulb-fill"></i> Təkliflər
                             </a>
                         </div>
