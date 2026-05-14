@@ -224,6 +224,15 @@
                 <i class="bi bi-chat-dots"></i>
                 <span class="fn-topnav-badge" id="chatCount" style="display:none">0</span>
             </a>
+            @if (isRehberRol || isAdmin)
+            {
+                <a asp-area="User" asp-controller="GelenMail" asp-action="Index"
+                   class="fn-topnav-icon" id="gelenMailBtn" title="Gələn Maillər"
+                   style="color:#0f766e">
+                    <i class="bi bi-envelope-fill"></i>
+                    <span class="fn-topnav-badge fn-topnav-badge--teal" id="gelenMailCount" style="display:none">0</span>
+                </a>
+            }
             <a asp-area="User" asp-controller="Inbox" asp-action="Index"
                asp-route-tab="bildirisler"
                class="fn-topnav-icon" id="notifBtn" title="Bildirişlər">
@@ -917,22 +926,29 @@
 
 <script>
 (function () {
-    var badge = document.querySelector('.fn-mail-badge');
-    if (!badge) return;
-    var url = badge.getAttribute('data-badge-url');
+    // Nav sidebar badge (köhnə)
+    var navBadge = document.querySelector('.fn-mail-badge');
+    // Topbar badge
+    var topBadge = document.getElementById('gelenMailCount');
+    if (!navBadge && !topBadge) return;
+    var url = (navBadge && navBadge.getAttribute('data-badge-url'))
+           || '@Url.Action("OxunmamisSay", "GelenMail", new { area = "User" })';
     if (!url) return;
-    function refreshBadge() {
+    function refreshMailBadge() {
         fetch(url).then(function(r){ return r.json(); }).then(function(d){
-            if (d.say > 0) {
-                badge.textContent = d.say;
-                badge.style.display = 'inline-flex';
-            } else {
-                badge.style.display = 'none';
+            var say = d.say || 0;
+            if (navBadge) {
+                navBadge.textContent = say;
+                navBadge.style.display = say > 0 ? 'inline-flex' : 'none';
+            }
+            if (topBadge) {
+                topBadge.textContent = say;
+                topBadge.style.display = say > 0 ? 'inline-flex' : 'none';
             }
         }).catch(function(){});
     }
-    refreshBadge();
-    setInterval(refreshBadge, 120000);
+    refreshMailBadge();
+    setInterval(refreshMailBadge, 120000);
 })();
 </script>
 
