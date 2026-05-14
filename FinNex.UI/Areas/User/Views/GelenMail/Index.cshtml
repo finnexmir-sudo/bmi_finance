@@ -59,7 +59,7 @@
                 <div class="gm-filter-group">
                     <select name="oxunmamis" class="gm-select" onchange="this.form.submit()">
                         <option value="">Hamısı</option>
-                        <option value="true" @(oxunmamisFilter == true ? "selected" : "")>Oxunmamış</option>
+                        <option value="true" selected="@(oxunmamisFilter == true)">Oxunmamış</option>
                     </select>
                 </div>
                 <button type="submit" class="gm-btn gm-btn-outline">
