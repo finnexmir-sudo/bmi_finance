@@ -299,6 +299,7 @@
 }
 .gm-alert--success { background: #dcfce7; color: #15803d; }
 .gm-alert--error { background: #fee2e2; color: #b91c1c; }
+.gm-alert--info { background: #eff6ff; color: #1d4ed8; }
 
 /* ══════════════════════════════════════════
    Detail Page
