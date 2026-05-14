@@ -1,5 +1,6 @@
 @model FinNex.Application.DTOs.Communication.GelenMailDetailDto
 @using FinNex.Application.DTOs.HR.Isci
+@using System.IO
 @{
     ViewData["Title"] = Model.Movzu;
     var isciler = ViewBag.Isciler as IEnumerable<IsciListDto> ?? Enumerable.Empty<IsciListDto>();
@@ -62,16 +63,7 @@
                         {
                             <div class="gm-attachment-card">
                                 <div class="gm-attachment-icon">
-                                    @{
-                                        var ext = Path.GetExtension(q.FaylAdi).ToLower();
-                                        var icon = ext switch {
-                                            ".pdf" => "bi-file-earmark-pdf text-danger",
-                                            ".docx" or ".doc" => "bi-file-earmark-word text-primary",
-                                            ".xlsx" or ".xls" => "bi-file-earmark-excel text-success",
-                                            _ => "bi-file-earmark text-secondary"
-                                        };
-                                    }
-                                    <i class="bi @icon fs-2"></i>
+                                    <i class="bi @(GetFileIcon(q.FaylAdi)) fs-2"></i>
                                 </div>
                                 <div class="gm-attachment-info">
                                     <span class="gm-attachment-name">@q.FaylAdi</span>
@@ -206,6 +198,15 @@
         if (bytes < 1024) return $"{bytes} B";
         if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
         return $"{bytes / 1024.0 / 1024.0:F1} MB";
+    }
+
+    string GetFileIcon(string fileName)
+    {
+        var ext = System.IO.Path.GetExtension(fileName ?? "").ToLowerInvariant();
+        if (ext == ".pdf") return "bi-file-earmark-pdf text-danger";
+        if (ext == ".docx" || ext == ".doc") return "bi-file-earmark-word text-primary";
+        if (ext == ".xlsx" || ext == ".xls") return "bi-file-earmark-excel text-success";
+        return "bi-file-earmark text-secondary";
     }
 }
 
