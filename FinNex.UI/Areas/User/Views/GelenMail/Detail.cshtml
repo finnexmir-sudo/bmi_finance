@@ -182,18 +182,43 @@
             <!-- Tapşırılmış işçilər -->
             @if (Model.TapalanIsciler.Any())
             {
+                var tamamSayi = Model.TapalanIsciler.Count(ti => ti.IcraOlundu);
                 <div class="gm-card">
-                    <div class="gm-card-header"><i class="bi bi-people-fill"></i> Tapşırılıb</div>
+                    <div class="gm-card-header">
+                        <i class="bi bi-people-fill"></i> Tapşırılıb
+                        <span class="gm-tapilan-progress" title="Tamamlanma">
+                            @tamamSayi/@Model.TapalanIsciler.Count
+                        </span>
+                    </div>
                     <div class="gm-card-body" style="padding:8px 12px">
                         @foreach (var ti in Model.TapalanIsciler)
                         {
                             <div class="gm-tapilan-isci">
-                                <div class="gm-tapilan-avatar">@(ti.AdSoyad.Length > 0 ? ti.AdSoyad[0].ToString() : "?")</div>
-                                <div>
+                                <div class="gm-tapilan-avatar @(ti.IcraOlundu ? "gm-tapilan-avatar--done" : "")">@(ti.AdSoyad.Length > 0 ? ti.AdSoyad[0].ToString() : "?")</div>
+                                <div style="flex:1;min-width:0">
                                     <div class="gm-tapilan-ad">@ti.AdSoyad</div>
-                                    <div class="gm-tapilan-tarix">@ti.TapalanTarix.ToString("dd.MM HH:mm")</div>
+                                    <div class="gm-tapilan-tarix">
+                                        Tapşırıldı: @ti.TapalanTarix.ToString("dd.MM HH:mm")
+                                    </div>
+                                    @if (ti.IcraOlundu && ti.IcraOlunduTarix.HasValue)
+                                    {
+                                        <div class="gm-tapilan-tarix" style="color:#10b981">
+                                            Tamamlandı: @ti.IcraOlunduTarix.Value.ToString("dd.MM HH:mm")
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(ti.Qeyd))
+                                    {
+                                        <div class="gm-tapilan-tarix" style="font-style:italic">@ti.Qeyd</div>
+                                    }
                                 </div>
-                                <i class="bi bi-check-circle-fill" style="color:#10b981;margin-left:auto;font-size:.85rem"></i>
+                                @if (ti.IcraOlundu)
+                                {
+                                    <i class="bi bi-check-circle-fill" style="color:#10b981;font-size:.95rem;flex-shrink:0"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-clock" style="color:#94a3b8;font-size:.95rem;flex-shrink:0"></i>
+                                }
                             </div>
                         }
                     </div>

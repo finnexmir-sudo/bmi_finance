@@ -4,11 +4,12 @@
     ViewData["Title"] = "Gələn Maillər";
     var oxunmamisFilter = ViewBag.OxunmamisFilter as bool?;
     var isciFilter = ViewBag.IsciFilter as int?;
+    var axtarisFilter = ViewBag.Axtaris as string;
     var oxunmamisSay = (int)(ViewBag.OxunmamisSay ?? 0);
     var currentPage = (int)(ViewBag.Page ?? 1);
 
-    var prevUrl = Url.Action("Index", new { page = currentPage - 1, oxunmamis = oxunmamisFilter, isciId = isciFilter });
-    var nextUrl = Url.Action("Index", new { page = currentPage + 1, oxunmamis = oxunmamisFilter, isciId = isciFilter });
+    var prevUrl = Url.Action("Index", new { page = currentPage - 1, oxunmamis = oxunmamisFilter, isciId = isciFilter, q = axtarisFilter });
+    var nextUrl = Url.Action("Index", new { page = currentPage + 1, oxunmamis = oxunmamisFilter, isciId = isciFilter, q = axtarisFilter });
 }
 
 <link rel="stylesheet" href="~/css/User/gelen-mail.css" asp-append-version="true" />
@@ -41,16 +42,28 @@
             </h1>
         </div>
         <div class="gm-header-right">
-            <form method="get" class="gm-filter-form">
+            <form method="get" class="gm-filter-form" id="filterForm">
+                <div class="gm-search-wrap">
+                    <i class="bi bi-search gm-search-icon"></i>
+                    <input type="text" name="q" value="@axtarisFilter"
+                           class="gm-search-input" placeholder="Mövzu, göndərən axtar…"
+                           autocomplete="off" />
+                    @if (!string.IsNullOrWhiteSpace(axtarisFilter))
+                    {
+                        <a href="@Url.Action("Index", new { oxunmamis = oxunmamisFilter, isciId = isciFilter })"
+                           class="gm-search-clear" title="Axtarışı sıfırla">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    }
+                </div>
                 <div class="gm-filter-group">
-                    <label class="gm-filter-label">Vəziyyət</label>
                     <select name="oxunmamis" class="gm-select" onchange="this.form.submit()">
                         <option value="">Hamısı</option>
-                        <option value="true" selected="@(oxunmamisFilter == true)">Oxunmamış</option>
+                        <option value="true" @(oxunmamisFilter == true ? "selected" : "")>Oxunmamış</option>
                     </select>
                 </div>
                 <button type="submit" class="gm-btn gm-btn-outline">
-                    <i class="bi bi-funnel"></i> Filtr
+                    <i class="bi bi-search"></i>
                 </button>
             </form>
         </div>

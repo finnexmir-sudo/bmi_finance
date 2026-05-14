@@ -16,7 +16,7 @@ public class GelenMailService : IGelenMailService
         _uow = uow;
     }
 
-    public async Task<List<GelenMailListDto>> GetListAsync(bool? oxunmamis = null, int? tapalanIsciId = null, int page = 1, int pageSize = 50)
+    public async Task<List<GelenMailListDto>> GetListAsync(bool? oxunmamis = null, int? tapalanIsciId = null, int page = 1, int pageSize = 50, string? axtaris = null)
     {
         IQueryable<GelenMail> query = _uow.Repository<GelenMail>().Query()
             .AsNoTracking()
@@ -29,6 +29,14 @@ public class GelenMailService : IGelenMailService
             query = query.Where(x => !x.Oxunub);
         if (tapalanIsciId.HasValue)
             query = query.Where(x => x.TapalanIsciler.Any(ti => ti.IsciId == tapalanIsciId));
+        if (!string.IsNullOrWhiteSpace(axtaris))
+        {
+            var q = axtaris.Trim().ToLower();
+            query = query.Where(x =>
+                x.Movzu.ToLower().Contains(q) ||
+                x.KimdenAd.ToLower().Contains(q) ||
+                x.KimdenEmail.ToLower().Contains(q));
+        }
 
         var mails = await query
             .OrderByDescending(x => x.AlinmaTarixi)
