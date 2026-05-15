@@ -16,7 +16,7 @@ public class GelenMailService : IGelenMailService
         _uow = uow;
     }
 
-    public async Task<List<GelenMailListDto>> GetListAsync(bool? oxunmamis = null, int? tapalanIsciId = null, int page = 1, int pageSize = 50, string? axtaris = null)
+    public async Task<List<GelenMailListDto>> GetListAsync(bool? oxunmamis = null, int? tapalanIsciId = null, int page = 1, int pageSize = 50, string? axtaris = null, DateTime? tarixden = null, DateTime? tarixe = null, bool? tapshirildi = null, bool? qosmali = null, string? deadlineFilter = null)
     {
         IQueryable<GelenMail> query = _uow.Repository<GelenMail>().Query()
             .AsNoTracking()
@@ -36,6 +36,27 @@ public class GelenMailService : IGelenMailService
                 x.Movzu.ToLower().Contains(q) ||
                 x.KimdenAd.ToLower().Contains(q) ||
                 x.KimdenEmail.ToLower().Contains(q));
+        }
+        if (tarixden.HasValue)
+            query = query.Where(x => x.AlinmaTarixi >= tarixden.Value);
+        if (tarixe.HasValue)
+            query = query.Where(x => x.AlinmaTarixi < tarixe.Value.AddDays(1));
+        if (tapshirildi == true)
+            query = query.Where(x => x.TapalanIsciler.Any(ti => !ti.Silinib));
+        if (tapshirildi == false)
+            query = query.Where(x => !x.TapalanIsciler.Any(ti => !ti.Silinib));
+        if (qosmali == true)
+            query = query.Where(x => x.Qosmalar.Any(q => !q.Silinib));
+        if (!string.IsNullOrWhiteSpace(deadlineFilter))
+        {
+            var today = DateTime.Today;
+            query = deadlineFilter switch
+            {
+                "var"     => query.Where(x => x.DedlaynTarix.HasValue),
+                "kecib"   => query.Where(x => x.DedlaynTarix.HasValue && x.DedlaynTarix < today),
+                "buhefte" => query.Where(x => x.DedlaynTarix.HasValue && x.DedlaynTarix >= today && x.DedlaynTarix < today.AddDays(7)),
+                _         => query
+            };
         }
 
         var mails = await query

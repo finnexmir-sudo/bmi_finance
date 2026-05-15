@@ -38,20 +38,34 @@ public class GelenMailController : Controller
         _userManager = userManager;
     }
 
-    public async Task<IActionResult> Index(bool? oxunmamis, int? isciId, string? q, int page = 1)
+    public async Task<IActionResult> Index(
+        bool? oxunmamis, int? isciId, string? q,
+        string? tarixden, string? tarixe,
+        bool? tapshirildi, bool? qosmali, string? deadline,
+        int page = 1)
     {
-        var mails = await _mailService.GetListAsync(oxunmamis, isciId, page, 50, q);
+        DateTime? tdFrom = DateTime.TryParse(tarixden, out var tf) ? tf : null;
+        DateTime? tdTo   = DateTime.TryParse(tarixe,   out var tt) ? tt : null;
+
+        var mails = await _mailService.GetListAsync(
+            oxunmamis, isciId, page, 50, q,
+            tdFrom, tdTo, tapshirildi, qosmali, deadline);
         var oxunmamisSay = await _mailService.GetOxunmamisSayAsync();
         var iscilerResult = await _isciService.HamisiniGetirAsync();
         var isciler = iscilerResult.Success ? iscilerResult.Data!.ToList() : new();
 
-        ViewBag.OxunmamisSay = oxunmamisSay;
-        ViewBag.Isciler = isciler;
+        ViewBag.OxunmamisSay  = oxunmamisSay;
+        ViewBag.Isciler        = isciler;
         ViewBag.OxunmamisFilter = oxunmamis;
-        ViewBag.IsciFilter = isciId;
-        ViewBag.Axtaris = q;
-        ViewBag.Page = page;
-        ViewData["Title"] = "Gələn Maillər";
+        ViewBag.IsciFilter     = isciId;
+        ViewBag.Axtaris        = q;
+        ViewBag.Tarixden       = tarixden;
+        ViewBag.Tarixe         = tarixe;
+        ViewBag.Tapshirildi    = tapshirildi;
+        ViewBag.Qosmali        = qosmali;
+        ViewBag.DeadlineFilter = deadline;
+        ViewBag.Page           = page;
+        ViewData["Title"]      = "Gələn Maillər";
 
         return View(mails);
     }
