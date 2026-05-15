@@ -1,7 +1,7 @@
 @model List<FinNex.Application.DTOs.Communication.MailTapshirilanDto>
 @{
     ViewData["Title"] = "Tapşırılan Maillər";
-    var gozleyenSayi  = Model.Count(x => !x.HamisiTamamladi);
+    var gozleyenSayi   = Model.Count(x => !x.HamisiTamamladi);
     var tamamlananSayi = Model.Count(x => x.HamisiTamamladi);
 }
 
@@ -18,20 +18,35 @@
         </h1>
     </div>
 
-    @* Stat kartları *@
-    <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
-        <div class="gm-stat-mini">
+    @* ── Stat kartları (kliklenə bilən filterlər) ── *@
+    <div class="gm-tapstat-row">
+        <button class="gm-stat-mini gm-stat-mini--active" data-filter="all" id="statAll">
             <span class="gm-stat-mini-num">@Model.Count</span>
             <span class="gm-stat-mini-lbl">Ümumi</span>
-        </div>
-        <div class="gm-stat-mini gm-stat-mini--amber">
+        </button>
+        <button class="gm-stat-mini gm-stat-mini--amber" data-filter="wait" id="statWait">
             <span class="gm-stat-mini-num">@gozleyenSayi</span>
             <span class="gm-stat-mini-lbl">Gözlənilir</span>
-        </div>
-        <div class="gm-stat-mini gm-stat-mini--green">
+        </button>
+        <button class="gm-stat-mini gm-stat-mini--green" data-filter="done" id="statDone">
             <span class="gm-stat-mini-num">@tamamlananSayi</span>
             <span class="gm-stat-mini-lbl">Tamamlandı</span>
+        </button>
+    </div>
+
+    @* ── Axtarış ── *@
+    <div class="gm-tapshirilan-search">
+        <div class="gm-search-wrap" style="flex:1;max-width:420px">
+            <i class="bi bi-search gm-search-icon"></i>
+            <input type="text" id="tapSearch"
+                   class="gm-search-input" style="width:100%"
+                   placeholder="Mövzu, göndərən, işçi adı axtar…"
+                   autocomplete="off" />
+            <span id="tapSearchClear" class="gm-search-clear" style="display:none;cursor:pointer">
+                <i class="bi bi-x-lg"></i>
+            </span>
         </div>
+        <span id="tapCount" class="gm-tapshirilan-count"></span>
     </div>
 
     @if (!Model.Any())
@@ -43,18 +58,20 @@
     }
     else
     {
-        <div class="gm-taplist">
+        <div class="gm-taplist" id="tapList">
             @foreach (var m in Model)
             {
                 var allDone = m.HamisiTamamladi;
-                <div class="gm-tapitem @(allDone ? "gm-tapitem--done" : "")">
+                var isciAdlar = string.Join(" ", m.Isciler.Select(i => i.AdSoyad));
+                var searchText = (m.Movzu + " " + m.KimdenAd + " " + m.KimdenEmail + " " + isciAdlar + " " + m.Qeyd).ToLower();
+                <div class="gm-tapitem @(allDone ? "gm-tapitem--done" : "")"
+                     data-status="@(allDone ? "done" : "wait")"
+                     data-search="@searchText">
                     <div class="gm-tapitem-header">
                         <a asp-action="Detail" asp-route-id="@m.MailId" class="gm-tapitem-subject">
                             @m.Movzu
                         </a>
-                        <span class="gm-tapitem-date">
-                            @m.AlinmaTarixi.ToString("dd.MM.yyyy")
-                        </span>
+                        <span class="gm-tapitem-date">@m.AlinmaTarixi.ToString("dd.MM.yyyy")</span>
                         <span class="gm-tapitem-badge @(allDone ? "gm-tapitem-badge--done" : "gm-tapitem-badge--wait")">
                             @m.TamamlananSayi/@m.Isciler.Count
                             @(allDone ? "Tamamlandı" : "Gözlənilir")
@@ -72,7 +89,7 @@
                         @foreach (var isci in m.Isciler)
                         {
                             <div class="gm-tapitem-isci">
-                                <div class="gm-tapilan-avatar @(isci.IcraOlundu ? "gm-tapilan-avatar--done" : "gm-tapilan-avatar--wait")">
+                                <div class="gm-tapilan-avatar @(isci.IcraOlundu ? "gm-tapilan-avatar--done" : isci.ImtinaEtdi ? "gm-tapilan-avatar--imtina" : "gm-tapilan-avatar--wait")">
                                     @(isci.AdSoyad.Length > 0 ? isci.AdSoyad[0].ToString().ToUpper() : "?")
                                 </div>
                                 <div style="flex:1;min-width:0">
@@ -81,6 +98,12 @@
                                     {
                                         <div class="gm-tapilan-tarix" style="color:#10b981">
                                             ✓ Tamamlandı: @isci.IcraOlunduTarix.Value.ToString("dd.MM.yyyy HH:mm")
+                                        </div>
+                                    }
+                                    else if (isci.ImtinaEtdi)
+                                    {
+                                        <div class="gm-tapilan-tarix" style="color:#ef4444">
+                                            ✕ İmtina@(!string.IsNullOrWhiteSpace(isci.ImtinaSebebi) ? ": " + isci.ImtinaSebebi : "")
                                         </div>
                                     }
                                     else
@@ -94,6 +117,10 @@
                                 {
                                     <i class="bi bi-check-circle-fill" style="color:#10b981;font-size:1rem;flex-shrink:0"></i>
                                 }
+                                else if (isci.ImtinaEtdi)
+                                {
+                                    <i class="bi bi-x-circle-fill" style="color:#ef4444;font-size:1rem;flex-shrink:0"></i>
+                                }
                                 else
                                 {
                                     <i class="bi bi-clock" style="color:#94a3b8;font-size:1rem;flex-shrink:0"></i>
@@ -104,5 +131,66 @@
                 </div>
             }
         </div>
+
+        <div id="tapEmpty" style="display:none" class="gm-empty">
+            <i class="bi bi-search" style="font-size:2rem;color:#e0e7ff"></i>
+            <p>Nəticə tapılmadı.</p>
+        </div>
     }
 </div>
+
+<script>
+(function () {
+    var items    = Array.from(document.querySelectorAll('#tapList .gm-tapitem'));
+    var searchEl = document.getElementById('tapSearch');
+    var clearEl  = document.getElementById('tapSearchClear');
+    var countEl  = document.getElementById('tapCount');
+    var emptyEl  = document.getElementById('tapEmpty');
+    var statBtns = document.querySelectorAll('[data-filter]');
+    var activeFilter = 'all';
+
+    function applyFilters() {
+        var q = (searchEl?.value || '').trim().toLowerCase();
+        var visible = 0;
+
+        items.forEach(function (item) {
+            var status  = item.dataset.status;
+            var search  = item.dataset.search || '';
+            var matchF  = activeFilter === 'all' || status === activeFilter;
+            var matchQ  = !q || search.includes(q);
+            var show    = matchF && matchQ;
+            item.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        if (countEl) countEl.textContent = visible + ' nəticə';
+        if (emptyEl) emptyEl.style.display = visible === 0 ? '' : 'none';
+        if (clearEl) clearEl.style.display = q ? '' : 'none';
+    }
+
+    // Stat kart klikləri
+    statBtns.forEach(function (btn) {
+        btn.style.cursor = 'pointer';
+        btn.addEventListener('click', function () {
+            activeFilter = this.dataset.filter;
+            statBtns.forEach(function (b) { b.classList.remove('gm-stat-mini--active'); });
+            this.classList.add('gm-stat-mini--active');
+            applyFilters();
+        });
+    });
+
+    // Axtarış
+    if (searchEl) {
+        searchEl.addEventListener('input', applyFilters);
+    }
+    if (clearEl) {
+        clearEl.addEventListener('click', function () {
+            searchEl.value = '';
+            applyFilters();
+            searchEl.focus();
+        });
+    }
+
+    applyFilters();
+})();
+</script>
