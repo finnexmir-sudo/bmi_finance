@@ -14,6 +14,7 @@ public class SmtpMailService : ISmtpMailService
         string metin,
         string fromEmail,
         string fromParol,
+        string? smtpHost = null,
         string? replyToMessageId = null)
     {
         if (string.IsNullOrWhiteSpace(fromEmail) || string.IsNullOrWhiteSpace(fromParol))
@@ -21,7 +22,8 @@ public class SmtpMailService : ISmtpMailService
 
         try
         {
-            var (host, port) = GetSmtpHost(fromEmail);
+            var (autoHost, port) = GetSmtpHost(fromEmail);
+            var host = !string.IsNullOrWhiteSpace(smtpHost) ? smtpHost.Trim() : autoHost;
 
             var msg = new MimeMessage();
             msg.From.Add(new MailboxAddress("", fromEmail));

@@ -352,10 +352,24 @@
                 </span>
             </div>
 
+            <div class="up-row">
+                <span class="up-row-label">
+                    SMTP Host
+                    <span style="font-size:.72rem;color:#aab0bc;font-weight:400"> — boş qoysan avtomatik</span>
+                </span>
+                <span class="up-row-value">
+                    <input type="text" id="smtpHost"
+                           value="@(ViewBag.MailSmtpHost ?? "")"
+                           placeholder="smtp.titan.email"
+                           class="up-edit-input up-visible"
+                           style="width:260px" />
+                </span>
+            </div>
+
             <div class="up-row" style="border-bottom:none;padding-top:4px">
                 <span class="up-row-label" style="font-size:.75rem;color:#aab0bc;font-weight:400">
                     <i class="bi bi-info-circle"></i>
-                    Gmail: App Password istifadə edin. Titan, Outlook, Yahoo avtomatik tanınır.
+                    Gmail: App Password istifadə edin. Titan/korporativ domenlərdə SMTP Host yazın.
                 </span>
                 <span class="up-row-value" style="display:flex;align-items:center;gap:8px">
                     <span id="mailAyarMsg" style="font-size:.82rem"></span>
@@ -407,9 +421,10 @@
                 saxlaBtn.addEventListener('click', async function () {
                     var email = document.getElementById('smtpEmail').value.trim();
                     var parol = document.getElementById('smtpParol').value;
+                    var host  = document.getElementById('smtpHost').value.trim();
                     if (!email) { showMsg('E-poçt ünvanı mütləqdir.', false); return; }
                     saxlaBtn.disabled = true;
-                    var d = await postJson('/User/Profile/MailAyarlariYenile', { mailSmtpEmail: email, mailSmtpParol: parol });
+                    var d = await postJson('/User/Profile/MailAyarlariYenile', { mailSmtpEmail: email, mailSmtpParol: parol, mailSmtpHost: host });
                     showMsg(d.message, d.success);
                     saxlaBtn.disabled = false;
                     if (d.success && parol) document.getElementById('smtpParol').value = '';

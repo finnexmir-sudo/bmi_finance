@@ -320,6 +320,7 @@ public class GelenMailController : Controller
             dto.CavabMetni,
             appUser.MailSmtpEmail,
             smtpParol,
+            appUser.MailSmtpHost,
             string.IsNullOrWhiteSpace(dto.MessageId) ? null : dto.MessageId);
 
         if (ok)

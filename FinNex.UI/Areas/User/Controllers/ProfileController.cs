@@ -55,7 +55,8 @@ namespace FinNex.UI.Areas.User.Controllers
             }
 
             var appUser = await _userManager.GetUserAsync(User);
-            ViewBag.MailSmtpEmail   = appUser?.MailSmtpEmail ?? "";
+            ViewBag.MailSmtpEmail     = appUser?.MailSmtpEmail ?? "";
+            ViewBag.MailSmtpHost      = appUser?.MailSmtpHost ?? "";
             ViewBag.MailSmtpKonfiqDir = !string.IsNullOrWhiteSpace(appUser?.MailSmtpParol);
 
             return View(isci);
@@ -64,13 +65,14 @@ namespace FinNex.UI.Areas.User.Controllers
         // ── POST /User/Profile/MailAyarlariYenile (AJAX) ──────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MailAyarlariYenile(string? mailSmtpEmail, string? mailSmtpParol)
+        public async Task<IActionResult> MailAyarlariYenile(string? mailSmtpEmail, string? mailSmtpParol, string? mailSmtpHost)
         {
             var appUser = await _userManager.GetUserAsync(User);
             if (appUser == null)
                 return Json(new { success = false, message = "İstifadəçi tapılmadı." });
 
             appUser.MailSmtpEmail = mailSmtpEmail?.Trim();
+            appUser.MailSmtpHost  = string.IsNullOrWhiteSpace(mailSmtpHost) ? null : mailSmtpHost.Trim();
 
             if (!string.IsNullOrWhiteSpace(mailSmtpParol))
                 appUser.MailSmtpParol = _protector.Protect(mailSmtpParol);
@@ -98,8 +100,9 @@ namespace FinNex.UI.Areas.User.Controllers
                 kimeAd: $"{appUser.Ad} {appUser.Soyad}".Trim(),
                 movzu: "FinNex — SMTP sınaq maili",
                 metin: $"Salam!\n\nBu mail SMTP konfiqurasiyasının yoxlanması üçün göndərilmişdir.\nSistem: FinNex\nTarix: {DateTime.Now:dd.MM.yyyy HH:mm}",
-                fromEmail: appUser.MailSmtpEmail,
-                fromParol: parol);
+                fromEmail: appUser.MailSmtpEmail!,
+                fromParol: parol,
+                smtpHost: appUser.MailSmtpHost);
 
             return Json(new { success = ok, message = ok ? "Sınaq maili göndərildi!" : $"Xəta: {xeta}" });
         }
