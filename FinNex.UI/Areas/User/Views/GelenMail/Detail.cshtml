@@ -84,7 +84,17 @@
             }
             else
             {
-                <div class="gm-ai-loading" id="aiLoading">
+                <div id="aiPrompt" class="gm-ai-prompt">
+                    <i class="bi bi-stars" style="font-size:1.4rem;color:#6366f1"></i>
+                    <div>
+                        <div style="font-weight:600;color:#1a2332;margin-bottom:2px">Maili AI ilə təhlil et</div>
+                        <div style="font-size:.78rem;color:#6b7280">Mövzu, tapşırıqlar, deadline və prioritet avtomatik müəyyən ediləcək</div>
+                    </div>
+                    <button id="aiStartBtn" class="gm-btn gm-btn-primary" style="margin-left:auto;white-space:nowrap">
+                        <i class="bi bi-stars"></i> Təhlil Et
+                    </button>
+                </div>
+                <div class="gm-ai-loading" id="aiLoading" style="display:none">
                     <div class="gm-ai-spinner"></div>
                     <span>Təhlil edilir...</span>
                 </div>
@@ -289,7 +299,6 @@ function toggleText(id) {
     if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
-// AI render
 function renderAI(text) {
     var el = document.getElementById('aiMarkdown');
     if (!el || !text) return;
@@ -299,20 +308,20 @@ function renderAI(text) {
     if (loading) loading.style.display = 'none';
 }
 
-(function () {
-    // Əgər DB-dən gəlirsə — dərhal render
-    if (window.__aiRaw) {
-        renderAI(window.__aiRaw);
-        return;
-    }
-    // Yoxdursa — AJAX ilə çağır
+function runAI() {
+    var prompt = document.getElementById('aiPrompt');
+    var loading = document.getElementById('aiLoading');
+    var btn = document.getElementById('aiStartBtn');
+    if (prompt) prompt.style.display = 'none';
+    if (loading) loading.style.display = '';
+    if (btn) btn.disabled = true;
+
     var form = new FormData();
     form.append('__RequestVerificationToken', document.querySelector('input[name=__RequestVerificationToken]')?.value || '');
     fetch('/User/GelenMail/RunAI?id=' + __mailId, { method: 'POST', body: form })
         .then(function (r) { return r.json(); })
         .then(function (d) {
             if (d.xulase) renderAI(d.xulase);
-            // Deadline banner-i göstər
             if (d.dedlaynTarix) {
                 var b = document.getElementById('dedlaynBanner');
                 if (b) {
@@ -324,10 +333,18 @@ function renderAI(text) {
             }
         })
         .catch(function () {
-            var loading = document.getElementById('aiLoading');
-            if (loading) loading.innerHTML = '<span style="color:#9ca3af;font-size:.8rem">AI cavabı alınmadı</span>';
+            if (loading) loading.innerHTML = '<span style="color:#9ca3af;font-size:.8rem">AI cavabı alınmadı. <button onclick="runAI()" style="background:none;border:none;color:#6366f1;cursor:pointer;text-decoration:underline">Yenidən cəhd et</button></span>';
         });
-})();
+}
+
+// DB-dən gəlirsə — dərhal render, düymə lazım deyil
+if (window.__aiRaw) {
+    renderAI(window.__aiRaw);
+}
+
+// Düymə klikdə başlat
+var aiBtn = document.getElementById('aiStartBtn');
+if (aiBtn) aiBtn.addEventListener('click', runAI);
 
 // Checkbox styling
 document.querySelectorAll('.gm-isci-item input[type=checkbox]').forEach(function (cb) {
