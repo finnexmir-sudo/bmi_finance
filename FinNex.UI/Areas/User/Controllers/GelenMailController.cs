@@ -232,6 +232,17 @@ public class GelenMailController : Controller
     }
 
     [HttpGet]
+    public async Task<IActionResult> TapshirilanMailler()
+    {
+        var appUser = await _userManager.GetUserAsync(User);
+        if (appUser == null) return Unauthorized();
+
+        var list = await _mailService.GetRehberTapshirilanMaillerAsync(appUser.Id);
+        ViewData["Title"] = "Tapşırılan Maillər";
+        return View(list);
+    }
+
+    [HttpGet]
     public async Task<IActionResult> OxunmamisSay()
     {
         var say = await _mailService.GetOxunmamisSayAsync();

@@ -1,0 +1,108 @@
+@model List<FinNex.Application.DTOs.Communication.MailTapshirilanDto>
+@{
+    ViewData["Title"] = "Tapşırılan Maillər";
+    var gozleyenSayi  = Model.Count(x => !x.HamisiTamamladi);
+    var tamamlananSayi = Model.Count(x => x.HamisiTamamladi);
+}
+
+<link rel="stylesheet" href="~/css/User/gelen-mail.css" asp-append-version="true" />
+
+<div class="gm-page">
+
+    <div class="gm-header">
+        <a asp-action="Index" class="gm-btn gm-btn-ghost">
+            <i class="bi bi-arrow-left"></i> Geri
+        </a>
+        <h1 class="gm-title" style="margin-left:8px">
+            <i class="bi bi-list-check"></i> Tapşırılan Maillər
+        </h1>
+    </div>
+
+    @* Stat kartları *@
+    <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+        <div class="gm-stat-mini">
+            <span class="gm-stat-mini-num">@Model.Count</span>
+            <span class="gm-stat-mini-lbl">Ümumi</span>
+        </div>
+        <div class="gm-stat-mini gm-stat-mini--amber">
+            <span class="gm-stat-mini-num">@gozleyenSayi</span>
+            <span class="gm-stat-mini-lbl">Gözlənilir</span>
+        </div>
+        <div class="gm-stat-mini gm-stat-mini--green">
+            <span class="gm-stat-mini-num">@tamamlananSayi</span>
+            <span class="gm-stat-mini-lbl">Tamamlandı</span>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="gm-empty">
+            <i class="bi bi-list-check" style="font-size:2.5rem;color:#e0e7ff"></i>
+            <p>Hələ heç bir mail tapşırılmayıb.</p>
+        </div>
+    }
+    else
+    {
+        <div class="gm-taplist">
+            @foreach (var m in Model)
+            {
+                var allDone = m.HamisiTamamladi;
+                <div class="gm-tapitem @(allDone ? "gm-tapitem--done" : "")">
+                    <div class="gm-tapitem-header">
+                        <a asp-action="Detail" asp-route-id="@m.MailId" class="gm-tapitem-subject">
+                            @m.Movzu
+                        </a>
+                        <span class="gm-tapitem-date">
+                            @m.AlinmaTarixi.ToString("dd.MM.yyyy")
+                        </span>
+                        <span class="gm-tapitem-badge @(allDone ? "gm-tapitem-badge--done" : "gm-tapitem-badge--wait")">
+                            @m.TamamlananSayi/@m.Isciler.Count
+                            @(allDone ? "Tamamlandı" : "Gözlənilir")
+                        </span>
+                    </div>
+                    <div class="gm-tapitem-from">
+                        <i class="bi bi-envelope"></i> @m.KimdenAd
+                        <span class="gm-tapitem-tarix">Tapşırıldı: @m.TapalanTarix.ToString("dd.MM.yyyy HH:mm")</span>
+                        @if (!string.IsNullOrWhiteSpace(m.Qeyd))
+                        {
+                            <span class="gm-tapitem-qeyd">— @m.Qeyd</span>
+                        }
+                    </div>
+                    <div class="gm-tapitem-isciler">
+                        @foreach (var isci in m.Isciler)
+                        {
+                            <div class="gm-tapitem-isci">
+                                <div class="gm-tapilan-avatar @(isci.IcraOlundu ? "gm-tapilan-avatar--done" : "gm-tapilan-avatar--wait")">
+                                    @(isci.AdSoyad.Length > 0 ? isci.AdSoyad[0].ToString().ToUpper() : "?")
+                                </div>
+                                <div style="flex:1;min-width:0">
+                                    <div class="gm-tapilan-ad">@isci.AdSoyad</div>
+                                    @if (isci.IcraOlundu && isci.IcraOlunduTarix.HasValue)
+                                    {
+                                        <div class="gm-tapilan-tarix" style="color:#10b981">
+                                            ✓ Tamamlandı: @isci.IcraOlunduTarix.Value.ToString("dd.MM.yyyy HH:mm")
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="gm-tapilan-tarix">
+                                            Tapşırıldı: @isci.TapalanTarix.ToString("dd.MM HH:mm")
+                                        </div>
+                                    }
+                                </div>
+                                @if (isci.IcraOlundu)
+                                {
+                                    <i class="bi bi-check-circle-fill" style="color:#10b981;font-size:1rem;flex-shrink:0"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-clock" style="color:#94a3b8;font-size:1rem;flex-shrink:0"></i>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
