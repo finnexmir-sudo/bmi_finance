@@ -42,9 +42,10 @@
     }
 }
 
-<div class="gm-page">
+<div class="gm-split-page">
 
     @* ── Başlıq ── *@
+    <div class="gm-split-top">
     <div class="gm-header">
         <h1 class="gm-title">
             <i class="bi bi-envelope-fill"></i>
@@ -64,7 +65,11 @@
             </a>
         </div>
     </div>
+    </div>@* /gm-split-top *@
     @Html.AntiForgeryToken()
+
+    <div class="gm-split-body">
+    <div class="gm-split-left">
 
     @* ── Filter paneli ── *@
     <form method="get" id="filterForm" class="gm-filterbar">
