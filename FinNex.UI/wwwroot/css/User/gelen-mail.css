@@ -572,6 +572,13 @@
     padding: 16px 20px 18px;
 }
 
+.gm-ai-prompt {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 4px 2px;
+}
+
 /* Markdown inside hero — dark text on white */
 .gm-ai-hero .gm-markdown h1,
 .gm-ai-hero .gm-markdown h2,
