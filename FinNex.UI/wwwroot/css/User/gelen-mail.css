@@ -902,3 +902,334 @@
     color: #cbd5e1 !important;
     font-size: .68rem;
 }
+
+/* ══════════════════════════════════════════
+   Cavab Yaz — Reply compose page
+══════════════════════════════════════════ */
+
+/* Reply button in detail nav */
+.gm-btn-reply {
+    background: #eff6ff;
+    color: #3b82f6;
+    border: 1.5px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 7px 16px;
+    font-size: .85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: background .15s, border-color .15s;
+}
+.gm-btn-reply:hover {
+    background: #dbeafe;
+    border-color: #93c5fd;
+    color: #1d4ed8;
+    text-decoration: none;
+}
+
+/* Page wrapper */
+.gm-cavab-page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Top nav bar */
+.gm-cavab-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.gm-cavab-topbar-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Original mail card */
+.gm-cavab-original {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.gm-cavab-original-label {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.gm-cavab-original-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.gm-cavab-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #3b82f6);
+    color: #fff;
+    font-size: .85rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.gm-cavab-original-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.gm-cavab-original-name {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: .9rem;
+}
+.gm-cavab-original-email {
+    font-size: .78rem;
+    color: #64748b;
+}
+.gm-cavab-original-date {
+    margin-left: auto;
+    font-size: .78rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+.gm-cavab-original-subject {
+    font-size: .85rem;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.gm-cavab-original-body {
+    border-top: 1px dashed #e2e8f0;
+    padding-top: 10px;
+}
+.gm-cavab-original-body summary {
+    font-size: .78rem;
+    color: #64748b;
+    cursor: pointer;
+    user-select: none;
+    padding: 2px 0;
+}
+.gm-cavab-original-pre {
+    font-size: .78rem;
+    color: #64748b;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 8px 0 0;
+    max-height: 180px;
+    overflow-y: auto;
+    background: #f8fafc;
+    padding: 10px;
+    border-radius: 6px;
+    line-height: 1.5;
+}
+
+/* Compose card */
+.gm-cavab-compose {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.gm-cavab-compose-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    font-weight: 600;
+    color: #1e293b;
+    font-size: .9rem;
+    background: #fafbff;
+}
+
+/* Field rows */
+.gm-cavab-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+}
+.gm-cavab-field--border {
+    border-bottom: 1px solid #f1f5f9;
+}
+.gm-cavab-field-label {
+    font-size: .78rem;
+    font-weight: 600;
+    color: #64748b;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 52px;
+    margin: 0;
+}
+.gm-cavab-field-inputs {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    flex-wrap: wrap;
+}
+.gm-cavab-input {
+    border: none;
+    outline: none;
+    font-size: .88rem;
+    color: #1e293b;
+    background: transparent;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: background .15s;
+}
+.gm-cavab-input:focus {
+    background: #f8fafc;
+    box-shadow: 0 0 0 2px #bfdbfe;
+}
+.gm-cavab-input--name  { min-width: 140px; flex: 0 0 auto; }
+.gm-cavab-input--email { flex: 1; min-width: 180px; }
+.gm-cavab-input--full  { flex: 1; min-width: 0; }
+
+/* AI assistant bar */
+.gm-cavab-ai-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    background: linear-gradient(90deg, #f0f7ff 0%, #faf5ff 100%);
+    border-top: 1px solid #e0e7ff;
+    border-bottom: 1px solid #e0e7ff;
+    gap: 12px;
+}
+.gm-cavab-ai-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.gm-cavab-ai-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: #94a3b8;
+}
+.gm-cavab-ai-dot--loading {
+    background: #6366f1;
+    animation: aiPulse .9s ease-in-out infinite;
+}
+.gm-cavab-ai-dot--done  { background: #10b981; }
+.gm-cavab-ai-dot--error { background: #ef4444; }
+
+@keyframes aiPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .4; transform: scale(.7); }
+}
+
+.gm-cavab-ai-status {
+    font-size: .78rem;
+    color: #475569;
+    font-weight: 500;
+}
+.gm-cavab-ai-refresh {
+    background: none;
+    border: 1px solid #c7d2fe;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: .75rem;
+    color: #6366f1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+    transition: background .15s;
+}
+.gm-cavab-ai-refresh:hover { background: #e0e7ff; }
+
+/* Textarea */
+.gm-cavab-textarea-wrap {
+    position: relative;
+    padding: 0;
+}
+.gm-cavab-textarea {
+    width: 100%;
+    min-height: 280px;
+    border: none;
+    outline: none;
+    resize: vertical;
+    font-size: .9rem;
+    line-height: 1.65;
+    color: #1e293b;
+    padding: 20px 20px 36px;
+    font-family: inherit;
+    background: #fff;
+    display: block;
+    box-sizing: border-box;
+}
+.gm-cavab-textarea--loading {
+    color: #94a3b8;
+    background: #fafbff;
+    cursor: wait;
+}
+.gm-cavab-textarea::placeholder { color: #cbd5e1; }
+.gm-cavab-char-count {
+    position: absolute;
+    bottom: 8px;
+    right: 16px;
+    font-size: .7rem;
+    color: #cbd5e1;
+    pointer-events: none;
+}
+
+/* Actions */
+.gm-cavab-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 20px;
+    border-top: 1px solid #f1f5f9;
+    background: #fafbff;
+}
+.gm-btn-send {
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 22px;
+    font-size: .88rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    box-shadow: 0 2px 8px rgba(99,102,241,.35);
+}
+.gm-btn-send:hover   { opacity: .9; }
+.gm-btn-send:active  { transform: scale(.97); }
+.gm-btn-send:disabled { opacity: .6; cursor: not-allowed; }
+.gm-cavab-sending { display: flex; align-items: center; gap: 7px; }

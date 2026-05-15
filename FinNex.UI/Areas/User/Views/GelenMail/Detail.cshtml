@@ -25,7 +25,10 @@
         <a href="@Url.Action("Index", "GelenMail", new { area = "User" })" class="gm-btn gm-btn-ghost">
             <i class="bi bi-arrow-left"></i> Geri
         </a>
-        <form asp-action="Sil" method="post" style="margin-left:auto"
+        <a asp-action="Cavab" asp-route-id="@Model.Id" class="gm-btn gm-btn-reply" style="margin-left:auto">
+            <i class="bi bi-reply-fill"></i> Cavab Yaz
+        </a>
+        <form asp-action="Sil" method="post"
               onsubmit="return confirm('Bu maili silmək istəyirsiniz?')">
             @Html.AntiForgeryToken()
             <input type="hidden" name="id" value="@Model.Id" />
