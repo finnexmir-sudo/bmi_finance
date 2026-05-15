@@ -1,13 +1,21 @@
+# Build outputs
 .vs/
 bin/
 obj/
 *.user
 *.suo
 *.vsidx
-wwwroot/uploads/
-appsettings.Production.json 
- #   R u n t i m e   l o g s  
- F i n N e x . U I / L o g s /  
- L o g s /  
- 
-FinNex.UI/Logs/
+
+# Local config — real passwords, connection strings
+FinNex.UI/appsettings.json
+FinNex.UI/appsettings.*.json
+!FinNex.UI/appsettings.Example.json
+
+# Uploaded files (runtime)
+**/wwwroot/uploads/
+**/wwwroot/xercler/
+
+# Logs
+Logs/
+**/Logs/
+*.log
