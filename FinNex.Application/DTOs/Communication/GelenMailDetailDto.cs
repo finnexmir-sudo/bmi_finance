@@ -34,6 +34,8 @@ public class GelenMailIsciDto
     public string? Qeyd { get; set; }
     public bool IcraOlundu { get; set; }
     public DateTime? IcraOlunduTarix { get; set; }
+    public bool ImtinaEtdi { get; set; }
+    public string? ImtinaSebebi { get; set; }
 }
 
 public class GelenMailQosmaDto
