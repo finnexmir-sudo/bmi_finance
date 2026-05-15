@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace FinNex.UI.Areas.User.Controllers;
 
@@ -17,6 +18,7 @@ public class GelenMailController : Controller
 {
     private readonly IGelenMailService _mailService;
     private readonly IAnthropicService _ai;
+    private readonly ISmtpMailService _smtp;
     private readonly IIsciService _isciService;
     private readonly IXatirlatmaService _xatirlatmaService;
     private readonly IBildirisService _bildirisService;
@@ -25,6 +27,7 @@ public class GelenMailController : Controller
     public GelenMailController(
         IGelenMailService mailService,
         IAnthropicService ai,
+        ISmtpMailService smtp,
         IIsciService isciService,
         IXatirlatmaService xatirlatmaService,
         IBildirisService bildirisService,
@@ -32,6 +35,7 @@ public class GelenMailController : Controller
     {
         _mailService = mailService;
         _ai = ai;
+        _smtp = smtp;
         _isciService = isciService;
         _xatirlatmaService = xatirlatmaService;
         _bildirisService = bildirisService;
@@ -247,5 +251,79 @@ public class GelenMailController : Controller
     {
         var say = await _mailService.GetOxunmamisSayAsync();
         return Json(new { say });
+    }
+
+    // ── GET /User/GelenMail/Cavab/5 ─────────────────────────────
+    [HttpGet]
+    public async Task<IActionResult> Cavab(int id)
+    {
+        var mail = await _mailService.GetDetailAsync(id);
+        if (mail == null) return NotFound();
+
+        var dto = new MailCavabDto
+        {
+            MailId          = id,
+            MessageId       = mail.MessageId,
+            KimeEmail       = mail.KimdenEmail,
+            KimeAd          = mail.KimdenAd,
+            Movzu           = "Re: " + mail.Movzu,
+            AsilMailMovzu   = mail.Movzu,
+            AsilMailTarix   = mail.AlinmaTarixi,
+            AsilMailMetinDuz = mail.MetinDuz?.Length > 800
+                ? mail.MetinDuz.Substring(0, 800) + "\n[...]"
+                : mail.MetinDuz,
+            AIXulase        = mail.AIXulase,
+            CavabMetni      = ""
+        };
+
+        ViewData["Title"] = "Cavab — " + mail.Movzu;
+        return View(dto);
+    }
+
+    // ── POST AJAX /User/GelenMail/AICavabHazirla ────────────────
+    [HttpPost]
+    public async Task<IActionResult> AICavabHazirla(int id)
+    {
+        var mail = await _mailService.GetDetailAsync(id);
+        if (mail == null) return NotFound();
+
+        var metin = await _ai.MailCavabHazirlaAsync(
+            $"{mail.KimdenAd} <{mail.KimdenEmail}>",
+            mail.Movzu,
+            mail.MetinDuz ?? "",
+            mail.AIXulase);
+
+        return Json(new { metin });
+    }
+
+    // ── POST /User/GelenMail/CavabGonder ────────────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CavabGonder(MailCavabDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.KimeEmail) || string.IsNullOrWhiteSpace(dto.CavabMetni))
+        {
+            TempData["Error"] = "Alıcı e-poçt və mətn mütləqdir.";
+            return RedirectToAction(nameof(Cavab), new { id = dto.MailId });
+        }
+
+        var (ok, xeta) = await _smtp.GonderAsync(
+            dto.KimeEmail,
+            dto.KimeAd,
+            dto.Movzu,
+            dto.CavabMetni,
+            string.IsNullOrWhiteSpace(dto.MessageId) ? null : dto.MessageId);
+
+        if (ok)
+        {
+            await _mailService.CavabVerildiIsareEtAsync(dto.MailId);
+            TempData["Success"] = $"Cavab {dto.KimeEmail} ünvanına göndərildi.";
+            return RedirectToAction(nameof(Detail), new { id = dto.MailId });
+        }
+        else
+        {
+            TempData["Error"] = $"Göndərmə xətası: {xeta}";
+            return RedirectToAction(nameof(Cavab), new { id = dto.MailId });
+        }
     }
 }

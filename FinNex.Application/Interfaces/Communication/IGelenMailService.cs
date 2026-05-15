@@ -17,4 +17,5 @@ public interface IGelenMailService
     Task<bool> IcraEtAsync(int mailId, int isciId);
     Task<bool> ImtinaEtAsync(int mailId, int isciId, string? sebeb);
     Task IsciOxuduIsareEtAsync(int mailId, int isciId);
+    Task CavabVerildiIsareEtAsync(int mailId);
 }
