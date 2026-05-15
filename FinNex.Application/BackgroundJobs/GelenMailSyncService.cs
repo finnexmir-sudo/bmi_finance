@@ -1,7 +1,9 @@
 using FinNex.Application.Interfaces.Communication;
+using FinNex.Application.Services.Communication;
 using FinNex.DataAccess.Contexts;
 using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -41,11 +43,19 @@ public class GelenMailSyncService : BackgroundService
             try
             {
                 using var scope = _scopeFactory.CreateScope();
-                var syncer = scope.ServiceProvider.GetRequiredService<IGelenMailImapSyncer>();
-                var count = await syncer.SyncNowAsync(stoppingToken);
+                var (imapHost, email, password) = await GetImapCredentialsAsync(scope);
 
-                if (count > 0)
-                    await SendRehberBildirisAsync(scope, count, stoppingToken);
+                if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+                {
+                    _logger.LogWarning("GelenMail: heç bir istifadəçidə IMAP məlumatları tapılmadı.");
+                }
+                else
+                {
+                    var syncer = scope.ServiceProvider.GetRequiredService<IGelenMailImapSyncer>();
+                    var count = await syncer.SyncNowAsync(imapHost, email, password, stoppingToken);
+                    if (count > 0)
+                        await SendRehberBildirisAsync(scope, count, stoppingToken);
+                }
             }
             catch (Exception ex) { _logger.LogError(ex, "GelenMailSyncService xətası"); }
 
@@ -55,6 +65,35 @@ public class GelenMailSyncService : BackgroundService
             try { await Task.Delay(_interval, stoppingToken); }
             catch (TaskCanceledException) { break; }
         }
+    }
+
+    // AppUser-dən ilk konfiqurasiya edilmiş IMAP məlumatlarını götür
+    private static async Task<(string imapHost, string email, string password)> GetImapCredentialsAsync(IServiceScope scope)
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var dpProvider = scope.ServiceProvider.GetRequiredService<IDataProtectionProvider>();
+        var protector = dpProvider.CreateProtector("MailSmtpParol");
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+
+        var rehberUsers = await userManager.GetUsersInRoleAsync(RoleNames.Rehber);
+        var adminUsers  = await userManager.GetUsersInRoleAsync(RoleNames.Admin);
+        var candidates  = rehberUsers.Concat(adminUsers);
+
+        foreach (var user in candidates)
+        {
+            if (string.IsNullOrWhiteSpace(user.MailSmtpEmail) || string.IsNullOrWhiteSpace(user.MailSmtpParol))
+                continue;
+
+            try
+            {
+                var password = protector.Unprotect(user.MailSmtpParol);
+                var imapHost = GelenMailImapSyncer.DeriveImapHost(user.MailSmtpHost, user.MailSmtpEmail);
+                return (imapHost, user.MailSmtpEmail, password);
+            }
+            catch { }
+        }
+
+        return ("", "", "");
     }
 
     private async Task MaybeRunEscalationAsync(CancellationToken ct)
