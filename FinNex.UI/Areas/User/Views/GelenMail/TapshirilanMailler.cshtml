@@ -112,6 +112,18 @@
                                             Tapşırıldı: @isci.TapalanTarix.ToString("dd.MM HH:mm")
                                         </div>
                                     }
+                                    @if (isci.IsciOxudu && isci.IsciOxuduTarix.HasValue)
+                                    {
+                                        <div class="gm-tapilan-tarix gm-tapilan-oxudu">
+                                            <i class="bi bi-eye-fill"></i> Oxudu: @isci.IsciOxuduTarix.Value.ToString("dd.MM HH:mm")
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="gm-tapilan-tarix gm-tapilan-oxumadi">
+                                            <i class="bi bi-eye-slash"></i> Oxumayıb
+                                        </div>
+                                    }
                                 </div>
                                 @if (isci.IcraOlundu)
                                 {
