@@ -13,4 +13,5 @@ public interface IGelenMailService
     Task SaveAINeticAsync(int id, AIMailTahlilNetic netic);
     Task SilAsync(int id);
     Task<List<GelenMailTapshiriqDto>> GetMailTapshiriqlariAsync(int isciId);
+    Task<List<MailTapshirilanDto>> GetRehberTapshirilanMaillerAsync(int rehberUserId);
 }

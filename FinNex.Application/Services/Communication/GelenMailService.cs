@@ -276,6 +276,45 @@ public class GelenMailService : IGelenMailService
         }).ToList();
     }
 
+    public async Task<List<MailTapshirilanDto>> GetRehberTapshirilanMaillerAsync(int rehberUserId)
+    {
+        var records = await _uow.Repository<GelenMailIsci>().Query()
+            .AsNoTracking()
+            .Where(x => x.TapalanIsciTarafindan == rehberUserId && !x.Silinib)
+            .Include(x => x.GelenMail)
+            .Include(x => x.Isci)
+            .OrderByDescending(x => x.TapalanTarix)
+            .ToListAsync();
+
+        return records
+            .GroupBy(x => x.GelenMailId)
+            .Select(g =>
+            {
+                var first = g.First();
+                return new MailTapshirilanDto
+                {
+                    MailId       = g.Key,
+                    Movzu        = first.GelenMail.Movzu,
+                    KimdenAd     = first.GelenMail.KimdenAd,
+                    KimdenEmail  = first.GelenMail.KimdenEmail,
+                    AlinmaTarixi = first.GelenMail.AlinmaTarixi,
+                    TapalanTarix = first.TapalanTarix,
+                    Qeyd         = first.Qeyd,
+                    Isciler      = g.Select(x => new MailTapshirilanIsciDto
+                    {
+                        IsciId          = x.IsciId,
+                        AdSoyad         = x.Isci != null ? $"{x.Isci.Ad} {x.Isci.Soyad}" : "",
+                        TapalanTarix    = x.TapalanTarix,
+                        Qeyd            = x.Qeyd,
+                        IcraOlundu      = x.IcraOlundu,
+                        IcraOlunduTarix = x.IcraOlunduTarix
+                    }).ToList()
+                };
+            })
+            .OrderByDescending(x => x.TapalanTarix)
+            .ToList();
+    }
+
     public async Task<int> GetOxunmamisSayAsync()
     {
         return await _uow.Repository<GelenMail>().Query()
