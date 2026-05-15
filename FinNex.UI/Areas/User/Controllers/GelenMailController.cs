@@ -260,11 +260,13 @@ public class GelenMailController : Controller
         try
         {
             var count = await _imapSyncer.SyncNowAsync();
+            if (count < 0)
+                return Json(new { success = false, count = 0, message = "IMAP konfiqurasiyası boşdur. appsettings.json → GelenMail:Email və Password doldurulmalıdır." });
             return Json(new { success = true, count, message = count > 0 ? $"{count} yeni mail tapıldı." : "Yeni mail yoxdur." });
         }
         catch (Exception ex)
         {
-            return Json(new { success = false, count = 0, message = $"Xəta: {ex.Message}" });
+            return Json(new { success = false, count = 0, message = $"IMAP xətası: {ex.Message}" });
         }
     }
 

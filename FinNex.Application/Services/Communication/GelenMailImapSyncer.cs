@@ -42,7 +42,7 @@ public class GelenMailImapSyncer : IGelenMailImapSyncer
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
             _logger.LogWarning("GelenMail IMAP konfiqurasiyası boşdur.");
-            return 0;
+            return -1;
         }
 
         var knownIds = await _db.Set<GelenMail>()
