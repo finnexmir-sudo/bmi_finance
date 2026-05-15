@@ -274,6 +274,56 @@ public class GelenMailController : Controller
         }
     }
 
+    // ── GET /User/GelenMail/MailPanel/5 — split-pane partial ────
+    [HttpGet]
+    public async Task<IActionResult> MailPanel(int id)
+    {
+        var mail = await _mailService.GetDetailAsync(id);
+        if (mail == null) return NotFound();
+        await _mailService.OxunduIsareEtAsync(id);
+        var iscilerResult = await _isciService.HamisiniGetirAsync();
+        ViewBag.Isciler = iscilerResult.Success ? iscilerResult.Data!.ToList() : new();
+        return PartialView("_MailDetail", mail);
+    }
+
+    // ── POST AJAX /User/GelenMail/TapaAjax ──────────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> TapaAjax(int mailId, List<int> isciIds, string? qeyd)
+    {
+        if (isciIds == null || isciIds.Count == 0)
+            return Json(new { success = false, message = "Ən az bir işçi seçin." });
+        var appUser = await _userManager.GetUserAsync(User);
+        if (appUser == null) return Unauthorized();
+        var mail = await _mailService.GetDetailAsync(mailId);
+        await _mailService.TapaAsync(mailId, isciIds, qeyd, appUser.Id);
+        if (mail != null)
+        {
+            var senderName = string.IsNullOrWhiteSpace(appUser.Ad) ? (User.Identity?.Name ?? "Rəhbər") : $"{appUser.Ad} {appUser.Soyad}".Trim();
+            foreach (var isciId in isciIds)
+            {
+                try { await _bildirisService.YaratAsync(isciId, BildirisNovu.YeniTapshiriq, "Sizə mail tapşırıldı", $"{senderName}: {mail.Movzu}" + (string.IsNullOrWhiteSpace(qeyd) ? "" : $" — {qeyd}"), "/User/Tapshiriq"); } catch { }
+            }
+        }
+        return Json(new { success = true, message = $"{isciIds.Count} işçiyə tapşırıldı." });
+    }
+
+    // ── POST AJAX /User/GelenMail/CavabGonderAjax ───────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CavabGonderAjax(MailCavabDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.KimeEmail) || string.IsNullOrWhiteSpace(dto.CavabMetni))
+            return Json(new { success = false, message = "Alıcı e-poçt və mətn mütləqdir." });
+        var appUser = await _userManager.GetUserAsync(User);
+        if (string.IsNullOrWhiteSpace(appUser?.MailSmtpEmail) || string.IsNullOrWhiteSpace(appUser?.MailSmtpParol))
+            return Json(new { success = false, message = "SMTP məlumatları tapılmadı. Profil → Mail Ayarları bölməsindən əlavə edin." });
+        var smtpParol = _protector.Unprotect(appUser.MailSmtpParol);
+        var (ok, xeta) = await _smtp.GonderAsync(dto.KimeEmail, dto.KimeAd, dto.Movzu, dto.CavabMetni, appUser.MailSmtpEmail, smtpParol, appUser.MailSmtpHost, string.IsNullOrWhiteSpace(dto.MessageId) ? null : dto.MessageId);
+        if (ok) await _mailService.CavabVerildiIsareEtAsync(dto.MailId);
+        return Json(new { success = ok, message = ok ? "Cavab göndərildi." : $"Xəta: {xeta}" });
+    }
+
     // ── GET /User/GelenMail/Cavab/5 ─────────────────────────────
     [HttpGet]
     public async Task<IActionResult> Cavab(int id)
