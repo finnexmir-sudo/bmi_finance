@@ -789,20 +789,46 @@
 .gm-form-hint { font-size: .72rem; color: #9ca3af; margin: 0 0 6px; }
 
 /* ══ Tapşırılan Maillər İzləmə Səhifəsi ══ */
+.gm-tapstat-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
 .gm-stat-mini {
     background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    border: 1.5px solid #e2e8f0;
     border-radius: 10px;
-    padding: 10px 20px;
+    padding: 10px 22px;
     text-align: center;
     min-width: 90px;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s, transform .1s;
+    appearance: none;
+    font-family: inherit;
 }
+.gm-stat-mini:hover { box-shadow: 0 2px 8px rgba(0,0,0,.09); transform: translateY(-1px); }
+.gm-stat-mini--active { border-color: #6366f1 !important; box-shadow: 0 0 0 3px #e0e7ff; }
 .gm-stat-mini-num { display: block; font-size: 1.4rem; font-weight: 700; color: #1a2332; }
 .gm-stat-mini-lbl { font-size: .72rem; color: #8a93a8; }
 .gm-stat-mini--amber { border-color: #fde68a; }
 .gm-stat-mini--amber .gm-stat-mini-num { color: #b45309; }
 .gm-stat-mini--green { border-color: #bbf7d0; }
 .gm-stat-mini--green .gm-stat-mini-num { color: #15803d; }
+
+.gm-tapshirilan-search {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.gm-tapshirilan-count {
+    font-size: .78rem;
+    color: #9ca3af;
+    white-space: nowrap;
+}
 
 .gm-taplist { display: flex; flex-direction: column; gap: 10px; }
 
@@ -859,6 +885,12 @@
 .gm-tapilan-avatar--wait {
     width: 28px; height: 28px; border-radius: 50%;
     background: #e5e7eb; color: #6b7280;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .72rem; font-weight: 700; flex-shrink: 0;
+}
+.gm-tapilan-avatar--imtina {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #fee2e2; color: #ef4444;
     display: flex; align-items: center; justify-content: center;
     font-size: .72rem; font-weight: 700; flex-shrink: 0;
 }
