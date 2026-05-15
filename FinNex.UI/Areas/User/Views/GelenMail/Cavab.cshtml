@@ -1,0 +1,211 @@
+@model FinNex.Application.DTOs.Communication.MailCavabDto
+@{
+    ViewData["Title"] = "Cavab — " + Model.AsilMailMovzu;
+}
+
+<link rel="stylesheet" href="~/css/User/gelen-mail.css" asp-append-version="true" />
+
+<div class="gm-cavab-page">
+
+    <!-- ── Başlıq ── -->
+    <div class="gm-cavab-topbar">
+        <a asp-action="Detail" asp-route-id="@Model.MailId" class="gm-btn gm-btn-ghost">
+            <i class="bi bi-arrow-left"></i> Geri
+        </a>
+        <div class="gm-cavab-topbar-title">
+            <i class="bi bi-reply-fill" style="color:#3b82f6"></i>
+            Mail Cavabı
+        </div>
+    </div>
+
+    <!-- ── Orijinal mail kartı ── -->
+    <div class="gm-cavab-original">
+        <div class="gm-cavab-original-label">
+            <i class="bi bi-envelope-open"></i> Cavab Verilən Mail
+        </div>
+        <div class="gm-cavab-original-row">
+            <div class="gm-mail-avatar gm-cavab-avatar">
+                @(Model.KimeAd.Length > 0 ? Model.KimeAd[0].ToString().ToUpper() : "?")
+            </div>
+            <div class="gm-cavab-original-info">
+                <span class="gm-cavab-original-name">@(string.IsNullOrWhiteSpace(Model.KimeAd) ? Model.KimeEmail : Model.KimeAd)</span>
+                <span class="gm-cavab-original-email">@Model.KimeEmail</span>
+            </div>
+            <span class="gm-cavab-original-date">
+                <i class="bi bi-calendar3"></i>
+                @Model.AsilMailTarix.ToString("dd MMMM yyyy, HH:mm")
+            </span>
+        </div>
+        <div class="gm-cavab-original-subject">
+            <i class="bi bi-tag"></i> @Model.AsilMailMovzu
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Model.AsilMailMetinDuz))
+        {
+            <details class="gm-cavab-original-body">
+                <summary>Orijinal mətni göstər</summary>
+                <pre class="gm-cavab-original-pre">@Model.AsilMailMetinDuz</pre>
+            </details>
+        }
+    </div>
+
+    <!-- ── Compose kartı ── -->
+    <div class="gm-cavab-compose">
+
+        <div class="gm-cavab-compose-header">
+            <i class="bi bi-pencil-square" style="color:#3b82f6;font-size:1.1rem"></i>
+            <span>Cavabınızı Yazın</span>
+        </div>
+
+        <form asp-action="CavabGonder" method="post" id="cavabForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="MailId"    value="@Model.MailId" />
+            <input type="hidden" name="MessageId" value="@Model.MessageId" />
+            <input type="hidden" name="AsilMailMovzu"   value="@Model.AsilMailMovzu" />
+            <input type="hidden" name="AsilMailTarix"   value="@Model.AsilMailTarix.ToString("o")" />
+
+            <!-- Kimə -->
+            <div class="gm-cavab-field">
+                <label class="gm-cavab-field-label">
+                    <i class="bi bi-person"></i> Kimə
+                </label>
+                <div class="gm-cavab-field-inputs">
+                    <input type="text"
+                           name="KimeAd"
+                           value="@Model.KimeAd"
+                           placeholder="Ad Soyad"
+                           class="gm-cavab-input gm-cavab-input--name"
+                           autocomplete="off" />
+                    <input type="email"
+                           name="KimeEmail"
+                           value="@Model.KimeEmail"
+                           placeholder="e-poçt@nümunə.com"
+                           class="gm-cavab-input gm-cavab-input--email"
+                           required
+                           autocomplete="off" />
+                </div>
+            </div>
+
+            <!-- Mövzu -->
+            <div class="gm-cavab-field gm-cavab-field--border">
+                <label class="gm-cavab-field-label">
+                    <i class="bi bi-tag"></i> Mövzu
+                </label>
+                <input type="text"
+                       name="Movzu"
+                       value="@Model.Movzu"
+                       class="gm-cavab-input gm-cavab-input--full"
+                       required />
+            </div>
+
+            <!-- AI paneli -->
+            <div class="gm-cavab-ai-bar" id="aiBar">
+                <div class="gm-cavab-ai-bar-left">
+                    <span class="gm-cavab-ai-dot" id="aiDot"></span>
+                    <span id="aiStatus" class="gm-cavab-ai-status">AI cavab hazırlayır...</span>
+                </div>
+                <button type="button" class="gm-cavab-ai-refresh" id="aiRefresh" title="Yenidən hazırla" style="display:none">
+                    <i class="bi bi-arrow-clockwise"></i> Yenidən hazırla
+                </button>
+            </div>
+
+            <!-- Mətn sahəsi -->
+            <div class="gm-cavab-textarea-wrap">
+                <textarea name="CavabMetni"
+                          id="cavabMetni"
+                          class="gm-cavab-textarea"
+                          placeholder="Cavabınızı bura yazın…"
+                          rows="14"
+                          required>@Model.CavabMetni</textarea>
+                <div class="gm-cavab-char-count" id="charCount">0 simvol</div>
+            </div>
+
+            <!-- Düymələr -->
+            <div class="gm-cavab-actions">
+                <a asp-action="Detail" asp-route-id="@Model.MailId" class="gm-btn gm-btn-ghost">
+                    <i class="bi bi-x-lg"></i> Ləğv et
+                </a>
+                <button type="submit" class="gm-btn gm-btn-send" id="sendBtn">
+                    <i class="bi bi-send-fill"></i> Göndər
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<script>
+(function () {
+    var mailId   = @Model.MailId;
+    var textarea = document.getElementById('cavabMetni');
+    var aiBar    = document.getElementById('aiBar');
+    var aiDot    = document.getElementById('aiDot');
+    var aiStatus = document.getElementById('aiStatus');
+    var aiRefresh= document.getElementById('aiRefresh');
+    var charCount= document.getElementById('charCount');
+    var sendBtn  = document.getElementById('sendBtn');
+    var token    = document.querySelector('[name="__RequestVerificationToken"]')?.value ?? '';
+
+    function updateCount() {
+        var n = (textarea.value || '').length;
+        charCount.textContent = n.toLocaleString() + ' simvol';
+    }
+    textarea.addEventListener('input', updateCount);
+    updateCount();
+
+    function setAiState(state) {
+        aiDot.className = 'gm-cavab-ai-dot gm-cavab-ai-dot--' + state;
+        if (state === 'loading') {
+            aiStatus.textContent = 'AI cavab hazırlayır…';
+            aiRefresh.style.display = 'none';
+            textarea.disabled = true;
+            textarea.classList.add('gm-cavab-textarea--loading');
+        } else if (state === 'done') {
+            aiStatus.textContent = 'AI cavab hazırladı — redaktə edə bilərsiniz';
+            aiRefresh.style.display = '';
+            textarea.disabled = false;
+            textarea.classList.remove('gm-cavab-textarea--loading');
+        } else if (state === 'error') {
+            aiStatus.textContent = 'AI cavab hazırlaya bilmədi';
+            aiRefresh.style.display = '';
+            textarea.disabled = false;
+            textarea.classList.remove('gm-cavab-textarea--loading');
+        }
+    }
+
+    async function loadAI() {
+        setAiState('loading');
+        try {
+            var resp = await fetch('/User/GelenMail/AICavabHazirla', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: 'id=' + mailId
+            });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            var data = await resp.json();
+            textarea.value = data.metin || '';
+            updateCount();
+            setAiState('done');
+        } catch (e) {
+            setAiState('error');
+        }
+    }
+
+    aiRefresh.addEventListener('click', loadAI);
+
+    // Submit qoruma
+    document.getElementById('cavabForm').addEventListener('submit', function () {
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<span class="gm-cavab-sending"><i class="bi bi-send-fill"></i> Göndərilir…</span>';
+    });
+
+    // Başlanğıcda boşdursa AI işə düşsün
+    if (!textarea.value.trim()) {
+        loadAI();
+    } else {
+        setAiState('done');
+    }
+})();
+</script>

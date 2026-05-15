@@ -373,6 +373,16 @@ public class GelenMailService : IGelenMailService
         await _uow.YaddaSaxlaAsync();
     }
 
+    public async Task CavabVerildiIsareEtAsync(int mailId)
+    {
+        var mail = await _uow.Repository<GelenMail>().Query()
+            .Where(x => x.Id == mailId && !x.Silinib)
+            .FirstOrDefaultAsync();
+        if (mail == null) return;
+        mail.CavabVerildi = true;
+        await _uow.YaddaSaxlaAsync();
+    }
+
     public async Task IsciOxuduIsareEtAsync(int mailId, int isciId)
     {
         var record = await _uow.Repository<GelenMailIsci>().Query()

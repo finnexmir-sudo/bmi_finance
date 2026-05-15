@@ -148,6 +148,10 @@ namespace FinNex.UI
                                         FinNex.Application.Services.Communication.AnthropicService>();
             builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.IAttachmentTextExtractor,
                                         FinNex.Application.Services.Communication.AttachmentTextExtractor>();
+            builder.Services.Configure<FinNex.Application.Settings.SmtpSettings>(
+                builder.Configuration.GetSection("SmtpSettings"));
+            builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.ISmtpMailService,
+                                        FinNex.Application.Services.Communication.SmtpMailService>();
 
             // ==================================================
             // 6. Background Services

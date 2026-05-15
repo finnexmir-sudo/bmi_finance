@@ -89,6 +89,50 @@ public class AnthropicService : IAnthropicService
         return new AIMailTahlilNetic { Xulase = raw };
     }
 
+    public async Task<string> MailCavabHazirlaAsync(string kimden, string movzu, string metin, string? aiXulase)
+    {
+        if (string.IsNullOrWhiteSpace(_apiKey))
+            return "AI açarı konfiqurasiya edilməyib. Cavabı özünüz yazın.";
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Siz şirkətin peşəkar mail katibisiniz. Aşağıdakı e-poçta Azərbaycan dilində rəsmi, nəzakətli və qısa cavab hazırlayın.");
+        sb.AppendLine("Cavab mütləq düz mətn formatında olsun (markdown yox). Heç bir izahat yazmayın — yalnız cavab mətni.");
+        sb.AppendLine($"Bugünkü tarix: {DateTime.Now:dd MMMM yyyy}.");
+        sb.AppendLine();
+        sb.AppendLine($"Göndərən: {kimden}");
+        sb.AppendLine($"Mövzu: {movzu}");
+        sb.AppendLine($"Məzmun:\n{metin.Substring(0, Math.Min(metin.Length, 2000))}");
+
+        if (!string.IsNullOrWhiteSpace(aiXulase))
+        {
+            sb.AppendLine();
+            sb.AppendLine($"AI xülasəsi (istifadə et):\n{aiXulase.Substring(0, Math.Min(aiXulase.Length, 500))}");
+        }
+
+        var request = new
+        {
+            model = Model,
+            max_tokens = 800,
+            messages = new[] { new { role = "user", content = sb.ToString() } }
+        };
+
+        var client = _httpClientFactory.CreateClient("Anthropic");
+        client.DefaultRequestHeaders.Clear();
+        client.DefaultRequestHeaders.Add("x-api-key", _apiKey);
+        client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+
+        var json = JsonSerializer.Serialize(request);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await client.PostAsync(ApiUrl, content);
+        if (!response.IsSuccessStatusCode)
+            return $"AI cavabı alınmadı (HTTP {(int)response.StatusCode}). Cavabı özünüz yazın.";
+
+        var body = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        return doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString() ?? "";
+    }
+
     private static string BuildPrompt(string kimden, string movzu, string metin,
         List<(string FileName, string ContentType, string Content)> qosmalar)
     {
