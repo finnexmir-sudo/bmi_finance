@@ -25,4 +25,6 @@ public class MailTapshirilanIsciDto
     public DateTime? IcraOlunduTarix { get; set; }
     public bool ImtinaEtdi { get; set; }
     public string? ImtinaSebebi { get; set; }
+    public bool IsciOxudu { get; set; }
+    public DateTime? IsciOxuduTarix { get; set; }
 }
