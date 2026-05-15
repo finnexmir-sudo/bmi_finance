@@ -11,6 +11,8 @@ public class GelenMailIsci : BaseEntity
     public string? Qeyd { get; set; }
     public bool IcraOlundu { get; set; }
     public DateTime? IcraOlunduTarix { get; set; }
+    public bool ImtinaEtdi { get; set; }
+    public string? ImtinaSebebi { get; set; }
 
     public virtual GelenMail GelenMail { get; set; } = null!;
     public virtual Isci Isci { get; set; } = null!;

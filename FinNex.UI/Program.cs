@@ -661,6 +661,10 @@ END
                                 ALTER TABLE [GelenMailIsciler] ADD [IcraOlundu] BIT NOT NULL DEFAULT 0;
                             IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailIsciler' AND COLUMN_NAME='IcraOlunduTarix')
                                 ALTER TABLE [GelenMailIsciler] ADD [IcraOlunduTarix] DATETIME2 NULL;
+                            IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailIsciler' AND COLUMN_NAME='ImtinaEtdi')
+                                ALTER TABLE [GelenMailIsciler] ADD [ImtinaEtdi] BIT NOT NULL DEFAULT 0;
+                            IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailIsciler' AND COLUMN_NAME='ImtinaSebebi')
+                                ALTER TABLE [GelenMailIsciler] ADD [ImtinaSebebi] NVARCHAR(500) NULL;
                         END
 
                         IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'GelenMailIsciler')
@@ -680,6 +684,8 @@ END
                                 [SilinmeTarixi]           DATETIME2 NULL,
                                 [IcraOlundu]              BIT NOT NULL DEFAULT 0,
                                 [IcraOlunduTarix]         DATETIME2 NULL,
+                                [ImtinaEtdi]              BIT NOT NULL DEFAULT 0,
+                                [ImtinaSebebi]            NVARCHAR(500) NULL,
                                 [Silinib]                 BIT NOT NULL DEFAULT 0,
                                 CONSTRAINT [FK_GelenMailIsciler_Mail]  FOREIGN KEY ([GelenMailId]) REFERENCES [GelenMailler]([Id]) ON DELETE CASCADE,
                                 CONSTRAINT [FK_GelenMailIsciler_Isci]  FOREIGN KEY ([IsciId])      REFERENCES [Isciler]([Id])

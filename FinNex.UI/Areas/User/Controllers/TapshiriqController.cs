@@ -159,6 +159,32 @@ namespace FinNex.UI.Areas.User.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // POST /User/Tapshiriq/MailIcraEt
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MailIcraEt(int mailId)
+        {
+            var isciId = await GetIsciIdAsync();
+            if (isciId == null) return RedirectToLogin();
+
+            await _gelenMailService.IcraEtAsync(mailId, isciId.Value);
+            TempData["Success"] = "Tapşırıq tamamlandı olaraq qeyd edildi.";
+            return RedirectToAction(nameof(MailGoruntusu), new { mailId });
+        }
+
+        // POST /User/Tapshiriq/MailImtina
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MailImtina(int mailId, string? sebeb)
+        {
+            var isciId = await GetIsciIdAsync();
+            if (isciId == null) return RedirectToLogin();
+
+            await _gelenMailService.ImtinaEtAsync(mailId, isciId.Value, sebeb);
+            TempData["Info"] = "İmtina qeyd edildi.";
+            return RedirectToAction(nameof(Index), new { tab = "mail" });
+        }
+
         // GET /User/Tapshiriq/MailGoruntusu/5
         public async Task<IActionResult> MailGoruntusu(int mailId)
         {

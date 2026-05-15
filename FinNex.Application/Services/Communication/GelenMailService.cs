@@ -122,7 +122,9 @@ public class GelenMailService : IGelenMailService
                 TapalanTarix = ti.TapalanTarix,
                 Qeyd = ti.Qeyd,
                 IcraOlundu = ti.IcraOlundu,
-                IcraOlunduTarix = ti.IcraOlunduTarix
+                IcraOlunduTarix = ti.IcraOlunduTarix,
+                ImtinaEtdi = ti.ImtinaEtdi,
+                ImtinaSebebi = ti.ImtinaSebebi
             }).ToList(),
             DedlaynTarix = m.DedlaynTarix,
             DedlaynNov = m.DedlaynNov,
@@ -272,8 +274,40 @@ public class GelenMailService : IGelenMailService
             TapalanTarix    = x.TapalanTarix,
             Qeyd            = x.Qeyd,
             IcraOlundu      = x.IcraOlundu,
-            IcraOlunduTarix = x.IcraOlunduTarix
+            IcraOlunduTarix = x.IcraOlunduTarix,
+            ImtinaEtdi      = x.ImtinaEtdi,
+            ImtinaSebebi    = x.ImtinaSebebi
         }).ToList();
+    }
+
+    public async Task<bool> IcraEtAsync(int mailId, int isciId)
+    {
+        var record = await _uow.Repository<GelenMailIsci>().Query()
+            .Where(x => x.GelenMailId == mailId && x.IsciId == isciId && !x.Silinib)
+            .FirstOrDefaultAsync();
+        if (record == null) return false;
+
+        record.IcraOlundu = true;
+        record.IcraOlunduTarix = DateTime.Now;
+        record.ImtinaEtdi = false;
+        record.ImtinaSebebi = null;
+        await _uow.YaddaSaxlaAsync();
+        return true;
+    }
+
+    public async Task<bool> ImtinaEtAsync(int mailId, int isciId, string? sebeb)
+    {
+        var record = await _uow.Repository<GelenMailIsci>().Query()
+            .Where(x => x.GelenMailId == mailId && x.IsciId == isciId && !x.Silinib)
+            .FirstOrDefaultAsync();
+        if (record == null) return false;
+
+        record.ImtinaEtdi = true;
+        record.ImtinaSebebi = sebeb;
+        record.IcraOlundu = false;
+        record.IcraOlunduTarix = null;
+        await _uow.YaddaSaxlaAsync();
+        return true;
     }
 
     public async Task<List<MailTapshirilanDto>> GetRehberTapshirilanMaillerAsync(int rehberUserId)
@@ -307,7 +341,9 @@ public class GelenMailService : IGelenMailService
                         TapalanTarix    = x.TapalanTarix,
                         Qeyd            = x.Qeyd,
                         IcraOlundu      = x.IcraOlundu,
-                        IcraOlunduTarix = x.IcraOlunduTarix
+                        IcraOlunduTarix = x.IcraOlunduTarix,
+                        ImtinaEtdi      = x.ImtinaEtdi,
+                        ImtinaSebebi    = x.ImtinaSebebi
                     }).ToList()
                 };
             })

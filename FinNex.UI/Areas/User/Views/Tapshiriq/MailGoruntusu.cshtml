@@ -130,6 +130,17 @@
         </div>
 
         <div class="gm-detail-sidebar">
+
+            @* Alertlər *@
+            @if (TempData["Success"] != null)
+            {
+                <div class="gm-alert gm-alert--success" style="margin-bottom:10px">@TempData["Success"]</div>
+            }
+            @if (TempData["Info"] != null)
+            {
+                <div class="gm-alert gm-alert--info" style="margin-bottom:10px">@TempData["Info"]</div>
+            }
+
             <div class="gm-card">
                 <div class="gm-card-header"><i class="bi bi-info-circle"></i> Tapşırıq məlumatı</div>
                 <div class="gm-card-body" style="font-size:.82rem;color:#374151;line-height:1.8">
@@ -145,6 +156,22 @@
                         @if (myAssignment?.IcraOlundu == true)
                         {
                             <span class="tsk-status tsk-status--done" style="font-size:.75rem">Tamamlandı</span>
+                            @if (myAssignment.IcraOlunduTarix.HasValue)
+                            {
+                                <div style="font-size:.72rem;color:#6b7280;margin-top:2px">
+                                    @myAssignment.IcraOlunduTarix.Value.ToString("dd.MM.yyyy HH:mm")
+                                </div>
+                            }
+                        }
+                        else if (myAssignment?.ImtinaEtdi == true)
+                        {
+                            <span class="tsk-status tsk-status--cancel" style="font-size:.75rem">İmtina edildi</span>
+                            @if (!string.IsNullOrWhiteSpace(myAssignment.ImtinaSebebi))
+                            {
+                                <div style="font-size:.72rem;color:#6b7280;margin-top:2px;font-style:italic">
+                                    @myAssignment.ImtinaSebebi
+                                </div>
+                            }
                         }
                         else
                         {
@@ -153,6 +180,37 @@
                     </div>
                 </div>
             </div>
+
+            @* Əməliyyat düymələri — yalnız gözlənilir statusunda *@
+            @if (myAssignment != null && !myAssignment.IcraOlundu && !myAssignment.ImtinaEtdi)
+            {
+                <div class="gm-card">
+                    <div class="gm-card-header"><i class="bi bi-check2-square"></i> Əməliyyat</div>
+                    <div class="gm-card-body" style="display:flex;flex-direction:column;gap:8px">
+
+                        <form asp-action="MailIcraEt" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="mailId" value="@Model.Id" />
+                            <button type="submit" class="gm-btn gm-btn-primary w-100">
+                                <i class="bi bi-check-circle"></i> İcra Etdim
+                            </button>
+                        </form>
+
+                        <form asp-action="MailImtina" method="post" id="imtinaForm">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="mailId" value="@Model.Id" />
+                            <textarea name="sebeb" class="gm-textarea" rows="2"
+                                      placeholder="İmtina səbəbi (ixtiyari)..." style="margin-bottom:6px"></textarea>
+                            <button type="submit" class="gm-btn gm-btn-outline w-100"
+                                    style="color:#ef4444;border-color:#fca5a5"
+                                    onclick="return confirm('İmtina etmək istəyirsiniz?')">
+                                <i class="bi bi-x-circle"></i> İmtina
+                            </button>
+                        </form>
+
+                    </div>
+                </div>
+            }
         </div>
     </div>
 </div>
