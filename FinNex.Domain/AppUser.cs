@@ -18,5 +18,8 @@ namespace FinNex.Domain
         public int? IsciId { get; set; }
         public Isci? Isci { get; set; }
 
+        // Mail cavabı üçün SMTP məlumatları (şifrəli saxlanır)
+        public string? MailSmtpEmail { get; set; }
+        public string? MailSmtpParol { get; set; }
     }
 }

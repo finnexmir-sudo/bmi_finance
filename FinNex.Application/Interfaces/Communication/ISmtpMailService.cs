@@ -7,5 +7,7 @@ public interface ISmtpMailService
         string kimeAd,
         string movzu,
         string metin,
+        string fromEmail,
+        string fromParol,
         string? replyToMessageId = null);
 }
