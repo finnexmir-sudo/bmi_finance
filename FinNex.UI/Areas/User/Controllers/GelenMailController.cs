@@ -5,6 +5,7 @@ using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,7 @@ public class GelenMailController : Controller
     private readonly IXatirlatmaService _xatirlatmaService;
     private readonly IBildirisService _bildirisService;
     private readonly UserManager<AppUser> _userManager;
+    private readonly IDataProtector _protector;
 
     public GelenMailController(
         IGelenMailService mailService,
@@ -31,7 +33,8 @@ public class GelenMailController : Controller
         IIsciService isciService,
         IXatirlatmaService xatirlatmaService,
         IBildirisService bildirisService,
-        UserManager<AppUser> userManager)
+        UserManager<AppUser> userManager,
+        IDataProtectionProvider dpProvider)
     {
         _mailService = mailService;
         _ai = ai;
@@ -40,6 +43,7 @@ public class GelenMailController : Controller
         _xatirlatmaService = xatirlatmaService;
         _bildirisService = bildirisService;
         _userManager = userManager;
+        _protector = dpProvider.CreateProtector("MailSmtpParol");
     }
 
     public async Task<IActionResult> Index(
@@ -307,11 +311,22 @@ public class GelenMailController : Controller
             return RedirectToAction(nameof(Cavab), new { id = dto.MailId });
         }
 
+        var appUser = await _userManager.GetUserAsync(User);
+        if (string.IsNullOrWhiteSpace(appUser?.MailSmtpEmail) || string.IsNullOrWhiteSpace(appUser?.MailSmtpParol))
+        {
+            TempData["Error"] = "SMTP məlumatları tapılmadı. Profil → Mail Ayarları bölməsindən e-poçt və şifrəni əlavə edin.";
+            return RedirectToAction(nameof(Cavab), new { id = dto.MailId });
+        }
+
+        var smtpParol = _protector.Unprotect(appUser.MailSmtpParol);
+
         var (ok, xeta) = await _smtp.GonderAsync(
             dto.KimeEmail,
             dto.KimeAd,
             dto.Movzu,
             dto.CavabMetni,
+            appUser.MailSmtpEmail,
+            smtpParol,
             string.IsNullOrWhiteSpace(dto.MessageId) ? null : dto.MessageId);
 
         if (ok)
