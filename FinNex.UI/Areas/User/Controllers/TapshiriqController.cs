@@ -198,6 +198,8 @@ namespace FinNex.UI.Areas.User.Controllers
             var tapshirildi = mail.TapalanIsciler.Any(ti => ti.IsciId == isciId.Value);
             if (!tapshirildi) return Forbid();
 
+            await _gelenMailService.IsciOxuduIsareEtAsync(mailId, isciId.Value);
+
             ViewBag.IsciId = isciId.Value;
             ViewData["Title"] = mail.Movzu;
             return View(mail);

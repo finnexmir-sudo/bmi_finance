@@ -124,7 +124,9 @@ public class GelenMailService : IGelenMailService
                 IcraOlundu = ti.IcraOlundu,
                 IcraOlunduTarix = ti.IcraOlunduTarix,
                 ImtinaEtdi = ti.ImtinaEtdi,
-                ImtinaSebebi = ti.ImtinaSebebi
+                ImtinaSebebi = ti.ImtinaSebebi,
+                IsciOxudu = ti.IsciOxudu,
+                IsciOxuduTarix = ti.IsciOxuduTarix
             }).ToList(),
             DedlaynTarix = m.DedlaynTarix,
             DedlaynNov = m.DedlaynNov,
@@ -343,7 +345,9 @@ public class GelenMailService : IGelenMailService
                         IcraOlundu      = x.IcraOlundu,
                         IcraOlunduTarix = x.IcraOlunduTarix,
                         ImtinaEtdi      = x.ImtinaEtdi,
-                        ImtinaSebebi    = x.ImtinaSebebi
+                        ImtinaSebebi    = x.ImtinaSebebi,
+                        IsciOxudu       = x.IsciOxudu,
+                        IsciOxuduTarix  = x.IsciOxuduTarix
                     }).ToList()
                 };
             })
@@ -366,6 +370,18 @@ public class GelenMailService : IGelenMailService
         if (mail == null) return;
         mail.Silinib = true;
         mail.SilinmeTarixi = DateTime.Now;
+        await _uow.YaddaSaxlaAsync();
+    }
+
+    public async Task IsciOxuduIsareEtAsync(int mailId, int isciId)
+    {
+        var record = await _uow.Repository<GelenMailIsci>().Query()
+            .Where(x => x.GelenMailId == mailId && x.IsciId == isciId && !x.Silinib)
+            .FirstOrDefaultAsync();
+        if (record == null || record.IsciOxudu) return;
+
+        record.IsciOxudu = true;
+        record.IsciOxuduTarix = DateTime.Now;
         await _uow.YaddaSaxlaAsync();
     }
 
