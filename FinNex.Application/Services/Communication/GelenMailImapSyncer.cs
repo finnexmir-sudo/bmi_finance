@@ -3,7 +3,6 @@ using FinNex.DataAccess.Contexts;
 using FinNex.Domain.Entities.Communication;
 using MailKit;
 using MailKit.Net.Imap;
-using MailKit.Search;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -14,9 +13,8 @@ namespace FinNex.Application.Services.Communication;
 public class GelenMailImapSyncer : IGelenMailImapSyncer
 {
     private readonly AppDbContext _db;
-    private readonly IConfiguration _config;
-    private readonly IAttachmentTextExtractor? _extractor;
     private readonly ILogger<GelenMailImapSyncer> _logger;
+    private readonly IAttachmentTextExtractor? _extractor;
     private readonly string _attachmentBaseDir;
 
     public GelenMailImapSyncer(
@@ -26,25 +24,13 @@ public class GelenMailImapSyncer : IGelenMailImapSyncer
         IAttachmentTextExtractor? extractor = null)
     {
         _db = db;
-        _config = config;
         _logger = logger;
         _extractor = extractor;
         _attachmentBaseDir = config["GelenMail:AttachmentDir"] ?? Path.Combine("wwwroot", "mail-qosmalar");
     }
 
-    public async Task<int> SyncNowAsync(CancellationToken ct = default)
+    public async Task<int> SyncNowAsync(string imapHost, string email, string password, CancellationToken ct = default)
     {
-        var host = _config["GelenMail:ImapServer"];
-        var port = _config.GetValue("GelenMail:Port", 993);
-        var email = _config["GelenMail:Email"];
-        var password = _config["GelenMail:Password"];
-
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
-        {
-            _logger.LogWarning("GelenMail IMAP konfiqurasiyası boşdur.");
-            return -1;
-        }
-
         var knownIds = await _db.Set<GelenMail>()
             .AsNoTracking()
             .Select(x => x.MessageId)
@@ -52,7 +38,7 @@ public class GelenMailImapSyncer : IGelenMailImapSyncer
         var knownSet = new HashSet<string>(knownIds);
 
         using var client = new ImapClient();
-        await client.ConnectAsync(host, port, MailKit.Security.SecureSocketOptions.SslOnConnect, ct);
+        await client.ConnectAsync(imapHost, 993, MailKit.Security.SecureSocketOptions.SslOnConnect, ct);
         await client.AuthenticateAsync(email, password, ct);
 
         var inbox = client.Inbox;
@@ -126,6 +112,23 @@ public class GelenMailImapSyncer : IGelenMailImapSyncer
 
         await client.DisconnectAsync(true, ct);
         return newMails.Count;
+    }
+
+    // smtp.titan.email → imap.titan.email; auto-detect if no smtpHost
+    public static string DeriveImapHost(string? smtpHost, string email)
+    {
+        if (!string.IsNullOrWhiteSpace(smtpHost) && smtpHost.StartsWith("smtp.", StringComparison.OrdinalIgnoreCase))
+            return "imap." + smtpHost[5..];
+
+        var domain = email.Split('@').LastOrDefault()?.ToLower() ?? "";
+        return domain switch
+        {
+            "gmail.com"                                   => "imap.gmail.com",
+            "yahoo.com"                                   => "imap.mail.yahoo.com",
+            "outlook.com" or "hotmail.com" or "live.com"  => "imap-mail.outlook.com",
+            _ when domain.Contains("titan")               => "imap.titan.email",
+            _                                             => $"imap.{domain}"
+        };
     }
 
     private static string SanitizeFileName(string name)

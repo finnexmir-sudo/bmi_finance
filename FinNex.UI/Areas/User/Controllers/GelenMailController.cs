@@ -257,11 +257,15 @@ public class GelenMailController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ManualSync()
     {
+        var appUser = await _userManager.GetUserAsync(User);
+        if (string.IsNullOrWhiteSpace(appUser?.MailSmtpEmail) || string.IsNullOrWhiteSpace(appUser?.MailSmtpParol))
+            return Json(new { success = false, count = 0, message = "Profil → Mail Ayarları bölməsindən e-poçt və şifrəni əlavə edin." });
+
         try
         {
-            var count = await _imapSyncer.SyncNowAsync();
-            if (count < 0)
-                return Json(new { success = false, count = 0, message = "IMAP konfiqurasiyası boşdur. appsettings.json → GelenMail:Email və Password doldurulmalıdır." });
+            var password = _protector.Unprotect(appUser.MailSmtpParol);
+            var imapHost = FinNex.Application.Services.Communication.GelenMailImapSyncer.DeriveImapHost(appUser.MailSmtpHost, appUser.MailSmtpEmail);
+            var count = await _imapSyncer.SyncNowAsync(imapHost, appUser.MailSmtpEmail, password);
             return Json(new { success = true, count, message = count > 0 ? $"{count} yeni mail tapıldı." : "Yeni mail yoxdur." });
         }
         catch (Exception ex)
