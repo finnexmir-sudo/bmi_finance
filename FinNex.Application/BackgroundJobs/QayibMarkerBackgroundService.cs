@@ -81,6 +81,17 @@ namespace FinNex.Infrastructure.BackgroundJobs
 
             if (aktivIsciler.Count == 0) return;
 
+            // Backfill dövründəki bayram/iş günü overrideları
+            var xususiGunler = await db.Set<BayramGunu>()
+                .AsNoTracking()
+                .Where(x => !x.Silinib && x.Tarix.Date >= baslanic && x.Tarix.Date <= bugun)
+                .Select(x => new { Tarix = x.Tarix.Date, x.Tip })
+                .ToListAsync(ct);
+
+            var xususiDict = xususiGunler
+                .GroupBy(x => x.Tarix)
+                .ToDictionary(g => g.Key, g => g.First().Tip);
+
             // Backfill dövründə mövcud davamiyyət qeydləri (işçi+tarix cütləri)
             var movcudQeydler = await db.Set<Davamiyyet>()
                 .AsNoTracking()
@@ -110,11 +121,19 @@ namespace FinNex.Infrastructure.BackgroundJobs
             // Son 7 gün (daxil olmaqla bu gün — amma bu gün üçün yalnız 23:00-dan sonra)
             for (var gun = baslanic; gun <= bugun; gun = gun.AddDays(1))
             {
-                // Həftəsonu — istər iş günü olmasın deyə yoxla (sadəcə Şən/Baz keç)
-                // Qeyd: BayramGunleri cədvəlinə görə dəqiq yoxlama lazımdırsa sonra
-                //       genişləndirilə bilər. Hazırda bu sadə qayda kifayətdir.
-                if (gun.DayOfWeek == DayOfWeek.Saturday || gun.DayOfWeek == DayOfWeek.Sunday)
-                    continue;
+                // İş günü yoxlaması: BayramGunu cədvəlinə bax, sonra həftəsonu qaydasına
+                if (xususiDict.TryGetValue(gun.Date, out var gunTipi))
+                {
+                    // Bayram olaraq işarələnib → iş günü deyil, Qayib yazma
+                    if (gunTipi == GunTipi.Bayram) continue;
+                    // GunTipi.IsGunu → həftəsonu olsa belə iş günüdür, davam et
+                }
+                else
+                {
+                    // Cədvəldə yoxdur — standart qayda: Şənbə/Bazar iş günü deyil
+                    if (gun.DayOfWeek == DayOfWeek.Saturday || gun.DayOfWeek == DayOfWeek.Sunday)
+                        continue;
+                }
 
                 foreach (var isci in aktivIsciler)
                 {
