@@ -308,68 +308,73 @@
         </div>
 
     </div>
-</div>
 
-@* ── Mail Ayarları (yalnız Rəhbər / Admin üçün) ── *@
-@if (User.IsInRole("Rehber") || User.IsInRole("Admin"))
-{
-    <div class="up-section" style="max-width:860px;margin:0 auto 32px;padding:0 16px">
-        <div class="up-card" id="mailAyarlariCard">
+    @* ── Mail Ayarları (yalnız Rəhbər / Admin üçün) ── *@
+    @if (User.IsInRole("Rehber") || User.IsInRole("Admin"))
+    {
+        <div class="up-card" style="margin-top:24px" id="mailAyarlariCard">
             <div class="up-card-title">
-                <i class="bi bi-envelope-at"></i> Mail Ayarları
+                <i class="bi bi-envelope-at"></i>
+                Mail Ayarları
                 @if ((bool)ViewBag.MailSmtpKonfiqDir)
                 {
-                    <span class="up-badge-aktiv" style="font-size:.72rem;margin-left:8px">
+                    <span class="up-badge-aktiv" style="margin-left:6px;font-size:.72rem;padding:2px 8px;border-radius:99px">
                         <i class="bi bi-check-circle-fill"></i> Konfiqurasiya edilib
                     </span>
                 }
             </div>
-            <p style="font-size:.82rem;color:#64748b;margin:0 0 16px">
-                Bu e-poçt məlumatları maillərə cavab göndərərkən istifadə olunacaq.
-                Şifrə şifrələnmiş şəkildə saxlanılır.
-            </p>
 
-            <div class="up-row" style="align-items:flex-start;flex-direction:column;gap:12px">
-                <div style="display:flex;gap:10px;width:100%;flex-wrap:wrap">
-                    <div style="flex:1;min-width:200px">
-                        <label style="font-size:.78rem;font-weight:600;color:#64748b;display:block;margin-bottom:4px">
-                            E-poçt ünvanı
-                        </label>
-                        <input type="email" id="smtpEmail"
-                               value="@ViewBag.MailSmtpEmail"
-                               placeholder="rehber@mail.az"
-                               class="up-input" />
-                    </div>
-                    <div style="flex:1;min-width:200px">
-                        <label style="font-size:.78rem;font-weight:600;color:#64748b;display:block;margin-bottom:4px">
-                            Şifrə @((bool)ViewBag.MailSmtpKonfiqDir ? "(dəyişmək üçün yaz)" : "")
-                        </label>
-                        <input type="password" id="smtpParol"
-                               placeholder="@((bool)ViewBag.MailSmtpKonfiqDir ? "••••••••" : "Şifrəni daxil edin")"
-                               class="up-input" autocomplete="new-password" />
-                    </div>
-                </div>
-                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                    <button type="button" id="mailSaxlaBtn" class="up-btn-primary">
-                        <i class="bi bi-floppy2-fill"></i> Yadda Saxla
-                    </button>
+            <div class="up-row">
+                <span class="up-row-label">E-poçt ünvanı</span>
+                <span class="up-row-value">
+                    <input type="email" id="smtpEmail"
+                           value="@ViewBag.MailSmtpEmail"
+                           placeholder="rehber@mail.az"
+                           class="up-edit-input up-visible"
+                           style="width:260px" />
+                </span>
+            </div>
+
+            <div class="up-row">
+                <span class="up-row-label">
+                    Şifrə
                     @if ((bool)ViewBag.MailSmtpKonfiqDir)
                     {
-                        <button type="button" id="mailSinaBtn" class="up-btn-outline">
-                            <i class="bi bi-send"></i> Sınaq Maili Göndər
+                        <span style="font-size:.72rem;color:#aab0bc;font-weight:400"> — dəyişmək üçün yaz</span>
+                    }
+                </span>
+                <span class="up-row-value">
+                    <input type="password" id="smtpParol"
+                           placeholder="@((bool)ViewBag.MailSmtpKonfiqDir ? "••••••••" : "Şifrəni daxil edin")"
+                           class="up-edit-input up-visible"
+                           style="width:260px"
+                           autocomplete="new-password" />
+                </span>
+            </div>
+
+            <div class="up-row" style="border-bottom:none;padding-top:4px">
+                <span class="up-row-label" style="font-size:.75rem;color:#aab0bc;font-weight:400">
+                    <i class="bi bi-info-circle"></i>
+                    Gmail: App Password istifadə edin. Titan, Outlook, Yahoo avtomatik tanınır.
+                </span>
+                <span class="up-row-value" style="display:flex;align-items:center;gap:8px">
+                    <span id="mailAyarMsg" style="font-size:.82rem"></span>
+                    @if ((bool)ViewBag.MailSmtpKonfiqDir)
+                    {
+                        <button type="button" id="mailSinaBtn" class="up-save-btn up-visible"
+                                style="background:#fff;color:#2d6cdf;border:1.5px solid #2d6cdf;padding:7px 16px">
+                            <i class="bi bi-send"></i> Sınaq Maili
                         </button>
                     }
-                    <span id="mailAyarMsg" style="font-size:.82rem"></span>
-                </div>
-                <p style="font-size:.75rem;color:#94a3b8;margin:0">
-                    <i class="bi bi-info-circle"></i>
-                    Gmail üçün tətbiq şifrəsi (App Password) istifadə edin.
-                    Titan, Outlook, Yahoo avtomatik tanınır.
-                </p>
+                    <button type="button" id="mailSaxlaBtn" class="up-save-btn up-visible">
+                        <i class="bi bi-floppy2-fill"></i> Yadda Saxla
+                    </button>
+                </span>
             </div>
         </div>
-    </div>
-}
+    }
+
+</div>
 
 @Html.AntiForgeryToken()
 
