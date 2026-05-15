@@ -14,4 +14,6 @@ public interface IGelenMailService
     Task SilAsync(int id);
     Task<List<GelenMailTapshiriqDto>> GetMailTapshiriqlariAsync(int isciId);
     Task<List<MailTapshirilanDto>> GetRehberTapshirilanMaillerAsync(int rehberUserId);
+    Task<bool> IcraEtAsync(int mailId, int isciId);
+    Task<bool> ImtinaEtAsync(int mailId, int isciId, string? sebeb);
 }

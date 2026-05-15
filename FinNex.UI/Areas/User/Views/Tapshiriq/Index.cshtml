@@ -201,6 +201,10 @@
                                     <span class="tsk-card-meta">@m.IcraOlunduTarix.Value.ToString("dd.MM.yyyy")</span>
                                 }
                             }
+                            else if (m.IcraOlundu == false && !string.IsNullOrWhiteSpace(m.ImtinaSebebi))
+                            {
+                                <span class="tsk-status tsk-status--cancel">İmtina</span>
+                            }
                             else
                             {
                                 <span class="tsk-status tsk-status--new">Gözlənilir</span>
