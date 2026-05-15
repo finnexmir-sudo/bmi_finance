@@ -100,11 +100,11 @@
             <!-- AI paneli -->
             <div class="gm-cavab-ai-bar" id="aiBar">
                 <div class="gm-cavab-ai-bar-left">
-                    <span class="gm-cavab-ai-dot" id="aiDot"></span>
-                    <span id="aiStatus" class="gm-cavab-ai-status">AI cavab hazırlayır...</span>
+                    <span class="gm-cavab-ai-dot gm-cavab-ai-dot--idle" id="aiDot"></span>
+                    <span id="aiStatus" class="gm-cavab-ai-status">AI cavab mətni hazırlaya bilər</span>
                 </div>
-                <button type="button" class="gm-cavab-ai-refresh" id="aiRefresh" title="Yenidən hazırla" style="display:none">
-                    <i class="bi bi-arrow-clockwise"></i> Yenidən hazırla
+                <button type="button" class="gm-cavab-ai-refresh" id="aiStartBtn">
+                    <i class="bi bi-stars"></i> AI ilə Hazırla
                 </button>
             </div>
 
@@ -135,15 +135,14 @@
 
 <script>
 (function () {
-    var mailId   = @Model.MailId;
-    var textarea = document.getElementById('cavabMetni');
-    var aiBar    = document.getElementById('aiBar');
-    var aiDot    = document.getElementById('aiDot');
-    var aiStatus = document.getElementById('aiStatus');
-    var aiRefresh= document.getElementById('aiRefresh');
-    var charCount= document.getElementById('charCount');
-    var sendBtn  = document.getElementById('sendBtn');
-    var token    = document.querySelector('[name="__RequestVerificationToken"]')?.value ?? '';
+    var mailId    = @Model.MailId;
+    var textarea  = document.getElementById('cavabMetni');
+    var aiDot     = document.getElementById('aiDot');
+    var aiStatus  = document.getElementById('aiStatus');
+    var aiStartBtn= document.getElementById('aiStartBtn');
+    var charCount = document.getElementById('charCount');
+    var sendBtn   = document.getElementById('sendBtn');
+    var token     = document.querySelector('[name="__RequestVerificationToken"]')?.value ?? '';
 
     function updateCount() {
         var n = (textarea.value || '').length;
@@ -156,17 +155,20 @@
         aiDot.className = 'gm-cavab-ai-dot gm-cavab-ai-dot--' + state;
         if (state === 'loading') {
             aiStatus.textContent = 'AI cavab hazırlayır…';
-            aiRefresh.style.display = 'none';
+            aiStartBtn.disabled = true;
+            aiStartBtn.innerHTML = '<span class="gm-cavab-sending"><i class="bi bi-stars"></i> Hazırlanır…</span>';
             textarea.disabled = true;
             textarea.classList.add('gm-cavab-textarea--loading');
         } else if (state === 'done') {
             aiStatus.textContent = 'AI cavab hazırladı — redaktə edə bilərsiniz';
-            aiRefresh.style.display = '';
+            aiStartBtn.disabled = false;
+            aiStartBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Yenidən hazırla';
             textarea.disabled = false;
             textarea.classList.remove('gm-cavab-textarea--loading');
         } else if (state === 'error') {
             aiStatus.textContent = 'AI cavab hazırlaya bilmədi';
-            aiRefresh.style.display = '';
+            aiStartBtn.disabled = false;
+            aiStartBtn.innerHTML = '<i class="bi bi-stars"></i> Yenidən cəhd et';
             textarea.disabled = false;
             textarea.classList.remove('gm-cavab-textarea--loading');
         }
@@ -193,19 +195,12 @@
         }
     }
 
-    aiRefresh.addEventListener('click', loadAI);
+    aiStartBtn.addEventListener('click', loadAI);
 
     // Submit qoruma
     document.getElementById('cavabForm').addEventListener('submit', function () {
         sendBtn.disabled = true;
         sendBtn.innerHTML = '<span class="gm-cavab-sending"><i class="bi bi-send-fill"></i> Göndərilir…</span>';
     });
-
-    // Başlanğıcda boşdursa AI işə düşsün
-    if (!textarea.value.trim()) {
-        loadAI();
-    } else {
-        setAiState('done');
-    }
 })();
 </script>
