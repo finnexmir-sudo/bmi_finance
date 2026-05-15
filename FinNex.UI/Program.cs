@@ -727,6 +727,8 @@ END
                 try
                 {
                     db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='AspNetUsers' AND COLUMN_NAME='MailSmtpHost')
+                            ALTER TABLE [AspNetUsers] ADD [MailSmtpHost] NVARCHAR(256) NULL;
                         IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='AspNetUsers' AND COLUMN_NAME='MailSmtpEmail')
                             ALTER TABLE [AspNetUsers] ADD [MailSmtpEmail] NVARCHAR(256) NULL;
                         IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='AspNetUsers' AND COLUMN_NAME='MailSmtpParol')
