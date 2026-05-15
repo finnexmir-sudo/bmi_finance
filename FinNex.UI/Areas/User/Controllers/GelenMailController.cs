@@ -23,6 +23,7 @@ public class GelenMailController : Controller
     private readonly IIsciService _isciService;
     private readonly IXatirlatmaService _xatirlatmaService;
     private readonly IBildirisService _bildirisService;
+    private readonly IGelenMailImapSyncer _imapSyncer;
     private readonly UserManager<AppUser> _userManager;
     private readonly IDataProtector _protector;
 
@@ -33,6 +34,7 @@ public class GelenMailController : Controller
         IIsciService isciService,
         IXatirlatmaService xatirlatmaService,
         IBildirisService bildirisService,
+        IGelenMailImapSyncer imapSyncer,
         UserManager<AppUser> userManager,
         IDataProtectionProvider dpProvider)
     {
@@ -42,6 +44,7 @@ public class GelenMailController : Controller
         _isciService = isciService;
         _xatirlatmaService = xatirlatmaService;
         _bildirisService = bildirisService;
+        _imapSyncer = imapSyncer;
         _userManager = userManager;
         _protector = dpProvider.CreateProtector("MailSmtpParol");
     }
@@ -248,6 +251,21 @@ public class GelenMailController : Controller
     {
         var say = await _mailService.GetOxunmamisSayAsync();
         return Json(new { say });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ManualSync()
+    {
+        try
+        {
+            var count = await _imapSyncer.SyncNowAsync();
+            return Json(new { success = true, count, message = count > 0 ? $"{count} yeni mail tapıldı." : "Yeni mail yoxdur." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, count = 0, message = $"Xəta: {ex.Message}" });
+        }
     }
 
     // ── GET /User/GelenMail/Cavab/5 ─────────────────────────────

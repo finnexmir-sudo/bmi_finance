@@ -54,10 +54,17 @@
                 <span class="gm-badge-unread">@oxunmamisSay</span>
             }
         </h1>
-        <a asp-action="TapshirilanMailler" class="gm-btn gm-btn-outline" style="margin-left:auto">
-            <i class="bi bi-list-check"></i> Tapşırılanlar
-        </a>
+        <div style="display:flex;gap:8px;margin-left:auto;align-items:center">
+            <span id="syncMsg" style="font-size:.82rem;color:#10b981;display:none"></span>
+            <button type="button" id="yenileBtn" class="gm-btn gm-btn-outline">
+                <i class="bi bi-arrow-clockwise"></i> Yenilə
+            </button>
+            <a asp-action="TapshirilanMailler" class="gm-btn gm-btn-outline">
+                <i class="bi bi-list-check"></i> Tapşırılanlar
+            </a>
+        </div>
     </div>
+    @Html.AntiForgeryToken()
 
     @* ── Filter paneli ── *@
     <form method="get" id="filterForm" class="gm-filterbar">
@@ -261,3 +268,38 @@
         }
     }
 </div>
+
+@section Scripts {
+<script>
+(function () {
+    var btn = document.getElementById('yenileBtn');
+    var msg = document.getElementById('syncMsg');
+    var token = document.querySelector('[name="__RequestVerificationToken"]')?.value ?? '';
+    if (!btn) return;
+
+    btn.addEventListener('click', async function () {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Yüklənir…';
+        msg.style.display = 'none';
+        try {
+            var r = await fetch('/User/GelenMail/ManualSync', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/x-www-form-urlencoded' }
+            });
+            var d = await r.json();
+            msg.textContent = d.message;
+            msg.style.color = d.success ? '#10b981' : '#ef4444';
+            msg.style.display = '';
+            if (d.success && d.count > 0) setTimeout(() => location.reload(), 800);
+        } catch {
+            msg.textContent = 'Bağlantı xətası.';
+            msg.style.color = '#ef4444';
+            msg.style.display = '';
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Yenilə';
+    });
+})();
+</script>
+<style>.spin { animation: spin .8s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }</style>
+}

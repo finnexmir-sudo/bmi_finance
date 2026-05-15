@@ -150,6 +150,8 @@ namespace FinNex.UI
                                         FinNex.Application.Services.Communication.AttachmentTextExtractor>();
             builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.ISmtpMailService,
                                         FinNex.Application.Services.Communication.SmtpMailService>();
+            builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.IGelenMailImapSyncer,
+                                        FinNex.Application.Services.Communication.GelenMailImapSyncer>();
 
             // ==================================================
             // 6. Background Services
