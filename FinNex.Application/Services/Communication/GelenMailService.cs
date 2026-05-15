@@ -1,6 +1,7 @@
 using FinNex.Application.DTOs.Communication;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain.Entities.Communication;
+using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.SenedDovriyyesi;
 using FinNex.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -193,7 +194,7 @@ public class GelenMailService : IGelenMailService
         return true;
     }
 
-    public async Task<int?> SenedeCevir(int mailId, int qosmaId, int yaradanUserId, int departmentId)
+    public async Task<int?> SenedeCevir(int mailId, int qosmaId, int yaradanUserId, int? isciId)
     {
         var mail = await _uow.Repository<GelenMail>().Query()
             .Where(x => x.Id == mailId && !x.Silinib)
@@ -201,11 +202,32 @@ public class GelenMailService : IGelenMailService
             .FirstOrDefaultAsync();
 
         if (mail == null) return null;
-        // Duplikat: artıq sənəd dövriyyəsindədirsə əlavə etmə
         if (mail.SenedId.HasValue) return null;
 
         var qosma = mail.Qosmalar.FirstOrDefault(q => q.Id == qosmaId && !q.Silinib);
         if (qosma == null || !File.Exists(qosma.FaylYolu)) return null;
+
+        // Şöbə: IsciTeyinat-dan aktiv teyin (UserDepartments deyil)
+        int departmentId = 1;
+        if (isciId.HasValue)
+        {
+            var teyinat = await _uow.Repository<IsciTeyinat>().Query()
+                .Where(t => t.IsciId == isciId.Value && t.Aktivdir && !t.Silinib)
+                .OrderByDescending(t => t.Id)
+                .FirstOrDefaultAsync();
+            if (teyinat != null)
+                departmentId = teyinat.DepartamentId;
+        }
+
+        // Sənəd nömrəsi: SenedNovu.Kod-İL-SıraNo
+        const int senedNovuId = 1;
+        var nov = await _uow.Repository<SenedNovu>().Query()
+            .FirstOrDefaultAsync(x => x.Id == senedNovuId);
+        var kod = nov?.Kod ?? "MAIL";
+        var currentYear = DateTime.Now.Year;
+        var existingCount = await _uow.Repository<Sened>().Query()
+            .CountAsync(x => x.SenedNovuId == senedNovuId && x.YaradilmaTarixi.Year == currentYear);
+        var senedNomresi = $"{kod}-{currentYear}-{(existingCount + 1):D3}";
 
         var sened = new Sened
         {
@@ -216,8 +238,9 @@ public class GelenMailService : IGelenMailService
             ReferenceId = mail.Id,
             YaradilmaTarixi = DateTime.Now,
             YaradanIcraciId = yaradanUserId,
-            DepartmentId = departmentId > 0 ? departmentId : 1,
-            SenedNovuId = 1
+            DepartmentId = departmentId,
+            SenedNovuId = senedNovuId,
+            SenedNomresi = senedNomresi
         };
 
         await _uow.Repository<Sened>().YaratAsync(sened);

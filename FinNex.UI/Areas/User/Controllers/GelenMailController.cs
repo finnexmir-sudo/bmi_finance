@@ -222,14 +222,7 @@ public class GelenMailController : Controller
             return RedirectToAction(nameof(Detail), new { id = mailId });
         }
 
-        // İstifadəçinin əsas şöbəsini tap
-        var deptId = await _userManager.Users
-            .Where(u => u.Id == appUser.Id)
-            .SelectMany(u => u.UserDepartments.Where(ud => ud.Esasdir))
-            .Select(ud => ud.DepartmentId)
-            .FirstOrDefaultAsync();
-
-        var senedId = await _mailService.SenedeCevir(mailId, qosmaId, appUser.Id, deptId);
+        var senedId = await _mailService.SenedeCevir(mailId, qosmaId, appUser.Id, appUser.IsciId);
 
         if (senedId.HasValue)
             TempData["Success"] = "Qoşma sənəd dövriyyəsinə əlavə edildi.";
