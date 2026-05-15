@@ -68,7 +68,89 @@
     border-radius: 99px;
 }
 
-/* ── Filter / Search ── */
+/* ── Filter bar ── */
+.gm-filterbar {
+    background: #fff;
+    border: 1px solid var(--gm-border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.gm-filterbar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.gm-filterbar-extras {
+    padding-top: 8px;
+    border-top: 1px solid #f0f2f5;
+    gap: 16px;
+}
+.gm-filter-chip-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.gm-filter-chip-label {
+    font-size: .75rem;
+    color: var(--gm-text-muted);
+    white-space: nowrap;
+    font-weight: 600;
+}
+.gm-filter-chip-sep {
+    color: #cbd5e1;
+    font-size: .8rem;
+}
+.gm-input-date {
+    padding: 5px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: .78rem;
+    color: var(--gm-text);
+    outline: none;
+}
+.gm-input-date:focus { border-color: var(--gm-accent); }
+.gm-select--sm { padding: 5px 8px; font-size: .78rem; }
+.gm-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: .78rem;
+    color: var(--gm-text);
+    cursor: pointer;
+    white-space: nowrap;
+}
+.gm-checkbox-label input[type="checkbox"] { accent-color: var(--gm-accent); }
+
+/* Aktiv filter chipləri */
+.gm-active-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 8px;
+    border-top: 1px solid #f0f2f5;
+    align-items: center;
+}
+.gm-achip {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    border-radius: 99px;
+    padding: 2px 10px;
+    font-size: .72rem;
+    font-weight: 600;
+}
+.gm-achip-count {
+    margin-left: auto;
+    font-size: .72rem;
+    color: var(--gm-text-muted);
+}
+
+/* ── Legacy filter classes (kept for compatibility) ── */
 .gm-filter-form {
     display: flex;
     gap: 8px;
