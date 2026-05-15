@@ -148,8 +148,6 @@ namespace FinNex.UI
                                         FinNex.Application.Services.Communication.AnthropicService>();
             builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.IAttachmentTextExtractor,
                                         FinNex.Application.Services.Communication.AttachmentTextExtractor>();
-            builder.Services.Configure<FinNex.Application.Settings.SmtpSettings>(
-                builder.Configuration.GetSection("SmtpSettings"));
             builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.ISmtpMailService,
                                         FinNex.Application.Services.Communication.SmtpMailService>();
 
@@ -721,6 +719,18 @@ END
                                 ADD CONSTRAINT [FK_GelenMailler_Isciler_TapalanIsciId]
                                 FOREIGN KEY ([TapalanIsciId]) REFERENCES [Isciler]([Id]) ON DELETE SET NULL;
                         END
+                    ");
+                }
+                catch { }
+
+                // AppUser — MailSmtpEmail, MailSmtpParol sütunları
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='AspNetUsers' AND COLUMN_NAME='MailSmtpEmail')
+                            ALTER TABLE [AspNetUsers] ADD [MailSmtpEmail] NVARCHAR(256) NULL;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='AspNetUsers' AND COLUMN_NAME='MailSmtpParol')
+                            ALTER TABLE [AspNetUsers] ADD [MailSmtpParol] NVARCHAR(MAX) NULL;
                     ");
                 }
                 catch { }

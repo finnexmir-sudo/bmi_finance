@@ -310,8 +310,119 @@
     </div>
 </div>
 
+@* ── Mail Ayarları (yalnız Rəhbər / Admin üçün) ── *@
+@if (User.IsInRole("Rehber") || User.IsInRole("Admin"))
+{
+    <div class="up-section" style="max-width:860px;margin:0 auto 32px;padding:0 16px">
+        <div class="up-card" id="mailAyarlariCard">
+            <div class="up-card-title">
+                <i class="bi bi-envelope-at"></i> Mail Ayarları
+                @if ((bool)ViewBag.MailSmtpKonfiqDir)
+                {
+                    <span class="up-badge-aktiv" style="font-size:.72rem;margin-left:8px">
+                        <i class="bi bi-check-circle-fill"></i> Konfiqurasiya edilib
+                    </span>
+                }
+            </div>
+            <p style="font-size:.82rem;color:#64748b;margin:0 0 16px">
+                Bu e-poçt məlumatları maillərə cavab göndərərkən istifadə olunacaq.
+                Şifrə şifrələnmiş şəkildə saxlanılır.
+            </p>
+
+            <div class="up-row" style="align-items:flex-start;flex-direction:column;gap:12px">
+                <div style="display:flex;gap:10px;width:100%;flex-wrap:wrap">
+                    <div style="flex:1;min-width:200px">
+                        <label style="font-size:.78rem;font-weight:600;color:#64748b;display:block;margin-bottom:4px">
+                            E-poçt ünvanı
+                        </label>
+                        <input type="email" id="smtpEmail"
+                               value="@ViewBag.MailSmtpEmail"
+                               placeholder="rehber@mail.az"
+                               class="up-input" />
+                    </div>
+                    <div style="flex:1;min-width:200px">
+                        <label style="font-size:.78rem;font-weight:600;color:#64748b;display:block;margin-bottom:4px">
+                            Şifrə @((bool)ViewBag.MailSmtpKonfiqDir ? "(dəyişmək üçün yaz)" : "")
+                        </label>
+                        <input type="password" id="smtpParol"
+                               placeholder="@((bool)ViewBag.MailSmtpKonfiqDir ? "••••••••" : "Şifrəni daxil edin")"
+                               class="up-input" autocomplete="new-password" />
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    <button type="button" id="mailSaxlaBtn" class="up-btn-primary">
+                        <i class="bi bi-floppy2-fill"></i> Yadda Saxla
+                    </button>
+                    @if ((bool)ViewBag.MailSmtpKonfiqDir)
+                    {
+                        <button type="button" id="mailSinaBtn" class="up-btn-outline">
+                            <i class="bi bi-send"></i> Sınaq Maili Göndər
+                        </button>
+                    }
+                    <span id="mailAyarMsg" style="font-size:.82rem"></span>
+                </div>
+                <p style="font-size:.75rem;color:#94a3b8;margin:0">
+                    <i class="bi bi-info-circle"></i>
+                    Gmail üçün tətbiq şifrəsi (App Password) istifadə edin.
+                    Titan, Outlook, Yahoo avtomatik tanınır.
+                </p>
+            </div>
+        </div>
+    </div>
+}
+
 @Html.AntiForgeryToken()
 
 @section Scripts {
     <script src="~/js/User/user-profile.js" asp-append-version="true"></script>
+    @if (User.IsInRole("Rehber") || User.IsInRole("Admin"))
+    {
+        <script>
+        (function () {
+            var token = document.querySelector('[name="__RequestVerificationToken"]')?.value ?? '';
+
+            async function postJson(url, data) {
+                var body = Object.entries(data).map(([k,v]) => k+'='+encodeURIComponent(v)).join('&');
+                var r = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+                    body
+                });
+                return r.json();
+            }
+
+            function showMsg(msg, ok) {
+                var el = document.getElementById('mailAyarMsg');
+                el.textContent = msg;
+                el.style.color = ok ? '#10b981' : '#ef4444';
+            }
+
+            var saxlaBtn = document.getElementById('mailSaxlaBtn');
+            if (saxlaBtn) {
+                saxlaBtn.addEventListener('click', async function () {
+                    var email = document.getElementById('smtpEmail').value.trim();
+                    var parol = document.getElementById('smtpParol').value;
+                    if (!email) { showMsg('E-poçt ünvanı mütləqdir.', false); return; }
+                    saxlaBtn.disabled = true;
+                    var d = await postJson('/User/Profile/MailAyarlariYenile', { mailSmtpEmail: email, mailSmtpParol: parol });
+                    showMsg(d.message, d.success);
+                    saxlaBtn.disabled = false;
+                    if (d.success && parol) document.getElementById('smtpParol').value = '';
+                });
+            }
+
+            var sinaBtn = document.getElementById('mailSinaBtn');
+            if (sinaBtn) {
+                sinaBtn.addEventListener('click', async function () {
+                    sinaBtn.disabled = true;
+                    sinaBtn.innerHTML = '<i class="bi bi-send"></i> Göndərilir…';
+                    var d = await postJson('/User/Profile/MailSina', {});
+                    showMsg(d.message, d.success);
+                    sinaBtn.disabled = false;
+                    sinaBtn.innerHTML = '<i class="bi bi-send"></i> Sınaq Maili Göndər';
+                });
+            }
+        })();
+        </script>
+    }
 }
