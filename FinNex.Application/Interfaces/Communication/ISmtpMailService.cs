@@ -9,5 +9,6 @@ public interface ISmtpMailService
         string metin,
         string fromEmail,
         string fromParol,
+        string? smtpHost = null,
         string? replyToMessageId = null);
 }
