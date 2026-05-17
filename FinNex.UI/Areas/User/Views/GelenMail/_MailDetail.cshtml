@@ -1,0 +1,498 @@
+@model FinNex.Application.DTOs.Communication.GelenMailDetailDto
+@using FinNex.Application.DTOs.HR.Isci
+@using System.IO
+@{
+    var isciler = ViewBag.Isciler as IEnumerable<IsciListDto> ?? Enumerable.Empty<IsciListDto>();
+    var tapalanIds = Model.TapalanIsciler.Select(ti => ti.IsciId).ToHashSet();
+
+    string DedlaynClass(DateTime? t) {
+        if (!t.HasValue) return "";
+        var d = (t.Value.Date - DateTime.Today).TotalDays;
+        return d < 0 ? "gm-dedlayn--kecib" : d <= 2 ? "gm-dedlayn--bugun" : d <= 7 ? "gm-dedlayn--yaxin" : "gm-dedlayn--gozle";
+    }
+    string DedlaynLabel(string? nov) => nov switch {
+        "Gorus" => "Görüş", "Hesabat" => "Hesabat",
+        "Muqavile" => "Müqavilə", "SonTarix" => "Son tarix", _ => "Deadline"
+    };
+}
+
+@Html.AntiForgeryToken()
+
+<!-- Top action bar -->
+<div class="gm-panel-topbar">
+    <div class="gm-panel-from">
+        <div class="gm-mail-avatar">@(Model.KimdenAd.Length > 0 ? Model.KimdenAd[0].ToString().ToUpper() : "?")</div>
+        <div>
+            <div style="font-weight:600;font-size:.9rem;color:#1a2332">@(string.IsNullOrWhiteSpace(Model.KimdenAd) ? Model.KimdenEmail : Model.KimdenAd)</div>
+            <div style="font-size:.78rem;color:#64748b">@Model.KimdenEmail</div>
+        </div>
+    </div>
+    <span class="gm-panel-date">@Model.AlinmaTarixi.ToString("dd MMMM yyyy, HH:mm")</span>
+    <button type="button" id="cavabYazBtn" class="gm-btn gm-btn-reply">
+        <i class="bi bi-reply-fill"></i> Cavab Yaz
+    </button>
+    <form action="/User/GelenMail/Sil" method="post" style="display:inline"
+          onsubmit="return confirm('Bu maili silmək istəyirsiniz?')">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Id" />
+        <button type="submit" class="gm-btn gm-btn-danger-outline">
+            <i class="bi bi-trash"></i> Sil
+        </button>
+    </form>
+</div>
+
+<div class="gm-panel-content">
+
+    @if (Model.DedlaynTarix.HasValue)
+    {
+        <div class="gm-dedlayn-banner @DedlaynClass(Model.DedlaynTarix)">
+            <i class="bi bi-alarm-fill"></i>
+            <strong>@DedlaynLabel(Model.DedlaynNov):</strong>
+            @Model.DedlaynTarix.Value.ToString("dd MMMM yyyy")
+            @if (!string.IsNullOrWhiteSpace(Model.DedlaynQeyd))
+            {
+                <span class="gm-dedlayn-qeyd">— @Model.DedlaynQeyd</span>
+            }
+            @{
+                var diff = (Model.DedlaynTarix.Value.Date - DateTime.Today).TotalDays;
+                if (diff < 0)      { <span class="gm-dedlayn-chip gm-dedlayn-chip--red">@(-(int)diff) gün keçib</span> }
+                else if (diff == 0){ <span class="gm-dedlayn-chip gm-dedlayn-chip--red">Bu gün!</span> }
+                else if (diff <= 7){ <span class="gm-dedlayn-chip gm-dedlayn-chip--amber">@((int)diff) gün qaldı</span> }
+                else               { <span class="gm-dedlayn-chip gm-dedlayn-chip--green">@((int)diff) gün qaldı</span> }
+            }
+        </div>
+    }
+    <div id="dedlaynBanner" style="display:none"></div>
+
+    <!-- AI Təhlili -->
+    <div class="gm-ai-hero" id="aiHeroCard">
+        <div class="gm-ai-hero-header">
+            <span class="gm-ai-hero-icon"><i class="bi bi-stars"></i></span>
+            <span class="gm-ai-hero-title">AI Təhlili</span>
+            @if (Model.AITahlilTarixi.HasValue)
+            {
+                <span class="gm-ai-hero-time">@Model.AITahlilTarixi.Value.ToString("HH:mm")</span>
+            }
+        </div>
+        <div class="gm-ai-hero-body">
+            @if (!string.IsNullOrEmpty(Model.AIXulase))
+            {
+                <div class="gm-ai-text gm-markdown" id="aiMarkdown"></div>
+                <script>
+                    window.__aiRaw = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AIXulase));
+                </script>
+            }
+            else
+            {
+                <div id="aiPrompt" class="gm-ai-prompt">
+                    <i class="bi bi-stars" style="font-size:1.4rem;color:#6366f1"></i>
+                    <div>
+                        <div style="font-weight:600;color:#1a2332;margin-bottom:2px">Maili AI ilə təhlil et</div>
+                        <div style="font-size:.78rem;color:#6b7280">Mövzu, tapşırıqlar, deadline və prioritet avtomatik müəyyən ediləcək</div>
+                    </div>
+                    <button id="aiStartBtn" class="gm-btn gm-btn-primary" style="margin-left:auto;white-space:nowrap">
+                        <i class="bi bi-stars"></i> Təhlil Et
+                    </button>
+                </div>
+                <div class="gm-ai-loading" id="aiLoading" style="display:none">
+                    <div class="gm-ai-spinner"></div>
+                    <span>Təhlil edilir...</span>
+                </div>
+                <div class="gm-ai-text gm-markdown" id="aiMarkdown" style="display:none"></div>
+            }
+        </div>
+    </div>
+
+    <!-- Mövzu -->
+    <h2 class="gm-panel-subject">@Model.Movzu</h2>
+
+    <!-- Mail mətni -->
+    <div class="gm-mail-body" style="padding:0 0 16px">
+        @if (!string.IsNullOrWhiteSpace(Model.MetinHtml))
+        {
+            <div class="gm-mail-html">@Html.Raw(Model.MetinHtml)</div>
+        }
+        else
+        {
+            <pre class="gm-mail-plain">@Model.MetinDuz</pre>
+        }
+    </div>
+
+    <!-- Qoşmalar -->
+    @if (Model.Qosmalar.Any())
+    {
+        <div class="gm-attachments">
+            <h4 class="gm-attachments-title">
+                <i class="bi bi-paperclip"></i> Qoşmalar (@Model.Qosmalar.Count)
+            </h4>
+            <div class="gm-attachments-list">
+                @foreach (var q in Model.Qosmalar)
+                {
+                    <div class="gm-attachment-card">
+                        <div class="gm-attachment-icon">
+                            <i class="bi @(GetFileIcon(q.FaylAdi)) fs-2"></i>
+                        </div>
+                        <div class="gm-attachment-info">
+                            <span class="gm-attachment-name">@q.FaylAdi</span>
+                            <span class="gm-attachment-size">@FormatBytes(q.OlcuBayt)</span>
+                        </div>
+                        <div class="gm-attachment-actions">
+                            @if (!string.IsNullOrWhiteSpace(q.CixarilmisMetin))
+                            {
+                                <button class="gm-btn gm-btn-sm gm-btn-ghost" onclick="toggleText('@q.Id')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            }
+                            @if (Model.SenedId.HasValue)
+                            {
+                                <span class="gm-btn gm-btn-sm gm-sened-badge">
+                                    <i class="bi bi-file-earmark-check-fill"></i> Sənəd dövriyyəsindədir
+                                </span>
+                            }
+                            else
+                            {
+                                <form action="/User/GelenMail/SenedeCevir" method="post" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="mailId" value="@Model.Id" />
+                                    <input type="hidden" name="qosmaId" value="@q.Id" />
+                                    <button type="submit" class="gm-btn gm-btn-sm gm-btn-outline"
+                                            onclick="return confirm('Sənəd Dövriyyəsinə əlavə etmək istəyirsiniz?')">
+                                        <i class="bi bi-file-earmark-arrow-up"></i> Sənədə
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(q.CixarilmisMetin))
+                        {
+                            <div id="text-@q.Id" class="gm-attachment-text" style="display:none">
+                                <pre>@q.CixarilmisMetin.Substring(0, Math.Min(q.CixarilmisMetin.Length, 2000))@(q.CixarilmisMetin.Length > 2000 ? "\n[...]" : "")</pre>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Tapşırma formu -->
+    <div class="gm-panel-assign">
+        <div class="gm-panel-assign-title"><i class="bi bi-person-check"></i> İşçiyə Tapşır</div>
+
+        @if (Model.TapalanIsciler.Any())
+        {
+            var tamamSayi = Model.TapalanIsciler.Count(ti => ti.IcraOlundu);
+            <div style="margin-bottom:10px">
+                @foreach (var ti in Model.TapalanIsciler)
+                {
+                    <div class="gm-tapilan-isci">
+                        <div class="gm-tapilan-avatar @(ti.IcraOlundu ? "gm-tapilan-avatar--done" : "")">@(ti.AdSoyad.Length > 0 ? ti.AdSoyad[0].ToString() : "?")</div>
+                        <div style="flex:1;min-width:0">
+                            <div class="gm-tapilan-ad">@ti.AdSoyad</div>
+                            <div class="gm-tapilan-tarix">Tapşırıldı: @ti.TapalanTarix.ToString("dd.MM HH:mm")</div>
+                            @if (ti.IcraOlundu && ti.IcraOlunduTarix.HasValue)
+                            {
+                                <div class="gm-tapilan-tarix" style="color:#10b981">Tamamlandı: @ti.IcraOlunduTarix.Value.ToString("dd.MM HH:mm")</div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(ti.Qeyd))
+                            {
+                                <div class="gm-tapilan-tarix" style="font-style:italic">@ti.Qeyd</div>
+                            }
+                        </div>
+                        @if (ti.IcraOlundu)
+                        {
+                            <i class="bi bi-check-circle-fill" style="color:#10b981;font-size:.95rem;flex-shrink:0"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-clock" style="color:#94a3b8;font-size:.95rem;flex-shrink:0"></i>
+                        }
+                    </div>
+                }
+            </div>
+        }
+
+        <form id="tapaForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="mailId" value="@Model.Id" />
+            <p class="gm-form-hint">Bir neçə işçi seçmək olar</p>
+            <div class="gm-isci-list">
+                @foreach (var isci in isciler)
+                {
+                    var chk = tapalanIds.Contains(isci.Id);
+                    <label class="gm-isci-item @(chk ? "gm-isci-item--checked" : "")">
+                        <input type="checkbox" name="isciIds" value="@isci.Id" @(chk ? "checked" : "") />
+                        <div class="gm-isci-avatar">@(isci.TamAd.Length > 0 ? isci.TamAd[0].ToString() : "?")</div>
+                        <span class="gm-isci-ad">@isci.TamAd</span>
+                    </label>
+                }
+            </div>
+            <textarea name="qeyd" class="gm-textarea" rows="2"
+                      placeholder="Qeyd (ixtiyari)..." style="margin-top:8px">@Model.TapalanQeyd</textarea>
+            <button type="submit" class="gm-btn gm-btn-primary w-100" style="margin-top:8px">
+                <i class="bi bi-send"></i> Tapşır
+            </button>
+        </form>
+        <div id="tapaMsg" style="display:none;margin-top:8px;font-size:.84rem;padding:8px 12px;border-radius:6px"></div>
+    </div>
+
+    @if (Model.SenedId.HasValue)
+    {
+        <div class="gm-card gm-status-card" style="margin-top:12px">
+            <i class="bi bi-file-earmark-check-fill text-success"></i>
+            Sənəd dövriyyəsinə əlavə edilib (#@Model.SenedId)
+        </div>
+    }
+
+    <!-- Inline cavab bölməsi -->
+    <div class="gm-inline-reply" id="inlineReplySection">
+        <div class="gm-inline-reply-bar" id="inlineReplyBar">
+            <i class="bi bi-reply"></i>
+            <span>Kimə: <strong>@Model.KimdenEmail</strong> — cavab yaz</span>
+        </div>
+        <div class="gm-inline-reply-form" id="inlineReplyForm" style="display:none">
+            <div class="gm-reply-header">
+                <span><strong>Kimə:</strong> @(string.IsNullOrWhiteSpace(Model.KimdenAd) ? Model.KimdenEmail : $"{Model.KimdenAd} <{Model.KimdenEmail}>")</span>
+                <span><strong>Mövzu:</strong> Re: @Model.Movzu</span>
+            </div>
+            <div class="gm-reply-ai-bar">
+                <span style="font-size:.82rem;color:#4f46e5;font-weight:600"><i class="bi bi-stars"></i> AI Cavab Hazırla</span>
+                <button type="button" id="aiDraftBtn" class="gm-btn gm-btn-sm gm-btn-outline" style="border-color:#c7d2fe;color:#6366f1">
+                    <i class="bi bi-stars"></i> Hazırla
+                </button>
+            </div>
+            <textarea id="replyTextarea" class="gm-reply-textarea"
+                      placeholder="Cavabınızı yazın..."></textarea>
+            <div class="gm-reply-actions">
+                <button type="button" id="replySendBtn" class="gm-btn gm-btn-primary">
+                    <i class="bi bi-send-fill"></i> Göndər
+                </button>
+                <button type="button" id="replyLegvBtn" class="gm-btn gm-btn-ghost">
+                    Ləğv et
+                </button>
+                <span id="replyMsg" style="display:none;font-size:.84rem;margin-left:8px"></span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@functions {
+    string FormatBytes(long b) =>
+        b < 1024 ? $"{b} B" : b < 1048576 ? $"{b/1024.0:F1} KB" : $"{b/1048576.0:F1} MB";
+
+    string GetFileIcon(string f) {
+        var e = System.IO.Path.GetExtension(f ?? "").ToLowerInvariant();
+        if (e == ".pdf") return "bi-file-earmark-pdf text-danger";
+        if (e == ".docx" || e == ".doc") return "bi-file-earmark-word text-primary";
+        if (e == ".xlsx" || e == ".xls") return "bi-file-earmark-excel text-success";
+        return "bi-file-earmark text-secondary";
+    }
+}
+
+<script>
+(function () {
+    var mailId    = @Model.Id;
+    var messageId = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MessageId ?? ""));
+    var kimeEmail = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.KimdenEmail ?? ""));
+    var kimeAd    = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.KimdenAd ?? ""));
+    var movzu     = @Html.Raw(System.Text.Json.JsonSerializer.Serialize("Re: " + (Model.Movzu ?? "")));
+
+    function getToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+    }
+
+    // ── Attachment text toggle ──
+    window.toggleText = function(id) {
+        var el = document.getElementById('text-' + id);
+        if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    };
+
+    // ── Checkbox styling ──
+    document.querySelectorAll('.gm-isci-item input[type=checkbox]').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            this.closest('.gm-isci-item').classList.toggle('gm-isci-item--checked', this.checked);
+        });
+    });
+
+    // ── Tapa AJAX ──
+    var tapaForm = document.getElementById('tapaForm');
+    var tapaMsg  = document.getElementById('tapaMsg');
+    if (tapaForm) {
+        tapaForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            var fd = new FormData(tapaForm);
+            // rebuild as URLSearchParams for the fetch body
+            var params = new URLSearchParams();
+            fd.forEach(function(v, k) { params.append(k, v); });
+            try {
+                var r = await fetch('/User/GelenMail/TapaAjax', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params.toString()
+                });
+                var d = await r.json();
+                tapaMsg.textContent = d.message;
+                tapaMsg.style.background = d.success ? '#d1fae5' : '#fee2e2';
+                tapaMsg.style.color      = d.success ? '#065f46' : '#991b1b';
+                tapaMsg.style.display    = '';
+            } catch {
+                tapaMsg.textContent   = 'Xəta baş verdi.';
+                tapaMsg.style.background = '#fee2e2';
+                tapaMsg.style.color      = '#991b1b';
+                tapaMsg.style.display    = '';
+            }
+        });
+    }
+
+    // ── AI helpers ──
+    function renderAI(text) {
+        var el = document.getElementById('aiMarkdown');
+        if (!el || !text) return;
+        if (window.marked) {
+            el.innerHTML = marked.parse(text);
+        } else {
+            el.textContent = text;
+        }
+        el.style.display = '';
+        var loading = document.getElementById('aiLoading');
+        if (loading) loading.style.display = 'none';
+    }
+
+    function runAI() {
+        var prompt  = document.getElementById('aiPrompt');
+        var loading = document.getElementById('aiLoading');
+        var btn     = document.getElementById('aiStartBtn');
+        if (prompt)  prompt.style.display  = 'none';
+        if (loading) loading.style.display = '';
+        if (btn)     btn.disabled = true;
+
+        var form = new FormData();
+        form.append('__RequestVerificationToken', getToken());
+        fetch('/User/GelenMail/RunAI?id=' + mailId, { method: 'POST', body: form })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.xulase) renderAI(d.xulase);
+                if (d.dedlaynTarix) {
+                    var b = document.getElementById('dedlaynBanner');
+                    if (b) {
+                        b.innerHTML = '<div class="gm-dedlayn-banner gm-dedlayn--yaxin" style="margin-top:8px"><i class="bi bi-alarm-fill"></i> <strong>' +
+                            (d.dedlaynNov || 'Deadline') + ':</strong> ' + d.dedlaynTarix +
+                            (d.dedlaynQeyd ? ' — ' + d.dedlaynQeyd : '') + '</div>';
+                        b.style.display = '';
+                    }
+                }
+            })
+            .catch(function() {
+                if (loading) loading.innerHTML = '<span style="color:#9ca3af;font-size:.8rem">AI cavabı alınmadı. <button onclick="(function(){var b=document.getElementById(\'aiStartBtn\');if(b){b.disabled=false;}var p=document.getElementById(\'aiPrompt\');if(p)p.style.display=\'\';var l=document.getElementById(\'aiLoading\');if(l)l.style.display=\'none\';})()" style="background:none;border:none;color:#6366f1;cursor:pointer;text-decoration:underline">Yenidən cəhd et</button></span>';
+            });
+    }
+
+    if (window.__aiRaw) {
+        renderAI(window.__aiRaw);
+        window.__aiRaw = null;
+    }
+
+    var aiBtn = document.getElementById('aiStartBtn');
+    if (aiBtn) aiBtn.addEventListener('click', runAI);
+
+    // ── Inline reply toggle ──
+    var cavabYazBtn     = document.getElementById('cavabYazBtn');
+    var inlineReplyBar  = document.getElementById('inlineReplyBar');
+    var inlineReplyForm = document.getElementById('inlineReplyForm');
+
+    function openReply() {
+        if (inlineReplyForm) inlineReplyForm.style.display = '';
+        if (inlineReplyBar)  inlineReplyBar.style.display  = 'none';
+        var ta = document.getElementById('replyTextarea');
+        if (ta) ta.focus();
+    }
+
+    function closeReply() {
+        if (inlineReplyForm) inlineReplyForm.style.display = 'none';
+        if (inlineReplyBar)  inlineReplyBar.style.display  = '';
+    }
+
+    if (cavabYazBtn)    cavabYazBtn.addEventListener('click', openReply);
+    if (inlineReplyBar) inlineReplyBar.addEventListener('click', openReply);
+
+    var legvBtn = document.getElementById('replyLegvBtn');
+    if (legvBtn) legvBtn.addEventListener('click', closeReply);
+
+    // ── AI Draft ──
+    var aiDraftBtn = document.getElementById('aiDraftBtn');
+    if (aiDraftBtn) {
+        aiDraftBtn.addEventListener('click', async function() {
+            aiDraftBtn.disabled = true;
+            aiDraftBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Hazırlanır...';
+            var ta = document.getElementById('replyTextarea');
+            try {
+                var form = new FormData();
+                form.append('__RequestVerificationToken', getToken());
+                var r = await fetch('/User/GelenMail/AICavabHazirla?id=' + mailId, { method: 'POST', body: form });
+                var d = await r.json();
+                if (d.metin && ta) ta.value = d.metin;
+            } catch { /* silent */ }
+            aiDraftBtn.disabled = false;
+            aiDraftBtn.innerHTML = '<i class="bi bi-stars"></i> Hazırla';
+        });
+    }
+
+    // ── Send reply ──
+    var sendBtn  = document.getElementById('replySendBtn');
+    var replyMsg = document.getElementById('replyMsg');
+    if (sendBtn) {
+        sendBtn.addEventListener('click', async function() {
+            var ta = document.getElementById('replyTextarea');
+            var metin = ta ? ta.value.trim() : '';
+            if (!metin) { alert('Cavab mətni boş ola bilməz.'); return; }
+
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Göndərilir...';
+
+            var params = new URLSearchParams({
+                '__RequestVerificationToken': getToken(),
+                'MailId':     mailId,
+                'MessageId':  messageId,
+                'KimeEmail':  kimeEmail,
+                'KimeAd':     kimeAd,
+                'Movzu':      movzu,
+                'CavabMetni': metin
+            });
+
+            try {
+                var r = await fetch('/User/GelenMail/CavabGonderAjax', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params.toString()
+                });
+                var d = await r.json();
+                replyMsg.textContent = d.success ? 'Göndərildi ✓' : d.message;
+                replyMsg.style.color = d.success ? '#10b981' : '#ef4444';
+                replyMsg.style.display = '';
+                if (d.success) {
+                    setTimeout(closeReply, 1800);
+                    if (ta) ta.value = '';
+                }
+            } catch {
+                replyMsg.textContent   = 'Göndərmə xətası baş verdi.';
+                replyMsg.style.color   = '#ef4444';
+                replyMsg.style.display = '';
+            }
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<i class="bi bi-send-fill"></i> Göndər';
+        });
+    }
+
+    // ── Email image cleanup ──
+    (function() {
+        var body = document.querySelector('.gm-mail-html');
+        if (!body) return;
+        body.querySelectorAll('img').forEach(function(img) {
+            var src = (img.getAttribute('src') || '').trim();
+            if (src.toLowerCase().startsWith('cid:')) { img.remove(); return; }
+            img.addEventListener('error', function() { this.classList.add('gm-img-broken'); });
+        });
+    })();
+
+})();
+</script>
