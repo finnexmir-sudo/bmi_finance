@@ -109,25 +109,50 @@ public class SenedAiController : Controller
 
     [HttpPost]
     public async Task<IActionResult> SenedYaratPost(
-        string senedNovu, string musteriAd, int gecikmeGun, decimal meble, string? elaveMelumat,
-        string? senedMovzusu, bool tercumeEdilsinmi, string? hedafDil)
+        string? serbestMovzu, bool tercumeEdilsinmi, string? hedafDil,
+        IFormFile? yuklenenFayl)
     {
         var userIdStr = _userManager.GetUserId(User);
         if (userIdStr == null)
             return Json(new { ok = false, xeta = "İstifadəçi müəyyən edilmədi." });
 
-        var hasParametrik = !string.IsNullOrWhiteSpace(senedNovu) && !string.IsNullOrWhiteSpace(musteriAd);
-        var hasSerbest = !string.IsNullOrWhiteSpace(senedMovzusu);
-        if (!hasParametrik && !hasSerbest)
-            return Json(new { ok = false, xeta = "Sənəd parametrləri və ya sərbəst mövzu daxil edilməyib." });
+        // Birbaşa fayl yüklənibsə → OCR ilə mətni çıxar
+        if (yuklenenFayl != null && yuklenenFayl.Length > 0)
+        {
+            var ext = Path.GetExtension(yuklenenFayl.FileName).ToLowerInvariant();
+            if (ext is ".jpg" or ".jpeg" or ".png")
+            {
+                using var fms = new MemoryStream();
+                await yuklenenFayl.CopyToAsync(fms);
+                var mt = ext == ".png" ? "image/png" : "image/jpeg";
+                var ocr = await _ai.OcrImageAsync(fms.ToArray(), mt, false, "Azərbaycan dili");
+                if (ocr.Xeta == null)
+                    serbestMovzu = string.IsNullOrWhiteSpace(serbestMovzu)
+                        ? ocr.GeneratedContent
+                        : serbestMovzu + "\n" + ocr.GeneratedContent;
+            }
+            else if (ext == ".pdf")
+            {
+                var td = Path.Combine(_env.ContentRootPath, "Temp");
+                Directory.CreateDirectory(td);
+                var tp = Path.Combine(td, $"{Guid.NewGuid()}{ext}");
+                await using (var fs = System.IO.File.Create(tp))
+                    await yuklenenFayl.CopyToAsync(fs);
+                var txt = _extractor.Extract(tp, yuklenenFayl.ContentType) ?? "";
+                System.IO.File.Delete(tp);
+                if (!string.IsNullOrWhiteSpace(txt))
+                    serbestMovzu = string.IsNullOrWhiteSpace(serbestMovzu) ? txt : serbestMovzu + "\n" + txt;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(serbestMovzu))
+            return Json(new { ok = false, xeta = "Sənəd mövzusu daxil edilməyib." });
 
         var userId = int.Parse(userIdStr);
-
         try
         {
             var result = await _ai.ConstructDocumentAsync(
-                senedNovu ?? "", musteriAd ?? "", gecikmeGun, meble, elaveMelumat,
-                senedMovzusu, tercumeEdilsinmi, hedafDil);
+                "", "", 0, 0, null, serbestMovzu, tercumeEdilsinmi, hedafDil);
 
             if (result.Xeta != null)
                 return Json(new { ok = false, xeta = result.Xeta });
@@ -137,8 +162,8 @@ public class SenedAiController : Controller
                 var record = new SenedKonstruktor
                 {
                     AppUserId = userId,
-                    SenedNovu = senedNovu ?? senedMovzusu ?? "Sərbəst",
-                    ParametrlerJson = JsonSerializer.Serialize(new { senedNovu, musteriAd, gecikmeGun, meble, elaveMelumat, senedMovzusu, tercumeEdilsinmi, hedafDil }),
+                    SenedNovu = serbestMovzu.Length > 60 ? serbestMovzu.Substring(0, 60) : serbestMovzu,
+                    ParametrlerJson = JsonSerializer.Serialize(new { serbestMovzu, tercumeEdilsinmi, hedafDil }),
                     GeneratedContent = result.GeneratedContent
                 };
                 _db.SenedKonstruktorlar.Add(record);
