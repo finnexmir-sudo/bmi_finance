@@ -12,11 +12,12 @@
         <div class="sa-header-icon blue"><i class="bi bi-file-earmark-text"></i></div>
         <div>
             <h4 class="sa-title">Ağıllı Sənəd Konstruktoru</h4>
-            <p class="sa-subtitle">Parametrləri daxil et, AI bankın rəsmi üslubunda sənədi avtomatik hazırlasın.</p>
+            <p class="sa-subtitle">Parametrləri daxil et, sərbəst mövzu yaz, ya da mövcud mətni rəsmi dildə tərcümə et.</p>
         </div>
     </div>
 
     <div class="row g-4">
+        <!-- ── Sol panel: forma ─────────────────────────────── -->
         <div class="col-lg-5">
             <div class="sa-card">
                 <h6 class="sa-section-title">Sənəd Parametrləri</h6>
@@ -32,38 +33,80 @@
                         <option value="Faiz Borcunun Ödənişi Haqqında">Faiz Borcu Bildirişi</option>
                         <option value="Xüsusi">Xüsusi (öz növünü yazın)</option>
                     </select>
-                    <input type="text" id="senedNovuCustom" class="sa-input mt-2" placeholder="Xüsusi sənəd növünü yazın..."
-                        style="display:none">
+                    <input type="text" id="senedNovuCustom" class="sa-input mt-2"
+                        placeholder="Xüsusi sənəd növünü yazın..." style="display:none">
                 </div>
 
                 <div class="sa-form-group">
-                    <label class="sa-label">Müştəri adı</label>
+                    <label class="sa-label">Müştəri / əlaqədar şəxs adı</label>
                     <input type="text" id="musteriAd" class="sa-input" placeholder="məs: Əli Həsənov">
                 </div>
 
-                <div class="sa-form-group">
-                    <label class="sa-label">Gecikmiş gün sayı</label>
-                    <input type="number" id="gecikmeGun" class="sa-input" value="30" min="1">
-                </div>
-
-                <div class="sa-form-group">
-                    <label class="sa-label">Borc məbləği (AZN)</label>
-                    <input type="number" id="meble" class="sa-input" value="0" min="0" step="0.01"
-                        placeholder="0.00">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="sa-form-group">
+                            <label class="sa-label">Gecikmiş gün</label>
+                            <input type="number" id="gecikmeGun" class="sa-input" value="30" min="1">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="sa-form-group">
+                            <label class="sa-label">Məbləğ (AZN)</label>
+                            <input type="number" id="meble" class="sa-input" value="0" min="0" step="0.01">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="sa-form-group">
                     <label class="sa-label">Əlavə məlumat <span class="sa-optional">(ixtiyari)</span></label>
-                    <textarea id="elaveMelumat" class="sa-textarea" rows="3"
+                    <textarea id="elaveMelumat" class="sa-textarea" rows="2"
                         placeholder="Müqavilə nömrəsi, xüsusi şərtlər..."></textarea>
                 </div>
 
-                <button class="sa-btn sa-btn-primary w-100" id="yaratBtn" onclick="startYarat()">
-                    <i class="bi bi-magic"></i> Sənədi Yarat
+                <!-- ── Sərbəst Mövzu ──────────────────────── -->
+                <div class="sa-divider"><span>və ya</span></div>
+
+                <div class="sa-form-group">
+                    <label class="sa-label">
+                        <i class="bi bi-pencil-square me-1 text-primary"></i>
+                        Sərbəst Mövzu <span class="sa-optional">(parametrləri əvəz edir)</span>
+                    </label>
+                    <textarea id="senedMovzusu" class="sa-textarea sa-textarea-prompt" rows="3"
+                        placeholder="Məs: İşçinin intizamsızlığa görə töhmət alması üçün rəsmi əmr hazırlat..."></textarea>
+                </div>
+
+                <!-- ── Tərcümə Rejimi ────────────────────── -->
+                <div class="sa-tercume-box">
+                    <div class="sa-switch-row">
+                        <div>
+                            <div class="sa-switch-label">
+                                <i class="bi bi-translate me-1"></i> Peşəkar Tərcümə Rejimi
+                            </div>
+                            <div class="sa-switch-hint">Bank-hüquq terminologiyası ilə rəsmi tərcümə</div>
+                        </div>
+                        <label class="sa-toggle">
+                            <input type="checkbox" id="tercumeSwitch" onchange="onTercumeChange()">
+                            <span class="sa-toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div id="tercumeOptions" class="sa-tercume-options" style="display:none">
+                        <label class="sa-label mt-2">Hədəf dil</label>
+                        <select id="hedafDil" class="sa-select">
+                            <option value="İngilis dili">🇬🇧 İngilis dili</option>
+                            <option value="Rus dili">🇷🇺 Rus dili</option>
+                            <option value="Azərbaycan dili">🇦🇿 Azərbaycan dili</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="sa-btn sa-btn-primary w-100 mt-3" id="yaratBtn" onclick="startYarat()">
+                    <i class="bi bi-magic"></i> <span id="yaratBtnText">Sənədi Yarat</span>
                 </button>
             </div>
         </div>
 
+        <!-- ── Sağ panel: nəticə ─────────────────────────────── -->
         <div class="col-lg-7">
             <div class="sa-card sa-result-card" id="resultCard" style="display:none">
                 <div class="sa-result-header">
@@ -75,14 +118,20 @@
                         <button class="sa-btn sa-btn-sm" onclick="printContent()">
                             <i class="bi bi-printer"></i> Çap et
                         </button>
+                        <button class="sa-btn sa-btn-sm sa-btn-word" id="wordBtn" onclick="exportWord()">
+                            <i class="bi bi-file-word"></i> Word (.docx)
+                        </button>
                     </div>
                 </div>
+                <!-- Plain text -->
                 <pre id="generatedContent" class="sa-generated-text"></pre>
+                <!-- HTML (tərcümə rejimi) -->
+                <div id="generatedHtml" class="sa-generated-html" style="display:none"></div>
             </div>
 
             <div id="loadingCard" style="display:none" class="sa-card sa-loading">
                 <div class="sa-spinner"></div>
-                <p>AI sənədi hazırlayır...</p>
+                <p id="loadingText">AI sənədi hazırlayır...</p>
             </div>
 
             <div class="sa-card sa-placeholder-card" id="placeholderCard">
@@ -95,10 +144,19 @@
 
 @section Scripts {
 <script>
-    document.getElementById('senedNovu').addEventListener('change', function() {
-        document.getElementById('senedNovuCustom').style.display =
-            this.value === 'Xüsusi' ? '' : 'none';
+    var currentIsHtml = false;
+    var currentContent = '';
+    var currentTitle = '';
+
+    document.getElementById('senedNovu').addEventListener('change', function () {
+        document.getElementById('senedNovuCustom').style.display = this.value === 'Xüsusi' ? '' : 'none';
     });
+
+    function onTercumeChange() {
+        var on = document.getElementById('tercumeSwitch').checked;
+        document.getElementById('tercumeOptions').style.display = on ? '' : 'none';
+        document.getElementById('yaratBtnText').textContent = on ? 'Tərcümə Et' : 'Sənədi Yarat';
+    }
 
     async function startYarat() {
         var senedNovuEl = document.getElementById('senedNovu');
@@ -109,30 +167,37 @@
         var gecikmeGun = parseInt(document.getElementById('gecikmeGun').value) || 0;
         var meble = parseFloat(document.getElementById('meble').value) || 0;
         var elaveMelumat = document.getElementById('elaveMelumat').value.trim();
+        var senedMovzusu = document.getElementById('senedMovzusu').value.trim();
+        var tercumeEdilsinmi = document.getElementById('tercumeSwitch').checked;
+        var hedafDil = document.getElementById('hedafDil').value;
 
-        if (!senedNovu) { alert('Sənəd növü seçin və ya yazın.'); return; }
-        if (!musteriAd) { alert('Müştəri adını daxil edin.'); return; }
+        var hasParametrik = senedNovu && musteriAd;
+        var hasSerbest = !!senedMovzusu;
+        if (!hasParametrik && !hasSerbest) {
+            alert('Sənəd parametrləri (növ + müştəri) VƏ ya sərbəst mövzu daxil edin.');
+            return;
+        }
 
         document.getElementById('resultCard').style.display = 'none';
         document.getElementById('placeholderCard').style.display = 'none';
         document.getElementById('loadingCard').style.display = '';
+        document.getElementById('loadingText').textContent = tercumeEdilsinmi ? 'AI tərcümə edir...' : 'AI sənədi hazırlayır...';
         document.getElementById('yaratBtn').disabled = true;
 
         var params = new URLSearchParams({
             senedNovu, musteriAd,
             gecikmeGun: gecikmeGun.toString(),
             meble: meble.toString(),
-            elaveMelumat
+            elaveMelumat, senedMovzusu,
+            tercumeEdilsinmi: tercumeEdilsinmi.toString(),
+            hedafDil
         });
 
         try {
             var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
             var resp = await fetch('@Url.Action("SenedYaratPost", "SenedAi", new { area = "User" })', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'RequestVerificationToken': token
-                },
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
                 body: params.toString()
             });
             var data = await resp.json();
@@ -140,11 +205,33 @@
             document.getElementById('loadingCard').style.display = 'none';
             document.getElementById('yaratBtn').disabled = false;
 
-            if (!data.ok) { alert('Xəta: ' + data.xeta); document.getElementById('placeholderCard').style.display = ''; return; }
+            if (!data.ok) {
+                alert('Xəta: ' + data.xeta);
+                document.getElementById('placeholderCard').style.display = '';
+                return;
+            }
 
-            document.getElementById('generatedContent').textContent = data.content;
+            currentContent = data.content;
+            currentIsHtml = data.isHtml;
+            currentTitle = tercumeEdilsinmi
+                ? ('Tercume_' + hedafDil.replace(' dili', '') + '_' + new Date().toISOString().slice(0,10))
+                : (senedNovu || senedMovzusu.substring(0, 30)).replace(/\s+/g, '_');
+
+            var preEl = document.getElementById('generatedContent');
+            var htmlEl = document.getElementById('generatedHtml');
+
+            if (data.isHtml) {
+                preEl.style.display = 'none';
+                htmlEl.innerHTML = data.content;
+                htmlEl.style.display = '';
+            } else {
+                htmlEl.style.display = 'none';
+                preEl.textContent = data.content;
+                preEl.style.display = '';
+            }
+
             document.getElementById('resultCard').style.display = '';
-        } catch(e) {
+        } catch (e) {
             document.getElementById('loadingCard').style.display = 'none';
             document.getElementById('placeholderCard').style.display = '';
             document.getElementById('yaratBtn').disabled = false;
@@ -153,20 +240,60 @@
     }
 
     function copyContent() {
-        var text = document.getElementById('generatedContent').textContent;
-        navigator.clipboard.writeText(text).then(function() {
+        var text = currentIsHtml
+            ? document.getElementById('generatedHtml').innerText
+            : document.getElementById('generatedContent').textContent;
+        navigator.clipboard.writeText(text).then(function () {
             var btn = event.currentTarget;
             btn.innerHTML = '<i class="bi bi-check"></i> Kopyalandı';
-            setTimeout(function() { btn.innerHTML = '<i class="bi bi-clipboard"></i> Kopyala'; }, 2000);
+            setTimeout(function () { btn.innerHTML = '<i class="bi bi-clipboard"></i> Kopyala'; }, 2000);
         });
     }
 
     function printContent() {
-        var text = document.getElementById('generatedContent').textContent;
+        var html = currentIsHtml
+            ? '<div style="font-family:serif;font-size:14px;padding:40px">' + currentContent + '</div>'
+            : '<pre style="font-family:serif;font-size:14px;padding:40px">' + escHtml(currentContent) + '</pre>';
         var w = window.open('', '_blank');
-        w.document.write('<pre style="font-family:serif;font-size:14px;padding:40px">' + text + '</pre>');
+        w.document.write(html);
         w.document.close();
         w.print();
+    }
+
+    async function exportWord() {
+        var btn = document.getElementById('wordBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Hazırlanır...';
+
+        try {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+            var params = new URLSearchParams({
+                content: currentContent,
+                isHtml: currentIsHtml.toString(),
+                docTitle: currentTitle
+            });
+            var resp = await fetch('@Url.Action("ExportToWord", "SenedAi", new { area = "User" })', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+                body: params.toString()
+            });
+            if (!resp.ok) { alert('Word ixracı uğursuz oldu.'); return; }
+
+            var blob = await resp.blob();
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = currentTitle + '.docx';
+            a.click();
+            URL.revokeObjectURL(url);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-file-word"></i> Word (.docx)';
+        }
+    }
+
+    function escHtml(s) {
+        return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 </script>
 }
