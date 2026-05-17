@@ -320,24 +320,28 @@
                     </a>
                     <div class="fn-nav-label">AI Modulları</div>
                     @{
-                        var aiModule = Context.Request.Query["module"].ToString();
-                        var isSenedYarat = currentController == "SenedAi" && currentAction == "SenedYarat";
+                        var aiModule      = Context.Request.Query["module"].ToString();
+                        var isSenedYarat  = currentController == "SenedAi" && currentAction == "SenedYarat";
+                        var baseYaratUrl  = Url.Action("SenedYarat", "SenedAi", new { area = "User" });
+                        var hrUrl         = baseYaratUrl + "?module=hr";
+                        var kreditUrl     = baseYaratUrl + "?module=kredit";
+                        var konstrAktiv   = isSenedYarat && aiModule != "hr" && aiModule != "kredit" ? "active" : "";
+                        var hrAktiv       = isSenedYarat && aiModule == "hr"     ? "active" : "";
+                        var kreditAktiv   = isSenedYarat && aiModule == "kredit" ? "active" : "";
                     }
                     <a asp-area="User" asp-controller="SenedAi" asp-action="RiskAnaliz"
                        class="fn-nav-item @(currentController == "SenedAi" && currentAction == "RiskAnaliz" ? "active" : "")">
                         <i class="bi bi-shield-exclamation"></i> Sənəd Risk Analizi
                     </a>
                     <a asp-area="User" asp-controller="SenedAi" asp-action="SenedYarat"
-                       class="fn-nav-item @(isSenedYarat && aiModule != "hr" && aiModule != "kredit" ? "active" : "")">
+                       class="fn-nav-item @konstrAktiv">
                         <i class="bi bi-file-earmark-text"></i> Sənəd Konstruktoru
                     </a>
-                    <a href="@Url.Action("SenedYarat", "SenedAi", new { area = "User" })?module=hr"
-                       class="fn-nav-item @(isSenedYarat && aiModule == "hr" ? "active" : "")">
+                    <a href="@hrUrl" class="fn-nav-item @hrAktiv">
                         <i class="bi bi-people-fill"></i> HR Assistanı
                         <span class="fn-nav-plan-badge">Planda</span>
                     </a>
-                    <a href="@Url.Action("SenedYarat", "SenedAi", new { area = "User" })?module=kredit"
-                       class="fn-nav-item @(isSenedYarat && aiModule == "kredit" ? "active" : "")">
+                    <a href="@kreditUrl" class="fn-nav-item @kreditAktiv">
                         <i class="bi bi-graph-up-arrow"></i> Kredit Komitəsi
                         <span class="fn-nav-plan-badge">Planda</span>
                     </a>
