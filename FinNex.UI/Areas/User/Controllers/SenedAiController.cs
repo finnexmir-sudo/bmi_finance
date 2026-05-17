@@ -198,7 +198,7 @@ public class SenedAiController : Controller
     {
         try
         {
-            var templateBytes = File.ReadAllBytes(templatePath);
+            var templateBytes = System.IO.File.ReadAllBytes(templatePath);
             using var ms = new MemoryStream();
             ms.Write(templateBytes, 0, templateBytes.Length);
 
