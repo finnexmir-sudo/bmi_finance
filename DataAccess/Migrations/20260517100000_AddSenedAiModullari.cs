@@ -1,16 +1,19 @@
+using FinNex.DataAccess.Contexts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace FinNex.DataAccess.Migrations
 {
-    /// <inheritdoc />
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20260517100000_AddSenedAiModullari")]
     public partial class AddSenedAiModullari : Migration
     {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
+        protected override void Up(MigrationBuilder m)
         {
-            migrationBuilder.Sql(@"
+            m.Sql(@"
                 IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'SenedAnalizler')
                 BEGIN
                     CREATE TABLE [SenedAnalizler] (
@@ -32,12 +35,12 @@ namespace FinNex.DataAccess.Migrations
                             FOREIGN KEY ([AppUserId]) REFERENCES [AspNetUsers]([Id]) ON DELETE NO ACTION
                     );
 
-                    CREATE INDEX [IX_SenedAnalizler_AppUserId] ON [SenedAnalizler] ([AppUserId]);
-                    CREATE INDEX [IX_SenedAnalizler_YaradilmaTarixi] ON [SenedAnalizler] ([YaradilmaTarixi] DESC);
+                    CREATE INDEX [IX_SenedAnalizler_AppUserId]        ON [SenedAnalizler] ([AppUserId]);
+                    CREATE INDEX [IX_SenedAnalizler_YaradilmaTarixi]  ON [SenedAnalizler] ([YaradilmaTarixi] DESC);
                 END
             ");
 
-            migrationBuilder.Sql(@"
+            m.Sql(@"
                 IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'SenedKonstruktorlar')
                 BEGIN
                     CREATE TABLE [SenedKonstruktorlar] (
@@ -58,17 +61,16 @@ namespace FinNex.DataAccess.Migrations
                             FOREIGN KEY ([AppUserId]) REFERENCES [AspNetUsers]([Id]) ON DELETE NO ACTION
                     );
 
-                    CREATE INDEX [IX_SenedKonstruktorlar_AppUserId] ON [SenedKonstruktorlar] ([AppUserId]);
+                    CREATE INDEX [IX_SenedKonstruktorlar_AppUserId]       ON [SenedKonstruktorlar] ([AppUserId]);
                     CREATE INDEX [IX_SenedKonstruktorlar_YaradilmaTarixi] ON [SenedKonstruktorlar] ([YaradilmaTarixi] DESC);
                 END
             ");
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
+        protected override void Down(MigrationBuilder m)
         {
-            migrationBuilder.Sql("DROP TABLE IF EXISTS [SenedKonstruktorlar];");
-            migrationBuilder.Sql("DROP TABLE IF EXISTS [SenedAnalizler];");
+            m.Sql("DROP TABLE IF EXISTS [SenedKonstruktorlar];");
+            m.Sql("DROP TABLE IF EXISTS [SenedAnalizler];");
         }
     }
 }
