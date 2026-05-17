@@ -29,7 +29,7 @@ namespace FinNex.DataAccess.Migrations
                         [Silinib]               BIT             NOT NULL DEFAULT 0,
 
                         CONSTRAINT [FK_SenedAnalizler_AspNetUsers_AppUserId]
-                            FOREIGN KEY ([AppUserId]) REFERENCES [AspNetUsers]([Id]) ON DELETE RESTRICT
+                            FOREIGN KEY ([AppUserId]) REFERENCES [AspNetUsers]([Id]) ON DELETE NO ACTION
                     );
 
                     CREATE INDEX [IX_SenedAnalizler_AppUserId] ON [SenedAnalizler] ([AppUserId]);
@@ -55,7 +55,7 @@ namespace FinNex.DataAccess.Migrations
                         [Silinib]               BIT             NOT NULL DEFAULT 0,
 
                         CONSTRAINT [FK_SenedKonstruktorlar_AspNetUsers_AppUserId]
-                            FOREIGN KEY ([AppUserId]) REFERENCES [AspNetUsers]([Id]) ON DELETE RESTRICT
+                            FOREIGN KEY ([AppUserId]) REFERENCES [AspNetUsers]([Id]) ON DELETE NO ACTION
                     );
 
                     CREATE INDEX [IX_SenedKonstruktorlar_AppUserId] ON [SenedKonstruktorlar] ([AppUserId]);

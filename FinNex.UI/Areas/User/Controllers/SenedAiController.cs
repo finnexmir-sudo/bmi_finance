@@ -39,53 +39,70 @@ public class SenedAiController : Controller
     [HttpPost]
     public async Task<IActionResult> RiskAnalizEt(IFormFile? fayl, string? metin)
     {
-        var userId = int.Parse(_userManager.GetUserId(User)!);
+        var userIdStr = _userManager.GetUserId(User);
+        if (userIdStr == null)
+            return Json(new { ok = false, xeta = "İstifadəçi müəyyən edilmədi." });
+
+        var userId = int.Parse(userIdStr);
         string text = "";
         string fileName = "manual_input";
 
-        if (fayl != null && fayl.Length > 0)
+        try
         {
-            var ext = Path.GetExtension(fayl.FileName).ToLowerInvariant();
-            var tempPath = Path.Combine(_env.ContentRootPath, "Temp", $"{Guid.NewGuid()}{ext}");
-            Directory.CreateDirectory(Path.GetDirectoryName(tempPath)!);
+            if (fayl != null && fayl.Length > 0)
+            {
+                var ext = Path.GetExtension(fayl.FileName).ToLowerInvariant();
+                var tempDir = Path.Combine(_env.ContentRootPath, "Temp");
+                Directory.CreateDirectory(tempDir);
+                var tempPath = Path.Combine(tempDir, $"{Guid.NewGuid()}{ext}");
 
-            await using (var fs = System.IO.File.Create(tempPath))
-                await fayl.CopyToAsync(fs);
+                await using (var fs = System.IO.File.Create(tempPath))
+                    await fayl.CopyToAsync(fs);
 
-            text = _extractor.Extract(tempPath, fayl.ContentType) ?? "";
-            fileName = fayl.FileName;
-            System.IO.File.Delete(tempPath);
+                text = _extractor.Extract(tempPath, fayl.ContentType) ?? "";
+                fileName = fayl.FileName;
+                System.IO.File.Delete(tempPath);
+            }
+            else if (!string.IsNullOrWhiteSpace(metin))
+            {
+                text = metin;
+            }
+
+            if (string.IsNullOrWhiteSpace(text))
+                return Json(new { ok = false, xeta = "Fayl və ya mətn daxil edilməyib." });
+
+            var result = await _ai.AnalyzeRiskAsync(text, fileName);
+
+            if (result.Xeta != null)
+                return Json(new { ok = false, xeta = result.Xeta });
+
+            // DB-yə saxla (uğursuz olsa nəticəni yenə qaytarırıq)
+            try
+            {
+                var record = new SenedAnaliz
+                {
+                    AppUserId = userId,
+                    OriginalFileName = fileName,
+                    OriginalText = text.Length > 10000 ? text.Substring(0, 10000) : text,
+                    RiskLevel = result.RiskLevel,
+                    RiskyClausesJson = JsonSerializer.Serialize(result.RiskyClauslar)
+                };
+                _db.SenedAnalizler.Add(record);
+                await _db.SaveChangesAsync();
+            }
+            catch { /* migration hələ run edilməyibsə nəticəni yenə qaytarırıq */ }
+
+            return Json(new
+            {
+                ok = true,
+                riskLevel = result.RiskLevel.ToString(),
+                clauses = result.RiskyClauslar
+            });
         }
-        else if (!string.IsNullOrWhiteSpace(metin))
+        catch (Exception ex)
         {
-            text = metin;
+            return Json(new { ok = false, xeta = "Server xətası: " + ex.Message });
         }
-
-        if (string.IsNullOrWhiteSpace(text))
-            return Json(new { ok = false, xeta = "Fayl və ya mətn daxil edilməyib." });
-
-        var result = await _ai.AnalyzeRiskAsync(text, fileName);
-
-        if (result.Xeta != null)
-            return Json(new { ok = false, xeta = result.Xeta });
-
-        var record = new SenedAnaliz
-        {
-            AppUserId = userId,
-            OriginalFileName = fileName,
-            OriginalText = text.Length > 10000 ? text[..10000] : text,
-            RiskLevel = result.RiskLevel,
-            RiskyClausesJson = JsonSerializer.Serialize(result.RiskyClauslar)
-        };
-        _db.SenedAnalizler.Add(record);
-        await _db.SaveChangesAsync();
-
-        return Json(new
-        {
-            ok = true,
-            riskLevel = result.RiskLevel.ToString(),
-            clauses = result.RiskyClauslar
-        });
     }
 
     // ─── Sənəd Konstruktoru ────────────────────────────────────────────────────
@@ -100,24 +117,39 @@ public class SenedAiController : Controller
         if (string.IsNullOrWhiteSpace(senedNovu) || string.IsNullOrWhiteSpace(musteriAd))
             return Json(new { ok = false, xeta = "Sənəd növü və müştəri adı mütləqdir." });
 
-        var userId = int.Parse(_userManager.GetUserId(User)!);
+        var userIdStr = _userManager.GetUserId(User);
+        if (userIdStr == null)
+            return Json(new { ok = false, xeta = "İstifadəçi müəyyən edilmədi." });
 
-        var result = await _ai.ConstructDocumentAsync(senedNovu, musteriAd, gecikmeGun, meble, elaveMelumat);
+        var userId = int.Parse(userIdStr);
 
-        if (result.Xeta != null)
-            return Json(new { ok = false, xeta = result.Xeta });
-
-        var parametrler = new { senedNovu, musteriAd, gecikmeGun, meble, elaveMelumat };
-        var record = new SenedKonstruktor
+        try
         {
-            AppUserId = userId,
-            SenedNovu = senedNovu,
-            ParametrlerJson = JsonSerializer.Serialize(parametrler),
-            GeneratedContent = result.GeneratedContent
-        };
-        _db.SenedKonstruktorlar.Add(record);
-        await _db.SaveChangesAsync();
+            var result = await _ai.ConstructDocumentAsync(senedNovu, musteriAd, gecikmeGun, meble, elaveMelumat);
 
-        return Json(new { ok = true, content = result.GeneratedContent });
+            if (result.Xeta != null)
+                return Json(new { ok = false, xeta = result.Xeta });
+
+            try
+            {
+                var parametrler = new { senedNovu, musteriAd, gecikmeGun, meble, elaveMelumat };
+                var record = new SenedKonstruktor
+                {
+                    AppUserId = userId,
+                    SenedNovu = senedNovu,
+                    ParametrlerJson = JsonSerializer.Serialize(parametrler),
+                    GeneratedContent = result.GeneratedContent
+                };
+                _db.SenedKonstruktorlar.Add(record);
+                await _db.SaveChangesAsync();
+            }
+            catch { /* migration hələ run edilməyibsə nəticəni yenə qaytarırıq */ }
+
+            return Json(new { ok = true, content = result.GeneratedContent });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { ok = false, xeta = "Server xətası: " + ex.Message });
+        }
     }
 }
