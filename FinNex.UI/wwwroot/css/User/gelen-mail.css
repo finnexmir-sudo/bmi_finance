@@ -1301,9 +1301,6 @@
     min-width: 80px;
 }
 
-.gm-split-left .gm-btn[type="submit"] {
-    flex: 1 1 100%;
-}
 
 .gm-split-right {
     flex: 1;
@@ -1489,7 +1486,7 @@
 
 .gm-split-search-btn {
     padding: 7px 10px;
-    flex-shrink: 0;
+    flex: 0 0 auto;
 }
 
 .gm-split-filter-row {
