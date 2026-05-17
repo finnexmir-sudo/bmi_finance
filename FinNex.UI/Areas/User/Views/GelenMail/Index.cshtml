@@ -99,38 +99,38 @@
             }
         </div>
 
-        @* Filterlər — bir sıra *@
-        <div class="gm-split-filter-row">
-            <select name="oxunmamis" class="gm-select gm-select--sm" onchange="this.form.submit()">
-                <option value="">Hamısı</option>
-                <option value="true" selected="@(oxunmamisFilter == true)">Oxunmamış</option>
-            </select>
-            <select name="tapshirildi" class="gm-select gm-select--sm">
-                <option value="">Tapşırma</option>
-                <option value="true"  selected="@(tapshirildiFlt == true)">Tapşırılıb</option>
-                <option value="false" selected="@(tapshirildiFlt == false)">Tapşırılmayıb</option>
-            </select>
-            <select name="deadline" class="gm-select gm-select--sm">
-                <option value="">Deadline</option>
-                <option value="var"     selected="@(deadlineFlt == "var")">Var</option>
-                <option value="kecib"   selected="@(deadlineFlt == "kecib")">Keçib</option>
-                <option value="buhefte" selected="@(deadlineFlt == "buhefte")">Bu həftə</option>
-            </select>
-            <label class="gm-checkbox-label" style="white-space:nowrap">
-                <input type="checkbox" name="qosmali" value="true"
-                       @(qosmaliFlt == true ? "checked" : "")
-                       onchange="this.form.submit()" />
-                <i class="bi bi-paperclip"></i>
-            </label>
-        </div>
-
-        @* Tarix (yalnız filter aktivdirsə göstər) *@
-        <div class="gm-split-filter-row">
-            <input type="date" name="tarixden" value="@tarixdenFilter"
-                   class="gm-input-date" style="flex:1" title="Tarixdən" />
-            <span style="color:#94a3b8;font-size:.8rem">—</span>
-            <input type="date" name="tarixe" value="@tarixeFilter"
-                   class="gm-input-date" style="flex:1" title="Tarixə" />
+        @* Filterlər — ayrı bölmə *@
+        <div class="gm-split-filter-section">
+            <div class="gm-split-filter-row">
+                <select name="oxunmamis" class="gm-select gm-select--sm" onchange="this.form.submit()">
+                    <option value="">Hamısı</option>
+                    <option value="true" selected="@(oxunmamisFilter == true)">Oxunmamış</option>
+                </select>
+                <select name="tapshirildi" class="gm-select gm-select--sm">
+                    <option value="">Tapşırma</option>
+                    <option value="true"  selected="@(tapshirildiFlt == true)">Tapşırılıb</option>
+                    <option value="false" selected="@(tapshirildiFlt == false)">Tapşırılmayıb</option>
+                </select>
+                <select name="deadline" class="gm-select gm-select--sm">
+                    <option value="">Deadline</option>
+                    <option value="var"     selected="@(deadlineFlt == "var")">Var</option>
+                    <option value="kecib"   selected="@(deadlineFlt == "kecib")">Keçib</option>
+                    <option value="buhefte" selected="@(deadlineFlt == "buhefte")">Bu həftə</option>
+                </select>
+                <label class="gm-checkbox-label" style="white-space:nowrap">
+                    <input type="checkbox" name="qosmali" value="true"
+                           @(qosmaliFlt == true ? "checked" : "")
+                           onchange="this.form.submit()" />
+                    <i class="bi bi-paperclip"></i>
+                </label>
+            </div>
+            <div class="gm-split-filter-row">
+                <input type="date" name="tarixden" value="@tarixdenFilter"
+                       class="gm-input-date" title="Tarixdən" />
+                <span style="color:#94a3b8;font-size:.8rem">—</span>
+                <input type="date" name="tarixe" value="@tarixeFilter"
+                       class="gm-input-date" title="Tarixə" />
+            </div>
         </div>
 
         @* Aktiv filter chips *@
