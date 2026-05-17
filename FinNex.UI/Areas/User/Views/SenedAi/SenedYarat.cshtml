@@ -16,17 +16,6 @@
         </div>
     </div>
 
-    <!-- ── AI Modul Seçimi ───────────────────────────────────────────── -->
-    <div class="sa-module-selector-row">
-        <span class="sa-module-label"><i class="bi bi-grid-3x3-gap-fill"></i> AI Modul Seçimi:</span>
-        <select id="aiModuleSelect" class="sa-module-select" onchange="onModuleChange()">
-            <option value="konstruktor">⚙️ Ağıllı Sənəd Konstruktoru</option>
-            <option value="risk">🔍 Sənəd Risk Analizi</option>
-            <option value="hr">👥 HR Assistanı (Əmrlər və Müqavilələr) — Planda</option>
-            <option value="kredit">🧠 Kredit Komitəsi (AI Üzv Rəyi) — Planda</option>
-        </select>
-    </div>
-
     <div class="row g-3">
         <!-- ── Sol panel: giriş ──────────────────────────────────────── -->
         <div class="col-xl-6 col-lg-6" id="leftPanel">
@@ -267,8 +256,8 @@
     var currentContent = '';
     var currentTitle   = '';
 
-    function onModuleChange() {
-        var mod       = document.getElementById('aiModuleSelect').value;
+    function onModuleChange(mod) {
+        mod = mod || 'konstruktor';
         var leftPanel = document.getElementById('leftPanel');
         var hrCard    = document.getElementById('hrRoadmapCard');
         var krCard    = document.getElementById('kreditRoadmapCard');
@@ -282,11 +271,6 @@
         leftPanel.style.opacity       = '1';
         leftPanel.style.pointerEvents = '';
         btn.disabled = false;
-
-        if (mod === 'risk') {
-            window.location.href = '@Url.Action("RiskAnaliz", "SenedAi", new { area = "User" })';
-            return;
-        }
 
         if (mod === 'hr' || mod === 'kredit') {
             leftPanel.style.opacity       = '0.35';
@@ -575,5 +559,11 @@
     function escHtml(s) {
         return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
+
+    // Auto-activate module from URL query param
+    (function () {
+        var mod = new URLSearchParams(window.location.search).get('module');
+        if (mod === 'hr' || mod === 'kredit') onModuleChange(mod);
+    })();
 </script>
 }
