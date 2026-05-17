@@ -1,7 +1,9 @@
 ﻿
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
+using FinNex.Application.Interfaces.AI;
 using FinNex.Application.Interfaces.Communication;
+using FinNex.Application.Services.AI;
 using FinNex.Application.Services.Communication;
 using FinNex.Application.Interfaces.HR;
 using FinNex.Application.Interfaces.Maas_If;
@@ -134,5 +136,8 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IGelenMailService, GelenMailService>();
         services.AddScoped<IAnthropicService, AnthropicService>();
         services.AddScoped<IAttachmentTextExtractor, AttachmentTextExtractor>();
+
+        // ── AI Sənəd Modulları ─────────────────────────────────
+        services.AddScoped<ISenedAiService, SenedAiService>();
     }
 }

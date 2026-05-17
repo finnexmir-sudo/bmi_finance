@@ -1,0 +1,182 @@
+@{
+    ViewData["Title"] = "Sənəd Risk Analizi";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/sened-ai.css" asp-append-version="true" />
+}
+
+<div class="sa-page">
+    <div class="sa-header">
+        <div class="sa-header-icon red"><i class="bi bi-shield-exclamation"></i></div>
+        <div>
+            <h4 class="sa-title">Sənədlərin Risk Analizi</h4>
+            <p class="sa-subtitle">Yüklədiyin sənədi AI vasitəsilə analiz et, gizli tələ və riskli bəndləri aşkar et.</p>
+        </div>
+    </div>
+
+    <div class="sa-card">
+        <div class="sa-tabs">
+            <button class="sa-tab active" id="tab-fayl" onclick="switchTab('fayl')">
+                <i class="bi bi-file-earmark-arrow-up"></i> Fayl yüklə
+            </button>
+            <button class="sa-tab" id="tab-metin" onclick="switchTab('metin')">
+                <i class="bi bi-textarea-t"></i> Mətn yapışdır
+            </button>
+        </div>
+
+        <div id="panel-fayl" class="sa-panel">
+            <div class="sa-drop-zone" id="dropZone">
+                <i class="bi bi-cloud-arrow-up sa-drop-icon"></i>
+                <p>PDF, Word (.docx) və ya TXT faylı buraya sürükləyin</p>
+                <p class="sa-drop-hint">və ya</p>
+                <label class="sa-btn sa-btn-outline" for="faylInput">Fayl seç</label>
+                <input type="file" id="faylInput" accept=".pdf,.docx,.txt,.doc" style="display:none">
+                <div id="faylAdi" class="sa-file-name"></div>
+            </div>
+        </div>
+
+        <div id="panel-metin" class="sa-panel" style="display:none">
+            <textarea id="metinInput" class="sa-textarea" rows="10"
+                placeholder="Sənəd mətnini buraya yapışdırın..."></textarea>
+        </div>
+
+        <div class="sa-actions">
+            <button class="sa-btn sa-btn-primary" id="analizBtn" onclick="startAnaliz()">
+                <i class="bi bi-cpu"></i> AI Analiz Et
+            </button>
+        </div>
+    </div>
+
+    <div id="resultSection" style="display:none">
+        <div class="sa-risk-badge-wrap">
+            <div id="riskBadge" class="sa-risk-badge"></div>
+        </div>
+
+        <div id="clauseList" class="sa-clause-list"></div>
+
+        <div class="sa-empty-ok" id="emptyOk" style="display:none">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <span>Yüksək risk aşkar edilmədi. Sənəd ümumi olaraq təhlükəsiz görünür.</span>
+        </div>
+    </div>
+
+    <div id="loadingSection" style="display:none" class="sa-loading">
+        <div class="sa-spinner"></div>
+        <p>AI sənədi analiz edir, zəhmət olmasa gözləyin...</p>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var activeTab = 'fayl';
+    var selectedFile = null;
+
+    function switchTab(tab) {
+        activeTab = tab;
+        document.getElementById('tab-fayl').classList.toggle('active', tab === 'fayl');
+        document.getElementById('tab-metin').classList.toggle('active', tab === 'metin');
+        document.getElementById('panel-fayl').style.display = tab === 'fayl' ? '' : 'none';
+        document.getElementById('panel-metin').style.display = tab === 'metin' ? '' : 'none';
+    }
+
+    var dropZone = document.getElementById('dropZone');
+    var faylInput = document.getElementById('faylInput');
+
+    dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('drag-over'); });
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
+    });
+    faylInput.addEventListener('change', function() { if (faylInput.files.length) setFile(faylInput.files[0]); });
+
+    function setFile(f) {
+        selectedFile = f;
+        document.getElementById('faylAdi').textContent = '✓ ' + f.name;
+    }
+
+    async function startAnaliz() {
+        var formData = new FormData();
+
+        if (activeTab === 'fayl') {
+            if (!selectedFile) { alert('Zəhmət olmasa fayl seçin.'); return; }
+            formData.append('fayl', selectedFile);
+        } else {
+            var metin = document.getElementById('metinInput').value.trim();
+            if (!metin) { alert('Zəhmət olmasa mətn daxil edin.'); return; }
+            formData.append('metin', metin);
+        }
+
+        document.getElementById('resultSection').style.display = 'none';
+        document.getElementById('loadingSection').style.display = '';
+        document.getElementById('analizBtn').disabled = true;
+
+        try {
+            var resp = await fetch('@Url.Action("RiskAnalizEt", "SenedAi", new { area = "User" })', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' },
+                body: formData
+            });
+            var data = await resp.json();
+
+            document.getElementById('loadingSection').style.display = 'none';
+            document.getElementById('analizBtn').disabled = false;
+
+            if (!data.ok) { alert('Xəta: ' + data.xeta); return; }
+
+            showResult(data.riskLevel, data.clauses);
+        } catch(e) {
+            document.getElementById('loadingSection').style.display = 'none';
+            document.getElementById('analizBtn').disabled = false;
+            alert('Şəbəkə xətası baş verdi.');
+        }
+    }
+
+    function showResult(level, clauses) {
+        var badge = document.getElementById('riskBadge');
+        var icons = { Red: '🔴', Yellow: '🟡', Green: '🟢' };
+        var labels = { Red: 'Yüksək Risk', Yellow: 'Orta Risk', Green: 'Aşağı Risk' };
+        badge.className = 'sa-risk-badge sa-risk-' + level.toLowerCase();
+        badge.innerHTML = icons[level] + ' ' + labels[level];
+
+        var list = document.getElementById('clauseList');
+        list.innerHTML = '';
+        document.getElementById('emptyOk').style.display = 'none';
+
+        if (clauses && clauses.length > 0) {
+            clauses.forEach(function(c, i) {
+                list.innerHTML += `
+                <div class="sa-clause-card">
+                    <div class="sa-clause-header">
+                        <span class="sa-clause-num">${i + 1}</span>
+                        <span class="sa-clause-type">${c.maddeTipi}</span>
+                    </div>
+                    <div class="sa-clause-row">
+                        <label>Riskli cümlə</label>
+                        <blockquote class="sa-quote">${escHtml(c.riskliCumle)}</blockquote>
+                    </div>
+                    <div class="sa-clause-row">
+                        <label>Zərər potensialı</label>
+                        <p>${escHtml(c.zararPotensiali)}</p>
+                    </div>
+                    <div class="sa-clause-row">
+                        <label>Alternativ təklif</label>
+                        <p class="sa-alt">${escHtml(c.alternativTeklif)}</p>
+                    </div>
+                </div>`;
+            });
+        } else {
+            document.getElementById('emptyOk').style.display = '';
+        }
+
+        document.getElementById('resultSection').style.display = '';
+    }
+
+    function escHtml(s) {
+        return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+</script>
+}
