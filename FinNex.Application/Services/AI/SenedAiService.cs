@@ -26,27 +26,46 @@ public class SenedAiService : ISenedAiService
         if (string.IsNullOrWhiteSpace(_apiKey))
             return new RiskAnalizResult { Xeta = "AI açarı konfiqurasiya edilməyib." };
 
-        var prompt = BuildRiskPrompt(text, fileName);
-        var raw = await CallApiAsync(prompt, 2000);
+        var raw = await CallApiAsync(BuildRiskPrompt(text, fileName), 2000);
         if (raw == null)
             return new RiskAnalizResult { Xeta = "AI cavabı alınmadı." };
 
         return ParseRiskResponse(raw);
     }
 
-    public async Task<KonstruktorResult> ConstructDocumentAsync(string senedNovu, string musteriAd,
-        int gecikmeGun, decimal meble, string? elaveMelumat)
+    public async Task<KonstruktorResult> ConstructDocumentAsync(
+        string senedNovu, string musteriAd, int gecikmeGun, decimal meble, string? elaveMelumat,
+        string? senedMovzusu, bool tercumeEdilsinmi, string? hedafDil)
     {
         if (string.IsNullOrWhiteSpace(_apiKey))
             return new KonstruktorResult { Xeta = "AI açarı konfiqurasiya edilməyib." };
 
-        var prompt = BuildKonstruktorPrompt(senedNovu, musteriAd, gecikmeGun, meble, elaveMelumat);
-        var raw = await CallApiAsync(prompt, 1500);
+        string prompt;
+        bool isHtml = false;
+
+        if (tercumeEdilsinmi)
+        {
+            var sourceText = !string.IsNullOrWhiteSpace(senedMovzusu) ? senedMovzusu : BuildDocTextForTranslation(senedNovu, musteriAd, gecikmeGun, meble, elaveMelumat);
+            prompt = BuildTercumePrompt(sourceText, hedafDil ?? "İngilis dili");
+            isHtml = true;
+        }
+        else if (!string.IsNullOrWhiteSpace(senedMovzusu))
+        {
+            prompt = BuildSerbrestPrompt(senedMovzusu, musteriAd);
+        }
+        else
+        {
+            prompt = BuildParametrikPrompt(senedNovu, musteriAd, gecikmeGun, meble, elaveMelumat);
+        }
+
+        var raw = await CallApiAsync(prompt, 2000);
         if (raw == null)
             return new KonstruktorResult { Xeta = "AI cavabı alınmadı." };
 
-        return new KonstruktorResult { GeneratedContent = raw.Trim() };
+        return new KonstruktorResult { GeneratedContent = raw.Trim(), IsHtml = isHtml };
     }
+
+    // ── HTTP ─────────────────────────────────────────────────────────────────
 
     private async Task<string?> CallApiAsync(string prompt, int maxTokens)
     {
@@ -63,15 +82,17 @@ public class SenedAiService : ISenedAiService
         client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
 
         var json = JsonSerializer.Serialize(request);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await client.PostAsync(ApiUrl, content);
+        var response = await client.PostAsync(ApiUrl, httpContent);
         if (!response.IsSuccessStatusCode) return null;
 
         var body = await response.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(body);
         return doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString();
     }
+
+    // ── Prompt Builders ───────────────────────────────────────────────────────
 
     private static string BuildRiskPrompt(string text, string fileName)
     {
@@ -93,19 +114,15 @@ public class SenedAiService : ISenedAiService
         sb.AppendLine("  ]");
         sb.AppendLine("}");
         sb.AppendLine();
-        sb.AppendLine("Risk səviyyəsi qaydası:");
-        sb.AppendLine("- Red: Bir və ya daha çox yüksək riskli bənd (bankın ciddi zərər çəkə biləcəyi)");
-        sb.AppendLine("- Yellow: Orta risk — qeyri-müəyyən ifadələr, şərh mübahisəsi yarada biləcək bəndlər");
-        sb.AppendLine("- Green: Aşkar risk yoxdur");
+        sb.AppendLine("Risk səviyyəsi: Red=yüksək risk, Yellow=orta risk, Green=aşkar risk yoxdur");
         sb.AppendLine();
         sb.AppendLine($"Fayl adı: {fileName}");
         sb.AppendLine("Sənəd mətni:");
         sb.AppendLine(truncated);
-
         return sb.ToString();
     }
 
-    private static string BuildKonstruktorPrompt(string senedNovu, string musteriAd,
+    private static string BuildParametrikPrompt(string senedNovu, string musteriAd,
         int gecikmeGun, decimal meble, string? elaveMelumat)
     {
         var sb = new StringBuilder();
@@ -119,15 +136,61 @@ public class SenedAiService : ISenedAiService
         if (!string.IsNullOrWhiteSpace(elaveMelumat))
             sb.AppendLine($"Əlavə məlumat: {elaveMelumat}");
         sb.AppendLine();
-        sb.AppendLine("Tələblər:");
-        sb.AppendLine("- Dil: Azərbaycan dili, rəsmi-işgüzar üslub");
-        sb.AppendLine("- Format: düz mətn (markdown yox, HTML yox)");
-        sb.AppendLine("- Sənəd tam strukturlu olmalıdır: başlıq, müraciət, əsas hissə, nəticə/xəbərdarlıq, imza sahəsi");
-        sb.AppendLine("- Bank standartlarına uyğun rəsmi terminologiya istifadə edin");
-        sb.AppendLine("- Yalnız sənədi yazın, heç bir izahat əlavə etməyin");
-
+        sb.AppendLine("Tələblər: Azərbaycan dili, rəsmi-işgüzar üslub, düz mətn (markdown/HTML yox).");
+        sb.AppendLine("Sənəd strukturu: başlıq → müraciət → əsas hissə → xəbərdarlıq/nəticə → imza sahəsi.");
+        sb.AppendLine("Yalnız sənədi yazın, izahat əlavə etməyin.");
         return sb.ToString();
     }
+
+    private static string BuildSerbrestPrompt(string senedMovzusu, string musteriAd)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("Siz bankın rəsmi yazışma mütəxəssisisiniz. Aşağıdakı tapşırığa əsasən tam rəsmi bank sənədi hazırlayın.");
+        sb.AppendLine();
+        sb.AppendLine($"Tapşırıq: {senedMovzusu}");
+        if (!string.IsNullOrWhiteSpace(musteriAd))
+            sb.AppendLine($"Əlaqədar şəxs/müştəri: {musteriAd}");
+        sb.AppendLine($"Tarix: {DateTime.Now:dd MMMM yyyy}");
+        sb.AppendLine();
+        sb.AppendLine("Tələblər: Azərbaycan dili, rəsmi-işgüzar üslub, düz mətn (markdown/HTML yox).");
+        sb.AppendLine("Sənəd strukturu: başlıq → müraciət → əsas hissə → nəticə → imza sahəsi.");
+        sb.AppendLine("Yalnız sənədi yazın, izahat əlavə etməyin.");
+        return sb.ToString();
+    }
+
+    private static string BuildTercumePrompt(string sourceText, string hedafDil)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"Siz peşəkar bank və hüquq tərcüməçisisiniz. Aşağıdakı mətni {hedafDil} dilinə tərcümə edin.");
+        sb.AppendLine();
+        sb.AppendLine("Tələblər:");
+        sb.AppendLine("- Terminoloji cəhətdən qüsursuz, rəsmi bank-hüquq dilinə uyğun tərcümə edin.");
+        sb.AppendLine("- Orijinalın strukturunu, bölmə başlıqlarını və rəsmi tonunu tam qoruyun.");
+        sb.AppendLine("- ÇIXIŞI MÜTLƏQ aşağıdakı HTML formatında verin (başqa heç nə yazmayın):");
+        sb.AppendLine("<div class=\"sa-translated-doc\">");
+        sb.AppendLine("  <h2>Başlıq</h2>");
+        sb.AppendLine("  <p>Məzmun...</p>");
+        sb.AppendLine("</div>");
+        sb.AppendLine();
+        sb.AppendLine("Tərcümə ediləcək mətn:");
+        sb.AppendLine(sourceText.Length > 6000 ? sourceText.Substring(0, 6000) + "\n[...kəsildi]" : sourceText);
+        return sb.ToString();
+    }
+
+    private static string BuildDocTextForTranslation(string senedNovu, string musteriAd,
+        int gecikmeGun, decimal meble, string? elaveMelumat)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"Sənəd növü: {senedNovu}");
+        sb.AppendLine($"Müştəri: {musteriAd}");
+        sb.AppendLine($"Gecikmiş gün: {gecikmeGun}");
+        sb.AppendLine($"Məbləğ: {meble:F2} AZN");
+        if (!string.IsNullOrWhiteSpace(elaveMelumat))
+            sb.AppendLine(elaveMelumat);
+        return sb.ToString();
+    }
+
+    // ── Risk Response Parser ──────────────────────────────────────────────────
 
     private static RiskAnalizResult ParseRiskResponse(string raw)
     {
@@ -143,12 +206,7 @@ public class SenedAiService : ISenedAiService
             var root = doc.RootElement;
 
             var levelStr = root.TryGetProperty("risk_level", out var rl) ? rl.GetString() ?? "Yellow" : "Yellow";
-            var level = levelStr switch
-            {
-                "Red" => RiskLevel.Red,
-                "Green" => RiskLevel.Green,
-                _ => RiskLevel.Yellow
-            };
+            var level = levelStr switch { "Red" => RiskLevel.Red, "Green" => RiskLevel.Green, _ => RiskLevel.Yellow };
 
             var clauses = new List<RiskyClause>();
             if (root.TryGetProperty("risky_clauses", out var arr) && arr.ValueKind == JsonValueKind.Array)
@@ -164,7 +222,6 @@ public class SenedAiService : ISenedAiService
                     });
                 }
             }
-
             return new RiskAnalizResult { RiskLevel = level, RiskyClauslar = clauses };
         }
         catch

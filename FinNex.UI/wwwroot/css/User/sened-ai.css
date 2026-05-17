@@ -331,3 +331,122 @@
     display: block;
     margin-bottom: 12px;
 }
+
+/* ── Divider ─────────────────────────────────────────────────────────────── */
+.sa-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0 16px;
+    color: #adb5bd;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+.sa-divider::before,
+.sa-divider::after { content: ''; flex: 1; height: 1px; background: #e9ecef; }
+
+/* ── Sərbəst Mövzu textarea ──────────────────────────────────────────────── */
+.sa-textarea-prompt {
+    border-color: #b2c9e8;
+    background: #f0f7ff;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    min-height: 80px;
+}
+.sa-textarea-prompt:focus {
+    border-color: #1971c2;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(25,113,194,.12);
+}
+
+/* ── Tərcümə kutusu ──────────────────────────────────────────────────────── */
+.sa-tercume-box {
+    background: linear-gradient(135deg, #f0f7ff 0%, #e8f4f8 100%);
+    border: 1px solid #b2c9e8;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-top: 4px;
+}
+.sa-switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.sa-switch-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1971c2;
+}
+.sa-switch-hint {
+    font-size: 0.75rem;
+    color: #74a8d0;
+    margin-top: 2px;
+}
+.sa-tercume-options { margin-top: 4px; }
+
+/* ── Toggle switch ───────────────────────────────────────────────────────── */
+.sa-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+}
+.sa-toggle input { opacity: 0; width: 0; height: 0; }
+.sa-toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: #ced4da;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.sa-toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    left: 3px; top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.sa-toggle input:checked + .sa-toggle-slider { background: #1971c2; }
+.sa-toggle input:checked + .sa-toggle-slider::before { transform: translateX(20px); }
+
+/* ── Word button ─────────────────────────────────────────────────────────── */
+.sa-btn-word {
+    background: #ebf4ff;
+    color: #1971c2;
+    border-color: #b2c9e8;
+    font-weight: 600;
+}
+.sa-btn-word:hover:not(:disabled) {
+    background: #1971c2;
+    color: #fff;
+    border-color: #1971c2;
+}
+
+/* ── HTML preview (tərcümə çıxışı) ──────────────────────────────────────── */
+.sa-generated-html {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px 24px;
+    max-height: 600px;
+    overflow-y: auto;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 0.9rem;
+    line-height: 1.8;
+    color: #212529;
+}
+.sa-generated-html h1,
+.sa-generated-html h2 { color: #1a1a2e; font-size: 1.1rem; margin: 16px 0 8px; font-weight: 700; }
+.sa-generated-html h3 { color: #343a40; font-size: 1rem; margin: 12px 0 6px; font-weight: 600; }
+.sa-generated-html p  { margin: 0 0 10px; }
+.sa-generated-html .sa-translated-doc { max-width: 100%; }
+
+/* ── Utilities ───────────────────────────────────────────────────────────── */
+.mt-3 { margin-top: 12px; }
