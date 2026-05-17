@@ -42,9 +42,10 @@
     }
 }
 
-<div class="gm-page">
+<div class="gm-split-page">
 
     @* ── Başlıq ── *@
+    <div class="gm-split-top">
     <div class="gm-header">
         <h1 class="gm-title">
             <i class="bi bi-envelope-fill"></i>
@@ -64,7 +65,11 @@
             </a>
         </div>
     </div>
+    </div>@* /gm-split-top *@
     @Html.AntiForgeryToken()
+
+    <div class="gm-split-body">
+    <div class="gm-split-left">
 
     @* ── Filter paneli ── *@
     <form method="get" id="filterForm" class="gm-filterbar">
@@ -195,8 +200,8 @@
                 var wrapCls  = !mail.Oxunub ? "gm-item-wrap--unread" : "";
                 var avatarChar = mail.KimdenAd.Length > 0 ? mail.KimdenAd[0].ToString().ToUpper() : "?";
                 var fromName = string.IsNullOrWhiteSpace(mail.KimdenAd) ? mail.KimdenEmail : mail.KimdenAd;
-                <div class="gm-item-wrap @wrapCls">
-                <a href="@detailUrl" class="gm-item @unreadCls">
+                <div id="mailItem-@mail.Id" class="gm-item-wrap @wrapCls">
+                <a href="@detailUrl" class="gm-item @unreadCls" data-mailid="@mail.Id">
                     <div class="gm-item-indicator"></div>
                     <div class="gm-item-avatar"><span>@avatarChar</span></div>
                     <div class="gm-item-body">
@@ -268,8 +273,63 @@
         }
     }
 </div>
+</div>@* /gm-split-left *@
+
+<div class="gm-split-right" id="gmRightPanel">
+    <div class="gm-split-placeholder">
+        <i class="bi bi-envelope-open" style="font-size:2.5rem"></i>
+        <span>Oxumaq üçün mail seçin</span>
+    </div>
+</div>
+
+</div>@* /gm-split-body *@
 
 @section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+(function() {
+    var panel = document.getElementById('gmRightPanel');
+    var token = document.querySelector('[name="__RequestVerificationToken"]')?.value ?? '';
+
+    function executeScripts(container) {
+        container.querySelectorAll('script').forEach(function(old) {
+            var s = document.createElement('script');
+            s.textContent = old.textContent;
+            old.parentNode.replaceChild(s, old);
+        });
+    }
+
+    async function loadPanel(id) {
+        panel.innerHTML = '<div class="gm-split-loading"><i class="bi bi-arrow-repeat spin"></i> Yüklənir...</div>';
+        document.querySelectorAll('.gm-item-wrap').forEach(el => el.classList.remove('gm-item--active'));
+        var wrap = document.getElementById('mailItem-' + id);
+        if (wrap) wrap.classList.add('gm-item--active');
+
+        try {
+            var res = await fetch('/User/GelenMail/MailPanel/' + id, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            var html = await res.text();
+            panel.innerHTML = html;
+            executeScripts(panel);
+            // Mark as read visually
+            if (wrap) wrap.classList.remove('gm-item-wrap--unread');
+            var link = wrap?.querySelector('.gm-item');
+            if (link) link.classList.remove('gm-item--unread');
+        } catch(e) {
+            panel.innerHTML = '<div class="gm-split-placeholder"><i class="bi bi-exclamation-circle"></i><span>Yükləmə xətası</span></div>';
+        }
+    }
+
+    // On desktop: intercept mail item clicks
+    if (window.innerWidth >= 992) {
+        document.addEventListener('click', function(e) {
+            var link = e.target.closest('.gm-item[data-mailid]');
+            if (!link) return;
+            e.preventDefault();
+            loadPanel(link.dataset.mailid);
+        });
+    }
+})();
+</script>
 <script>
 (function () {
     var btn = document.getElementById('yenileBtn');
