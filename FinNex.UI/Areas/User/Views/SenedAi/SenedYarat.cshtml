@@ -1,0 +1,172 @@
+@{
+    ViewData["Title"] = "Ağıllı Sənəd Konstruktoru";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/sened-ai.css" asp-append-version="true" />
+}
+
+<div class="sa-page">
+    <div class="sa-header">
+        <div class="sa-header-icon blue"><i class="bi bi-file-earmark-text"></i></div>
+        <div>
+            <h4 class="sa-title">Ağıllı Sənəd Konstruktoru</h4>
+            <p class="sa-subtitle">Parametrləri daxil et, AI bankın rəsmi üslubunda sənədi avtomatik hazırlasın.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="sa-card">
+                <h6 class="sa-section-title">Sənəd Parametrləri</h6>
+
+                <div class="sa-form-group">
+                    <label class="sa-label">Sənəd növü</label>
+                    <select id="senedNovu" class="sa-select">
+                        <option value="Gecikmiş Kredit Xəbərdarlığı">Gecikmiş Kredit Xəbərdarlığı</option>
+                        <option value="Son Xəbərdarlıq Məktubu">Son Xəbərdarlıq Məktubu</option>
+                        <option value="Kredit Borcunun Ödənilməsi Haqqında Bildiriş">Kredit Borcu Bildirişi</option>
+                        <option value="Girov Aktivinə Dair Bildiriş">Girov Aktivinə Dair Bildiriş</option>
+                        <option value="Müqavilənin Ləğvi Barədə Xəbərdarlıq">Müqavilənin Ləğvi Xəbərdarlığı</option>
+                        <option value="Faiz Borcunun Ödənişi Haqqında">Faiz Borcu Bildirişi</option>
+                        <option value="Xüsusi">Xüsusi (öz növünü yazın)</option>
+                    </select>
+                    <input type="text" id="senedNovuCustom" class="sa-input mt-2" placeholder="Xüsusi sənəd növünü yazın..."
+                        style="display:none">
+                </div>
+
+                <div class="sa-form-group">
+                    <label class="sa-label">Müştəri adı</label>
+                    <input type="text" id="musteriAd" class="sa-input" placeholder="məs: Əli Həsənov">
+                </div>
+
+                <div class="sa-form-group">
+                    <label class="sa-label">Gecikmiş gün sayı</label>
+                    <input type="number" id="gecikmeGun" class="sa-input" value="30" min="1">
+                </div>
+
+                <div class="sa-form-group">
+                    <label class="sa-label">Borc məbləği (AZN)</label>
+                    <input type="number" id="meble" class="sa-input" value="0" min="0" step="0.01"
+                        placeholder="0.00">
+                </div>
+
+                <div class="sa-form-group">
+                    <label class="sa-label">Əlavə məlumat <span class="sa-optional">(ixtiyari)</span></label>
+                    <textarea id="elaveMelumat" class="sa-textarea" rows="3"
+                        placeholder="Müqavilə nömrəsi, xüsusi şərtlər..."></textarea>
+                </div>
+
+                <button class="sa-btn sa-btn-primary w-100" id="yaratBtn" onclick="startYarat()">
+                    <i class="bi bi-magic"></i> Sənədi Yarat
+                </button>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="sa-card sa-result-card" id="resultCard" style="display:none">
+                <div class="sa-result-header">
+                    <h6 class="sa-section-title mb-0">Yaradılan Sənəd</h6>
+                    <div class="sa-result-actions">
+                        <button class="sa-btn sa-btn-sm" onclick="copyContent()">
+                            <i class="bi bi-clipboard"></i> Kopyala
+                        </button>
+                        <button class="sa-btn sa-btn-sm" onclick="printContent()">
+                            <i class="bi bi-printer"></i> Çap et
+                        </button>
+                    </div>
+                </div>
+                <pre id="generatedContent" class="sa-generated-text"></pre>
+            </div>
+
+            <div id="loadingCard" style="display:none" class="sa-card sa-loading">
+                <div class="sa-spinner"></div>
+                <p>AI sənədi hazırlayır...</p>
+            </div>
+
+            <div class="sa-card sa-placeholder-card" id="placeholderCard">
+                <i class="bi bi-file-earmark-plus sa-placeholder-icon"></i>
+                <p>Parametrləri daxil edib "Sənədi Yarat" düyməsini basın</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.getElementById('senedNovu').addEventListener('change', function() {
+        document.getElementById('senedNovuCustom').style.display =
+            this.value === 'Xüsusi' ? '' : 'none';
+    });
+
+    async function startYarat() {
+        var senedNovuEl = document.getElementById('senedNovu');
+        var senedNovu = senedNovuEl.value === 'Xüsusi'
+            ? document.getElementById('senedNovuCustom').value.trim()
+            : senedNovuEl.value;
+        var musteriAd = document.getElementById('musteriAd').value.trim();
+        var gecikmeGun = parseInt(document.getElementById('gecikmeGun').value) || 0;
+        var meble = parseFloat(document.getElementById('meble').value) || 0;
+        var elaveMelumat = document.getElementById('elaveMelumat').value.trim();
+
+        if (!senedNovu) { alert('Sənəd növü seçin və ya yazın.'); return; }
+        if (!musteriAd) { alert('Müştəri adını daxil edin.'); return; }
+
+        document.getElementById('resultCard').style.display = 'none';
+        document.getElementById('placeholderCard').style.display = 'none';
+        document.getElementById('loadingCard').style.display = '';
+        document.getElementById('yaratBtn').disabled = true;
+
+        var params = new URLSearchParams({
+            senedNovu, musteriAd,
+            gecikmeGun: gecikmeGun.toString(),
+            meble: meble.toString(),
+            elaveMelumat
+        });
+
+        try {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+            var resp = await fetch('@Url.Action("SenedYaratPost", "SenedAi", new { area = "User" })', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: params.toString()
+            });
+            var data = await resp.json();
+
+            document.getElementById('loadingCard').style.display = 'none';
+            document.getElementById('yaratBtn').disabled = false;
+
+            if (!data.ok) { alert('Xəta: ' + data.xeta); document.getElementById('placeholderCard').style.display = ''; return; }
+
+            document.getElementById('generatedContent').textContent = data.content;
+            document.getElementById('resultCard').style.display = '';
+        } catch(e) {
+            document.getElementById('loadingCard').style.display = 'none';
+            document.getElementById('placeholderCard').style.display = '';
+            document.getElementById('yaratBtn').disabled = false;
+            alert('Şəbəkə xətası baş verdi.');
+        }
+    }
+
+    function copyContent() {
+        var text = document.getElementById('generatedContent').textContent;
+        navigator.clipboard.writeText(text).then(function() {
+            var btn = event.currentTarget;
+            btn.innerHTML = '<i class="bi bi-check"></i> Kopyalandı';
+            setTimeout(function() { btn.innerHTML = '<i class="bi bi-clipboard"></i> Kopyala'; }, 2000);
+        });
+    }
+
+    function printContent() {
+        var text = document.getElementById('generatedContent').textContent;
+        var w = window.open('', '_blank');
+        w.document.write('<pre style="font-family:serif;font-size:14px;padding:40px">' + text + '</pre>');
+        w.document.close();
+        w.print();
+    }
+</script>
+}
