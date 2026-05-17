@@ -75,54 +75,58 @@ public class SenedAiService : ISenedAiService
 
     private static string BuildRiskPrompt(string text, string fileName)
     {
-        var truncated = text.Length > 8000 ? text[..8000] + "\n[...mətn kəsildi]" : text;
-        return $"""
-Siz bank hüquq şöbəsinin ekspert AI köməkçisisiniz. Aşağıdakı sənədi analiz edin və bankın mənafeyinə zərər verə biləcək gizli tələ, qeyri-müəyyən ifadə və riskli bənlri aşkar edin.
+        var truncated = text.Length > 8000 ? text.Substring(0, 8000) + "\n[...mətn kəsildi]" : text;
 
-CAVABI MÜTLƏQ aşağıdakı JSON formatında verin (başqa heç nə yazmayın):
-{{
-  "risk_level": "Red|Yellow|Green",
-  "risky_clauses": [
-    {{
-      "madde_tipi": "məs: Faiz dərəcəsi, Vaxtından əvvəl ödəniş, Girov, Cərimə şərti...",
-      "riskli_cumle": "sənəddəki problematik cümlə/ifadə (sitat)",
-      "zarar_potensiali": "bu bəndin banka necə zərər verə biləcəyinin izahı",
-      "alternativ_teklif": "daha təhlükəsiz alternativ formul ya bənd"
-    }}
-  ]
-}}
+        var sb = new StringBuilder();
+        sb.AppendLine("Siz bank hüquq şöbəsinin ekspert AI köməkçisisiniz. Aşağıdakı sənədi analiz edin və bankın mənafeyinə zərər verə biləcək gizli tələ, qeyri-müəyyən ifadə və riskli bəndləri aşkar edin.");
+        sb.AppendLine();
+        sb.AppendLine("CAVABI MÜTLƏQ aşağıdakı JSON formatında verin (başqa heç nə yazmayın):");
+        sb.AppendLine("{");
+        sb.AppendLine("  \"risk_level\": \"Red|Yellow|Green\",");
+        sb.AppendLine("  \"risky_clauses\": [");
+        sb.AppendLine("    {");
+        sb.AppendLine("      \"madde_tipi\": \"məs: Faiz dərəcəsi, Vaxtından əvvəl ödəniş, Girov, Cərimə şərti...\",");
+        sb.AppendLine("      \"riskli_cumle\": \"sənəddəki problematik cümlə/ifadə (sitat)\",");
+        sb.AppendLine("      \"zarar_potensiali\": \"bu bəndin banka necə zərər verə biləcəyinin izahı\",");
+        sb.AppendLine("      \"alternativ_teklif\": \"daha təhlükəsiz alternativ formul ya bənd\"");
+        sb.AppendLine("    }");
+        sb.AppendLine("  ]");
+        sb.AppendLine("}");
+        sb.AppendLine();
+        sb.AppendLine("Risk səviyyəsi qaydası:");
+        sb.AppendLine("- Red: Bir və ya daha çox yüksək riskli bənd (bankın ciddi zərər çəkə biləcəyi)");
+        sb.AppendLine("- Yellow: Orta risk — qeyri-müəyyən ifadələr, şərh mübahisəsi yarada biləcək bəndlər");
+        sb.AppendLine("- Green: Aşkar risk yoxdur");
+        sb.AppendLine();
+        sb.AppendLine($"Fayl adı: {fileName}");
+        sb.AppendLine("Sənəd mətni:");
+        sb.AppendLine(truncated);
 
-Risk səviyyəsi qaydası:
-- Red: Bir və ya daha çox yüksək riskli bənd (bankın ciddi zərər çəkə biləcəyi)
-- Yellow: Orta risk — qeyri-müəyyən ifadələr, şərh mübahisəsi yarada biləcək bəndlər
-- Green: Aşkar risk yoxdur
-
-Fayl adı: {fileName}
-Sənəd mətni:
-{truncated}
-""";
+        return sb.ToString();
     }
 
     private static string BuildKonstruktorPrompt(string senedNovu, string musteriAd,
         int gecikmeGun, decimal meble, string? elaveMelumat)
     {
-        var elave = string.IsNullOrWhiteSpace(elaveMelumat) ? "" : $"\nƏlavə məlumat: {elaveMelumat}";
-        return $"""
-Siz bankın rəsmi yazışma mütəxəssisisiniz. Aşağıdakı parametrlərə əsasən tam rəsmi bank sənədi hazırlayın.
+        var sb = new StringBuilder();
+        sb.AppendLine("Siz bankın rəsmi yazışma mütəxəssisisiniz. Aşağıdakı parametrlərə əsasən tam rəsmi bank sənədi hazırlayın.");
+        sb.AppendLine();
+        sb.AppendLine($"Sənəd növü: {senedNovu}");
+        sb.AppendLine($"Müştəri adı: {musteriAd}");
+        sb.AppendLine($"Gecikmiş gün sayı: {gecikmeGun}");
+        sb.AppendLine($"Məbləğ (AZN): {meble:F2}");
+        sb.AppendLine($"Tarix: {DateTime.Now:dd MMMM yyyy}");
+        if (!string.IsNullOrWhiteSpace(elaveMelumat))
+            sb.AppendLine($"Əlavə məlumat: {elaveMelumat}");
+        sb.AppendLine();
+        sb.AppendLine("Tələblər:");
+        sb.AppendLine("- Dil: Azərbaycan dili, rəsmi-işgüzar üslub");
+        sb.AppendLine("- Format: düz mətn (markdown yox, HTML yox)");
+        sb.AppendLine("- Sənəd tam strukturlu olmalıdır: başlıq, müraciət, əsas hissə, nəticə/xəbərdarlıq, imza sahəsi");
+        sb.AppendLine("- Bank standartlarına uyğun rəsmi terminologiya istifadə edin");
+        sb.AppendLine("- Yalnız sənədi yazın, heç bir izahat əlavə etməyin");
 
-Sənəd növü: {senedNovu}
-Müştəri adı: {musteriAd}
-Gecikmiş gün sayı: {gecikmeGun}
-Məbləğ (AZN): {meble:F2}{elave}
-Tarix: {DateTime.Now:dd MMMM yyyy}
-
-Tələblər:
-- Dil: Azərbaycan dili, rəsmi-işgüzar üslub
-- Format: düz mətn (markdown yox, HTML yox)
-- Sənəd tam strukturlu olmalıdır: başlıq, müraciət, əsas hissə, nəticə/xəbərdarlıq, imza sahəsi
-- Bank standartlarına uyğun rəsmi terminologiya istifadə edin
-- Yalnız sənədi yazın, heç bir izahat əlavə etməyin
-""";
+        return sb.ToString();
     }
 
     private static RiskAnalizResult ParseRiskResponse(string raw)
@@ -134,7 +138,7 @@ Tələblər:
 
         try
         {
-            var jsonStr = raw[jsonStart..(jsonEnd + 1)];
+            var jsonStr = raw.Substring(jsonStart, jsonEnd - jsonStart + 1);
             using var doc = JsonDocument.Parse(jsonStr);
             var root = doc.RootElement;
 
