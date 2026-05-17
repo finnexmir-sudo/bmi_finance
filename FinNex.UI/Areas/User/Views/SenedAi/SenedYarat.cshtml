@@ -16,9 +16,20 @@
         </div>
     </div>
 
+    <!-- ── AI Modul Seçimi ───────────────────────────────────────────── -->
+    <div class="sa-module-selector-row">
+        <span class="sa-module-label"><i class="bi bi-grid-3x3-gap-fill"></i> AI Modul Seçimi:</span>
+        <select id="aiModuleSelect" class="sa-module-select" onchange="onModuleChange()">
+            <option value="konstruktor">⚙️ Ağıllı Sənəd Konstruktoru</option>
+            <option value="risk">🔍 Sənəd Risk Analizi</option>
+            <option value="hr">👥 HR Assistanı (Əmrlər və Müqavilələr) — Planda</option>
+            <option value="kredit">🧠 Kredit Komitəsi (AI Üzv Rəyi) — Planda</option>
+        </select>
+    </div>
+
     <div class="row g-3">
         <!-- ── Sol panel: giriş ──────────────────────────────────────── -->
-        <div class="col-xl-6 col-lg-6">
+        <div class="col-xl-6 col-lg-6" id="leftPanel">
             <div class="sa-card sa-form-card">
 
                 <div class="sk-block-label sk-block-label--ai mb-3">
@@ -145,6 +156,106 @@
                 <p>Təlimatı yazın və ya sənəd yükləyin</p>
                 <p class="sa-placeholder-hint">AI adları, tarixləri, məbləğləri özü tapır</p>
             </div>
+
+            <!-- ── HR Assistanı Roadmap ─────────────────────────────── -->
+            <div id="hrRoadmapCard" class="sa-roadmap-card" style="display:none">
+                <div class="sa-roadmap-header sa-roadmap-header--green">
+                    <i class="bi bi-people-fill"></i>
+                    HR ASSİSTANI — PLANLAŞDIRILAN İŞ SSENARİSİ
+                    <span class="sa-roadmap-soon-badge">Tezliklə</span>
+                </div>
+                <div class="sa-roadmap-body">
+                    <div class="sa-roadmap-step">
+                        <div class="sa-roadmap-step-icon blue"><i class="bi bi-cloud-arrow-up-fill"></i></div>
+                        <div>
+                            <div class="sa-roadmap-step-title">
+                                <span>Giriş (OCR)</span>
+                                <span class="sa-roadmap-step-badge">Mərhələ 1</span>
+                            </div>
+                            <div class="sa-roadmap-step-text">
+                                Dövlət portallarından və ya daxili HRM sistemindən gələn kadr məlumatları, ezamiyyət vərəqələri, tibbi bülletenlər və ya işçi ərizələrinin şəkilləri/PDF-ləri birbaşa sistemə yüklənəcək.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sa-roadmap-step">
+                        <div class="sa-roadmap-step-icon green"><i class="bi bi-cpu-fill"></i></div>
+                        <div>
+                            <div class="sa-roadmap-step-title">
+                                <span>AI Prosesi</span>
+                                <span class="sa-roadmap-step-badge green">Mərhələ 2</span>
+                            </div>
+                            <div class="sa-roadmap-step-text">
+                                AI daxil olan mətni Azərbaycan Respublikasının Əmək Məcəlləsinin müvafiq maddələri (Məsələn: Maddə 70, Maddə 115 və s.) ilə çarpaz yoxlayacaq.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sa-roadmap-step">
+                        <div class="sa-roadmap-step-icon gold"><i class="bi bi-file-earmark-word-fill"></i></div>
+                        <div>
+                            <div class="sa-roadmap-step-title">
+                                <span>Çıxış (Word)</span>
+                                <span class="sa-roadmap-step-badge gold">Mərhələ 3</span>
+                            </div>
+                            <div class="sa-roadmap-step-text">
+                                Birbaşa bankın rəsmi blankında hüquqi cəhətdən qüsursuz Əmək müqaviləsi, Xəbərdarlıq məktubu, Ştat dəyişikliyi və ya İntizam tənbehi əmri (.docx) avtomatik formalaşdırılacaq.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="sa-roadmap-footer">
+                    <i class="bi bi-clock-history"></i> Bu modul aktiv inkişaf mərhələsindədir — tezliklə istifadəyə veriləcək.
+                </div>
+            </div>
+
+            <!-- ── Kredit Komitəsi Roadmap ──────────────────────────── -->
+            <div id="kreditRoadmapCard" class="sa-roadmap-card" style="display:none">
+                <div class="sa-roadmap-header sa-roadmap-header--navy">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    KREDİT KOMİTƏSİ (AI ÜZV RƏYİ) — PLANLAŞDIRILAN İŞ SSENARİSİ
+                    <span class="sa-roadmap-soon-badge">Tezliklə</span>
+                </div>
+                <div class="sa-roadmap-body">
+                    <div class="sa-roadmap-step">
+                        <div class="sa-roadmap-step-icon blue"><i class="bi bi-cloud-arrow-up-fill"></i></div>
+                        <div>
+                            <div class="sa-roadmap-step-title">
+                                <span>Giriş (OCR &amp; Data)</span>
+                                <span class="sa-roadmap-step-badge">Mərhələ 1</span>
+                            </div>
+                            <div class="sa-roadmap-step-text">
+                                Müştərinin maaş arayışları, digər banklardakı öhdəlik hesabatları (MKR), vergi bəyannamələri və bank daxili hesab çıxarışları sistemə ötürüləcək.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sa-roadmap-step">
+                        <div class="sa-roadmap-step-icon green"><i class="bi bi-bar-chart-fill"></i></div>
+                        <div>
+                            <div class="sa-roadmap-step-title">
+                                <span>AI Prosesi</span>
+                                <span class="sa-roadmap-step-badge green">Mərhələ 2</span>
+                            </div>
+                            <div class="sa-roadmap-step-text">
+                                Sistem müştərinin Borcun Gəlirə Nisbəti (DTI) əmsalını avtomatik hesablayacaq, gəlirlərin stabilliyini trend analizləri ilə yoxlayacaq və müştərinin risk skorunu çıxaracaq.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sa-roadmap-step">
+                        <div class="sa-roadmap-step-icon gold"><i class="bi bi-shield-check"></i></div>
+                        <div>
+                            <div class="sa-roadmap-step-title">
+                                <span>Çıxış (Decision &amp; Memorandum)</span>
+                                <span class="sa-roadmap-step-badge gold">Mərhələ 3</span>
+                            </div>
+                            <div class="sa-roadmap-step-text">
+                                Komitə üzvlərinin qarşısına rəsmi Kredit Memorandumu çıxacaq. AI orada Tövsiyə olunan Limit (Məs: 25,000 AZN), optimal faiz dərəcəsi və qərarın əsaslandırılmış risk səbəblərini saniyələr ərzində pre-render edəcək.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="sa-roadmap-footer">
+                    <i class="bi bi-clock-history"></i> Bu modul aktiv inkişaf mərhələsindədir — tezliklə istifadəyə veriləcək.
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -155,6 +266,48 @@
     var currentIsHtml  = false;
     var currentContent = '';
     var currentTitle   = '';
+
+    function onModuleChange() {
+        var mod       = document.getElementById('aiModuleSelect').value;
+        var leftPanel = document.getElementById('leftPanel');
+        var hrCard    = document.getElementById('hrRoadmapCard');
+        var krCard    = document.getElementById('kreditRoadmapCard');
+        var btn       = document.getElementById('yaratBtn');
+        var btnText   = document.getElementById('yaratBtnText');
+        var btnIcon   = document.getElementById('yaratBtnIcon');
+
+        // Reset state
+        hrCard.style.display = 'none';
+        krCard.style.display = 'none';
+        leftPanel.style.opacity       = '1';
+        leftPanel.style.pointerEvents = '';
+        btn.disabled = false;
+
+        if (mod === 'risk') {
+            window.location.href = '@Url.Action("RiskAnaliz", "SenedAi", new { area = "User" })';
+            return;
+        }
+
+        if (mod === 'hr' || mod === 'kredit') {
+            leftPanel.style.opacity       = '0.35';
+            leftPanel.style.pointerEvents = 'none';
+            document.getElementById('placeholderCard').style.display = 'none';
+            document.getElementById('resultCard').style.display      = 'none';
+            document.getElementById('loadingCard').style.display     = 'none';
+            btn.disabled      = true;
+            btnIcon.className = 'bi bi-hourglass-split';
+            if (mod === 'hr') {
+                hrCard.style.display  = '';
+                btnText.textContent   = 'HR Modulu Aktivləşdirilir...';
+            } else {
+                krCard.style.display  = '';
+                btnText.textContent   = 'Kredit Assistanı Aktivləşdirilir...';
+            }
+        } else {
+            document.getElementById('placeholderCard').style.display = '';
+            updateBtn();
+        }
+    }
 
     function updateBtn() {
         var tercume = document.getElementById('tercumeSwitch').checked;
