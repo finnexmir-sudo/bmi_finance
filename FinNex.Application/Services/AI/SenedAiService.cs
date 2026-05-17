@@ -190,6 +190,83 @@ public class SenedAiService : ISenedAiService
         return sb.ToString();
     }
 
+    public async Task<KonstruktorResult> OcrImageAsync(byte[] imageBytes, string mediaType, bool tercumeEdilsinmi, string hedafDil)
+    {
+        if (string.IsNullOrWhiteSpace(_apiKey))
+            return new KonstruktorResult { Xeta = "AI açarı konfiqurasiya edilməyib." };
+
+        var prompt = BuildOcrPrompt(tercumeEdilsinmi, hedafDil);
+        var raw = await CallApiWithImageAsync(imageBytes, mediaType, prompt, 3000);
+        if (raw == null)
+            return new KonstruktorResult { Xeta = "AI cavabı alınmadı." };
+
+        return new KonstruktorResult { GeneratedContent = raw.Trim(), IsHtml = tercumeEdilsinmi };
+    }
+
+    private async Task<string?> CallApiWithImageAsync(byte[] imageBytes, string mediaType, string textPrompt, int maxTokens)
+    {
+        var request = new
+        {
+            model = Model,
+            max_tokens = maxTokens,
+            messages = new[]
+            {
+                new
+                {
+                    role = "user",
+                    content = new object[]
+                    {
+                        new
+                        {
+                            type = "image",
+                            source = new
+                            {
+                                type = "base64",
+                                media_type = mediaType,
+                                data = Convert.ToBase64String(imageBytes)
+                            }
+                        },
+                        new { type = "text", text = textPrompt }
+                    }
+                }
+            }
+        };
+
+        var client = _httpClientFactory.CreateClient("Anthropic");
+        client.DefaultRequestHeaders.Clear();
+        client.DefaultRequestHeaders.Add("x-api-key", _apiKey);
+        client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+
+        var json = JsonSerializer.Serialize(request);
+        var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await client.PostAsync(ApiUrl, httpContent);
+        if (!response.IsSuccessStatusCode) return null;
+
+        var body = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        return doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString();
+    }
+
+    private static string BuildOcrPrompt(bool withTranslation, string targetLang)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("Sən peşəkar bank OCR və skaner köməkçisisən.");
+        sb.AppendLine("Bu şəkildəki / sənəddəki bütün mətnləri qüsursuz şəkildə oxu, strukturu (başlıq, abzaslar, cədvəl) itirmə.");
+        if (withTranslation)
+        {
+            sb.AppendLine($"Oxuduğun mətni birbaşa {targetLang} dilinə bank-hüquq standartları ilə çevir.");
+            sb.AppendLine("ÇIXIŞI MÜTLƏQ aşağıdakı HTML formatında ver (başqa heç nə yazma):");
+            sb.AppendLine("<div class=\"sa-translated-doc\"><h2>Başlıq</h2><p>Məzmun...</p></div>");
+        }
+        else
+        {
+            sb.AppendLine("Mətni düz formatda (markdown/HTML yox) ver, strukturu qoru.");
+            sb.AppendLine("Yalnız oxunan mətni ver, izahat əlavə etmə.");
+        }
+        return sb.ToString();
+    }
+
     // ── Risk Response Parser ──────────────────────────────────────────────────
 
     private static RiskAnalizResult ParseRiskResponse(string raw)
