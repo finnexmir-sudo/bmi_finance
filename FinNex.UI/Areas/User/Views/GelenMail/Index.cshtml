@@ -303,13 +303,30 @@
         }
     }
 
-    // On desktop: intercept mail item clicks
+    // Desktop: tək klik → sağ panel, cüt klik → tam səhifə
     if (window.innerWidth >= 992) {
+        var clickTimer = null;
+
         document.addEventListener('click', function(e) {
             var link = e.target.closest('.gm-item[data-mailid]');
             if (!link) return;
             e.preventDefault();
-            loadPanel(link.dataset.mailid);
+            // Əgər artıq timer varsa — bu ikinci klkdir, dblclick handler götürəcək
+            if (clickTimer !== null) return;
+            var savedHref = link.href;
+            var savedId   = link.dataset.mailid;
+            clickTimer = setTimeout(function() {
+                clickTimer = null;
+                loadPanel(savedId);
+            }, 240);
+        });
+
+        document.addEventListener('dblclick', function(e) {
+            var link = e.target.closest('.gm-item[data-mailid]');
+            if (!link) return;
+            e.preventDefault();
+            if (clickTimer !== null) { clearTimeout(clickTimer); clickTimer = null; }
+            window.location.href = link.href;
         });
     }
 })();
