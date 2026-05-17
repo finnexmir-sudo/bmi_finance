@@ -154,6 +154,62 @@ public class SenedAiController : Controller
         }
     }
 
+    // ─── OCR (Vision) ─────────────────────────────────────────────────────────
+
+    [HttpPost]
+    public async Task<IActionResult> OcrFayl(IFormFile? fayl, bool tercumeEdilsinmi = false, string? hedafDil = null)
+    {
+        if (fayl == null || fayl.Length == 0)
+            return Json(new { ok = false, xeta = "Fayl seçilməyib." });
+
+        var ext = Path.GetExtension(fayl.FileName).ToLowerInvariant();
+        if (!new[] { ".jpg", ".jpeg", ".png", ".pdf" }.Contains(ext))
+            return Json(new { ok = false, xeta = "Yalnız JPG, PNG və PDF fayllar qəbul edilir." });
+
+        if (fayl.Length > 10 * 1024 * 1024)
+            return Json(new { ok = false, xeta = "Fayl ölçüsü 10MB-dan böyük ola bilməz." });
+
+        try
+        {
+            KonstruktorResult result;
+
+            if (ext is ".jpg" or ".jpeg" or ".png")
+            {
+                using var ms = new MemoryStream();
+                await fayl.CopyToAsync(ms);
+                var mediaType = ext == ".png" ? "image/png" : "image/jpeg";
+                result = await _ai.OcrImageAsync(ms.ToArray(), mediaType, tercumeEdilsinmi, hedafDil ?? "Azərbaycan dili");
+            }
+            else // PDF
+            {
+                var tempDir = Path.Combine(_env.ContentRootPath, "Temp");
+                Directory.CreateDirectory(tempDir);
+                var tempPath = Path.Combine(tempDir, $"{Guid.NewGuid()}{ext}");
+                await using (var fs = System.IO.File.Create(tempPath))
+                    await fayl.CopyToAsync(fs);
+                var text = _extractor.Extract(tempPath, fayl.ContentType) ?? "";
+                System.IO.File.Delete(tempPath);
+
+                if (string.IsNullOrWhiteSpace(text))
+                    return Json(new { ok = false, xeta = "PDF-dən mətn çıxarıla bilmədi." });
+
+                if (tercumeEdilsinmi)
+                    result = await _ai.ConstructDocumentAsync("", "", 0, 0, null, text, true, hedafDil);
+                else
+                    result = new KonstruktorResult { GeneratedContent = text, IsHtml = false };
+            }
+
+            if (result.Xeta != null)
+                return Json(new { ok = false, xeta = result.Xeta });
+
+            return Json(new { ok = true, text = result.GeneratedContent, isHtml = result.IsHtml });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { ok = false, xeta = "Server xətası: " + ex.Message });
+        }
+    }
+
     // ─── Word (.docx) Export ───────────────────────────────────────────────────
 
     [HttpPost]

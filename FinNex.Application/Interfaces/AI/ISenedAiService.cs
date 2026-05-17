@@ -8,4 +8,5 @@ public interface ISenedAiService
     Task<KonstruktorResult> ConstructDocumentAsync(
         string senedNovu, string musteriAd, int gecikmeGun, decimal meble, string? elaveMelumat,
         string? senedMovzusu, bool tercumeEdilsinmi, string? hedafDil);
+    Task<KonstruktorResult> OcrImageAsync(byte[] imageBytes, string mediaType, bool tercumeEdilsinmi, string hedafDil);
 }
