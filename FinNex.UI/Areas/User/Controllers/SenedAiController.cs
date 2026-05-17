@@ -157,7 +157,8 @@ public class SenedAiController : Controller
     // ─── Word (.docx) Export ───────────────────────────────────────────────────
 
     [HttpPost]
-    public IActionResult ExportToWord(string content, bool isHtml, string? docTitle)
+    public IActionResult ExportToWord(string content, bool isHtml, string? docTitle,
+        bool istifadeEdilsinmiBankBlank = false)
     {
         if (string.IsNullOrWhiteSpace(content))
             return BadRequest();
@@ -168,7 +169,17 @@ public class SenedAiController : Controller
 
         try
         {
-            var bytes = BuildWordDocument(content, isHtml);
+            byte[] bytes;
+            if (istifadeEdilsinmiBankBlank)
+            {
+                var templatePath = Path.Combine(_env.WebRootPath, "templates", "bank_blank.docx");
+                bytes = BuildWordFromTemplate(content, isHtml, templatePath);
+            }
+            else
+            {
+                bytes = BuildWordDocument(content, isHtml);
+            }
+
             return File(bytes,
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 SanitizeFileName(title) + ".docx");
@@ -180,6 +191,75 @@ public class SenedAiController : Controller
     }
 
     // ─── Word generation ───────────────────────────────────────────────────────
+
+    // ─── Template-based Word generation ───────────────────────────────────────
+
+    private static byte[] BuildWordFromTemplate(string content, bool isHtml, string templatePath)
+    {
+        try
+        {
+            var templateBytes = File.ReadAllBytes(templatePath);
+            using var ms = new MemoryStream();
+            ms.Write(templateBytes, 0, templateBytes.Length);
+
+            using (var wordDoc = WordprocessingDocument.Open(ms, true))
+            {
+                var body = wordDoc.MainDocumentPart!.Document.Body!;
+                var lines = isHtml ? HtmlToLines(content) : PlainToLines(content);
+
+                // Find signature area: first direct-child paragraph containing signature keywords
+                OpenXmlElement? insertBefore = body.ChildElements
+                    .OfType<Paragraph>()
+                    .FirstOrDefault(p =>
+                    {
+                        var t = p.InnerText;
+                        return t.Contains("müdiri") || t.StartsWith("«") || t.Contains("filialının müdiri");
+                    });
+
+                // Fallback: insert before SectionProperties (always last child)
+                insertBefore ??= (OpenXmlElement?)body.ChildElements
+                    .OfType<SectionProperties>().LastOrDefault();
+
+                void Insert(OpenXmlElement el)
+                {
+                    if (insertBefore != null) body.InsertBefore(el, insertBefore);
+                    else body.AppendChild(el);
+                }
+
+                // Current date right-aligned (Azerbaijani format)
+                var datePara = MakePara(AzDate(DateTime.Now), "Body");
+                var dPPr = datePara.ParagraphProperties ?? new ParagraphProperties();
+                dPPr.Justification = new Justification { Val = JustificationValues.Right };
+                datePara.ParagraphProperties = dPPr;
+                Insert(datePara);
+                Insert(SpacerPara());
+
+                // AI-generated content
+                foreach (var (lineText, style) in lines)
+                    Insert(string.IsNullOrWhiteSpace(lineText) ? SpacerPara() : MakePara(lineText, style));
+
+                Insert(SpacerPara());
+                Insert(SpacerPara());
+
+                wordDoc.MainDocumentPart.Document.Save();
+            }
+
+            return ms.ToArray();
+        }
+        catch
+        {
+            // Fallback to standard clean document if template unreadable
+            return BuildWordDocument(content, isHtml);
+        }
+    }
+
+    private static string AzDate(DateTime d)
+    {
+        string[] months = ["Yanvar","Fevral","Mart","Aprel","May","İyun","İyul","Avqust","Sentyabr","Oktyabr","Noyabr","Dekabr"];
+        // Ordinal suffix via vowel harmony on last digit of year
+        string[] suffixes = ["cı","ci","ci","cü","cü","ci","cı","ci","ci","cu"];
+        return $"{d.Day} {months[d.Month - 1]} {d.Year}-{suffixes[d.Year % 10]} il";
+    }
 
     private static byte[] BuildWordDocument(string content, bool isHtml)
     {
