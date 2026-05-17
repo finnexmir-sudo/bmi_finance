@@ -226,11 +226,10 @@ public class SenedAiController : Controller
                     else body.AppendChild(el);
                 }
 
-                // Current date right-aligned (Azerbaijani format)
-                var datePara = MakePara(AzDate(DateTime.Now), "Body");
-                var dPPr = datePara.ParagraphProperties ?? new ParagraphProperties();
-                dPPr.Justification = new Justification { Val = JustificationValues.Right };
-                datePara.ParagraphProperties = dPPr;
+                // Current date right-aligned (Azerbaijani format), no first-line indent
+                var datePara = MakePara(AzDate(DateTime.Now), "Body", noIndent: true);
+                datePara.ParagraphProperties!.Justification =
+                    new Justification { Val = JustificationValues.Right };
                 Insert(datePara);
                 Insert(SpacerPara());
 
@@ -304,41 +303,42 @@ public class SenedAiController : Controller
         return ms.ToArray();
     }
 
-    private static Paragraph MakePara(string text, string style)
+    private static Paragraph MakePara(string text, string style, bool noIndent = false)
     {
         bool isHeading = style is "H1" or "H2" or "H3";
         bool bold = style is "H1" or "H2";
         string halfPt = style switch { "H1" => "28", "H2" => "26", "H3" => "24", _ => "24" };
 
         var para = new Paragraph();
-
         var pPr = new ParagraphProperties();
-        var spacing = new SpacingBetweenLines();
-        spacing.Line = "276";
-        spacing.LineRule = LineSpacingRuleValues.Auto;
-        spacing.Before = isHeading ? "240" : "0";
-        spacing.After = "120";
-        pPr.SpacingBetweenLines = spacing;
 
+        var spacing = new SpacingBetweenLines();
+        spacing.LineRule = LineSpacingRuleValues.Auto;
         if (isHeading)
         {
-            var jc = new Justification();
-            jc.Val = JustificationValues.Center;
-            pPr.Justification = jc;
+            spacing.Line = "276";
+            spacing.Before = "240";
+            spacing.After = "120";
+            pPr.Justification = new Justification { Val = JustificationValues.Center };
         }
+        else
+        {
+            spacing.Line = "360"; // 1.5x sətir aralığı
+            spacing.Before = "0";
+            spacing.After = "160";
+            pPr.Justification = new Justification { Val = JustificationValues.Both };
+            if (!noIndent)
+                pPr.Indentation = new Indentation { FirstLine = "720" }; // 0.5" abzas girintisi
+        }
+        pPr.SpacingBetweenLines = spacing;
         para.ParagraphProperties = pPr;
 
         var run = new Run();
         var rPr = new RunProperties();
-
-        var fonts = new RunFonts();
-        fonts.Ascii = "Times New Roman";
-        fonts.HighAnsi = "Times New Roman";
-        rPr.AppendChild(fonts);
+        rPr.AppendChild(new RunFonts { Ascii = "Times New Roman", HighAnsi = "Times New Roman" });
         rPr.AppendChild(new FontSize { Val = halfPt });
         if (bold) rPr.AppendChild(new Bold());
         run.RunProperties = rPr;
-
         run.AppendChild(new Text(text) { Space = SpaceProcessingModeValues.Preserve });
         para.AppendChild(run);
         return para;
