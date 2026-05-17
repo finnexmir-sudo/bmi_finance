@@ -74,13 +74,13 @@
     @* ── Filter paneli ── *@
     <form method="get" id="filterForm" class="gm-filterbar">
 
-        @* Sıra 1: axtarış + vəziyyət + axtar düyməsi *@
-        <div class="gm-filterbar-row">
-            <div class="gm-search-wrap" style="flex:1;max-width:340px">
+        @* Sıra 1: tam genişlikdə axtarış *@
+        <div class="gm-filterbar-row" style="flex-wrap:nowrap;gap:6px">
+            <div class="gm-search-wrap" style="flex:1;min-width:0">
                 <i class="bi bi-search gm-search-icon"></i>
                 <input type="text" name="q" value="@axtarisFilter"
                        class="gm-search-input" style="width:100%"
-                       placeholder="Mövzu, göndərən, email axtar…" autocomplete="off" />
+                       placeholder="Axtar…" autocomplete="off" />
                 @if (!string.IsNullOrWhiteSpace(axtarisFilter))
                 {
                     <a href="@Url.Action("Index")" class="gm-search-clear" title="Sıfırla">
@@ -89,13 +89,13 @@
                 }
             </div>
 
-            <select name="oxunmamis" class="gm-select" onchange="this.form.submit()">
-                <option value="">Bütün vəziyyət</option>
+            <select name="oxunmamis" class="gm-select" style="flex-shrink:0;width:auto" onchange="this.form.submit()">
+                <option value="">Hamısı</option>
                 <option value="true" selected="@(oxunmamisFilter == true)">Oxunmamış</option>
             </select>
 
-            <button type="submit" class="gm-btn gm-btn-primary" style="white-space:nowrap">
-                <i class="bi bi-search"></i> Axtar
+            <button type="submit" class="gm-btn gm-btn-primary" style="flex-shrink:0;padding:0 12px">
+                <i class="bi bi-search"></i>
             </button>
 
             @if (herhansiFilter)
