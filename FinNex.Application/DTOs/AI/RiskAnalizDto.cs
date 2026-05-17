@@ -20,5 +20,6 @@ public class RiskAnalizResult
 public class KonstruktorResult
 {
     public string GeneratedContent { get; set; } = "";
+    public bool IsHtml { get; set; }
     public string? Xeta { get; set; }
 }
