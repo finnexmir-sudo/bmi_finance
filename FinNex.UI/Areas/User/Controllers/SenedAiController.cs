@@ -35,7 +35,7 @@ public class SenedAiController : Controller
         _env = env;
     }
 
-    // ─── Risk Analizi ─────────────────────────────────────────────────────────
+    // ─── Risk Analizi ──────────────────────────────────────────────────────────
 
     [HttpGet]
     public IActionResult RiskAnaliz() => View();
@@ -92,14 +92,9 @@ public class SenedAiController : Controller
                 _db.SenedAnalizler.Add(record);
                 await _db.SaveChangesAsync();
             }
-            catch { /* migration hələ run edilməyibsə nəticəni yenə qaytarırıq */ }
+            catch { }
 
-            return Json(new
-            {
-                ok = true,
-                riskLevel = result.RiskLevel.ToString(),
-                clauses = result.RiskyClauslar
-            });
+            return Json(new { ok = true, riskLevel = result.RiskLevel.ToString(), clauses = result.RiskyClauslar });
         }
         catch (Exception ex)
         {
@@ -123,7 +118,6 @@ public class SenedAiController : Controller
 
         var hasParametrik = !string.IsNullOrWhiteSpace(senedNovu) && !string.IsNullOrWhiteSpace(musteriAd);
         var hasSerbest = !string.IsNullOrWhiteSpace(senedMovzusu);
-
         if (!hasParametrik && !hasSerbest)
             return Json(new { ok = false, xeta = "Sənəd parametrləri və ya sərbəst mövzu daxil edilməyib." });
 
@@ -140,12 +134,11 @@ public class SenedAiController : Controller
 
             try
             {
-                var parametrler = new { senedNovu, musteriAd, gecikmeGun, meble, elaveMelumat, senedMovzusu, tercumeEdilsinmi, hedafDil };
                 var record = new SenedKonstruktor
                 {
                     AppUserId = userId,
                     SenedNovu = senedNovu ?? senedMovzusu ?? "Sərbəst",
-                    ParametrlerJson = JsonSerializer.Serialize(parametrler),
+                    ParametrlerJson = JsonSerializer.Serialize(new { senedNovu, musteriAd, gecikmeGun, meble, elaveMelumat, senedMovzusu, tercumeEdilsinmi, hedafDil }),
                     GeneratedContent = result.GeneratedContent
                 };
                 _db.SenedKonstruktorlar.Add(record);
@@ -161,7 +154,7 @@ public class SenedAiController : Controller
         }
     }
 
-    // ─── Word (.docx) Export ──────────────────────────────────────────────────
+    // ─── Word (.docx) Export ───────────────────────────────────────────────────
 
     [HttpPost]
     public IActionResult ExportToWord(string content, bool isHtml, string? docTitle)
@@ -169,169 +162,161 @@ public class SenedAiController : Controller
         if (string.IsNullOrWhiteSpace(content))
             return BadRequest();
 
-        var title = docTitle ?? $"FinNex_Sened_{DateTime.Now:yyyyMMdd_HHmm}";
-        var bytes = BuildWordDocument(content, isHtml, title);
+        var title = string.IsNullOrWhiteSpace(docTitle)
+            ? $"FinNex_Sened_{DateTime.Now:yyyyMMdd_HHmm}"
+            : docTitle;
 
-        return File(bytes,
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            $"{SanitizeFileName(title)}.docx");
+        try
+        {
+            var bytes = BuildWordDocument(content, isHtml);
+            return File(bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                SanitizeFileName(title) + ".docx");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
     }
 
-    // ─── Word Generation ──────────────────────────────────────────────────────
+    // ─── Word generation ───────────────────────────────────────────────────────
 
-    private static byte[] BuildWordDocument(string content, bool isHtml, string docTitle)
+    private static byte[] BuildWordDocument(string content, bool isHtml)
     {
         using var ms = new MemoryStream();
-        using var wordDoc = WordprocessingDocument.Create(ms, WordprocessingDocumentType.Document, true);
-
-        var mainPart = wordDoc.AddMainDocumentPart();
-        mainPart.Document = new Document();
-        var body = mainPart.Document.AppendChild(new Body());
-
-        // Styles
-        var stylesPart = mainPart.AddNewPart<StyleDefinitionsPart>();
-        stylesPart.Styles = BuildStyles();
-
-        // Page setup: A4, 2.5cm left/right margins
-        var sectPr = new SectionProperties(
-            new PageSize { Width = 11906, Height = 16838, Orient = PageOrientationValues.Portrait },
-            new PageMargin { Top = 1134, Bottom = 1134, Left = 1418, Right = 1134, Header = 709, Footer = 709 }
-        );
-
-        // Content
-        var lines = isHtml ? ParseHtmlToLines(content) : ParsePlainToLines(content);
-        bool firstLine = true;
-
-        foreach (var (text, style) in lines)
+        using (var wordDoc = WordprocessingDocument.Create(ms, WordprocessingDocumentType.Document, true))
         {
-            if (string.IsNullOrWhiteSpace(text) && !firstLine)
+            var mainPart = wordDoc.AddMainDocumentPart();
+            mainPart.Document = new Document(new Body());
+            var body = mainPart.Document.Body!;
+
+            var lines = isHtml ? HtmlToLines(content) : PlainToLines(content);
+            bool started = false;
+
+            foreach (var (lineText, style) in lines)
             {
-                body.AppendChild(EmptyParagraph());
-                continue;
+                if (string.IsNullOrWhiteSpace(lineText))
+                {
+                    if (started) body.AppendChild(SpacerPara());
+                    continue;
+                }
+                started = true;
+                body.AppendChild(MakePara(lineText, style));
             }
-            if (string.IsNullOrWhiteSpace(text)) continue;
 
-            body.AppendChild(MakeParagraph(text, style));
-            firstLine = false;
+            // Page setup: A4
+            var sectPr = new SectionProperties();
+            var ps = new PageSize();
+            ps.Width = (UInt32Value)11906U;
+            ps.Height = (UInt32Value)16838U;
+            sectPr.AppendChild(ps);
+
+            var pm = new PageMargin();
+            pm.Top = 1134;
+            pm.Bottom = 1134;
+            pm.Left = (UInt32Value)1418U;
+            pm.Right = (UInt32Value)1134U;
+            sectPr.AppendChild(pm);
+            body.AppendChild(sectPr);
+
+            mainPart.Document.Save();
         }
-
-        body.AppendChild(sectPr);
-        mainPart.Document.Save();
         return ms.ToArray();
     }
 
-    private static List<(string text, string style)> ParseHtmlToLines(string html)
+    private static Paragraph MakePara(string text, string style)
     {
-        var result = new List<(string, string)>();
-        // h1/h2/h3 → headings, p → body, strip other tags
-        html = Regex.Replace(html, @"<br\s*/?>", "\n", RegexOptions.IgnoreCase);
-        html = Regex.Replace(html, @"<h1[^>]*>(.*?)</h1>", m => "HEADING1" + StripTags(m.Groups[1].Value) + "\n", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-        html = Regex.Replace(html, @"<h2[^>]*>(.*?)</h2>", m => "HEADING2" + StripTags(m.Groups[1].Value) + "\n", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-        html = Regex.Replace(html, @"<h3[^>]*>(.*?)</h3>", m => "HEADING3" + StripTags(m.Groups[1].Value) + "\n", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-        html = Regex.Replace(html, @"<p[^>]*>(.*?)</p>", m => StripTags(m.Groups[1].Value) + "\n", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-        html = StripTags(html);
+        bool isHeading = style is "H1" or "H2" or "H3";
+        bool bold = style is "H1" or "H2";
+        string halfPt = style switch { "H1" => "28", "H2" => "26", "H3" => "24", _ => "24" };
 
-        foreach (var line in html.Split('\n'))
-        {
-            var trimmed = line.Trim();
-            if (trimmed.StartsWith("HEADING1"))
-                result.Add((trimmed.Substring(9), "Heading1"));
-            else if (trimmed.StartsWith("HEADING2"))
-                result.Add((trimmed.Substring(9), "Heading2"));
-            else if (trimmed.StartsWith("HEADING3"))
-                result.Add((trimmed.Substring(9), "Heading3"));
-            else
-                result.Add((trimmed, "BodyText"));
-        }
-        return result;
-    }
-
-    private static List<(string text, string style)> ParsePlainToLines(string text)
-    {
-        var result = new List<(string, string)>();
-        var lines = text.Split('\n');
-
-        for (int i = 0; i < lines.Length; i++)
-        {
-            var line = lines[i].TrimEnd();
-            // Heuristic: SHORT ALL-CAPS line surrounded by blank lines → heading
-            var isHeading = line.Length > 0 && line.Length <= 80
-                && line == line.ToUpper()
-                && line.Any(char.IsLetter)
-                && (i == 0 || string.IsNullOrWhiteSpace(lines[i - 1]));
-
-            result.Add((line, isHeading ? "Heading2" : "BodyText"));
-        }
-        return result;
-    }
-
-    private static Paragraph MakeParagraph(string text, string style)
-    {
         var para = new Paragraph();
-        var props = new ParagraphProperties(new ParagraphStyleId { Val = style });
 
-        if (style == "BodyText")
+        var pPr = new ParagraphProperties();
+        var spacing = new SpacingBetweenLines();
+        spacing.Line = "276";
+        spacing.LineRule = LineSpacingRuleValues.Auto;
+        spacing.Before = isHeading ? "240" : "0";
+        spacing.After = "120";
+        pPr.SpacingBetweenLines = spacing;
+
+        if (isHeading)
         {
-            props.AppendChild(new SpacingBetweenLines { Line = "276", LineRule = LineSpacingRuleValues.Auto, Before = "0", After = "120" });
+            var jc = new Justification();
+            jc.Val = JustificationValues.Center;
+            pPr.Justification = jc;
         }
-        para.AppendChild(props);
+        para.ParagraphProperties = pPr;
 
-        var run = new Run(new Text(text) { Space = SpaceProcessingModeValues.Preserve });
+        var run = new Run();
         var rPr = new RunProperties();
-        if (style == "BodyText")
-            rPr.AppendChild(new FontSize { Val = "24" }); // 12pt
-        run.PrependChild(rPr);
+
+        var fonts = new RunFonts();
+        fonts.Ascii = "Times New Roman";
+        fonts.HighAnsi = "Times New Roman";
+        rPr.AppendChild(fonts);
+        rPr.AppendChild(new FontSize { Val = halfPt });
+        if (bold) rPr.AppendChild(new Bold());
+        run.RunProperties = rPr;
+
+        run.AppendChild(new Text(text) { Space = SpaceProcessingModeValues.Preserve });
         para.AppendChild(run);
         return para;
     }
 
-    private static Paragraph EmptyParagraph()
+    private static Paragraph SpacerPara()
     {
         var para = new Paragraph();
-        var props = new ParagraphProperties();
-        props.AppendChild(new SpacingBetweenLines { Before = "0", After = "0" });
-        para.AppendChild(props);
+        var pPr = new ParagraphProperties();
+        var spacing = new SpacingBetweenLines();
+        spacing.Before = "0";
+        spacing.After = "60";
+        pPr.SpacingBetweenLines = spacing;
+        para.ParagraphProperties = pPr;
         return para;
     }
 
-    private static Styles BuildStyles()
+    private static List<(string text, string style)> HtmlToLines(string html)
     {
-        var styles = new Styles();
+        var result = new List<(string, string)>();
+        html = Regex.Replace(html, @"<br\s*/?>", "\n", RegexOptions.IgnoreCase);
+        html = Regex.Replace(html, @"<h1[^>]*>(.*?)</h1>", m => "%%H1%%" + Strip(m.Groups[1].Value) + "\n", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        html = Regex.Replace(html, @"<h2[^>]*>(.*?)</h2>", m => "%%H2%%" + Strip(m.Groups[1].Value) + "\n", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        html = Regex.Replace(html, @"<h3[^>]*>(.*?)</h3>", m => "%%H3%%" + Strip(m.Groups[1].Value) + "\n", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        html = Regex.Replace(html, @"<p[^>]*>(.*?)</p>", m => Strip(m.Groups[1].Value) + "\n", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        html = Strip(html);
 
-        styles.AppendChild(new Style
+        foreach (var line in html.Split('\n'))
         {
-            Type = StyleValues.Paragraph, StyleId = "BodyText", Default = false,
-            StyleName = new StyleName { Val = "BodyText" },
-            StyleRunProperties = new StyleRunProperties(
-                new RunFonts { Ascii = "Times New Roman", HighAnsi = "Times New Roman" },
-                new FontSize { Val = "24" })
-        });
-
-        styles.AppendChild(MakeHeadingStyle("Heading1", "14", "2E4057", true));
-        styles.AppendChild(MakeHeadingStyle("Heading2", "26", "1971C2", true));
-        styles.AppendChild(MakeHeadingStyle("Heading3", "24", "495057", false));
-
-        return styles;
+            var t = line.Trim();
+            if (t.StartsWith("%%H1%%"))      result.Add((t.Substring(6), "H1"));
+            else if (t.StartsWith("%%H2%%")) result.Add((t.Substring(6), "H2"));
+            else if (t.StartsWith("%%H3%%")) result.Add((t.Substring(6), "H3"));
+            else                             result.Add((t, "Body"));
+        }
+        return result;
     }
 
-    private static Style MakeHeadingStyle(string id, string halfPt, string color, bool bold)
+    private static List<(string text, string style)> PlainToLines(string text)
     {
-        var s = new Style { Type = StyleValues.Paragraph, StyleId = id, StyleName = new StyleName { Val = id } };
-        var rpr = new StyleRunProperties();
-        rpr.AppendChild(new RunFonts { Ascii = "Times New Roman", HighAnsi = "Times New Roman" });
-        rpr.AppendChild(new FontSize { Val = halfPt });
-        rpr.AppendChild(new Color { Val = color });
-        if (bold) rpr.AppendChild(new Bold());
-        s.StyleRunProperties = rpr;
-
-        var ppr = new StyleParagraphProperties();
-        ppr.AppendChild(new SpacingBetweenLines { Before = "240", After = "120" });
-        s.StyleParagraphProperties = ppr;
-        return s;
+        var result = new List<(string, string)>();
+        var lines = text.Split('\n');
+        for (int i = 0; i < lines.Length; i++)
+        {
+            var line = lines[i].TrimEnd();
+            var isHeading = line.Length is > 0 and <= 80
+                && line == line.ToUpper()
+                && line.Any(char.IsLetter)
+                && (i == 0 || string.IsNullOrWhiteSpace(lines[i - 1]));
+            result.Add((line, isHeading ? "H2" : "Body"));
+        }
+        return result;
     }
 
-    private static string StripTags(string html) =>
-        Regex.Replace(html, @"<[^>]+>", "").Replace("&nbsp;", " ").Replace("&amp;", "&").Replace("&lt;", "<").Replace("&gt;", ">").Trim();
+    private static string Strip(string html) =>
+        Regex.Replace(html, @"<[^>]+>", "")
+             .Replace("&nbsp;", " ").Replace("&amp;", "&")
+             .Replace("&lt;", "<").Replace("&gt;", ">").Trim();
 
     private static string SanitizeFileName(string name) =>
         Regex.Replace(name, @"[\\/:*?""<>|]", "_").Trim().TrimEnd('.');
