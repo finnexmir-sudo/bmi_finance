@@ -318,6 +318,15 @@
                         }
                         <span class="fn-mail-badge" data-badge-url="@gmBadgeUrl" style="display:none"></span>
                     </a>
+                    <div class="fn-nav-label">AI Modulları</div>
+                    <a asp-area="User" asp-controller="SenedAi" asp-action="RiskAnaliz"
+                       class="fn-nav-item @(currentController == "SenedAi" && currentAction == "RiskAnaliz" ? "active" : "")">
+                        <i class="bi bi-shield-exclamation"></i> Sənəd Risk Analizi
+                    </a>
+                    <a asp-area="User" asp-controller="SenedAi" asp-action="SenedYarat"
+                       class="fn-nav-item @(currentController == "SenedAi" && currentAction == "SenedYarat" ? "active" : "")">
+                        <i class="bi bi-file-earmark-text"></i> Sənəd Konstruktoru
+                    </a>
                 }
                 @if (isHR)
                 {

@@ -1,5 +1,6 @@
 ﻿using FinNex.Domain;
 using FinNex.Domain.Entities;
+using FinNex.Domain.Entities.AI;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
@@ -150,6 +151,12 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<FinNex.Domain.Entities.Kredit.KreditZamin> KreditZaminler { get; set; }
     public DbSet<FinNex.Domain.Entities.Kredit.KreditRandevu> KreditRandevular { get; set; }
     public DbSet<FinNex.Domain.Entities.Kredit.KreditSmsLog> KreditSmsLoglar { get; set; }
+
+    // =====================
+    // AI Module
+    // =====================
+    public DbSet<SenedAnaliz> SenedAnalizler { get; set; }
+    public DbSet<SenedKonstruktor> SenedKonstruktorlar { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -1252,6 +1259,27 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .WithMany()
             .HasForeignKey(x => x.IsciId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // ── AI Module ──────────────────────────────────────────────
+        builder.Entity<SenedAnaliz>(e =>
+        {
+            e.ToTable("SenedAnalizler");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.OriginalText).HasColumnType("nvarchar(max)");
+            e.Property(x => x.RiskyClausesJson).HasColumnType("nvarchar(max)");
+            e.HasOne(x => x.AppUser).WithMany().HasForeignKey(x => x.AppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<SenedKonstruktor>(e =>
+        {
+            e.ToTable("SenedKonstruktorlar");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ParametrlerJson).HasColumnType("nvarchar(max)");
+            e.Property(x => x.GeneratedContent).HasColumnType("nvarchar(max)");
+            e.HasOne(x => x.AppUser).WithMany().HasForeignKey(x => x.AppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
 
     }
 
