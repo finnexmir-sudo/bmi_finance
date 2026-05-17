@@ -319,13 +319,27 @@
                         <span class="fn-mail-badge" data-badge-url="@gmBadgeUrl" style="display:none"></span>
                     </a>
                     <div class="fn-nav-label">AI Modulları</div>
+                    @{
+                        var aiModule = Context.Request.Query["module"].ToString();
+                        var isSenedYarat = currentController == "SenedAi" && currentAction == "SenedYarat";
+                    }
                     <a asp-area="User" asp-controller="SenedAi" asp-action="RiskAnaliz"
                        class="fn-nav-item @(currentController == "SenedAi" && currentAction == "RiskAnaliz" ? "active" : "")">
                         <i class="bi bi-shield-exclamation"></i> Sənəd Risk Analizi
                     </a>
                     <a asp-area="User" asp-controller="SenedAi" asp-action="SenedYarat"
-                       class="fn-nav-item @(currentController == "SenedAi" && currentAction == "SenedYarat" ? "active" : "")">
+                       class="fn-nav-item @(isSenedYarat && aiModule != "hr" && aiModule != "kredit" ? "active" : "")">
                         <i class="bi bi-file-earmark-text"></i> Sənəd Konstruktoru
+                    </a>
+                    <a href="@Url.Action("SenedYarat", "SenedAi", new { area = "User" })?module=hr"
+                       class="fn-nav-item @(isSenedYarat && aiModule == "hr" ? "active" : "")">
+                        <i class="bi bi-people-fill"></i> HR Assistanı
+                        <span class="fn-nav-plan-badge">Planda</span>
+                    </a>
+                    <a href="@Url.Action("SenedYarat", "SenedAi", new { area = "User" })?module=kredit"
+                       class="fn-nav-item @(isSenedYarat && aiModule == "kredit" ? "active" : "")">
+                        <i class="bi bi-graph-up-arrow"></i> Kredit Komitəsi
+                        <span class="fn-nav-plan-badge">Planda</span>
                     </a>
                 }
                 @if (isHR)
