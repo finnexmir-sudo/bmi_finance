@@ -17,10 +17,14 @@
     </div>
 
     <div class="row g-4">
-        <!-- ── Sol panel: forma ─────────────────────────────── -->
+        <!-- ── Sol panel: forma ──────────────────────────────────────── -->
         <div class="col-lg-5">
             <div class="sa-card">
-                <h6 class="sa-section-title">Sənəd Parametrləri</h6>
+
+                <!-- BLOK 1: Parametrik forma -->
+                <div class="sk-block-label">
+                    <i class="bi bi-sliders2"></i> Parametrik Sənəd
+                </div>
 
                 <div class="sa-form-group">
                     <label class="sa-label">Sənəd növü</label>
@@ -34,7 +38,7 @@
                         <option value="Xüsusi">Xüsusi (öz növünü yazın)</option>
                     </select>
                     <input type="text" id="senedNovuCustom" class="sa-input mt-2"
-                        placeholder="Xüsusi sənəd növünü yazın..." style="display:none">
+                           placeholder="Xüsusi sənəd növünü yazın..." style="display:none">
                 </div>
 
                 <div class="sa-form-group">
@@ -60,54 +64,64 @@
                 <div class="sa-form-group">
                     <label class="sa-label">Əlavə məlumat <span class="sa-optional">(ixtiyari)</span></label>
                     <textarea id="elaveMelumat" class="sa-textarea" rows="2"
-                        placeholder="Müqavilə nömrəsi, xüsusi şərtlər..."></textarea>
+                              placeholder="Müqavilə nömrəsi, xüsusi şərtlər..."></textarea>
                 </div>
 
-                <!-- ── Sərbəst Mövzu ──────────────────────── -->
-                <div class="sa-divider"><span>və ya</span></div>
+                <!-- ── OR Separator ──────────────────────────────── -->
+                <div class="or-separator"><span>və ya</span></div>
 
-                <div class="sa-form-group">
-                    <label class="sa-label">
-                        <i class="bi bi-pencil-square me-1 text-primary"></i>
-                        Sərbəst Mövzu <span class="sa-optional">(parametrləri əvəz edir)</span>
-                    </label>
-                    <textarea id="senedMovzusu" class="sa-textarea sa-textarea-prompt" rows="3"
-                        placeholder="Məs: İşçinin intizamsızlığa görə töhmət alması üçün rəsmi əmr hazırlat..."></textarea>
-                </div>
+                <!-- BLOK 2: AI Sərbəst + Tərcümə -->
+                <div class="ai-free-mode-container">
 
-                <!-- ── Tərcümə Rejimi ────────────────────── -->
-                <div class="sa-tercume-box">
-                    <div class="sa-switch-row">
-                        <div>
-                            <div class="sa-switch-label">
-                                <i class="bi bi-translate me-1"></i> Peşəkar Tərcümə Rejimi
-                            </div>
-                            <div class="sa-switch-hint">Bank-hüquq terminologiyası ilə rəsmi tərcümə</div>
-                        </div>
-                        <label class="sa-toggle">
-                            <input type="checkbox" id="tercumeSwitch" onchange="onTercumeChange()">
-                            <span class="sa-toggle-slider"></span>
+                    <div class="sk-block-label sk-block-label--ai">
+                        <i class="bi bi-cpu"></i> AI Rejimi
+                    </div>
+
+                    <div class="sa-form-group">
+                        <label class="sa-label">
+                            Sərbəst Mövzu
+                            <span class="sa-optional">(parametrləri əvəz edir)</span>
                         </label>
+                        <textarea id="senedMovzusu" class="sa-textarea sa-textarea-prompt" rows="3"
+                                  placeholder="Məs: İşçinin intizamsızlığa görə töhmət alması üçün rəsmi əmr hazırlat..."
+                                  oninput="updateBtn()"></textarea>
                     </div>
 
-                    <div id="tercumeOptions" class="sa-tercume-options" style="display:none">
-                        <label class="sa-label mt-2">Hədəf dil</label>
-                        <select id="hedafDil" class="sa-select">
-                            <option value="İngilis dili">🇬🇧 İngilis dili</option>
-                            <option value="Rus dili">🇷🇺 Rus dili</option>
-                            <option value="Azərbaycan dili">🇦🇿 Azərbaycan dili</option>
-                            <option value="Fars dili">🇮🇷 Fars dili</option>
-                        </select>
+                    <div class="sa-tercume-box">
+                        <div class="sa-switch-row">
+                            <div>
+                                <div class="sa-switch-label">
+                                    <i class="bi bi-translate"></i> Peşəkar Tərcümə Rejimi
+                                </div>
+                                <div class="sa-switch-hint">Bank-hüquq terminologiyası ilə rəsmi tərcümə</div>
+                            </div>
+                            <label class="sa-toggle">
+                                <input type="checkbox" id="tercumeSwitch" onchange="onTercumeChange()">
+                                <span class="sa-toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div id="tercumeOptions" class="sa-tercume-options" style="display:none">
+                            <label class="sa-label">Hədəf dil</label>
+                            <select id="hedafDil" class="sa-select" onchange="updateBtn()">
+                                <option value="İngilis dili">🇬🇧 İngilis dili</option>
+                                <option value="Rus dili">🇷🇺 Rus dili</option>
+                                <option value="Azərbaycan dili">🇦🇿 Azərbaycan dili</option>
+                                <option value="Fars dili">🇮🇷 Fars dili</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
+                <!-- /ai-free-mode-container -->
 
-                <button class="sa-btn sa-btn-primary w-100 mt-3" id="yaratBtn" onclick="startYarat()">
-                    <i class="bi bi-magic"></i> <span id="yaratBtnText">Sənədi Yarat</span>
+                <button class="sa-btn sa-btn-primary w-100 sk-main-btn" id="yaratBtn" onclick="startYarat()">
+                    <i id="yaratBtnIcon" class="bi bi-file-earmark-text"></i>
+                    <span id="yaratBtnText">Sənədi Yarat</span>
                 </button>
             </div>
         </div>
 
-        <!-- ── Sağ panel: nəticə ─────────────────────────────── -->
+        <!-- ── Sağ panel: nəticə ─────────────────────────────────── -->
         <div class="col-lg-7">
             <div class="sa-card sa-result-card" id="resultCard" style="display:none">
                 <div class="sa-result-header">
@@ -124,9 +138,7 @@
                         </button>
                     </div>
                 </div>
-                <!-- Plain text -->
                 <pre id="generatedContent" class="sa-generated-text"></pre>
-                <!-- HTML (tərcümə rejimi) -->
                 <div id="generatedHtml" class="sa-generated-html" style="display:none"></div>
             </div>
 
@@ -137,7 +149,7 @@
 
             <div class="sa-card sa-placeholder-card" id="placeholderCard">
                 <i class="bi bi-file-earmark-plus sa-placeholder-icon"></i>
-                <p>Parametrləri daxil edib "Sənədi Yarat" düyməsini basın</p>
+                <p>Parametrləri daxil edib düyməni basın</p>
             </div>
         </div>
     </div>
@@ -145,44 +157,82 @@
 
 @section Scripts {
 <script>
-    var currentIsHtml = false;
+    // RTL dillər
+    var RTL_LANGS = ['Fars dili', 'Ərəb dili'];
+
+    var currentIsHtml  = false;
     var currentContent = '';
-    var currentTitle = '';
+    var currentTitle   = '';
 
     document.getElementById('senedNovu').addEventListener('change', function () {
         document.getElementById('senedNovuCustom').style.display = this.value === 'Xüsusi' ? '' : 'none';
+        updateBtn();
     });
+
+    // ── Düymə mətn/ikon sinxronizasiyası ──────────────────────────────────────
+    function updateBtn() {
+        var tercume   = document.getElementById('tercumeSwitch').checked;
+        var serbest   = document.getElementById('senedMovzusu').value.trim() !== '';
+        var iconEl    = document.getElementById('yaratBtnIcon');
+        var textEl    = document.getElementById('yaratBtnText');
+
+        if (tercume) {
+            iconEl.className = 'bi bi-translate';
+            textEl.textContent = 'Tərcümə Et';
+        } else if (serbest) {
+            iconEl.className = 'bi bi-magic';
+            textEl.textContent = 'AI ilə Sənəd Yarat';
+        } else {
+            iconEl.className = 'bi bi-file-earmark-text';
+            textEl.textContent = 'Sənədi Yarat';
+        }
+    }
 
     function onTercumeChange() {
         var on = document.getElementById('tercumeSwitch').checked;
         document.getElementById('tercumeOptions').style.display = on ? '' : 'none';
-        document.getElementById('yaratBtnText').textContent = on ? 'Tərcümə Et' : 'Sənədi Yarat';
+        updateBtn();
     }
 
-    async function startYarat() {
-        var senedNovuEl = document.getElementById('senedNovu');
-        var senedNovu = senedNovuEl.value === 'Xüsusi'
-            ? document.getElementById('senedNovuCustom').value.trim()
-            : senedNovuEl.value;
-        var musteriAd = document.getElementById('musteriAd').value.trim();
-        var gecikmeGun = parseInt(document.getElementById('gecikmeGun').value) || 0;
-        var meble = parseFloat(document.getElementById('meble').value) || 0;
-        var elaveMelumat = document.getElementById('elaveMelumat').value.trim();
-        var senedMovzusu = document.getElementById('senedMovzusu').value.trim();
-        var tercumeEdilsinmi = document.getElementById('tercumeSwitch').checked;
-        var hedafDil = document.getElementById('hedafDil').value;
+    // ── RTL tənzimlənməsi ─────────────────────────────────────────────────────
+    function applyRtl(lang) {
+        var isRtl = RTL_LANGS.indexOf(lang) !== -1;
+        var pre  = document.getElementById('generatedContent');
+        var div  = document.getElementById('generatedHtml');
+        var dir  = isRtl ? 'rtl' : 'ltr';
+        var align = isRtl ? 'right' : 'left';
+        [pre, div].forEach(function (el) {
+            el.style.direction  = dir;
+            el.style.textAlign  = align;
+        });
+    }
 
-        var hasParametrik = senedNovu && musteriAd;
-        var hasSerbest = !!senedMovzusu;
+    // ── Əsas sorğu ───────────────────────────────────────────────────────────
+    async function startYarat() {
+        var senedNovuEl   = document.getElementById('senedNovu');
+        var senedNovu     = senedNovuEl.value === 'Xüsusi'
+                            ? document.getElementById('senedNovuCustom').value.trim()
+                            : senedNovuEl.value;
+        var musteriAd       = document.getElementById('musteriAd').value.trim();
+        var gecikmeGun      = parseInt(document.getElementById('gecikmeGun').value)   || 0;
+        var meble           = parseFloat(document.getElementById('meble').value)      || 0;
+        var elaveMelumat    = document.getElementById('elaveMelumat').value.trim();
+        var senedMovzusu    = document.getElementById('senedMovzusu').value.trim();
+        var tercumeEdilsinmi = document.getElementById('tercumeSwitch').checked;
+        var hedafDil        = document.getElementById('hedafDil').value;
+
+        var hasParametrik = !!(senedNovu && musteriAd);
+        var hasSerbest    = !!senedMovzusu;
+
         if (!hasParametrik && !hasSerbest) {
             alert('Sənəd parametrləri (növ + müştəri) VƏ ya sərbəst mövzu daxil edin.');
             return;
         }
 
-        document.getElementById('resultCard').style.display = 'none';
+        document.getElementById('resultCard').style.display      = 'none';
         document.getElementById('placeholderCard').style.display = 'none';
-        document.getElementById('loadingCard').style.display = '';
-        document.getElementById('loadingText').textContent = tercumeEdilsinmi ? 'AI tərcümə edir...' : 'AI sənədi hazırlayır...';
+        document.getElementById('loadingCard').style.display     = '';
+        document.getElementById('loadingText').textContent       = tercumeEdilsinmi ? 'AI tərcümə edir...' : 'AI sənədi hazırlayır...';
         document.getElementById('yaratBtn').disabled = true;
 
         var params = new URLSearchParams({
@@ -198,7 +248,10 @@
             var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
             var resp = await fetch('@Url.Action("SenedYaratPost", "SenedAi", new { area = "User" })', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
                 body: params.toString()
             });
             var data = await resp.json();
@@ -213,33 +266,36 @@
             }
 
             currentContent = data.content;
-            currentIsHtml = data.isHtml;
-            currentTitle = tercumeEdilsinmi
-                ? ('Tercume_' + hedafDil.replace(' dili', '') + '_' + new Date().toISOString().slice(0,10))
+            currentIsHtml  = data.isHtml;
+            currentTitle   = tercumeEdilsinmi
+                ? ('Tercume_' + hedafDil.replace(' dili', '') + '_' + new Date().toISOString().slice(0, 10))
                 : (senedNovu || senedMovzusu.substring(0, 30)).replace(/\s+/g, '_');
 
-            var preEl = document.getElementById('generatedContent');
+            var preEl  = document.getElementById('generatedContent');
             var htmlEl = document.getElementById('generatedHtml');
 
             if (data.isHtml) {
-                preEl.style.display = 'none';
-                htmlEl.innerHTML = data.content;
-                htmlEl.style.display = '';
+                preEl.style.display   = 'none';
+                htmlEl.innerHTML      = data.content;
+                htmlEl.style.display  = '';
             } else {
-                htmlEl.style.display = 'none';
-                preEl.textContent = data.content;
-                preEl.style.display = '';
+                htmlEl.style.display  = 'none';
+                preEl.textContent     = data.content;
+                preEl.style.display   = '';
             }
 
+            applyRtl(hedafDil);
             document.getElementById('resultCard').style.display = '';
+
         } catch (e) {
-            document.getElementById('loadingCard').style.display = 'none';
+            document.getElementById('loadingCard').style.display     = 'none';
             document.getElementById('placeholderCard').style.display = '';
             document.getElementById('yaratBtn').disabled = false;
             alert('Şəbəkə xətası baş verdi.');
         }
     }
 
+    // ── Köməkçi əməliyyatlar ──────────────────────────────────────────────────
     function copyContent() {
         var text = currentIsHtml
             ? document.getElementById('generatedHtml').innerText
@@ -252,9 +308,11 @@
     }
 
     function printContent() {
-        var html = currentIsHtml
-            ? '<div style="font-family:serif;font-size:14px;padding:40px">' + currentContent + '</div>'
-            : '<pre style="font-family:serif;font-size:14px;padding:40px">' + escHtml(currentContent) + '</pre>';
+        var isRtl  = RTL_LANGS.indexOf(document.getElementById('hedafDil').value) !== -1;
+        var dirCss = isRtl ? 'direction:rtl;text-align:right;' : '';
+        var html   = currentIsHtml
+            ? '<div style="font-family:serif;font-size:14px;padding:40px;' + dirCss + '">' + currentContent + '</div>'
+            : '<pre style="font-family:serif;font-size:14px;padding:40px;white-space:pre-wrap;' + dirCss + '">' + escHtml(currentContent) + '</pre>';
         var w = window.open('', '_blank');
         w.document.write(html);
         w.document.close();
@@ -265,9 +323,8 @@
         var btn = document.getElementById('wordBtn');
         btn.disabled = true;
         btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Hazırlanır...';
-
         try {
-            var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+            var token  = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
             var params = new URLSearchParams({
                 content: currentContent,
                 isHtml: currentIsHtml.toString(),
@@ -275,20 +332,22 @@
             });
             var resp = await fetch('@Url.Action("ExportToWord", "SenedAi", new { area = "User" })', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
                 body: params.toString()
             });
             if (!resp.ok) { alert('Word ixracı uğursuz oldu.'); return; }
-
             var blob = await resp.blob();
-            var url = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
+            var url  = URL.createObjectURL(blob);
+            var a    = document.createElement('a');
+            a.href   = url;
             a.download = currentTitle + '.docx';
             a.click();
             URL.revokeObjectURL(url);
         } finally {
-            btn.disabled = false;
+            btn.disabled  = false;
             btn.innerHTML = '<i class="bi bi-file-word"></i> Word (.docx)';
         }
     }

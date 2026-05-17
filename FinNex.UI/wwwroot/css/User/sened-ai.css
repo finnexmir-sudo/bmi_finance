@@ -448,5 +448,60 @@
 .sa-generated-html p  { margin: 0 0 10px; }
 .sa-generated-html .sa-translated-doc { max-width: 100%; }
 
+/* ── OR Separator ────────────────────────────────────────────────────────── */
+.or-separator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 24px 0 20px;
+    color: #adb5bd;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: lowercase;
+    letter-spacing: .3px;
+}
+.or-separator::before,
+.or-separator::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    border-top: 1px dashed #ced4da;
+}
+.or-separator span {
+    white-space: nowrap;
+    padding: 0 4px;
+}
+
+/* ── AI Free Mode Container ──────────────────────────────────────────────── */
+.ai-free-mode-container {
+    background: #f8faff;
+    border: 1px solid #e4e9f2;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+.ai-free-mode-container .sa-form-group { margin-bottom: 14px; }
+.ai-free-mode-container .sa-form-group:last-child { margin-bottom: 0; }
+
+/* ── Block section labels ────────────────────────────────────────────────── */
+.sk-block-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    color: #868e96;
+    margin-bottom: 14px;
+}
+.sk-block-label--ai {
+    color: #1971c2;
+}
+.sk-block-label i { font-size: 0.85rem; }
+
+/* ── Main action button spacing ──────────────────────────────────────────── */
+.sk-main-btn { margin-top: 20px; }
+
 /* ── Utilities ───────────────────────────────────────────────────────────── */
 .mt-3 { margin-top: 12px; }
