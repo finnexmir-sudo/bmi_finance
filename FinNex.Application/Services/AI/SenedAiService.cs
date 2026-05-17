@@ -145,15 +145,18 @@ public class SenedAiService : ISenedAiService
     private static string BuildSerbrestPrompt(string senedMovzusu, string musteriAd)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("Siz bankın rəsmi yazışma mütəxəssisisiniz. Aşağıdakı tapşırığa əsasən tam rəsmi bank sənədi hazırlayın.");
-        sb.AppendLine();
-        sb.AppendLine($"Tapşırıq: {senedMovzusu}");
-        if (!string.IsNullOrWhiteSpace(musteriAd))
-            sb.AppendLine($"Əlaqədar şəxs/müştəri: {musteriAd}");
+        sb.AppendLine("Sən bankın rəsmi sənəd mütəxəssisisən. İstifadəçinin aşağıdakı sərbəst təlimatını oxu:");
+        sb.AppendLine("- Mətndəki şəxs adlarını, tarixləri, məbləğləri, müqavilə nömrələrini, gecikmiş gün sayını və digər əsas detalları intellektual olaraq müəyyən et.");
+        sb.AppendLine("- Bu detalları özbaşına sənədin müvafiq bölümlərinə peşəkar şəkildə yerləşdir.");
+        sb.AppendLine("- Mətndə açıq göstərilməyən detallar üçün bank üslubu ilə standart formul işlət.");
         sb.AppendLine($"Tarix: {DateTime.Now:dd MMMM yyyy}");
         sb.AppendLine();
+        sb.AppendLine($"İstifadəçi təlimatı: {senedMovzusu}");
+        if (!string.IsNullOrWhiteSpace(musteriAd))
+            sb.AppendLine($"Əlaqədar şəxs: {musteriAd}");
+        sb.AppendLine();
         sb.AppendLine("Tələblər: Azərbaycan dili, rəsmi-işgüzar üslub, düz mətn (markdown/HTML yox).");
-        sb.AppendLine("Sənəd strukturu: başlıq → müraciət → əsas hissə → nəticə → imza sahəsi.");
+        sb.AppendLine("Struktur: başlıq → müraciət → əsas hissə → nəticə → imza sahəsi.");
         sb.AppendLine("Yalnız sənədi yazın, izahat əlavə etməyin.");
         return sb.ToString();
     }

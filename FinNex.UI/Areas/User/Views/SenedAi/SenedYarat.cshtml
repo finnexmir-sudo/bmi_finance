@@ -12,143 +12,90 @@
         <div class="sa-header-icon blue"><i class="bi bi-file-earmark-text"></i></div>
         <div>
             <h4 class="sa-title">Ağıllı OCR Sənəd Mərkəzi</h4>
-            <p class="sa-subtitle">Şəkil / PDF yüklə, parametrləri daxil et, sərbəst mövzu yaz ya da mövcud mətni rəsmi dildə tərcümə et.</p>
+            <p class="sa-subtitle">Şəkil / PDF yüklə və ya təlimatı sərbəst yaz — AI parametrləri özü müəyyən edib rəsmi sənədi hazırlayır.</p>
         </div>
     </div>
 
     <div class="row g-3">
-        <!-- ── Sol panel: forma ──────────────────────────────────────── -->
+        <!-- ── Sol panel: giriş ──────────────────────────────────────── -->
         <div class="col-xl-6 col-lg-6">
             <div class="sa-card sa-form-card">
 
-                <!-- BLOK 1: Parametrik forma -->
-                <div class="sk-block-label">
-                    <i class="bi bi-sliders2"></i> Parametrik Sənəd
+                <div class="sk-block-label sk-block-label--ai mb-3">
+                    <i class="bi bi-cpu"></i> AI Sənəd Təlimatı
                 </div>
 
+                <!-- OCR Drop Zone -->
                 <div class="sa-form-group">
-                    <label class="sa-label">Sənəd növü</label>
-                    <select id="senedNovu" class="sa-select">
-                        <option value="Gecikmiş Kredit Xəbərdarlığı">Gecikmiş Kredit Xəbərdarlığı</option>
-                        <option value="Son Xəbərdarlıq Məktubu">Son Xəbərdarlıq Məktubu</option>
-                        <option value="Kredit Borcunun Ödənilməsi Haqqında Bildiriş">Kredit Borcu Bildirişi</option>
-                        <option value="Girov Aktivinə Dair Bildiriş">Girov Aktivinə Dair Bildiriş</option>
-                        <option value="Müqavilənin Ləğvi Barədə Xəbərdarlıq">Müqavilənin Ləğvi Xəbərdarlığı</option>
-                        <option value="Faiz Borcunun Ödənişi Haqqında">Faiz Borcu Bildirişi</option>
-                        <option value="Xüsusi">Xüsusi (öz növünü yazın)</option>
-                    </select>
-                    <input type="text" id="senedNovuCustom" class="sa-input mt-2"
-                           placeholder="Xüsusi sənəd növünü yazın..." style="display:none">
+                    <label class="sa-label">
+                        <i class="bi bi-file-earmark-image"></i> Şəkil / Sənəd Yüklə
+                        <span class="sa-optional">(OCR — JPG, PNG, PDF)</span>
+                    </label>
+
+                    <div class="sa-ocr-zone" id="ocrZone"
+                         onclick="document.getElementById('ocrFileInput').click()"
+                         ondragover="ocrDragOver(event)"
+                         ondragleave="ocrDragLeave(event)"
+                         ondrop="ocrDrop(event)">
+                        <input type="file" id="ocrFileInput" accept=".jpg,.jpeg,.png,.pdf"
+                               style="display:none" onchange="onOcrFileSelect(this)">
+                        <i class="bi bi-cloud-arrow-up sa-ocr-icon"></i>
+                        <div class="sa-ocr-text">Sürüşdür & Burax və ya Seç</div>
+                        <div class="sa-ocr-hint">JPG · PNG · PDF — maks. 10 MB</div>
+                    </div>
+
+                    <div id="ocrProgress" class="sa-ocr-progress" style="display:none">
+                        <div class="sa-ocr-spinner"></div>
+                        <span id="ocrProgressText">AI sənədi skanerlayır...</span>
+                        <div class="sa-ocr-pbar"><div id="ocrPbarFill" class="sa-ocr-pbar-fill"></div></div>
+                    </div>
+
+                    <div id="ocrResult" class="sa-ocr-result" style="display:none">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span id="ocrFileName" class="sa-ocr-filename"></span>
+                        <button type="button" class="sa-ocr-clear" onclick="clearOcr()" title="Təmizlə">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    </div>
                 </div>
 
+                <!-- Serbest Movzu / AI Telimat -->
                 <div class="sa-form-group">
-                    <label class="sa-label">Müştəri / əlaqədar şəxs adı</label>
-                    <input type="text" id="musteriAd" class="sa-input" placeholder="məs: Əli Həsənov">
+                    <label class="sa-label">
+                        Sənəd Təlimatı
+                        <span class="sa-optional">(AI parametrləri özü çıxarır)</span>
+                    </label>
+                    <textarea id="senedMovzusu" class="sa-textarea sa-textarea-prompt sa-textarea-main"
+                              rows="6"
+                              placeholder="Sənəd hazırlamaq üçün təlimatı bura yazın (Məsələn: Əli Həsənovun 30 günlük gecikməsi üçün xəbərdarlıq məktubu) və ya yuxarıya sənəd yükləyərək tərcümə rejimini aktiv edin..."
+                              oninput="updateBtn()"></textarea>
                 </div>
 
-                <div class="row g-2">
-                    <div class="col-6">
-                        <div class="sa-form-group">
-                            <label class="sa-label">Gecikmiş gün</label>
-                            <input type="number" id="gecikmeGun" class="sa-input" value="30" min="1">
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="sa-form-group">
-                            <label class="sa-label">Məbləğ (AZN)</label>
-                            <input type="number" id="meble" class="sa-input" value="0" min="0" step="0.01">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="sa-form-group">
-                    <label class="sa-label">Əlavə məlumat <span class="sa-optional">(ixtiyari)</span></label>
-                    <textarea id="elaveMelumat" class="sa-textarea" rows="2"
-                              placeholder="Müqavilə nömrəsi, xüsusi şərtlər..."></textarea>
-                </div>
-
-                <!-- ── OR Separator ──────────────────────────────── -->
-                <div class="or-separator"><span>və ya</span></div>
-
-                <!-- BLOK 2: AI Rejimi (OCR + Sərbəst + Tərcümə) -->
-                <div class="ai-free-mode-container">
-
-                    <div class="sk-block-label sk-block-label--ai">
-                        <i class="bi bi-cpu"></i> AI Rejimi
-                    </div>
-
-                    <!-- OCR Drop Zone -->
-                    <div class="sa-form-group">
-                        <label class="sa-label">
-                            <i class="bi bi-file-earmark-image"></i> Şəkil / Sənəd OCR
-                            <span class="sa-optional">(JPG, PNG, PDF)</span>
-                        </label>
-
-                        <div class="sa-ocr-zone" id="ocrZone"
-                             onclick="document.getElementById('ocrFileInput').click()"
-                             ondragover="ocrDragOver(event)"
-                             ondragleave="ocrDragLeave(event)"
-                             ondrop="ocrDrop(event)">
-                            <input type="file" id="ocrFileInput" accept=".jpg,.jpeg,.png,.pdf"
-                                   style="display:none" onchange="onOcrFileSelect(this)">
-                            <i class="bi bi-cloud-arrow-up sa-ocr-icon"></i>
-                            <div class="sa-ocr-text">Sürüşdür & Burax və ya Seç</div>
-                            <div class="sa-ocr-hint">JPG · PNG · PDF — maks. 10 MB</div>
-                        </div>
-
-                        <div id="ocrProgress" class="sa-ocr-progress" style="display:none">
-                            <div class="sa-ocr-spinner"></div>
-                            <span id="ocrProgressText">AI sənədi skanerlayır...</span>
-                            <div class="sa-ocr-pbar"><div id="ocrPbarFill" class="sa-ocr-pbar-fill"></div></div>
-                        </div>
-
-                        <div id="ocrResult" class="sa-ocr-result" style="display:none">
-                            <i class="bi bi-check-circle-fill"></i>
-                            <span id="ocrFileName" class="sa-ocr-filename"></span>
-                            <button type="button" class="sa-ocr-clear" onclick="clearOcr()" title="Təmizlə">
-                                <i class="bi bi-x-circle"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Serbest Movzu -->
-                    <div class="sa-form-group">
-                        <label class="sa-label">
-                            Sərbəst Mövzu
-                            <span class="sa-optional">(parametrləri əvəz edir)</span>
-                        </label>
-                        <textarea id="senedMovzusu" class="sa-textarea sa-textarea-prompt" rows="3"
-                                  placeholder="Məs: İşçinin intizamsızlığa görə töhmət alması üçün rəsmi əmr hazırlat..."
-                                  oninput="updateBtn()"></textarea>
-                    </div>
-
-                    <!-- Tercume -->
-                    <div class="sa-tercume-box">
-                        <div class="sa-switch-row">
-                            <div>
-                                <div class="sa-switch-label">
-                                    <i class="bi bi-translate"></i> Peşəkar Tərcümə Rejimi
-                                </div>
-                                <div class="sa-switch-hint">Bank-hüquq terminologiyası ilə rəsmi tərcümə</div>
+                <!-- Tercume -->
+                <div class="sa-tercume-box">
+                    <div class="sa-switch-row">
+                        <div>
+                            <div class="sa-switch-label">
+                                <i class="bi bi-translate"></i> Peşəkar Tərcümə Rejimi
                             </div>
-                            <label class="sa-toggle">
-                                <input type="checkbox" id="tercumeSwitch" onchange="onTercumeChange()">
-                                <span class="sa-toggle-slider"></span>
-                            </label>
+                            <div class="sa-switch-hint">Bank-hüquq terminologiyası ilə rəsmi tərcümə</div>
                         </div>
+                        <label class="sa-toggle">
+                            <input type="checkbox" id="tercumeSwitch" onchange="onTercumeChange()">
+                            <span class="sa-toggle-slider"></span>
+                        </label>
+                    </div>
 
-                        <div id="tercumeOptions" class="sa-tercume-options" style="display:none">
-                            <label class="sa-label">Hədəf dil</label>
-                            <select id="hedafDil" class="sa-select" onchange="updateBtn()">
-                                <option value="İngilis dili">🇬🇧 İngilis dili</option>
-                                <option value="Rus dili">🇷🇺 Rus dili</option>
-                                <option value="Azərbaycan dili">🇦🇿 Azərbaycan dili</option>
-                                <option value="Fars dili">🇮🇷 Fars dili</option>
-                            </select>
-                        </div>
+                    <div id="tercumeOptions" class="sa-tercume-options" style="display:none">
+                        <label class="sa-label">Hədəf dil</label>
+                        <select id="hedafDil" class="sa-select" onchange="updateBtn()">
+                            <option value="İngilis dili">🇬🇧 İngilis dili</option>
+                            <option value="Rus dili">🇷🇺 Rus dili</option>
+                            <option value="Azərbaycan dili">🇦🇿 Azərbaycan dili</option>
+                            <option value="Fars dili">🇮🇷 Fars dili</option>
+                        </select>
                     </div>
                 </div>
-                <!-- /ai-free-mode-container -->
 
                 <button class="sa-btn sa-btn-primary w-100 sk-main-btn" id="yaratBtn" onclick="startYarat()">
                     <i id="yaratBtnIcon" class="bi bi-file-earmark-text"></i>
@@ -175,7 +122,6 @@
                     </div>
                 </div>
 
-                <!-- Bank blank seçimi -->
                 <div class="sa-bank-blank-row">
                     <label class="sa-bank-blank-label">
                         <input type="checkbox" id="bankBlankSwitch" class="sa-bank-blank-check">
@@ -196,8 +142,8 @@
 
             <div class="sa-card sa-placeholder-card" id="placeholderCard">
                 <i class="bi bi-file-earmark-plus sa-placeholder-icon"></i>
-                <p>Parametrləri daxil edib düyməni basın</p>
-                <p class="sa-placeholder-hint">və ya şəkil / PDF yükləyin</p>
+                <p>Təlimatı yazın və ya sənəd yükləyin</p>
+                <p class="sa-placeholder-hint">AI adları, tarixləri, məbləğləri özü tapır</p>
             </div>
         </div>
     </div>
@@ -205,25 +151,16 @@
 
 @section Scripts {
 <script>
-    // RTL dillər
     var RTL_LANGS = ['Fars dili', 'Ərəb dili'];
-
     var currentIsHtml  = false;
     var currentContent = '';
     var currentTitle   = '';
 
-    document.getElementById('senedNovu').addEventListener('change', function () {
-        document.getElementById('senedNovuCustom').style.display = this.value === 'Xüsusi' ? '' : 'none';
-        updateBtn();
-    });
-
-    // ── Düymə sinxronizasiyası ────────────────────────────────────────────────
     function updateBtn() {
         var tercume = document.getElementById('tercumeSwitch').checked;
         var serbest = document.getElementById('senedMovzusu').value.trim() !== '';
         var iconEl  = document.getElementById('yaratBtnIcon');
         var textEl  = document.getElementById('yaratBtnText');
-
         if (tercume) {
             iconEl.className = 'bi bi-translate';
             textEl.textContent = 'Tərcümə Et';
@@ -237,133 +174,26 @@
     }
 
     function onTercumeChange() {
-        var on = document.getElementById('tercumeSwitch').checked;
-        document.getElementById('tercumeOptions').style.display = on ? '' : 'none';
+        document.getElementById('tercumeOptions').style.display =
+            document.getElementById('tercumeSwitch').checked ? '' : 'none';
         updateBtn();
     }
 
-    // ── RTL ──────────────────────────────────────────────────────────────────
     function applyRtl(lang) {
         var isRtl = RTL_LANGS.indexOf(lang) !== -1;
-        var dir   = isRtl ? 'rtl' : 'ltr';
-        var align = isRtl ? 'right' : 'left';
         ['generatedContent', 'generatedHtml'].forEach(function (id) {
             var el = document.getElementById(id);
-            el.style.direction = dir;
-            el.style.textAlign = align;
+            el.style.direction = isRtl ? 'rtl' : 'ltr';
+            el.style.textAlign = isRtl ? 'right' : 'left';
         });
-    }
-
-    // ── OCR Drop Zone ─────────────────────────────────────────────────────────
-    function ocrDragOver(e) {
-        e.preventDefault();
-        document.getElementById('ocrZone').classList.add('drag-over');
-    }
-    function ocrDragLeave(e) {
-        document.getElementById('ocrZone').classList.remove('drag-over');
-    }
-    function ocrDrop(e) {
-        e.preventDefault();
-        document.getElementById('ocrZone').classList.remove('drag-over');
-        var file = e.dataTransfer.files[0];
-        if (file) processOcrFile(file);
-    }
-    function onOcrFileSelect(input) {
-        if (input.files[0]) processOcrFile(input.files[0]);
-    }
-
-    async function processOcrFile(file) {
-        var allowed = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-        if (!allowed.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|pdf)$/i)) {
-            alert('Yalnız JPG, PNG və ya PDF fayllar qəbul edilir.');
-            return;
-        }
-        if (file.size > 10 * 1024 * 1024) {
-            alert('Fayl 10MB-dan böyük ola bilməz.');
-            return;
-        }
-
-        document.getElementById('ocrZone').style.display     = 'none';
-        document.getElementById('ocrResult').style.display   = 'none';
-        document.getElementById('ocrProgress').style.display = '';
-
-        // Fake progress animation
-        var fill = document.getElementById('ocrPbarFill');
-        var pct = 0;
-        var timer = setInterval(function () {
-            pct = Math.min(pct + Math.random() * 12, 85);
-            fill.style.width = pct + '%';
-        }, 300);
-
-        var formData = new FormData();
-        formData.append('fayl', file);
-        var tercume  = document.getElementById('tercumeSwitch').checked;
-        var hedafDil = document.getElementById('hedafDil').value;
-        formData.append('tercumeEdilsinmi', tercume.toString());
-        formData.append('hedafDil', hedafDil);
-
-        try {
-            var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
-            var resp = await fetch('@Url.Action("OcrFayl", "SenedAi", new { area = "User" })', {
-                method: 'POST',
-                headers: { 'RequestVerificationToken': token },
-                body: formData
-            });
-            var data = await resp.json();
-
-            clearInterval(timer);
-            fill.style.width = '100%';
-            await new Promise(r => setTimeout(r, 300));
-
-            document.getElementById('ocrProgress').style.display = 'none';
-
-            if (!data.ok) {
-                alert('OCR xətası: ' + data.xeta);
-                document.getElementById('ocrZone').style.display = '';
-                return;
-            }
-
-            // Show success badge
-            document.getElementById('ocrFileName').textContent = file.name;
-            document.getElementById('ocrResult').style.display = '';
-
-            // Fill textarea
-            document.getElementById('senedMovzusu').value = data.isHtml
-                ? document.createElement('div').appendChild(Object.assign(document.createElement('div'), { innerHTML: data.text })).innerText
-                : data.text;
-            updateBtn();
-
-            // Show in preview panel
-            showResult(data.text, data.isHtml, file.name.replace(/\.[^.]+$/, ''));
-            applyRtl(hedafDil);
-
-        } catch (e) {
-            clearInterval(timer);
-            document.getElementById('ocrProgress').style.display = 'none';
-            document.getElementById('ocrZone').style.display = '';
-            alert('Şəbəkə xətası baş verdi.');
-        }
-    }
-
-    function clearOcr() {
-        document.getElementById('ocrFileInput').value = '';
-        document.getElementById('ocrResult').style.display   = 'none';
-        document.getElementById('ocrZone').style.display     = '';
-        document.getElementById('senedMovzusu').value = '';
-        document.getElementById('ocrPbarFill').style.width = '0%';
-        updateBtn();
-        document.getElementById('resultCard').style.display     = 'none';
-        document.getElementById('placeholderCard').style.display = '';
     }
 
     function showResult(content, isHtml, title) {
         currentContent = content;
         currentIsHtml  = isHtml;
         currentTitle   = (title || 'Sened').replace(/\s+/g, '_');
-
         var preEl  = document.getElementById('generatedContent');
         var htmlEl = document.getElementById('generatedHtml');
-
         if (isHtml) {
             preEl.style.display  = 'none';
             htmlEl.innerHTML     = content;
@@ -378,43 +208,124 @@
         document.getElementById('resultCard').style.display      = '';
     }
 
+    // ── OCR ──────────────────────────────────────────────────────────────────
+    function ocrDragOver(e) {
+        e.preventDefault();
+        document.getElementById('ocrZone').classList.add('drag-over');
+    }
+    function ocrDragLeave() {
+        document.getElementById('ocrZone').classList.remove('drag-over');
+    }
+    function ocrDrop(e) {
+        e.preventDefault();
+        document.getElementById('ocrZone').classList.remove('drag-over');
+        if (e.dataTransfer.files[0]) processOcrFile(e.dataTransfer.files[0]);
+    }
+    function onOcrFileSelect(input) {
+        if (input.files[0]) processOcrFile(input.files[0]);
+    }
+
+    async function processOcrFile(file) {
+        if (!file.name.match(/\.(jpg|jpeg|png|pdf)$/i)) {
+            alert('Yalnız JPG, PNG və ya PDF fayllar qəbul edilir.');
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            alert('Fayl 10MB-dan böyük ola bilməz.');
+            return;
+        }
+
+        document.getElementById('ocrZone').style.display     = 'none';
+        document.getElementById('ocrResult').style.display   = 'none';
+        document.getElementById('ocrProgress').style.display = '';
+
+        var fill  = document.getElementById('ocrPbarFill');
+        var pct   = 0;
+        var timer = setInterval(function () {
+            pct = Math.min(pct + Math.random() * 14, 85);
+            fill.style.width = pct + '%';
+        }, 280);
+
+        var formData = new FormData();
+        formData.append('fayl', file);
+        formData.append('tercumeEdilsinmi', document.getElementById('tercumeSwitch').checked.toString());
+        formData.append('hedafDil', document.getElementById('hedafDil').value);
+
+        try {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+            var resp  = await fetch('@Url.Action("OcrFayl", "SenedAi", new { area = "User" })', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token },
+                body: formData
+            });
+            var data = await resp.json();
+            clearInterval(timer);
+            fill.style.width = '100%';
+            await new Promise(r => setTimeout(r, 280));
+            document.getElementById('ocrProgress').style.display = 'none';
+
+            if (!data.ok) {
+                alert('OCR xətası: ' + data.xeta);
+                document.getElementById('ocrZone').style.display = '';
+                return;
+            }
+
+            document.getElementById('ocrFileName').textContent = file.name;
+            document.getElementById('ocrResult').style.display = '';
+
+            var tmp = document.createElement('div');
+            tmp.innerHTML = data.isHtml ? data.text : '';
+            document.getElementById('senedMovzusu').value = data.isHtml ? tmp.innerText : data.text;
+            updateBtn();
+
+            showResult(data.text, data.isHtml, file.name.replace(/\.[^.]+$/, ''));
+            applyRtl(document.getElementById('hedafDil').value);
+
+        } catch (e) {
+            clearInterval(timer);
+            document.getElementById('ocrProgress').style.display = 'none';
+            document.getElementById('ocrZone').style.display = '';
+            alert('Şəbəkə xətası baş verdi.');
+        }
+    }
+
+    function clearOcr() {
+        document.getElementById('ocrFileInput').value = '';
+        document.getElementById('ocrResult').style.display   = 'none';
+        document.getElementById('ocrZone').style.display     = '';
+        document.getElementById('ocrPbarFill').style.width   = '0%';
+        document.getElementById('senedMovzusu').value = '';
+        document.getElementById('resultCard').style.display      = 'none';
+        document.getElementById('placeholderCard').style.display = '';
+        updateBtn();
+    }
+
     // ── Əsas sorğu ───────────────────────────────────────────────────────────
     async function startYarat() {
-        var senedNovuEl   = document.getElementById('senedNovu');
-        var senedNovu     = senedNovuEl.value === 'Xüsusi'
-                            ? document.getElementById('senedNovuCustom').value.trim()
-                            : senedNovuEl.value;
-        var musteriAd        = document.getElementById('musteriAd').value.trim();
-        var gecikmeGun       = parseInt(document.getElementById('gecikmeGun').value)  || 0;
-        var meble            = parseFloat(document.getElementById('meble').value)     || 0;
-        var elaveMelumat     = document.getElementById('elaveMelumat').value.trim();
         var senedMovzusu     = document.getElementById('senedMovzusu').value.trim();
         var tercumeEdilsinmi = document.getElementById('tercumeSwitch').checked;
         var hedafDil         = document.getElementById('hedafDil').value;
 
-        if (!senedNovu && !musteriAd && !senedMovzusu) {
-            alert('Sənəd parametrləri (növ + müştəri) VƏ ya sərbəst mövzu daxil edin.');
+        if (!senedMovzusu) {
+            alert('Sənəd təlimatı daxil edin və ya şəkil/PDF yükləyin.');
             return;
         }
 
         document.getElementById('resultCard').style.display      = 'none';
         document.getElementById('placeholderCard').style.display = 'none';
         document.getElementById('loadingCard').style.display     = '';
-        document.getElementById('loadingText').textContent       = tercumeEdilsinmi ? 'AI tərcümə edir...' : 'AI sənədi hazırlayır...';
+        document.getElementById('loadingText').textContent = tercumeEdilsinmi ? 'AI tərcümə edir...' : 'AI sənədi hazırlayır...';
         document.getElementById('yaratBtn').disabled = true;
 
         var params = new URLSearchParams({
-            senedNovu, musteriAd,
-            gecikmeGun: gecikmeGun.toString(),
-            meble: meble.toString(),
-            elaveMelumat, senedMovzusu,
+            serbestMovzu: senedMovzusu,
             tercumeEdilsinmi: tercumeEdilsinmi.toString(),
-            hedafDil
+            hedafDil: hedafDil
         });
 
         try {
             var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
-            var resp = await fetch('@Url.Action("SenedYaratPost", "SenedAi", new { area = "User" })', {
+            var resp  = await fetch('@Url.Action("SenedYaratPost", "SenedAi", new { area = "User" })', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -423,19 +334,18 @@
                 body: params.toString()
             });
             var data = await resp.json();
-
-            document.getElementById('loadingCard').style.display = 'none';
             document.getElementById('yaratBtn').disabled = false;
 
             if (!data.ok) {
                 alert('Xəta: ' + data.xeta);
+                document.getElementById('loadingCard').style.display     = 'none';
                 document.getElementById('placeholderCard').style.display = '';
                 return;
             }
 
             var title = tercumeEdilsinmi
                 ? ('Tercume_' + hedafDil.replace(' dili', '') + '_' + new Date().toISOString().slice(0, 10))
-                : (senedNovu || senedMovzusu.substring(0, 30)).replace(/\s+/g, '_');
+                : senedMovzusu.substring(0, 40).replace(/\s+/g, '_');
 
             showResult(data.content, data.isHtml, title);
             applyRtl(hedafDil);
@@ -448,7 +358,7 @@
         }
     }
 
-    // ── Köməkçi əməliyyatlar ──────────────────────────────────────────────────
+    // ── Köməkçi ──────────────────────────────────────────────────────────────
     function copyContent() {
         var text = currentIsHtml
             ? document.getElementById('generatedHtml').innerText
@@ -473,9 +383,9 @@
     }
 
     async function exportWord() {
-        var btn = document.getElementById('wordBtn');
-        btn.disabled = true;
+        var btn       = document.getElementById('wordBtn');
         var bankBlank = document.getElementById('bankBlankSwitch').checked;
+        btn.disabled  = true;
         btn.innerHTML = bankBlank
             ? '<i class="bi bi-hourglass-split"></i> Blank hazırlanır...'
             : '<i class="bi bi-hourglass-split"></i> Hazırlanır...';
@@ -510,7 +420,7 @@
     }
 
     function escHtml(s) {
-        return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 </script>
 }
