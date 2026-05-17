@@ -72,15 +72,15 @@
     <div class="gm-split-left">
 
     @* ── Filter paneli ── *@
-    <form method="get" id="filterForm" class="gm-filterbar">
+    <form method="get" id="filterForm" class="gm-split-filterbar">
 
-        @* Sıra 1: tam genişlikdə axtarış *@
-        <div class="gm-filterbar-row" style="flex-wrap:nowrap;gap:6px">
+        @* Axtarış — tam genişlik *@
+        <div class="gm-split-search-row">
             <div class="gm-search-wrap" style="flex:1;min-width:0">
                 <i class="bi bi-search gm-search-icon"></i>
                 <input type="text" name="q" value="@axtarisFilter"
-                       class="gm-search-input" style="width:100%"
-                       placeholder="Axtar…" autocomplete="off" />
+                       class="gm-search-input"
+                       placeholder="Mövzu, göndərən axtar…" autocomplete="off" />
                 @if (!string.IsNullOrWhiteSpace(axtarisFilter))
                 {
                     <a href="@Url.Action("Index")" class="gm-search-clear" title="Sıfırla">
@@ -88,64 +88,49 @@
                     </a>
                 }
             </div>
-
-            <select name="oxunmamis" class="gm-select" style="flex-shrink:0;width:auto" onchange="this.form.submit()">
-                <option value="">Hamısı</option>
-                <option value="true" selected="@(oxunmamisFilter == true)">Oxunmamış</option>
-            </select>
-
-            <button type="submit" class="gm-btn gm-btn-primary" style="flex-shrink:0;padding:0 12px">
+            <button type="submit" class="gm-btn gm-btn-primary gm-split-search-btn">
                 <i class="bi bi-search"></i>
             </button>
-
             @if (herhansiFilter)
             {
-                <a href="@Url.Action("Index")" class="gm-btn gm-btn-outline" style="white-space:nowrap">
-                    <i class="bi bi-x-circle"></i> Sıfırla
+                <a href="@Url.Action("Index")" class="gm-btn gm-btn-ghost gm-split-search-btn" title="Sıfırla">
+                    <i class="bi bi-x-lg"></i>
                 </a>
             }
         </div>
 
-        @* Sıra 2: əlavə filterlər *@
-        <div class="gm-filterbar-row gm-filterbar-extras">
+        @* Filterlər — bir sıra *@
+        <div class="gm-split-filter-row">
+            <select name="oxunmamis" class="gm-select gm-select--sm" onchange="this.form.submit()">
+                <option value="">Hamısı</option>
+                <option value="true" selected="@(oxunmamisFilter == true)">Oxunmamış</option>
+            </select>
+            <select name="tapshirildi" class="gm-select gm-select--sm">
+                <option value="">Tapşırma</option>
+                <option value="true"  selected="@(tapshirildiFlt == true)">Tapşırılıb</option>
+                <option value="false" selected="@(tapshirildiFlt == false)">Tapşırılmayıb</option>
+            </select>
+            <select name="deadline" class="gm-select gm-select--sm">
+                <option value="">Deadline</option>
+                <option value="var"     selected="@(deadlineFlt == "var")">Var</option>
+                <option value="kecib"   selected="@(deadlineFlt == "kecib")">Keçib</option>
+                <option value="buhefte" selected="@(deadlineFlt == "buhefte")">Bu həftə</option>
+            </select>
+            <label class="gm-checkbox-label" style="white-space:nowrap">
+                <input type="checkbox" name="qosmali" value="true"
+                       @(qosmaliFlt == true ? "checked" : "")
+                       onchange="this.form.submit()" />
+                <i class="bi bi-paperclip"></i>
+            </label>
+        </div>
 
-            <div class="gm-filter-chip-group">
-                <span class="gm-filter-chip-label"><i class="bi bi-calendar3"></i> Tarix</span>
-                <input type="date" name="tarixden" value="@tarixdenFilter"
-                       class="gm-input-date" title="Tarixdən" />
-                <span class="gm-filter-chip-sep">—</span>
-                <input type="date" name="tarixe" value="@tarixeFilter"
-                       class="gm-input-date" title="Tarixə" />
-            </div>
-
-            <div class="gm-filter-chip-group">
-                <span class="gm-filter-chip-label"><i class="bi bi-person-check"></i> Tapşırıldı</span>
-                <select name="tapshirildi" class="gm-select gm-select--sm">
-                    <option value="">Hamısı</option>
-                    <option value="true"  selected="@(tapshirildiFlt == true)">Tapşırılıb</option>
-                    <option value="false" selected="@(tapshirildiFlt == false)">Tapşırılmayıb</option>
-                </select>
-            </div>
-
-            <div class="gm-filter-chip-group">
-                <span class="gm-filter-chip-label"><i class="bi bi-alarm"></i> Deadline</span>
-                <select name="deadline" class="gm-select gm-select--sm">
-                    <option value="">Hamısı</option>
-                    <option value="var"     selected="@(deadlineFlt == "var")">Deadline var</option>
-                    <option value="kecib"   selected="@(deadlineFlt == "kecib")">Keçib</option>
-                    <option value="buhefte" selected="@(deadlineFlt == "buhefte")">Bu həftə</option>
-                </select>
-            </div>
-
-            <div class="gm-filter-chip-group">
-                <label class="gm-checkbox-label">
-                    <input type="checkbox" name="qosmali" value="true"
-                           @(qosmaliFlt == true ? "checked" : "")
-                           onchange="this.form.submit()" />
-                    <i class="bi bi-paperclip"></i> Qoşmalı
-                </label>
-            </div>
-
+        @* Tarix (yalnız filter aktivdirsə göstər) *@
+        <div class="gm-split-filter-row">
+            <input type="date" name="tarixden" value="@tarixdenFilter"
+                   class="gm-input-date" style="flex:1" title="Tarixdən" />
+            <span style="color:#94a3b8;font-size:.8rem">—</span>
+            <input type="date" name="tarixe" value="@tarixeFilter"
+                   class="gm-input-date" style="flex:1" title="Tarixə" />
         </div>
 
         @* Aktiv filter chips *@

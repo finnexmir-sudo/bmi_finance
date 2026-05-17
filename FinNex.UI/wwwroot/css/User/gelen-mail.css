@@ -1458,6 +1458,68 @@
     color: #94a3b8;
 }
 
+/* ── Split-pane filter bar ── */
+.gm-split-filterbar {
+    background: #fff;
+    border-bottom: 1px solid var(--gm-border);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+.gm-split-search-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.gm-split-search-row .gm-search-input {
+    width: 100%;
+    font-size: .82rem;
+}
+
+.gm-split-search-row .gm-search-wrap {
+    flex: 1;
+    min-width: 0;
+}
+
+.gm-split-search-btn {
+    padding: 7px 10px;
+    flex-shrink: 0;
+}
+
+.gm-split-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+
+.gm-split-filter-row .gm-select--sm {
+    flex: 1;
+    min-width: 0;
+    padding: 5px 4px;
+    font-size: .75rem;
+}
+
+.gm-split-filter-row .gm-input-date {
+    flex: 1;
+    min-width: 0;
+    padding: 5px 4px;
+    font-size: .75rem;
+    width: 100%;
+}
+
+.gm-split-filterbar .gm-active-chips {
+    border-top: 1px solid #f0f2f5;
+    padding-top: 6px;
+    margin-top: 0;
+}
+
 @media (max-width: 992px) {
     .gm-split-body {
         flex-direction: column;
