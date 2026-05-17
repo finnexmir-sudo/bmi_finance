@@ -1252,16 +1252,49 @@
 
 .gm-split-body {
     display: flex;
-    height: calc(100vh - 120px);
+    flex-direction: row;
+    height: calc(100vh - 116px);
     gap: 0;
+    overflow: hidden;
 }
 
 .gm-split-left {
-    width: 380px;
-    min-width: 300px;
+    width: 420px;
+    min-width: 280px;
     overflow-y: auto;
+    overflow-x: hidden;
     border-right: 1px solid var(--gm-border);
     flex-shrink: 0;
+}
+
+.gm-split-left .gm-filterbar {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    margin-bottom: 0;
+}
+
+.gm-split-left .gm-filterbar-row {
+    flex-wrap: wrap;
+}
+
+.gm-split-left .gm-search-wrap {
+    max-width: none !important;
+    flex: 1 1 100%;
+}
+
+.gm-split-left .gm-search-input {
+    width: 100% !important;
+}
+
+.gm-split-left .gm-filterbar-extras {
+    gap: 8px;
+}
+
+.gm-split-left .gm-select {
+    flex: 1;
+    min-width: 80px;
 }
 
 .gm-split-right {
