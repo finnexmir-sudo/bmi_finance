@@ -138,6 +138,17 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- Bank blank seçimi -->
+                <div class="sa-bank-blank-row">
+                    <label class="sa-bank-blank-label">
+                        <input type="checkbox" id="bankBlankSwitch" class="sa-bank-blank-check">
+                        <i class="bi bi-building"></i>
+                        Rəsmi Bank Blankında Endir
+                    </label>
+                    <span class="sa-bank-blank-hint">Bank Melli İran — rəsmi sənəd blankı</span>
+                </div>
+
                 <pre id="generatedContent" class="sa-generated-text"></pre>
                 <div id="generatedHtml" class="sa-generated-html" style="display:none"></div>
             </div>
@@ -322,13 +333,17 @@
     async function exportWord() {
         var btn = document.getElementById('wordBtn');
         btn.disabled = true;
-        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Hazırlanır...';
+        var bankBlank = document.getElementById('bankBlankSwitch').checked;
+        btn.innerHTML = bankBlank
+            ? '<i class="bi bi-hourglass-split"></i> Blank hazırlanır...'
+            : '<i class="bi bi-hourglass-split"></i> Hazırlanır...';
         try {
             var token  = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
             var params = new URLSearchParams({
                 content: currentContent,
                 isHtml: currentIsHtml.toString(),
-                docTitle: currentTitle
+                docTitle: currentTitle,
+                istifadeEdilsinmiBankBlank: bankBlank.toString()
             });
             var resp = await fetch('@Url.Action("ExportToWord", "SenedAi", new { area = "User" })', {
                 method: 'POST',
