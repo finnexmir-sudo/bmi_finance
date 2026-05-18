@@ -99,8 +99,8 @@ public class GozlenilenXercController : Controller
             Qeyd            = dto.Qeyd?.Trim()
         };
 
-        await _unitOfWork.Repository<GozlenilenXerc>().AddAsync(gx);
-        await _unitOfWork.SaveAsync();
+        await _unitOfWork.Repository<GozlenilenXerc>().YaratAsync(gx);
+        await _unitOfWork.YaddaSaxlaAsync();
         return Json(new { ok = true, id = gx.Id });
     }
 
@@ -124,7 +124,7 @@ public class GozlenilenXercController : Controller
         gx.Prioritet       = (GozlenilenXercPrioritet)dto.PrioritetId;
         gx.Qeyd            = dto.Qeyd?.Trim();
 
-        await _unitOfWork.SaveAsync();
+        await _unitOfWork.YaddaSaxlaAsync();
         return Json(new { ok = true });
     }
 
@@ -150,12 +150,12 @@ public class GozlenilenXercController : Controller
             XercTarixi    = dto.OdenisTarixi != default ? dto.OdenisTarixi : DateTime.Now,
             Status        = XercStatus.Odenildi
         };
-        await _unitOfWork.Repository<Xerc>().AddAsync(xerc);
-        await _unitOfWork.SaveAsync();
+        await _unitOfWork.Repository<Xerc>().YaratAsync(xerc);
+        await _unitOfWork.YaddaSaxlaAsync();
 
         gx.Status = GozlenilenXercStatus.Reallashdi;
         gx.XercId = xerc.Id;
-        await _unitOfWork.SaveAsync();
+        await _unitOfWork.YaddaSaxlaAsync();
 
         return Json(new { ok = true, xercId = xerc.Id });
     }
@@ -170,7 +170,7 @@ public class GozlenilenXercController : Controller
 
         if (gx == null) return Json(new { ok = false });
         gx.Status = GozlenilenXercStatus.LegvEdildi;
-        await _unitOfWork.SaveAsync();
+        await _unitOfWork.YaddaSaxlaAsync();
         return Json(new { ok = true });
     }
 
@@ -184,7 +184,7 @@ public class GozlenilenXercController : Controller
         if (gx == null) return Json(new { ok = false });
         gx.Silinib       = true;
         gx.SilinmeTarixi = DateTime.Now;
-        await _unitOfWork.SaveAsync();
+        await _unitOfWork.YaddaSaxlaAsync();
         return Json(new { ok = true });
     }
 
