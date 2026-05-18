@@ -326,24 +326,35 @@
                         }
                         <span class="fn-mail-badge" data-badge-url="@gmBadgeUrl" style="display:none"></span>
                     </a>
-                    <div class="fn-nav-label">AI Modulları</div>
-                    <a asp-area="User" asp-controller="SenedAi" asp-action="RiskAnaliz"
-                       class="fn-nav-item @(currentController == "SenedAi" && currentAction == "RiskAnaliz" ? "active" : "")">
-                        <i class="bi bi-shield-exclamation"></i> Sənəd Risk Analizi
-                    </a>
-                    <a asp-area="User" asp-controller="SenedAi" asp-action="SenedYarat"
-                       class="fn-nav-item @konstrAktiv">
-                        <i class="bi bi-file-earmark-text"></i> Sənəd Konstruktoru
-                    </a>
-                    <a asp-area="User" asp-controller="HRMeslehetci" asp-action="Index"
-                       class="fn-nav-item @hrMeslehetciAktiv">
-                        <i class="bi bi-scales"></i> HR Məsləhətçi
-                    </a>
-                    <a asp-area="User" asp-controller="SenedAi" asp-action="SenedYarat" asp-route-module="kredit"
-                       class="fn-nav-item @kreditAktiv">
-                        <i class="bi bi-graph-up-arrow"></i> Kredit Komitəsi
-                        <span class="fn-nav-plan-badge">Planda</span>
-                    </a>
+                    @{
+                        var aiRiskAktiv = currentController == "SenedAi" && currentAction == "RiskAnaliz";
+                        var aiAnyActive = aiRiskAktiv || !string.IsNullOrEmpty(konstrAktiv) || !string.IsNullOrEmpty(hrMeslehetciAktiv) || !string.IsNullOrEmpty(kreditAktiv);
+                    }
+                    <div class="fn-nav-g @(aiAnyActive ? "open" : "")">
+                        <button type="button" class="fn-nav-g-head">
+                            <span>AI Modulları</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="fn-nav-g-body">
+                            <a asp-area="User" asp-controller="SenedAi" asp-action="RiskAnaliz"
+                               class="fn-nav-item @(aiRiskAktiv ? "active" : "")">
+                                <i class="bi bi-shield-exclamation"></i> Sənəd Risk Analizi
+                            </a>
+                            <a asp-area="User" asp-controller="SenedAi" asp-action="SenedYarat"
+                               class="fn-nav-item @konstrAktiv">
+                                <i class="bi bi-file-earmark-text"></i> Sənəd Konstruktoru
+                            </a>
+                            <a asp-area="User" asp-controller="HRMeslehetci" asp-action="Index"
+                               class="fn-nav-item @hrMeslehetciAktiv">
+                                <i class="bi bi-scales"></i> HR Məsləhətçi
+                            </a>
+                            <a asp-area="User" asp-controller="SenedAi" asp-action="SenedYarat" asp-route-module="kredit"
+                               class="fn-nav-item @kreditAktiv">
+                                <i class="bi bi-graph-up-arrow"></i> Kredit Komitəsi
+                                <span class="fn-nav-plan-badge">Planda</span>
+                            </a>
+                        </div>
+                    </div>
                 }
                 @if (isHR)
                 {
