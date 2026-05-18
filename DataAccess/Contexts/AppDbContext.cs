@@ -121,6 +121,8 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     // Büdcə
     public DbSet<Budce> Budceler { get; set; }
     public DbSet<SirketBudcesi> SirketBudceleri { get; set; }
+    public DbSet<DovriOdenis> DovriOdenisler { get; set; }
+    public DbSet<GozlenilenXerc> GozlenilenXercler { get; set; }
     public DbSet<IsParametri> IsParametrler { get; set; }
 
     // Elan
@@ -961,6 +963,46 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasIndex(x => x.Il).IsUnique();
         builder.Entity<SirketBudcesi>()
             .Property(x => x.Mebleg).HasPrecision(18, 2);
+
+        // ── Dövri Ödənişlər ───────────────────────────────────
+        builder.Entity<DovriOdenis>()
+            .HasOne(x => x.Kateqoriya)
+            .WithMany()
+            .HasForeignKey(x => x.KateqoriyaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<DovriOdenis>()
+            .HasOne(x => x.Departament)
+            .WithMany()
+            .HasForeignKey(x => x.DepartamentId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<DovriOdenis>()
+            .Property(x => x.Mebleg).HasPrecision(18, 2);
+
+        // ── Gözlənilən Xərclər ────────────────────────────────
+        builder.Entity<GozlenilenXerc>()
+            .HasOne(x => x.Kateqoriya)
+            .WithMany()
+            .HasForeignKey(x => x.KateqoriyaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<GozlenilenXerc>()
+            .HasOne(x => x.Departament)
+            .WithMany()
+            .HasForeignKey(x => x.DepartamentId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<GozlenilenXerc>()
+            .HasOne(x => x.Xerc)
+            .WithMany()
+            .HasForeignKey(x => x.XercId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<GozlenilenXerc>()
+            .Property(x => x.TəxminiMebleg).HasPrecision(18, 2);
 
         builder.Entity<IsParametri>()
             .ToTable("IsParametrleri");
