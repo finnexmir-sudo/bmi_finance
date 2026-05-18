@@ -54,11 +54,18 @@ public class HRMeslehetciController : Controller
             .Select(f => new { f.Id, f.Ad, f.Kateqoriya })
             .ToListAsync();
 
-        ViewBag.Sohbetler   = sohbetler;
-        ViewBag.AktivSohbetId = 0;
-        ViewBag.Mesajlar    = new List<HRSohbetMesaj>();
-        ViewBag.QanunFayllar = qanunFayllar;
-        ViewBag.IsAdmin     = User.IsInRole(RoleNames.Admin);
+        var movcudKateqoriyalar = qanunFayllar
+            .Select(f => (string)f.Kateqoriya)
+            .Distinct()
+            .OrderBy(k => k)
+            .ToList();
+
+        ViewBag.Sohbetler          = sohbetler;
+        ViewBag.AktivSohbetId      = 0;
+        ViewBag.Mesajlar           = new List<HRSohbetMesaj>();
+        ViewBag.QanunFayllar       = qanunFayllar;
+        ViewBag.MovcudKateqoriyalar = movcudKateqoriyalar;
+        ViewBag.IsAdmin            = User.IsInRole(RoleNames.Admin);
 
         if (sohbetId.HasValue && sohbetId > 0)
         {
@@ -127,7 +134,13 @@ public class HRMeslehetciController : Controller
 
         if (fayllarVar)
         {
-            kateqoriya = await _ai.KateqoriyaTapAsync(dto.Sual.Trim());
+            var kateqoriyaSiyahi = await _db.HRQanunFayllar
+                .Where(f => !f.Silinib)
+                .Select(f => f.Kateqoriya)
+                .Distinct()
+                .ToListAsync();
+
+            kateqoriya = await _ai.KateqoriyaTapAsync(dto.Sual.Trim(), kateqoriyaSiyahi);
 
             // ── Mərhələ 2: Faylları DB-dən çək ───────────────────────────────
             List<HRQanunFayl> fayllar;
@@ -206,9 +219,8 @@ public class HRMeslehetciController : Controller
         if (string.IsNullOrWhiteSpace(ad))
             return Json(new { ok = false, xeta = "Faylın adı daxil edilməyib." });
 
-        if (string.IsNullOrWhiteSpace(kateqoriya) ||
-            !new[] { "emek", "vergi", "dsmf", "itss" }.Contains(kateqoriya))
-            return Json(new { ok = false, xeta = "Kateqoriya düzgün seçilməyib." });
+        if (string.IsNullOrWhiteSpace(kateqoriya) || kateqoriya.Length > 60)
+            return Json(new { ok = false, xeta = "Kateqoriya adı boş və ya həddən uzun ola bilməz." });
 
         var ext = Path.GetExtension(fayl.FileName).ToLowerInvariant();
         if (!IcazaliFaylTipləri.Contains(ext))
