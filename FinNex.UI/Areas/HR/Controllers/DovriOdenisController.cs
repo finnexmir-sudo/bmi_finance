@@ -1,4 +1,3 @@
-using ClosedXML.Excel;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.Structure;
@@ -99,8 +98,8 @@ public class DovriOdenisController : Controller
             Qeyd                = dto.Qeyd?.Trim()
         };
 
-        await _unitOfWork.Repository<DovriOdenis>().AddAsync(ode);
-        await _unitOfWork.SaveAsync();
+        await _unitOfWork.Repository<DovriOdenis>().YaratAsync(ode);
+        await _unitOfWork.YaddaSaxlaAsync();
 
         return Json(new { ok = true, id = ode.Id });
     }
@@ -127,7 +126,7 @@ public class DovriOdenisController : Controller
         ode.Aktiv         = dto.Aktiv;
         ode.Qeyd          = dto.Qeyd?.Trim();
 
-        await _unitOfWork.SaveAsync();
+        await _unitOfWork.YaddaSaxlaAsync();
         return Json(new { ok = true });
     }
 
@@ -152,7 +151,7 @@ public class DovriOdenisController : Controller
             XercTarixi    = DateTime.Now,
             Status        = XercStatus.Odenildi
         };
-        await _unitOfWork.Repository<Xerc>().AddAsync(xerc);
+        await _unitOfWork.Repository<Xerc>().YaratAsync(xerc);
 
         // Növbəti tarixi irəli çək
         ode.NovbatiOdenisTarixi = NovbatiTarixHesabla(ode.NovbatiOdenisTarixi, ode.Dovruluq);
@@ -161,7 +160,7 @@ public class DovriOdenisController : Controller
         if (ode.BitmeTarixi.HasValue && ode.NovbatiOdenisTarixi > ode.BitmeTarixi.Value)
             ode.Aktiv = false;
 
-        await _unitOfWork.SaveAsync();
+        await _unitOfWork.YaddaSaxlaAsync();
         return Json(new { ok = true, xercId = xerc.Id });
     }
 
@@ -174,7 +173,7 @@ public class DovriOdenisController : Controller
 
         if (ode == null) return Json(new { ok = false });
         ode.Aktiv = dto.Aktiv;
-        await _unitOfWork.SaveAsync();
+        await _unitOfWork.YaddaSaxlaAsync();
         return Json(new { ok = true });
     }
 
@@ -188,7 +187,7 @@ public class DovriOdenisController : Controller
         if (ode == null) return Json(new { ok = false });
         ode.Silinib       = true;
         ode.SilinmeTarixi = DateTime.Now;
-        await _unitOfWork.SaveAsync();
+        await _unitOfWork.YaddaSaxlaAsync();
         return Json(new { ok = true });
     }
 
