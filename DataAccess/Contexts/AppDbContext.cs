@@ -157,6 +157,8 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     // =====================
     public DbSet<SenedAnaliz> SenedAnalizler { get; set; }
     public DbSet<SenedKonstruktor> SenedKonstruktorlar { get; set; }
+    public DbSet<HRSohbet> HRSohbetler { get; set; }
+    public DbSet<HRSohbetMesaj> HRSohbetMesajlar { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -1279,6 +1281,24 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.Property(x => x.GeneratedContent).HasColumnType("nvarchar(max)");
             e.HasOne(x => x.AppUser).WithMany().HasForeignKey(x => x.AppUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<HRSohbet>(e =>
+        {
+            e.ToTable("HRSohbetler");
+            e.HasKey(x => x.Id);
+            e.HasOne(x => x.AppUser).WithMany().HasForeignKey(x => x.AppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasMany(x => x.Mesajlar).WithOne(m => m.Sohbet).HasForeignKey(m => m.SohbetId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<HRSohbetMesaj>(e =>
+        {
+            e.ToTable("HRSohbetMesajlar");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Metn).HasColumnType("nvarchar(max)");
+            e.Property(x => x.Rol).HasMaxLength(20);
         });
 
     }
