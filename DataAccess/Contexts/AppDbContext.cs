@@ -159,6 +159,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<SenedKonstruktor> SenedKonstruktorlar { get; set; }
     public DbSet<HRSohbet> HRSohbetler { get; set; }
     public DbSet<HRSohbetMesaj> HRSohbetMesajlar { get; set; }
+    public DbSet<HRQanunFayl> HRQanunFayllar { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -1299,6 +1300,16 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.HasKey(x => x.Id);
             e.Property(x => x.Metn).HasColumnType("nvarchar(max)");
             e.Property(x => x.Rol).HasMaxLength(20);
+        });
+
+        builder.Entity<HRQanunFayl>(e =>
+        {
+            e.ToTable("HRQanunFayllar");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Ad).HasMaxLength(300);
+            e.Property(x => x.Kateqoriya).HasMaxLength(50);
+            e.Property(x => x.FaylYolu).HasMaxLength(500);
+            e.Property(x => x.MetnContent).HasColumnType("nvarchar(max)");
         });
 
     }
