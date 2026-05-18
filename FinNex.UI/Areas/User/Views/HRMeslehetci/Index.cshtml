@@ -5,9 +5,10 @@
 
     var sohbetler    = ViewBag.Sohbetler    as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
     var mesajlar     = ViewBag.Mesajlar     as List<HRSohbetMesaj>  ?? new List<HRSohbetMesaj>();
-    var qanunFayllar = ViewBag.QanunFayllar as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
-    var aktivId      = (int)(ViewBag.AktivSohbetId ?? 0);
-    var isAdmin      = (bool)(ViewBag.IsAdmin ?? false);
+    var qanunFayllar        = ViewBag.QanunFayllar       as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var movcudKateqoriyalar = ViewBag.MovcudKateqoriyalar as List<string>         ?? new List<string>();
+    var aktivId             = (int)(ViewBag.AktivSohbetId ?? 0);
+    var isAdmin             = (bool)(ViewBag.IsAdmin ?? false);
 }
 
 <style>
@@ -41,6 +42,7 @@
 .badge-vergi{background:#fef3c7;color:#92400e}
 .badge-dsmf{background:#d1fae5;color:#065f46}
 .badge-itss{background:#ede9fe;color:#5b21b6}
+.badge-other{background:#f3f4f6;color:#374151}
 .btn-fayl-sil{background:none;border:none;color:#d1d5db;cursor:pointer;padding:2px 4px;border-radius:4px;font-size:12px}
 .btn-fayl-sil:hover{color:#ef4444;background:#fee2e2}
 
@@ -161,8 +163,9 @@
       @foreach (var f in qanunFayllar)
       {
           string kat = (string)f.Kateqoriya;
+          string badgeCss = kat is "emek" or "vergi" or "dsmf" or "itss" ? $"badge-{kat}" : "badge-other";
           <div class="hrm-fayl-item">
-            <span class="hrm-fayl-badge badge-@kat">@kat</span>
+            <span class="hrm-fayl-badge @badgeCss">@kat</span>
             <span style="flex:1;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@f.Ad">@f.Ad</span>
             @if (isAdmin)
             {
@@ -187,13 +190,18 @@
           <h4><i class="bi bi-cloud-arrow-up"></i> Fayl Əlavə Et</h4>
           <div class="hrm-form-row">
             <input type="text" id="faylAd" class="fn-input-sm" placeholder="Faylın adı (məs: Əmək Məcəlləsi 2026)" />
-            <select id="faylKat" class="fn-select-sm">
-              <option value="">— Kateqoriya seçin —</option>
+            <input type="text" id="faylKat" class="fn-input-sm" list="katSuggest"
+                   placeholder="Kateqoriya (mövcud seçin və ya yeni yazın)" autocomplete="off" />
+            <datalist id="katSuggest">
               <option value="emek">Əmək Qanunvericiliyi</option>
               <option value="vergi">Vergi Məcəlləsi</option>
               <option value="dsmf">DSMF Qaydaları</option>
               <option value="itss">İTSS / İşsizlik</option>
-            </select>
+              @foreach (var k in movcudKateqoriyalar)
+              {
+                  <option value="@k">@k</option>
+              }
+            </datalist>
             <input type="file" id="faylInput" accept=".pdf,.doc,.docx" class="fn-input-sm" style="padding:4px" />
             <button class="btn-yukle" id="btnYukle" onclick="faylYukle()">
               <i class="bi bi-upload"></i> Yüklə və Mətni Çıxar

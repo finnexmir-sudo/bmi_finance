@@ -55,16 +55,13 @@ Qayda 1: İstinad etdiyin hər qanun maddəsini **qalın** formatda yaz (məs: *
 Qayda 2: Sual kateqoriya xaricindədirsə, bunu bildir.
 Qayda 3: Cavab Azərbaycan dilində olmalıdır.";
 
-    // ── Kateqoriya təyini üçün prompt ────────────────────────────────────────
-    private const string KateqoriyaPrompt = @"Aşağıdakı sual hansı Azərbaycan qanun kateqoriyasına aiddir?
-Yalnız bu sözlərdən BİRİNİ qaytar (başqa heç nə yazma):
-emek
-vergi
-dsmf
-itss
+    // ── Kateqoriya təyini üçün prompt şablonu ────────────────────────────────
+    private const string KateqoriyaPromptTemplate = @"Aşağıdakı sual hansı qanun kateqoriyasına aiddir?
+Yalnız bu siyahıdan BİRİNİ qaytar (başqa heç nə yazma):
+{0}
 hamisi
 
-Sual: {0}";
+Sual: {1}";
 
     public HRMeslehetciService(IHttpClientFactory httpClientFactory, IConfiguration config)
     {
@@ -73,19 +70,22 @@ Sual: {0}";
     }
 
     // ── Mərhələ 1: Kateqoriya təyini ─────────────────────────────────────────
-    public async Task<string> KateqoriyaTapAsync(string sual)
+    public async Task<string> KateqoriyaTapAsync(string sual, List<string> movcudKateqoriyalar)
     {
-        if (string.IsNullOrWhiteSpace(_apiKey)) return "hamisi";
+        if (string.IsNullOrWhiteSpace(_apiKey) || movcudKateqoriyalar.Count == 0)
+            return "hamisi";
+
+        var katSiyahi = string.Join("\n", movcudKateqoriyalar.Select(k => k.ToLowerInvariant().Trim()));
+        var prompt = string.Format(KateqoriyaPromptTemplate, katSiyahi, sual);
 
         var raw = await CallApiAsync(
-            systemPrompt: "Yalnız verilmiş sözlərdən birini qaytar. Heç bir izahat yazma.",
-            userMessage: string.Format(KateqoriyaPrompt, sual),
-            maxTokens: 10);
+            systemPrompt: "Yalnız verilmiş siyahıdan bir söz qaytar. Heç bir izahat yazma.",
+            userMessage: prompt,
+            maxTokens: 20);
 
         var result = (raw ?? "hamisi").Trim().ToLowerInvariant();
-        return result is "emek" or "vergi" or "dsmf" or "itss" or "hamisi"
-            ? result
-            : "hamisi";
+        var gecerli = movcudKateqoriyalar.Select(k => k.ToLowerInvariant().Trim()).ToHashSet();
+        return gecerli.Contains(result) ? result : "hamisi";
     }
 
     // ── Mərhələ 2: Kontekstual cavab ─────────────────────────────────────────

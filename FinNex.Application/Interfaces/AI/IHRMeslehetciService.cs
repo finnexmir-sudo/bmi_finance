@@ -6,9 +6,9 @@ public interface IHRMeslehetciService
 {
     /// <summary>
     /// Mərhələ 1: Sualın hansı qanun kateqoriyasına aid olduğunu təyin edir.
-    /// Qaytarır: "emek" | "vergi" | "dsmf" | "itss" | "hamisi"
+    /// movcudKateqoriyalar boşdursa "hamisi" qaytarır.
     /// </summary>
-    Task<string> KateqoriyaTapAsync(string sual);
+    Task<string> KateqoriyaTapAsync(string sual, List<string> movcudKateqoriyalar);
 
     /// <summary>
     /// Mərhələ 2: Sualı cavablandırır. Qanun konteksti varsa onu əsas götürür.
