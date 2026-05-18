@@ -86,6 +86,8 @@
     var hrAktiv     = isSYarat && aiModule == "hr"     ? "active" : "";
     var kreditAktiv = isSYarat && aiModule == "kredit" ? "active" : "";
     var hrMeslehetciAktiv = currentController == "HRMeslehetci" ? "active" : "";
+    var aiRiskAktiv  = currentController == "SenedAi" && currentAction == "RiskAnaliz";
+    var aiAnyActive  = aiRiskAktiv || !string.IsNullOrEmpty(konstrAktiv) || !string.IsNullOrEmpty(hrMeslehetciAktiv) || !string.IsNullOrEmpty(kreditAktiv);
 }
 
 <!DOCTYPE html>
@@ -326,10 +328,6 @@
                         }
                         <span class="fn-mail-badge" data-badge-url="@gmBadgeUrl" style="display:none"></span>
                     </a>
-                    @{
-                        var aiRiskAktiv = currentController == "SenedAi" && currentAction == "RiskAnaliz";
-                        var aiAnyActive = aiRiskAktiv || !string.IsNullOrEmpty(konstrAktiv) || !string.IsNullOrEmpty(hrMeslehetciAktiv) || !string.IsNullOrEmpty(kreditAktiv);
-                    }
                     <div class="fn-nav-g @(aiAnyActive ? "open" : "")">
                         <button type="button" class="fn-nav-g-head">
                             <span>AI Modulları</span>
