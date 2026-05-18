@@ -85,6 +85,7 @@
     var konstrAktiv = isSYarat && aiModule != "hr" && aiModule != "kredit" ? "active" : "";
     var hrAktiv     = isSYarat && aiModule == "hr"     ? "active" : "";
     var kreditAktiv = isSYarat && aiModule == "kredit" ? "active" : "";
+    var hrMeslehetciAktiv = currentController == "HRMeslehetci" ? "active" : "";
 }
 
 <!DOCTYPE html>
@@ -334,10 +335,9 @@
                        class="fn-nav-item @konstrAktiv">
                         <i class="bi bi-file-earmark-text"></i> Sənəd Konstruktoru
                     </a>
-                    <a asp-area="User" asp-controller="SenedAi" asp-action="SenedYarat" asp-route-module="hr"
-                       class="fn-nav-item @hrAktiv">
-                        <i class="bi bi-people-fill"></i> HR Assistanı
-                        <span class="fn-nav-plan-badge">Planda</span>
+                    <a asp-area="User" asp-controller="HRMeslehetci" asp-action="Index"
+                       class="fn-nav-item @hrMeslehetciAktiv">
+                        <i class="bi bi-scales"></i> HR Məsləhətçi
                     </a>
                     <a asp-area="User" asp-controller="SenedAi" asp-action="SenedYarat" asp-route-module="kredit"
                        class="fn-nav-item @kreditAktiv">
