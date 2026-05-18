@@ -300,7 +300,7 @@
                    class="fn-nav-item @(currentController == "Dashboard" && currentArea == "User" ? "active" : "")">
                     <i class="bi bi-grid"></i> Dashboard
                 </a>
-                @if (isRehberRol)
+                @if (isRehberRol || isAdmin)
                 {
                     <a asp-area="HR" asp-controller="RehberDashboard" asp-action="Index"
                        class="fn-nav-item @(currentController == "RehberDashboard" && currentAction == "Index" ? "active" : "")">
