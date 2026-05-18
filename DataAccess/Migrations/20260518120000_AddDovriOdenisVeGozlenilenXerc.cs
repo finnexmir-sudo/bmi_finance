@@ -47,7 +47,7 @@ BEGIN
         [Tesvir]            NVARCHAR(1000) NULL,
         [KateqoriyaId]      INT            NOT NULL,
         [DepartamentId]     INT            NULL,
-        [TəxminiMebleg]     DECIMAL(18,2)  NOT NULL DEFAULT 0,
+        [TahminiMebleg]     DECIMAL(18,2)  NOT NULL DEFAULT 0,
         [GozlenilenTarix]   DATETIME2      NOT NULL,
         [Prioritet]         INT            NOT NULL DEFAULT 2,
         [Status]            INT            NOT NULL DEFAULT 0,

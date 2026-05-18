@@ -231,7 +231,7 @@ function render() {
             </td>
             <td>${x.departament}</td>
             <td><i class="bi ${x.kateqoriyaIkon}" style="margin-right:4px;"></i>${x.kateqoriya}</td>
-            <td><strong>${x.təxminiMebleg.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</strong></td>
+            <td><strong>${x.tahminiMebleg.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</strong></td>
             <td class="${tCls}">${x.gecmis ? '⚠️ ' : x.yaxinda ? '🔔 ' : ''}${x.gozlenilenTarix}</td>
             <td><span class="gx-badge ${pCls}">${x.prioritet}</span></td>
             <td><span class="gx-badge ${sCls}">${x.status}</span></td>
@@ -242,7 +242,7 @@ function render() {
 
 function renderSummary() {
     const aktiv  = allData.filter(x => x.statusId === 0);
-    const cemi   = aktiv.reduce((s, x) => s + x.təxminiMebleg, 0);
+    const cemi   = aktiv.reduce((s, x) => s + x.tahminiMebleg, 0);
     const kecmis = aktiv.filter(x => x.kecmis).length;
     const real   = allData.filter(x => x.statusId === 1).length;
     document.getElementById('summaryRow').innerHTML = `
@@ -292,7 +292,7 @@ function redakte(x) {
     document.getElementById('gxTesvir').value = x.tesvir || '';
     document.getElementById('gxKat').value = x.kateqoriyaId;
     document.getElementById('gxDept').value = x.departamentId || 0;
-    document.getElementById('gxMebleg').value = x.təxminiMebleg;
+    document.getElementById('gxMebleg').value = x.tahminiMebleg;
     const tp = x.gozlenilenTarix.split('.').reverse().join('-');
     document.getElementById('gxTarix').value = tp;
     document.getElementById('gxPrioritet').value = x.prioritetId;
@@ -310,12 +310,12 @@ async function saxla() {
         tesvir:          document.getElementById('gxTesvir').value.trim(),
         kateqoriyaId:    parseInt(document.getElementById('gxKat').value),
         departamentId:   parseInt(document.getElementById('gxDept').value) || null,
-        təxminiMebleg:   parseFloat(document.getElementById('gxMebleg').value),
+        tahminiMebleg:   parseFloat(document.getElementById('gxMebleg').value),
         gozlenilenTarix: document.getElementById('gxTarix').value,
         prioritetId:     parseInt(document.getElementById('gxPrioritet').value),
         qeyd:            document.getElementById('gxQeyd').value.trim()
     };
-    if (!dto.ad || !dto.kateqoriyaId || !dto.təxminiMebleg || !dto.gozlenilenTarix) {
+    if (!dto.ad || !dto.kateqoriyaId || !dto.tahminiMebleg || !dto.gozlenilenTarix) {
         alert('Zəhmət olmasa məcburi sahələri doldurun.'); return;
     }
     const url = id ? '/HR/GozlenilenXerc/Yenile' : '/HR/GozlenilenXerc/Yarat';
