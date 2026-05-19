@@ -42,7 +42,10 @@ public class GozlenilenXercController : Controller
             .Query().Where(x => !x.Silinib);
 
         if (status.HasValue)
-            q = q.Where(x => (int)x.Status == status.Value);
+        {
+            var s = (GozlenilenXercStatus)status.Value;
+            q = q.Where(x => x.Status == s);
+        }
 
         if (deptId.HasValue)
             q = q.Where(x => x.DepartamentId == deptId);
