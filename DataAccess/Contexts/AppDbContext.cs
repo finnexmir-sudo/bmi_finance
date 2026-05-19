@@ -123,6 +123,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<SirketBudcesi> SirketBudceleri { get; set; }
     public DbSet<DovriOdenis> DovriOdenisler { get; set; }
     public DbSet<GozlenilenXerc> GozlenilenXercler { get; set; }
+    public DbSet<SistemAyar> SistemAyarlari { get; set; }
     public DbSet<IsParametri> IsParametrler { get; set; }
 
     // Elan
