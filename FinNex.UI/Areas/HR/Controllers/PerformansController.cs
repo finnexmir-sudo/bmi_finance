@@ -177,44 +177,86 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         // ── Toplu Kampaniya ─────────────────────────────────────
         [HttpGet]
-        public async Task<IActionResult> BulkKampaniya()
+        public async Task<IActionResult> BulkKampaniya(int? tipi)
         {
-            await YaratmaFormSiyahilariDoldur();
-            var isciler = await _unitOfWork.Repository<Isci>()
-                .Query().Where(x => x.Status == IsciStatus.Aktiv && !x.Silinib)
-                .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null))
-                    .ThenInclude(t => t.Departament)
-                .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null))
-                    .ThenInclude(t => t.Vezife)
-                .OrderBy(x => x.Soyad).ThenBy(x => x.Ad)
-                .ToListAsync();
+            if (!tipi.HasValue)
+                return View("BulkKampaniyaTipi");
 
-            // Hər işçi üçün şöbə rəisini tap
+            var kampaniyaTipi = (KampaniyaTipi)tipi.Value;
+
             var strukturRollar = await _unitOfWork.Repository<IsciStrukturRolu>()
-                .Query().Where(x => x.Aktivdir && !x.Silinib
-                    && (x.RolTipi == StrukturRolTipi.SobeReisi || x.RolTipi == StrukturRolTipi.Rehber))
+                .Query().Where(x => x.Aktivdir && !x.Silinib)
                 .Include(x => x.Isci)
                 .ToListAsync();
+
+            // Yalnız Rəhbər rolundakılar (Rəhbər 1 / Rəhbər 2 üçün)
+            var rehberler = strukturRollar
+                .Where(r => r.RolTipi == StrukturRolTipi.Rehber)
+                .Select(r => new SelectListItem($"{r.Isci.Soyad} {r.Isci.Ad}", r.IsciId.ToString()))
+                .DistinctBy(x => x.Value)
+                .ToList();
+            ViewBag.Rehberler = rehberler;
+
+            // Şöbə Rəisi siyahısı (inline seçim üçün)
+            var sobeReisiRollar = strukturRollar
+                .Where(r => r.RolTipi == StrukturRolTipi.SobeReisi)
+                .ToList();
+            var sobeReisiIds = sobeReisiRollar.Select(r => r.IsciId).ToHashSet();
+            ViewBag.SobeReisleri = sobeReisiRollar
+                .Select(r => new SelectListItem($"{r.Isci.Soyad} {r.Isci.Ad}", r.IsciId.ToString()))
+                .DistinctBy(x => x.Value)
+                .ToList();
+
+            // İl siyahısı
+            ViewBag.Iller = Enumerable.Range(DateTime.Now.Year - 1, 3)
+                .Select(x => new SelectListItem(x.ToString(), x.ToString(), x == DateTime.Now.Year)).ToList();
+
+            // İşçi siyahısı — tipə görə filtrlə
+            IEnumerable<Isci> isciler;
+            if (kampaniyaTipi == KampaniyaTipi.SobeReisiQiymetlendirme)
+            {
+                // Yalnız aktiv Şöbə Rəisi rolundakılar
+                isciler = await _unitOfWork.Repository<Isci>()
+                    .Query().Where(x => x.Status == IsciStatus.Aktiv && !x.Silinib && sobeReisiIds.Contains(x.Id))
+                    .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null)).ThenInclude(t => t.Departament)
+                    .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null)).ThenInclude(t => t.Vezife)
+                    .OrderBy(x => x.Soyad).ThenBy(x => x.Ad)
+                    .ToListAsync();
+            }
+            else
+            {
+                // Yalnız Şöbə Rəisi OLMAYAN işçilər
+                isciler = await _unitOfWork.Repository<Isci>()
+                    .Query().Where(x => x.Status == IsciStatus.Aktiv && !x.Silinib && !sobeReisiIds.Contains(x.Id))
+                    .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null)).ThenInclude(t => t.Departament)
+                    .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null)).ThenInclude(t => t.Vezife)
+                    .OrderBy(x => x.Soyad).ThenBy(x => x.Ad)
+                    .ToListAsync();
+            }
 
             var isciVmList = isciler.Select(i =>
             {
                 var teyinat = i.IsciTeyinatlari.FirstOrDefault();
                 var deptId = teyinat?.DepartamentId;
-                var sobeR = deptId.HasValue ? strukturRollar.FirstOrDefault(r => r.DepartamentId == deptId && r.RolTipi == StrukturRolTipi.SobeReisi) : null;
-                var isMenecer = strukturRollar.Any(r => r.IsciId == i.Id && r.RolTipi == StrukturRolTipi.SobeReisi);
+                var sobeR = deptId.HasValue
+                    ? sobeReisiRollar.FirstOrDefault(r => r.DepartamentId == deptId && r.IsciId != i.Id)
+                    : null;
                 return new
                 {
                     i.Id, i.Ad, i.Soyad,
                     Departament = teyinat?.Departament?.Ad ?? "—",
-                    Vezife = teyinat?.Vezife?.Ad ?? "—",
-                    SobeReisiVar = sobeR != null && sobeR.IsciId != i.Id,
-                    SobeReisiAd = sobeR?.Isci?.TamAd,
-                    IsMenecer = isMenecer
+                    Vezife     = teyinat?.Vezife?.Ad ?? "—",
+                    SobeReisiVar = sobeR != null,
+                    SobeReisiId  = sobeR?.IsciId,
+                    SobeReisiAd  = sobeR?.Isci?.TamAd
                 };
             }).ToList();
 
             ViewBag.IsciVmList = isciVmList;
-            ViewData["Title"] = "Toplu Kampaniya Başlat";
+            ViewBag.KampaniyaTipi = (int)kampaniyaTipi;
+            ViewData["Title"] = kampaniyaTipi == KampaniyaTipi.SobeReisiQiymetlendirme
+                ? "Şöbə Rəisi Qiymətləndirməsi Kampaniyası"
+                : "İşçi Qiymətləndirməsi Kampaniyası";
             return View();
         }
 
@@ -222,23 +264,31 @@ namespace FinNex.UI.Areas.HR.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> BulkKampaniyaBaslat(
             List<int> secilmisIsciIds, int qiymetlendirenIsciId, int? rehber2Id,
-            int dovrTipi, int il, int? rubu,
-            List<int> mudirSizIsciIds) // şöbə rəisi olmayan işçilər üçün müvəqqəti mudir override
+            int dovrTipi, int il, int? rubu, int kampaniyaTipi)
         {
             if (!secilmisIsciIds.Any())
-            {
-                TempData["Error"] = "Ən azı bir işçi seçilməlidir.";
-                return RedirectToAction(nameof(BulkKampaniya));
-            }
+            { TempData["Error"] = "Ən azı bir işçi seçilməlidir."; return RedirectToAction(nameof(BulkKampaniya), new { tipi = kampaniyaTipi }); }
             if (qiymetlendirenIsciId <= 0)
+            { TempData["Error"] = "Rəhbər seçilməlidir."; return RedirectToAction(nameof(BulkKampaniya), new { tipi = kampaniyaTipi }); }
+
+            var tipi = (KampaniyaTipi)kampaniyaTipi;
+
+            // İnline şöbə rəisi override-ları (sobe_ISCIID = sobeReisiId)
+            var inlineSobe = new Dictionary<int, int>();
+            foreach (var key in Request.Form.Keys.Where(k => k.StartsWith("sobe_")))
             {
-                TempData["Error"] = "Rəhbər 1 seçilməlidir.";
-                return RedirectToAction(nameof(BulkKampaniya));
+                if (int.TryParse(key[5..], out int iId) &&
+                    int.TryParse(Request.Form[key], out int sId) && sId > 0)
+                    inlineSobe[iId] = sId;
             }
 
+            // DB-dən kriteriya şablonlarını yüklə
+            var sablonlar = await _unitOfWork.Repository<PerformansKriteriyaSablon>()
+                .Query().Where(x => x.KampaniyaTipi == tipi && x.Aktiv)
+                .OrderBy(x => x.Sira).ToListAsync();
+
             var strukturRollar = await _unitOfWork.Repository<IsciStrukturRolu>()
-                .Query().Where(x => x.Aktivdir && !x.Silinib)
-                .ToListAsync();
+                .Query().Where(x => x.Aktivdir && !x.Silinib).ToListAsync();
 
             var isciler = await _unitOfWork.Repository<Isci>()
                 .Query().Where(x => secilmisIsciIds.Contains(x.Id) && !x.Silinib)
@@ -246,48 +296,53 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .ToListAsync();
 
             int yaradildi = 0;
-            var detailUrl = Url.Action("Index", "Performans", new { area = "User" });
+            var listUrl = Url.Action("Index", "Performans", new { area = "User" });
 
             foreach (var isci in isciler)
             {
                 var teyinat = isci.IsciTeyinatlari.FirstOrDefault();
-                var deptId = teyinat?.DepartamentId;
+                var deptId  = teyinat?.DepartamentId;
 
+                // Şöbə rəisi qiymətləndirməsindədir — SobeReisiId yoxdur
                 int? sobeReisiId = null;
-                if (deptId.HasValue)
+                if (tipi == KampaniyaTipi.IsciQiymetlendirme)
                 {
-                    var sr = strukturRollar.FirstOrDefault(r => r.DepartamentId == deptId && r.RolTipi == StrukturRolTipi.SobeReisi && r.IsciId != isci.Id);
-                    sobeReisiId = sr?.IsciId;
+                    if (inlineSobe.TryGetValue(isci.Id, out int overrideSobe))
+                        sobeReisiId = overrideSobe;
+                    else if (deptId.HasValue)
+                    {
+                        var sr = strukturRollar.FirstOrDefault(r =>
+                            r.DepartamentId == deptId && r.RolTipi == StrukturRolTipi.SobeReisi && r.IsciId != isci.Id);
+                        sobeReisiId = sr?.IsciId;
+                    }
                 }
-
-                var isMenecer = strukturRollar.Any(r => r.IsciId == isci.Id && r.RolTipi == StrukturRolTipi.SobeReisi);
-
-                var kriteriyalar = isMenecer ? MenecerKriteriyalari() : StandartKriteriyalar();
 
                 var performans = new PerformansQiymetlendirme
                 {
                     IsciId = isci.Id,
                     QiymetlendirenIsciId = qiymetlendirenIsciId,
-                    Rehber2Id = rehber2Id > 0 ? rehber2Id : null,
+                    Rehber2Id  = rehber2Id > 0 ? rehber2Id : null,
                     SobeReisiId = sobeReisiId,
-                    DovrTipi = (PerformansDovrTipi)dovrTipi,
+                    DovrTipi   = (PerformansDovrTipi)dovrTipi,
                     Il = il, Rubu = rubu,
-                    MenecerKriteriyalari = isMenecer,
+                    KampaniyaTipi      = tipi,
+                    MenecerKriteriyalari = tipi == KampaniyaTipi.SobeReisiQiymetlendirme,
                     Status = PerformansStatus.Gozlemede
                 };
 
                 await _unitOfWork.Repository<PerformansQiymetlendirme>().YaratAsync(performans);
                 await _unitOfWork.YaddaSaxlaAsync();
 
-                foreach (var (ad, ceki) in kriteriyalar)
-                    await _unitOfWork.Repository<PerformansKriteriya>().YaratAsync(new PerformansKriteriya { PerformansId = performans.Id, KriteriyaAdi = ad, Ceki = ceki });
+                foreach (var s in sablonlar)
+                    await _unitOfWork.Repository<PerformansKriteriya>().YaratAsync(
+                        new PerformansKriteriya { PerformansId = performans.Id, KriteriyaAdi = s.Ad, Ceki = s.Ceki });
 
                 await _unitOfWork.YaddaSaxlaAsync();
 
                 await _bildirisRouter.NotifyIsciAsync(isci.Id, BildirisNovu.PerformansBasladi,
                     "Performans qiymətləndirməsi başladı",
-                    $"{il} ili üzrə performans qiymətləndirməniz başladı. Zəhmət olmasa özünüzü qiymətləndirin.",
-                    redirectUrl: detailUrl);
+                    $"{il} ili üzrə performans qiymətləndirməniz başladı.",
+                    redirectUrl: listUrl);
 
                 yaradildi++;
             }

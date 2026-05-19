@@ -1,0 +1,49 @@
+@{
+    ViewData["Title"] = "Kampaniya Tipi Seçin";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/performans.css" asp-append-version="true" />
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Toplu Kampaniya Başlat</div>
+            <div class="fn-page-sub">Qiymətləndirmə tipini seçin</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">← Geri</a>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:760px;margin:40px auto;">
+
+        <a asp-action="BulkKampaniya" asp-route-tipi="1"
+           style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#fff;border:2px solid #e2e8f0;border-radius:16px;padding:40px 24px;text-decoration:none;transition:border-color .2s,box-shadow .2s;cursor:pointer;"
+           onmouseover="this.style.borderColor='#6366f1';this.style.boxShadow='0 4px 20px rgba(99,102,241,.15)'"
+           onmouseout="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+            <div style="width:64px;height:64px;background:#eef2ff;border-radius:16px;display:flex;align-items:center;justify-content:center;">
+                <i class="bi bi-people" style="font-size:28px;color:#6366f1;"></i>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:6px;">İşçi Qiymətləndirməsi</div>
+                <div style="font-size:13px;color:#64748b;line-height:1.5;">Adi işçilərin dövri performans qiymətləndirilməsi. İşçi → Şöbə Rəisi → Rəhbər.</div>
+            </div>
+            <div style="background:#6366f1;color:#fff;padding:8px 24px;border-radius:8px;font-size:13px;font-weight:600;margin-top:4px;">Seç</div>
+        </a>
+
+        <a asp-action="BulkKampaniya" asp-route-tipi="2"
+           style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#fff;border:2px solid #e2e8f0;border-radius:16px;padding:40px 24px;text-decoration:none;transition:border-color .2s,box-shadow .2s;cursor:pointer;"
+           onmouseover="this.style.borderColor='#f59e0b';this.style.boxShadow='0 4px 20px rgba(245,158,11,.15)'"
+           onmouseout="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+            <div style="width:64px;height:64px;background:#fffbeb;border-radius:16px;display:flex;align-items:center;justify-content:center;">
+                <i class="bi bi-person-badge" style="font-size:28px;color:#f59e0b;"></i>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:6px;">Şöbə Rəisi Qiymətləndirməsi</div>
+                <div style="font-size:13px;color:#64748b;line-height:1.5;">Şöbə rəislərinin liderlik və komanda idarəetməsi qiymətləndirilməsi.</div>
+            </div>
+            <div style="background:#f59e0b;color:#fff;padding:8px 24px;border-radius:8px;font-size:13px;font-weight:600;margin-top:4px;">Seç</div>
+        </a>
+
+    </div>
+</div>
