@@ -72,7 +72,7 @@ public class MaliyyeDashboardController : Controller
         // Gecikmiş dövri ödənişlər
         var gecikmisDovri = await _unitOfWork.Repository<DovriOdenis>()
             .Query()
-            .CountAsync(x => !x.Silinib && x.Aktiv && x.NovbatiOdenisTarixi.Date < bugun);
+            .CountAsync(x => !x.Silinib && x.Aktiv && x.NovbatiOdenisTarixi < bugun);
 
         var isletmeFaizi = buAyPlan > 0
             ? Math.Round((buAyOdenilmis + buAyGozleme) / buAyPlan * 100, 1)
@@ -109,9 +109,13 @@ public class MaliyyeDashboardController : Controller
             .Select(x => new { x.Mebleg, x.XercTarixi.Year, x.XercTarixi.Month })
             .ToListAsync();
 
+        var minYm = aylar[0].Year * 100 + aylar[0].Month;
+        var maxYm = aylar[^1].Year * 100 + aylar[^1].Month;
         var budceler = await _unitOfWork.Repository<Budce>()
             .Query()
-            .Where(x => !x.Silinib && aylar.Any(a => a.Year == x.Il && a.Month == x.Ay))
+            .Where(x => !x.Silinib
+                     && (x.Il * 100 + x.Ay) >= minYm
+                     && (x.Il * 100 + x.Ay) <= maxYm)
             .Select(x => new { x.Il, x.Ay, x.PlanMebleg })
             .ToListAsync();
 
@@ -192,7 +196,7 @@ public class MaliyyeDashboardController : Controller
 
         var data = await _unitOfWork.Repository<DovriOdenis>()
             .Query()
-            .Where(x => !x.Silinib && x.Aktiv && x.NovbatiOdenisTarixi.Date <= son)
+            .Where(x => !x.Silinib && x.Aktiv && x.NovbatiOdenisTarixi < son.AddDays(1))
             .Include(x => x.Kateqoriya)
             .Include(x => x.Departament)
             .OrderBy(x => x.NovbatiOdenisTarixi)
