@@ -1160,7 +1160,7 @@ namespace FinNex.DataAccess.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<decimal>("TəxminiMebleg")
+                    b.Property<decimal>("TahminiMebleg")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 

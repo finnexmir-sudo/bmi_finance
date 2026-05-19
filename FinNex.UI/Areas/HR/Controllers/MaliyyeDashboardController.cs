@@ -60,7 +60,7 @@ public class MaliyyeDashboardController : Controller
         var gozlenilenCem = await _unitOfWork.Repository<GozlenilenXerc>()
             .Query()
             .Where(x => !x.Silinib && x.Status == GozlenilenXercStatus.Aktiv)
-            .SumAsync(x => (decimal?)x.TəxminiMebleg) ?? 0;
+            .SumAsync(x => (decimal?)x.TahminiMebleg) ?? 0;
 
         // Bu ay aktiv dövri ödənişlər sayı
         var dovriSay = await _unitOfWork.Repository<DovriOdenis>()
@@ -236,7 +236,7 @@ public class MaliyyeDashboardController : Controller
             x.Ad,
             kateqoriya  = x.Kateqoriya.Ad,
             departament = x.Departament?.Ad ?? "—",
-            x.TəxminiMebleg,
+            x.TahminiMebleg,
             tarix     = x.GozlenilenTarix.ToString("dd.MM.yyyy"),
             prioritet = x.Prioritet.ToString(),
             kecmis    = x.GozlenilenTarix.Date < bugun

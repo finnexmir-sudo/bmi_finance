@@ -1002,7 +1002,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .OnDelete(DeleteBehavior.NoAction);
 
         builder.Entity<GozlenilenXerc>()
-            .Property(x => x.TəxminiMebleg).HasPrecision(18, 2);
+            .Property(x => x.TahminiMebleg).HasPrecision(18, 2);
 
         builder.Entity<IsParametri>()
             .ToTable("IsParametrleri");
