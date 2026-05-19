@@ -46,7 +46,7 @@
                     <div class="bkt-card-title">İşçi Qiymətləndirməsi</div>
                     <div class="bkt-card-desc">İşçi → Şöbə Rəisi → Rəhbər axını</div>
                 </div>
-                <div id="badgeIsci" style="background:#6366f1;color:#fff;padding:5px 18px;border-radius:8px;font-size:12px;font-weight:600;opacity:.35;transition:opacity .18s;">Seçildi</div>
+                <div id="badgeIsci" style="background:#6366f1;color:#fff;padding:5px 18px;border-radius:8px;font-size:12px;font-weight:600;transition:opacity .18s;">Seç</div>
             </label>
 
             <label class="bkt-card" id="cardSobe" onclick="selectTip(2)">
@@ -58,7 +58,7 @@
                     <div class="bkt-card-title">Şöbə Rəisi Qiymətləndirməsi</div>
                     <div class="bkt-card-desc">Liderlik və komanda idarəetməsi</div>
                 </div>
-                <div id="badgeSobe" style="background:#f59e0b;color:#fff;padding:5px 18px;border-radius:8px;font-size:12px;font-weight:600;opacity:.35;transition:opacity .18s;">Seçildi</div>
+                <div id="badgeSobe" style="background:#f59e0b;color:#fff;padding:5px 18px;border-radius:8px;font-size:12px;font-weight:600;transition:opacity .18s;">Seç</div>
             </label>
 
         </div>
@@ -111,8 +111,8 @@
             document.getElementById('cardIsci').classList.toggle('selected-isci', n === 1);
             document.getElementById('cardSobe').classList.toggle('selected-sobe', n === 2);
 
-            document.getElementById('badgeIsci').style.opacity = n === 1 ? '1' : '.35';
-            document.getElementById('badgeSobe').style.opacity = n === 2 ? '1' : '.35';
+            document.getElementById('badgeIsci').textContent = n === 1 ? 'Seçildi ✓' : 'Seç';
+            document.getElementById('badgeSobe').textContent = n === 2 ? 'Seçildi ✓' : 'Seç';
 
             document.getElementById('btnDevam').disabled = false;
         }
