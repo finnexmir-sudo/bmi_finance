@@ -8,9 +8,16 @@
 <style>
 .gx-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:24px; }
 .gx-toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:20px; }
-.gx-filter-btn { padding:6px 16px; border-radius:8px; border:1px solid #d1d5db; background:#fff;
-                 font-size:.83rem; cursor:pointer; transition:.2s; }
+.gx-filter-btn { padding:6px 18px; border-radius:8px; border:1.5px solid #d1d5db; background:#f8fafc;
+                 font-size:.83rem; cursor:pointer; transition:.2s; color:#374151; font-weight:500; }
+.gx-filter-btn:hover { background:#e2e8f0; border-color:#94a3b8; }
 .gx-filter-btn.active { background:var(--fn-primary); color:#fff; border-color:var(--fn-primary); }
+.gx-filter-btn[onclick*="setStatus(0"] { border-color:#93c5fd; color:#1d4ed8; background:#eff6ff; }
+.gx-filter-btn[onclick*="setStatus(0"].active { background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
+.gx-filter-btn[onclick*="setStatus(1"] { border-color:#6ee7b7; color:#065f46; background:#f0fdf4; }
+.gx-filter-btn[onclick*="setStatus(1"].active { background:#0f766e; color:#fff; border-color:#0f766e; }
+.gx-filter-btn[onclick*="setStatus(2"] { border-color:#fca5a5; color:#b91c1c; background:#fff1f2; }
+.gx-filter-btn[onclick*="setStatus(2"].active { background:#dc2626; color:#fff; border-color:#dc2626; }
 .gx-table { width:100%; border-collapse:collapse; font-size:.87rem; }
 .gx-table th { background:#f8fafc; font-weight:600; padding:10px 13px;
                text-align:left; border-bottom:2px solid #e5e7eb; }
@@ -39,10 +46,12 @@
 .sum-card .lbl { font-size:.78rem; color:#6b7280; margin-top:2px; }
 .fn-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45);
                     display:flex; align-items:center; justify-content:center; z-index:999; }
-.fn-modal { background:#fff; border-radius:14px; padding:28px; width:520px; max-width:95vw;
-            max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.2); }
-.fn-modal h4 { margin:0 0 20px; font-size:1.1rem; font-weight:700; }
-.fn-form-group { margin-bottom:15px; }
+.fn-modal { background:#fff; border-radius:14px; padding:22px 26px; width:540px; max-width:96vw;
+            max-height:92vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.2);
+            display:flex; flex-direction:column; }
+.fn-modal h4 { margin:0 0 14px; font-size:1.05rem; font-weight:700; flex-shrink:0; }
+.fn-modal-body { flex:1; overflow-y:auto; }
+.fn-form-group { margin-bottom:11px; }
 .fn-form-group label { display:block; font-size:.82rem; font-weight:600; color:#374151; margin-bottom:5px; }
 .fn-form-group input, .fn-form-group select, .fn-form-group textarea {
     width:100%; padding:9px 12px; border:1px solid #d1d5db; border-radius:8px;
@@ -50,7 +59,8 @@
 .fn-form-group input:focus, .fn-form-group select:focus, .fn-form-group textarea:focus {
     border-color:var(--fn-primary); }
 .fn-form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.fn-btn-row { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+.fn-btn-row { display:flex; gap:10px; justify-content:flex-end; margin-top:14px; padding-top:12px;
+              border-top:1px solid #f1f5f9; flex-shrink:0; }
 .fn-btn { padding:9px 22px; border-radius:9px; border:none; font-weight:600;
            font-size:.88rem; cursor:pointer; transition:.2s; }
 .fn-btn-primary { background:var(--fn-primary); color:#fff; }
@@ -102,62 +112,68 @@
         <h4 id="gxModalTitle">Yeni Gözlənilən Xərc</h4>
         <input type="hidden" id="gxId">
 
-        <div class="fn-form-group">
-            <label>Ad *</label>
-            <input type="text" id="gxAd" placeholder="Məs: Printer alışı" maxlength="200">
-        </div>
-        <div class="fn-form-group">
-            <label>Açıqlama</label>
-            <textarea id="gxTesvir" rows="2" maxlength="1000" placeholder="Əlavə məlumat…"></textarea>
-        </div>
-        <div class="fn-form-row">
+        <div class="fn-modal-body">
             <div class="fn-form-group">
-                <label>Kateqoriya *</label>
-                <select id="gxKat">
-                    <option value="">Seçin…</option>
-                    @foreach (var k in kateqoriyalar)
-                    {
-                        <option value="@k.Id">@k.Ad</option>
-                    }
-                </select>
+                <label>Ad *</label>
+                <input type="text" id="gxAd" placeholder="Məs: Printer alışı" maxlength="200">
             </div>
             <div class="fn-form-group">
-                <label>Departament</label>
-                <select id="gxDept">
-                    <option value="0">— Hamısı —</option>
-                    @foreach (var d in departamentlar)
-                    {
-                        <option value="@d.Id">@d.Ad</option>
-                    }
-                </select>
+                <label>Açıqlama</label>
+                <textarea id="gxTesvir" rows="2" maxlength="1000" placeholder="Əlavə məlumat…"></textarea>
             </div>
-        </div>
-        <div class="fn-form-row">
-            <div class="fn-form-group">
-                <label>Təxmini Məbləğ (AZN) *</label>
-                <input type="number" id="gxMebleg" min="0.01" step="0.01" placeholder="0.00">
+            <div class="fn-form-row">
+                <div class="fn-form-group">
+                    <label>Kateqoriya *</label>
+                    <select id="gxKat">
+                        <option value="">Seçin…</option>
+                        @foreach (var k in kateqoriyalar)
+                        {
+                            <option value="@k.Id">@k.Ad</option>
+                        }
+                    </select>
+                </div>
+                <div class="fn-form-group">
+                    <label>Departament</label>
+                    <select id="gxDept">
+                        <option value="0">— Hamısı —</option>
+                        @foreach (var d in departamentlar)
+                        {
+                            <option value="@d.Id">@d.Ad</option>
+                        }
+                    </select>
+                </div>
             </div>
-            <div class="fn-form-group">
-                <label>Gözlənilən Tarix *</label>
-                <input type="date" id="gxTarix">
+            <div class="fn-form-row">
+                <div class="fn-form-group">
+                    <label>Təxmini Məbləğ (AZN) *</label>
+                    <input type="number" id="gxMebleg" min="0.01" step="0.01" placeholder="0.00">
+                </div>
+                <div class="fn-form-group">
+                    <label>Gözlənilən Tarix *</label>
+                    <input type="date" id="gxTarix">
+                </div>
             </div>
-        </div>
-        <div class="fn-form-group">
-            <label>Prioritet</label>
-            <select id="gxPrioritet">
-                <option value="3">Yüksək</option>
-                <option value="2" selected>Orta</option>
-                <option value="1">Aşağı</option>
-            </select>
-        </div>
-        <div class="fn-form-group">
-            <label>Qeyd</label>
-            <textarea id="gxQeyd" rows="2" maxlength="500" placeholder="Əlavə qeyd…"></textarea>
+            <div class="fn-form-row">
+                <div class="fn-form-group">
+                    <label>Prioritet</label>
+                    <select id="gxPrioritet">
+                        <option value="3">Yüksək</option>
+                        <option value="2" selected>Orta</option>
+                        <option value="1">Aşağı</option>
+                    </select>
+                </div>
+                <div class="fn-form-group">
+                    <label>Qeyd</label>
+                    <input type="text" id="gxQeyd" maxlength="500" placeholder="Əlavə qeyd…">
+                </div>
+            </div>
         </div>
 
         <div class="fn-btn-row">
             <button class="fn-btn fn-btn-ghost" onclick="modalBag()">Ləğv et</button>
-            <button class="fn-btn fn-btn-primary" onclick="saxla()">Saxla</button>
+            <button class="fn-btn fn-btn-primary" onclick="saxla()">
+                <i class="bi bi-check-lg"></i> Saxla
+            </button>
         </div>
     </div>
 </div>
