@@ -134,7 +134,7 @@
                         <label class="fn-label">İl</label>
                         <select name="il" class="fn-input">
                             @foreach (var item in ViewBag.Iller as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
-                            { <option value="@item.Value" @(item.Selected ? "selected" : "")>@item.Text</option> }
+                            { <option value="@item.Value" selected="@(item.Selected ? "selected" : null)">@item.Text</option> }
                         </select>
                     </div>
                     <div class="fn-form-row" style="margin-bottom:0" id="rubuRow">
