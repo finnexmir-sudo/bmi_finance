@@ -6,38 +6,41 @@
 <style>
 .md-grid { display:grid; gap:20px; }
 .md-kpi { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
-.md-kpi-card { background:#fff; border:1px solid #e5e7eb; border-radius:14px;
-               padding:20px 22px; display:flex; align-items:center; gap:16px; }
-.md-kpi-icon { width:46px; height:46px; border-radius:12px; display:flex;
-               align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
+.md-kpi-card { background:#fff; border:1px solid #e5e7eb; border-radius:16px;
+               padding:20px 22px; display:flex; align-items:center; gap:16px;
+               box-shadow:0 1px 4px rgba(0,0,0,.04); transition:box-shadow .2s; }
+.md-kpi-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.08); }
+.md-kpi-icon { width:50px; height:50px; border-radius:14px; display:flex;
+               align-items:center; justify-content:center; font-size:1.4rem;
+               flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,.08); }
 .md-kpi-val  { font-size:1.5rem; font-weight:700; line-height:1.1; }
 .md-kpi-lbl  { font-size:.78rem; color:#6b7280; margin-top:3px; }
-.md-kpi-sub  { font-size:.75rem; margin-top:4px; }
+.md-kpi-sub  { font-size:.75rem; margin-top:4px; color:#9ca3af; }
 .md-row2 { display:grid; grid-template-columns:2fr 1fr; gap:20px; }
 .md-row3 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
-.md-card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:22px; }
+.md-card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:22px;
+           box-shadow:0 1px 4px rgba(0,0,0,.04); }
 .md-card h5 { margin:0 0 18px; font-size:.95rem; font-weight:700; color:#1e293b;
               display:flex; align-items:center; gap:8px; }
 .md-list { list-style:none; margin:0; padding:0; }
 .md-list li { display:flex; align-items:center; justify-content:space-between;
-              padding:9px 0; border-bottom:1px solid #f1f5f9; font-size:.85rem; }
+              padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:.85rem; }
 .md-list li:last-child { border-bottom:none; }
 .md-list .left { display:flex; align-items:center; gap:10px; }
 .md-list .mebleg { font-weight:600; }
-.md-tag { display:inline-flex; align-items:center; padding:2px 9px;
-          border-radius:20px; font-size:.75rem; font-weight:500; }
+.md-tag { display:inline-flex; align-items:center; padding:3px 10px;
+          border-radius:20px; font-size:.74rem; font-weight:600; }
 .md-tag-gecikib { background:#fee2e2; color:#b91c1c; }
 .md-tag-bugun   { background:#fef3c7; color:#92400e; }
 .md-tag-yaxinda { background:#dbeafe; color:#1d4ed8; }
 .md-tag-kecmis  { background:#fee2e2; color:#b91c1c; }
-.progress-bar-wrap { height:10px; background:#f1f5f9; border-radius:10px; overflow:hidden; margin-top:6px; }
-.progress-bar-fill { height:100%; border-radius:10px; transition:width .5s ease; }
-.md-empty { color:#9ca3af; text-align:center; padding:24px; font-size:.87rem; }
-.md-dept-row { display:flex; align-items:center; justify-content:space-between;
-               padding:7px 0; border-bottom:1px solid #f1f5f9; font-size:.84rem; }
-.md-dept-row:last-child { border-bottom:none; }
-.md-dept-bar { height:6px; background:#e5e7eb; border-radius:6px; overflow:hidden; margin-top:4px; }
-.md-dept-bar-fill { height:100%; background:#0f766e; border-radius:6px; }
+.md-dept-bar { height:6px; background:#f1f5f9; border-radius:6px; overflow:hidden; margin-top:5px; }
+.md-dept-bar-fill { height:100%; border-radius:6px; transition:width .6s ease; }
+.md-empty {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:8px; padding:36px 20px; color:#9ca3af; font-size:.86rem; text-align:center;
+}
+.md-empty i { font-size:1.6rem; opacity:.45; }
 @@media (max-width:900px) {
     .md-kpi { grid-template-columns:repeat(2,1fr); }
     .md-row2, .md-row3 { grid-template-columns:1fr; }
@@ -48,10 +51,44 @@
 
     <!-- ── KPI Kartlar ──────────────────────────────────────── -->
     <div class="md-kpi" id="kpiRow">
-        <div class="md-kpi-card"><div class="md-kpi-icon" style="background:#dbeafe;color:#1d4ed8"><i class="bi bi-cash-stack"></i></div><div><div class="md-kpi-val" id="kpi1">—</div><div class="md-kpi-lbl">Bu ay ödənilmiş</div></div></div>
-        <div class="md-kpi-card"><div class="md-kpi-icon" style="background:#fef3c7;color:#92400e"><i class="bi bi-hourglass-split"></i></div><div><div class="md-kpi-val" id="kpi2">—</div><div class="md-kpi-lbl">Gözləmədə (workflow)</div></div></div>
-        <div class="md-kpi-card"><div class="md-kpi-icon" style="background:#d1fae5;color:#065f46"><i class="bi bi-bar-chart-line"></i></div><div><div class="md-kpi-val" id="kpi3">—</div><div class="md-kpi-lbl">Bu ay büdcə istifadəsi</div><div class="md-kpi-sub" id="kpi3sub"></div></div></div>
-        <div class="md-kpi-card"><div class="md-kpi-icon" style="background:#fee2e2;color:#b91c1c"><i class="bi bi-alarm"></i></div><div><div class="md-kpi-val" id="kpi4">—</div><div class="md-kpi-lbl">Gecikmiş dövri ödəniş</div><div class="md-kpi-sub" id="kpi4sub"></div></div></div>
+        <div class="md-kpi-card">
+            <div class="md-kpi-icon" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#1d4ed8">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <div>
+                <div class="md-kpi-val" id="kpi1">—</div>
+                <div class="md-kpi-lbl">Bu ay ödənilmiş</div>
+            </div>
+        </div>
+        <div class="md-kpi-card">
+            <div class="md-kpi-icon" style="background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e">
+                <i class="bi bi-hourglass-split"></i>
+            </div>
+            <div>
+                <div class="md-kpi-val" id="kpi2">—</div>
+                <div class="md-kpi-lbl">Gözləmədə (workflow)</div>
+            </div>
+        </div>
+        <div class="md-kpi-card">
+            <div class="md-kpi-icon" style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:#065f46">
+                <i class="bi bi-bar-chart-line"></i>
+            </div>
+            <div>
+                <div class="md-kpi-val" id="kpi3">—</div>
+                <div class="md-kpi-lbl">Bu ay büdcə istifadəsi</div>
+                <div class="md-kpi-sub" id="kpi3sub"></div>
+            </div>
+        </div>
+        <div class="md-kpi-card">
+            <div class="md-kpi-icon" style="background:linear-gradient(135deg,#fee2e2,#fecaca);color:#b91c1c">
+                <i class="bi bi-alarm"></i>
+            </div>
+            <div>
+                <div class="md-kpi-val" id="kpi4">—</div>
+                <div class="md-kpi-lbl">Gecikmiş dövri ödəniş</div>
+                <div class="md-kpi-sub" id="kpi4sub"></div>
+            </div>
+        </div>
     </div>
 
     <!-- ── Trend chart + Kateqoriya chart ─────────────────── -->
@@ -71,18 +108,24 @@
     <div class="md-row3">
         <div class="md-card">
             <h5><i class="bi bi-building" style="color:#0f766e"></i> Bu Ay Ən Çox Xərc Edən Departamentlər</h5>
-            <div id="deptList"><div class="md-empty">Yüklənir…</div></div>
+            <div id="deptList">
+                <div class="md-empty"><i class="bi bi-hourglass"></i>Yüklənir…</div>
+            </div>
         </div>
         <div class="md-card">
             <h5><i class="bi bi-calendar-check" style="color:#f59e0b"></i> Gözlənilən Xərclər (30 gün)</h5>
-            <ul class="md-list" id="gxList"><li><span class="md-empty">Yüklənir…</span></li></ul>
+            <ul class="md-list" id="gxList">
+                <li style="border:none"><div class="md-empty"><i class="bi bi-hourglass"></i>Yüklənir…</div></li>
+            </ul>
         </div>
     </div>
 
     <!-- ── Yaxında dövri ödənişlər ─────────────────────────── -->
     <div class="md-card">
         <h5><i class="bi bi-arrow-repeat" style="color:#6366f1"></i> Yaxında Dövri Ödənişlər (14 gün)</h5>
-        <ul class="md-list" id="dovriList"><li><span class="md-empty">Yüklənir…</span></li></ul>
+        <ul class="md-list" id="dovriList">
+            <li style="border:none"><div class="md-empty"><i class="bi bi-hourglass"></i>Yüklənir…</div></li>
+        </ul>
     </div>
 
 </div>
@@ -92,7 +135,7 @@
 <script>
 const AZN = v => v.toLocaleString('az-AZ', { minimumFractionDigits: 2 }) + ' ₼';
 
-const COLORS = ['#6366f1','#0f766e','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16','#f97316'];
+const COLORS = ['#2ecc71','#3498db','#f1c40f','#e74c3c','#9b59b6','#1abc9c','#e67e22','#e91e63'];
 
 async function init() {
     const [summary, trend, kat, dept, dovri, goz] = await Promise.all([
@@ -118,14 +161,12 @@ function renderKPI(s) {
 
     const faiz = s.isletmeFaizi;
     const faizClr = faiz >= 100 ? '#ef4444' : faiz >= 80 ? '#f59e0b' : '#059669';
-    document.getElementById('kpi3').innerHTML =
-        `<span style="color:${faizClr}">${faiz}%</span>`;
+    document.getElementById('kpi3').innerHTML = `<span style="color:${faizClr}">${faiz}%</span>`;
     document.getElementById('kpi3sub').innerHTML =
         `Plan: ${AZN(s.buAyPlan)} | Azad: ${AZN(Math.max(0,s.azad))}`;
 
     document.getElementById('kpi4').textContent = s.gecikmisDovri;
-    document.getElementById('kpi4sub').textContent =
-        `Bu ay ${s.dovriSay} dövri ödəniş gözlənilir`;
+    document.getElementById('kpi4sub').textContent = `Bu ay ${s.dovriSay} dövri ödəniş gözlənilir`;
     if (s.gecikmisDovri > 0)
         document.getElementById('kpi4').style.color = '#ef4444';
 }
@@ -139,31 +180,51 @@ function renderTrend(data) {
                 {
                     label: 'Plan',
                     data: data.map(x => x.plan),
-                    backgroundColor: 'rgba(99,102,241,0.15)',
+                    backgroundColor: 'rgba(99,102,241,0.05)',
                     borderColor: '#6366f1',
-                    borderWidth: 2,
+                    borderWidth: 3,
                     type: 'line',
-                    tension: 0.3,
+                    tension: 0.4,
                     fill: true,
-                    pointRadius: 4
+                    pointRadius: 5,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#6366f1',
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 7
                 },
                 {
                     label: 'Faktiki',
                     data: data.map(x => x.faktiki),
-                    backgroundColor: '#0f766e',
-                    borderRadius: 5,
-                    borderSkipped: false
+                    backgroundColor: 'rgba(15,118,110,0.75)',
+                    borderColor: '#0f766e',
+                    borderWidth: 0,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    hoverBackgroundColor: '#0f766e'
                 }
             ]
         },
         options: {
             responsive: true,
+            interaction: { mode: 'index', intersect: false },
             plugins: {
-                legend: { position: 'top' },
-                tooltip: { callbacks: { label: ctx => ' ' + AZN(ctx.parsed.y) } }
+                legend: {
+                    position: 'top',
+                    labels: { usePointStyle: true, pointStyleWidth: 10, font: { size: 12 } }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15,23,42,0.9)',
+                    padding: 12,
+                    cornerRadius: 10,
+                    callbacks: { label: ctx => '  ' + ctx.dataset.label + ': ' + AZN(ctx.parsed.y) }
+                }
             },
             scales: {
-                y: { ticks: { callback: v => AZN(v) }, grid: { color:'#f1f5f9' } }
+                x: { grid: { display: false } },
+                y: {
+                    ticks: { callback: v => AZN(v), font: { size: 11 } },
+                    grid: { color:'rgba(241,245,249,0.8)' }
+                }
             }
         }
     });
@@ -171,7 +232,8 @@ function renderTrend(data) {
 
 function renderKat(data) {
     if (!data.length) {
-        document.getElementById('katLegend').innerHTML = '<li><span class="md-empty">Bu ay xərc yoxdur.</span></li>';
+        document.getElementById('katLegend').innerHTML =
+            `<li style="border:none"><div class="md-empty"><i class="bi bi-pie-chart"></i>Bu ay xərc qeydə alınmayıb.</div></li>`;
         return;
     }
     const total = data.reduce((s, x) => s + x.mebleg, 0);
@@ -179,34 +241,52 @@ function renderKat(data) {
         type: 'doughnut',
         data: {
             labels: data.map(x => x.ad),
-            datasets: [{ data: data.map(x => x.mebleg), backgroundColor: COLORS, borderWidth: 2 }]
+            datasets: [{
+                data: data.map(x => x.mebleg),
+                backgroundColor: COLORS,
+                borderWidth: 3,
+                borderColor: '#fff',
+                hoverOffset: 6
+            }]
         },
         options: {
             responsive: true,
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ' + AZN(ctx.parsed) } } },
-            cutout: '65%'
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(15,23,42,0.9)',
+                    padding: 10,
+                    cornerRadius: 8,
+                    callbacks: { label: ctx => '  ' + AZN(ctx.parsed) }
+                }
+            },
+            cutout: '68%'
         }
     });
     document.getElementById('katLegend').innerHTML = data.map((x, i) =>
         `<li>
             <span class="left">
-                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${COLORS[i]};"></span>
-                ${x.ad}
+                <span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${COLORS[i % COLORS.length]};flex-shrink:0;"></span>
+                <span style="color:#374151">${x.ad}</span>
             </span>
-            <span class="mebleg">${(x.mebleg/total*100).toFixed(1)}% — ${AZN(x.mebleg)}</span>
+            <span class="mebleg" style="color:#1e293b">${(x.mebleg/total*100).toFixed(1)}% — ${AZN(x.mebleg)}</span>
         </li>`
     ).join('');
 }
 
 function renderDept(data) {
-    if (!data.length) { document.getElementById('deptList').innerHTML = '<div class="md-empty">Bu ay xərc yoxdur.</div>'; return; }
+    if (!data.length) {
+        document.getElementById('deptList').innerHTML =
+            `<div class="md-empty"><i class="bi bi-building"></i>Bu ay departament xərci yoxdur.</div>`;
+        return;
+    }
     const max = data[0].mebleg;
     document.getElementById('deptList').innerHTML = data.map((x, i) => {
-        const pct = max > 0 ? Math.round(x.mebleg/max*100) : 0;
-        return `<div class="md-dept-row" style="display:block;padding:8px 0;border-bottom:1px solid #f1f5f9;">
-            <div style="display:flex;justify-content:space-between;font-size:.84rem;">
-                <span>${x.departament}</span>
-                <strong>${AZN(x.mebleg)}</strong>
+        const pct = max > 0 ? Math.round(x.mebleg / max * 100) : 0;
+        return `<div style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
+            <div style="display:flex;justify-content:space-between;font-size:.84rem;margin-bottom:4px;">
+                <span style="color:#374151">${x.departament}</span>
+                <strong style="color:#1e293b">${AZN(x.mebleg)}</strong>
             </div>
             <div class="md-dept-bar">
                 <div class="md-dept-bar-fill" style="width:${pct}%;background:${COLORS[i % COLORS.length]};"></div>
@@ -217,7 +297,8 @@ function renderDept(data) {
 
 function renderDovri(data) {
     if (!data.length) {
-        document.getElementById('dovriList').innerHTML = '<li><span class="md-empty">Yaxın 14 günə dövri ödəniş yoxdur.</span></li>';
+        document.getElementById('dovriList').innerHTML =
+            `<li style="border:none"><div class="md-empty"><i class="bi bi-arrow-repeat"></i>Yaxın 14 günə dövri ödəniş planlanmayıb.</div></li>`;
         return;
     }
     document.getElementById('dovriList').innerHTML = data.map(x => {
@@ -228,11 +309,16 @@ function renderDovri(data) {
             : `<span class="md-tag md-tag-yaxinda">${x.tarix}</span>`;
         return `<li>
             <span class="left">
-                <i class="bi bi-arrow-repeat" style="color:#6366f1"></i>
-                <span><strong>${x.ad}</strong><br><small style="color:#6b7280">${x.departament} · ${x.kateqoriya}</small></span>
+                <span style="width:32px;height:32px;border-radius:9px;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="bi bi-arrow-repeat" style="color:#6366f1;font-size:.9rem"></i>
+                </span>
+                <span>
+                    <strong style="color:#1e293b">${x.ad}</strong>
+                    <br><small style="color:#6b7280">${x.departament} · ${x.kateqoriya}</small>
+                </span>
             </span>
-            <span style="display:flex;align-items:center;gap:8px;">
-                <span class="mebleg">${AZN(x.mebleg)}</span>
+            <span style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                <span class="mebleg" style="color:#1e293b">${AZN(x.mebleg)}</span>
                 ${tag}
             </span>
         </li>`;
@@ -241,7 +327,8 @@ function renderDovri(data) {
 
 function renderGoz(data) {
     if (!data.length) {
-        document.getElementById('gxList').innerHTML = '<li><span class="md-empty">30 günə gözlənilən xərc yoxdur.</span></li>';
+        document.getElementById('gxList').innerHTML =
+            `<li style="border:none"><div class="md-empty"><i class="bi bi-calendar-check"></i>30 günlük müddətdə gözlənilən xərc yoxdur.</div></li>`;
         return;
     }
     const pClr = { 'Yuksek':'#ef4444', 'Orta':'#f59e0b', 'Asagi':'#059669' };
@@ -249,14 +336,17 @@ function renderGoz(data) {
         const clr = pClr[x.prioritet] || '#6b7280';
         const tag = x.kecmis
             ? `<span class="md-tag md-tag-kecmis">Keçib</span>`
-            : `<span style="font-size:.77rem;color:#6b7280">${x.tarix}</span>`;
+            : `<span style="font-size:.76rem;color:#6b7280;background:#f8fafc;padding:2px 8px;border-radius:6px;">${x.tarix}</span>`;
         return `<li>
             <span class="left">
-                <span style="width:8px;height:8px;border-radius:50%;background:${clr};display:inline-block;flex-shrink:0;"></span>
-                <span><strong>${x.ad}</strong><br><small style="color:#6b7280">${x.departament} · ${x.kateqoriya}</small></span>
+                <span style="width:9px;height:9px;border-radius:50%;background:${clr};display:inline-block;flex-shrink:0;box-shadow:0 0 0 3px ${clr}22;"></span>
+                <span>
+                    <strong style="color:#1e293b">${x.ad}</strong>
+                    <br><small style="color:#6b7280">${x.departament} · ${x.kateqoriya}</small>
+                </span>
             </span>
             <span style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                <span class="mebleg">${AZN(x.tahminiMebleg)}</span>
+                <span class="mebleg" style="color:#1e293b">${AZN(x.tahminiMebleg)}</span>
                 ${tag}
             </span>
         </li>`;
