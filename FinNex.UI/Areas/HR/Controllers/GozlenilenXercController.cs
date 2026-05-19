@@ -61,7 +61,7 @@ public class GozlenilenXercController : Controller
             kateqoriya     = x.Kateqoriya.Ad,
             kateqoriyaIkon = x.Kateqoriya.Ikon ?? "bi-tag",
             departament    = x.Departament?.Ad ?? "—",
-            x.TəxminiMebleg,
+            x.TahminiMebleg,
             gozlenilenTarix = x.GozlenilenTarix.ToString("dd.MM.yyyy"),
             prioritet       = PrioritetAdi(x.Prioritet),
             prioritetId     = (int)x.Prioritet,
@@ -83,7 +83,7 @@ public class GozlenilenXercController : Controller
     {
         if (string.IsNullOrWhiteSpace(dto.Ad))
             return Json(new { ok = false, xeta = "Ad boş ola bilməz." });
-        if (dto.TəxminiMebleg <= 0)
+        if (dto.TahminiMebleg <= 0)
             return Json(new { ok = false, xeta = "Məbləğ sıfırdan böyük olmalıdır." });
 
         var gx = new GozlenilenXerc
@@ -92,7 +92,7 @@ public class GozlenilenXercController : Controller
             Tesvir          = dto.Tesvir?.Trim(),
             KateqoriyaId    = dto.KateqoriyaId,
             DepartamentId   = dto.DepartamentId == 0 ? null : dto.DepartamentId,
-            TəxminiMebleg   = dto.TəxminiMebleg,
+            TahminiMebleg   = dto.TahminiMebleg,
             GozlenilenTarix = dto.GozlenilenTarix,
             Prioritet       = (GozlenilenXercPrioritet)dto.PrioritetId,
             Status          = GozlenilenXercStatus.Aktiv,
@@ -119,7 +119,7 @@ public class GozlenilenXercController : Controller
         gx.Tesvir          = dto.Tesvir?.Trim();
         gx.KateqoriyaId    = dto.KateqoriyaId;
         gx.DepartamentId   = dto.DepartamentId == 0 ? null : dto.DepartamentId;
-        gx.TəxminiMebleg   = dto.TəxminiMebleg;
+        gx.TahminiMebleg   = dto.TahminiMebleg;
         gx.GozlenilenTarix = dto.GozlenilenTarix;
         gx.Prioritet       = (GozlenilenXercPrioritet)dto.PrioritetId;
         gx.Qeyd            = dto.Qeyd?.Trim();
@@ -146,7 +146,7 @@ public class GozlenilenXercController : Controller
             KateqoriyaId  = gx.KateqoriyaId,
             ManualGiris   = true,
             Tesvir        = $"[Gözlənilən] {gx.Ad}" + (string.IsNullOrEmpty(gx.Tesvir) ? "" : $" — {gx.Tesvir}"),
-            Mebleg        = dto.FaktikiMebleg > 0 ? dto.FaktikiMebleg : gx.TəxminiMebleg,
+            Mebleg        = dto.FaktikiMebleg > 0 ? dto.FaktikiMebleg : gx.TahminiMebleg,
             XercTarixi    = dto.OdenisTarixi != default ? dto.OdenisTarixi : DateTime.Now,
             Status        = XercStatus.Odenildi
         };
@@ -213,7 +213,7 @@ public class GozlenilenXercController : Controller
         public string?  Tesvir          { get; set; }
         public int      KateqoriyaId    { get; set; }
         public int?     DepartamentId   { get; set; }
-        public decimal  TəxminiMebleg   { get; set; }
+        public decimal  TahminiMebleg   { get; set; }
         public DateTime GozlenilenTarix { get; set; }
         public int      PrioritetId     { get; set; } = 2;
         public string?  Qeyd            { get; set; }

@@ -13,7 +13,7 @@ public class GozlenilenXerc : BaseEntity
     public int? DepartamentId { get; set; }
     public Departament? Departament { get; set; }
 
-    public decimal TəxminiMebleg { get; set; }
+    public decimal TahminiMebleg { get; set; }
     public DateTime GozlenilenTarix { get; set; }
 
     public GozlenilenXercPrioritet Prioritet { get; set; } = GozlenilenXercPrioritet.Orta;
