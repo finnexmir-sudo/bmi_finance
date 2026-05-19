@@ -207,6 +207,11 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .DistinctBy(x => x.Value)
                 .ToList();
 
+            // Rəhbər rolundakı işçi ID-ləri (siyahıdan xaric ediləcək)
+            var rehberIds = strukturRollar
+                .Where(r => r.RolTipi == StrukturRolTipi.Rehber)
+                .Select(r => r.IsciId).ToHashSet();
+
             // İl siyahısı
             ViewBag.Iller = Enumerable.Range(DateTime.Now.Year - 1, 3)
                 .Select(x => new SelectListItem(x.ToString(), x.ToString(), x == DateTime.Now.Year)).ToList();
@@ -225,9 +230,10 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
             else
             {
-                // Yalnız Şöbə Rəisi OLMAYAN işçilər
+                // Şöbə Rəisi və Rəhbər rolundakılar xaric — yalnız adi işçilər
+                var xaricEdilecekIds = sobeReisiIds.Union(rehberIds).ToHashSet();
                 isciler = await _unitOfWork.Repository<Isci>()
-                    .Query().Where(x => x.Status == IsciStatus.Aktiv && !x.Silinib && !sobeReisiIds.Contains(x.Id))
+                    .Query().Where(x => x.Status == IsciStatus.Aktiv && !x.Silinib && !xaricEdilecekIds.Contains(x.Id))
                     .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null)).ThenInclude(t => t.Departament)
                     .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null)).ThenInclude(t => t.Vezife)
                     .OrderBy(x => x.Soyad).ThenBy(x => x.Ad)
