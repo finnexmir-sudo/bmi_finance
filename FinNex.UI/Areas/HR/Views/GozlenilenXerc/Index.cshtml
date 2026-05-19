@@ -8,16 +8,16 @@
 <style>
 .gx-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:24px; }
 .gx-toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:20px; }
-.gx-filter-btn { padding:6px 18px; border-radius:8px; border:1.5px solid #d1d5db; background:#f8fafc;
+.gx-filter-btn { padding:6px 16px; border-radius:8px; border:1.5px solid #d1d5db; background:#f1f5f9;
                  font-size:.83rem; cursor:pointer; transition:.2s; color:#374151; font-weight:500; }
-.gx-filter-btn:hover { background:#e2e8f0; border-color:#94a3b8; }
+.gx-filter-btn:hover { background:#e2e8f0; }
 .gx-filter-btn.active { background:var(--fn-primary); color:#fff; border-color:var(--fn-primary); }
-.gx-filter-btn[onclick*="setStatus(0"] { border-color:#93c5fd; color:#1d4ed8; background:#eff6ff; }
-.gx-filter-btn[onclick*="setStatus(0"].active { background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
-.gx-filter-btn[onclick*="setStatus(1"] { border-color:#6ee7b7; color:#065f46; background:#f0fdf4; }
-.gx-filter-btn[onclick*="setStatus(1"].active { background:#0f766e; color:#fff; border-color:#0f766e; }
-.gx-filter-btn[onclick*="setStatus(2"] { border-color:#fca5a5; color:#b91c1c; background:#fff1f2; }
-.gx-filter-btn[onclick*="setStatus(2"].active { background:#dc2626; color:#fff; border-color:#dc2626; }
+.gx-f-aktiv { background:#eff6ff; color:#1d4ed8; border-color:#93c5fd; }
+.gx-f-aktiv.active { background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
+.gx-f-real  { background:#f0fdf4; color:#065f46; border-color:#6ee7b7; }
+.gx-f-real.active  { background:#0f766e; color:#fff; border-color:#0f766e; }
+.gx-f-legv  { background:#fff1f2; color:#b91c1c; border-color:#fca5a5; }
+.gx-f-legv.active  { background:#dc2626; color:#fff; border-color:#dc2626; }
 .gx-table { width:100%; border-collapse:collapse; font-size:.87rem; }
 .gx-table th { background:#f8fafc; font-weight:600; padding:10px 13px;
                text-align:left; border-bottom:2px solid #e5e7eb; }
@@ -73,16 +73,16 @@
 <div class="summary-row" id="summaryRow"></div>
 
 <div class="gx-card">
-    <div class="gx-toolbar">
-        <button class="gx-filter-btn active" onclick="setStatus(null,this)">Hamısı</button>
-        <button class="gx-filter-btn" onclick="setStatus(0,this)">Aktiv</button>
-        <button class="gx-filter-btn" onclick="setStatus(1,this)">Reallaşdı</button>
-        <button class="gx-filter-btn" onclick="setStatus(2,this)">Ləğv edildi</button>
-        <div style="margin-left:auto;">
-            <button class="fn-btn fn-btn-primary" onclick="modalAc()">
-                <i class="bi bi-plus-lg"></i> Yeni Gözlənilən Xərc
-            </button>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:12px; flex-wrap:wrap;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="gx-filter-btn active" onclick="setStatus(null,this)">Hamısı</button>
+            <button class="gx-filter-btn gx-f-aktiv" onclick="setStatus(0,this)">Aktiv</button>
+            <button class="gx-filter-btn gx-f-real" onclick="setStatus(1,this)">Reallaşdı</button>
+            <button class="gx-filter-btn gx-f-legv" onclick="setStatus(2,this)">Ləğv edildi</button>
         </div>
+        <button class="fn-btn fn-btn-primary" onclick="modalAc()" style="white-space:nowrap;">
+            <i class="bi bi-plus-lg"></i> Yeni Gözlənilən Xərc
+        </button>
     </div>
 
     <div style="overflow-x:auto;">
