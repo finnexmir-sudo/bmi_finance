@@ -303,6 +303,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             int yaradildi = 0;
             var listUrl = Url.Action("Index", "Performans", new { area = "User" });
+            var xetalar = new List<string>();
 
             foreach (var isci in isciler)
             {
@@ -320,6 +321,13 @@ namespace FinNex.UI.Areas.HR.Controllers
                         var sr = strukturRollar.FirstOrDefault(r =>
                             r.DepartamentId == deptId && r.RolTipi == StrukturRolTipi.SobeReisi && r.IsciId != isci.Id);
                         sobeReisiId = sr?.IsciId;
+                    }
+
+                    // Validation: işçi qiymətləndirməsində şöbə rəisi məcburidir
+                    if (sobeReisiId == null)
+                    {
+                        xetalar.Add($"{isci.Soyad} {isci.Ad} üçün şöbə rəisi seçilməyib.");
+                        continue;
                     }
                 }
 
@@ -351,6 +359,15 @@ namespace FinNex.UI.Areas.HR.Controllers
                     redirectUrl: listUrl);
 
                 yaradildi++;
+            }
+
+            if (xetalar.Any())
+                TempData["Warning"] = string.Join(" | ", xetalar);
+
+            if (yaradildi == 0)
+            {
+                TempData["Error"] = "Heç bir qiymətləndirmə yaradılmadı. Bütün seçilmiş işçilər üçün şöbə rəisi seçilməlidir.";
+                return RedirectToAction(nameof(BulkKampaniya), new { tipi = kampaniyaTipi });
             }
 
             TempData["Success"] = $"{yaradildi} işçi üçün performans kampaniyası uğurla başladıldı.";
