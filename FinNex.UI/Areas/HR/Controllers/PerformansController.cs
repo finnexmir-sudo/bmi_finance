@@ -197,7 +197,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Query().Where(x => !x.Silinib && x.Il == il && x.KampaniyaTipi == kampaniyaTipi);
             if (dovrTipiEnum == PerformansDovrTipi.Rublik && rubuDeger.HasValue)
                 mevcudQuery = mevcudQuery.Where(x => x.Rubu == rubuDeger);
-            var mevcudIsciIds = await mevcudQuery.Select(x => x.IsciId).ToHashSetAsync();
+            var mevcudIsciIds = (await mevcudQuery.Select(x => x.IsciId).ToListAsync()).ToHashSet();
 
             var strukturRollar = await _unitOfWork.Repository<IsciStrukturRolu>()
                 .Query().Where(x => x.Aktivdir && !x.Silinib)
