@@ -98,6 +98,12 @@
 
             <div class="nav-section">System</div>
 
+            <a class="nav-link @(currentController == "SistemAyar" ? "active" : "")"
+               asp-area="Admin" asp-controller="SistemAyar" asp-action="Index">
+                <i class="bi bi-gear-fill"></i>
+                Sistem Ayarları
+            </a>
+
             <a class="nav-link @(currentController == "LoginLogs" ? "active" : "")"
                asp-area="Admin" asp-controller="LoginLogs" asp-action="Index">
                 <i class="bi bi-door-open"></i>

@@ -1,4 +1,5 @@
 using FinNex.Application.Interfaces.Kredit;
+using FinNex.DataAccess.Contexts;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.Kredit;
@@ -8,6 +9,7 @@ using MailKit.Search;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.UI.Areas.User.Controllers;
 
@@ -25,6 +27,7 @@ public class KreditMuracietController : Controller
     private readonly UserManager<AppUser> _userManager;
     private readonly IWebHostEnvironment _env;
     private readonly IConfiguration _config;
+    private readonly AppDbContext _db;
 
     public KreditMuracietController(
         IKreditMuracietService muracietService,
@@ -36,7 +39,8 @@ public class KreditMuracietController : Controller
         IKomiteUzvuService komiteService,
         UserManager<AppUser> userManager,
         IWebHostEnvironment env,
-        IConfiguration config)
+        IConfiguration config,
+        AppDbContext db)
     {
         _muracietService = muracietService;
         _qerarService = qerarService;
@@ -48,6 +52,22 @@ public class KreditMuracietController : Controller
         _userManager = userManager;
         _env = env;
         _config = config;
+        _db = db;
+    }
+
+    private async Task<(string server, int port, string email, string password)> GetImapAyarlariAsync()
+    {
+        var ayar = await _db.SistemAyarlari.FirstOrDefaultAsync();
+        if (ayar != null && !string.IsNullOrWhiteSpace(ayar.KreditImapEmail))
+            return (ayar.KreditImapServer, ayar.KreditImapPort, ayar.KreditImapEmail, ayar.KreditImapPassword);
+
+        // fallback: appsettings
+        return (
+            _config["KreditMail:ImapServer"] ?? "imap.titan.email",
+            _config.GetValue("KreditMail:Port", 993),
+            _config["KreditMail:Email"] ?? "",
+            _config["KreditMail:Password"] ?? ""
+        );
     }
 
     // ══════════════════════════════════════════════════════
@@ -638,14 +658,11 @@ public class KreditMuracietController : Controller
 
         try
         {
-            var server = _config["KreditMail:ImapServer"] ?? "imap.titan.email";
-            var port = _config.GetValue("KreditMail:Port", 993);
-            var email = _config["KreditMail:Email"] ?? "";
-            var password = _config["KreditMail:Password"] ?? "";
+            var (server, port, email, password) = await GetImapAyarlariAsync();
 
             if (string.IsNullOrEmpty(password) || password == "PAROL_BURA_YAZIN")
             {
-                TempData["Error"] = "Mail parolu konfiqurasiya olunmayıb.";
+                TempData["Error"] = "Mail parolu konfiqurasiya olunmayıb. Admin panelindən ayarlayın.";
                 return RedirectToAction("Index");
             }
 
@@ -698,10 +715,7 @@ public class KreditMuracietController : Controller
     {
         try
         {
-            var server = _config["KreditMail:ImapServer"] ?? "imap.titan.email";
-            var port = _config.GetValue("KreditMail:Port", 993);
-            var email = _config["KreditMail:Email"] ?? "";
-            var password = _config["KreditMail:Password"] ?? "";
+            var (server, port, email, password) = await GetImapAyarlariAsync();
 
             if (string.IsNullOrEmpty(password) || password == "PAROL_BURA_YAZIN") return;
 
