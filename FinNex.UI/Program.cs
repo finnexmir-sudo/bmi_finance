@@ -331,12 +331,19 @@ namespace FinNex.UI
                         IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'PerformansKriteriyaSablonlar')
                         BEGIN
                             CREATE TABLE PerformansKriteriyaSablonlar (
-                                Id           INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                                Ad           NVARCHAR(200) NOT NULL,
-                                Ceki         DECIMAL(5,2)  NOT NULL,
-                                KampaniyaTipi INT          NOT NULL,
-                                Aktiv        BIT           NOT NULL DEFAULT 1,
-                                Sira         INT           NOT NULL DEFAULT 0
+                                Id                  INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                                Ad                  NVARCHAR(200) NOT NULL,
+                                Ceki                DECIMAL(5,2)  NOT NULL,
+                                KampaniyaTipi       INT           NOT NULL,
+                                Aktiv               BIT           NOT NULL DEFAULT 1,
+                                Sira                INT           NOT NULL DEFAULT 0,
+                                YaradilmaTarixi     DATETIME2     NOT NULL DEFAULT GETDATE(),
+                                YaradanIcraciId     INT           NULL,
+                                YenileyenIcraciId   INT           NULL,
+                                SilenIcraciId       INT           NULL,
+                                YenilenmeTarixi     DATETIME2     NULL,
+                                Silinib             BIT           NOT NULL DEFAULT 0,
+                                SilinmeTarixi       DATETIME2     NULL
                             );
                             INSERT INTO PerformansKriteriyaSablonlar (Ad, Ceki, KampaniyaTipi, Aktiv, Sira) VALUES
                             (N'İş keyfiyyəti',   30, 1, 1, 1),
