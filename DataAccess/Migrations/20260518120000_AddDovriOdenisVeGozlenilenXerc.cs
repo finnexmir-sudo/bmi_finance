@@ -1,9 +1,14 @@
+using FinNex.DataAccess.Contexts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace DataAccess.Migrations
+namespace FinNex.DataAccess.Migrations
 {
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20260518120000_AddDovriOdenisVeGozlenilenXerc")]
     public partial class AddDovriOdenisVeGozlenilenXerc : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
