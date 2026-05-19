@@ -36,9 +36,11 @@ namespace FinNex.UI.Areas.User.Controllers
                 .Where(x => !x.Silinib && (
                     x.IsciId == isciId ||
                     x.SobeReisiId == isciId ||
-                    x.QiymetlendirenIsciId == isciId))
+                    x.QiymetlendirenIsciId == isciId ||
+                    x.Rehber2Id == isciId))
                 .Include(x => x.Isci)
                 .Include(x => x.QiymetlendirenIsci)
+                .Include(x => x.Rehber2)
                 .Include(x => x.SobeReisi)
                 .OrderByDescending(x => x.YaradilmaTarixi)
                 .ToListAsync();
@@ -59,7 +61,8 @@ namespace FinNex.UI.Areas.User.Controllers
                 .Where(x => x.Id == id && !x.Silinib && (
                     x.IsciId == isciId ||
                     x.SobeReisiId == isciId ||
-                    x.QiymetlendirenIsciId == isciId))
+                    x.QiymetlendirenIsciId == isciId ||
+                    x.Rehber2Id == isciId))
                 .Include(x => x.Isci)
                     .ThenInclude(i => i.IsciTeyinatlari.Where(t => t.BitmeTarixi == null))
                         .ThenInclude(t => t.Departament)
@@ -67,6 +70,7 @@ namespace FinNex.UI.Areas.User.Controllers
                     .ThenInclude(i => i.IsciTeyinatlari.Where(t => t.BitmeTarixi == null))
                         .ThenInclude(t => t.Vezife)
                 .Include(x => x.QiymetlendirenIsci)
+                .Include(x => x.Rehber2)
                 .Include(x => x.SobeReisi)
                 .Include(x => x.Kriteriyalar)
                 .FirstOrDefaultAsync();
@@ -76,13 +80,13 @@ namespace FinNex.UI.Areas.User.Controllers
             ViewBag.CurrentIsciId = isciId;
             ViewBag.IsIsci = performans.IsciId == isciId;
             ViewBag.IsSobeReisi = performans.SobeReisiId == isciId;
-            ViewBag.IsRehber = performans.QiymetlendirenIsciId == isciId;
+            ViewBag.IsRehber1 = performans.QiymetlendirenIsciId == isciId;
+            ViewBag.IsRehber2 = performans.Rehber2Id == isciId;
             ViewData["Title"] = $"Performans — {performans.Isci.Ad} {performans.Isci.Soyad}";
             return View(performans);
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> IsciQiymetlendir(int performansId,
             string? isciSherhi, string? inkisafPlani,
             List<int> kriteriyaIds, List<decimal> isciQiymetleri, List<string?> isciSherhler)
@@ -90,44 +94,40 @@ namespace FinNex.UI.Areas.User.Controllers
             var appUser = await _userManager.GetUserAsync(User);
             if (appUser?.IsciId == null) return Forbid();
 
-            var performans = await _unitOfWork.Repository<PerformansQiymetlendirme>()
+            var p = await _unitOfWork.Repository<PerformansQiymetlendirme>()
                 .Query().Where(x => x.Id == performansId && !x.Silinib && x.IsciId == appUser.IsciId.Value)
                 .Include(x => x.Kriteriyalar).FirstOrDefaultAsync();
 
-            if (performans == null) return NotFound();
-            if (performans.Status != PerformansStatus.Gozlemede)
-            {
-                TempData["Error"] = "Bu mərhələ artıq tamamlanıb.";
-                return RedirectToAction(nameof(Detal), new { id = performansId });
-            }
+            if (p == null) return NotFound();
+            if (p.Status != PerformansStatus.Gozlemede)
+            { TempData["Error"] = "Bu mərhələ artıq tamamlanıb."; return RedirectToAction(nameof(Detal), new { id = performansId }); }
 
             for (int i = 0; i < kriteriyaIds.Count; i++)
             {
-                var krit = performans.Kriteriyalar.FirstOrDefault(k => k.Id == kriteriyaIds[i]);
+                var krit = p.Kriteriyalar.FirstOrDefault(k => k.Id == kriteriyaIds[i]);
                 if (krit == null) continue;
                 krit.IsciQiymeti = isciQiymetleri[i];
                 krit.IsciSherhi = isciSherhler.Count > i ? isciSherhler[i] : null;
                 await _unitOfWork.Repository<PerformansKriteriya>().YenileAsync(krit);
             }
 
-            decimal toplamCeki = performans.Kriteriyalar.Sum(k => k.Ceki);
-            performans.IsciOrtalamaQiymet = toplamCeki > 0
-                ? Math.Round(performans.Kriteriyalar.Where(k => k.IsciQiymeti.HasValue)
+            decimal toplamCeki = p.Kriteriyalar.Sum(k => k.Ceki);
+            p.IsciOrtalamaQiymet = toplamCeki > 0
+                ? Math.Round(p.Kriteriyalar.Where(k => k.IsciQiymeti.HasValue)
                     .Sum(k => k.IsciQiymeti!.Value * k.Ceki) / toplamCeki, 2) : 0;
-            performans.IsciSherhi = isciSherhi;
-            performans.InkisafPlani = inkisafPlani;
-            performans.IsciQiymetlendirmeTarixi = DateTime.Now;
-            performans.Status = PerformansStatus.IsciQiymetlendirdi;
+            p.IsciSherhi = isciSherhi;
+            p.InkisafPlani = inkisafPlani;
+            p.IsciQiymetlendirmeTarixi = DateTime.Now;
+            p.Status = PerformansStatus.SobeReisiGozleyir;
 
-            await _unitOfWork.Repository<PerformansQiymetlendirme>().YenileAsync(performans);
+            await _unitOfWork.Repository<PerformansQiymetlendirme>().YenileAsync(p);
             await _unitOfWork.YaddaSaxlaAsync();
 
             TempData["Success"] = "Qiymətləndirməniz qeydə alındı.";
             return RedirectToAction(nameof(Detal), new { id = performansId });
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> SobeReisiQiymetlendir(int performansId,
             string? sobeReisiSherhi,
             List<int> kriteriyaIds, List<decimal> sobeReisiQiymetleri, List<string?> sobeReisiSherhler)
@@ -135,43 +135,39 @@ namespace FinNex.UI.Areas.User.Controllers
             var appUser = await _userManager.GetUserAsync(User);
             if (appUser?.IsciId == null) return Forbid();
 
-            var performans = await _unitOfWork.Repository<PerformansQiymetlendirme>()
+            var p = await _unitOfWork.Repository<PerformansQiymetlendirme>()
                 .Query().Where(x => x.Id == performansId && !x.Silinib && x.SobeReisiId == appUser.IsciId.Value)
                 .Include(x => x.Kriteriyalar).FirstOrDefaultAsync();
 
-            if (performans == null) return NotFound();
-            if (performans.Status != PerformansStatus.IsciQiymetlendirdi)
-            {
-                TempData["Error"] = "Bu mərhələ mövcud deyil.";
-                return RedirectToAction(nameof(Detal), new { id = performansId });
-            }
+            if (p == null) return NotFound();
+            if (p.Status != PerformansStatus.SobeReisiGozleyir)
+            { TempData["Error"] = "Bu mərhələ mövcud deyil."; return RedirectToAction(nameof(Detal), new { id = performansId }); }
 
             for (int i = 0; i < kriteriyaIds.Count; i++)
             {
-                var krit = performans.Kriteriyalar.FirstOrDefault(k => k.Id == kriteriyaIds[i]);
+                var krit = p.Kriteriyalar.FirstOrDefault(k => k.Id == kriteriyaIds[i]);
                 if (krit == null) continue;
                 krit.SobeReisiQiymeti = sobeReisiQiymetleri[i];
                 krit.SobeReisiSherhi = sobeReisiSherhler.Count > i ? sobeReisiSherhler[i] : null;
                 await _unitOfWork.Repository<PerformansKriteriya>().YenileAsync(krit);
             }
 
-            decimal toplamCeki = performans.Kriteriyalar.Sum(k => k.Ceki);
-            performans.SobeReisiOrtalamaQiymet = toplamCeki > 0
-                ? Math.Round(performans.Kriteriyalar.Where(k => k.SobeReisiQiymeti.HasValue)
+            decimal toplamCeki = p.Kriteriyalar.Sum(k => k.Ceki);
+            p.SobeReisiOrtalamaQiymet = toplamCeki > 0
+                ? Math.Round(p.Kriteriyalar.Where(k => k.SobeReisiQiymeti.HasValue)
                     .Sum(k => k.SobeReisiQiymeti!.Value * k.Ceki) / toplamCeki, 2) : 0;
-            performans.SobeReisiSherhi = sobeReisiSherhi;
-            performans.SobeReisiQiymetlendirmeTarixi = DateTime.Now;
-            performans.Status = PerformansStatus.SobeReisiQiymetlendirdi;
+            p.SobeReisiSherhi = sobeReisiSherhi;
+            p.SobeReisiQiymetlendirmeTarixi = DateTime.Now;
+            p.Status = PerformansStatus.RehberGozleyir;
 
-            await _unitOfWork.Repository<PerformansQiymetlendirme>().YenileAsync(performans);
+            await _unitOfWork.Repository<PerformansQiymetlendirme>().YenileAsync(p);
             await _unitOfWork.YaddaSaxlaAsync();
 
             TempData["Success"] = "Şöbə rəisi qiymətləndirməsi qeydə alındı.";
             return RedirectToAction(nameof(Detal), new { id = performansId });
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> RehberQiymetlendir(int performansId,
             string? mudirSherhi, string? inkisafPlani,
             List<int> kriteriyaIds, List<decimal> mudirQiymetleri, List<string?> mudirSherhler)
@@ -179,48 +175,95 @@ namespace FinNex.UI.Areas.User.Controllers
             var appUser = await _userManager.GetUserAsync(User);
             if (appUser?.IsciId == null) return Forbid();
 
-            var performans = await _unitOfWork.Repository<PerformansQiymetlendirme>()
+            var p = await _unitOfWork.Repository<PerformansQiymetlendirme>()
                 .Query().Where(x => x.Id == performansId && !x.Silinib && x.QiymetlendirenIsciId == appUser.IsciId.Value)
                 .Include(x => x.Kriteriyalar).FirstOrDefaultAsync();
 
-            if (performans == null) return NotFound();
-            var validStatuses = new[] { PerformansStatus.IsciQiymetlendirdi, PerformansStatus.SobeReisiQiymetlendirdi };
-            if (!validStatuses.Contains(performans.Status))
-            {
-                TempData["Error"] = "Bu mərhələ mövcud deyil.";
-                return RedirectToAction(nameof(Detal), new { id = performansId });
-            }
+            if (p == null) return NotFound();
+            var validStatuses = new[] { PerformansStatus.SobeReisiGozleyir, PerformansStatus.RehberGozleyir };
+            if (!validStatuses.Contains(p.Status))
+            { TempData["Error"] = "Bu mərhələ mövcud deyil."; return RedirectToAction(nameof(Detal), new { id = performansId }); }
 
             for (int i = 0; i < kriteriyaIds.Count; i++)
             {
-                var krit = performans.Kriteriyalar.FirstOrDefault(k => k.Id == kriteriyaIds[i]);
+                var krit = p.Kriteriyalar.FirstOrDefault(k => k.Id == kriteriyaIds[i]);
                 if (krit == null) continue;
                 krit.MudirQiymeti = mudirQiymetleri[i];
                 krit.MudirSherhi = mudirSherhler.Count > i ? mudirSherhler[i] : null;
                 await _unitOfWork.Repository<PerformansKriteriya>().YenileAsync(krit);
             }
 
-            decimal toplamCeki = performans.Kriteriyalar.Sum(k => k.Ceki);
-            performans.MudirOrtalamaQiymet = toplamCeki > 0
-                ? Math.Round(performans.Kriteriyalar.Where(k => k.MudirQiymeti.HasValue)
+            decimal toplamCeki = p.Kriteriyalar.Sum(k => k.Ceki);
+            p.MudirOrtalamaQiymet = toplamCeki > 0
+                ? Math.Round(p.Kriteriyalar.Where(k => k.MudirQiymeti.HasValue)
                     .Sum(k => k.MudirQiymeti!.Value * k.Ceki) / toplamCeki, 2) : 0;
-            performans.MudirSherhi = mudirSherhi;
-            if (!string.IsNullOrEmpty(inkisafPlani)) performans.InkisafPlani = inkisafPlani;
-            performans.MudirQiymetlendirmeTarixi = DateTime.Now;
-            performans.Status = PerformansStatus.Tamamlandi;
+            p.MudirSherhi = mudirSherhi;
+            if (!string.IsNullOrEmpty(inkisafPlani)) p.InkisafPlani = inkisafPlani;
+            p.MudirQiymetlendirmeTarixi = DateTime.Now;
+            p.Status = p.Rehber2Id.HasValue ? PerformansStatus.Rehber2Gozleyir : PerformansStatus.Tamamlandi;
 
-            decimal isci = performans.IsciOrtalamaQiymet;
-            decimal sobe = performans.SobeReisiOrtalamaQiymet;
-            decimal rehber = performans.MudirOrtalamaQiymet;
-            bool hasSobe = performans.SobeReisiId.HasValue && sobe > 0;
-            performans.YekunQiymet = hasSobe
-                ? Math.Round((isci + sobe + rehber) / 3, 2)
-                : Math.Round((isci + rehber) / 2, 2);
+            decimal isci = p.IsciOrtalamaQiymet, sobe = p.SobeReisiOrtalamaQiymet;
+            decimal r1 = p.MudirOrtalamaQiymet;
+            bool hasSobe = p.SobeReisiId.HasValue && sobe > 0;
+            p.YekunQiymet = hasSobe
+                ? Math.Round((isci + sobe + r1) / 3, 2)
+                : Math.Round((isci + r1) / 2, 2);
 
-            await _unitOfWork.Repository<PerformansQiymetlendirme>().YenileAsync(performans);
+            await _unitOfWork.Repository<PerformansQiymetlendirme>().YenileAsync(p);
             await _unitOfWork.YaddaSaxlaAsync();
 
-            TempData["Success"] = "Qiymətləndirmə tamamlandı.";
+            TempData["Success"] = p.Rehber2Id.HasValue
+                ? "Qiymətləndirməniz qeydə alındı. Rəhbər 2 gözlənilir."
+                : "Qiymətləndirmə tamamlandı.";
+            return RedirectToAction(nameof(Detal), new { id = performansId });
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Rehber2Qiymetlendir(int performansId,
+            string? rehber2Sherhi, string? inkisafPlani,
+            List<int> kriteriyaIds, List<decimal> rehber2Qiymetleri, List<string?> rehber2Sherhler)
+        {
+            var appUser = await _userManager.GetUserAsync(User);
+            if (appUser?.IsciId == null) return Forbid();
+
+            var p = await _unitOfWork.Repository<PerformansQiymetlendirme>()
+                .Query().Where(x => x.Id == performansId && !x.Silinib && x.Rehber2Id == appUser.IsciId.Value)
+                .Include(x => x.Kriteriyalar).FirstOrDefaultAsync();
+
+            if (p == null) return NotFound();
+            if (p.Status != PerformansStatus.Rehber2Gozleyir)
+            { TempData["Error"] = "Bu mərhələ mövcud deyil."; return RedirectToAction(nameof(Detal), new { id = performansId }); }
+
+            for (int i = 0; i < kriteriyaIds.Count; i++)
+            {
+                var krit = p.Kriteriyalar.FirstOrDefault(k => k.Id == kriteriyaIds[i]);
+                if (krit == null) continue;
+                krit.Rehber2Qiymeti = rehber2Qiymetleri[i];
+                krit.Rehber2Sherhi = rehber2Sherhler.Count > i ? rehber2Sherhler[i] : null;
+                await _unitOfWork.Repository<PerformansKriteriya>().YenileAsync(krit);
+            }
+
+            decimal toplamCeki = p.Kriteriyalar.Sum(k => k.Ceki);
+            p.Rehber2OrtalamaQiymet = toplamCeki > 0
+                ? Math.Round(p.Kriteriyalar.Where(k => k.Rehber2Qiymeti.HasValue)
+                    .Sum(k => k.Rehber2Qiymeti!.Value * k.Ceki) / toplamCeki, 2) : 0;
+            p.Rehber2Sherhi = rehber2Sherhi;
+            if (!string.IsNullOrEmpty(inkisafPlani)) p.InkisafPlani = inkisafPlani;
+            p.Rehber2QiymetlendirmeTarixi = DateTime.Now;
+            p.Status = PerformansStatus.Tamamlandi;
+
+            bool hasSobe = p.SobeReisiId.HasValue && p.SobeReisiOrtalamaQiymet > 0;
+            bool hasR2 = p.Rehber2OrtalamaQiymet > 0;
+            decimal sum = p.IsciOrtalamaQiymet + p.MudirOrtalamaQiymet;
+            int cnt = 2;
+            if (hasSobe) { sum += p.SobeReisiOrtalamaQiymet; cnt++; }
+            if (hasR2) { sum += p.Rehber2OrtalamaQiymet; cnt++; }
+            p.YekunQiymet = Math.Round(sum / cnt, 2);
+
+            await _unitOfWork.Repository<PerformansQiymetlendirme>().YenileAsync(p);
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            TempData["Success"] = "Yekun qiymətləndirmə tamamlandı.";
             return RedirectToAction(nameof(Detal), new { id = performansId });
         }
     }

@@ -57,6 +57,12 @@ namespace FinNex.Domain.Entities.Communication
         TeklifCavab = 37,
 
         // Gələn Mail
-        YeniGelenMail = 38
+        YeniGelenMail = 38,
+
+        // Performans Qiymətləndirmə
+        PerformansBasladi = 39,
+        PerformansNovbeSobe = 40,
+        PerformansNovbeRehber = 41,
+        PerformansTamamlandi = 42
     }
 }

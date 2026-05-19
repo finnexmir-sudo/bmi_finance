@@ -1,0 +1,197 @@
+@{
+    ViewData["Title"] = "Toplu Kampaniya Başlat";
+    var isciList = ViewBag.IsciVmList as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/performans.css" asp-append-version="true" />
+    <style>
+        .bk-wrap { display:grid; grid-template-columns:1fr 360px; gap:20px; align-items:start; }
+        .bk-table-wrap { background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; }
+        .bk-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .bk-table th { background:#f8fafc; padding:10px 14px; text-align:left; font-weight:600; color:#475569; border-bottom:1px solid #e2e8f0; white-space:nowrap; }
+        .bk-table td { padding:10px 14px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+        .bk-table tr:last-child td { border-bottom:none; }
+        .bk-table tr:hover td { background:#f8fafc; }
+        .bk-check { width:16px; height:16px; cursor:pointer; accent-color:#6366f1; }
+        .bk-warning { display:inline-block; background:#fef3c7; color:#92400e; font-size:11px; padding:2px 7px; border-radius:12px; }
+        .bk-menecer { display:inline-block; background:#ede9fe; color:#6d28d9; font-size:11px; padding:2px 7px; border-radius:12px; }
+        .bk-sidebar { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px; position:sticky; top:20px; }
+        .bk-selected-count { font-size:28px; font-weight:700; color:#6366f1; }
+        .bk-toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid #e2e8f0; }
+        .bk-select-all { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:#475569; cursor:pointer; }
+        @@media(max-width:900px){ .bk-wrap{ grid-template-columns:1fr; } .bk-sidebar{ position:static; } }
+    </style>
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Toplu Kampaniya Başlat</div>
+            <div class="fn-page-sub">İşçiləri seçin, rəhbərləri təyin edin, kampaniya başlatın</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">← Geri</a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:16px;color:#dc2626;font-size:13px;">
+            <i class="bi bi-exclamation-circle me-1"></i>@TempData["Error"]
+        </div>
+    }
+
+    <form id="bulkForm" asp-action="BulkKampaniyaBaslat" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="bk-wrap">
+            @* ── Sol: İşçi Siyahısı ── *@
+            <div>
+                <div class="bk-table-wrap">
+                    <div class="bk-toolbar">
+                        <label class="bk-select-all">
+                            <input type="checkbox" id="chkHamisi" class="bk-check" />
+                            Hamısını seç
+                        </label>
+                        <div style="font-size:13px;color:#64748b;">
+                            <span id="secilmisCount">0</span> işçi seçilib
+                        </div>
+                    </div>
+                    <table class="bk-table">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;"></th>
+                                <th>Ad Soyad</th>
+                                <th>Departament</th>
+                                <th>Vəzifə</th>
+                                <th>Şöbə Rəisi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var isci in isciList)
+                            {
+                                <tr>
+                                    <td><input type="checkbox" name="secilmisIsciIds" value="@isci.Id" class="bk-check isci-chk" /></td>
+                                    <td>
+                                        <strong>@isci.Soyad @isci.Ad</strong>
+                                        @if ((bool)isci.IsMenecer)
+                                        { <span class="bk-menecer ms-1">Menecer</span> }
+                                    </td>
+                                    <td>@isci.Departament</td>
+                                    <td>@isci.Vezife</td>
+                                    <td>
+                                        @if ((bool)isci.SobeReisiVar)
+                                        { <span style="font-size:12px;color:#059669;">@isci.SobeReisiAd</span> }
+                                        else
+                                        { <span class="bk-warning"><i class="bi bi-exclamation-triangle"></i> Rəis yoxdur</span> }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            @* ── Sağ: Kampaniya Ayarları ── *@
+            <div class="bk-sidebar">
+                <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:16px;border-bottom:1px solid #e2e8f0;padding-bottom:10px;">
+                    <i class="bi bi-gear me-1"></i> Kampaniya Parametrləri
+                </div>
+
+                <div style="margin-bottom:12px;">
+                    <div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:4px;">Seçilmiş işçilər</div>
+                    <div class="bk-selected-count" id="sidebarCount">0</div>
+                </div>
+
+                <div class="fn-form-row" style="margin-bottom:12px;">
+                    <label class="fn-label">Rəhbər 1 <span style="color:#dc2626">*</span></label>
+                    <select name="qiymetlendirenIsciId" class="fn-input" required>
+                        <option value="">Rəhbər seçin...</option>
+                        @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                        { <option value="@item.Value">@item.Text</option> }
+                    </select>
+                </div>
+
+                <div class="fn-form-row" style="margin-bottom:12px;">
+                    <label class="fn-label">Rəhbər 2 <span style="color:#64748b;font-weight:400;">(ixtiyari)</span></label>
+                    <select name="rehber2Id" class="fn-input">
+                        <option value="">— yoxdur —</option>
+                        @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                        { <option value="@item.Value">@item.Text</option> }
+                    </select>
+                    <div style="font-size:11px;color:#64748b;margin-top:4px;">Dual/Skip-level review üçün ikinci rəhbər</div>
+                </div>
+
+                <div class="fn-form-row" style="margin-bottom:12px;">
+                    <label class="fn-label">Dövr Tipi</label>
+                    <select name="dovrTipi" id="dovrTipi" class="fn-input">
+                        <option value="1">Rüblük</option>
+                        <option value="2">İllik</option>
+                    </select>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+                    <div class="fn-form-row" style="margin-bottom:0">
+                        <label class="fn-label">İl</label>
+                        <select name="il" class="fn-input">
+                            @foreach (var item in ViewBag.Iller as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                            { <option value="@item.Value" @(item.Selected ? "selected" : "")>@item.Text</option> }
+                        </select>
+                    </div>
+                    <div class="fn-form-row" style="margin-bottom:0" id="rubuRow">
+                        <label class="fn-label">Rüb</label>
+                        <select name="rubu" class="fn-input">
+                            <option value="1">Rüb 1</option><option value="2">Rüb 2</option>
+                            <option value="3">Rüb 3</option><option value="4">Rüb 4</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 12px;font-size:12px;color:#0369a1;margin-bottom:16px;">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Menecer rolundakı işçilər üçün avtomatik liderlik kriteriyaları tətbiq olunacaq.
+                </div>
+
+                <button type="submit" class="fn-btn fn-btn--primary" style="width:100%;" id="btnBaslat" disabled>
+                    <i class="bi bi-rocket-takeoff me-1"></i> Kampaniya Başlat
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        var chkHamisi = document.getElementById('chkHamisi');
+        var isciChkler = document.querySelectorAll('.isci-chk');
+        var sidebarCount = document.getElementById('sidebarCount');
+        var secilmisCount = document.getElementById('secilmisCount');
+        var btnBaslat = document.getElementById('btnBaslat');
+
+        function yenileCount() {
+            var n = document.querySelectorAll('.isci-chk:checked').length;
+            sidebarCount.textContent = n;
+            secilmisCount.textContent = n;
+            btnBaslat.disabled = n === 0;
+        }
+
+        chkHamisi.addEventListener('change', function () {
+            isciChkler.forEach(function (c) { c.checked = chkHamisi.checked; });
+            yenileCount();
+        });
+        isciChkler.forEach(function (c) {
+            c.addEventListener('change', function () {
+                chkHamisi.checked = document.querySelectorAll('.isci-chk:checked').length === isciChkler.length;
+                yenileCount();
+            });
+        });
+
+        document.getElementById('dovrTipi').addEventListener('change', function () {
+            document.getElementById('rubuRow').style.display = this.value === '2' ? 'none' : '';
+        });
+
+        document.getElementById('bulkForm').addEventListener('submit', function (e) {
+            var n = document.querySelectorAll('.isci-chk:checked').length;
+            if (n === 0) { e.preventDefault(); alert('Ən azı bir işçi seçilməlidir.'); }
+        });
+    </script>
+}

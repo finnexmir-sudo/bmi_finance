@@ -295,6 +295,33 @@ namespace FinNex.UI
                 }
                 catch { /* artıq tətbiq olunub */ }
 
+                // Performans — Rehber2 və MenecerKriteriyalari sütunları
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='Rehber2Id')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD Rehber2Id INT NULL;
+                        IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name='FK_Performans_Isciler_Rehber2Id')
+                        BEGIN
+                            IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='Rehber2Id')
+                                ALTER TABLE PerformansQiymetlendirmeler ADD CONSTRAINT FK_Performans_Isciler_Rehber2Id FOREIGN KEY (Rehber2Id) REFERENCES Isciler(Id);
+                        END
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='Rehber2OrtalamaQiymet')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD Rehber2OrtalamaQiymet DECIMAL(5,2) NOT NULL DEFAULT 0;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='Rehber2Sherhi')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD Rehber2Sherhi NVARCHAR(MAX) NULL;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='Rehber2QiymetlendirmeTarixi')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD Rehber2QiymetlendirmeTarixi DATETIME2 NULL;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='MenecerKriteriyalari')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD MenecerKriteriyalari BIT NOT NULL DEFAULT 0;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansKriteriyalar' AND COLUMN_NAME='Rehber2Qiymeti')
+                            ALTER TABLE PerformansKriteriyalar ADD Rehber2Qiymeti DECIMAL(5,2) NULL;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansKriteriyalar' AND COLUMN_NAME='Rehber2Sherhi')
+                            ALTER TABLE PerformansKriteriyalar ADD Rehber2Sherhi NVARCHAR(MAX) NULL;
+                    ");
+                }
+                catch { }
+
                 // Icazeler.JetonOdenenSaat sütununu əlavə etmə (jeton ilə ödənilən icazə saatı)
                 try
                 {
