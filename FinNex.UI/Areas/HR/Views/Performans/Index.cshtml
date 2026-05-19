@@ -35,17 +35,17 @@
             <span class="prf-filter-label">Filtr</span>
             <select name="il" class="prf-select prf-auto-filter">
                 @foreach (var item in ViewBag.Iller as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
-                { <option value="@item.Value" @(item.Selected ? "selected" : "")>@item.Text</option> }
+                { <option value="@item.Value" selected="@(item.Selected ? "selected" : null)">@item.Text</option> }
             </select>
             <select name="rubu" class="prf-select prf-auto-filter">
                 <option value="">Bütün rüblər</option>
                 @foreach (var item in ViewBag.Rublar as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
-                { <option value="@item.Value" @(item.Selected ? "selected" : "")>@item.Text</option> }
+                { <option value="@item.Value" selected="@(item.Selected ? "selected" : null)">@item.Text</option> }
             </select>
             <select name="departamentId" class="prf-select prf-select--wide prf-auto-filter">
                 <option value="">Bütün departamentlər</option>
                 @foreach (var item in ViewBag.Departamentler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
-                { <option value="@item.Value" @(item.Selected ? "selected" : "")>@item.Text</option> }
+                { <option value="@item.Value" selected="@(item.Selected ? "selected" : null)">@item.Text</option> }
             </select>
             <div class="prf-filter-actions">
                 <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">Sıfırla</a>
