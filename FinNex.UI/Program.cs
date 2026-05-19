@@ -768,7 +768,7 @@ END
                                 CONSTRAINT [FK_DovriOdenisler_XercKateqoriyalari_KateqoriyaId]
                                     FOREIGN KEY ([KateqoriyaId]) REFERENCES [XercKateqoriyalari]([Id]) ON DELETE NO ACTION,
                                 CONSTRAINT [FK_DovriOdenisler_Departments_DepartamentId]
-                                    FOREIGN KEY ([DepartamentId]) REFERENCES [Departments]([Id]) ON DELETE NO ACTION
+                                    FOREIGN KEY ([DepartamentId]) REFERENCES [Departament]([Id]) ON DELETE NO ACTION
                             );
                         END
                     ");
@@ -804,7 +804,7 @@ END
                                 CONSTRAINT [FK_GozlenilenXercler_XercKateqoriyalari_KateqoriyaId]
                                     FOREIGN KEY ([KateqoriyaId]) REFERENCES [XercKateqoriyalari]([Id]) ON DELETE NO ACTION,
                                 CONSTRAINT [FK_GozlenilenXercler_Departments_DepartamentId]
-                                    FOREIGN KEY ([DepartamentId]) REFERENCES [Departments]([Id]) ON DELETE NO ACTION,
+                                    FOREIGN KEY ([DepartamentId]) REFERENCES [Departament]([Id]) ON DELETE NO ACTION,
                                 CONSTRAINT [FK_GozlenilenXercler_Xercler_XercId]
                                     FOREIGN KEY ([XercId]) REFERENCES [Xercler]([Id]) ON DELETE NO ACTION
                             );
