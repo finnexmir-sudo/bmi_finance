@@ -286,9 +286,9 @@ namespace FinNex.UI.Areas.HR.Controllers
             int dovrTipi, int il, int? rubu, int kampaniyaTipi)
         {
             if (!secilmisIsciIds.Any())
-            { TempData["Error"] = "Ən azı bir işçi seçilməlidir."; return RedirectToAction(nameof(BulkKampaniya), new { tipi = kampaniyaTipi }); }
+            { TempData["Error"] = "Ən azı bir işçi seçilməlidir."; return RedirectToAction(nameof(BulkKampaniya), new { tipi = kampaniyaTipi, il, dovrTipi, rubu }); }
             if (qiymetlendirenIsciId <= 0)
-            { TempData["Error"] = "Rəhbər seçilməlidir."; return RedirectToAction(nameof(BulkKampaniya), new { tipi = kampaniyaTipi }); }
+            { TempData["Error"] = "Rəhbər seçilməlidir."; return RedirectToAction(nameof(BulkKampaniya), new { tipi = kampaniyaTipi, il, dovrTipi, rubu }); }
 
             var tipi = (KampaniyaTipi)kampaniyaTipi;
 
@@ -380,7 +380,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             if (yaradildi == 0)
             {
                 TempData["Error"] = "Heç bir qiymətləndirmə yaradılmadı. Bütün seçilmiş işçilər üçün şöbə rəisi seçilməlidir.";
-                return RedirectToAction(nameof(BulkKampaniya), new { tipi = kampaniyaTipi });
+                return RedirectToAction(nameof(BulkKampaniya), new { tipi = kampaniyaTipi, il, dovrTipi, rubu });
             }
 
             TempData["Success"] = $"{yaradildi} işçi üçün performans kampaniyası uğurla başladıldı.";
