@@ -862,12 +862,19 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .OnDelete(DeleteBehavior.NoAction);
 
         builder.Entity<PerformansQiymetlendirme>()
-            .Property(x => x.SobeReisiOrtalamaQiymet).HasPrecision(5, 2);
+            .HasOne(x => x.Rehber2)
+            .WithMany()
+            .HasForeignKey(x => x.Rehber2Id)
+            .OnDelete(DeleteBehavior.NoAction);
 
+        builder.Entity<PerformansQiymetlendirme>()
+            .Property(x => x.SobeReisiOrtalamaQiymet).HasPrecision(5, 2);
         builder.Entity<PerformansQiymetlendirme>()
             .Property(x => x.IsciOrtalamaQiymet).HasPrecision(5, 2);
         builder.Entity<PerformansQiymetlendirme>()
             .Property(x => x.MudirOrtalamaQiymet).HasPrecision(5, 2);
+        builder.Entity<PerformansQiymetlendirme>()
+            .Property(x => x.Rehber2OrtalamaQiymet).HasPrecision(5, 2);
         builder.Entity<PerformansQiymetlendirme>()
             .Property(x => x.YekunQiymet).HasPrecision(5, 2);
 
@@ -883,6 +890,8 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .Property(x => x.IsciQiymeti).HasPrecision(5, 2);
         builder.Entity<PerformansKriteriya>()
             .Property(x => x.MudirQiymeti).HasPrecision(5, 2);
+        builder.Entity<PerformansKriteriya>()
+            .Property(x => x.Rehber2Qiymeti).HasPrecision(5, 2);
         builder.Entity<PerformansKriteriya>()
             .Property(x => x.SobeReisiQiymeti).HasPrecision(5, 2);
 

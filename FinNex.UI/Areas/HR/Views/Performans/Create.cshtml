@@ -50,19 +50,33 @@
                         </div>
                     </div>
                     <div class="fn-form-row">
-                        <label class="fn-label">Rəhbər <span style="color:#dc2626">*</span></label>
+                        <label class="fn-label">Rəhbər 1 <span style="color:#dc2626">*</span></label>
                         <select name="qiymetlendirenIsciId" id="rehberSelect" class="fn-input" required>
                             <option value="">Rəhbər seçin...</option>
                             @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
-                            {
-                                <option value="@item.Value">@item.Text</option>
-                            }
+                            { <option value="@item.Value">@item.Text</option> }
                         </select>
                         <div class="prf-mudir-hint" id="rehberHint" style="display:none;">
-                            <i class="bi bi-info-circle"></i>
-                            <span id="rehberHintText"></span>
+                            <i class="bi bi-info-circle"></i><span id="rehberHintText"></span>
                         </div>
                     </div>
+                    <div class="fn-form-row">
+                        <label class="fn-label">Rəhbər 2 <span style="color:#64748b;font-weight:400;">(ixtiyari — dual review)</span></label>
+                        <select name="rehber2Id" id="rehber2Select" class="fn-input">
+                            <option value="">— yoxdur —</option>
+                            @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                            { <option value="@item.Value">@item.Text</option> }
+                        </select>
+                    </div>
+                </div>
+
+                @* Menecer kriteriyaları *@
+                <div style="margin-top:12px;">
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                        <input type="checkbox" name="menecerKriteriyalari" id="chkMenecer" value="true" style="accent-color:#6366f1;width:16px;height:16px;" />
+                        <span>Menecer qiymətləndirməsi (liderlik kriteriyaları tətbiq edilsin)</span>
+                        <span id="menecerBadge" style="display:none;background:#ede9fe;color:#6d28d9;font-size:11px;padding:2px 8px;border-radius:12px;">Avtomatik aşkarlandı</span>
+                    </label>
                 </div>
             </div>
         </div>
@@ -215,6 +229,14 @@
                         document.getElementById('rehberHint').style.display = 'flex';
                     } else {
                         document.getElementById('rehberHint').style.display = 'none';
+                    }
+                    // Menecer aşkarlandısa checkbox işarələ
+                    if (data.isMenecer) {
+                        document.getElementById('chkMenecer').checked = true;
+                        document.getElementById('menecerBadge').style.display = 'inline-block';
+                    } else {
+                        document.getElementById('chkMenecer').checked = false;
+                        document.getElementById('menecerBadge').style.display = 'none';
                     }
                 })
                 .catch(function() {});

@@ -5,23 +5,25 @@
     int currentIsciId = ViewBag.IsciId ?? 0;
 
     string StatusText(PerformansStatus s) => s switch {
-        PerformansStatus.Gozlemede => "Gözləmədə",
-        PerformansStatus.IsciQiymetlendirdi => "İşçi qiymətləndirdi",
-        PerformansStatus.SobeReisiQiymetlendirdi => "Şöbə rəisi qiymətləndirdi",
-        PerformansStatus.RehberQiymetlendirdi => "Rəhbər qiymətləndirdi",
-        PerformansStatus.Tamamlandi => "Tamamlandı",
+        PerformansStatus.Gozlemede          => "Gözləmədə",
+        PerformansStatus.SobeReisiGozleyir  => "Şöbə rəisi gözlənilir",
+        PerformansStatus.RehberGozleyir     => "Rəhbər gözlənilir",
+        PerformansStatus.Rehber2Gozleyir    => "Rəhbər 2 gözlənilir",
+        PerformansStatus.Tamamlandi         => "Tamamlandı",
         _ => "—"
     };
     string RolText(PerformansQiymetlendirme p) {
         if (p.IsciId == currentIsciId) return "İşçi";
         if (p.SobeReisiId == currentIsciId) return "Şöbə Rəisi";
-        if (p.QiymetlendirenIsciId == currentIsciId) return "Rəhbər";
+        if (p.QiymetlendirenIsciId == currentIsciId) return "Rəhbər 1";
+        if (p.Rehber2Id == currentIsciId) return "Rəhbər 2";
         return "—";
     };
     bool GozlemeDe(PerformansQiymetlendirme p) {
         if (p.IsciId == currentIsciId && p.Status == PerformansStatus.Gozlemede) return true;
-        if (p.SobeReisiId == currentIsciId && p.Status == PerformansStatus.IsciQiymetlendirdi) return true;
-        if (p.QiymetlendirenIsciId == currentIsciId && (p.Status == PerformansStatus.IsciQiymetlendirdi || p.Status == PerformansStatus.SobeReisiQiymetlendirdi)) return true;
+        if (p.SobeReisiId == currentIsciId && p.Status == PerformansStatus.SobeReisiGozleyir) return true;
+        if (p.QiymetlendirenIsciId == currentIsciId && p.Status == PerformansStatus.RehberGozleyir) return true;
+        if (p.Rehber2Id == currentIsciId && p.Status == PerformansStatus.Rehber2Gozleyir) return true;
         return false;
     };
 }
@@ -62,6 +64,8 @@
                             Rəhbər: @(p.QiymetlendirenIsci?.Ad) @(p.QiymetlendirenIsci?.Soyad)
                             @if (p.SobeReisiId.HasValue && p.SobeReisi != null)
                             { <span> · Şöbə R.: @p.SobeReisi.Ad @p.SobeReisi.Soyad</span> }
+                            @if (p.Rehber2Id.HasValue && p.Rehber2 != null)
+                            { <span> · R.2: @p.Rehber2.Ad @p.Rehber2.Soyad</span> }
                         </div>
                     </div>
                     <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
