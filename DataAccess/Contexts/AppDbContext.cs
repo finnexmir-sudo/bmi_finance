@@ -108,6 +108,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     // Performans
     public DbSet<PerformansQiymetlendirme> PerformansQiymetlendirmeler { get; set; }
     public DbSet<PerformansKriteriya> PerformansKriteriyalar { get; set; }
+    public DbSet<PerformansKriteriyaSablon> PerformansKriteriyaSablonlar { get; set; }
 
     // Təlim
     public DbSet<Telim> Telimler { get; set; }
@@ -894,6 +895,11 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .Property(x => x.Rehber2Qiymeti).HasPrecision(5, 2);
         builder.Entity<PerformansKriteriya>()
             .Property(x => x.SobeReisiQiymeti).HasPrecision(5, 2);
+
+        builder.Entity<PerformansKriteriyaSablon>()
+            .Property(x => x.Ceki).HasPrecision(5, 2);
+        builder.Entity<PerformansKriteriyaSablon>()
+            .ToTable("PerformansKriteriyaSablonlar");
 
         // ── Təlim ─────────────────────────────────────────────
         builder.Entity<TelimIshtiraki>()

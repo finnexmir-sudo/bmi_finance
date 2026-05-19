@@ -25,7 +25,9 @@ namespace FinNex.Domain.Entities.HR
 
         public PerformansStatus Status { get; set; } = PerformansStatus.Gozlemede;
 
-        // Menecer kriteriyaları (şöbə rəisi qiymətləndiriləndə true)
+        public KampaniyaTipi KampaniyaTipi { get; set; } = KampaniyaTipi.IsciQiymetlendirme;
+
+        // Köhnə sahə — uyğunluq üçün saxlanılır
         public bool MenecerKriteriyalari { get; set; }
 
         public decimal IsciOrtalamaQiymet { get; set; }

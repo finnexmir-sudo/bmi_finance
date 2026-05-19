@@ -1,6 +1,12 @@
 @{
-    ViewData["Title"] = "Toplu Kampaniya Başlat";
-    var isciList = ViewBag.IsciVmList as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    ViewData["Title"] = (string)ViewData["Title"];
+    var isciList  = ViewBag.IsciVmList as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var kampTipi  = (int)(ViewBag.KampaniyaTipi ?? 1);
+    var isSobeR   = kampTipi == 2;
+    var sobeReisleri = ViewBag.SobeReisleri as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+                       ?? Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+    var rehberler    = ViewBag.Rehberler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+                       ?? Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
 }
 
 @section Styles {
@@ -14,12 +20,13 @@
         .bk-table tr:last-child td { border-bottom:none; }
         .bk-table tr:hover td { background:#f8fafc; }
         .bk-check { width:16px; height:16px; cursor:pointer; accent-color:#6366f1; }
-        .bk-warning { display:inline-block; background:#fef3c7; color:#92400e; font-size:11px; padding:2px 7px; border-radius:12px; }
-        .bk-menecer { display:inline-block; background:#ede9fe; color:#6d28d9; font-size:11px; padding:2px 7px; border-radius:12px; }
+        .bk-badge-sobe { display:inline-block; background:#fef3c7; color:#92400e; font-size:11px; padding:2px 7px; border-radius:12px; }
+        .bk-badge-rehber { display:inline-block; background:#ede9fe; color:#6d28d9; font-size:11px; padding:2px 7px; border-radius:12px; }
         .bk-sidebar { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px; position:sticky; top:20px; }
         .bk-selected-count { font-size:28px; font-weight:700; color:#6366f1; }
         .bk-toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid #e2e8f0; }
         .bk-select-all { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:#475569; cursor:pointer; }
+        .bk-inline-select { font-size:12px; padding:3px 6px; border:1px solid #e2e8f0; border-radius:6px; color:#334155; min-width:140px; }
         @@media(max-width:900px){ .bk-wrap{ grid-template-columns:1fr; } .bk-sidebar{ position:static; } }
     </style>
 }
@@ -27,10 +34,19 @@
 <div class="fn-page">
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">Toplu Kampaniya Başlat</div>
-            <div class="fn-page-sub">İşçiləri seçin, rəhbərləri təyin edin, kampaniya başlatın</div>
+            <div class="fn-page-title">
+                @if (isSobeR)
+                { <i class="bi bi-person-badge me-2" style="color:#f59e0b;"></i> }
+                else
+                { <i class="bi bi-people me-2" style="color:#6366f1;"></i> }
+                @ViewData["Title"]
+            </div>
+            <div class="fn-page-sub">İşçiləri seçin, rəhbər təyin edin, kampaniya başlatın</div>
         </div>
-        <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">← Geri</a>
+        <div style="display:flex;gap:8px;">
+            <a asp-action="BulkKampaniya" class="fn-btn fn-btn--outline fn-btn--sm">← Tipi dəyiş</a>
+            <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">↩ Siyahıya</a>
+        </div>
     </div>
 
     @if (TempData["Error"] != null)
@@ -42,9 +58,11 @@
 
     <form id="bulkForm" asp-action="BulkKampaniyaBaslat" method="post">
         @Html.AntiForgeryToken()
+        <input type="hidden" name="kampaniyaTipi" value="@kampTipi" />
 
         <div class="bk-wrap">
-            @* ── Sol: İşçi Siyahısı ── *@
+
+            @* ── Sol: İşçi / Şöbə Rəisi Siyahısı ── *@
             <div>
                 <div class="bk-table-wrap">
                     <div class="bk-toolbar">
@@ -53,7 +71,8 @@
                             Hamısını seç
                         </label>
                         <div style="font-size:13px;color:#64748b;">
-                            <span id="secilmisCount">0</span> işçi seçilib
+                            <span id="secilmisCount">0</span>
+                            @(isSobeR ? "şöbə rəisi" : "işçi") seçilib
                         </div>
                     </div>
                     <table class="bk-table">
@@ -63,7 +82,8 @@
                                 <th>Ad Soyad</th>
                                 <th>Departament</th>
                                 <th>Vəzifə</th>
-                                <th>Şöbə Rəisi</th>
+                                @if (!isSobeR)
+                                { <th>Şöbə Rəisi</th> }
                             </tr>
                         </thead>
                         <tbody>
@@ -73,17 +93,29 @@
                                     <td><input type="checkbox" name="secilmisIsciIds" value="@isci.Id" class="bk-check isci-chk" /></td>
                                     <td>
                                         <strong>@isci.Soyad @isci.Ad</strong>
-                                        @if ((bool)isci.IsMenecer)
-                                        { <span class="bk-menecer ms-1">Menecer</span> }
+                                        @if (isSobeR)
+                                        { <span class="bk-badge-sobe ms-1">Şöbə Rəisi</span> }
                                     </td>
                                     <td>@isci.Departament</td>
                                     <td>@isci.Vezife</td>
-                                    <td>
-                                        @if ((bool)isci.SobeReisiVar)
-                                        { <span style="font-size:12px;color:#059669;">@isci.SobeReisiAd</span> }
-                                        else
-                                        { <span class="bk-warning"><i class="bi bi-exclamation-triangle"></i> Rəis yoxdur</span> }
-                                    </td>
+                                    @if (!isSobeR)
+                                    {
+                                        <td>
+                                            @if ((bool)isci.SobeReisiVar)
+                                            {
+                                                <span style="font-size:12px;color:#059669;">@isci.SobeReisiAd</span>
+                                                <input type="hidden" name="sobe_@isci.Id" value="@isci.SobeReisiId" />
+                                            }
+                                            else
+                                            {
+                                                <select name="sobe_@isci.Id" class="bk-inline-select">
+                                                    <option value="">— Seçin —</option>
+                                                    @foreach (var sr in sobeReisleri)
+                                                    { <option value="@sr.Value">@sr.Text</option> }
+                                                </select>
+                                            }
+                                        </td>
+                                    }
                                 </tr>
                             }
                         </tbody>
@@ -91,34 +123,39 @@
                 </div>
             </div>
 
-            @* ── Sağ: Kampaniya Ayarları ── *@
+            @* ── Sağ: Kampaniya Parametrləri ── *@
             <div class="bk-sidebar">
                 <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:16px;border-bottom:1px solid #e2e8f0;padding-bottom:10px;">
                     <i class="bi bi-gear me-1"></i> Kampaniya Parametrləri
                 </div>
 
                 <div style="margin-bottom:12px;">
-                    <div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:4px;">Seçilmiş işçilər</div>
+                    <div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:4px;">Seçilmiş</div>
                     <div class="bk-selected-count" id="sidebarCount">0</div>
                 </div>
 
                 <div class="fn-form-row" style="margin-bottom:12px;">
-                    <label class="fn-label">Rəhbər 1 <span style="color:#dc2626">*</span></label>
+                    <label class="fn-label">
+                        Rəhbər 1 <span style="color:#dc2626">*</span>
+                        <span style="font-size:10px;color:#94a3b8;font-weight:400;margin-left:4px;">yalnız rəhbər rolundakılar</span>
+                    </label>
                     <select name="qiymetlendirenIsciId" class="fn-input" required>
                         <option value="">Rəhbər seçin...</option>
-                        @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                        @foreach (var item in rehberler)
                         { <option value="@item.Value">@item.Text</option> }
                     </select>
                 </div>
 
                 <div class="fn-form-row" style="margin-bottom:12px;">
-                    <label class="fn-label">Rəhbər 2 <span style="color:#64748b;font-weight:400;">(ixtiyari)</span></label>
+                    <label class="fn-label">
+                        Rəhbər 2 <span style="color:#64748b;font-weight:400;">(ixtiyari)</span>
+                    </label>
                     <select name="rehber2Id" class="fn-input">
                         <option value="">— yoxdur —</option>
-                        @foreach (var item in ViewBag.Isciler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                        @foreach (var item in rehberler)
                         { <option value="@item.Value">@item.Text</option> }
                     </select>
-                    <div style="font-size:11px;color:#64748b;margin-top:4px;">Dual/Skip-level review üçün ikinci rəhbər</div>
+                    <div style="font-size:11px;color:#64748b;margin-top:4px;">Skip-level review üçün ikinci rəhbər</div>
                 </div>
 
                 <div class="fn-form-row" style="margin-bottom:12px;">
@@ -146,9 +183,12 @@
                     </div>
                 </div>
 
-                <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 12px;font-size:12px;color:#0369a1;margin-bottom:16px;">
+                <div style="background:@(isSobeR ? "#fffbeb" : "#f0f9ff");border:1px solid @(isSobeR ? "#fde68a" : "#bae6fd");border-radius:8px;padding:10px 12px;font-size:12px;color:@(isSobeR ? "#92400e" : "#0369a1");margin-bottom:16px;">
                     <i class="bi bi-info-circle me-1"></i>
-                    Menecer rolundakı işçilər üçün avtomatik liderlik kriteriyaları tətbiq olunacaq.
+                    @if (isSobeR)
+                    { <span>Şöbə rəisləri üçün <strong>liderlik</strong> və <strong>komanda idarəetməsi</strong> kriteriyaları tətbiq olunacaq.</span> }
+                    else
+                    { <span>İşçilər üçün standart performans kriteriyaları tətbiq olunacaq.</span> }
                 </div>
 
                 <button type="submit" class="fn-btn fn-btn--primary" style="width:100%;" id="btnBaslat" disabled>
@@ -161,15 +201,15 @@
 
 @section Scripts {
     <script>
-        var chkHamisi = document.getElementById('chkHamisi');
-        var isciChkler = document.querySelectorAll('.isci-chk');
-        var sidebarCount = document.getElementById('sidebarCount');
+        var chkHamisi     = document.getElementById('chkHamisi');
+        var isciChkler    = document.querySelectorAll('.isci-chk');
+        var sidebarCount  = document.getElementById('sidebarCount');
         var secilmisCount = document.getElementById('secilmisCount');
-        var btnBaslat = document.getElementById('btnBaslat');
+        var btnBaslat     = document.getElementById('btnBaslat');
 
         function yenileCount() {
             var n = document.querySelectorAll('.isci-chk:checked').length;
-            sidebarCount.textContent = n;
+            sidebarCount.textContent  = n;
             secilmisCount.textContent = n;
             btnBaslat.disabled = n === 0;
         }
@@ -190,8 +230,10 @@
         });
 
         document.getElementById('bulkForm').addEventListener('submit', function (e) {
-            var n = document.querySelectorAll('.isci-chk:checked').length;
-            if (n === 0) { e.preventDefault(); alert('Ən azı bir işçi seçilməlidir.'); }
+            if (document.querySelectorAll('.isci-chk:checked').length === 0) {
+                e.preventDefault();
+                alert('Ən azı bir işçi seçilməlidir.');
+            }
         });
     </script>
 }

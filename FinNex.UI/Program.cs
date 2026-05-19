@@ -318,6 +318,38 @@ namespace FinNex.UI
                             ALTER TABLE PerformansKriteriyalar ADD Rehber2Qiymeti DECIMAL(5,2) NULL;
                         IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansKriteriyalar' AND COLUMN_NAME='Rehber2Sherhi')
                             ALTER TABLE PerformansKriteriyalar ADD Rehber2Sherhi NVARCHAR(MAX) NULL;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='KampaniyaTipi')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD KampaniyaTipi INT NOT NULL DEFAULT 1;
+                    ");
+                }
+                catch { }
+
+                // PerformansKriteriyaSablonlar cədvəlini yarat + default məlumatlar
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'PerformansKriteriyaSablonlar')
+                        BEGIN
+                            CREATE TABLE PerformansKriteriyaSablonlar (
+                                Id           INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                                Ad           NVARCHAR(200) NOT NULL,
+                                Ceki         DECIMAL(5,2)  NOT NULL,
+                                KampaniyaTipi INT          NOT NULL,
+                                Aktiv        BIT           NOT NULL DEFAULT 1,
+                                Sira         INT           NOT NULL DEFAULT 0
+                            );
+                            INSERT INTO PerformansKriteriyaSablonlar (Ad, Ceki, KampaniyaTipi, Aktiv, Sira) VALUES
+                            (N'İş keyfiyyəti',   30, 1, 1, 1),
+                            (N'Vaxtında icra',   20, 1, 1, 2),
+                            (N'Komanda işi',     20, 1, 1, 3),
+                            (N'Təşəbbüskarlıq',  15, 1, 1, 4),
+                            (N'Peşəkar inkişaf', 15, 1, 1, 5),
+                            (N'Liderlik',            25, 2, 1, 1),
+                            (N'Komanda idarəetməsi', 25, 2, 1, 2),
+                            (N'Nəticəyönümlülük',    20, 2, 1, 3),
+                            (N'Ünsiyyət',            15, 2, 1, 4),
+                            (N'İnkişaf dəstəyi',     15, 2, 1, 5);
+                        END
                     ");
                 }
                 catch { }
