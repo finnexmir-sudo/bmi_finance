@@ -24,11 +24,6 @@
     };
     string QiymetClass(decimal q) => q >= 4 ? "prf-q--high" : q >= 3 ? "prf-q--mid" : q > 0 ? "prf-q--low" : "";
 
-    bool sobeFormuGoster = hasSobeReisi && Model.Status == PerformansStatus.SobeReisiGozleyir;
-    bool rehber1FormuGoster = hasSobeReisi
-        ? Model.Status == PerformansStatus.RehberGozleyir
-        : (Model.Status == PerformansStatus.SobeReisiGozleyir || Model.Status == PerformansStatus.RehberGozleyir);
-    bool rehber2FormuGoster = hasRehber2 && Model.Status == PerformansStatus.Rehber2Gozleyir;
 }
 
 @section Styles {
@@ -205,159 +200,15 @@
         </div>
     }
 
-    @* ── İşçi Formu ── *@
-    @if (Model.Status == PerformansStatus.Gozlemede)
+
+    @* ── Cari Mərhələ (read-only info) ── *@
+    @if (Model.Status != PerformansStatus.Tamamlandi)
     {
-        <div class="fn-card prf-form-card" style="margin-top:20px;">
-            <div class="fn-card-title">İşçi Qiymətləndirməsi</div>
-            <form asp-action="IsciQiymetlendir" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="performansId" value="@Model.Id" />
-                @foreach (var k in Model.Kriteriyalar.OrderByDescending(x => x.Ceki))
-                {
-                    <div class="prf-krit-form-row">
-                        <div class="prf-krit-name">@k.KriteriyaAdi <span class="prf-krit-ceki">(@k.Ceki%)</span></div>
-                        <input type="hidden" name="kriteriyaIds" value="@k.Id" />
-                        <div class="prf-krit-inputs">
-                            <select name="isciQiymetleri" class="fn-input fn-input--sm" required>
-                                <option value="">Qiymət...</option>
-                                <option value="1">1 — Çox zəif</option><option value="2">2 — Zəif</option>
-                                <option value="3">3 — Orta</option><option value="4">4 — Yaxşı</option><option value="5">5 — Əla</option>
-                            </select>
-                            <input type="text" name="isciSherhler" class="fn-input fn-input--sm" placeholder="Şərh..." />
-                        </div>
-                    </div>
-                }
-                <div class="fn-form-row" style="margin-top:12px;"><label class="fn-label">Ümumi Şərh</label><textarea name="isciSherhi" class="fn-input" rows="3"></textarea></div>
-                <div class="fn-form-row"><label class="fn-label">İnkişaf Planı</label><textarea name="inkisafPlani" class="fn-input" rows="3"></textarea></div>
-                <div style="display:flex;justify-content:flex-end;margin-top:12px;">
-                    <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-check-lg me-1"></i>Qiymətləndir</button>
-                </div>
-            </form>
-        </div>
-    }
-
-    @* ── Şöbə Rəisi Formu ── *@
-    @if (sobeFormuGoster)
-    {
-        <div class="fn-card prf-form-card" style="margin-top:16px;border-left:4px solid #f59e0b;">
-            <div class="fn-card-title">Şöbə Rəisi Qiymətləndirməsi</div>
-            <form asp-action="SobeReisiQiymetlendir" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="performansId" value="@Model.Id" />
-                @foreach (var k in Model.Kriteriyalar.OrderByDescending(x => x.Ceki))
-                {
-                    <div class="prf-krit-form-row">
-                        <div class="prf-krit-name">
-                            @k.KriteriyaAdi <span class="prf-krit-ceki">(@k.Ceki%)</span>
-                            @if (k.IsciQiymeti.HasValue) { <span style="font-size:11px;color:#64748b;margin-left:8px;">İşçi: @k.IsciQiymeti.Value.ToString("N1")</span> }
-                        </div>
-                        <input type="hidden" name="kriteriyaIds" value="@k.Id" />
-                        <div class="prf-krit-inputs">
-                            <select name="sobeReisiQiymetleri" class="fn-input fn-input--sm" required>
-                                <option value="">Qiymət...</option>
-                                <option value="1">1 — Çox zəif</option><option value="2">2 — Zəif</option>
-                                <option value="3">3 — Orta</option><option value="4">4 — Yaxşı</option><option value="5">5 — Əla</option>
-                            </select>
-                            <input type="text" name="sobeReisiSherhler" class="fn-input fn-input--sm" placeholder="Şərh..." />
-                        </div>
-                    </div>
-                }
-                <div class="fn-form-row" style="margin-top:12px;"><label class="fn-label">Ümumi Şərh</label><textarea name="sobeReisiSherhi" class="fn-input" rows="3"></textarea></div>
-                <div style="display:flex;justify-content:flex-end;margin-top:12px;">
-                    <button type="submit" class="fn-btn fn-btn--primary" style="background:#f59e0b;border-color:#f59e0b;"><i class="bi bi-check-lg me-1"></i>Şöbə Rəisi Qiymətləndirsin</button>
-                </div>
-            </form>
-        </div>
-    }
-
-    @* ── Rəhbər 1 Formu ── *@
-    @if (rehber1FormuGoster)
-    {
-        <div class="fn-card prf-form-card" style="margin-top:16px;border-left:4px solid #6366f1;">
-            <div class="fn-card-title">Rəhbər 1 Qiymətləndirməsi — @Model.QiymetlendirenIsci.TamAd</div>
-            <form asp-action="RehberQiymetlendir" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="performansId" value="@Model.Id" />
-                @foreach (var k in Model.Kriteriyalar.OrderByDescending(x => x.Ceki))
-                {
-                    <div class="prf-krit-form-row">
-                        <div class="prf-krit-name">
-                            @k.KriteriyaAdi <span class="prf-krit-ceki">(@k.Ceki%)</span>
-                            @if (k.IsciQiymeti.HasValue) { <span style="font-size:11px;color:#64748b;margin-left:8px;">İşçi: @k.IsciQiymeti.Value.ToString("N1")</span> }
-                            @if (k.SobeReisiQiymeti.HasValue) { <span style="font-size:11px;color:#92400e;margin-left:4px;">| Ş.R.: @k.SobeReisiQiymeti.Value.ToString("N1")</span> }
-                        </div>
-                        <input type="hidden" name="kriteriyaIds" value="@k.Id" />
-                        <div class="prf-krit-inputs">
-                            <select name="mudirQiymetleri" class="fn-input fn-input--sm" required>
-                                <option value="">Qiymət...</option>
-                                <option value="1">1 — Çox zəif</option><option value="2">2 — Zəif</option>
-                                <option value="3">3 — Orta</option><option value="4">4 — Yaxşı</option><option value="5">5 — Əla</option>
-                            </select>
-                            <input type="text" name="mudirSherhler" class="fn-input fn-input--sm" placeholder="Şərh..." />
-                        </div>
-                    </div>
-                }
-                <div class="fn-form-row" style="margin-top:12px;"><label class="fn-label">Rəhbər Şərhi</label><textarea name="mudirSherhi" class="fn-input" rows="3"></textarea></div>
-                <div class="fn-form-row"><label class="fn-label">İnkişaf Planı</label><textarea name="inkisafPlani" class="fn-input" rows="3">@Model.InkisafPlani</textarea></div>
-
-                @* ── Jeton Motivasiya Hint ── *@
-                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;margin-top:16px;font-size:13px;color:#1d4ed8;display:flex;gap:10px;align-items:flex-start;">
-                    <span style="font-size:20px;line-height:1;">💡</span>
-                    <span>Gələcək planlarımızda, bu mərhələdə performansı yüksək olan işçiləri daxili <strong>Jetonlarla (Bonus)</strong> mükafatlandıra biləcəksiniz.</span>
-                </div>
-
-                <div style="display:flex;justify-content:flex-end;margin-top:12px;">
-                    <button type="submit" class="fn-btn fn-btn--primary">
-                        <i class="bi bi-check-lg me-1"></i>
-                        @(hasRehber2 ? "Rəhbər 1 Qiymətləndirsin" : "Qiymətləndirməni Tamamla")
-                    </button>
-                </div>
-            </form>
-        </div>
-    }
-
-    @* ── Rəhbər 2 Formu ── *@
-    @if (rehber2FormuGoster)
-    {
-        <div class="fn-card prf-form-card" style="margin-top:16px;border-left:4px solid #8b5cf6;">
-            <div class="fn-card-title">Rəhbər 2 — Yekun Qiymətləndirmə — @(Model.Rehber2?.TamAd ?? "")</div>
-            <form asp-action="Rehber2Qiymetlendir" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="performansId" value="@Model.Id" />
-                @foreach (var k in Model.Kriteriyalar.OrderByDescending(x => x.Ceki))
-                {
-                    <div class="prf-krit-form-row">
-                        <div class="prf-krit-name">
-                            @k.KriteriyaAdi <span class="prf-krit-ceki">(@k.Ceki%)</span>
-                            @if (k.IsciQiymeti.HasValue) { <span style="font-size:11px;color:#64748b;margin-left:8px;">İşçi: @k.IsciQiymeti.Value.ToString("N1")</span> }
-                            @if (k.MudirQiymeti.HasValue) { <span style="font-size:11px;color:#4f46e5;margin-left:4px;">| R.1: @k.MudirQiymeti.Value.ToString("N1")</span> }
-                        </div>
-                        <input type="hidden" name="kriteriyaIds" value="@k.Id" />
-                        <div class="prf-krit-inputs">
-                            <select name="rehber2Qiymetleri" class="fn-input fn-input--sm" required>
-                                <option value="">Qiymət...</option>
-                                <option value="1">1 — Çox zəif</option><option value="2">2 — Zəif</option>
-                                <option value="3">3 — Orta</option><option value="4">4 — Yaxşı</option><option value="5">5 — Əla</option>
-                            </select>
-                            <input type="text" name="rehber2Sherhler" class="fn-input fn-input--sm" placeholder="Şərh..." />
-                        </div>
-                    </div>
-                }
-                <div class="fn-form-row" style="margin-top:12px;"><label class="fn-label">Yekun Şərh</label><textarea name="rehber2Sherhi" class="fn-input" rows="3"></textarea></div>
-                <div class="fn-form-row"><label class="fn-label">İnkişaf Planı</label><textarea name="inkisafPlani" class="fn-input" rows="3">@Model.InkisafPlani</textarea></div>
-
-                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;margin-top:16px;font-size:13px;color:#1d4ed8;display:flex;gap:10px;align-items:flex-start;">
-                    <span style="font-size:20px;line-height:1;">💡</span>
-                    <span>Gələcək planlarımızda, bu mərhələdə performansı yüksək olan işçiləri daxili <strong>Jetonlarla (Bonus)</strong> mükafatlandıra biləcəksiniz.</span>
-                </div>
-
-                <div style="display:flex;justify-content:flex-end;margin-top:12px;">
-                    <button type="submit" class="fn-btn fn-btn--primary" style="background:#8b5cf6;border-color:#8b5cf6;">
-                        <i class="bi bi-check-lg me-1"></i>Yekun Qiymətləndirməni Tamamla
-                    </button>
-                </div>
-            </form>
+        <div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-top:16px;font-size:13px;color:#92400e;display:flex;align-items:center;gap:8px;">
+            <i class="bi bi-hourglass-split"></i>
+            <span>
+                Hazırda <strong>@StatusText(Model.Status)</strong> mərhələsindədir. Qiymətləndirməni həmin rolun sahibi öz şəxsi kabinetindən həyata keçirir.
+            </span>
         </div>
     }
 
