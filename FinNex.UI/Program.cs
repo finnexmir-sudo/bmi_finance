@@ -813,6 +813,27 @@ END
                 }
                 catch { }
 
+                // SistemAyarlari cədvəli
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'SistemAyarlari')
+                        BEGIN
+                            CREATE TABLE [SistemAyarlari] (
+                                [Id]                 INT           NOT NULL IDENTITY(1,1),
+                                [KreditImapServer]   NVARCHAR(200) NOT NULL DEFAULT 'imap.titan.email',
+                                [KreditImapPort]     INT           NOT NULL DEFAULT 993,
+                                [KreditImapEmail]    NVARCHAR(200) NOT NULL DEFAULT '',
+                                [KreditImapPassword] NVARCHAR(500) NOT NULL DEFAULT '',
+                                CONSTRAINT [PK_SistemAyarlari] PRIMARY KEY ([Id])
+                            );
+                            INSERT INTO [SistemAyarlari] ([KreditImapServer],[KreditImapPort],[KreditImapEmail],[KreditImapPassword])
+                            VALUES ('imap.titan.email', 993, '', '');
+                        END
+                    ");
+                }
+                catch { }
+
                 // Avtomatik migration — sadəcə Migrate() çağır, xəta olsa logla amma crash etmə
                 try
                 {
