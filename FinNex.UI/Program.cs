@@ -105,15 +105,12 @@ namespace FinNex.UI
             // ==================================================
             // 4. MVC + FluentValidation (.NET 8 way)
             // ==================================================
-            var mvc = builder.Services.AddControllersWithViews(options =>
+            builder.Services.AddControllersWithViews(options =>
             {
                 // Decimal field-lər həm "." həm "," qəbul etsin
                 // (az-AZ kültürü "." -i minlik kimi parse etməsin deyə)
                 options.ModelBinderProviders.Insert(0, new Configurations.FlexibleDecimalModelBinderProvider());
             });
-            // Development-də .cshtml dəyişiklikləri rebuild olmadan görünsün
-            if (builder.Environment.IsDevelopment())
-                mvc.AddRazorRuntimeCompilation();
 
             builder.Services.AddFluentValidationAutoValidation();
             builder.Services.AddFluentValidationClientsideAdapters();
