@@ -56,11 +56,15 @@
             <p>Şirkətin daxili qaydaları, prosedurlar və tənzimləmələr · <strong>@aktiv.Count</strong> aktiv qayda</p>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
-            <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm"><i class="bi bi-chat-dots me-1"></i> HR Məsləhətçi</a>
+            <a asp-action="Index"
+               style="display:inline-flex;align-items:center;gap:5px;padding:6px 14px;background:#6366f1;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;text-decoration:none;">
+                <i class="bi bi-chat-dots"></i> HR Məsləhətçi
+            </a>
             @if (isAdmin)
             {
-                <button class="fn-btn fn-btn--primary fn-btn--sm" onclick="modalAc()">
-                    <i class="bi bi-plus-lg me-1"></i> Yeni Qayda
+                <button onclick="modalAc()"
+                        style="display:inline-flex;align-items:center;gap:5px;padding:6px 14px;background:#1e293b;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;">
+                    <i class="bi bi-plus-lg"></i> Yeni Qayda
                 </button>
             }
         </div>
