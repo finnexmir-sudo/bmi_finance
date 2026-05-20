@@ -1,0 +1,80 @@
+@model IEnumerable<FinNex.Domain.Entities.HR.PerformansKriteriyaSablon>
+@using FinNex.Domain.Entities.HR
+@{
+    ViewData["Title"] = "Performans Kriteriyaları";
+    var isciList = Model.Where(x => x.KampaniyaTipi == KampaniyaTipi.IsciQiymetlendirme).ToList();
+    var sobeList = Model.Where(x => x.KampaniyaTipi == KampaniyaTipi.SobeReisiQiymetlendirme).ToList();
+
+    decimal isciCemi = isciList.Where(x => x.Aktiv).Sum(x => x.Ceki);
+    decimal sobeCemi = sobeList.Where(x => x.Aktiv).Sum(x => x.Ceki);
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/performans.css" asp-append-version="true" />
+    <style>
+        .krit-wrap { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+        .krit-panel { background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; }
+        .krit-panel-head { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid #e2e8f0; }
+        .krit-panel-title { font-size:14px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:8px; }
+        .krit-ceki-badge { font-size:12px; font-weight:600; padding:3px 10px; border-radius:20px; }
+        .krit-ceki-ok   { background:#dcfce7; color:#16a34a; }
+        .krit-ceki-warn { background:#fef3c7; color:#92400e; }
+        .krit-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .krit-table th { background:#f8fafc; padding:8px 14px; text-align:left; font-weight:600; color:#64748b; border-bottom:1px solid #e2e8f0; font-size:11px; text-transform:uppercase; letter-spacing:.05em; }
+        .krit-table td { padding:10px 14px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+        .krit-table tr:last-child td { border-bottom:none; }
+        .krit-inactive { opacity:.45; }
+        .krit-add-form { padding:14px 18px; border-top:1px solid #e2e8f0; background:#f8fafc; display:flex; gap:8px; align-items:flex-end; }
+        .krit-edit-input { font-size:12px; padding:4px 8px; border:1px solid #d1d5db; border-radius:6px; }
+        @@media(max-width:900px){ .krit-wrap{ grid-template-columns:1fr; } }
+    </style>
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title"><i class="bi bi-list-check me-2" style="color:#6366f1;"></i>Performans Kriteriyaları</div>
+            <div class="fn-page-sub">Kampaniya tipinə görə qiymətləndirmə kriteriyaları</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">← Siyahı</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 16px;margin-bottom:14px;color:#16a34a;font-size:13px;">
+            <i class="bi bi-check-circle me-1"></i>@TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 16px;margin-bottom:14px;color:#dc2626;font-size:13px;">
+            <i class="bi bi-exclamation-circle me-1"></i>@TempData["Error"]
+        </div>
+    }
+
+    <div class="krit-wrap">
+
+        @* ── İşçi Kriteriyaları ── *@
+        @await Html.PartialAsync("_KriteriyaPanel", new ViewDataDictionary(ViewData)
+        {
+            { "PanelList",  isciList },
+            { "PanelTipi",  (int)KampaniyaTipi.IsciQiymetlendirme },
+            { "PanelTitle", "İşçi Qiymətləndirməsi" },
+            { "PanelColor", "#6366f1" },
+            { "PanelIcon",  "bi-people" },
+            { "PanelCemi",  isciCemi }
+        })
+
+        @* ── Şöbə Rəisi Kriteriyaları ── *@
+        @await Html.PartialAsync("_KriteriyaPanel", new ViewDataDictionary(ViewData)
+        {
+            { "PanelList",  sobeList },
+            { "PanelTipi",  (int)KampaniyaTipi.SobeReisiQiymetlendirme },
+            { "PanelTitle", "Şöbə Rəisi Qiymətləndirməsi" },
+            { "PanelColor", "#f59e0b" },
+            { "PanelIcon",  "bi-person-badge" },
+            { "PanelCemi",  sobeCemi }
+        })
+
+    </div>
+</div>
