@@ -219,7 +219,16 @@
             btnBaslat.disabled = n === 0;
         }
 
-        chkHamisi.addEventListener('change', function () {
+        document.querySelectorAll('.bk-inline-select').forEach(function (sel) {
+            sel.addEventListener('change', function () {
+                var icon = this.parentElement.querySelector('.bi-exclamation-triangle-fill');
+                if (icon) icon.style.display = this.value ? 'none' : '';
+                this.style.borderColor = this.value ? '#e2e8f0' : '#fcd34d';
+                this.closest('tr').style.background = this.value ? '' : '#fffbeb';
+            });
+        });
+
+
             isciChkler.forEach(function (c) { c.checked = chkHamisi.checked; });
             yenileCount();
         });
