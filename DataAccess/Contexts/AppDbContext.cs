@@ -164,6 +164,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<HRSohbet> HRSohbetler { get; set; }
     public DbSet<HRSohbetMesaj> HRSohbetMesajlar { get; set; }
     public DbSet<HRQanunFayl> HRQanunFayllar { get; set; }
+    public DbSet<HRDaxiliQayda> HRDaxiliQaydalar { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -1368,6 +1369,17 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.Property(x => x.Kateqoriya).HasMaxLength(50);
             e.Property(x => x.FaylYolu).HasMaxLength(500);
             e.Property(x => x.MetnContent).HasColumnType("nvarchar(max)");
+        });
+
+        builder.Entity<HRDaxiliQayda>(e =>
+        {
+            e.ToTable("HRDaxiliQaydalar");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Kod).HasMaxLength(20);
+            e.Property(x => x.Ad).HasMaxLength(300);
+            e.Property(x => x.Kateqoriya).HasMaxLength(100);
+            e.Property(x => x.Mezmun).HasColumnType("nvarchar(max)");
+            e.HasOne(x => x.YazilanKim).WithMany().HasForeignKey(x => x.YazilanKimId).OnDelete(DeleteBehavior.Restrict);
         });
 
     }

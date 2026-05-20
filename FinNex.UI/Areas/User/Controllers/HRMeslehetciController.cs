@@ -2,6 +2,7 @@ using FinNex.Application.Interfaces.AI;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.DataAccess.Contexts;
 using FinNex.Domain;
+using FinNex.Domain.Entities;
 using FinNex.Domain.Entities.AI;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -311,6 +312,106 @@ public class HRMeslehetciController : Controller
         await _db.SaveChangesAsync();
 
         return Json(new { ok = true });
+    }
+
+    // ── GET /User/HRMeslehetci/Qaydalar ──────────────────────────────────────
+    public async Task<IActionResult> Qaydalar(string? kateqoriya, string? axtaris)
+    {
+        var query = _db.HRDaxiliQaydalar
+            .Include(x => x.YazilanKim)
+            .Where(x => !x.Silinib);
+
+        if (!string.IsNullOrEmpty(kateqoriya))
+            query = query.Where(x => x.Kateqoriya == kateqoriya);
+        if (!string.IsNullOrEmpty(axtaris))
+            query = query.Where(x => x.Ad.Contains(axtaris) || x.Mezmun.Contains(axtaris));
+
+        var qaydalar = await query
+            .OrderBy(x => x.Kod).ThenByDescending(x => x.Versiya)
+            .ToListAsync();
+
+        var kateqoriyalar = await _db.HRDaxiliQaydalar
+            .Where(x => !x.Silinib)
+            .Select(x => x.Kateqoriya).Distinct().OrderBy(x => x).ToListAsync();
+
+        ViewBag.Kateqoriyalar  = kateqoriyalar;
+        ViewBag.AktivKateqoriya = kateqoriya;
+        ViewBag.Axtaris        = axtaris;
+        ViewBag.IsAdmin        = User.IsInRole(RoleNames.Admin);
+        ViewData["Title"]      = "Daxili Qaydalar";
+        return View(qaydalar);
+    }
+
+    // ── GET /User/HRMeslehetci/QaydaDetal/{id} ────────────────────────────────
+    public async Task<IActionResult> QaydaDetal(int id)
+    {
+        var qayda = await _db.HRDaxiliQaydalar
+            .Include(x => x.YazilanKim)
+            .FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
+        if (qayda == null) return RedirectToAction(nameof(Qaydalar));
+
+        var versiyalar = await _db.HRDaxiliQaydalar
+            .Include(x => x.YazilanKim)
+            .Where(x => x.Kod == qayda.Kod && !x.Silinib)
+            .OrderByDescending(x => x.Versiya)
+            .ToListAsync();
+
+        ViewBag.Versiyalar = versiyalar;
+        ViewBag.IsAdmin    = User.IsInRole(RoleNames.Admin);
+        ViewData["Title"]  = qayda.Ad;
+        return View(qayda);
+    }
+
+    // ── POST /User/HRMeslehetci/QaydaYarat (Admin) ───────────────────────────
+    [HttpPost, ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
+    public async Task<IActionResult> QaydaYarat(string ad, string mezmun, string kateqoriya)
+    {
+        if (string.IsNullOrWhiteSpace(ad) || string.IsNullOrWhiteSpace(mezmun))
+        { TempData["Error"] = "Ad və məzmun doldurulmalıdır."; return RedirectToAction(nameof(Qaydalar)); }
+
+        var userId = int.Parse(_userManager.GetUserId(User)!);
+        var sonKod = await _db.HRDaxiliQaydalar
+            .Where(x => !x.Silinib)
+            .OrderByDescending(x => x.Id)
+            .Select(x => x.Kod).FirstOrDefaultAsync();
+
+        int novbeti = 1;
+        if (!string.IsNullOrEmpty(sonKod) && sonKod.StartsWith("HR-") &&
+            int.TryParse(sonKod[3..], out int n)) novbeti = n + 1;
+
+        var q = new HRDaxiliQayda
+        {
+            Kod = $"HR-{novbeti:D3}", Ad = ad.Trim(),
+            Mezmun = mezmun.Trim(), Kateqoriya = kateqoriya.Trim(),
+            Versiya = 1, Aktiv = true, YazilanKimId = userId
+        };
+        _db.HRDaxiliQaydalar.Add(q);
+        await _db.SaveChangesAsync();
+        TempData["Success"] = $"Qayda '{q.Kod}' yaradıldı.";
+        return RedirectToAction(nameof(QaydaDetal), new { id = q.Id });
+    }
+
+    // ── POST /User/HRMeslehetci/QaydaYenile (Admin — yeni versiya) ────────────
+    [HttpPost, ValidateAntiForgeryToken]
+    [Authorize(Roles = RoleNames.Admin)]
+    public async Task<IActionResult> QaydaYenile(int kohneId, string ad, string mezmun, string kateqoriya, string sebeb)
+    {
+        var kohne = await _db.HRDaxiliQaydalar.FirstOrDefaultAsync(x => x.Id == kohneId && !x.Silinib);
+        if (kohne == null) return RedirectToAction(nameof(Qaydalar));
+
+        kohne.Aktiv = false;
+        var userId = int.Parse(_userManager.GetUserId(User)!);
+        var yeni = new HRDaxiliQayda
+        {
+            Kod = kohne.Kod, Ad = ad.Trim(),
+            Mezmun = mezmun.Trim(), Kateqoriya = kateqoriya.Trim(),
+            Versiya = kohne.Versiya + 1, Aktiv = true, YazilanKimId = userId
+        };
+        _db.HRDaxiliQaydalar.Add(yeni);
+        await _db.SaveChangesAsync();
+        TempData["Success"] = $"Qayda v{yeni.Versiya} olaraq yeniləndi.";
+        return RedirectToAction(nameof(QaydaDetal), new { id = yeni.Id });
     }
 
     // ── DTOs ──────────────────────────────────────────────────────────────────
