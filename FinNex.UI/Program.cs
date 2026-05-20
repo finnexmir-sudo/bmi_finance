@@ -900,6 +900,37 @@ END
                 }
                 catch { }
 
+                // HRDaxiliQaydalar cədvəli
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'HRDaxiliQaydalar')
+BEGIN
+    CREATE TABLE HRDaxiliQaydalar (
+        Id               INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        Kod              NVARCHAR(20)  NOT NULL DEFAULT '',
+        Ad               NVARCHAR(300) NOT NULL,
+        Mezmun           NVARCHAR(MAX) NOT NULL,
+        Kateqoriya       NVARCHAR(100) NOT NULL DEFAULT '',
+        Versiya          INT           NOT NULL DEFAULT 1,
+        Aktiv            BIT           NOT NULL DEFAULT 1,
+        YazilanKimId     INT           NOT NULL,
+        YaradilmaTarixi  DATETIME2     NOT NULL DEFAULT GETDATE(),
+        YenilenmeTarixi  DATETIME2     NULL,
+        Silinib          BIT           NOT NULL DEFAULT 0,
+        SilinmeTarixi    DATETIME2     NULL,
+        YaradanIcraciId  INT           NULL,
+        YenileyenIcraciId INT          NULL,
+        SilenIcraciId    INT           NULL,
+        CONSTRAINT FK_HRDaxiliQaydalar_AppUser FOREIGN KEY (YazilanKimId) REFERENCES AspNetUsers(Id)
+    );
+    CREATE INDEX IX_HRDaxiliQaydalar_Kod    ON HRDaxiliQaydalar(Kod);
+    CREATE INDEX IX_HRDaxiliQaydalar_Aktiv  ON HRDaxiliQaydalar(Aktiv);
+END
+                    ");
+                }
+                catch { }
+
                 // Avtomatik migration — sadəcə Migrate() çağır, xəta olsa logla amma crash etmə
                 try
                 {
