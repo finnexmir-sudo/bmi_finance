@@ -9,7 +9,9 @@ namespace FinNex.Domain.Entities.AI
         public string Mezmun   { get; set; } = "";
         public string Kateqoriya { get; set; } = ""; // Davamiyyət, Məzuniyyət, Əmək haqqı...
         public int    Versiya  { get; set; } = 1;
-        public bool   Aktiv    { get; set; } = true; // cari versiya
+        public bool   Aktiv    { get; set; } = true;
+        public string? SenedAd   { get; set; }   // əlavə sənədin adı
+        public string? SenedYolu { get; set; }   // fayl yolu
         public int    YazilanKimId { get; set; }
         public AppUser? YazilanKim { get; set; }
     }

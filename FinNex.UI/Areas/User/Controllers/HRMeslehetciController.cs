@@ -365,7 +365,7 @@ public class HRMeslehetciController : Controller
     // ── POST /User/HRMeslehetci/QaydaYarat (Admin) ───────────────────────────
     [HttpPost, ValidateAntiForgeryToken]
     [Authorize(Roles = RoleNames.Admin)]
-    public async Task<IActionResult> QaydaYarat(string ad, string mezmun, string kateqoriya)
+    public async Task<IActionResult> QaydaYarat(string ad, string mezmun, string kateqoriya, IFormFile? sened)
     {
         if (string.IsNullOrWhiteSpace(ad) || string.IsNullOrWhiteSpace(mezmun))
         { TempData["Error"] = "Ad və məzmun doldurulmalıdır."; return RedirectToAction(nameof(Qaydalar)); }
@@ -383,9 +383,17 @@ public class HRMeslehetciController : Controller
         var q = new HRDaxiliQayda
         {
             Kod = $"HR-{novbeti:D3}", Ad = ad.Trim(),
-            Mezmun = mezmun.Trim(), Kateqoriya = kateqoriya.Trim(),
+            Mezmun = mezmun.Trim(), Kateqoriya = kateqoriya?.Trim() ?? "",
             Versiya = 1, Aktiv = true, YazilanKimId = userId
         };
+
+        if (sened != null && sened.Length > 0)
+        {
+            var (yol, originalAd) = await _SenedSaxla(sened);
+            q.SenedYolu = yol;
+            q.SenedAd   = originalAd;
+        }
+
         _db.HRDaxiliQaydalar.Add(q);
         await _db.SaveChangesAsync();
         TempData["Success"] = $"Qayda '{q.Kod}' yaradıldı.";
@@ -395,7 +403,7 @@ public class HRMeslehetciController : Controller
     // ── POST /User/HRMeslehetci/QaydaYenile (Admin — yeni versiya) ────────────
     [HttpPost, ValidateAntiForgeryToken]
     [Authorize(Roles = RoleNames.Admin)]
-    public async Task<IActionResult> QaydaYenile(int kohneId, string ad, string mezmun, string kateqoriya, string sebeb)
+    public async Task<IActionResult> QaydaYenile(int kohneId, string ad, string mezmun, string kateqoriya, string sebeb, IFormFile? sened)
     {
         var kohne = await _db.HRDaxiliQaydalar.FirstOrDefaultAsync(x => x.Id == kohneId && !x.Silinib);
         if (kohne == null) return RedirectToAction(nameof(Qaydalar));
@@ -405,13 +413,34 @@ public class HRMeslehetciController : Controller
         var yeni = new HRDaxiliQayda
         {
             Kod = kohne.Kod, Ad = ad.Trim(),
-            Mezmun = mezmun.Trim(), Kateqoriya = kateqoriya.Trim(),
-            Versiya = kohne.Versiya + 1, Aktiv = true, YazilanKimId = userId
+            Mezmun = mezmun.Trim(), Kateqoriya = kateqoriya?.Trim() ?? "",
+            Versiya = kohne.Versiya + 1, Aktiv = true, YazilanKimId = userId,
+            SenedAd = kohne.SenedAd, SenedYolu = kohne.SenedYolu
         };
+
+        if (sened != null && sened.Length > 0)
+        {
+            var (yol, originalAd) = await _SenedSaxla(sened);
+            yeni.SenedYolu = yol;
+            yeni.SenedAd   = originalAd;
+        }
+
         _db.HRDaxiliQaydalar.Add(yeni);
         await _db.SaveChangesAsync();
         TempData["Success"] = $"Qayda v{yeni.Versiya} olaraq yeniləndi.";
         return RedirectToAction(nameof(QaydaDetal), new { id = yeni.Id });
+    }
+
+    private async Task<(string yol, string ad)> _SenedSaxla(IFormFile fayl)
+    {
+        var ext = Path.GetExtension(fayl.FileName).ToLowerInvariant();
+        var dir = Path.Combine(_env.WebRootPath, "uploads", "hr-qaydalar");
+        Directory.CreateDirectory(dir);
+        var fileName = $"{Guid.NewGuid()}{ext}";
+        var fullPath = Path.Combine(dir, fileName);
+        await using var fs = System.IO.File.Create(fullPath);
+        await fayl.CopyToAsync(fs);
+        return ($"/uploads/hr-qaydalar/{fileName}", fayl.FileName);
     }
 
     // ── DTOs ──────────────────────────────────────────────────────────────────

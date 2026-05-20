@@ -187,32 +187,7 @@
       }
     </div>
 
-    @* Admin upload *@
-    @if (isAdmin)
-    {
-        <div class="hrm-upload-panel">
-          <h4><i class="bi bi-cloud-arrow-up"></i> Fayl Əlavə Et</h4>
-          <div class="hrm-form-row">
-            <input type="text" id="faylAd" class="fn-input-sm" placeholder="Faylın adı (məs: Əmək Məcəlləsi 2026)" />
-            <input type="text" id="faylKat" class="fn-input-sm" list="katSuggest"
-                   placeholder="Kateqoriya (mövcud seçin və ya yeni yazın)" autocomplete="off" />
-            <datalist id="katSuggest">
-              <option value="emek">Əmək Qanunvericiliyi</option>
-              <option value="vergi">Vergi Məcəlləsi</option>
-              <option value="dsmf">DSMF Qaydaları</option>
-              <option value="itss">İTSS / İşsizlik</option>
-              @foreach (var k in movcudKateqoriyalar)
-              {
-                  <option value="@k">@k</option>
-              }
-            </datalist>
-            <input type="file" id="faylInput" accept=".pdf,.doc,.docx" class="fn-input-sm" style="padding:4px" />
-            <button class="btn-yukle" id="btnYukle" onclick="faylYukle()">
-              <i class="bi bi-upload"></i> Yüklə və Mətni Çıxar
-            </button>
-          </div>
-          <div id="yuklemeNetic" style="font-size:11px;margin-top:6px;min-height:16px"></div>
-        </div>
+    @* Admin — Qanun Faylları idarəetməsi artıq Qaydalar səhifəsindədir *@
     }
   </div>
 
