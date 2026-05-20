@@ -89,6 +89,19 @@
     @* Məzmun *@
     <div class="qd-body">
         <div class="qd-body-text">@Model.Mezmun</div>
+
+        @if (!string.IsNullOrEmpty(Model.SenedYolu))
+        {
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9;">
+                <div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:.06em;margin-bottom:8px;">ƏLAVƏ SƏNƏD</div>
+                <a href="@Model.SenedYolu" target="_blank"
+                   style="display:inline-flex;align-items:center;gap:8px;padding:10px 16px;background:#f0f4ff;border:1px solid #c7d2fe;border-radius:8px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">
+                    <i class="bi bi-file-earmark-text" style="font-size:16px;"></i>
+                    @(Model.SenedAd ?? "Sənədi Aç")
+                    <i class="bi bi-box-arrow-up-right" style="font-size:11px;opacity:.6;"></i>
+                </a>
+            </div>
+        }
     </div>
 
     @* Admin — Yeni Versiya Formu *@
@@ -99,7 +112,7 @@
                 <i class="bi bi-pencil-square" style="color:#6366f1;"></i> Yeni Versiya Yaz
                 <span style="font-size:11px;color:#94a3b8;font-weight:400;">(v@(Model.Versiya+1) yaranacaq, köhnəsi arxivə keçəcək)</span>
             </div>
-            <form asp-action="QaydaYenile" method="post">
+            <form asp-action="QaydaYenile" method="post" enctype="multipart/form-data">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="kohneId" value="@Model.Id" />
                 <div class="fn-form-row" style="margin-bottom:12px;">
@@ -114,10 +127,23 @@
                     <label class="fn-label">Yenilənmə Səbəbi</label>
                     <input type="text" name="sebeb" class="fn-input" placeholder="Qanun dəyişikliyi, daxili qərar..." />
                 </div>
-                <div class="fn-form-row" style="margin-bottom:16px;">
+                <div class="fn-form-row" style="margin-bottom:12px;">
                     <label class="fn-label">Yeni Məzmun</label>
                     <textarea name="mezmun" class="fn-input" rows="10" required
                               style="font-size:13px;line-height:1.7;resize:vertical;">@Model.Mezmun</textarea>
+                </div>
+                <div class="fn-form-row" style="margin-bottom:16px;">
+                    <label class="fn-label">
+                        Yeni Sənəd
+                        <span style="font-size:11px;color:#94a3b8;font-weight:400;">
+                            @if (!string.IsNullOrEmpty(Model.SenedYolu))
+                            { <text>— hazırda: <a href="@Model.SenedYolu" target="_blank" style="color:#6366f1;">@Model.SenedAd</a> (dəyişməzsə köhnəsi saxlanılır)</text> }
+                            else
+                            { <text>(ixtiyari, PDF / DOC / DOCX)</text> }
+                        </span>
+                    </label>
+                    <input type="file" name="sened" class="fn-input" accept=".pdf,.doc,.docx"
+                           style="padding:6px;font-size:13px;" />
                 </div>
                 <div style="display:flex;gap:8px;justify-content:flex-end;">
                     <button type="button" onclick="yenileBag()" class="fn-btn fn-btn--outline">Ləğv et</button>

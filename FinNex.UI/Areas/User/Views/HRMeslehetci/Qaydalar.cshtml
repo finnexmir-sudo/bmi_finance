@@ -171,7 +171,7 @@
     <div class="qyd-modal-bg" id="qaydaModal" onclick="if(event.target===this)modalBag()">
         <div class="qyd-modal">
             <h2><i class="bi bi-journal-plus me-2" style="color:#6366f1;"></i>Yeni Qayda Yarat</h2>
-            <form asp-action="QaydaYarat" method="post">
+            <form asp-action="QaydaYarat" method="post" enctype="multipart/form-data">
                 @Html.AntiForgeryToken()
                 <div class="fn-form-row" style="margin-bottom:12px;">
                     <label class="fn-label">Qayda Adı <span style="color:#dc2626">*</span></label>
@@ -190,11 +190,16 @@
                         @foreach (var k in kateqoriyalar) { <option value="@k" /> }
                     </datalist>
                 </div>
-                <div class="fn-form-row" style="margin-bottom:18px;">
+                <div class="fn-form-row" style="margin-bottom:12px;">
                     <label class="fn-label">Məzmun <span style="color:#dc2626">*</span></label>
                     <textarea name="mezmun" class="fn-input" rows="8"
                               placeholder="Qaydanın tam mətni..." required
                               style="font-size:13px;line-height:1.6;resize:vertical;"></textarea>
+                </div>
+                <div class="fn-form-row" style="margin-bottom:18px;">
+                    <label class="fn-label">Əlavə Sənəd <span style="font-size:11px;color:#94a3b8;">(PDF, DOC, DOCX — ixtiyari)</span></label>
+                    <input type="file" name="sened" class="fn-input" accept=".pdf,.doc,.docx"
+                           style="padding:6px;font-size:13px;" />
                 </div>
                 <div style="display:flex;gap:8px;justify-content:flex-end;">
                     <button type="button" onclick="modalBag()" class="fn-btn fn-btn--outline">Ləğv et</button>
