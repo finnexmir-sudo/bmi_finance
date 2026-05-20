@@ -1,0 +1,213 @@
+@model IEnumerable<FinNex.Domain.Entities.AI.HRDaxiliQayda>
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Daxili Qaydalar";
+    var kateqoriyalar  = ViewBag.Kateqoriyalar  as List<string> ?? new();
+    var aktivKat       = ViewBag.AktivKateqoriya as string;
+    var axtaris        = ViewBag.Axtaris         as string;
+    var isAdmin        = (bool)(ViewBag.IsAdmin ?? false);
+
+    // Aktiv versiyaları qrupla (bir Kod üçün ən yüksək versiya)
+    var aktiv = Model.Where(x => x.Aktiv).ToList();
+    var tarixci = Model.Where(x => !x.Aktiv).ToList();
+}
+
+<style>
+.qyd-page { max-width:1100px; margin:0 auto; padding:24px 16px; }
+.qyd-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+.qyd-head-left h1 { font-size:20px; font-weight:800; color:#1e293b; margin:0; display:flex; align-items:center; gap:8px; }
+.qyd-head-left p  { font-size:13px; color:#64748b; margin:4px 0 0; }
+.qyd-filters { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.qyd-filter-chip { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; text-decoration:none; border:1.5px solid transparent; transition:all .15s; }
+.qyd-filter-chip.aktiv { background:#1e293b; color:#fff; border-color:#1e293b; }
+.qyd-filter-chip:not(.aktiv) { background:#f1f5f9; color:#475569; border-color:#e2e8f0; }
+.qyd-filter-chip:not(.aktiv):hover { border-color:#94a3b8; color:#1e293b; }
+.qyd-search { flex:1; min-width:200px; max-width:320px; position:relative; }
+.qyd-search input { width:100%; padding:7px 10px 7px 34px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:13px; outline:none; }
+.qyd-search input:focus { border-color:#6366f1; }
+.qyd-search i { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#94a3b8; }
+.qyd-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
+.qyd-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; transition:box-shadow .18s,border-color .18s; }
+.qyd-card:hover { box-shadow:0 4px 20px rgba(0,0,0,.08); border-color:#c7d2fe; }
+.qyd-card-top { padding:16px 18px 12px; border-left:4px solid var(--qyd-color,#6366f1); }
+.qyd-card-meta { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+.qyd-kod { font-size:11px; font-weight:700; color:#94a3b8; letter-spacing:.06em; }
+.qyd-kat-badge { font-size:10px; font-weight:600; padding:2px 8px; border-radius:10px; background:#eef2ff; color:#4338ca; }
+.qyd-versiya { margin-left:auto; font-size:10px; color:#94a3b8; }
+.qyd-card-title { font-size:14px; font-weight:700; color:#1e293b; margin-bottom:6px; line-height:1.4; }
+.qyd-card-excerpt { font-size:12px; color:#475569; line-height:1.6; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.qyd-card-foot { display:flex; align-items:center; justify-content:space-between; padding:10px 18px; background:#f8fafc; border-top:1px solid #f1f5f9; }
+.qyd-card-date { font-size:11px; color:#94a3b8; display:flex; align-items:center; gap:4px; }
+.qyd-card-author { font-size:11px; color:#64748b; display:flex; align-items:center; gap:4px; }
+.qyd-empty { text-align:center; padding:60px 20px; color:#94a3b8; }
+.qyd-empty i { font-size:40px; display:block; margin-bottom:10px; }
+
+/* Admin add modal */
+.qyd-modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999; align-items:center; justify-content:center; }
+.qyd-modal { background:#fff; border-radius:16px; padding:32px; width:560px; max-width:95vw; max-height:90vh; overflow-y:auto; box-shadow:0 25px 60px rgba(0,0,0,.25); }
+.qyd-modal h2 { font-size:16px; font-weight:800; color:#1e293b; margin:0 0 20px; }
+</style>
+
+<div class="qyd-page">
+
+    <div class="qyd-head">
+        <div class="qyd-head-left">
+            <h1><i class="bi bi-journal-bookmark-fill" style="color:#6366f1;"></i> Daxili Qaydalar</h1>
+            <p>Şirkətin daxili qaydaları, prosedurlar və tənzimləmələr · <strong>@aktiv.Count</strong> aktiv qayda</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm"><i class="bi bi-chat-dots me-1"></i> HR Məsləhətçi</a>
+            @if (isAdmin)
+            {
+                <button class="fn-btn fn-btn--primary fn-btn--sm" onclick="modalAc()">
+                    <i class="bi bi-plus-lg me-1"></i> Yeni Qayda
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 16px;margin-bottom:14px;color:#16a34a;font-size:13px;">
+            <i class="bi bi-check-circle me-1"></i>@TempData["Success"]
+        </div>
+    }
+
+    @* Filtrlər *@
+    <div class="qyd-filters">
+        <div class="qyd-search">
+            <i class="bi bi-search"></i>
+            <form method="get">
+                @if (!string.IsNullOrEmpty(aktivKat))
+                { <input type="hidden" name="kateqoriya" value="@aktivKat" /> }
+                <input type="text" name="axtaris" value="@axtaris" placeholder="Qayda axtar..." />
+            </form>
+        </div>
+        <a asp-action="Qaydalar" class="qyd-filter-chip @(aktivKat == null && string.IsNullOrEmpty(axtaris) ? "aktiv" : "")">
+            Hamısı
+        </a>
+        @foreach (var k in kateqoriyalar)
+        {
+            <a asp-action="Qaydalar" asp-route-kateqoriya="@k"
+               class="qyd-filter-chip @(aktivKat == k ? "aktiv" : "")">@k</a>
+        }
+    </div>
+
+    @* Aktiv qaydalar *@
+    @if (!aktiv.Any())
+    {
+        <div class="qyd-empty">
+            <i class="bi bi-journal-x"></i>
+            <div style="font-size:15px;font-weight:600;color:#475569;margin-bottom:4px;">Qayda tapılmadı</div>
+            <div style="font-size:13px;">@(isAdmin ? "Yeni qayda əlavə edin." : "Hələ qayda yoxdur.")</div>
+        </div>
+    }
+    else
+    {
+        <div class="qyd-grid">
+            @foreach (var q in aktiv)
+            {
+                string color = q.Kateqoriya switch {
+                    "Davamiyyət"  => "#3b82f6",
+                    "Məzuniyyət"  => "#22c55e",
+                    "Əmək haqqı" => "#f59e0b",
+                    "Korporativ"  => "#8b5cf6",
+                    "İntizam"     => "#ef4444",
+                    _             => "#6366f1"
+                };
+                <a asp-action="QaydaDetal" asp-route-id="@q.Id" class="qyd-card" style="text-decoration:none;">
+                    <div class="qyd-card-top" style="--qyd-color:@color">
+                        <div class="qyd-card-meta">
+                            <span class="qyd-kod">@q.Kod</span>
+                            <span class="qyd-kat-badge" style="background:@color22;color:@color;">@q.Kateqoriya</span>
+                            @if (q.Versiya > 1)
+                            { <span class="qyd-versiya">v@q.Versiya</span> }
+                        </div>
+                        <div class="qyd-card-title">@q.Ad</div>
+                        <div class="qyd-card-excerpt">@q.Mezmun</div>
+                    </div>
+                    <div class="qyd-card-foot">
+                        <span class="qyd-card-date">
+                            <i class="bi bi-calendar3"></i>
+                            @q.YaradilmaTarixi.ToString("dd.MM.yyyy")
+                        </span>
+                        <span class="qyd-card-author">
+                            <i class="bi bi-person"></i>
+                            @(q.YazilanKim?.UserName ?? "—")
+                        </span>
+                    </div>
+                </a>
+            }
+        </div>
+    }
+
+    @* Tarixçə (keçmiş versiyalar) *@
+    @if (tarixci.Any() && string.IsNullOrEmpty(axtaris) && string.IsNullOrEmpty(aktivKat))
+    {
+        <div style="margin-top:36px;border-top:1px solid #e2e8f0;padding-top:20px;">
+            <div style="font-size:13px;font-weight:700;color:#64748b;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                <i class="bi bi-clock-history"></i> Köhnə Versiyalar
+                <span style="font-size:11px;font-weight:400;color:#94a3b8;">(@tarixci.Count ədəd)</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                @foreach (var q in tarixci)
+                {
+                    <a asp-action="QaydaDetal" asp-route-id="@q.Id"
+                       style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#f8fafc;border:1px solid #f1f5f9;border-radius:8px;text-decoration:none;color:#475569;font-size:12px;">
+                        <span style="font-size:10px;font-weight:700;color:#94a3b8;min-width:50px;">@q.Kod</span>
+                        <span style="flex:1;font-weight:500;color:#64748b;">@q.Ad</span>
+                        <span style="background:#f1f5f9;color:#94a3b8;font-size:10px;padding:2px 7px;border-radius:8px;">v@q.Versiya</span>
+                        <span style="color:#94a3b8;">@q.YaradilmaTarixi.ToString("dd.MM.yyyy")</span>
+                    </a>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@* Admin — Yeni Qayda Modal *@
+@if (isAdmin)
+{
+    <div class="qyd-modal-bg" id="qaydaModal" onclick="if(event.target===this)modalBag()">
+        <div class="qyd-modal">
+            <h2><i class="bi bi-journal-plus me-2" style="color:#6366f1;"></i>Yeni Qayda Yarat</h2>
+            <form asp-action="QaydaYarat" method="post">
+                @Html.AntiForgeryToken()
+                <div class="fn-form-row" style="margin-bottom:12px;">
+                    <label class="fn-label">Qayda Adı <span style="color:#dc2626">*</span></label>
+                    <input type="text" name="ad" class="fn-input" placeholder="Məs: İşə qəbul proseduru" required />
+                </div>
+                <div class="fn-form-row" style="margin-bottom:12px;">
+                    <label class="fn-label">Kateqoriya</label>
+                    <input type="text" name="kateqoriya" class="fn-input" list="katList"
+                           placeholder="Davamiyyət, Məzuniyyət, Korporativ..." />
+                    <datalist id="katList">
+                        <option value="Davamiyyət" />
+                        <option value="Məzuniyyət" />
+                        <option value="Əmək haqqı" />
+                        <option value="Korporativ" />
+                        <option value="İntizam" />
+                        @foreach (var k in kateqoriyalar) { <option value="@k" /> }
+                    </datalist>
+                </div>
+                <div class="fn-form-row" style="margin-bottom:18px;">
+                    <label class="fn-label">Məzmun <span style="color:#dc2626">*</span></label>
+                    <textarea name="mezmun" class="fn-input" rows="8"
+                              placeholder="Qaydanın tam mətni..." required
+                              style="font-size:13px;line-height:1.6;resize:vertical;"></textarea>
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                    <button type="button" onclick="modalBag()" class="fn-btn fn-btn--outline">Ləğv et</button>
+                    <button type="submit" class="fn-btn fn-btn--primary">
+                        <i class="bi bi-check-lg me-1"></i> Yarat
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function modalAc() { document.getElementById('qaydaModal').style.display = 'flex'; }
+        function modalBag() { document.getElementById('qaydaModal').style.display = 'none'; }
+    </script>
+}
