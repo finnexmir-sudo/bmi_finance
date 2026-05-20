@@ -680,6 +680,61 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Select(x => new SelectListItem(x.Ad, x.Id.ToString(), x.Id == deptId)).ToList();
         }
 
+        // ── Kriteriya İdarəetməsi ────────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> Kriteriyalar()
+        {
+            var sablonlar = await _unitOfWork.Repository<PerformansKriteriyaSablon>()
+                .Query().Where(x => !x.Silinib).OrderBy(x => x.KampaniyaTipi).ThenBy(x => x.Sira)
+                .ToListAsync();
+            ViewData["Title"] = "Performans Kriteriyaları";
+            return View(sablonlar);
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> KriteriyaYarat(string ad, decimal ceki, int kampaniyaTipi)
+        {
+            if (string.IsNullOrWhiteSpace(ad) || ceki <= 0)
+            { TempData["Error"] = "Ad və çəki daxil edilməlidir."; return RedirectToAction(nameof(Kriteriyalar)); }
+
+            var tipi = (KampaniyaTipi)kampaniyaTipi;
+            var sonSira = (await _unitOfWork.Repository<PerformansKriteriyaSablon>()
+                .Query().Where(x => x.KampaniyaTipi == tipi && !x.Silinib)
+                .OrderByDescending(x => x.Sira).FirstOrDefaultAsync())?.Sira ?? 0;
+
+            await _unitOfWork.Repository<PerformansKriteriyaSablon>().YaratAsync(new PerformansKriteriyaSablon
+            {
+                Ad = ad.Trim(), Ceki = ceki, KampaniyaTipi = tipi, Aktiv = true, Sira = sonSira + 1
+            });
+            await _unitOfWork.YaddaSaxlaAsync();
+            TempData["Success"] = "Kriteriya əlavə edildi.";
+            return RedirectToAction(nameof(Kriteriyalar));
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> KriteriyaYenile(int id, string ad, decimal ceki, bool aktiv)
+        {
+            var s = await _unitOfWork.Repository<PerformansKriteriyaSablon>()
+                .Query().FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
+            if (s == null) { TempData["Error"] = "Tapılmadı."; return RedirectToAction(nameof(Kriteriyalar)); }
+
+            s.Ad = ad.Trim(); s.Ceki = ceki; s.Aktiv = aktiv;
+            await _unitOfWork.Repository<PerformansKriteriyaSablon>().YenileAsync(s);
+            await _unitOfWork.YaddaSaxlaAsync();
+            TempData["Success"] = "Kriteriya yeniləndi.";
+            return RedirectToAction(nameof(Kriteriyalar));
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> KriteriyaSil(int id)
+        {
+            var s = await _unitOfWork.Repository<PerformansKriteriyaSablon>()
+                .Query().FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
+            if (s != null) { s.Silinib = true; await _unitOfWork.Repository<PerformansKriteriyaSablon>().YenileAsync(s); await _unitOfWork.YaddaSaxlaAsync(); }
+            TempData["Success"] = "Kriteriya silindi.";
+            return RedirectToAction(nameof(Kriteriyalar));
+        }
+
         private async Task YaratmaFormSiyahilariDoldur()
         {
             var isciler = await _unitOfWork.Repository<Isci>()
