@@ -914,6 +914,8 @@ BEGIN
         Kateqoriya       NVARCHAR(100) NOT NULL DEFAULT '',
         Versiya          INT           NOT NULL DEFAULT 1,
         Aktiv            BIT           NOT NULL DEFAULT 1,
+        SenedAd          NVARCHAR(500) NULL,
+        SenedYolu        NVARCHAR(500) NULL,
         YazilanKimId     INT           NOT NULL,
         YaradilmaTarixi  DATETIME2     NOT NULL DEFAULT GETDATE(),
         YenilenmeTarixi  DATETIME2     NULL,
@@ -926,6 +928,13 @@ BEGIN
     );
     CREATE INDEX IX_HRDaxiliQaydalar_Kod    ON HRDaxiliQaydalar(Kod);
     CREATE INDEX IX_HRDaxiliQaydalar_Aktiv  ON HRDaxiliQaydalar(Aktiv);
+END
+ELSE
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='HRDaxiliQaydalar' AND COLUMN_NAME='SenedAd')
+        ALTER TABLE HRDaxiliQaydalar ADD SenedAd NVARCHAR(500) NULL;
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='HRDaxiliQaydalar' AND COLUMN_NAME='SenedYolu')
+        ALTER TABLE HRDaxiliQaydalar ADD SenedYolu NVARCHAR(500) NULL;
 END
                     ");
                 }
