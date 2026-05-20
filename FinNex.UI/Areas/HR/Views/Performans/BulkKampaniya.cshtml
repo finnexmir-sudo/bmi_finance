@@ -107,7 +107,7 @@
                             @foreach (var isci in isciList)
                             {
                                 bool sobeYox = !isSobeR && !(bool)isci.SobeReisiVar;
-                                <tr style="@(sobeYox ? "background:#fffbeb;" : "")">
+                                <tr class="@(sobeYox ? "sobe-yox-setr" : "")">
                                     <td><input type="checkbox" name="secilmisIsciIds" value="@isci.Id" class="bk-check isci-chk" /></td>
                                     <td>
                                         <strong>@isci.Soyad @isci.Ad</strong>
@@ -127,8 +127,8 @@
                                             else
                                             {
                                                 <div style="display:flex;align-items:center;gap:6px;">
-                                                    <i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:13px;" title="Şöbə rəisi seçilməlidir"></i>
-                                                    <select name="sobe_@isci.Id" class="bk-inline-select" style="border-color:#fcd34d;">
+                                                    <i class="bi bi-exclamation-triangle-fill warn-icon" style="color:#f59e0b;font-size:13px;display:none;" title="Şöbə rəisi seçilməlidir"></i>
+                                                    <select name="sobe_@isci.Id" class="bk-inline-select sobe-select">
                                                         <option value="">— Seçin —</option>
                                                         @foreach (var sr in sobeReisleri)
                                                         { <option value="@sr.Value">@sr.Text</option> }
@@ -219,19 +219,11 @@
             btnBaslat.disabled = n === 0;
         }
 
-        document.querySelectorAll('.bk-inline-select').forEach(function (sel) {
-            sel.addEventListener('change', function () {
-                var icon = this.parentElement.querySelector('.bi-exclamation-triangle-fill');
-                if (icon) icon.style.display = this.value ? 'none' : '';
-                this.style.borderColor = this.value ? '#e2e8f0' : '#fcd34d';
-                this.closest('tr').style.background = this.value ? '' : '#fffbeb';
-            });
-        });
-
-
+        chkHamisi.addEventListener('change', function () {
             isciChkler.forEach(function (c) { c.checked = chkHamisi.checked; });
             yenileCount();
         });
+
         isciChkler.forEach(function (c) {
             c.addEventListener('change', function () {
                 chkHamisi.checked = document.querySelectorAll('.isci-chk:checked').length === isciChkler.length;
@@ -239,10 +231,41 @@
             });
         });
 
+        // Şöbə rəisi seçiləndə xəbərdarlığı sil
+        document.querySelectorAll('.sobe-select').forEach(function (sel) {
+            sel.addEventListener('change', function () {
+                var tr   = this.closest('tr');
+                var icon = tr.querySelector('.warn-icon');
+                var seçildi = this.value !== '';
+                if (icon) icon.style.display = seçildi ? 'none' : '';
+                this.style.borderColor = seçildi ? '#e2e8f0' : '#fcd34d';
+                tr.style.background = seçildi ? '' : '#fffbeb';
+            });
+        });
+
         document.getElementById('bulkForm').addEventListener('submit', function (e) {
             if (document.querySelectorAll('.isci-chk:checked').length === 0) {
                 e.preventDefault();
                 alert('Ən azı bir işçi seçilməlidir.');
+                return;
+            }
+            // Seçilmiş amma şöbə rəisi boş olan sətirləri vurğula
+            var problem = false;
+            document.querySelectorAll('.isci-chk:checked').forEach(function (chk) {
+                var tr  = chk.closest('tr');
+                var sel = tr.querySelector('.sobe-select');
+                if (sel && sel.value === '') {
+                    tr.style.background = '#fffbeb';
+                    var icon = tr.querySelector('.warn-icon');
+                    if (icon) icon.style.display = '';
+                    sel.style.borderColor = '#fcd34d';
+                    problem = true;
+                }
+            });
+            if (problem) {
+                e.preventDefault();
+                var ilk = document.querySelector('.isci-chk:checked ~ * .sobe-select[style*="fcd34d"], tr[style*="fffbeb"] .sobe-select');
+                if (ilk) ilk.closest('tr').scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         });
     </script>
