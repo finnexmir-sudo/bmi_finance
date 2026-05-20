@@ -385,7 +385,7 @@
 
         var formData = new FormData();
         formData.append('fayl', file);
-        formData.append('tercumeEdilsinmi', document.getElementById('tercumeSwitch').checked.toString());
+        formData.append('tercumeEdilsinmi', 'false');
         formData.append('hedafDil', document.getElementById('hedafDil').value);
 
         try {
@@ -412,11 +412,9 @@
 
             var tmp = document.createElement('div');
             tmp.innerHTML = data.isHtml ? data.text : '';
-            document.getElementById('senedMovzusu').value = data.isHtml ? tmp.innerText : data.text;
+            var rawMetn = data.isHtml ? tmp.innerText : data.text;
+            document.getElementById('senedMovzusu').value = rawMetn;
             updateBtn();
-
-            showResult(data.text, data.isHtml, file.name.replace(/\.[^.]+$/, ''));
-            applyRtl(document.getElementById('hedafDil').value);
 
         } catch (e) {
             clearInterval(timer);
