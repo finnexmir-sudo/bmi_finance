@@ -172,9 +172,22 @@
 @* Admin — Yeni Qayda Modal *@
 @if (isAdmin)
 {
-    <div class="qyd-modal-bg" id="qaydaModal" onclick="if(event.target===this)modalBag()">
-        <div class="qyd-modal">
-            <h2><i class="bi bi-journal-plus me-2" style="color:#6366f1;"></i>Yeni Qayda Yarat</h2>
+    <div class="qyd-modal-bg" id="qaydaModal" onclick="if(event.target===this)modalBag()"
+         style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:16px;width:560px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,.3);display:flex;flex-direction:column;">
+            <div style="background:linear-gradient(135deg,#6366f1 0%,#4f46e5 100%);border-radius:16px 16px 0 0;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:36px;height:36px;background:rgba(255,255,255,.2);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-journal-plus" style="font-size:18px;color:#fff;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:16px;font-weight:800;color:#fff;">Yeni Qayda Yarat</div>
+                        <div style="font-size:11px;color:rgba(255,255,255,.7);">Şirkətin daxili qaydası</div>
+                    </div>
+                </div>
+                <button type="button" onclick="modalBag()" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;width:32px;height:32px;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+            </div>
+            <div style="padding:24px 28px;background:#f8fafc;">
             <form asp-action="QaydaYarat" method="post" enctype="multipart/form-data">
                 @Html.AntiForgeryToken()
                 <div class="fn-form-row" style="margin-bottom:12px;">
@@ -205,13 +218,18 @@
                     <input type="file" name="sened" class="fn-input" accept=".pdf,.doc,.docx"
                            style="padding:6px;font-size:13px;" />
                 </div>
-                <div style="display:flex;gap:8px;justify-content:flex-end;">
-                    <button type="button" onclick="modalBag()" class="fn-btn fn-btn--outline">Ləğv et</button>
-                    <button type="submit" class="fn-btn fn-btn--primary">
-                        <i class="bi bi-check-lg me-1"></i> Yarat
+                <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">
+                    <button type="button" onclick="modalBag()"
+                            style="padding:8px 18px;background:#f1f5f9;color:#475569;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">
+                        Ləğv et
+                    </button>
+                    <button type="submit"
+                            style="padding:8px 20px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                        <i class="bi bi-check-lg"></i> Yarat
                     </button>
                 </div>
             </form>
+            </div>
         </div>
     </div>
 
