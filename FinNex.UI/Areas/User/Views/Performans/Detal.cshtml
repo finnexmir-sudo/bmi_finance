@@ -337,42 +337,73 @@
     @if (hasAnyComment)
     {
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;margin-top:16px;">
-            <div style="font-size:13px;font-weight:600;color:#1e293b;margin-bottom:12px;">Şərhlər</div>
-            @if (!string.IsNullOrEmpty(Model.IsciSherhi))
-            {
-                <div style="margin-bottom:10px;padding:10px 12px;background:#eef2ff;border-radius:8px;font-size:12px;">
-                    <div style="font-weight:600;color:#6366f1;margin-bottom:4px;">İşçi Şərhi</div>
-                    <div style="color:#334155;">@Model.IsciSherhi</div>
-                </div>
-            }
-            @if (!string.IsNullOrEmpty(Model.SobeReisiSherhi))
-            {
-                <div style="margin-bottom:10px;padding:10px 12px;background:#fffbeb;border-radius:8px;font-size:12px;">
-                    <div style="font-weight:600;color:#d97706;margin-bottom:4px;">Şöbə Rəisi Şərhi</div>
-                    <div style="color:#334155;">@Model.SobeReisiSherhi</div>
-                </div>
-            }
-            @if (!string.IsNullOrEmpty(Model.MudirSherhi))
-            {
-                <div style="margin-bottom:10px;padding:10px 12px;background:#f5f3ff;border-radius:8px;font-size:12px;">
-                    <div style="font-weight:600;color:#8b5cf6;margin-bottom:4px;">Rəhbər 1 Şərhi</div>
-                    <div style="color:#334155;">@Model.MudirSherhi</div>
-                </div>
-            }
-            @if (!string.IsNullOrEmpty(Model.Rehber2Sherhi))
-            {
-                <div style="margin-bottom:10px;padding:10px 12px;background:#ede9fe;border-radius:8px;font-size:12px;">
-                    <div style="font-weight:600;color:#7c3aed;margin-bottom:4px;">Rəhbər 2 Şərhi</div>
-                    <div style="color:#334155;">@Model.Rehber2Sherhi</div>
-                </div>
-            }
-            @if (!string.IsNullOrEmpty(Model.InkisafPlani))
-            {
-                <div style="padding:10px 12px;background:#f0fdf4;border-radius:8px;font-size:12px;">
-                    <div style="font-weight:600;color:#059669;margin-bottom:4px;">İnkişaf Planı</div>
-                    <div style="color:#334155;">@Model.InkisafPlani</div>
-                </div>
-            }
+            <div style="font-size:13px;font-weight:600;color:#1e293b;margin-bottom:14px;">Şərhlər</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+
+                @if (!string.IsNullOrEmpty(Model.IsciSherhi))
+                {
+                    <div style="border-left:4px solid #6366f1;background:#eef2ff;border-radius:0 8px 8px 0;padding:10px 14px;">
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+                            <div style="width:24px;height:24px;border-radius:50%;background:#6366f1;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">İ</div>
+                            <span style="font-size:12px;font-weight:600;color:#6366f1;">İşçi</span>
+                            @if (Model.IsciQiymetlendirmeTarixi.HasValue)
+                            { <span style="font-size:11px;color:#94a3b8;margin-left:4px;">· @Model.IsciQiymetlendirmeTarixi.Value.ToString("dd.MM.yyyy")</span> }
+                        </div>
+                        <div style="font-size:13px;color:#334155;">@Model.IsciSherhi</div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.SobeReisiSherhi))
+                {
+                    <div style="border-left:4px solid #f59e0b;background:#fffbeb;border-radius:0 8px 8px 0;padding:10px 14px;">
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+                            <div style="width:24px;height:24px;border-radius:50%;background:#f59e0b;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">Ş</div>
+                            <span style="font-size:12px;font-weight:600;color:#d97706;">Şöbə Rəisi</span>
+                            @if (Model.SobeReisiQiymetlendirmeTarixi.HasValue)
+                            { <span style="font-size:11px;color:#94a3b8;margin-left:4px;">· @Model.SobeReisiQiymetlendirmeTarixi.Value.ToString("dd.MM.yyyy")</span> }
+                        </div>
+                        <div style="font-size:13px;color:#334155;">@Model.SobeReisiSherhi</div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.MudirSherhi))
+                {
+                    <div style="border-left:4px solid #8b5cf6;background:#f5f3ff;border-radius:0 8px 8px 0;padding:10px 14px;">
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+                            <div style="width:24px;height:24px;border-radius:50%;background:#8b5cf6;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">R</div>
+                            <span style="font-size:12px;font-weight:600;color:#7c3aed;">Rəhbər 1 — @(Model.QiymetlendirenIsci?.TamAd ?? "")</span>
+                            @if (Model.MudirQiymetlendirmeTarixi.HasValue)
+                            { <span style="font-size:11px;color:#94a3b8;margin-left:4px;">· @Model.MudirQiymetlendirmeTarixi.Value.ToString("dd.MM.yyyy")</span> }
+                        </div>
+                        <div style="font-size:13px;color:#334155;">@Model.MudirSherhi</div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.Rehber2Sherhi))
+                {
+                    <div style="border-left:4px solid #06b6d4;background:#ecfeff;border-radius:0 8px 8px 0;padding:10px 14px;">
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+                            <div style="width:24px;height:24px;border-radius:50%;background:#06b6d4;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">R</div>
+                            <span style="font-size:12px;font-weight:600;color:#0891b2;">Rəhbər 2 — @(Model.Rehber2?.TamAd ?? "")</span>
+                            @if (Model.Rehber2QiymetlendirmeTarixi.HasValue)
+                            { <span style="font-size:11px;color:#94a3b8;margin-left:4px;">· @Model.Rehber2QiymetlendirmeTarixi.Value.ToString("dd.MM.yyyy")</span> }
+                        </div>
+                        <div style="font-size:13px;color:#334155;">@Model.Rehber2Sherhi</div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.InkisafPlani))
+                {
+                    <div style="border-left:4px solid #22c55e;background:#f0fdf4;border-radius:0 8px 8px 0;padding:10px 14px;">
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+                            <div style="width:24px;height:24px;border-radius:50%;background:#22c55e;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;"><i class="bi bi-journal-text" style="font-size:10px;"></i></div>
+                            <span style="font-size:12px;font-weight:600;color:#15803d;">İnkişaf Planı</span>
+                        </div>
+                        <div style="font-size:13px;color:#334155;">@Model.InkisafPlani</div>
+                    </div>
+                }
+
+            </div>
         </div>
     }
 </div>
