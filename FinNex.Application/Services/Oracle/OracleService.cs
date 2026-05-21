@@ -20,6 +20,7 @@ public class OracleService : IOracleService
 
     public async Task<List<Dictionary<string, object?>>> SelectAsync(string sql, CancellationToken ct = default)
     {
+        sql = sql.Trim().TrimEnd(';').TrimEnd();
         var trimmed = sql.TrimStart();
         if (!trimmed.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase)
             && !trimmed.StartsWith("WITH", StringComparison.OrdinalIgnoreCase))
