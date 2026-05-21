@@ -332,10 +332,10 @@
                     method: 'POST', body: fd
                 });
                 var json = await resp.json();
-                if (json.success) {
+                if (json.ok) {
                     location.reload();
                 } else {
-                    alert(json.message || 'Xəta baş verdi.');
+                    alert(json.xeta || 'Xəta baş verdi.');
                     btn.disabled = false; btn.textContent = 'Tətbiq et';
                 }
             } catch (e) {
