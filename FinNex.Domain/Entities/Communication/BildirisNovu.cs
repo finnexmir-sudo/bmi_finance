@@ -57,6 +57,9 @@ namespace FinNex.Domain.Entities.Communication
         TeklifCavab = 37,
 
         // Gələn Mail
-        YeniGelenMail = 38
+        YeniGelenMail = 38,
+
+        // İş günü bitdi elanı
+        IsGunuBitdi = 39
     }
 }

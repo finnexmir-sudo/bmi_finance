@@ -58,6 +58,13 @@
             <button id="hrdExport" class="hrd-btn hrd-btn--export" title="Excel-ə ixrac et">
                 <i class="bi bi-file-earmark-excel"></i> Excel
             </button>
+            <button id="btnIsGunuBit"
+                    class="hrd-btn"
+                    style="background:#16a34a;color:#fff;border-color:#16a34a;"
+                    title="İşi bitirən işçilərə bildiriş göndər"
+                    data-endpoint="@Url.Action("IsGunuBit", "Davamiyyet", new { area = "HR" })">
+                <i class="bi bi-door-open"></i> İş Bitdi
+            </button>
         </div>
     </div>
 
