@@ -425,6 +425,11 @@ body {
     color: #166534;
 }
 
+.type-dovlet {
+    background: #fffbea;
+    color: #b45309;
+}
+
 /* ── Action Buttons ── */
 .mez-action-btn {
     width: 32px;
