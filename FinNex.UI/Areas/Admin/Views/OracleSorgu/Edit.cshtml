@@ -1,0 +1,70 @@
+@model FinNex.Application.DTOs.Sorgular.OracleSorguUpdateDto
+
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Sorğunu Düzəlt";
+}
+
+<div class="container-fluid" style="max-width:860px">
+    <div class="mb-4">
+        <h3 class="fw-bold mb-0">
+            <i class="bi bi-database-gear me-2 text-primary"></i>
+            Sorğunu Düzəlt
+        </h3>
+        <small class="text-muted">Oracle SELECT sorğusunu yeniləyin</small>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input asp-for="Id" type="hidden" />
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="SorguAdi" class="form-label fw-semibold">Sorğu Adı *</label>
+                        <input asp-for="SorguAdi" class="form-control" />
+                        <span asp-validation-for="SorguAdi" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="DepartamentId" class="form-label fw-semibold">Şöbə *</label>
+                        <select asp-for="DepartamentId" asp-items="ViewBag.Sobeler" class="form-select">
+                            <option value="">— Seçin —</option>
+                        </select>
+                        <span asp-validation-for="DepartamentId" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Mahiyyet" class="form-label fw-semibold">Mahiyyət</label>
+                    <input asp-for="Mahiyyet" class="form-control" />
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="SorguMetni" class="form-label fw-semibold">
+                        SELECT Sorğusu *
+                        <span class="badge bg-warning-subtle text-warning ms-2">
+                            <i class="bi bi-lock"></i> Yalnız SELECT
+                        </span>
+                    </label>
+                    <textarea asp-for="SorguMetni" class="form-control font-monospace" rows="12"></textarea>
+                    <span asp-validation-for="SorguMetni" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-4">
+                    <div class="form-check form-switch">
+                        <input asp-for="Aktiv" class="form-check-input" type="checkbox" />
+                        <label asp-for="Aktiv" class="form-check-label">Aktiv</label>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-check-lg me-1"></i> Yadda saxla
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4">Ləğv et</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -79,6 +79,64 @@
         </form>
     </div>
 
+    @* ── Toplu SMS ── *@
+    <div class="fn-card" style="padding:18px;margin-bottom:16px" id="topluSmsCard">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <div style="font-size:14px;font-weight:700;color:#0f172a">
+                <i class="bi bi-people-fill me-1 text-primary"></i> Toplu SMS
+            </div>
+            <button type="button" class="fn-btn fn-btn--outline" id="btnBorcalanlarGetir" onclick="borcalanlarGetir()">
+                <i class="bi bi-cloud-download"></i> Borcalanları Gətir
+            </button>
+        </div>
+
+        <div id="topluXeta" style="display:none;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
+        <div id="topluUgur" style="display:none;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
+
+        <div id="topluSmsPanel" style="display:none">
+            <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center">
+                <input type="text" id="topluFilter" class="fn-input" placeholder="Ad və ya telefona görə axtar..."
+                       oninput="topluFilter()" style="max-width:320px" />
+                <span id="topluSay" style="font-size:13px;color:#64748b"></span>
+            </div>
+
+            <div style="max-height:340px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:14px">
+                <table style="width:100%;border-collapse:collapse;font-size:13px" id="topluCedvel">
+                    <thead style="background:#f8fafc;position:sticky;top:0">
+                        <tr>
+                            <th style="padding:8px 12px;text-align:left;font-weight:600;color:#475569;width:36px">
+                                <input type="checkbox" id="hamisiSec" onchange="hamisiSec(this)" title="Hamısını seç/ləğv et" />
+                            </th>
+                            <th style="padding:8px 12px;text-align:left;font-weight:600;color:#475569">Ad</th>
+                            <th style="padding:8px 12px;text-align:left;font-weight:600;color:#475569">Telefon</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topluTbody"></tbody>
+                </table>
+            </div>
+
+            <div class="fn-form-group" style="margin-bottom:10px">
+                <label class="fn-label">
+                    SMS mətni *
+                    <span style="font-size:11px;color:#64748b;font-weight:400;margin-left:6px">
+                        <i class="bi bi-info-circle"></i> {AD} yazın — müştəri adı ilə əvəzlənir
+                    </span>
+                </label>
+                <textarea id="topluMetn" class="fn-input" rows="4" maxlength="1000"
+                          placeholder="Hörmətli {AD}, kredit borcunuzu ödəməyinizi xahiş edirik."></textarea>
+                <div style="font-size:12px;color:#64748b;margin-top:4px">
+                    <span id="topluCharCount">0</span> / 1000
+                </div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end">
+                <button type="button" class="fn-btn fn-btn--primary" onclick="topluGonder()" id="btnTopluGonder">
+                    <i class="bi bi-send-fill"></i> SMS Göndər
+                </button>
+            </div>
+        </div>
+    </div>
+
     @* ── Tarixçə ── *@
     <div class="fn-card" style="padding:0">
         <div style="padding:16px 18px;border-bottom:1px solid #e2e8f0">
@@ -141,4 +199,128 @@
         document.getElementById('charCount').textContent = m.value.length;
     }
     document.getElementById('smsMetn').addEventListener('input', yenileCharCount);
+
+    // ── Toplu SMS ──────────────────────────────────────────
+
+    document.getElementById('topluMetn').addEventListener('input', function () {
+        document.getElementById('topluCharCount').textContent = this.value.length;
+    });
+
+    async function borcalanlarGetir() {
+        var btn = document.getElementById('btnBorcalanlarGetir');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Yüklənir...';
+        gizleXeta(); gizleUgur();
+
+        try {
+            var resp = await fetch('@Url.Action("BorcalanlarGetir", "PidSms", new { area = "User" })');
+            var json = await resp.json();
+            if (json.error) { gosterXeta(json.error); return; }
+            cedveldoldir(json.data, json.sorguAdi);
+        } catch (e) {
+            gosterXeta('Şəbəkə xətası: ' + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-cloud-download"></i> Borcalanları Gətir';
+        }
+    }
+
+    function cedveldoldir(data, sorguAdi) {
+        var tbody = document.getElementById('topluTbody');
+        tbody.innerHTML = '';
+        if (!data || data.length === 0) {
+            gosterXeta('Sorğu nəticəsi boşdur.');
+            document.getElementById('topluSmsPanel').style.display = 'none';
+            return;
+        }
+        data.forEach(function (item, i) {
+            var tr = document.createElement('tr');
+            tr.style.borderTop = '1px solid #f1f5f9';
+            tr.setAttribute('data-ad', (item.ad || '').toLowerCase());
+            tr.setAttribute('data-tel', (item.telefon || '').toLowerCase());
+            tr.innerHTML =
+                '<td style="padding:7px 12px"><input type="checkbox" class="alici-chk" checked /></td>' +
+                '<td style="padding:7px 12px;color:#0f172a">' + escHtml(item.ad) + '</td>' +
+                '<td style="padding:7px 12px;font-family:monospace;color:#475569">' + escHtml(item.telefon) + '</td>';
+            tbody.appendChild(tr);
+        });
+        document.getElementById('topluSmsPanel').style.display = 'block';
+        document.getElementById('hamisiSec').checked = true;
+        document.getElementById('topluFilter').value = '';
+        sayGuncelle();
+    }
+
+    function topluFilter() {
+        var q = document.getElementById('topluFilter').value.toLowerCase();
+        document.querySelectorAll('#topluTbody tr').forEach(function (tr) {
+            var ad  = tr.getAttribute('data-ad')  || '';
+            var tel = tr.getAttribute('data-tel') || '';
+            tr.style.display = (ad.includes(q) || tel.includes(q)) ? '' : 'none';
+        });
+        sayGuncelle();
+    }
+
+    function hamisiSec(cb) {
+        document.querySelectorAll('#topluTbody tr:not([style*="display: none"]):not([style*="display:none"]) .alici-chk').forEach(function (chk) {
+            chk.checked = cb.checked;
+        });
+        sayGuncelle();
+    }
+
+    function sayGuncelle() {
+        var gorunenSecili = document.querySelectorAll('#topluTbody tr:not([style*="display: none"]):not([style*="display:none"]) .alici-chk:checked').length;
+        var gorunen = document.querySelectorAll('#topluTbody tr:not([style*="display: none"]):not([style*="display:none"])').length;
+        document.getElementById('topluSay').textContent = gorunen + ' nəticə, ' + gorunenSecili + ' seçili';
+    }
+
+    document.getElementById('topluTbody').addEventListener('change', function (e) {
+        if (e.target.classList.contains('alici-chk')) sayGuncelle();
+    });
+
+    async function topluGonder() {
+        var metn = document.getElementById('topluMetn').value.trim();
+        if (!metn) { alert('SMS mətni boş ola bilməz.'); return; }
+
+        var alicilar = [];
+        document.querySelectorAll('#topluTbody tr').forEach(function (tr) {
+            if (tr.style.display === 'none') return;
+            var chk = tr.querySelector('.alici-chk');
+            if (!chk || !chk.checked) return;
+            var cells = tr.querySelectorAll('td');
+            alicilar.push({ ad: cells[1].textContent.trim(), telefon: cells[2].textContent.trim() });
+        });
+
+        if (alicilar.length === 0) { alert('Heç bir alıcı seçilməyib.'); return; }
+
+        if (!confirm(alicilar.length + ' müştəriyə SMS göndərilsin?')) return;
+
+        var btn = document.getElementById('btnTopluGonder');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Göndərilir...';
+        gizleXeta(); gizleUgur();
+
+        try {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            var fd = new FormData();
+            fd.append('alicilarJson', JSON.stringify(alicilar));
+            fd.append('smsMetni', metn);
+            fd.append('__RequestVerificationToken', token);
+
+            var resp = await fetch('@Url.Action("TopluGonder", "PidSms", new { area = "User" })', { method: 'POST', body: fd });
+            var json = await resp.json();
+            if (json.error) { gosterXeta(json.error); return; }
+            gosterUgur('Göndərildi: ' + json.ugur + ' uğurlu, ' + json.xeta + ' xətalı.');
+        } catch (e) {
+            gosterXeta('Şəbəkə xətası: ' + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-send-fill"></i> SMS Göndər';
+        }
+    }
+
+    function gosterXeta(msg) { var el = document.getElementById('topluXeta'); el.textContent = msg; el.style.display = 'block'; }
+    function gizleXeta()     { document.getElementById('topluXeta').style.display = 'none'; }
+    function gosterUgur(msg) { var el = document.getElementById('topluUgur'); el.textContent = msg; el.style.display = 'block'; }
+    function gizleUgur()     { document.getElementById('topluUgur').style.display = 'none'; }
+    function escHtml(s)      { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 </script>

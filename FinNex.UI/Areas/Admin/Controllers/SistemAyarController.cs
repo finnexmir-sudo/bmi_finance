@@ -1,8 +1,10 @@
+using FinNex.Application.Interfaces.Sorgular;
 using FinNex.DataAccess.Contexts;
 using FinNex.Domain;
 using FinNex.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.UI.Areas.Admin.Controllers;
@@ -12,14 +14,20 @@ namespace FinNex.UI.Areas.Admin.Controllers;
 public class SistemAyarController : Controller
 {
     private readonly AppDbContext _db;
+    private readonly IOracleSorguService _oracleSorguService;
 
-    public SistemAyarController(AppDbContext db) => _db = db;
+    public SistemAyarController(AppDbContext db, IOracleSorguService oracleSorguService)
+    {
+        _db = db;
+        _oracleSorguService = oracleSorguService;
+    }
 
     public async Task<IActionResult> Index()
     {
         var ayar = await _db.SistemAyarlari.FirstOrDefaultAsync()
                    ?? new SistemAyar();
         ViewData["Title"] = "Sistem Ayarları";
+        await YukleSorqular(ayar.PidTopluSmsOracleSorguId);
         return View(ayar);
     }
 
@@ -41,8 +49,17 @@ public class SistemAyarController : Controller
         if (!string.IsNullOrWhiteSpace(model.KreditImapPassword))
             ayar.KreditImapPassword = model.KreditImapPassword.Trim();
 
+        ayar.PidTopluSmsOracleSorguId = model.PidTopluSmsOracleSorguId;
+
         await _db.SaveChangesAsync();
         TempData["Ugur"] = "Ayarlar yadda saxlandı.";
         return RedirectToAction(nameof(Index));
+    }
+
+    private async Task YukleSorqular(int? seciliId = null)
+    {
+        var result = await _oracleSorguService.HamisiniGetirAsync();
+        var aktiv = (result.Data ?? []).Where(x => x.Aktiv).ToList();
+        ViewBag.OracleSorqular = new SelectList(aktiv, "Id", "SorguAdi", seciliId);
     }
 }

@@ -96,6 +96,14 @@
                 Komitə üzvləri
             </a>
 
+            <div class="nav-section">Sorğular</div>
+
+            <a class="nav-link @(currentController == "OracleSorgu" ? "active" : "")"
+               asp-area="Admin" asp-controller="OracleSorgu" asp-action="Index">
+                <i class="bi bi-database"></i>
+                Oracle Sorğular
+            </a>
+
             <div class="nav-section">System</div>
 
             <a class="nav-link @(currentController == "SistemAyar" ? "active" : "")"

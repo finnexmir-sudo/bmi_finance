@@ -1,0 +1,105 @@
+@model List<FinNex.Application.DTOs.Sorgular.OracleSorguDto>
+
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Oracle Sorğular";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-database me-2 text-primary"></i>
+                Oracle Sorğular
+            </h3>
+            <small class="text-muted">Şöbələr üzrə Oracle sorğularının idarəsi</small>
+        </div>
+        <a asp-action="Create" class="btn btn-primary shadow-sm">
+            <i class="bi bi-plus-circle me-1"></i> Yeni Sorğu
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-database text-muted" style="font-size:50px;"></i>
+                    <h5 class="mt-3 text-muted">Sorğu tapılmadı</h5>
+                    <p class="text-muted small">Yeni sorğu əlavə edin.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sorğu Adı</th>
+                                <th>Şöbə</th>
+                                <th>Mahiyyət</th>
+                                <th>Status</th>
+                                <th>Tarix</th>
+                                <th class="text-end">Əməliyyat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@item.SorguAdi</td>
+                                    <td>
+                                        <span class="badge bg-primary-subtle text-primary">
+                                            @item.DepartamentAd
+                                        </span>
+                                    </td>
+                                    <td class="text-muted small">@(item.Mahiyyet ?? "—")</td>
+                                    <td>
+                                        @if (item.Aktiv)
+                                        {
+                                            <span class="badge bg-success-subtle text-success">Aktiv</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary-subtle text-secondary">Deaktiv</span>
+                                        }
+                                    </td>
+                                    <td class="text-muted small">@item.YaradilmaTarixi.ToString("dd.MM.yyyy")</td>
+                                    <td class="text-end">
+                                        <a asp-action="Edit" asp-route-id="@item.Id"
+                                           class="btn btn-sm btn-outline-primary me-1">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form asp-action="Sil" asp-route-id="@item.Id" method="post"
+                                              class="d-inline"
+                                              onsubmit="return confirm('«@item.SorguAdi» silinsin?')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
