@@ -443,6 +443,7 @@ namespace FinNex.Application.Services.HR
                                 // Korreksiya qeydləri mövcud Illik məzuniyyətin üzərindədir;
                                 // ayrıca ödəniş tələb etmir, post-korreksiyaya daxil edilməməlidir.
                                 && x.Nov != MezuniyyetNovu.DovletVezifelerininIcrasi
+                                && (x.IsGunlerininSayiManual ?? x.IsGunlerininSayi) > 0
                                 && x.YaradilmaTarixi > prevMaas.HesablanmaTarixi
                                 && x.BaslamaTarixi <= prevAyBitis
                                 && x.BitmeTarixi >= prevAyBaslama)
@@ -1104,6 +1105,7 @@ namespace FinNex.Application.Services.HR
                     // üzərindəki korreksiya kimi yaranır — həmin günlər artıq Illik qeyd
                     // tərəfindən sayılır, ikiqat saymamaq üçün burada çıxarılır.
                     x.Nov != MezuniyyetNovu.DovletVezifelerininIcrasi &&
+                    (x.IsGunlerininSayiManual ?? x.IsGunlerininSayi) > 0 &&
                     x.BaslamaTarixi <= ayBitis &&
                     x.BitmeTarixi >= ayBaslangic);
 
@@ -1860,6 +1862,7 @@ namespace FinNex.Application.Services.HR
                         && x.Status == MezuniyyetStatus.Tesdiqlenib
                         && x.OdenisTipi == MezuniyyetOdenisTipi.AySonuOdenis
                         && x.Nov != MezuniyyetNovu.DovletVezifelerininIcrasi
+                        && (x.IsGunlerininSayiManual ?? x.IsGunlerininSayi) > 0
                         && x.YaradilmaTarixi > prevMaas.HesablanmaTarixi
                         && x.BaslamaTarixi <= prevAyBitis
                         && x.BitmeTarixi >= prevAyBaslama)
