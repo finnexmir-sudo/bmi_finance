@@ -937,8 +937,8 @@ END
                                 [YenileyenIcraciId] INT             NULL,
                                 [SilenIcraciId]     INT             NULL,
                                 [Silinib]           BIT             NOT NULL DEFAULT 0,
-                                CONSTRAINT [FK_OracleSorgular_Departamentler]
-                                    FOREIGN KEY ([DepartamentId]) REFERENCES [Departamentler] ([Id])
+                                CONSTRAINT [FK_OracleSorgular_Departament]
+                                    FOREIGN KEY ([DepartamentId]) REFERENCES [Departament] ([Id])
                             );
                             CREATE INDEX [IX_OracleSorgular_DepartamentId] ON [OracleSorgular] ([DepartamentId]);
                             CREATE INDEX [IX_OracleSorgular_Aktiv]         ON [OracleSorgular] ([Aktiv]);
