@@ -5,6 +5,7 @@ using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
 using FinNex.Domain.Entities.SenedDovriyyesi;
+using FinNex.Domain.Entities.Sorgular;
 using FinNex.Domain.Entities.Structure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -160,6 +161,8 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     // PİD (Problemli İşlər Departamenti)
     public DbSet<FinNex.Domain.Entities.Pid.PidSmsSablon> PidSmsSablonlar { get; set; }
     public DbSet<FinNex.Domain.Entities.Pid.PidSmsLog> PidSmsLoglar { get; set; }
+
+    public DbSet<OracleSorgu> OracleSorgular { get; set; }
 
     // =====================
     // AI Module

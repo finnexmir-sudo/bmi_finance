@@ -64,9 +64,21 @@ Layihə tədricən Clean Architecture-ə keçirilir. Yeni kod yazarkən və möv
 - Hər dəfə bir Controller seçilir: Servis → DTO → Controller → Test → Commit
 - Köhnə işləyən kod, yeni kod hazır olana qədər toxunulmaz qalır
 
+## Oracle Verilənlər Bazası — KRİTİK QAYDA
+
+Layihədə ikinci bir verilənlər bazası mövcuddur: **Oracle (BMI)**
+
+- Bağlantı: `DATA SOURCE=BMI;USER ID=FOXPRO;Password=...` (secrets.json-da saxlanır)
+- Bu baza **yalnız oxumaq** üçündür — **YALNIZ SELECT** icazəlidir
+- **INSERT, UPDATE, DELETE, DDL — QƏTI QADAĞANDIR**
+- Oracle-a yazma əməliyyatı heç bir halda edilməməlidir — nə birbaşa, nə dolayı
+- Bütün Oracle sorğuları `IOracleService` vasitəsilə icra olunur
+- Oracle sorguları `OracleSorgular` cədvəlində saxlanır (SQL Server-də), oradan oxunur
+
 ## Texnoloji stack
 - ASP.NET Core MVC, Areas: HR / User / Admin
 - EF Core, IUnitOfWork + IRepositoryAsync pattern
-- SQL Server
+- SQL Server (əsas baza — yazma/oxuma)
+- Oracle (BMI) — **yalnız oxuma**, `IOracleService` vasitəsilə
 - Identity (AppUser, int PK)
 - Azərbaycan dili — bütün UI mətnləri Azərbaycan dilindədir
