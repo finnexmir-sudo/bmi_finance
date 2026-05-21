@@ -6990,6 +6990,40 @@ namespace FinNex.DataAccess.Migrations
 
                     b.Navigation("UserDepartments");
                 });
+
+            modelBuilder.Entity("FinNex.Domain.Entities.Sorgular.OracleSorgu", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+                    b.Property<string>("SorguAdi").IsRequired()
+                        .HasMaxLength(200).HasColumnType("nvarchar(200)");
+                    b.Property<string>("Mahiyyet")
+                        .HasMaxLength(500).HasColumnType("nvarchar(500)");
+                    b.Property<string>("SorguMetni").IsRequired()
+                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("Aktiv").HasColumnType("bit");
+                    b.Property<int>("DepartamentId").HasColumnType("int");
+                    b.Property<DateTime>("YaradilmaTarixi").HasColumnType("datetime2");
+                    b.Property<DateTime?>("YenilenmeTarixi").HasColumnType("datetime2");
+                    b.Property<DateTime?>("SilinmeTarixi").HasColumnType("datetime2");
+                    b.Property<int?>("YaradanIcraciId").HasColumnType("int");
+                    b.Property<int?>("YenileyenIcraciId").HasColumnType("int");
+                    b.Property<int?>("SilenIcraciId").HasColumnType("int");
+                    b.Property<bool>("Silinib").HasColumnType("bit");
+                    b.HasKey("Id");
+                    b.HasIndex("DepartamentId");
+                    b.ToTable("OracleSorgular");
+                });
+
+            modelBuilder.Entity("FinNex.Domain.Entities.Sorgular.OracleSorgu", b =>
+                {
+                    b.HasOne("FinNex.Domain.Entities.Structure.Departament", "Departament")
+                        .WithMany()
+                        .HasForeignKey("DepartamentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                    b.Navigation("Departament");
+                });
 #pragma warning restore 612, 618
         }
     }
