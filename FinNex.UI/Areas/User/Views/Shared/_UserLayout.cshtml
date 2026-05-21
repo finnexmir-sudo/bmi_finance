@@ -61,6 +61,7 @@
         if (currentArea == "PR_Odenis_Tapsirigi") return "umumi";
         if (currentController == "Tesdiq") return "tesdiq";
         if (currentController == "KreditMuraciet") return "kredit";
+        if (currentController == "PidSms") return "pid";
         if (currentController == "Hesabat" || currentController == "HesabatIzleme") return "hesabat";
         if (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye") return "hr";
         if (currentController is "Davamiyyet" or "Takvim" or "Mezuniyyet" or "Muraciet"
@@ -168,7 +169,7 @@
             }
 
             @{
-                var isDepartModule = activeModule is "kredit" or "hr" or "muhasibat" or "umumi";
+                var isDepartModule = activeModule is "kredit" or "hr" or "muhasibat" or "umumi" or "pid";
                 var departActiveCls = isDepartModule ? " fn-topnav-tab--active" : "";
             }
             <div class="fn-topnav-dropdown @(isDepartModule ? "fn-topnav-dropdown--active" : "")">
@@ -213,6 +214,14 @@
                         <div>
                             <div class="fn-topnav-dd-title">Ümumi</div>
                             <div class="fn-topnav-dd-sub">Sənəd dövriyyəsi, Swift / ödəniş</div>
+                        </div>
+                    </a>
+                    <a asp-area="User" asp-controller="PidSms" asp-action="Index"
+                       class="fn-topnav-dd-item @(activeModule == "pid" ? "fn-topnav-dd-item--active" : "")">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <div>
+                            <div class="fn-topnav-dd-title">PİD</div>
+                            <div class="fn-topnav-dd-sub">Problemli İşlər Departamenti</div>
                         </div>
                     </a>
                 </div>
@@ -513,6 +522,14 @@
                 <a asp-area="User" asp-controller="KreditMuraciet" asp-action="Randevular"
                    class="fn-nav-item @(currentAction == "Randevular" ? "active" : "")">
                     <i class="bi bi-calendar-plus"></i> Randevular
+                </a>
+                break;
+
+            case "pid":
+                <div class="fn-nav-label">PİD</div>
+                <a asp-area="User" asp-controller="PidSms" asp-action="Index"
+                   class="fn-nav-item @(currentController == "PidSms" ? "active" : "")">
+                    <i class="bi bi-chat-left-text"></i> SMS
                 </a>
                 break;
 
