@@ -917,6 +917,88 @@ END
                 }
                 catch { }
 
+                // OracleSorgular cədvəli
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'OracleSorgular')
+                        BEGIN
+                            CREATE TABLE [OracleSorgular] (
+                                [Id]                INT             NOT NULL IDENTITY(1,1) PRIMARY KEY,
+                                [SorguAdi]          NVARCHAR(200)   NOT NULL DEFAULT '',
+                                [Mahiyyet]          NVARCHAR(500)   NULL,
+                                [SorguMetni]        NVARCHAR(MAX)   NOT NULL DEFAULT '',
+                                [Aktiv]             BIT             NOT NULL DEFAULT 1,
+                                [DepartamentId]     INT             NOT NULL,
+                                [YaradilmaTarixi]   DATETIME2       NOT NULL DEFAULT GETDATE(),
+                                [YenilenmeTarixi]   DATETIME2       NULL,
+                                [SilinmeTarixi]     DATETIME2       NULL,
+                                [YaradanIcraciId]   INT             NULL,
+                                [YenileyenIcraciId] INT             NULL,
+                                [SilenIcraciId]     INT             NULL,
+                                [Silinib]           BIT             NOT NULL DEFAULT 0,
+                                CONSTRAINT [FK_OracleSorgular_Departamentler]
+                                    FOREIGN KEY ([DepartamentId]) REFERENCES [Departamentler] ([Id])
+                            );
+                            CREATE INDEX [IX_OracleSorgular_DepartamentId] ON [OracleSorgular] ([DepartamentId]);
+                            CREATE INDEX [IX_OracleSorgular_Aktiv]         ON [OracleSorgular] ([Aktiv]);
+                        END
+
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                                       WHERE TABLE_NAME = 'SistemAyarlari'
+                                         AND COLUMN_NAME = 'PidTopluSmsOracleSorguId')
+                        BEGIN
+                            ALTER TABLE [SistemAyarlari] ADD [PidTopluSmsOracleSorguId] INT NULL;
+                        END
+
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'PidSmsSablonlar')
+                        BEGIN
+                            CREATE TABLE [PidSmsSablonlar] (
+                                [Id]                INT             NOT NULL IDENTITY(1,1) PRIMARY KEY,
+                                [Ad]                NVARCHAR(200)   NOT NULL DEFAULT '',
+                                [Metn]              NVARCHAR(1000)  NOT NULL DEFAULT '',
+                                [Aciqlama]          NVARCHAR(500)   NULL,
+                                [Aktiv]             BIT             NOT NULL DEFAULT 1,
+                                [YaradilmaTarixi]   DATETIME2       NOT NULL DEFAULT GETDATE(),
+                                [YenilenmeTarixi]   DATETIME2       NULL,
+                                [SilinmeTarixi]     DATETIME2       NULL,
+                                [YaradanIcraciId]   INT             NULL,
+                                [YenileyenIcraciId] INT             NULL,
+                                [SilenIcraciId]     INT             NULL,
+                                [Silinib]           BIT             NOT NULL DEFAULT 0
+                            );
+                        END
+
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'PidSmsLoglar')
+                        BEGIN
+                            CREATE TABLE [PidSmsLoglar] (
+                                [Id]                INT             NOT NULL IDENTITY(1,1) PRIMARY KEY,
+                                [Telefon]           NVARCHAR(20)    NOT NULL DEFAULT '',
+                                [Metn]              NVARCHAR(1000)  NOT NULL DEFAULT '',
+                                [SablonId]          INT             NULL,
+                                [Status]            INT             NOT NULL DEFAULT 0,
+                                [GonderilmeTarixi]  DATETIME2       NULL,
+                                [GoyercinId]        NVARCHAR(100)   NULL,
+                                [GatewayCavabi]     NVARCHAR(2000)  NULL,
+                                [Xeta]              NVARCHAR(1000)  NULL,
+                                [GonderenIsciId]    INT             NOT NULL,
+                                [YaradilmaTarixi]   DATETIME2       NOT NULL DEFAULT GETDATE(),
+                                [YenilenmeTarixi]   DATETIME2       NULL,
+                                [SilinmeTarixi]     DATETIME2       NULL,
+                                [YaradanIcraciId]   INT             NULL,
+                                [YenileyenIcraciId] INT             NULL,
+                                [SilenIcraciId]     INT             NULL,
+                                [Silinib]           BIT             NOT NULL DEFAULT 0,
+                                CONSTRAINT [FK_PidSmsLoglar_PidSmsSablonlar_SablonId]
+                                    FOREIGN KEY ([SablonId]) REFERENCES [PidSmsSablonlar] ([Id]) ON DELETE SET NULL,
+                                CONSTRAINT [FK_PidSmsLoglar_Isciler_GonderenIsciId]
+                                    FOREIGN KEY ([GonderenIsciId]) REFERENCES [Isciler] ([Id]) ON DELETE NO ACTION
+                            );
+                        END
+                    ");
+                }
+                catch { }
+
                 // HRDaxiliQaydalar cədvəli
                 try
                 {
