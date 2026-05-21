@@ -37,13 +37,23 @@ public class OracleSorguService : IOracleSorguService
         bool izlemeden = true)
     {
         var query = _uow.Repository<OracleSorgu>().Query()
-            .Where(x => !x.Silinib)
-            .Include(x => x.Departament);
+            .Where(x => !x.Silinib);
 
         if (predicate != null) query = query.Where(predicate);
 
-        var list = await query.Select(x => ToDto(x)).ToListAsync();
+        var list = await query
+            .Include(x => x.Departament)
+            .OrderBy(x => x.Departament.Ad).ThenBy(x => x.SorguAdi)
+            .Select(x => ToDto(x))
+            .ToListAsync();
+
         return Result<IList<OracleSorguDto>>.Ok(list);
+    }
+
+    public async Task<Result<bool>> MovcuddurmuAsync(Expression<Func<OracleSorgu, bool>> predicate)
+    {
+        var exists = await _uow.Repository<OracleSorgu>().MovcuddurmuAsync(predicate);
+        return Result<bool>.Ok(exists);
     }
 
     public async Task<Result<OracleSorguDto?>> IdIleGetirAsync(int id)
