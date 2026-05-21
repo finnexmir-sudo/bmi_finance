@@ -7,7 +7,12 @@
         Qayib = 3,
         Icazeli = 4,
         Xestelik = 5,
-        Ezamiyyet = 6
+        Ezamiyyet = 6,
+        /// <summary>
+        /// Hərbi çağırış / dövlət vəzifəsi — ödənişli, balansdan düşmür,
+        /// maaş modulunda MaasdanKes=false saxlanılır.
+        /// </summary>
+        OdenisDovletVezifesi = 7
     }
 
 }

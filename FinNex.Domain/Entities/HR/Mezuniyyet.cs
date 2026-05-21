@@ -105,5 +105,15 @@ namespace FinNex.Domain.Entities.HR
         /// </summary>
         [NotMapped]
         public int EfektivGunSayi => IsGunlerininSayiManual ?? IsGunlerininSayi;
+
+        // ── Dövlət Vəzifəsi Korreksiyası ─────────────────────────────────
+        // DovletVezifelerininIcrasi növündə yaradılan qeydlər üçün:
+        //   KorreksiyaOlunanMezuniyyetId — hansı illik məzuniyyətin yerinə gəlir
+        //   SenedYolu                    — yüklənmiş rəsmi sənəd (hərbi əmr, məhkəmə vərəqəsi)
+        //   KorreksiyaSebebi             — HR-in qeyd etdiyi açıqlama
+        public int?    KorreksiyaOlunanMezuniyyetId { get; set; }
+        public Mezuniyyet? KorreksiyaOlunanMezuniyyet { get; set; }
+        public string? SenedYolu       { get; set; }
+        public string? KorreksiyaSebebi { get; set; }
     }
 }

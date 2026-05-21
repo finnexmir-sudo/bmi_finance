@@ -55,5 +55,16 @@ namespace FinNex.Application.Interfaces
         // Təsdiq axınını atlayır, avtomatik təsdiqlənib statusunda yaranır,
         // davamiyyətdə "Qayib" qeydlərini "İcazəli"-yə çevirir.
         Task<Result<MezuniyyetDto>> GeriyeQeydEtAsync(GeriyeMezuniyyetCreateDto dto, int hrIsciId);
+
+        /// <summary>
+        /// Dövlət vəzifəsi korreksiyası (Əmək Məcəlləsi Maddə 173).
+        /// İşçi illik məzuniyyətdə olarkən hərbi çağırış / məhkəmə şahidliyi kimi
+        /// dövlət vəzifəsi yerinə yetirirsə:
+        ///   a) həmin günlər illik balansa geri qaytarılır (+KorreksiyaGunSayi)
+        ///   b) DovletVezifelerininIcrasi növündə yeni məzuniyyət qeydi yaranır
+        ///   c) Davamiyyət qeydlərində həmin günlər OdenisDovletVezifesi → MaasdanKes=false
+        /// </summary>
+        Task<Result<MezuniyyetDto>> KorreksiyaEtAsync(
+            MezuniyyetKorreksiyaDto dto, int hrIsciId, string senedSaxlama);
     }
 }
