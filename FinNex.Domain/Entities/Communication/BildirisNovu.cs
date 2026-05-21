@@ -63,6 +63,9 @@ namespace FinNex.Domain.Entities.Communication
         PerformansBasladi = 39,
         PerformansNovbeSobe = 40,
         PerformansNovbeRehber = 41,
-        PerformansTamamlandi = 42
+        PerformansTamamlandi = 42,
+
+        // İş günü bitdi elanı
+        IsGunuBitdi = 43
     }
 }

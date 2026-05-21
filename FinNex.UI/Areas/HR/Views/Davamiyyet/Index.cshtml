@@ -44,6 +44,16 @@
             <button id="btnIsParametri" class="hrd-btn hrd-btn--settings" title="İş saatı parametrləri">
                 <i class="bi bi-gear-fill"></i> Parametrlər
             </button>
+            @if (User.IsInRole("HR") || User.IsInRole("Rehber") || User.IsInRole("Admin"))
+            {
+                <button id="btnIsGunuBit"
+                        class="hrd-btn"
+                        style="background:#16a34a;color:#fff;border-color:#16a34a;"
+                        title="İşi bitirən işçilərə bildiriş göndər"
+                        data-endpoint="@Url.Action("IsGunuBit", "Davamiyyet", new { area = "HR" })">
+                    <i class="bi bi-door-open"></i> İş Bitdi
+                </button>
+            }
             <div class="hrd-live-pill" id="hrdDeviceStatus">
                 <span class="hrd-live-dot"></span>
                 <span id="hrdDeviceText">Cihaz yoxlanılır...</span>

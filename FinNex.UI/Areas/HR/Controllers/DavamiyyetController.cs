@@ -1,6 +1,8 @@
 using ClosedXML.Excel;
 using FinNex.Application.Interfaces;
+using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -17,17 +19,20 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IIsciService _isciService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IJetonTeklifleriService _teklifService;
+        private readonly IBildirisRouter _bildirisRouter;
 
         public DavamiyyetController(
             IDavamiyyetService davamiyyetService,
             IIsciService isciService,
             IUnitOfWork unitOfWork,
-            IJetonTeklifleriService teklifService)
+            IJetonTeklifleriService teklifService,
+            IBildirisRouter bildirisRouter)
         {
             _davamiyyetService = davamiyyetService;
             _isciService = isciService;
             _unitOfWork = unitOfWork;
             _teklifService = teklifService;
+            _bildirisRouter = bildirisRouter;
         }
 
         public async Task<IActionResult> Index()
@@ -75,7 +80,23 @@ namespace FinNex.UI.Areas.HR.Controllers
                 var parametri = await GetIsParametriEntity();
                 var standartCixis = parametri.StandartCixisVaxti;
                 var tezCixmaTolerans = TimeSpan.FromMinutes(parametri.TezCixmaToleransDeqiqe);
-                var efektivCixisHeddi = standartCixis - tezCixmaTolerans;
+                var naharBaslama = parametri.NaharBaslamaSaati;
+                var naharBitis = naharBaslama.Add(TimeSpan.FromMinutes(parametri.NaharMuddetDeqiqe));
+
+                // IsGunuBitdiElan — həmin tarix üçün düymə vurulubsa, o vaxt TezCixan həddi kimi götürülür
+                var elanBaslangic = (baslangic ?? tarix ?? DateTime.Today).Date;
+                var elanSon = (son ?? tarix ?? DateTime.Today).Date;
+                var elanDict = new Dictionary<DateTime, TimeSpan>();
+                try
+                {
+                    var elanlar = await _unitOfWork.Repository<IsGunuBitdiElan>()
+                        .Query().AsNoTracking()
+                        .Where(x => !x.Silinib && x.Tarix.Date >= elanBaslangic && x.Tarix.Date <= elanSon)
+                        .ToListAsync();
+                    foreach (var e in elanlar)
+                        elanDict[e.Tarix.Date] = e.BitisVaxti;
+                }
+                catch { }
 
                 // KPI-lar filter-dən ƏVVƏL hesablanır ki, status filtri cədvələ təsir
                 // etsə də, yuxarıdakı statistika sabit qalsın.
@@ -126,8 +147,25 @@ namespace FinNex.UI.Areas.HR.Controllers
                 var data = result.Select(x =>
                 {
                     var gunCixis = bayramDict.TryGetValue(x.Tarix.Date, out var bv) ? bv : standartCixis;
-                    var gunHedd  = gunCixis - tezCixmaTolerans;
+                    var gunHedd = elanDict.TryGetValue(x.Tarix.Date, out var elanVaxt)
+                        ? elanVaxt
+                        : gunCixis - tezCixmaTolerans;
                     var tezCixanFlag = x.CixisVaxti.HasValue && x.CixisVaxti.Value.TimeOfDay < gunHedd;
+
+                    // Nahar çıxılması — işçi nahar başlamadan gəlib, nahar bitdikdən sonra çıxıbsa
+                    int? islemeSaatiDeq = null;
+                    bool naharCixildi = false;
+                    if (x.GirisVaxti.HasValue && x.CixisVaxti.HasValue)
+                    {
+                        var diff = (int)(x.CixisVaxti.Value - x.GirisVaxti.Value).TotalMinutes;
+                        if (x.CixisVaxti.Value.TimeOfDay > naharBitis && x.GirisVaxti.Value.TimeOfDay < naharBaslama)
+                        {
+                            diff -= parametri.NaharMuddetDeqiqe;
+                            naharCixildi = true;
+                        }
+                        islemeSaatiDeq = Math.Max(0, diff);
+                    }
+
                     return new
                     {
                         id = x.Id,
@@ -139,7 +177,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                         status = (int)x.Status,
                         maasdanKes = x.MaasdanKes,
                         qayibSebebi = x.QayibSebebi ?? "",
-                        tezCixan = tezCixanFlag
+                        tezCixan = tezCixanFlag,
+                        islemeSaatiDeq,
+                        naharCixildi
                     };
                 }).OrderByDescending(x => x.tarix).ThenBy(x => x.isciTamAd).ToList();
 
@@ -156,7 +196,13 @@ namespace FinNex.UI.Areas.HR.Controllers
 
                 var iseSaatleri = umumi
                     .Where(x => x.GirisVaxti.HasValue && x.CixisVaxti.HasValue)
-                    .Select(x => (x.CixisVaxti!.Value - x.GirisVaxti!.Value).TotalHours)
+                    .Select(x =>
+                    {
+                        var saatlar = (x.CixisVaxti!.Value - x.GirisVaxti!.Value).TotalHours;
+                        if (x.CixisVaxti.Value.TimeOfDay > naharBitis && x.GirisVaxti.Value.TimeOfDay < naharBaslama)
+                            saatlar -= parametri.NaharMuddetDeqiqe / 60.0;
+                        return Math.Max(0, saatlar);
+                    })
                     .ToList();
                 var ortaIsSaati = iseSaatleri.Any() ? Math.Round(iseSaatleri.Average(), 1) : 0;
 
@@ -189,13 +235,70 @@ namespace FinNex.UI.Areas.HR.Controllers
                         girisVaxti = parametri.StandartGirisVaxti.ToString(@"hh\:mm"),
                         cixisVaxti = parametri.StandartCixisVaxti.ToString(@"hh\:mm"),
                         gecikmeTolerans = parametri.GecikmeToleransDeqiqe,
-                        tezCixmaTolerans = parametri.TezCixmaToleransDeqiqe
-                    }
+                        tezCixmaTolerans = parametri.TezCixmaToleransDeqiqe,
+                        naharBaslamaSaati = naharBaslama.ToString(@"hh\:mm"),
+                        naharMuddetDeqiqe = parametri.NaharMuddetDeqiqe
+                    },
+                    isGunuBitdiElan = elanDict.TryGetValue(DateTime.Today, out var bugunElan)
+                        ? bugunElan.ToString(@"hh\:mm")
+                        : (string?)null
                 });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Rehber)]
+        public async Task<IActionResult> IsGunuBit()
+        {
+            try
+            {
+                var bugun = DateTime.Today;
+                var bitisVaxti = DateTime.Now.TimeOfDay;
+
+                var movcud = await _unitOfWork.Repository<IsGunuBitdiElan>()
+                    .Query()
+                    .Where(x => x.Tarix.Date == bugun && !x.Silinib)
+                    .FirstOrDefaultAsync();
+
+                if (movcud != null)
+                {
+                    movcud.BitisVaxti = bitisVaxti;
+                    await _unitOfWork.Repository<IsGunuBitdiElan>().YenileAsync(movcud);
+                }
+                else
+                {
+                    await _unitOfWork.Repository<IsGunuBitdiElan>().EkleAsync(new IsGunuBitdiElan
+                    {
+                        Tarix = bugun,
+                        BitisVaxti = bitisVaxti
+                    });
+                }
+                await _unitOfWork.SaveChangesAsync();
+
+                var isciIds = await _unitOfWork.Repository<Isci>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib && x.Status == IsciStatus.Aktiv)
+                    .Select(x => x.Id)
+                    .ToListAsync();
+
+                foreach (var isciId in isciIds)
+                {
+                    await _bildirisRouter.NotifyIsciAsync(
+                        isciId,
+                        BildirisNovu.IsGunuBitdi,
+                        "İş günü başa çatdı",
+                        "İşini bitirən şəxslər gedə bilərlər.");
+                }
+
+                return Ok(new { ok = true, bitisVaxti = bitisVaxti.ToString(@"hh\:mm") });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { ok = false, xeta = ex.Message });
             }
         }
 

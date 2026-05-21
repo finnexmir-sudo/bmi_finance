@@ -582,16 +582,81 @@ namespace FinNex.UI.Areas.HR.Controllers
                 if (status.HasValue && status.Value == (int)DavamiyyetStatus.Icazeli)
                     result = result.Where(x => !mezuniyyetIsciIds.Contains(x.IsciId)).ToList();
 
-                var data = result.Select(x => new
+                // IsParametri — nahar və TezCixan hesablaması üçün
+                IsParametri parametri;
+                try { parametri = await _uow.Repository<IsParametri>().Query().AsNoTracking().Where(x => !x.Silinib).FirstOrDefaultAsync() ?? new IsParametri(); }
+                catch { parametri = new IsParametri(); }
+
+                var standartCixis = parametri.StandartCixisVaxti;
+                var tezCixmaTolerans = TimeSpan.FromMinutes(parametri.TezCixmaToleransDeqiqe);
+                var naharBaslama = parametri.NaharBaslamaSaati;
+                var naharBitis = naharBaslama.Add(TimeSpan.FromMinutes(parametri.NaharMuddetDeqiqe));
+
+                var elanBaslangic = (baslangic ?? tarix ?? DateTime.Today).Date;
+                var elanSon = (son ?? tarix ?? DateTime.Today).Date;
+                var elanDict = new Dictionary<DateTime, TimeSpan>();
+                try
                 {
-                    id = x.Id,
-                    isciTamAd = x.IsciTamAd ?? "-",
-                    departamentAd = x.DepartamentAd ?? "-",
-                    tarix = x.Tarix,
-                    girisVaxti = x.GirisVaxti,
-                    cixisVaxti = x.CixisVaxti,
-                    status = (int)x.Status
+                    var elanlar = await _uow.Repository<IsGunuBitdiElan>()
+                        .Query().AsNoTracking()
+                        .Where(x => !x.Silinib && x.Tarix.Date >= elanBaslangic && x.Tarix.Date <= elanSon)
+                        .ToListAsync();
+                    foreach (var e in elanlar)
+                        elanDict[e.Tarix.Date] = e.BitisVaxti;
+                }
+                catch { }
+
+                var hedefTarixler = result.Select(x => x.Tarix.Date).Distinct().ToList();
+                var bayramDict = new Dictionary<DateTime, TimeSpan>();
+                try
+                {
+                    var bayramlar = await _uow.Repository<BayramGunu>()
+                        .Query().AsNoTracking()
+                        .Where(x => !x.Silinib && hedefTarixler.Contains(x.Tarix.Date) && x.XususiBitisVaxti.HasValue)
+                        .ToListAsync();
+                    bayramDict = bayramlar.ToDictionary(x => x.Tarix.Date, x => x.XususiBitisVaxti!.Value);
+                }
+                catch { }
+
+                var tezCixanSayi = 0;
+                var data = result.Select(x =>
+                {
+                    var gunCixis = bayramDict.TryGetValue(x.Tarix.Date, out var bv) ? bv : standartCixis;
+                    var gunHedd = elanDict.TryGetValue(x.Tarix.Date, out var elanVaxt)
+                        ? elanVaxt
+                        : gunCixis - tezCixmaTolerans;
+                    var tezCixanFlag = x.CixisVaxti.HasValue && x.CixisVaxti.Value.TimeOfDay < gunHedd;
+
+                    int? islemeSaatiDeq = null;
+                    bool naharCixildi = false;
+                    if (x.GirisVaxti.HasValue && x.CixisVaxti.HasValue)
+                    {
+                        var diff = (int)(x.CixisVaxti.Value - x.GirisVaxti.Value).TotalMinutes;
+                        if (x.CixisVaxti.Value.TimeOfDay > naharBitis && x.GirisVaxti.Value.TimeOfDay < naharBaslama)
+                        {
+                            diff -= parametri.NaharMuddetDeqiqe;
+                            naharCixildi = true;
+                        }
+                        islemeSaatiDeq = Math.Max(0, diff);
+                    }
+
+                    return new
+                    {
+                        id = x.Id,
+                        isciTamAd = x.IsciTamAd ?? "-",
+                        departamentAd = x.DepartamentAd ?? "-",
+                        tarix = x.Tarix,
+                        girisVaxti = x.GirisVaxti,
+                        cixisVaxti = x.CixisVaxti,
+                        status = (int)x.Status,
+                        maasdanKes = x.MaasdanKes,
+                        qayibSebebi = x.QayibSebebi ?? "",
+                        tezCixan = tezCixanFlag,
+                        islemeSaatiDeq,
+                        naharCixildi
+                    };
                 }).OrderByDescending(x => x.tarix).ThenBy(x => x.isciTamAd).ToList();
+                tezCixanSayi = data.Count(x => x.tezCixan);
 
                 var gelib = umumi.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
                 var gecikme = umumi.Count(x => x.Status == DavamiyyetStatus.Gecikme);
@@ -602,7 +667,13 @@ namespace FinNex.UI.Areas.HR.Controllers
 
                 var iseSaatleri = umumi
                     .Where(x => x.GirisVaxti.HasValue && x.CixisVaxti.HasValue)
-                    .Select(x => (x.CixisVaxti!.Value - x.GirisVaxti!.Value).TotalHours)
+                    .Select(x =>
+                    {
+                        var saatlar = (x.CixisVaxti!.Value - x.GirisVaxti!.Value).TotalHours;
+                        if (x.CixisVaxti.Value.TimeOfDay > naharBitis && x.GirisVaxti.Value.TimeOfDay < naharBaslama)
+                            saatlar -= parametri.NaharMuddetDeqiqe / 60.0;
+                        return Math.Max(0, saatlar);
+                    })
                     .ToList();
                 var ortaIsSaati = iseSaatleri.Any() ? Math.Round(iseSaatleri.Average(), 1) : 0;
 
@@ -624,11 +695,24 @@ namespace FinNex.UI.Areas.HR.Controllers
                         icazeli,
                         xestelik,
                         ezamiyyet,
+                        tezCixan = tezCixanSayi,
                         cemi = umumi.Count,
                         ortaIsSaati,
                         enCoxGecikenDept = enCoxGecikenDept?.ad ?? "-",
                         enCoxGecikenDeptSay = enCoxGecikenDept?.say ?? 0
-                    }
+                    },
+                    isParametri = new
+                    {
+                        girisVaxti = parametri.StandartGirisVaxti.ToString(@"hh\:mm"),
+                        cixisVaxti = parametri.StandartCixisVaxti.ToString(@"hh\:mm"),
+                        gecikmeTolerans = parametri.GecikmeToleransDeqiqe,
+                        tezCixmaTolerans = parametri.TezCixmaToleransDeqiqe,
+                        naharBaslamaSaati = naharBaslama.ToString(@"hh\:mm"),
+                        naharMuddetDeqiqe = parametri.NaharMuddetDeqiqe
+                    },
+                    isGunuBitdiElan = elanDict.TryGetValue(DateTime.Today, out var bugunElan)
+                        ? bugunElan.ToString(@"hh\:mm")
+                        : (string?)null
                 });
             }
             catch (Exception ex)
