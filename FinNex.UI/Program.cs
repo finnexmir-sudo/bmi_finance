@@ -142,6 +142,15 @@ namespace FinNex.UI
             // 5.6 Gələn Mail / AI Servisləri
             // ==================================================
             builder.Services.AddHttpClient("Anthropic");
+
+            // ── Göyərçin (Posta Güvercini) SMS Gateway ────────
+            builder.Services.Configure<FinNex.Application.Services.Sms.GoyercinSettings>(
+                builder.Configuration.GetSection("Goyercin"));
+            builder.Services.AddHttpClient<FinNex.Application.Interfaces.Sms.ISmsGateway,
+                                            FinNex.Application.Services.Sms.GoyercinSmsGateway>(c =>
+            {
+                c.Timeout = TimeSpan.FromSeconds(30);
+            });
             builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.IGelenMailService,
                                         FinNex.Application.Services.Communication.GelenMailService>();
             builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.IAnthropicService,

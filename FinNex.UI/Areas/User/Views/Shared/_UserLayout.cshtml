@@ -218,7 +218,7 @@
                     </a>
                     <a asp-area="User" asp-controller="PidSms" asp-action="Index"
                        class="fn-topnav-dd-item @(activeModule == "pid" ? "fn-topnav-dd-item--active" : "")">
-                        <i class="bi bi-exclamation-triangle"></i>
+                        <i class="bi bi-shield-exclamation"></i>
                         <div>
                             <div class="fn-topnav-dd-title">PİD</div>
                             <div class="fn-topnav-dd-sub">Problemli İşlər Departamenti</div>
@@ -528,8 +528,12 @@
             case "pid":
                 <div class="fn-nav-label">PİD</div>
                 <a asp-area="User" asp-controller="PidSms" asp-action="Index"
-                   class="fn-nav-item @(currentController == "PidSms" ? "active" : "")">
+                   class="fn-nav-item @(currentController == "PidSms" && currentAction == "Index" ? "active" : "")">
                     <i class="bi bi-chat-left-text"></i> SMS
+                </a>
+                <a asp-area="User" asp-controller="PidSms" asp-action="Sablonlar"
+                   class="fn-nav-item @(currentController == "PidSms" && currentAction == "Sablonlar" ? "active" : "")">
+                    <i class="bi bi-file-earmark-text"></i> Şablonlar
                 </a>
                 break;
 

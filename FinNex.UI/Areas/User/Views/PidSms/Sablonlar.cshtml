@@ -1,0 +1,98 @@
+@using FinNex.Domain.Entities.Pid
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "SMS Şablonları — PİD";
+    var sablonlar = ViewBag.Sablonlar as IList<PidSmsSablon> ?? new List<PidSmsSablon>();
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">SMS Şablonları</div>
+            <div class="fn-page-sub">Problemli İşlər Departamenti</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline">← SMS-ə qayıt</a>
+    </div>
+
+    @if (TempData["Success"] != null) { <div class="fn-alert fn-alert--success">@TempData["Success"]</div> }
+    @if (TempData["Error"] != null)
+    {
+        <div style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Error"]</div>
+    }
+
+    @* ── Yeni şablon ── *@
+    <div class="fn-card" style="padding:18px;margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:12px">Yeni şablon</div>
+        <form asp-action="SablonYarat" method="post">
+            @Html.AntiForgeryToken()
+            <div style="display:grid;grid-template-columns:1fr 2fr;gap:12px">
+                <div class="fn-form-group">
+                    <label class="fn-label">Ad *</label>
+                    <input type="text" name="ad" class="fn-input" maxlength="200" required />
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Açıqlama</label>
+                    <input type="text" name="aciqlama" class="fn-input" maxlength="500" />
+                </div>
+            </div>
+            <div class="fn-form-group" style="margin-top:8px">
+                <label class="fn-label">Mətn * (max 1000 simvol)</label>
+                <textarea name="metn" class="fn-input" rows="3" maxlength="1000" required></textarea>
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:12px">
+                <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-plus"></i> Əlavə et</button>
+            </div>
+        </form>
+    </div>
+
+    @* ── Mövcud şablonlar ── *@
+    <div class="fn-card" style="padding:0">
+        <div style="padding:16px 18px;border-bottom:1px solid #e2e8f0">
+            <div style="font-size:14px;font-weight:700;color:#0f172a">Şablonlar (@sablonlar.Count)</div>
+        </div>
+        @if (!sablonlar.Any())
+        {
+            <div style="padding:30px;text-align:center;color:#64748b;font-size:13px">Hələ şablon yoxdur.</div>
+        }
+        else
+        {
+            foreach (var s in sablonlar)
+            {
+                <div style="padding:14px 18px;border-bottom:1px solid #f1f5f9">
+                    <form asp-action="SablonYenile" method="post" style="display:grid;gap:8px">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@s.Id" />
+                        <div style="display:grid;grid-template-columns:1fr 2fr auto auto;gap:8px;align-items:end">
+                            <div class="fn-form-group">
+                                <label class="fn-label">Ad</label>
+                                <input type="text" name="ad" class="fn-input" value="@s.Ad" required />
+                            </div>
+                            <div class="fn-form-group">
+                                <label class="fn-label">Açıqlama</label>
+                                <input type="text" name="aciqlama" class="fn-input" value="@s.Aciqlama" />
+                            </div>
+                            <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#475569;margin-bottom:8px">
+                                <input type="checkbox" name="aktiv" value="true" @(s.Aktiv ? "checked" : "") />
+                                Aktiv
+                            </label>
+                            <div style="display:flex;gap:6px;margin-bottom:8px">
+                                <button type="submit" class="fn-btn fn-btn--primary" style="padding:6px 12px">Yenilə</button>
+                            </div>
+                        </div>
+                        <div class="fn-form-group">
+                            <textarea name="metn" class="fn-input" rows="2" maxlength="1000">@s.Metn</textarea>
+                        </div>
+                    </form>
+                    <form asp-action="SablonSil" method="post" style="margin-top:6px;display:inline" onsubmit="return confirm('Bu şablonu silmək istəyirsiniz?')">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@s.Id" />
+                        <button type="submit" style="background:none;border:none;color:#dc2626;font-size:12px;cursor:pointer">
+                            <i class="bi bi-trash"></i> Sil
+                        </button>
+                    </form>
+                </div>
+            }
+        }
+    </div>
+</div>

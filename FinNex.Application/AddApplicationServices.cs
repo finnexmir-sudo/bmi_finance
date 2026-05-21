@@ -127,6 +127,12 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IKreditRandevuService, KreditRandevuService>();
         services.AddScoped<IKreditSmsService, KreditSmsService>();
 
+        // ── PİD (Problemli İşlər Departamenti) ────────────────
+        services.AddScoped<FinNex.Application.Interfaces.Pid.IPidSmsSablonService,
+                           FinNex.Application.Services.Pid.PidSmsSablonService>();
+        services.AddScoped<FinNex.Application.Interfaces.Pid.IPidSmsService,
+                           FinNex.Application.Services.Pid.PidSmsService>();
+
         // ── Jeton (Gamification) Modulu ──────────────────────
         services.AddScoped<IJetonService, JetonService>();
         services.AddScoped<IReytingService, ReytingService>();
