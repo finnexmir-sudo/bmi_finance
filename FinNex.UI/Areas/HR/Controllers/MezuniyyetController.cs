@@ -7,6 +7,7 @@ using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using FinNex.UI.Areas.HR.ViewModels.Mezuniyyet;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,19 +22,25 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly IBildirisService _bildirisService;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IWebHostEnvironment _env;
+
+        private static readonly string[] _icazeSenedTipler =
+            [".pdf", ".jpg", ".jpeg", ".png"];
 
         public MezuniyyetController(
             IMezuniyyetService mezuniyyetService,
             IIsciService isciService,
             UserManager<AppUser> userManager,
             IBildirisService bildirisService,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IWebHostEnvironment env)
         {
             _mezuniyyetService = mezuniyyetService;
             _isciService = isciService;
             _userManager = userManager;
             _bildirisService = bildirisService;
             _unitOfWork = unitOfWork;
+            _env = env;
         }
 
         // ── Köməkçi: cari istifadəçinin IsciId-sini alır ──────
@@ -371,5 +378,62 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         // Xəstəlik/Ezamiyyət əməliyyatları XestelikEzamiyyetController-ə köçürülüb
+
+        // ══════════════════════════════════════════════════════
+        // DÖVLƏT VƏZİFƏSİ KORREKSİYASI — Maddə 173
+        // ══════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Dövlət vəzifəsi korreksiyası (hərbi çağırış, məhkəmə şahidliyi və s.).
+        /// İşçi illik məzuniyyətdə olarkən dövlət vəzifəsi icra edirsə:
+        ///   — həmin günlər balansdan geri qaytarılır
+        ///   — DovletVezifelerininIcrasi növündə yeni qeyd yaranır
+        ///   — Davamiyyətdə MaasdanKes=false — maaşdan kəsinti olmur
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Korreksiya([FromForm] MezuniyyetKorreksiyaDto dto)
+        {
+            var hrIsciId = await GetCurrentIsciIdAsync();
+            if (hrIsciId == null)
+                return Json(new { ok = false, xeta = "İstifadəçi tapılmadı." });
+
+            // ── Sənəd saxla (opsional) ────────────────────────────────────
+            string senedYolu = string.Empty;
+            if (dto.Sened != null && dto.Sened.Length > 0)
+            {
+                var ext = Path.GetExtension(dto.Sened.FileName).ToLowerInvariant();
+                if (!_icazeSenedTipler.Contains(ext))
+                    return Json(new
+                    {
+                        ok = false,
+                        xeta = "Sənəd formatı qəbul edilmir. İcazə verilən: PDF, JPG, PNG."
+                    });
+
+                if (dto.Sened.Length > 10 * 1024 * 1024)
+                    return Json(new { ok = false, xeta = "Sənəd 10 MB-dan böyük ola bilməz." });
+
+                var dir = Path.Combine(_env.WebRootPath, "uploads", "dovlet-vezife");
+                Directory.CreateDirectory(dir);
+                var fileName = $"{Guid.NewGuid()}{ext}";
+                await using (var fs = new FileStream(Path.Combine(dir, fileName), FileMode.Create))
+                    await dto.Sened.CopyToAsync(fs);
+
+                senedYolu = $"/uploads/dovlet-vezife/{fileName}";
+            }
+
+            // ── Servis çağır ──────────────────────────────────────────────
+            var result = await _mezuniyyetService.KorreksiyaEtAsync(dto, hrIsciId.Value, senedYolu);
+
+            if (!result.Success)
+                return Json(new { ok = false, xeta = result.Message });
+
+            return Json(new
+            {
+                ok      = true,
+                mesaj   = result.Message,
+                yeniId  = result.Data?.Id
+            });
+        }
     }
 }

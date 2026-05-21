@@ -1672,4 +1672,202 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             }
         }
     }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // DÖVLƏT VƏZİFƏSİ KORREKSİYASI — Əmək Məcəlləsi Maddə 173
+    // ════════════════════════════════════════════════════════════════════════
+    /// <param name="senedSaxlama">
+    /// Controller tərəfindən saxlanmış sənədin server yolu (boş ola bilər).
+    /// Service fayl saxlamır — yalnız verilmiş yolu entity-yə yazır.
+    /// </param>
+    public async Task<Result<MezuniyyetDto>> KorreksiyaEtAsync(
+        MezuniyyetKorreksiyaDto dto, int hrIsciId, string senedSaxlama)
+    {
+        using var transaction = await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            // ── 1. Əsas məzuniyyət validasiyası ──────────────────────────
+            var original = await _unitOfWork.Repository<Mezuniyyet>()
+                .GetirAsync(x => x.Id == dto.MezuniyyetId && !x.Silinib);
+
+            if (original == null)
+                return Result<MezuniyyetDto>.Fail("Məzuniyyət tapılmadı.");
+
+            if (original.IsciId != dto.IsciId)
+                return Result<MezuniyyetDto>.Fail("İşçi uyğunsuzluğu.");
+
+            if (original.Status != MezuniyyetStatus.Tesdiqlenib)
+                return Result<MezuniyyetDto>.Fail(
+                    "Korreksiya yalnız təsdiqlənmiş məzuniyyətlərə tətbiq edilə bilər.");
+
+            if (original.Nov != MezuniyyetNovu.Illik)
+                return Result<MezuniyyetDto>.Fail(
+                    "Korreksiya yalnız illik məzuniyyətlərə tətbiq edilir. " +
+                    "Xəstəlik və ezamiyyət üçün ayrı prosedur tətbiq olunur.");
+
+            // ── 2. Tarix validasiyası ─────────────────────────────────────
+            if (dto.BitmeTarixi < dto.BaslamaTarixi)
+                return Result<MezuniyyetDto>.Fail("Bitmə tarixi başlama tarixindən əvvəl ola bilməz.");
+
+            if (dto.BaslamaTarixi.Date < original.BaslamaTarixi.Date ||
+                dto.BitmeTarixi.Date > original.BitmeTarixi.Date)
+                return Result<MezuniyyetDto>.Fail(
+                    "Korreksiya tarixləri əsas məzuniyyət aralığı içərisində olmalıdır.");
+
+            if (dto.KorreksiyaGunSayi <= 0)
+                return Result<MezuniyyetDto>.Fail("Korreksiya gün sayı müsbət olmalıdır.");
+
+            int isGunu = await HesablaIsGunuAsync(dto.BaslamaTarixi, dto.BitmeTarixi);
+            if (isGunu <= 0)
+                return Result<MezuniyyetDto>.Fail(
+                    "Seçilən aralıqda iş günü yoxdur (yalnız həftəsonu/bayram).");
+
+            if (dto.KorreksiyaGunSayi > original.EfektivGunSayi)
+                return Result<MezuniyyetDto>.Fail(
+                    $"Korreksiya gün sayı ({dto.KorreksiyaGunSayi}) əsas məzuniyyətin " +
+                    $"effektiv gün sayını ({original.EfektivGunSayi}) keçə bilməz.");
+
+            // ── 3. Eyni işçi üçün üst-üstə düşən DovletVezifesi yoxlanışı ──
+            var artiqVar = await _unitOfWork.Repository<Mezuniyyet>()
+                .MovcuddurmuAsync(x =>
+                    !x.Silinib &&
+                    x.IsciId == dto.IsciId &&
+                    x.Nov == MezuniyyetNovu.DovletVezifelerininIcrasi &&
+                    x.Status == MezuniyyetStatus.Tesdiqlenib &&
+                    x.BaslamaTarixi <= dto.BitmeTarixi &&
+                    x.BitmeTarixi >= dto.BaslamaTarixi);
+
+            if (artiqVar)
+                return Result<MezuniyyetDto>.Fail(
+                    "Bu tarix aralığında işçinin artıq dövlət vəzifəsi qeydi mövcuddur.");
+
+            // ── 4. Balansı geri qaytar (LIFO — ən son ilin balansına) ─────
+            await BalansiGeriQaytarAsync(dto.IsciId, MezuniyyetNovu.Illik, dto.KorreksiyaGunSayi);
+
+            // ── 5. Yeni DovletVezifelerininIcrasi məzuniyyəti yarat ───────
+            var indi = DateTime.Now;
+            var yeniMezuniyyet = new Mezuniyyet
+            {
+                IsciId                      = dto.IsciId,
+                Nov                         = MezuniyyetNovu.DovletVezifelerininIcrasi,
+                Status                      = MezuniyyetStatus.Tesdiqlenib,
+                BaslamaTarixi               = dto.BaslamaTarixi.Date,
+                BitmeTarixi                 = dto.BitmeTarixi.Date,
+                IsGunlerininSayi            = dto.KorreksiyaGunSayi,
+                Qeyd                        = dto.Qeyd?.Trim(),
+                HrTesdiq                    = true,
+                HrId                        = hrIsciId,
+                HrTesdiqTarixi              = indi,
+                KorreksiyaOlunanMezuniyyetId = original.Id,
+                SenedYolu                   = string.IsNullOrWhiteSpace(senedSaxlama)
+                                                  ? null : senedSaxlama,
+                KorreksiyaSebebi            = dto.Qeyd?.Trim(),
+                OdenisTipi                  = MezuniyyetOdenisTipi.AySonuOdenis,
+                OdenisStatus                = MezuniyyetOdenisStatus.TetbiqEdilmir,
+                YaradilmaTarixi             = indi
+            };
+
+            await _unitOfWork.Repository<Mezuniyyet>().YaratAsync(yeniMezuniyyet);
+
+            // ── 6. Davamiyyət qeydlərini yenilə ──────────────────────────
+            // Həmin günlər üçün Icazeli → OdenisDovletVezifesi, MaasdanKes=false
+            var skipBayramlar = await _unitOfWork.Repository<BayramGunu>()
+                .HamisiniGetirAsync(x =>
+                    x.Tarix >= dto.BaslamaTarixi &&
+                    x.Tarix <= dto.BitmeTarixi   &&
+                    x.Tip == GunTipi.Bayram      &&
+                    !x.MezuniyyetdeHesablanir);
+
+            int yenilenDavamiyyet = 0;
+            for (var gun = dto.BaslamaTarixi.Date;
+                 gun <= dto.BitmeTarixi.Date;
+                 gun = gun.AddDays(1))
+            {
+                if (skipBayramlar.Any(b => b.Tarix.Date == gun)) continue;
+
+                var dav = await _unitOfWork.Repository<Davamiyyet>()
+                    .GetirAsync(x => x.IsciId == dto.IsciId && x.Tarix.Date == gun);
+
+                if (dav != null)
+                {
+                    // Icazeli idi → dövlət vəzifəsinə çevir
+                    if (dav.Status == DavamiyyetStatus.Icazeli ||
+                        dav.Status == DavamiyyetStatus.Qayib)
+                    {
+                        dav.Status      = DavamiyyetStatus.OdenisDovletVezifesi;
+                        dav.MaasdanKes  = false;
+                        dav.QayibSebebi = "Dövlət vəzifəsinin icrası (Maddə 173)";
+                        await _unitOfWork.Repository<Davamiyyet>().YenileAsync(dav);
+                        yenilenDavamiyyet++;
+                    }
+                }
+                else
+                {
+                    await _unitOfWork.Repository<Davamiyyet>().YaratAsync(new Davamiyyet
+                    {
+                        IsciId      = dto.IsciId,
+                        Tarix       = gun,
+                        Status      = DavamiyyetStatus.OdenisDovletVezifesi,
+                        MaasdanKes  = false,
+                        QayibSebebi = "Dövlət vəzifəsinin icrası (Maddə 173)"
+                    });
+                    yenilenDavamiyyet++;
+                }
+            }
+
+            await _unitOfWork.YaddaSaxlaAsync();
+            await transaction.CommitAsync();
+
+            var resultDto = new MezuniyyetDto
+            {
+                Id             = yeniMezuniyyet.Id,
+                IsciId         = yeniMezuniyyet.IsciId,
+                Nov            = yeniMezuniyyet.Nov,
+                Status         = yeniMezuniyyet.Status,
+                BaslamaTarixi  = yeniMezuniyyet.BaslamaTarixi,
+                BitmeTarixi    = yeniMezuniyyet.BitmeTarixi,
+                IsGunlerininSayi = yeniMezuniyyet.IsGunlerininSayi,
+                Qeyd           = yeniMezuniyyet.Qeyd
+            };
+
+            return Result<MezuniyyetDto>.Ok(
+                resultDto,
+                $"Dövlət vəzifəsi korreksiyası tamamlandı. " +
+                $"{dto.KorreksiyaGunSayi} gün illik balansa geri qaytarıldı. " +
+                $"Davamiyyət: {yenilenDavamiyyet} qeyd yeniləndi.");
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return Result<MezuniyyetDto>.Fail($"Korreksiya xətası: {ex.Message}");
+        }
+    }
+
+    // ── Balansı geri qaytarma köməkçisi (LIFO — ən son illərdən əvvəl) ───
+    // Balansdan kesilmə FIFO ilə gedib (köhnə il → yeni il), geri qaytarma
+    // LIFO ilə gedir (yeni il → köhnə il) — eyni məntiqlə geri alınır.
+    private async Task BalansiGeriQaytarAsync(int isciId, MezuniyyetNovu nov, int gun)
+    {
+        if (gun <= 0) return;
+
+        var repo = _unitOfWork.Repository<MezuniyyetBalans>();
+
+        // IstifadeOlunanGun > 0 olan balansları ən son il əvvəl
+        var balanslar = await repo.Query()
+            .Where(b => !b.Silinib && b.IsciId == isciId &&
+                        b.Nov == nov && b.IstifadeOlunanGun > 0)
+            .OrderByDescending(b => b.Il)
+            .ToListAsync();
+
+        int qalanGeri = gun;
+        foreach (var b in balanslar)
+        {
+            if (qalanGeri <= 0) break;
+            int qaytar = Math.Min(b.IstifadeOlunanGun, qalanGeri);
+            b.IstifadeOlunanGun -= qaytar;
+            b.YenilenmeTarixi    = DateTime.Now;
+            await repo.YenileAsync(b);
+            qalanGeri -= qaytar;
+        }
+    }
 }
