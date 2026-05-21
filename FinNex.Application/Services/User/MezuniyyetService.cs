@@ -1722,10 +1722,23 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 return Result<MezuniyyetDto>.Fail(
                     "Seçilən aralıqda iş günü yoxdur (yalnız həftəsonu/bayram).");
 
-            if (dto.KorreksiyaGunSayi > original.EfektivGunSayi)
+            // Əvvəlki korreksiyaların kumulyativ cəmi — eyni orijinal məzuniyyət üzərindən
+            // fərqli tarix aralıqları ilə edilmiş bütün aktiv korreksiyalar toplanır.
+            int sumOfEvvelkiKorreksiyalar = await _unitOfWork.Repository<Mezuniyyet>()
+                .Query()
+                .Where(x => !x.Silinib &&
+                            x.KorreksiyaOlunanMezuniyyetId == original.Id &&
+                            x.Status == MezuniyyetStatus.Tesdiqlenib)
+                .SumAsync(x => (int?)x.IsGunlerininSayi) ?? 0;
+
+            int qalanEfektivGun = original.EfektivGunSayi - sumOfEvvelkiKorreksiyalar;
+
+            if (dto.KorreksiyaGunSayi > qalanEfektivGun)
                 return Result<MezuniyyetDto>.Fail(
-                    $"Korreksiya gün sayı ({dto.KorreksiyaGunSayi}) əsas məzuniyyətin " +
-                    $"effektiv gün sayını ({original.EfektivGunSayi}) keçə bilməz.");
+                    $"Daxil edilən korreksiya günü ({dto.KorreksiyaGunSayi}) məzuniyyətin " +
+                    $"yerdə qalan effektiv gün sayından ({qalanEfektivGun}) çox ola bilməz. " +
+                    $"(Əvvəlki korreksiyalar: {sumOfEvvelkiKorreksiyalar} gün, " +
+                    $"cəmi effektiv: {original.EfektivGunSayi} gün)");
 
             // ── 3. Eyni işçi üçün üst-üstə düşən DovletVezifesi yoxlanışı ──
             var artiqVar = await _unitOfWork.Repository<Mezuniyyet>()
