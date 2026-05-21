@@ -156,6 +156,10 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<FinNex.Domain.Entities.Kredit.KreditRandevu> KreditRandevular { get; set; }
     public DbSet<FinNex.Domain.Entities.Kredit.KreditSmsLog> KreditSmsLoglar { get; set; }
 
+    // PİD (Problemli İşlər Departamenti)
+    public DbSet<FinNex.Domain.Entities.Pid.PidSmsSablon> PidSmsSablonlar { get; set; }
+    public DbSet<FinNex.Domain.Entities.Pid.PidSmsLog> PidSmsLoglar { get; set; }
+
     // =====================
     // AI Module
     // =====================
@@ -1153,6 +1157,22 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .WithMany()
             .HasForeignKey(x => x.GonderenIsciId)
             .OnDelete(DeleteBehavior.NoAction);
+
+        // ── PİD SMS Modulu ────────────────────────────────────
+        builder.Entity<FinNex.Domain.Entities.Pid.PidSmsLog>()
+            .HasOne(x => x.Sablon)
+            .WithMany()
+            .HasForeignKey(x => x.SablonId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<FinNex.Domain.Entities.Pid.PidSmsLog>()
+            .HasOne(x => x.GonderenIsci)
+            .WithMany()
+            .HasForeignKey(x => x.GonderenIsciId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<FinNex.Domain.Entities.Pid.PidSmsLog>()
+            .HasIndex(x => x.YaradilmaTarixi);
 
         // ── Jeton Modulu ──────────────────────────────────────
         builder.Entity<JetonTeyinati>()

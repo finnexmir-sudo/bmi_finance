@@ -1,6 +1,27 @@
+@using FinNex.Domain.Entities.Pid
 @{
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     ViewData["Title"] = "SMS — PİD";
+    var sablonlar = ViewBag.Sablonlar as IList<PidSmsSablon> ?? new List<PidSmsSablon>();
+    var loglar = ViewBag.Loglar as IList<PidSmsLog> ?? new List<PidSmsLog>();
+
+    string StatusText(PidSmsStatus s) => s switch
+    {
+        PidSmsStatus.Gozleyir => "Gözləyir",
+        PidSmsStatus.Gonderildi => "Göndərildi",
+        PidSmsStatus.Catdirildi => "Çatdırıldı",
+        PidSmsStatus.Catmadi => "Çatmadı",
+        PidSmsStatus.Xeta => "Xəta",
+        _ => "-"
+    };
+    string StatusRengi(PidSmsStatus s) => s switch
+    {
+        PidSmsStatus.Catdirildi => "#16a34a",
+        PidSmsStatus.Gonderildi => "#0ea5e9",
+        PidSmsStatus.Xeta => "#dc2626",
+        PidSmsStatus.Catmadi => "#dc2626",
+        _ => "#f59e0b"
+    };
 }
 
 <div class="fn-page">
@@ -8,15 +29,116 @@
     <div class="fn-page-head">
         <div>
             <div class="fn-page-title">SMS</div>
-            <div class="fn-page-sub">Problemli İşlər Departamenti</div>
+            <div class="fn-page-sub">Problemli İşlər Departamenti — Göyərçin gateway</div>
         </div>
+        <a asp-action="Sablonlar" class="fn-btn fn-btn--outline">
+            <i class="bi bi-file-earmark-text"></i> Şablonları idarə et
+        </a>
     </div>
 
-    <div class="fn-card" style="padding:24px">
-        <div style="color:#64748b;font-size:14px">
-            Bu səhifə hazırlıq mərhələsindədir. Göyərçin (Posta Güvercini)
-            inteqrasiyası sonrakı addımda əlavə olunacaq.
-        </div>
+    @if (TempData["Success"] != null)
+    {
+        <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Error"]</div>
+    }
+
+    @* ── Yeni SMS göndərmə formu ── *@
+    <div class="fn-card" style="padding:18px;margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:12px">Yeni SMS</div>
+        <form asp-action="Gonder" method="post">
+            @Html.AntiForgeryToken()
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div class="fn-form-group">
+                    <label class="fn-label">Telefon *</label>
+                    <input type="text" name="telefon" class="fn-input" placeholder="994551234567 və ya 0551234567" required />
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Şablon (istəyə bağlı)</label>
+                    <select name="sablonId" class="fn-input" id="smsSablon" onchange="sablonTetbiqEt(this)">
+                        <option value="">— sərbəst mətn —</option>
+                        @foreach (var s in sablonlar)
+                        {
+                            <option value="@s.Id" data-metn="@s.Metn">@s.Ad</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="fn-form-group" style="margin-top:8px">
+                <label class="fn-label">Mətn * (max 1000 simvol, English)</label>
+                <textarea name="metn" id="smsMetn" class="fn-input" rows="4" maxlength="1000" required></textarea>
+                <div style="font-size:12px;color:#64748b;margin-top:4px"><span id="charCount">0</span> / 1000</div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:12px">
+                <button type="submit" class="fn-btn fn-btn--primary">
+                    <i class="bi bi-send"></i> Göndər
+                </button>
+            </div>
+        </form>
     </div>
 
+    @* ── Tarixçə ── *@
+    <div class="fn-card" style="padding:0">
+        <div style="padding:16px 18px;border-bottom:1px solid #e2e8f0">
+            <div style="font-size:14px;font-weight:700;color:#0f172a">SMS tarixçəsi (son 200)</div>
+        </div>
+        @if (!loglar.Any())
+        {
+            <div style="padding:30px;text-align:center;color:#64748b;font-size:13px">Hələ SMS göndərilməyib.</div>
+        }
+        else
+        {
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead style="background:#f8fafc">
+                    <tr>
+                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Tarix</th>
+                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Telefon</th>
+                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Mətn</th>
+                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Şablon</th>
+                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Status</th>
+                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Göndərən</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in loglar)
+                    {
+                        <tr style="border-top:1px solid #f1f5f9">
+                            <td style="padding:10px 14px;color:#475569;white-space:nowrap">@l.YaradilmaTarixi.ToString("dd.MM.yy HH:mm")</td>
+                            <td style="padding:10px 14px;color:#0f172a;font-family:monospace">@l.Telefon</td>
+                            <td style="padding:10px 14px;color:#334155;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@l.Metn">@l.Metn</td>
+                            <td style="padding:10px 14px;color:#64748b">@(l.Sablon?.Ad ?? "—")</td>
+                            <td style="padding:10px 14px">
+                                <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;color:#fff;background:@StatusRengi(l.Status)">
+                                    @StatusText(l.Status)
+                                </span>
+                                @if (!string.IsNullOrEmpty(l.Xeta))
+                                {
+                                    <div style="font-size:11px;color:#dc2626;margin-top:2px" title="@l.Xeta">@(l.Xeta.Length > 40 ? l.Xeta.Substring(0,40) + "…" : l.Xeta)</div>
+                                }
+                            </td>
+                            <td style="padding:10px 14px;color:#64748b">@(l.GonderenIsci?.TamAd ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
 </div>
+
+<script>
+    function sablonTetbiqEt(sel) {
+        var opt = sel.options[sel.selectedIndex];
+        var m = opt.getAttribute('data-metn');
+        if (m) {
+            document.getElementById('smsMetn').value = m;
+            yenileCharCount();
+        }
+    }
+    function yenileCharCount() {
+        var m = document.getElementById('smsMetn');
+        document.getElementById('charCount').textContent = m.value.length;
+    }
+    document.getElementById('smsMetn').addEventListener('input', yenileCharCount);
+</script>
