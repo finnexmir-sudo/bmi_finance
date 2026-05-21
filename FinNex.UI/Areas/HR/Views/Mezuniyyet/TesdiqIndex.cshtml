@@ -32,25 +32,28 @@
     {
         var (color, ad, icon) = n switch
         {
-            MezuniyyetNovu.Xestelik  => ("#a855f7", "Xəstəlik",  "bi-hospital"),
-            MezuniyyetNovu.Ezamiyyet => ("#f97316", "Ezamiyyət", "bi-briefcase"),
-            _                        => ("#2d6cdf", "İllik",     "bi-calendar-check")
+            MezuniyyetNovu.Xestelik               => ("#a855f7", "Xəstəlik",        "bi-hospital"),
+            MezuniyyetNovu.Ezamiyyet               => ("#f97316", "Ezamiyyət",       "bi-briefcase"),
+            MezuniyyetNovu.DovletVezifelerininIcrasi => ("#b45309", "Dövlət Vəzifəsi", "bi-shield-check"),
+            _                                      => ("#2d6cdf", "İllik",           "bi-calendar-check")
         };
         return $"display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:{color}1a;color:{color};";
     }
 
     string NovText(MezuniyyetNovu n) => n switch
     {
-        MezuniyyetNovu.Xestelik  => "Xəstəlik",
-        MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
-        _                        => "İllik"
+        MezuniyyetNovu.Xestelik               => "Xəstəlik",
+        MezuniyyetNovu.Ezamiyyet               => "Ezamiyyət",
+        MezuniyyetNovu.DovletVezifelerininIcrasi => "Dövlət Vəzifəsi",
+        _                                      => "İllik"
     };
 
     string NovIcon(MezuniyyetNovu n) => n switch
     {
-        MezuniyyetNovu.Xestelik  => "bi-hospital",
-        MezuniyyetNovu.Ezamiyyet => "bi-briefcase",
-        _                        => "bi-calendar-check"
+        MezuniyyetNovu.Xestelik               => "bi-hospital",
+        MezuniyyetNovu.Ezamiyyet               => "bi-briefcase",
+        MezuniyyetNovu.DovletVezifelerininIcrasi => "bi-shield-check",
+        _                                      => "bi-calendar-check"
     };
 }
 
