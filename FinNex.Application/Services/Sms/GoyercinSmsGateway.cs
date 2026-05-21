@@ -84,7 +84,11 @@ public class GoyercinSmsGateway : ISmsGateway
             using var doc = JsonDocument.Parse(raw);
             var root = doc.RootElement;
 
-            var status = root.TryGetProperty("Status", out var s) ? s.GetInt32() : 0;
+            var status = 0;
+            if (root.TryGetProperty("Status", out var s))
+                status = s.ValueKind == JsonValueKind.String
+                    ? int.TryParse(s.GetString(), out var parsed) ? parsed : 0
+                    : s.GetInt32();
             var desc = root.TryGetProperty("Description", out var d) ? d.GetString() ?? "" : "";
 
             if (status != 200)
