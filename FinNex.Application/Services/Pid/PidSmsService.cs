@@ -88,6 +88,22 @@ public class PidSmsService : IPidSmsService
         return log;
     }
 
+    public async Task<(int Ugur, int Xeta)> TopluGonderAsync(
+        IEnumerable<(string Ad, string Telefon)> alicilar,
+        string smsMetni,
+        int gonderenIsciId)
+    {
+        int ugur = 0, xeta = 0;
+        foreach (var (ad, telefon) in alicilar)
+        {
+            var metn = smsMetni.Replace("{AD}", ad, StringComparison.OrdinalIgnoreCase);
+            var log = await GonderAsync(telefon, metn, sablonId: null, gonderenIsciId);
+            if (log.Status == PidSmsStatus.Xeta) xeta++;
+            else ugur++;
+        }
+        return (ugur, xeta);
+    }
+
     public async Task<IList<PidSmsLog>> SonGonderilenler(int say = 100)
     {
         return await _uow.Repository<PidSmsLog>().Query()

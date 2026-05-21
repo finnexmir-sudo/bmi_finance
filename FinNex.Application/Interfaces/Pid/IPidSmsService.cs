@@ -16,4 +16,9 @@ public interface IPidSmsService
     Task<PidSmsLog> GonderAsync(string telefon, string metn, int? sablonId, int gonderenIsciId);
 
     Task<IList<PidSmsLog>> SonGonderilenler(int say = 100);
+
+    Task<(int Ugur, int Xeta)> TopluGonderAsync(
+        IEnumerable<(string Ad, string Telefon)> alicilar,
+        string smsMetni,
+        int gonderenIsciId);
 }
