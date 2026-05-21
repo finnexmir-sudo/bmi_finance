@@ -277,7 +277,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                         BitisVaxti = bitisVaxti
                     });
                 }
-                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.YaddaSaxlaAsync();
 
                 var isciIds = await _unitOfWork.Repository<Isci>()
                     .Query().AsNoTracking()
