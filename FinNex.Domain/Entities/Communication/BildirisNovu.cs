@@ -59,7 +59,13 @@ namespace FinNex.Domain.Entities.Communication
         // Gələn Mail
         YeniGelenMail = 38,
 
+        // Performans Qiymətləndirmə
+        PerformansBasladi = 39,
+        PerformansNovbeSobe = 40,
+        PerformansNovbeRehber = 41,
+        PerformansTamamlandi = 42,
+
         // İş günü bitdi elanı
-        IsGunuBitdi = 39
+        IsGunuBitdi = 43
     }
 }

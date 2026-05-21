@@ -1,0 +1,124 @@
+@{
+    ViewData["Title"] = "Toplu Kampaniya Başlat";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/performans.css" asp-append-version="true" />
+    <style>
+        .bkt-card {
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            gap:14px; background:#fff; border:2px solid #e2e8f0; border-radius:16px;
+            padding:28px 20px; cursor:pointer; transition:border-color .18s, box-shadow .18s;
+        }
+        .bkt-card.selected-isci  { border-color:#6366f1; box-shadow:0 4px 20px rgba(99,102,241,.15); }
+        .bkt-card.selected-sobe  { border-color:#f59e0b; box-shadow:0 4px 20px rgba(245,158,11,.15); }
+        .bkt-card-icon { width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; }
+        .bkt-card-title { font-size:15px; font-weight:700; color:#1e293b; margin-bottom:4px; text-align:center; }
+        .bkt-card-desc  { font-size:12px; color:#64748b; line-height:1.5; text-align:center; }
+        .bkt-card input[type=radio] { display:none; }
+        .bkt-divider { height:1px; background:#e2e8f0; margin:20px 0; }
+        .bkt-period-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+        @@media(max-width:600px){ .bkt-period-grid{ grid-template-columns:1fr 1fr; } }
+    </style>
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Toplu Kampaniya Başlat</div>
+            <div class="fn-page-sub">Kampaniya tipini və dövrü seçib siyahıya keçin</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">← Geri</a>
+    </div>
+
+    <form asp-action="BulkKampaniya" method="get" style="max-width:620px;margin:32px auto;">
+
+        @* ── Tip Seçimi ── *@
+        <div style="font-size:12px;font-weight:700;color:#64748b;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;">Qiymətləndirmə Tipi</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+            <label class="bkt-card" id="cardIsci" onclick="selectTip(1)">
+                <input type="radio" name="tipi" value="1" id="tipIsci" required />
+                <div class="bkt-card-icon" style="background:#eef2ff;">
+                    <i class="bi bi-people" style="font-size:26px;color:#6366f1;"></i>
+                </div>
+                <div>
+                    <div class="bkt-card-title">İşçi Qiymətləndirməsi</div>
+                    <div class="bkt-card-desc">İşçi → Şöbə Rəisi → Rəhbər axını</div>
+                </div>
+                <div id="badgeIsci" style="background:#6366f1;color:#fff;padding:5px 18px;border-radius:8px;font-size:12px;font-weight:600;transition:opacity .18s;">Seç</div>
+            </label>
+
+            <label class="bkt-card" id="cardSobe" onclick="selectTip(2)">
+                <input type="radio" name="tipi" value="2" id="tipSobe" required />
+                <div class="bkt-card-icon" style="background:#fffbeb;">
+                    <i class="bi bi-person-badge" style="font-size:26px;color:#f59e0b;"></i>
+                </div>
+                <div>
+                    <div class="bkt-card-title">Şöbə Rəisi Qiymətləndirməsi</div>
+                    <div class="bkt-card-desc">Liderlik və komanda idarəetməsi</div>
+                </div>
+                <div id="badgeSobe" style="background:#f59e0b;color:#fff;padding:5px 18px;border-radius:8px;font-size:12px;font-weight:600;transition:opacity .18s;">Seç</div>
+            </label>
+
+        </div>
+
+        <div class="bkt-divider"></div>
+
+        @* ── Dövr Seçimi ── *@
+        <div style="font-size:12px;font-weight:700;color:#64748b;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;">Dövr</div>
+        <div class="bkt-period-grid">
+            <div class="fn-form-row" style="margin-bottom:0;">
+                <label class="fn-label">Dövr Tipi</label>
+                <select name="dovrTipi" id="dovrTipi" class="fn-input">
+                    <option value="1">Rüblük</option>
+                    <option value="2">İllik</option>
+                </select>
+            </div>
+            <div class="fn-form-row" style="margin-bottom:0;">
+                <label class="fn-label">İl</label>
+                <select name="il" class="fn-input">
+                    @foreach (var y in Enumerable.Range(DateTime.Now.Year - 1, 3).Reverse())
+                    { <option value="@y" selected="@(y == DateTime.Now.Year ? "selected" : null)">@y</option> }
+                </select>
+            </div>
+            <div class="fn-form-row" style="margin-bottom:0;" id="rubuRow">
+                <label class="fn-label">Rüb</label>
+                <select name="rubu" class="fn-input">
+                    <option value="1">Rüb 1</option>
+                    <option value="2">Rüb 2</option>
+                    <option value="3">Rüb 3</option>
+                    <option value="4">Rüb 4</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="bkt-divider"></div>
+
+        <button type="submit" class="fn-btn fn-btn--primary" style="width:100%;" id="btnDevam" disabled>
+            <i class="bi bi-people me-1"></i> İşçi Siyahısını Göstər
+        </button>
+
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        function selectTip(n) {
+            document.getElementById('tipIsci').checked = (n === 1);
+            document.getElementById('tipSobe').checked = (n === 2);
+
+            document.getElementById('cardIsci').classList.toggle('selected-isci', n === 1);
+            document.getElementById('cardSobe').classList.toggle('selected-sobe', n === 2);
+
+            document.getElementById('badgeIsci').textContent = n === 1 ? 'Seçildi ✓' : 'Seç';
+            document.getElementById('badgeSobe').textContent = n === 2 ? 'Seçildi ✓' : 'Seç';
+
+            document.getElementById('btnDevam').disabled = false;
+        }
+
+        document.getElementById('dovrTipi').addEventListener('change', function () {
+            document.getElementById('rubuRow').style.display = this.value === '2' ? 'none' : '';
+        });
+    </script>
+}

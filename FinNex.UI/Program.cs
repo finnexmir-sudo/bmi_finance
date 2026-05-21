@@ -295,6 +295,72 @@ namespace FinNex.UI
                 }
                 catch { /* artıq tətbiq olunub */ }
 
+                // Performans — Rehber2 və MenecerKriteriyalari sütunları
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='Rehber2Id')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD Rehber2Id INT NULL;
+                        IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name='FK_Performans_Isciler_Rehber2Id')
+                        BEGIN
+                            IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='Rehber2Id')
+                                ALTER TABLE PerformansQiymetlendirmeler ADD CONSTRAINT FK_Performans_Isciler_Rehber2Id FOREIGN KEY (Rehber2Id) REFERENCES Isciler(Id);
+                        END
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='Rehber2OrtalamaQiymet')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD Rehber2OrtalamaQiymet DECIMAL(5,2) NOT NULL DEFAULT 0;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='Rehber2Sherhi')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD Rehber2Sherhi NVARCHAR(MAX) NULL;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='Rehber2QiymetlendirmeTarixi')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD Rehber2QiymetlendirmeTarixi DATETIME2 NULL;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='MenecerKriteriyalari')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD MenecerKriteriyalari BIT NOT NULL DEFAULT 0;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansKriteriyalar' AND COLUMN_NAME='Rehber2Qiymeti')
+                            ALTER TABLE PerformansKriteriyalar ADD Rehber2Qiymeti DECIMAL(5,2) NULL;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansKriteriyalar' AND COLUMN_NAME='Rehber2Sherhi')
+                            ALTER TABLE PerformansKriteriyalar ADD Rehber2Sherhi NVARCHAR(MAX) NULL;
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='PerformansQiymetlendirmeler' AND COLUMN_NAME='KampaniyaTipi')
+                            ALTER TABLE PerformansQiymetlendirmeler ADD KampaniyaTipi INT NOT NULL DEFAULT 1;
+                    ");
+                }
+                catch { }
+
+                // PerformansKriteriyaSablonlar cədvəlini yarat + default məlumatlar
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'PerformansKriteriyaSablonlar')
+                        BEGIN
+                            CREATE TABLE PerformansKriteriyaSablonlar (
+                                Id                  INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                                Ad                  NVARCHAR(200) NOT NULL,
+                                Ceki                DECIMAL(5,2)  NOT NULL,
+                                KampaniyaTipi       INT           NOT NULL,
+                                Aktiv               BIT           NOT NULL DEFAULT 1,
+                                Sira                INT           NOT NULL DEFAULT 0,
+                                YaradilmaTarixi     DATETIME2     NOT NULL DEFAULT GETDATE(),
+                                YaradanIcraciId     INT           NULL,
+                                YenileyenIcraciId   INT           NULL,
+                                SilenIcraciId       INT           NULL,
+                                YenilenmeTarixi     DATETIME2     NULL,
+                                Silinib             BIT           NOT NULL DEFAULT 0,
+                                SilinmeTarixi       DATETIME2     NULL
+                            );
+                            INSERT INTO PerformansKriteriyaSablonlar (Ad, Ceki, KampaniyaTipi, Aktiv, Sira) VALUES
+                            (N'İş keyfiyyəti',   30, 1, 1, 1),
+                            (N'Vaxtında icra',   20, 1, 1, 2),
+                            (N'Komanda işi',     20, 1, 1, 3),
+                            (N'Təşəbbüskarlıq',  15, 1, 1, 4),
+                            (N'Peşəkar inkişaf', 15, 1, 1, 5),
+                            (N'Liderlik',            25, 2, 1, 1),
+                            (N'Komanda idarəetməsi', 25, 2, 1, 2),
+                            (N'Nəticəyönümlülük',    20, 2, 1, 3),
+                            (N'Ünsiyyət',            15, 2, 1, 4),
+                            (N'İnkişaf dəstəyi',     15, 2, 1, 5);
+                        END
+                    ");
+                }
+                catch { }
+
                 // Icazeler.JetonOdenenSaat sütununu əlavə etmə (jeton ilə ödənilən icazə saatı)
                 try
                 {
@@ -735,6 +801,141 @@ END
                             ALTER TABLE [AspNetUsers] ADD [MailSmtpEmail] NVARCHAR(256) NULL;
                         IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='AspNetUsers' AND COLUMN_NAME='MailSmtpParol')
                             ALTER TABLE [AspNetUsers] ADD [MailSmtpParol] NVARCHAR(MAX) NULL;
+                    ");
+                }
+                catch { }
+
+                // DovriOdenisler cədvəli
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'DovriOdenisler')
+                        BEGIN
+                            CREATE TABLE [DovriOdenisler] (
+                                [Id]                    INT            NOT NULL IDENTITY(1,1),
+                                [Ad]                    NVARCHAR(200)  NOT NULL DEFAULT '',
+                                [KateqoriyaId]          INT            NOT NULL,
+                                [DepartamentId]         INT            NOT NULL,
+                                [Mebleg]                DECIMAL(18,2)  NOT NULL DEFAULT 0,
+                                [Dovruluq]              INT            NOT NULL DEFAULT 2,
+                                [BaslamaTarixi]         DATETIME2      NOT NULL,
+                                [BitmeTarixi]           DATETIME2      NULL,
+                                [NovbatiOdenisTarixi]   DATETIME2      NOT NULL,
+                                [Aktiv]                 BIT            NOT NULL DEFAULT 1,
+                                [Qeyd]                  NVARCHAR(500)  NULL,
+                                [YaradilmaTarixi]       DATETIME2      NOT NULL DEFAULT GETDATE(),
+                                [YaradanIcraciId]       INT            NULL,
+                                [YenileyenIcraciId]     INT            NULL,
+                                [SilenIcraciId]         INT            NULL,
+                                [YenilenmeTarixi]       DATETIME2      NULL,
+                                [Silinib]               BIT            NOT NULL DEFAULT 0,
+                                [SilinmeTarixi]         DATETIME2      NULL,
+                                CONSTRAINT [PK_DovriOdenisler] PRIMARY KEY ([Id]),
+                                CONSTRAINT [FK_DovriOdenisler_XercKateqoriyalari_KateqoriyaId]
+                                    FOREIGN KEY ([KateqoriyaId]) REFERENCES [XercKateqoriyalari]([Id]) ON DELETE NO ACTION,
+                                CONSTRAINT [FK_DovriOdenisler_Departments_DepartamentId]
+                                    FOREIGN KEY ([DepartamentId]) REFERENCES [Departament]([Id]) ON DELETE NO ACTION
+                            );
+                        END
+                    ");
+                }
+                catch { }
+
+                // GozlenilenXercler cədvəli
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'GozlenilenXercler')
+                        BEGIN
+                            CREATE TABLE [GozlenilenXercler] (
+                                [Id]                INT            NOT NULL IDENTITY(1,1),
+                                [Ad]                NVARCHAR(200)  NOT NULL DEFAULT '',
+                                [Tesvir]            NVARCHAR(1000) NULL,
+                                [KateqoriyaId]      INT            NOT NULL,
+                                [DepartamentId]     INT            NULL,
+                                [TahminiMebleg]     DECIMAL(18,2)  NOT NULL DEFAULT 0,
+                                [GozlenilenTarix]   DATETIME2      NOT NULL,
+                                [Prioritet]         INT            NOT NULL DEFAULT 2,
+                                [Status]            INT            NOT NULL DEFAULT 0,
+                                [XercId]            INT            NULL,
+                                [Qeyd]              NVARCHAR(500)  NULL,
+                                [YaradilmaTarixi]   DATETIME2      NOT NULL DEFAULT GETDATE(),
+                                [YaradanIcraciId]   INT            NULL,
+                                [YenileyenIcraciId] INT            NULL,
+                                [SilenIcraciId]     INT            NULL,
+                                [YenilenmeTarixi]   DATETIME2      NULL,
+                                [Silinib]           BIT            NOT NULL DEFAULT 0,
+                                [SilinmeTarixi]     DATETIME2      NULL,
+                                CONSTRAINT [PK_GozlenilenXercler] PRIMARY KEY ([Id]),
+                                CONSTRAINT [FK_GozlenilenXercler_XercKateqoriyalari_KateqoriyaId]
+                                    FOREIGN KEY ([KateqoriyaId]) REFERENCES [XercKateqoriyalari]([Id]) ON DELETE NO ACTION,
+                                CONSTRAINT [FK_GozlenilenXercler_Departments_DepartamentId]
+                                    FOREIGN KEY ([DepartamentId]) REFERENCES [Departament]([Id]) ON DELETE NO ACTION,
+                                CONSTRAINT [FK_GozlenilenXercler_Xercler_XercId]
+                                    FOREIGN KEY ([XercId]) REFERENCES [Xercler]([Id]) ON DELETE NO ACTION
+                            );
+                        END
+                    ");
+                }
+                catch { }
+
+                // SistemAyarlari cədvəli
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'SistemAyarlari')
+                        BEGIN
+                            CREATE TABLE [SistemAyarlari] (
+                                [Id]                 INT           NOT NULL IDENTITY(1,1),
+                                [KreditImapServer]   NVARCHAR(200) NOT NULL DEFAULT 'imap.titan.email',
+                                [KreditImapPort]     INT           NOT NULL DEFAULT 993,
+                                [KreditImapEmail]    NVARCHAR(200) NOT NULL DEFAULT '',
+                                [KreditImapPassword] NVARCHAR(500) NOT NULL DEFAULT '',
+                                CONSTRAINT [PK_SistemAyarlari] PRIMARY KEY ([Id])
+                            );
+                            INSERT INTO [SistemAyarlari] ([KreditImapServer],[KreditImapPort],[KreditImapEmail],[KreditImapPassword])
+                            VALUES ('imap.titan.email', 993, '', '');
+                        END
+                    ");
+                }
+                catch { }
+
+                // HRDaxiliQaydalar cədvəli
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'HRDaxiliQaydalar')
+BEGIN
+    CREATE TABLE HRDaxiliQaydalar (
+        Id               INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        Kod              NVARCHAR(20)  NOT NULL DEFAULT '',
+        Ad               NVARCHAR(300) NOT NULL,
+        Mezmun           NVARCHAR(MAX) NOT NULL,
+        Kateqoriya       NVARCHAR(100) NOT NULL DEFAULT '',
+        Versiya          INT           NOT NULL DEFAULT 1,
+        Aktiv            BIT           NOT NULL DEFAULT 1,
+        SenedAd          NVARCHAR(500) NULL,
+        SenedYolu        NVARCHAR(500) NULL,
+        YazilanKimId     INT           NOT NULL,
+        YaradilmaTarixi  DATETIME2     NOT NULL DEFAULT GETDATE(),
+        YenilenmeTarixi  DATETIME2     NULL,
+        Silinib          BIT           NOT NULL DEFAULT 0,
+        SilinmeTarixi    DATETIME2     NULL,
+        YaradanIcraciId  INT           NULL,
+        YenileyenIcraciId INT          NULL,
+        SilenIcraciId    INT           NULL,
+        CONSTRAINT FK_HRDaxiliQaydalar_AppUser FOREIGN KEY (YazilanKimId) REFERENCES AspNetUsers(Id)
+    );
+    CREATE INDEX IX_HRDaxiliQaydalar_Kod    ON HRDaxiliQaydalar(Kod);
+    CREATE INDEX IX_HRDaxiliQaydalar_Aktiv  ON HRDaxiliQaydalar(Aktiv);
+END
+ELSE
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='HRDaxiliQaydalar' AND COLUMN_NAME='SenedAd')
+        ALTER TABLE HRDaxiliQaydalar ADD SenedAd NVARCHAR(500) NULL;
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='HRDaxiliQaydalar' AND COLUMN_NAME='SenedYolu')
+        ALTER TABLE HRDaxiliQaydalar ADD SenedYolu NVARCHAR(500) NULL;
+END
                     ");
                 }
                 catch { }

@@ -1,0 +1,344 @@
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Dövri Ödənişlər";
+    var kateqoriyalar  = ViewBag.Kateqoriyalar  as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var departamentlar = ViewBag.Departamentlar as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+
+<style>
+.do-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:24px; }
+.do-toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:20px; }
+.do-filter-btn { padding:7px 18px; border-radius:8px; border:1px solid #d1d5db; background:#fff;
+                 font-size:.85rem; cursor:pointer; transition:.2s; }
+.do-filter-btn.active { background:#0f766e; color:#fff; border-color:#0f766e; }
+.do-table { width:100%; border-collapse:collapse; font-size:.88rem; }
+.do-table th { background:#f8fafc; font-weight:600; padding:10px 14px;
+               text-align:left; border-bottom:2px solid #e5e7eb; white-space:nowrap; }
+.do-table td { padding:10px 14px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+.do-table tr:hover td { background:#fafbfc; }
+.do-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px;
+            border-radius:20px; font-size:.78rem; font-weight:500; }
+.do-badge-ay     { background:#dbeafe; color:#1d4ed8; }
+.do-badge-hefte  { background:#d1fae5; color:#065f46; }
+.do-badge-rubl   { background:#ede9fe; color:#6d28d9; }
+.do-badge-il     { background:#fef3c7; color:#92400e; }
+.do-badge-aktiv  { background:#d1fae5; color:#065f46; }
+.do-badge-deaktiv { background:#f1f5f9; color:#64748b; }
+.do-tag-gecikib  { background:#fee2e2; color:#b91c1c; }
+.do-tag-bugun    { background:#fef3c7; color:#92400e; }
+.do-tag-normal   { background:#d1fae5; color:#065f46; }
+.do-act-btn { padding:5px 12px; border-radius:7px; border:1px solid #e5e7eb;
+              background:#fff; font-size:.8rem; cursor:pointer; transition:.15s; }
+.do-act-btn:hover { background:#f8fafc; }
+.do-act-btn.ode { background:#0f766e; color:#fff; border-color:#0f766e; }
+.do-act-btn.ode:hover { background:#0d9488; }
+.do-act-btn.del { color:#ef4444; border-color:#fca5a5; }
+.fn-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45);
+                    display:flex; align-items:center; justify-content:center; z-index:999; }
+.fn-modal { background:#fff; border-radius:14px; padding:28px; width:500px; max-width:95vw;
+            max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+.fn-modal h4 { margin:0 0 20px; font-size:1.1rem; font-weight:700; }
+.fn-form-group { margin-bottom:16px; }
+.fn-form-group label { display:block; font-size:.83rem; font-weight:600;
+                        color:#374151; margin-bottom:5px; }
+.fn-form-group input, .fn-form-group select, .fn-form-group textarea {
+    width:100%; padding:9px 12px; border:1px solid #d1d5db; border-radius:8px;
+    font-size:.88rem; outline:none; transition:.2s; }
+.fn-form-group input:focus, .fn-form-group select:focus { border-color:#0f766e; }
+.fn-form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.fn-btn-row { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+.fn-btn { padding:9px 22px; border-radius:9px; border:none; font-weight:600;
+           font-size:.88rem; cursor:pointer; transition:.2s; }
+.fn-btn-primary { background:#0f766e; color:#fff; }
+.fn-btn-primary:hover { opacity:.88; }
+.fn-btn-ghost { background:#f1f5f9; color:#374151; }
+.fn-btn-ghost:hover { background:#e2e8f0; }
+.summary-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+.sum-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px 20px; }
+.sum-card .val { font-size:1.6rem; font-weight:700; }
+.sum-card .lbl { font-size:.78rem; color:#6b7280; margin-top:2px; }
+.empty-row td { text-align:center; color:#9ca3af; padding:40px; font-size:.92rem; }
+</style>
+
+<div class="summary-row" id="summaryRow"></div>
+
+<div class="do-card">
+    <div class="do-toolbar">
+        <button class="do-filter-btn active" onclick="setFilter('hamisi',this)">Hamısı</button>
+        <button class="do-filter-btn" onclick="setFilter('aktiv',this)">Yalnız Aktiv</button>
+        <div style="margin-left:auto; display:flex; gap:8px;">
+            <button class="fn-btn fn-btn-primary" onclick="modalAc()">
+                <i class="bi bi-plus-lg"></i> Yeni Dövri Ödəniş
+            </button>
+        </div>
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table class="do-table">
+            <thead>
+                <tr>
+                    <th>Ad</th>
+                    <th>Departament</th>
+                    <th>Kateqoriya</th>
+                    <th>Məbləğ</th>
+                    <th>Dövrlük</th>
+                    <th>Növbəti Ödəniş</th>
+                    <th>Status</th>
+                    <th>Əməliyyat</th>
+                </tr>
+            </thead>
+            <tbody id="doTableBody">
+                <tr class="empty-row"><td colspan="8">Yüklənir…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ── Yarat/Düzəliş Modalı ─────────────────────────────── -->
+<div class="fn-modal-overlay" id="doModal" style="display:none">
+    <div class="fn-modal">
+        <h4 id="doModalTitle">Yeni Dövri Ödəniş</h4>
+        <input type="hidden" id="doId">
+
+        <div class="fn-form-group">
+            <label>Ad *</label>
+            <input type="text" id="doAd" placeholder="Məs: Ofis icarəsi" maxlength="200">
+        </div>
+        <div class="fn-form-row">
+            <div class="fn-form-group">
+                <label>Departament *</label>
+                <select id="doDept">
+                    <option value="">Seçin…</option>
+                    @foreach (var d in departamentlar)
+                    {
+                        <option value="@d.Id">@d.Ad</option>
+                    }
+                </select>
+            </div>
+            <div class="fn-form-group">
+                <label>Kateqoriya *</label>
+                <select id="doKat">
+                    <option value="">Seçin…</option>
+                    @foreach (var k in kateqoriyalar)
+                    {
+                        <option value="@k.Id">@k.Ad</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="fn-form-row">
+            <div class="fn-form-group">
+                <label>Məbləğ (AZN) *</label>
+                <input type="number" id="doMebleg" min="0.01" step="0.01" placeholder="0.00">
+            </div>
+            <div class="fn-form-group">
+                <label>Dövrlük *</label>
+                <select id="doDovruluq">
+                    <option value="1">Həftəlik</option>
+                    <option value="2" selected>Aylıq</option>
+                    <option value="3">Rüblük</option>
+                    <option value="4">İllik</option>
+                </select>
+            </div>
+        </div>
+        <div class="fn-form-row">
+            <div class="fn-form-group">
+                <label>Başlama Tarixi *</label>
+                <input type="date" id="doBaslama">
+            </div>
+            <div class="fn-form-group">
+                <label>Bitmə Tarixi (boş = müddətsiz)</label>
+                <input type="date" id="doBitme">
+            </div>
+        </div>
+        <div class="fn-form-group" id="doAktivRow" style="display:none;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="doAktiv" checked> Aktiv
+            </label>
+        </div>
+        <div class="fn-form-group">
+            <label>Qeyd</label>
+            <textarea id="doQeyd" rows="2" maxlength="500" placeholder="Əlavə məlumat…"></textarea>
+        </div>
+
+        <div class="fn-btn-row">
+            <button class="fn-btn fn-btn-ghost" onclick="modalBag()">Ləğv et</button>
+            <button class="fn-btn fn-btn-primary" onclick="saxla()">Saxla</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let filter = 'hamisi';
+let allData = [];
+
+async function yukle() {
+    const url = filter === 'aktiv'
+        ? '/HR/DovriOdenis/GetData?yalnizAktiv=true'
+        : '/HR/DovriOdenis/GetData';
+    const r = await fetch(url);
+    allData = await r.json();
+    render();
+    renderSummary();
+}
+
+function render() {
+    const tbody = document.getElementById('doTableBody');
+    if (!allData.length) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="8">Dövri ödəniş tapılmadı.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = allData.map(x => {
+        const tarixCls = x.gecikib ? 'do-tag-gecikib' : x.buGun ? 'do-tag-bugun' : 'do-tag-normal';
+        const tarixIkon = x.gecikib ? '⚠️' : x.buGun ? '🔔' : '✓';
+        const dovBadge = { 1:'do-badge-hefte',2:'do-badge-ay',3:'do-badge-rubl',4:'do-badge-il' }[x.dovruluqId] || 'do-badge-ay';
+        const dovAd    = { 1:'Həftəlik',2:'Aylıq',3:'Rüblük',4:'İllik' }[x.dovruluqId] || 'Aylıq';
+        return `<tr>
+            <td><strong>${x.ad}</strong>${x.qeyd ? `<br><small style="color:#6b7280">${x.qeyd}</small>` : ''}</td>
+            <td>${x.departament}</td>
+            <td><i class="bi ${x.kateqoriyaIkon}" style="margin-right:5px;"></i>${x.kateqoriya}</td>
+            <td><strong>${x.mebleg.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</strong></td>
+            <td><span class="do-badge ${dovBadge}">${dovAd}</span></td>
+            <td><span class="do-badge ${tarixCls}">${tarixIkon} ${x.novbatiOdenisTarixi}</span></td>
+            <td>
+                <span class="do-badge ${x.aktiv ? 'do-badge-aktiv' : 'do-badge-deaktiv'}">${x.aktiv ? 'Aktiv' : 'Deaktiv'}</span>
+            </td>
+            <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                ${x.aktiv ? `<button class="do-act-btn ode" onclick="odeEt(${x.id},'${x.ad}',${x.mebleg})">
+                    <i class="bi bi-check2-circle"></i> Ödə
+                </button>` : ''}
+                <button class="do-act-btn" onclick="redakte(${JSON.stringify(x).replace(/"/g,'&quot;')})">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="do-act-btn" onclick="statusDeyis(${x.id},${x.aktiv})" title="${x.aktiv ? 'Deaktiv et' : 'Aktiv et'}">
+                    <i class="bi bi-${x.aktiv ? 'pause-circle' : 'play-circle'}"></i>
+                </button>
+                <button class="do-act-btn del" onclick="sil(${x.id},'${x.ad}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function renderSummary() {
+    const aktiv   = allData.filter(x => x.aktiv).length;
+    const buAyCem = allData.filter(x => x.aktiv).reduce((s, x) => s + x.mebleg, 0);
+    const gecikib = allData.filter(x => x.gecikib).length;
+    const yaxinda = allData.filter(x => x.yaxinda).length;
+
+    document.getElementById('summaryRow').innerHTML = `
+        <div class="sum-card">
+            <div class="val" style="color:#0f766e">${aktiv}</div>
+            <div class="lbl">Aktiv Dövri Ödəniş</div>
+        </div>
+        <div class="sum-card">
+            <div class="val">${buAyCem.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div>
+            <div class="lbl">Bu ay gözlənilən cəm</div>
+        </div>
+        <div class="sum-card">
+            <div class="val" style="color:#ef4444">${gecikib}</div>
+            <div class="lbl">Gecikmiş ödəniş</div>
+        </div>
+        <div class="sum-card">
+            <div class="val" style="color:#f59e0b">${yaxinda}</div>
+            <div class="lbl">7 gün içində</div>
+        </div>`;
+}
+
+function setFilter(f, btn) {
+    filter = f;
+    document.querySelectorAll('.do-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    yukle();
+}
+
+function modalAc() {
+    document.getElementById('doId').value = '';
+    document.getElementById('doModalTitle').textContent = 'Yeni Dövri Ödəniş';
+    document.getElementById('doAd').value = '';
+    document.getElementById('doDept').value = '';
+    document.getElementById('doKat').value = '';
+    document.getElementById('doMebleg').value = '';
+    document.getElementById('doDovruluq').value = '2';
+    document.getElementById('doBaslama').value = new Date().toISOString().split('T')[0];
+    document.getElementById('doBitme').value = '';
+    document.getElementById('doQeyd').value = '';
+    document.getElementById('doAktivRow').style.display = 'none';
+    document.getElementById('doModal').style.display = 'flex';
+}
+
+function redakte(x) {
+    document.getElementById('doId').value = x.id;
+    document.getElementById('doModalTitle').textContent = 'Dövri Ödənişi Düzəliş Et';
+    document.getElementById('doAd').value = x.ad;
+    document.getElementById('doDept').value = x.departamentId;
+    document.getElementById('doKat').value = x.kateqoriyaId;
+    document.getElementById('doMebleg').value = x.mebleg;
+    document.getElementById('doDovruluq').value = x.dovruluqId;
+    const bitmeParts = x.bitmeTarixi ? x.bitmeTarixi.split('.').reverse().join('-') : '';
+    document.getElementById('doBitme').value = bitmeParts;
+    document.getElementById('doQeyd').value = x.qeyd || '';
+    document.getElementById('doAktivRow').style.display = 'block';
+    document.getElementById('doAktiv').checked = x.aktiv;
+    document.getElementById('doModal').style.display = 'flex';
+}
+
+function modalBag() { document.getElementById('doModal').style.display = 'none'; }
+
+async function saxla() {
+    const id = parseInt(document.getElementById('doId').value) || 0;
+    const dto = {
+        id,
+        ad:           document.getElementById('doAd').value.trim(),
+        kateqoriyaId: parseInt(document.getElementById('doKat').value),
+        departamentId:parseInt(document.getElementById('doDept').value),
+        mebleg:       parseFloat(document.getElementById('doMebleg').value),
+        dovruluqId:   parseInt(document.getElementById('doDovruluq').value),
+        baslamaTarixi:document.getElementById('doBaslama').value,
+        bitmeTarixi:  document.getElementById('doBitme').value || null,
+        aktiv:        id ? document.getElementById('doAktiv').checked : true,
+        qeyd:         document.getElementById('doQeyd').value.trim()
+    };
+    if (!dto.ad || !dto.kateqoriyaId || !dto.departamentId || !dto.mebleg || !dto.baslamaTarixi) {
+        alert('Zəhmət olmasa bütün məcburi sahələri doldurun.'); return;
+    }
+    const url = id ? '/HR/DovriOdenis/Yenile' : '/HR/DovriOdenis/Yarat';
+    const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(dto) });
+    const d = await r.json();
+    if (d.ok) { modalBag(); yukle(); }
+    else alert(d.xeta || 'Xəta baş verdi.');
+}
+
+async function odeEt(id, ad, mebleg) {
+    if (!confirm(`"${ad}" üzrə ${mebleg.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼ ödənildi kimi qeyd edilsin?`)) return;
+    const r = await fetch('/HR/DovriOdenis/OdeEt', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+    const d = await r.json();
+    if (d.ok) yukle();
+    else alert('Xəta baş verdi.');
+}
+
+async function statusDeyis(id, indikiAktiv) {
+    const r = await fetch('/HR/DovriOdenis/StatusDeyis', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ id, aktiv: !indikiAktiv })
+    });
+    const d = await r.json();
+    if (d.ok) yukle();
+}
+
+async function sil(id, ad) {
+    if (!confirm(`"${ad}" silinsin?`)) return;
+    const r = await fetch('/HR/DovriOdenis/Sil', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+    const d = await r.json();
+    if (d.ok) yukle();
+}
+
+document.getElementById('doModal').addEventListener('click', function(e) {
+    if (e.target === this) modalBag();
+});
+
+yukle();
+</script>
+}

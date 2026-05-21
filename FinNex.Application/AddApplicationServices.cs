@@ -139,5 +139,8 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
 
         // ── AI Sənəd Modulları ─────────────────────────────────
         services.AddScoped<ISenedAiService, SenedAiService>();
+
+        // ── HR Məsləhətçi AI Modulu ────────────────────────────
+        services.AddScoped<IHRMeslehetciService, HRMeslehetciService>();
     }
 }

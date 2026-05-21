@@ -1,7 +1,6 @@
 @using FinNex.Domain.Entities.HR
 @{
     ViewData["Title"] = "Performans Qiymətləndirmə";
-
     var il = (int)ViewBag.SecilmisIl;
     var rubu = ViewBag.SecilmisRubu as int?;
     var deptId = ViewBag.SecilmisDepartamentId as int?;
@@ -18,46 +17,32 @@
             <div class="fn-page-title">Performans Qiymətləndirmə</div>
             <div class="fn-page-sub">İşçilərin performans qiymətləndirmə idarəetməsi</div>
         </div>
-        <a asp-action="Create" class="fn-btn fn-btn--primary">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-            </svg>
-            Yeni Qiymətləndirmə
-        </a>
+        <div style="display:flex;gap:8px;">
+            <a asp-action="Kriteriyalar" class="fn-btn fn-btn--outline">
+                <i class="bi bi-list-check me-1"></i> Kriteriyalar
+            </a>
+            <a asp-action="BulkKampaniya" class="fn-btn fn-btn--primary">
+                <i class="bi bi-people-fill me-1"></i> Kampaniya Başlat
+            </a>
+        </div>
     </div>
 
-    @* ── Filter Bar ───────────────────────────────────────── *@
     <form id="perfFilterForm" asp-action="Index" method="get">
         <div class="prf-filter-bar">
             <span class="prf-filter-label">Filtr</span>
             <select name="il" class="prf-select prf-auto-filter">
                 @foreach (var item in ViewBag.Iller as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
-                {
-                    if (item.Selected)
-                    { <option value="@item.Value" selected>@item.Text</option> }
-                    else
-                    { <option value="@item.Value">@item.Text</option> }
-                }
+                { <option value="@item.Value" selected="@(item.Selected ? "selected" : null)">@item.Text</option> }
             </select>
             <select name="rubu" class="prf-select prf-auto-filter">
                 <option value="">Bütün rüblər</option>
                 @foreach (var item in ViewBag.Rublar as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
-                {
-                    if (item.Selected)
-                    { <option value="@item.Value" selected>@item.Text</option> }
-                    else
-                    { <option value="@item.Value">@item.Text</option> }
-                }
+                { <option value="@item.Value" selected="@(item.Selected ? "selected" : null)">@item.Text</option> }
             </select>
             <select name="departamentId" class="prf-select prf-select--wide prf-auto-filter">
                 <option value="">Bütün departamentlər</option>
                 @foreach (var item in ViewBag.Departamentler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
-                {
-                    if (item.Selected)
-                    { <option value="@item.Value" selected>@item.Text</option> }
-                    else
-                    { <option value="@item.Value">@item.Text</option> }
-                }
+                { <option value="@item.Value" selected="@(item.Selected ? "selected" : null)">@item.Text</option> }
             </select>
             <div class="prf-filter-actions">
                 <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">Sıfırla</a>
@@ -65,36 +50,18 @@
         </div>
     </form>
 
-    @* ── Stats ────────────────────────────────────────────── *@
     <div class="prf-stats" id="prfStats">
-        <div class="prf-stat prf-stat--blue">
-            <div class="prf-stat-label">Ümumi</div>
-            <div class="prf-stat-value" id="statUmumi">0</div>
-        </div>
-        <div class="prf-stat prf-stat--orange">
-            <div class="prf-stat-label">Gözləmədə</div>
-            <div class="prf-stat-value" id="statGozlemede">0</div>
-        </div>
-        <div class="prf-stat prf-stat--gold">
-            <div class="prf-stat-label">Davam edir</div>
-            <div class="prf-stat-value" id="statDavam">0</div>
-        </div>
-        <div class="prf-stat prf-stat--green">
-            <div class="prf-stat-label">Tamamlandı</div>
-            <div class="prf-stat-value" id="statTamamlandi">0</div>
-        </div>
-        <div class="prf-stat prf-stat--purple">
-            <div class="prf-stat-label">Ort. Qiymət</div>
-            <div class="prf-stat-value" id="statOrtaQiymet">0</div>
-        </div>
+        <div class="prf-stat prf-stat--blue"><div class="prf-stat-label">Ümumi</div><div class="prf-stat-value" id="statUmumi">0</div></div>
+        <div class="prf-stat prf-stat--orange"><div class="prf-stat-label">Gözləmədə</div><div class="prf-stat-value" id="statGozlemede">0</div></div>
+        <div class="prf-stat prf-stat--gold"><div class="prf-stat-label">Davam edir</div><div class="prf-stat-value" id="statDavam">0</div></div>
+        <div class="prf-stat prf-stat--green"><div class="prf-stat-label">Tamamlandı</div><div class="prf-stat-value" id="statTamamlandi">0</div></div>
+        <div class="prf-stat prf-stat--purple"><div class="prf-stat-label">Ort. Qiymət</div><div class="prf-stat-value" id="statOrtaQiymet">0</div></div>
     </div>
 
-    @* ── Table ────────────────────────────────────────────── *@
     <div class="fn-card" style="padding:0;overflow:hidden;">
         <div class="prf-toolbar">
             <div class="prf-result-count"><span id="prfResultCount">0</span> nəticə</div>
         </div>
-
         <div class="prf-table-wrap">
             <table class="prf-table" id="prfTable">
                 <thead>
@@ -104,16 +71,14 @@
                         <th>Dövr</th>
                         <th>İl / Rüb</th>
                         <th>Status</th>
-                        <th>İşçi Qiym.</th>
-                        <th>Müdir Qiym.</th>
+                        <th>İşçi</th>
+                        <th>Rəhbər</th>
                         <th>Yekun</th>
                         <th class="center">Əməliyyat</th>
                     </tr>
                 </thead>
                 <tbody id="prfTableBody">
-                    <tr>
-                        <td colspan="9" class="prf-loading">Yüklənir...</td>
-                    </tr>
+                    <tr><td colspan="9" class="prf-loading">Yüklənir...</td></tr>
                 </tbody>
             </table>
         </div>

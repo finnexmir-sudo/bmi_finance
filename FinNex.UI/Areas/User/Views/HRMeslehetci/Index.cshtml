@@ -1,0 +1,453 @@
+@using FinNex.Domain.Entities.AI
+@{
+    ViewData["Title"] = "HR Məsləhətçi";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    var sohbetler    = ViewBag.Sohbetler    as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var mesajlar     = ViewBag.Mesajlar     as List<HRSohbetMesaj>  ?? new List<HRSohbetMesaj>();
+    var qanunFayllar        = ViewBag.QanunFayllar       as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var movcudKateqoriyalar = ViewBag.MovcudKateqoriyalar as List<string>         ?? new List<string>();
+    var aktivId             = (int)(ViewBag.AktivSohbetId ?? 0);
+    var isAdmin             = (bool)(ViewBag.IsAdmin ?? false);
+}
+
+<style>
+/* fn-main2 override — chat page only */
+.fn-layout2:has(.hrm-wrap) > .fn-main2 {
+    display:flex; flex-direction:column;
+    height:calc(100vh - 60px); padding-bottom:0; overflow:hidden;
+}
+.hrm-wrap{display:flex;flex:1;min-height:0;overflow:hidden;background:#f5f6fa}
+
+/* Sol panel */
+.hrm-sidebar{width:268px;min-width:268px;background:#fff;border-right:1px solid #e8eaf0;display:flex;flex-direction:column;overflow:hidden}
+.hrm-sidebar-top{padding:14px 14px 10px;border-bottom:1px solid #e8eaf0;display:flex;flex-direction:column;gap:8px}
+.hrm-sidebar-top h2{font-size:14px;font-weight:700;color:#1a2035;margin:0;display:flex;align-items:center;gap:7px}
+.btn-yeni{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:8px;background:#2563eb;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:background .2s}
+.btn-yeni:hover{background:#1d4ed8;color:#fff}
+
+/* Sidebar bölmə başlıqları */
+.hrm-section-label{font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.6px;padding:10px 14px 4px}
+
+/* Söhbət siyahısı */
+.hrm-history{overflow-y:auto;max-height:220px}
+.hrm-history-item{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;cursor:pointer;font-size:12.5px;color:#374151;text-decoration:none;transition:background .15s}
+.hrm-history-item:hover{background:#f0f4ff;color:#1a2035}
+.hrm-history-item.aktiv{background:#eff6ff;color:#2563eb;font-weight:600}
+.hrm-history-date{font-size:10.5px;color:#9ca3af;margin-top:1px}
+.btn-sil-kicik{background:none;border:none;color:#d1d5db;cursor:pointer;padding:2px 4px;border-radius:4px;font-size:13px;display:none}
+.hrm-history-item:hover .btn-sil-kicik{display:block}
+.btn-sil-kicik:hover{color:#ef4444;background:#fee2e2}
+
+/* Qanun faylları siyahısı */
+.hrm-fayllar{overflow-y:auto;flex:1}
+.hrm-fayl-item{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6;gap:6px}
+.hrm-fayl-badge{font-size:10px;padding:2px 6px;border-radius:10px;font-weight:600;white-space:nowrap}
+.badge-emek{background:#dbeafe;color:#1e40af}
+.badge-vergi{background:#fef3c7;color:#92400e}
+.badge-dsmf{background:#d1fae5;color:#065f46}
+.badge-itss{background:#ede9fe;color:#5b21b6}
+.badge-other{background:#f3f4f6;color:#374151}
+.btn-fayl-sil{background:none;border:none;color:#d1d5db;cursor:pointer;padding:2px 4px;border-radius:4px;font-size:12px}
+.btn-fayl-sil:hover{color:#ef4444;background:#fee2e2}
+
+/* Yükləmə paneli */
+.hrm-upload-panel{border-top:1px solid #e8eaf0;padding:12px 14px;background:#fafafa}
+.hrm-upload-panel h4{font-size:12px;font-weight:700;color:#374151;margin:0 0 8px 0}
+.hrm-form-row{display:flex;flex-direction:column;gap:6px}
+.fn-input-sm{width:100%;padding:6px 8px;border:1.5px solid #e5e7eb;border-radius:6px;font-size:12px;outline:none;font-family:inherit}
+.fn-input-sm:focus{border-color:#2563eb}
+.fn-select-sm{width:100%;padding:6px 8px;border:1.5px solid #e5e7eb;border-radius:6px;font-size:12px;background:#fff;font-family:inherit}
+.btn-yukle{width:100%;padding:7px;background:#059669;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:background .2s}
+.btn-yukle:hover:not(:disabled){background:#047857}
+.btn-yukle:disabled{background:#6ee7b7;cursor:not-allowed}
+
+/* Sağ panel */
+.hrm-main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#f5f6fa}
+.hrm-header{background:#fff;border-bottom:1px solid #e8eaf0;padding:12px 20px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.hrm-header-icon{width:36px;height:36px;background:linear-gradient(135deg,#2563eb,#7c3aed);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;flex-shrink:0}
+.hrm-header-info h3{font-size:14px;font-weight:700;color:#1a2035;margin:0}
+.hrm-header-info p{font-size:11.5px;color:#6b7280;margin:0}
+.hrm-kateq-chip{margin-left:auto;font-size:11px;padding:3px 9px;border-radius:10px;font-weight:600}
+
+/* Mesaj sahəsi */
+.hrm-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+.hrm-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9ca3af;text-align:center;gap:10px}
+.hrm-empty-icon{width:56px;height:56px;background:#eff6ff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;color:#2563eb}
+.hrm-empty h4{font-size:15px;color:#374151;margin:0;font-weight:600}
+.hrm-empty p{font-size:12.5px;margin:0;max-width:280px;line-height:1.6}
+
+/* Bubble-lar */
+.hrm-msg{display:flex;gap:8px;max-width:840px}
+.hrm-msg.user{align-self:flex-end;flex-direction:row-reverse}
+.hrm-msg.assistant{align-self:flex-start}
+.hrm-msg-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px}
+.hrm-msg.user .hrm-msg-avatar{background:#2563eb;color:#fff}
+.hrm-msg.assistant .hrm-msg-avatar{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+.hrm-msg-body{display:flex;flex-direction:column;gap:3px}
+.hrm-msg-bubble{padding:10px 14px;border-radius:13px;font-size:13.5px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.hrm-msg.user .hrm-msg-bubble{background:#2563eb;color:#fff;border-bottom-right-radius:3px}
+.hrm-msg.assistant .hrm-msg-bubble{background:#fff;color:#1a2035;border:1px solid #e8eaf0;border-bottom-left-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.hrm-msg-bubble strong{font-weight:700}
+.hrm-msg-time{font-size:10.5px;color:#9ca3af;padding:0 3px}
+.hrm-msg.user .hrm-msg-time{text-align:right}
+
+/* Mənbə badge */
+.hrm-menbe{display:flex;align-items:center;gap:5px;margin-top:3px;padding:4px 9px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;font-size:11px;color:#166534;max-width:560px}
+
+/* Disclaimer */
+.hrm-disclaimer{display:flex;align-items:flex-start;gap:5px;margin-top:3px;padding:5px 9px;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;font-size:11px;color:#92400e;max-width:560px}
+
+/* Input sahəsi */
+.hrm-input-wrap{background:#fff;border-top:1px solid #e8eaf0;padding:14px 20px;flex-shrink:0}
+.hrm-input-box{display:flex;gap:8px;align-items:flex-end;background:#f5f6fa;border:1.5px solid #e8eaf0;border-radius:11px;padding:9px 10px;transition:border-color .2s}
+.hrm-input-box:focus-within{border-color:#2563eb}
+#sualInput{flex:1;border:none;background:transparent;outline:none;font-size:13.5px;color:#1a2035;resize:none;min-height:22px;max-height:130px;line-height:1.5;font-family:inherit}
+#sualInput::placeholder{color:#9ca3af}
+.btn-gonder{width:36px;height:36px;background:#2563eb;border:none;border-radius:7px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s;font-size:15px}
+.btn-gonder:hover:not(:disabled){background:#1d4ed8}
+.btn-gonder:disabled{background:#93c5fd;cursor:not-allowed}
+
+/* Typing animasiya */
+.hrm-typing{display:flex;gap:8px;align-items:flex-start;max-width:840px;align-self:flex-start}
+.hrm-typing-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#2563eb);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;flex-shrink:0}
+.hrm-typing-bubble{background:#fff;border:1px solid #e8eaf0;border-radius:13px;border-bottom-left-radius:3px;padding:12px 16px;display:flex;gap:4px;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.hrm-typing-dot{width:6px;height:6px;background:#93c5fd;border-radius:50%;animation:typingDot 1.2s infinite}
+.hrm-typing-dot:nth-child(2){animation-delay:.2s}
+.hrm-typing-dot:nth-child(3){animation-delay:.4s}
+@@keyframes typingDot{0%,80%,100%{transform:scale(1);opacity:.5}40%{transform:scale(1.3);opacity:1}}
+
+/* Kateqoriya rəngləri */
+.chip-emek{background:#dbeafe;color:#1e40af}
+.chip-vergi{background:#fef3c7;color:#92400e}
+.chip-dsmf{background:#d1fae5;color:#065f46}
+.chip-itss{background:#ede9fe;color:#5b21b6}
+.chip-hamisi{background:#f3f4f6;color:#374151}
+</style>
+
+<div class="hrm-wrap">
+
+  @* Sol panel *@
+  <div class="hrm-sidebar">
+    <div class="hrm-sidebar-top">
+      <h2><i class="bi bi-scales"></i> HR Məsləhətçi</h2>
+      <a href="@Url.Action("Index","HRMeslehetci",new{area="User"})" class="btn-yeni">
+        <i class="bi bi-plus-lg"></i> Yeni Söhbət
+      </a>
+      <a href="@Url.Action("Qaydalar","HRMeslehetci",new{area="User"})"
+         style="display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:7px;background:#16a34a;color:#fff;border:1.5px solid #15803d;border-radius:7px;font-size:12px;font-weight:600;text-decoration:none;transition:background .2s;">
+        <i class="bi bi-journal-bookmark-fill"></i> Daxili Qaydalar
+      </a>
+    </div>
+
+    @* Söhbət tarixi *@
+    <div class="hrm-section-label">Söhbətlər</div>
+    <div class="hrm-history">
+      @foreach (var s in sohbetler)
+      {
+          bool isAktiv = (int)s.Id == aktivId;
+          <a href="@Url.Action("Index","HRMeslehetci",new{area="User",sohbetId=s.Id})"
+             class="hrm-history-item @(isAktiv?"aktiv":"")">
+            <div>
+              <div>Söhbət #@s.Id</div>
+              <div class="hrm-history-date">@((DateTime)s.BaslanmaTarixi).ToString("dd.MM.yy HH:mm")</div>
+            </div>
+            <button class="btn-sil-kicik" title="Sil"
+                    onclick="event.preventDefault();sohbetSil(@s.Id)">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </a>
+      }
+      @if (!sohbetler.Any())
+      {
+          <div style="padding:12px 14px;font-size:11.5px;color:#9ca3af;text-align:center">
+            Hələ söhbət yoxdur.
+          </div>
+      }
+    </div>
+
+    @* Qanun faylları *@
+    <div class="hrm-section-label" style="margin-top:4px">Qanun Faylları</div>
+    <div class="hrm-fayllar">
+      @foreach (var f in qanunFayllar)
+      {
+          string kat = (string)f.Kateqoriya;
+          string badgeCss = kat is "emek" or "vergi" or "dsmf" or "itss" ? $"badge-{kat}" : "badge-other";
+          <div class="hrm-fayl-item">
+            <span class="hrm-fayl-badge @badgeCss">@kat</span>
+            <span style="flex:1;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@f.Ad">@f.Ad</span>
+            @if (isAdmin)
+            {
+                <button class="btn-fayl-sil" title="Sil" onclick="fayliSil(@f.Id)">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+            }
+          </div>
+      }
+      @if (!qanunFayllar.Any())
+      {
+          <div style="padding:10px 14px;font-size:11.5px;color:#9ca3af;text-align:center">
+            Fayl yüklənməyib.<br/>@if (isAdmin) { <span>Aşağıdan əlavə edin.</span> }
+          </div>
+      }
+    </div>
+
+  </div>
+
+  @* Sağ panel *@
+  <div class="hrm-main">
+    <div class="hrm-header">
+      <div class="hrm-header-icon"><i class="bi bi-robot"></i></div>
+      <div class="hrm-header-info">
+        <h3>HR & Hüquq Məsləhətçisi</h3>
+        <p>Azərbaycan Respublikası qanunvericiliyinə əsasən cavab verir</p>
+      </div>
+      <span class="hrm-kateq-chip" id="kateqChip" style="display:none"></span>
+    </div>
+
+    <div class="hrm-messages" id="messageArea">
+      @if (!mesajlar.Any())
+      {
+          <div class="hrm-empty" id="emptyState">
+            <div class="hrm-empty-icon"><i class="bi bi-chat-square-text"></i></div>
+            <h4>Sualınızı yazın</h4>
+            <p>Əmək hüququ, vergi, DSMF, İTSS və digər qanunvericilik məsələləri üzrə sual verin.</p>
+          </div>
+      }
+      else
+      {
+          foreach (var m in mesajlar)
+          {
+              bool isUser = m.Rol == "user";
+              <div class="hrm-msg @m.Rol">
+                <div class="hrm-msg-avatar">
+                  @if (isUser) { <i class="bi bi-person-fill"></i> }
+                  else { <i class="bi bi-robot"></i> }
+                </div>
+                <div class="hrm-msg-body">
+                  <div class="hrm-msg-bubble">@Html.Raw(FormatMesaj(m.Metn))</div>
+                  <div class="hrm-msg-time">@m.Tarix.ToString("HH:mm")</div>
+                  @if (!isUser)
+                  {
+                      <div class="hrm-disclaimer">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        ⚠️ Bu informativ cavabdır, hüquqi qərarlar üçün mütəxəssislə məsləhətləşin.
+                      </div>
+                  }
+                </div>
+              </div>
+          }
+      }
+    </div>
+
+    <div class="hrm-input-wrap">
+      <div class="hrm-input-box">
+        <textarea id="sualInput" rows="1"
+                  placeholder="Sualınızı yazın... (Shift+Enter yeni sətir, Enter göndər)"></textarea>
+        <button class="btn-gonder" id="gonderBtn" title="Göndər">
+          <i class="bi bi-send-fill"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+@functions {
+    string FormatMesaj(string metn)
+    {
+        if (string.IsNullOrEmpty(metn)) return "";
+        var e = System.Net.WebUtility.HtmlEncode(metn);
+        e = System.Text.RegularExpressions.Regex.Replace(e, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
+        return e;
+    }
+}
+
+<script>
+const aktivSohbetId = @aktivId;
+let aktivId = aktivSohbetId;
+
+const messageArea = document.getElementById('messageArea');
+const sualInput   = document.getElementById('sualInput');
+const gonderBtn   = document.getElementById('gonderBtn');
+const kateqChip   = document.getElementById('kateqChip');
+
+const kateqMap = {
+  emek:   { label: 'Əmək Hüququ', cls: 'chip-emek' },
+  vergi:  { label: 'Vergi',        cls: 'chip-vergi' },
+  dsmf:   { label: 'DSMF',         cls: 'chip-dsmf' },
+  itss:   { label: 'İTSS',         cls: 'chip-itss' },
+  hamisi: { label: 'Ümumi',        cls: 'chip-hamisi' }
+};
+
+function scrollDown() { messageArea.scrollTop = messageArea.scrollHeight; }
+scrollDown();
+
+sualInput.addEventListener('input', function () {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 130) + 'px';
+});
+
+sualInput.addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); gonder(); }
+});
+
+gonderBtn.addEventListener('click', gonder);
+
+async function gonder() {
+  const sual = sualInput.value.trim();
+  if (!sual || gonderBtn.disabled) return;
+
+  document.getElementById('emptyState')?.remove();
+  appendMesaj('user', sual, new Date().toLocaleTimeString('az', { hour:'2-digit', minute:'2-digit' }));
+  sualInput.value = '';
+  sualInput.style.height = 'auto';
+
+  const typingEl = appendTyping();
+  gonderBtn.disabled = true;
+
+  try {
+    const resp = await fetch('/User/HRMeslehetci/Sor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sohbetId: aktivId, sual })
+    });
+    const data = await resp.json();
+    typingEl.remove();
+
+    if (data.ok) {
+      aktivId = data.sohbetId;
+
+      // Kateqoriya göstər
+      if (data.kateqoriya && kateqMap[data.kateqoriya]) {
+        const k = kateqMap[data.kateqoriya];
+        kateqChip.textContent = k.label;
+        kateqChip.className = 'hrm-kateq-chip ' + k.cls;
+        kateqChip.style.display = '';
+      }
+
+      appendMesaj('assistant', data.cavab, data.tarix, true, data.menbeAdi);
+      if (aktivSohbetId === 0) window.history.replaceState(null,'','?sohbetId=' + data.sohbetId);
+    } else {
+      appendXeta(data.xeta || 'Xəta baş verdi.');
+    }
+  } catch {
+    typingEl.remove();
+    appendXeta('Şəbəkə xətası. Zəhmət olmasa yenidən cəhd edin.');
+  }
+
+  gonderBtn.disabled = false;
+  sualInput.focus();
+}
+
+function appendMesaj(rol, metn, saatStr, disclaimer, menbeAdi) {
+  const isUser = rol === 'user';
+  const div = document.createElement('div');
+  div.className = 'hrm-msg ' + rol;
+  div.innerHTML = `
+    <div class="hrm-msg-avatar"><i class="bi bi-${isUser ? 'person-fill' : 'robot'}"></i></div>
+    <div class="hrm-msg-body">
+      <div class="hrm-msg-bubble">${formatMesaj(metn)}</div>
+      <div class="hrm-msg-time">${saatStr}</div>
+      ${menbeAdi ? `<div class="hrm-menbe"><i class="bi bi-file-earmark-check-fill"></i>Mənbə: ${escHtml(menbeAdi)}</div>` : ''}
+      ${disclaimer ? `<div class="hrm-disclaimer"><i class="bi bi-exclamation-triangle-fill"></i>⚠️ Bu informativ cavabdır, hüquqi qərarlar üçün mütəxəssislə məsləhətləşin.</div>` : ''}
+    </div>`;
+  messageArea.appendChild(div);
+  scrollDown();
+}
+
+function appendTyping() {
+  const div = document.createElement('div');
+  div.className = 'hrm-typing';
+  div.innerHTML = `
+    <div class="hrm-typing-avatar"><i class="bi bi-robot"></i></div>
+    <div class="hrm-typing-bubble">
+      <div class="hrm-typing-dot"></div><div class="hrm-typing-dot"></div><div class="hrm-typing-dot"></div>
+    </div>`;
+  messageArea.appendChild(div);
+  scrollDown();
+  return div;
+}
+
+function appendXeta(metn) {
+  const div = document.createElement('div');
+  div.style.cssText = 'align-self:center;padding:7px 14px;background:#fee2e2;color:#991b1b;border-radius:8px;font-size:12.5px;';
+  div.textContent = metn;
+  messageArea.appendChild(div);
+  scrollDown();
+}
+
+function formatMesaj(metn) {
+  return metn
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+}
+
+function escHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function sohbetSil(sohbetId) {
+  if (!confirm('Bu söhbəti silmək istəyirsiniz?')) return;
+  const resp = await fetch('/User/HRMeslehetci/TarixiSil', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ sohbetId })
+  });
+  const data = await resp.json();
+  if (data.ok) {
+    if (sohbetId === aktivId) window.location.href = '/User/HRMeslehetci';
+    else window.location.reload();
+  }
+}
+
+async function faylYukle() {
+  const ad    = document.getElementById('faylAd')?.value.trim();
+  const kat   = document.getElementById('faylKat')?.value;
+  const input = document.getElementById('faylInput');
+  const netic = document.getElementById('yuklemeNetic');
+  const btn   = document.getElementById('btnYukle');
+
+  if (!ad)    { netic.style.color='#dc2626'; netic.textContent='Ad daxil edin.'; return; }
+  if (!kat)   { netic.style.color='#dc2626'; netic.textContent='Kateqoriya seçin.'; return; }
+  if (!input?.files[0]) { netic.style.color='#dc2626'; netic.textContent='Fayl seçin.'; return; }
+
+  const fd = new FormData();
+  fd.append('fayl', input.files[0]);
+  fd.append('ad', ad);
+  fd.append('kateqoriya', kat);
+
+  btn.disabled = true;
+  netic.style.color = '#6b7280';
+  netic.textContent = 'Yüklənir və mətn çıxarılır...';
+
+  try {
+    const resp = await fetch('/User/HRMeslehetci/YukleQanunFayl', { method:'POST', body: fd });
+    const data = await resp.json();
+    if (data.ok) {
+      netic.style.color = '#059669';
+      netic.textContent = `✓ "${data.ad}" əlavə edildi (${(data.xarakter/1000).toFixed(1)}k karakter).`;
+      document.getElementById('faylAd').value = '';
+      document.getElementById('faylKat').value = '';
+      input.value = '';
+      setTimeout(() => window.location.reload(), 1200);
+    } else {
+      netic.style.color = '#dc2626';
+      netic.textContent = data.xeta || 'Xəta baş verdi.';
+    }
+  } catch {
+    netic.style.color = '#dc2626';
+    netic.textContent = 'Şəbəkə xətası.';
+  }
+  btn.disabled = false;
+}
+
+async function fayliSil(faylId) {
+  if (!confirm('Bu faylı silmək istəyirsiniz?')) return;
+  const resp = await fetch('/User/HRMeslehetci/FayliSil', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ faylId })
+  });
+  const data = await resp.json();
+  if (data.ok) window.location.reload();
+}
+</script>

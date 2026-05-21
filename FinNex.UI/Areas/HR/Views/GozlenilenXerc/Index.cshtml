@@ -1,0 +1,385 @@
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Gözlənilən Xərclər";
+    var kateqoriyalar  = ViewBag.Kateqoriyalar  as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var departamentlar = ViewBag.Departamentlar as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+
+<style>
+.gx-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:24px; }
+.gx-toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:20px; }
+.gx-filter-btn { padding:6px 16px; border-radius:8px; border:1.5px solid #d1d5db; background:#f1f5f9;
+                 font-size:.83rem; cursor:pointer; transition:.2s; color:#374151; font-weight:500; }
+.gx-filter-btn:hover { background:#e2e8f0; }
+.gx-filter-btn.active { background:#0f766e; color:#fff; border-color:#0f766e; }
+.gx-f-aktiv { background:#eff6ff; color:#1d4ed8; border-color:#93c5fd; }
+.gx-f-aktiv.active { background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
+.gx-f-real  { background:#f0fdf4; color:#065f46; border-color:#6ee7b7; }
+.gx-f-real.active  { background:#0f766e; color:#fff; border-color:#0f766e; }
+.gx-f-legv  { background:#fff1f2; color:#b91c1c; border-color:#fca5a5; }
+.gx-f-legv.active  { background:#dc2626; color:#fff; border-color:#dc2626; }
+.gx-table { width:100%; border-collapse:collapse; font-size:.87rem; }
+.gx-table th { background:#f8fafc; font-weight:600; padding:10px 13px;
+               text-align:left; border-bottom:2px solid #e5e7eb; }
+.gx-table td { padding:10px 13px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+.gx-table tr:hover td { background:#fafbfc; }
+.gx-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px;
+            border-radius:20px; font-size:.77rem; font-weight:500; }
+.p-yuksek { background:#fee2e2; color:#b91c1c; }
+.p-orta   { background:#fef3c7; color:#92400e; }
+.p-asagi  { background:#d1fae5; color:#065f46; }
+.s-aktiv  { background:#dbeafe; color:#1d4ed8; }
+.s-real   { background:#d1fae5; color:#065f46; }
+.s-legv   { background:#f1f5f9; color:#64748b; }
+.t-kecmis { background:#fee2e2; color:#b91c1c; }
+.t-yaxinda{ background:#fef3c7; color:#92400e; }
+.t-normal { color:#374151; }
+.gx-act-btn { padding:5px 11px; border-radius:7px; border:1px solid #e5e7eb;
+              background:#fff; font-size:.79rem; cursor:pointer; transition:.15s; }
+.gx-act-btn:hover { background:#f1f5f9; }
+.gx-act-btn.real { background:#0f766e; color:#fff; border-color:#0f766e; }
+.gx-act-btn.real:hover { background:#0d9488; }
+.gx-act-btn.legv { color:#ef4444; border-color:#fca5a5; }
+.summary-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+.sum-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px 20px; }
+.sum-card .val { font-size:1.6rem; font-weight:700; }
+.sum-card .lbl { font-size:.78rem; color:#6b7280; margin-top:2px; }
+.fn-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45);
+                    display:flex; align-items:center; justify-content:center; z-index:999; }
+.fn-modal { background:#fff; border-radius:14px; padding:22px 26px; width:540px; max-width:96vw;
+            max-height:92vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.2);
+            display:flex; flex-direction:column; }
+.fn-modal h4 { margin:0 0 14px; font-size:1.05rem; font-weight:700; flex-shrink:0; }
+.fn-modal-body { flex:1; overflow-y:auto; }
+.fn-form-group { margin-bottom:11px; }
+.fn-form-group label { display:block; font-size:.82rem; font-weight:600; color:#374151; margin-bottom:5px; }
+.fn-form-group input, .fn-form-group select, .fn-form-group textarea {
+    width:100%; padding:9px 12px; border:1px solid #d1d5db; border-radius:8px;
+    font-size:.88rem; outline:none; transition:.2s; box-sizing:border-box; }
+.fn-form-group input:focus, .fn-form-group select:focus, .fn-form-group textarea:focus {
+    border-color:#0f766e; }
+.fn-form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.fn-btn-row { display:flex; gap:10px; justify-content:flex-end; margin-top:14px; padding-top:12px;
+              border-top:1px solid #f1f5f9; flex-shrink:0; }
+.fn-btn { padding:9px 22px; border-radius:9px; border:none; font-weight:600;
+           font-size:.88rem; cursor:pointer; transition:.2s; }
+.fn-btn-primary { background:#0f766e; color:#fff; }
+.fn-btn-primary:hover { opacity:.88; }
+.fn-btn-ghost { background:#f1f5f9; color:#374151; }
+.fn-btn-ghost:hover { background:#e2e8f0; }
+.empty-row td { text-align:center; color:#9ca3af; padding:40px; }
+</style>
+
+<div class="summary-row" id="summaryRow"></div>
+
+<div class="gx-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:12px; flex-wrap:wrap;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="gx-filter-btn active" onclick="setStatus(null,this)">Hamısı</button>
+            <button class="gx-filter-btn gx-f-aktiv" onclick="setStatus(0,this)">Aktiv</button>
+            <button class="gx-filter-btn gx-f-real" onclick="setStatus(1,this)">Reallaşdı</button>
+            <button class="gx-filter-btn gx-f-legv" onclick="setStatus(2,this)">Ləğv edildi</button>
+        </div>
+        <button class="fn-btn fn-btn-primary" onclick="modalAc()" style="white-space:nowrap;">
+            <i class="bi bi-plus-lg"></i> Yeni Gözlənilən Xərc
+        </button>
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table class="gx-table">
+            <thead>
+                <tr>
+                    <th>Ad / Açıqlama</th>
+                    <th>Departament</th>
+                    <th>Kateqoriya</th>
+                    <th>Təxmini Məbləğ</th>
+                    <th>Gözlənilən Tarix</th>
+                    <th>Prioritet</th>
+                    <th>Status</th>
+                    <th>Əməliyyat</th>
+                </tr>
+            </thead>
+            <tbody id="gxTableBody">
+                <tr class="empty-row"><td colspan="8">Yüklənir…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ── Yarat/Düzəliş Modalı ─────────────────────────────── -->
+<div class="fn-modal-overlay" id="gxModal" style="display:none">
+    <div class="fn-modal">
+        <h4 id="gxModalTitle">Yeni Gözlənilən Xərc</h4>
+        <input type="hidden" id="gxId">
+
+        <div class="fn-modal-body">
+            <div class="fn-form-group">
+                <label>Ad *</label>
+                <input type="text" id="gxAd" placeholder="Məs: Printer alışı" maxlength="200">
+            </div>
+            <div class="fn-form-group">
+                <label>Açıqlama</label>
+                <textarea id="gxTesvir" rows="2" maxlength="1000" placeholder="Əlavə məlumat…"></textarea>
+            </div>
+            <div class="fn-form-row">
+                <div class="fn-form-group">
+                    <label>Kateqoriya *</label>
+                    <select id="gxKat">
+                        <option value="">Seçin…</option>
+                        @foreach (var k in kateqoriyalar)
+                        {
+                            <option value="@k.Id">@k.Ad</option>
+                        }
+                    </select>
+                </div>
+                <div class="fn-form-group">
+                    <label>Departament</label>
+                    <select id="gxDept">
+                        <option value="0">— Hamısı —</option>
+                        @foreach (var d in departamentlar)
+                        {
+                            <option value="@d.Id">@d.Ad</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="fn-form-row">
+                <div class="fn-form-group">
+                    <label>Təxmini Məbləğ (AZN) *</label>
+                    <input type="number" id="gxMebleg" min="0.01" step="0.01" placeholder="0.00">
+                </div>
+                <div class="fn-form-group">
+                    <label>Gözlənilən Tarix *</label>
+                    <input type="date" id="gxTarix">
+                </div>
+            </div>
+            <div class="fn-form-row">
+                <div class="fn-form-group">
+                    <label>Prioritet</label>
+                    <select id="gxPrioritet">
+                        <option value="3">Yüksək</option>
+                        <option value="2" selected>Orta</option>
+                        <option value="1">Aşağı</option>
+                    </select>
+                </div>
+                <div class="fn-form-group">
+                    <label>Qeyd</label>
+                    <input type="text" id="gxQeyd" maxlength="500" placeholder="Əlavə qeyd…">
+                </div>
+            </div>
+        </div>
+
+        <div class="fn-btn-row">
+            <button class="fn-btn fn-btn-ghost" onclick="modalBag()">Ləğv et</button>
+            <button class="fn-btn fn-btn-primary" onclick="saxla()">
+                <i class="bi bi-check-lg"></i> Saxla
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Reallaşdır Modalı ──────────────────────────────────── -->
+<div class="fn-modal-overlay" id="realModal" style="display:none">
+    <div class="fn-modal" style="width:400px;">
+        <h4>Xərci Reallaşdır</h4>
+        <input type="hidden" id="realId">
+        <p style="color:#6b7280;font-size:.87rem;margin-bottom:16px;">
+            Gözlənilən xərc faktiki ödənilmiş xərc kimi qeyd ediləcək.
+        </p>
+        <div class="fn-form-group">
+            <label>Faktiki Məbləğ (AZN)</label>
+            <input type="number" id="realMebleg" min="0.01" step="0.01" placeholder="Boş buraxsanız təxmini məbləğ istifadə olunur">
+        </div>
+        <div class="fn-form-group">
+            <label>Ödəniş Tarixi</label>
+            <input type="date" id="realTarix">
+        </div>
+        <div class="fn-btn-row">
+            <button class="fn-btn fn-btn-ghost" onclick="realModalBag()">Ləğv et</button>
+            <button class="fn-btn fn-btn-primary" onclick="reallashtirTesdiq()">Reallaşdır</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let currentStatus = null;
+let allData = [];
+
+async function yukle() {
+    let url = '/HR/GozlenilenXerc/GetData';
+    if (currentStatus !== null) url += `?status=${currentStatus}`;
+    const r = await fetch(url);
+    allData = await r.json();
+    render();
+    renderSummary();
+}
+
+function render() {
+    const tbody = document.getElementById('gxTableBody');
+    if (!allData.length) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="8">Gözlənilən xərc tapılmadı.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = allData.map(x => {
+        const pCls = { 3:'p-yuksek', 2:'p-orta', 1:'p-asagi' }[x.prioritetId] || 'p-orta';
+        const sCls = { 0:'s-aktiv',  1:'s-real',  2:'s-legv'  }[x.statusId]   || 's-aktiv';
+        const tCls = x.kecmis ? 't-kecmis' : x.yaxinda ? 't-yaxinda' : 't-normal';
+        const isAktiv = x.statusId === 0;
+        const actions = isAktiv
+            ? `<button class="gx-act-btn real" onclick="realModalAc(${x.id})">
+                   <i class="bi bi-check2-circle"></i> Reallaşdır
+               </button>
+               <button class="gx-act-btn" onclick="redakte(${JSON.stringify(x).replace(/"/g,'&quot;')})">
+                   <i class="bi bi-pencil"></i>
+               </button>
+               <button class="gx-act-btn legv" onclick="legvEt(${x.id},'${x.ad}')">
+                   <i class="bi bi-x-circle"></i> Ləğv
+               </button>`
+            : `<button class="gx-act-btn legv" onclick="sil(${x.id},'${x.ad}')">
+                   <i class="bi bi-trash"></i>
+               </button>`;
+        return `<tr>
+            <td>
+                <strong>${x.ad}</strong>
+                ${x.tesvir ? `<br><small style="color:#6b7280">${x.tesvir}</small>` : ''}
+                ${x.xercId ? `<br><small style="color:#0f766e"><i class="bi bi-link-45deg"></i> Xərc #${x.xercId}</small>` : ''}
+            </td>
+            <td>${x.departament}</td>
+            <td><i class="bi ${x.kateqoriyaIkon}" style="margin-right:4px;"></i>${x.kateqoriya}</td>
+            <td><strong>${x.tahminiMebleg.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</strong></td>
+            <td class="${tCls}">${x.gecmis ? '⚠️ ' : x.yaxinda ? '🔔 ' : ''}${x.gozlenilenTarix}</td>
+            <td><span class="gx-badge ${pCls}">${x.prioritet}</span></td>
+            <td><span class="gx-badge ${sCls}">${x.status}</span></td>
+            <td style="display:flex;gap:5px;flex-wrap:wrap;">${actions}</td>
+        </tr>`;
+    }).join('');
+}
+
+function renderSummary() {
+    const aktiv  = allData.filter(x => x.statusId === 0);
+    const cemi   = aktiv.reduce((s, x) => s + x.tahminiMebleg, 0);
+    const kecmis = aktiv.filter(x => x.kecmis).length;
+    const real   = allData.filter(x => x.statusId === 1).length;
+    document.getElementById('summaryRow').innerHTML = `
+        <div class="sum-card">
+            <div class="val" style="color:#0f766e">${aktiv.length}</div>
+            <div class="lbl">Aktiv gözlənilən xərc</div>
+        </div>
+        <div class="sum-card">
+            <div class="val">${cemi.toLocaleString('az-AZ',{minimumFractionDigits:2})} ₼</div>
+            <div class="lbl">Gözlənilən cəm məbləğ</div>
+        </div>
+        <div class="sum-card">
+            <div class="val" style="color:#ef4444">${kecmis}</div>
+            <div class="lbl">Gecikmiş (tarix keçib)</div>
+        </div>
+        <div class="sum-card">
+            <div class="val" style="color:#059669">${real}</div>
+            <div class="lbl">Reallaşdırılmış</div>
+        </div>`;
+}
+
+function setStatus(s, btn) {
+    currentStatus = s;
+    document.querySelectorAll('.gx-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    yukle();
+}
+
+function modalAc() {
+    document.getElementById('gxId').value = '';
+    document.getElementById('gxModalTitle').textContent = 'Yeni Gözlənilən Xərc';
+    document.getElementById('gxAd').value = '';
+    document.getElementById('gxTesvir').value = '';
+    document.getElementById('gxKat').value = '';
+    document.getElementById('gxDept').value = '0';
+    document.getElementById('gxMebleg').value = '';
+    document.getElementById('gxTarix').value = '';
+    document.getElementById('gxPrioritet').value = '2';
+    document.getElementById('gxQeyd').value = '';
+    document.getElementById('gxModal').style.display = 'flex';
+}
+
+function redakte(x) {
+    document.getElementById('gxId').value = x.id;
+    document.getElementById('gxModalTitle').textContent = 'Gözlənilən Xərci Düzəliş Et';
+    document.getElementById('gxAd').value = x.ad;
+    document.getElementById('gxTesvir').value = x.tesvir || '';
+    document.getElementById('gxKat').value = x.kateqoriyaId;
+    document.getElementById('gxDept').value = x.departamentId || 0;
+    document.getElementById('gxMebleg').value = x.tahminiMebleg;
+    const tp = x.gozlenilenTarix.split('.').reverse().join('-');
+    document.getElementById('gxTarix').value = tp;
+    document.getElementById('gxPrioritet').value = x.prioritetId;
+    document.getElementById('gxQeyd').value = x.qeyd || '';
+    document.getElementById('gxModal').style.display = 'flex';
+}
+
+function modalBag() { document.getElementById('gxModal').style.display = 'none'; }
+
+async function saxla() {
+    const id = parseInt(document.getElementById('gxId').value) || 0;
+    const dto = {
+        id,
+        ad:              document.getElementById('gxAd').value.trim(),
+        tesvir:          document.getElementById('gxTesvir').value.trim(),
+        kateqoriyaId:    parseInt(document.getElementById('gxKat').value),
+        departamentId:   parseInt(document.getElementById('gxDept').value) || null,
+        tahminiMebleg:   parseFloat(document.getElementById('gxMebleg').value),
+        gozlenilenTarix: document.getElementById('gxTarix').value,
+        prioritetId:     parseInt(document.getElementById('gxPrioritet').value),
+        qeyd:            document.getElementById('gxQeyd').value.trim()
+    };
+    if (!dto.ad || !dto.kateqoriyaId || !dto.tahminiMebleg || !dto.gozlenilenTarix) {
+        alert('Zəhmət olmasa məcburi sahələri doldurun.'); return;
+    }
+    const url = id ? '/HR/GozlenilenXerc/Yenile' : '/HR/GozlenilenXerc/Yarat';
+    const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(dto) });
+    const d = await r.json();
+    if (d.ok) { modalBag(); yukle(); }
+    else alert(d.xeta || 'Xəta baş verdi.');
+}
+
+function realModalAc(id) {
+    document.getElementById('realId').value = id;
+    document.getElementById('realMebleg').value = '';
+    document.getElementById('realTarix').value = new Date().toISOString().split('T')[0];
+    document.getElementById('realModal').style.display = 'flex';
+}
+function realModalBag() { document.getElementById('realModal').style.display = 'none'; }
+
+async function reallashtirTesdiq() {
+    const dto = {
+        id:           parseInt(document.getElementById('realId').value),
+        faktikiMebleg:parseFloat(document.getElementById('realMebleg').value) || 0,
+        odenisTarixi: document.getElementById('realTarix').value
+    };
+    const r = await fetch('/HR/GozlenilenXerc/Reallashdir', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(dto)
+    });
+    const d = await r.json();
+    if (d.ok) { realModalBag(); yukle(); }
+    else alert(d.xeta || 'Xəta baş verdi.');
+}
+
+async function legvEt(id, ad) {
+    if (!confirm(`"${ad}" ləğv edilsin?`)) return;
+    const r = await fetch('/HR/GozlenilenXerc/LegvEt', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+    const d = await r.json();
+    if (d.ok) yukle();
+}
+
+async function sil(id, ad) {
+    if (!confirm(`"${ad}" silinsin?`)) return;
+    const r = await fetch('/HR/GozlenilenXerc/Sil', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+    const d = await r.json();
+    if (d.ok) yukle();
+}
+
+document.getElementById('gxModal').addEventListener('click', e => { if(e.target===document.getElementById('gxModal')) modalBag(); });
+document.getElementById('realModal').addEventListener('click', e => { if(e.target===document.getElementById('realModal')) realModalBag(); });
+
+yukle();
+</script>
+}

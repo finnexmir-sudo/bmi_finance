@@ -1,0 +1,272 @@
+@{
+    ViewData["Title"] = (string)ViewData["Title"];
+    var isciList  = ViewBag.IsciVmList as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var kampTipi  = (int)(ViewBag.KampaniyaTipi ?? 1);
+    var isSobeR   = kampTipi == 2;
+    var secilmisIl   = (int)(ViewBag.SecilmisIl ?? DateTime.Now.Year);
+    var secilmisRubu = ViewBag.SecilmisRubu as int?;
+    var dovrTipiVal  = (int)(ViewBag.DovrTipi ?? 1);
+    var sobeReisleri = ViewBag.SobeReisleri as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+                       ?? Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+    var rehberler    = ViewBag.Rehberler as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+                       ?? Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/performans.css" asp-append-version="true" />
+    <style>
+        .bk-wrap { display:grid; grid-template-columns:1fr 360px; gap:20px; align-items:start; }
+        .bk-table-wrap { background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; }
+        .bk-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .bk-table th { background:#f8fafc; padding:10px 14px; text-align:left; font-weight:600; color:#475569; border-bottom:1px solid #e2e8f0; white-space:nowrap; }
+        .bk-table td { padding:10px 14px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+        .bk-table tr:last-child td { border-bottom:none; }
+        .bk-table tr:hover td { background:#f8fafc; }
+        .bk-check { width:16px; height:16px; cursor:pointer; accent-color:#6366f1; }
+        .bk-badge-sobe { display:inline-block; background:#fef3c7; color:#92400e; font-size:11px; padding:2px 7px; border-radius:12px; }
+        .bk-badge-rehber { display:inline-block; background:#ede9fe; color:#6d28d9; font-size:11px; padding:2px 7px; border-radius:12px; }
+        .bk-sidebar { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px; position:sticky; top:20px; }
+        .bk-selected-count { font-size:28px; font-weight:700; color:#6366f1; }
+        .bk-toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid #e2e8f0; }
+        .bk-select-all { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:#475569; cursor:pointer; }
+        .bk-inline-select { font-size:12px; padding:3px 6px; border:1px solid #e2e8f0; border-radius:6px; color:#334155; min-width:140px; }
+        @@media(max-width:900px){ .bk-wrap{ grid-template-columns:1fr; } .bk-sidebar{ position:static; } }
+    </style>
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">
+                @if (isSobeR)
+                { <i class="bi bi-person-badge me-2" style="color:#f59e0b;"></i> }
+                else
+                { <i class="bi bi-people me-2" style="color:#6366f1;"></i> }
+                @ViewData["Title"]
+            </div>
+            <div class="fn-page-sub">İşçiləri seçin, rəhbər təyin edin, kampaniya başlatın</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <a asp-action="BulkKampaniya" class="fn-btn fn-btn--outline fn-btn--sm">← Geri</a>
+            <a asp-action="Index" class="fn-btn fn-btn--outline fn-btn--sm">↩ Siyahı</a>
+        </div>
+    </div>
+
+    @if (!isSobeR)
+    {
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:13px;color:#1d4ed8;display:flex;align-items:center;gap:8px;">
+            <i class="bi bi-info-circle-fill"></i>
+            <span><strong>Diqqət:</strong> Şöbə rəisi <strong>olmayan</strong> işçilər üçün siyahıdan şöbə rəisi seçilməlidir. Seçilmədən həmin işçi kampaniyaya daxil edilməyəcək.</span>
+        </div>
+    }
+
+    <form id="bulkForm" asp-action="BulkKampaniyaBaslat" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="kampaniyaTipi" value="@kampTipi" />
+        <input type="hidden" name="dovrTipi" value="@dovrTipiVal" />
+        <input type="hidden" name="il" value="@secilmisIl" />
+        @if (secilmisRubu.HasValue)
+        { <input type="hidden" name="rubu" value="@secilmisRubu" /> }
+
+        <div class="bk-wrap">
+
+            @* ── Sol: İşçi / Şöbə Rəisi Siyahısı ── *@
+            <div>
+                <div class="bk-table-wrap">
+                    <div class="bk-toolbar">
+                        <label class="bk-select-all">
+                            <input type="checkbox" id="chkHamisi" class="bk-check" />
+                            Hamısını seç
+                        </label>
+                        <div style="font-size:13px;color:#64748b;">
+                            <span id="secilmisCount">0</span>
+                            @(isSobeR ? "şöbə rəisi" : "işçi") seçilib
+                        </div>
+                    </div>
+                    <table class="bk-table">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;"></th>
+                                <th>Ad Soyad</th>
+                                <th>Departament</th>
+                                <th>Vəzifə</th>
+                                @if (!isSobeR)
+                                { <th>Şöbə Rəisi</th> }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!isciList.Any())
+                            {
+                                <tr>
+                                    <td colspan="@(isSobeR ? 4 : 5)" style="text-align:center;padding:40px;color:#64748b;">
+                                        <i class="bi bi-check-circle" style="font-size:28px;display:block;margin-bottom:8px;color:#22c55e;"></i>
+                                        Bu dövr üçün bütün @(isSobeR ? "şöbə rəisləri" : "işçilər") artıq qiymətləndirilmişdir.
+                                    </td>
+                                </tr>
+                            }
+                            @foreach (var isci in isciList)
+                            {
+                                bool sobeYox = !isSobeR && !(bool)isci.SobeReisiVar;
+                                <tr class="@(sobeYox ? "sobe-yox-setr" : "")">
+                                    <td><input type="checkbox" name="secilmisIsciIds" value="@isci.Id" class="bk-check isci-chk" /></td>
+                                    <td>
+                                        <strong>@isci.Soyad @isci.Ad</strong>
+                                        @if (isSobeR)
+                                        { <span class="bk-badge-sobe ms-1">Şöbə Rəisi</span> }
+                                    </td>
+                                    <td>@isci.Departament</td>
+                                    <td>@isci.Vezife</td>
+                                    @if (!isSobeR)
+                                    {
+                                        <td>
+                                            @if ((bool)isci.SobeReisiVar)
+                                            {
+                                                <span style="font-size:12px;color:#059669;">@isci.SobeReisiAd</span>
+                                                <input type="hidden" name="sobe_@isci.Id" value="@isci.SobeReisiId" />
+                                            }
+                                            else
+                                            {
+                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                    <i class="bi bi-exclamation-triangle-fill warn-icon" style="color:#f59e0b;font-size:13px;display:none;" title="Şöbə rəisi seçilməlidir"></i>
+                                                    <select name="sobe_@isci.Id" class="bk-inline-select sobe-select">
+                                                        <option value="">— Seçin —</option>
+                                                        @foreach (var sr in sobeReisleri)
+                                                        { <option value="@sr.Value">@sr.Text</option> }
+                                                    </select>
+                                                </div>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            @* ── Sağ: Kampaniya Parametrləri ── *@
+            <div class="bk-sidebar">
+                <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:16px;border-bottom:1px solid #e2e8f0;padding-bottom:10px;">
+                    <i class="bi bi-gear me-1"></i> Kampaniya Parametrləri
+                </div>
+
+                <div style="margin-bottom:12px;">
+                    <div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:4px;">Seçilmiş</div>
+                    <div class="bk-selected-count" id="sidebarCount">0</div>
+                </div>
+
+                <div class="fn-form-row" style="margin-bottom:12px;">
+                    <label class="fn-label">
+                        Rəhbər 1 <span style="color:#dc2626">*</span>
+                        <span style="font-size:10px;color:#94a3b8;font-weight:400;margin-left:4px;">yalnız rəhbər rolundakılar</span>
+                    </label>
+                    <select name="qiymetlendirenIsciId" class="fn-input" required>
+                        <option value="">Rəhbər seçin...</option>
+                        @foreach (var item in rehberler)
+                        { <option value="@item.Value">@item.Text</option> }
+                    </select>
+                </div>
+
+                <div class="fn-form-row" style="margin-bottom:12px;">
+                    <label class="fn-label">
+                        Rəhbər 2 <span style="color:#64748b;font-weight:400;">(ixtiyari)</span>
+                    </label>
+                    <select name="rehber2Id" class="fn-input">
+                        <option value="">— yoxdur —</option>
+                        @foreach (var item in rehberler)
+                        { <option value="@item.Value">@item.Text</option> }
+                    </select>
+                    <div style="font-size:11px;color:#64748b;margin-top:4px;">Skip-level review üçün ikinci rəhbər</div>
+                </div>
+
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Seçilmiş Dövr</div>
+                    <div style="font-weight:700;color:#1e293b;">
+                        @(dovrTipiVal == 2 ? "İllik" : "Rüblük") — @secilmisIl
+                        @if (secilmisRubu.HasValue)
+                        { <span>/ Rüb @secilmisRubu</span> }
+                    </div>
+                </div>
+
+                <div style="background:@(isSobeR ? "#fffbeb" : "#f0f9ff");border:1px solid @(isSobeR ? "#fde68a" : "#bae6fd");border-radius:8px;padding:10px 12px;font-size:12px;color:@(isSobeR ? "#92400e" : "#0369a1");margin-bottom:16px;">
+                    <i class="bi bi-info-circle me-1"></i>
+                    @if (isSobeR)
+                    { <span>Şöbə rəisləri üçün <strong>liderlik</strong> və <strong>komanda idarəetməsi</strong> kriteriyaları tətbiq olunacaq.</span> }
+                    else
+                    { <span>İşçilər üçün standart performans kriteriyaları tətbiq olunacaq.</span> }
+                </div>
+
+                <button type="submit" class="fn-btn fn-btn--primary" style="width:100%;" id="btnBaslat" disabled>
+                    <i class="bi bi-rocket-takeoff me-1"></i> Kampaniya Başlat
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        var chkHamisi     = document.getElementById('chkHamisi');
+        var isciChkler    = document.querySelectorAll('.isci-chk');
+        var sidebarCount  = document.getElementById('sidebarCount');
+        var secilmisCount = document.getElementById('secilmisCount');
+        var btnBaslat     = document.getElementById('btnBaslat');
+
+        function yenileCount() {
+            var n = document.querySelectorAll('.isci-chk:checked').length;
+            sidebarCount.textContent  = n;
+            secilmisCount.textContent = n;
+            btnBaslat.disabled = n === 0;
+        }
+
+        chkHamisi.addEventListener('change', function () {
+            isciChkler.forEach(function (c) { c.checked = chkHamisi.checked; });
+            yenileCount();
+        });
+
+        isciChkler.forEach(function (c) {
+            c.addEventListener('change', function () {
+                chkHamisi.checked = document.querySelectorAll('.isci-chk:checked').length === isciChkler.length;
+                yenileCount();
+            });
+        });
+
+        // Şöbə rəisi seçiləndə xəbərdarlığı sil
+        document.querySelectorAll('.sobe-select').forEach(function (sel) {
+            sel.addEventListener('change', function () {
+                var tr   = this.closest('tr');
+                var icon = tr.querySelector('.warn-icon');
+                var seçildi = this.value !== '';
+                if (icon) icon.style.display = seçildi ? 'none' : '';
+                this.style.borderColor = seçildi ? '#e2e8f0' : '#fcd34d';
+                tr.style.background = seçildi ? '' : '#fffbeb';
+            });
+        });
+
+        document.getElementById('bulkForm').addEventListener('submit', function (e) {
+            if (document.querySelectorAll('.isci-chk:checked').length === 0) {
+                e.preventDefault();
+                alert('Ən azı bir işçi seçilməlidir.');
+                return;
+            }
+            // Seçilmiş amma şöbə rəisi boş olan sətirləri vurğula
+            var problem = false;
+            document.querySelectorAll('.isci-chk:checked').forEach(function (chk) {
+                var tr  = chk.closest('tr');
+                var sel = tr.querySelector('.sobe-select');
+                if (sel && sel.value === '') {
+                    tr.style.background = '#fffbeb';
+                    var icon = tr.querySelector('.warn-icon');
+                    if (icon) icon.style.display = '';
+                    sel.style.borderColor = '#fcd34d';
+                    problem = true;
+                }
+            });
+            if (problem) {
+                e.preventDefault();
+                var ilk = document.querySelector('.isci-chk:checked ~ * .sobe-select[style*="fcd34d"], tr[style*="fffbeb"] .sobe-select');
+                if (ilk) ilk.closest('tr').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+    </script>
+}

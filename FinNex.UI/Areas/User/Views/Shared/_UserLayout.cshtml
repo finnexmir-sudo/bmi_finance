@@ -37,6 +37,9 @@
             || currentController == "Guzest"
             || currentController == "IsciGuzest"
             || currentController == "IsciHYS"
+            || currentController == "DovriOdenis"
+            || currentController == "GozlenilenXerc"
+            || currentController == "MaliyyeDashboard"
             || (currentController == "Avans" && currentArea == "HR");
     }
 
@@ -85,6 +88,9 @@
     var konstrAktiv = isSYarat && aiModule != "hr" && aiModule != "kredit" ? "active" : "";
     var hrAktiv     = isSYarat && aiModule == "hr"     ? "active" : "";
     var kreditAktiv = isSYarat && aiModule == "kredit" ? "active" : "";
+    var hrMeslehetciAktiv = currentController == "HRMeslehetci" ? "active" : "";
+    var aiRiskAktiv  = currentController == "SenedAi" && currentAction == "RiskAnaliz";
+    var aiAnyActive  = aiRiskAktiv || !string.IsNullOrEmpty(konstrAktiv) || !string.IsNullOrEmpty(hrMeslehetciAktiv) || !string.IsNullOrEmpty(kreditAktiv);
 }
 
 <!DOCTYPE html>
@@ -299,7 +305,7 @@
                    class="fn-nav-item @(currentController == "Dashboard" && currentArea == "User" ? "active" : "")">
                     <i class="bi bi-grid"></i> Dashboard
                 </a>
-                @if (isRehberRol)
+                @if (isRehberRol || isAdmin)
                 {
                     <a asp-area="HR" asp-controller="RehberDashboard" asp-action="Index"
                        class="fn-nav-item @(currentController == "RehberDashboard" && currentAction == "Index" ? "active" : "")">
@@ -325,25 +331,31 @@
                         }
                         <span class="fn-mail-badge" data-badge-url="@gmBadgeUrl" style="display:none"></span>
                     </a>
-                    <div class="fn-nav-label">AI Modulları</div>
-                    <a asp-area="User" asp-controller="SenedAi" asp-action="RiskAnaliz"
-                       class="fn-nav-item @(currentController == "SenedAi" && currentAction == "RiskAnaliz" ? "active" : "")">
-                        <i class="bi bi-shield-exclamation"></i> Sənəd Risk Analizi
-                    </a>
-                    <a asp-area="User" asp-controller="SenedAi" asp-action="SenedYarat"
-                       class="fn-nav-item @konstrAktiv">
-                        <i class="bi bi-file-earmark-text"></i> Sənəd Konstruktoru
-                    </a>
-                    <a asp-area="User" asp-controller="SenedAi" asp-action="SenedYarat" asp-route-module="hr"
-                       class="fn-nav-item @hrAktiv">
-                        <i class="bi bi-people-fill"></i> HR Assistanı
-                        <span class="fn-nav-plan-badge">Planda</span>
-                    </a>
-                    <a asp-area="User" asp-controller="SenedAi" asp-action="SenedYarat" asp-route-module="kredit"
-                       class="fn-nav-item @kreditAktiv">
-                        <i class="bi bi-graph-up-arrow"></i> Kredit Komitəsi
-                        <span class="fn-nav-plan-badge">Planda</span>
-                    </a>
+                    <div class="fn-nav-g @(aiAnyActive ? "open" : "")">
+                        <button type="button" class="fn-nav-g-head">
+                            <span>AI Modulları</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="fn-nav-g-body">
+                            <a asp-area="User" asp-controller="SenedAi" asp-action="RiskAnaliz"
+                               class="fn-nav-item @(aiRiskAktiv ? "active" : "")">
+                                <i class="bi bi-shield-exclamation"></i> Sənəd Risk Analizi
+                            </a>
+                            <a asp-area="User" asp-controller="SenedAi" asp-action="SenedYarat"
+                               class="fn-nav-item @konstrAktiv">
+                                <i class="bi bi-file-earmark-text"></i> Sənəd Konstruktoru
+                            </a>
+                            <a asp-area="User" asp-controller="HRMeslehetci" asp-action="Index"
+                               class="fn-nav-item @hrMeslehetciAktiv">
+                                <i class="bi bi-scales"></i> HR Məsləhətçi
+                            </a>
+                            <a asp-area="User" asp-controller="SenedAi" asp-action="SenedYarat" asp-route-module="kredit"
+                               class="fn-nav-item @kreditAktiv">
+                                <i class="bi bi-graph-up-arrow"></i> Kredit Komitəsi
+                                <span class="fn-nav-plan-badge">Planda</span>
+                            </a>
+                        </div>
+                    </div>
                 }
                 @if (isHR)
                 {
@@ -690,7 +702,7 @@
                     var mhMaasActive = currentController is "Maas" or "MezuniyyetOdenis" or "IsciAyliqQazanc"
                                        || (currentController == "Avans" && currentArea == "HR");
                     var mhParamActive = currentController is "MaasParametri" or "Guzest" or "IsciGuzest" or "IsciHYS";
-                    var mhMaliyyeActive = currentController == "Budce" || (currentArea == "HR" && (currentController == "Xerc" || currentController == "XercKateqoriya" || currentController == "XercHesabat"));
+                    var mhMaliyyeActive = currentController == "Budce" || (currentArea == "HR" && (currentController == "Xerc" || currentController == "XercKateqoriya" || currentController == "XercHesabat" || currentController == "DovriOdenis" || currentController == "GozlenilenXerc" || currentController == "MaliyyeDashboard"));
                     var mhAnyActive = mhMaasActive || mhParamActive || mhMaliyyeActive;
 
                     <div class="fn-nav-g @(mhMaasActive ? "open" : "")">
@@ -751,6 +763,10 @@
                                 <i class="bi bi-chevron-down"></i>
                             </button>
                             <div class="fn-nav-g-body">
+                                <a asp-area="HR" asp-controller="MaliyyeDashboard" asp-action="Index"
+                                   class="fn-nav-item @(currentArea == "HR" && currentController == "MaliyyeDashboard" ? "active" : "")">
+                                    <i class="bi bi-speedometer2"></i> Maliyyə Dashboard
+                                </a>
                                 <a asp-area="HR" asp-controller="Budce" asp-action="Index"
                                    class="fn-nav-item @(currentController == "Budce" ? "active" : "")">
                                     <i class="bi bi-piggy-bank"></i> Büdcə
@@ -758,6 +774,14 @@
                                 <a asp-area="HR" asp-controller="Xerc" asp-action="Index"
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "Xerc" ? "active" : "")">
                                     <i class="bi bi-receipt"></i> Xərc İdarəetmə
+                                </a>
+                                <a asp-area="HR" asp-controller="DovriOdenis" asp-action="Index"
+                                   class="fn-nav-item @(currentArea == "HR" && currentController == "DovriOdenis" ? "active" : "")">
+                                    <i class="bi bi-arrow-repeat"></i> Dövri Ödənişlər
+                                </a>
+                                <a asp-area="HR" asp-controller="GozlenilenXerc" asp-action="Index"
+                                   class="fn-nav-item @(currentArea == "HR" && currentController == "GozlenilenXerc" ? "active" : "")">
+                                    <i class="bi bi-calendar-plus"></i> Gözlənilən Xərclər
                                 </a>
                                 <a asp-area="HR" asp-controller="XercHesabat" asp-action="Index"
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "XercHesabat" ? "active" : "")">

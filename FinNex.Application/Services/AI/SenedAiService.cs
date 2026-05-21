@@ -254,8 +254,16 @@ public class SenedAiService : ISenedAiService
     private static string BuildOcrPrompt(bool withTranslation, string targetLang)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("Sən peşəkar bank OCR və skaner köməkçisisən.");
-        sb.AppendLine("Bu şəkildəki / sənəddəki bütün mətnləri qüsursuz şəkildə oxu, strukturu (başlıq, abzaslar, cədvəl) itirmə.");
+        sb.AppendLine("Sən peşəkar bank OCR mütəxəssisisən. Azərbaycan dilində əl yazısı oxumaqda ekspertsən.");
+        sb.AppendLine("Bu şəkil çox güman ki əl yazısı ilə yazılmış Azərbaycan dili mətnidir.");
+        sb.AppendLine();
+        sb.AppendLine("OXUMA QAYDALARI:");
+        sb.AppendLine("- Azərbaycan əlifbasının xüsusi hərflərinə diqqət et: ə, ı, ğ, ş, ç, ö, ü, İ, Ə");
+        sb.AppendLine("- Əl yazısında oxşar görünən hərfləri kontekstə görə düzəlt (məs: 'gəlişinin' deyil 'qalığının', 'b' ilə 'l', 'i' ilə 'ı' fərqi)");
+        sb.AppendLine("- Bank-hüquq terminologiyasını tanı: borc qalığı, girov, əmlak, qiymətləndirmə, sənəd, müqavilə, rübü, hesab və s.");
+        sb.AppendLine("- Hər sözü kontekstlə yoxla — bank sənədlərindəki tipik ifadələrə üstünlük ver");
+        sb.AppendLine("- Mümkün olmayan söz birləşməsi görürsənsə, ən məntiqli variantı seç");
+        sb.AppendLine();
         if (withTranslation)
         {
             sb.AppendLine($"Oxuduğun mətni birbaşa {targetLang} dilinə bank-hüquq standartları ilə çevir.");

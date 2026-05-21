@@ -109,6 +109,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     // Performans
     public DbSet<PerformansQiymetlendirme> PerformansQiymetlendirmeler { get; set; }
     public DbSet<PerformansKriteriya> PerformansKriteriyalar { get; set; }
+    public DbSet<PerformansKriteriyaSablon> PerformansKriteriyaSablonlar { get; set; }
 
     // Təlim
     public DbSet<Telim> Telimler { get; set; }
@@ -122,6 +123,9 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     // Büdcə
     public DbSet<Budce> Budceler { get; set; }
     public DbSet<SirketBudcesi> SirketBudceleri { get; set; }
+    public DbSet<DovriOdenis> DovriOdenisler { get; set; }
+    public DbSet<GozlenilenXerc> GozlenilenXercler { get; set; }
+    public DbSet<SistemAyar> SistemAyarlari { get; set; }
     public DbSet<IsParametri> IsParametrler { get; set; }
 
     // Elan
@@ -158,6 +162,10 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     // =====================
     public DbSet<SenedAnaliz> SenedAnalizler { get; set; }
     public DbSet<SenedKonstruktor> SenedKonstruktorlar { get; set; }
+    public DbSet<HRSohbet> HRSohbetler { get; set; }
+    public DbSet<HRSohbetMesaj> HRSohbetMesajlar { get; set; }
+    public DbSet<HRQanunFayl> HRQanunFayllar { get; set; }
+    public DbSet<HRDaxiliQayda> HRDaxiliQaydalar { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -857,12 +865,19 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .OnDelete(DeleteBehavior.NoAction);
 
         builder.Entity<PerformansQiymetlendirme>()
-            .Property(x => x.SobeReisiOrtalamaQiymet).HasPrecision(5, 2);
+            .HasOne(x => x.Rehber2)
+            .WithMany()
+            .HasForeignKey(x => x.Rehber2Id)
+            .OnDelete(DeleteBehavior.NoAction);
 
+        builder.Entity<PerformansQiymetlendirme>()
+            .Property(x => x.SobeReisiOrtalamaQiymet).HasPrecision(5, 2);
         builder.Entity<PerformansQiymetlendirme>()
             .Property(x => x.IsciOrtalamaQiymet).HasPrecision(5, 2);
         builder.Entity<PerformansQiymetlendirme>()
             .Property(x => x.MudirOrtalamaQiymet).HasPrecision(5, 2);
+        builder.Entity<PerformansQiymetlendirme>()
+            .Property(x => x.Rehber2OrtalamaQiymet).HasPrecision(5, 2);
         builder.Entity<PerformansQiymetlendirme>()
             .Property(x => x.YekunQiymet).HasPrecision(5, 2);
 
@@ -879,7 +894,14 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         builder.Entity<PerformansKriteriya>()
             .Property(x => x.MudirQiymeti).HasPrecision(5, 2);
         builder.Entity<PerformansKriteriya>()
+            .Property(x => x.Rehber2Qiymeti).HasPrecision(5, 2);
+        builder.Entity<PerformansKriteriya>()
             .Property(x => x.SobeReisiQiymeti).HasPrecision(5, 2);
+
+        builder.Entity<PerformansKriteriyaSablon>()
+            .Property(x => x.Ceki).HasPrecision(5, 2);
+        builder.Entity<PerformansKriteriyaSablon>()
+            .ToTable("PerformansKriteriyaSablonlar");
 
         // ── Təlim ─────────────────────────────────────────────
         builder.Entity<TelimIshtiraki>()
@@ -959,6 +981,46 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasIndex(x => x.Il).IsUnique();
         builder.Entity<SirketBudcesi>()
             .Property(x => x.Mebleg).HasPrecision(18, 2);
+
+        // ── Dövri Ödənişlər ───────────────────────────────────
+        builder.Entity<DovriOdenis>()
+            .HasOne(x => x.Kateqoriya)
+            .WithMany()
+            .HasForeignKey(x => x.KateqoriyaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<DovriOdenis>()
+            .HasOne(x => x.Departament)
+            .WithMany()
+            .HasForeignKey(x => x.DepartamentId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<DovriOdenis>()
+            .Property(x => x.Mebleg).HasPrecision(18, 2);
+
+        // ── Gözlənilən Xərclər ────────────────────────────────
+        builder.Entity<GozlenilenXerc>()
+            .HasOne(x => x.Kateqoriya)
+            .WithMany()
+            .HasForeignKey(x => x.KateqoriyaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<GozlenilenXerc>()
+            .HasOne(x => x.Departament)
+            .WithMany()
+            .HasForeignKey(x => x.DepartamentId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<GozlenilenXerc>()
+            .HasOne(x => x.Xerc)
+            .WithMany()
+            .HasForeignKey(x => x.XercId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<GozlenilenXerc>()
+            .Property(x => x.TahminiMebleg).HasPrecision(18, 2);
 
         builder.Entity<IsParametri>()
             .ToTable("IsParametrleri");
@@ -1280,6 +1342,45 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.Property(x => x.GeneratedContent).HasColumnType("nvarchar(max)");
             e.HasOne(x => x.AppUser).WithMany().HasForeignKey(x => x.AppUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<HRSohbet>(e =>
+        {
+            e.ToTable("HRSohbetler");
+            e.HasKey(x => x.Id);
+            e.HasOne(x => x.AppUser).WithMany().HasForeignKey(x => x.AppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasMany(x => x.Mesajlar).WithOne(m => m.Sohbet).HasForeignKey(m => m.SohbetId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<HRSohbetMesaj>(e =>
+        {
+            e.ToTable("HRSohbetMesajlar");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Metn).HasColumnType("nvarchar(max)");
+            e.Property(x => x.Rol).HasMaxLength(20);
+        });
+
+        builder.Entity<HRQanunFayl>(e =>
+        {
+            e.ToTable("HRQanunFayllar");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Ad).HasMaxLength(300);
+            e.Property(x => x.Kateqoriya).HasMaxLength(50);
+            e.Property(x => x.FaylYolu).HasMaxLength(500);
+            e.Property(x => x.MetnContent).HasColumnType("nvarchar(max)");
+        });
+
+        builder.Entity<HRDaxiliQayda>(e =>
+        {
+            e.ToTable("HRDaxiliQaydalar");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Kod).HasMaxLength(20);
+            e.Property(x => x.Ad).HasMaxLength(300);
+            e.Property(x => x.Kateqoriya).HasMaxLength(100);
+            e.Property(x => x.Mezmun).HasColumnType("nvarchar(max)");
+            e.HasOne(x => x.YazilanKim).WithMany().HasForeignKey(x => x.YazilanKimId).OnDelete(DeleteBehavior.Restrict);
         });
 
     }

@@ -1,0 +1,196 @@
+@model FinNex.Domain.Entities.AI.HRDaxiliQayda
+@using FinNex.Domain.Entities.AI
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = Model.Ad;
+    var versiyalar = ViewBag.Versiyalar as List<HRDaxiliQayda> ?? new();
+    var isAdmin    = (bool)(ViewBag.IsAdmin ?? false);
+}
+
+<style>
+.qd-wrap   { max-width:900px; margin:0 auto; padding:24px 16px; }
+.qd-header { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:24px 28px; margin-bottom:20px; border-left:5px solid #6366f1; }
+.qd-meta   { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+.qd-kod    { font-size:12px; font-weight:700; color:#94a3b8; letter-spacing:.08em; }
+.qd-kat    { font-size:11px; font-weight:600; padding:3px 10px; border-radius:12px; background:#eef2ff; color:#4338ca; }
+.qd-v      { font-size:11px; font-weight:600; padding:3px 10px; border-radius:12px; background:#f0fdf4; color:#15803d; }
+.qd-title  { font-size:20px; font-weight:800; color:#1e293b; margin-bottom:8px; line-height:1.3; }
+.qd-info   { display:flex; gap:16px; flex-wrap:wrap; }
+.qd-info-item { display:flex; align-items:center; gap:5px; font-size:12px; color:#64748b; }
+.qd-body   { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:28px; margin-bottom:20px; }
+.qd-body-text { font-size:14px; line-height:1.85; color:#334155; white-space:pre-wrap; }
+.qd-timeline { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px 24px; }
+.qd-timeline-title { font-size:13px; font-weight:700; color:#1e293b; margin-bottom:16px; display:flex; align-items:center; gap:6px; }
+.qd-tl-item { display:flex; gap:14px; position:relative; padding-bottom:18px; }
+.qd-tl-item:last-child { padding-bottom:0; }
+.qd-tl-line { width:2px; background:#e2e8f0; position:absolute; left:11px; top:24px; bottom:0; }
+.qd-tl-item:last-child .qd-tl-line { display:none; }
+.qd-tl-dot  { width:24px; height:24px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; }
+.qd-tl-dot.aktiv   { background:#6366f1; }
+.qd-tl-dot.keçmiş  { background:#cbd5e1; }
+.qd-tl-content { flex:1; }
+.qd-tl-ver { font-size:11px; font-weight:700; color:#64748b; }
+.qd-tl-date { font-size:11px; color:#94a3b8; margin-bottom:3px; }
+.qd-tl-ad  { font-size:13px; font-weight:600; color:#1e293b; }
+.qd-edit-panel { background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:24px; margin-bottom:20px; }
+</style>
+
+<div class="qd-wrap">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <a asp-action="Qaydalar" style="font-size:13px;color:#6366f1;text-decoration:none;display:flex;align-items:center;gap:5px;">
+            <i class="bi bi-arrow-left"></i> Bütün Qaydalar
+        </a>
+        @if (isAdmin && Model.Aktiv)
+        {
+            <button onclick="yenileAc()"
+                    style="display:inline-flex;align-items:center;gap:5px;padding:6px 14px;background:#f1f5f9;color:#475569;border:1.5px solid #e2e8f0;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;">
+                <i class="bi bi-pencil"></i> Yeni Versiya
+            </button>
+        }
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 16px;margin-bottom:14px;color:#16a34a;font-size:13px;">
+            <i class="bi bi-check-circle me-1"></i>@TempData["Success"]
+        </div>
+    }
+
+    @if (!Model.Aktiv)
+    {
+        <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:13px;color:#92400e;display:flex;align-items:center;gap:8px;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Bu köhnə versiya (v@Model.Versiya)dır. Ən son versiyaya keçmək üçün
+            @{
+                var enYeni = versiyalar.FirstOrDefault(x => x.Aktiv);
+                if (enYeni != null)
+                { <a asp-action="QaydaDetal" asp-route-id="@enYeni.Id" style="color:#92400e;font-weight:600;margin-left:4px;">buraya klikləyin →</a> }
+            }
+        </div>
+    }
+
+    @* Header *@
+    <div class="qd-header">
+        <div class="qd-meta">
+            <span class="qd-kod">@Model.Kod</span>
+            @if (!string.IsNullOrEmpty(Model.Kateqoriya))
+            { <span class="qd-kat">@Model.Kateqoriya</span> }
+            <span class="qd-v">v@Model.Versiya @(Model.Aktiv ? "· Aktiv" : "· Arxiv")</span>
+        </div>
+        <div class="qd-title">@Model.Ad</div>
+        <div class="qd-info">
+            <span class="qd-info-item"><i class="bi bi-calendar3"></i> @Model.YaradilmaTarixi.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("az-Latn-AZ"))</span>
+            <span class="qd-info-item"><i class="bi bi-person"></i> @(Model.YazilanKim?.UserName ?? "—")</span>
+            @if (versiyalar.Count > 1)
+            { <span class="qd-info-item"><i class="bi bi-layers"></i> @versiyalar.Count versiya</span> }
+        </div>
+    </div>
+
+    @* Məzmun *@
+    <div class="qd-body">
+        <div class="qd-body-text">@Model.Mezmun</div>
+
+        @if (!string.IsNullOrEmpty(Model.SenedYolu))
+        {
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9;">
+                <div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:.06em;margin-bottom:8px;">ƏLAVƏ SƏNƏD</div>
+                <a href="@Model.SenedYolu" target="_blank"
+                   style="display:inline-flex;align-items:center;gap:8px;padding:10px 16px;background:#f0f4ff;border:1px solid #c7d2fe;border-radius:8px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">
+                    <i class="bi bi-file-earmark-text" style="font-size:16px;"></i>
+                    @(Model.SenedAd ?? "Sənədi Aç")
+                    <i class="bi bi-box-arrow-up-right" style="font-size:11px;opacity:.6;"></i>
+                </a>
+            </div>
+        }
+    </div>
+
+    @* Admin — Yeni Versiya Formu *@
+    @if (isAdmin && Model.Aktiv)
+    {
+        <div class="qd-edit-panel" id="yenilePanel" style="display:none;">
+            <div style="font-size:14px;font-weight:700;color:#1e293b;margin-bottom:16px;display:flex;align-items:center;gap:6px;">
+                <i class="bi bi-pencil-square" style="color:#6366f1;"></i> Yeni Versiya Yaz
+                <span style="font-size:11px;color:#94a3b8;font-weight:400;">(v@(Model.Versiya+1) yaranacaq, köhnəsi arxivə keçəcək)</span>
+            </div>
+            <form asp-action="QaydaYenile" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="kohneId" value="@Model.Id" />
+                <div class="fn-form-row" style="margin-bottom:12px;">
+                    <label class="fn-label">Qayda Adı</label>
+                    <input type="text" name="ad" class="fn-input" value="@Model.Ad" required />
+                </div>
+                <div class="fn-form-row" style="margin-bottom:12px;">
+                    <label class="fn-label">Kateqoriya</label>
+                    <input type="text" name="kateqoriya" class="fn-input" value="@Model.Kateqoriya" />
+                </div>
+                <div class="fn-form-row" style="margin-bottom:12px;">
+                    <label class="fn-label">Yenilənmə Səbəbi</label>
+                    <input type="text" name="sebeb" class="fn-input" placeholder="Qanun dəyişikliyi, daxili qərar..." />
+                </div>
+                <div class="fn-form-row" style="margin-bottom:12px;">
+                    <label class="fn-label">Yeni Məzmun</label>
+                    <textarea name="mezmun" class="fn-input" rows="10" required
+                              style="font-size:13px;line-height:1.7;resize:vertical;">@Model.Mezmun</textarea>
+                </div>
+                <div class="fn-form-row" style="margin-bottom:16px;">
+                    <label class="fn-label">
+                        Yeni Sənəd
+                        <span style="font-size:11px;color:#94a3b8;font-weight:400;">
+                            @if (!string.IsNullOrEmpty(Model.SenedYolu))
+                            { <text>— hazırda: <a href="@Model.SenedYolu" target="_blank" style="color:#6366f1;">@Model.SenedAd</a> (dəyişməzsə köhnəsi saxlanılır)</text> }
+                            else
+                            { <text>(ixtiyari, PDF / DOC / DOCX)</text> }
+                        </span>
+                    </label>
+                    <input type="file" name="sened" class="fn-input" accept=".pdf,.doc,.docx"
+                           style="padding:6px;font-size:13px;" />
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                    <button type="button" onclick="yenileBag()" class="fn-btn fn-btn--outline">Ləğv et</button>
+                    <button type="submit" class="fn-btn fn-btn--primary">
+                        <i class="bi bi-save me-1"></i> v@(Model.Versiya+1) kimi yadda saxla
+                    </button>
+                </div>
+            </form>
+        </div>
+    }
+
+    @* Versiya Tarixçəsi *@
+    @if (versiyalar.Count > 1)
+    {
+        <div class="qd-timeline">
+            <div class="qd-timeline-title">
+                <i class="bi bi-clock-history" style="color:#6366f1;"></i> Versiya Tarixçəsi
+            </div>
+            @foreach (var v in versiyalar)
+            {
+                <div class="qd-tl-item">
+                    <div class="qd-tl-line"></div>
+                    <div class="qd-tl-dot @(v.Aktiv ? "aktiv" : "keçmiş")">@v.Versiya</div>
+                    <div class="qd-tl-content">
+                        <div class="qd-tl-ver">v@v.Versiya @(v.Aktiv ? "— Cari" : "— Arxiv")</div>
+                        <div class="qd-tl-date">@v.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm") · @(v.YazilanKim?.UserName ?? "—")</div>
+                        @if (v.Id != Model.Id)
+                        {
+                            <a asp-action="QaydaDetal" asp-route-id="@v.Id"
+                               class="qd-tl-ad" style="color:#6366f1;text-decoration:none;">
+                                @v.Ad <i class="bi bi-arrow-right" style="font-size:11px;"></i>
+                            </a>
+                        }
+                        else
+                        {
+                            <div class="qd-tl-ad">@v.Ad <span style="font-size:11px;color:#94a3b8;">(bu)</span></div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+</div>
+
+<script>
+    function yenileAc() { document.getElementById('yenilePanel').style.display = ''; document.getElementById('yenilePanel').scrollIntoView({behavior:'smooth'}); }
+    function yenileBag() { document.getElementById('yenilePanel').style.display = 'none'; }
+</script>
