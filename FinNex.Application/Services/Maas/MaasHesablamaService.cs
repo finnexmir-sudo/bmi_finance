@@ -440,6 +440,9 @@ namespace FinNex.Application.Services.HR
                             .Where(x => x.IsciId == input.IsciId && !x.Silinib
                                 && x.Status == MezuniyyetStatus.Tesdiqlenib
                                 && x.OdenisTipi == MezuniyyetOdenisTipi.AySonuOdenis
+                                // Korreksiya qeydləri mövcud Illik məzuniyyətin üzərindədir;
+                                // ayrıca ödəniş tələb etmir, post-korreksiyaya daxil edilməməlidir.
+                                && x.Nov != MezuniyyetNovu.DovletVezifelerininIcrasi
                                 && x.YaradilmaTarixi > prevMaas.HesablanmaTarixi
                                 && x.BaslamaTarixi <= prevAyBitis
                                 && x.BitmeTarixi >= prevAyBaslama)
@@ -1097,6 +1100,10 @@ namespace FinNex.Application.Services.HR
                     x.IsciId == isciId &&
                     !x.Silinib &&
                     x.Status == MezuniyyetStatus.Tesdiqlenib &&
+                    // DovletVezifelerininIcrasi qeydləri həmişə mövcud Illik məzuniyyətin
+                    // üzərindəki korreksiya kimi yaranır — həmin günlər artıq Illik qeyd
+                    // tərəfindən sayılır, ikiqat saymamaq üçün burada çıxarılır.
+                    x.Nov != MezuniyyetNovu.DovletVezifelerininIcrasi &&
                     x.BaslamaTarixi <= ayBitis &&
                     x.BitmeTarixi >= ayBaslangic);
 
@@ -1852,6 +1859,7 @@ namespace FinNex.Application.Services.HR
                     .Where(x => x.IsciId == isciId && !x.Silinib
                         && x.Status == MezuniyyetStatus.Tesdiqlenib
                         && x.OdenisTipi == MezuniyyetOdenisTipi.AySonuOdenis
+                        && x.Nov != MezuniyyetNovu.DovletVezifelerininIcrasi
                         && x.YaradilmaTarixi > prevMaas.HesablanmaTarixi
                         && x.BaslamaTarixi <= prevAyBitis
                         && x.BitmeTarixi >= prevAyBaslama)

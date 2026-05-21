@@ -267,6 +267,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         [HttpGet]
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        [HttpGet]
         public async Task<IActionResult> GeriyeQeyd()
         {
             var vm = new GeriyeQeydVM
@@ -284,6 +285,66 @@ namespace FinNex.UI.Areas.HR.Controllers
         // ══════════════════════════════════════════════════════
 
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        // ── Məzuniyyət Redaktəsi ───────────────────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var result = await _mezuniyyetService.IdIleGetirAsync(id);
+            if (!result.Success || result.Data == null)
+            {
+                TempData["Xeta"] = "Məzuniyyət tapılmadı.";
+                return RedirectToAction("Index");
+            }
+
+            var m = result.Data;
+
+            var editStatuses = new[]
+            {
+                MezuniyyetStatus.Gozlemede,
+                MezuniyyetStatus.SobeReisiTesdiqinde,
+                MezuniyyetStatus.RehberTesdiqinde,
+                MezuniyyetStatus.HrTesdiqinde
+            };
+
+            if (!editStatuses.Contains(m.Status))
+            {
+                TempData["Xeta"] = "Yalnız prosesdə olan məzuniyyətlər redaktə edilə bilər.";
+                return RedirectToAction("Index");
+            }
+
+            var dto = new MezuniyyetUpdateDto
+            {
+                Id             = m.Id,
+                Nov            = m.Nov,
+                BaslamaTarixi  = m.BaslamaTarixi,
+                BitmeTarixi    = m.BitmeTarixi,
+                EvezEdenIsciId = m.EvezEdenIsciId,
+                Qeyd           = m.Qeyd,
+                Status         = m.Status,
+                ImtinaSebebi   = m.ImtinaSebebi
+            };
+
+            return View(dto);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(MezuniyyetUpdateDto dto)
+        {
+            if (!ModelState.IsValid)
+                return View(dto);
+
+            var result = await _mezuniyyetService.YenileAsync(dto);
+            if (!result.Success)
+            {
+                TempData["Xeta"] = result.Message;
+                return View(dto);
+            }
+
+            TempData["Ugur"] = result.Message ?? "Məzuniyyət uğurla yeniləndi.";
+            return RedirectToAction("Index");
+        }
+
         public async Task<IActionResult> Aktiv(int qabaqcaGun = 30)
         {
             if (qabaqcaGun < 0) qabaqcaGun = 0;
