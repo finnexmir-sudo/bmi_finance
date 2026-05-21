@@ -146,6 +146,8 @@ namespace FinNex.UI
             // ── Oracle (yalnız oxuma) ──────────────────────────
             builder.Services.AddScoped<FinNex.Application.Interfaces.Oracle.IOracleService,
                                         FinNex.Application.Services.Oracle.OracleService>();
+            builder.Services.AddScoped<FinNex.Application.Interfaces.Sorgular.IOracleSorguService,
+                                        FinNex.Application.Services.Sorgular.OracleSorguService>();
 
             // ── Göyərçin (Posta Güvercini) SMS Gateway ────────
             builder.Services.Configure<FinNex.Application.Services.Sms.GoyercinSettings>(
