@@ -18,6 +18,7 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
             MezuniyyetNovu.Illik => "İllik məzuniyyət",
             MezuniyyetNovu.Xestelik => "Xəstəlik məzuniyyəti",
             MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
+            MezuniyyetNovu.DovletVezifelerininIcrasi => "Dövlət Vəzifəsi",
             _ => Nov.ToString()
         };
 
