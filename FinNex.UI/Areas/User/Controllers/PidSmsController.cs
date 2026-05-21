@@ -131,7 +131,10 @@ public class PidSmsController : Controller
             var result = rows.Select(r => new
             {
                 ad      = GetStr(r, "AD"),
-                telefon = GetStr(r, "TELEFON")
+                telefon = GetStr(r, "TELEFON") is { Length: > 0 } t ? t
+                        : GetStr(r, "ZAMTEL") is { Length: > 0 } zt ? zt
+                        : GetStr(r, "MOB") is { Length: > 0 } m ? m
+                        : GetStr(r, "TEL")
             }).Where(x => !string.IsNullOrWhiteSpace(x.telefon)).ToList();
 
             return Json(new { data = result, sorguAdi = sorquResult.Data.SorguAdi });
