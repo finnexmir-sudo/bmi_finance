@@ -1722,23 +1722,12 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 return Result<MezuniyyetDto>.Fail(
                     "Seçilən aralıqda iş günü yoxdur (yalnız həftəsonu/bayram).");
 
-            // Əvvəlki korreksiyaların kumulyativ cəmi — eyni orijinal məzuniyyət üzərindən
-            // fərqli tarix aralıqları ilə edilmiş bütün aktiv korreksiyalar toplanır.
-            int sumOfEvvelkiKorreksiyalar = await _unitOfWork.Repository<Mezuniyyet>()
-                .Query()
-                .Where(x => !x.Silinib &&
-                            x.KorreksiyaOlunanMezuniyyetId == original.Id &&
-                            x.Status == MezuniyyetStatus.Tesdiqlenib)
-                .SumAsync(x => (int?)x.IsGunlerininSayi) ?? 0;
-
-            int qalanEfektivGun = original.EfektivGunSayi - sumOfEvvelkiKorreksiyalar;
-
-            if (dto.KorreksiyaGunSayi > qalanEfektivGun)
+            // EfektivGunSayi hər korreksiyadan sonra birbaşa azaldılır,
+            // ona görə sadə müqayisə kifayətdir — kumulyativ yoxlama tələb olunmur.
+            if (dto.KorreksiyaGunSayi > original.EfektivGunSayi)
                 return Result<MezuniyyetDto>.Fail(
-                    $"Daxil edilən korreksiya günü ({dto.KorreksiyaGunSayi}) məzuniyyətin " +
-                    $"yerdə qalan effektiv gün sayından ({qalanEfektivGun}) çox ola bilməz. " +
-                    $"(Əvvəlki korreksiyalar: {sumOfEvvelkiKorreksiyalar} gün, " +
-                    $"cəmi effektiv: {original.EfektivGunSayi} gün)");
+                    $"Korreksiya günü ({dto.KorreksiyaGunSayi}) məzuniyyətin " +
+                    $"qalan effektiv gün sayını ({original.EfektivGunSayi}) keçə bilməz.");
 
             // ── 3. Eyni işçi üçün üst-üstə düşən DovletVezifesi yoxlanışı ──
             var artiqVar = await _unitOfWork.Repository<Mezuniyyet>()
@@ -1756,6 +1745,21 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
             // ── 4. Balansı geri qaytar (LIFO — ən son ilin balansına) ─────
             await BalansiGeriQaytarAsync(dto.IsciId, MezuniyyetNovu.Illik, dto.KorreksiyaGunSayi);
+
+            // ── 4b. Orijinal Illik qeydin effektiv gün sayını azalt ───────
+            // Korreksiya edilmiş günlər Illik məzuniyyət kimi deyil, dövlət
+            // vəzifəsi kimi qeyd olunur. Maaş hesablaması original qeydi
+            // yalnız qalan günlər üçün sayır (sıfıra çatarsa maaşa daxil olmur).
+            // IsGunlerininSayiManual varsa o sahəni azaldırıq — EfektivGunSayi
+            // həmişə MIN(Manual ?? Avtomatik) olduğundan hər iki halda düzgün işləyir.
+            if (original.IsGunlerininSayiManual.HasValue)
+                original.IsGunlerininSayiManual =
+                    Math.Max(0, original.IsGunlerininSayiManual.Value - dto.KorreksiyaGunSayi);
+            else
+                original.IsGunlerininSayi =
+                    Math.Max(0, original.IsGunlerininSayi - dto.KorreksiyaGunSayi);
+
+            await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(original);
 
             // ── 5. Yeni DovletVezifelerininIcrasi məzuniyyəti yarat ───────
             var indi = DateTime.Now;
