@@ -76,8 +76,11 @@ document.addEventListener('DOMContentLoaded', function () {
         girisVaxti: '09:00',
         cixisVaxti: '17:45',
         gecikmeTolerans: 5,
-        tezCixmaTolerans: 15
+        tezCixmaTolerans: 15,
+        naharBaslamaSaati: '13:00',
+        naharMuddetDeqiqe: 45
     };
+    var isGunuBitdiElan = null; // "HH:MM" — bu gün elan varsa
 
     // "HH:MM" → {hours, minutes}
     function parseTime(str) {
@@ -571,6 +574,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.isParametri) {
                     isParametriData = data.isParametri;
                 }
+                if (data.isGunuBitdiElan !== undefined) {
+                    isGunuBitdiElan = data.isGunuBitdiElan;
+                    updateIsGunuBitBtn();
+                }
                 updateKPI(data.stats);
 
                 var records = data.records;
@@ -578,15 +585,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     records = records.filter(function (r) { return clientFilterStatuses.indexOf(r.status) >= 0; });
                 }
                 if (filterTezCixan) {
-                    var cp = parseTime(isParametriData.cixisVaxti);
-                    var cixisTotal = cp.hours * 60 + cp.minutes;
-                    var hedd = cixisTotal - (isParametriData.tezCixmaTolerans || 15);
-                    records = records.filter(function (r) {
-                        if (!r.cixisVaxti) return false;
-                        var d = new Date(r.cixisVaxti);
-                        var dTotal = d.getHours() * 60 + d.getMinutes();
-                        return dTotal < hedd;
-                    });
+                    records = records.filter(function (r) { return r.tezCixan === true; });
                 }
                 if (filterCixisYox) {
                     records = records.filter(function (r) {
@@ -666,11 +665,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
             var duration = '<span class="hrd-nodata">---</span>';
             if (r.girisVaxti && r.cixisVaxti) {
-                var diff = new Date(r.cixisVaxti) - new Date(r.girisVaxti);
-                var h = Math.floor(diff / 3600000);
-                var m = Math.floor((diff % 3600000) / 60000);
+                var totalMin = r.islemeSaatiDeq != null
+                    ? r.islemeSaatiDeq
+                    : Math.floor((new Date(r.cixisVaxti) - new Date(r.girisVaxti)) / 60000);
+                var h = Math.floor(totalMin / 60);
+                var m = totalMin % 60;
                 var durCls = h < 8 ? 'hrd-dur hrd-dur--short' : 'hrd-dur hrd-dur--ok';
-                duration = '<span class="' + durCls + '">' + h + ' s ' + m + ' d</span>';
+                var naharTip = r.naharCixildi ? ' <span style="font-size:10px;color:#94a3b8;margin-left:3px;" title="Nahar çıxılıb"><i class="bi bi-cup-hot"></i></span>' : '';
+                duration = '<span class="' + durCls + '">' + h + ' s ' + m + ' d</span>' + naharTip;
             }
 
             var badge = getStatusBadge(r.status);
@@ -997,6 +999,47 @@ document.addEventListener('DOMContentLoaded', function () {
                 naharMuddetDeqiqe: d.naharMuddetDeqiqe ?? 45
             };
         });
+
+    // ── "İş Bitdi" düyməsi ────────────────────────────────────────────
+    function updateIsGunuBitBtn() {
+        var btn = document.getElementById('btnIsGunuBit');
+        if (!btn) return;
+        if (isGunuBitdiElan) {
+            btn.innerHTML = '<i class="bi bi-door-open"></i> İş Bitdi (' + isGunuBitdiElan + ')';
+            btn.style.background = '#15803d';
+        } else {
+            btn.innerHTML = '<i class="bi bi-door-open"></i> İş Bitdi';
+            btn.style.background = '#16a34a';
+        }
+    }
+
+    var btnIsGunuBit = document.getElementById('btnIsGunuBit');
+    if (btnIsGunuBit) {
+        btnIsGunuBit.addEventListener('click', function () {
+            if (!confirm('Bütün aktiv işçilərə "İşini bitirən şəxslər gedə bilərlər" bildirişi göndərilsin?')) return;
+            var endpoint = btnIsGunuBit.dataset.endpoint || '/HR/Davamiyyet/IsGunuBit';
+            btnIsGunuBit.disabled = true;
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.ok) {
+                    isGunuBitdiElan = data.bitisVaxti;
+                    updateIsGunuBitBtn();
+                    alert('Bildiriş göndərildi. İş günü bitişi: ' + data.bitisVaxti);
+                } else {
+                    alert('Xəta: ' + (data.xeta || 'Naməlum xəta'));
+                }
+            })
+            .catch(function () { alert('Server ilə əlaqə xətası.'); })
+            .finally(function () { btnIsGunuBit.disabled = false; });
+        });
+    }
 
     // Səhifə ilk açılanda JS render ilə yüklə ki, redaktə/sil düymələri görünsün
     loadData({ tarix: inputTarix.value || toLocalDateStr(new Date()) });
