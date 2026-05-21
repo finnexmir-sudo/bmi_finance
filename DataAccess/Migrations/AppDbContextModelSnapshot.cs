@@ -1249,6 +1249,46 @@ namespace FinNex.DataAccess.Migrations
                     b.ToTable("Davamiyyetler");
                 });
 
+            modelBuilder.Entity("FinNex.Domain.Entities.HR.IsGunuBitdiElan", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Tarix")
+                        .HasColumnType("datetime2");
+
+                    b.Property<TimeSpan>("BitisVaxti")
+                        .HasColumnType("time");
+
+                    b.Property<DateTime>("YaradilmaTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YaradanIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("YenileyenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SilenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("YenilenmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("Silinib")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SilinmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("IsGunuBitdiElanlar");
+                });
+
             modelBuilder.Entity("FinNex.Domain.Entities.HR.Guzest", b =>
                 {
                     b.Property<int>("Id")
