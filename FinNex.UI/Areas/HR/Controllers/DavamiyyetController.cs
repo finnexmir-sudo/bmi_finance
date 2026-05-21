@@ -271,7 +271,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 }
                 else
                 {
-                    await _unitOfWork.Repository<IsGunuBitdiElan>().EkleAsync(new IsGunuBitdiElan
+                    await _unitOfWork.Repository<IsGunuBitdiElan>().YaratAsync(new IsGunuBitdiElan
                     {
                         Tarix = bugun,
                         BitisVaxti = bitisVaxti
