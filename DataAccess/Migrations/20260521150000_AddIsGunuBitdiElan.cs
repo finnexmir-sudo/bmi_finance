@@ -1,38 +1,41 @@
+using FinNex.DataAccess.Contexts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace DataAccess.Migrations
+namespace FinNex.DataAccess.Migrations
 {
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20260521150000_AddIsGunuBitdiElan")]
     public partial class AddIsGunuBitdiElan : Migration
     {
-        protected override void Up(MigrationBuilder migrationBuilder)
+        protected override void Up(MigrationBuilder m)
         {
-            migrationBuilder.CreateTable(
-                name: "IsGunuBitdiElanlar",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Tarix = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    BitisVaxti = table.Column<TimeSpan>(type: "time", nullable: false),
-                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
-                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Silinib = table.Column<bool>(type: "bit", nullable: false),
-                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_IsGunuBitdiElanlar", x => x.Id);
-                });
+            m.Sql(@"
+                IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'IsGunuBitdiElanlar')
+                BEGIN
+                    CREATE TABLE [dbo].[IsGunuBitdiElanlar] (
+                        [Id]                  INT            NOT NULL IDENTITY(1,1),
+                        [Tarix]               DATETIME2      NOT NULL,
+                        [BitisVaxti]          TIME(7)        NOT NULL,
+                        [YaradilmaTarixi]     DATETIME2      NOT NULL DEFAULT GETDATE(),
+                        [YaradanIcraciId]     INT            NULL,
+                        [YenileyenIcraciId]   INT            NULL,
+                        [SilenIcraciId]       INT            NULL,
+                        [YenilenmeTarixi]     DATETIME2      NULL,
+                        [Silinib]             BIT            NOT NULL DEFAULT 0,
+                        [SilinmeTarixi]       DATETIME2      NULL,
+                        CONSTRAINT [PK_IsGunuBitdiElanlar] PRIMARY KEY ([Id])
+                    );
+                END
+            ");
         }
 
-        protected override void Down(MigrationBuilder migrationBuilder)
+        protected override void Down(MigrationBuilder m)
         {
-            migrationBuilder.DropTable(name: "IsGunuBitdiElanlar");
+            m.Sql("DROP TABLE IF EXISTS [dbo].[IsGunuBitdiElanlar];");
         }
     }
 }
