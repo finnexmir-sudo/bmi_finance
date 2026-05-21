@@ -12,6 +12,10 @@ public class OracleService : IOracleService
     {
         _connectionString = config["Oracle:ConnectionString"]
             ?? throw new InvalidOperationException("Oracle:ConnectionString konfiqurasiya edilməyib.");
+
+        var tnsAdmin = config["Oracle:TnsAdmin"];
+        if (!string.IsNullOrWhiteSpace(tnsAdmin))
+            OracleConfiguration.TnsAdmin = tnsAdmin;
     }
 
     public async Task<List<Dictionary<string, object?>>> SelectAsync(string sql, CancellationToken ct = default)
