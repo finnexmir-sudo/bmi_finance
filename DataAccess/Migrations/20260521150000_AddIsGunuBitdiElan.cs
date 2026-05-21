@@ -8,29 +8,31 @@ namespace DataAccess.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql(@"
-                IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'IsGunuBitdiElanlar')
-                BEGIN
-                    CREATE TABLE [dbo].[IsGunuBitdiElanlar] (
-                        [Id]                  INT            NOT NULL IDENTITY(1,1),
-                        [Tarix]               DATETIME2      NOT NULL,
-                        [BitisVaxti]          TIME(7)        NOT NULL,
-                        [YaradilmaTarixi]     DATETIME2      NOT NULL DEFAULT GETDATE(),
-                        [YaradanIcraciId]     INT            NULL,
-                        [YenileyenIcraciId]   INT            NULL,
-                        [SilenIcraciId]       INT            NULL,
-                        [YenilenmeTarixi]     DATETIME2      NULL,
-                        [Silinib]             BIT            NOT NULL DEFAULT 0,
-                        [SilinmeTarixi]       DATETIME2      NULL,
-                        CONSTRAINT [PK_IsGunuBitdiElanlar] PRIMARY KEY ([Id])
-                    );
-                END
-            ");
+            migrationBuilder.CreateTable(
+                name: "IsGunuBitdiElanlar",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Tarix = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    BitisVaxti = table.Column<TimeSpan>(type: "time", nullable: false),
+                    YaradilmaTarixi = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    YaradanIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenileyenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    SilenIcraciId = table.Column<int>(type: "int", nullable: true),
+                    YenilenmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Silinib = table.Column<bool>(type: "bit", nullable: false),
+                    SilinmeTarixi = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_IsGunuBitdiElanlar", x => x.Id);
+                });
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("DROP TABLE IF EXISTS [dbo].[IsGunuBitdiElanlar];");
+            migrationBuilder.DropTable(name: "IsGunuBitdiElanlar");
         }
     }
 }
