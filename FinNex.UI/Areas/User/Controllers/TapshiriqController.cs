@@ -269,6 +269,27 @@ namespace FinNex.UI.Areas.User.Controllers
             return appUser?.IsciId;
         }
 
+        // GET /User/Tapshiriq/TestNotif  — müvəqqəti debug endpoint
+        public async Task<IActionResult> TestNotif()
+        {
+            var isciId = await GetIsciIdAsync();
+            if (isciId == null)
+                return Json(new { ok = false, error = "isciId tapılmadı" });
+
+            try
+            {
+                await _desktopBildiris.PushAsync(
+                    isciId.Value,
+                    "Test Bildirişi",
+                    $"Bu test mesajıdır. isciId={isciId.Value} | {DateTime.Now:HH:mm:ss}");
+                return Json(new { ok = true, isciId = isciId.Value, group = $"desktopUser_{isciId.Value}" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, error = ex.Message });
+            }
+        }
+
         private IActionResult RedirectToLogin() =>
             RedirectToAction("Login", "Account", new { area = "" });
 
