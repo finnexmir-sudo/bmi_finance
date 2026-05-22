@@ -7,23 +7,26 @@ using Microsoft.AspNetCore.Identity;
 
 namespace FinNex.Application.Services.Communication
 {
+    /// <summary>
+    /// Bildirişi həm DB-yə (IBildirisService.YaratAsync vasitəsilə),
+    /// həm də desktop agentə göndərir.
+    /// Desktop push artıq BildirisService.YaratAsync içində işləyir —
+    /// bu sinif ayrıca PushAsync çağırmır.
+    /// </summary>
     public class BildirisRouter : IBildirisRouter
     {
-        private readonly IBildirisService _bildirisService;
-        private readonly IDesktopBildirisService _desktopBildiris;
+        private readonly IBildirisService    _bildirisService;
         private readonly UserManager<AppUser> _userManager;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IUnitOfWork         _unitOfWork;
 
         public BildirisRouter(
-            IBildirisService bildirisService,
-            IDesktopBildirisService desktopBildiris,
+            IBildirisService    bildirisService,
             UserManager<AppUser> userManager,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork         unitOfWork)
         {
             _bildirisService = bildirisService;
-            _desktopBildiris = desktopBildiris;
-            _userManager = userManager;
-            _unitOfWork = unitOfWork;
+            _userManager     = userManager;
+            _unitOfWork      = unitOfWork;
         }
 
         public async Task NotifyIsciAsync(
@@ -31,24 +34,22 @@ namespace FinNex.Application.Services.Communication
             BildirisNovu nov,
             string bashliq,
             string metn,
-            string? redirectUrl = null,
-            int? mezuniyyetId = null,
-            int? icazeId = null)
+            string? redirectUrl   = null,
+            int?   mezuniyyetId   = null,
+            int?   icazeId        = null)
         {
             try
             {
                 if (isciId <= 0) return;
 
                 await _bildirisService.YaratAsync(
-                    isciId: isciId,
-                    nov: nov,
-                    bashliq: bashliq,
-                    metn: metn,
-                    redirectUrl: redirectUrl,
+                    isciId:       isciId,
+                    nov:          nov,
+                    bashliq:      bashliq,
+                    metn:         metn,
+                    redirectUrl:  redirectUrl,
                     mezuniyyetId: mezuniyyetId,
-                    icazeId: icazeId);
-
-                await _desktopBildiris.PushAsync(isciId, bashliq, metn, redirectUrl, nov);
+                    icazeId:      icazeId);
             }
             catch
             {
@@ -61,10 +62,10 @@ namespace FinNex.Application.Services.Communication
             BildirisNovu nov,
             string bashliq,
             string metn,
-            string? redirectUrl = null,
-            int? mezuniyyetId = null,
-            int? icazeId = null,
-            int? exceptIsciId = null)
+            string? redirectUrl  = null,
+            int?   mezuniyyetId  = null,
+            int?   icazeId       = null,
+            int?   exceptIsciId  = null)
             => NotifyRolesAsync(new[] { roleName }, nov, bashliq, metn,
                 redirectUrl, mezuniyyetId, icazeId, exceptIsciId);
 
@@ -73,15 +74,17 @@ namespace FinNex.Application.Services.Communication
             BildirisNovu nov,
             string bashliq,
             string metn,
-            string? redirectUrl = null,
-            int? mezuniyyetId = null,
-            int? icazeId = null,
-            int? exceptIsciId = null)
+            string? redirectUrl  = null,
+            int?   mezuniyyetId  = null,
+            int?   icazeId       = null,
+            int?   exceptIsciId  = null)
         {
             try
             {
                 var alici = new HashSet<int>();
-                foreach (var rol in roleNames.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct())
+                foreach (var rol in roleNames
+                    .Where(r => !string.IsNullOrWhiteSpace(r))
+                    .Distinct())
                 {
                     var users = await _userManager.GetUsersInRoleAsync(rol);
                     foreach (var u in users)
@@ -95,15 +98,13 @@ namespace FinNex.Application.Services.Communication
                 foreach (var isciId in alici)
                 {
                     await _bildirisService.YaratAsync(
-                        isciId: isciId,
-                        nov: nov,
-                        bashliq: bashliq,
-                        metn: metn,
-                        redirectUrl: redirectUrl,
+                        isciId:       isciId,
+                        nov:          nov,
+                        bashliq:      bashliq,
+                        metn:         metn,
+                        redirectUrl:  redirectUrl,
                         mezuniyyetId: mezuniyyetId,
-                        icazeId: icazeId);
-
-                    await _desktopBildiris.PushAsync(isciId, bashliq, metn, redirectUrl, nov);
+                        icazeId:      icazeId);
                 }
             }
             catch
@@ -117,18 +118,18 @@ namespace FinNex.Application.Services.Communication
             BildirisNovu nov,
             string bashliq,
             string metn,
-            string? redirectUrl = null,
-            int? mezuniyyetId = null,
-            int? icazeId = null,
-            int? exceptIsciId = null)
+            string? redirectUrl  = null,
+            int?   mezuniyyetId  = null,
+            int?   icazeId       = null,
+            int?   exceptIsciId  = null)
         {
             try
             {
                 var rollar = await _unitOfWork.Repository<IsciStrukturRolu>()
                     .HamisiniGetirAsync(
                         predicate: x => x.Aktivdir
-                                       && x.RolTipi == rolTipi
-                                       && (x.BitmeTarixi == null || x.BitmeTarixi >= DateTime.Now),
+                                     && x.RolTipi == rolTipi
+                                     && (x.BitmeTarixi == null || x.BitmeTarixi >= DateTime.Now),
                         izlemeden: true);
 
                 foreach (var r in rollar)
@@ -136,15 +137,13 @@ namespace FinNex.Application.Services.Communication
                     if (exceptIsciId.HasValue && r.IsciId == exceptIsciId.Value) continue;
 
                     await _bildirisService.YaratAsync(
-                        isciId: r.IsciId,
-                        nov: nov,
-                        bashliq: bashliq,
-                        metn: metn,
-                        redirectUrl: redirectUrl,
+                        isciId:       r.IsciId,
+                        nov:          nov,
+                        bashliq:      bashliq,
+                        metn:         metn,
+                        redirectUrl:  redirectUrl,
                         mezuniyyetId: mezuniyyetId,
-                        icazeId: icazeId);
-
-                    await _desktopBildiris.PushAsync(r.IsciId, bashliq, metn, redirectUrl, nov);
+                        icazeId:      icazeId);
                 }
             }
             catch
@@ -159,10 +158,10 @@ namespace FinNex.Application.Services.Communication
             BildirisNovu nov,
             string bashliq,
             string metn,
-            string? redirectUrl = null,
-            int? mezuniyyetId = null,
-            int? icazeId = null,
-            int? exceptIsciId = null)
+            string? redirectUrl  = null,
+            int?   mezuniyyetId  = null,
+            int?   icazeId       = null,
+            int?   exceptIsciId  = null)
         {
             try
             {
@@ -171,9 +170,9 @@ namespace FinNex.Application.Services.Communication
                 var rollar = await _unitOfWork.Repository<IsciStrukturRolu>()
                     .HamisiniGetirAsync(
                         predicate: x => x.Aktivdir
-                                       && x.DepartamentId == departamentId
-                                       && x.RolTipi == rolTipi
-                                       && (x.BitmeTarixi == null || x.BitmeTarixi >= DateTime.Now),
+                                     && x.DepartamentId == departamentId
+                                     && x.RolTipi == rolTipi
+                                     && (x.BitmeTarixi == null || x.BitmeTarixi >= DateTime.Now),
                         izlemeden: true);
 
                 foreach (var r in rollar)
@@ -181,15 +180,13 @@ namespace FinNex.Application.Services.Communication
                     if (exceptIsciId.HasValue && r.IsciId == exceptIsciId.Value) continue;
 
                     await _bildirisService.YaratAsync(
-                        isciId: r.IsciId,
-                        nov: nov,
-                        bashliq: bashliq,
-                        metn: metn,
-                        redirectUrl: redirectUrl,
+                        isciId:       r.IsciId,
+                        nov:          nov,
+                        bashliq:      bashliq,
+                        metn:         metn,
+                        redirectUrl:  redirectUrl,
                         mezuniyyetId: mezuniyyetId,
-                        icazeId: icazeId);
-
-                    await _desktopBildiris.PushAsync(r.IsciId, bashliq, metn, redirectUrl, nov);
+                        icazeId:      icazeId);
                 }
             }
             catch
