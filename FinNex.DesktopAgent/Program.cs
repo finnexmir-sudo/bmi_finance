@@ -18,11 +18,12 @@ Application.SetHighDpiMode(HighDpiMode.SystemAware);
 
 var config = AppConfig.Load();
 
-// Giriş forması göstərilir; istifadəçi JWT alır
+// Giriş forması göstərilir; istifadəçi JWT + IsciId alır
 using var loginForm = new LoginForm(config);
 if (loginForm.ShowDialog() != DialogResult.OK || string.IsNullOrEmpty(loginForm.Token))
     return; // Giriş ləğv edildi və ya xəta baş verdi
 
 // TrayAgent arxa fonda işləyir — forma yoxdur, yalnız system tray
-var agent = new TrayAgent(config, loginForm.Token, loginForm.Ad);
+// IsciId Hub-a query parametr kimi ötürülür ki, qrup adı düzgün qurulsun
+var agent = new TrayAgent(config, loginForm.Token, loginForm.IsciId, loginForm.Ad);
 Application.Run(agent);

@@ -9,6 +9,10 @@ namespace FinNex.DesktopAgent;
 /// Windows balloon-tip kimi ekranda göstərir.
 /// Bağlantı kəsilsə exponential backoff ilə yenidən qoşulur.
 ///
+/// Hub URL-i: /notificationHub?access_token={token}&isciId={isciId}
+/// IsciId həm token-dən həm query-dən göndərilir;
+/// server tərəf yalnız query-dən oxuyur (claim mapping problemini aradan qaldırır).
+///
 /// NotifyIcon Control-dan törəmədiyinə görə Invoke() yoxdur;
 /// Shell_NotifyIcon Win32 API-si thread-safe olduğundan birbaşa çağırıla bilər.
 /// </summary>
@@ -16,16 +20,18 @@ public class TrayAgent : ApplicationContext
 {
     private readonly AppConfig _config;
     private readonly string _token;
+    private readonly int _isciId;
     private readonly string _ad;
 
     private readonly NotifyIcon _trayIcon;
     private HubConnection? _connection;
     private int _reconnectAttempt;
 
-    public TrayAgent(AppConfig config, string token, string ad)
+    public TrayAgent(AppConfig config, string token, int isciId, string ad)
     {
         _config = config;
         _token = token;
+        _isciId = isciId;
         _ad = ad;
 
         _trayIcon = new NotifyIcon
@@ -55,8 +61,12 @@ public class TrayAgent : ApplicationContext
         {
             try
             {
+                // access_token: JWT Bearer auth üçün (Program.cs-dəki JwtBearerEvents oxuyur)
+                // isciId: Hub-un OnConnectedAsync-i qrup adını query-dən qurur
+                var hubUrl = $"{_config.FullHubUrl}?access_token={_token}&isciId={_isciId}";
+
                 _connection = new HubConnectionBuilder()
-                    .WithUrl(_config.FullHubUrl + "?access_token=" + _token, opts =>
+                    .WithUrl(hubUrl, opts =>
                     {
                         // İnkişaf mühitlərindəki self-signed sertifikatları qəbul et
                         opts.HttpMessageHandlerFactory = _ =>
@@ -115,8 +125,6 @@ public class TrayAgent : ApplicationContext
         await Task.Delay(delay);
     }
 
-    // NotifyIcon Control-dan törəmədiyinə görə Invoke() yoxdur.
-    // Shell_NotifyIcon Win32 API-si istənilən thread-dən çağırıla bilər.
     private void SetTrayTooltip(bool bağlandi)
     {
         if (_trayIcon.IsDisposed) return;
