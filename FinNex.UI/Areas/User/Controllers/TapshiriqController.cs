@@ -20,17 +20,20 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly ITapshiriqService _tapshiriqService;
         private readonly IIsciService _isciService;
         private readonly IGelenMailService _gelenMailService;
+        private readonly IDesktopBildirisService _desktopBildiris;
         private readonly UserManager<AppUser> _userManager;
 
         public TapshiriqController(
             ITapshiriqService tapshiriqService,
             IIsciService isciService,
             IGelenMailService gelenMailService,
+            IDesktopBildirisService desktopBildiris,
             UserManager<AppUser> userManager)
         {
             _tapshiriqService = tapshiriqService;
             _isciService = isciService;
             _gelenMailService = gelenMailService;
+            _desktopBildiris = desktopBildiris;
             _userManager = userManager;
         }
 
@@ -117,6 +120,19 @@ namespace FinNex.UI.Areas.User.Controllers
 
             var result = await _tapshiriqService.YaratAsync(dto);
             TempData[result.Success ? "Success" : "Error"] = result.Message;
+
+            if (result.Success)
+            {
+                try
+                {
+                    await _desktopBildiris.PushAsync(
+                        vm.TeyinOlunanIsciId,
+                        "Yeni Tapşırıq Təyini",
+                        $"Sizə yeni bir tapşırıq təyin edildi: {vm.Bashliq}");
+                }
+                catch { /* Desktop push xətası əsas əməliyyatı pozmasın */ }
+            }
+
             return RedirectToAction(nameof(Index), new { tab = "verdiklerim" });
         }
 
@@ -130,6 +146,23 @@ namespace FinNex.UI.Areas.User.Controllers
 
             var result = await _tapshiriqService.StatusYenileAsync(dto, isciId.Value);
             TempData[result.Success ? "Success" : "Error"] = result.Message;
+
+            if (result.Success)
+            {
+                try
+                {
+                    var detay = await _tapshiriqService.GetDetayAsync(dto.Id, isciId.Value);
+                    if (detay.Success && detay.Data != null)
+                    {
+                        await _desktopBildiris.PushAsync(
+                            detay.Data.YaradanIsciId,
+                            "Tapşırıq Statusu Dəyişdi",
+                            $"{detay.Data.Bashliq} tapşırığının statusu yeniləndi.");
+                    }
+                }
+                catch { /* Desktop push xətası əsas əməliyyatı pozmasın */ }
+            }
+
             return RedirectToAction(nameof(Detay), new { id = dto.Id });
         }
 
