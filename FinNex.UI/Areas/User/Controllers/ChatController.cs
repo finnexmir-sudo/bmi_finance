@@ -1,3 +1,4 @@
+using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
@@ -14,21 +15,26 @@ namespace FinNex.UI.Areas.User.Controllers;
 [Authorize]
 public class ChatController : Controller
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IWebHostEnvironment _env;
+    private readonly IUnitOfWork             _unitOfWork;
+    private readonly IWebHostEnvironment     _env;
+    private readonly IDesktopBildirisService _desktop;
 
-    private const int MesajLimit = 50;
-    private const int KohneMesajGunLimiti = 30;
-    private const long MaxFaylOlcusu = 10 * 1024 * 1024; // 10 MB
+    private const int  MesajLimit            = 50;
+    private const int  KohneMesajGunLimiti   = 30;
+    private const long MaxFaylOlcusu         = 10 * 1024 * 1024; // 10 MB
     private static readonly string[] IcazaliTipler = { ".pdf", ".doc", ".docx", ".xls", ".xlsx" };
 
-    public ChatController(IUnitOfWork unitOfWork, IWebHostEnvironment env)
+    public ChatController(
+        IUnitOfWork             unitOfWork,
+        IWebHostEnvironment     env,
+        IDesktopBildirisService desktop)
     {
         _unitOfWork = unitOfWork;
-        _env = env;
+        _env        = env;
+        _desktop    = desktop;
     }
 
-    // ── GET /User/Chat ──────────────────────────────────────
+    // ── GET /User/Chat ───────────────────────────────────
     public IActionResult Index()
     {
         ViewData["Title"] = "Daxili Chat";
@@ -62,17 +68,17 @@ public class ChatController : Controller
 
         var contacts = isciler.Select(i => new
         {
-            isciId = i.Id,
-            ad = i.Ad,
-            soyad = i.Soyad,
-            tamAd = i.TamAd,
+            isciId    = i.Id,
+            ad        = i.Ad,
+            soyad     = i.Soyad,
+            tamAd     = i.TamAd,
             oxunmamis = oxunmamis.FirstOrDefault(o => o.isciId == i.Id)?.say ?? 0
         });
 
         return Json(new { contacts, menimIsciId = menim.Id });
     }
 
-    // ── GET /User/Chat/GetMessages?isciId=5&beforeId=0 ──────
+    // ── GET /User/Chat/GetMessages?isciId=5&beforeId=0 ──────────────
     [HttpGet]
     public async Task<IActionResult> GetMessages(int isciId, int beforeId = 0)
     {
@@ -109,7 +115,7 @@ public class ChatController : Controller
             var now = DateTime.Now;
             foreach (var m in oxunmamislar)
             {
-                m.Oxunub = true;
+                m.Oxunub       = true;
                 m.OxunmaTarixi = now;
                 await _unitOfWork.Repository<ChatMesaj>().YenileAsync(m);
             }
@@ -123,23 +129,23 @@ public class ChatController : Controller
 
         var data = mesajlar.Select(m => new
         {
-            id = m.Id,
+            id             = m.Id,
             gonderenIsciId = m.GonderenIsciId,
-            metn = m.Metn,
-            tarix = m.GonderilmeTarixi.ToString("dd.MM.yyyy HH:mm"),
-            saatStr = m.GonderilmeTarixi.ToString("HH:mm"),
-            menimdir = m.GonderenIsciId == menim.Id,
-            oxunub = m.Oxunub,
-            faylAdi = m.FaylAdi,
-            faylYolu = m.FaylYolu,
-            faylTipi = m.FaylTipi,
-            faylOlcusu = m.FaylOlcusu
+            metn           = m.Metn,
+            tarix          = m.GonderilmeTarixi.ToString("dd.MM.yyyy HH:mm"),
+            saatStr        = m.GonderilmeTarixi.ToString("HH:mm"),
+            menimdir       = m.GonderenIsciId == menim.Id,
+            oxunub         = m.Oxunub,
+            faylAdi        = m.FaylAdi,
+            faylYolu       = m.FaylYolu,
+            faylTipi       = m.FaylTipi,
+            faylOlcusu     = m.FaylOlcusu
         });
 
         return Json(new { mesajlar = data, dahaVar });
     }
 
-    // ── POST /User/Chat/Send ───────────────────────────────
+    // ── POST /User/Chat/Send ─────────────────────────────
     [HttpPost]
     public async Task<IActionResult> Send([FromBody] ChatSendDto dto)
     {
@@ -157,20 +163,32 @@ public class ChatController : Controller
 
         var mesaj = new ChatMesaj
         {
-            GonderenIsciId = menim.Id,
-            AlanIsciId = dto.AlanIsciId,
-            Metn = dto.Metn.Trim(),
-            Oxunub = false,
+            GonderenIsciId   = menim.Id,
+            AlanIsciId       = dto.AlanIsciId,
+            Metn             = dto.Metn.Trim(),
+            Oxunub           = false,
             GonderilmeTarixi = DateTime.Now
         };
 
         await _unitOfWork.Repository<ChatMesaj>().YaratAsync(mesaj);
         await _unitOfWork.YaddaSaxlaAsync();
 
+        // Masaüstü agentə anlıq push — çat mövzusu (nov = YeniMesaj).
+        try
+        {
+            await _desktop.PushAsync(
+                dto.AlanIsciId,
+                "Yeni Mesaj",
+                $"{menim.TamAd}: {mesaj.Metn}",
+                "/User/Chat",
+                BildirisNovu.YeniMesaj);
+        }
+        catch { }
+
         return Json(new { ok = true, id = mesaj.Id, tarix = mesaj.GonderilmeTarixi.ToString("HH:mm") });
     }
 
-    // ── POST /User/Chat/SendWithFile ───────────────────────
+    // ── POST /User/Chat/SendWithFile ────────────────────────
     [HttpPost]
     public async Task<IActionResult> SendWithFile(int alanIsciId, string? metn, IFormFile? fayl)
     {
@@ -178,7 +196,7 @@ public class ChatController : Controller
         var menim = await _unitOfWork.Repository<Isci>()
             .GetirAsync(x => x.AppUserId == userId && !x.Silinib);
 
-        if (menim == null) return Json(new { ok = false, mesaj = "İşçi tapılmadı" });
+        if (menim == null)  return Json(new { ok = false, mesaj = "İşçi tapılmadı" });
         if (alanIsciId <= 0) return Json(new { ok = false, mesaj = "Alıcı seçilməyib" });
 
         string? faylAdi = null, faylYolu = null, faylTipi = null;
@@ -197,16 +215,16 @@ public class ChatController : Controller
             Directory.CreateDirectory(uploadsDir);
 
             var uniqueName = $"{Guid.NewGuid()}{ext}";
-            var fullPath = Path.Combine(uploadsDir, uniqueName);
+            var fullPath   = Path.Combine(uploadsDir, uniqueName);
 
             using (var stream = new FileStream(fullPath, FileMode.Create))
             {
                 await fayl.CopyToAsync(stream);
             }
 
-            faylAdi = fayl.FileName;
-            faylYolu = $"/uploads/chat/{uniqueName}";
-            faylTipi = ext.TrimStart('.');
+            faylAdi    = fayl.FileName;
+            faylYolu   = $"/uploads/chat/{uniqueName}";
+            faylTipi   = ext.TrimStart('.');
             faylOlcusu = fayl.Length;
         }
 
@@ -215,19 +233,34 @@ public class ChatController : Controller
 
         var mesaj = new ChatMesaj
         {
-            GonderenIsciId = menim.Id,
-            AlanIsciId = alanIsciId,
-            Metn = metn?.Trim() ?? "",
-            Oxunub = false,
+            GonderenIsciId   = menim.Id,
+            AlanIsciId       = alanIsciId,
+            Metn             = metn?.Trim() ?? "",
+            Oxunub           = false,
             GonderilmeTarixi = DateTime.Now,
-            FaylAdi = faylAdi,
-            FaylYolu = faylYolu,
-            FaylTipi = faylTipi,
-            FaylOlcusu = faylOlcusu
+            FaylAdi          = faylAdi,
+            FaylYolu         = faylYolu,
+            FaylTipi         = faylTipi,
+            FaylOlcusu       = faylOlcusu
         };
 
         await _unitOfWork.Repository<ChatMesaj>().YaratAsync(mesaj);
         await _unitOfWork.YaddaSaxlaAsync();
+
+        // Masaüstü agentə push — mətn yoxdursa fayl adını göstər.
+        try
+        {
+            var pushMetn = !string.IsNullOrWhiteSpace(metn)
+                ? metn.Trim()
+                : (faylAdi != null ? $"📎 {faylAdi}" : "");
+            await _desktop.PushAsync(
+                alanIsciId,
+                "Yeni Mesaj",
+                $"{menim.TamAd}: {pushMetn}",
+                "/User/Chat",
+                BildirisNovu.YeniMesaj);
+        }
+        catch { }
 
         return Json(new
         {
@@ -241,7 +274,7 @@ public class ChatController : Controller
         });
     }
 
-    // ── GET /User/Chat/GetDepartments ──────────────────────
+    // ── GET /User/Chat/GetDepartments ────────────────────────
     [HttpGet]
     public async Task<IActionResult> GetDepartments()
     {
@@ -255,7 +288,7 @@ public class ChatController : Controller
         return Json(new { departamentler });
     }
 
-    // ── GET /User/Chat/GetEmployees?departamentId=0 ────────
+    // ── GET /User/Chat/GetEmployees?departamentId=0 ────────────────
     [HttpGet]
     public async Task<IActionResult> GetEmployees(int? departamentId)
     {
@@ -323,16 +356,16 @@ public class ChatController : Controller
             return Json(new { ok = false, mesaj = "Göndəriləcək işçi tapılmadı" });
 
         var grupId = Guid.NewGuid();
-        var now = DateTime.Now;
+        var now    = DateTime.Now;
 
         foreach (var isciId in hederIsciIdler)
         {
             var mesaj = new ChatMesaj
             {
-                GonderenIsciId = menim.Id,
-                AlanIsciId = isciId,
-                Metn = dto.Metn.Trim(),
-                Oxunub = false,
+                GonderenIsciId   = menim.Id,
+                AlanIsciId       = isciId,
+                Metn             = dto.Metn.Trim(),
+                Oxunub           = false,
                 GonderilmeTarixi = now,
                 TopluMesajGrupId = grupId
             };
@@ -341,10 +374,26 @@ public class ChatController : Controller
 
         await _unitOfWork.YaddaSaxlaAsync();
 
+        // Masaüstü agentə push — hər alıcıya ayrıca.
+        var bulkMetn = dto.Metn.Trim();
+        foreach (var isciId in hederIsciIdler)
+        {
+            try
+            {
+                await _desktop.PushAsync(
+                    isciId,
+                    "Yeni Mesaj",
+                    $"{menim.TamAd}: {bulkMetn}",
+                    "/User/Chat",
+                    BildirisNovu.YeniMesaj);
+            }
+            catch { }
+        }
+
         return Json(new { ok = true, say = hederIsciIdler.Count, tarix = now.ToString("HH:mm") });
     }
 
-    // ── POST /User/Chat/MarkAsRead ─────────────────────────
+    // ── POST /User/Chat/MarkAsRead ──────────────────────────
     [HttpPost]
     public async Task<IActionResult> MarkAsRead([FromBody] MarkAsReadDto dto)
     {
@@ -366,7 +415,7 @@ public class ChatController : Controller
         var now = DateTime.Now;
         foreach (var m in oxunmamis)
         {
-            m.Oxunub = true;
+            m.Oxunub       = true;
             m.OxunmaTarixi = now;
             await _unitOfWork.Repository<ChatMesaj>().YenileAsync(m);
         }
@@ -377,7 +426,7 @@ public class ChatController : Controller
         return Json(new { ok = true, say = oxunmamis.Count });
     }
 
-    // ── GET /User/Chat/GetReadStatus?isciId=5 ──────────────
+    // ── GET /User/Chat/GetReadStatus?isciId=5 ───────────────────
     [HttpGet]
     public async Task<IActionResult> GetReadStatus(int isciId)
     {
@@ -397,7 +446,7 @@ public class ChatController : Controller
         return Json(new { oxunmuslar });
     }
 
-    // ── POST /User/Chat/Cleanup ────────────────────────────
+    // ── POST /User/Chat/Cleanup ───────────────────────────
     [HttpPost]
     public async Task<IActionResult> Cleanup()
     {
@@ -432,7 +481,7 @@ public class ChatController : Controller
         return Json(new { ok = true, say = kohneMesajlar.Count });
     }
 
-    // ── POST /User/Chat/DeleteMessage ─────────────────────
+    // ── POST /User/Chat/DeleteMessage ───────────────────────
     [HttpPost]
     public async Task<IActionResult> DeleteMessage([FromBody] DeleteMessageDto dto)
     {
@@ -464,18 +513,18 @@ public class ChatController : Controller
         return Json(new { ok = true });
     }
 
-    // ── DTOs ────────────────────────────────────────────────
+    // ── DTOs ───────────────────────────────────────────
     public class ChatSendDto
     {
-        public int AlanIsciId { get; set; }
-        public string Metn { get; set; } = "";
+        public int    AlanIsciId { get; set; }
+        public string Metn       { get; set; } = "";
     }
 
     public class ChatBulkSendDto
     {
-        public int? DepartamentId { get; set; }
-        public List<int>? IsciIdler { get; set; }
-        public string Metn { get; set; } = "";
+        public int?       DepartamentId { get; set; }
+        public List<int>? IsciIdler     { get; set; }
+        public string     Metn          { get; set; } = "";
     }
 
     public class MarkAsReadDto
