@@ -12,9 +12,6 @@ namespace FinNex.DesktopAgent;
 /// Hub URL-i: /notificationHub?access_token={token}&isciId={isciId}
 /// IsciId həm token-dən həm query-dən göndərilir;
 /// server tərəf yalnız query-dən oxuyur (claim mapping problemini aradan qaldırır).
-///
-/// NotifyIcon Control-dan törəmədiyinə görə Invoke() yoxdur;
-/// Shell_NotifyIcon Win32 API-si thread-safe olduğundan birbaşa çağırıla bilər.
 /// </summary>
 public class TrayAgent : ApplicationContext
 {
@@ -24,6 +21,9 @@ public class TrayAgent : ApplicationContext
     private readonly string _ad;
 
     private readonly NotifyIcon _trayIcon;
+    // SignalR callback-ləri thread pool-da işləyir;
+    // ShowBalloonTip düzgün göstərilmək üçün UI message loop thread-inə ehtiyac duyur.
+    private readonly SynchronizationContext _uiContext;
     private HubConnection? _connection;
     private int _reconnectAttempt;
 
@@ -33,6 +33,8 @@ public class TrayAgent : ApplicationContext
         _token = token;
         _isciId = isciId;
         _ad = ad;
+        // Constructor UI thread-ində işləyir — WindowsFormsSynchronizationContext-i yadda saxla
+        _uiContext = SynchronizationContext.Current ?? new SynchronizationContext();
 
         _trayIcon = new NotifyIcon
         {
@@ -130,19 +132,25 @@ public class TrayAgent : ApplicationContext
 
     private void SetTrayTooltip(bool bağlandi)
     {
-        if (_trayIcon.IsDisposed) return;
-        _trayIcon.Text = bağlandi
-            ? $"FinNex Agent — {_ad} (Qoşuldu)"
-            : $"FinNex Agent — {_ad} (Qoşulmadı)";
+        _uiContext.Post(_ =>
+        {
+            if (_trayIcon.IsDisposed) return;
+            _trayIcon.Text = bağlandi
+                ? $"FinNex Agent — {_ad} (Qoşuldu)"
+                : $"FinNex Agent — {_ad} (Qoşulmadı)";
+        }, null);
     }
 
     private void ShowBalloon(string bashliq, string metn)
     {
-        if (_trayIcon.IsDisposed) return;
-        _trayIcon.BalloonTipTitle = bashliq;
-        _trayIcon.BalloonTipText = metn;
-        _trayIcon.BalloonTipIcon = ToolTipIcon.Info;
-        _trayIcon.ShowBalloonTip(8000);
+        _uiContext.Post(_ =>
+        {
+            if (_trayIcon.IsDisposed) return;
+            _trayIcon.BalloonTipTitle = bashliq;
+            _trayIcon.BalloonTipText = metn;
+            _trayIcon.BalloonTipIcon = ToolTipIcon.Info;
+            _trayIcon.ShowBalloonTip(8000);
+        }, null);
     }
 
     private void ExitAgent()
