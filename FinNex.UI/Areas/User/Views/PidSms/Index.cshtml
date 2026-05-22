@@ -130,6 +130,7 @@
                                 </th>
                                 <th style="padding:9px 12px;text-align:left;font-weight:600;color:#374151">Ad</th>
                                 <th style="padding:9px 12px;text-align:left;font-weight:600;color:#374151;width:160px">Telefon</th>
+                                <th style="padding:9px 12px;width:36px"></th>
                             </tr>
                         </thead>
                         <tbody id="topluTbody"></tbody>
@@ -311,12 +312,19 @@
             tr.innerHTML =
                 '<td style="padding:8px 12px;text-align:center;border-top:1px solid #f1f5f9"><input type="checkbox" class="alici-chk" checked /></td>' +
                 '<td style="padding:8px 12px;color:#0f172a;border-top:1px solid #f1f5f9">' + escHtml(item.ad) + '</td>' +
-                '<td style="padding:8px 12px;font-family:monospace;color:#374151;border-top:1px solid #f1f5f9">' + escHtml(item.telefon) + '</td>';
+                '<td style="padding:8px 12px;font-family:monospace;color:#374151;border-top:1px solid #f1f5f9">' + escHtml(item.telefon) + '</td>' +
+                '<td style="padding:8px 12px;text-align:center;border-top:1px solid #f1f5f9"><button type="button" onclick="siliSatiri(this)" title="Sil" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:15px;padding:0 4px;line-height:1">&times;</button></td>';
             tbody.appendChild(tr);
         });
         document.getElementById('topluSmsPanel').style.display = 'block';
         document.getElementById('hamisiSec').checked = true;
         document.getElementById('topluFilter').value = '';
+        sayGuncelle();
+        onizlemeyiGuncelle();
+    }
+
+    function siliSatiri(btn) {
+        btn.closest('tr').remove();
         sayGuncelle();
         onizlemeyiGuncelle();
     }
