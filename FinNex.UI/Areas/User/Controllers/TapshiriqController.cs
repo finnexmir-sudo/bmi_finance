@@ -22,19 +22,22 @@ namespace FinNex.UI.Areas.User.Controllers
         private readonly IGelenMailService _gelenMailService;
         private readonly IDesktopBildirisService _desktopBildiris;
         private readonly UserManager<AppUser> _userManager;
+        private readonly ILogger<TapshiriqController> _logger;
 
         public TapshiriqController(
             ITapshiriqService tapshiriqService,
             IIsciService isciService,
             IGelenMailService gelenMailService,
             IDesktopBildirisService desktopBildiris,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            ILogger<TapshiriqController> logger)
         {
             _tapshiriqService = tapshiriqService;
             _isciService = isciService;
             _gelenMailService = gelenMailService;
             _desktopBildiris = desktopBildiris;
             _userManager = userManager;
+            _logger = logger;
         }
 
         // ── GET /User/Tapshiriq ──────────────────────────────
@@ -130,7 +133,10 @@ namespace FinNex.UI.Areas.User.Controllers
                         "Yeni Tapşırıq Təyini",
                         $"Sizə yeni bir tapşırıq təyin edildi: {vm.Bashliq}");
                 }
-                catch { /* Desktop push xətası əsas əməliyyatı pozmasın */ }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Desktop push xətası (Yarat): isciId={IsciId}", vm.TeyinOlunanIsciId);
+                }
             }
 
             return RedirectToAction(nameof(Index), new { tab = "verdiklerim" });
@@ -160,7 +166,10 @@ namespace FinNex.UI.Areas.User.Controllers
                             $"{detay.Data.Bashliq} tapşırığının statusu yeniləndi.");
                     }
                 }
-                catch { /* Desktop push xətası əsas əməliyyatı pozmasın */ }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Desktop push xətası (StatusYenile): isciId={IsciId}", dto.Id);
+                }
             }
 
             return RedirectToAction(nameof(Detay), new { id = dto.Id });
