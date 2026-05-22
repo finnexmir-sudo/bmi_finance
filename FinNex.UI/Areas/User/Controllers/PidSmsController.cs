@@ -170,7 +170,7 @@ public class PidSmsController : Controller
         if (alicilar is null || alicilar.Count == 0)
             return Json(new { error = "Göndəriləcək alıcı yoxdur." });
 
-        var (ugur, xeta) = await _smsService.TopluGonderAsync(alicilar, smsMetni, isciId.Value);
+        var (ugur, xeta) = await _smsService.TopluGonderAsync(alicilar, smsMetni, isciId);
         return Json(new { ugur, xeta });
     }
 
