@@ -96,7 +96,9 @@ public class PidSmsService : IPidSmsService
         int ugur = 0, xeta = 0;
         foreach (var (ad, telefon) in alicilar)
         {
-            var metn = smsMetni.Replace("{AD}", ad, StringComparison.OrdinalIgnoreCase);
+            var metn = smsMetni
+                .Replace("{{1}}", ad)
+                .Replace("{AD}", ad, StringComparison.OrdinalIgnoreCase);
             var log = await GonderAsync(telefon, metn, sablonId: null, gonderenIsciId);
             if (log.Status == PidSmsStatus.Xeta) xeta++;
             else ugur++;

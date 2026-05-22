@@ -236,7 +236,9 @@
         if (!metn) { blok.style.display = 'none'; return; }
         var ilkRow = document.querySelector('#topluTbody tr:not([style*="display: none"])');
         var ilkAd = ilkRow ? (ilkRow.querySelectorAll('td')[1]?.textContent.trim() || '') : '';
-        document.getElementById('onizlemeMetn').textContent = metn.replace(/\{AD\}/g, ilkAd || '{AD}');
+        document.getElementById('onizlemeMetn').textContent = metn
+            .replace(/\{\{1\}\}/g, ilkAd || '{{1}}')
+            .replace(/\{AD\}/gi, ilkAd || '{AD}');
         document.getElementById('onizlemeAdLabel').textContent = ilkAd ? '(' + ilkAd + ' üçün)' : '';
         blok.style.display = 'block';
     }
