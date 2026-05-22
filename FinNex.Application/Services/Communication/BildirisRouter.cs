@@ -10,15 +10,18 @@ namespace FinNex.Application.Services.Communication
     public class BildirisRouter : IBildirisRouter
     {
         private readonly IBildirisService _bildirisService;
+        private readonly IDesktopBildirisService _desktopBildiris;
         private readonly UserManager<AppUser> _userManager;
         private readonly IUnitOfWork _unitOfWork;
 
         public BildirisRouter(
             IBildirisService bildirisService,
+            IDesktopBildirisService desktopBildiris,
             UserManager<AppUser> userManager,
             IUnitOfWork unitOfWork)
         {
             _bildirisService = bildirisService;
+            _desktopBildiris = desktopBildiris;
             _userManager = userManager;
             _unitOfWork = unitOfWork;
         }
@@ -44,6 +47,8 @@ namespace FinNex.Application.Services.Communication
                     redirectUrl: redirectUrl,
                     mezuniyyetId: mezuniyyetId,
                     icazeId: icazeId);
+
+                await _desktopBildiris.PushAsync(isciId, bashliq, metn);
             }
             catch
             {
@@ -97,6 +102,8 @@ namespace FinNex.Application.Services.Communication
                         redirectUrl: redirectUrl,
                         mezuniyyetId: mezuniyyetId,
                         icazeId: icazeId);
+
+                    await _desktopBildiris.PushAsync(isciId, bashliq, metn);
                 }
             }
             catch
@@ -136,6 +143,8 @@ namespace FinNex.Application.Services.Communication
                         redirectUrl: redirectUrl,
                         mezuniyyetId: mezuniyyetId,
                         icazeId: icazeId);
+
+                    await _desktopBildiris.PushAsync(r.IsciId, bashliq, metn);
                 }
             }
             catch
@@ -179,6 +188,8 @@ namespace FinNex.Application.Services.Communication
                         redirectUrl: redirectUrl,
                         mezuniyyetId: mezuniyyetId,
                         icazeId: icazeId);
+
+                    await _desktopBildiris.PushAsync(r.IsciId, bashliq, metn);
                 }
             }
             catch

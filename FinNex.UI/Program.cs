@@ -8,7 +8,10 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using System.Globalization;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using System.Threading.RateLimiting;
 using Serilog;
 using Serilog.Events;
@@ -59,6 +62,37 @@ namespace FinNex.UI
         options.Cookie.IsEssential = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.Lax;
+    })
+    .AddJwtBearer(options =>
+    {
+        // Masaüstü köməkçi proqram üçün JWT konfiqurasiyası.
+        // DesktopJwt:Secret secrets.json-da saxlanılmalıdır.
+        var jwt = builder.Configuration.GetSection("DesktopJwt");
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwt["Issuer"],
+            ValidateAudience = true,
+            ValidAudience = jwt["Audience"],
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwt["Secret"] ?? "PLACEHOLDER_SET_IN_SECRETS"))
+        };
+        // SignalR WebSocket əlaqəsi üçün token URL query string-dən oxunur
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                var token = ctx.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(token) &&
+                    ctx.HttpContext.Request.Path.StartsWithSegments("/notificationHub"))
+                {
+                    ctx.Token = token;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 
             builder.Services.AddAppAuthorization();
@@ -159,6 +193,10 @@ namespace FinNex.UI
             {
                 c.Timeout = TimeSpan.FromSeconds(30);
             });
+            // ── Masaüstü Bildiriş Servisi (SignalR push) ─────────
+            builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.IDesktopBildirisService,
+                                        FinNex.UI.Services.SignalRDesktopBildirisService>();
+
             builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.IGelenMailService,
                                         FinNex.Application.Services.Communication.GelenMailService>();
             builder.Services.AddScoped<FinNex.Application.Interfaces.Communication.IAnthropicService,
@@ -1112,6 +1150,7 @@ END
             app.UseAuthorization();
 
             app.MapHub<FinNex.UI.Hubs.ChatHub>("/chatHub");
+            app.MapHub<FinNex.UI.Hubs.NotificationHub>("/notificationHub");
 
             app.MapControllerRoute(
                 name: "areas",
