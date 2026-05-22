@@ -153,7 +153,7 @@ public class PidSmsController : Controller
         if (string.IsNullOrWhiteSpace(alicilarJson) || string.IsNullOrWhiteSpace(smsMetni))
             return Json(new { error = "Alıcı siyahısı və ya SMS mətni boşdur." });
 
-        var isciId = await CurrentIsciIdAsync() ?? 0;
+        var isciId = await CurrentIsciIdAsync();
 
         List<(string Ad, string Telefon)>? alicilar;
         try

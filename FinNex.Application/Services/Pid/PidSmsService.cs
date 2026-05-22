@@ -43,7 +43,7 @@ public class PidSmsService : IPidSmsService
         return digits;
     }
 
-    public async Task<PidSmsLog> GonderAsync(string telefon, string metn, int? sablonId, int gonderenIsciId)
+    public async Task<PidSmsLog> GonderAsync(string telefon, string metn, int? sablonId, int? gonderenIsciId)
     {
         var norm = TelefonNormallasdir(telefon);
 
@@ -91,7 +91,7 @@ public class PidSmsService : IPidSmsService
     public async Task<(int Ugur, int Xeta)> TopluGonderAsync(
         IEnumerable<(string Ad, string Telefon)> alicilar,
         string smsMetni,
-        int gonderenIsciId)
+        int? gonderenIsciId)
     {
         int ugur = 0, xeta = 0;
         foreach (var (ad, telefon) in alicilar)

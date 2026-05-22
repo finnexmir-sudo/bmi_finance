@@ -981,7 +981,7 @@ END
                                 [GoyercinId]        NVARCHAR(100)   NULL,
                                 [GatewayCavabi]     NVARCHAR(2000)  NULL,
                                 [Xeta]              NVARCHAR(1000)  NULL,
-                                [GonderenIsciId]    INT             NOT NULL,
+                                [GonderenIsciId]    INT             NULL,
                                 [YaradilmaTarixi]   DATETIME2       NOT NULL DEFAULT GETDATE(),
                                 [YenilenmeTarixi]   DATETIME2       NULL,
                                 [SilinmeTarixi]     DATETIME2       NULL,
@@ -994,6 +994,18 @@ END
                                 CONSTRAINT [FK_PidSmsLoglar_Isciler_GonderenIsciId]
                                     FOREIGN KEY ([GonderenIsciId]) REFERENCES [Isciler] ([Id]) ON DELETE NO ACTION
                             );
+                        END
+
+                        IF EXISTS (
+                            SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                            WHERE TABLE_NAME = 'PidSmsLoglar' AND COLUMN_NAME = 'GonderenIsciId'
+                              AND IS_NULLABLE = 'NO')
+                        BEGIN
+                            IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_PidSmsLoglar_Isciler_GonderenIsciId')
+                                ALTER TABLE [PidSmsLoglar] DROP CONSTRAINT [FK_PidSmsLoglar_Isciler_GonderenIsciId];
+                            ALTER TABLE [PidSmsLoglar] ALTER COLUMN [GonderenIsciId] INT NULL;
+                            ALTER TABLE [PidSmsLoglar] ADD CONSTRAINT [FK_PidSmsLoglar_Isciler_GonderenIsciId]
+                                FOREIGN KEY ([GonderenIsciId]) REFERENCES [Isciler] ([Id]) ON DELETE NO ACTION;
                         END
                     ");
                 }

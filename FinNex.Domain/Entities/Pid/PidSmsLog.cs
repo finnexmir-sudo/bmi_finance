@@ -20,8 +20,8 @@ public class PidSmsLog : BaseEntity
     public string? GatewayCavabi { get; set; }            // API-nin tam cavabı (debug üçün, max 2000 simvol)
     public string? Xeta { get; set; }                     // səhv mesajı
 
-    public int GonderenIsciId { get; set; }
-    public Isci GonderenIsci { get; set; } = null!;
+    public int? GonderenIsciId { get; set; }
+    public Isci? GonderenIsci { get; set; }
 }
 
 public enum PidSmsStatus
