@@ -1,3 +1,5 @@
+using FinNex.Domain.Entities.Communication;
+
 namespace FinNex.Application.Interfaces.Communication
 {
     /// <summary>
@@ -7,6 +9,6 @@ namespace FinNex.Application.Interfaces.Communication
     /// </summary>
     public interface IDesktopBildirisService
     {
-        Task PushAsync(int isciId, string bashliq, string metn, string? url = null);
+        Task PushAsync(int isciId, string bashliq, string metn, string? url = null, BildirisNovu nov = default);
     }
 }

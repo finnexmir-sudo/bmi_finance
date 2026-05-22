@@ -48,7 +48,7 @@ namespace FinNex.Application.Services.Communication
                     mezuniyyetId: mezuniyyetId,
                     icazeId: icazeId);
 
-                await _desktopBildiris.PushAsync(isciId, bashliq, metn, redirectUrl);
+                await _desktopBildiris.PushAsync(isciId, bashliq, metn, redirectUrl, nov);
             }
             catch
             {
@@ -103,7 +103,7 @@ namespace FinNex.Application.Services.Communication
                         mezuniyyetId: mezuniyyetId,
                         icazeId: icazeId);
 
-                    await _desktopBildiris.PushAsync(isciId, bashliq, metn, redirectUrl);
+                    await _desktopBildiris.PushAsync(isciId, bashliq, metn, redirectUrl, nov);
                 }
             }
             catch
@@ -144,7 +144,7 @@ namespace FinNex.Application.Services.Communication
                         mezuniyyetId: mezuniyyetId,
                         icazeId: icazeId);
 
-                    await _desktopBildiris.PushAsync(r.IsciId, bashliq, metn, redirectUrl);
+                    await _desktopBildiris.PushAsync(r.IsciId, bashliq, metn, redirectUrl, nov);
                 }
             }
             catch
@@ -189,7 +189,7 @@ namespace FinNex.Application.Services.Communication
                         mezuniyyetId: mezuniyyetId,
                         icazeId: icazeId);
 
-                    await _desktopBildiris.PushAsync(r.IsciId, bashliq, metn, redirectUrl);
+                    await _desktopBildiris.PushAsync(r.IsciId, bashliq, metn, redirectUrl, nov);
                 }
             }
             catch
