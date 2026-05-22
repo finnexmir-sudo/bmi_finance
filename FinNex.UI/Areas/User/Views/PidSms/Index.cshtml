@@ -101,6 +101,15 @@
         <div id="topluXeta" style="display:none;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
         <div id="topluUgur" style="display:none;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
 
+        @* Önizləmə — həmişə görünür, mətn varsa *@
+        <div id="onizlemeBlok" style="display:none;border:1px dashed #cbd5e1;border-radius:6px;padding:10px 12px;background:#f8fafc;margin-bottom:12px">
+            <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">
+                <i class="bi bi-eye"></i> Önizləmə
+                <span id="onizlemeAdLabel" style="font-weight:400;color:#94a3b8;margin-left:4px"></span>
+            </div>
+            <div id="onizlemeMetn" style="font-size:13px;color:#0f172a;white-space:pre-wrap;word-break:break-word"></div>
+        </div>
+
         <div id="topluSmsPanel" style="display:none">
 
             @* Filter sətri *@
@@ -142,15 +151,6 @@
                               oninput="onizlemeyiGuncelle();document.getElementById('topluCharCount').textContent=this.value.length"
                               style="margin-bottom:4px"></textarea>
                     <div style="font-size:12px;color:#94a3b8;margin-bottom:12px"><span id="topluCharCount">0</span> / 1000</div>
-
-                    @* Önizləmə *@
-                    <div id="onizlemeBlok" style="display:none;border:1px dashed #cbd5e1;border-radius:6px;padding:10px 12px;background:#f8fafc;margin-bottom:12px">
-                        <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">
-                            <i class="bi bi-eye"></i> Önizləmə
-                            <span id="onizlemeAdLabel" style="font-weight:400;color:#94a3b8;margin-left:4px"></span>
-                        </div>
-                        <div id="onizlemeMetn" style="font-size:13px;color:#0f172a;white-space:pre-wrap;word-break:break-word"></div>
-                    </div>
 
                     <div style="display:flex;justify-content:flex-end">
                         <button type="button" class="fn-btn fn-btn--primary" onclick="topluGonder()" id="btnTopluGonder">
