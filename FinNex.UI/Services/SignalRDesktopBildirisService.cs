@@ -1,4 +1,5 @@
 using FinNex.Application.Interfaces.Communication;
+using FinNex.Domain.Entities.Communication;
 using FinNex.UI.Hubs;
 using Microsoft.AspNetCore.SignalR;
 
@@ -22,7 +23,7 @@ public class SignalRDesktopBildirisService : IDesktopBildirisService
         _logger = logger;
     }
 
-    public async Task PushAsync(int isciId, string bashliq, string metn, string? url = null)
+    public async Task PushAsync(int isciId, string bashliq, string metn, string? url = null, BildirisNovu nov = default)
     {
         if (isciId <= 0) return;
 
@@ -36,7 +37,8 @@ public class SignalRDesktopBildirisService : IDesktopBildirisService
                 bashliq,
                 metn,
                 tarix = DateTime.Now.ToString("dd.MM.yyyy HH:mm"),
-                url
+                url,
+                nov = (int)nov
             });
 
         _logger.LogInformation("Desktop push göndərildi → group={Group}", group);
