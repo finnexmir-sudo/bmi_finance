@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ClosedXML.Excel;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Oracle;
 using FinNex.Application.Interfaces.Pid;
@@ -173,6 +174,62 @@ public class PidSmsController : Controller
 
         var (ugur, xeta) = await _smsService.TopluGonderAsync(alicilar, smsMetni, isciId.Value);
         return Json(new { ugur, xeta });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ExceldenYukle(IFormFile excel)
+    {
+        if (excel is null || excel.Length == 0)
+            return Json(new { error = "Fayl seçilməyib." });
+
+        var ext = Path.GetExtension(excel.FileName).ToLowerInvariant();
+        if (ext != ".xlsx")
+            return Json(new { error = "Yalnız .xlsx formatı qəbul olunur." });
+
+        try
+        {
+            using var ms = new MemoryStream();
+            await excel.CopyToAsync(ms);
+            ms.Position = 0;
+
+            using var wb = new XLWorkbook(ms);
+            var ws = wb.Worksheets.First();
+
+            int adCol = -1, telCol = -1;
+            foreach (var cell in ws.Row(1).CellsUsed())
+            {
+                var h = cell.GetString().Trim().ToUpperInvariant()
+                    .Replace("Ö", "O").Replace("Ə", "E").Replace("Ü", "U")
+                    .Replace("I", "I").Replace("İ", "I");
+                if (h == "AD") adCol = cell.Address.ColumnNumber;
+                else if (h is "NOMRE" or "TELEFON" or "TEL" or "MOB" or "MOBIL")
+                    telCol = cell.Address.ColumnNumber;
+            }
+
+            if (adCol < 0 || telCol < 0)
+                return Json(new { error = "Excel-də 'AD' və 'NOMRE' (və ya 'TELEFON') başlıqları tapılmadı." });
+
+            var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+            var result = new List<object>();
+            for (int i = 2; i <= lastRow; i++)
+            {
+                var r = ws.Row(i);
+                var ad  = r.Cell(adCol).GetString().Trim();
+                var tel = r.Cell(telCol).GetString().Trim();
+                if (!string.IsNullOrWhiteSpace(tel))
+                    result.Add(new { ad, telefon = tel });
+            }
+
+            if (result.Count == 0)
+                return Json(new { error = "Excel-də data tapılmadı." });
+
+            return Json(new { data = result, sorguAdi = "Excel" });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { error = "Excel oxunarkən xəta: " + ex.Message });
+        }
     }
 
     private static string GetStr(Dictionary<string, object?> row, string key)
