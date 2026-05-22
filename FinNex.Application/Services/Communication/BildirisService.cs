@@ -1,4 +1,4 @@
-﻿using FinNex.Application.Common.Results;
+using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.Communication;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain.Entities.Communication;
@@ -8,11 +8,13 @@ namespace FinNex.Application.Services.Communication
 {
     public class BildirisService : IBildirisService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IUnitOfWork              _unitOfWork;
+        private readonly IDesktopBildirisService  _desktop;
 
-        public BildirisService(IUnitOfWork unitOfWork)
+        public BildirisService(IUnitOfWork unitOfWork, IDesktopBildirisService desktop)
         {
             _unitOfWork = unitOfWork;
+            _desktop    = desktop;
         }
 
         public async Task<Result<IList<BildirisDto>>> GetIscibildirisleriAsync(int isciId)
@@ -28,17 +30,17 @@ namespace FinNex.Application.Services.Communication
                     .OrderByDescending(x => x.YaradilmaTarixi)
                     .Select(b => new BildirisDto
                     {
-                        Id = b.Id,
-                        Nov = b.Nov,
-                        Bashliq = b.Bashliq,
-                        Metn = b.Metn,
-                        Oxunub = b.Oxunub,
-                        OxunmaTarixi = b.OxunmaTarixi,
+                        Id              = b.Id,
+                        Nov             = b.Nov,
+                        Bashliq         = b.Bashliq,
+                        Metn            = b.Metn,
+                        Oxunub          = b.Oxunub,
+                        OxunmaTarixi    = b.OxunmaTarixi,
                         YaradilmaTarixi = b.YaradilmaTarixi,
-                        RedirectUrl = b.RedirectUrl,
-                        MezuniyyetId = b.MezuniyyetId,
-                        IcazeId = b.IcazeId,
-                        MesajId = b.MesajId
+                        RedirectUrl     = b.RedirectUrl,
+                        MezuniyyetId    = b.MezuniyyetId,
+                        IcazeId         = b.IcazeId,
+                        MesajId         = b.MesajId
                     }).ToList();
 
                 return Result<IList<BildirisDto>>.Ok(dtos);
@@ -56,7 +58,7 @@ namespace FinNex.Application.Services.Communication
 
             if (b == null) return Result.Fail("Tapılmadı.");
 
-            b.Oxunub = true;
+            b.Oxunub       = true;
             b.OxunmaTarixi = DateTime.Now;
 
             await _unitOfWork.Repository<Bildiris>().YenileAsync(b);
@@ -71,7 +73,7 @@ namespace FinNex.Application.Services.Communication
 
             foreach (var b in list)
             {
-                b.Oxunub = true;
+                b.Oxunub       = true;
                 b.OxunmaTarixi = DateTime.Now;
                 await _unitOfWork.Repository<Bildiris>().YenileAsync(b);
             }
@@ -89,26 +91,33 @@ namespace FinNex.Application.Services.Communication
             return Result<int>.Ok(sayi);
         }
 
-        public async Task<Result> YaratAsync(int isciId, BildirisNovu nov,
+        public async Task<Result> YaratAsync(
+            int isciId, BildirisNovu nov,
             string bashliq, string metn, string? redirectUrl = null,
             int? mezuniyyetId = null, int? icazeId = null, int? mesajId = null)
         {
             try
             {
+                // 1. Verilənlər bazına yaz
                 var entity = new Bildiris
                 {
-                    IsciId = isciId,
-                    Nov = nov,
-                    Bashliq = bashliq,
-                    Metn = metn,
-                    RedirectUrl = redirectUrl,
+                    IsciId       = isciId,
+                    Nov          = nov,
+                    Bashliq      = bashliq,
+                    Metn         = metn,
+                    RedirectUrl  = redirectUrl,
                     MezuniyyetId = mezuniyyetId,
-                    IcazeId = icazeId,
-                    MesajId = mesajId
+                    IcazeId      = icazeId,
+                    MesajId      = mesajId
                 };
 
                 await _unitOfWork.Repository<Bildiris>().YaratAsync(entity);
                 await _unitOfWork.YaddaSaxlaAsync();
+
+                // 2. Desktop agentə anlıq push (fire-and-forget).
+                //    Xəta DB əməliyyatını etkiləməsin dəyə await etmirik.
+                _ = _desktop.PushAsync(isciId, bashliq, metn, redirectUrl, nov);
+
                 return Result.Ok();
             }
             catch (Exception ex)
