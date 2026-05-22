@@ -4,18 +4,16 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace FinNex.UI.Hubs;
 
-/// <summary>
-/// Masaüstü köməkçi proqram üçün SignalR Hub-u.
-/// JWT Bearer ilə autentifikasiya tələb olunur.
-/// IsciId claims-dən yox, query string-dən oxunur:
-///   ?access_token=...&isciId=42
-/// Beləliklə JWT claim mapping fərqliliklərindən asılı olmur.
-/// IsciId qoşulma zamanı Context.Items-ə saxlanılır ki,
-/// OnDisconnectedAsync-də yenidən HTTP context-ə müraciət lazım olmasın.
-/// </summary>
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class NotificationHub : Hub
 {
+    private readonly ILogger<NotificationHub> _logger;
+
+    public NotificationHub(ILogger<NotificationHub> logger)
+    {
+        _logger = logger;
+    }
+
     public override async Task OnConnectedAsync()
     {
         var isciId = Context.GetHttpContext()?.Request.Query["isciId"].ToString();
@@ -23,6 +21,13 @@ public class NotificationHub : Hub
         {
             Context.Items["isciId"] = isciId;
             await Groups.AddToGroupAsync(Context.ConnectionId, $"desktopUser_{isciId}");
+            _logger.LogInformation("Desktop agent qoşuldu: isciId={IsciId} connectionId={ConnectionId}",
+                isciId, Context.ConnectionId);
+        }
+        else
+        {
+            _logger.LogWarning("Desktop agent qoşuldu amma isciId yoxdur: connectionId={ConnectionId}",
+                Context.ConnectionId);
         }
         await base.OnConnectedAsync();
     }
@@ -32,6 +37,8 @@ public class NotificationHub : Hub
         if (Context.Items.TryGetValue("isciId", out var val) && val is string isciId)
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"desktopUser_{isciId}");
+            _logger.LogInformation("Desktop agent ayrıldı: isciId={IsciId} connectionId={ConnectionId}",
+                isciId, Context.ConnectionId);
         }
         await base.OnDisconnectedAsync(exception);
     }

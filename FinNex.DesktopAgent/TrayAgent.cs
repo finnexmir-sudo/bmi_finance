@@ -94,7 +94,10 @@ public class TrayAgent : ApplicationContext
                 _connection.Closed += async ex =>
                 {
                     SetTrayTooltip(bağlandi: false);
-                    if (ex != null) await ReconnectWithBackoffAsync();
+                    // WithAutomaticReconnect bütün cəhdlərini bitirdikdən sonra
+                    // Closed fire olur. Tam yeni bağlantı qurulmalıdır.
+                    await ReconnectWithBackoffAsync();
+                    _ = ConnectAsync(); // loop-u yenidən başlat
                 };
 
                 _connection.Reconnected += _ =>
