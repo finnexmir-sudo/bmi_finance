@@ -1,3 +1,4 @@
+using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -9,11 +10,13 @@ namespace FinNex.UI.Hubs;
 [Authorize]
 public class ChatHub : Hub
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork             _unitOfWork;
+    private readonly IDesktopBildirisService _desktop;
 
-    public ChatHub(IUnitOfWork unitOfWork)
+    public ChatHub(IUnitOfWork unitOfWork, IDesktopBildirisService desktop)
     {
         _unitOfWork = unitOfWork;
+        _desktop    = desktop;
     }
 
     public override async Task OnConnectedAsync()
@@ -37,10 +40,10 @@ public class ChatHub : Hub
 
         var mesaj = new ChatMesaj
         {
-            GonderenIsciId = gonderenIsci.Id,
-            AlanIsciId = alanIsciId,
-            Metn = metn,
-            Oxunub = false,
+            GonderenIsciId   = gonderenIsci.Id,
+            AlanIsciId       = alanIsciId,
+            Metn             = metn,
+            Oxunub           = false,
             GonderilmeTarixi = DateTime.Now
         };
 
@@ -55,19 +58,32 @@ public class ChatHub : Hub
         {
             await Clients.Group($"user_{alanIsci.AppUserId}").SendAsync("ReceiveMessage", new
             {
-                id = mesaj.Id,
+                id             = mesaj.Id,
                 gonderenIsciId = gonderenIsci.Id,
-                gonderenAd = gonderenIsci.TamAd,
-                metn = mesaj.Metn,
-                tarix = mesaj.GonderilmeTarixi.ToString("HH:mm")
+                gonderenAd     = gonderenIsci.TamAd,
+                metn           = mesaj.Metn,
+                tarix          = mesaj.GonderilmeTarixi.ToString("HH:mm")
             });
         }
 
+        // Masaüstü agentə anlıq push — nov = YeniMesaj (çat mövzusu).
+        // Xəta mesaj göndərməni pozmasın deyə səssizcə uğursuz olur.
+        try
+        {
+            await _desktop.PushAsync(
+                alanIsciId,
+                "Yeni Mesaj",
+                $"{gonderenIsci.TamAd}: {metn}",
+                "/User/Chat",
+                BildirisNovu.YeniMesaj);
+        }
+        catch { }
+
         await Clients.Caller.SendAsync("MessageSent", new
         {
-            id = mesaj.Id,
+            id    = mesaj.Id,
             alanIsciId,
-            metn = mesaj.Metn,
+            metn  = mesaj.Metn,
             tarix = mesaj.GonderilmeTarixi.ToString("HH:mm")
         });
     }
@@ -87,7 +103,7 @@ public class ChatHub : Hub
         var now = DateTime.Now;
         foreach (var m in oxunmamis)
         {
-            m.Oxunub = true;
+            m.Oxunub       = true;
             m.OxunmaTarixi = now;
             await _unitOfWork.Repository<ChatMesaj>().YenileAsync(m);
         }
