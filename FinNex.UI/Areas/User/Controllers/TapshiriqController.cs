@@ -1,4 +1,4 @@
-﻿// Areas/User/Controllers/TapshiriqController.cs
+// Areas/User/Controllers/TapshiriqController.cs
 using FinNex.Application.DTOs.Communication;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Communication;
@@ -131,7 +131,8 @@ namespace FinNex.UI.Areas.User.Controllers
                     await _desktopBildiris.PushAsync(
                         vm.TeyinOlunanIsciId,
                         "Yeni Tapşırıq Təyini",
-                        $"Sizə yeni bir tapşırıq təyin edildi: {vm.Bashliq}");
+                        $"Sizə yeni bir tapşırıq təyin edildi: {vm.Bashliq}",
+                        "/User/Tapshiriq?tab=menim");
                 }
                 catch (Exception ex)
                 {
@@ -142,7 +143,7 @@ namespace FinNex.UI.Areas.User.Controllers
             return RedirectToAction(nameof(Index), new { tab = "verdiklerim" });
         }
 
-        // ── POST /User/Tapshiriq/StatusYenile ────────────────
+        // ── POST /User/Tapshiriq/StatusYenile ──────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> StatusYenile(TapshiriqUpdateDto dto)
@@ -163,7 +164,8 @@ namespace FinNex.UI.Areas.User.Controllers
                         await _desktopBildiris.PushAsync(
                             detay.Data.YaradanIsciId,
                             "Tapşırıq Statusu Dəyişdi",
-                            $"{detay.Data.Bashliq} tapşırığının statusu yeniləndi.");
+                            $"{detay.Data.Bashliq} tapşırığının statusu yenilendi.",
+                            $"/User/Tapshiriq/Detay/{dto.Id}");
                     }
                 }
                 catch (Exception ex)
@@ -236,7 +238,6 @@ namespace FinNex.UI.Areas.User.Controllers
             var mail = await _gelenMailService.GetDetailAsync(mailId);
             if (mail == null) return NotFound();
 
-            // Yalnız tapşırılan işçi görə bilər
             var tapshirildi = mail.TapalanIsciler.Any(ti => ti.IsciId == isciId.Value);
             if (!tapshirildi) return Forbid();
 
@@ -281,7 +282,8 @@ namespace FinNex.UI.Areas.User.Controllers
                 await _desktopBildiris.PushAsync(
                     isciId.Value,
                     "Test Bildirişi",
-                    $"Bu test mesajıdır. isciId={isciId.Value} | {DateTime.Now:HH:mm:ss}");
+                    $"Bu test mesajıdır. isciId={isciId.Value} | {DateTime.Now:HH:mm:ss}",
+                    "/User/Tapshiriq?tab=menim");
                 return Json(new { ok = true, isciId = isciId.Value, group = $"desktopUser_{isciId.Value}" });
             }
             catch (Exception ex)
@@ -289,9 +291,6 @@ namespace FinNex.UI.Areas.User.Controllers
                 return Json(new { ok = false, error = ex.Message });
             }
         }
-
-        private IActionResult RedirectToLogin() =>
-            RedirectToAction("Login", "Account", new { area = "" });
 
         // GET /User/Tapshiriq/Edit/5
         public async Task<IActionResult> Edit(int id)
@@ -378,5 +377,8 @@ namespace FinNex.UI.Areas.User.Controllers
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Detay), new { id = vm.Id });
         }
+
+        private IActionResult RedirectToLogin() =>
+            RedirectToAction("Login", "Account", new { area = "" });
     }
 }

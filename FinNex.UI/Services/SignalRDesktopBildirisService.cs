@@ -5,10 +5,9 @@ using Microsoft.AspNetCore.SignalR;
 namespace FinNex.UI.Services;
 
 /// <summary>
-/// IDesktopBildirisService-in SignalR implementasiyası.
-/// IHubContext<NotificationHub>-u inject edərək işçinin bağlı olan masaüstü
+/// IDesktopBildirisService-in SignalR implementasiyasi.
+/// IHubContext-u inject edərək işçinin bağli olan masaüstü
 /// proqramlarına anlıq mesaj göndərir.
-/// Bu klass UI layihəsindədir çünki IHubContext ASP.NET Core-a aiddir.
 /// </summary>
 public class SignalRDesktopBildirisService : IDesktopBildirisService
 {
@@ -23,7 +22,7 @@ public class SignalRDesktopBildirisService : IDesktopBildirisService
         _logger = logger;
     }
 
-    public async Task PushAsync(int isciId, string bashliq, string metn)
+    public async Task PushAsync(int isciId, string bashliq, string metn, string? url = null)
     {
         if (isciId <= 0) return;
 
@@ -36,7 +35,8 @@ public class SignalRDesktopBildirisService : IDesktopBildirisService
             {
                 bashliq,
                 metn,
-                tarix = DateTime.Now.ToString("dd.MM.yyyy HH:mm")
+                tarix = DateTime.Now.ToString("dd.MM.yyyy HH:mm"),
+                url
             });
 
         _logger.LogInformation("Desktop push göndərildi → group={Group}", group);
