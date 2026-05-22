@@ -48,12 +48,12 @@
     @* ── Yeni SMS göndərmə formu ── *@
     <div class="fn-card" style="padding:18px;margin-bottom:16px">
         <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:12px">Yeni SMS</div>
-        <form asp-action="Gonder" method="post">
+        <form asp-action="Gonder" method="post" novalidate id="tekSmsForm">
             @Html.AntiForgeryToken()
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                 <div class="fn-form-group">
                     <label class="fn-label">Telefon *</label>
-                    <input type="text" name="telefon" class="fn-input" placeholder="994551234567 və ya 0551234567" required />
+                    <input type="text" name="telefon" id="tekTelefon" class="fn-input" placeholder="994551234567 və ya 0551234567" />
                 </div>
                 <div class="fn-form-group">
                     <label class="fn-label">Şablon (istəyə bağlı)</label>
@@ -68,7 +68,7 @@
             </div>
             <div class="fn-form-group" style="margin-top:8px">
                 <label class="fn-label">Mətn * (max 1000 simvol, English)</label>
-                <textarea name="metn" id="smsMetn" class="fn-input" rows="4" maxlength="1000" required></textarea>
+                <textarea name="metn" id="smsMetn" class="fn-input" rows="4" maxlength="1000"></textarea>
                 <div style="font-size:12px;color:#64748b;margin-top:4px"><span id="charCount">0</span> / 1000</div>
             </div>
             <div style="display:flex;justify-content:flex-end;margin-top:12px">
@@ -211,6 +211,16 @@
 </div>
 
 <script>
+    document.getElementById('tekSmsForm').addEventListener('submit', function (e) {
+        var tel = document.getElementById('tekTelefon').value.trim();
+        var metn = document.getElementById('smsMetn').value.trim();
+        if (!tel || !metn) {
+            e.preventDefault();
+            if (!tel) { document.getElementById('tekTelefon').focus(); alert('Telefon nömrəsi daxil edin.'); }
+            else { document.getElementById('smsMetn').focus(); alert('SMS mətnini daxil edin.'); }
+        }
+    });
+
     function sablonTetbiqEt(sel) {
         var opt = sel.options[sel.selectedIndex];
         var m = opt.getAttribute('data-metn');
