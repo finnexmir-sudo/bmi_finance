@@ -75,6 +75,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<IsciMaliye> IsciMaliyeleri { get; set; }
     public DbSet<MaasDetay> MaasDetaylari { get; set; }
     public DbSet<MaasNovu> MaasNovleri { get; set; }
+    public DbSet<AyliqElaveQeydi> AyliqElaveQeydleri { get; set; }
     public DbSet<IsciMaasTarixcesi> IsciMaasTarixceleri { get; set; }
     public DbSet<MaasParametri> MaasParametrleri { get; set; }
     public DbSet<VergiPille> VergiPilleleri { get; set; }

@@ -33,7 +33,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var isciler = await _unitOfWork.Repository<Isci>()
                 .Query()
                 .Where(x => !x.Silinib)
-                .OrderBy(x => x.Soyad).ThenBy(x => x.Ad)
+                .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)
                 .Select(x => new SelectListItem { Value = x.Id.ToString(), Text = x.Ad + " " + x.Soyad })
                 .ToListAsync();
 

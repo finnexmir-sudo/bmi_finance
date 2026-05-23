@@ -1,0 +1,680 @@
+diff --git a/DataAccess/Contexts/AppDbContext.cs b/DataAccess/Contexts/AppDbContext.cs
+index 1f71df4..6c79a7c 100644
+--- a/DataAccess/Contexts/AppDbContext.cs
++++ b/DataAccess/Contexts/AppDbContext.cs
+@@ -75,6 +75,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
+     public DbSet<IsciMaliye> IsciMaliyeleri { get; set; }
+     public DbSet<MaasDetay> MaasDetaylari { get; set; }
+     public DbSet<MaasNovu> MaasNovleri { get; set; }
++    public DbSet<AyliqElaveQeydi> AyliqElaveQeydleri { get; set; }
+     public DbSet<IsciMaasTarixcesi> IsciMaasTarixceleri { get; set; }
+     public DbSet<MaasParametri> MaasParametrleri { get; set; }
+     public DbSet<VergiPille> VergiPilleleri { get; set; }
+diff --git a/DataAccess/Migrations/20260522120000_AddAyliqElaveQeydi.cs b/DataAccess/Migrations/20260522120000_AddAyliqElaveQeydi.cs
+new file mode 100644
+index 0000000..55c10ad
+--- /dev/null
++++ b/DataAccess/Migrations/20260522120000_AddAyliqElaveQeydi.cs
+@@ -0,0 +1,64 @@
++using FinNex.DataAccess.Contexts;
++using Microsoft.EntityFrameworkCore;
++using Microsoft.EntityFrameworkCore.Infrastructure;
++using Microsoft.EntityFrameworkCore.Migrations;
++
++#nullable disable
++
++namespace FinNex.DataAccess.Migrations
++{
++    /// <summary>
++    /// İşçi üzrə aylıq Bonus/Overtime qeydləri üçün cədvəl + "Overtime" maaş növü.
++    /// İdempotentdir — artıq mövcuddursa heç nə etmir.
++    /// </summary>
++    [DbContext(typeof(AppDbContext))]
++    [Migration("20260522120000_AddAyliqElaveQeydi")]
++    public partial class AddAyliqElaveQeydi : Migration
++    {
++        protected override void Up(MigrationBuilder m)
++        {
++            // ── Cədvəl ──────────────────────────────────────────────────
++            m.Sql(@"
++                IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'AyliqElaveQeydleri')
++                BEGIN
++                    CREATE TABLE [dbo].[AyliqElaveQeydleri] (
++                        [Id]                  INT            NOT NULL IDENTITY(1,1),
++                        [IsciId]              INT            NOT NULL,
++                        [Il]                  INT            NOT NULL,
++                        [Ay]                  INT            NOT NULL,
++                        [Bonus]               DECIMAL(18,2)  NOT NULL DEFAULT 0,
++                        [Overtime]            DECIMAL(18,2)  NOT NULL DEFAULT 0,
++                        [YaradilmaTarixi]     DATETIME2      NOT NULL DEFAULT GETDATE(),
++                        [YaradanIcraciId]     INT            NULL,
++                        [YenileyenIcraciId]   INT            NULL,
++                        [SilenIcraciId]       INT            NULL,
++                        [YenilenmeTarixi]     DATETIME2      NULL,
++                        [Silinib]             BIT            NOT NULL DEFAULT 0,
++                        [SilinmeTarixi]       DATETIME2      NULL,
++                        CONSTRAINT [PK_AyliqElaveQeydleri] PRIMARY KEY ([Id])
++                    );
++
++                    -- Hər (İşçi, İl, Ay) üçün yalnız bir aktiv qeyd
++                    CREATE UNIQUE INDEX [IX_AyliqElaveQeydleri_Isci_Il_Ay]
++                        ON [dbo].[AyliqElaveQeydleri] ([IsciId], [Il], [Ay])
++                        WHERE [Silinib] = 0;
++                END
++            ");
++
++            // ── "Overtime" maaş növü (Tip = Gelir = 1) ──────────────────
++            m.Sql(@"
++                IF NOT EXISTS (SELECT * FROM [dbo].[MaasNovleri] WHERE [Ad] = N'Overtime')
++                BEGIN
++                    INSERT INTO [dbo].[MaasNovleri] ([Ad], [Tip], [Aktivdir], [Silinib], [YaradilmaTarixi])
++                    VALUES (N'Overtime', 1, 1, 0, GETDATE());
++                END
++            ");
++        }
++
++        protected override void Down(MigrationBuilder m)
++        {
++            m.Sql("DELETE FROM [dbo].[MaasNovleri] WHERE [Ad] = N'Overtime';");
++            m.Sql("DROP TABLE IF EXISTS [dbo].[AyliqElaveQeydleri];");
++        }
++    }
++}
+diff --git a/FinNex.Application/DTOs/HR/Maas/MaasHesablaInputDto.cs b/FinNex.Application/DTOs/HR/Maas/MaasHesablaInputDto.cs
+index 7ee7f06..08e7949 100644
+--- a/FinNex.Application/DTOs/HR/Maas/MaasHesablaInputDto.cs
++++ b/FinNex.Application/DTOs/HR/Maas/MaasHesablaInputDto.cs
+@@ -123,6 +123,7 @@ namespace FinNex.Application.DTOs.HR.Maas
+         public int Ay { get; set; }
+         public decimal EsasMaas { get; set; }
+         public decimal BonusMeblegi { get; set; }
++        public decimal OvertimeMeblegi { get; set; }
+         public int QayibGunSayi { get; set; }
+         public decimal QayibKesintisi { get; set; }
+         public int MezuniyyetGunSayi { get; set; }
+@@ -178,6 +179,7 @@ namespace FinNex.Application.DTOs.HR.Maas
+         public int Ay { get; set; }
+         public decimal EsasMaas { get; set; }
+         public decimal BonusMeblegi { get; set; }
++        public decimal OvertimeMeblegi { get; set; }
+         public decimal MezuniyyetOdenisi { get; set; }
+         public decimal MezuniyyetEsasMaasKesintisi { get; set; }
+         public decimal CerimeMeblegi { get; set; }
+diff --git a/FinNex.Application/Services/Maas/MaasHesablamaService.cs b/FinNex.Application/Services/Maas/MaasHesablamaService.cs
+index 486c7d3..ae81a2e 100644
+--- a/FinNex.Application/Services/Maas/MaasHesablamaService.cs
++++ b/FinNex.Application/Services/Maas/MaasHesablamaService.cs
+@@ -153,6 +153,21 @@ namespace FinNex.Application.Services.HR
+             var hesabTarixi = new DateTime(input.Il, input.Ay, 1);
+             var p = await VergiParametrleriniGetirAsync(hesabTarixi);
+ 
++            // 3.1 Aylıq əlavə qeydi — Bonus və Overtime.
++            //     HR ayrıca "Aylıq Əlavə" səhifəsində daxil edir; maaş hesablama
++            //     bu məbləğləri həmin qeyddən oxuyur (tək mənbə).
++            decimal overtimeMebleg = 0;
++            var elaveQeyd = await _unitOfWork.Repository<AyliqElaveQeydi>()
++                .GetirAsync(x => x.IsciId == input.IsciId
++                              && x.Il == input.Il
++                              && x.Ay == input.Ay
++                              && !x.Silinib);
++            if (elaveQeyd != null)
++            {
++                input.BonusMeblegi = elaveQeyd.Bonus;
++                overtimeMebleg = elaveQeyd.Overtime;
++            }
++
+             // 4. Esas maas
+             decimal esasMaas = isci.Maliye.CariMaas;
+             izahatlar.Add(new HesablamaIzahiDto
+@@ -497,6 +512,16 @@ namespace FinNex.Application.Services.HR
+                     Tip = "gelir"
+                 });
+ 
++            // 7.0 Overtime — aylıq əlavə qeydindən (bonus kimi gəlir, vergiyə cəlb olunur)
++            if (overtimeMebleg > 0)
++                izahatlar.Add(new HesablamaIzahiDto
++                {
++                    Addim = "Overtime",
++                    Izah = "Aylıq əlavə qeydindən",
++                    Mebleg = overtimeMebleg,
++                    Tip = "gelir"
++                });
++
+             // 7.1 IH-07 əlavə təminat (18.02.2016 tarixli əmr) — vergiyə cəlb olunur, brüt-ə əlavə edilir
+             if (input.IH07Meblegi > 0)
+                 izahatlar.Add(new HesablamaIzahiDto
+@@ -622,6 +647,7 @@ namespace FinNex.Application.Services.HR
+                 - xestelikKesinti
+                 - qayibKesinti
+                 + input.BonusMeblegi
++                + overtimeMebleg
+                 + input.IH07Meblegi
+                 + input.VM9821Meblegi
+                 - input.CerimeMeblegi
+@@ -920,6 +946,7 @@ namespace FinNex.Application.Services.HR
+                 DetayEkle("Məzuniyyət Ödənişi",                MaasDetayTipi.Gelir,           mezOdenis,          mezGun > 0 ? $"{mezGun} gün" : null),
+                 DetayEkle("Xəstəlik Ödənişi",                  MaasDetayTipi.Gelir,           xestelikSirketOdenis, xestelikSirketGun > 0 ? $"{xestelikSirketGun} iş günü (şirkət payı)" : null),
+                 DetayEkle("Bonus/Mükafat",                     MaasDetayTipi.Gelir,           input.BonusMeblegi, input.BonusAciqlama),
++                DetayEkle("Overtime",                          MaasDetayTipi.Gelir,           overtimeMebleg,     "Aylıq əlavə qeydindən"),
+                 DetayEkle("IH-07 Əlavə Təminat",               MaasDetayTipi.Gelir,           input.IH07Meblegi,        "18.02.2016 tarixli IH-07 saylı əmrlə əlavə təminat"),
+                 DetayEkle("VM 98.2.1 Gəlirləri",              MaasDetayTipi.Gelir,           input.VM9821Meblegi,      "VM-nin 98.2.1-ci maddəsinə əsasən vergiyə cəlb olunan gəlirlər"),
+                 // Kəsintilər
+@@ -1013,6 +1040,7 @@ namespace FinNex.Application.Services.HR
+                 Ay = input.Ay,
+                 EsasMaas = esasMaas,
+                 BonusMeblegi = input.BonusMeblegi,
++                OvertimeMeblegi = overtimeMebleg,
+                 QayibGunSayi = qayibGun,
+                 QayibKesintisi = qayibKesinti,
+                 MezuniyyetGunSayi = mezGun,
+diff --git a/FinNex.Domain/Entities/HR/AyliqElaveQeydi.cs b/FinNex.Domain/Entities/HR/AyliqElaveQeydi.cs
+new file mode 100644
+index 0000000..a6c2b0f
+--- /dev/null
++++ b/FinNex.Domain/Entities/HR/AyliqElaveQeydi.cs
+@@ -0,0 +1,21 @@
++namespace FinNex.Domain.Entities.HR
++{
++    /// <summary>
++    /// İşçiyə müəyyən ay üçün təyin olunan əlavə ödənişlər — Bonus və Overtime.
++    /// HR ayrıca "Aylıq Əlavə" səhifəsində daxil edir.
++    /// Maaş hesablanana qədər dəyişdirilə/silinə bilər; hesablama mərhələsində
++    /// MaasHesablamaService bu qeyddən Bonus və Overtime məbləğlərini oxuyur.
++    /// Hər (İşçi, İl, Ay) üçün bir qeyd olur.
++    /// </summary>
++    public class AyliqElaveQeydi : BaseEntity
++    {
++        public int IsciId { get; set; }
++        public Isci Isci { get; set; } = null!;
++
++        public int Il { get; set; }
++        public int Ay { get; set; }
++
++        public decimal Bonus { get; set; }
++        public decimal Overtime { get; set; }
++    }
++}
+diff --git a/FinNex.UI/Areas/HR/Controllers/AyliqElaveController.cs b/FinNex.UI/Areas/HR/Controllers/AyliqElaveController.cs
+new file mode 100644
+index 0000000..9fc9b4f
+--- /dev/null
++++ b/FinNex.UI/Areas/HR/Controllers/AyliqElaveController.cs
+@@ -0,0 +1,146 @@
++using FinNex.Domain;
++using FinNex.Domain.Entities.HR;
++using FinNex.Domain.Interfaces;
++using FinNex.UI.Areas.HR.ViewModels;
++using Microsoft.AspNetCore.Authorization;
++using Microsoft.AspNetCore.Mvc;
++using Microsoft.EntityFrameworkCore;
++
++namespace FinNex.UI.Areas.HR.Controllers
++{
++    /// <summary>
++    /// İşçilərə aylıq Bonus / Overtime təyin edilən səhifə.
++    /// Daxil edilən məbləğlər DB-də saxlanır; maaş hesablanana qədər
++    /// dəyişdirilə/silinə bilər. Maaş hesablanan kimi həmin işçinin sətri kilidlənir.
++    /// MaasHesablamaService maaş hesablayanda bu qeyddən Bonus/Overtime oxuyur.
++    /// </summary>
++    [Area("HR")]
++    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Muhasib + "," + RoleNames.Rehber)]
++    public class AyliqElaveController : Controller
++    {
++        private readonly IUnitOfWork _unitOfWork;
++
++        public AyliqElaveController(IUnitOfWork unitOfWork)
++        {
++            _unitOfWork = unitOfWork;
++        }
++
++        // ── GET /HR/AyliqElave ───────────────────────────────────
++        public async Task<IActionResult> Index(int? il, int? ay)
++        {
++            var cIl = il ?? DateTime.Now.Year;
++            var cAy = ay ?? DateTime.Now.Month;
++            if (cAy < 1 || cAy > 12) cAy = DateTime.Now.Month;
++
++            // Aktiv işçilər
++            var isciler = await _unitOfWork.Repository<Isci>()
++                .Query()
++                .Where(x => x.Status == IsciStatus.Aktiv && !x.Silinib)
++                .OrderBy(x => x.Ad).ThenBy(x => x.Soyad)
++                .ToListAsync();
++
++            // Bu ay üçün mövcud əlavə qeydləri
++            var qeydler = await _unitOfWork.Repository<AyliqElaveQeydi>()
++                .Query()
++                .Where(x => x.Il == cIl && x.Ay == cAy && !x.Silinib)
++                .ToListAsync();
++
++            // Maaşı artıq hesablanmış işçilər → sətir kilidli
++            var kilidli = (await _unitOfWork.Repository<Maas>()
++                .Query()
++                .Where(x => x.Il == cIl && x.Ay == cAy && !x.Silinib)
++                .Select(x => x.IsciId)
++                .ToListAsync())
++                .ToHashSet();
++
++            var setirler = isciler.Select(i =>
++            {
++                var q = qeydler.FirstOrDefault(x => x.IsciId == i.Id);
++                return new AyliqElaveSetirVM
++                {
++                    IsciId   = i.Id,
++                    AdSoyad  = $"{i.Ad} {i.Soyad}",
++                    Bonus    = q?.Bonus ?? 0,
++                    Overtime = q?.Overtime ?? 0,
++                    Kilidli  = kilidli.Contains(i.Id)
++                };
++            }).ToList();
++
++            ViewBag.Il    = cIl;
++            ViewBag.Ay    = cAy;
++            ViewBag.Iller = Enumerable.Range(DateTime.Now.Year - 2, 4).ToList();
++            ViewData["Title"] = "Aylıq Əlavə — Bonus / Overtime";
++            return View(setirler);
++        }
++
++        // ── POST /HR/AyliqElave/Saxla ────────────────────────────
++        [HttpPost]
++        [ValidateAntiForgeryToken]
++        public async Task<IActionResult> Saxla(int il, int ay, List<AyliqElaveSetirVM> setirler)
++        {
++            setirler ??= new List<AyliqElaveSetirVM>();
++
++            // Kilidli işçilər — maaşı hesablanıb, dəyişməyə icazə yoxdur
++            var kilidli = (await _unitOfWork.Repository<Maas>()
++                .Query()
++                .Where(x => x.Il == il && x.Ay == ay && !x.Silinib)
++                .Select(x => x.IsciId)
++                .ToListAsync())
++                .ToHashSet();
++
++            var repo = _unitOfWork.Repository<AyliqElaveQeydi>();
++            var movcud = await repo.Query()
++                .Where(x => x.Il == il && x.Ay == ay && !x.Silinib)
++                .ToListAsync();
++
++            int deyisen = 0;
++            foreach (var s in setirler)
++            {
++                if (s.IsciId <= 0 || kilidli.Contains(s.IsciId)) continue;
++
++                var bonus    = s.Bonus    < 0 ? 0 : s.Bonus;
++                var overtime = s.Overtime < 0 ? 0 : s.Overtime;
++                var q = movcud.FirstOrDefault(x => x.IsciId == s.IsciId);
++
++                // Hər ikisi sıfırdırsa — qeyd lazım deyil; varsa sil
++                if (bonus == 0 && overtime == 0)
++                {
++                    if (q != null)
++                    {
++                        q.Silinib = true;
++                        await repo.YenileAsync(q);
++                        deyisen++;
++                    }
++                    continue;
++                }
++
++                if (q == null)
++                {
++                    await repo.YaratAsync(new AyliqElaveQeydi
++                    {
++                        IsciId   = s.IsciId,
++                        Il       = il,
++                        Ay       = ay,
++                        Bonus    = bonus,
++                        Overtime = overtime
++                    });
++                    deyisen++;
++                }
++                else if (q.Bonus != bonus || q.Overtime != overtime)
++                {
++                    q.Bonus    = bonus;
++                    q.Overtime = overtime;
++                    await repo.YenileAsync(q);
++                    deyisen++;
++                }
++            }
++
++            await _unitOfWork.YaddaSaxlaAsync();
++
++            TempData["Success"] = deyisen > 0
++                ? $"Yadda saxlanıldı — {deyisen} qeyd yeniləndi."
++                : "Dəyişiklik olmadı.";
++            return RedirectToAction(nameof(Index), new { il, ay });
++        }
++    }
++}
+diff --git a/FinNex.UI/Areas/HR/Controllers/MaasController.cs b/FinNex.UI/Areas/HR/Controllers/MaasController.cs
+index 54e24dd..2fc931d 100644
+--- a/FinNex.UI/Areas/HR/Controllers/MaasController.cs
++++ b/FinNex.UI/Areas/HR/Controllers/MaasController.cs
+@@ -108,6 +108,7 @@ namespace FinNex.UI.Areas.HR.Controllers
+                     Ay = m.Ay,
+                     EsasMaas = GetDetay("Əsas Əməkhaqqı"),
+                     BonusMeblegi = GetDetay("Bonus/Mükafat"),
++                    OvertimeMeblegi = GetDetay("Overtime"),
+                     MezuniyyetOdenisi = GetDetay("Məzuniyyət Ödənişi"),
+                     MezuniyyetEsasMaasKesintisi = GetDetay("Məzuniyyət Kəsintisi"),
+                     CerimeMeblegi = GetDetay("Gecikdirmə Cəriməsi"),
+diff --git a/FinNex.UI/Areas/HR/ViewModels/AyliqElaveSetirVM.cs b/FinNex.UI/Areas/HR/ViewModels/AyliqElaveSetirVM.cs
+new file mode 100644
+index 0000000..73f5297
+--- /dev/null
++++ b/FinNex.UI/Areas/HR/ViewModels/AyliqElaveSetirVM.cs
+@@ -0,0 +1,16 @@
++namespace FinNex.UI.Areas.HR.ViewModels
++{
++    /// <summary>
++    /// "Aylıq Əlavə" səhifəsində bir işçi sətri — Bonus və Overtime daxiletməsi.
++    /// </summary>
++    public class AyliqElaveSetirVM
++    {
++        public int IsciId { get; set; }
++        public string AdSoyad { get; set; } = "";
++        public decimal Bonus { get; set; }
++        public decimal Overtime { get; set; }
++
++        /// <summary>Bu ayın maaşı artıq hesablanıb — sətir kilidlidir.</summary>
++        public bool Kilidli { get; set; }
++    }
++}
+diff --git a/FinNex.UI/Areas/HR/Views/AyliqElave/Index.cshtml b/FinNex.UI/Areas/HR/Views/AyliqElave/Index.cshtml
+new file mode 100644
+index 0000000..054a7e9
+--- /dev/null
++++ b/FinNex.UI/Areas/HR/Views/AyliqElave/Index.cshtml
+@@ -0,0 +1,200 @@
++@model List<FinNex.UI.Areas.HR.ViewModels.AyliqElaveSetirVM>
++@{
++    ViewData["Title"] = "Aylıq Əlavə — Bonus / Overtime";
++    var il  = (int)ViewBag.Il;
++    var ay  = (int)ViewBag.Ay;
++    var iller = (List<int>)ViewBag.Iller;
++    var ayAdlar = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
++                          "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
++
++    var kilidliSayi = Model.Count(x => x.Kilidli);
++    var aktivSayi   = Model.Count - kilidliSayi;
++    var doluSayi    = Model.Count(x => x.Bonus > 0 || x.Overtime > 0);
++}
++
++<style>
++    .ae-wrap   { max-width: 1000px; margin: 0 auto; }
++    .ae-head   { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
++                 gap:14px; margin-bottom:18px; }
++    .ae-title  { font-size:20px; font-weight:700; color:#1a2332; margin:0; }
++    .ae-sub    { font-size:12.5px; color:#7a8699; margin-top:2px; }
++
++    .ae-period { display:flex; gap:8px; align-items:center; }
++    .ae-period select { padding:7px 10px; border:1px solid #d6dce6; border-radius:8px;
++                        font-size:13px; background:#fff; color:#1a2332; }
++    .ae-btn    { padding:8px 16px; border:none; border-radius:8px; font-size:13px;
++                 font-weight:600; cursor:pointer; }
++    .ae-btn--ghost { background:#eef1f6; color:#34405a; }
++    .ae-btn--primary { background:#2563eb; color:#fff; }
++    .ae-btn--primary:disabled { background:#aab4c6; cursor:not-allowed; }
++
++    .ae-msg    { padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:14px;
++                 background:#e7f6ec; color:#1c7a3e; border:1px solid #b6e3c6; }
++
++    .ae-stats  { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
++    .ae-stat   { background:#fff; border:1px solid #e6e9f0; border-radius:10px;
++                 padding:9px 14px; min-width:120px; }
++    .ae-stat b { display:block; font-size:18px; color:#1a2332; }
++    .ae-stat span { font-size:11.5px; color:#8a93a6; }
++
++    .ae-card   { background:#fff; border:1px solid #e6e9f0; border-radius:12px;
++                 overflow:hidden; box-shadow:0 1px 3px rgba(20,30,50,.05); }
++    .ae-search { width:100%; box-sizing:border-box; padding:11px 14px; border:none;
++                 border-bottom:1px solid #eef0f4; font-size:13px; outline:none; }
++
++    table.ae-tbl { width:100%; border-collapse:collapse; }
++    .ae-tbl th   { text-align:left; font-size:11.5px; text-transform:uppercase;
++                   letter-spacing:.4px; color:#8a93a6; padding:10px 14px;
++                   border-bottom:1px solid #eef0f4; background:#fafbfc; }
++    .ae-tbl th.num { text-align:right; }
++    .ae-tbl td   { padding:8px 14px; border-bottom:1px solid #f2f3f6; font-size:13.5px;
++                   color:#1a2332; vertical-align:middle; }
++    .ae-tbl tr:last-child td { border-bottom:none; }
++    .ae-tbl tr:hover td { background:#fafcff; }
++    .ae-row--locked td { background:#fbfbfc; color:#9aa3b2; }
++
++    .ae-no   { color:#aab2c0; font-size:12px; width:38px; }
++    .ae-name { font-weight:600; }
++    .ae-inp  { width:120px; padding:6px 9px; border:1px solid #d6dce6; border-radius:7px;
++               font-size:13px; text-align:right; }
++    .ae-inp:focus { outline:none; border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
++    .ae-cellnum { text-align:right; }
++    .ae-money   { font-weight:600; }
++
++    .ae-lock  { display:inline-block; font-size:11px; font-weight:600; padding:3px 9px;
++                border-radius:20px; background:#fdecec; color:#c0392b; }
++    .ae-ok    { display:inline-block; font-size:11px; font-weight:600; padding:3px 9px;
++                border-radius:20px; background:#eaf6ef; color:#1c7a3e; }
++    .ae-dim   { color:#c2c8d2; }
++
++    .ae-bar   { position:sticky; bottom:0; margin-top:16px; background:#fff;
++                border:1px solid #e6e9f0; border-radius:12px; padding:12px 16px;
++                display:flex; align-items:center; justify-content:space-between;
++                box-shadow:0 -2px 10px rgba(20,30,50,.06); }
++    .ae-bar-info { font-size:12.5px; color:#7a8699; }
++</style>
++
++<div class="ae-wrap">
++
++    <div class="ae-head">
++        <div>
++            <h1 class="ae-title">Aylıq Əlavə — Bonus / Overtime</h1>
++            <div class="ae-sub">İşçilərə seçilmiş ay üçün bonus və overtime təyin edin. Maaş hesablananadək dəyişdirilə bilər.</div>
++        </div>
++        <form method="get" class="ae-period">
++            <select name="ay">
++                @for (int a = 1; a <= 12; a++)
++                {
++                    <option value="@a" selected="@(a == ay)">@ayAdlar[a]</option>
++                }
++            </select>
++            <select name="il">
++                @foreach (var y in iller)
++                {
++                    <option value="@y" selected="@(y == il)">@y</option>
++                }
++            </select>
++            <button type="submit" class="ae-btn ae-btn--ghost">Göstər</button>
++        </form>
++    </div>
++
++    @if (TempData["Success"] != null)
++    {
++        <div class="ae-msg">@TempData["Success"]</div>
++    }
++
++    <div class="ae-stats">
++        <div class="ae-stat"><b>@ayAdlar[ay] @il</b><span>Seçilmiş dövr</span></div>
++        <div class="ae-stat"><b>@Model.Count</b><span>Aktiv işçi</span></div>
++        <div class="ae-stat"><b>@doluSayi</b><span>Əlavəsi olan</span></div>
++        <div class="ae-stat"><b>@kilidliSayi</b><span>Maaşı hesablanıb (kilidli)</span></div>
++    </div>
++
++    <form method="post" asp-action="Saxla">
++        <input type="hidden" name="il" value="@il" />
++        <input type="hidden" name="ay" value="@ay" />
++
++        <div class="ae-card">
++            <input type="text" class="ae-search" id="aeSearch"
++                   placeholder="İşçi axtar..." autocomplete="off" />
++
++            <table class="ae-tbl">
++                <thead>
++                    <tr>
++                        <th class="ae-no">#</th>
++                        <th>İşçi</th>
++                        <th class="num">Bonus (₼)</th>
++                        <th class="num">Overtime (₼)</th>
++                        <th>Vəziyyət</th>
++                    </tr>
++                </thead>
++                <tbody id="aeBody">
++                @{ int sira = 0; }
++                @for (int i = 0; i < Model.Count; i++)
++                {
++                    var s = Model[i];
++                    sira++;
++                    <tr class="ae-rowx @(s.Kilidli ? "ae-row--locked" : "")" data-name="@s.AdSoyad.ToLower()">
++                        <td class="ae-no">@sira</td>
++                        <td class="ae-name">
++                            @s.AdSoyad
++                            <input type="hidden" name="setirler[@i].IsciId" value="@s.IsciId" />
++                        </td>
++
++                        @if (s.Kilidli)
++                        {
++                            <td class="ae-cellnum ae-money">@(s.Bonus > 0 ? s.Bonus.ToString("N2") : "—")</td>
++                            <td class="ae-cellnum ae-money">@(s.Overtime > 0 ? s.Overtime.ToString("N2") : "—")</td>
++                            <td><span class="ae-lock">İcra olunub</span></td>
++                        }
++                        else
++                        {
++                            <td class="ae-cellnum">
++                                <input type="number" step="0.01" min="0" class="ae-inp"
++                                       name="setirler[@i].Bonus"
++                                       value="@(s.Bonus > 0 ? s.Bonus.ToString("0.##") : "")"
++                                       placeholder="0" />
++                            </td>
++                            <td class="ae-cellnum">
++                                <input type="number" step="0.01" min="0" class="ae-inp"
++                                       name="setirler[@i].Overtime"
++                                       value="@(s.Overtime > 0 ? s.Overtime.ToString("0.##") : "")"
++                                       placeholder="0" />
++                            </td>
++                            <td><span class="ae-ok">Redaktə oluna bilər</span></td>
++                        }
++                    </tr>
++                }
++                </tbody>
++            </table>
++        </div>
++
++        <div class="ae-bar">
++            <div class="ae-bar-info">
++                @aktivSayi işçi redaktə oluna bilər · @kilidliSayi kilidli (maaşı hesablanıb)
++            </div>
++            <button type="submit" class="ae-btn ae-btn--primary" @(aktivSayi == 0 ? "disabled" : "")>
++                Yadda saxla
++            </button>
++        </div>
++    </form>
++
++    @if (!Model.Any())
++    {
++        <p class="ae-dim" style="text-align:center;margin-top:20px;">Aktiv işçi tapılmadı.</p>
++    }
++</div>
++
++<script>
++    (function () {
++        var box = document.getElementById('aeSearch');
++        var rows = document.querySelectorAll('#aeBody .ae-rowx');
++        if (!box) return;
++        box.addEventListener('input', function () {
++            var q = this.value.trim().toLowerCase();
++            rows.forEach(function (r) {
++                r.style.display = r.getAttribute('data-name').indexOf(q) > -1 ? '' : 'none';
++            });
++        });
++    })();
++</script>
+diff --git a/FinNex.UI/Areas/HR/Views/Maas/Index.cshtml b/FinNex.UI/Areas/HR/Views/Maas/Index.cshtml
+index e7111ed..0b0d995 100644
+--- a/FinNex.UI/Areas/HR/Views/Maas/Index.cshtml
++++ b/FinNex.UI/Areas/HR/Views/Maas/Index.cshtml
+@@ -36,6 +36,7 @@
+     decimal umumiIssizlik = list.Sum(x => x.IssizlikIsci);
+     decimal umumiItss     = list.Sum(x => x.Itss);
+     decimal umumiBonus    = list.Sum(x => x.BonusMeblegi);
++    decimal umumiOvertime = list.Sum(x => x.OvertimeMeblegi);
+     decimal umumiCerime   = list.Sum(x => x.CerimeMeblegi);
+     decimal umumiTutulma  = umumiGelirV + umumiDsmf + umumiIssizlik + umumiItss;
+ 
+@@ -429,7 +430,7 @@
+                             <th colspan="1" class="grp-sts center">Status</th>
+                             <th colspan="1" class="grp-sts center">Əməliyyat</th>
+                             <th colspan="1" class="grp-isci left">İşçi</th>
+-                            <th colspan="3" class="grp-gelir">Gəlirlər</th>
++                            <th colspan="4" class="grp-gelir">Gəlirlər</th>
+                             <th colspan="1" class="grp-kesinti">Kəsinti</th>
+                             <th colspan="4" class="grp-vergi">Tutulmalar (İşçi)</th>
+                             <th colspan="2" class="grp-net">NET / Ödəniş</th>
+@@ -444,6 +445,7 @@
+ 
+                             <th style="min-width:110px;">Əsas Maaş</th>
+                             <th style="min-width:90px;">Bonus</th>
++                            <th style="min-width:90px;">Overtime</th>
+                             <th class="col-sep" style="min-width:110px;">Məzuniyyət Öd.</th>
+ 
+                             <th class="col-sep" style="min-width:100px;">Cərimə</th>
+@@ -558,6 +560,12 @@
+                                     else
+                                     { <span class="n n--dim">—</span> }
+                                 </td>
++                                <td>
++                                    @if (!isLegv && m.OvertimeMeblegi > 0)
++                                    { <span class="n n--green">+@m.OvertimeMeblegi.ToString("N2") ₼</span> }
++                                    else
++                                    { <span class="n n--dim">—</span> }
++                                </td>
+                                 <td class="col-sep">
+                                     @if (!isLegv && m.MezuniyyetOdenisi > 0)
+                                     { <span class="n n--blue">@m.MezuniyyetOdenisi.ToString("N2") ₼</span> }
+@@ -641,6 +649,7 @@
+                             </td>
+                             <td class="center"><span class="n">@umumiBrut.ToString("N2") ₼</span></td>
+                             <td class="center"><span class="n n--green">@FmtC(umumiBonus,"+")</span></td>
++                            <td class="center"><span class="n n--green">@FmtC(umumiOvertime,"+")</span></td>
+                             <td class="center col-sep"><span class="n n--blue">@FmtC(list.Sum(x=>x.MezuniyyetOdenisi))</span></td>
+                             <td class="center col-sep"><span class="n n--red">@FmtC(umumiCerime,"−")</span></td>
+                             <td class="center"><span class="n n--red">@umumiGelirV.ToString("N2") ₼</span></td>
+diff --git a/FinNex.UI/Areas/HR/Views/Shared/_HRLayout.cshtml b/FinNex.UI/Areas/HR/Views/Shared/_HRLayout.cshtml
+index 11deb29..278a2e2 100644
+--- a/FinNex.UI/Areas/HR/Views/Shared/_HRLayout.cshtml
++++ b/FinNex.UI/Areas/HR/Views/Shared/_HRLayout.cshtml
+@@ -139,6 +139,13 @@
+                            asp-action="Index">
+                             Maaş
+                         </a>
++
++                        <a class="hr-nav-sub-item @(currentController == "AyliqElave" ? "active" : "")"
++                           asp-area="HR"
++                           asp-controller="AyliqElave"
++                           asp-action="Index">
++                            Bonus / Overtime
++                        </a>
+                     </div>
+                 </div>
+ 
+diff --git a/FinNex.UI/Areas/User/Views/Shared/_UserLayout.cshtml b/FinNex.UI/Areas/User/Views/Shared/_UserLayout.cshtml
+index 56877e1..caa9b1f 100644
+--- a/FinNex.UI/Areas/User/Views/Shared/_UserLayout.cshtml
++++ b/FinNex.UI/Areas/User/Views/Shared/_UserLayout.cshtml
+@@ -720,7 +720,7 @@
+ 
+             case "muhasibat":
+                 {
+-                    var mhMaasActive = currentController is "Maas" or "MezuniyyetOdenis" or "IsciAyliqQazanc"
++                    var mhMaasActive = currentController is "Maas" or "MezuniyyetOdenis" or "IsciAyliqQazanc" or "AyliqElave"
+                                        || (currentController == "Avans" && currentArea == "HR");
+                     var mhParamActive = currentController is "MaasParametri" or "Guzest" or "IsciGuzest" or "IsciHYS";
+                     var mhMaliyyeActive = currentController == "Budce" || (currentArea == "HR" && (currentController == "Xerc" || currentController == "XercKateqoriya" || currentController == "XercHesabat" || currentController == "DovriOdenis" || currentController == "GozlenilenXerc" || currentController == "MaliyyeDashboard"));
+@@ -736,6 +736,10 @@
+                                class="fn-nav-item @(currentController == "Maas" ? "active" : "")">
+                                 <i class="bi bi-cash-stack"></i> Maaş Siyahısı
+                             </a>
++                            <a asp-area="HR" asp-controller="AyliqElave" asp-action="Index"
++                               class="fn-nav-item @(currentController == "AyliqElave" ? "active" : "")">
++                                <i class="bi bi-plus-circle"></i> Bonus / Overtime
++                            </a>
+                             <a asp-area="HR" asp-controller="MezuniyyetOdenis" asp-action="Index"
+                                class="fn-nav-item @(currentArea == "HR" && currentController == "MezuniyyetOdenis" ? "active" : "")">
+                                 <i class="bi bi-wallet"></i> Məzuniyyət Ödənişləri

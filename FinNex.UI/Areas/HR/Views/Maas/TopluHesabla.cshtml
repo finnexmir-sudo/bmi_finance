@@ -284,6 +284,7 @@
                                 <th class="col-name left">Ad Soyad</th>
                                 <th class="col-status center">Status</th>
                                 <th class="col-bonus">+ Bonus</th>
+                                <th class="col-bonus">+ Overtime</th>
                                 <th class="col-cerime">− Cərimə</th>
                                 <th class="col-davam" style="color:#dc2626;">− Davamiyyət</th>
                                 <th class="col-esas">Əsas Maaş</th>
@@ -305,6 +306,12 @@
                                 var esas    = GetEsas(isci.Id);
                                 var isDone  = hesablanmis.Contains(isci.Id);
                                 var hasIban = !string.IsNullOrEmpty(GetIban(isci.Id));
+
+                                // Aylıq Əlavə qeydindən bonus/overtime (oxunaqlı — yalnız Bonus/Overtime səhifəsindən redaktə)
+                                var _aeBonusMap    = ViewBag.AyliqElaveBonusMap    as Dictionary<int, decimal>;
+                                var _aeOvertimeMap = ViewBag.AyliqElaveOvertimeMap as Dictionary<int, decimal>;
+                                decimal aeBonus    = (_aeBonusMap    != null && _aeBonusMap.ContainsKey(isci.Id))    ? _aeBonusMap[isci.Id]    : 0m;
+                                decimal aeOvertime = (_aeOvertimeMap != null && _aeOvertimeMap.ContainsKey(isci.Id)) ? _aeOvertimeMap[isci.Id] : 0m;
 
                                 @* ── Main row ──────────────────────────────── *@
                                 decimal isciGuzestMebleg = 0m;
@@ -444,14 +451,26 @@
                                         }
                                     </td>
 
-                                    @* + Bonus *@
+                                    @* + Bonus — yalnız "Bonus / Overtime" səhifəsindən redaktə olunur *@
                                     <td class="col-bonus">
-                                        <div class="mth-inp-wrap">
+                                        <div class="mth-inp-wrap" title="Bonus/Overtime səhifəsindən redaktə edin">
                                             <span class="mth-inp-pfx mth-inp-pfx--plus">+</span>
                                             <input type="number" class="mth-inp mth-inp--b"
                                                    name="ferdiElaveler[@i].BonusMeblegi"
                                                    min="0" step="0.01" placeholder="0.00"
-                                                   @(isDone?"readonly":"")/>
+                                                   value="@(aeBonus > 0 ? aeBonus.ToString("0.##") : "")"
+                                                   readonly />
+                                        </div>
+                                    </td>
+
+                                    @* + Overtime — Bonus/Overtime səhifəsindən gəlir *@
+                                    <td class="col-bonus">
+                                        <div class="mth-inp-wrap" title="Bonus/Overtime səhifəsindən redaktə edin">
+                                            <span class="mth-inp-pfx mth-inp-pfx--plus">+</span>
+                                            <input type="number" class="mth-inp mth-inp--b"
+                                                   min="0" step="0.01" placeholder="0.00"
+                                                   value="@(aeOvertime > 0 ? aeOvertime.ToString("0.##") : "")"
+                                                   readonly />
                                         </div>
                                     </td>
 
@@ -503,7 +522,7 @@
 
                                 @* ── Expandable detail panel ───────────────── *@
                                 <tr class="mth-detail-row" data-detail-for="@isci.Id">
-                                    <td colspan="10">
+                                    <td colspan="11">
                                         <div class="mth-detail-panel">
                                             <div class="mth-detail-grid">
 
@@ -930,7 +949,7 @@
                         @* ── Cəmi sətri ────────────────────────────────── *@
                         <tfoot>
                             <tr>
-                                <td class="left" colspan="6" style="font-weight:700;font-size:12px;color:#3d4557;padding:11px 10px;">
+                                <td class="left" colspan="7" style="font-weight:700;font-size:12px;color:#3d4557;padding:11px 10px;">
                                     CƏMİ — @isciList.Count işçi
                                 </td>
                                 <td><span class="n">@Fmt(isciList.Sum(x=>GetEsas(x.Id)))</span></td>

@@ -405,7 +405,7 @@ public class StrukturRoluController : Controller
         var list = await _unitOfWork.Repository<Isci>()
             .Query()
             .Where(x => !x.Silinib && x.Status == IsciStatus.Aktiv)
-            .OrderBy(x => x.Soyad).ThenBy(x => x.Ad)
+            .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)
             .ToListAsync();
 
         return list.Select(x => new SelectListItem(

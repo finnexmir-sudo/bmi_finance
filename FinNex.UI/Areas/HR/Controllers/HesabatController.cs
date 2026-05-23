@@ -49,7 +49,7 @@ public class HesabatController : Controller
             .Include(x => x.Isci)
                 .ThenInclude(i => i.IsciTeyinatlari.Where(t => t.BitmeTarixi == null))
                     .ThenInclude(t => t.Departament)
-            .OrderBy(x => x.Isci.Soyad)
+            .OrderBy(x => x.Isci.Sira).ThenBy(x => x.Isci.Ad).ThenBy(x => x.Isci.Soyad)
             .ThenBy(x => x.Isci.Ad)
             .ToListAsync();
 
@@ -223,7 +223,7 @@ public class HesabatController : Controller
             .Include(x => x.Isci)
                 .ThenInclude(i => i.IsciTeyinatlari.Where(t => t.BitmeTarixi == null))
                     .ThenInclude(t => t.Departament)
-            .OrderBy(x => x.Isci.Soyad)
+            .OrderBy(x => x.Isci.Sira).ThenBy(x => x.Isci.Ad).ThenBy(x => x.Isci.Soyad)
             .ThenBy(x => x.Isci.Ad)
             .ToListAsync();
 

@@ -83,7 +83,7 @@ public class KreditBaxanIsciController : Controller
         }
 
         var isciler = await iscilerQ
-            .OrderBy(x => x.Soyad).ThenBy(x => x.Ad)
+            .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)
             .Take(500)
             .ToListAsync();
 

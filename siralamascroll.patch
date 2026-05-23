@@ -1,0 +1,137 @@
+From 41cbfeb4500200a42e054acd068b2a5951612c02 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 23 May 2026 18:03:00 +0000
+Subject: [PATCH] fix: isci siralamasinda auto-scroll + ust/asagi duymeleri
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Iki problem hell olundu:
+1. Drag-and-drop zamani sehife yuxariya/asagiya sürüsmurdu, ona göre
+   uzun siyahida bir setiri en yuxari/en asagi cekmek mumkun deyildi.
+   SortableJS-de explicit scroll konfiqurasiyasi (scroll: true,
+   scrollSensitivity: 120, scrollSpeed: 18, bubbleScroll: true).
+
+2. Her setre ↑/↓ duymeleri elave olundu — drag-a alternativ olaraq
+   bir-bir deqiq yerdəyisme ucun. Birinci/sonuncu setirde deaktivdir.
+   SortableJS filter: '.is-arrow' + preventOnFilter: false — duyme
+   klikinde drag baslamir.
+
+Setir yerdeyisende scrollIntoView ile ekran ozu uygun pozisiyaya
+gelir, gozden cixmir.
+
+https://claude.ai/code/session_018nZeGieRr7ezZ9mDSF1gdo
+---
+ .../Areas/HR/Views/IsciSiralama/Index.cshtml  | 68 +++++++++++++++++--
+ 1 file changed, 64 insertions(+), 4 deletions(-)
+
+diff --git a/FinNex.UI/Areas/HR/Views/IsciSiralama/Index.cshtml b/FinNex.UI/Areas/HR/Views/IsciSiralama/Index.cshtml
+index f6e42713..41a596b9 100644
+--- a/FinNex.UI/Areas/HR/Views/IsciSiralama/Index.cshtml
++++ b/FinNex.UI/Areas/HR/Views/IsciSiralama/Index.cshtml
+@@ -36,6 +36,14 @@
+     .is-name   { font-weight:600; font-size:14px; color:#1a2332; }
+     .is-meta   { font-size:11.5px; color:#7a8699; margin-top:2px; }
+ 
++    .is-actions { display:flex; gap:4px; margin-left:12px; }
++    .is-arrow   { background:#eef1f6; border:none; border-radius:6px;
++                  width:30px; height:30px; cursor:pointer; color:#34405a;
++                  display:flex; align-items:center; justify-content:center;
++                  transition:background .15s; }
++    .is-arrow:hover:not(:disabled) { background:#dbe2ed; }
++    .is-arrow:disabled { opacity:.25; cursor:not-allowed; }
++
+     .is-bar    { position:sticky; bottom:0; margin-top:16px; background:#fff;
+                  border:1px solid #e6e9f0; border-radius:12px; padding:12px 16px;
+                  display:flex; align-items:center; justify-content:space-between;
+@@ -71,6 +79,10 @@
+                     <div class="is-meta">@meta</div>
+                 }
+             </div>
++            <div class="is-actions">
++                <button type="button" class="is-arrow is-up"   title="Yuxarı"><i class="bi bi-arrow-up"></i></button>
++                <button type="button" class="is-arrow is-down" title="Aşağı"><i class="bi bi-arrow-down"></i></button>
++            </div>
+         </div>
+     }
+     </div>
+@@ -102,17 +114,23 @@
+ 
+             if (!list) return;
+ 
+-            // Drag-and-drop
++            // Drag-and-drop — auto-scroll konfiqurasiyası ilə
+             Sortable.create(list, {
+                 animation: 160,
+                 handle: '.is-row',
+                 draggable: '.is-row',
+                 ghostClass: 'is-ghost',
+                 chosenClass: 'is-drag',
++                // ↓ klikləyəndə drag başlamasın
++                filter: '.is-arrow',
++                preventOnFilter: false,
++                // Pəncərə kənarında avtomatik sürüşmə
++                scroll: true,
++                scrollSensitivity: 120,   // 120px-dən başla
++                scrollSpeed: 18,
++                bubbleScroll: true,
+                 onEnd: function () {
+-                    renumber();
+-                    dirty = true;
+-                    info.textContent = total + ' işçi · Dəyişiklik var, yadda saxlayın';
++                    afterChange();
+                 }
+             });
+ 
+@@ -124,6 +142,48 @@
+                 });
+             }
+ 
++            // ↑/↓ düymələri vəziyyəti — birinci/sonuncu sətirdə deaktiv
++            function updateArrows() {
++                const rows = list.querySelectorAll('.is-row');
++                rows.forEach((r, i) => {
++                    const up   = r.querySelector('.is-up');
++                    const down = r.querySelector('.is-down');
++                    if (up)   up.disabled   = (i === 0);
++                    if (down) down.disabled = (i === rows.length - 1);
++                });
++            }
++
++            function moveRow(row, dir) {
++                if (dir < 0 && row.previousElementSibling) {
++                    list.insertBefore(row, row.previousElementSibling);
++                } else if (dir > 0 && row.nextElementSibling) {
++                    list.insertBefore(row.nextElementSibling, row);
++                } else {
++                    return;
++                }
++                row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
++                afterChange();
++            }
++
++            function afterChange() {
++                renumber();
++                updateArrows();
++                dirty = true;
++                info.textContent = total + ' işçi · Dəyişiklik var, yadda saxlayın';
++            }
++
++            // ↑/↓ kliklərini idarə et (event delegation)
++            list.addEventListener('click', function (e) {
++                const up   = e.target.closest('.is-up');
++                const down = e.target.closest('.is-down');
++                const row  = e.target.closest('.is-row');
++                if (!row) return;
++                if (up)   { moveRow(row, -1); e.stopPropagation(); }
++                else if (down) { moveRow(row,  1); e.stopPropagation(); }
++            });
++
++            updateArrows();  // ilkin vəziyyət
++
+             function showMsg(text, ok) {
+                 msg.textContent = text;
+                 msg.className = 'is-msg ' + (ok ? 'is-msg--ok' : 'is-msg--err');
+-- 
+2.43.0
+

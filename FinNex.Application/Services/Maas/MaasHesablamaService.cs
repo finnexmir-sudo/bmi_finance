@@ -153,6 +153,21 @@ namespace FinNex.Application.Services.HR
             var hesabTarixi = new DateTime(input.Il, input.Ay, 1);
             var p = await VergiParametrleriniGetirAsync(hesabTarixi);
 
+            // 3.1 Aylıq əlavə qeydi — Bonus və Overtime.
+            //     HR ayrıca "Aylıq Əlavə" səhifəsində daxil edir; maaş hesablama
+            //     bu məbləğləri həmin qeyddən oxuyur (tək mənbə).
+            decimal overtimeMebleg = 0;
+            var elaveQeyd = await _unitOfWork.Repository<AyliqElaveQeydi>()
+                .GetirAsync(x => x.IsciId == input.IsciId
+                              && x.Il == input.Il
+                              && x.Ay == input.Ay
+                              && !x.Silinib);
+            if (elaveQeyd != null)
+            {
+                input.BonusMeblegi = elaveQeyd.Bonus;
+                overtimeMebleg = elaveQeyd.Overtime;
+            }
+
             // 4. Esas maas
             decimal esasMaas = isci.Maliye.CariMaas;
             izahatlar.Add(new HesablamaIzahiDto
@@ -497,6 +512,16 @@ namespace FinNex.Application.Services.HR
                     Tip = "gelir"
                 });
 
+            // 7.0 Overtime — aylıq əlavə qeydindən (bonus kimi gəlir, vergiyə cəlb olunur)
+            if (overtimeMebleg > 0)
+                izahatlar.Add(new HesablamaIzahiDto
+                {
+                    Addim = "Overtime",
+                    Izah = "Aylıq əlavə qeydindən",
+                    Mebleg = overtimeMebleg,
+                    Tip = "gelir"
+                });
+
             // 7.1 IH-07 əlavə təminat (18.02.2016 tarixli əmr) — vergiyə cəlb olunur, brüt-ə əlavə edilir
             if (input.IH07Meblegi > 0)
                 izahatlar.Add(new HesablamaIzahiDto
@@ -622,6 +647,7 @@ namespace FinNex.Application.Services.HR
                 - xestelikKesinti
                 - qayibKesinti
                 + input.BonusMeblegi
+                + overtimeMebleg
                 + input.IH07Meblegi
                 + input.VM9821Meblegi
                 - input.CerimeMeblegi
@@ -920,6 +946,7 @@ namespace FinNex.Application.Services.HR
                 DetayEkle("Məzuniyyət Ödənişi",                MaasDetayTipi.Gelir,           mezOdenis,          mezGun > 0 ? $"{mezGun} gün" : null),
                 DetayEkle("Xəstəlik Ödənişi",                  MaasDetayTipi.Gelir,           xestelikSirketOdenis, xestelikSirketGun > 0 ? $"{xestelikSirketGun} iş günü (şirkət payı)" : null),
                 DetayEkle("Bonus/Mükafat",                     MaasDetayTipi.Gelir,           input.BonusMeblegi, input.BonusAciqlama),
+                DetayEkle("Overtime",                          MaasDetayTipi.Gelir,           overtimeMebleg,     "Aylıq əlavə qeydindən"),
                 DetayEkle("IH-07 Əlavə Təminat",               MaasDetayTipi.Gelir,           input.IH07Meblegi,        "18.02.2016 tarixli IH-07 saylı əmrlə əlavə təminat"),
                 DetayEkle("VM 98.2.1 Gəlirləri",              MaasDetayTipi.Gelir,           input.VM9821Meblegi,      "VM-nin 98.2.1-ci maddəsinə əsasən vergiyə cəlb olunan gəlirlər"),
                 // Kəsintilər
@@ -1013,6 +1040,7 @@ namespace FinNex.Application.Services.HR
                 Ay = input.Ay,
                 EsasMaas = esasMaas,
                 BonusMeblegi = input.BonusMeblegi,
+                OvertimeMeblegi = overtimeMebleg,
                 QayibGunSayi = qayibGun,
                 QayibKesintisi = qayibKesinti,
                 MezuniyyetGunSayi = mezGun,

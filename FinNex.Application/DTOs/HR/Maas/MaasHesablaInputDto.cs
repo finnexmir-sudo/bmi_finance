@@ -123,6 +123,7 @@ namespace FinNex.Application.DTOs.HR.Maas
         public int Ay { get; set; }
         public decimal EsasMaas { get; set; }
         public decimal BonusMeblegi { get; set; }
+        public decimal OvertimeMeblegi { get; set; }
         public int QayibGunSayi { get; set; }
         public decimal QayibKesintisi { get; set; }
         public int MezuniyyetGunSayi { get; set; }
@@ -178,6 +179,7 @@ namespace FinNex.Application.DTOs.HR.Maas
         public int Ay { get; set; }
         public decimal EsasMaas { get; set; }
         public decimal BonusMeblegi { get; set; }
+        public decimal OvertimeMeblegi { get; set; }
         public decimal MezuniyyetOdenisi { get; set; }
         public decimal MezuniyyetEsasMaasKesintisi { get; set; }
         public decimal CerimeMeblegi { get; set; }

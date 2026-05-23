@@ -5,6 +5,9 @@ namespace FinNex.Application.DTOs.HR.Isci
     public class IsciListDto : BaseDto
     {
         public string TamAd { get; set; } = null!;
+
+        /// <summary>İşçi siyahılarında göstərmə sırası (HR → "İşçi Sıralaması" səhifəsi).</summary>
+        public int Sira { get; set; }
         public string FIN { get; set; } = null!;
 
         // IsciTeyinat-dan (aktiv)

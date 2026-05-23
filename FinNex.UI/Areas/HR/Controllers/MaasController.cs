@@ -26,6 +26,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IBildirisService _bildirisService;
         private readonly IBildirisRouter _bildirisRouter;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IAyliqElaveService _ayliqElaveService;
 
         public MaasController(
             IMaasService maasService,
@@ -33,7 +34,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             IUnitOfWork unitOfWork,
             IBildirisService bildirisService,
             IBildirisRouter bildirisRouter,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            IAyliqElaveService ayliqElaveService)
         {
             _maasService = maasService;
             _hesablamaService = hesablamaService;
@@ -41,6 +43,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             _bildirisService = bildirisService;
             _bildirisRouter = bildirisRouter;
             _userManager = userManager;
+            _ayliqElaveService = ayliqElaveService;
         }
 
         // ── GET /HR/Maas ─────────────────────────────────────────
@@ -76,7 +79,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                         .ThenInclude(t => t.Vezife)
                 .Include(x => x.Detallar)
                     .ThenInclude(d => d.MaasNovu)
-                .OrderBy(x => x.Isci.Soyad)
+                .OrderBy(x => x.Isci.Sira).ThenBy(x => x.Isci.Ad).ThenBy(x => x.Isci.Soyad)
                 .ToListAsync();
 
             // Departament filteri (JOIN sonrası)
@@ -108,6 +111,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                     Ay = m.Ay,
                     EsasMaas = GetDetay("Əsas Əməkhaqqı"),
                     BonusMeblegi = GetDetay("Bonus/Mükafat"),
+                    OvertimeMeblegi = GetDetay("Overtime"),
                     MezuniyyetOdenisi = GetDetay("Məzuniyyət Ödənişi"),
                     MezuniyyetEsasMaasKesintisi = GetDetay("Məzuniyyət Kəsintisi"),
                     CerimeMeblegi = GetDetay("Gecikdirmə Cəriməsi"),
@@ -391,7 +395,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                     .ThenInclude(t => t.Departament)
                 .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null))
                     .ThenInclude(t => t.Vezife)
-                .OrderBy(x => x.Soyad)
+                .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)
                 .ToListAsync();
 
             // CariMaas — IsciMaliye-dən birbaşa sorğu (navigation-dan asılı olmayaraq)
@@ -627,6 +631,13 @@ namespace FinNex.UI.Areas.HR.Controllers
                 if (k > 0 || g > 0) isciKorreksiyaMap[id] = (k, g, a);
             }
             ViewBag.IsciKorreksiyaMap = isciKorreksiyaMap;
+
+            // Aylıq əlavə qeydləri (Bonus + Overtime) — maaş hesablama bunlardan oxuyur.
+            // Mühasib təsdiqdən əvvəl səhifədə görsün deyə dictionary kimi göndəririk.
+            // Servis vasitəsilə — controller bilavasitə Repository istifadə etmir.
+            var (bonusMap, overtimeMap) = await _ayliqElaveService.GetAyMapAsync(cIl, cAy);
+            ViewBag.AyliqElaveBonusMap    = bonusMap;
+            ViewBag.AyliqElaveOvertimeMap = overtimeMap;
 
             ViewBag.Hesablanmis = hesablanmis;
             ViewBag.CariMaasMap = cariMaasMap;
@@ -1276,7 +1287,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Include(x => x.Isci).ThenInclude(i => i.IsciTeyinatlari.Where(t => t.BitmeTarixi == null))
                     .ThenInclude(t => t.Vezife)
                 .Include(x => x.Detallar).ThenInclude(d => d.MaasNovu)
-                .OrderBy(x => x.Isci.Soyad).ThenBy(x => x.Isci.Ad)
+                .OrderBy(x => x.Isci.Sira).ThenBy(x => x.Isci.Ad).ThenBy(x => x.Isci.Soyad)
                 .ToListAsync();
 
             if (!maaslar.Any())

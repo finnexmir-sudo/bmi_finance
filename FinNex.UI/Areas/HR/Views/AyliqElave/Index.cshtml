@@ -1,0 +1,200 @@
+@model IList<FinNex.Application.DTOs.HR.AyliqElave.AyliqElaveSetirDto>
+@{
+    ViewData["Title"] = "Aylıq Əlavə — Bonus / Overtime";
+    var il  = (int)ViewBag.Il;
+    var ay  = (int)ViewBag.Ay;
+    var iller = (List<int>)ViewBag.Iller;
+    var ayAdlar = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+                          "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+
+    var kilidliSayi = Model.Count(x => x.Kilidli);
+    var aktivSayi   = Model.Count - kilidliSayi;
+    var doluSayi    = Model.Count(x => x.Bonus > 0 || x.Overtime > 0);
+}
+
+<style>
+    .ae-wrap   { max-width: 1000px; margin: 0 auto; }
+    .ae-head   { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
+                 gap:14px; margin-bottom:18px; }
+    .ae-title  { font-size:20px; font-weight:700; color:#1a2332; margin:0; }
+    .ae-sub    { font-size:12.5px; color:#7a8699; margin-top:2px; }
+
+    .ae-period { display:flex; gap:8px; align-items:center; }
+    .ae-period select { padding:7px 10px; border:1px solid #d6dce6; border-radius:8px;
+                        font-size:13px; background:#fff; color:#1a2332; }
+    .ae-btn    { padding:8px 16px; border:none; border-radius:8px; font-size:13px;
+                 font-weight:600; cursor:pointer; }
+    .ae-btn--ghost { background:#eef1f6; color:#34405a; }
+    .ae-btn--primary { background:#2563eb; color:#fff; }
+    .ae-btn--primary:disabled { background:#aab4c6; cursor:not-allowed; }
+
+    .ae-msg    { padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:14px;
+                 background:#e7f6ec; color:#1c7a3e; border:1px solid #b6e3c6; }
+
+    .ae-stats  { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+    .ae-stat   { background:#fff; border:1px solid #e6e9f0; border-radius:10px;
+                 padding:9px 14px; min-width:120px; }
+    .ae-stat b { display:block; font-size:18px; color:#1a2332; }
+    .ae-stat span { font-size:11.5px; color:#8a93a6; }
+
+    .ae-card   { background:#fff; border:1px solid #e6e9f0; border-radius:12px;
+                 overflow:hidden; box-shadow:0 1px 3px rgba(20,30,50,.05); }
+    .ae-search { width:100%; box-sizing:border-box; padding:11px 14px; border:none;
+                 border-bottom:1px solid #eef0f4; font-size:13px; outline:none; }
+
+    table.ae-tbl { width:100%; border-collapse:collapse; }
+    .ae-tbl th   { text-align:left; font-size:11.5px; text-transform:uppercase;
+                   letter-spacing:.4px; color:#8a93a6; padding:10px 14px;
+                   border-bottom:1px solid #eef0f4; background:#fafbfc; }
+    .ae-tbl th.num { text-align:right; }
+    .ae-tbl td   { padding:8px 14px; border-bottom:1px solid #f2f3f6; font-size:13.5px;
+                   color:#1a2332; vertical-align:middle; }
+    .ae-tbl tr:last-child td { border-bottom:none; }
+    .ae-tbl tr:hover td { background:#fafcff; }
+    .ae-row--locked td { background:#fbfbfc; color:#9aa3b2; }
+
+    .ae-no   { color:#aab2c0; font-size:12px; width:38px; }
+    .ae-name { font-weight:600; }
+    .ae-inp  { width:120px; padding:6px 9px; border:1px solid #d6dce6; border-radius:7px;
+               font-size:13px; text-align:right; }
+    .ae-inp:focus { outline:none; border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+    .ae-cellnum { text-align:right; }
+    .ae-money   { font-weight:600; }
+
+    .ae-lock  { display:inline-block; font-size:11px; font-weight:600; padding:3px 9px;
+                border-radius:20px; background:#fdecec; color:#c0392b; }
+    .ae-ok    { display:inline-block; font-size:11px; font-weight:600; padding:3px 9px;
+                border-radius:20px; background:#eaf6ef; color:#1c7a3e; }
+    .ae-dim   { color:#c2c8d2; }
+
+    .ae-bar   { position:sticky; bottom:0; margin-top:16px; background:#fff;
+                border:1px solid #e6e9f0; border-radius:12px; padding:12px 16px;
+                display:flex; align-items:center; justify-content:space-between;
+                box-shadow:0 -2px 10px rgba(20,30,50,.06); }
+    .ae-bar-info { font-size:12.5px; color:#7a8699; }
+</style>
+
+<div class="ae-wrap">
+
+    <div class="ae-head">
+        <div>
+            <h1 class="ae-title">Aylıq Əlavə — Bonus / Overtime</h1>
+            <div class="ae-sub">İşçilərə seçilmiş ay üçün bonus və overtime təyin edin. Maaş hesablananadək dəyişdirilə bilər.</div>
+        </div>
+        <form method="get" class="ae-period">
+            <select name="ay">
+                @for (int a = 1; a <= 12; a++)
+                {
+                    <option value="@a" selected="@(a == ay)">@ayAdlar[a]</option>
+                }
+            </select>
+            <select name="il">
+                @foreach (var y in iller)
+                {
+                    <option value="@y" selected="@(y == il)">@y</option>
+                }
+            </select>
+            <button type="submit" class="ae-btn ae-btn--ghost">Göstər</button>
+        </form>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="ae-msg">@TempData["Success"]</div>
+    }
+
+    <div class="ae-stats">
+        <div class="ae-stat"><b>@ayAdlar[ay] @il</b><span>Seçilmiş dövr</span></div>
+        <div class="ae-stat"><b>@Model.Count</b><span>Aktiv işçi</span></div>
+        <div class="ae-stat"><b>@doluSayi</b><span>Əlavəsi olan</span></div>
+        <div class="ae-stat"><b>@kilidliSayi</b><span>Maaşı hesablanıb (kilidli)</span></div>
+    </div>
+
+    <form method="post" asp-action="Saxla">
+        <input type="hidden" name="il" value="@il" />
+        <input type="hidden" name="ay" value="@ay" />
+
+        <div class="ae-card">
+            <input type="text" class="ae-search" id="aeSearch"
+                   placeholder="İşçi axtar..." autocomplete="off" />
+
+            <table class="ae-tbl">
+                <thead>
+                    <tr>
+                        <th class="ae-no">#</th>
+                        <th>İşçi</th>
+                        <th class="num">Bonus (₼)</th>
+                        <th class="num">Overtime (₼)</th>
+                        <th>Vəziyyət</th>
+                    </tr>
+                </thead>
+                <tbody id="aeBody">
+                @{ int sira = 0; }
+                @for (int i = 0; i < Model.Count; i++)
+                {
+                    var s = Model[i];
+                    sira++;
+                    <tr class="ae-rowx @(s.Kilidli ? "ae-row--locked" : "")" data-name="@s.AdSoyad.ToLower()">
+                        <td class="ae-no">@sira</td>
+                        <td class="ae-name">
+                            @s.AdSoyad
+                            <input type="hidden" name="setirler[@i].IsciId" value="@s.IsciId" />
+                        </td>
+
+                        @if (s.Kilidli)
+                        {
+                            <td class="ae-cellnum ae-money">@(s.Bonus > 0 ? s.Bonus.ToString("N2") : "—")</td>
+                            <td class="ae-cellnum ae-money">@(s.Overtime > 0 ? s.Overtime.ToString("N2") : "—")</td>
+                            <td><span class="ae-lock">İcra olunub</span></td>
+                        }
+                        else
+                        {
+                            <td class="ae-cellnum">
+                                <input type="number" step="0.01" min="0" class="ae-inp"
+                                       name="setirler[@i].Bonus"
+                                       value="@(s.Bonus > 0 ? s.Bonus.ToString("0.##") : "")"
+                                       placeholder="0" />
+                            </td>
+                            <td class="ae-cellnum">
+                                <input type="number" step="0.01" min="0" class="ae-inp"
+                                       name="setirler[@i].Overtime"
+                                       value="@(s.Overtime > 0 ? s.Overtime.ToString("0.##") : "")"
+                                       placeholder="0" />
+                            </td>
+                            <td><span class="ae-ok">Redaktə oluna bilər</span></td>
+                        }
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="ae-bar">
+            <div class="ae-bar-info">
+                @aktivSayi işçi redaktə oluna bilər · @kilidliSayi kilidli (maaşı hesablanıb)
+            </div>
+            <button type="submit" class="ae-btn ae-btn--primary" @(aktivSayi == 0 ? "disabled" : "")>
+                Yadda saxla
+            </button>
+        </div>
+    </form>
+
+    @if (!Model.Any())
+    {
+        <p class="ae-dim" style="text-align:center;margin-top:20px;">Aktiv işçi tapılmadı.</p>
+    }
+</div>
+
+<script>
+    (function () {
+        var box = document.getElementById('aeSearch');
+        var rows = document.querySelectorAll('#aeBody .ae-rowx');
+        if (!box) return;
+        box.addEventListener('input', function () {
+            var q = this.value.trim().toLowerCase();
+            rows.forEach(function (r) {
+                r.style.display = r.getAttribute('data-name').indexOf(q) > -1 ? '' : 'none';
+            });
+        });
+    })();
+</script>

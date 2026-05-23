@@ -41,7 +41,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var isciler = await q
                 .Include(x => x.IsciTeyinatlari.Where(t => !t.Silinib))
                     .ThenInclude(t => t.Departament)
-                .OrderBy(x => x.Soyad).ThenBy(x => x.Ad)
+                .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)
                 .ToListAsync();
 
             ViewBag.Axtaris = axtaris;

@@ -104,7 +104,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var isciler = await _unitOfWork.Repository<Isci>()
                 .Query()
                 .Where(x => x.Status == IsciStatus.Aktiv && !x.Silinib)
-                .OrderBy(x => x.Soyad).ThenBy(x => x.Ad)
+                .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)
                 .Select(x => new { x.Id, x.Ad, x.Soyad })
                 .ToListAsync();
 

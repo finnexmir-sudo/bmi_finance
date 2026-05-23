@@ -1,0 +1,32 @@
+From 430d4b1ae8234aae47607a1c038aba2d31415d3b Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 22 May 2026 21:52:15 +0000
+Subject: [PATCH] =?UTF-8?q?fix:=20AyliqElave-de=20soldak=C4=B1=20menyu=20M?=
+ =?UTF-8?q?uhasibatliq=20grupunda=20qalsin?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+DetectActiveModule (IsAccountingCtrl) AyliqElave controller-ini tanimirdi,
+ona gore Bonus/Overtime-e klik edende sidebar HR-a kecirdi.
+
+https://claude.ai/code/session_018nZeGieRr7ezZ9mDSF1gdo
+---
+ FinNex.UI/Areas/User/Views/Shared/_UserLayout.cshtml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/FinNex.UI/Areas/User/Views/Shared/_UserLayout.cshtml b/FinNex.UI/Areas/User/Views/Shared/_UserLayout.cshtml
+index caa9b1f..54ee686 100644
+--- a/FinNex.UI/Areas/User/Views/Shared/_UserLayout.cshtml
++++ b/FinNex.UI/Areas/User/Views/Shared/_UserLayout.cshtml
+@@ -28,6 +28,7 @@
+     {
+         return currentController == "Maas"
+             || currentController == "MaasParametri"
++            || currentController == "AyliqElave"
+             || currentController == "Budce"
+             || currentController == "Xerc"
+             || currentController == "XercKateqoriya"
+-- 
+2.43.0
+

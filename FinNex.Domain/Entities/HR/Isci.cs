@@ -21,6 +21,14 @@
         public IsciStatus Status { get; set; } = IsciStatus.Aktiv;
 
         /// <summary>
+        /// İşçi siyahılarında göstərmə sırası (kiçik nömrə əvvəl).
+        /// HR-də "İşçi Sıralaması" səhifəsində drag-and-drop ilə təyin olunur.
+        /// Yeni işçi əlavə olunduqda 0 olur — eyni sıralı işçilər arasında
+        /// ad/soyad əlifba sırası ilə düzülür.
+        /// </summary>
+        public int Sira { get; set; } = 0;
+
+        /// <summary>
         /// Ümumi iş stajı başlanğıc tarixi (əvvəlki iş yerləri daxil).
         /// LEGACY — köhnə hesablamalar üçün saxlanılır.
         /// Yeni yanaşma: EvvelkiStajPeriodlari (kitabçə) + bank tenure.

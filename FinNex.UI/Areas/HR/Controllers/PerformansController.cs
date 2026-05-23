@@ -236,7 +236,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                         && !mevcudIsciIds.Contains(x.Id))
                     .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null)).ThenInclude(t => t.Departament)
                     .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null)).ThenInclude(t => t.Vezife)
-                    .OrderBy(x => x.Soyad).ThenBy(x => x.Ad)
+                    .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)
                     .ToListAsync();
             }
             else
@@ -247,7 +247,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                         && !xaricEdilecekIds.Contains(x.Id))
                     .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null)).ThenInclude(t => t.Departament)
                     .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null)).ThenInclude(t => t.Vezife)
-                    .OrderBy(x => x.Soyad).ThenBy(x => x.Ad)
+                    .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)
                     .ToListAsync();
             }
 
@@ -739,7 +739,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         {
             var isciler = await _unitOfWork.Repository<Isci>()
                 .Query().Where(x => x.Status == IsciStatus.Aktiv && !x.Silinib)
-                .OrderBy(x => x.Soyad).ToListAsync();
+                .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad).ToListAsync();
             ViewBag.Isciler = isciler
                 .Select(x => new SelectListItem($"{x.Soyad} {x.Ad}", x.Id.ToString())).ToList();
             ViewBag.Iller = Enumerable.Range(DateTime.Now.Year - 1, 3)

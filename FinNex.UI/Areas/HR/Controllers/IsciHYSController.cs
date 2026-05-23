@@ -39,7 +39,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.Isciler = await _unitOfWork.Repository<Isci>()
                 .Query()
                 .Where(x => !x.Silinib && x.Status == IsciStatus.Aktiv)
-                .OrderBy(x => x.Ad)
+                .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)
                 .ToListAsync();
 
             return View(list);
@@ -253,7 +253,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.Isciler = await _unitOfWork.Repository<Isci>()
                 .Query()
                 .Where(x => !x.Silinib && x.Status == IsciStatus.Aktiv)
-                .OrderBy(x => x.Ad)
+                .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)
                 .ToListAsync();
         }
     }

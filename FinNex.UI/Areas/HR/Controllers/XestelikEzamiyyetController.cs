@@ -199,7 +199,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 x => x.Status == IsciStatus.Aktiv, izlemeden: true);
 
             var items = iscilerResult.Success
-                ? iscilerResult.Data!.OrderBy(x => x.TamAd)
+                ? iscilerResult.Data!.OrderBy(x => x.Sira).ThenBy(x => x.TamAd)
                     .Select(x => new SelectListItem(x.TamAd, x.Id.ToString()))
                     .ToList()
                 : new List<SelectListItem>();
@@ -215,7 +215,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.EvezEdenIsciList = iscilerResult.Success
                 ? iscilerResult.Data!
                     .Where(x => isciId == null || x.Id != isciId)
-                    .OrderBy(x => x.TamAd)
+                    .OrderBy(x => x.Sira).ThenBy(x => x.TamAd)
                     .Select(x => new SelectListItem(x.TamAd, x.Id.ToString()))
                     .ToList()
                 : new List<SelectListItem>();

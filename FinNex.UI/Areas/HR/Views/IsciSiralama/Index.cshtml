@@ -1,0 +1,305 @@
+@model IList<FinNex.Application.DTOs.HR.Isci.IsciSiraDto>
+@{
+    ViewData["Title"] = "İşçi Sıralaması";
+}
+
+<style>
+    .is-wrap   { max-width: 760px; margin: 0 auto; }
+    .is-head   { display:flex; align-items:center; justify-content:space-between;
+                 margin-bottom:14px; gap:14px; flex-wrap:wrap; }
+    .is-title  { font-size:20px; font-weight:700; color:#1a2332; margin:0; }
+    .is-sub    { font-size:12.5px; color:#7a8699; margin-top:2px; }
+
+    .is-btn    { padding:9px 18px; border:none; border-radius:8px; font-size:13px;
+                 font-weight:600; cursor:pointer; background:#2563eb; color:#fff; }
+    .is-btn:disabled { background:#aab4c6; cursor:not-allowed; }
+
+    .is-msg    { padding:10px 14px; border-radius:8px; font-size:13px;
+                 margin-bottom:14px; display:none; }
+    .is-msg--ok  { background:#e7f6ec; color:#1c7a3e; border:1px solid #b6e3c6; }
+    .is-msg--err { background:#fdecec; color:#c0392b; border:1px solid #f3c7c7; }
+
+    .is-list   { background:#fff; border:1px solid #e6e9f0; border-radius:12px;
+                 box-shadow:0 1px 3px rgba(20,30,50,.05); overflow:hidden; }
+    .is-row    { display:flex; align-items:center; padding:11px 14px;
+                 border-bottom:1px solid #f2f3f6; cursor:grab; background:#fff;
+                 transition:background .15s; user-select:none; }
+    .is-row:last-child { border-bottom:none; }
+    .is-row:hover { background:#fafcff; }
+    .is-row.is-drag   { opacity:.5; cursor:grabbing; }
+    .is-row.is-ghost  { background:#eaf2ff; }
+
+    .is-no     { width:34px; color:#aab2c0; font-size:12px; font-weight:600;
+                 text-align:right; padding-right:14px; }
+    .is-grip   { color:#c2c8d2; margin-right:12px; font-size:16px; }
+    .is-body   { flex:1; }
+    .is-name   { font-weight:600; font-size:14px; color:#1a2332; }
+    .is-meta   { font-size:11.5px; color:#7a8699; margin-top:2px; }
+
+    .is-actions { display:flex; gap:4px; margin-left:12px; }
+    .is-arrow   { background:#eef1f6; border:none; border-radius:6px;
+                  width:30px; height:30px; cursor:pointer; color:#34405a;
+                  display:flex; align-items:center; justify-content:center;
+                  transition:background .15s; }
+    .is-arrow:hover:not(:disabled) { background:#dbe2ed; }
+    .is-arrow:disabled { opacity:.25; cursor:not-allowed; }
+
+    .is-bar    { position:sticky; bottom:0; margin-top:16px; background:#fff;
+                 border:1px solid #e6e9f0; border-radius:12px; padding:12px 16px;
+                 display:flex; align-items:center; justify-content:space-between;
+                 box-shadow:0 -2px 10px rgba(20,30,50,.06); }
+    .is-bar-info { font-size:12.5px; color:#7a8699; }
+</style>
+
+<div class="is-wrap">
+
+    <div class="is-head">
+        <div>
+            <h1 class="is-title">İşçi Sıralaması</h1>
+            <div class="is-sub">Siçanla işçini çəkib istədiyiniz yerə buraxın. Bu sıra Maaş, Bonus/Overtime və digər siyahılarda istifadə olunur.</div>
+        </div>
+    </div>
+
+    <div id="isMsg" class="is-msg"></div>
+
+    <div class="is-list" id="isList">
+    @for (int i = 0; i < Model.Count; i++)
+    {
+        var s = Model[i];
+        var meta = string.Join(" · ",
+            new[] { s.VezifeAd, s.DepartamentAd }.Where(x => !string.IsNullOrWhiteSpace(x)));
+
+        <div class="is-row" data-id="@s.IsciId">
+            <span class="is-no">@(i + 1)</span>
+            <i class="bi bi-grip-vertical is-grip"></i>
+            <div class="is-body">
+                <div class="is-name">@s.AdSoyad</div>
+                @if (!string.IsNullOrEmpty(meta))
+                {
+                    <div class="is-meta">@meta</div>
+                }
+            </div>
+            <div class="is-actions">
+                <button type="button" class="is-arrow is-top"  title="Ən üstə (1-ə)"><i class="bi bi-chevron-double-up"></i></button>
+                <button type="button" class="is-arrow is-up"   title="Yuxarı (bir-bir)"><i class="bi bi-arrow-up"></i></button>
+                <button type="button" class="is-arrow is-down" title="Aşağı (bir-bir)"><i class="bi bi-arrow-down"></i></button>
+                <button type="button" class="is-arrow is-bot"  title="Ən aşağı"><i class="bi bi-chevron-double-down"></i></button>
+            </div>
+        </div>
+    }
+    </div>
+
+    <div class="is-bar">
+        <div class="is-bar-info" id="isInfo">
+            @Model.Count işçi · Çəkib-buraxın, sonra "Yadda saxla" basın
+        </div>
+        <button type="button" id="isSave" class="is-btn">Yadda saxla</button>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <p style="text-align:center;color:#aab2c0;margin-top:20px;">Aktiv işçi tapılmadı.</p>
+    }
+
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <script>
+        (function () {
+            const list   = document.getElementById('isList');
+            const saveBtn = document.getElementById('isSave');
+            const info   = document.getElementById('isInfo');
+            const msg    = document.getElementById('isMsg');
+            const total  = @Model.Count;
+            let dirty = false;
+
+            if (!list) return;
+
+            // ── Drag zamanı manual auto-scroll ──
+            // SortableJS-in default scroll-u bəzi layout-larda işləmir
+            // (fixed header, inner overflow və s.). Ona görə siçanın Y
+            // pozisiyasına görə pəncərəni özümüz sürüşdürürük.
+            let dragActive = false;
+            let dragMouseY = 0;
+            let scrollRAF  = null;
+            const EDGE_PX  = 140;   // bu məsafədə başla
+            const MAX_SPD  = 22;    // maks. sürət
+
+            function onDragMove(e) {
+                // Həm mouse, həm touch, həm HTML5 drag — hamısını tut
+                if (e.touches && e.touches.length) dragMouseY = e.touches[0].clientY;
+                else if (typeof e.clientY === 'number') dragMouseY = e.clientY;
+            }
+
+            function scrollLoop() {
+                if (!dragActive) { scrollRAF = null; return; }
+                const vh   = window.innerHeight;
+                const top  = dragMouseY;
+                const bot  = vh - dragMouseY;
+                if (top < EDGE_PX) {
+                    const f = (EDGE_PX - top) / EDGE_PX;       // 0..1
+                    window.scrollBy(0, -Math.ceil(f * MAX_SPD));
+                } else if (bot < EDGE_PX) {
+                    const f = (EDGE_PX - bot) / EDGE_PX;
+                    window.scrollBy(0, Math.ceil(f * MAX_SPD));
+                }
+                scrollRAF = requestAnimationFrame(scrollLoop);
+            }
+
+            function startDragScroll() {
+                dragActive = true;
+                document.addEventListener('mousemove', onDragMove, true);
+                document.addEventListener('dragover',  onDragMove, true);
+                document.addEventListener('touchmove', onDragMove, { passive: true, capture: true });
+                if (!scrollRAF) scrollRAF = requestAnimationFrame(scrollLoop);
+            }
+            function stopDragScroll() {
+                dragActive = false;
+                document.removeEventListener('mousemove', onDragMove, true);
+                document.removeEventListener('dragover',  onDragMove, true);
+                document.removeEventListener('touchmove', onDragMove, true);
+            }
+
+            Sortable.create(list, {
+                animation: 160,
+                handle: '.is-row',
+                draggable: '.is-row',
+                ghostClass: 'is-ghost',
+                chosenClass: 'is-drag',
+                // ↓ kliklərdə drag başlamasın
+                filter: '.is-arrow',
+                preventOnFilter: false,
+                // Daxili SortableJS scroll-u da işə sal (var olduğunda zərər vermir)
+                scroll: true,
+                scrollSensitivity: 120,
+                scrollSpeed: 18,
+                bubbleScroll: true,
+                onStart: startDragScroll,
+                onEnd: function () {
+                    stopDragScroll();
+                    afterChange();
+                }
+            });
+
+            function renumber() {
+                const rows = list.querySelectorAll('.is-row');
+                rows.forEach((r, i) => {
+                    const no = r.querySelector('.is-no');
+                    if (no) no.textContent = (i + 1);
+                });
+            }
+
+            // ↑/↓/⇈/⇊ düymələri vəziyyəti — birinci/sonuncu sətirdə deaktiv
+            function updateArrows() {
+                const rows = list.querySelectorAll('.is-row');
+                rows.forEach((r, i) => {
+                    const top  = r.querySelector('.is-top');
+                    const up   = r.querySelector('.is-up');
+                    const down = r.querySelector('.is-down');
+                    const bot  = r.querySelector('.is-bot');
+                    const atTop = (i === 0);
+                    const atBot = (i === rows.length - 1);
+                    if (top)  top.disabled  = atTop;
+                    if (up)   up.disabled   = atTop;
+                    if (down) down.disabled = atBot;
+                    if (bot)  bot.disabled  = atBot;
+                });
+            }
+
+            function moveRow(row, dir) {
+                if (dir < 0 && row.previousElementSibling) {
+                    list.insertBefore(row, row.previousElementSibling);
+                } else if (dir > 0 && row.nextElementSibling) {
+                    list.insertBefore(row.nextElementSibling, row);
+                } else {
+                    return;
+                }
+                row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                afterChange();
+            }
+
+            function moveToTop(row) {
+                if (!row.previousElementSibling) return;
+                list.insertBefore(row, list.firstElementChild);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                afterChange();
+            }
+
+            function moveToBottom(row) {
+                if (!row.nextElementSibling) return;
+                list.appendChild(row);
+                row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                afterChange();
+            }
+
+            function afterChange() {
+                renumber();
+                updateArrows();
+                dirty = true;
+                info.textContent = total + ' işçi · Dəyişiklik var, yadda saxlayın';
+            }
+
+            // ⇈/↑/↓/⇊ kliklərini idarə et (event delegation)
+            list.addEventListener('click', function (e) {
+                const top  = e.target.closest('.is-top');
+                const up   = e.target.closest('.is-up');
+                const down = e.target.closest('.is-down');
+                const bot  = e.target.closest('.is-bot');
+                const row  = e.target.closest('.is-row');
+                if (!row) return;
+                if (top)       { moveToTop(row);    e.stopPropagation(); }
+                else if (up)   { moveRow(row, -1);  e.stopPropagation(); }
+                else if (down) { moveRow(row,  1);  e.stopPropagation(); }
+                else if (bot)  { moveToBottom(row); e.stopPropagation(); }
+            });
+
+            updateArrows();  // ilkin vəziyyət
+
+            function showMsg(text, ok) {
+                msg.textContent = text;
+                msg.className = 'is-msg ' + (ok ? 'is-msg--ok' : 'is-msg--err');
+                msg.style.display = 'block';
+                setTimeout(() => { msg.style.display = 'none'; }, 4000);
+            }
+
+            saveBtn.addEventListener('click', async function () {
+                if (!dirty) { showMsg('Heç bir dəyişiklik yoxdur.', true); return; }
+                const ids = Array.from(list.querySelectorAll('.is-row'))
+                    .map(r => parseInt(r.getAttribute('data-id'), 10))
+                    .filter(x => !isNaN(x));
+
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Saxlanılır...';
+
+                try {
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+                    const resp = await fetch('@Url.Action("Saxla", "IsciSiralama", new { area = "HR" })', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
+                        },
+                        body: JSON.stringify({ isciIdler: ids })
+                    });
+                    const data = await resp.json();
+                    if (data.ok) {
+                        showMsg(data.mesaj || 'Saxlanıldı.', true);
+                        dirty = false;
+                        info.textContent = total + ' işçi · Çəkib-buraxın, sonra "Yadda saxla" basın';
+                    } else {
+                        showMsg(data.mesaj || 'Xəta baş verdi.', false);
+                    }
+                } catch (e) {
+                    showMsg('Şəbəkə xətası: ' + e.message, false);
+                } finally {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Yadda saxla';
+                }
+            });
+        })();
+    </script>
+
+    @* AntiForgery token — JS POST üçün *@
+    <form style="display:none">@Html.AntiForgeryToken()</form>
+}

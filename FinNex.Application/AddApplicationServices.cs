@@ -73,6 +73,8 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IIsciAyliqQazancService, IsciAyliqQazancService>();
         services.AddScoped<IXestelikService, XestelikService>();
         services.AddScoped<IDavamiyyetService, DavamiyyetService>();
+        services.AddScoped<IAyliqElaveService, AyliqElaveService>();
+        services.AddScoped<IIsciSiralamaService, IsciSiralamaService>();
         // Məzuniyyət Modulu Servisləri
         services.AddScoped<IMezuniyyetService, MezuniyyetService>();
         services.AddScoped<IIcazeService, IcazeService>();

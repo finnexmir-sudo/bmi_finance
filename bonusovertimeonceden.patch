@@ -1,0 +1,115 @@
+From f2e77a32a71eab4ea460331a069a68ccc5fc7ecc Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 22 May 2026 21:41:32 +0000
+Subject: [PATCH] feat: TopluHesabla-da Bonus/Overtime onceden gorunsun
+
+Muhasib tesdiqden evvel her ishchinin Bonus/Overtime meblegini gormeli.
+- MaasController.TopluHesabla GET: AyliqElaveQeydi cedvelinden bonus+overtime
+  oxuyub ViewBag-e dictionary kimi otururur
+- TopluHesabla view: yeni Overtime sutunu, Bonus xanasi readonly + AyliqElave
+  qiymeti ile pre-fill, tooltip 'Bonus/Overtime sehifesinden redakte edin'
+- Cemi setrinin colspan ve expand row colspan duzeldildi (yeni sutun ucun)
+
+https://claude.ai/code/session_018nZeGieRr7ezZ9mDSF1gdo
+---
+ .../Areas/HR/Controllers/MaasController.cs    | 10 +++++++
+ .../Areas/HR/Views/Maas/TopluHesabla.cshtml   | 29 +++++++++++++++----
+ 2 files changed, 34 insertions(+), 5 deletions(-)
+
+diff --git a/FinNex.UI/Areas/HR/Controllers/MaasController.cs b/FinNex.UI/Areas/HR/Controllers/MaasController.cs
+index 2fc931d..7d7bcf8 100644
+--- a/FinNex.UI/Areas/HR/Controllers/MaasController.cs
++++ b/FinNex.UI/Areas/HR/Controllers/MaasController.cs
+@@ -629,6 +629,16 @@ namespace FinNex.UI.Areas.HR.Controllers
+             }
+             ViewBag.IsciKorreksiyaMap = isciKorreksiyaMap;
+ 
++            // Aylıq əlavə qeydləri (Bonus + Overtime) — maaş hesablama bunlardan oxuyur.
++            // Mühasib təsdiqdən əvvəl səhifədə görsün deyə dictionary kimi göndəririk.
++            var ayliqElaveler = await _unitOfWork.Repository<AyliqElaveQeydi>()
++                .Query()
++                .Where(x => x.Il == cIl && x.Ay == cAy && !x.Silinib)
++                .Select(x => new { x.IsciId, x.Bonus, x.Overtime })
++                .ToListAsync();
++            ViewBag.AyliqElaveBonusMap    = ayliqElaveler.ToDictionary(x => x.IsciId, x => x.Bonus);
++            ViewBag.AyliqElaveOvertimeMap = ayliqElaveler.ToDictionary(x => x.IsciId, x => x.Overtime);
++
+             ViewBag.Hesablanmis = hesablanmis;
+             ViewBag.CariMaasMap = cariMaasMap;
+             ViewBag.IbanMap = ibanMap;
+diff --git a/FinNex.UI/Areas/HR/Views/Maas/TopluHesabla.cshtml b/FinNex.UI/Areas/HR/Views/Maas/TopluHesabla.cshtml
+index 3006163..3a1160b 100644
+--- a/FinNex.UI/Areas/HR/Views/Maas/TopluHesabla.cshtml
++++ b/FinNex.UI/Areas/HR/Views/Maas/TopluHesabla.cshtml
+@@ -284,6 +284,7 @@
+                                 <th class="col-name left">Ad Soyad</th>
+                                 <th class="col-status center">Status</th>
+                                 <th class="col-bonus">+ Bonus</th>
++                                <th class="col-bonus">+ Overtime</th>
+                                 <th class="col-cerime">− Cərimə</th>
+                                 <th class="col-davam" style="color:#dc2626;">− Davamiyyət</th>
+                                 <th class="col-esas">Əsas Maaş</th>
+@@ -306,6 +307,12 @@
+                                 var isDone  = hesablanmis.Contains(isci.Id);
+                                 var hasIban = !string.IsNullOrEmpty(GetIban(isci.Id));
+ 
++                                // Aylıq Əlavə qeydindən bonus/overtime (oxunaqlı — yalnız Bonus/Overtime səhifəsindən redaktə)
++                                var _aeBonusMap    = ViewBag.AyliqElaveBonusMap    as Dictionary<int, decimal>;
++                                var _aeOvertimeMap = ViewBag.AyliqElaveOvertimeMap as Dictionary<int, decimal>;
++                                decimal aeBonus    = (_aeBonusMap    != null && _aeBonusMap.ContainsKey(isci.Id))    ? _aeBonusMap[isci.Id]    : 0m;
++                                decimal aeOvertime = (_aeOvertimeMap != null && _aeOvertimeMap.ContainsKey(isci.Id)) ? _aeOvertimeMap[isci.Id] : 0m;
++
+                                 @* ── Main row ──────────────────────────────── *@
+                                 decimal isciGuzestMebleg = 0m;
+                                 string isciGuzestAd = "";
+@@ -444,14 +451,26 @@
+                                         }
+                                     </td>
+ 
+-                                    @* + Bonus *@
++                                    @* + Bonus — yalnız "Bonus / Overtime" səhifəsindən redaktə olunur *@
+                                     <td class="col-bonus">
+-                                        <div class="mth-inp-wrap">
++                                        <div class="mth-inp-wrap" title="Bonus/Overtime səhifəsindən redaktə edin">
+                                             <span class="mth-inp-pfx mth-inp-pfx--plus">+</span>
+                                             <input type="number" class="mth-inp mth-inp--b"
+                                                    name="ferdiElaveler[@i].BonusMeblegi"
+                                                    min="0" step="0.01" placeholder="0.00"
+-                                                   @(isDone?"readonly":"")/>
++                                                   value="@(aeBonus > 0 ? aeBonus.ToString("0.##") : "")"
++                                                   readonly />
++                                        </div>
++                                    </td>
++
++                                    @* + Overtime — Bonus/Overtime səhifəsindən gəlir *@
++                                    <td class="col-bonus">
++                                        <div class="mth-inp-wrap" title="Bonus/Overtime səhifəsindən redaktə edin">
++                                            <span class="mth-inp-pfx mth-inp-pfx--plus">+</span>
++                                            <input type="number" class="mth-inp mth-inp--b"
++                                                   min="0" step="0.01" placeholder="0.00"
++                                                   value="@(aeOvertime > 0 ? aeOvertime.ToString("0.##") : "")"
++                                                   readonly />
+                                         </div>
+                                     </td>
+ 
+@@ -503,7 +522,7 @@
+ 
+                                 @* ── Expandable detail panel ───────────────── *@
+                                 <tr class="mth-detail-row" data-detail-for="@isci.Id">
+-                                    <td colspan="10">
++                                    <td colspan="11">
+                                         <div class="mth-detail-panel">
+                                             <div class="mth-detail-grid">
+ 
+@@ -930,7 +949,7 @@
+                         @* ── Cəmi sətri ────────────────────────────────── *@
+                         <tfoot>
+                             <tr>
+-                                <td class="left" colspan="6" style="font-weight:700;font-size:12px;color:#3d4557;padding:11px 10px;">
++                                <td class="left" colspan="7" style="font-weight:700;font-size:12px;color:#3d4557;padding:11px 10px;">
+                                     CƏMİ — @isciList.Count işçi
+                                 </td>
+                                 <td><span class="n">@Fmt(isciList.Sum(x=>GetEsas(x.Id)))</span></td>
+-- 
+2.43.0
+

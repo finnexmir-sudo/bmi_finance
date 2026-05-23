@@ -25,6 +25,43 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
                         .Include(i => i.Maliye)
                 );
 
+            // İşçi Sıralaması səhifəsində təyin edilmiş sıra ilə düz
+            entities = entities
+                .OrderBy(x => x.Sira)
+                .ThenBy(x => x.Ad)
+                .ThenBy(x => x.Soyad)
+                .ToList();
+
+            var data = _mapper.Map<IList<IsciListDto>>(entities);
+            return Result<IList<IsciListDto>>.Ok(data);
+        }
+        catch (Exception)
+        {
+            return Result<IList<IsciListDto>>.Fail("İşçi siyahısı gətirilərkən xəta baş verdi.");
+        }
+    }
+
+    /// <summary>
+    /// Predikat və include ilə işçi siyahısı — Sira ilə düzülmüş.
+    /// Bu overload-u override edirik ki, bütün filtirlənmiş çağırışlar da
+    /// "İşçi Sıralaması" qaydasına əməl etsin.
+    /// </summary>
+    public override async Task<Result<IList<IsciListDto>>> HamisiniGetirAsync(
+        System.Linq.Expressions.Expression<Func<Isci, bool>>? predicate = null,
+        Func<IQueryable<Isci>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<Isci, object>>? include = null,
+        bool izlemeden = true)
+    {
+        try
+        {
+            var entities = await _unitOfWork.Repository<Isci>()
+                .HamisiniGetirAsync(predicate, include, izlemeden);
+
+            entities = entities
+                .OrderBy(x => x.Sira)
+                .ThenBy(x => x.Ad)
+                .ThenBy(x => x.Soyad)
+                .ToList();
+
             var data = _mapper.Map<IList<IsciListDto>>(entities);
             return Result<IList<IsciListDto>>.Ok(data);
         }

@@ -36,6 +36,7 @@
     decimal umumiIssizlik = list.Sum(x => x.IssizlikIsci);
     decimal umumiItss     = list.Sum(x => x.Itss);
     decimal umumiBonus    = list.Sum(x => x.BonusMeblegi);
+    decimal umumiOvertime = list.Sum(x => x.OvertimeMeblegi);
     decimal umumiCerime   = list.Sum(x => x.CerimeMeblegi);
     decimal umumiTutulma  = umumiGelirV + umumiDsmf + umumiIssizlik + umumiItss;
 
@@ -429,7 +430,7 @@
                             <th colspan="1" class="grp-sts center">Status</th>
                             <th colspan="1" class="grp-sts center">Əməliyyat</th>
                             <th colspan="1" class="grp-isci left">İşçi</th>
-                            <th colspan="3" class="grp-gelir">Gəlirlər</th>
+                            <th colspan="4" class="grp-gelir">Gəlirlər</th>
                             <th colspan="1" class="grp-kesinti">Kəsinti</th>
                             <th colspan="4" class="grp-vergi">Tutulmalar (İşçi)</th>
                             <th colspan="2" class="grp-net">NET / Ödəniş</th>
@@ -444,6 +445,7 @@
 
                             <th style="min-width:110px;">Əsas Maaş</th>
                             <th style="min-width:90px;">Bonus</th>
+                            <th style="min-width:90px;">Overtime</th>
                             <th class="col-sep" style="min-width:110px;">Məzuniyyət Öd.</th>
 
                             <th class="col-sep" style="min-width:100px;">Cərimə</th>
@@ -558,6 +560,12 @@
                                     else
                                     { <span class="n n--dim">—</span> }
                                 </td>
+                                <td>
+                                    @if (!isLegv && m.OvertimeMeblegi > 0)
+                                    { <span class="n n--green">+@m.OvertimeMeblegi.ToString("N2") ₼</span> }
+                                    else
+                                    { <span class="n n--dim">—</span> }
+                                </td>
                                 <td class="col-sep">
                                     @if (!isLegv && m.MezuniyyetOdenisi > 0)
                                     { <span class="n n--blue">@m.MezuniyyetOdenisi.ToString("N2") ₼</span> }
@@ -641,6 +649,7 @@
                             </td>
                             <td class="center"><span class="n">@umumiBrut.ToString("N2") ₼</span></td>
                             <td class="center"><span class="n n--green">@FmtC(umumiBonus,"+")</span></td>
+                            <td class="center"><span class="n n--green">@FmtC(umumiOvertime,"+")</span></td>
                             <td class="center col-sep"><span class="n n--blue">@FmtC(list.Sum(x=>x.MezuniyyetOdenisi))</span></td>
                             <td class="center col-sep"><span class="n n--red">@FmtC(umumiCerime,"−")</span></td>
                             <td class="center"><span class="n n--red">@umumiGelirV.ToString("N2") ₼</span></td>
