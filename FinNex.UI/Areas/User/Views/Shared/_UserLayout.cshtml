@@ -611,12 +611,16 @@
                             @if (isHR)
                             {
                                 <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Hr"
-                                   class="fn-nav-item @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction != "GeriyeQeyd" && currentAction != "Aktiv" ? "active" : "")">
+                                   class="fn-nav-item @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction != "GeriyeQeyd" && currentAction != "Aktiv" && currentAction != "Yenilenmeler" ? "active" : "")">
                                     <i class="bi bi-tree"></i> Məzuniyyət Müraciətləri
                                 </a>
                                 <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Aktiv"
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction == "Aktiv" ? "active" : "")">
                                     <i class="bi bi-airplane"></i> Aktiv Məzuniyyətlər
+                                </a>
+                                <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="Yenilenmeler"
+                                   class="fn-nav-item @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction == "Yenilenmeler" ? "active" : "")">
+                                    <i class="bi bi-calendar-event"></i> Yenilənmələr
                                 </a>
                                 <a asp-area="HR" asp-controller="Mezuniyyet" asp-action="GeriyeQeyd"
                                    class="fn-nav-item @(currentArea == "HR" && currentController == "Mezuniyyet" && currentAction == "GeriyeQeyd" ? "active" : "")">
