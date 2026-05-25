@@ -126,6 +126,13 @@
                             Məzuniyyət
                         </a>
 
+                        <a class="hr-nav-sub-item @(currentController == "Mezuniyyet" && currentAction == "Yenilenmeler" ? "active" : "")"
+                           asp-area="HR"
+                           asp-controller="Mezuniyyet"
+                           asp-action="Yenilenmeler">
+                            Yenilənmələr
+                        </a>
+
                         <a class="hr-nav-sub-item @(currentController == "XestelikEzamiyyet" ? "active" : "")"
                            asp-area="HR"
                            asp-controller="XestelikEzamiyyet"

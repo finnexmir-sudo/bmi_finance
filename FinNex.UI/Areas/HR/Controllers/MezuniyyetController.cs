@@ -1,4 +1,5 @@
-﻿using FinNex.Application.DTOs.HR.Mezuniyyet;
+﻿using ClosedXML.Excel;
+using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain;
@@ -10,6 +11,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
 namespace FinNex.UI.Areas.HR.Controllers
@@ -108,7 +111,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             var pageTitle = aktivTab switch
             {
-                "proses" => "Prosesdə olan müraciətlər",
+                "proses" => "Prosesədə olan müraciətlər",
                 "tarixce" => "Təsdiq tarixçəsi",
                 _ => "HR — Son Təsdiq"
             };
@@ -214,7 +217,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             if (!editStatuses.Contains(m.Status))
             {
-                TempData["Xeta"] = "Yalnız prosesdə olan məzuniyyətlər redaktə edilə bilər.";
+                TempData["Xeta"] = "Yalnız prosesədə olan məzuniyyətlər redaktə edilə bilər.";
                 return RedirectToAction("Index");
             }
 
@@ -256,6 +259,211 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.QabaqcaGun = qabaqcaGun;
             ViewData["Title"] = "Aktiv Məzuniyyətlər";
             return View(list);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // MƌZUNİYYƌT YENİLƌNMƌLƌRİ (illik balıs yənilənmə tarixi)
+        // ─────────────────────────────────────────────────────────────────────────────
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> Yenilenmeler(int gun = 30, int? departamentId = null, string? search = null)
+        {
+            if (gun < 1)   gun = 30;
+            if (gun > 365) gun = 365;
+
+            var rows = await FetchYenilenmelerAsync(gun, departamentId, search);
+            var depts = await _unitOfWork.Repository<Departament>().HamisiniGetirAsync(
+                x => !x.Silinib, izlemeden: true);
+
+            var vm = new MezuniyyetYenilenmeIndexVM
+            {
+                Rows          = rows,
+                Gun           = gun,
+                DepartamentId = departamentId,
+                Search        = search,
+                Departamentler = depts
+                    .OrderBy(d => d.Ad)
+                    .Select(d => new SelectListItem(d.Ad, d.Id.ToString(), d.Id == departamentId))
+                    .ToList()
+            };
+
+            ViewData["Title"] = "Məzuniyyət Yenilənmələri";
+            return View(vm);
+        }
+
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> YenilenmelerExcel(int gun = 30, int? departamentId = null, string? search = null)
+        {
+            if (gun < 1)   gun = 30;
+            if (gun > 365) gun = 365;
+
+            var rows = await FetchYenilenmelerAsync(gun, departamentId, search);
+
+            using var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add("Yenilənmələr");
+
+            // Headers
+            var headers = new[]
+            {
+                "#", "Ad", "Soyad", "Ata Adı", "FIN", "Şəxs. Vəsiqəsi",
+                "Doğum Tarixi", "Cins", "Telefon", "Email", "Ünvan",
+                "Departament", "Vəzifə", "İşə Qəbul",
+                "Növbəti Yenilənmə", "Qalan Gün", "Stajlı İl",
+                "Cari Maaş", "IBAN", "Cari İl Balansı (gün)", "Status"
+            };
+
+            for (int i = 0; i < headers.Length; i++)
+                ws.Cell(1, i + 1).Value = headers[i];
+
+            var headerRange = ws.Range(1, 1, 1, headers.Length);
+            headerRange.Style.Font.Bold = true;
+            headerRange.Style.Fill.BackgroundColor = XLColor.LightSteelBlue;
+            headerRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+            // Data rows
+            for (int r = 0; r < rows.Count; r++)
+            {
+                var row = rows[r];
+                int c = 1;
+                ws.Cell(r + 2, c++).Value = r + 1;
+                ws.Cell(r + 2, c++).Value = row.Ad;
+                ws.Cell(r + 2, c++).Value = row.Soyad;
+                ws.Cell(r + 2, c++).Value = row.AtaAdi ?? "";
+                ws.Cell(r + 2, c++).Value = row.FIN;
+                ws.Cell(r + 2, c++).Value = row.SeriyaNomre ?? "";
+                ws.Cell(r + 2, c++).Value = row.DogumTarixi;
+                ws.Cell(r + 2, c++).Value = row.CinsAd;
+                ws.Cell(r + 2, c++).Value = row.Telefon ?? "";
+                ws.Cell(r + 2, c++).Value = row.Email ?? "";
+                ws.Cell(r + 2, c++).Value = row.Unvan ?? "";
+                ws.Cell(r + 2, c++).Value = row.DepartamentAd;
+                ws.Cell(r + 2, c++).Value = row.VezifeAd;
+                ws.Cell(r + 2, c++).Value = row.IsheQebulTarixi;
+                ws.Cell(r + 2, c++).Value = row.NextRenewDate;
+                ws.Cell(r + 2, c++).Value = row.QalanGun;
+                ws.Cell(r + 2, c++).Value = row.IslediyiIl;
+                ws.Cell(r + 2, c++).Value = row.CariMaas ?? 0m;
+                ws.Cell(r + 2, c++).Value = row.Iban ?? "";
+                ws.Cell(r + 2, c++).Value = row.CariIldeToplamGun ?? 0;
+                ws.Cell(r + 2, c++).Value = row.CariIldeBalansVar ? "Balans mövcuddur" : "Yenilənməlidir";
+            }
+
+            // Date format columns (7=Doğum, 14=İşə qəbul, 15=Növbəti)
+            ws.Column(7).Style.DateFormat.Format = "dd.MM.yyyy";
+            ws.Column(14).Style.DateFormat.Format = "dd.MM.yyyy";
+            ws.Column(15).Style.DateFormat.Format = "dd.MM.yyyy";
+            ws.Column(18).Style.NumberFormat.Format = "#,##0.00";
+
+            // Auto-fit
+            ws.Columns().AdjustToContents();
+
+            // Freeze first row
+            ws.SheetView.FreezeRows(1);
+
+            using var ms = new MemoryStream();
+            wb.SaveAs(ms);
+
+            var fileName = $"Mezuniyyet_Yenilenmeler_{DateTime.Today:yyyy-MM-dd}.xlsx";
+            return File(
+                ms.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
+        }
+
+        /// <summary>
+        /// Işci anniversary (işə qəbul ildönümü) tarixi görə yenilənmə list ini gətirir.
+        /// </summary>
+        private async Task<List<MezuniyyetYenilenmeRowVM>> FetchYenilenmelerAsync(
+            int gun, int? departamentId, string? search)
+        {
+            var today = DateTime.Today;
+            var currentYear = today.Year;
+
+            var query = _unitOfWork.Repository<Isci>().SorguHazirla(
+                x => x.Status == IsciStatus.Aktiv,
+                include: q => q
+                    .Include(i => i.IsciTeyinatlari).ThenInclude(t => t.Departament)
+                    .Include(i => i.IsciTeyinatlari).ThenInclude(t => t.Vezife)
+                    .Include(i => i.Maliye)
+                    .Include(i => i.MezuniyyetBalanslari),
+                izlemeden: true);
+
+            var isciler = await query.ToListAsync();
+
+            var rows = isciler.Select(i =>
+            {
+                var aktiv = i.IsciTeyinatlari.FirstOrDefault(t => t.Aktivdir);
+                var illik = i.MezuniyyetBalanslari
+                    .FirstOrDefault(b => b.Il == currentYear && b.Nov == MezuniyyetNovu.Illik);
+
+                var next = NextRenewDate(i.IsheQebulTarixi, today);
+                var qalan = (next - today).Days;
+                var stajIl = today.Year - i.IsheQebulTarixi.Year;
+                if (i.IsheQebulTarixi.Date > today.AddYears(-stajIl)) stajIl--;
+
+                return new MezuniyyetYenilenmeRowVM
+                {
+                    IsciId            = i.Id,
+                    Ad                = i.Ad,
+                    Soyad             = i.Soyad,
+                    AtaAdi            = i.AtaAdi,
+                    FIN               = i.FIN,
+                    SeriyaNomre       = i.SeriyaNomre,
+                    DogumTarixi       = i.DogumTarixi,
+                    Cins              = i.Cins,
+                    Telefon           = i.Telefon,
+                    Email             = i.Email,
+                    Unvan             = i.Unvan,
+                    IsheQebulTarixi   = i.IsheQebulTarixi,
+                    NextRenewDate     = next,
+                    QalanGun          = qalan,
+                    IslediyiIl        = Math.Max(0, stajIl),
+                    DepartamentId     = aktiv?.DepartamentId ?? 0,
+                    DepartamentAd     = aktiv?.Departament?.Ad ?? "—",
+                    VezifeAd          = aktiv?.Vezife?.Ad ?? "—",
+                    CariMaas          = i.Maliye?.CariMaas,
+                    Iban              = i.Maliye?.BankHesabNo,
+                    CariIldeBalansVar = illik != null,
+                    CariIldeToplamGun = illik?.ToplamGun
+                };
+            })
+            .Where(r => r.QalanGun >= 0 && r.QalanGun <= gun)
+            .ToList();
+
+            if (departamentId.HasValue && departamentId.Value > 0)
+                rows = rows.Where(r => r.DepartamentId == departamentId.Value).ToList();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim();
+                rows = rows.Where(r =>
+                    (r.Ad?.Contains(s, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (r.Soyad?.Contains(s, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (r.FIN?.Contains(s, StringComparison.OrdinalIgnoreCase) ?? false))
+                    .ToList();
+            }
+
+            return rows.OrderBy(r => r.QalanGun).ThenBy(r => r.Soyad).ToList();
+        }
+
+        /// <summary>
+        /// İşə qəbul tarixinin ildönümünü bu il (əgər keçməyibsə) və ya gələn il qaytarır.
+        /// 29 fevral kimi hüdud hallarını idarə edir (ayın son gününə clamp).
+        /// </summary>
+        private static DateTime NextRenewDate(DateTime hireDate, DateTime today)
+        {
+            int year  = today.Year;
+            int month = hireDate.Month;
+            int day   = Math.Min(hireDate.Day, DateTime.DaysInMonth(year, month));
+            var thisYear = new DateTime(year, month, day);
+
+            if (thisYear < today)
+            {
+                year++;
+                day = Math.Min(hireDate.Day, DateTime.DaysInMonth(year, month));
+                return new DateTime(year, month, day);
+            }
+            return thisYear;
         }
 
         [HttpPost, ValidateAntiForgeryToken]
@@ -300,7 +508,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             return RedirectToAction(nameof(Hr));
         }
 
-        private async Task<List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>> GetAktivIsciSelectListAsync(int? selected = null)
+        private async Task<List<SelectListItem>> GetAktivIsciSelectListAsync(int? selected = null)
         {
             var iscilerResult = await _isciService.HamisiniGetirAsync(
                 x => x.Status == IsciStatus.Aktiv,
@@ -311,7 +519,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             return iscilerResult.Data
                 .OrderBy(x => x.TamAd)
-                .Select(x => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+                .Select(x => new SelectListItem(
                     x.TamAd, x.Id.ToString(), x.Id == selected))
                 .ToList();
         }
@@ -330,7 +538,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             return View("TesdiqIndex", vm);
         }
 
-        // DÖVLƏT VƏZİFƏSİ KORREKSİYASI — Maddə 173
+        // DÖVLƌT VƌZİFƌSİ KORREKSİYASI — Maddə 173
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -393,7 +601,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> KorreksiyaSenedElave(int mezuniyyetId, List<IFormFile> senedler)
         {
             if (senedler == null || senedler.Count == 0)
-                return Json(new { ok = false, xeta = "Ən azı bir sənəd seçin." });
+                return Json(new { ok = false, xeta = "ƌn azı bir sənəd seçin." });
 
             var dmsRoot2 = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
             var dir = Path.Combine(dmsRoot2, "dovlet-vezife");
