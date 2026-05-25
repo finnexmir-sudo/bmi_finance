@@ -270,20 +270,29 @@ namespace FinNex.UI.Areas.HR.Controllers
             if (gun < 1)   gun = 30;
             if (gun > 365) gun = 365;
 
-            var rows = await FetchYenilenmelerAsync(gun, departamentId, search);
-            var depts = await _unitOfWork.Repository<Departament>().HamisiniGetirAsync(
-                x => !x.Silinib, izlemeden: true);
+            var allRows = await LoadAllRowsAsync();
+
+            // Departament dropdown — bütün aktiv departamentlər (filtr-dən asılı olmadan)
+            var depts = allRows
+                .Where(r => r.DepartamentId > 0 && r.DepartamentAd != "—")
+                .GroupBy(r => r.DepartamentId)
+                .Select(g => new SelectListItem(
+                    g.First().DepartamentAd,
+                    g.Key.ToString(),
+                    g.Key == departamentId))
+                .OrderBy(s => s.Text)
+                .ToList();
+
+            // Filtrlər
+            var rows = ApplyFilters(allRows, gun, departamentId, search);
 
             var vm = new MezuniyyetYenilenmeIndexVM
             {
-                Rows          = rows,
-                Gun           = gun,
-                DepartamentId = departamentId,
-                Search        = search,
+                Rows           = rows,
+                Gun            = gun,
+                DepartamentId  = departamentId,
+                Search         = search,
                 Departamentler = depts
-                    .OrderBy(d => d.Ad)
-                    .Select(d => new SelectListItem(d.Ad, d.Id.ToString(), d.Id == departamentId))
-                    .ToList()
             };
 
             ViewData["Title"] = "Məzuniyyət Yenilənmələri";
@@ -296,12 +305,12 @@ namespace FinNex.UI.Areas.HR.Controllers
             if (gun < 1)   gun = 30;
             if (gun > 365) gun = 365;
 
-            var rows = await FetchYenilenmelerAsync(gun, departamentId, search);
+            var allRows = await LoadAllRowsAsync();
+            var rows = ApplyFilters(allRows, gun, departamentId, search);
 
             using var wb = new XLWorkbook();
             var ws = wb.Worksheets.Add("Yenilənmələr");
 
-            // Headers
             var headers = new[]
             {
                 "#", "Ad", "Soyad", "Ata Adı", "FIN", "Şəxs. Vəsiqəsi",
@@ -320,7 +329,6 @@ namespace FinNex.UI.Areas.HR.Controllers
             headerRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
             headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            // Data rows
             for (int r = 0; r < rows.Count; r++)
             {
                 var row = rows[r];
@@ -348,16 +356,12 @@ namespace FinNex.UI.Areas.HR.Controllers
                 ws.Cell(r + 2, c++).Value = row.CariIldeBalansVar ? "Balans mövcuddur" : "Yenilənməlidir";
             }
 
-            // Date format columns (7=Doğum, 14=İşə qəbul, 15=Növbəti)
             ws.Column(7).Style.DateFormat.Format = "dd.MM.yyyy";
             ws.Column(14).Style.DateFormat.Format = "dd.MM.yyyy";
             ws.Column(15).Style.DateFormat.Format = "dd.MM.yyyy";
             ws.Column(18).Style.NumberFormat.Format = "#,##0.00";
 
-            // Auto-fit
             ws.Columns().AdjustToContents();
-
-            // Freeze first row
             ws.SheetView.FreezeRows(1);
 
             using var ms = new MemoryStream();
@@ -371,26 +375,23 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         /// <summary>
-        /// Işci anniversary (işə qəbul ildönümü) tarixi görə yenilənmə list ini gətirir.
+        /// Bütün aktiv işçilər üçün yenilənmə sətrlərini hazırlayır (filtrsiz).
         /// </summary>
-        private async Task<List<MezuniyyetYenilenmeRowVM>> FetchYenilenmelerAsync(
-            int gun, int? departamentId, string? search)
+        private async Task<List<MezuniyyetYenilenmeRowVM>> LoadAllRowsAsync()
         {
             var today = DateTime.Today;
             var currentYear = today.Year;
 
-            var query = _unitOfWork.Repository<Isci>().SorguHazirla(
+            var isciler = await _unitOfWork.Repository<Isci>().SorguHazirla(
                 x => x.Status == IsciStatus.Aktiv,
                 include: q => q
                     .Include(i => i.IsciTeyinatlari).ThenInclude(t => t.Departament)
                     .Include(i => i.IsciTeyinatlari).ThenInclude(t => t.Vezife)
                     .Include(i => i.Maliye)
                     .Include(i => i.MezuniyyetBalanslari),
-                izlemeden: true);
+                izlemeden: true).ToListAsync();
 
-            var isciler = await query.ToListAsync();
-
-            var rows = isciler.Select(i =>
+            return isciler.Select(i =>
             {
                 var aktiv = i.IsciTeyinatlari.FirstOrDefault(t => t.Aktivdir);
                 var illik = i.MezuniyyetBalanslari
@@ -426,12 +427,23 @@ namespace FinNex.UI.Areas.HR.Controllers
                     CariIldeBalansVar = illik != null,
                     CariIldeToplamGun = illik?.ToplamGun
                 };
-            })
-            .Where(r => r.QalanGun >= 0 && r.QalanGun <= gun)
-            .ToList();
+            }).ToList();
+        }
+
+        /// <summary>
+        /// Gün, departament və axtarış filtrlərini tətbiq edir.
+        /// </summary>
+        private static List<MezuniyyetYenilenmeRowVM> ApplyFilters(
+            List<MezuniyyetYenilenmeRowVM> all,
+            int gun,
+            int? departamentId,
+            string? search)
+        {
+            var rows = all
+                .Where(r => r.QalanGun >= 0 && r.QalanGun <= gun);
 
             if (departamentId.HasValue && departamentId.Value > 0)
-                rows = rows.Where(r => r.DepartamentId == departamentId.Value).ToList();
+                rows = rows.Where(r => r.DepartamentId == departamentId.Value);
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -439,8 +451,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 rows = rows.Where(r =>
                     (r.Ad?.Contains(s, StringComparison.OrdinalIgnoreCase) ?? false) ||
                     (r.Soyad?.Contains(s, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (r.FIN?.Contains(s, StringComparison.OrdinalIgnoreCase) ?? false))
-                    .ToList();
+                    (r.FIN?.Contains(s, StringComparison.OrdinalIgnoreCase) ?? false));
             }
 
             return rows.OrderBy(r => r.QalanGun).ThenBy(r => r.Soyad).ToList();
