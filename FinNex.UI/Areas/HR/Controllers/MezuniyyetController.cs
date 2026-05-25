@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace FinNex.UI.Areas.HR.Controllers
 {
@@ -23,6 +24,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IBildirisService _bildirisService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IWebHostEnvironment _env;
+        private readonly IConfiguration _config;
 
         private static readonly string[] _icazeSenedTipler =
             [".pdf", ".jpg", ".jpeg", ".png"];
@@ -33,7 +35,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             UserManager<AppUser> userManager,
             IBildirisService bildirisService,
             IUnitOfWork unitOfWork,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            IConfiguration config)
         {
             _mezuniyyetService = mezuniyyetService;
             _isciService = isciService;
@@ -41,74 +44,34 @@ namespace FinNex.UI.Areas.HR.Controllers
             _bildirisService = bildirisService;
             _unitOfWork = unitOfWork;
             _env = env;
+            _config = config;
         }
 
-        // ── Köməkçi: cari istifadəçinin IsciId-sini alır ──────
         private async Task<int?> GetCurrentIsciIdAsync()
         {
             var appUser = await _userManager.GetUserAsync(User);
             return appUser?.IsciId;
         }
 
-        // ── Köməkçi: cari işçinin aktiv departament ID-sini alır ──
         private async Task<int?> GetCurrentDepartamentIdAsync(int isciId)
         {
             var result = await _isciService.GetAktivDepartamentIdAsync(isciId);
             return result.Success ? result.Data : null;
         }
 
-        // ══════════════════════════════════════════════════════
-        // ŞÖBƏ RƏİSİ BÖLÜMÜ
-        // Rol: "SobeReisi"
-        // ══════════════════════════════════════════════════════
-
-        //[Authorize(Roles = "SobeReisi,Admin")]
-        //public async Task<IActionResult> SobeReisi()
-        //{
-        //    var isciId = await GetCurrentIsciIdAsync();
-        //    if (isciId == null) return Forbid();
-
-        //    var departamentId = await GetCurrentDepartamentIdAsync(isciId.Value);
-        //    if (departamentId == null) return Forbid();
-
-        //    var result = await _mezuniyyetService.GetSobeyeGoreMezuniyyetlerAsync(departamentId.Value);
-
-        //    var vm = new HrMezuniyyetIndexVM
-        //    {
-        //        Mezuniyyetler = result.Success ? result.Data!.ToList() : new(),
-        //        PageTitle = "Şöbə Rəisi — Gözləyən Müraciətlər",
-        //        TesdiqAction = "SobeReisiTesdiq"
-        //    };
-
-        //    ViewData["Title"] = "Şöbə Rəisi Təsdiqi";
-        //    return View("TesdiqIndex", vm);
-        //}
-
-        // ══════════════════════════════════════════════════════
-        // RƏHBƏR BÖLÜMÜ
-        // Rol: "Rehber"
-        // ══════════════════════════════════════════════════════
-
         [Authorize(Roles = RoleNames.Rehber + "," + RoleNames.Admin)]
         public async Task<IActionResult> Rehber()
         {
             var result = await _mezuniyyetService.GetRehberTesdiqindeAsync();
-
             var vm = new HrMezuniyyetIndexVM
             {
                 Mezuniyyetler = result.Success ? result.Data!.ToList() : new(),
                 PageTitle = "Rəhbər — Gözləyən Müraciətlər",
                 TesdiqAction = "RehberTesdiq"
             };
-
             ViewData["Title"] = "Rəhbər Təsdiqi";
             return View("TesdiqIndex", vm);
         }
-
-        // ══════════════════════════════════════════════════════
-        // HR BÖLÜMÜ
-        // Rol: "HR"
-        // ══════════════════════════════════════════════════════
 
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
         public async Task<IActionResult> Hr(string tab = "tesdiq", string? axtaris = null)
@@ -120,7 +83,6 @@ namespace FinNex.UI.Areas.HR.Controllers
                 _ => "tesdiq"
             };
 
-            // Sayğaclar üçün bütün tablar sayğısını hesablayırıq
             var tesdiqResult = await _mezuniyyetService.GetHrTesdiqindeAsync();
             var prosesResult = await _mezuniyyetService.GetProsesdeOlanlarAsync();
             var tarixceResult = await _mezuniyyetService.GetTarixceAsync(
@@ -130,7 +92,6 @@ namespace FinNex.UI.Areas.HR.Controllers
             var prosesList = prosesResult.Success ? prosesResult.Data!.ToList() : new();
             var tarixceList = tarixceResult.Success ? tarixceResult.Data!.ToList() : new();
 
-            // Tarixçə üçün sayğacı axtarış olmadan götürürük ki, rəqəm sabit qalsın
             int tarixceTotalSayi = tarixceList.Count;
             if (aktivTab == "tarixce" && !string.IsNullOrWhiteSpace(axtaris))
             {
@@ -173,10 +134,6 @@ namespace FinNex.UI.Areas.HR.Controllers
             return View("TesdiqIndex", vm);
         }
 
-        // ══════════════════════════════════════════════════════
-        // DETAL SƏHİFƏSİ (3 rol üçün ortaq)
-        // ══════════════════════════════════════════════════════
-
         [Authorize(Roles = RoleNames.SobeReisi + "," + RoleNames.Rehber + "," + RoleNames.HR + "," + RoleNames.Admin)]
         public async Task<IActionResult> Detal(int id, string returnAction = "Hr")
         {
@@ -198,32 +155,6 @@ namespace FinNex.UI.Areas.HR.Controllers
             return View("Detail", vm);
         }
 
-        // ══════════════════════════════════════════════════════
-        // POST — ŞÖBƏ RƏİSİ TƏSDİQİ
-        // ══════════════════════════════════════════════════════
-
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //[Authorize(Roles = "SobeReisi,Admin")]
-        //public async Task<IActionResult> SobeReisiTesdiq(int id, bool status, string? qeyd)
-        //{
-        //    var isciId = await GetCurrentIsciIdAsync();
-        //    if (isciId == null) return Forbid();
-
-        //    // Məzuniyyəti yükləyib SobeReisiId-ni set edirik
-        //    var mezResult = await _mezuniyyetService.IdIleGetirAsync(id);
-        //    if (!mezResult.Success || mezResult.Data == null) return NotFound();
-
-        //    var result = await _mezuniyyetService.SobeReisiTesdiqAsync(id, status, qeyd, isciId.Value);
-
-        //    TempData[result.Success ? "Success" : "Error"] = result.Message;
-        //    return RedirectToAction(nameof(SobeReisi));
-        //}
-
-        // ══════════════════════════════════════════════════════
-        // POST — RƏHBƏR TƏSDİQİ
-        // ══════════════════════════════════════════════════════
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = RoleNames.Rehber + "," + RoleNames.Admin)]
@@ -231,16 +162,10 @@ namespace FinNex.UI.Areas.HR.Controllers
         {
             var isciId = await GetCurrentIsciIdAsync();
             if (isciId == null) return Forbid();
-
             var result = await _mezuniyyetService.RehberTesdiqAsync(id, status, qeyd, isciId.Value);
-
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Rehber));
         }
-
-        // ══════════════════════════════════════════════════════
-        // POST — HR TƏSDİQİ
-        // ══════════════════════════════════════════════════════
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -249,21 +174,10 @@ namespace FinNex.UI.Areas.HR.Controllers
         {
             var isciId = await GetCurrentIsciIdAsync();
             if (isciId == null) return Forbid();
-
             var result = await _mezuniyyetService.HrTesdiqAsync(id, status, qeyd, isciId.Value);
-
-            // Mühasib bildirişi artıq MezuniyyetService.HrTesdiqAsync daxilindədir
-            // (həm qabaqcadan, həm ay-sonu üçün). Burada təkrar göndərilmir.
-
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Hr));
         }
-
-        // ══════════════════════════════════════════════════════
-        // GERİYƏ QEYD — HR keçmiş tarix üçün məzuniyyət rəsmiləşdirir
-        // Emergency halları üçün: işçi işdə olmayıb, sonra HR sənədləşdirir.
-        // Təsdiq axınını atlayır, işçinin Davamiyyətindəki Qayib → İcazəliyə çevirir.
-        // ══════════════════════════════════════════════════════
 
         [HttpGet]
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
@@ -274,18 +188,11 @@ namespace FinNex.UI.Areas.HR.Controllers
             {
                 Isciler = await GetAktivIsciSelectListAsync()
             };
-
             ViewData["Title"] = "Geriyə Məzuniyyət Qeyd et";
             return View(vm);
         }
 
-        // ══════════════════════════════════════════════════════
-        // AKTİV MƏZUNİYYƏTLƏR — izləmə paneli
-        // Hazırda məzuniyyətdə olan və yaxın günlərdə başlayacaqlar.
-        // ══════════════════════════════════════════════════════
-
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
-        // ── Məzuniyyət Redaktəsi ───────────────────────────────────────────
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
@@ -297,7 +204,6 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             var m = result.Data;
-
             var editStatuses = new[]
             {
                 MezuniyyetStatus.Gozlemede,
@@ -323,7 +229,6 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Status         = m.Status,
                 ImtinaSebebi   = m.ImtinaSebebi
             };
-
             return View(dto);
         }
 
@@ -331,16 +236,13 @@ namespace FinNex.UI.Areas.HR.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(MezuniyyetUpdateDto dto)
         {
-            if (!ModelState.IsValid)
-                return View(dto);
-
+            if (!ModelState.IsValid) return View(dto);
             var result = await _mezuniyyetService.YenileAsync(dto);
             if (!result.Success)
             {
                 TempData["Xeta"] = result.Message;
                 return View(dto);
             }
-
             TempData["Ugur"] = result.Message ?? "Məzuniyyət uğurla yeniləndi.";
             return RedirectToAction("Index");
         }
@@ -349,10 +251,8 @@ namespace FinNex.UI.Areas.HR.Controllers
         {
             if (qabaqcaGun < 0) qabaqcaGun = 0;
             if (qabaqcaGun > 365) qabaqcaGun = 365;
-
             var result = await _mezuniyyetService.GetAktivVeYaxinlardakilarAsync(qabaqcaGun);
             var list = result.Success ? result.Data!.ToList() : new();
-
             ViewBag.QabaqcaGun = qabaqcaGun;
             ViewData["Title"] = "Aktiv Məzuniyyətlər";
             return View(list);
@@ -389,7 +289,6 @@ namespace FinNex.UI.Areas.HR.Controllers
             };
 
             var result = await _mezuniyyetService.GeriyeQeydEtAsync(dto, hrIsciId.Value);
-
             if (!result.Success)
             {
                 TempData["Error"] = result.Message;
@@ -398,7 +297,6 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             TempData["Success"] = result.Message ?? "Geriyə qeyd uğurla rəsmiləşdirildi.";
-            // HR təsdiq panelinə qayıt (Index yalnız Admin üçündür).
             return RedirectToAction(nameof(Hr));
         }
 
@@ -418,39 +316,22 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .ToList();
         }
 
-        // ══════════════════════════════════════════════════════
-        // ADMIN — hamısını görür
-        // ══════════════════════════════════════════════════════
-
         [Authorize(Roles = RoleNames.Admin)]
         public async Task<IActionResult> Index()
         {
             var result = await _mezuniyyetService.GetListAsync();
-
             var vm = new HrMezuniyyetIndexVM
             {
                 Mezuniyyetler = result.Success ? result.Data!.ToList() : new(),
                 PageTitle = "Bütün Müraciətlər",
                 TesdiqAction = ""
             };
-
             ViewData["Title"] = "Bütün Məzuniyyət Müraciətləri";
             return View("TesdiqIndex", vm);
         }
 
-        // Xəstəlik/Ezamiyyət əməliyyatları XestelikEzamiyyetController-ə köçürülüb
-
-        // ══════════════════════════════════════════════════════
         // DÖVLƏT VƏZİFƏSİ KORREKSİYASI — Maddə 173
-        // ══════════════════════════════════════════════════════
 
-        /// <summary>
-        /// Dövlət vəzifəsi korreksiyası (hərbi çağırış, məhkəmə şahidliyi və s.).
-        /// İşçi illik məzuniyyətdə olarkən dövlət vəzifəsi icra edirsə:
-        ///   — həmin günlər balansdan geri qaytarılır
-        ///   — DovletVezifelerininIcrasi növündə yeni qeyd yaranır
-        ///   — Davamiyyətdə MaasdanKes=false — maaşdan kəsinti olmur
-        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Korreksiya([FromForm] MezuniyyetKorreksiyaDto dto)
@@ -459,33 +340,43 @@ namespace FinNex.UI.Areas.HR.Controllers
             if (hrIsciId == null)
                 return Json(new { ok = false, xeta = "İstifadəçi tapılmadı." });
 
-            // ── Sənəd saxla (opsional) ────────────────────────────────────
-            string senedYolu = string.Empty;
-            if (dto.Sened != null && dto.Sened.Length > 0)
+            var yollar = new List<string>();
+            if (dto.Senedler != null && dto.Senedler.Count > 0)
             {
-                var ext = Path.GetExtension(dto.Sened.FileName).ToLowerInvariant();
-                if (!_icazeSenedTipler.Contains(ext))
-                    return Json(new
-                    {
-                        ok = false,
-                        xeta = "Sənəd formatı qəbul edilmir. İcazə verilən: PDF, JPG, PNG."
-                    });
-
-                if (dto.Sened.Length > 10 * 1024 * 1024)
-                    return Json(new { ok = false, xeta = "Sənəd 10 MB-dan böyük ola bilməz." });
-
-                var dir = Path.Combine(_env.WebRootPath, "uploads", "dovlet-vezife");
+                var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+                var dir = Path.Combine(dmsRoot, "dovlet-vezife");
                 Directory.CreateDirectory(dir);
-                var fileName = $"{Guid.NewGuid()}{ext}";
-                await using (var fs = new FileStream(Path.Combine(dir, fileName), FileMode.Create))
-                    await dto.Sened.CopyToAsync(fs);
 
-                senedYolu = $"/uploads/dovlet-vezife/{fileName}";
+                foreach (var sened in dto.Senedler)
+                {
+                    if (sened == null || sened.Length == 0) continue;
+
+                    var ext = Path.GetExtension(sened.FileName).ToLowerInvariant();
+                    if (!_icazeSenedTipler.Contains(ext))
+                        return Json(new
+                        {
+                            ok = false,
+                            xeta = $"\"{sened.FileName}\" — format qəbul edilmir. İcazə verilən: PDF, JPG, PNG."
+                        });
+
+                    if (sened.Length > 10 * 1024 * 1024)
+                        return Json(new
+                        {
+                            ok = false,
+                            xeta = $"\"{sened.FileName}\" — 10 MB-dan böyük ola bilməz."
+                        });
+
+                    var fileName = $"{Guid.NewGuid()}{ext}";
+                    await using (var fs = new FileStream(Path.Combine(dir, fileName), FileMode.Create))
+                        await sened.CopyToAsync(fs);
+
+                    yollar.Add($"/dms/dovlet-vezife/{fileName}");
+                }
             }
 
-            // ── Servis çağır ──────────────────────────────────────────────
-            var result = await _mezuniyyetService.KorreksiyaEtAsync(dto, hrIsciId.Value, senedYolu);
+            var senedYolu = string.Join("|", yollar);
 
+            var result = await _mezuniyyetService.KorreksiyaEtAsync(dto, hrIsciId.Value, senedYolu);
             if (!result.Success)
                 return Json(new { ok = false, xeta = result.Message });
 
@@ -495,6 +386,56 @@ namespace FinNex.UI.Areas.HR.Controllers
                 mesaj   = result.Message,
                 yeniId  = result.Data?.Id
             });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> KorreksiyaSenedElave(int mezuniyyetId, List<IFormFile> senedler)
+        {
+            if (senedler == null || senedler.Count == 0)
+                return Json(new { ok = false, xeta = "Ən azı bir sənəd seçin." });
+
+            var dmsRoot2 = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+            var dir = Path.Combine(dmsRoot2, "dovlet-vezife");
+            Directory.CreateDirectory(dir);
+
+            var yollar = new List<string>();
+            foreach (var sened in senedler)
+            {
+                if (sened == null || sened.Length == 0) continue;
+
+                var ext = Path.GetExtension(sened.FileName).ToLowerInvariant();
+                if (!_icazeSenedTipler.Contains(ext))
+                    return Json(new
+                    {
+                        ok = false,
+                        xeta = $"\"{sened.FileName}\" — format qəbul edilmir. İcazə verilən: PDF, JPG, PNG."
+                    });
+
+                if (sened.Length > 10 * 1024 * 1024)
+                    return Json(new
+                    {
+                        ok = false,
+                        xeta = $"\"{sened.FileName}\" — 10 MB-dan böyük ola bilməz."
+                    });
+
+                var fileName = $"{Guid.NewGuid()}{ext}";
+                await using (var fs = new FileStream(Path.Combine(dir, fileName), FileMode.Create))
+                    await sened.CopyToAsync(fs);
+
+                yollar.Add($"/dms/dovlet-vezife/{fileName}");
+            }
+
+            if (yollar.Count == 0)
+                return Json(new { ok = false, xeta = "Heç bir sənəd emal edilmədi." });
+
+            var result = await _mezuniyyetService.SenedElavetEtAsync(
+                mezuniyyetId, string.Join("|", yollar));
+
+            if (!result.Success)
+                return Json(new { ok = false, xeta = result.Message });
+
+            return Json(new { ok = true, mesaj = result.Message });
         }
     }
 }
