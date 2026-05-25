@@ -17,6 +17,8 @@ namespace FinNex.UI.Areas.HR.Controllers
     [Authorize(Policy = Configurations.PolicyNames.HR_View)]
     public class IsciController : Controller
     {
+        private const int PageSize = 25;
+
         private readonly IIsciService _isciService;
         private readonly IDepartmentService _departmentService;
         private readonly IVezifeService _vezifeService;
@@ -40,11 +42,34 @@ namespace FinNex.UI.Areas.HR.Controllers
             _unitOfWork = unitOfWork;
         }
 
-        // ─────────── INDEX ───────────
-        public async Task<IActionResult> Index()
+        // ─────────── INDEX (paginated) ───────────
+        public async Task<IActionResult> Index(
+            string tab = "aktiv",
+            string? search = null,
+            int page = 1)
         {
-            var result = await _isciService.HamisiniGetirAsync();
-            return View(result.Data ?? new List<IsciListDto>());
+            if (page < 1) page = 1;
+            if (tab != "cixmis") tab = "aktiv";
+
+            var (items, total, aktiv, cixmis) =
+                await _isciService.GetPagedAsync(tab, search, page, PageSize);
+
+            var totalPages = total == 0 ? 1 : (int)Math.Ceiling((double)total / PageSize);
+            if (page > totalPages) page = totalPages;
+
+            var vm = new IsciIndexVM
+            {
+                Items      = items.ToList(),
+                CurrentPage = page,
+                TotalPages  = totalPages,
+                TotalCount  = total,
+                AktivCount  = aktiv,
+                CixmisCount = cixmis,
+                Tab         = tab,
+                Search      = search
+            };
+
+            return View(vm);
         }
 
         // ─────────── DETAIL ───────────
@@ -151,7 +176,6 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return View(vm);
             }
 
-            // Operator rolunu əlavə et (default rol)
             await _userManager.AddToRoleAsync(user, RoleNames.Operator);
 
             var dto = new IsciCreateDto
@@ -179,7 +203,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             if (!resultIsci.Success)
             {
                 await _userManager.DeleteAsync(user);
-                ModelState.AddModelError("", resultIsci.Message ?? "İşçi yaradıla bilmədi");
+                ModelState.AddModelError("", resultIsci.Message ?? "İşçi yeradıla bilmedi");
                 await ReloadDepartments(vm);
                 return View(vm);
             }
@@ -190,7 +214,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 await _userManager.UpdateAsync(user);
             }
 
-            TempData["Success"] = "İşçi və İstifadəçi uğurla yaradıldı.";
+            TempData["Success"] = "İşçi və İstifadəçi uğurla yeradıldı.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -263,11 +287,10 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             if (!result.Success)
             {
-                ModelState.AddModelError("", result.Message ?? "Yeniləmə zamanı xəta baş verdi.");
+                ModelState.AddModelError("", result.Message ?? "Yenileme zamanı xəta baş verdi.");
                 return View(vm);
             }
 
-            // AppUser-dəki Ad/Soyad/Email/UserName-i də yenilə
             var users = _userManager.Users.Where(u => u.IsciId == vm.Id).ToList();
             foreach (var appUser in users)
             {
@@ -289,7 +312,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 await _userManager.UpdateAsync(appUser);
             }
 
-            TempData["Success"] = "İşçi məlumatları uğurla yeniləndi.";
+            TempData["Success"] = "İşçi məlumatları uğurla yenilendi.";
             return RedirectToAction(nameof(Detail), new { id = vm.Id });
         }
 
@@ -462,11 +485,11 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return View(vm);
             }
 
-            TempData["Success"] = "Maaş uğurla yeniləndi.";
+            TempData["Success"] = "Maaş uğurla yenilendi.";
             return RedirectToAction(nameof(Detail), new { id = vm.IsciId });
         }
 
-        // ─────────── MAAS TARİXÇƏSİ REDAKTƏ GET ───────────
+        // ─────────── MAAS TARİXÇƌSİ REDAKTƌ GET ───────────
         [HttpGet]
         [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
         public async Task<IActionResult> MaasTarixcesiRedakte(int id)
@@ -481,7 +504,6 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             var isciDetail = await _isciService.GetIsciDetailsAsync(tarixce.IsciId);
 
-            // Bu işçinin ən son maaş qeydi mi?
             var enSon = await _unitOfWork.Repository<IsciMaasTarixcesi>()
                 .SorguHazirla(x => x.IsciId == tarixce.IsciId, izlemeden: true)
                 .OrderByDescending(x => x.DeyismeTarixi)
@@ -501,7 +523,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             return View(vm);
         }
 
-        // ─────────── MAAS TARİXÇƏSİ REDAKTƏ POST ───────────
+        // ─────────── MAAS TARİXÇƌSİ REDAKTƌ POST ───────────
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = Configurations.PolicyNames.HR_Full)]
@@ -523,7 +545,6 @@ namespace FinNex.UI.Areas.HR.Controllers
             tarixce.YenilenmeTarixi = DateTime.Now;
             await _unitOfWork.Repository<IsciMaasTarixcesi>().YenileAsync(tarixce);
 
-            // Əgər bu ən son qeyddirsə, CariMaas-ı da yenilə
             if (vm.EnSonQeyddirmi)
             {
                 var maliye = await _unitOfWork.Repository<IsciMaliye>()
@@ -537,7 +558,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             await _unitOfWork.YaddaSaxlaAsync();
-            TempData["Success"] = "Maaş qeydi uğurla yeniləndi.";
+            TempData["Success"] = "Maaş qeydi uğurla yenilendi.";
             return RedirectToAction(nameof(Detail), new { id = vm.IsciId });
         }
 
@@ -547,7 +568,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> IsdenCixar([FromBody] IsdenCixarRequest req)
         {
             if (req == null || req.IsciId <= 0)
-                return Json(new { success = false, message = "Məlumat natamamdır." });
+                return Json(new { success = false, message = "Məlumat natamamıdır." });
             if (string.IsNullOrWhiteSpace(req.Sebeb))
                 return Json(new { success = false, message = "Çıxma səbəbi daxil edilməlidir." });
             if (req.Tarix == default)

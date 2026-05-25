@@ -42,7 +42,7 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
     }
 
     /// <summary>
-    /// Predikat və include ilə işçi siyahısı — Sira ilə düzülmüş.
+    /// Predikat və include ilə işçi siyahısı — Sira ilə düzülümüş.
     /// Bu overload-u override edirik ki, bütün filtirlənmiş çağırışlar da
     /// "İşçi Sıralaması" qaydasına əməl etsin.
     /// </summary>
@@ -69,6 +69,55 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
         {
             return Result<IList<IsciListDto>>.Fail("İşçi siyahısı gətirilərkən xəta baş verdi.");
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SERVER-SIDE PAGINATION
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    public async Task<(IList<IsciListDto> Items, int TotalCount, int AktivCount, int CixmisCount)> GetPagedAsync(
+        string tab, string? search, int page, int pageSize)
+    {
+        // 1) Tab counts — sadece COUNT, includes lazim deyil
+        var countQuery = _unitOfWork.Repository<Isci>().SorguHazirla(izlemeden: true);
+        var aktivCount  = await countQuery.CountAsync(x => x.Status != IsciStatus.IshtenCixib);
+        var cixmisCount = await countQuery.CountAsync(x => x.Status == IsciStatus.IshtenCixib);
+
+        // 2) Data query — DTO mapping ucun includes
+        var query = _unitOfWork.Repository<Isci>().SorguHazirla(
+            izlemeden: true,
+            include: q => q
+                .Include(i => i.IsciTeyinatlari).ThenInclude(t => t.Departament)
+                .Include(i => i.IsciTeyinatlari).ThenInclude(t => t.Vezife)
+                .Include(i => i.Maliye)
+        );
+
+        // Tab filteri
+        query = tab == "cixmis"
+            ? query.Where(x => x.Status == IsciStatus.IshtenCixib)
+            : query.Where(x => x.Status != IsciStatus.IshtenCixib);
+
+        // Axtarış filteri
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(x =>
+                x.Ad.Contains(search) ||
+                x.Soyad.Contains(search) ||
+                (x.AtaAdi != null && x.AtaAdi.Contains(search)) ||
+                x.FIN.Contains(search));
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .OrderBy(x => x.Sira)
+            .ThenBy(x => x.Ad)
+            .ThenBy(x => x.Soyad)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (_mapper.Map<IList<IsciListDto>>(items), totalCount, aktivCount, cixmisCount);
     }
 
     public override async Task<Result<IsciListDto>> YaratAsync(IsciCreateDto dto)
@@ -99,7 +148,7 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             };
             await _unitOfWork.Repository<IsciMaliye>().YaratAsync(maliye);
 
-            // 3 növ məzuniyyət balansı yarat: İllik, Xəstəlik, Ezamiyyət
+            // 3 nov məzuniyyət balanşı yarat: İllik, Xəstəlik, Ezamiyyət
             var illikBalans = new MezuniyyetBalans
             {
                 IsciId = isci.Id,
@@ -112,14 +161,14 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
                 IsciId = isci.Id,
                 Il = DateTime.Now.Year,
                 Nov = MezuniyyetNovu.Xestelik,
-                ToplamGun = 0 // limitsiz
+                ToplamGun = 0
             };
             var ezamiyyetBalans = new MezuniyyetBalans
             {
                 IsciId = isci.Id,
                 Il = DateTime.Now.Year,
                 Nov = MezuniyyetNovu.Ezamiyyet,
-                ToplamGun = 0 // limitsiz
+                ToplamGun = 0
             };
 
             await _unitOfWork.Repository<MezuniyyetBalans>().YaratAsync(illikBalans);
@@ -128,7 +177,7 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
 
             await _unitOfWork.YaddaSaxlaAsync();
 
-            // Yaradılmış işçini əlaqələri ilə yüklə
+            // Yeradılmış işçini əlaqələri ilə yüklə
             var createdIsci = await _unitOfWork.Repository<Isci>().GetirAsync(
                 x => x.Id == isci.Id,
                 include: q => q
@@ -141,7 +190,7 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
         }
         catch (Exception ex)
         {
-            return Result<IsciListDto>.Fail($"İşçi yaradılarkən xəta baş verdi: {ex.Message}");
+            return Result<IsciListDto>.Fail($"İşçi yeradılarkən xəta baş verdi: {ex.Message}");
         }
     }
 
@@ -192,7 +241,6 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             var isci = await _unitOfWork.Repository<Isci>().IdIleGetirAsync(isciId);
             if (isci == null) return Result.Fail("İşçi tapılmadı.");
 
-            // Əmr nömrəsini avtomatik yarat
             if (string.IsNullOrWhiteSpace(emrNo))
             {
                 var il = DateTime.Now.Year;
@@ -201,13 +249,11 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
                 emrNo = $"EMR-{il}/{(umumiSayi + 1):D3}";
             }
 
-            // Maliye-ni yüklə
             var maliye = await _unitOfWork.Repository<IsciMaliye>()
                 .GetirAsync(x => x.IsciId == isciId);
 
             var kohneMaas = maliye?.CariMaas ?? 0;
 
-            // Tarixçə yarat
             var tarixce = new IsciMaasTarixcesi
             {
                 IsciId = isciId,
@@ -231,11 +277,11 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             }
 
             await _unitOfWork.YaddaSaxlaAsync();
-            return Result.Ok("Maaş uğurla yeniləndi.");
+            return Result.Ok("Maaş uğurla yenilendi.");
         }
         catch (Exception ex)
         {
-            return Result.Fail($"Maaş yenilənmədi: {ex.Message}");
+            return Result.Fail($"Maaş yenilenmedi: {ex.Message}");
         }
     }
 
@@ -302,13 +348,11 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
     {
         try
         {
-            // Aktiv təyinatı tap
             var repo = _unitOfWork.Repository<IsciTeyinat>();
             var aktiv = await repo.GetirAsync(x => x.IsciId == isciId && x.Aktivdir);
 
             if (aktiv == null)
             {
-                // Aktiv təyinat yoxdur - yeni yaradaq
                 var yeni = new IsciTeyinat
                 {
                     IsciId = isciId,
@@ -320,14 +364,12 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
                 };
                 await repo.YaratAsync(yeni);
                 await _unitOfWork.YaddaSaxlaAsync();
-                return Result.Ok("Yeni təyinat yaradıldı.");
+                return Result.Ok("Yeni təyinat yeradıldı.");
             }
 
-            // Dəyişiklik varmı yoxla
             if (aktiv.DepartamentId == departamentId && aktiv.VezifeId == vezifeId)
                 return Result.Ok("Dəyişiklik yoxdur.");
 
-            // Entity-ni ID ilə yenidən yüklə və yenilə
             var entity = await repo.IdIleGetirAsync(aktiv.Id);
             if (entity == null)
                 return Result.Fail("Təyinat tapılmadı.");
@@ -339,7 +381,7 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             var saved = await _unitOfWork.YaddaSaxlaAsync();
             return saved > 0
                 ? Result.Ok("Təyinat uğurla redaktə edildi.")
-                : Result.Fail($"Bazaya yazılmadı. (saved={saved})");
+                : Result.Fail($"Baza yazılmadı. (saved={saved})");
         }
         catch (Exception ex)
         {
