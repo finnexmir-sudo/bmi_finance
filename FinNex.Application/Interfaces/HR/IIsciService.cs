@@ -17,6 +17,13 @@ public interface IIsciService : IServiceAsync<Isci, IsciListDto, IsciCreateDto, 
     Task<decimal> GetCariMaasAsync(int isciId);
 
     /// <summary>
+    /// İşçinin bank IBAN-ını yeniləyir (IsciMaliye.BankHesabNo).
+    /// Boşluq və kiçik hərflər avtomatik təmizlənir. Format yoxlanılır:
+    /// AZ + 2 rəqəm + 4 hərf + 20 rəqəm. Maliye sətri yoxdursa yaradılır.
+    /// </summary>
+    Task<Result> IbanYenileAsync(int isciId, string? iban);
+
+    /// <summary>
     /// Server-side səhifələmə və axtarış üçün.
     /// </summary>
     /// <param name="tab">"aktiv" və ya "cixmis"</param>

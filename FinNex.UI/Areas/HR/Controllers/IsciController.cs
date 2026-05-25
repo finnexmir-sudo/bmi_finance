@@ -59,7 +59,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             var vm = new IsciIndexVM
             {
-                Items      = items.ToList(),
+                Items       = items.ToList(),
                 CurrentPage = page,
                 TotalPages  = totalPages,
                 TotalCount  = total,
@@ -111,6 +111,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 CariDepartament = aktivTeyinat.Success ? aktivTeyinat.Data?.DepartamentAd : isci.SobeAdi,
                 CariVezife = aktivTeyinat.Success ? aktivTeyinat.Data?.VezifeAd : isci.VezifeAdi,
                 CariMaas = cariMaas,
+                Iban = isci.BankHesabNo,
                 TeyinatTarixcesi = teyinatResult.Success ? teyinatResult.Data ?? new List<FinNex.Application.DTOs.HR.IsciTeyinat.IsciTeyinatDto>() : new List<FinNex.Application.DTOs.HR.IsciTeyinat.IsciTeyinatDto>(),
                 MaasTarixcesi = maasResult.Success ? maasResult.Data ?? new List<IsciMaasTarixcesiDto>() : new List<IsciMaasTarixcesiDto>()
             };
@@ -203,7 +204,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             if (!resultIsci.Success)
             {
                 await _userManager.DeleteAsync(user);
-                ModelState.AddModelError("", resultIsci.Message ?? "İşçi yeradıla bilmedi");
+                ModelState.AddModelError("", resultIsci.Message ?? "İşçi yaradıla bilmədi");
                 await ReloadDepartments(vm);
                 return View(vm);
             }
@@ -212,9 +213,17 @@ namespace FinNex.UI.Areas.HR.Controllers
             {
                 user.IsciId = resultIsci.Data.Id;
                 await _userManager.UpdateAsync(user);
+
+                // IBAN verilibsə yadda saxla
+                if (!string.IsNullOrWhiteSpace(vm.Iban))
+                {
+                    var ibanResult = await _isciService.IbanYenileAsync(resultIsci.Data.Id, vm.Iban);
+                    if (!ibanResult.Success)
+                        TempData["Error"] = $"İşçi yaradıldı, lakin IBAN qeydə alınmadı: {ibanResult.Message}";
+                }
             }
 
-            TempData["Success"] = "İşçi və İstifadəçi uğurla yeradıldı.";
+            TempData["Success"] = "İşçi və İstifadəçi uğurla yaradıldı.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -249,7 +258,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Unvan = isci.Unvan,
                 IsheQebulTarixi = isci.IsheQebulTarixi,
                 IsdenAyrilmaTarixi = isci.IsdenAyrilmaTarixi,
-                Status = isci.Status
+                Status = isci.Status,
+                Iban = isci.BankHesabNo
             };
 
             return View(vm);
@@ -287,7 +297,15 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             if (!result.Success)
             {
-                ModelState.AddModelError("", result.Message ?? "Yenileme zamanı xəta baş verdi.");
+                ModelState.AddModelError("", result.Message ?? "Yeniləmə zamanı xəta baş verdi.");
+                return View(vm);
+            }
+
+            // IBAN-ı ayrıca yenilə (IsciMaliye.BankHesabNo)
+            var ibanResult = await _isciService.IbanYenileAsync(vm.Id, vm.Iban);
+            if (!ibanResult.Success)
+            {
+                ModelState.AddModelError("Iban", ibanResult.Message ?? "IBAN yenilənmədi.");
                 return View(vm);
             }
 
@@ -312,7 +330,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 await _userManager.UpdateAsync(appUser);
             }
 
-            TempData["Success"] = "İşçi məlumatları uğurla yenilendi.";
+            TempData["Success"] = "İşçi məlumatları uğurla yeniləndi.";
             return RedirectToAction(nameof(Detail), new { id = vm.Id });
         }
 
@@ -485,7 +503,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return View(vm);
             }
 
-            TempData["Success"] = "Maaş uğurla yenilendi.";
+            TempData["Success"] = "Maaş uğurla yeniləndi.";
             return RedirectToAction(nameof(Detail), new { id = vm.IsciId });
         }
 
@@ -558,7 +576,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             await _unitOfWork.YaddaSaxlaAsync();
-            TempData["Success"] = "Maaş qeydi uğurla yenilendi.";
+            TempData["Success"] = "Maaş qeydi uğurla yeniləndi.";
             return RedirectToAction(nameof(Detail), new { id = vm.IsciId });
         }
 
@@ -568,7 +586,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> IsdenCixar([FromBody] IsdenCixarRequest req)
         {
             if (req == null || req.IsciId <= 0)
-                return Json(new { success = false, message = "Məlumat natamamıdır." });
+                return Json(new { success = false, message = "Məlumat natamamdır." });
             if (string.IsNullOrWhiteSpace(req.Sebeb))
                 return Json(new { success = false, message = "Çıxma səbəbi daxil edilməlidir." });
             if (req.Tarix == default)
