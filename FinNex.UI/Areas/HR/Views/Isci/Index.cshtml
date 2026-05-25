@@ -36,9 +36,6 @@
             {
                 <a asp-action="Index" asp-route-tab="@Model.Tab"
                    class="fn-btn fn-btn--ghost" style="color:var(--fn-danger,#e53e3e);">Sıfırla</a>
-            }
-            @if (!string.IsNullOrEmpty(Model.Search))
-            {
                 <span style="color:var(--fn-text-muted,#888);font-size:13px;">
                     "@Model.Search" üzrə @Model.TotalCount nəticə
                 </span>
@@ -77,13 +74,13 @@
                         <th>Ayrılma tarixi</th>
                         <th>Səbəb</th>
                     }
-                    <th class="isci-th-right">ƌməliyyat</th>
+                    <th class="isci-th-right">Əməliyyat</th>
                 </tr>
             </thead>
             <tbody>
                 @if (Model.Items.Any())
                 {
-                    @foreach (var item in Model.Items)
+                    foreach (var item in Model.Items)
                     {
                         var isCixmis = item.Status == IsciStatus.IshtenCixib;
                         <tr class="@(isCixmis ? "isci-row-cixmis" : "")">
@@ -203,10 +200,9 @@
     @* Pagination *@
     @if (Model.TotalPages > 1)
     {
-        @{
-            var startPage = Math.Max(1, Model.CurrentPage - 2);
-            var endPage   = Math.Min(Model.TotalPages, Model.CurrentPage + 2);
-        }
+        var startPage = Math.Max(1, Model.CurrentPage - 2);
+        var endPage   = Math.Min(Model.TotalPages, Model.CurrentPage + 2);
+
         <nav style="display:flex;justify-content:center;align-items:center;gap:4px;margin-top:16px;flex-wrap:wrap;">
             @* Prev *@
             @if (Model.CurrentPage > 1)
@@ -227,7 +223,7 @@
             @* Page numbers *@
             @for (int i = startPage; i <= endPage; i++)
             {
-                @if (i == Model.CurrentPage)
+                if (i == Model.CurrentPage)
                 {
                     <span class="fn-btn fn-btn--primary" style="min-width:36px;padding:6px 10px;cursor:default;">@i</span>
                 }
