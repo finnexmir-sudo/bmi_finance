@@ -15,4 +15,14 @@ public interface IIsciService : IServiceAsync<Isci, IsciListDto, IsciCreateDto, 
     Task<Result> TeyinatRedakteEtAsync(int isciId, int departamentId, int vezifeId);
     Task<Result<int?>> GetAktivDepartamentIdAsync(int isciId);
     Task<decimal> GetCariMaasAsync(int isciId);
+
+    /// <summary>
+    /// Server-side səhifələmə və axtarış üçün.
+    /// </summary>
+    /// <param name="tab">"aktiv" və ya "cixmis"</param>
+    /// <param name="search">Ad / soyad / FIN axtarışı (optional)</param>
+    /// <param name="page">1-based səhifə nömrəsi</param>
+    /// <param name="pageSize">Səhifə ölçüsü</param>
+    Task<(IList<IsciListDto> Items, int TotalCount, int AktivCount, int CixmisCount)> GetPagedAsync(
+        string tab, string? search, int page, int pageSize);
 }

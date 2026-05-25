@@ -1,5 +1,6 @@
-@model List<IsciListDto>
+@model IsciIndexVM
 @using FinNex.Domain.Entities.HR
+@using FinNex.UI.Areas.HR.ViewModels
 @{
     ViewData["Title"] = "İşçilər";
 }
@@ -23,115 +24,174 @@
         </a>
     </div>
 
+    @* Axtarış *@
+    <form method="get" asp-action="Index" style="margin-bottom:12px;">
+        <input type="hidden" name="tab" value="@Model.Tab" />
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input type="text" name="search" value="@Model.Search"
+                   class="fn-input" placeholder="Ad, soyad, FIN ilə axtar..."
+                   style="max-width:280px;" />
+            <button type="submit" class="fn-btn fn-btn--ghost">Axtar</button>
+            @if (!string.IsNullOrEmpty(Model.Search))
+            {
+                <a asp-action="Index" asp-route-tab="@Model.Tab"
+                   class="fn-btn fn-btn--ghost" style="color:var(--fn-danger,#e53e3e);">Sıfırla</a>
+            }
+            @if (!string.IsNullOrEmpty(Model.Search))
+            {
+                <span style="color:var(--fn-text-muted,#888);font-size:13px;">
+                    "@Model.Search" üzrə @Model.TotalCount nəticə
+                </span>
+            }
+        </div>
+    </form>
+
     @* Tab bar *@
     <div class="isci-tabs">
-        <button class="isci-tab isci-tab--active" data-tab="aktiv">
+        <a asp-action="Index"
+           asp-route-tab="aktiv"
+           asp-route-search="@Model.Search"
+           class="isci-tab @(Model.Tab == "aktiv" ? "isci-tab--active" : "")">
             Aktiv
-            <span class="isci-tab-count" id="aktiv-count">0</span>
-        </button>
-        <button class="isci-tab" data-tab="cixmis">
+            <span class="isci-tab-count">@Model.AktivCount</span>
+        </a>
+        <a asp-action="Index"
+           asp-route-tab="cixmis"
+           asp-route-search="@Model.Search"
+           class="isci-tab @(Model.Tab == "cixmis" ? "isci-tab--active" : "")">
             İşdən Çıxmış
-            <span class="isci-tab-count isci-tab-count--red" id="cixmis-count">0</span>
-        </button>
+            <span class="isci-tab-count isci-tab-count--red">@Model.CixmisCount</span>
+        </a>
     </div>
 
     <div class="fn-card" style="padding:0;overflow:hidden;">
-        <table class="isci-table" id="isci-table">
+        <table class="isci-table">
             <thead>
                 <tr>
                     <th>Ad Soyad</th>
                     <th>Şöbə</th>
                     <th>Vəzifə</th>
                     <th>Status</th>
-                    <th id="col-cixma-tarixi" style="display:none;">Ayrılma tarixi</th>
-                    <th id="col-sebeb" style="display:none;">Səbəb</th>
-                    <th class="isci-th-right">Əməliyyat</th>
+                    @if (Model.Tab == "cixmis")
+                    {
+                        <th>Ayrılma tarixi</th>
+                        <th>Səbəb</th>
+                    }
+                    <th class="isci-th-right">ƌməliyyat</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var item in Model)
+                @if (Model.Items.Any())
                 {
-                    var isCixmis = item.Status == IsciStatus.IshtenCixib;
-                    <tr data-status="@(isCixmis ? "cixmis" : "aktiv")" class="@(isCixmis ? "isci-row-cixmis" : "")">
-                        <td>
-                            <div class="isci-info">
-                                <div class="isci-avatar @(isCixmis ? "isci-avatar--cixmis" : "")">@item.TamAd.Substring(0, 1)</div>
-                                <div>
-                                    <div class="isci-name">@item.TamAd</div>
-                                    <div class="isci-email">@item.Email</div>
+                    @foreach (var item in Model.Items)
+                    {
+                        var isCixmis = item.Status == IsciStatus.IshtenCixib;
+                        <tr class="@(isCixmis ? "isci-row-cixmis" : "")">
+                            <td>
+                                <div class="isci-info">
+                                    <div class="isci-avatar @(isCixmis ? "isci-avatar--cixmis" : "")">@item.TamAd.Substring(0, 1)</div>
+                                    <div>
+                                        <div class="isci-name">@item.TamAd</div>
+                                        <div class="isci-email">@item.Email</div>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td class="isci-td-meta">@(item.SobeAdi ?? "—")</td>
-                        <td class="isci-td-meta">@(item.VezifeAdi ?? "—")</td>
-                        <td>
-                            @if (item.Status == IsciStatus.Aktiv)
+                            </td>
+                            <td class="isci-td-meta">@(item.SobeAdi ?? "—")</td>
+                            <td class="isci-td-meta">@(item.VezifeAdi ?? "—")</td>
+                            <td>
+                                @if (item.Status == IsciStatus.Aktiv)
+                                {
+                                    <span class="fn-badge fn-badge--done">Aktiv</span>
+                                }
+                                else if (item.Status == IsciStatus.Mezuniyyetde)
+                                {
+                                    <span class="fn-badge fn-badge--pending">Məzuniyyətdə</span>
+                                }
+                                else
+                                {
+                                    <span class="fn-badge fn-badge--rejected">İşdən Çıxmış</span>
+                                }
+                            </td>
+                            @if (Model.Tab == "cixmis")
                             {
-                                <span class="fn-badge fn-badge--done">Aktiv</span>
+                                <td class="isci-td-meta">
+                                    @(item.IsdenAyrilmaTarixi.HasValue
+                                        ? item.IsdenAyrilmaTarixi.Value.ToString("dd.MM.yyyy")
+                                        : "—")
+                                </td>
+                                <td class="isci-td-meta">
+                                    <span title="@item.FesihSebebi">
+                                        @(string.IsNullOrEmpty(item.FesihSebebi)
+                                            ? "—"
+                                            : (item.FesihSebebi.Length > 40
+                                                ? item.FesihSebebi.Substring(0, 40) + "…"
+                                                : item.FesihSebebi))
+                                    </span>
+                                </td>
                             }
-                            else if (item.Status == IsciStatus.Mezuniyyetde)
+                            <td class="isci-td-actions">
+                                <a asp-action="Detail" asp-route-id="@item.Id" class="isci-action-btn" title="Bax">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <ellipse cx="7" cy="7" rx="6" ry="4" stroke="currentColor" stroke-width="1.2" />
+                                        <circle cx="7" cy="7" r="1.8" stroke="currentColor" stroke-width="1.2" />
+                                    </svg>
+                                </a>
+                                @if (!isCixmis)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="isci-action-btn" title="Redaktə">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                            <path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
+                                        </svg>
+                                    </a>
+                                    <a asp-action="TeyinatDeyis" asp-route-id="@item.Id" class="isci-action-btn isci-action-btn--blue" title="Təyinat Dəyiş">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                            <path d="M2 5h10M9 2l3 3-3 3M12 9H2M5 6l-3 3 3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </a>
+                                    <a asp-action="MaasDeyis" asp-route-id="@item.Id" class="isci-action-btn isci-action-btn--green" title="Maaş Dəyiş">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                            <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2" />
+                                            <path d="M7 4v6M5 5.5h3a1 1 0 010 2H6a1 1 0 000 2h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                        </svg>
+                                    </a>
+                                    <button class="isci-action-btn isci-action-btn--red btn-isden-cixar"
+                                            title="İşdən Çıxar"
+                                            data-id="@item.Id"
+                                            data-ad="@item.TamAd">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                            <path d="M9 2H5a1 1 0 00-1 1v8a1 1 0 001 1h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                            <path d="M11 7H6M9 5l2 2-2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="isci-action-btn isci-action-btn--green btn-isey-geri"
+                                            title="Yenidən Aktiv Et"
+                                            data-id="@item.Id"
+                                            data-ad="@item.TamAd">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                            <path d="M2 7a5 5 0 1010 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                            <path d="M2 4v3h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="@(Model.Tab == "cixmis" ? 7 : 5)"
+                            style="text-align:center;padding:48px;color:var(--fn-text-muted,#888);">
+                            @if (string.IsNullOrEmpty(Model.Search))
                             {
-                                <span class="fn-badge fn-badge--pending">Məzuniyyətdə</span>
+                                <span>Nəticə tapılmadı.</span>
                             }
                             else
                             {
-                                <span class="fn-badge fn-badge--rejected">İşdən Çıxmış</span>
-                            }
-                        </td>
-                        <td class="isci-td-meta col-cixma-tarixi" style="display:none;">
-                            @(item.IsdenAyrilmaTarixi.HasValue ? item.IsdenAyrilmaTarixi.Value.ToString("dd.MM.yyyy") : "—")
-                        </td>
-                        <td class="isci-td-meta col-sebeb" style="display:none;">
-                            <span title="@item.FesihSebebi">
-                                @(string.IsNullOrEmpty(item.FesihSebebi) ? "—" : (item.FesihSebebi.Length > 40 ? item.FesihSebebi.Substring(0, 40) + "…" : item.FesihSebebi))
-                            </span>
-                        </td>
-                        <td class="isci-td-actions">
-                            <a asp-action="Detail" asp-route-id="@item.Id" class="isci-action-btn" title="Bax">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                    <ellipse cx="7" cy="7" rx="6" ry="4" stroke="currentColor" stroke-width="1.2" />
-                                    <circle cx="7" cy="7" r="1.8" stroke="currentColor" stroke-width="1.2" />
-                                </svg>
-                            </a>
-                            @if (!isCixmis)
-                            {
-                                <a asp-action="Edit" asp-route-id="@item.Id" class="isci-action-btn" title="Redaktə">
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                        <path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
-                                    </svg>
-                                </a>
-                                <a asp-action="TeyinatDeyis" asp-route-id="@item.Id" class="isci-action-btn isci-action-btn--blue" title="Təyinat Dəyiş">
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                        <path d="M2 5h10M9 2l3 3-3 3M12 9H2M5 6l-3 3 3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
-                                    </svg>
-                                </a>
-                                <a asp-action="MaasDeyis" asp-route-id="@item.Id" class="isci-action-btn isci-action-btn--green" title="Maaş Dəyiş">
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                        <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2" />
-                                        <path d="M7 4v6M5 5.5h3a1 1 0 010 2H6a1 1 0 000 2h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
-                                    </svg>
-                                </a>
-                                <button class="isci-action-btn isci-action-btn--red btn-isden-cixar"
-                                        title="İşdən Çıxar"
-                                        data-id="@item.Id"
-                                        data-ad="@item.TamAd">
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                        <path d="M9 2H5a1 1 0 00-1 1v8a1 1 0 001 1h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                                        <path d="M11 7H6M9 5l2 2-2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                </button>
-                            }
-                            else
-                            {
-                                <button class="isci-action-btn isci-action-btn--green btn-isey-geri"
-                                        title="Yenidən Aktiv Et"
-                                        data-id="@item.Id"
-                                        data-ad="@item.TamAd">
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                        <path d="M2 7a5 5 0 1010 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                                        <path d="M2 4v3h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                </button>
+                                <span>&ldquo;@Model.Search&rdquo; üzrə nəticə tapılmadı.</span>
                             }
                         </td>
                     </tr>
@@ -139,6 +199,68 @@
             </tbody>
         </table>
     </div>
+
+    @* Pagination *@
+    @if (Model.TotalPages > 1)
+    {
+        @{
+            var startPage = Math.Max(1, Model.CurrentPage - 2);
+            var endPage   = Math.Min(Model.TotalPages, Model.CurrentPage + 2);
+        }
+        <nav style="display:flex;justify-content:center;align-items:center;gap:4px;margin-top:16px;flex-wrap:wrap;">
+            @* Prev *@
+            @if (Model.CurrentPage > 1)
+            {
+                <a asp-action="Index"
+                   asp-route-tab="@Model.Tab"
+                   asp-route-search="@Model.Search"
+                   asp-route-page="@(Model.CurrentPage - 1)"
+                   class="fn-btn fn-btn--ghost" style="min-width:36px;padding:6px 10px;">
+                    ‹
+                </a>
+            }
+            else
+            {
+                <span class="fn-btn fn-btn--ghost" style="min-width:36px;padding:6px 10px;opacity:.4;cursor:default;">‹</span>
+            }
+
+            @* Page numbers *@
+            @for (int i = startPage; i <= endPage; i++)
+            {
+                @if (i == Model.CurrentPage)
+                {
+                    <span class="fn-btn fn-btn--primary" style="min-width:36px;padding:6px 10px;cursor:default;">@i</span>
+                }
+                else
+                {
+                    <a asp-action="Index"
+                       asp-route-tab="@Model.Tab"
+                       asp-route-search="@Model.Search"
+                       asp-route-page="@i"
+                       class="fn-btn fn-btn--ghost" style="min-width:36px;padding:6px 10px;">@i</a>
+                }
+            }
+
+            @* Next *@
+            @if (Model.CurrentPage < Model.TotalPages)
+            {
+                <a asp-action="Index"
+                   asp-route-tab="@Model.Tab"
+                   asp-route-search="@Model.Search"
+                   asp-route-page="@(Model.CurrentPage + 1)"
+                   class="fn-btn fn-btn--ghost" style="min-width:36px;padding:6px 10px;">
+                    ›
+                </a>
+            }
+            else
+            {
+                <span class="fn-btn fn-btn--ghost" style="min-width:36px;padding:6px 10px;opacity:.4;cursor:default;">›</span>
+            }
+        </nav>
+        <div style="text-align:center;margin-top:6px;color:var(--fn-text-muted,#888);font-size:13px;">
+            Ümumi @Model.TotalCount işçi &bull; Səhifə @Model.CurrentPage / @Model.TotalPages
+        </div>
+    }
 </div>
 
 @* İşdən Çıxar Modal *@
@@ -173,31 +295,6 @@
 
 @section Scripts {
 <script>
-// ── Tab filter ───────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function () {
-    const rows = document.querySelectorAll('#isci-table tbody tr');
-    const tabs = document.querySelectorAll('.isci-tab');
-
-    const aktivCount = [...rows].filter(r => r.dataset.status === 'aktiv').length;
-    const cixmisCount = [...rows].filter(r => r.dataset.status === 'cixmis').length;
-    document.getElementById('aktiv-count').textContent = aktivCount;
-    document.getElementById('cixmis-count').textContent = cixmisCount;
-
-    function switchTab(tab) {
-        tabs.forEach(t => t.classList.toggle('isci-tab--active', t.dataset.tab === tab));
-        const isCixmis = tab === 'cixmis';
-        rows.forEach(r => r.style.display = r.dataset.status === tab ? '' : 'none');
-        document.querySelectorAll('.col-cixma-tarixi').forEach(el => el.style.display = isCixmis ? '' : 'none');
-        document.querySelectorAll('.col-sebeb').forEach(el => el.style.display = isCixmis ? '' : 'none');
-        document.getElementById('col-cixma-tarixi').style.display = isCixmis ? '' : 'none';
-        document.getElementById('col-sebeb').style.display = isCixmis ? '' : 'none';
-    }
-
-    tabs.forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
-    switchTab('aktiv'); // default
-});
-
-// ── İşdən Çıxar Modal ────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.btn-isden-cixar').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -227,10 +324,10 @@ function closeIsdenCixarModal() {
 
 async function submitIsdenCixar() {
     const isciId = parseInt(document.getElementById('cixar-isci-id').value);
-    const tarix = document.getElementById('cixar-tarix').value;
-    const sebeb = document.getElementById('cixar-sebeb').value.trim();
-    const errEl = document.getElementById('cixar-error');
-    const btn = document.getElementById('cixar-submit-btn');
+    const tarix  = document.getElementById('cixar-tarix').value;
+    const sebeb  = document.getElementById('cixar-sebeb').value.trim();
+    const errEl  = document.getElementById('cixar-error');
+    const btn    = document.getElementById('cixar-submit-btn');
 
     errEl.style.display = 'none';
     if (!tarix) { showCixarErr('Tarix seçilməlidir.'); return; }
@@ -240,7 +337,7 @@ async function submitIsdenCixar() {
     try {
         const res = await fetch('@Url.Action("IsdenCixar", "Isci")', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getToken() },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ isciId, tarix, sebeb })
         });
         const data = await res.json();
@@ -264,17 +361,13 @@ async function iseyiGeri(isciId, tamAd) {
     try {
         const res = await fetch('@Url.Action("IseyiGeri", "Isci")', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getToken() },
-            body: JSON.stringify(isciId)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(parseInt(isciId))
         });
         const data = await res.json();
         if (data.success) location.reload();
         else alert(data.message);
     } catch { alert('Xəta baş verdi.'); }
-}
-
-function getToken() {
-    return document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
 }
 </script>
 }
