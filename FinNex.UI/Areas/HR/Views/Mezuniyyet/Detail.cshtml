@@ -54,14 +54,12 @@
                 </button>
             }
             @{
-                // ReturnAction dəyərinə görə uyğun panelə geri qayıt
                 var backAction = string.IsNullOrEmpty(Model.ReturnAction) ? "Hr" : Model.ReturnAction;
-                // Boş, HrTesdiq, RehberTesdiq, SobeReisiTesdiq dəyərlərini GET action-na map et
                 var backActionMapped = backAction switch
                 {
                     "HrTesdiq" => "Hr",
                     "RehberTesdiq" => "Rehber",
-                    "SobeReisiTesdiq" => "Hr", // SobeReisi üçün ayrıca panel User/Tesdiq-dir
+                    "SobeReisiTesdiq" => "Hr",
                     _ => backAction
                 };
             }
@@ -70,7 +68,6 @@
         </div>
     </div>
 
-    @* ── Status + Növ + Əmr № ── *@
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
         <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:@(StatusColor(m.Status))1a;color:@(StatusColor(m.Status));">
             <span style="width:7px;height:7px;border-radius:50%;background:@(StatusColor(m.Status));"></span>
@@ -87,7 +84,6 @@
         }
     </div>
 
-    @* ── Məlumatlar ── *@
     <div class="fn-card" style="max-width:860px;">
         <div class="fn-card-title" style="margin-bottom:14px;">Qeyd məlumatları</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
@@ -112,7 +108,7 @@
                 <div style="font-size:13px;color:#1a2332;font-weight:600;">@m.IsGunlerininSayi gün</div>
             </div>
             <div class="fn-form-group">
-                <div class="fn-sbi-label">Əvəzedici</div>
+                <div class="fn-sbi-label">ƌvəzedici</div>
                 <div style="font-size:13px;color:#1a2332;">@(string.IsNullOrEmpty(m.EvezEdenIsciAdSoyad) ? "—" : m.EvezEdenIsciAdSoyad)</div>
             </div>
         </div>
@@ -142,13 +138,13 @@
         }
     </div>
 
-    @* ── Əvəzedici konflikti (soft-warn) ───────────────────────── *@
+    @* ── ƌvəzedici konflikti (soft-warn) ───────────────────────────────── *@
     @if (Model.EvezediciKonfliktleri.Any())
     {
         <div class="fn-card" style="max-width:860px;margin-top:14px;border-left:4px solid #f59e0b;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
                 <span style="font-size:18px;">⚠</span>
-                <div class="fn-card-title" style="margin:0;color:#b45309;">Əvəzedici konflikti</div>
+                <div class="fn-card-title" style="margin:0;color:#b45309;">ƌvəzedici konflikti</div>
             </div>
             <div style="font-size:12px;color:#7a5a10;margin-bottom:10px;">
                 Bu işçi həmin tarix aralığında başqa müraciətlərdə <b>qəbul edilmiş əvəzedici</b>
@@ -166,7 +162,51 @@
         </div>
     }
 
-    @* ── Bu dövrdə həmkarları ───────────────────────────────── *@
+    @* ── Dövlət Vəzifəsi — sənədlər + sonradan əlavə ───────────────────────── *@
+    @if (m.Nov == MezuniyyetNovu.DovletVezifelerininIcrasi)
+    {
+        <div class="fn-card" style="max-width:860px;margin-top:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div class="fn-card-title" style="margin:0;">
+                    <i class="bi bi-paperclip" style="margin-right:6px;color:#6b7280;"></i>
+                    Sənədlər
+                </div>
+                <button type="button" onclick="senedElavetModalAc()"
+                        style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;border:1.5px solid #2d6cdf;background:#eff6ff;color:#1e40af;font-size:12px;font-weight:600;cursor:pointer;">
+                    <i class="bi bi-plus-lg"></i> Sənəd əlavə et
+                </button>
+            </div>
+
+            @if (m.SenedYollari.Count == 0)
+            {
+                <div style="font-size:13px;color:#9ca3af;padding:8px 0;">
+                    Sənəd əlavə edilməyib.
+                </div>
+            }
+            else
+            {
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    @for (int si = 0; si < m.SenedYollari.Count; si++)
+                    {
+                        var yol = m.SenedYollari[si];
+                        var ext = System.IO.Path.GetExtension(yol).ToLowerInvariant();
+                        var icon = ext == ".pdf" ? "bi-file-earmark-pdf" : "bi-file-earmark-image";
+                        var iconColor = ext == ".pdf" ? "#ef4444" : "#6366f1";
+                        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:7px;">
+                            <i class="bi @icon" style="color:@iconColor;font-size:16px;"></i>
+                            <a href="@yol" target="_blank"
+                               style="font-size:13px;color:#1e40af;text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                Sənəd @(si + 1)@ext
+                            </a>
+                            <span style="font-size:11px;color:#9ca3af;">@ext.TrimStart('.')</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    @* ── Bu dövrdə həmkarları ────────────────────────────────────── *@
     @if (Model.OverlapMezuniyyetler.Any())
     {
         <div class="fn-card" style="max-width:860px;margin-top:14px;">
@@ -180,7 +220,6 @@
             <div style="display:flex;flex-direction:column;gap:8px;">
                 @foreach (var o in Model.OverlapMezuniyyetler)
                 {
-                    var eyniBadge = o.EyniSobe ? "#ef4444" : "#6b7280";
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
                         <div>
                             <div style="font-size:13px;font-weight:600;color:#1a2332;">
@@ -254,7 +293,7 @@
                 <div style="margin-bottom:12px;">
                     <label class="fn-sbi-label">Korreksiya günü (iş günü)</label>
                     <input type="number" id="kor_GunSayi" class="fn-input" min="1" max="@m.IsGunlerininSayi"
-                           placeholder="Tarix seçildikdə avtomatik hesablanır" readonly
+                           placeholder="Tarix seçild ikdə avtomatik hesablanır" readonly
                            style="background:#f5f7fa;" />
                 </div>
 
@@ -265,8 +304,10 @@
                 </div>
 
                 <div style="margin-bottom:4px;">
-                    <label class="fn-sbi-label">Sənəd (icazəli: pdf, jpg, jpeg, png)</label>
-                    <input type="file" id="kor_Sened" class="fn-input" accept=".pdf,.jpg,.jpeg,.png" />
+                    <label class="fn-sbi-label">Sənəd(lər) (icazəli: pdf, jpg, jpeg, png)</label>
+                    <input type="file" id="kor_Sened" class="fn-input"
+                           accept=".pdf,.jpg,.jpeg,.png" multiple />
+                    <div id="kor_SenedInfo" style="font-size:11px;color:#6b7280;margin-top:4px;"></div>
                 </div>
             </div>
             <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #e4e8f0;">
@@ -284,12 +325,18 @@
 
     <script>
         function korreksiyaModalAc() {
-            var el = document.getElementById('korreksiyaModal');
-            el.style.display = 'flex';
+            document.getElementById('korreksiyaModal').style.display = 'flex';
         }
         function korreksiyaModalBag() {
             document.getElementById('korreksiyaModal').style.display = 'none';
         }
+
+        document.getElementById('kor_Sened').addEventListener('change', function () {
+            var info = document.getElementById('kor_SenedInfo');
+            info.textContent = this.files.length > 0
+                ? this.files.length + ' fayl seçildi'
+                : '';
+        });
 
         function hesablaKorGun() {
             var b = document.getElementById('kor_Baslama').value;
@@ -318,8 +365,11 @@
             fd.append('BitmeTarixi', document.getElementById('kor_Bitme').value);
             fd.append('KorreksiyaGunSayi', gun);
             fd.append('Qeyd', document.getElementById('kor_Qeyd').value);
+
             var senedEl = document.getElementById('kor_Sened');
-            if (senedEl.files.length > 0) fd.append('Sened', senedEl.files[0]);
+            for (var i = 0; i < senedEl.files.length; i++) {
+                fd.append('Senedler', senedEl.files[i]);
+            }
 
             var token = document.querySelector('input[name="__RequestVerificationToken"]');
             if (token) fd.append('__RequestVerificationToken', token.value);
@@ -341,6 +391,98 @@
             } catch (e) {
                 alert('Şəbəkə xətası.');
                 btn.disabled = false; btn.textContent = 'Tətbiq et';
+            }
+        }
+    </script>
+}
+
+@* ── Sonradan sənəd əlavə etmə modali (DovletVezife qeydlərindən açılır) *@
+@if (m.Nov == MezuniyyetNovu.DovletVezifelerininIcrasi)
+{
+    @Html.AntiForgeryToken()
+
+    <div id="senedElavetModal"
+         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1050;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:12px;width:100%;max-width:420px;margin:16px;box-shadow:0 8px 32px rgba(0,0,0,.18);">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e4e8f0;">
+                <div style="font-size:15px;font-weight:700;color:#1a2332;">
+                    <i class="bi bi-paperclip" style="color:#2d6cdf;margin-right:6px;"></i>
+                    Sənəd Əlavə Et
+                </div>
+                <button type="button" onclick="senedElavetModalBag()"
+                        style="background:none;border:none;font-size:18px;color:#6b7280;cursor:pointer;line-height:1;">×</button>
+            </div>
+            <div style="padding:20px;">
+                <div style="font-size:12px;color:#6b7280;margin-bottom:14px;line-height:1.6;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 12px;">
+                    Mövcud sənədlər silinmir — yeni sənəd(lər) üstünə əlavə olunur.
+                </div>
+                <div>
+                    <label class="fn-sbi-label">Sənəd(lər) seçin (pdf, jpg, jpeg, png)</label>
+                    <input type="file" id="se_Sened" class="fn-input"
+                           accept=".pdf,.jpg,.jpeg,.png" multiple />
+                    <div id="se_SenedInfo" style="font-size:11px;color:#6b7280;margin-top:4px;"></div>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #e4e8f0;">
+                <button type="button" onclick="senedElavetModalBag()"
+                        style="padding:8px 18px;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer;">
+                    Ləğv et
+                </button>
+                <button type="button" onclick="senedElavetGonder()" id="se_SendBtn"
+                        style="padding:8px 18px;border-radius:8px;border:none;background:#2d6cdf;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
+                    Yüklə
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function senedElavetModalAc() {
+            document.getElementById('se_Sened').value = '';
+            document.getElementById('se_SenedInfo').textContent = '';
+            document.getElementById('senedElavetModal').style.display = 'flex';
+        }
+        function senedElavetModalBag() {
+            document.getElementById('senedElavetModal').style.display = 'none';
+        }
+
+        document.getElementById('se_Sened').addEventListener('change', function () {
+            var info = document.getElementById('se_SenedInfo');
+            info.textContent = this.files.length > 0
+                ? this.files.length + ' fayl seçildi'
+                : '';
+        });
+
+        async function senedElavetGonder() {
+            var senedEl = document.getElementById('se_Sened');
+            if (!senedEl.files.length) { alert('Ən azı bir fayl seçin.'); return; }
+
+            var fd = new FormData();
+            fd.append('mezuniyyetId', '@m.Id');
+            for (var i = 0; i < senedEl.files.length; i++) {
+                fd.append('senedler', senedEl.files[i]);
+            }
+
+            var token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) fd.append('__RequestVerificationToken', token.value);
+
+            var btn = document.getElementById('se_SendBtn');
+            btn.disabled = true; btn.textContent = 'Yüklənir...';
+
+            try {
+                var resp = await fetch('@Url.Action("KorreksiyaSenedElave", "Mezuniyyet", new { area = "HR" })', {
+                    method: 'POST', body: fd
+                });
+                var json = await resp.json();
+                if (json.ok) {
+                    location.reload();
+                } else {
+                    alert(json.xeta || 'Xəta baş verdi.');
+                    btn.disabled = false; btn.textContent = 'Yüklə';
+                }
+            } catch (e) {
+                alert('Şəbəkə xətası.');
+                btn.disabled = false; btn.textContent = 'Yüklə';
             }
         }
     </script>

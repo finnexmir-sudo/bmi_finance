@@ -1,4 +1,4 @@
-﻿using FinNex.Application.Common.Results;
+using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Domain.Entities.HR;
 
@@ -66,5 +66,12 @@ namespace FinNex.Application.Interfaces
         /// </summary>
         Task<Result<MezuniyyetDto>> KorreksiyaEtAsync(
             MezuniyyetKorreksiyaDto dto, int hrIsciId, string senedSaxlama);
+
+        /// <summary>
+        /// Mövcud dövlət vəzifəsi korreksiya qeydine sonradan sənəd əlavə edir.
+        /// senedYollari: "|" ilə ayrılmış yeni fayl yolları.
+        /// Mövcud sənədlər silinmir — üstünə əlavə olunur.
+        /// </summary>
+        Task<Result> SenedElavetEtAsync(int mezuniyyetId, string senedYollari);
     }
 }
