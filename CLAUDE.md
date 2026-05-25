@@ -26,7 +26,7 @@
 
 ## Xəta Etirafı
 
-- Səhv aşkar olarsa dərhal bil dir — gizlətmə, bəhanə axtarma.
+- Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.
 - Nə səhv olduğunu, niyə olduğunu, necə düzəldildiyini izah et.
 - Eyni tip səhvin bir daha olmaması üçün bu fayla əlavə et.
 
@@ -82,3 +82,62 @@ Layihədə ikinci bir verilənlər bazası mövcuddur: **Oracle (BMI)**
 - Oracle (BMI) — **yalnız oxuma**, `IOracleService` vasitəsilə
 - Identity (AppUser, int PK)
 - Azərbaycan dili — bütün UI mətnləri Azərbaycan dilindədir
+
+## Fayl Yükləmə — SƏNƏD SAXLAMA QAYDASI
+
+### ✅ ƏSAS QAYDA — KƏSİN RİAYƏT EDİLMƏLİDİR
+
+**Bütün yüklənən fayllar `C:\FinNex_DMS\` qovluğuna yazılmalıdır.**
+
+- `wwwroot`-a fayl **YAZILMAZ** — publish edildikdə silinir, bu dəyişdiriləcək
+- Hər modul öz alt qovluğuna yazır
+- Konfiqurasiya mənbəyi: `appsettings.json → DocumentStorage:RootPath`
+
+### Düzgün istifadə nümunəsi
+
+```csharp
+// ✅ DÜZGÜN — həmişə belə yaz
+var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+var dir = Path.Combine(dmsRoot, "modul-adi");
+Directory.CreateDirectory(dir);
+var fileName = $"{Guid.NewGuid()}{ext}";
+await using var fs = new FileStream(Path.Combine(dir, fileName), FileMode.Create);
+await file.CopyToAsync(fs);
+
+// ❌ SƏHV — wwwroot istifadə etmə
+var dir = Path.Combine(_env.WebRootPath, "uploads", "modul");
+```
+
+### Qovluq strukturu — `C:\FinNex_DMS\`
+
+| Qovluq | Modul | Status |
+|--------|-------|--------|
+| `dovlet-vezife\` | Məzuniyyət — dövlət vəzifəsi sənədləri | ✅ Düzgün |
+| `senedler\yyyy\MM\` | Sənəd dövriyyəsi (SenedService) | ✅ Düzgün |
+| `elanlar\` | Elan şəkilləri/sənədləri | ⚠️ Hələ wwwroot-da |
+| `fakturalar\` | Xərc fakturaları (HR) | ⚠️ Hələ wwwroot-da |
+| `xercler\` | Xərc sənədləri (User) | ⚠️ Hələ wwwroot-da |
+| `kredit-qerarlar\` | Kredit komitə qərarları | ⚠️ Hələ wwwroot-da |
+| `chat\` | Chat qoşmaları | ⚠️ Hələ wwwroot-da |
+| `hr-qanun\` | HR məsləhətçi qanun faylları | ⚠️ Hələ wwwroot-da |
+| `hr-qaydalar\` | HR məsləhətçi qaydalar | ⚠️ Hələ wwwroot-da |
+
+### ⚠️ İslahedilməli fayllar (wwwroot → FinNex_DMS)
+
+Aşağıdakı controller-lər hələ `wwwroot`-a yazır — dəyişdirilməlidir:
+
+1. `ElanController.cs` → `wwwroot/uploads/elan/` → `FinNex_DMS/elanlar/`
+2. `XercController.cs` (HR) → `wwwroot/uploads/fakturalar/` → `FinNex_DMS/fakturalar/`
+3. `XercController.cs` (User) → `wwwroot/uploads/xercler/` → `FinNex_DMS/xercler/`
+4. `KreditMuracietController.cs` → `wwwroot/Files/Kredit/Qerarlar/` → `FinNex_DMS/kredit-qerarlar/`
+5. `ChatController.cs` → `wwwroot/uploads/chat/` → `FinNex_DMS/chat/`
+6. `HRMeslehetciController.cs` → `wwwroot/uploads/hr-qanun/` + `hr-qaydalar/` → `FinNex_DMS/hr-qanun/` + `FinNex_DMS/hr-qaydalar/`
+
+### Yeni modul yazarkən
+
+Yeni bir sahədə fayl yükləmə lazım olarsa:
+1. `DocumentStorage:RootPath` konfiqurasiyasından oxu
+2. `FinNex_DMS\{yeni-modul-adi}\` alt qovluğu yarat
+3. `Directory.CreateDirectory(dir)` ilə qovluğu avtomatik yarat
+4. Faylı yaz, DB-yə **yalnız nisbi yolu** saxla (məs: `dovlet-vezife/abc123.pdf`)
+5. Faylı serve etmək üçün `Program.cs`-dəki `/dms` static file middleware-i istifadə et
