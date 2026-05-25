@@ -47,7 +47,8 @@ namespace FinNex.Application.Interfaces.SenedDovriyyesi
     string? search,
     int? tagId = null,
     string? sortBy = null,
-    string? sortDir = null);
+    string? sortDir = null,
+    int? currentUserId = null);
 
         Task<Result<PagedResult<SenedListDto>>> GetSilinmisPagedAsync(
             PagedRequest req,
@@ -55,22 +56,26 @@ namespace FinNex.Application.Interfaces.SenedDovriyyesi
             int? sobeId,
             int? senedNovuId,
             SenedStatusu? status,
-            string? search);
+            string? search,
+            int? currentUserId = null);
 
         Task<Result<SenedDetailDto>> GetDetailAsync(
             int senedId,
             List<int> icazeliSobeIdleri,
-            bool isAdmin);
+            bool isAdmin,
+            int? currentUserId = null);
 
         Task<Result<SenedDetailDto>> GetDetailSilinmisAsync(
             int senedId,
             List<int> icazeliSobeIdleri,
-            bool isAdmin);
+            bool isAdmin,
+            int? currentUserId = null);
 
         Task<Result<SenedDetailDto>> silmeİCazeSorgusuAsync(
             int senedId,
             List<int> icazeliSobeIdleri,
-            bool isAdmin);
+            bool isAdmin,
+            int? currentUserId = null);
 
         Task<Result<SenedDashboardDto>> GetDashboardAsync();
 

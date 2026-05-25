@@ -20,7 +20,7 @@ namespace FinNex.Application.DTOs.HR.Dashboard
         public int IsGunuSayi { get; set; }  // Ay üzrə iş günü sayı
         public int QaibGun { get; set; }
         public int IcazeliGun { get; set; }  // DavamiyyetStatus.Icazeli
-        public int GozlenilenGun { get; set; }  // Hələ gəlməmiş gələcək günlər
+        public int GecikenGun { get; set; }  // DavamiyyetStatus.Gecikme — cari ayda gecikmə sayı
 
         // ── Məzuniyyət balansı (cari il, növ üzrə) ───────────
         // MezuniyyetBalans-dan + Mezuniyyet cədvəlindən hesablanır
@@ -141,7 +141,6 @@ namespace FinNex.Application.DTOs.HR.Dashboard
         public TimeSpan BaslamaSaati { get; set; }
         public TimeSpan BitisSaati { get; set; }
         public double IcazeSaati { get; set; }
-        public string? EvezEdenAdSoyad { get; set; }
         public string? Sebeb { get; set; }
         public IcazeStatus Status { get; set; }
 

@@ -48,7 +48,6 @@ namespace FinNex.Application.Services
                             .Include(m => m.Isci)
                                 .ThenInclude(i => i.IsciTeyinatlari)
                                     .ThenInclude(t => t.Vezife)
-                            .Include(m => m.EvezEdenIsci)
                             .Include(m => m.CixisGiris),
                         izlemeden: true);
 
@@ -116,7 +115,6 @@ namespace FinNex.Application.Services
                 var entity = new Icaze
                 {
                     IsciId = dto.IsciId,
-                    EvezEdenIsciId = dto.EvezEdenIsciId,
                     IcazeTarixi = dto.IcazeTarixi,
                     BaslamaSaati = dto.BaslamaSaati,
                     BitisSaati = dto.BitisSaati,
@@ -170,7 +168,6 @@ namespace FinNex.Application.Services
                             .Include(i => i.Isci)
                                 .ThenInclude(i => i.IsciTeyinatlari)
                                     .ThenInclude(t => t.Vezife)
-                            .Include(i => i.EvezEdenIsci)
                             .Include(i => i.CixisGiris),
                         izlemeden: true);
 
@@ -230,7 +227,6 @@ namespace FinNex.Application.Services
                             .Include(i => i.Isci)
                                 .ThenInclude(i => i.IsciTeyinatlari)
                                     .ThenInclude(t => t.Departament)
-                            .Include(i => i.EvezEdenIsci)
                             .Include(i => i.CixisGiris),
                         izlemeden: true);
 
@@ -246,7 +242,6 @@ namespace FinNex.Application.Services
                         .Where(t => t.Aktivdir && t.Departament != null)
                         .Select(t => t.Departament.Ad)
                         .FirstOrDefault() ?? "-",
-                    EvezEdenAdSoyad = icaze.EvezEdenIsci?.TamAd ?? "—",
                     IcazeTarixi = icaze.IcazeTarixi,
                     BaslamaSaati = icaze.BaslamaSaati,
                     BitisSaati = icaze.BitisSaati,
@@ -285,7 +280,6 @@ namespace FinNex.Application.Services
                         include: q => q
                             .Include(i => i.Isci)
                                 .ThenInclude(i => i.IsciTeyinatlari)
-                            .Include(i => i.EvezEdenIsci)
                             .Include(i => i.CixisGiris),
                         izlemeden: true);
 
@@ -312,8 +306,7 @@ namespace FinNex.Application.Services
                                     .ThenInclude(t => t.Departament)
                             .Include(i => i.Isci)
                                 .ThenInclude(i => i.IsciTeyinatlari)
-                                    .ThenInclude(t => t.Vezife)
-                            .Include(i => i.EvezEdenIsci),
+                                    .ThenInclude(t => t.Vezife),
                         izlemeden: true);
 
                 return Result<IList<IcazeListDto>>.Ok(
@@ -341,8 +334,7 @@ namespace FinNex.Application.Services
                                     .ThenInclude(t => t.Departament)
                             .Include(i => i.Isci)
                                 .ThenInclude(i => i.IsciTeyinatlari)
-                                    .ThenInclude(t => t.Vezife)
-                            .Include(i => i.EvezEdenIsci),
+                                    .ThenInclude(t => t.Vezife),
                         izlemeden: true);
 
                 return Result<IList<IcazeListDto>>.Ok(
@@ -367,8 +359,7 @@ namespace FinNex.Application.Services
                                     .ThenInclude(t => t.Departament)
                             .Include(i => i.Isci)
                                 .ThenInclude(i => i.IsciTeyinatlari)
-                                    .ThenInclude(t => t.Vezife)
-                            .Include(i => i.EvezEdenIsci),
+                                    .ThenInclude(t => t.Vezife),
                         izlemeden: true);
 
                 return Result<IList<IcazeListDto>>.Ok(
@@ -393,8 +384,7 @@ namespace FinNex.Application.Services
                                     .ThenInclude(t => t.Departament)
                             .Include(i => i.Isci)
                                 .ThenInclude(i => i.IsciTeyinatlari)
-                                    .ThenInclude(t => t.Vezife)
-                            .Include(i => i.EvezEdenIsci),
+                                    .ThenInclude(t => t.Vezife),
                         izlemeden: true);
 
                 return Result<IList<IcazeListDto>>.Ok(
@@ -739,7 +729,6 @@ namespace FinNex.Application.Services
                 .Where(t => t.Aktivdir)
                 .Select(t => t.Departament?.Ad)
                 .FirstOrDefault() ?? "-",
-            EvezEdenAdSoyad = icaze.EvezEdenIsci?.TamAd ?? "—",
             IcazeTarixi = icaze.IcazeTarixi,
             BaslamaSaati = icaze.BaslamaSaati,
             BitisSaati = icaze.BitisSaati,
@@ -780,7 +769,6 @@ namespace FinNex.Application.Services
                             .Include(i => i.Isci)
                                 .ThenInclude(i => i.IsciTeyinatlari)
                                     .ThenInclude(t => t.Vezife)
-                            .Include(i => i.EvezEdenIsci)
                             .Include(i => i.CixisGiris),
                         izlemeden: true);
 
@@ -896,7 +884,6 @@ namespace FinNex.Application.Services
                             .Include(i => i.Isci)
                                 .ThenInclude(i => i.IsciTeyinatlari)
                                     .ThenInclude(t => t.Vezife)
-                            .Include(i => i.EvezEdenIsci)
                             .Include(i => i.SobeReisi)
                             .Include(i => i.Rehber)
                             .Include(i => i.HrTesdiqleyen)
@@ -913,7 +900,6 @@ namespace FinNex.Application.Services
                             .Where(t => t.Aktivdir)
                             .Select(t => t.Departament?.Ad)
                             .FirstOrDefault() ?? "-",
-                        EvezEdenAdSoyad = ic.EvezEdenIsci?.TamAd ?? "—",
                         IcazeTarixi = ic.IcazeTarixi,
                         BaslamaSaati = ic.BaslamaSaati,
                         BitisSaati = ic.BitisSaati,

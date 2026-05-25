@@ -10,5 +10,6 @@ namespace FinNex.Application.DTOs.SenedDovriyyesi.Sened
 
         // Sənədin tarixi — istifadəçi tərəfindən daxil edilir (default: bu gün)
         public DateTime SenedTarixi { get; set; } = DateTime.Now.Date;
+        public FinNex.Domain.Entities.SenedDovriyyesi.SenedKateqoriyasi Kateqoriya { get; set; } = FinNex.Domain.Entities.SenedDovriyyesi.SenedKateqoriyasi.Umumi;
     }
 }

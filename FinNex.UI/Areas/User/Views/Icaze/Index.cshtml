@@ -104,12 +104,8 @@
                         <span class="fn-icaze-dur">(@icaze.IcazeSaati.ToString("F1") saat)</span>
                     </div>
                     <div class="fn-icaze-meta">
-                        <span class="fn-icaze-evez">
-                            Əvəzedici: @icaze.EvezEdenAdSoyad
-                        </span>
                         @if (!string.IsNullOrEmpty(icaze.Sebeb))
                         {
-                            <span class="fn-icaze-sep">·</span>
                             <span class="fn-icaze-sebeb">@icaze.Sebeb</span>
                         }
                     </div>
@@ -122,14 +118,6 @@
                                 <div class="fn-ws-dot"></div>
                                 <div class="fn-ws-lbl">Müraciət</div>
                             </div>
-                            @if (icaze.EvezediciSecildi)
-                            {
-                                <div class="fn-ws-line @(step >= 1 ? "fn-ws-line--done" : "")"></div>
-                                <div class="fn-ws @(icaze.EvezediciTesdiqlenib == true ? "fn-ws--done" : step == 0 ? "fn-ws--active" : "")">
-                                    <div class="fn-ws-dot"></div>
-                                    <div class="fn-ws-lbl">Əvəzedici</div>
-                                </div>
-                            }
                             @if (!icaze.SobeReisiKecildi)
                             {
                                 <div class="fn-ws-line @(step >= 2 ? "fn-ws-line--done" : "")"></div>

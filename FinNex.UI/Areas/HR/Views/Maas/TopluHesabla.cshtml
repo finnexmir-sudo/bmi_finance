@@ -427,7 +427,29 @@
                                             <div class="mth-name-primary">@isci.Ad @isci.Soyad</div>
                                             <div class="mth-name-dept">@dept</div>
                                         </div>
-                                        @if (!hasIban)
+                                        @if (isci.IsdenAyrilmaTarixi.HasValue)
+                                        {
+                                            <div style="margin-top:3px;display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:#b45309;background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:1px 7px"
+                                                 title="Bu ay üçün maaş hesablanır çünki həmin tarixə qədər işçi əmək münasibətində olub.">
+                                                <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+                                                    <path d="M2 4.5h5M5 2.5l2 2-2 2" stroke="#b45309" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                                İşdən çıxıb @isci.IsdenAyrilmaTarixi.Value.ToString("dd.MM.yyyy")
+                                            </div>
+                                        }
+                                        @if (hasIban)
+                                        {
+                                            var iban = GetIban(isci.Id)!;
+                                            <div class="mth-iban-ok" title="@iban"
+                                                 style="margin-top:3px;font-family:monospace;font-size:11px;color:#475569;letter-spacing:.3px">
+                                                <svg width="9" height="9" viewBox="0 0 9 9" fill="none" style="vertical-align:-1px">
+                                                    <rect x="1" y="2" width="7" height="5" rx="1" stroke="#16a34a" stroke-width=".9"/>
+                                                    <path d="M1 4h7" stroke="#16a34a" stroke-width=".9"/>
+                                                </svg>
+                                                @iban
+                                            </div>
+                                        }
+                                        else
                                         {
                                             <div class="mth-iban">
                                                 <svg width="9" height="9" viewBox="0 0 9 9" fill="none">

@@ -23,6 +23,13 @@ namespace FinNex.Domain.Entities.SenedDovriyyesi
 
         public SenedStatusu Status { get; set; } = SenedStatusu.Yeni;
 
+        /// <summary>
+        /// Görünmə kateqoriyası. Default Umumi — hər kəsə açıq.
+        /// Maildən avtomatik atılan sənədlər də Umumi gəlir; lazım olarsa
+        /// yaradan sonradan Xususi-yə dəyişə bilər.
+        /// </summary>
+        public SenedKateqoriyasi Kateqoriya { get; set; } = SenedKateqoriyasi.Umumi;
+
         public MexfilikSeviyesi Mexfilik { get; set; } = MexfilikSeviyesi.Internal;
 
         // 🔴 ÇOX VACİB – hansı obyektə bağlıdır

@@ -72,20 +72,6 @@
                      style="display:none; background:#fff3cd; color:#856404; border-color:#ffc107;">
                 </div>
 
-                @* ── Əvəzedici işçi ── *@
-                <div class="fn-form-group">
-                    <label asp-for="EvezEdenIsciId" class="fn-label">
-                        Əvəzedici işçi <span class="fn-required"></span>
-                        <span class="fn-label-hint"></span>
-                    </label>
-                    <select asp-for="EvezEdenIsciId"
-                            asp-items="Model.EvezEdenList"
-                            class="fn-select">
-                        <option value="">— Seçin —</option>
-                    </select>
-                    <span asp-validation-for="EvezEdenIsciId" class="fn-val-msg"></span>
-                </div>
-
                 @* ── Səbəb ── *@
                 <div class="fn-form-group">
                     <label asp-for="Sebeb" class="fn-label">

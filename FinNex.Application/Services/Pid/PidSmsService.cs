@@ -116,4 +116,30 @@ public class PidSmsService : IPidSmsService
             .Include(x => x.GonderenIsci)
             .ToListAsync();
     }
+
+    public async Task<PidSmsKpiDto> GetKpiAsync()
+    {
+        var bugun = DateTime.Today;
+        var ayBasi = new DateTime(bugun.Year, bugun.Month, 1);
+        var son30 = bugun.AddDays(-30);
+
+        var q = _uow.Repository<PidSmsLog>().Query().Where(x => !x.Silinib);
+
+        var buGun = await q.CountAsync(x => x.YaradilmaTarixi >= bugun);
+        var buAy = await q.CountAsync(x => x.YaradilmaTarixi >= ayBasi);
+        var ugurlu = await q.CountAsync(x => x.YaradilmaTarixi >= son30
+                                          && (x.Status == PidSmsStatus.Gonderildi
+                                           || x.Status == PidSmsStatus.Catdirildi));
+        var xeta = await q.CountAsync(x => x.YaradilmaTarixi >= son30
+                                        && (x.Status == PidSmsStatus.Xeta
+                                         || x.Status == PidSmsStatus.Catmadi));
+
+        return new PidSmsKpiDto
+        {
+            BuGun = buGun,
+            BuAy = buAy,
+            UgurluSon30 = ugurlu,
+            XetaSon30 = xeta
+        };
+    }
 }

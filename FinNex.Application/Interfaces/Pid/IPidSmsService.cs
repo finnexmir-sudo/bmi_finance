@@ -21,4 +21,14 @@ public interface IPidSmsService
         IEnumerable<(string Ad, string Telefon)> alicilar,
         string smsMetni,
         int? gonderenIsciId);
+
+    Task<PidSmsKpiDto> GetKpiAsync();
+}
+
+public class PidSmsKpiDto
+{
+    public int BuGun { get; set; }
+    public int BuAy { get; set; }
+    public int UgurluSon30 { get; set; }
+    public int XetaSon30 { get; set; }
 }

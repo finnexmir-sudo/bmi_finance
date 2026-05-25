@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc.Rendering;
 using System.ComponentModel.DataAnnotations;
 
 namespace FinNex.UI.Areas.User.ViewModels.Icaze
@@ -11,9 +10,6 @@ namespace FinNex.UI.Areas.User.ViewModels.Icaze
     {
         // Sistem avtomatik doldurur
         public int IsciId { get; set; }
-
-       
-        public int? EvezEdenIsciId { get; set; }
 
         [Required(ErrorMessage = "İcazə tarixi seçilməlidir")]
         public DateTime IcazeTarixi { get; set; } = DateTime.Today;
@@ -29,8 +25,5 @@ namespace FinNex.UI.Areas.User.ViewModels.Icaze
 
         [Range(0, 24, ErrorMessage = "Jeton saatı 0–24 aralığında olmalıdır")]
         public decimal JetonOdenenSaat { get; set; } = 0;
-
-        // Dropdown
-        public List<SelectListItem> EvezEdenList { get; set; } = new();
     }
 }

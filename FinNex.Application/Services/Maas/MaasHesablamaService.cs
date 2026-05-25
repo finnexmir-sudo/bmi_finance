@@ -55,14 +55,22 @@ namespace FinNex.Application.Services.HR
 
         public async Task<Result<TopluHesablamaNeticesiDto>> TopluHesablaAsync(TopluHesablaInputDto input)
         {
+            // Hesablanan il/ay sərhədləri — işdən çıxmış işçi həmin ayda
+            // bankla əmək münasibətində idisə (məs. mayda məzuniyyət pulu
+            // almışsa) maaş cədvəlində görünməlidir.
+            var ayBirinci = new DateTime(input.Il, input.Ay, 1);
+            var ayinSonGunu = ayBirinci.AddMonths(1).AddDays(-1);
+
             var isciler = await _unitOfWork.Repository<Isci>()
                 .Query()
-                .Where(x => x.Status == IsciStatus.Aktiv && !x.Silinib)
+                .Where(x => !x.Silinib
+                         && x.IsheQebulTarixi <= ayinSonGunu
+                         && (x.IsdenAyrilmaTarixi == null || x.IsdenAyrilmaTarixi >= ayBirinci))
                 .Include(x => x.Maliye)
                 .ToListAsync();
 
             if (!isciler.Any())
-                return Result<TopluHesablamaNeticesiDto>.Fail("Aktiv isci tapilmadi.");
+                return Result<TopluHesablamaNeticesiDto>.Fail("Bu ay üçün hesablanacaq işçi tapılmadı.");
 
             var netice = new TopluHesablamaNeticesiDto { Il = input.Il, Ay = input.Ay };
 
@@ -193,6 +201,60 @@ namespace FinNex.Application.Services.HR
                     Mebleg = qayibKesinti,
                     Tip = "kesinti"
                 });
+            }
+
+            // 5b. İŞDƏN AYRILMA KƏSİNTİSİ (PRORATE)
+            //     İşçi ay ərzində işdən çıxıbsa, ayrılma tarixindən sonrakı
+            //     iş günləri (şənbə/bazar və bayram istisna) üçün avtomatik
+            //     kəsinti tutulur. Səbəb: QayibMarkerBackgroundService
+            //     ayrılma tarixindən sonrakı günlərə Qayib qeydi yazmır;
+            //     deməli, kəsinti olmasa, ay tam ödənilərdi (səhv).
+            //     Eyni qaydalar Bayram cədvəli ilə (Bayram = istirahət,
+            //     IsGunu = iş günü override) tətbiq olunur.
+            if (isci.IsdenAyrilmaTarixi.HasValue)
+            {
+                var ayrilmaT = isci.IsdenAyrilmaTarixi.Value.Date;
+                var ayBaslangic = new DateTime(input.Il, input.Ay, 1);
+                var ayBitis = ayBaslangic.AddMonths(1).AddDays(-1);
+
+                if (ayrilmaT >= ayBaslangic && ayrilmaT <= ayBitis)
+                {
+                    var bayramlar = await _unitOfWork.Repository<BayramGunu>()
+                        .HamisiniGetirAsync(x =>
+                            x.Tarix > ayrilmaT && x.Tarix <= ayBitis && !x.Silinib);
+                    var bayramDict = bayramlar
+                        .GroupBy(x => x.Tarix.Date)
+                        .ToDictionary(g => g.Key, g => g.First().Tip);
+
+                    int ayrilmadanSonraIsGunu = 0;
+                    for (var t = ayrilmaT.AddDays(1); t <= ayBitis; t = t.AddDays(1))
+                    {
+                        if (bayramDict.TryGetValue(t.Date, out var tip))
+                        {
+                            if (tip == GunTipi.IsGunu) ayrilmadanSonraIsGunu++;
+                        }
+                        else
+                        {
+                            if (t.DayOfWeek != DayOfWeek.Saturday &&
+                                t.DayOfWeek != DayOfWeek.Sunday)
+                                ayrilmadanSonraIsGunu++;
+                        }
+                    }
+
+                    if (ayrilmadanSonraIsGunu > 0 && ayIsGunu > 0)
+                    {
+                        var ayrilmaKesinti = Math.Round(esasMaas / ayIsGunu * ayrilmadanSonraIsGunu, 2);
+                        qayibKesinti += ayrilmaKesinti;
+                        izahatlar.Add(new HesablamaIzahiDto
+                        {
+                            Addim = "İşdən Ayrılma Kəsintisi",
+                            Izah = $"{ayrilmaT:dd.MM.yyyy} tarixində işdən çıxıb — " +
+                                   $"{esasMaas:N2} / {ayIsGunu} iş günü × {ayrilmadanSonraIsGunu} ayrılmadan sonrakı iş günü",
+                            Mebleg = ayrilmaKesinti,
+                            Tip = "kesinti"
+                        });
+                    }
+                }
             }
 
             // 6. Mezuniyyet gunleri ve odenisi (2026 qaydası: GS + İGS)

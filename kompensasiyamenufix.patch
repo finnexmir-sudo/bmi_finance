@@ -1,0 +1,82 @@
+From dbe5ff3109d472cb9f4f1de6b73a9889abf630ce Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 24 May 2026 18:51:02 +0000
+Subject: [PATCH] =?UTF-8?q?fix(hr/kompensasiya):=20=5FUserLayout=20istifad?=
+ =?UTF-8?q?=C9=99=20et=20v=C9=99=20sol=20panel=C9=99=20nav-item=20=C9=99la?=
+ =?UTF-8?q?v=C9=99=20et?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml   | 2 +-
+ FinNex.UI/Areas/HR/Views/Kompensasiya/Index.cshtml   | 2 +-
+ FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml   | 2 +-
+ FinNex.UI/Areas/User/Views/Shared/_UserLayout.cshtml | 6 +++++-
+ 4 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml b/FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml
+index e07c5371..2c12fbb7 100644
+--- a/FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml
++++ b/FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml
+@@ -1,7 +1,7 @@
+ @model FinNex.Application.DTOs.HR.Kompensasiya.KompensasiyaDetalDto
+ @using FinNex.Domain.Entities.HR
+ @{
+-    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
++    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+     ViewData["Title"] = "Kompensasiya Detal";
+     var ayAdlari = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+         "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+diff --git a/FinNex.UI/Areas/HR/Views/Kompensasiya/Index.cshtml b/FinNex.UI/Areas/HR/Views/Kompensasiya/Index.cshtml
+index 8a6901aa..a286d784 100644
+--- a/FinNex.UI/Areas/HR/Views/Kompensasiya/Index.cshtml
++++ b/FinNex.UI/Areas/HR/Views/Kompensasiya/Index.cshtml
+@@ -1,7 +1,7 @@
+ @model IList<FinNex.Application.DTOs.HR.Kompensasiya.KompensasiyaListDto>
+ @using FinNex.Domain.Entities.HR
+ @{
+-    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
++    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+     ViewData["Title"] = "Məzuniyyət Kompensasiyası";
+ 
+     string StatusText(KompensasiyaStatus s) => s switch
+diff --git a/FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml b/FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml
+index 3183b65a..0504b791 100644
+--- a/FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml
++++ b/FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml
+@@ -1,6 +1,6 @@
+ @model FinNex.UI.Areas.HR.ViewModels.Kompensasiya.KompensasiyaYaratVM
+ @{
+-    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
++    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+     ViewData["Title"] = "Yeni Kompensasiya";
+     var ayAdlari = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+         "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+diff --git a/FinNex.UI/Areas/User/Views/Shared/_UserLayout.cshtml b/FinNex.UI/Areas/User/Views/Shared/_UserLayout.cshtml
+index c6ba60fa..ea17d129 100644
+--- a/FinNex.UI/Areas/User/Views/Shared/_UserLayout.cshtml
++++ b/FinNex.UI/Areas/User/Views/Shared/_UserLayout.cshtml
+@@ -542,7 +542,7 @@
+                 {
+                     var hrAsasActive = currentArea == "HR" && (currentController is "Dashboard" or "RehberDashboard");
+                     var hrKadrActive = currentController is "Isci" or "Departament" or "Vezife" or "Organizasiya";
+-                    var hrDMActive = (currentArea == "HR" && currentController is "Davamiyyet" or "Mezuniyyet" or "BayramGunu" or "MezuniyyetBalans" or "Xestelik" or "XestelikEzamiyyet" or "IsciStaji")
++                    var hrDMActive = (currentArea == "HR" && currentController is "Davamiyyet" or "Mezuniyyet" or "BayramGunu" or "MezuniyyetBalans" or "Xestelik" or "XestelikEzamiyyet" or "IsciStaji" or "Kompensasiya")
+                                   || (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye");
+                     var hrQymetActive = currentArea == "HR" && currentController is "Performans" or "Telim";
+                     var hrDigerActive = currentArea == "HR" && currentController is "Hesabat" or "Elan";
+@@ -639,6 +639,10 @@
+                                class="fn-nav-item @(currentArea == "HR" && currentController == "XestelikEzamiyyet" ? "active" : "")">
+                                 <i class="bi bi-airplane-engines"></i> Ezamiyyət
+                             </a>
++                            <a asp-area="HR" asp-controller="Kompensasiya" asp-action="Index"
++                               class="fn-nav-item @(currentArea == "HR" && currentController == "Kompensasiya" ? "active" : "")">
++                                <i class="bi bi-cash-coin"></i> Məz. Kompensasiyası
++                            </a>
+                             <a asp-area="HR" asp-controller="IsciStaji" asp-action="Index"
+                                class="fn-nav-item @(currentArea == "HR" && currentController == "IsciStaji" ? "active" : "")">
+                                 <i class="bi bi-award"></i> İşçi Stajı
+-- 
+2.43.0
+

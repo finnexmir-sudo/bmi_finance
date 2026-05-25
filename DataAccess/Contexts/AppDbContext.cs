@@ -63,6 +63,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     // Məzuniyyət modulu üçün yeni DbSet-lər
     public DbSet<Mezuniyyet> Mezuniyyetler { get; set; }
     public DbSet<MezuniyyetBalans> MezuniyyetBalanslari { get; set; }
+    public DbSet<MezuniyyetKompensasiyasi> MezuniyyetKompensasiyalari { get; set; }
     public DbSet<BayramGunu> BayramGunleri { get; set; }
     public DbSet<Icaze> Icazeler { get; set; }
     public DbSet<IcazeCixisGiris> IcazeCixisGirisler { get; set; }

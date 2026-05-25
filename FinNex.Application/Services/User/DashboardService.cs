@@ -77,12 +77,11 @@ namespace FinNex.Application.Services
                 dto.IcazeliGun = davamiyyetler.Count(x => x.Status == DavamiyyetStatus.Icazeli
                                                           || x.Status == DavamiyyetStatus.Xestelik
                                                           || x.Status == DavamiyyetStatus.Ezamiyyet);
+                dto.GecikenGun = davamiyyetler.Count(x => x.Status == DavamiyyetStatus.Gecikme);
 
-                // Hələ qeydə alınmamış iş günləri (gələcək)
+                // Hələ qeydə alınmamış iş günləri (gələcək) — IsGunuSayi üçün
                 var isGunleri = GetAyinIsGunleri(buIl, buAy);
                 dto.IsGunuSayi = isGunleri.Count;
-                dto.GozlenilenGun = isGunleri.Count(g => g > DateTime.Today
-                    && !davamiyyetler.Any(d => d.Tarix.Date == g.Date));
 
                 // ── 3. Davamiyyət təqvimi — ayın bütün günləri ──────────
                 var aydakiButunGunler = Enumerable
@@ -197,7 +196,6 @@ namespace FinNex.Application.Services
                         x => x.IsciId == isci.Id
                           && x.Status != IcazeStatus.ImtinaEdildi
                           && x.Status != IcazeStatus.Tesdiqlenib,
-                        include: q => q.Include(i => i.EvezEdenIsci),
                         izlemeden: true);
 
                 dto.AktivIcazeler = aktivIcazeler
@@ -210,7 +208,6 @@ namespace FinNex.Application.Services
                         BaslamaSaati = i.BaslamaSaati,
                         BitisSaati = i.BitisSaati,
                         IcazeSaati = i.IcazeSaati,
-                        EvezEdenAdSoyad = i.EvezEdenIsci?.TamAd,
                         Sebeb = i.Sebeb,
                         Status = i.Status
                     }).ToList();

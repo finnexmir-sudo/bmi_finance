@@ -38,6 +38,7 @@ public class SenedListItemVM
     public string Basliq { get; set; } = null!;
     public string AcarSoz { get; set; } = null!;
     public SenedStatusu Status { get; set; }
+    public SenedKateqoriyasi Kateqoriya { get; set; } = SenedKateqoriyasi.Umumi;
     public string Sobe { get; set; } = null!;
     public string IsciAdi { get; set; }=null!;
     public string SenedNovu { get; set; } = null!;

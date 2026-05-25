@@ -1,0 +1,283 @@
+From 15d60c6660f6081a92eee88e5ad5bdf01845d31c Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 24 May 2026 19:17:47 +0000
+Subject: [PATCH] =?UTF-8?q?fix(hr/kompensasiya):=20anniversary=20=C9=99sas?=
+ =?UTF-8?q?l=C4=B1=20prorate=20d=C3=BCsturu?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+İstifadəçinin izahına uyğun olaraq prorate düsturu yenidən
+quruldu — yanvar 1 əvəzinə HƏR İŞÇİNİN ÖZ ANNIVERSARY TARİXİ
+(işə qəbul gün/ay-ı) istifadə olunur.
+
+Misal: Samir Hüseynov, işə qəbul 01.02.2010, ayrılma 24.05.2026
+  Köhnə: (yanvar 1 → 24 may) = 144 gün × 36 / 365 = 14.20 gün
+  Yeni:  (01.02.2026 → 24.05.2026) = 112 gün × 36 / 365 = 11.04 gün
+
+MezuniyyetBalans.Il artıq ANNIVERSARY ili kimi başa düşülür
+(takvim ili yox). Keçmiş illər qalığı cariAnniversaryIli-dən
+əvvəlki anniversary illərin qalığlarının cəmidir.
+
+Yeni işçi (heç bir anniversary keçməyib) → prorate işə qəbul
+tarixindən başlanır.
+
+Sonuncu məzuniyyət tarixi artıq hesablamaya təsir etmir —
+köhnə illərdən qalan günlərdən artıq azalmış kimi qəbul olunur.
+İnformativ olaraq göstərilir.
+
+UI: KompensasiyaHesablamaNeticesiDto-ya AnniversaryBaslangic
+sahəsi əlavə oldu. Yarat preview və Detal view yenilənib.
+---
+ .../DTOs/HR/Kompensasiya/KompensasiyaDtos.cs  |  3 +-
+ .../Services/HR/KompensasiyaService.cs        | 93 +++++++++++++------
+ .../Areas/HR/Views/Kompensasiya/Detal.cshtml  | 19 ++--
+ .../Areas/HR/Views/Kompensasiya/Yarat.cshtml  | 14 +--
+ 4 files changed, 87 insertions(+), 42 deletions(-)
+
+diff --git a/FinNex.Application/DTOs/HR/Kompensasiya/KompensasiyaDtos.cs b/FinNex.Application/DTOs/HR/Kompensasiya/KompensasiyaDtos.cs
+index 769018c5..6bdea6e9 100644
+--- a/FinNex.Application/DTOs/HR/Kompensasiya/KompensasiyaDtos.cs
++++ b/FinNex.Application/DTOs/HR/Kompensasiya/KompensasiyaDtos.cs
+@@ -18,8 +18,9 @@ namespace FinNex.Application.DTOs.HR.Kompensasiya
+         public List<KompensasiyaIlDto> KecmisIller { get; set; } = new();
+         public decimal KecmisQaligGun { get; set; }
+ 
+-        // Cari il
++        // Cari anniversary ili
+         public int CariIl { get; set; }
++        public DateTime AnniversaryBaslangic { get; set; }  // cari məzuniyyət ili başlanğıcı
+         public decimal CariIlToplamGun { get; set; }
+         public decimal CariIlIstifadeOlunan { get; set; }
+         public DateTime? SonuncuMezuniyyetBitmeTarixi { get; set; }
+diff --git a/FinNex.Application/Services/HR/KompensasiyaService.cs b/FinNex.Application/Services/HR/KompensasiyaService.cs
+index 9d1d91cf..e9fbf6f9 100644
+--- a/FinNex.Application/Services/HR/KompensasiyaService.cs
++++ b/FinNex.Application/Services/HR/KompensasiyaService.cs
+@@ -60,7 +60,10 @@ namespace FinNex.Application.Services.HR
+                 result.DepartamentAd = aktivTeyinat?.Departament?.Ad;
+                 result.VezifeAd = aktivTeyinat?.Vezife?.Ad;
+ 
+-                // ─── 1. MEZUNIYYET BALANSI (illər üzrə) ─────────────
++                // ─── 1. MEZUNIYYET BALANSI (anniversary illər üzrə) ──
++                // MezuniyyetBalans.Il anniversary ilini bildirir, takvim deyil.
++                // Misal: işə qəbul 01.02.2010 → "Il=2025" anniversary ili
++                // 01.02.2025–31.01.2026-ya uyğundur.
+                 var balanslar = await _uow.Repository<MezuniyyetBalans>()
+                     .Query()
+                     .Where(x => x.IsciId == isciId
+@@ -69,9 +72,46 @@ namespace FinNex.Application.Services.HR
+                     .OrderBy(x => x.Il)
+                     .ToListAsync();
+ 
+-                // Keçmiş illər (cari il < ayrılma ili)
++                // ─── 2. CARI ANNIVERSARY İLİNİ TAP ──────────────────
++                // İşçinin işə qəbul gün/ay-ı hər il anniversary tarixini formalaşdırır.
++                // Cari anniversary = ən son keçən anniversary tarixinin baş düşdüyü il.
++                //
++                // Misal: işə qəbul 01.02.2010, ayrılma 24.05.2026
++                //   → bu il anniversary 01.02.2026, keçib → cariAnniversaryIli = 2026
++                //
++                // Misal: işə qəbul 01.06.2010, ayrılma 24.05.2026
++                //   → bu il anniversary 01.06.2026, hələ gəlməyib
++                //   → son anniversary 01.06.2025 → cariAnniversaryIli = 2025
++                var anniversaryBuIl = new DateTime(
++                    ayrilmaTarixi.Year, isci.IsheQebulTarixi.Month, isci.IsheQebulTarixi.Day);
++                int cariAnniversaryIli;
++                DateTime anniversaryBaslangic;
++                if (anniversaryBuIl <= ayrilmaTarixi.Date)
++                {
++                    cariAnniversaryIli = ayrilmaTarixi.Year;
++                    anniversaryBaslangic = anniversaryBuIl;
++                }
++                else
++                {
++                    cariAnniversaryIli = ayrilmaTarixi.Year - 1;
++                    anniversaryBaslangic = new DateTime(
++                        cariAnniversaryIli, isci.IsheQebulTarixi.Month, isci.IsheQebulTarixi.Day);
++                }
++
++                // Yeni işçi (heç bir anniversary keçməyib) — prorate işə qəbul tarixindən
++                if (isci.IsheQebulTarixi.Date > anniversaryBaslangic)
++                {
++                    anniversaryBaslangic = isci.IsheQebulTarixi.Date;
++                    result.SonuncuMezuniyyetIsheQebulTarixindenGoturuldu = true;
++                }
++
++                result.CariIl = cariAnniversaryIli;
++                result.AnniversaryBaslangic = anniversaryBaslangic;
++
++                // ─── 3. KEÇMİŞ İLLƏR QALIĞI ─────────────────────────
++                // Anniversary ili < cariAnniversaryIli olan bütün balans qalığı
+                 decimal kecmisQalig = 0;
+-                foreach (var b in balanslar.Where(x => x.Il < ayrilmaTarixi.Year))
++                foreach (var b in balanslar.Where(x => x.Il < cariAnniversaryIli))
+                 {
+                     decimal qalig = b.ToplamGun - b.IstifadeOlunanGun;
+                     if (qalig > 0) kecmisQalig += qalig;
+@@ -85,13 +125,13 @@ namespace FinNex.Application.Services.HR
+                 }
+                 result.KecmisQaligGun = kecmisQalig;
+ 
+-                // Cari il balansı
+-                var cariIlBalans = balanslar.FirstOrDefault(x => x.Il == ayrilmaTarixi.Year);
++                // Cari anniversary ili balansı
++                var cariIlBalans = balanslar.FirstOrDefault(x => x.Il == cariAnniversaryIli);
+                 decimal illikGunHuququ = cariIlBalans?.ToplamGun ?? 21;
+                 result.CariIlToplamGun = illikGunHuququ;
+                 result.CariIlIstifadeOlunan = cariIlBalans?.IstifadeOlunanGun ?? 0;
+ 
+-                // ─── 2. SONUNCU MEZUNIYYET (prorate base) ───────────
++                // ─── 4. SONUNCU MEZUNIYYET (informativ — istifadə olunmur) ───
+                 var sonMezuniyyet = await _uow.Repository<Mezuniyyet>()
+                     .Query()
+                     .Where(x => x.IsciId == isciId
+@@ -101,25 +141,21 @@ namespace FinNex.Application.Services.HR
+                     .OrderByDescending(x => x.BitmeTarixi)
+                     .FirstOrDefaultAsync();
+ 
+-                DateTime baslangic;
+                 if (sonMezuniyyet != null)
+                 {
+                     result.SonuncuMezuniyyetBitmeTarixi = sonMezuniyyet.BitmeTarixi.Date;
+                     result.SonuncuMezuniyyetId = sonMezuniyyet.Id;
+-                    baslangic = sonMezuniyyet.BitmeTarixi.Date.AddDays(1);
+-                }
+-                else
+-                {
+-                    result.SonuncuMezuniyyetIsheQebulTarixindenGoturuldu = true;
+-                    baslangic = isci.IsheQebulTarixi.Date;
+                 }
+ 
+-                int kecenGun = (ayrilmaTarixi.Date - baslangic).Days;
++                // ─── 5. CARI ANNIVERSARY PRORATE ────────────────────
++                // Cari anniversary başlanğıcından ayrılma tarixinə qədər keçən
++                // günə görə cari il günü hüququ prorate olunur.
++                // Cari ildə artıq istifadə edilən günlər çıxılır
++                // (köhnə illərdən qalanlar onsuzda kecmisQalig-a daxil deyil).
++                int kecenGun = (ayrilmaTarixi.Date - anniversaryBaslangic).Days;
+                 if (kecenGun < 0) kecenGun = 0;
+                 result.KecenGunSayi = kecenGun;
+ 
+-                // ─── 3. CARI IL PRORATE ─────────────────────────────
+-                // (keçən gün / 365) × illik hüquq − cari ildə artıq istifadə
+                 decimal cariIlProrate = Math.Round(
+                     (decimal)kecenGun / 365m * illikGunHuququ - result.CariIlIstifadeOlunan,
+                     2);
+@@ -186,24 +222,23 @@ namespace FinNex.Application.Services.HR
+                 // ─── 6. IZAHAT ─────────────────────────────────────
+                 result.Izahatlar.Add($"İşçi: {isci.TamAd}");
+                 result.Izahatlar.Add($"İşə qəbul: {isci.IsheQebulTarixi:dd.MM.yyyy}, Ayrılma: {ayrilmaTarixi:dd.MM.yyyy}");
+-                result.Izahatlar.Add($"Keçmiş illərdə istifadə edilməmiş qalıq: {kecmisQalig:N2} gün");
++                result.Izahatlar.Add(
++                    $"Cari məzuniyyət ili başlanğıcı (anniversary): " +
++                    $"{anniversaryBaslangic:dd.MM.yyyy} — bu tarixdən ayrılmaya qədər " +
++                    $"{kecenGun} gün keçib");
++                result.Izahatlar.Add($"Keçmiş anniversary illərdən qalıq cəmi: {kecmisQalig:N2} gün");
+ 
+                 if (sonMezuniyyet != null)
+                 {
+                     result.Izahatlar.Add(
+-                        $"Sonuncu məzuniyyət: {sonMezuniyyet.BaslamaTarixi:dd.MM.yyyy} – " +
+-                        $"{sonMezuniyyet.BitmeTarixi:dd.MM.yyyy} (bitişdən {kecenGun} gün keçib)");
+-                }
+-                else
+-                {
+-                    result.Izahatlar.Add(
+-                        $"Sonuncu məzuniyyət qeydi yoxdur — prorate işə qəbul tarixindən " +
+-                        $"({isci.IsheQebulTarixi:dd.MM.yyyy}, {kecenGun} gün keçib) hesablanır");
++                        $"(İnformativ) Sonuncu məzuniyyət: {sonMezuniyyet.BaslamaTarixi:dd.MM.yyyy} – " +
++                        $"{sonMezuniyyet.BitmeTarixi:dd.MM.yyyy} — köhnə illərdən qalan günlərdən artıq azalıb, " +
++                        $"prorate-ə təsir etmir.");
+                 }
+ 
+                 result.Izahatlar.Add(
+                     $"Cari il prorate: ({kecenGun} / 365) × {illikGunHuququ:N0} " +
+-                    $"− {result.CariIlIstifadeOlunan:N0} (artıq istifadə) = {cariIlProrate:N2} gün");
++                    $"− {result.CariIlIstifadeOlunan:N0} (cari ildə istifadə) = {cariIlProrate:N2} gün");
+                 result.Izahatlar.Add(
+                     $"CƏMİ KOMPENSASİYA GÜNLƏRİ: {kecmisQalig:N2} + {cariIlProrate:N2} = " +
+                     $"{result.CemiKompensasiyaGun:N2} gün");
+@@ -384,9 +419,15 @@ namespace FinNex.Application.Services.HR
+                     GunlukMezPul = e.GunlukMezPul,
+                     GunlukMaas = e.GunlukMaas,
+                     GunlukRate = e.GunlukRate,
++                    Qalib = calc.Data?.Qalib ?? "MH",
+                     CemiMebleg = e.CemiMebleg,
+                     HesablananIl = e.HesablananIl,
+                     HesablananAy = e.HesablananAy,
++                    CariIl = calc.Data?.CariIl ?? 0,
++                    AnniversaryBaslangic = calc.Data?.AnniversaryBaslangic ?? default,
++                    CariIlToplamGun = calc.Data?.CariIlToplamGun ?? 0,
++                    CariIlIstifadeOlunan = calc.Data?.CariIlIstifadeOlunan ?? 0,
++                    SonuncuMezuniyyetIsheQebulTarixindenGoturuldu = calc.Data?.SonuncuMezuniyyetIsheQebulTarixindenGoturuldu ?? false,
+                     Izahatlar = calc.Data?.Izahatlar ?? new List<string>(),
+                     Xeberdarliqlar = calc.Data?.Xeberdarliqlar ?? new List<string>(),
+                     KecmisIller = calc.Data?.KecmisIller ?? new List<KompensasiyaIlDto>()
+diff --git a/FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml b/FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml
+index 2c12fbb7..978838a1 100644
+--- a/FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml
++++ b/FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml
+@@ -101,22 +101,25 @@
+                     </table>
+                 }
+ 
+-                <div style="font-size:11px;color:#64748b;text-transform:uppercase;margin:14px 0 6px">Cari il prorate (@Model.CariIl)</div>
++                <div style="font-size:11px;color:#64748b;text-transform:uppercase;margin:14px 0 6px">Cari anniversary ili prorate (@Model.CariIl)</div>
+                 <div style="font-size:13px;color:#475569;margin-bottom:6px">
+-                    @if (Model.SonuncuMezuniyyetBitmeTarixi.HasValue)
++                    Anniversary başlanğıcı: <b>@Model.AnniversaryBaslangic.ToString("dd.MM.yyyy")</b>
++                    @if (Model.SonuncuMezuniyyetIsheQebulTarixindenGoturuldu)
+                     {
+-                        <span>Sonuncu məzuniyyət bitiş: <b>@Model.SonuncuMezuniyyetBitmeTarixi.Value.ToString("dd.MM.yyyy")</b></span>
+-                    }
+-                    else
+-                    {
+-                        <span style="color:#b45309">⚠ Sonuncu məzuniyyət qeydi yoxdur — işə qəbul tarixindən hesablanır</span>
++                        <span style="color:#b45309">(yeni işçi — işə qəbul tarixindən)</span>
+                     }
+                 </div>
+                 <div style="font-size:13px;color:#475569;margin-bottom:6px">
+                     Keçən gün: <b>@Model.KecenGunSayi</b> · İllik hüquq: <b>@Model.CariIlToplamGun.ToString("N0")</b> · İstifadə: <b>@Model.CariIlIstifadeOlunan.ToString("N0")</b>
+                 </div>
++                @if (Model.SonuncuMezuniyyetBitmeTarixi.HasValue)
++                {
++                    <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;font-style:italic">
++                        (İnformativ) Sonuncu məzuniyyət bitiş: @Model.SonuncuMezuniyyetBitmeTarixi.Value.ToString("dd.MM.yyyy") — hesablamaya təsir etmir
++                    </div>
++                }
+                 <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid #e2e8f0;font-weight:700;font-size:14px">
+-                    <span>Cari il prorate</span>
++                    <span>Cari anniversary ili prorate</span>
+                     <span style="color:#16a34a">@Model.CariIlProrateGun.ToString("N2") gün</span>
+                 </div>
+ 
+diff --git a/FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml b/FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml
+index 0504b791..f825f73a 100644
+--- a/FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml
++++ b/FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml
+@@ -157,14 +157,14 @@
+             html += '</div>';
+         }
+ 
+-        // Cari il prorate
+-        html += '<div style="font-size:11px;color:#64748b;text-transform:uppercase;margin:12px 0 4px">Cari il prorate</div>';
+-        if (d.sonuncuMezuniyyetBitmeTarixi) {
+-            html += '<div style="font-size:12px;color:#475569">Sonuncu məz. bitiş: <b>' + d.sonuncuMezuniyyetBitmeTarixi.substr(0,10) + '</b></div>';
+-        } else {
+-            html += '<div style="font-size:12px;color:#b45309">⚠ Sonuncu məzuniyyət yoxdur — işə qəbul tarixindən hesablanır</div>';
++        // Cari anniversary ili prorate
++        html += '<div style="font-size:11px;color:#64748b;text-transform:uppercase;margin:12px 0 4px">Cari anniversary ili prorate</div>';
++        html += '<div style="font-size:12px;color:#475569">Anniversary başlanğıcı: <b>' + d.anniversaryBaslangic.substr(0,10) + '</b>';
++        if (d.sonuncuMezuniyyetIsheQebulTarixindenGoturuldu) {
++            html += ' <span style="color:#b45309">(yeni işçi — işə qəbul tarixindən)</span>';
+         }
+-        html += '<div style="font-size:12px;color:#475569;margin-top:2px">Keçən gün: <b>' + d.kecenGunSayi + '</b> · İllik hüquq: <b>' + fmt(d.cariIlToplamGun, 0) + '</b> gün</div>';
++        html += '</div>';
++        html += '<div style="font-size:12px;color:#475569;margin-top:2px">Keçən gün: <b>' + d.kecenGunSayi + '</b> · İllik hüquq: <b>' + fmt(d.cariIlToplamGun, 0) + '</b> · İstifadə: <b>' + fmt(d.cariIlIstifadeOlunan, 0) + '</b></div>';
+         html += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;font-weight:600;margin-top:4px">';
+         html += '<span style="color:#475569">(' + d.kecenGunSayi + '/365) × ' + fmt(d.cariIlToplamGun, 0) + ' − ' + fmt(d.cariIlIstifadeOlunan, 0) + '</span>';
+         html += '<span style="color:#16a34a">' + fmt(d.cariIlProrateGun) + ' gün</span>';
+-- 
+2.43.0
+

@@ -1,9 +1,11 @@
 @using FinNex.Domain.Entities.Pid
+@using FinNex.Application.Interfaces.Pid
 @{
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     ViewData["Title"] = "SMS — PİD";
     var sablonlar = ViewBag.Sablonlar as IList<PidSmsSablon> ?? new List<PidSmsSablon>();
     var loglar = ViewBag.Loglar as IList<PidSmsLog> ?? new List<PidSmsLog>();
+    var kpi = ViewBag.Kpi as PidSmsKpiDto ?? new PidSmsKpiDto();
 
     string StatusText(PidSmsStatus s) => s switch
     {
@@ -24,11 +26,42 @@
     };
 }
 
+<style>
+    .sms-kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+    .sms-kpi { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:14px 16px; display:flex; align-items:center; gap:12px; }
+    .sms-kpi-icon { width:38px; height:38px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+    .sms-kpi-val { font-size:22px; font-weight:700; color:#0f172a; line-height:1; }
+    .sms-kpi-lbl { font-size:12px; color:#64748b; margin-top:4px; }
+
+    .sms-grid { display:grid; grid-template-columns:1.4fr 1fr; gap:16px; align-items:flex-start; }
+    @@media (max-width: 1100px) { .sms-grid { grid-template-columns:1fr; } }
+
+    .sms-tabs { display:flex; gap:4px; border-bottom:2px solid #e2e8f0; margin-bottom:14px; }
+    .sms-tab { background:none; border:none; padding:9px 14px; font-size:13px; font-weight:600; color:#64748b; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; display:flex; align-items:center; gap:6px; }
+    .sms-tab.active { color:#2563eb; border-bottom-color:#2563eb; }
+    .sms-tab:hover:not(.active) { color:#0f172a; }
+    .sms-pane { display:none; }
+    .sms-pane.active { display:block; }
+
+    .sms-history { max-height: 720px; overflow-y:auto; }
+    .sms-log-item { padding:10px 14px; border-bottom:1px solid #f1f5f9; display:flex; gap:10px; align-items:flex-start; }
+    .sms-log-item:hover { background:#f8fafc; }
+    .sms-log-status { width:8px; height:8px; border-radius:50%; margin-top:7px; flex-shrink:0; }
+    .sms-log-body { flex:1; min-width:0; }
+    .sms-log-top { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:12px; color:#64748b; margin-bottom:3px; }
+    .sms-log-tel { font-family:monospace; color:#0f172a; font-weight:600; font-size:13px; }
+    .sms-log-text { font-size:13px; color:#334155; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+    .sms-log-err { font-size:11px; color:#dc2626; margin-top:3px; }
+
+    .sms-filter-row { display:flex; gap:6px; padding:10px 14px; border-bottom:1px solid #e2e8f0; background:#f8fafc; }
+    .sms-filter-row select, .sms-filter-row input { flex:1; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; background:#fff; }
+</style>
+
 <div class="fn-page">
 
     <div class="fn-page-head">
         <div>
-            <div class="fn-page-title">SMS</div>
+            <div class="fn-page-title">SMS Kampaniyaları</div>
             <div class="fn-page-sub">Problemli İşlər Departamenti — Göyərçin gateway</div>
         </div>
         <a asp-action="Sablonlar" class="fn-btn fn-btn--outline">
@@ -45,173 +78,251 @@
         <div style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Error"]</div>
     }
 
-    @* ── Yeni SMS göndərmə formu ── *@
-    <div class="fn-card" style="padding:18px;margin-bottom:16px">
-        <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:12px">Yeni SMS</div>
-        <form asp-action="Gonder" method="post" novalidate id="tekSmsForm">
-            @Html.AntiForgeryToken()
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                <div class="fn-form-group">
-                    <label class="fn-label">Telefon *</label>
-                    <input type="text" name="telefon" id="tekTelefon" class="fn-input" placeholder="994551234567 və ya 0551234567" />
-                </div>
-                <div class="fn-form-group">
-                    <label class="fn-label">Şablon (istəyə bağlı)</label>
-                    <select name="sablonId" class="fn-input" id="smsSablon" onchange="sablonTetbiqEt(this)">
-                        <option value="">— sərbəst mətn —</option>
-                        @foreach (var s in sablonlar)
-                        {
-                            <option value="@s.Id" data-metn="@s.Metn">@s.Ad</option>
-                        }
-                    </select>
-                </div>
+    @* ── KPI sətri ── *@
+    <div class="sms-kpi-row">
+        <div class="sms-kpi">
+            <div class="sms-kpi-icon" style="background:#dbeafe;color:#1d4ed8"><i class="bi bi-calendar-day"></i></div>
+            <div>
+                <div class="sms-kpi-val">@kpi.BuGun</div>
+                <div class="sms-kpi-lbl">Bu gün göndərilib</div>
             </div>
-            <div class="fn-form-group" style="margin-top:8px">
-                <label class="fn-label">Mətn * (max 1000 simvol, English)</label>
-                <textarea name="metn" id="smsMetn" class="fn-input" rows="4" maxlength="1000"></textarea>
-                <div style="font-size:12px;color:#64748b;margin-top:4px"><span id="charCount">0</span> / 1000</div>
+        </div>
+        <div class="sms-kpi">
+            <div class="sms-kpi-icon" style="background:#ede9fe;color:#6d28d9"><i class="bi bi-calendar-month"></i></div>
+            <div>
+                <div class="sms-kpi-val">@kpi.BuAy</div>
+                <div class="sms-kpi-lbl">Bu ay cəmi</div>
             </div>
-            <div style="display:flex;justify-content:flex-end;margin-top:12px">
-                <button type="submit" class="fn-btn fn-btn--primary">
-                    <i class="bi bi-send"></i> Göndər
-                </button>
+        </div>
+        <div class="sms-kpi">
+            <div class="sms-kpi-icon" style="background:#dcfce7;color:#15803d"><i class="bi bi-check2-circle"></i></div>
+            <div>
+                <div class="sms-kpi-val" style="color:#15803d">@kpi.UgurluSon30</div>
+                <div class="sms-kpi-lbl">Uğurlu (son 30 gün)</div>
             </div>
-        </form>
+        </div>
+        <div class="sms-kpi">
+            <div class="sms-kpi-icon" style="background:#fee2e2;color:#b91c1c"><i class="bi bi-x-octagon"></i></div>
+            <div>
+                <div class="sms-kpi-val" style="color:#b91c1c">@kpi.XetaSon30</div>
+                <div class="sms-kpi-lbl">Xəta (son 30 gün)</div>
+            </div>
+        </div>
     </div>
 
-    @* ── Toplu SMS ── *@
-    <div class="fn-card" style="padding:18px;margin-bottom:16px" id="topluSmsCard">
+    @* ── 2 sütun: sol = göndərmə paneli, sağ = tarixçə ── *@
+    <div class="sms-grid">
 
-        @* Başlıq + düymələr *@
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-            <div style="font-size:14px;font-weight:700;color:#0f172a">
-                <i class="bi bi-people-fill me-1 text-primary"></i> Toplu SMS
-            </div>
-            <div style="display:flex;gap:8px;align-items:center">
-                <button type="button" class="fn-btn fn-btn--outline" id="btnBorcalanlarGetir" onclick="borcalanlarGetir()">
-                    <i class="bi bi-cloud-download"></i> Borcalanları Gətir
+        @* ============ SOL: SMS göndər ============ *@
+        <div class="fn-card" style="padding:18px">
+
+            <div class="sms-tabs">
+                <button type="button" class="sms-tab active" data-pane="paneTek">
+                    <i class="bi bi-person"></i> Tək nömrə
                 </button>
-                <button type="button" class="fn-btn fn-btn--outline" id="btnExcel" onclick="document.getElementById('excelInput').click()">
-                    <i class="bi bi-file-earmark-excel"></i> Excel Yüklə
+                <button type="button" class="sms-tab" data-pane="paneBorc">
+                    <i class="bi bi-cloud-download"></i> Borclu siyahısı
                 </button>
-                <input type="file" id="excelInput" accept=".xlsx" style="display:none" />
-            </div>
-        </div>
-
-        <div id="topluXeta" style="display:none;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
-        <div id="topluUgur" style="display:none;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
-
-        @* Önizləmə — həmişə görünür, mətn varsa *@
-        <div id="onizlemeBlok" style="display:none;border:1px dashed #cbd5e1;border-radius:6px;padding:10px 12px;background:#f8fafc;margin-bottom:12px">
-            <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">
-                <i class="bi bi-eye"></i> Önizləmə
-                <span id="onizlemeAdLabel" style="font-weight:400;color:#94a3b8;margin-left:4px"></span>
-            </div>
-            <div id="onizlemeMetn" style="font-size:13px;color:#0f172a;white-space:pre-wrap;word-break:break-word"></div>
-        </div>
-
-        <div id="topluSmsPanel" style="display:none">
-
-            @* Filter sətri *@
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-                <input type="text" id="topluFilter" class="fn-input" placeholder="Ad və ya telefona görə axtar..."
-                       oninput="topluFilterEt()" style="max-width:300px" />
-                <span id="topluSay" style="font-size:13px;color:#64748b;white-space:nowrap"></span>
+                <button type="button" class="sms-tab" data-pane="paneExcel">
+                    <i class="bi bi-file-earmark-excel"></i> Excel yüklə
+                </button>
             </div>
 
-            @* Cədvəl *@
-            <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:16px">
-                <div style="max-height:320px;overflow-y:auto">
-                    <table style="width:100%;border-collapse:collapse;font-size:13px" id="topluCedvel">
-                        <thead>
-                            <tr style="background:#f1f5f9;border-bottom:2px solid #e2e8f0">
-                                <th style="padding:9px 12px;width:40px;text-align:center">
-                                    <input type="checkbox" id="hamisiSec" onchange="hamisiSec(this)" title="Hamısını seç/ləğv et" />
-                                </th>
-                                <th style="padding:9px 12px;text-align:left;font-weight:600;color:#374151">Ad</th>
-                                <th style="padding:9px 12px;text-align:left;font-weight:600;color:#374151;width:160px">Telefon</th>
-                                <th style="padding:9px 12px;width:36px"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="topluTbody"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            @* SMS mətni *@
-            <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:0">
-                <div style="padding:10px 14px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;font-size:13px;font-weight:600;color:#374151;display:flex;justify-content:space-between;align-items:center">
-                    <span>SMS mətni</span>
-                    <span style="font-size:11px;font-weight:400;color:#64748b">
-                        <i class="bi bi-info-circle"></i> <code>{AD}</code> — müştəri adı ilə əvəzlənir
-                    </span>
-                </div>
-                <div style="padding:14px;background:#fff">
-                    <textarea id="topluMetn" class="fn-input" rows="3" maxlength="1000"
-                              placeholder="Hörmətli {AD}, kredit borcunuzu ödəməyinizi xahiş edirik."
-                              oninput="onizlemeyiGuncelle();document.getElementById('topluCharCount').textContent=this.value.length"
-                              style="margin-bottom:4px"></textarea>
-                    <div style="font-size:12px;color:#94a3b8;margin-bottom:12px"><span id="topluCharCount">0</span> / 1000</div>
-
-                    <div style="display:flex;justify-content:flex-end">
-                        <button type="button" class="fn-btn fn-btn--primary" onclick="topluGonder()" id="btnTopluGonder">
-                            <i class="bi bi-send-fill"></i> SMS Göndər
+            @* ── PANEL 1: Tək SMS ── *@
+            <div class="sms-pane active" id="paneTek">
+                <form asp-action="Gonder" method="post" novalidate id="tekSmsForm">
+                    @Html.AntiForgeryToken()
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                        <div class="fn-form-group">
+                            <label class="fn-label">Telefon *</label>
+                            <input type="text" name="telefon" id="tekTelefon" class="fn-input" placeholder="994551234567 və ya 0551234567" />
+                        </div>
+                        <div class="fn-form-group">
+                            <label class="fn-label">Şablon</label>
+                            <select name="sablonId" class="fn-input" id="smsSablon" onchange="sablonTetbiqEt(this)">
+                                <option value="">— sərbəst mətn —</option>
+                                @foreach (var s in sablonlar)
+                                {
+                                    <option value="@s.Id" data-metn="@s.Metn">@s.Ad</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="fn-form-group" style="margin-top:10px">
+                        <label class="fn-label">Mətn * (max 1000 simvol, English)</label>
+                        <textarea name="metn" id="smsMetn" class="fn-input" rows="4" maxlength="1000"></textarea>
+                        <div style="font-size:12px;color:#64748b;margin-top:4px"><span id="charCount">0</span> / 1000</div>
+                    </div>
+                    <div style="display:flex;justify-content:flex-end;margin-top:12px">
+                        <button type="submit" class="fn-btn fn-btn--primary">
+                            <i class="bi bi-send"></i> Göndər
                         </button>
+                    </div>
+                </form>
+            </div>
+
+            @* ── PANEL 2: Borclu siyahısı ── *@
+            <div class="sms-pane" id="paneBorc">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                    <div style="font-size:13px;color:#475569">
+                        Oracle sorğusundan borclu siyahısını gətir.
+                    </div>
+                    <button type="button" class="fn-btn fn-btn--primary" id="btnBorcalanlarGetir" onclick="borcalanlarGetir()">
+                        <i class="bi bi-cloud-download"></i> Siyahını gətir
+                    </button>
+                </div>
+
+                @* Toplu paneli — həm Borc, həm Excel tab-ı tərəfindən doldurulur *@
+                <div id="topluXeta" style="display:none;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
+                <div id="topluUgur" style="display:none;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
+
+                <div id="onizlemeBlok" style="display:none;border:1px dashed #cbd5e1;border-radius:6px;padding:10px 12px;background:#f8fafc;margin-bottom:12px">
+                    <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">
+                        <i class="bi bi-eye"></i> Önizləmə
+                        <span id="onizlemeAdLabel" style="font-weight:400;color:#94a3b8;margin-left:4px"></span>
+                    </div>
+                    <div id="onizlemeMetn" style="font-size:13px;color:#0f172a;white-space:pre-wrap;word-break:break-word"></div>
+                </div>
+
+                <div id="topluSmsPanel" style="display:none">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+                        <input type="text" id="topluFilter" class="fn-input" placeholder="Ad və ya telefona görə axtar..."
+                               oninput="topluFilterEt()" style="max-width:280px" />
+                        <span id="topluSay" style="font-size:13px;color:#64748b;white-space:nowrap"></span>
+                        <span id="topluMenbeAdi" style="font-size:11px;color:#94a3b8;margin-left:auto"></span>
+                    </div>
+
+                    <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:12px">
+                        <div style="max-height:280px;overflow-y:auto">
+                            <table style="width:100%;border-collapse:collapse;font-size:13px" id="topluCedvel">
+                                <thead>
+                                    <tr style="background:#f1f5f9;border-bottom:2px solid #e2e8f0">
+                                        <th style="padding:9px 12px;width:40px;text-align:center">
+                                            <input type="checkbox" id="hamisiSec" title="Hamısını seç/ləğv et" />
+                                        </th>
+                                        <th style="padding:9px 12px;text-align:left;font-weight:600;color:#374151">Ad</th>
+                                        <th style="padding:9px 12px;text-align:left;font-weight:600;color:#374151;width:150px">Telefon</th>
+                                        <th style="padding:9px 12px;width:36px"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="topluTbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
+                        <div style="padding:9px 13px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;font-size:13px;font-weight:600;color:#374151;display:flex;justify-content:space-between;align-items:center">
+                            <span>SMS mətni</span>
+                            <span style="font-size:11px;font-weight:400;color:#64748b">
+                                <i class="bi bi-info-circle"></i> <code>{AD}</code> — müştəri adı ilə əvəzlənir
+                            </span>
+                        </div>
+                        <div style="padding:12px;background:#fff">
+                            <textarea id="topluMetn" class="fn-input" rows="3" maxlength="1000"
+                                      placeholder="Hörmətli {AD}, kredit borcunuzu ödəməyinizi xahiş edirik."
+                                      oninput="onizlemeyiGuncelle();document.getElementById('topluCharCount').textContent=this.value.length"
+                                      style="margin-bottom:4px"></textarea>
+                            <div style="font-size:12px;color:#94a3b8;margin-bottom:10px"><span id="topluCharCount">0</span> / 1000</div>
+                            <div style="display:flex;justify-content:flex-end">
+                                <button type="button" class="fn-btn fn-btn--primary" onclick="topluGonder()" id="btnTopluGonder">
+                                    <i class="bi bi-send-fill"></i> SMS Göndər
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    @* ── Tarixçə ── *@
-    <div class="fn-card" style="padding:0">
-        <div style="padding:16px 18px;border-bottom:1px solid #e2e8f0">
-            <div style="font-size:14px;font-weight:700;color:#0f172a">SMS tarixçəsi (son 200)</div>
+            @* ── PANEL 3: Excel ── *@
+            <div class="sms-pane" id="paneExcel">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap">
+                    <div style="font-size:13px;color:#475569">
+                        Excel faylı yüklə (sütunlar: <code>AD</code>, <code>NOMRE</code> / <code>TELEFON</code>).
+                    </div>
+                    <button type="button" class="fn-btn fn-btn--primary" id="btnExcel" onclick="document.getElementById('excelInput').click()">
+                        <i class="bi bi-upload"></i> Fayl seç
+                    </button>
+                    <input type="file" id="excelInput" accept=".xlsx" style="display:none" />
+                </div>
+                <div style="border:1px dashed #cbd5e1;border-radius:8px;padding:24px;text-align:center;color:#64748b;font-size:13px;background:#f8fafc">
+                    <i class="bi bi-file-earmark-excel" style="font-size:32px;color:#10b981;display:block;margin-bottom:8px"></i>
+                    Excel yüklədikdən sonra avtomatik olaraq <b>Borclu siyahısı</b> tab-ına keçəcəksiniz.
+                </div>
+            </div>
         </div>
-        @if (!loglar.Any())
-        {
-            <div style="padding:30px;text-align:center;color:#64748b;font-size:13px">Hələ SMS göndərilməyib.</div>
-        }
-        else
-        {
-            <table style="width:100%;border-collapse:collapse;font-size:13px">
-                <thead style="background:#f8fafc">
-                    <tr>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Tarix</th>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Telefon</th>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Mətn</th>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Şablon</th>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Status</th>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Göndərən</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var l in loglar)
+
+        @* ============ SAĞ: Tarixçə ============ *@
+        <div class="fn-card" style="padding:0">
+            <div style="padding:14px 16px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
+                <div style="font-size:14px;font-weight:700;color:#0f172a">Son göndərilənlər</div>
+                <span style="font-size:12px;color:#64748b" id="logSay">@loglar.Count nəticə</span>
+            </div>
+
+            <div class="sms-filter-row">
+                <input type="text" id="logFilter" placeholder="Telefon və ya mətn..." oninput="logFilterEt()" />
+                <select id="logStatusFilter" onchange="logFilterEt()" style="flex:0 0 130px">
+                    <option value="">Hamısı</option>
+                    <option value="1">Göndərildi</option>
+                    <option value="2">Çatdırıldı</option>
+                    <option value="3">Çatmadı</option>
+                    <option value="4">Xəta</option>
+                </select>
+            </div>
+
+            <div class="sms-history" id="logList">
+                @if (!loglar.Any())
+                {
+                    <div style="padding:30px;text-align:center;color:#64748b;font-size:13px">Hələ SMS göndərilməyib.</div>
+                }
+                else
+                {
+                    foreach (var l in loglar)
                     {
-                        <tr style="border-top:1px solid #f1f5f9">
-                            <td style="padding:10px 14px;color:#475569;white-space:nowrap">@l.YaradilmaTarixi.ToString("dd.MM.yy HH:mm")</td>
-                            <td style="padding:10px 14px;color:#0f172a;font-family:monospace">@l.Telefon</td>
-                            <td style="padding:10px 14px;color:#334155;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@l.Metn">@l.Metn</td>
-                            <td style="padding:10px 14px;color:#64748b">@(l.Sablon?.Ad ?? "—")</td>
-                            <td style="padding:10px 14px">
-                                <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;color:#fff;background:@StatusRengi(l.Status)">
-                                    @StatusText(l.Status)
-                                </span>
+                        <div class="sms-log-item"
+                             data-status="@((int)l.Status)"
+                             data-text="@((l.Telefon + " " + l.Metn).ToLower())"
+                             onclick="logDetal(@l.Id)">
+                            <div class="sms-log-status" style="background:@StatusRengi(l.Status)"></div>
+                            <div class="sms-log-body">
+                                <div class="sms-log-top">
+                                    <span class="sms-log-tel">@l.Telefon</span>
+                                    <span>@l.YaradilmaTarixi.ToString("dd.MM HH:mm")</span>
+                                </div>
+                                <div class="sms-log-text" title="@l.Metn">@l.Metn</div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+                                    <span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;color:#fff;background:@StatusRengi(l.Status)">
+                                        @StatusText(l.Status)
+                                    </span>
+                                    <span style="font-size:11px;color:#94a3b8">
+                                        @(l.Sablon?.Ad ?? "sərbəst")
+                                        · @(l.GonderenIsci?.TamAd ?? "—")
+                                    </span>
+                                </div>
                                 @if (!string.IsNullOrEmpty(l.Xeta))
                                 {
-                                    <div style="font-size:11px;color:#dc2626;margin-top:2px" title="@l.Xeta">@(l.Xeta.Length > 40 ? l.Xeta.Substring(0,40) + "…" : l.Xeta)</div>
+                                    <div class="sms-log-err" title="@l.Xeta">@(l.Xeta.Length > 60 ? l.Xeta.Substring(0,60) + "…" : l.Xeta)</div>
                                 }
-                            </td>
-                            <td style="padding:10px 14px;color:#64748b">@(l.GonderenIsci?.TamAd ?? "—")</td>
-                        </tr>
+                            </div>
+                        </div>
                     }
-                </tbody>
-            </table>
-        }
+                }
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
+    // ── Tab keçidi ──────────────────────────────────────────
+    document.querySelectorAll('.sms-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            document.querySelectorAll('.sms-tab').forEach(function (t) { t.classList.remove('active'); });
+            document.querySelectorAll('.sms-pane').forEach(function (p) { p.classList.remove('active'); });
+            tab.classList.add('active');
+            document.getElementById(tab.dataset.pane).classList.add('active');
+        });
+    });
+
+    // ── Tək SMS validasiya ──────────────────────────────────
     document.getElementById('tekSmsForm').addEventListener('submit', function (e) {
         var tel = document.getElementById('tekTelefon').value.trim();
         var metn = document.getElementById('smsMetn').value.trim();
@@ -228,9 +339,12 @@
         if (m) {
             document.getElementById('smsMetn').value = m;
             yenileCharCount();
-            document.getElementById('topluMetn').value = m;
-            document.getElementById('topluCharCount').textContent = m.length;
-            onizlemeyiGuncelle();
+            var topluMetn = document.getElementById('topluMetn');
+            if (topluMetn) {
+                topluMetn.value = m;
+                document.getElementById('topluCharCount').textContent = m.length;
+                onizlemeyiGuncelle();
+            }
         }
     }
     function yenileCharCount() {
@@ -239,11 +353,12 @@
     }
     document.getElementById('smsMetn').addEventListener('input', yenileCharCount);
 
-    // ── Toplu SMS ──────────────────────────────────────────
+    // ── Toplu SMS — köçürülmüş məntiq ─────────────────────────
 
     function onizlemeyiGuncelle() {
         var metn = document.getElementById('topluMetn').value;
         var blok = document.getElementById('onizlemeBlok');
+        if (!blok) return;
         if (!metn) { blok.style.display = 'none'; return; }
         var ilkRow = document.querySelector('#topluTbody tr:not([style*="display: none"])');
         var ilkAd = ilkRow ? (ilkRow.querySelectorAll('td')[1]?.textContent.trim() || '') : '';
@@ -263,12 +378,14 @@
             var resp = await fetch('@Url.Action("BorcalanlarGetir", "PidSms", new { area = "User" })');
             var json = await resp.json();
             if (json.error) { gosterXeta(json.error); return; }
+            // Borc paneli aktiv edək — istifadəçi excel tab-dadırsa belə aktiv borc tab-a yön­ləndirək
+            document.querySelector('.sms-tab[data-pane="paneBorc"]').click();
             cedveldoldir(json.data, json.sorguAdi);
         } catch (e) {
             gosterXeta('Şəbəkə xətası: ' + e.message);
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-cloud-download"></i> Borcalanları Gətir';
+            btn.innerHTML = '<i class="bi bi-cloud-download"></i> Siyahını gətir';
         }
     }
 
@@ -286,18 +403,21 @@
             var resp = await fetch('@Url.Action("ExceldenYukle", "PidSms", new { area = "User" })', { method: 'POST', body: fd });
             var json = await resp.json();
             if (json.error) { gosterXeta(json.error); return; }
+            // Excel uğurlu — borc panelinə keç, çünki cədvəl və mətn orada
+            document.querySelector('.sms-tab[data-pane="paneBorc"]').click();
             cedveldoldir(json.data, json.sorguAdi);
         } catch (e) {
             gosterXeta('Şəbəkə xətası: ' + e.message);
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-file-earmark-excel"></i> Excel Yüklə';
+            btn.innerHTML = '<i class="bi bi-upload"></i> Fayl seç';
             this.value = '';
         }
     });
 
     function cedveldoldir(data, sorguAdi) {
         var tbody = document.getElementById('topluTbody');
+        if (!tbody) return;
         tbody.innerHTML = '';
         if (!data || data.length === 0) {
             gosterXeta('Sorğu nəticəsi boşdur.');
@@ -319,6 +439,7 @@
         document.getElementById('topluSmsPanel').style.display = 'block';
         document.getElementById('hamisiSec').checked = true;
         document.getElementById('topluFilter').value = '';
+        document.getElementById('topluMenbeAdi').textContent = sorguAdi || '';
         sayGuncelle();
         onizlemeyiGuncelle();
     }
@@ -353,11 +474,13 @@
             gorunen++;
             if (tr.querySelector('.alici-chk:checked')) secili++;
         });
-        document.getElementById('topluSay').textContent = gorunen + ' nəticə, ' + secili + ' seçili';
+        var el = document.getElementById('topluSay');
+        if (el) el.textContent = gorunen + ' nəticə, ' + secili + ' seçili';
     }
 
-    document.getElementById('topluTbody').addEventListener('change', function (e) {
-        if (e.target.classList.contains('alici-chk')) sayGuncelle();
+    document.addEventListener('change', function (e) {
+        if (e.target && e.target.classList && e.target.classList.contains('alici-chk')) sayGuncelle();
+        if (e.target && e.target.id === 'hamisiSec') hamisiSec(e.target);
     });
 
     async function topluGonder() {
@@ -389,7 +512,8 @@
             var resp = await fetch('@Url.Action("TopluGonder", "PidSms", new { area = "User" })', { method: 'POST', body: fd });
             var json = await resp.json();
             if (json.error) { gosterXeta(json.error); return; }
-            gosterUgur('Göndərildi: ' + json.ugur + ' uğurlu, ' + json.xeta + ' xətalı.');
+            gosterUgur('Göndərildi: ' + json.ugur + ' uğurlu, ' + json.xeta + ' xətalı. Səhifə yenilənir...');
+            setTimeout(function () { location.reload(); }, 1500);
         } catch (e) {
             gosterXeta('Şəbəkə xətası: ' + e.message);
         } finally {
@@ -398,9 +522,29 @@
         }
     }
 
-    function gosterXeta(msg) { var el = document.getElementById('topluXeta'); el.textContent = msg; el.style.display = 'block'; }
-    function gizleXeta()     { document.getElementById('topluXeta').style.display = 'none'; }
-    function gosterUgur(msg) { var el = document.getElementById('topluUgur'); el.textContent = msg; el.style.display = 'block'; }
-    function gizleUgur()     { document.getElementById('topluUgur').style.display = 'none'; }
+    function gosterXeta(msg) { var el = document.getElementById('topluXeta'); if (el) { el.textContent = msg; el.style.display = 'block'; } }
+    function gizleXeta()     { var el = document.getElementById('topluXeta'); if (el) el.style.display = 'none'; }
+    function gosterUgur(msg) { var el = document.getElementById('topluUgur'); if (el) { el.textContent = msg; el.style.display = 'block'; } }
+    function gizleUgur()     { var el = document.getElementById('topluUgur'); if (el) el.style.display = 'none'; }
     function escHtml(s)      { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // ── Tarixçə filtri ──────────────────────────────────────
+    function logFilterEt() {
+        var q = (document.getElementById('logFilter').value || '').toLowerCase();
+        var s = document.getElementById('logStatusFilter').value;
+        var rows = document.querySelectorAll('.sms-log-item');
+        var gorunen = 0;
+        rows.forEach(function (r) {
+            var matchText = !q || (r.getAttribute('data-text') || '').includes(q);
+            var matchStatus = !s || r.getAttribute('data-status') === s;
+            var show = matchText && matchStatus;
+            r.style.display = show ? '' : 'none';
+            if (show) gorunen++;
+        });
+        document.getElementById('logSay').textContent = gorunen + ' nəticə';
+    }
+
+    function logDetal(id) {
+        // gələcəkdə modal — hazırda sadəcə tooltip-dən istifadə
+    }
 </script>

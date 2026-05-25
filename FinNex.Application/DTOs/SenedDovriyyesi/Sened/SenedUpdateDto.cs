@@ -8,6 +8,7 @@
         public string Basliq { get; set; } = null!;
         public string AcarSoz { get; set; } = null!;
         public List<int> TagIds { get; set; } = new();
+        public FinNex.Domain.Entities.SenedDovriyyesi.SenedKateqoriyasi Kateqoriya { get; set; } = FinNex.Domain.Entities.SenedDovriyyesi.SenedKateqoriyasi.Umumi;
     }
 
     public class SenedRestoreDto

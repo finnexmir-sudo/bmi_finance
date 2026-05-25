@@ -135,8 +135,8 @@
                         <div class="fn-as-lbl">İcazəli</div>
                     </div>
                     <div class="fn-as">
-                        <div class="fn-as-val" style="color:#aab0bf">@Model.GozlenilenGun</div>
-                        <div class="fn-as-lbl">Gözlənilir</div>
+                        <div class="fn-as-val" style="color:#d97706">@Model.GecikenGun</div>
+                        <div class="fn-as-lbl">Gecikmə</div>
                     </div>
                 </div>
             </div>
@@ -323,10 +323,6 @@
                                     </div>
                                     <div class="fn-ri-date">
                                         @ic.WorkflowMerhele
-                                        @if (!string.IsNullOrEmpty(ic.EvezEdenAdSoyad))
-                                        {
-                                            <span class="fn-ri-evez">· Əvəzedici: @ic.EvezEdenAdSoyad</span>
-                                        }
                                     </div>
                                 </div>
                                 <span class="fn-badge @MuracietBadgeClass(ic.WorkflowMerhele)">

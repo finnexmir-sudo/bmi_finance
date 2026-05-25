@@ -28,4 +28,15 @@
         Sil = 4,
         TamHuquq = 5
     }
+
+    /// <summary>
+    /// Sənədin görünmə kateqoriyası.
+    /// Umumi  — bütün istifadəçilərə açıq.
+    /// Xususi — yalnız yaradan və sənədin şöbəsinə icazəsi olan istifadəçilərə açıq.
+    /// </summary>
+    public enum SenedKateqoriyasi
+    {
+        Umumi  = 1,
+        Xususi = 2
+    }
 }

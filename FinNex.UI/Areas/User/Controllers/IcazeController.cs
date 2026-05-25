@@ -78,7 +78,6 @@ namespace FinNex.UI.Areas.User.Controllers
                 IcazeTarixi = DateTime.Today,
                 BaslamaSaati = "09:00",
                 BitisSaati = "11:00",
-                EvezEdenList = await BuildEvezEdenListAsync(isciId.Value),
             };
 
             // Jeton balansı: rəhbər təsdiq zamanı görmək üçün məlumat olaraq göstərilir
@@ -118,14 +117,12 @@ namespace FinNex.UI.Areas.User.Controllers
 
             if (!ModelState.IsValid)
             {
-                vm.EvezEdenList = await BuildEvezEdenListAsync(isciId.Value);
                 return View(vm);
             }
 
             var createDto = new IcazeCreateDto
             {
                 IsciId = isciId.Value,
-                EvezEdenIsciId = vm.EvezEdenIsciId,
                 IcazeTarixi = vm.IcazeTarixi,
                 BaslamaSaati = basTs,
                 BitisSaati = bitisTs,
@@ -141,7 +138,6 @@ namespace FinNex.UI.Areas.User.Controllers
             if (!result.Success)
             {
                 TempData["Error"] = result.Message;
-                vm.EvezEdenList = await BuildEvezEdenListAsync(isciId.Value);
                 return View(vm);
             }
 
@@ -274,20 +270,6 @@ namespace FinNex.UI.Areas.User.Controllers
         {
             var appUser = await _userManager.GetUserAsync(User);
             return appUser?.IsciId;
-        }
-
-        private async Task<List<SelectListItem>> BuildEvezEdenListAsync(int isciId)
-        {
-            var result = await _isciService.HamisiniGetirAsync(
-                x => x.Id != isciId && x.Status == IsciStatus.Aktiv,
-                izlemeden: true);
-
-            return result.Success
-                ? result.Data!
-                    .OrderBy(x => x.TamAd)
-                    .Select(x => new SelectListItem(x.TamAd, x.Id.ToString()))
-                    .ToList()
-                : new();
         }
 
         private IActionResult RedirectToLogin() =>

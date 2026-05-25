@@ -229,10 +229,8 @@
                                     </span>
                                 </div>
                                 <div class="fn-icaze-meta">
-                                    <span class="fn-icaze-evez">Əvəzedici: @i.EvezEdenAdSoyad</span>
                                     @if (!string.IsNullOrEmpty(i.Sebeb))
                                     {
-                                        <span class="fn-icaze-sep">·</span>
                                         <span class="fn-icaze-sebeb">@i.Sebeb</span>
                                     }
                                 </div>
@@ -242,13 +240,6 @@
                                         <div class="fn-ws @(step >= 1 ? "fn-ws--done" : step == 0 ? "fn-ws--active" : "")">
                                             <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Müraciət</div>
                                         </div>
-                                        @if (i.EvezediciSecildi)
-                                        {
-                                            <div class="fn-ws-line @(step >= 1 ? "fn-ws-line--done" : "")"></div>
-                                            <div class="fn-ws @(i.EvezediciTesdiqlenib == true ? "fn-ws--done" : step == 0 ? "fn-ws--active" : "")">
-                                                <div class="fn-ws-dot"></div><div class="fn-ws-lbl">Əvəzedici</div>
-                                            </div>
-                                        }
                                         @if (!i.SobeReisiKecildi)
                                         {
                                             <div class="fn-ws-line @(step >= 2 ? "fn-ws-line--done" : "")"></div>

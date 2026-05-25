@@ -8,8 +8,6 @@ namespace FinNex.Application.DTOs.HR.Icaze
     {
         public int IsciId { get; set; }
 
-        public int? EvezEdenIsciId { get; set; }
-
         [Required(ErrorMessage = "İcazə tarixi seçilməlidir")]
         public DateTime IcazeTarixi { get; set; }
 
@@ -41,10 +39,6 @@ namespace FinNex.Application.DTOs.HR.Icaze
         public string SobeAdi { get; set; } = null!;
         // Bu icazənin neçə saatı jetonla ödənilir (0 = adi icazə)
         public decimal JetonOdenenSaat { get; set; } = 0;
-
-        public string? EvezEdenAdSoyad { get; set; }
-        public bool EvezediciSecildi => !string.IsNullOrEmpty(EvezEdenAdSoyad) && EvezEdenAdSoyad != "—";
-        public bool? EvezediciTesdiqlenib { get; set; }
 
         public DateTime IcazeTarixi { get; set; }
         public TimeSpan BaslamaSaati { get; set; }

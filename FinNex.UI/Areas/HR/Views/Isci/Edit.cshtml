@@ -130,6 +130,29 @@
                         </div>
                     </div>
 
+                    <!-- Bank Məlumatları -->
+                    <div>
+                        <div class="isci-section-label">Bank Məlumatları</div>
+                        <div class="isci-form-grid-3" style="margin-top:12px;">
+                            <div class="isci-field isci-field--full" style="grid-column:span 3">
+                                <label class="isci-label">Bank Hesabı (IBAN)</label>
+                                <input asp-for="Iban" class="isci-input isci-input--mono"
+                                       maxlength="28"
+                                       style="text-transform:uppercase;letter-spacing:.5px"
+                                       placeholder="AZ55MELI41010000000008700000"
+                                       autocomplete="off"
+                                       data-form-type="other"
+                                       data-lpignore="true"
+                                       data-1p-ignore="true" />
+                                <small style="color:#888;font-size:11px;">
+                                    Format: AZ + 2 rəqəm + 4 hərf bank kodu + 20 rəqəm hesab nömrəsi (cəmi 28 simvol).
+                                    Boşluqları qoymayın, kiçik hərflər avtomatik böyüdüləcək.
+                                </small>
+                                <span asp-validation-for="Iban" class="isci-error"></span>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
                 <div class="isci-form-footer">

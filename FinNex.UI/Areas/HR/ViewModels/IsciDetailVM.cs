@@ -29,6 +29,9 @@ namespace FinNex.UI.Areas.HR.ViewModels
         public string? CariVezife { get; set; }
         public decimal CariMaas { get; set; }
 
+        // Bank hesabı (IsciMaliye.BankHesabNo)
+        public string? Iban { get; set; }
+
         // Tarixçə
         public IList<IsciTeyinatDto> TeyinatTarixcesi { get; set; } = new List<IsciTeyinatDto>();
         public IList<IsciMaasTarixcesiDto> MaasTarixcesi { get; set; } = new List<IsciMaasTarixcesiDto>();

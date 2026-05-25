@@ -15,5 +15,6 @@ namespace FinNex.Application.DTOs.SenedDovriyyesi.Sened
         public int FaylSayi { get; set; }
         public DateTime SenedTarixi { get; set; }
         public DateTime YaradilmaTarixi { get; set; }
+        public SenedKateqoriyasi Kateqoriya { get; set; } = SenedKateqoriyasi.Umumi;
     }
 }

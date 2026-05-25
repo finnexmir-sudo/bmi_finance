@@ -99,6 +99,15 @@
                                     Nümunə: müqavilə, qaydalar, maliyyə, 2024
                                 </span>
                             </div>
+
+                            <div>
+                                <label class="sd-label">Kateqoriya</label>
+                                <select asp-for="Kateqoriya" class="sd-select-full">
+                                    <option value="@FinNex.Domain.Entities.SenedDovriyyesi.SenedKateqoriyasi.Umumi">Umumi — hər kəsə açıq</option>
+                                    <option value="@FinNex.Domain.Entities.SenedDovriyyesi.SenedKateqoriyasi.Xususi">Xususi — yalnız şöbəyə açıq</option>
+                                </select>
+                                <small style="font-size:11px;color:#aab0bf;margin-top:4px;display:block;">Xususi seçilsə yalnız yaradan və şöbə işçilərinə görünür.</small>
+                            </div>
                         </div>
                     </div>
 

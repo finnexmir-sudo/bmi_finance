@@ -105,6 +105,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 SenedTarixi = senedTarixi,
                 Status = SenedStatusu.Yeni,
                 Mexfilik = MexfilikSeviyesi.Internal,
+                Kateqoriya = dto.Kateqoriya,
                 YaradanIcraciId = userId,
                 YaradilmaTarixi = DateTime.UtcNow
             };
@@ -217,7 +218,8 @@ namespace FinNex.Application.Services.SenedDovriyyesi
     string? search,
     int? tagId = null,
     string? sortBy = null,
-    string? sortDir = null)
+    string? sortDir = null,
+    int? currentUserId = null)
         {
             var query = _uow.Repository<Sened>().Query();
 
@@ -227,7 +229,13 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                  .Include(x => x.SenedNovu)
                  .Include(x => x.Fayllar.Where(f => !f.Silinib));
 
-            query = query.Where(x => icazeliSobeIdleri.Contains(x.DepartmentId));
+            // Görünmə qaydası:
+            //   Umumi  → hər kəs görür
+            //   Xususi → yalnız sənədin şöbəsinə icazəsi olan + yaradan görür
+            query = query.Where(x =>
+                x.Kateqoriya == SenedKateqoriyasi.Umumi
+                || icazeliSobeIdleri.Contains(x.DepartmentId)
+                || (currentUserId.HasValue && x.YaradanIcraciId == currentUserId.Value));
 
             if (sobeId.HasValue) query = query.Where(x => x.DepartmentId == sobeId);
             if (senedNovuId.HasValue) query = query.Where(x => x.SenedNovuId == senedNovuId);
@@ -273,7 +281,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
         }
 
         public async Task<Result<PagedResult<SenedListDto>>> GetSilinmisPagedAsync(
-                PagedRequest req, List<int> icazeliSobeIdleri, int? sobeId, int? senedNovuId, SenedStatusu? status, string? search)
+                PagedRequest req, List<int> icazeliSobeIdleri, int? sobeId, int? senedNovuId, SenedStatusu? status, string? search, int? currentUserId = null)
         {
             var query = _uow.Repository<Sened>().QueryDeleted();
 
@@ -283,7 +291,10 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                  .Include(x => x.SenedNovu)
                  .Include(x => x.Fayllar.Where(f => !f.Silinib));
 
-            query = query.Where(x => icazeliSobeIdleri.Contains(x.DepartmentId));
+            query = query.Where(x =>
+                x.Kateqoriya == SenedKateqoriyasi.Umumi
+                || icazeliSobeIdleri.Contains(x.DepartmentId)
+                || (currentUserId.HasValue && x.YaradanIcraciId == currentUserId.Value));
 
             if (sobeId.HasValue) query = query.Where(x => x.DepartmentId == sobeId);
             if (senedNovuId.HasValue) query = query.Where(x => x.SenedNovuId == senedNovuId);
@@ -317,7 +328,8 @@ namespace FinNex.Application.Services.SenedDovriyyesi
         public async Task<Result<SenedDetailDto>> GetDetailAsync(
     int senedId,
     List<int> icazeliSobeIdleri,
-    bool isAdmin)
+    bool isAdmin,
+    int? currentUserId = null)
         {
             var query = _uow.Repository<Sened>()
                 .Query()
@@ -328,7 +340,10 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 .AsQueryable();
 
             if (!isAdmin)
-                query = query.Where(x => icazeliSobeIdleri.Contains(x.DepartmentId));
+                query = query.Where(x =>
+                    x.Kateqoriya == SenedKateqoriyasi.Umumi
+                    || icazeliSobeIdleri.Contains(x.DepartmentId)
+                    || (currentUserId.HasValue && x.YaradanIcraciId == currentUserId.Value));
 
             var sened = await query.FirstOrDefaultAsync(x => x.Id == senedId);
 
@@ -349,7 +364,8 @@ namespace FinNex.Application.Services.SenedDovriyyesi
         public async Task<Result<SenedDetailDto>> GetDetailSilinmisAsync(
     int senedId,
     List<int> icazeliSobeIdleri,
-    bool isAdmin)
+    bool isAdmin,
+    int? currentUserId = null)
         {
             var query = _uow.Repository<Sened>()
                 .QueryDeleted()
@@ -358,7 +374,10 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 .AsQueryable();
 
             if (!isAdmin)
-                query = query.Where(x => icazeliSobeIdleri.Contains(x.DepartmentId));
+                query = query.Where(x =>
+                    x.Kateqoriya == SenedKateqoriyasi.Umumi
+                    || icazeliSobeIdleri.Contains(x.DepartmentId)
+                    || (currentUserId.HasValue && x.YaradanIcraciId == currentUserId.Value));
 
             var sened = await query.FirstOrDefaultAsync(x => x.Id == senedId);
 
@@ -380,7 +399,8 @@ namespace FinNex.Application.Services.SenedDovriyyesi
         public async Task<Result<SenedDetailDto>> silmeİCazeSorgusuAsync(
     int senedId,
     List<int> icazeliSobeIdleri,
-    bool isAdmin)
+    bool isAdmin,
+    int? currentUserId = null)
         {
             var query = _uow.Repository<Sened>()
                 .Query()
@@ -389,7 +409,10 @@ namespace FinNex.Application.Services.SenedDovriyyesi
                 .AsQueryable();
 
             if (!isAdmin)
-                query = query.Where(x => icazeliSobeIdleri.Contains(x.DepartmentId));
+                query = query.Where(x =>
+                    x.Kateqoriya == SenedKateqoriyasi.Umumi
+                    || icazeliSobeIdleri.Contains(x.DepartmentId)
+                    || (currentUserId.HasValue && x.YaradanIcraciId == currentUserId.Value));
 
             var sened = await query.FirstOrDefaultAsync(x => x.Id == senedId);
 
@@ -722,6 +745,7 @@ namespace FinNex.Application.Services.SenedDovriyyesi
             sened.DepartmentId = dto.SobeId;
             sened.SenedNovuId = dto.SenedNovuId;
             sened.AcarSoz = dto.AcarSoz;
+            sened.Kateqoriya = dto.Kateqoriya;
             sened.YenileyenIcraciId = userId;
             sened.YenilenmeTarixi = DateTime.UtcNow;
 

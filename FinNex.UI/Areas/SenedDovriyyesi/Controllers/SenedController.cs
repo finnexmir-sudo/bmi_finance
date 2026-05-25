@@ -218,7 +218,8 @@ public class SenedController : Controller
 
         var result = await _senedService.GetPagedAsync(
             new PagedRequest { Page = page, PageSize = pageSize },
-            icazeliSobeIdleri, sobeId, senedNovuId, status, q, tagId, sortBy, sortDir);
+            icazeliSobeIdleri, sobeId, senedNovuId, status, q, tagId, sortBy, sortDir,
+            currentUserId: GetUserId());
 
         var vm = new SenedListVM
         {
@@ -243,6 +244,7 @@ public class SenedController : Controller
                 Basliq = x.Basliq,
                 AcarSoz = x.AcarSoz,
                 Status = x.Status,
+                Kateqoriya = x.Kateqoriya,
                 Sobe = x.Sobe,
                 SenedNovu = x.SenedNovu,
                 FaylSayi = x.FaylSayi,
@@ -266,7 +268,7 @@ public class SenedController : Controller
 
         var result = await _senedService.GetSilinmisPagedAsync(
             new PagedRequest { Page = page, PageSize = pageSize },
-            icazeliSobeIdleri, sobeId, senedNovuId, status, q);
+            icazeliSobeIdleri, sobeId, senedNovuId, status, q, currentUserId: GetUserId());
 
         var vm = new SenedListVM
         {
@@ -289,6 +291,7 @@ public class SenedController : Controller
                 Basliq = x.Basliq,
                 AcarSoz = x.AcarSoz,
                 Status = x.Status,
+                Kateqoriya = x.Kateqoriya,
                 Sobe = x.Sobe,
                 SenedNovu = x.SenedNovu,
                 FaylSayi = x.FaylSayi,
@@ -361,7 +364,8 @@ public class SenedController : Controller
             Basliq = vm.Basliq,
             AcarSoz = vm.AcarSoz,
             TagIds = vm.TagIds ?? new List<int>(),
-            SenedTarixi = vm.SenedTarixi == default ? DateTime.Now.Date : vm.SenedTarixi
+            SenedTarixi = vm.SenedTarixi == default ? DateTime.Now.Date : vm.SenedTarixi,
+            Kateqoriya = vm.Kateqoriya
         };
 
         var uploadDto = new SenedUploadDto
@@ -393,7 +397,7 @@ public class SenedController : Controller
     {
         var icazeliSobeIdleri = await GetIcazeliSobeIdleriAsync();
         // Rehber-ə də Admin kimi tam baxış — tüm şöbələrdən sənəd aça bilər
-        var result = await _senedService.GetDetailAsync(id, icazeliSobeIdleri, IsAdminOrRehber());
+        var result = await _senedService.GetDetailAsync(id, icazeliSobeIdleri, IsAdminOrRehber(), GetUserId());
 
         if (!result.Success || result.Data == null)
         {
@@ -591,7 +595,7 @@ public class SenedController : Controller
         if (!IsAdmin()) return Forbid();
 
         var icazeliSobeIdleri = await GetIcazeliSobeIdleriAsync();
-        var result = await _senedService.GetDetailSilinmisAsync(id, icazeliSobeIdleri, IsAdmin());
+        var result = await _senedService.GetDetailSilinmisAsync(id, icazeliSobeIdleri, IsAdmin(), GetUserId());
 
         if (!result.Success || result.Data == null)
         {
@@ -911,7 +915,8 @@ public class SenedController : Controller
             SenedNovuId = sened.Data.SenedNovuId,
             Basliq = sened.Data.Basliq,
             AcarSoz = sened.Data.AcarSoz,
-            TagIds = senedTagMaps.Select(x => x.TagId).ToList()
+            TagIds = senedTagMaps.Select(x => x.TagId).ToList(),
+            Kateqoriya = sened.Data.Kateqoriya
         };
 
         var aktivFayl = sened.Data?.Fayllar?.FirstOrDefault(x => x.AktivVersiya);
@@ -954,7 +959,8 @@ public class SenedController : Controller
             SenedNovuId = vm.SenedNovuId,
             Basliq = vm.Basliq,
             AcarSoz = vm.AcarSoz,
-            TagIds = vm.TagIds ?? new List<int>()
+            TagIds = vm.TagIds ?? new List<int>(),
+            Kateqoriya = vm.Kateqoriya
         };
 
         var result = await _senedService.UpdateAsync(updateDto, userId, GetIp());

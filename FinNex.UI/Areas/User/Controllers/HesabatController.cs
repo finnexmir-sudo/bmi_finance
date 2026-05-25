@@ -110,7 +110,6 @@ public class HesabatController : Controller
                 IcazeSaati = ic.IcazeSaati,
                 StatusText = ic.WorkflowMerhele,
                 StatusValue = (int)ic.Status,
-                EvezEden = ic.EvezEdenAdSoyad ?? "-",
                 YaradilmaTarixi = ic.IcazeTarixi,
             }));
         }
@@ -216,7 +215,6 @@ public class HesabatController : Controller
                 wsIcaze.Cell(row, 6).Value = ic.BitisSaati.ToString(@"hh\:mm");
                 wsIcaze.Cell(row, 7).Value = ic.IcazeSaati.ToString("0.##");
                 wsIcaze.Cell(row, 8).Value = ic.WorkflowMerhele;
-                wsIcaze.Cell(row, 9).Value = ic.EvezEdenAdSoyad ?? "-";
                 row++;
             }
         }

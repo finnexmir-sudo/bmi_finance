@@ -48,6 +48,7 @@ public class PidSmsController : Controller
     {
         ViewBag.Sablonlar = await _sablonService.HamisiniGetirAsync(yalnizAktiv: true);
         ViewBag.Loglar = await _smsService.SonGonderilenler(200);
+        ViewBag.Kpi = await _smsService.GetKpiAsync();
         return View();
     }
 

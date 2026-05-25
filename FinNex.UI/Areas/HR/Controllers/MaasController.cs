@@ -183,10 +183,17 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.OdenisSayi = listDto.Count(x => x.Status == MaasStatus.Odenildi);
             ViewBag.IsciSayi = listDto.Count;
 
-            // Aktiv işçi sayı — Toplu Hesabla düyməsinin görünməsi üçün
+            // Bu ay üçün maaş cədvəlində görünməli işçilərin sayı —
+            // "Toplu Hesabla" düyməsinin görünmə şərti üçün.
+            // İşdən çıxmış olub-olmamasından asılı olmayaraq, ay ərzində
+            // əmək münasibətində olan hər kəs sayılır.
+            var ixAyBir = new DateTime(cIl, cAy, 1);
+            var ixAyAxir = ixAyBir.AddMonths(1).AddDays(-1);
             ViewBag.AktivIsciSayi = await _unitOfWork.Repository<Isci>()
                 .Query()
-                .Where(x => x.Status == IsciStatus.Aktiv && !x.Silinib)
+                .Where(x => !x.Silinib
+                         && x.IsheQebulTarixi <= ixAyAxir
+                         && (x.IsdenAyrilmaTarixi == null || x.IsdenAyrilmaTarixi >= ixAyBir))
                 .CountAsync();
 
             ViewData["Title"] = $"Əmək Haqqı — {cIl}/{cAy:D2}";
@@ -386,10 +393,21 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return RedirectToAction(nameof(Index), new { il = bugun.Year, ay = bugun.Month });
             }
 
-            // Aktiv işçiləri gətir — bonus/cərimə daxil etmək üçün
+            // Hesablanan ay üçün işçi sərhədləri
+            var ayBirinci = new DateTime(cIl, cAy, 1);
+            var ayinSonGunu = ayBirinci.AddMonths(1).AddDays(-1);
+
+            // İşçilər — hesablanan ayda bankla əmək münasibətində olanlar.
+            // Yəni: işə qəbul tarixi ayın son günündən gec deyil
+            //   VƏ (işdən ayrılmayıb VƏYA ayın 1-i və ya sonrasında ayrılıb).
+            // Status yoxlanmır — işdən çıxmış işçi öz son ayında məzuniyyət
+            // ödənişi və ya günlərini almış ola bilər və qanunən maaş cədvəlində
+            // görünməlidir.
             var isciler = await _unitOfWork.Repository<Isci>()
                 .Query()
-                .Where(x => x.Status == IsciStatus.Aktiv && !x.Silinib)
+                .Where(x => !x.Silinib
+                         && x.IsheQebulTarixi <= ayinSonGunu
+                         && (x.IsdenAyrilmaTarixi == null || x.IsdenAyrilmaTarixi >= ayBirinci))
                 .Include(x => x.Maliye)
                 .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null))
                     .ThenInclude(t => t.Departament)

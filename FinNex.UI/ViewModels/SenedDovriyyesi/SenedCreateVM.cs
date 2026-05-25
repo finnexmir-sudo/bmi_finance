@@ -31,6 +31,9 @@ public class SenedCreateVM
 
     public List<int> TagIds { get; set; } = new();
 
+    /// <summary>Görünmə kateqoriyası — Umumi (default) və ya Xususi.</summary>
+    public FinNex.Domain.Entities.SenedDovriyyesi.SenedKateqoriyasi Kateqoriya { get; set; } = FinNex.Domain.Entities.SenedDovriyyesi.SenedKateqoriyasi.Umumi;
+
     // Dropdowns
     public List<DropdownItemVM> Sobeler { get; set; } = new();
     public List<DropdownItemVM> SenedNovleri { get; set; } = new();

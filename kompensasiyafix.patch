@@ -1,0 +1,54 @@
+From faa44f092c4daa1a0b08cc0d0a3d4e86b18613d2 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 24 May 2026 18:34:25 +0000
+Subject: [PATCH] =?UTF-8?q?fix(hr/kompensasiya):=20IsciListDto.TamAd=20ist?=
+ =?UTF-8?q?ifad=C9=99=20et=20v=C9=99=20Detal.cshtml=20<text>=20atributu=20?=
+ =?UTF-8?q?sil?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ FinNex.UI/Areas/HR/Controllers/KompensasiyaController.cs | 4 ++--
+ FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml       | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/FinNex.UI/Areas/HR/Controllers/KompensasiyaController.cs b/FinNex.UI/Areas/HR/Controllers/KompensasiyaController.cs
+index 51a43d1b..35f7f336 100644
+--- a/FinNex.UI/Areas/HR/Controllers/KompensasiyaController.cs
++++ b/FinNex.UI/Areas/HR/Controllers/KompensasiyaController.cs
+@@ -130,11 +130,11 @@ namespace FinNex.UI.Areas.HR.Controllers
+                 ? iscilerR.Data : new List<FinNex.Application.DTOs.HR.Isci.IsciListDto>();
+ 
+             vm.Isciler = isciler
+-                .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)
++                .OrderBy(x => x.Sira).ThenBy(x => x.TamAd)
+                 .Select(x => new SelectListItem
+                 {
+                     Value = x.Id.ToString(),
+-                    Text = $"{x.Ad} {x.Soyad}"
++                    Text = x.TamAd
+                           + (x.IsdenAyrilmaTarixi.HasValue
+                               ? $" — işdən çıxıb {x.IsdenAyrilmaTarixi:dd.MM.yyyy}"
+                               : "")
+diff --git a/FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml b/FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml
+index 02d89842..e07c5371 100644
+--- a/FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml
++++ b/FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml
+@@ -105,11 +105,11 @@
+                 <div style="font-size:13px;color:#475569;margin-bottom:6px">
+                     @if (Model.SonuncuMezuniyyetBitmeTarixi.HasValue)
+                     {
+-                        <text>Sonuncu məzuniyyət bitiş: <b>@Model.SonuncuMezuniyyetBitmeTarixi.Value.ToString("dd.MM.yyyy")</b></text>
++                        <span>Sonuncu məzuniyyət bitiş: <b>@Model.SonuncuMezuniyyetBitmeTarixi.Value.ToString("dd.MM.yyyy")</b></span>
+                     }
+                     else
+                     {
+-                        <text style="color:#b45309">⚠ Sonuncu məzuniyyət qeydi yoxdur — işə qəbul tarixindən hesablanır</text>
++                        <span style="color:#b45309">⚠ Sonuncu məzuniyyət qeydi yoxdur — işə qəbul tarixindən hesablanır</span>
+                     }
+                 </div>
+                 <div style="font-size:13px;color:#475569;margin-bottom:6px">
+-- 
+2.43.0
+

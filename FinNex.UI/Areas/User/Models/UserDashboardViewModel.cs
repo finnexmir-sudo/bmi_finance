@@ -20,7 +20,7 @@ namespace FinNex.UI.Areas.User.Models
         public int IsGunuSayi { get; set; }
         public int QaibGun { get; set; }
         public int IcazeliGun { get; set; }
-        public int GozlenilenGun { get; set; }
+        public int GecikenGun { get; set; }
 
         // ── Məzuniyyət balansı ──────────────────────────────────
         public int IllikToplamGun { get; set; }
@@ -54,7 +54,7 @@ namespace FinNex.UI.Areas.User.Models
             IsGunuSayi = dto.IsGunuSayi,
             QaibGun = dto.QaibGun,
             IcazeliGun = dto.IcazeliGun,
-            GozlenilenGun = dto.GozlenilenGun,
+            GecikenGun = dto.GecikenGun,
 
             IllikToplamGun = dto.IllikToplamGun,
             IllikIstifadeGun = dto.IllikIstifadeGun,

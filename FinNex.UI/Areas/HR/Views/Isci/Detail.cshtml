@@ -248,6 +248,38 @@
                         }
                     </span>
                 </div>
+
+                <div class="isci-info-card-title" style="margin-top:16px;">Bank Məlumatları</div>
+                <div class="isci-info-row">
+                    <span class="isci-info-key">IBAN</span>
+                    <span class="isci-info-val">
+                        @if (!string.IsNullOrEmpty(Model.Iban))
+                        {
+                            <span id="ibanDeyer" class="isci-info-val--mono" style="letter-spacing:.4px">@Model.Iban</span>
+                            <button type="button" class="fn-btn fn-btn--outline fn-btn--sm"
+                                    title="IBAN-ı clipboard-a kopyala"
+                                    style="margin-left:8px;padding:2px 8px;font-size:11px;display:inline-flex;align-items:center;gap:4px"
+                                    onclick="navigator.clipboard.writeText(document.getElementById('ibanDeyer').textContent.trim()).then(()=>{this.innerHTML='✓ Kopyalandı';setTimeout(()=>{this.innerHTML='<svg width=&quot;11&quot; height=&quot;11&quot; viewBox=&quot;0 0 11 11&quot; fill=&quot;none&quot;><rect x=&quot;3&quot; y=&quot;3&quot; width=&quot;6&quot; height=&quot;7&quot; rx=&quot;1&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.1&quot;/><path d=&quot;M2 8V2a1 1 0 011-1h5&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.1&quot;/></svg> Kopyala'},1500)">
+                                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                    <rect x="3" y="3" width="6" height="7" rx="1" stroke="currentColor" stroke-width="1.1"/>
+                                    <path d="M2 8V2a1 1 0 011-1h5" stroke="currentColor" stroke-width="1.1"/>
+                                </svg>
+                                Kopyala
+                            </button>
+                        }
+                        else
+                        {
+                            <span class="isci-badge-no">✗ Yoxdur</span>
+                        }
+                    </span>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Iban) && Model.Iban.Length == 28)
+                {
+                    <div class="isci-info-row">
+                        <span class="isci-info-key">Hesab nömrəsi</span>
+                        <span class="isci-info-val isci-info-val--mono" style="letter-spacing:.4px">@Model.Iban.Substring(8)</span>
+                    </div>
+                }
             </div>
         </div>
     </div>

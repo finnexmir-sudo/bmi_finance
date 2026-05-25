@@ -1,0 +1,1627 @@
+From 2cced8757f439c7adfac46f1ec8f102e478bc642 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 24 May 2026 18:14:22 +0000
+Subject: [PATCH] =?UTF-8?q?feat(hr/kompensasiya):=20istifad=C9=99=20edilm?=
+ =?UTF-8?q?=C9=99mi=C5=9F=20m=C9=99zuniyy=C9=99t=20kompensasiyas=C4=B1=20m?=
+ =?UTF-8?q?odulu?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Yeni modul: HR → Məzuniyyət → 'Məzuniyyət Kompensasiyası'.
+İşdən çıxan işçi üçün istifadə edilməmiş əmək məzuniyyəti
+günlərinə görə kompensasiyanı hesablayır və yadda saxlayır.
+
+Hesablama məntiqi:
+- Keçmiş illər qalığı: MezuniyyetBalans.ToplamGun − IstifadeOlunanGun
+  cəmi (il < ayrılma ili).
+- Cari il prorate: (sonuncu məz. bitişindən / IsheQebulTarixi-dən
+  ayrılma tarixinə qədər keçən gün / 365) × illik gün hüququ
+  − cari ildə artıq istifadə.
+- Günlük rate: adi məzuniyyət ödənişi düsturu ilə eyni —
+  MAX(S/12/30.4, CariMaas/ayIsGun), S = son 12 ay artım əmsallı
+  qazanc cəmi.
+
+Komponentlər:
+- MezuniyyetKompensasiyasi entity + idempotent migration
+- IKompensasiyaService + KompensasiyaService
+- DTO-lar: KompensasiyaHesablamaNeticesiDto, YaratDto, ListDto, DetalDto
+- KompensasiyaController (CLAUDE.md: yalnız IService inject)
+- Views: Index (siyahı), Yarat (form + AJAX preview), Detal (tam izahat)
+- HR sidebar-da yeni nav-item
+
+İstifadə axını:
+1. HR yeni kompensasiya açır → işçi və ayrılma tarixi seçir
+2. 'Hesabla' düyməsi AJAX ilə preview göstərir
+3. 'Yadda saxla' Layihe statusu ilə DB-yə yazır
+4. (Sonrakı: maaş engine bu kompensasiyanı avtomatik gəlir kimi
+   həmin ay üçün maaşa daxil edəcək, status MaasaDaxilEdildi olacaq)
+---
+ DataAccess/Contexts/AppDbContext.cs           |   1 +
+ ...60524130000_AddMezuniyyetKompensasiyasi.cs |  71 +++
+ FinNex.Application/AddApplicationServices.cs  |   1 +
+ .../DTOs/HR/Kompensasiya/KompensasiyaDtos.cs  | 103 ++++
+ .../Interfaces/HR/IKompensasiyaService.cs     |  52 ++
+ .../Services/HR/KompensasiyaService.cs        | 451 ++++++++++++++++++
+ .../Entities/HR/MezuniyyetKompensasiyasi.cs   |  63 +++
+ .../HR/Controllers/KompensasiyaController.cs  | 151 ++++++
+ .../Kompensasiya/KompensasiyaYaratVM.cs       |  32 ++
+ .../Areas/HR/Views/Kompensasiya/Detal.cshtml  | 196 ++++++++
+ .../Areas/HR/Views/Kompensasiya/Index.cshtml  | 106 ++++
+ .../Areas/HR/Views/Kompensasiya/Yarat.cshtml  | 225 +++++++++
+ .../Areas/HR/Views/Shared/_HRLayout.cshtml    |   8 +
+ 13 files changed, 1460 insertions(+)
+ create mode 100644 DataAccess/Migrations/20260524130000_AddMezuniyyetKompensasiyasi.cs
+ create mode 100644 FinNex.Application/DTOs/HR/Kompensasiya/KompensasiyaDtos.cs
+ create mode 100644 FinNex.Application/Interfaces/HR/IKompensasiyaService.cs
+ create mode 100644 FinNex.Application/Services/HR/KompensasiyaService.cs
+ create mode 100644 FinNex.Domain/Entities/HR/MezuniyyetKompensasiyasi.cs
+ create mode 100644 FinNex.UI/Areas/HR/Controllers/KompensasiyaController.cs
+ create mode 100644 FinNex.UI/Areas/HR/ViewModels/Kompensasiya/KompensasiyaYaratVM.cs
+ create mode 100644 FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml
+ create mode 100644 FinNex.UI/Areas/HR/Views/Kompensasiya/Index.cshtml
+ create mode 100644 FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml
+
+diff --git a/DataAccess/Contexts/AppDbContext.cs b/DataAccess/Contexts/AppDbContext.cs
+index 6c79a7ce..d4f6c8ef 100644
+--- a/DataAccess/Contexts/AppDbContext.cs
++++ b/DataAccess/Contexts/AppDbContext.cs
+@@ -63,6 +63,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
+     // Məzuniyyət modulu üçün yeni DbSet-lər
+     public DbSet<Mezuniyyet> Mezuniyyetler { get; set; }
+     public DbSet<MezuniyyetBalans> MezuniyyetBalanslari { get; set; }
++    public DbSet<MezuniyyetKompensasiyasi> MezuniyyetKompensasiyalari { get; set; }
+     public DbSet<BayramGunu> BayramGunleri { get; set; }
+     public DbSet<Icaze> Icazeler { get; set; }
+     public DbSet<IcazeCixisGiris> IcazeCixisGirisler { get; set; }
+diff --git a/DataAccess/Migrations/20260524130000_AddMezuniyyetKompensasiyasi.cs b/DataAccess/Migrations/20260524130000_AddMezuniyyetKompensasiyasi.cs
+new file mode 100644
+index 00000000..7a8b38de
+--- /dev/null
++++ b/DataAccess/Migrations/20260524130000_AddMezuniyyetKompensasiyasi.cs
+@@ -0,0 +1,71 @@
++using FinNex.DataAccess.Contexts;
++using Microsoft.EntityFrameworkCore.Infrastructure;
++using Microsoft.EntityFrameworkCore.Migrations;
++
++#nullable disable
++
++namespace FinNex.DataAccess.Migrations
++{
++    /// <summary>
++    /// İstifadə edilməmiş əmək məzuniyyəti günlərinə görə kompensasiya cədvəli.
++    /// İdempotentdir — artıq mövcuddursa heç nə etmir.
++    /// </summary>
++    [DbContext(typeof(AppDbContext))]
++    [Migration("20260524130000_AddMezuniyyetKompensasiyasi")]
++    public partial class AddMezuniyyetKompensasiyasi : Migration
++    {
++        protected override void Up(MigrationBuilder m)
++        {
++            m.Sql(@"
++                IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'MezuniyyetKompensasiyalari')
++                BEGIN
++                    CREATE TABLE [dbo].[MezuniyyetKompensasiyalari] (
++                        [Id]                              INT            NOT NULL IDENTITY(1,1),
++                        [IsciId]                          INT            NOT NULL,
++                        [AyrilmaTarixi]                   DATETIME2      NOT NULL,
++                        [SonuncuMezuniyyetBitmeTarixi]    DATETIME2      NULL,
++                        [SonuncuMezuniyyetId]             INT            NULL,
++                        [KecenGunSayi]                    INT            NOT NULL DEFAULT 0,
++                        [KecmisQaligGun]                  DECIMAL(10,2)  NOT NULL DEFAULT 0,
++                        [CariIlProrateGun]                DECIMAL(10,2)  NOT NULL DEFAULT 0,
++                        [CemiKompensasiyaGun]             DECIMAL(10,2)  NOT NULL DEFAULT 0,
++                        [Son12AyDuzelmisQazanc]           DECIMAL(18,2)  NOT NULL DEFAULT 0,
++                        [GunlukMezPul]                    DECIMAL(18,4)  NOT NULL DEFAULT 0,
++                        [GunlukMaas]                      DECIMAL(18,4)  NOT NULL DEFAULT 0,
++                        [GunlukRate]                      DECIMAL(18,4)  NOT NULL DEFAULT 0,
++                        [CemiMebleg]                      DECIMAL(18,2)  NOT NULL DEFAULT 0,
++                        [HesablananIl]                    INT            NOT NULL,
++                        [HesablananAy]                    INT            NOT NULL,
++                        [MaasId]                          INT            NULL,
++                        [Status]                          INT            NOT NULL DEFAULT 1,
++                        [Qeyd]                            NVARCHAR(500)  NULL,
++                        [HesablayanIsciId]                INT            NOT NULL DEFAULT 0,
++                        [YaradilmaTarixi]                 DATETIME2      NOT NULL DEFAULT GETDATE(),
++                        [YaradanIcraciId]                 INT            NULL,
++                        [YenileyenIcraciId]               INT            NULL,
++                        [SilenIcraciId]                   INT            NULL,
++                        [YenilenmeTarixi]                 DATETIME2      NULL,
++                        [Silinib]                         BIT            NOT NULL DEFAULT 0,
++                        [SilinmeTarixi]                   DATETIME2      NULL,
++                        CONSTRAINT [PK_MezuniyyetKompensasiyalari] PRIMARY KEY ([Id]),
++                        CONSTRAINT [FK_MezuniyyetKompensasiyalari_Isciler]
++                            FOREIGN KEY ([IsciId]) REFERENCES [dbo].[Isciler]([Id])
++                    );
++
++                    -- Hər (İşçi, İl, Ay) üçün yalnız bir aktiv kompensasiya qeydi
++                    CREATE UNIQUE INDEX [IX_MezKomp_Isci_Il_Ay]
++                        ON [dbo].[MezuniyyetKompensasiyalari] ([IsciId], [HesablananIl], [HesablananAy])
++                        WHERE [Silinib] = 0 AND [Status] != 99;
++
++                    CREATE INDEX [IX_MezKomp_Status]
++                        ON [dbo].[MezuniyyetKompensasiyalari] ([Status]);
++                END
++            ");
++        }
++
++        protected override void Down(MigrationBuilder m)
++        {
++            m.Sql("DROP TABLE IF EXISTS [dbo].[MezuniyyetKompensasiyalari];");
++        }
++    }
++}
+diff --git a/FinNex.Application/AddApplicationServices.cs b/FinNex.Application/AddApplicationServices.cs
+index e809c5a2..bb9d9168 100644
+--- a/FinNex.Application/AddApplicationServices.cs
++++ b/FinNex.Application/AddApplicationServices.cs
+@@ -75,6 +75,7 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
+         services.AddScoped<IDavamiyyetService, DavamiyyetService>();
+         services.AddScoped<IAyliqElaveService, AyliqElaveService>();
+         services.AddScoped<IIsciSiralamaService, IsciSiralamaService>();
++        services.AddScoped<IKompensasiyaService, KompensasiyaService>();
+         // Məzuniyyət Modulu Servisləri
+         services.AddScoped<IMezuniyyetService, MezuniyyetService>();
+         services.AddScoped<IIcazeService, IcazeService>();
+diff --git a/FinNex.Application/DTOs/HR/Kompensasiya/KompensasiyaDtos.cs b/FinNex.Application/DTOs/HR/Kompensasiya/KompensasiyaDtos.cs
+new file mode 100644
+index 00000000..769018c5
+--- /dev/null
++++ b/FinNex.Application/DTOs/HR/Kompensasiya/KompensasiyaDtos.cs
+@@ -0,0 +1,103 @@
++using FinNex.Domain.Entities.HR;
++
++namespace FinNex.Application.DTOs.HR.Kompensasiya
++{
++    /// <summary>
++    /// Anlıq hesablama nəticəsi (preview — yadda saxlanmayan).
++    /// </summary>
++    public class KompensasiyaHesablamaNeticesiDto
++    {
++        public int IsciId { get; set; }
++        public string IsciAdSoyad { get; set; } = null!;
++        public string? DepartamentAd { get; set; }
++        public string? VezifeAd { get; set; }
++        public DateTime IseQebulTarixi { get; set; }
++        public DateTime AyrilmaTarixi { get; set; }
++
++        // Keçmiş illər qalığı (illər üzrə)
++        public List<KompensasiyaIlDto> KecmisIller { get; set; } = new();
++        public decimal KecmisQaligGun { get; set; }
++
++        // Cari il
++        public int CariIl { get; set; }
++        public decimal CariIlToplamGun { get; set; }
++        public decimal CariIlIstifadeOlunan { get; set; }
++        public DateTime? SonuncuMezuniyyetBitmeTarixi { get; set; }
++        public int? SonuncuMezuniyyetId { get; set; }
++        public bool SonuncuMezuniyyetIsheQebulTarixindenGoturuldu { get; set; }
++        public int KecenGunSayi { get; set; }
++        public decimal CariIlProrateGun { get; set; }
++
++        // Yekun gün
++        public decimal CemiKompensasiyaGun { get; set; }
++
++        // Pul
++        public decimal CariMaas { get; set; }
++        public decimal Son12AyCemQazanc { get; set; }
++        public decimal Son12AyDuzelmisQazanc { get; set; }
++        public int Son12AyQeydSayi { get; set; }
++        public decimal GunlukMezPul { get; set; }
++        public decimal GunlukMaas { get; set; }
++        public decimal GunlukRate { get; set; }
++        public string Qalib { get; set; } = "MH";  // MH və ya ƏH
++        public decimal CemiMebleg { get; set; }
++
++        // Hesablananacaq dövr
++        public int HesablananIl { get; set; }
++        public int HesablananAy { get; set; }
++
++        // İzahat addımları (transparency üçün)
++        public List<string> Izahatlar { get; set; } = new();
++        public List<string> Xeberdarliqlar { get; set; } = new();
++    }
++
++    public class KompensasiyaIlDto
++    {
++        public int Il { get; set; }
++        public decimal ToplamGun { get; set; }
++        public decimal IstifadeOlunanGun { get; set; }
++        public decimal QaligGun { get; set; }
++    }
++
++    /// <summary>
++    /// Yadda saxlama input-u.
++    /// </summary>
++    public class KompensasiyaYaratDto
++    {
++        public int IsciId { get; set; }
++        public DateTime AyrilmaTarixi { get; set; }
++        public int HesablananIl { get; set; }
++        public int HesablananAy { get; set; }
++        public string? Qeyd { get; set; }
++    }
++
++    /// <summary>
++    /// Index siyahı sətri.
++    /// </summary>
++    public class KompensasiyaListDto
++    {
++        public int Id { get; set; }
++        public int IsciId { get; set; }
++        public string IsciAdSoyad { get; set; } = null!;
++        public DateTime AyrilmaTarixi { get; set; }
++        public int HesablananIl { get; set; }
++        public int HesablananAy { get; set; }
++        public decimal CemiKompensasiyaGun { get; set; }
++        public decimal CemiMebleg { get; set; }
++        public KompensasiyaStatus Status { get; set; }
++        public DateTime YaradilmaTarixi { get; set; }
++        public int? MaasId { get; set; }
++    }
++
++    /// <summary>
++    /// Detal/breakdown — Index-də sətrə klik edildikdə.
++    /// </summary>
++    public class KompensasiyaDetalDto : KompensasiyaHesablamaNeticesiDto
++    {
++        public int Id { get; set; }
++        public KompensasiyaStatus Status { get; set; }
++        public string? Qeyd { get; set; }
++        public int? MaasId { get; set; }
++        public DateTime YaradilmaTarixi { get; set; }
++    }
++}
+diff --git a/FinNex.Application/Interfaces/HR/IKompensasiyaService.cs b/FinNex.Application/Interfaces/HR/IKompensasiyaService.cs
+new file mode 100644
+index 00000000..78886732
+--- /dev/null
++++ b/FinNex.Application/Interfaces/HR/IKompensasiyaService.cs
+@@ -0,0 +1,52 @@
++using FinNex.Application.Common.Results;
++using FinNex.Application.DTOs.HR.Kompensasiya;
++using FinNex.Domain.Entities.HR;
++
++namespace FinNex.Application.Interfaces.HR
++{
++    /// <summary>
++    /// İstifadə edilməmiş əmək məzuniyyəti günlərinə görə kompensasiya
++    /// hesablama servisi. Adi məzuniyyət ödənişi düsturu ilə eyni
++    /// gündəlik dərəcəni istifadə edir, sadəcə günlərin sayını fərqli
++    /// hesablayır (keçmiş illərin qalığı + cari il prorate).
++    /// </summary>
++    public interface IKompensasiyaService
++    {
++        /// <summary>
++        /// Anlıq hesablama — yadda saxlamır, yalnız preview nəticə qaytarır.
++        /// </summary>
++        Task<Result<KompensasiyaHesablamaNeticesiDto>> HesablaAsync(
++            int isciId, DateTime ayrilmaTarixi);
++
++        /// <summary>
++        /// Hesablamanı yadda saxla (Layihe statusu ilə).
++        /// </summary>
++        Task<Result<int>> YaratAsync(KompensasiyaYaratDto dto, int hesablayanIsciId);
++
++        /// <summary>
++        /// Bütün kompensasiya qeydlərini gətir (tarixçə).
++        /// </summary>
++        Task<Result<IList<KompensasiyaListDto>>> HamisiniGetirAsync();
++
++        /// <summary>
++        /// Tək qeyd detalı.
++        /// </summary>
++        Task<Result<KompensasiyaDetalDto?>> IdIleGetirAsync(int id);
++
++        /// <summary>
++        /// Ləğv et (status → LegvEdildi).
++        /// </summary>
++        Task<Result> LegvEtAsync(int id);
++
++        /// <summary>
++        /// Maaş engine üçün: bu işçi üçün bu il/ay-da aktiv
++        /// (Layihe və ya Tesdiqlenib) kompensasiya varsa qaytarır.
++        /// </summary>
++        Task<MezuniyyetKompensasiyasi?> GetAktivKompensasiyaAsync(int isciId, int il, int ay);
++
++        /// <summary>
++        /// Maaş engine kompensasiyanı maaşa daxil etdikdə statusu yenilə.
++        /// </summary>
++        Task IsareLamasiniYadda(int kompensasiyaId, int maasId);
++    }
++}
+diff --git a/FinNex.Application/Services/HR/KompensasiyaService.cs b/FinNex.Application/Services/HR/KompensasiyaService.cs
+new file mode 100644
+index 00000000..9d1d91cf
+--- /dev/null
++++ b/FinNex.Application/Services/HR/KompensasiyaService.cs
+@@ -0,0 +1,451 @@
++using FinNex.Application.Common.Results;
++using FinNex.Application.DTOs.HR.Kompensasiya;
++using FinNex.Application.Interfaces.HR;
++using FinNex.Application.Interfaces.Maas_If;
++using FinNex.Domain.Entities.HR;
++using FinNex.Domain.Interfaces;
++using Microsoft.EntityFrameworkCore;
++
++namespace FinNex.Application.Services.HR
++{
++    /// <summary>
++    /// İstifadə edilməmiş əmək məzuniyyəti günlərinə görə kompensasiya
++    /// hesablama servisi. Adi məzuniyyət ödənişi düsturu ilə eyni
++    /// (MAX(S/12/30.4, CariMaas/AyIsGun)) gündəlik dərəcəni istifadə edir.
++    /// Fərq yalnız günlərin sayında: keçmiş illərin qalığı + cari il prorate.
++    /// </summary>
++    public class KompensasiyaService : IKompensasiyaService
++    {
++        private readonly IUnitOfWork _uow;
++        private readonly IMaasHesablamaService _hesablamaService;
++
++        public KompensasiyaService(IUnitOfWork uow, IMaasHesablamaService hesablamaService)
++        {
++            _uow = uow;
++            _hesablamaService = hesablamaService;
++        }
++
++        // ─── HESABLA (preview) ───────────────────────────────────
++        public async Task<Result<KompensasiyaHesablamaNeticesiDto>> HesablaAsync(
++            int isciId, DateTime ayrilmaTarixi)
++        {
++            try
++            {
++                var isci = await _uow.Repository<Isci>()
++                    .Query()
++                    .Where(x => x.Id == isciId && !x.Silinib)
++                    .Include(x => x.Maliye)
++                    .Include(x => x.IsciTeyinatlari.Where(t => t.Aktivdir))
++                        .ThenInclude(t => t.Departament)
++                    .Include(x => x.IsciTeyinatlari.Where(t => t.Aktivdir))
++                        .ThenInclude(t => t.Vezife)
++                    .FirstOrDefaultAsync();
++
++                if (isci == null)
++                    return Result<KompensasiyaHesablamaNeticesiDto>.Fail("İşçi tapılmadı.");
++
++                var result = new KompensasiyaHesablamaNeticesiDto
++                {
++                    IsciId = isciId,
++                    IsciAdSoyad = isci.TamAd,
++                    IseQebulTarixi = isci.IsheQebulTarixi,
++                    AyrilmaTarixi = ayrilmaTarixi.Date,
++                    HesablananIl = ayrilmaTarixi.Year,
++                    HesablananAy = ayrilmaTarixi.Month,
++                    CariMaas = isci.Maliye?.CariMaas ?? 0,
++                    CariIl = ayrilmaTarixi.Year
++                };
++
++                var aktivTeyinat = isci.IsciTeyinatlari.FirstOrDefault(t => t.Aktivdir);
++                result.DepartamentAd = aktivTeyinat?.Departament?.Ad;
++                result.VezifeAd = aktivTeyinat?.Vezife?.Ad;
++
++                // ─── 1. MEZUNIYYET BALANSI (illər üzrə) ─────────────
++                var balanslar = await _uow.Repository<MezuniyyetBalans>()
++                    .Query()
++                    .Where(x => x.IsciId == isciId
++                             && x.Nov == MezuniyyetNovu.Illik
++                             && !x.Silinib)
++                    .OrderBy(x => x.Il)
++                    .ToListAsync();
++
++                // Keçmiş illər (cari il < ayrılma ili)
++                decimal kecmisQalig = 0;
++                foreach (var b in balanslar.Where(x => x.Il < ayrilmaTarixi.Year))
++                {
++                    decimal qalig = b.ToplamGun - b.IstifadeOlunanGun;
++                    if (qalig > 0) kecmisQalig += qalig;
++                    result.KecmisIller.Add(new KompensasiyaIlDto
++                    {
++                        Il = b.Il,
++                        ToplamGun = b.ToplamGun,
++                        IstifadeOlunanGun = b.IstifadeOlunanGun,
++                        QaligGun = qalig
++                    });
++                }
++                result.KecmisQaligGun = kecmisQalig;
++
++                // Cari il balansı
++                var cariIlBalans = balanslar.FirstOrDefault(x => x.Il == ayrilmaTarixi.Year);
++                decimal illikGunHuququ = cariIlBalans?.ToplamGun ?? 21;
++                result.CariIlToplamGun = illikGunHuququ;
++                result.CariIlIstifadeOlunan = cariIlBalans?.IstifadeOlunanGun ?? 0;
++
++                // ─── 2. SONUNCU MEZUNIYYET (prorate base) ───────────
++                var sonMezuniyyet = await _uow.Repository<Mezuniyyet>()
++                    .Query()
++                    .Where(x => x.IsciId == isciId
++                             && !x.Silinib
++                             && x.Status == MezuniyyetStatus.Tesdiqlenib
++                             && x.BitmeTarixi <= ayrilmaTarixi)
++                    .OrderByDescending(x => x.BitmeTarixi)
++                    .FirstOrDefaultAsync();
++
++                DateTime baslangic;
++                if (sonMezuniyyet != null)
++                {
++                    result.SonuncuMezuniyyetBitmeTarixi = sonMezuniyyet.BitmeTarixi.Date;
++                    result.SonuncuMezuniyyetId = sonMezuniyyet.Id;
++                    baslangic = sonMezuniyyet.BitmeTarixi.Date.AddDays(1);
++                }
++                else
++                {
++                    result.SonuncuMezuniyyetIsheQebulTarixindenGoturuldu = true;
++                    baslangic = isci.IsheQebulTarixi.Date;
++                }
++
++                int kecenGun = (ayrilmaTarixi.Date - baslangic).Days;
++                if (kecenGun < 0) kecenGun = 0;
++                result.KecenGunSayi = kecenGun;
++
++                // ─── 3. CARI IL PRORATE ─────────────────────────────
++                // (keçən gün / 365) × illik hüquq − cari ildə artıq istifadə
++                decimal cariIlProrate = Math.Round(
++                    (decimal)kecenGun / 365m * illikGunHuququ - result.CariIlIstifadeOlunan,
++                    2);
++                if (cariIlProrate < 0) cariIlProrate = 0;
++                result.CariIlProrateGun = cariIlProrate;
++
++                result.CemiKompensasiyaGun = result.KecmisQaligGun + cariIlProrate;
++
++                // ─── 4. GUNLUK RATE (məzuniyyət düsturu ilə eyni) ───
++                //   S = son 12 ay düzəlmiş qazanc cəmi (ayrılma ayından əvvəlki 12 ay)
++                //   gunlukMezPul = S / 12 / 30.4
++                //   gunlukMaas   = CariMaas / ayIsGun (ayrılma ayının iş günü sayı)
++                //   gunlukRate   = MAX(gunlukMezPul, gunlukMaas)
++                int baslamaRefKey = ayrilmaTarixi.Year * 12 + ayrilmaTarixi.Month;
++                var son12Qazanc = await _uow.Repository<IsciAyliqQazanc>()
++                    .Query()
++                    .Where(x => x.IsciId == isciId
++                             && !x.Silinib
++                             && (x.Il * 12 + x.Ay) < baslamaRefKey)
++                    .OrderByDescending(x => x.Il * 12 + x.Ay)
++                    .Take(12)
++                    .ToListAsync();
++
++                result.Son12AyCemQazanc = son12Qazanc.Sum(x => x.Qazanc);
++                result.Son12AyQeydSayi = son12Qazanc.Count;
++
++                // Artım əmsalı (K_i) — köhnə qazancları cari maaş səviyyəsinə qaldır
++                decimal sDuzelmis = 0;
++                foreach (var q in son12Qazanc.OrderBy(x => x.Il).ThenBy(x => x.Ay))
++                {
++                    var ayBitis = new DateTime(q.Il, q.Ay, 1).AddMonths(1).AddDays(-1);
++                    decimal statMaas = await _hesablamaService
++                        .StatMaasiTarixeGoreTapAsync(isciId, ayBitis);
++                    if (statMaas <= 0) statMaas = result.CariMaas;
++
++                    decimal emsal = (statMaas > 0 && result.CariMaas > 0)
++                        ? result.CariMaas / statMaas : 1m;
++                    if (emsal < 1m) emsal = 1m;
++
++                    sDuzelmis += Math.Round(q.Qazanc * emsal, 2);
++                }
++                result.Son12AyDuzelmisQazanc = sDuzelmis;
++
++                int ayIsGun = await _hesablamaService.AyIsGunSayiniHesablaAsync(
++                    ayrilmaTarixi.Year, ayrilmaTarixi.Month);
++
++                decimal gunlukMezPul = sDuzelmis > 0
++                    ? Math.Round(sDuzelmis / 12m / 30.4m, 4)
++                    : 0m;
++                decimal gunlukMaas = (result.CariMaas > 0 && ayIsGun > 0)
++                    ? Math.Round(result.CariMaas / ayIsGun, 4)
++                    : 0m;
++                decimal gunlukRate = Math.Max(gunlukMezPul, gunlukMaas);
++                string qalib = gunlukMezPul >= gunlukMaas ? "MH" : "ƏH";
++
++                result.GunlukMezPul = gunlukMezPul;
++                result.GunlukMaas = gunlukMaas;
++                result.GunlukRate = gunlukRate;
++                result.Qalib = qalib;
++
++                // ─── 5. CEMI MEBLEG ─────────────────────────────────
++                result.CemiMebleg = Math.Round(result.CemiKompensasiyaGun * gunlukRate, 2);
++
++                // ─── 6. IZAHAT ─────────────────────────────────────
++                result.Izahatlar.Add($"İşçi: {isci.TamAd}");
++                result.Izahatlar.Add($"İşə qəbul: {isci.IsheQebulTarixi:dd.MM.yyyy}, Ayrılma: {ayrilmaTarixi:dd.MM.yyyy}");
++                result.Izahatlar.Add($"Keçmiş illərdə istifadə edilməmiş qalıq: {kecmisQalig:N2} gün");
++
++                if (sonMezuniyyet != null)
++                {
++                    result.Izahatlar.Add(
++                        $"Sonuncu məzuniyyət: {sonMezuniyyet.BaslamaTarixi:dd.MM.yyyy} – " +
++                        $"{sonMezuniyyet.BitmeTarixi:dd.MM.yyyy} (bitişdən {kecenGun} gün keçib)");
++                }
++                else
++                {
++                    result.Izahatlar.Add(
++                        $"Sonuncu məzuniyyət qeydi yoxdur — prorate işə qəbul tarixindən " +
++                        $"({isci.IsheQebulTarixi:dd.MM.yyyy}, {kecenGun} gün keçib) hesablanır");
++                }
++
++                result.Izahatlar.Add(
++                    $"Cari il prorate: ({kecenGun} / 365) × {illikGunHuququ:N0} " +
++                    $"− {result.CariIlIstifadeOlunan:N0} (artıq istifadə) = {cariIlProrate:N2} gün");
++                result.Izahatlar.Add(
++                    $"CƏMİ KOMPENSASİYA GÜNLƏRİ: {kecmisQalig:N2} + {cariIlProrate:N2} = " +
++                    $"{result.CemiKompensasiyaGun:N2} gün");
++
++                result.Izahatlar.Add(
++                    $"Son 12 ayın faktiki qazancı: {result.Son12AyCemQazanc:N2} ₼ " +
++                    $"({result.Son12AyQeydSayi} qeyd)");
++                result.Izahatlar.Add(
++                    $"Artım əmsalı tətbiq edilmiş cəm (S): {sDuzelmis:N2} ₼");
++                result.Izahatlar.Add(
++                    $"Gündəlik məzuniyyət pulu (MH): {sDuzelmis:N2} ÷ 12 ÷ 30.4 = {gunlukMezPul:N4} ₼");
++                result.Izahatlar.Add(
++                    $"Gündəlik maaş (ƏH): {result.CariMaas:N2} ÷ {ayIsGun} = {gunlukMaas:N4} ₼");
++                result.Izahatlar.Add(
++                    $"Seçilən gündəlik dərəcə: MAX(MH, ƏH) = {gunlukRate:N4} ₼ ({qalib} qalib)");
++                result.Izahatlar.Add(
++                    $"YEKUN MƏBLƏĞ: {result.CemiKompensasiyaGun:N2} gün × {gunlukRate:N4} ₼ = " +
++                    $"{result.CemiMebleg:N2} ₼");
++
++                // Xəbərdarlıqlar
++                if (son12Qazanc.Count < 12)
++                {
++                    result.Xeberdarliqlar.Add(
++                        $"Yalnız {son12Qazanc.Count}/12 ay üçün qazanc qeydi tapıldı — " +
++                        $"hesablama dəqiq olmaya bilər.");
++                }
++                if (result.CemiKompensasiyaGun == 0)
++                {
++                    result.Xeberdarliqlar.Add(
++                        "Kompensasiya günü 0-dır — bu işçi üçün kompensasiya hesablanmır.");
++                }
++                if (kecenGun > 366)
++                {
++                    result.Xeberdarliqlar.Add(
++                        $"Sonuncu məzuniyyətdən bəri {kecenGun} gün keçib — " +
++                        $"bu, normal il limitindən artıqdır. Mənbə məlumatları yoxlayın.");
++                }
++
++                return Result<KompensasiyaHesablamaNeticesiDto>.Ok(result);
++            }
++            catch (Exception ex)
++            {
++                return Result<KompensasiyaHesablamaNeticesiDto>.Fail(
++                    $"Kompensasiya hesablanarkən xəta: {ex.Message}");
++            }
++        }
++
++        // ─── YARAT (DB-yə yaz) ───────────────────────────────────
++        public async Task<Result<int>> YaratAsync(KompensasiyaYaratDto dto, int hesablayanIsciId)
++        {
++            try
++            {
++                // Eyni il/ay üçün aktiv qeyd varsa qadağa
++                var movcud = await _uow.Repository<MezuniyyetKompensasiyasi>()
++                    .Query()
++                    .AnyAsync(x => x.IsciId == dto.IsciId
++                                && x.HesablananIl == dto.HesablananIl
++                                && x.HesablananAy == dto.HesablananAy
++                                && x.Status != KompensasiyaStatus.LegvEdildi
++                                && !x.Silinib);
++                if (movcud)
++                    return Result<int>.Fail(
++                        "Bu işçi üçün seçilmiş ay-da artıq aktiv kompensasiya qeydi var. " +
++                        "Əvvəlcə onu ləğv edin.");
++
++                // Hesabla
++                var calc = await HesablaAsync(dto.IsciId, dto.AyrilmaTarixi);
++                if (!calc.Success || calc.Data == null)
++                    return Result<int>.Fail(calc.Message ?? "Hesablama uğursuz.");
++
++                var c = calc.Data;
++                var entity = new MezuniyyetKompensasiyasi
++                {
++                    IsciId = dto.IsciId,
++                    AyrilmaTarixi = dto.AyrilmaTarixi.Date,
++                    SonuncuMezuniyyetBitmeTarixi = c.SonuncuMezuniyyetBitmeTarixi,
++                    SonuncuMezuniyyetId = c.SonuncuMezuniyyetId,
++                    KecenGunSayi = c.KecenGunSayi,
++                    KecmisQaligGun = c.KecmisQaligGun,
++                    CariIlProrateGun = c.CariIlProrateGun,
++                    CemiKompensasiyaGun = c.CemiKompensasiyaGun,
++                    Son12AyDuzelmisQazanc = c.Son12AyDuzelmisQazanc,
++                    GunlukMezPul = c.GunlukMezPul,
++                    GunlukMaas = c.GunlukMaas,
++                    GunlukRate = c.GunlukRate,
++                    CemiMebleg = c.CemiMebleg,
++                    HesablananIl = dto.HesablananIl,
++                    HesablananAy = dto.HesablananAy,
++                    Status = KompensasiyaStatus.Layihe,
++                    Qeyd = dto.Qeyd?.Trim(),
++                    HesablayanIsciId = hesablayanIsciId,
++                    YaradanIcraciId = hesablayanIsciId,
++                    YaradilmaTarixi = DateTime.Now
++                };
++
++                await _uow.Repository<MezuniyyetKompensasiyasi>().YaratAsync(entity);
++                await _uow.YaddaSaxlaAsync();
++
++                return Result<int>.Ok(entity.Id, "Kompensasiya hesablandı və yadda saxlandı.");
++            }
++            catch (Exception ex)
++            {
++                return Result<int>.Fail($"Yadda saxlama zamanı xəta: {ex.Message}");
++            }
++        }
++
++        // ─── SIYAHI ─────────────────────────────────────────────
++        public async Task<Result<IList<KompensasiyaListDto>>> HamisiniGetirAsync()
++        {
++            try
++            {
++                var list = await _uow.Repository<MezuniyyetKompensasiyasi>()
++                    .Query()
++                    .Where(x => !x.Silinib)
++                    .Include(x => x.Isci)
++                    .OrderByDescending(x => x.YaradilmaTarixi)
++                    .Select(x => new KompensasiyaListDto
++                    {
++                        Id = x.Id,
++                        IsciId = x.IsciId,
++                        IsciAdSoyad = x.Isci.Ad + " " + x.Isci.Soyad,
++                        AyrilmaTarixi = x.AyrilmaTarixi,
++                        HesablananIl = x.HesablananIl,
++                        HesablananAy = x.HesablananAy,
++                        CemiKompensasiyaGun = x.CemiKompensasiyaGun,
++                        CemiMebleg = x.CemiMebleg,
++                        Status = x.Status,
++                        YaradilmaTarixi = x.YaradilmaTarixi,
++                        MaasId = x.MaasId
++                    })
++                    .ToListAsync();
++                return Result<IList<KompensasiyaListDto>>.Ok(list);
++            }
++            catch (Exception ex)
++            {
++                return Result<IList<KompensasiyaListDto>>.Fail($"Siyahı yüklənmədi: {ex.Message}");
++            }
++        }
++
++        // ─── DETAL ──────────────────────────────────────────────
++        public async Task<Result<KompensasiyaDetalDto?>> IdIleGetirAsync(int id)
++        {
++            try
++            {
++                var e = await _uow.Repository<MezuniyyetKompensasiyasi>()
++                    .Query()
++                    .Where(x => x.Id == id && !x.Silinib)
++                    .Include(x => x.Isci).ThenInclude(i => i.IsciTeyinatlari.Where(t => t.Aktivdir))
++                        .ThenInclude(t => t.Departament)
++                    .Include(x => x.Isci).ThenInclude(i => i.IsciTeyinatlari.Where(t => t.Aktivdir))
++                        .ThenInclude(t => t.Vezife)
++                    .FirstOrDefaultAsync();
++                if (e == null)
++                    return Result<KompensasiyaDetalDto?>.Fail("Qeyd tapılmadı.");
++
++                // Detal preview-i təkrar hesablayırıq ki, breakdown göstərə bilək
++                var calc = await HesablaAsync(e.IsciId, e.AyrilmaTarixi);
++                var dto = new KompensasiyaDetalDto
++                {
++                    Id = e.Id,
++                    Status = e.Status,
++                    Qeyd = e.Qeyd,
++                    MaasId = e.MaasId,
++                    YaradilmaTarixi = e.YaradilmaTarixi,
++                    IsciId = e.IsciId,
++                    IsciAdSoyad = calc.Data?.IsciAdSoyad ?? e.Isci.Ad + " " + e.Isci.Soyad,
++                    DepartamentAd = calc.Data?.DepartamentAd,
++                    VezifeAd = calc.Data?.VezifeAd,
++                    IseQebulTarixi = e.Isci.IsheQebulTarixi,
++                    AyrilmaTarixi = e.AyrilmaTarixi,
++                    SonuncuMezuniyyetBitmeTarixi = e.SonuncuMezuniyyetBitmeTarixi,
++                    SonuncuMezuniyyetId = e.SonuncuMezuniyyetId,
++                    KecenGunSayi = e.KecenGunSayi,
++                    KecmisQaligGun = e.KecmisQaligGun,
++                    CariIlProrateGun = e.CariIlProrateGun,
++                    CemiKompensasiyaGun = e.CemiKompensasiyaGun,
++                    Son12AyDuzelmisQazanc = e.Son12AyDuzelmisQazanc,
++                    GunlukMezPul = e.GunlukMezPul,
++                    GunlukMaas = e.GunlukMaas,
++                    GunlukRate = e.GunlukRate,
++                    CemiMebleg = e.CemiMebleg,
++                    HesablananIl = e.HesablananIl,
++                    HesablananAy = e.HesablananAy,
++                    Izahatlar = calc.Data?.Izahatlar ?? new List<string>(),
++                    Xeberdarliqlar = calc.Data?.Xeberdarliqlar ?? new List<string>(),
++                    KecmisIller = calc.Data?.KecmisIller ?? new List<KompensasiyaIlDto>()
++                };
++                return Result<KompensasiyaDetalDto?>.Ok(dto);
++            }
++            catch (Exception ex)
++            {
++                return Result<KompensasiyaDetalDto?>.Fail($"Detal yüklənmədi: {ex.Message}");
++            }
++        }
++
++        // ─── LEGV ───────────────────────────────────────────────
++        public async Task<Result> LegvEtAsync(int id)
++        {
++            try
++            {
++                var e = await _uow.Repository<MezuniyyetKompensasiyasi>()
++                    .Query().FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
++                if (e == null) return Result.Fail("Qeyd tapılmadı.");
++                if (e.Status == KompensasiyaStatus.MaasaDaxilEdildi)
++                    return Result.Fail(
++                        "Bu kompensasiya artıq maaşa daxil edilib — ləğv etmək olmaz.");
++
++                e.Status = KompensasiyaStatus.LegvEdildi;
++                e.YenilenmeTarixi = DateTime.Now;
++                await _uow.Repository<MezuniyyetKompensasiyasi>().YenileAsync(e);
++                await _uow.YaddaSaxlaAsync();
++                return Result.Ok("Kompensasiya ləğv edildi.");
++            }
++            catch (Exception ex)
++            {
++                return Result.Fail($"Ləğv zamanı xəta: {ex.Message}");
++            }
++        }
++
++        // ─── MAAŞ ENGINE ÜÇÜN ─────────────────────────────────────
++        public async Task<MezuniyyetKompensasiyasi?> GetAktivKompensasiyaAsync(int isciId, int il, int ay)
++        {
++            return await _uow.Repository<MezuniyyetKompensasiyasi>()
++                .Query()
++                .FirstOrDefaultAsync(x => x.IsciId == isciId
++                                       && x.HesablananIl == il
++                                       && x.HesablananAy == ay
++                                       && !x.Silinib
++                                       && (x.Status == KompensasiyaStatus.Layihe
++                                        || x.Status == KompensasiyaStatus.Tesdiqlenib));
++        }
++
++        public async Task IsareLamasiniYadda(int kompensasiyaId, int maasId)
++        {
++            var e = await _uow.Repository<MezuniyyetKompensasiyasi>()
++                .Query().FirstOrDefaultAsync(x => x.Id == kompensasiyaId);
++            if (e == null) return;
++            e.Status = KompensasiyaStatus.MaasaDaxilEdildi;
++            e.MaasId = maasId;
++            e.YenilenmeTarixi = DateTime.Now;
++            await _uow.Repository<MezuniyyetKompensasiyasi>().YenileAsync(e);
++            await _uow.YaddaSaxlaAsync();
++        }
++    }
++}
+diff --git a/FinNex.Domain/Entities/HR/MezuniyyetKompensasiyasi.cs b/FinNex.Domain/Entities/HR/MezuniyyetKompensasiyasi.cs
+new file mode 100644
+index 00000000..3b66e822
+--- /dev/null
++++ b/FinNex.Domain/Entities/HR/MezuniyyetKompensasiyasi.cs
+@@ -0,0 +1,63 @@
++namespace FinNex.Domain.Entities.HR
++{
++    /// <summary>
++    /// İstifadə edilməmiş əmək məzuniyyəti günlərinə görə kompensasiya.
++    /// İşçi ay ərzində işdən çıxdıqda HR bu səhifədə hesablama aparır,
++    /// nəticə yadda saxlanılır və həmin ayın maaş hesablamasında gəlir
++    /// kimi avtomatik daxil olur.
++    ///
++    /// Hesablama məntiqi:
++    ///   • Keçmiş illər: MezuniyyetBalans-da bütün il < ayrılma ili
++    ///     üçün qalıq (ToplamGun − IstifadeOlunanGun) cəmi.
++    ///   • Cari il prorate: sonuncu məzuniyyətin BitmeTarixi-dən (yoxdursa
++    ///     IsheQebulTarixi) ayrılma tarixinə qədər keçən gün / 365
++    ///     × illik gün hüququ − cari ildə artıq istifadə edilən günlər.
++    ///   • Günlük rate: məzuniyyət haqqı düsturu (MAX(S/12/30.4, Maas/ayIsGun))
++    ///     ilə eyni — son 12 ay artım əmsallı qazanc cəmi əsasında.
++    /// </summary>
++    public class MezuniyyetKompensasiyasi : BaseEntity
++    {
++        public int IsciId { get; set; }
++        public Isci Isci { get; set; } = null!;
++
++        public DateTime AyrilmaTarixi { get; set; }
++
++        // Sonuncu məzuniyyət (prorate üçün) — yoxdursa null, prorate
++        // IsheQebulTarixi-dən hesablanır.
++        public DateTime? SonuncuMezuniyyetBitmeTarixi { get; set; }
++        public int? SonuncuMezuniyyetId { get; set; }
++
++        // Sonuncu məzuniyyət bitişindən ayrılma tarixinə qədər keçən gün
++        public int KecenGunSayi { get; set; }
++
++        // Gün hesablanması (ondalıklı — prorate üçün)
++        public decimal KecmisQaligGun { get; set; }
++        public decimal CariIlProrateGun { get; set; }
++        public decimal CemiKompensasiyaGun { get; set; }
++
++        // Günlük rate hesablaması — şəffaflıq üçün
++        public decimal Son12AyDuzelmisQazanc { get; set; }   // S
++        public decimal GunlukMezPul { get; set; }            // S / 12 / 30.4
++        public decimal GunlukMaas { get; set; }              // CariMaas / 22 (təxminən)
++        public decimal GunlukRate { get; set; }              // MAX-ın seçdiyi
++
++        public decimal CemiMebleg { get; set; }
++
++        // Maaşa daxil etmək üçün hədəf dövr
++        public int HesablananIl { get; set; }
++        public int HesablananAy { get; set; }
++        public int? MaasId { get; set; }                     // hansı Maas qeydinə yapışdırılıb
++
++        public KompensasiyaStatus Status { get; set; } = KompensasiyaStatus.Layihe;
++        public string? Qeyd { get; set; }
++        public int HesablayanIsciId { get; set; }
++    }
++
++    public enum KompensasiyaStatus
++    {
++        Layihe = 1,
++        Tesdiqlenib = 2,
++        MaasaDaxilEdildi = 3,
++        LegvEdildi = 99
++    }
++}
+diff --git a/FinNex.UI/Areas/HR/Controllers/KompensasiyaController.cs b/FinNex.UI/Areas/HR/Controllers/KompensasiyaController.cs
+new file mode 100644
+index 00000000..51a43d1b
+--- /dev/null
++++ b/FinNex.UI/Areas/HR/Controllers/KompensasiyaController.cs
+@@ -0,0 +1,151 @@
++using FinNex.Application.DTOs.HR.Kompensasiya;
++using FinNex.Application.Interfaces;
++using FinNex.Application.Interfaces.HR;
++using FinNex.Domain;
++using FinNex.UI.Areas.HR.ViewModels.Kompensasiya;
++using Microsoft.AspNetCore.Authorization;
++using Microsoft.AspNetCore.Identity;
++using Microsoft.AspNetCore.Mvc;
++using Microsoft.AspNetCore.Mvc.Rendering;
++
++namespace FinNex.UI.Areas.HR.Controllers
++{
++    /// <summary>
++    /// İstifadə edilməmiş əmək məzuniyyəti günlərinə görə kompensasiya
++    /// hesablama səhifəsi. HR işçi və ayrılma tarixini seçir,
++    /// sistem keçmiş qalıqları + cari il prorate-i hesablayır,
++    /// nəticə yadda saxlandıqda hədəf ayın maaş hesablamasında avtomatik
++    /// gəlir kimi daxil olur.
++    /// </summary>
++    [Area("HR")]
++    [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin + "," + RoleNames.Muhasib)]
++    public class KompensasiyaController : Controller
++    {
++        private readonly IKompensasiyaService _service;
++        private readonly IIsciService _isciService;
++        private readonly UserManager<AppUser> _userManager;
++
++        public KompensasiyaController(
++            IKompensasiyaService service,
++            IIsciService isciService,
++            UserManager<AppUser> userManager)
++        {
++            _service = service;
++            _isciService = isciService;
++            _userManager = userManager;
++        }
++
++        // ── GET /HR/Kompensasiya ───────────────────────────────
++        public async Task<IActionResult> Index()
++        {
++            var r = await _service.HamisiniGetirAsync();
++            ViewData["Title"] = "Məzuniyyət Kompensasiyası";
++            return View(r.Success ? r.Data : new List<KompensasiyaListDto>());
++        }
++
++        // ── GET /HR/Kompensasiya/Yarat ─────────────────────────
++        public async Task<IActionResult> Yarat()
++        {
++            var vm = new KompensasiyaYaratVM();
++            await IsciDropdownDoldur(vm);
++            return View(vm);
++        }
++
++        // ── POST /HR/Kompensasiya/Yarat ────────────────────────
++        [HttpPost]
++        [ValidateAntiForgeryToken]
++        public async Task<IActionResult> Yarat(KompensasiyaYaratVM vm)
++        {
++            if (!ModelState.IsValid)
++            {
++                await IsciDropdownDoldur(vm);
++                return View(vm);
++            }
++
++            var hesablayan = await _userManager.GetUserAsync(User);
++            var hesablayanIsciId = hesablayan?.IsciId ?? 0;
++
++            var dto = new KompensasiyaYaratDto
++            {
++                IsciId = vm.IsciId,
++                AyrilmaTarixi = vm.AyrilmaTarixi,
++                HesablananIl = vm.HesablananIl,
++                HesablananAy = vm.HesablananAy,
++                Qeyd = vm.Qeyd
++            };
++            var r = await _service.YaratAsync(dto, hesablayanIsciId);
++            if (!r.Success)
++            {
++                ModelState.AddModelError("", r.Message ?? "Yadda saxlama uğursuz.");
++                await IsciDropdownDoldur(vm);
++                return View(vm);
++            }
++
++            TempData["Success"] = r.Message;
++            return RedirectToAction(nameof(Detal), new { id = r.Data });
++        }
++
++        // ── POST /HR/Kompensasiya/Hesabla (AJAX preview) ──────
++        [HttpPost]
++        [ValidateAntiForgeryToken]
++        public async Task<IActionResult> Hesabla([FromBody] HesablaSorgu req)
++        {
++            if (req == null || req.IsciId <= 0 || req.AyrilmaTarixi == default)
++                return Json(new { error = "İşçi və ayrılma tarixi mütləqdir." });
++
++            var r = await _service.HesablaAsync(req.IsciId, req.AyrilmaTarixi);
++            if (!r.Success)
++                return Json(new { error = r.Message });
++
++            return Json(new { data = r.Data });
++        }
++
++        // ── GET /HR/Kompensasiya/Detal/{id} ──────────────────
++        public async Task<IActionResult> Detal(int id)
++        {
++            var r = await _service.IdIleGetirAsync(id);
++            if (!r.Success || r.Data == null)
++            {
++                TempData["Error"] = r.Message ?? "Qeyd tapılmadı.";
++                return RedirectToAction(nameof(Index));
++            }
++            return View(r.Data);
++        }
++
++        // ── POST /HR/Kompensasiya/LegvEt/{id} ─────────────────
++        [HttpPost]
++        [ValidateAntiForgeryToken]
++        public async Task<IActionResult> LegvEt(int id)
++        {
++            var r = await _service.LegvEtAsync(id);
++            TempData[r.Success ? "Success" : "Error"] = r.Message;
++            return RedirectToAction(nameof(Index));
++        }
++
++        // ──────────────────────────────────────────────────────
++        private async Task IsciDropdownDoldur(KompensasiyaYaratVM vm)
++        {
++            var iscilerR = await _isciService.HamisiniGetirAsync();
++            var isciler = iscilerR.Success && iscilerR.Data != null
++                ? iscilerR.Data : new List<FinNex.Application.DTOs.HR.Isci.IsciListDto>();
++
++            vm.Isciler = isciler
++                .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)
++                .Select(x => new SelectListItem
++                {
++                    Value = x.Id.ToString(),
++                    Text = $"{x.Ad} {x.Soyad}"
++                          + (x.IsdenAyrilmaTarixi.HasValue
++                              ? $" — işdən çıxıb {x.IsdenAyrilmaTarixi:dd.MM.yyyy}"
++                              : "")
++                })
++                .ToList();
++        }
++
++        public class HesablaSorgu
++        {
++            public int IsciId { get; set; }
++            public DateTime AyrilmaTarixi { get; set; }
++        }
++    }
++}
+diff --git a/FinNex.UI/Areas/HR/ViewModels/Kompensasiya/KompensasiyaYaratVM.cs b/FinNex.UI/Areas/HR/ViewModels/Kompensasiya/KompensasiyaYaratVM.cs
+new file mode 100644
+index 00000000..e54311c5
+--- /dev/null
++++ b/FinNex.UI/Areas/HR/ViewModels/Kompensasiya/KompensasiyaYaratVM.cs
+@@ -0,0 +1,32 @@
++using System.ComponentModel.DataAnnotations;
++using Microsoft.AspNetCore.Mvc.Rendering;
++
++namespace FinNex.UI.Areas.HR.ViewModels.Kompensasiya
++{
++    public class KompensasiyaYaratVM
++    {
++        [Required(ErrorMessage = "İşçi seçin")]
++        [Display(Name = "İşçi")]
++        public int IsciId { get; set; }
++
++        [Required(ErrorMessage = "Ayrılma tarixi mütləqdir")]
++        [Display(Name = "Ayrılma tarixi")]
++        [DataType(DataType.Date)]
++        public DateTime AyrilmaTarixi { get; set; } = DateTime.Today;
++
++        [Required]
++        [Display(Name = "Hesablanan il")]
++        public int HesablananIl { get; set; } = DateTime.Now.Year;
++
++        [Required]
++        [Range(1, 12)]
++        [Display(Name = "Hesablanan ay")]
++        public int HesablananAy { get; set; } = DateTime.Now.Month;
++
++        [Display(Name = "Qeyd")]
++        [StringLength(500)]
++        public string? Qeyd { get; set; }
++
++        public List<SelectListItem> Isciler { get; set; } = new();
++    }
++}
+diff --git a/FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml b/FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml
+new file mode 100644
+index 00000000..02d89842
+--- /dev/null
++++ b/FinNex.UI/Areas/HR/Views/Kompensasiya/Detal.cshtml
+@@ -0,0 +1,196 @@
++@model FinNex.Application.DTOs.HR.Kompensasiya.KompensasiyaDetalDto
++@using FinNex.Domain.Entities.HR
++@{
++    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
++    ViewData["Title"] = "Kompensasiya Detal";
++    var ayAdlari = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
++        "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
++
++    string StatusText(KompensasiyaStatus s) => s switch
++    {
++        KompensasiyaStatus.Layihe => "Layihə",
++        KompensasiyaStatus.Tesdiqlenib => "Təsdiqlənib",
++        KompensasiyaStatus.MaasaDaxilEdildi => "Maaşa daxil edilib",
++        KompensasiyaStatus.LegvEdildi => "Ləğv edilib",
++        _ => "-"
++    };
++    string StatusClass(KompensasiyaStatus s) => s switch
++    {
++        KompensasiyaStatus.MaasaDaxilEdildi => "fn-badge--done",
++        KompensasiyaStatus.Tesdiqlenib => "fn-badge--review",
++        KompensasiyaStatus.Layihe => "fn-badge--wait",
++        KompensasiyaStatus.LegvEdildi => "fn-badge--rejected",
++        _ => ""
++    };
++}
++
++<div class="fn-page">
++    <div class="fn-page-head">
++        <div>
++            <a asp-action="Index" style="font-size:13px;color:#64748b;text-decoration:none">‹ Siyahıya qayıt</a>
++            <div class="fn-page-title" style="margin-top:4px;display:flex;align-items:center;gap:10px">
++                @Model.IsciAdSoyad
++                <span class="fn-badge @StatusClass(Model.Status)">@StatusText(Model.Status)</span>
++            </div>
++            <div class="fn-page-sub">
++                @(Model.DepartamentAd ?? "—") · @(Model.VezifeAd ?? "—") ·
++                Hesablanan ay: @ayAdlari[Model.HesablananAy] @Model.HesablananIl
++            </div>
++        </div>
++        <div>
++            @if (Model.Status != KompensasiyaStatus.MaasaDaxilEdildi && Model.Status != KompensasiyaStatus.LegvEdildi)
++            {
++                <form asp-action="LegvEt" method="post" style="display:inline"
++                      onsubmit="return confirm('Ləğv etmək istəyirsiniz?')">
++                    @Html.AntiForgeryToken()
++                    <input type="hidden" name="id" value="@Model.Id" />
++                    <button type="submit" class="fn-btn fn-btn--danger-sm">Ləğv et</button>
++                </form>
++            }
++        </div>
++    </div>
++
++    @if (TempData["Success"] != null)
++    {
++        <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
++    }
++
++    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:flex-start">
++
++        <div>
++            @* ── YEKUN MƏBLƏĞ ─────────────── *@
++            <div class="fn-card" style="padding:20px;margin-bottom:14px;background:linear-gradient(to bottom right,#ecfdf5,#fff);border:2px solid #16a34a">
++                <div style="font-size:12px;color:#15803d;font-weight:600;text-transform:uppercase;margin-bottom:4px">Yekun Kompensasiya Məbləği</div>
++                <div style="font-size:32px;font-weight:800;color:#15803d">@Model.CemiMebleg.ToString("N2") ₼</div>
++                <div style="font-size:13px;color:#475569;margin-top:6px">
++                    @Model.CemiKompensasiyaGun.ToString("N2") gün × @Model.GunlukRate.ToString("N4") ₼/gün
++                </div>
++            </div>
++
++            @* ── Gün Hesablanması ─────────── *@
++            <div class="fn-card" style="padding:18px;margin-bottom:14px">
++                <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:12px">Gün Hesablanması</div>
++
++                @if (Model.KecmisIller.Any())
++                {
++                    <div style="font-size:11px;color:#64748b;text-transform:uppercase;margin-bottom:6px">Keçmiş illər qalığı</div>
++                    <table style="width:100%;font-size:13px;border-collapse:collapse">
++                        <thead>
++                            <tr style="border-bottom:1px solid #e2e8f0;color:#64748b;font-size:11px">
++                                <th style="text-align:left;padding:4px 8px">İl</th>
++                                <th style="text-align:right;padding:4px 8px">Toplam</th>
++                                <th style="text-align:right;padding:4px 8px">İstifadə</th>
++                                <th style="text-align:right;padding:4px 8px">Qalıq</th>
++                            </tr>
++                        </thead>
++                        <tbody>
++                            @foreach (var il in Model.KecmisIller)
++                            {
++                                <tr style="border-bottom:1px solid #f1f5f9">
++                                    <td style="padding:5px 8px">@il.Il</td>
++                                    <td style="text-align:right;padding:5px 8px;font-family:monospace">@il.ToplamGun.ToString("N0")</td>
++                                    <td style="text-align:right;padding:5px 8px;font-family:monospace">@il.IstifadeOlunanGun.ToString("N0")</td>
++                                    <td style="text-align:right;padding:5px 8px;font-family:monospace;color:@(il.QaligGun > 0 ? "#16a34a" : "#94a3b8");font-weight:600">@il.QaligGun.ToString("N2")</td>
++                                </tr>
++                            }
++                            <tr style="border-top:2px solid #0f172a;font-weight:700">
++                                <td style="padding:6px 8px" colspan="3">Keçmiş cəm</td>
++                                <td style="text-align:right;padding:6px 8px;color:#16a34a;font-family:monospace">@Model.KecmisQaligGun.ToString("N2") gün</td>
++                            </tr>
++                        </tbody>
++                    </table>
++                }
++
++                <div style="font-size:11px;color:#64748b;text-transform:uppercase;margin:14px 0 6px">Cari il prorate (@Model.CariIl)</div>
++                <div style="font-size:13px;color:#475569;margin-bottom:6px">
++                    @if (Model.SonuncuMezuniyyetBitmeTarixi.HasValue)
++                    {
++                        <text>Sonuncu məzuniyyət bitiş: <b>@Model.SonuncuMezuniyyetBitmeTarixi.Value.ToString("dd.MM.yyyy")</b></text>
++                    }
++                    else
++                    {
++                        <text style="color:#b45309">⚠ Sonuncu məzuniyyət qeydi yoxdur — işə qəbul tarixindən hesablanır</text>
++                    }
++                </div>
++                <div style="font-size:13px;color:#475569;margin-bottom:6px">
++                    Keçən gün: <b>@Model.KecenGunSayi</b> · İllik hüquq: <b>@Model.CariIlToplamGun.ToString("N0")</b> · İstifadə: <b>@Model.CariIlIstifadeOlunan.ToString("N0")</b>
++                </div>
++                <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid #e2e8f0;font-weight:700;font-size:14px">
++                    <span>Cari il prorate</span>
++                    <span style="color:#16a34a">@Model.CariIlProrateGun.ToString("N2") gün</span>
++                </div>
++
++                <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:2px solid #0f172a;margin-top:8px;font-weight:700;font-size:15px">
++                    <span>CƏMİ KOMPENSASİYA GÜNLƏRİ</span>
++                    <span>@Model.CemiKompensasiyaGun.ToString("N2") gün</span>
++                </div>
++            </div>
++
++            @* ── Gündəlik dərəcə ─────────── *@
++            <div class="fn-card" style="padding:18px">
++                <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:12px">Gündəlik Dərəcə</div>
++                <table style="width:100%;font-size:13px;border-collapse:collapse">
++                    <tr style="border-bottom:1px solid #f1f5f9">
++                        <td style="padding:5px 0;color:#64748b">Son 12 ay düzəlmiş cəm (S)</td>
++                        <td style="padding:5px 0;text-align:right;font-family:monospace">@Model.Son12AyDuzelmisQazanc.ToString("N2") ₼</td>
++                    </tr>
++                    <tr style="border-bottom:1px solid #f1f5f9">
++                        <td style="padding:5px 0;color:#64748b">MH = S / 12 / 30.4</td>
++                        <td style="padding:5px 0;text-align:right;font-family:monospace;color:@(Model.Qalib == "MH" ? "#16a34a" : "#0f172a");font-weight:@(Model.Qalib == "MH" ? "700" : "400")">@Model.GunlukMezPul.ToString("N4") ₼/gün</td>
++                    </tr>
++                    <tr style="border-bottom:1px solid #f1f5f9">
++                        <td style="padding:5px 0;color:#64748b">ƏH = CariMaas / ayİşGün</td>
++                        <td style="padding:5px 0;text-align:right;font-family:monospace;color:@(Model.Qalib == "ƏH" ? "#16a34a" : "#0f172a");font-weight:@(Model.Qalib == "ƏH" ? "700" : "400")">@Model.GunlukMaas.ToString("N4") ₼/gün</td>
++                    </tr>
++                    <tr style="font-weight:700;border-top:1px solid #0f172a">
++                        <td style="padding:8px 0">MAX (@Model.Qalib qalib)</td>
++                        <td style="padding:8px 0;text-align:right;font-family:monospace">@Model.GunlukRate.ToString("N4") ₼/gün</td>
++                    </tr>
++                </table>
++            </div>
++        </div>
++
++        <div>
++            @* ── İzahat ──── *@
++            <div class="fn-card" style="padding:18px;margin-bottom:12px">
++                <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:10px">İzahat Addımları</div>
++                @foreach (var iz in Model.Izahatlar)
++                {
++                    <div style="font-size:12px;color:#475569;padding:4px 0;border-bottom:1px solid #f1f5f9">@iz</div>
++                }
++            </div>
++
++            @if (Model.Xeberdarliqlar.Any())
++            {
++                <div class="fn-card" style="padding:14px 18px;background:#fffbeb;border:1px solid #fcd34d;margin-bottom:12px">
++                    <div style="font-size:11px;font-weight:700;color:#b45309;margin-bottom:6px">⚠ XƏBƏRDARLIQLAR</div>
++                    @foreach (var x in Model.Xeberdarliqlar)
++                    {
++                        <div style="font-size:12px;color:#92400e;margin:3px 0">• @x</div>
++                    }
++                </div>
++            }
++
++            @if (!string.IsNullOrEmpty(Model.Qeyd))
++            {
++                <div class="fn-card" style="padding:14px 18px;margin-bottom:12px">
++                    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">QEYD</div>
++                    <div style="font-size:13px;color:#0f172a;white-space:pre-wrap">@Model.Qeyd</div>
++                </div>
++            }
++
++            <div class="fn-card" style="padding:14px 18px">
++                <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">QEYD İNFOSU</div>
++                <div style="font-size:12px;color:#475569;line-height:1.7">
++                    Yaradılıb: <b>@Model.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</b><br/>
++                    Ayrılma tarixi: <b>@Model.AyrilmaTarixi.ToString("dd.MM.yyyy")</b><br/>
++                    Hesablanan: <b>@ayAdlari[Model.HesablananAy] @Model.HesablananIl</b><br/>
++                    @if (Model.MaasId.HasValue)
++                    {
++                        <text>Maaş qeydi: <a asp-area="HR" asp-controller="Maas" asp-action="Detal" asp-route-id="@Model.MaasId">#@Model.MaasId</a></text>
++                    }
++                </div>
++            </div>
++        </div>
++    </div>
++</div>
+diff --git a/FinNex.UI/Areas/HR/Views/Kompensasiya/Index.cshtml b/FinNex.UI/Areas/HR/Views/Kompensasiya/Index.cshtml
+new file mode 100644
+index 00000000..8a6901aa
+--- /dev/null
++++ b/FinNex.UI/Areas/HR/Views/Kompensasiya/Index.cshtml
+@@ -0,0 +1,106 @@
++@model IList<FinNex.Application.DTOs.HR.Kompensasiya.KompensasiyaListDto>
++@using FinNex.Domain.Entities.HR
++@{
++    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
++    ViewData["Title"] = "Məzuniyyət Kompensasiyası";
++
++    string StatusText(KompensasiyaStatus s) => s switch
++    {
++        KompensasiyaStatus.Layihe => "Layihə",
++        KompensasiyaStatus.Tesdiqlenib => "Təsdiqlənib",
++        KompensasiyaStatus.MaasaDaxilEdildi => "Maaşa daxil edilib",
++        KompensasiyaStatus.LegvEdildi => "Ləğv edilib",
++        _ => "-"
++    };
++    string StatusClass(KompensasiyaStatus s) => s switch
++    {
++        KompensasiyaStatus.MaasaDaxilEdildi => "fn-badge--done",
++        KompensasiyaStatus.Tesdiqlenib => "fn-badge--review",
++        KompensasiyaStatus.Layihe => "fn-badge--wait",
++        KompensasiyaStatus.LegvEdildi => "fn-badge--rejected",
++        _ => ""
++    };
++
++    var ayAdlari = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
++        "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
++}
++
++<div class="fn-page">
++    <div class="fn-page-head">
++        <div>
++            <div class="fn-page-title">Məzuniyyət Kompensasiyası</div>
++            <div class="fn-page-sub">İstifadə edilməmiş əmək məzuniyyəti günlərinə görə kompensasiya hesablamaları</div>
++        </div>
++        <a asp-action="Yarat" class="fn-btn fn-btn--primary">
++            <i class="bi bi-plus-lg"></i> Yeni Kompensasiya
++        </a>
++    </div>
++
++    @if (TempData["Success"] != null)
++    {
++        <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
++    }
++    @if (TempData["Error"] != null)
++    {
++        <div style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Error"]</div>
++    }
++
++    @if (!Model.Any())
++    {
++        <div class="fn-empty-state">
++            <div class="fn-empty-icon">
++                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
++                    <rect x="6" y="9" width="28" height="22" rx="2" stroke="#dde1ea" stroke-width="2"/>
++                    <path d="M6 15h28M14 6v6M26 6v6" stroke="#dde1ea" stroke-width="2" stroke-linecap="round"/>
++                </svg>
++            </div>
++            <div class="fn-empty-title">Hələ kompensasiya hesablanmayıb</div>
++            <div class="fn-empty-sub">Yeni hesablama üçün yuxarıdakı düyməni basın</div>
++        </div>
++    }
++    else
++    {
++        <div class="fn-card" style="padding:0">
++            <table style="width:100%;border-collapse:collapse;font-size:13px">
++                <thead style="background:#f8fafc">
++                    <tr>
++                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">İşçi</th>
++                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Ayrılma tarixi</th>
++                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Hesablanan ay</th>
++                        <th style="text-align:right;padding:10px 14px;font-weight:600;color:#475569">Gün</th>
++                        <th style="text-align:right;padding:10px 14px;font-weight:600;color:#475569">Məbləğ</th>
++                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Status</th>
++                        <th style="text-align:right;padding:10px 14px;font-weight:600;color:#475569">Yaradılıb</th>
++                        <th style="width:1%"></th>
++                    </tr>
++                </thead>
++                <tbody>
++                    @foreach (var k in Model)
++                    {
++                        <tr style="border-top:1px solid #f1f5f9">
++                            <td style="padding:10px 14px;color:#0f172a;font-weight:500">@k.IsciAdSoyad</td>
++                            <td style="padding:10px 14px;color:#475569;white-space:nowrap">@k.AyrilmaTarixi.ToString("dd.MM.yyyy")</td>
++                            <td style="padding:10px 14px;color:#475569">@ayAdlari[k.HesablananAy] @k.HesablananIl</td>
++                            <td style="padding:10px 14px;text-align:right;font-family:monospace;color:#0f172a">@k.CemiKompensasiyaGun.ToString("N2")</td>
++                            <td style="padding:10px 14px;text-align:right;font-family:monospace;font-weight:600;color:#0f172a">@k.CemiMebleg.ToString("N2") ₼</td>
++                            <td style="padding:10px 14px"><span class="fn-badge @StatusClass(k.Status)">@StatusText(k.Status)</span></td>
++                            <td style="padding:10px 14px;text-align:right;color:#94a3b8;white-space:nowrap;font-size:12px">@k.YaradilmaTarixi.ToString("dd.MM HH:mm")</td>
++                            <td style="padding:10px 14px;white-space:nowrap">
++                                <a asp-action="Detal" asp-route-id="@k.Id" class="fn-btn fn-btn--outline fn-btn--sm" style="padding:4px 10px">Detal</a>
++                                @if (k.Status != KompensasiyaStatus.MaasaDaxilEdildi && k.Status != KompensasiyaStatus.LegvEdildi)
++                                {
++                                    <form asp-action="LegvEt" method="post" style="display:inline-block;margin-left:4px"
++                                          onsubmit="return confirm('Bu kompensasiyanı ləğv etmək istəyirsiniz?')">
++                                        @Html.AntiForgeryToken()
++                                        <input type="hidden" name="id" value="@k.Id" />
++                                        <button type="submit" class="fn-btn fn-btn--danger-sm">Ləğv</button>
++                                    </form>
++                                }
++                            </td>
++                        </tr>
++                    }
++                </tbody>
++            </table>
++        </div>
++    }
++</div>
+diff --git a/FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml b/FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml
+new file mode 100644
+index 00000000..3183b65a
+--- /dev/null
++++ b/FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml
+@@ -0,0 +1,225 @@
++@model FinNex.UI.Areas.HR.ViewModels.Kompensasiya.KompensasiyaYaratVM
++@{
++    Layout = "~/Areas/HR/Views/Shared/_HRLayout.cshtml";
++    ViewData["Title"] = "Yeni Kompensasiya";
++    var ayAdlari = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
++        "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
++}
++
++<div class="fn-page">
++    <div class="fn-page-head">
++        <div>
++            <a asp-action="Index" style="font-size:13px;color:#64748b;text-decoration:none">‹ Geri</a>
++            <div class="fn-page-title" style="margin-top:4px">Yeni Kompensasiya</div>
++            <div class="fn-page-sub">İşçini və ayrılma tarixini seçin — sistem avtomatik hesablayacaq</div>
++        </div>
++    </div>
++
++    <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:16px;align-items:flex-start">
++
++        @* ── SOL: form ───────────────────── *@
++        <form asp-action="Yarat" method="post" id="frm">
++            @Html.AntiForgeryToken()
++
++            <div class="fn-card" style="padding:18px">
++                <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:14px">Giriş məlumatları</div>
++
++                <div asp-validation-summary="ModelOnly" class="fn-alert fn-alert--error"></div>
++
++                <div class="fn-form-group">
++                    <label class="fn-label">İşçi *</label>
++                    <select asp-for="IsciId" asp-items="Model.Isciler" class="fn-input" id="isciSec">
++                        <option value="">— seçin —</option>
++                    </select>
++                    <span asp-validation-for="IsciId" class="fn-error"></span>
++                </div>
++
++                <div class="fn-form-group" style="margin-top:12px">
++                    <label class="fn-label">Ayrılma tarixi *</label>
++                    <input asp-for="AyrilmaTarixi" type="date" class="fn-input" id="ayrilmaTar" />
++                    <span asp-validation-for="AyrilmaTarixi" class="fn-error"></span>
++                </div>
++
++                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
++                    <div class="fn-form-group">
++                        <label class="fn-label">Hesablanan il *</label>
++                        <input asp-for="HesablananIl" type="number" min="2020" max="2099" class="fn-input" />
++                    </div>
++                    <div class="fn-form-group">
++                        <label class="fn-label">Hesablanan ay *</label>
++                        <select asp-for="HesablananAy" class="fn-input">
++                            @for (int i = 1; i <= 12; i++)
++                            {
++                                <option value="@i" selected="@(Model.HesablananAy == i)">@ayAdlari[i]</option>
++                            }
++                        </select>
++                    </div>
++                </div>
++
++                <div class="fn-form-group" style="margin-top:12px">
++                    <label class="fn-label">Qeyd (istəyə bağlı)</label>
++                    <textarea asp-for="Qeyd" rows="2" class="fn-input" maxlength="500"
++                              placeholder="Mühasibat üçün izah, əlavə şərhlər..."></textarea>
++                </div>
++
++                <div style="display:flex;justify-content:space-between;gap:8px;margin-top:16px">
++                    <button type="button" class="fn-btn fn-btn--outline" onclick="hesabla()">
++                        <i class="bi bi-calculator"></i> Hesabla (preview)
++                    </button>
++                    <button type="submit" class="fn-btn fn-btn--primary" id="saxlaBtn" disabled>
++                        <i class="bi bi-save"></i> Yadda saxla
++                    </button>
++                </div>
++            </div>
++        </form>
++
++        @* ── SAĞ: preview panel ───────────── *@
++        <div id="previewPanel">
++            <div class="fn-card" style="padding:24px;text-align:center;color:#94a3b8">
++                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style="opacity:.4;margin-bottom:8px">
++                    <rect x="6" y="9" width="28" height="22" rx="2" stroke="#94a3b8" stroke-width="1.5"/>
++                    <path d="M6 15h28" stroke="#94a3b8" stroke-width="1.5"/>
++                </svg>
++                <div style="font-size:13px">İşçini və ayrılma tarixini seçib "Hesabla" düyməsini basın.</div>
++            </div>
++        </div>
++    </div>
++</div>
++
++<script>
++    async function hesabla() {
++        var isciId = parseInt(document.getElementById('isciSec').value || 0);
++        var ayr = document.getElementById('ayrilmaTar').value;
++        if (!isciId) { alert('İşçi seçin.'); return; }
++        if (!ayr) { alert('Ayrılma tarixi daxil edin.'); return; }
++
++        var panel = document.getElementById('previewPanel');
++        panel.innerHTML = '<div class="fn-card" style="padding:30px;text-align:center;color:#64748b;font-size:13px">Hesablanır...</div>';
++
++        try {
++            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
++            var resp = await fetch('@Url.Action("Hesabla", "Kompensasiya", new { area = "HR" })', {
++                method: 'POST',
++                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
++                body: JSON.stringify({ isciId: isciId, ayrilmaTarixi: ayr })
++            });
++            var json = await resp.json();
++            if (json.error) {
++                panel.innerHTML = '<div class="fn-card" style="padding:20px;background:#fef2f2;color:#dc2626;font-size:13px">'
++                                 + json.error + '</div>';
++                document.getElementById('saxlaBtn').disabled = true;
++                return;
++            }
++            renderPreview(json.data);
++            document.getElementById('saxlaBtn').disabled = false;
++        } catch (e) {
++            panel.innerHTML = '<div class="fn-card" style="padding:20px;background:#fef2f2;color:#dc2626;font-size:13px">Şəbəkə xətası: ' + e.message + '</div>';
++        }
++    }
++
++    function fmt(n, d) { return Number(n || 0).toFixed(d == null ? 2 : d); }
++    function fmtMon(n) { return Number(n || 0).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
++    function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
++
++    function renderPreview(d) {
++        var panel = document.getElementById('previewPanel');
++        var html = '';
++
++        // Profil
++        html += '<div class="fn-card" style="padding:16px 18px;margin-bottom:12px">';
++        html += '<div style="font-size:13px;color:#64748b">İşçi</div>';
++        html += '<div style="font-size:18px;font-weight:700;color:#0f172a;margin-top:2px">' + esc(d.isciAdSoyad) + '</div>';
++        if (d.departamentAd || d.vezifeAd) {
++            html += '<div style="font-size:12px;color:#94a3b8;margin-top:2px">' + esc(d.departamentAd || '') + ' · ' + esc(d.vezifeAd || '') + '</div>';
++        }
++        html += '<div style="font-size:12px;color:#64748b;margin-top:8px">'
++              + 'İşə qəbul: <b>' + d.iseQebulTarixi.substr(0,10) + '</b> · '
++              + 'Ayrılma: <b>' + d.ayrilmaTarixi.substr(0,10) + '</b>'
++              + '</div>';
++        html += '</div>';
++
++        // Gün hesablanması
++        html += '<div class="fn-card" style="padding:16px 18px;margin-bottom:12px">';
++        html += '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px">Gün Hesablanması</div>';
++
++        // Keçmiş illər
++        if (d.kecmisIller && d.kecmisIller.length > 0) {
++            html += '<div style="font-size:11px;color:#64748b;text-transform:uppercase;margin-bottom:4px">Keçmiş illər qalığı</div>';
++            d.kecmisIller.forEach(function (il) {
++                html += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid #f1f5f9">';
++                html += '<span style="color:#475569">' + il.il + ': ' + fmt(il.toplamGun, 0) + ' toplam − ' + fmt(il.istifadeOlunanGun, 0) + ' istifadə</span>';
++                html += '<span style="font-weight:600;color:' + (il.qaligGun > 0 ? '#16a34a' : '#94a3b8') + '">' + fmt(il.qaligGun) + ' gün</span>';
++                html += '</div>';
++            });
++            html += '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;font-weight:700;border-top:2px solid #e2e8f0;margin-top:4px">';
++            html += '<span>Keçmiş cəm</span>';
++            html += '<span style="color:#16a34a">' + fmt(d.kecmisQaligGun) + ' gün</span>';
++            html += '</div>';
++        }
++
++        // Cari il prorate
++        html += '<div style="font-size:11px;color:#64748b;text-transform:uppercase;margin:12px 0 4px">Cari il prorate</div>';
++        if (d.sonuncuMezuniyyetBitmeTarixi) {
++            html += '<div style="font-size:12px;color:#475569">Sonuncu məz. bitiş: <b>' + d.sonuncuMezuniyyetBitmeTarixi.substr(0,10) + '</b></div>';
++        } else {
++            html += '<div style="font-size:12px;color:#b45309">⚠ Sonuncu məzuniyyət yoxdur — işə qəbul tarixindən hesablanır</div>';
++        }
++        html += '<div style="font-size:12px;color:#475569;margin-top:2px">Keçən gün: <b>' + d.kecenGunSayi + '</b> · İllik hüquq: <b>' + fmt(d.cariIlToplamGun, 0) + '</b> gün</div>';
++        html += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;font-weight:600;margin-top:4px">';
++        html += '<span style="color:#475569">(' + d.kecenGunSayi + '/365) × ' + fmt(d.cariIlToplamGun, 0) + ' − ' + fmt(d.cariIlIstifadeOlunan, 0) + '</span>';
++        html += '<span style="color:#16a34a">' + fmt(d.cariIlProrateGun) + ' gün</span>';
++        html += '</div>';
++
++        // YEKUN GÜN
++        html += '<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:15px;font-weight:700;border-top:2px solid #0f172a;margin-top:8px">';
++        html += '<span>CƏMİ KOMPENSASİYA GÜNLƏRİ</span>';
++        html += '<span style="color:#0f172a">' + fmt(d.cemiKompensasiyaGun) + ' gün</span>';
++        html += '</div>';
++
++        html += '</div>';
++
++        // Pul hesablanması
++        html += '<div class="fn-card" style="padding:16px 18px;margin-bottom:12px">';
++        html += '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px">Gündəlik Dərəcə (məzuniyyət düsturu ilə)</div>';
++        html += '<div style="display:grid;grid-template-columns:auto auto;gap:6px 14px;font-size:12.5px">';
++        html += '<span style="color:#64748b">Son 12 ay düzəlmiş cəm (S):</span><span style="text-align:right;font-family:monospace">' + fmtMon(d.son12AyDuzelmisQazanc) + ' ₼</span>';
++        html += '<span style="color:#64748b">MH (S/12/30.4):</span><span style="text-align:right;font-family:monospace' + (d.qalib === 'MH' ? ';color:#16a34a;font-weight:700' : '') + '">' + fmtMon(d.gunlukMezPul) + ' ₼/gün</span>';
++        html += '<span style="color:#64748b">ƏH (Maaş/ayİşGün):</span><span style="text-align:right;font-family:monospace' + (d.qalib === 'ƏH' ? ';color:#16a34a;font-weight:700' : '') + '">' + fmtMon(d.gunlukMaas) + ' ₼/gün</span>';
++        html += '<span style="color:#0f172a;font-weight:600">MAX (' + d.qalib + ' qalib):</span><span style="text-align:right;font-family:monospace;font-weight:700">' + fmtMon(d.gunlukRate) + ' ₼/gün</span>';
++        html += '</div>';
++        html += '</div>';
++
++        // YEKUN MƏBLƏĞ
++        html += '<div class="fn-card" style="padding:18px;background:linear-gradient(to bottom right,#ecfdf5,#fff);border:2px solid #16a34a">';
++        html += '<div style="font-size:12px;color:#15803d;font-weight:600;text-transform:uppercase;margin-bottom:4px">YEKUN KOMPENSASİYA MƏBLƏĞİ</div>';
++        html += '<div style="font-size:28px;font-weight:800;color:#15803d">' + fmtMon(d.cemiMebleg) + ' ₼</div>';
++        html += '<div style="font-size:12px;color:#475569;margin-top:4px">' + fmt(d.cemiKompensasiyaGun) + ' gün × ' + fmtMon(d.gunlukRate) + ' ₼/gün</div>';
++        html += '</div>';
++
++        // Xəbərdarlıqlar
++        if (d.xeberdarliqlar && d.xeberdarliqlar.length > 0) {
++            html += '<div class="fn-card" style="padding:12px 16px;margin-top:12px;background:#fffbeb;border:1px solid #fcd34d">';
++            html += '<div style="font-size:11px;font-weight:700;color:#b45309;margin-bottom:6px">⚠ XƏBƏRDARLIQLAR</div>';
++            d.xeberdarliqlar.forEach(function (x) {
++                html += '<div style="font-size:12px;color:#92400e;margin:2px 0">• ' + esc(x) + '</div>';
++            });
++            html += '</div>';
++        }
++
++        // İzahatlar (collapsible)
++        if (d.izahatlar && d.izahatlar.length > 0) {
++            html += '<details class="fn-card" style="margin-top:12px;padding:12px 16px"><summary style="cursor:pointer;font-size:12px;font-weight:600;color:#64748b">İzahat addımları (' + d.izahatlar.length + ')</summary>';
++            html += '<div style="margin-top:8px">';
++            d.izahatlar.forEach(function (i) {
++                html += '<div style="font-size:12px;color:#475569;padding:2px 0;border-bottom:1px solid #f1f5f9">' + esc(i) + '</div>';
++            });
++            html += '</div></details>';
++        }
++
++        panel.innerHTML = html;
++    }
++</script>
++
++@section Scripts {
++    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
++}
+diff --git a/FinNex.UI/Areas/HR/Views/Shared/_HRLayout.cshtml b/FinNex.UI/Areas/HR/Views/Shared/_HRLayout.cshtml
+index 278a2e25..0bd45373 100644
+--- a/FinNex.UI/Areas/HR/Views/Shared/_HRLayout.cshtml
++++ b/FinNex.UI/Areas/HR/Views/Shared/_HRLayout.cshtml
+@@ -14,6 +14,7 @@
+         currentController == "Isci" ||
+         currentController == "Davamiyyet" ||
+         currentController == "Mezuniyyet" ||
++        currentController == "Kompensasiya" ||
+         currentController == "Maas";
+ 
+ 
+@@ -133,6 +134,13 @@
+                             Ezamiyyət
+                         </a>
+ 
++                        <a class="hr-nav-sub-item @(currentController == "Kompensasiya" ? "active" : "")"
++                           asp-area="HR"
++                           asp-controller="Kompensasiya"
++                           asp-action="Index">
++                            Məzuniyyət Kompensasiyası
++                        </a>
++
+                         <a class="hr-nav-sub-item @(currentController == "Maas" ? "active" : "")"
+                            asp-area="HR"
+                            asp-controller="Maas"
+-- 
+2.43.0
+

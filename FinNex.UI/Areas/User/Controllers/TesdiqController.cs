@@ -221,7 +221,6 @@ namespace FinNex.UI.Areas.User.Controllers
                 IsciAdSoyad = dto.IsciAdSoyad,
                 SobeAdi = dto.SobeAdi,
                 VezifeAdi = "-",
-                EvezEdenIsciAdSoyad = dto.EvezEdenAdSoyad,
                 IsMezuniyyet = false,
                 IcazeTarixi = dto.IcazeTarixi,
                 BaslamaSaati = dto.BaslamaSaati,

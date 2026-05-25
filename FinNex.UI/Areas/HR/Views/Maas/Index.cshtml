@@ -550,6 +550,17 @@
                                 @* İşçi adı *@
                                 <td class="left col-sep">
                                     <div class="mi-emp-name">@m.IsciAdSoyad</div>
+                                    @if (hasIban)
+                                    {
+                                        <div title="@m.BankHesabNo"
+                                             style="font-family:monospace;font-size:10.5px;color:#64748b;letter-spacing:.3px;margin-top:2px">
+                                            @m.BankHesabNo
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div style="font-size:10.5px;color:#b45309;margin-top:2px">⚠ IBAN yoxdur</div>
+                                    }
                                 </td>
 
                                 @* Gəlirlər *@

@@ -1,0 +1,773 @@
+From 6a25ad3eb78fb6112994386d7cf291bcd63965d1 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 25 May 2026 04:11:15 +0000
+Subject: [PATCH] =?UTF-8?q?feat(hr/kompensasiya):=20dropdown=20filter=20+?=
+ =?UTF-8?q?=20qismi=20kompensasiya=20+=20maa=C5=9F=20engine=20inteqrasiyas?=
+ =?UTF-8?q?=C4=B1?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+3 əlavə:
+
+1. Dropdown filter — yalnız məzuniyyət qalığı olan işçilər
+   GetIscilerWithQaligAsync metodu: MezuniyyetBalans-da qalıq
+   cəmi > 0 olan işçiləri qaytarır. İşdən çıxanlar əvvəldə görünür.
+   Qalıq həm Text-də göstərilir (məs. 'Samir — qalıq: 56.0 gün').
+
+2. Manual gün override (qismi kompensasiya) — aktiv işçi qalan
+   məzuniyyət günlərinin BIR HISSƏSİNİ pulla almaq istəyirsə HR
+   manual gün sayını verir. Boş buraxılsa avtomatik (tam ayrılma
+   kompensasiyası). Form-da yeni input + service-də override.
+
+3. Maaş engine inteqrasiyası — saxlanılmış Layihe/Tesdiqlenib
+   statusundakı kompensasiya FerdiHesablaAsync-də avtomatik gəlir
+   kimi BRUT-a əlavə olunur:
+   * MaasHesablamaService konstruktoruna IKompensasiyaService inject
+   * 5a bloku: kompensasiyanı oxu, izahata əlavə et, esasBrut-a +
+   * 14b bloku: Maas saxlanandan sonra IsareLamasiniYadda çağırır
+     (status → MaasaDaxilEdildi, MaasId set olunur)
+   * TopluHesabla preview: ViewBag.IsciKompMap əlavə, view-da
+     yaşıl 'Məz. Kompensasiyası' kartı, JS-də GROSS düsturuna +
+
+Beləliklə, /HR/Kompensasiya/Yarat-da Yadda saxla basıldıqdan
+sonra növbəti Toplu Hesabla aparıldıqda kompensasiya avtomatik
+həmin işçinin maaşına gəlir kimi daxil olur, vergi tutulur,
+NET-də əks olunur.
+---
+ .../DTOs/HR/Kompensasiya/KompensasiyaDtos.cs  | 19 ++++++
+ .../Interfaces/HR/IKompensasiyaService.cs     |  6 ++
+ .../Services/HR/KompensasiyaService.cs        | 67 ++++++++++++++++++-
+ .../Services/Maas/MaasHesablamaService.cs     | 46 ++++++++++++-
+ .../HR/Controllers/KompensasiyaController.cs  | 16 +++--
+ .../Areas/HR/Controllers/MaasController.cs    | 23 ++++++-
+ .../Kompensasiya/KompensasiyaYaratVM.cs       |  8 +++
+ .../Areas/HR/Views/Kompensasiya/Yarat.cshtml  | 11 +++
+ .../Areas/HR/Views/Maas/TopluHesabla.cshtml   | 39 +++++++++++
+ FinNex.UI/wwwroot/js/maas-toplu.js            |  4 ++
+ 10 files changed, 227 insertions(+), 12 deletions(-)
+
+diff --git a/FinNex.Application/DTOs/HR/Kompensasiya/KompensasiyaDtos.cs b/FinNex.Application/DTOs/HR/Kompensasiya/KompensasiyaDtos.cs
+index 6bdea6e9..e6580bac 100644
+--- a/FinNex.Application/DTOs/HR/Kompensasiya/KompensasiyaDtos.cs
++++ b/FinNex.Application/DTOs/HR/Kompensasiya/KompensasiyaDtos.cs
+@@ -53,30 +53,49 @@ namespace FinNex.Application.DTOs.HR.Kompensasiya
+     }
+ 
+     public class KompensasiyaIlDto
+     {
+         public int Il { get; set; }
+         public decimal ToplamGun { get; set; }
+         public decimal IstifadeOlunanGun { get; set; }
+         public decimal QaligGun { get; set; }
+     }
+ 
++    /// <summary>
++    /// Dropdown üçün: məzuniyyət qalığı olan işçilər siyahısı.
++    /// </summary>
++    public class KompensasiyaIsciSecimDto
++    {
++        public int IsciId { get; set; }
++        public string TamAd { get; set; } = null!;
++        public int Sira { get; set; }
++        public DateTime? IsdenAyrilmaTarixi { get; set; }
++        public decimal CemiQaligGun { get; set; }
++        public string? SobeAdi { get; set; }
++    }
++
+     /// <summary>
+     /// Yadda saxlama input-u.
+     /// </summary>
+     public class KompensasiyaYaratDto
+     {
+         public int IsciId { get; set; }
+         public DateTime AyrilmaTarixi { get; set; }
+         public int HesablananIl { get; set; }
+         public int HesablananAy { get; set; }
+         public string? Qeyd { get; set; }
++
++        /// <summary>
++        /// Manual override — boş buraxılsa avtomatik (qalıq + prorate) hesablanır.
++        /// Doldurulsa yalnız bu gün sayı kompensasiya olunur (gündəlik rate eyni qalır).
++        /// </summary>
++        public decimal? ManualGunSayi { get; set; }
+     }
+ 
+     /// <summary>
+     /// Index siyahı sətri.
+     /// </summary>
+     public class KompensasiyaListDto
+     {
+         public int Id { get; set; }
+         public int IsciId { get; set; }
+         public string IsciAdSoyad { get; set; } = null!;
+diff --git a/FinNex.Application/Interfaces/HR/IKompensasiyaService.cs b/FinNex.Application/Interfaces/HR/IKompensasiyaService.cs
+index 78886732..d31b5e2c 100644
+--- a/FinNex.Application/Interfaces/HR/IKompensasiyaService.cs
++++ b/FinNex.Application/Interfaces/HR/IKompensasiyaService.cs
+@@ -21,20 +21,26 @@ namespace FinNex.Application.Interfaces.HR
+         /// <summary>
+         /// Hesablamanı yadda saxla (Layihe statusu ilə).
+         /// </summary>
+         Task<Result<int>> YaratAsync(KompensasiyaYaratDto dto, int hesablayanIsciId);
+ 
+         /// <summary>
+         /// Bütün kompensasiya qeydlərini gətir (tarixçə).
+         /// </summary>
+         Task<Result<IList<KompensasiyaListDto>>> HamisiniGetirAsync();
+ 
++        /// <summary>
++        /// Dropdown üçün — məzuniyyət qalığı olan bütün işçilər (Aktiv + işdən çıxan).
++        /// Qalıq cəmi 0 olan işçilər siyahıya daxil olmur.
++        /// </summary>
++        Task<IList<KompensasiyaIsciSecimDto>> GetIscilerWithQaligAsync();
++
+         /// <summary>
+         /// Tək qeyd detalı.
+         /// </summary>
+         Task<Result<KompensasiyaDetalDto?>> IdIleGetirAsync(int id);
+ 
+         /// <summary>
+         /// Ləğv et (status → LegvEdildi).
+         /// </summary>
+         Task<Result> LegvEtAsync(int id);
+ 
+diff --git a/FinNex.Application/Services/HR/KompensasiyaService.cs b/FinNex.Application/Services/HR/KompensasiyaService.cs
+index e9fbf6f9..ff773efb 100644
+--- a/FinNex.Application/Services/HR/KompensasiyaService.cs
++++ b/FinNex.Application/Services/HR/KompensasiyaService.cs
+@@ -303,55 +303,116 @@ namespace FinNex.Application.Services.HR
+                     return Result<int>.Fail(
+                         "Bu işçi üçün seçilmiş ay-da artıq aktiv kompensasiya qeydi var. " +
+                         "Əvvəlcə onu ləğv edin.");
+ 
+                 // Hesabla
+                 var calc = await HesablaAsync(dto.IsciId, dto.AyrilmaTarixi);
+                 if (!calc.Success || calc.Data == null)
+                     return Result<int>.Fail(calc.Message ?? "Hesablama uğursuz.");
+ 
+                 var c = calc.Data;
++
++                // Manual override — HR yalnız müəyyən günü kompensasiya etmək istəsə
++                // (məs. işçi aktiv qalır, sadəcə qalan günlərin bir hissəsini pulla alır).
++                decimal cemiGun = c.CemiKompensasiyaGun;
++                decimal cemiMebleg = c.CemiMebleg;
++                string? autoOverrideQeyd = null;
++                if (dto.ManualGunSayi.HasValue && dto.ManualGunSayi.Value > 0)
++                {
++                    cemiGun = dto.ManualGunSayi.Value;
++                    cemiMebleg = Math.Round(cemiGun * c.GunlukRate, 2);
++                    autoOverrideQeyd =
++                        $"Manual override: {cemiGun:N2} gün × {c.GunlukRate:N4} ₼/gün = {cemiMebleg:N2} ₼ " +
++                        $"(avtomatik hesablanan {c.CemiKompensasiyaGun:N2} gün override olundu).";
++                }
++
+                 var entity = new MezuniyyetKompensasiyasi
+                 {
+                     IsciId = dto.IsciId,
+                     AyrilmaTarixi = dto.AyrilmaTarixi.Date,
+                     SonuncuMezuniyyetBitmeTarixi = c.SonuncuMezuniyyetBitmeTarixi,
+                     SonuncuMezuniyyetId = c.SonuncuMezuniyyetId,
+                     KecenGunSayi = c.KecenGunSayi,
+                     KecmisQaligGun = c.KecmisQaligGun,
+                     CariIlProrateGun = c.CariIlProrateGun,
+-                    CemiKompensasiyaGun = c.CemiKompensasiyaGun,
++                    CemiKompensasiyaGun = cemiGun,
+                     Son12AyDuzelmisQazanc = c.Son12AyDuzelmisQazanc,
+                     GunlukMezPul = c.GunlukMezPul,
+                     GunlukMaas = c.GunlukMaas,
+                     GunlukRate = c.GunlukRate,
+-                    CemiMebleg = c.CemiMebleg,
++                    CemiMebleg = cemiMebleg,
+                     HesablananIl = dto.HesablananIl,
+                     HesablananAy = dto.HesablananAy,
+                     Status = KompensasiyaStatus.Layihe,
+-                    Qeyd = dto.Qeyd?.Trim(),
++                    Qeyd = string.IsNullOrWhiteSpace(autoOverrideQeyd)
++                        ? dto.Qeyd?.Trim()
++                        : (string.IsNullOrWhiteSpace(dto.Qeyd)
++                            ? autoOverrideQeyd
++                            : dto.Qeyd.Trim() + Environment.NewLine + autoOverrideQeyd),
+                     HesablayanIsciId = hesablayanIsciId,
+                     YaradanIcraciId = hesablayanIsciId,
+                     YaradilmaTarixi = DateTime.Now
+                 };
+ 
+                 await _uow.Repository<MezuniyyetKompensasiyasi>().YaratAsync(entity);
+                 await _uow.YaddaSaxlaAsync();
+ 
+                 return Result<int>.Ok(entity.Id, "Kompensasiya hesablandı və yadda saxlandı.");
+             }
+             catch (Exception ex)
+             {
+                 return Result<int>.Fail($"Yadda saxlama zamanı xəta: {ex.Message}");
+             }
+         }
+ 
++        // ─── DROPDOWN: QALIĞI OLAN İŞÇİLƏR ──────────────────────
++        public async Task<IList<KompensasiyaIsciSecimDto>> GetIscilerWithQaligAsync()
++        {
++            // İllik məzuniyyət balansından hər işçi üçün qalıq cəmini çıxar
++            var qaligler = await _uow.Repository<MezuniyyetBalans>()
++                .Query()
++                .Where(x => x.Nov == MezuniyyetNovu.Illik && !x.Silinib)
++                .GroupBy(x => x.IsciId)
++                .Select(g => new
++                {
++                    IsciId = g.Key,
++                    QaligGun = g.Sum(x => x.ToplamGun - x.IstifadeOlunanGun)
++                })
++                .Where(x => x.QaligGun > 0)
++                .ToListAsync();
++
++            if (!qaligler.Any()) return new List<KompensasiyaIsciSecimDto>();
++
++            var isciIds = qaligler.Select(x => x.IsciId).ToList();
++            var isciler = await _uow.Repository<Isci>()
++                .Query()
++                .Where(x => isciIds.Contains(x.Id) && !x.Silinib)
++                .Include(x => x.IsciTeyinatlari.Where(t => t.Aktivdir))
++                    .ThenInclude(t => t.Departament)
++                .ToListAsync();
++
++            var dict = qaligler.ToDictionary(x => x.IsciId, x => x.QaligGun);
++
++            return isciler.Select(i => new KompensasiyaIsciSecimDto
++                {
++                    IsciId = i.Id,
++                    TamAd = i.TamAd,
++                    Sira = i.Sira,
++                    IsdenAyrilmaTarixi = i.IsdenAyrilmaTarixi,
++                    CemiQaligGun = dict[i.Id],
++                    SobeAdi = i.IsciTeyinatlari.FirstOrDefault(t => t.Aktivdir)?.Departament?.Ad
++                })
++                .OrderBy(x => x.IsdenAyrilmaTarixi.HasValue ? 0 : 1)  // işdən çıxanlar əvvəl
++                .ThenBy(x => x.Sira).ThenBy(x => x.TamAd)
++                .ToList();
++        }
++
+         // ─── SIYAHI ─────────────────────────────────────────────
+         public async Task<Result<IList<KompensasiyaListDto>>> HamisiniGetirAsync()
+         {
+             try
+             {
+                 var list = await _uow.Repository<MezuniyyetKompensasiyasi>()
+                     .Query()
+                     .Where(x => !x.Silinib)
+                     .Include(x => x.Isci)
+                     .OrderByDescending(x => x.YaradilmaTarixi)
+diff --git a/FinNex.Application/Services/Maas/MaasHesablamaService.cs b/FinNex.Application/Services/Maas/MaasHesablamaService.cs
+index 6965d0de..ab331ccf 100644
+--- a/FinNex.Application/Services/Maas/MaasHesablamaService.cs
++++ b/FinNex.Application/Services/Maas/MaasHesablamaService.cs
+@@ -31,29 +31,32 @@ namespace FinNex.Application.Services.HR
+     ///   Son 12 ayin yalniz islenmis (BrutMebleg > 0) aylari goturulur.
+     ///   avgDaily = totalBrut / islenmis_ay_sayi / 30
+     ///   minDaily = cariMaas / 30
+     ///   Netice   = Max(avgDaily, minDaily) x gunSayi
+     /// </summary>
+     public class MaasHesablamaService : IMaasHesablamaService
+     {
+         private readonly IUnitOfWork _unitOfWork;
+         private readonly IIsciAyliqQazancService _ayliqQazancService;
+         private readonly IXestelikService _xestelikService;
++        private readonly IKompensasiyaService _kompensasiyaService;
+ 
+         public MaasHesablamaService(
+             IUnitOfWork unitOfWork,
+             IIsciAyliqQazancService ayliqQazancService,
+-            IXestelikService xestelikService)
++            IXestelikService xestelikService,
++            IKompensasiyaService kompensasiyaService)
+         {
+             _unitOfWork = unitOfWork;
+             _ayliqQazancService = ayliqQazancService;
+             _xestelikService = xestelikService;
++            _kompensasiyaService = kompensasiyaService;
+         }
+ 
+         // ─────────────────────────────────────────────────────────
+         // TOPLU HESABLAMA
+         // ─────────────────────────────────────────────────────────
+ 
+         public async Task<Result<TopluHesablamaNeticesiDto>> TopluHesablaAsync(TopluHesablaInputDto input)
+         {
+             // Hesablanan il/ay sərhədləri — işdən çıxmış işçi həmin ayda
+             // bankla əmək münasibətində idisə (məs. mayda məzuniyyət pulu
+@@ -196,20 +199,49 @@ namespace FinNex.Application.Services.HR
+                 qayibKesinti = Math.Round(esasMaas / ayIsGunu * qayibGun, 2);
+                 izahatlar.Add(new HesablamaIzahiDto
+                 {
+                     Addim = "Qayıb Gün Kesintisi",
+                     Izah = $"{esasMaas:N2} / {ayIsGunu} iş günü x {qayibGun} qayıb gün",
+                     Mebleg = qayibKesinti,
+                     Tip = "kesinti"
+                 });
+             }
+ 
++            // 5a. MƏZUNIYYƏT KOMPENSASİYASI (varsa)
++            //     İstifadə edilməmiş əmək məzuniyyəti günlərinə görə kompensasiya
++            //     ayrıca səhifədə (/HR/Kompensasiya) hesablanır və Layihe/Tesdiqlenib
++            //     statusunda yadda saxlanılır. Maaş hesablanarkən bu kompensasiya
++            //     avtomatik gəlir kimi BRUT-a əlavə olunur, status MaasaDaxilEdildi
++            //     olur və MaasId set olunur.
++            decimal mezKompensasiyaMebleg = 0;
++            MezuniyyetKompensasiyasi? aktivKompensasiya = null;
++            try
++            {
++                aktivKompensasiya = await _kompensasiyaService
++                    .GetAktivKompensasiyaAsync(input.IsciId, input.Il, input.Ay);
++            }
++            catch { /* kompensasiya servisi xətasında maaş hesablamasını dayandırma */ }
++
++            if (aktivKompensasiya != null)
++            {
++                mezKompensasiyaMebleg = aktivKompensasiya.CemiMebleg;
++                izahatlar.Add(new HesablamaIzahiDto
++                {
++                    Addim = "İstifadə edilməmiş Məz. Kompensasiyası",
++                    Izah = $"{aktivKompensasiya.CemiKompensasiyaGun:N2} gün × " +
++                           $"{aktivKompensasiya.GunlukRate:N4} ₼/gün — " +
++                           $"/HR/Kompensasiya/Detal/{aktivKompensasiya.Id}",
++                    Mebleg = mezKompensasiyaMebleg,
++                    Tip = "gelir"
++                });
++            }
++
+             // 5b. İŞDƏN AYRILMA KƏSİNTİSİ (PRORATE)
+             //     İşçi ay ərzində işdən çıxıbsa, ayrılma tarixindən sonrakı
+             //     iş günləri (şənbə/bazar və bayram istisna) üçün avtomatik
+             //     kəsinti tutulur. Səbəb: QayibMarkerBackgroundService
+             //     ayrılma tarixindən sonrakı günlərə Qayib qeydi yazmır;
+             //     deməli, kəsinti olmasa, ay tam ödənilərdi (səhv).
+             //     Eyni qaydalar Bayram cədvəli ilə (Bayram = istirahət,
+             //     IsGunu = iş günü override) tətbiq olunur.
+             if (isci.IsdenAyrilmaTarixi.HasValue)
+             {
+@@ -705,20 +737,21 @@ namespace FinNex.Application.Services.HR
+             decimal esasBrut = esasMaas
+                 - mezKesinti
+                 + mezOdenis
+                 + xestelikSirketOdenis
+                 - xestelikKesinti
+                 - qayibKesinti
+                 + input.BonusMeblegi
+                 + overtimeMebleg
+                 + input.IH07Meblegi
+                 + input.VM9821Meblegi
++                + mezKompensasiyaMebleg
+                 - input.CerimeMeblegi
+                 + korreksiyaGelir
+                 - korreksiyaKesinti;
+ 
+             if (esasBrut < 0) esasBrut = 0;
+             decimal brutMaas = esasBrut + hysIsegoturen;
+ 
+             izahatlar.Add(new HesablamaIzahiDto
+             {
+                 Addim = "Gross Məbləğ",
+@@ -1038,20 +1071,31 @@ namespace FinNex.Application.Services.HR
+             if (ilkXeta != null)
+                 return Result<MaasHesablaNeticesiDto>.Fail(ilkXeta.Message);
+ 
+             // Addım-addım izahları JSON kimi saxla — Detal səhifəsində
+             // mühasib yekun rəqəmin hardan gəldiyini oxuya bilsin deyə.
+             maas.HesablamaIzahi = JsonSerializer.Serialize(izahatlar);
+ 
+             await _unitOfWork.Repository<Maas>().YaratAsync(maas);
+             await _unitOfWork.YaddaSaxlaAsync();
+ 
++            // 14b. Məzuniyyət kompensasiyası bu maaşa "yapışdırıldı"
++            //      Status → MaasaDaxilEdildi, MaasId set olunur ki, Detal-da link görünsün.
++            if (aktivKompensasiya != null && maas.Id > 0)
++            {
++                try
++                {
++                    await _kompensasiyaService.IsareLamasiniYadda(aktivKompensasiya.Id, maas.Id);
++                }
++                catch { /* qeyd uğursuzluğunda maaş yenidən hesablanmayacaq, log et */ }
++            }
++
+             // 15. XestelikOdenis qeydlərini bu Maas-a bağla
+             try
+             {
+                 var xestelikler = await _xestelikService.AyUzreXestelikleriGetirAsync(input.IsciId, input.Il, input.Ay);
+                 foreach (var xst in xestelikler)
+                 {
+                     var ayOdenisleri = xst.Odenisler
+                         .Where(o => o.Il == input.Il && o.Ay == input.Ay && !o.Silinib && o.MaasId == null);
+                     foreach (var od in ayOdenisleri)
+                     {
+diff --git a/FinNex.UI/Areas/HR/Controllers/KompensasiyaController.cs b/FinNex.UI/Areas/HR/Controllers/KompensasiyaController.cs
+index 35f7f336..fb91ea6a 100644
+--- a/FinNex.UI/Areas/HR/Controllers/KompensasiyaController.cs
++++ b/FinNex.UI/Areas/HR/Controllers/KompensasiyaController.cs
+@@ -64,21 +64,22 @@ namespace FinNex.UI.Areas.HR.Controllers
+ 
+             var hesablayan = await _userManager.GetUserAsync(User);
+             var hesablayanIsciId = hesablayan?.IsciId ?? 0;
+ 
+             var dto = new KompensasiyaYaratDto
+             {
+                 IsciId = vm.IsciId,
+                 AyrilmaTarixi = vm.AyrilmaTarixi,
+                 HesablananIl = vm.HesablananIl,
+                 HesablananAy = vm.HesablananAy,
+-                Qeyd = vm.Qeyd
++                Qeyd = vm.Qeyd,
++                ManualGunSayi = vm.ManualGunSayi
+             };
+             var r = await _service.YaratAsync(dto, hesablayanIsciId);
+             if (!r.Success)
+             {
+                 ModelState.AddModelError("", r.Message ?? "Yadda saxlama uğursuz.");
+                 await IsciDropdownDoldur(vm);
+                 return View(vm);
+             }
+ 
+             TempData["Success"] = r.Message;
+@@ -116,34 +117,35 @@ namespace FinNex.UI.Areas.HR.Controllers
+         [HttpPost]
+         [ValidateAntiForgeryToken]
+         public async Task<IActionResult> LegvEt(int id)
+         {
+             var r = await _service.LegvEtAsync(id);
+             TempData[r.Success ? "Success" : "Error"] = r.Message;
+             return RedirectToAction(nameof(Index));
+         }
+ 
+         // ──────────────────────────────────────────────────────
++        // Dropdown — yalnız məzuniyyət qalığı olan işçilər.
++        // İşdən çıxanlar əvvəldə görünür (kompensasiya üçün əsas hədəfdir).
++        // Aktiv işçilər də siyahıda — qismi kompensasiya etmək üçün.
+         private async Task IsciDropdownDoldur(KompensasiyaYaratVM vm)
+         {
+-            var iscilerR = await _isciService.HamisiniGetirAsync();
+-            var isciler = iscilerR.Success && iscilerR.Data != null
+-                ? iscilerR.Data : new List<FinNex.Application.DTOs.HR.Isci.IsciListDto>();
++            var isciler = await _service.GetIscilerWithQaligAsync();
+ 
+             vm.Isciler = isciler
+-                .OrderBy(x => x.Sira).ThenBy(x => x.TamAd)
+                 .Select(x => new SelectListItem
+                 {
+-                    Value = x.Id.ToString(),
++                    Value = x.IsciId.ToString(),
+                     Text = x.TamAd
++                          + $" — qalıq: {x.CemiQaligGun:N1} gün"
+                           + (x.IsdenAyrilmaTarixi.HasValue
+-                              ? $" — işdən çıxıb {x.IsdenAyrilmaTarixi:dd.MM.yyyy}"
++                              ? $" · işdən çıxıb {x.IsdenAyrilmaTarixi:dd.MM.yyyy}"
+                               : "")
+                 })
+                 .ToList();
+         }
+ 
+         public class HesablaSorgu
+         {
+             public int IsciId { get; set; }
+             public DateTime AyrilmaTarixi { get; set; }
+         }
+diff --git a/FinNex.UI/Areas/HR/Controllers/MaasController.cs b/FinNex.UI/Areas/HR/Controllers/MaasController.cs
+index 0b8c2021..62b9e9ee 100644
+--- a/FinNex.UI/Areas/HR/Controllers/MaasController.cs
++++ b/FinNex.UI/Areas/HR/Controllers/MaasController.cs
+@@ -21,34 +21,38 @@ namespace FinNex.UI.Areas.HR.Controllers
+     public class MaasController : Controller
+     {
+         private readonly IMaasService _maasService;
+         private readonly IMaasHesablamaService _hesablamaService;
+         private readonly IUnitOfWork _unitOfWork;
+         private readonly IBildirisService _bildirisService;
+         private readonly IBildirisRouter _bildirisRouter;
+         private readonly UserManager<AppUser> _userManager;
+         private readonly IAyliqElaveService _ayliqElaveService;
+ 
++        private readonly IKompensasiyaService _kompensasiyaService;
++
+         public MaasController(
+             IMaasService maasService,
+             IMaasHesablamaService hesablamaService,
+             IUnitOfWork unitOfWork,
+             IBildirisService bildirisService,
+             IBildirisRouter bildirisRouter,
+             UserManager<AppUser> userManager,
+-            IAyliqElaveService ayliqElaveService)
++            IAyliqElaveService ayliqElaveService,
++            IKompensasiyaService kompensasiyaService)
+         {
+             _maasService = maasService;
+             _hesablamaService = hesablamaService;
+             _unitOfWork = unitOfWork;
+             _bildirisService = bildirisService;
+             _bildirisRouter = bildirisRouter;
++            _kompensasiyaService = kompensasiyaService;
+             _userManager = userManager;
+             _ayliqElaveService = ayliqElaveService;
+         }
+ 
+         // ── GET /HR/Maas ─────────────────────────────────────────
+         // Əsas siyahı — hər işçi, hər sütun ayrı məbləğ
+         public async Task<IActionResult> Index(int? il, int? ay, int? isciId, int? departamentId)
+         {
+             var cIl = il ?? DateTime.Now.Year;
+             var cAy = ay ?? DateTime.Now.Month;
+@@ -705,20 +709,37 @@ namespace FinNex.UI.Areas.HR.Controllers
+             }
+             ViewBag.IsciKorreksiyaMap = isciKorreksiyaMap;
+ 
+             // Aylıq əlavə qeydləri (Bonus + Overtime) — maaş hesablama bunlardan oxuyur.
+             // Mühasib təsdiqdən əvvəl səhifədə görsün deyə dictionary kimi göndəririk.
+             // Servis vasitəsilə — controller bilavasitə Repository istifadə etmir.
+             var (bonusMap, overtimeMap) = await _ayliqElaveService.GetAyMapAsync(cIl, cAy);
+             ViewBag.AyliqElaveBonusMap    = bonusMap;
+             ViewBag.AyliqElaveOvertimeMap = overtimeMap;
+ 
++            // Məzuniyyət kompensasiyası preview — bu il/ay üçün Layihe/Tesdiqlenib
++            // statusunda olan kompensasiyalar engine tərəfindən avtomatik gəlirə əlavə
++            // olunacaq. Preview-də göstərmək üçün dictionary-yə yığırıq.
++            var aktivKompensasiyalar = await _unitOfWork.Repository<MezuniyyetKompensasiyasi>()
++                .Query()
++                .Where(x => x.HesablananIl == cIl
++                         && x.HesablananAy == cAy
++                         && !x.Silinib
++                         && (x.Status == KompensasiyaStatus.Layihe
++                          || x.Status == KompensasiyaStatus.Tesdiqlenib))
++                .ToListAsync();
++            var isciKompMap = aktivKompensasiyalar
++                .ToDictionary(x => x.IsciId,
++                    x => (Id: x.Id, Gun: x.CemiKompensasiyaGun,
++                          Mebleg: x.CemiMebleg, Rate: x.GunlukRate));
++            ViewBag.IsciKompMap = isciKompMap;
++
+             ViewBag.Hesablanmis = hesablanmis;
+             ViewBag.CariMaasMap = cariMaasMap;
+             ViewBag.IbanMap = ibanMap;
+             ViewBag.VergiPilleleri = pilleler;
+             ViewBag.VergiGuzesti = vergiGuzesti;
+             ViewBag.FirstBracketMax = firstBracketMax;
+             ViewBag.IsciGuzestMap = isciGuzestMap;
+             ViewBag.IsciHysMap = isciHysMap;
+             ViewBag.HysIsvFaiz = hysIsvFaiz;
+             ViewBag.IsciAvansMap = isciAvansMap;
+diff --git a/FinNex.UI/Areas/HR/ViewModels/Kompensasiya/KompensasiyaYaratVM.cs b/FinNex.UI/Areas/HR/ViewModels/Kompensasiya/KompensasiyaYaratVM.cs
+index e54311c5..5b922a39 100644
+--- a/FinNex.UI/Areas/HR/ViewModels/Kompensasiya/KompensasiyaYaratVM.cs
++++ b/FinNex.UI/Areas/HR/ViewModels/Kompensasiya/KompensasiyaYaratVM.cs
+@@ -20,13 +20,21 @@ namespace FinNex.UI.Areas.HR.ViewModels.Kompensasiya
+ 
+         [Required]
+         [Range(1, 12)]
+         [Display(Name = "Hesablanan ay")]
+         public int HesablananAy { get; set; } = DateTime.Now.Month;
+ 
+         [Display(Name = "Qeyd")]
+         [StringLength(500)]
+         public string? Qeyd { get; set; }
+ 
++        /// <summary>
++        /// Boş: avtomatik (keçmiş qalıq + cari prorate).
++        /// Doldurulsa: yalnız bu gün sayı kompensasiya olunur — qismi kompensasiya.
++        /// </summary>
++        [Display(Name = "Manual gün (qismi kompensasiya)")]
++        [Range(0, 365, ErrorMessage = "Gün sayı 0–365 aralığında olmalıdır")]
++        public decimal? ManualGunSayi { get; set; }
++
+         public List<SelectListItem> Isciler { get; set; } = new();
+     }
+ }
+diff --git a/FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml b/FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml
+index f825f73a..d8ce6c49 100644
+--- a/FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml
++++ b/FinNex.UI/Areas/HR/Views/Kompensasiya/Yarat.cshtml
+@@ -49,20 +49,31 @@
+                         <label class="fn-label">Hesablanan ay *</label>
+                         <select asp-for="HesablananAy" class="fn-input">
+                             @for (int i = 1; i <= 12; i++)
+                             {
+                                 <option value="@i" selected="@(Model.HesablananAy == i)">@ayAdlari[i]</option>
+                             }
+                         </select>
+                     </div>
+                 </div>
+ 
++                <div class="fn-form-group" style="margin-top:12px">
++                    <label class="fn-label">Manual gün sayı (qismi kompensasiya — istəyə bağlı)</label>
++                    <input asp-for="ManualGunSayi" type="number" step="0.01" min="0" max="365" class="fn-input"
++                           id="manualGunInp" placeholder="Boş buraxsanız: avtomatik (tam ayrılma kompensasiyası)" />
++                    <small style="color:#888;font-size:11px;line-height:1.5;display:block;margin-top:3px">
++                        <b>Boş</b>: tam kompensasiya — keçmiş qalıq + cari il prorate (işdən çıxan üçün).<br/>
++                        <b>Doldursanız</b>: yalnız bu gün sayı kompensasiya olunur (aktiv işçi qalıq günlərinin bir hissəsini pulla almaq istəyirsə).
++                    </small>
++                    <span asp-validation-for="ManualGunSayi" class="fn-error"></span>
++                </div>
++
+                 <div class="fn-form-group" style="margin-top:12px">
+                     <label class="fn-label">Qeyd (istəyə bağlı)</label>
+                     <textarea asp-for="Qeyd" rows="2" class="fn-input" maxlength="500"
+                               placeholder="Mühasibat üçün izah, əlavə şərhlər..."></textarea>
+                 </div>
+ 
+                 <div style="display:flex;justify-content:space-between;gap:8px;margin-top:16px">
+                     <button type="button" class="fn-btn fn-btn--outline" onclick="hesabla()">
+                         <i class="bi bi-calculator"></i> Hesabla (preview)
+                     </button>
+diff --git a/FinNex.UI/Areas/HR/Views/Maas/TopluHesabla.cshtml b/FinNex.UI/Areas/HR/Views/Maas/TopluHesabla.cshtml
+index 0c9eaadb..eb303bca 100644
+--- a/FinNex.UI/Areas/HR/Views/Maas/TopluHesabla.cshtml
++++ b/FinNex.UI/Areas/HR/Views/Maas/TopluHesabla.cshtml
+@@ -371,20 +371,28 @@
+ 
+                                 // İşdən ayrılma kəsintisi preview — bu ay ərzində işdən
+                                 // çıxan işçi üçün ayrılma tarixindən sonrakı iş günləri kəsilir.
+                                 var ayrilmaMap = ViewBag.IsciAyrilmaMap as Dictionary<int, (int gun, decimal kesinti, DateTime tarix)>
+                                                  ?? new Dictionary<int, (int gun, decimal kesinti, DateTime tarix)>();
+                                 int ayrilmaGun = 0; decimal ayrilmaKesinti = 0m; DateTime? ayrilmaTarixi = null;
+                                 if (ayrilmaMap.TryGetValue(isci.Id, out var ayrVal))
+                                 { ayrilmaGun = ayrVal.gun; ayrilmaKesinti = ayrVal.kesinti; ayrilmaTarixi = ayrVal.tarix; }
+                                 var ayrilmaKesintiStr = ayrilmaKesinti.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+ 
++                                // Məzuniyyət kompensasiyası preview — saxlanılmış kompensasiya bu maaşa daxil olacaq.
++                                var kompMap = ViewBag.IsciKompMap as Dictionary<int, (int Id, decimal Gun, decimal Mebleg, decimal Rate)>
++                                              ?? new Dictionary<int, (int, decimal, decimal, decimal)>();
++                                int kompId = 0; decimal kompGun = 0m; decimal kompMebleg = 0m; decimal kompRate = 0m;
++                                if (kompMap.TryGetValue(isci.Id, out var kVal))
++                                { kompId = kVal.Id; kompGun = kVal.Gun; kompMebleg = kVal.Mebleg; kompRate = kVal.Rate; }
++                                var kompMeblegStr = kompMebleg.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
++
+                                 // Əvvəlki ay korreksiyası (post-maaş daxil edilmiş xəstəlik/məzuniyyət)
+                                 var korrMap = ViewBag.IsciKorreksiyaMap as Dictionary<int, (decimal kesinti, decimal gelir, string? aciq)>
+                                               ?? new Dictionary<int, (decimal kesinti, decimal gelir, string? aciq)>();
+                                 decimal korrKesinti = 0m, korrGelir = 0m;
+                                 string? korrAciq = null;
+                                 if (korrMap.TryGetValue(isci.Id, out var korrVal))
+                                 { korrKesinti = korrVal.kesinti; korrGelir = korrVal.gelir; korrAciq = korrVal.aciq; }
+                                 var korrKesintiStr = korrKesinti.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                 var korrGelirStr   = korrGelir.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+ 
+@@ -410,20 +418,21 @@
+                                     data-mez-kesinti="@mezKesintiStr"
+                                     data-xes-sirket-gun="@xSirketGun"
+                                     data-xes-dsmf-gun="@xDsmfGun"
+                                     data-xes-sirket-odenis="@xSirketOdStr"
+                                     data-xes-dsmf-odenis="@xDsmfOdStr"
+                                     data-xes-kesinti="@xKesintiStr"
+                                     data-qayib-gun="@qayibGun"
+                                     data-qayib-kesinti="@qayibKesintiStr"
+                                     data-ayrilma-gun="@ayrilmaGun"
+                                     data-ayrilma-kesinti="@ayrilmaKesintiStr"
++                                    data-komp-mebleg="@kompMeblegStr"
+                                     data-mav-brut="@mavBrutStr"
+                                     data-mav-gelirv="@mavGelirVStr"
+                                     data-mav-dsmf="@mavDsmfStr"
+                                     data-mav-iss="@mavIssStr"
+                                     data-mav-itss="@mavItssStr"
+                                     data-mav-net="@mavNetStr"
+                                     class="mth-row @(isDone ? "done" : "")">
+ 
+                                     @* Checkbox *@
+                                     <td class="col-chk center">
+@@ -628,20 +637,50 @@
+                                                             <span class="mth-detail-lbl">Qayıb gün</span>
+                                                             <span class="n n--d" data-p="qayibgun">—</span>
+                                                         </div>
+                                                         <div class="mth-detail-item">
+                                                             <span class="mth-detail-lbl">Kəsinti</span>
+                                                             <span class="n n--d" data-p="qayibkes">—</span>
+                                                         </div>
+                                                     </div>
+                                                 </div>
+ 
++                                                @* Məzuniyyət Kompensasiyası — yalnız aktiv kompensasiya varsa *@
++                                                @if (kompMebleg > 0)
++                                                {
++                                                    <div class="mth-detail-card" style="border-color:#86efac;background:#f0fdf4;">
++                                                        <div class="mth-detail-card-head" style="color:#15803d;">
++                                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
++                                                                <path d="M2 7h10M7 2l5 5-5 5" stroke="#15803d" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
++                                                            </svg>
++                                                            <span>Məz. Kompensasiyası</span>
++                                                        </div>
++                                                        <div class="mth-detail-card-body">
++                                                            <div class="mth-detail-item">
++                                                                <span class="mth-detail-lbl">Gün</span>
++                                                                <span class="n">@kompGun.ToString("N2")</span>
++                                                            </div>
++                                                            <div class="mth-detail-item">
++                                                                <span class="mth-detail-lbl">Günlük rate</span>
++                                                                <span class="n">@kompRate.ToString("N4") ₼</span>
++                                                            </div>
++                                                            <div class="mth-detail-item">
++                                                                <span class="mth-detail-lbl">Məbləğ</span>
++                                                                <span class="n" style="color:#15803d;font-weight:700">+@Fmt(kompMebleg)</span>
++                                                            </div>
++                                                            <div class="mth-detail-item" style="font-size:11px">
++                                                                <a asp-area="HR" asp-controller="Kompensasiya" asp-action="Detal" asp-route-id="@kompId" style="color:#15803d">Detal aç →</a>
++                                                            </div>
++                                                        </div>
++                                                    </div>
++                                                }
++
+                                                 @* İşdən Ayrılma Kəsintisi — yalnız ay ərzində ayrılanlar üçün *@
+                                                 @if (ayrilmaGun > 0)
+                                                 {
+                                                     <div class="mth-detail-card" style="border-color:#fcd34d;background:#fffbeb;">
+                                                         <div class="mth-detail-card-head" style="color:#b45309;">
+                                                             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                                 <path d="M2 7h7M7 4l3 3-3 3" stroke="#b45309" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                                                                 <path d="M12 2v10" stroke="#b45309" stroke-width="1.3" stroke-linecap="round"/>
+                                                             </svg>
+                                                             <span>İşdən Ayrılma</span>
+diff --git a/FinNex.UI/wwwroot/js/maas-toplu.js b/FinNex.UI/wwwroot/js/maas-toplu.js
+index e7762b7d..ed781e22 100644
+--- a/FinNex.UI/wwwroot/js/maas-toplu.js
++++ b/FinNex.UI/wwwroot/js/maas-toplu.js
+@@ -91,20 +91,23 @@
+         const xesSirketOdenis = parseFloat(row.dataset.xesSirketOdenis || 0) || 0;
+         const xesDsmfOdenis = parseFloat(row.dataset.xesDsmfOdenis || 0) || 0;
+         const xesKesinti = parseFloat(row.dataset.xesKesinti || 0) || 0;
+         const qayibGun = parseInt(row.dataset.qayibGun || 0) || 0;
+         const qayibKesinti = parseFloat(row.dataset.qayibKesinti || 0) || 0;
+         // İşdən ayrılma kəsintisi — bu ay ərzində ayrılan işçi üçün
+         // ayrılma tarixindən sonrakı iş günləri avtomatik kəsilir.
+         // Engine FerdiHesablaAsync ilə eyni məntiq; qayib-dən ayrı saxlanılır
+         // ki, UI-da şəffaf görünsün.
+         const ayrilmaKesinti = parseFloat(row.dataset.ayrilmaKesinti || 0) || 0;
++        // Məzuniyyət kompensasiyası — /HR/Kompensasiya səhifəsində yadda saxlanıb,
++        // bu il/ay üçün aktiv (Layihe/Tesdiqlenib). Engine BRUT-a gəlir kimi əlavə edir.
++        const kompMebleg = parseFloat(row.dataset.kompMebleg || 0) || 0;
+         // Məzuniyyət avansı vergisi (server-tərəfi hesablanmış, ödənilmiş).
+         // Faktiki ödənilmiş NET-dən (mavNet) implied cəmi vergi (mavBrut − mavNet)
+         // server-in standalone hesabladığı vergi cəmindən fərqli ola bilər
+         // (TutulmalariHesablaAsync-in im üçün standartGuzest tətbiqi səbəbiylə).
+         // Burada növ üzrə dəyərləri uyğunlaşdırırıq ki, cəm = faktiki vergi olsun.
+         const mavBrut   = parseFloat(row.dataset.mavBrut   || 0) || 0;
+         let   mavGelirV = parseFloat(row.dataset.mavGelirv || 0) || 0;
+         let   mavDsmf   = parseFloat(row.dataset.mavDsmf   || 0) || 0;
+         let   mavIss    = parseFloat(row.dataset.mavIss    || 0) || 0;
+         let   mavItss   = parseFloat(row.dataset.mavItss   || 0) || 0;
+@@ -138,20 +141,21 @@
+         //        + xəstəlik şirkət ödənişi − xəstəlik kəsintisi
+         //        + bonus + fərqli gəlir − cərimə
+         // (FerdiHesablaAsync ilə eyni düstur. Diqqət: işəgötürən HYS payı GROSS-da
+         //  GÖSTƏRİLMİR — şirkət xərcidir, işçinin işlədiyi pul deyil. Yalnız bəzi
+         //  vergi bazalarında (İTSS, İşsizlik) süni olaraq nəzərə alınır.)
+         const esasBrut = Math.max(
+             esas - mezKesinti + mezOdenis
+                  - xesKesinti + xesSirketOdenis
+                  - qayibKesinti
+                  - ayrilmaKesinti
++                 + kompMebleg
+                  + bonus + ferqliGelir - cerime,
+             0);
+         const brut = esasBrut;  // GROSS = işlədiyi məbləğ (preview ilə eyni)
+ 
+         // Vergi bazaları — server (FerdiHesablaAsync) ilə eyni:
+         //   Xəstəlik vərəqəsi şirkət ödənişi YALNIZ gəlir vergisinə cəlb olunur,
+         //   DSMF / İşsizlik / İTSS bazalarından çıxılır.
+         //
+         //   HYS:
+         //     - İşçi HYS payı: vergi+DSMF-dən AZAD, İTSS+İşsizlikdən cəlb olunur.
+-- 
+2.43.0
+

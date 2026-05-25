@@ -46,7 +46,7 @@
                     <!-- 1. Kateqoriya -->
                     <div>
                         <div class="sd-form-hdr-sub" style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:#e8b84b;margin-bottom:12px;">
-                            1 · Kateqoriya Seçimi
+                            1 · Şöbə və Növ
                         </div>
                         <div class="sd-form-row">
                             <div>
@@ -127,12 +127,22 @@
                                 <input asp-for="AcarSoz" class="sd-input" placeholder="Vergüllə ayırın..." />
                                 <span asp-validation-for="AcarSoz" class="sd-error"></span>
                             </div>
-                            <div>
-                                <label class="sd-label">Sənəd Tarixi <span class="sd-required">*</span></label>
-                                <input asp-for="SenedTarixi" type="date" class="sd-input"
-                                       value="@Model.SenedTarixi.ToString("yyyy-MM-dd")" />
-                                <span asp-validation-for="SenedTarixi" class="sd-error"></span>
-                                <small style="color:#8b95a5;font-size:11px;">Sənədin öz tarixi (default: bu gün). Yaradılma tarixi həmişə cari tarixdir.</small>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                                <div>
+                                    <label class="sd-label">Sənəd Tarixi <span class="sd-required">*</span></label>
+                                    <input asp-for="SenedTarixi" type="date" class="sd-input"
+                                           value="@Model.SenedTarixi.ToString("yyyy-MM-dd")" />
+                                    <span asp-validation-for="SenedTarixi" class="sd-error"></span>
+                                    <small style="color:#8b95a5;font-size:11px;">Default: bu gün.</small>
+                                </div>
+                                <div>
+                                    <label class="sd-label">Görünmə <span class="sd-required">*</span></label>
+                                    <select asp-for="Kateqoriya" class="sd-select-full">
+                                        <option value="@FinNex.Domain.Entities.SenedDovriyyesi.SenedKateqoriyasi.Umumi">Umumi — hər kəsə açıq</option>
+                                        <option value="@FinNex.Domain.Entities.SenedDovriyyesi.SenedKateqoriyasi.Xususi">Xususi — yalnız şöbəyə</option>
+                                    </select>
+                                    <small style="color:#8b95a5;font-size:11px;">Xususi: yalnız sən + şöbə görür.</small>
+                                </div>
                             </div>
                         </div>
                     </div>

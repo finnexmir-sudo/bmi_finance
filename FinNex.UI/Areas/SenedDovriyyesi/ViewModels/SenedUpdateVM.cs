@@ -24,5 +24,9 @@ namespace FinNex.UI.Areas.SenedDovriyyesi.ViewModels
         public string AcarSoz { get; set; } = string.Empty;
 
         public List<int> TagIds { get; set; } = new();
+
+        /// <summary>Görünmə kateqoriyası — Umumi və ya Xususi.</summary>
+        [Display(Name = "Kateqoriya")]
+        public FinNex.Domain.Entities.SenedDovriyyesi.SenedKateqoriyasi Kateqoriya { get; set; } = FinNex.Domain.Entities.SenedDovriyyesi.SenedKateqoriyasi.Umumi;
     }
 }

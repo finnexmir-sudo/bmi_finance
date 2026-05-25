@@ -378,4 +378,42 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             .GetirAsync(x => x.IsciId == isciId, izlemeden: true);
         return maliye?.CariMaas ?? 0;
     }
+
+    public async Task<Result> IbanYenileAsync(int isciId, string? iban)
+    {
+        try
+        {
+            string? normalized = null;
+            if (!string.IsNullOrWhiteSpace(iban))
+            {
+                normalized = new string(iban.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToUpperInvariant();
+                if (!System.Text.RegularExpressions.Regex.IsMatch(normalized, @"^AZ\d{2}[A-Z]{4}\d{20}$"))
+                    return Result.Fail("IBAN formatı yanlışdır. Düzgün format: AZ + 2 rəqəm + 4 hərf bank kodu + 20 rəqəm.");
+            }
+
+            var maliyeRepo = _unitOfWork.Repository<IsciMaliye>();
+            var maliye = await maliyeRepo.GetirAsync(x => x.IsciId == isciId);
+
+            if (maliye == null)
+            {
+                maliye = new IsciMaliye { IsciId = isciId, CariMaas = 0, BankHesabNo = normalized };
+                await maliyeRepo.YaratAsync(maliye);
+            }
+            else
+            {
+                if (string.Equals(maliye.BankHesabNo, normalized, StringComparison.Ordinal))
+                    return Result.Ok("Dəyişiklik yoxdur.");
+                maliye.BankHesabNo = normalized;
+                maliye.YenilenmeTarixi = DateTime.Now;
+                await maliyeRepo.YenileAsync(maliye);
+            }
+
+            await _unitOfWork.YaddaSaxlaAsync();
+            return Result.Ok("IBAN yeniləndi.");
+        }
+        catch (Exception ex)
+        {
+            return Result.Fail($"IBAN yenilənmədi: {ex.Message}");
+        }
+    }
 }
