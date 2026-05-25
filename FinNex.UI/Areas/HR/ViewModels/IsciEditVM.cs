@@ -31,7 +31,7 @@ namespace FinNex.UI.Areas.HR.ViewModels
         [Display(Name = "Şəxsiyyət Vəsiqəsi")]
         public string SeriyaNomre { get; set; } = null!;
 
-        [Required(ErrorMessage = "Doğum tarixi mütləqdir")]
+    [Required(ErrorMessage = "Doğum tarixi mütləqdir")]
         [Display(Name = "Doğum Tarixi")]
         public DateTime DogumTarixi { get; set; }
 
@@ -58,5 +58,10 @@ namespace FinNex.UI.Areas.HR.ViewModels
 
         [Display(Name = "Status")]
         public IsciStatus Status { get; set; }
+
+        [Display(Name = "Bank Hesabı (IBAN)")]
+        [RegularExpression(@"^\s*$|^AZ\d{2}[A-Za-z]{4}\d{20}$",
+            ErrorMessage = "IBAN formatı yanlışdır. Nümunə: AZ55MELI41010000000008700000")]
+        public string? Iban { get; set; }
     }
 }

@@ -56,6 +56,11 @@ public class IsciCreateVM
     public decimal? BaslangicMaas { get; set; }
     public int? BaslangicMezuniyyet { get; set; }
 
+    [Display(Name = "Bank Hesabı (IBAN)")]
+    [RegularExpression(@"^\s*$|^AZ\d{2}[A-Za-z]{4}\d{20}$",
+        ErrorMessage = "IBAN formatı yanlışdır. Nümunə: AZ55MELI41010000000008700000")]
+    public string? Iban { get; set; }
+
     public List<SelectListItem> Departments { get; set; } = new();
     public int IsciId { get; set; }
     public int UserId { get; set; }
