@@ -1,4 +1,4 @@
-﻿using FinNex.Application;
+using FinNex.Application;
 using FinNex.DataAccess;
 using FinNex.DataAccess.Contexts;
 using FinNex.DataAccess.Seed;
@@ -289,6 +289,23 @@ namespace FinNex.UI
                         )
                         BEGIN
                             ALTER TABLE [Mezuniyyetler] ADD [OdenenMeblegBrut] DECIMAL(18,2) NULL;
+                        END
+                    ");
+                }
+                catch { /* artıq tətbiq olunub */ }
+
+                // Mezuniyyetler.SenedYolu — çoxlu sənəd dəstəyi üçün NVARCHAR(MAX)-a çevir
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF EXISTS (
+                            SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                            WHERE TABLE_NAME  = 'Mezuniyyetler'
+                              AND COLUMN_NAME = 'SenedYolu'
+                              AND CHARACTER_MAXIMUM_LENGTH = 500
+                        )
+                        BEGIN
+                            ALTER TABLE [Mezuniyyetler] ALTER COLUMN [SenedYolu] NVARCHAR(MAX) NULL;
                         END
                     ");
                 }
@@ -1095,7 +1112,7 @@ END
                     var pending = db.Database.GetPendingMigrations().ToList();
                     if (pending.Any())
                     {
-                        Console.WriteLine($"[Migration] {pending.Count} pending migration tapıldı: {string.Join(", ", pending)}");
+                        Console.WriteLine($"[Migration] {pending.Count} pending migration tapıldı: {string.Join(\", \", pending)}");
                         db.Database.Migrate();
                         Console.WriteLine("[Migration] Bütün migration-lar uğurla tətbiq olundu.");
                     }
@@ -1139,6 +1156,17 @@ END
             app.UseMiddleware<SecurityHeadersMiddleware>();
 
             app.UseStaticFiles();
+
+            // ── C:\FinNex_DMS → /dms URL-i ilə servis ─────────────────────────
+            var dmsRoot = app.Configuration["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+            if (Directory.Exists(dmsRoot))
+            {
+                app.UseStaticFiles(new StaticFileOptions
+                {
+                    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(dmsRoot),
+                    RequestPath = "/dms"
+                });
+            }
 
             app.UseRouting();
 

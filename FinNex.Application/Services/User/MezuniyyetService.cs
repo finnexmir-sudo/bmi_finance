@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
@@ -1156,6 +1156,8 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             EmrRegem = entity.EmrRegem,
             EmrSuffiks = entity.EmrSuffiks,
             EmrIl = entity.EmrIl,
+            SenedYolu = entity.SenedYolu,
+            KorreksiyaSebebi = entity.KorreksiyaSebebi,
         };
 
         return Result<MezuniyyetDto>.Ok(dto);
@@ -1858,6 +1860,36 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             await transaction.RollbackAsync();
             return Result<MezuniyyetDto>.Fail($"Korreksiya xətası: {ex.Message}");
         }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // DÖVLƏT VƏZİFƏSİ — sonradan sənəd əlavəsi
+    // ══════════════════════════════════════════════════════
+
+    /// <inheritdoc/>
+    public async Task<Result> SenedElavetEtAsync(int mezuniyyetId, string senedYollari)
+    {
+        if (string.IsNullOrWhiteSpace(senedYollari))
+            return Result.Fail("Sənəd yolu boş ola bilməz.");
+
+        var entity = await _unitOfWork.Repository<Mezuniyyet>()
+            .GetirAsync(m => m.Id == mezuniyyetId && !m.Silinib);
+
+        if (entity == null)
+            return Result.Fail("Qeyd tapılmadı.");
+
+        if (entity.Nov != MezuniyyetNovu.DovletVezifelerininIcrasi)
+            return Result.Fail("Sənəd yalnız Dövlət Vəzifəsi korreksiya qeydlərinə əlavə edilə bilər.");
+
+        // Mövcud sənədlər saxlanılır, yenilər üstünə əlavə olunur
+        entity.SenedYolu = string.IsNullOrWhiteSpace(entity.SenedYolu)
+            ? senedYollari
+            : entity.SenedYolu.TrimEnd('|') + "|" + senedYollari.TrimStart('|');
+
+        await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(entity);
+        await _unitOfWork.YaddaSaxlaAsync();
+
+        return Result.Ok("Sənəd(lər) uğurla əlavə edildi.");
     }
 
     // ── Balansı geri qaytarma köməkçisi (LIFO — ən son illərdən əvvəl) ───
