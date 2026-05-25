@@ -22,7 +22,7 @@ public class TrayAgent : ApplicationContext
 
     private readonly NotifyIcon _trayIcon;
     // SignalR callback-ləri thread pool-da işləyir;
-    // ShowBalloonTip düzgün göstərilmək üçün UI message loop thread-inə ehtiyac duyur.
+    // ShowBalloonTip düzğün göstərilmək üçün UI message loop thread-inə ehtiyac duyur.
     private readonly SynchronizationContext _uiContext;
     private HubConnection? _connection;
     private int _reconnectAttempt;
@@ -78,8 +78,13 @@ public class TrayAgent : ApplicationContext
                             };
                     })
                     .WithAutomaticReconnect(
-                        new[] { TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15) })
+                        new[] { TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(60) })
                     .Build();
+
+                // VM yük altında serverin cavab vaxtı uzana bilir.
+                // Default ServerTimeout = 30s — bunu artırırıq.
+                _connection.ServerTimeout    = TimeSpan.FromSeconds(120);
+                _connection.KeepAliveInterval = TimeSpan.FromSeconds(30);
 
                 _connection.On<JsonElement>("ReceiveDesktopNotification", payload =>
                 {
@@ -96,7 +101,7 @@ public class TrayAgent : ApplicationContext
                 _connection.Closed += async ex =>
                 {
                     SetTrayTooltip(bağlandi: false);
-                    // WithAutomaticReconnect bütün cəhdlərini bitirdikdən sonra
+                    // WithAutomaticReconnect bütün cəhdlərini bitirdəkdən sonra
                     // Closed fire olur. Tam yeni bağlantı qurulmalıdır.
                     await ReconnectWithBackoffAsync();
                     _ = ConnectAsync(); // loop-u yenidən başlat
