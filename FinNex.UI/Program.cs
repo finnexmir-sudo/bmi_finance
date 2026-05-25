@@ -1112,7 +1112,7 @@ END
                     var pending = db.Database.GetPendingMigrations().ToList();
                     if (pending.Any())
                     {
-                        Console.WriteLine($"[Migration] {pending.Count} pending migration tapıldı: {string.Join(\", \", pending)}");
+                        Console.WriteLine($"[Migration] {pending.Count} pending migration tapıldı: {string.Join(", ", pending)}");
                         db.Database.Migrate();
                         Console.WriteLine("[Migration] Bütün migration-lar uğurla tətbiq olundu.");
                     }
