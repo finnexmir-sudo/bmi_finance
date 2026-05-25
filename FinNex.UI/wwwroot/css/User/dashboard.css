@@ -25,7 +25,11 @@
 }
 
     .fn-qa-btn--primary:hover {
-        background: #2559c7;
+        background: #1e4cb5;
+        color: #fff;
+        border-color: #1e4cb5;
+        text-decoration: none;
+        box-shadow: 0 2px 8px rgba(45, 108, 223, 0.35);
     }
 
 .fn-qa-btn--secondary {
@@ -35,7 +39,10 @@
 }
 
     .fn-qa-btn--secondary:hover {
-        background: #e8eaef;
+        background: #d9dde5;
+        color: #1a2332;
+        border-color: #c4c9d3;
+        text-decoration: none;
     }
 
 .fn-lb-actions {
