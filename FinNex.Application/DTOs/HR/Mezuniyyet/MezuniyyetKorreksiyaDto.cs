@@ -5,14 +5,14 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet;
 /// <summary>
 /// HR-in dövlət vəzifəsi korreksiyası üçün DTO.
 /// İşçi illik məzuniyyətdə olarkən hərbi çağırış / məhkəmə şahidliyi kimi
-/// dövlət vəzifəsi yerinə yetirirsə, HR bu DTO ilə:
+/// dövlət vəzifəsi yerindyə yetirirsə, HR bu DTO ilə:
 ///   — o günləri balansdan geri qaytarır (+KorreksiyaGunSayi)
 ///   — həmin günlər üçün ayrıca DovletVezifelerininIcrasi qeydi yaradır
-///   — maaş moduluna MaasdanKes=false işarəsini göndərir
+///   — maaş modulına MaasdanKes=false işarəsini göndərir
 /// </summary>
 public class MezuniyyetKorreksiyaDto
 {
-    /// <summary>Düzəliş ediləcək əsas illik məzuniyyətin ID-si.</summary>
+    /// <summary>Düzəliş edilecək əsas illik məzuniyyətin ID-si.</summary>
     public int MezuniyyetId { get; set; }
 
     /// <summary>İşçinin ID-si (double-check üçün).</summary>
@@ -30,12 +30,13 @@ public class MezuniyyetKorreksiyaDto
     /// </summary>
     public int KorreksiyaGunSayi { get; set; }
 
-    /// <summary>HR-in açıqlaması (məs: "Hərbi komissarlıq çağırışı, əmr №123").</summary>
+    /// <summary>HR-in açıqlaması (məs: "Hərbi komisarlıq çağırışı, əmr №123").</summary>
     public string? Qeyd { get; set; }
 
     /// <summary>
-    /// Rəsmi sənədin (hərbi əmr, məhkəmə vərəqəsi) skanı.
-    /// Opsional — sonradan da yükləmək mümkündür.
+    /// Rəsmi sənədlər (hərbi əmr, məhkəmə vərəqəsi və s.) skanları.
+    /// Opsional, çoxlu fayl göndərmək mümkündür.
+    /// Sonradan da əlavə etmək olar.
     /// </summary>
-    public IFormFile? Sened { get; set; }
+    public List<IFormFile>? Senedler { get; set; }
 }
