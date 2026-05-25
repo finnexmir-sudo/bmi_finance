@@ -1,4 +1,4 @@
-using FinNex.Application.DTOs.HR.Mezuniyyet;
+﻿using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.Domain;
@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace FinNex.UI.Areas.HR.Controllers
 {
@@ -23,6 +24,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IBildirisService _bildirisService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IWebHostEnvironment _env;
+        private readonly IConfiguration _config;
 
         private static readonly string[] _icazeSenedTipler =
             [".pdf", ".jpg", ".jpeg", ".png"];
@@ -33,7 +35,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             UserManager<AppUser> userManager,
             IBildirisService bildirisService,
             IUnitOfWork unitOfWork,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            IConfiguration config)
         {
             _mezuniyyetService = mezuniyyetService;
             _isciService = isciService;
@@ -41,6 +44,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             _bildirisService = bildirisService;
             _unitOfWork = unitOfWork;
             _env = env;
+            _config = config;
         }
 
         private async Task<int?> GetCurrentIsciIdAsync()
@@ -326,9 +330,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             return View("TesdiqIndex", vm);
         }
 
-        // ══════════════════════════════════════════════════════
         // DÖVLƏT VƏZİFƏSİ KORREKSİYASI — Maddə 173
-        // ══════════════════════════════════════════════════════
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -338,11 +340,11 @@ namespace FinNex.UI.Areas.HR.Controllers
             if (hrIsciId == null)
                 return Json(new { ok = false, xeta = "İstifadəçi tapılmadı." });
 
-            // ── Sənədlər saxla (opsional, çoxlu fayl) ─────────────────────
             var yollar = new List<string>();
             if (dto.Senedler != null && dto.Senedler.Count > 0)
             {
-                var dir = Path.Combine(_env.WebRootPath, "uploads", "dovlet-vezife");
+                var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+                var dir = Path.Combine(dmsRoot, "dovlet-vezife");
                 Directory.CreateDirectory(dir);
 
                 foreach (var sened in dto.Senedler)
@@ -368,7 +370,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                     await using (var fs = new FileStream(Path.Combine(dir, fileName), FileMode.Create))
                         await sened.CopyToAsync(fs);
 
-                    yollar.Add($"/uploads/dovlet-vezife/{fileName}");
+                    yollar.Add($"/dms/dovlet-vezife/{fileName}");
                 }
             }
 
@@ -386,10 +388,6 @@ namespace FinNex.UI.Areas.HR.Controllers
             });
         }
 
-        // ══════════════════════════════════════════════════════
-        // POST — DÖVLƏT VƏZİFƏSİ — SONRADAN SƏNƏD ƏLAVƏSİ
-        // ══════════════════════════════════════════════════════
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> KorreksiyaSenedElave(int mezuniyyetId, List<IFormFile> senedler)
@@ -397,7 +395,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             if (senedler == null || senedler.Count == 0)
                 return Json(new { ok = false, xeta = "Ən azı bir sənəd seçin." });
 
-            var dir = Path.Combine(_env.WebRootPath, "uploads", "dovlet-vezife");
+            var dmsRoot2 = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+            var dir = Path.Combine(dmsRoot2, "dovlet-vezife");
             Directory.CreateDirectory(dir);
 
             var yollar = new List<string>();
@@ -424,7 +423,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 await using (var fs = new FileStream(Path.Combine(dir, fileName), FileMode.Create))
                     await sened.CopyToAsync(fs);
 
-                yollar.Add($"/uploads/dovlet-vezife/{fileName}");
+                yollar.Add($"/dms/dovlet-vezife/{fileName}");
             }
 
             if (yollar.Count == 0)
