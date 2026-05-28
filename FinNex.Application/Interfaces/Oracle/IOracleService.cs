@@ -5,6 +5,7 @@ public interface IOracleService
     /// <summary>
     /// Verilmiş SELECT sorğusunu Oracle-da icra edir.
     /// Yalnız SELECT icazəlidir — başqa DML/DDL qəbul edilmir.
+    /// maxRows: qaytarılacaq maksimum sətir sayı (default 1000).
     /// </summary>
-    Task<List<Dictionary<string, object?>>> SelectAsync(string sql, CancellationToken ct = default);
+    Task<List<Dictionary<string, object?>>> SelectAsync(string sql, int maxRows = 1000, CancellationToken ct = default);
 }
