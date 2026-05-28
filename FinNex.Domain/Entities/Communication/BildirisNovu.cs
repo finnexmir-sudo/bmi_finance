@@ -55,7 +55,7 @@ namespace FinNex.Domain.Entities.Communication
         TeklifGonderildi = 36,
         TeklifCavab = 37,
 
-        // Gələn Mail (IMAP — xarici)
+        // Gələn Mail (IMAP — xərici)
         YeniGelenMail = 38,
 
         // Performans Qiymətləndirmə
@@ -66,8 +66,5 @@ namespace FinNex.Domain.Entities.Communication
 
         // İş günü bitdi elanı
         IsGunuBitdi = 43,
-
-        // İşçi daxili mail sistemi
-        YeniIsciMail = 44
     }
 }

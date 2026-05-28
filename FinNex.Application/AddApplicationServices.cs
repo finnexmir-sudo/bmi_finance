@@ -27,7 +27,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace FinNex.Application;
 
-public static class ServiceRegistration // Class mütləq static olmalıdır
+public static class ServiceRegistration // Class mütəq mütəq static olmalıdır
 {
     public static void AddApplicationServices(this IServiceCollection services)
     {
@@ -104,10 +104,10 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         // AddApplicationServices.cs — yeni servis əlavələri
         // Mövcud qeydiyyatlara əlavə edin:
 
-        // ── Maaş Hesablama Engine ───────────────────────────────────
+        // ── Maaş Hesablama Engine ───────────────────────────────
         services.AddScoped<IMaasHesablamaService, MaasHesablamaService>();
 
-        // ── Hesabat İzləmə ────────────────────────────────────
+        // ── Hesabat İzləmə ────────────────────────────
         services.AddScoped<IHesabatIzlemeService, HesabatIzlemeService>();
 
 
@@ -115,12 +115,12 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         // services.AddScoped<IMaasParametriService, MaasParametriService>();
 
 
-        // Əgər BayramGunu və Balans üçün xüsusi məntiq yazmamısansa, 
-        // onları generik servis üzərindən belə qeydiyyatdan keçirə bilərsən:
+        // Əgər BayramGunu və Balans üçün xüsuslü məntiq yazmamidinsa,
+        // onları generik servis üzrindən belə qeydiyyatdan keçirə bilərsən:
         services.AddScoped(typeof(IServiceAsync<BayramGunu, BayramGunuDto, BayramGunuCreateDto, BayramGunuUpdateDto>), typeof(ServiceAsync<BayramGunu, BayramGunuDto, BayramGunuCreateDto, BayramGunuUpdateDto>));
         services.AddScoped(typeof(IServiceAsync<MezuniyyetBalans, MezuniyyetBalansDto, MezuniyyetBalansCreateDto, MezuniyyetBalansUpdateDto>), typeof(ServiceAsync<MezuniyyetBalans, MezuniyyetBalansDto, MezuniyyetBalansCreateDto, MezuniyyetBalansUpdateDto>));
 
-        // ── Kredit Modul Servisləri ───────────────────────────
+        // ── Kredit Modul Servisləri ─────────────────────────
         services.AddScoped<IKreditBaxanIsciService, KreditBaxanIsciService>();
         services.AddScoped<IKomiteUzvuService, KomiteUzvuService>();
         services.AddScoped<IKreditMuracietService, KreditMuracietService>();
@@ -129,29 +129,26 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IKreditRandevuService, KreditRandevuService>();
         services.AddScoped<IKreditSmsService, KreditSmsService>();
 
-        // ── PİD (Problemli İşlər Departamenti) ────────────────
+        // ── PİD (Problemli İşlər Departamenti) ─────────────────
         services.AddScoped<FinNex.Application.Interfaces.Pid.IPidSmsSablonService,
                            FinNex.Application.Services.Pid.PidSmsSablonService>();
         services.AddScoped<FinNex.Application.Interfaces.Pid.IPidSmsService,
                            FinNex.Application.Services.Pid.PidSmsService>();
 
-        // ── Jeton (Gamification) Modulu ──────────────────────
+        // ── Jeton (Gamification) Modulu ────────────────────
         services.AddScoped<IJetonService, JetonService>();
         services.AddScoped<IReytingService, ReytingService>();
         services.AddScoped<IJetonTeklifleriService, JetonTeklifleriService>();
 
-        // ── Gələn Mail Modulu (IMAP — xarici) ─────────────────
+        // ── Gələn Mail Modulu (IMAP — xərici) ─────────────────
         services.AddScoped<IGelenMailService, GelenMailService>();
         services.AddScoped<IAnthropicService, AnthropicService>();
         services.AddScoped<IAttachmentTextExtractor, AttachmentTextExtractor>();
 
-        // ── İşçi Daxili Mail Modulu ────────────────────────────
-        services.AddScoped<IIsciMailService, IsciMailService>();
-
-        // ── AI Sənəd Modulları ─────────────────────────────────
+        // ── AI Sənəd Modulları ─────────────────────────────
         services.AddScoped<ISenedAiService, SenedAiService>();
 
-        // ── HR Məsləhətçi AI Modulu ────────────────────────────
+        // ── HR Məsləhətçi AI Modulu ────────────────────────
         services.AddScoped<IHRMeslehetciService, HRMeslehetciService>();
     }
 }
