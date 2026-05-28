@@ -7,22 +7,16 @@ using Microsoft.AspNetCore.Identity;
 
 namespace FinNex.Application.Services.Communication
 {
-    /// <summary>
-    /// Bildirişi həm DB-yə (IBildirisService.YaratAsync vasitəsilə),
-    /// həm də desktop agentə göndərir.
-    /// Desktop push artıq BildirisService.YaratAsync içində işləyir —
-    /// bu sinif ayrıca PushAsync çağırmır.
-    /// </summary>
     public class BildirisRouter : IBildirisRouter
     {
-        private readonly IBildirisService    _bildirisService;
+        private readonly IBildirisService     _bildirisService;
         private readonly UserManager<AppUser> _userManager;
-        private readonly IUnitOfWork         _unitOfWork;
+        private readonly IUnitOfWork          _unitOfWork;
 
         public BildirisRouter(
-            IBildirisService    bildirisService,
+            IBildirisService     bildirisService,
             UserManager<AppUser> userManager,
-            IUnitOfWork         unitOfWork)
+            IUnitOfWork          unitOfWork)
         {
             _bildirisService = bildirisService;
             _userManager     = userManager;
@@ -34,9 +28,9 @@ namespace FinNex.Application.Services.Communication
             BildirisNovu nov,
             string bashliq,
             string metn,
-            string? redirectUrl   = null,
-            int?   mezuniyyetId   = null,
-            int?   icazeId        = null)
+            string? redirectUrl  = null,
+            int?   mezuniyyetId  = null,
+            int?   icazeId       = null)
         {
             try
             {
@@ -95,17 +89,15 @@ namespace FinNex.Application.Services.Communication
                     }
                 }
 
-                foreach (var isciId in alici)
-                {
-                    await _bildirisService.YaratAsync(
+                await Task.WhenAll(alici.Select(isciId =>
+                    _bildirisService.YaratAsync(
                         isciId:       isciId,
                         nov:          nov,
                         bashliq:      bashliq,
                         metn:         metn,
                         redirectUrl:  redirectUrl,
                         mezuniyyetId: mezuniyyetId,
-                        icazeId:      icazeId);
-                }
+                        icazeId:      icazeId)));
             }
             catch
             {
@@ -132,19 +124,19 @@ namespace FinNex.Application.Services.Communication
                                      && (x.BitmeTarixi == null || x.BitmeTarixi >= DateTime.Now),
                         izlemeden: true);
 
-                foreach (var r in rollar)
-                {
-                    if (exceptIsciId.HasValue && r.IsciId == exceptIsciId.Value) continue;
+                var hedefler = rollar
+                    .Where(r => !exceptIsciId.HasValue || r.IsciId != exceptIsciId.Value)
+                    .ToList();
 
-                    await _bildirisService.YaratAsync(
+                await Task.WhenAll(hedefler.Select(r =>
+                    _bildirisService.YaratAsync(
                         isciId:       r.IsciId,
                         nov:          nov,
                         bashliq:      bashliq,
                         metn:         metn,
                         redirectUrl:  redirectUrl,
                         mezuniyyetId: mezuniyyetId,
-                        icazeId:      icazeId);
-                }
+                        icazeId:      icazeId)));
             }
             catch
             {
@@ -175,19 +167,19 @@ namespace FinNex.Application.Services.Communication
                                      && (x.BitmeTarixi == null || x.BitmeTarixi >= DateTime.Now),
                         izlemeden: true);
 
-                foreach (var r in rollar)
-                {
-                    if (exceptIsciId.HasValue && r.IsciId == exceptIsciId.Value) continue;
+                var hedefler = rollar
+                    .Where(r => !exceptIsciId.HasValue || r.IsciId != exceptIsciId.Value)
+                    .ToList();
 
-                    await _bildirisService.YaratAsync(
+                await Task.WhenAll(hedefler.Select(r =>
+                    _bildirisService.YaratAsync(
                         isciId:       r.IsciId,
                         nov:          nov,
                         bashliq:      bashliq,
                         metn:         metn,
                         redirectUrl:  redirectUrl,
                         mezuniyyetId: mezuniyyetId,
-                        icazeId:      icazeId);
-                }
+                        icazeId:      icazeId)));
             }
             catch
             {
