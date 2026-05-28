@@ -1,0 +1,49 @@
+@model List<FinNex.Application.DTOs.Communication.IsciMail.IsciMailDto>
+@{
+    ViewData["Title"] = "Göndərilənlər";
+}
+
+<div class="fn-page-header d-flex align-items-center justify-content-between mb-3">
+    <h4 class="mb-0">
+        <i class="bi bi-send me-2 text-primary"></i> Göndərilənlər
+    </h4>
+    <a asp-action="Yaz" class="btn btn-primary btn-sm">
+        <i class="bi bi-pencil-square me-1"></i> Yeni Mail
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-send display-5"></i>
+                <p class="mt-2">Göndərilən mail yoxdur</p>
+            </div>
+        }
+        else
+        {
+            <div class="list-group list-group-flush">
+                @foreach (var mail in Model)
+                {
+                    <a asp-action="Detay" asp-route-id="@mail.Id"
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-semibold">@mail.Movzu</span>
+                                <small class="text-muted ms-2">@mail.MetinKisar</small>
+                                @if (mail.AliciSayi > 0)
+                                {
+                                    <span class="badge bg-secondary ms-2">@mail.AliciSayi alıcı</span>
+                                }
+                            </div>
+                            <small class="text-muted text-nowrap ms-3">
+                                @(mail.GondermeTarixi?.ToString("dd.MM.yy HH:mm") ?? "")
+                            </small>
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,60 @@
+@model FinNex.Application.DTOs.Communication.IsciMail.IsciMailCreateDto
+@{
+    ViewData["Title"] = "Yeni Mail";
+}
+
+<div class="fn-page-header mb-3">
+    <h4 class="mb-0">
+        <i class="bi bi-pencil-square me-2 text-primary"></i> Yeni Mail
+    </h4>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form asp-action="Yaz" method="post" id="mailForm">
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Alıcılar <span class="text-danger">*</span></label>
+                <select name="AliciIsciIds" id="selAlicilar" class="form-select"
+                        multiple asp-items="ViewBag.Isciler">
+                </select>
+                <div class="form-text">Bir və ya bir neçə alıcı seçin (Ctrl+Klik)</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Kopyalanacaqlar (CC)</label>
+                <select name="CcIsciIds" class="form-select"
+                        multiple asp-items="ViewBag.Isciler">
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Mövzu</label>
+                <input asp-for="Movzu" class="form-control" placeholder="Mail mövzusu..." />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Məzmun</label>
+                <textarea asp-for="Metin" id="mailMetin" class="form-control" rows="10"
+                          placeholder="Mailin məzmunu..."></textarea>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" name="action" value="gonder" class="btn btn-primary">
+                    <i class="bi bi-send me-1"></i> Göndər
+                </button>
+                <button type="submit" name="action" value="taslaq" class="btn btn-outline-secondary">
+                    <i class="bi bi-save me-1"></i> Qaralama saxla
+                </button>
+                <a asp-action="Index" class="btn btn-outline-danger">
+                    <i class="bi bi-x me-1"></i> Ləğv et
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,5 +1,4 @@
 // FinNex.Domain.Entities.Communication/BildirisNovu.cs
-// FinNex.Domain.Entities.Communication/Bildiris.cs
 namespace FinNex.Domain.Entities.Communication
 {
     public enum BildirisNovu
@@ -56,7 +55,7 @@ namespace FinNex.Domain.Entities.Communication
         TeklifGonderildi = 36,
         TeklifCavab = 37,
 
-        // Gələn Mail
+        // Gələn Mail (IMAP — xarici)
         YeniGelenMail = 38,
 
         // Performans Qiymətləndirmə
@@ -66,6 +65,9 @@ namespace FinNex.Domain.Entities.Communication
         PerformansTamamlandi = 42,
 
         // İş günü bitdi elanı
-        IsGunuBitdi = 43
+        IsGunuBitdi = 43,
+
+        // İşçi daxili mail sistemi
+        YeniIsciMail = 44
     }
 }

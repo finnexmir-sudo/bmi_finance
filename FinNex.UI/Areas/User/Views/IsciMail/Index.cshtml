@@ -1,0 +1,65 @@
+@model List<FinNex.Application.DTOs.Communication.IsciMail.IsciMailDto>
+@{
+    ViewData["Title"] = "Gələn Qutusu";
+    int oxunmamis = (int)(ViewData["OxunmamisSayi"] ?? 0);
+}
+
+<div class="fn-page-header d-flex align-items-center justify-content-between mb-3">
+    <h4 class="mb-0">
+        <i class="bi bi-inbox me-2 text-primary"></i>
+        Gələn Qutusu
+        @if (oxunmamis > 0)
+        {
+            <span class="badge bg-danger ms-1">@oxunmamis</span>
+        }
+    </h4>
+    <a asp-action="Yaz" class="btn btn-primary btn-sm">
+        <i class="bi bi-pencil-square me-1"></i> Yeni Mail
+    </a>
+</div>
+
+@include("_MailSideNav")
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox display-5"></i>
+                <p class="mt-2">Gələn qutusu boşdur</p>
+            </div>
+        }
+        else
+        {
+            <div class="list-group list-group-flush">
+                @foreach (var mail in Model)
+                {
+                    <a asp-action="Detay" asp-route-id="@mail.Id"
+                       class="list-group-item list-group-item-action @(mail.Oxunub ? "" : "fw-semibold bg-light")">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                @if (!mail.Oxunub)
+                                {
+                                    <span class="badge bg-primary rounded-circle p-1" style="width:8px;height:8px;"></span>
+                                }
+                                <div>
+                                    <span class="text-dark">@mail.GonderenAdSoyad</span>
+                                    <span class="mx-1 text-muted">—</span>
+                                    <span>@mail.Movzu</span>
+                                    <small class="text-muted ms-2">@mail.MetinKisar</small>
+                                </div>
+                            </div>
+                            <small class="text-muted text-nowrap ms-3">
+                                @(mail.GondermeTarixi?.ToString("dd.MM.yy HH:mm") ?? "")
+                            </small>
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

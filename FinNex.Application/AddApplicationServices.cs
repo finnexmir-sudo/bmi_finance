@@ -1,4 +1,4 @@
-﻿
+
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.AI;
@@ -140,10 +140,13 @@ public static class ServiceRegistration // Class mütləq static olmalıdır
         services.AddScoped<IReytingService, ReytingService>();
         services.AddScoped<IJetonTeklifleriService, JetonTeklifleriService>();
 
-        // ── Gələn Mail Modulu ──────────────────────────────────
+        // ── Gələn Mail Modulu (IMAP — xarici) ─────────────────
         services.AddScoped<IGelenMailService, GelenMailService>();
         services.AddScoped<IAnthropicService, AnthropicService>();
         services.AddScoped<IAttachmentTextExtractor, AttachmentTextExtractor>();
+
+        // ── İşçi Daxili Mail Modulu ────────────────────────────
+        services.AddScoped<IIsciMailService, IsciMailService>();
 
         // ── AI Sənəd Modulları ─────────────────────────────────
         services.AddScoped<ISenedAiService, SenedAiService>();
