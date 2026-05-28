@@ -93,6 +93,10 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<GelenMailQosma> GelenMailQosmalar { get; set; }
     public DbSet<GelenMailIsci> GelenMailIsciler { get; set; }
 
+    // ── İşçi Mail Modulu ──────────────────────────────────
+    public DbSet<IsciMail> IsciMailleri { get; set; } = null!;
+    public DbSet<IsciMailAlici> IsciMailAlicilari { get; set; } = null!;
+
     public DbSet<Mesaj> Mesajlar { get; set; }
     public DbSet<Bildiris> Bildirisler { get; set; }
     public DbSet<EvezediciTesdiq> EvezediciTesdiqler { get; set; }
@@ -1345,6 +1349,25 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasOne(x => x.Isci)
             .WithMany()
             .HasForeignKey(x => x.IsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // ── İşçi Mail Modulu ──────────────────────────────────────────────
+        builder.Entity<IsciMail>()
+            .HasOne(x => x.Gonderen)
+            .WithMany()
+            .HasForeignKey(x => x.GonderenIsciId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<IsciMailAlici>()
+            .HasOne(x => x.IsciMail)
+            .WithMany(x => x.Alicilar)
+            .HasForeignKey(x => x.IsciMailId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<IsciMailAlici>()
+            .HasOne(x => x.Alici)
+            .WithMany()
+            .HasForeignKey(x => x.AliciIsciId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // ── AI Module ──────────────────────────────────────────────
