@@ -12,13 +12,9 @@ public class OracleService : IOracleService
     {
         _connectionString = config["Oracle:ConnectionString"]
             ?? throw new InvalidOperationException("Oracle:ConnectionString konfiqurasiya edilməyib.");
-
-        var tnsAdmin = config["Oracle:TnsAdmin"];
-        if (!string.IsNullOrWhiteSpace(tnsAdmin))
-            OracleConfiguration.TnsAdmin = tnsAdmin;
     }
 
-    public async Task<List<Dictionary<string, object?>>> SelectAsync(string sql, CancellationToken ct = default)
+    public async Task<List<Dictionary<string, object?>>> SelectAsync(string sql, int maxRows = 1000, CancellationToken ct = default)
     {
         sql = sql.Trim().TrimEnd(';').TrimEnd();
         var trimmed = sql.TrimStart();
@@ -37,12 +33,14 @@ public class OracleService : IOracleService
         };
 
         await using var reader = await cmd.ExecuteReaderAsync(ct);
-        while (await reader.ReadAsync(ct))
+        var count = 0;
+        while (count < maxRows && await reader.ReadAsync(ct))
         {
             var row = new Dictionary<string, object?>();
             for (var i = 0; i < reader.FieldCount; i++)
                 row[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader.GetValue(i);
             result.Add(row);
+            count++;
         }
 
         return result;

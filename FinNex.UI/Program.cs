@@ -15,6 +15,7 @@ using System.Text;
 using System.Threading.RateLimiting;
 using Serilog;
 using Serilog.Events;
+using Oracle.ManagedDataAccess.Client;
 
 namespace FinNex.UI
 {
@@ -225,6 +226,11 @@ namespace FinNex.UI
             builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.GelenMailSyncService>();
             // builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.ChatCleanupBackgroundService>();
             // builder.Services.AddHostedService<FinNex.Infrastructure.BackgroundJobs.KreditMailBackgroundService>();
+
+            // ── Oracle statik konfiqurasiya (startup-da bircə dəfə) ───
+            var oracleTnsAdmin = builder.Configuration["Oracle:TnsAdmin"];
+            if (!string.IsNullOrWhiteSpace(oracleTnsAdmin))
+                OracleConfiguration.TnsAdmin = oracleTnsAdmin;
 
             var app = builder.Build();
 
