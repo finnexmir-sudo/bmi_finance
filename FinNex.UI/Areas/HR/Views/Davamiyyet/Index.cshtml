@@ -285,7 +285,9 @@
                         {
                             var isLate = item.GirisVaxti.HasValue &&
                                 (item.GirisVaxti.Value.Hour > 9 || (item.GirisVaxti.Value.Hour == 9 && item.GirisVaxti.Value.Minute > 5));
-                            <tr>
+                            <tr data-giris="@(item.GirisVaxti.HasValue ? item.GirisVaxti.Value.ToString("yyyy-MM-ddTHH:mm:ss") : "")"
+                                data-cixis="@(item.CixisVaxti.HasValue ? item.CixisVaxti.Value.ToString("yyyy-MM-ddTHH:mm:ss") : "")"
+                                style="cursor:pointer;">
                                 <td>
                                     <div class="hrd-emp">
                                         <div class="hrd-emp-av">@item.IsciTamAd.Substring(0, Math.Min(2, item.IsciTamAd.Length)).ToUpper()</div>
