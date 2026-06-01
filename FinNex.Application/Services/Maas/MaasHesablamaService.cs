@@ -200,6 +200,32 @@ namespace FinNex.Application.Services.HR
                 });
             }
 
+            // 5.1 İşdən çıxma kəsintisi — həmin ayda işdən çıxıbsa yalnız işlənmiş günlər ödənir
+            decimal cixisKesintisi = 0;
+            if (isci.Status == IsciStatus.IshtenCixib &&
+                isci.IsdenAyrilmaTarixi.HasValue &&
+                isci.IsdenAyrilmaTarixi.Value.Year == input.Il &&
+                isci.IsdenAyrilmaTarixi.Value.Month == input.Ay &&
+                ayIsGunu > 0)
+            {
+                var ayBash = new DateTime(input.Il, input.Ay, 1);
+                int islenmisDays = await IsGunleriniTariheGoereSayAsync(ayBash, isci.IsdenAyrilmaTarixi.Value.Date);
+                int cixisGun = Math.Max(0, ayIsGunu - islenmisDays);
+                if (cixisGun > 0)
+                {
+                    cixisKesintisi = Math.Round(esasMaas / ayIsGunu * cixisGun, 2);
+                    izahatlar.Add(new HesablamaIzahiDto
+                    {
+                        Addim = "Çıxış Kəsintisi",
+                        Izah = $"İşdən çıxma: {isci.IsdenAyrilmaTarixi.Value:dd.MM.yyyy}. " +
+                               $"İşlənmiş: {islenmisDays} iş günü / {ayIsGunu} iş günü. " +
+                               $"Kəsilən: {cixisGun} gün × {esasMaas:N2}/{ayIsGunu} = {cixisKesintisi:N2} AZN",
+                        Mebleg = cixisKesintisi,
+                        Tip = "kesinti"
+                    });
+                }
+            }
+
             // 6. Mezuniyyet gunleri ve odenisi (2026 qaydası: GS + İGS)
             //    QAYDA (BMI Finance biznes qərarı):
             //      - AySonuOdenis qeydləri → bu ayın maaşına ödəniş əlavə olunur,
@@ -646,6 +672,7 @@ namespace FinNex.Application.Services.HR
 
             // 9. BRUT = əsas maaş ± düzəlişlər + işəgötürən HYS payı (işçinin ümumi gəliri)
             decimal esasBrut = esasMaas
+                - cixisKesintisi
                 - mezKesinti
                 + mezOdenis
                 + xestelikSirketOdenis
