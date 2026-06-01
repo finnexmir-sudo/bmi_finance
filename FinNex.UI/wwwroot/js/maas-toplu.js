@@ -116,6 +116,7 @@
         const mavTutulma = mavGelirV + mavDsmf + mavIss + mavItss;
         const chk = row.querySelector('.mth-checkbox');
         const bInp = row.querySelector('.mth-inp--b');
+        const ovInp = row.querySelector('.mth-inp--ov');
         const cInp = row.querySelector('.mth-inp--c');
         // Fərqli gəlir input əsas sırada deyil, əlaqəli detail sırasında yerləşir
         const detailRow = document.querySelector(`tr.mth-detail-row[data-detail-for="${row.dataset.isci}"]`);
@@ -123,6 +124,7 @@
         const done = row.classList.contains('done');
 
         const bonus = parseFloat(bInp?.value || 0) || 0;
+        const overtime = parseFloat(ovInp?.value || 0) || 0;
         const cerime = parseFloat(cInp?.value || 0) || 0;
         const ferqliGelir = fgInps.reduce((s, inp) => s + (parseFloat(inp.value || 0) || 0), 0);
 
@@ -139,7 +141,7 @@
             esas - mezKesinti + mezOdenis
                  - xesKesinti + xesSirketOdenis
                  - qayibKesinti
-                 + bonus + ferqliGelir - cerime,
+                 + bonus + overtime + ferqliGelir - cerime,
             0);
         const brut = esasBrut;  // GROSS = işlədiyi məbləğ (preview ilə eyni)
 
@@ -225,7 +227,7 @@
         const sirketCemi = dsmfIsv + issIsv + itssIsv + hysIsv;
 
         return {
-            esas, bonus, cerime, ferqliGelir, brut, vergilenecek,
+            esas, bonus, overtime, cerime, ferqliGelir, brut, vergilenecek,
             vergiBazasi, dsmfBazasi, itssBazasi,
             standartGuzest, isciGuzest, isciGuzestAd,
             hys, hysIsv, avans,
@@ -492,7 +494,7 @@
 
         const headers = [
             '#', 'Ad Soyad', 'Departament', 'Əsas maaş',
-            'Bonus', 'Fərqli gəlir', 'Cərimə',
+            'Bonus', 'Overtime', 'Fərqli gəlir', 'Cərimə',
             'Məz. günü', 'Məz. ödəniş', 'Məz. kəsinti',
             'Xəs. şirkət gün', 'Xəs. şirkət ödəniş', 'Xəs. DSMF gün', 'Xəs. DSMF ödəniş', 'Xəs. kəsinti',
             'GROSS',
@@ -507,7 +509,7 @@
             ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]);
 
         let totals = {
-            esas: 0, bonus: 0, ferqli: 0, cerime: 0,
+            esas: 0, bonus: 0, overtime: 0, ferqli: 0, cerime: 0,
             mezOdenis: 0, mezKesinti: 0, xesSirket: 0, xesDsmf: 0, xesKesinti: 0,
             brut: 0, gelirV: 0, dsmf: 0, iss: 0, itss: 0, hys: 0, avans: 0, tutulma: 0, net: 0,
             dsmfIsv: 0, issIsv: 0, itssIsv: 0, hysIsv: 0, sirketCemi: 0
@@ -521,6 +523,7 @@
 
             totals.esas += d.esas;
             totals.bonus += d.bonus;
+            totals.overtime += d.overtime;
             totals.ferqli += d.ferqliGelir;
             totals.cerime += d.cerime;
             totals.mezOdenis += d.mezOdenis;
@@ -549,6 +552,7 @@
                 <td>${esc(dept)}</td>
                 <td style="text-align:right">${num(d.esas)}</td>
                 <td style="text-align:right">${num(d.bonus)}</td>
+                <td style="text-align:right">${num(d.overtime)}</td>
                 <td style="text-align:right">${num(d.ferqliGelir)}</td>
                 <td style="text-align:right">${num(d.cerime)}</td>
                 <td style="text-align:center">${d.mezGun || ''}</td>
@@ -583,6 +587,7 @@
             <td colspan="3" style="text-align:right">CƏMİ — ${visibleRows.length} işçi</td>
             <td style="text-align:right">${num(totals.esas)}</td>
             <td style="text-align:right">${num(totals.bonus)}</td>
+            <td style="text-align:right">${num(totals.overtime)}</td>
             <td style="text-align:right">${num(totals.ferqli)}</td>
             <td style="text-align:right">${num(totals.cerime)}</td>
             <td></td>
