@@ -386,10 +386,15 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return RedirectToAction(nameof(Index), new { il = bugun.Year, ay = bugun.Month });
             }
 
-            // Aktiv işçiləri gətir — bonus/cərimə daxil etmək üçün
+            // Aktiv işçilər + həmin ayda işdən çıxmış işçilər (cari ayın əmək haqqı hesablanmalıdır)
             var isciler = await _unitOfWork.Repository<Isci>()
                 .Query()
-                .Where(x => x.Status == IsciStatus.Aktiv && !x.Silinib)
+                .Where(x => !x.Silinib && (
+                    x.Status == IsciStatus.Aktiv ||
+                    (x.Status == IsciStatus.IshtenCixib &&
+                     x.IsdenAyrilmaTarixi.HasValue &&
+                     x.IsdenAyrilmaTarixi.Value.Year == cIl &&
+                     x.IsdenAyrilmaTarixi.Value.Month == cAy)))
                 .Include(x => x.Maliye)
                 .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null))
                     .ThenInclude(t => t.Departament)
