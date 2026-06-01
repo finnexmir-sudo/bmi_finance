@@ -729,7 +729,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 actionCell = '<td></td>';
             }
 
-            html += '<tr>' +
+            html += '<tr data-giris="' + (r.girisVaxti || '') + '" data-cixis="' + (r.cixisVaxti || '') + '" style="cursor:pointer;">' +
                 '<td><div class="hrd-emp"><div class="hrd-emp-av">' + initials + '</div><div class="hrd-emp-name">' + r.isciTamAd + '</div></div></td>' +
                 '<td><span class="hrd-dept">' + r.departamentAd + '</span></td>' +
                 '<td><div class="hrd-date">' + tarix + '</div></td>' +
@@ -1040,6 +1040,67 @@ document.addEventListener('DOMContentLoaded', function () {
             .finally(function () { btnIsGunuBit.disabled = false; });
         });
     }
+
+    // ── İşçi sırası klik → keçən iş vaxtı ─────────────────────────────
+    var elapsedTooltip = document.createElement('div');
+    elapsedTooltip.id = 'hrdElapsedTooltip';
+    elapsedTooltip.style.cssText =
+        'position:fixed;z-index:9999;background:#1e293b;color:#f1f5f9;' +
+        'padding:10px 16px;border-radius:10px;font-size:13px;' +
+        'box-shadow:0 4px 20px rgba(0,0,0,.35);display:none;white-space:nowrap;' +
+        'line-height:1.6;pointer-events:none;';
+    document.body.appendChild(elapsedTooltip);
+
+    var suppressElapsedClose = false;
+
+    tableBody.addEventListener('click', function (e) {
+        if (e.target.closest('button')) return;
+        var row = e.target.closest('tr[data-giris]');
+        if (!row) return;
+
+        var girisStr = row.getAttribute('data-giris');
+        var cixisStr = row.getAttribute('data-cixis');
+        var isciAd = (row.querySelector('.hrd-emp-name') || {}).textContent || '';
+
+        var msg;
+        if (!girisStr) {
+            msg = '<span style="opacity:.6;">Giriş qeydi yoxdur</span>';
+        } else if (cixisStr) {
+            var cixisDate = new Date(cixisStr);
+            var girisDate2 = new Date(girisStr);
+            var workedMin = Math.floor((cixisDate - girisDate2) / 60000);
+            var wh = Math.floor(workedMin / 60);
+            var wm = workedMin % 60;
+            msg = '&#128682; <strong>' + isciAd + '</strong><br>' +
+                  '<span style="opacity:.7;font-size:12px;">İşdən çıxıb · Cəmi: ' + wh + ' saat ' + wm + ' dəqiqə</span>';
+        } else {
+            var girisDate = new Date(girisStr);
+            var now = new Date();
+            var diffMin = Math.max(0, Math.floor((now - girisDate) / 60000));
+            var h = Math.floor(diffMin / 60);
+            var m = diffMin % 60;
+            msg = '&#9200; <strong>' + isciAd + '</strong><br>' +
+                  '<span style="color:#34d399;font-size:14px;font-weight:600;">' + h + ' saat ' + m + ' dəqiqə</span>' +
+                  '<span style="opacity:.6;font-size:11px;margin-left:6px;">işdədir</span>';
+        }
+
+        elapsedTooltip.innerHTML = msg;
+        elapsedTooltip.style.display = 'block';
+
+        var x = e.clientX + 14;
+        var y = e.clientY - 14;
+        if (x + 260 > window.innerWidth) x = e.clientX - 260;
+        if (y + 70 > window.innerHeight) y = e.clientY - 70;
+        elapsedTooltip.style.left = x + 'px';
+        elapsedTooltip.style.top = y + 'px';
+
+        suppressElapsedClose = true;
+    });
+
+    document.addEventListener('click', function () {
+        if (suppressElapsedClose) { suppressElapsedClose = false; return; }
+        elapsedTooltip.style.display = 'none';
+    });
 
     // Səhifə ilk açılanda JS render ilə yüklə ki, redaktə/sil düymələri görünsün
     loadData({ tarix: inputTarix.value || toLocalDateStr(new Date()) });

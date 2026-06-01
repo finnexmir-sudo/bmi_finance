@@ -374,12 +374,12 @@
         const sel = rows.filter(r => rd(r).checked);
         const t = sel.reduce((a, r) => {
             const d = rd(r);
-            // İşçi tərəfi
+            // İşçi tərəfi — vergi sütunları maaş + məz.avansi hissəsini birlikdə toplayır
             a.brut        += d.brut;
-            a.gelirV      += d.gelirV;
-            a.dsmfIsci    += d.dsmf;
-            a.issIsci     += d.iss;
-            a.itssIsci    += d.itss;
+            a.gelirV      += d.gelirV + d.mavGelirV;
+            a.dsmfIsci    += d.dsmf  + d.mavDsmf;
+            a.issIsci     += d.iss   + d.mavIss;
+            a.itssIsci    += d.itss  + d.mavItss;
             a.hysIsci     += d.hys;
             a.avans       += d.avans;
             a.mavTutulma  += d.mavTutulma;
@@ -538,10 +538,10 @@
             totals.xesDsmf += d.xesDsmfOdenis;
             totals.xesKesinti += d.xesKesinti;
             totals.brut += d.brut;
-            totals.gelirV += d.gelirV;
-            totals.dsmf += d.dsmf;
-            totals.iss += d.iss;
-            totals.itss += d.itss;
+            totals.gelirV += d.gelirV + d.mavGelirV;
+            totals.dsmf   += d.dsmf  + d.mavDsmf;
+            totals.iss    += d.iss   + d.mavIss;
+            totals.itss   += d.itss  + d.mavItss;
             totals.hys += d.hys;
             totals.avans += d.avans;
             totals.tutulma += d.tutulma;
@@ -573,10 +573,10 @@
                 <td style="text-align:right">${num(d.standartGuzest)}</td>
                 <td style="text-align:right">${num(d.isciGuzest)}</td>
                 <td style="text-align:right">${num(d.vergilenecek)}</td>
-                <td style="text-align:right">${num(d.gelirV)}</td>
-                <td style="text-align:right">${num(d.dsmf)}</td>
-                <td style="text-align:right">${num(d.iss)}</td>
-                <td style="text-align:right">${num(d.itss)}</td>
+                <td style="text-align:right">${num(d.gelirV + d.mavGelirV)}</td>
+                <td style="text-align:right">${num(d.dsmf  + d.mavDsmf)}</td>
+                <td style="text-align:right">${num(d.iss   + d.mavIss)}</td>
+                <td style="text-align:right">${num(d.itss  + d.mavItss)}</td>
                 <td style="text-align:right">${num(d.hys)}</td>
                 <td style="text-align:right">${num(d.avans)}</td>
                 <td style="text-align:right;color:#c83838">${num(d.tutulma + d.hys)}</td>
