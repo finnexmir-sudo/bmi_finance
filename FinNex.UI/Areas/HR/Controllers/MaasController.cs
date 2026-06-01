@@ -713,10 +713,11 @@ namespace FinNex.UI.Areas.HR.Controllers
                 TempData["Xetalar"] = string.Join("|", d.Xetalar);
 
             // Bildiriş: bütün Rəhbər/Admin istifadəçilərə təsdiq sorğusu göndər
-            if (d.UgurluSayi > 0)
-            {
-                await BildirisGonderRehberlereAsync(il, ay, d.UgurluSayi);
-            }
+            // ── MÜVƏQQƏTİ SÖNDÜRÜLÜB — açmaq üçün aşağıdakı şərhi sil ──
+            // if (d.UgurluSayi > 0)
+            // {
+            //     await BildirisGonderRehberlereAsync(il, ay, d.UgurluSayi);
+            // }
 
             return RedirectToAction(nameof(Index), new { il, ay });
         }
