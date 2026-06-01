@@ -787,17 +787,12 @@ namespace FinNex.UI.Areas.HR.Controllers
                 if (r.Success)
                 {
                     ugurlu++;
-                    // İşçiyə ödəniş bildirişi
-                    try
-                    {
-                        await _bildirisService.YaratAsync(
-                            isciId: m.IsciId,
-                            nov: BildirisNovu.MaasOdenildi,
-                            bashliq: $"Əmək haqqı ödənildi — {dovr}",
-                            metn: $"{dovr} üçün əmək haqqınız ({m.NetMebleg:N2} ₼) ödənildi.",
-                            redirectUrl: isciRedirect);
-                    }
-                    catch { /* bildiriş əsas əməliyyatı pozmasın */ }
+                    // İşçiyə ödəniş bildirişi — MÜVƏQQƏTİ SÖNDÜRÜLÜB
+                    // await _bildirisService.YaratAsync(
+                    //     isciId: m.IsciId, nov: BildirisNovu.MaasOdenildi,
+                    //     bashliq: $"Əmək haqqı ödənildi — {dovr}",
+                    //     metn: $"{dovr} üçün əmək haqqınız ({m.NetMebleg:N2} ₼) ödənildi.",
+                    //     redirectUrl: isciRedirect);
                 }
                 else xeta++;
             }
@@ -858,11 +853,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 else xeta++;
             }
 
-            // Mühasibə bildiriş göndər
-            if (ugurlu > 0)
-            {
-                await BildirisGonderMuhasibleriAsync(il, ay, ugurlu);
-            }
+            // Mühasibə bildiriş göndər — MÜVƏQQƏTİ SÖNDÜRÜLÜB
+            // if (ugurlu > 0) await BildirisGonderMuhasibleriAsync(il, ay, ugurlu);
 
             TempData[xeta > 0 ? "Error" : "Success"] =
                 $"Toplu təsdiq: {ugurlu} maaş təsdiqləndi" + (xeta > 0 ? $", {xeta} xətalı." : ".");
@@ -894,8 +886,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 else xeta++;
             }
 
-            if (ugurlu > 0)
-                await BildirisGonderHesablamaUcunAsync(il, ay, ugurlu, sebeb);
+            // MÜVƏQQƏTİ SÖNDÜRÜLÜB:
+            // if (ugurlu > 0) await BildirisGonderHesablamaUcunAsync(il, ay, ugurlu, sebeb);
 
             TempData[xeta > 0 ? "Error" : "Success"] =
                 $"Hesablama geri qaytarıldı: {ugurlu} maaş ləğv edildi, mühasib yenidən hesablamağa dəvət edildi"
@@ -1163,35 +1155,13 @@ namespace FinNex.UI.Areas.HR.Controllers
                                       "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
                 var dovr = $"{ayAdlar[ay]} {il}";
 
-                switch (yeniStatus)
-                {
-                    case MaasStatus.Tesdiqlendi:
-                        await _bildirisRouter.NotifyRolesAsync(
-                            new[] { RoleNames.Muhasib, RoleNames.Admin },
-                            BildirisNovu.TesdiqSorgusu,
-                            $"Maaş təsdiqləndi — {dovr}",
-                            $"{dovr} dövrü üçün maaş təsdiqləndi, ödəniş gözləyir.",
-                            redirectUrl: Url.Action("Index", "Maas", new { area = "HR", il, ay }));
-                        break;
-
-                    case MaasStatus.Odenildi:
-                        await _bildirisService.YaratAsync(
-                            isciId: maas.IsciId,
-                            nov: BildirisNovu.MaasOdenildi,
-                            bashliq: $"Əmək haqqı ödənildi — {dovr}",
-                            metn: $"{dovr} üçün əmək haqqınız ({maas.NetMebleg:N2} ₼) ödənildi.",
-                            redirectUrl: Url.Action("Index", "Maas", new { area = "User" }));
-                        break;
-
-                    case MaasStatus.LegvEdildi:
-                        await _bildirisRouter.NotifyIsciAsync(
-                            maas.IsciId,
-                            BildirisNovu.MaasReddedildi,
-                            $"Maaş ləğv edildi — {dovr}",
-                            $"{dovr} dövrü üçün maaş qeydi ləğv edildi. Ətraflı məlumat üçün HR ilə əlaqə saxlayın.",
-                            redirectUrl: Url.Action("Index", "Maas", new { area = "User" }));
-                        break;
-                }
+                // Status bildirişləri — MÜVƏQQƏTİ SÖNDÜRÜLÜB
+                // switch (yeniStatus)
+                // {
+                //     case MaasStatus.Tesdiqlendi: NotifyRolesAsync(...); break;
+                //     case MaasStatus.Odenildi:    YaratAsync(isciId...); break;
+                //     case MaasStatus.LegvEdildi:  NotifyIsciAsync(...);  break;
+                // }
             }
             catch { /* bildiriş xətası əsas əməliyyatı pozmasın */ }
         }
