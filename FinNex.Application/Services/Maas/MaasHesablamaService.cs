@@ -57,7 +57,12 @@ namespace FinNex.Application.Services.HR
         {
             var isciler = await _unitOfWork.Repository<Isci>()
                 .Query()
-                .Where(x => x.Status == IsciStatus.Aktiv && !x.Silinib)
+                .Where(x => !x.Silinib && (
+                    x.Status == IsciStatus.Aktiv ||
+                    (x.Status == IsciStatus.IshtenCixib &&
+                     x.IsdenAyrilmaTarixi.HasValue &&
+                     x.IsdenAyrilmaTarixi.Value.Year == input.Il &&
+                     x.IsdenAyrilmaTarixi.Value.Month == input.Ay)))
                 .Include(x => x.Maliye)
                 .ToListAsync();
 

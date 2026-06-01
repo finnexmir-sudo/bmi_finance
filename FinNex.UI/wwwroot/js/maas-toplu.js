@@ -409,7 +409,7 @@
         s('mthFootHysIsci', fmt(t.hysIsci));
         s('mthFootAvans', fmt(t.avans));
         s('mthFootMavTutulma', fmt(t.mavTutulma));
-        s('mthFootTutulma', fmt(t.tutulma));
+        s('mthFootTutulma', fmt(t.tutulma + t.hysIsci));
         s('mthFootNet', fmt(t.net));
         s('mthFootNet2', fmt(t.net));
         // Şirkət tərəfi
@@ -579,7 +579,7 @@
                 <td style="text-align:right">${num(d.itss)}</td>
                 <td style="text-align:right">${num(d.hys)}</td>
                 <td style="text-align:right">${num(d.avans)}</td>
-                <td style="text-align:right;color:#c83838">${num(d.tutulma)}</td>
+                <td style="text-align:right;color:#c83838">${num(d.tutulma + d.hys)}</td>
                 <td style="text-align:right;font-weight:bold;background:#fff7e0">${num(d.net)}</td>
                 <td style="text-align:right">${num(d.dsmfIsv)}</td>
                 <td style="text-align:right">${num(d.issIsv)}</td>
@@ -612,7 +612,7 @@
             <td style="text-align:right">${num(totals.itss)}</td>
             <td style="text-align:right">${num(totals.hys)}</td>
             <td style="text-align:right">${num(totals.avans)}</td>
-            <td style="text-align:right;color:#c83838">${num(totals.tutulma)}</td>
+            <td style="text-align:right;color:#c83838">${num(totals.tutulma + totals.hys)}</td>
             <td style="text-align:right;background:#fff7e0">${num(totals.net)}</td>
             <td style="text-align:right">${num(totals.dsmfIsv)}</td>
             <td style="text-align:right">${num(totals.issIsv)}</td>
