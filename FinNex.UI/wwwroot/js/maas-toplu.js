@@ -115,8 +115,13 @@
         }
         const mavTutulma = mavGelirV + mavDsmf + mavIss + mavItss;
         const chk = row.querySelector('.mth-checkbox');
-        const bInp  = row.querySelector('.mth-inp--b[name]');
-        const ovInp = row.querySelector('.mth-inp--b:not([name])');
+        // .mth-inp--b (bonus) həmişə name atributuna malikdir;
+        // overtime input-unda isə heç vaxt name olmur (forma submit edilmir).
+        // Hər iki class variantını axtarırıq ki, serverin compile etdiyi
+        // view versiyasından asılı olmayaq.
+        const allBInputs = Array.from(row.querySelectorAll('.mth-inp--b, .mth-inp--ov'));
+        const bInp  = allBInputs.find(inp => inp.name) || null;
+        const ovInp = allBInputs.find(inp => !inp.name) || null;
         const cInp  = row.querySelector('.mth-inp--c');
         // Fərqli gəlir input əsas sırada deyil, əlaqəli detail sırasında yerləşir
         const detailRow = document.querySelector(`tr.mth-detail-row[data-detail-for="${row.dataset.isci}"]`);
@@ -454,7 +459,8 @@
         const fgInpsForEvent = detailRowForInput
             ? Array.from(detailRowForInput.querySelectorAll('.mth-inp--fg'))
             : [];
-        [row.querySelector('.mth-inp--b[name]'),
+        const allBInpsForEvent = Array.from(row.querySelectorAll('.mth-inp--b, .mth-inp--ov'));
+        [...allBInpsForEvent,
          row.querySelector('.mth-inp--c'),
          ...fgInpsForEvent].forEach(inp => {
             inp?.addEventListener('input', () => { updateRow(row); updateFooter(); });
