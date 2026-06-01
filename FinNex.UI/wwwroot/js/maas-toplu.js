@@ -115,9 +115,9 @@
         }
         const mavTutulma = mavGelirV + mavDsmf + mavIss + mavItss;
         const chk = row.querySelector('.mth-checkbox');
-        const bInp = row.querySelector('.mth-inp--b');
-        const ovInp = row.querySelector('.mth-inp--ov');
-        const cInp = row.querySelector('.mth-inp--c');
+        const bInp  = row.querySelector('.mth-inp--b[name]');
+        const ovInp = row.querySelector('.mth-inp--b:not([name])');
+        const cInp  = row.querySelector('.mth-inp--c');
         // Fərqli gəlir input əsas sırada deyil, əlaqəli detail sırasında yerləşir
         const detailRow = document.querySelector(`tr.mth-detail-row[data-detail-for="${row.dataset.isci}"]`);
         const fgInps = detailRow ? Array.from(detailRow.querySelectorAll('.mth-inp--fg')) : [];
@@ -454,7 +454,7 @@
         const fgInpsForEvent = detailRowForInput
             ? Array.from(detailRowForInput.querySelectorAll('.mth-inp--fg'))
             : [];
-        [row.querySelector('.mth-inp--b'),
+        [row.querySelector('.mth-inp--b[name]'),
          row.querySelector('.mth-inp--c'),
          ...fgInpsForEvent].forEach(inp => {
             inp?.addEventListener('input', () => { updateRow(row); updateFooter(); });
