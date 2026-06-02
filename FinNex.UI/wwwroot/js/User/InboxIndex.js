@@ -25,6 +25,7 @@ document.querySelectorAll('.ibx-item[data-bildiris-id]').forEach(item => {
             });
             item.classList.remove('ibx-item--unread');
             item.querySelector('.ibx-unread-dot')?.remove();
+            if (typeof checkNotifs === 'function') checkNotifs();
         }
     });
 });
@@ -36,6 +37,7 @@ document.getElementById('hamisiniOxuBtn')?.addEventListener('click', async () =>
         i.classList.remove('ibx-item--unread');
         i.querySelector('.ibx-unread-dot')?.remove();
     });
+    if (typeof checkNotifs === 'function') checkNotifs();
 });
 
 // Köhnə bildirişlər toggle
