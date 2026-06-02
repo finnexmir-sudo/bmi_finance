@@ -32,6 +32,13 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> Yarat([FromBody] JetonTeyinatiCreateDto dto)
+        {
+            var result = await _jetonService.JetonTeyinatiYaratAsync(dto);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+
+        [HttpPost]
         public async Task<IActionResult> Yenile([FromBody] JetonTeyinatiUpdateDto dto)
         {
             var result = await _jetonService.JetonTeyinatiYenileAsync(dto);

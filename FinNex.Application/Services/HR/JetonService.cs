@@ -631,6 +631,39 @@ namespace FinNex.Application.Services.HR
             return list.Select(MapRedim).ToList();
         }
 
+        public async Task<Result> JetonTeyinatiYaratAsync(JetonTeyinatiCreateDto dto)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(dto.Ad))
+                    return Result.Fail("Ad boş ola bilməz.");
+
+                if (dto.Nov == JetonNovu.Musbat && dto.SaatDeyeri < 0)
+                    return Result.Fail("Müsbət jeton üçün saat dəyəri mənfi ola bilməz.");
+
+                var teyinat = new JetonTeyinati
+                {
+                    Ad         = dto.Ad.Trim(),
+                    Nov        = dto.Nov,
+                    Rengi      = dto.Rengi,
+                    SaatDeyeri = dto.SaatDeyeri,
+                    Ikon       = string.IsNullOrWhiteSpace(dto.Ikon) ? "bi bi-award-fill" : dto.Ikon.Trim(),
+                    RengKodu   = string.IsNullOrWhiteSpace(dto.RengKodu) ? "#6b7280" : dto.RengKodu.Trim(),
+                    Tesvir     = dto.Tesvir?.Trim(),
+                    Aktivdir   = true
+                };
+
+                await _unitOfWork.Repository<JetonTeyinati>().YaratAsync(teyinat);
+                await _unitOfWork.YaddaSaxlaAsync();
+
+                return Result.Ok($"{teyinat.Ad} jeton növü yaradıldı.");
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail($"Xəta: {ex.Message}");
+            }
+        }
+
         public async Task<Result> JetonTeyinatiYenileAsync(JetonTeyinatiUpdateDto dto)
         {
             try
