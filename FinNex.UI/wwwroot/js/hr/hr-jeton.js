@@ -87,20 +87,23 @@ async function hjLoadEmeliyyatlar() {
     const isciId = document.getElementById('hjIsciFilter').value;
     const url = isciId ? `/HR/Jeton/GetEmeliyyatlar?isciId=${isciId}` : '/HR/Jeton/GetEmeliyyatlar';
     const tbody = document.getElementById('hjEmeliyyatlarBody');
-    tbody.innerHTML = '<tr><td colspan="6" class="hj-empty">Yüklənir…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="hj-empty">Yüklənir…</td></tr>';
 
     try {
         const res = await fetch(url);
         const json = await res.json();
         if (!json.success || !json.data.length) {
-            tbody.innerHTML = '<tr><td colspan="6" class="hj-empty">Əməliyyat yoxdur.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="hj-empty">Əməliyyat yoxdur.</td></tr>';
             return;
         }
         tbody.innerHTML = json.data.map(r => `
             <tr>
                 <td>${r.isciTamAd ?? '—'}</td>
                 <td>${hjBadge(r)}</td>
-                <td>${hjDate(r.qazanmaTarixi)}</td>
+                <td style="white-space:nowrap">${hjDeyerGoster(r, true)}</td>
+                <td style="white-space:nowrap">${hjQalanGoster(r)}</td>
+                <td style="white-space:nowrap;font-size:12px">${hjXercGoster(r)}</td>
+                <td style="white-space:nowrap">${hjDate(r.qazanmaTarixi)}</td>
                 <td class="hj-td-sebeb">${r.sebeb ?? '—'}</td>
                 <td>${hjStatusBadge(r.status)}</td>
                 <td>
@@ -112,8 +115,47 @@ async function hjLoadEmeliyyatlar() {
                 </td>
             </tr>`).join('');
     } catch {
-        tbody.innerHTML = '<tr><td colspan="6" class="hj-empty">Xəta baş verdi.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="hj-empty">Xəta baş verdi.</td></tr>';
     }
+}
+
+// Jeton tam dəyərini göstərir (vahidə görə saat/gün)
+function hjDeyerGoster(r, tam = false) {
+    const saat = r.jetonSaatDeyeri ?? 0;
+    if (saat <= 0) return '<span style="color:#6b7280">Cəza</span>';
+    if (r.jetonVahid === 2)
+        return `<strong>${(saat / 8).toFixed(2).replace(/\.?0+$/, '')} gün</strong> <span style="color:#9ca3af;font-size:11px">(${saat} saat)</span>`;
+    return `<strong>${saat.toString().replace(/\.?0+$/, '')} saat</strong>`;
+}
+
+// Qalan dəyəri göstərir
+function hjQalanGoster(r) {
+    // Aktiv deyilsə qalan göstərməyə ehtiyac yoxdur
+    if (r.status !== 1) return '<span style="color:#9ca3af">—</span>';
+    const tam = r.jetonSaatDeyeri ?? 0;
+    // qalanSaat null deməkdir tam qalıb
+    const qalan = r.qalanSaat != null ? r.qalanSaat : tam;
+    const renk = qalan < tam ? '#f59e0b' : '#22c55e';
+    if (r.jetonVahid === 2) {
+        const gun = (qalan / 8).toFixed(2).replace(/\.?0+$/, '');
+        return `<span style="color:${renk};font-weight:600">${gun} gün</span>`
+             + (qalan < tam ? ` <span style="color:#9ca3af;font-size:11px">(${qalan} saat)</span>` : '');
+    }
+    return `<span style="color:${renk};font-weight:600">${qalan} saat</span>`;
+}
+
+// Xərclənmə mənbəyini göstərir
+function hjXercGoster(r) {
+    if (r.icazeId) {
+        const tarix = r.icazeTarixi ? new Date(r.icazeTarixi).toLocaleDateString('az-AZ', { day:'2-digit', month:'2-digit', year:'numeric' }) : '';
+        const saat = (r.icazeBaslamaSaati ?? '') + (r.icazeBitisSaati ? '–' + r.icazeBitisSaati : '');
+        return `<span style="color:#6366f1"><i class="bi bi-clock"></i> İcazə</span><br><span style="color:#6b7280">${tarix} ${saat}</span>`;
+    }
+    if (r.redimTelebiId)
+        return `<span style="color:#0891b2"><i class="bi bi-cash-coin"></i> Redim sorğusu</span>`;
+    if (r.status !== 1)
+        return '<span style="color:#9ca3af">—</span>';
+    return '<span style="color:#9ca3af">—</span>';
 }
 
 // ── Redim sorğuları ───────────────────────────────────────

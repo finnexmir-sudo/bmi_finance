@@ -19,5 +19,9 @@ namespace FinNex.Domain.Entities.HR
 
         public int? RedimTelebiId { get; set; }
         public JetonRedimTelebi? RedimTelebi { get; set; }
+
+        // İcazə-based FIFO xərclənməsinin izlənməsi
+        public int? IcazeId { get; set; }
+        public Icaze? Icaze { get; set; }
     }
 }

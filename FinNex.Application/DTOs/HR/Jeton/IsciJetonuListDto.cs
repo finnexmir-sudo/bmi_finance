@@ -20,5 +20,11 @@ namespace FinNex.Application.DTOs.HR.Jeton
         public string Sebeb { get; set; } = null!;
         public IsciJetonuStatus Status { get; set; }
         public int? RedimTelebiId { get; set; }
+
+        // İcazəyə bağlı xərcləmə izlənməsi
+        public int? IcazeId { get; set; }
+        public DateTime? IcazeTarixi { get; set; }
+        public string? IcazeBaslamaSaati { get; set; }
+        public string? IcazeBitisSaati { get; set; }
     }
 }

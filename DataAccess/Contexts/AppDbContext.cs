@@ -1202,6 +1202,12 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasForeignKey(x => x.RedimTelebiId)
             .OnDelete(DeleteBehavior.NoAction);
 
+        builder.Entity<IsciJetonu>()
+            .HasOne(x => x.Icaze)
+            .WithMany()
+            .HasForeignKey(x => x.IcazeId)
+            .OnDelete(DeleteBehavior.NoAction);
+
         builder.Entity<JetonRedimTelebi>()
             .Property(x => x.CemiSaat).HasPrecision(8, 2);
 
