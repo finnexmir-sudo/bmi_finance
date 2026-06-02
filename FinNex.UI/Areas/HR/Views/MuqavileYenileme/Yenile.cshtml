@@ -1,0 +1,190 @@
+@model FinNex.UI.Areas.HR.ViewModels.MuqavileYenileme.MuqavileYenilemeVM
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Müqavilə Yeniləmə";
+}
+
+<style>
+    .muq-wrap   { max-width: 780px; margin: 0 auto; }
+    .muq-card   { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:28px 32px; margin-bottom:20px; }
+    .muq-title  { font-size:18px; font-weight:700; margin:0 0 4px; }
+    .muq-sub    { font-size:13px; color:#6b7280; margin:0 0 20px; }
+    .muq-info   { display:flex; gap:24px; flex-wrap:wrap; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #f1f5f9; }
+    .muq-info-item label { font-size:11px; color:#6b7280; text-transform:uppercase; display:block; margin-bottom:2px; }
+    .muq-info-item span  { font-size:13px; font-weight:600; color:#1e293b; }
+    .muq-field  { margin-bottom:16px; }
+    .muq-label  { font-size:13px; font-weight:600; color:#374151; display:block; margin-bottom:5px; }
+    .muq-input  { width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:7px; font-size:13px; }
+    .muq-input:focus { outline:none; border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+    .muq-textarea { resize:vertical; min-height:70px; }
+    .muq-err    { color:#dc2626; font-size:12px; margin-top:3px; display:block; }
+    .muq-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+
+    .muq-curr   { display:flex; align-items:center; gap:10px; background:#fff8e8; border:1px solid #f0d785; border-radius:7px; padding:10px 14px; margin-bottom:20px; font-size:13px; }
+    .muq-curr strong { color:#854d0e; }
+
+    .hist-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .hist-table th, .hist-table td { padding:8px 10px; border-bottom:1px solid #f1f5f9; text-align:left; }
+    .hist-table thead th { background:#f8fafc; font-weight:600; color:#475569; font-size:12px; text-transform:uppercase; }
+    .hist-table tr:hover { background:#fafbfc; }
+    .hist-empty { padding:32px; text-align:center; color:#9ca3af; font-size:13px; }
+</style>
+
+<div class="muq-wrap">
+
+    @* Geri linki *@
+    <div style="margin-bottom:12px;">
+        <a asp-area="HR" asp-controller="MuqavileBitme" asp-action="Index"
+           style="color:#6b7280;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;">
+            ← Müqavilə Bitmə siyahısına qayıt
+        </a>
+    </div>
+
+    @if (TempData["Success"] is string suc)
+    {
+        <div style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:7px;padding:10px 14px;color:#065f46;font-size:13px;margin-bottom:14px;">
+            <i class="bi bi-check-circle-fill"></i> @suc
+        </div>
+    }
+
+    @* Yeniləmə formu *@
+    <div class="muq-card">
+        <div class="muq-title">Müqavilə Yeniləmə</div>
+        <div class="muq-sub">@Model.IsciTamAd — yeni müqavilə bitmə tarixini daxil edin</div>
+
+        <div class="muq-info">
+            <div class="muq-info-item">
+                <label>İşçi</label>
+                <span>@Model.IsciTamAd</span>
+            </div>
+            <div class="muq-info-item">
+                <label>Departament</label>
+                <span>@Model.DepartamentAd</span>
+            </div>
+            <div class="muq-info-item">
+                <label>Vəzifə</label>
+                <span>@Model.VezifeAd</span>
+            </div>
+        </div>
+
+        @if (Model.KohneBitmeTarixi.HasValue)
+        {
+            <div class="muq-curr">
+                <i class="bi bi-calendar2-x" style="color:#d97706;font-size:16px;"></i>
+                Mövcud bitmə tarixi: <strong>@Model.KohneBitmeTarixi.Value.ToString("dd.MM.yyyy")</strong>
+                @{
+                    var qalan = (Model.KohneBitmeTarixi.Value.Date - DateTime.Today).Days;
+                }
+                @if (qalan < 0)
+                {
+                    <span style="color:#dc2626;font-size:12px;">(@Math.Abs(qalan) gün keçib)</span>
+                }
+                else if (qalan == 0)
+                {
+                    <span style="color:#dc2626;font-size:12px;">(Bugün bitir!)</span>
+                }
+                else
+                {
+                    <span style="color:#6b7280;font-size:12px;">(@qalan gün qalıb)</span>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="muq-curr" style="background:#f1f5f9;border-color:#e2e8f0;">
+                <i class="bi bi-calendar2-plus" style="color:#6b7280;font-size:16px;"></i>
+                <span style="color:#6b7280;">Hal-hazırda bitmə tarixi qeyd olunmayıb</span>
+            </div>
+        }
+
+        <form asp-action="Yenile" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="IsciId" />
+
+            <div class="muq-field">
+                <label class="muq-label" asp-for="YeniBitmeTarixi">
+                    Yeni bitmə tarixi <span style="color:#dc2626;">*</span>
+                </label>
+                <input asp-for="YeniBitmeTarixi" type="date" class="muq-input"
+                       style="max-width:240px;"
+                       value="@(Model.YeniBitmeTarixi.HasValue ? Model.YeniBitmeTarixi.Value.ToString("yyyy-MM-dd") : "")" />
+                <span asp-validation-for="YeniBitmeTarixi" class="muq-err"></span>
+            </div>
+
+            <div class="muq-field">
+                <label class="muq-label" asp-for="Qeyd">
+                    Qeyd <span style="font-size:11px;color:#6b7280;font-weight:400;">(istəyə bağlı)</span>
+                </label>
+                <textarea asp-for="Qeyd" class="muq-input muq-textarea"
+                          placeholder="Müqavilə yeniləmənin səbəbi və ya qeydi..."></textarea>
+                <span asp-validation-for="Qeyd" class="muq-err"></span>
+            </div>
+
+            <div class="muq-actions">
+                <a asp-area="HR" asp-controller="MuqavileBitme" asp-action="Index"
+                   class="fn-btn fn-btn--outline">Ləğv et</a>
+                <button type="submit" class="fn-btn fn-btn--primary">
+                    <i class="bi bi-arrow-clockwise"></i> Müqaviləni Uzat
+                </button>
+            </div>
+        </form>
+    </div>
+
+    @* Tarixçə *@
+    <div class="muq-card">
+        <div class="muq-title" style="font-size:15px;margin-bottom:14px;">
+            <i class="bi bi-clock-history" style="color:#6b7280;margin-right:6px;"></i>
+            Yeniləmə tarixçəsi
+        </div>
+
+        @if (!Model.Tarixce.Any())
+        {
+            <div class="hist-empty">
+                <i class="bi bi-inbox" style="font-size:24px;"></i>
+                <div style="margin-top:6px;">Hələ heç bir yeniləmə qeydə alınmayıb</div>
+            </div>
+        }
+        else
+        {
+            <table class="hist-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Köhnə bitmə tarixi</th>
+                        <th>Yeni bitmə tarixi</th>
+                        <th>Yeniləmə tarixi</th>
+                        <th>Qeyd</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int i = 1; }
+                    @foreach (var r in Model.Tarixce)
+                    {
+                        <tr>
+                            <td style="color:#9ca3af;">@i</td>
+                            <td>
+                                @if (r.KohneBitmeTarixi.HasValue)
+                                {
+                                    <span>@r.KohneBitmeTarixi.Value.ToString("dd.MM.yyyy")</span>
+                                }
+                                else
+                                {
+                                    <span style="color:#9ca3af;">—</span>
+                                }
+                            </td>
+                            <td style="font-weight:600;color:#065f46;">@r.YeniBitmeTarixi.ToString("dd.MM.yyyy")</td>
+                            <td style="color:#6b7280;">@r.YenilemeTarixi.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td style="color:#475569;">@(r.Qeyd ?? "—")</td>
+                        </tr>
+                        i++;
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -59,15 +59,6 @@
                         <span asp-validation-for="VezifeId" class="isci-error"></span>
                     </div>
 
-                    <div class="isci-field">
-                        <label class="isci-label">Müqavilə bitmə tarixi
-                            <span style="font-size:11px;color:#6b7280;font-weight:400;">(müddətsizdirsə boş buraxın)</span>
-                        </label>
-                        <input asp-for="BitmeTarixi" type="date" class="isci-input"
-                               value="@(Model.BitmeTarixi.HasValue ? Model.BitmeTarixi.Value.ToString("yyyy-MM-dd") : "")" />
-                        <span asp-validation-for="BitmeTarixi" class="isci-error"></span>
-                    </div>
-
                     <div class="isci-hint" style="background:#e8f5e9;border-color:#a5d6a7;">
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;margin-top:1px;">
                             <circle cx="7" cy="7" r="6" stroke="#2e7d32" stroke-width="1.3" />
