@@ -125,6 +125,19 @@
                 <textarea id="bulkMetn" class="fn-input chat-bulk-textarea"
                           rows="3" placeholder="Mesajınızı yazın..."></textarea>
             </div>
+            <div class="fn-form-group" style="margin-top:6px;">
+                <label class="fn-label" style="margin-bottom:6px;">
+                    Fayl qoşması
+                    <span style="color:#94a3b8;font-size:11px;font-weight:400;"> (PDF, Word, Excel · max 10 MB)</span>
+                </label>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <label class="fn-btn fn-btn--sm fn-btn--outline" style="cursor:pointer;margin:0;display:inline-flex;align-items:center;gap:5px;">
+                        <i class="bi bi-paperclip"></i> Fayl seç
+                        <input type="file" id="bulkFaylInput" accept=".pdf,.doc,.docx,.xls,.xlsx" style="display:none;">
+                    </label>
+                    <span id="bulkFaylPreview" style="font-size:12px;color:#475569;display:flex;align-items:center;gap:6px;"></span>
+                </div>
+            </div>
         </div>
         <div class="chat-modal-footer">
             <div class="chat-bulk-info" id="bulkInfo"></div>
