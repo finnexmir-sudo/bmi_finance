@@ -1,0 +1,184 @@
+@model FinNex.UI.Areas.HR.ViewModels.MuqavileBitme.MuqavileBitmeIndexVM
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Müqavilə Bitmə Tarixi";
+}
+
+<style>
+    .yenil-filter { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:end; }
+    .yenil-stats  { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:16px; }
+    .yenil-stat   { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:12px; text-align:center; }
+    .yenil-stat-num { font-size:22px; font-weight:700; }
+    .yenil-stat-lbl { font-size:11px; color:#6b7280; text-transform:uppercase; }
+
+    .yenil-table { width:100%; border-collapse:collapse; background:#fff; font-size:13px; }
+    .yenil-table th, .yenil-table td { padding:8px 10px; border-bottom:1px solid #f1f5f9; text-align:left; white-space:nowrap; }
+    .yenil-table thead th { background:#f8fafc; font-weight:600; color:#475569; font-size:12px; text-transform:uppercase; position:sticky; top:0; z-index:1; }
+    .yenil-table tr:hover { background:#fafbfc; }
+
+    .qalan-cell { font-weight:600; }
+    .qalan-cell.kecmis  { color:#7c3aed; }
+    .qalan-cell.qirmizi { color:#dc2626; }
+    .qalan-cell.sari    { color:#d97706; }
+    .qalan-cell.normal  { color:#475569; }
+
+    .yenil-btn { padding:8px 14px; border-radius:6px; font-size:13px; font-weight:600; border:1px solid transparent; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+    .yenil-btn--primary { background:#2563eb; color:#fff; }
+    .yenil-btn--ghost   { background:#fff; color:#475569; border-color:#cbd5e1; }
+    .yenil-btn--excel   { background:#16a34a; color:#fff; }
+    .yenil-btn--uzat    { background:#7c3aed; color:#fff; padding:4px 10px; font-size:12px; border-radius:5px; }
+
+    .yenil-input, .yenil-select { padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; min-width:140px; }
+    .yenil-empty { background:#fff; padding:48px; text-align:center; color:#6b7280; border-radius:8px; }
+    .yenil-card  { background:#fff; border-radius:8px; overflow:auto; max-height:70vh; border:1px solid #e5e7eb; }
+</style>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+    <div>
+        <h2 style="margin:0;font-size:20px;">Müqavilə Bitmə Tarixi</h2>
+        <p style="margin:4px 0 0;color:#6b7280;font-size:13px;">
+            Aktiv işçilərin müqavilə / təyinat bitmə tarixinə görə izləmə
+        </p>
+    </div>
+    <a class="yenil-btn yenil-btn--excel"
+       asp-action="Excel"
+       asp-route-gun="@Model.Gun"
+       asp-route-departamentId="@Model.DepartamentId"
+       asp-route-search="@Model.Search">
+        <i class="bi bi-file-earmark-excel-fill"></i> Excel-ə Çıxart
+    </a>
+</div>
+
+@* Filter *@
+<form method="get" asp-action="Index" class="yenil-filter">
+    <div>
+        <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px;">Növbəti N gün</label>
+        <select name="gun" class="yenil-select">
+            <option value="7"   selected="@(Model.Gun == 7)">7 gün</option>
+            <option value="14"  selected="@(Model.Gun == 14)">14 gün</option>
+            <option value="30"  selected="@(Model.Gun == 30)">30 gün</option>
+            <option value="60"  selected="@(Model.Gun == 60)">60 gün</option>
+            <option value="90"  selected="@(Model.Gun == 90)">90 gün</option>
+            <option value="180" selected="@(Model.Gun == 180)">180 gün</option>
+            <option value="365" selected="@(Model.Gun == 365)">Bütün il</option>
+        </select>
+    </div>
+    <div>
+        <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px;">Departament</label>
+        <select name="departamentId" class="yenil-select">
+            <option value="">Hamısı</option>
+            @foreach (var d in Model.Departamentler)
+            {
+                <option value="@d.Value" selected="@d.Selected">@d.Text</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px;">Axtarış (ad / FIN)</label>
+        <input type="text" name="search" value="@Model.Search" class="yenil-input" placeholder="Ad, soyad, FIN..." />
+    </div>
+    <div>
+        <button type="submit" class="yenil-btn yenil-btn--primary">
+            <i class="bi bi-funnel-fill"></i> Filtrlə
+        </button>
+    </div>
+    @if (Model.Gun != 30 || Model.DepartamentId.HasValue || !string.IsNullOrEmpty(Model.Search))
+    {
+        <div>
+            <a asp-action="Index" class="yenil-btn yenil-btn--ghost">
+                <i class="bi bi-x-lg"></i> Sıfırla
+            </a>
+        </div>
+    }
+</form>
+
+@* Stats *@
+<div class="yenil-stats">
+    <div class="yenil-stat">
+        <div class="yenil-stat-num" style="color:#2563eb;">@Model.CemiSay</div>
+        <div class="yenil-stat-lbl">Cəmi yaxınlaşan</div>
+    </div>
+    <div class="yenil-stat">
+        <div class="yenil-stat-num" style="color:#dc2626;">@Model.TecibiSay</div>
+        <div class="yenil-stat-lbl">Təcili (≤ 7 gün)</div>
+    </div>
+    <div class="yenil-stat">
+        <div class="yenil-stat-num" style="color:#d97706;">@Model.DiqqetSay</div>
+        <div class="yenil-stat-lbl">Diqqət (8–30 gün)</div>
+    </div>
+    <div class="yenil-stat">
+        <div class="yenil-stat-num" style="color:#7c3aed;">@Model.KecmisKimi</div>
+        <div class="yenil-stat-lbl">Müddəti keçib</div>
+    </div>
+</div>
+
+@if (!Model.Rows.Any())
+{
+    <div class="yenil-empty">
+        <i class="bi bi-file-earmark-x" style="font-size:32px;color:#9ca3af;"></i>
+        <h5 style="margin-top:10px;">Nəticə tapılmadı</h5>
+        <p style="font-size:13px;color:#6b7280;">Seçilmiş filtrə uyğun yaxınlaşan müqavilə yoxdur.</p>
+    </div>
+}
+else
+{
+    <div class="yenil-card">
+        <table class="yenil-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Ad Soyad</th>
+                    <th>FIN</th>
+                    <th>Departament</th>
+                    <th>Vəzifə</th>
+                    <th>İşə qəbul</th>
+                    <th>Müqavilə bitir</th>
+                    <th>Qalan gün</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int idx = 1; }
+                @foreach (var r in Model.Rows)
+                {
+                    <tr>
+                        <td>@idx</td>
+                        <td>
+                            <a asp-area="HR" asp-controller="Isci" asp-action="Detail" asp-route-id="@r.IsciId"
+                               style="color:#2563eb;text-decoration:none;font-weight:600;">
+                                @r.TamAd
+                            </a>
+                        </td>
+                        <td><code style="font-size:11px;">@r.FIN</code></td>
+                        <td>@r.DepartamentAd</td>
+                        <td>@r.VezifeAd</td>
+                        <td>@r.IsheQebulTarixi.ToString("dd.MM.yyyy")</td>
+                        <td style="font-weight:600;">@r.BitmeTarixi.ToString("dd.MM.yyyy")</td>
+                        <td class="qalan-cell @r.Tecililik">
+                            @if (r.QalanGun < 0)
+                            {
+                                <span>@Math.Abs(r.QalanGun) gün keçib</span>
+                            }
+                            else if (r.QalanGun == 0)
+                            {
+                                <span>Bugün!</span>
+                            }
+                            else
+                            {
+                                <span>@r.QalanGun gün</span>
+                            }
+                        </td>
+                        <td>
+                            <a asp-area="HR" asp-controller="Isci" asp-action="TeyinatRedakte"
+                               asp-route-id="@r.IsciId"
+                               class="yenil-btn yenil-btn--uzat">
+                                <i class="bi bi-arrow-clockwise"></i> Uzat
+                            </a>
+                        </td>
+                    </tr>
+                    idx++;
+                }
+            </tbody>
+        </table>
+    </div>
+}
