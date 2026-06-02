@@ -26,5 +26,8 @@ namespace FinNex.Application.DTOs.HR.Jeton
         public DateTime? IcazeTarixi { get; set; }
         public string? IcazeBaslamaSaati { get; set; }
         public string? IcazeBitisSaati { get; set; }
+
+        // Xərclənmə tarixi
+        public DateTime? XerclenmeTarixi { get; set; }
     }
 }

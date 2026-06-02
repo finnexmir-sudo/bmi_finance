@@ -407,6 +407,7 @@ namespace FinNex.Application.Services.HR
                 foreach (var j in redim.XerclenenJetonlar)
                 {
                     j.Status = IsciJetonuStatus.IstifadeOlunub;
+                    j.XerclenmeTarixi = DateTime.Now;
                     await _unitOfWork.Repository<IsciJetonu>().YenileAsync(j);
                 }
 
@@ -524,6 +525,7 @@ namespace FinNex.Application.Services.HR
 
                     if (icazeId.HasValue)
                         j.IcazeId = icazeId.Value;
+                    j.XerclenmeTarixi = DateTime.Now;
 
                     await _unitOfWork.Repository<IsciJetonu>().YenileAsync(j);
                 }
@@ -793,10 +795,11 @@ namespace FinNex.Application.Services.HR
             Sebeb = x.Sebeb,
             Status = x.Status,
             RedimTelebiId = x.RedimTelebiId,
-            IcazeId          = x.IcazeId,
-            IcazeTarixi      = x.Icaze?.IcazeTarixi,
+            IcazeId           = x.IcazeId,
+            IcazeTarixi       = x.Icaze?.IcazeTarixi,
             IcazeBaslamaSaati = x.Icaze != null ? x.Icaze.BaslamaSaati.ToString(@"hh\:mm") : null,
             IcazeBitisSaati   = x.Icaze != null ? x.Icaze.BitisSaati.ToString(@"hh\:mm") : null,
+            XerclenmeTarixi   = x.XerclenmeTarixi,
         };
 
         private static JetonRedimTelebiListDto MapRedim(JetonRedimTelebi x) => new()

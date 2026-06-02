@@ -23,5 +23,8 @@ namespace FinNex.Domain.Entities.HR
         // İcazə-based FIFO xərclənməsinin izlənməsi
         public int? IcazeId { get; set; }
         public Icaze? Icaze { get; set; }
+
+        // Xərclənmə tarixi (FIFO və ya redim anı)
+        public DateTime? XerclenmeTarixi { get; set; }
     }
 }

@@ -144,17 +144,26 @@ function hjQalanGoster(r) {
     return `<span style="color:${renk};font-weight:600">${qalan} saat</span>`;
 }
 
-// Xərclənmə mənbəyini göstərir
+// Xərclənmə mənbəyini və tarixini göstərir
 function hjXercGoster(r) {
+    const xercTarix = r.xerclenmeTarixi
+        ? new Date(r.xerclenmeTarixi).toLocaleDateString('az-AZ', { day:'2-digit', month:'2-digit', year:'numeric' })
+        : '';
+
     if (r.icazeId) {
-        const tarix = r.icazeTarixi ? new Date(r.icazeTarixi).toLocaleDateString('az-AZ', { day:'2-digit', month:'2-digit', year:'numeric' }) : '';
+        const icTarix = r.icazeTarixi
+            ? new Date(r.icazeTarixi).toLocaleDateString('az-AZ', { day:'2-digit', month:'2-digit', year:'numeric' })
+            : '';
         const saat = (r.icazeBaslamaSaati ?? '') + (r.icazeBitisSaati ? '–' + r.icazeBitisSaati : '');
-        return `<span style="color:#6366f1"><i class="bi bi-clock"></i> İcazə</span><br><span style="color:#6b7280">${tarix} ${saat}</span>`;
+        return `<span style="color:#6366f1;font-weight:600"><i class="bi bi-clock"></i> İcazə</span>`
+             + `<br><span style="color:#374151">${icTarix} ${saat}</span>`
+             + (xercTarix ? `<br><span style="color:#9ca3af;font-size:11px">xərcləndi: ${xercTarix}</span>` : '');
     }
-    if (r.redimTelebiId)
-        return `<span style="color:#0891b2"><i class="bi bi-cash-coin"></i> Redim sorğusu</span>`;
-    if (r.status !== 1)
-        return '<span style="color:#9ca3af">—</span>';
+    if (r.redimTelebiId) {
+        // İşçinin özü "Cüzdanım"dan sorğu göndərərək xərcləyib
+        return `<span style="color:#0891b2;font-weight:600"><i class="bi bi-person-check"></i> İşçi sorğusu</span>`
+             + (xercTarix ? `<br><span style="color:#9ca3af;font-size:11px">xərcləndi: ${xercTarix}</span>` : '');
+    }
     return '<span style="color:#9ca3af">—</span>';
 }
 
