@@ -647,6 +647,7 @@ namespace FinNex.Application.Services.HR
                     Nov               = dto.Nov,
                     Rengi             = dto.Rengi,
                     SaatDeyeri        = dto.SaatDeyeri,
+                    Vahid             = dto.Vahid,
                     Ikon              = string.IsNullOrWhiteSpace(dto.Ikon) ? "bi bi-award-fill" : dto.Ikon.Trim(),
                     RengKodu          = string.IsNullOrWhiteSpace(dto.RengKodu) ? "#6b7280" : dto.RengKodu.Trim(),
                     Tesvir            = dto.Tesvir?.Trim(),
@@ -684,6 +685,7 @@ namespace FinNex.Application.Services.HR
 
                 teyinat.Ad               = dto.Ad.Trim();
                 teyinat.SaatDeyeri       = dto.SaatDeyeri;
+                teyinat.Vahid            = dto.Vahid;
                 teyinat.Tesvir           = dto.Tesvir;
                 teyinat.Ikon             = string.IsNullOrWhiteSpace(dto.Ikon) ? teyinat.Ikon : dto.Ikon.Trim();
                 teyinat.RengKodu         = string.IsNullOrWhiteSpace(dto.RengKodu) ? teyinat.RengKodu : dto.RengKodu.Trim();
@@ -745,6 +747,7 @@ namespace FinNex.Application.Services.HR
             Nov              = x.Nov,
             Rengi            = x.Rengi,
             SaatDeyeri       = x.SaatDeyeri,
+            Vahid            = x.Vahid,
             Ikon             = x.Ikon,
             RengKodu         = x.RengKodu,
             Tesvir           = x.Tesvir,
@@ -764,6 +767,7 @@ namespace FinNex.Application.Services.HR
             JetonIkon = x.JetonTeyinati.Ikon,
             JetonRengKodu = x.JetonTeyinati.RengKodu,
             JetonSaatDeyeri = x.JetonTeyinati.SaatDeyeri,
+            JetonVahid      = x.JetonTeyinati.Vahid,
             QazanmaTarixi = x.QazanmaTarixi,
             Sebeb = x.Sebeb,
             Status = x.Status,

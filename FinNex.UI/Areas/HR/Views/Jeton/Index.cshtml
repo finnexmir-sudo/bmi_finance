@@ -159,7 +159,14 @@
                         <span class="hj-jeton-card-name">@t.Ad</span>
                         @if (t.SaatDeyeri > 0)
                         {
-                            <span class="hj-jeton-card-saat">@t.SaatDeyeri saat</span>
+                            @if (t.Vahid == FinNex.Domain.Entities.HR.JetonVahid.Gun)
+                            {
+                                <span class="hj-jeton-card-saat">@((t.SaatDeyeri / 8m).ToString("0.##")) gün</span>
+                            }
+                            else
+                            {
+                                <span class="hj-jeton-card-saat">@t.SaatDeyeri.ToString("0.##") saat</span>
+                            }
                         }
                         else
                         {

@@ -50,17 +50,19 @@
                         </td>
                         <td>@t.Ad</td>
                         <td>
-                            @{
-                                var gun = t.SaatDeyeri / 8m;
-                                var saatStr = $"{t.SaatDeyeri.ToString("0.##")} saat";
-                                var gunStr  = gun == Math.Floor(gun) && gun > 0
-                                    ? $" ({gun.ToString("0.##")} gün)"
-                                    : "";
-                            }
-                            <strong>@saatStr</strong>
-                            @if (!string.IsNullOrEmpty(gunStr))
+                            @if (t.SaatDeyeri == 0)
                             {
-                                <span style="color:#6b7280;font-size:12px;">@gunStr</span>
+                                <span style="color:#9ca3af;">—</span>
+                            }
+                            else if (t.Vahid == FinNex.Domain.Entities.HR.JetonVahid.Gun)
+                            {
+                                var gun2 = t.SaatDeyeri / 8m;
+                                <strong>@gun2.ToString("0.##") gün</strong>
+                                <span style="color:#9ca3af;font-size:12px;"> (@t.SaatDeyeri.ToString("0.##") saat)</span>
+                            }
+                            else
+                            {
+                                <strong>@t.SaatDeyeri.ToString("0.##") saat</strong>
                             }
                         </td>
                         <td>

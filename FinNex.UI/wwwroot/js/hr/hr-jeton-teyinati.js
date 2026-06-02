@@ -13,9 +13,10 @@ function hjtOpenEditModal(t) {
     document.getElementById('hjtAktiv').checked = !!t.aktivdir;
     document.getElementById('hjtBirbasaOdenishli').checked = !!t.birbasaOdenishli;
 
-    // Saat dəyərini göstər, vahidi saata sıfırla
-    document.getElementById('hjtVahid').value = 'saat';
-    document.getElementById('hjtSaat').value = t.saatDeyeri ?? 0;
+    // Vahid: 2=Gun, başqası=Saat
+    const isGun = t.vahid === 2;
+    document.getElementById('hjtVahid').value = isGun ? 'gun' : 'saat';
+    document.getElementById('hjtSaat').value = isGun ? (t.saatDeyeri / 8) : (t.saatDeyeri ?? 0);
     hjtSyncEditVahid();
 
     hjtCurrentIkon = t.ikon ?? '';
@@ -53,6 +54,7 @@ async function hjtSubmitEdit() {
         id:               parseInt(document.getElementById('hjtId').value),
         ad:               document.getElementById('hjtAd').value.trim(),
         saatDeyeri:       saatDeyeri,
+        vahid:            document.getElementById('hjtVahid').value === 'gun' ? 2 : 1,
         tesvir:           document.getElementById('hjtTesvir').value.trim(),
         ikon:             hjtCurrentIkon,
         rengKodu:         hjtCurrentReng,
@@ -170,6 +172,7 @@ async function hjtSubmitCreate() {
         nov:              parseInt(document.getElementById('hjtcNov').value),
         rengi:            hjtcLastRengiEnum,
         saatDeyeri:       saatDeyeri,
+        vahid:            document.getElementById('hjtcVahid').value === 'gun' ? 2 : 1,
         ikon:             document.getElementById('hjtcIkon').value.trim() || 'bi bi-award-fill',
         rengKodu:         document.getElementById('hjtcRengKodu').value.trim() || '#6b7280',
         birbasaOdenishli: document.getElementById('hjtcBirbasaOdenishli').checked,

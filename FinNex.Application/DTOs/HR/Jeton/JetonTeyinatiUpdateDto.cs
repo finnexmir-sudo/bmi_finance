@@ -5,6 +5,7 @@ namespace FinNex.Application.DTOs.HR.Jeton
         public int Id { get; set; }
         public string Ad { get; set; } = null!;
         public decimal SaatDeyeri { get; set; }
+        public JetonVahid Vahid { get; set; } = JetonVahid.Saat;
         public string? Tesvir { get; set; }
         public string Ikon { get; set; } = null!;
         public string RengKodu { get; set; } = null!;

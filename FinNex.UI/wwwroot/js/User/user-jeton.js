@@ -4,6 +4,13 @@
 let ujJetonlar = []; // aktiv jetonlar cache
 let ujSelectedIds = new Set();
 
+// jetonVahid: 1=Saat, 2=Gun
+function ujDeyerGoster(j) {
+    if (!j.jetonSaatDeyeri || j.jetonSaatDeyeri <= 0) return 'Cəza';
+    if (j.jetonVahid === 2) return (j.jetonSaatDeyeri / 8) + ' gün';
+    return j.jetonSaatDeyeri + ' saat';
+}
+
 // ── Tab ─────────────────────────────────────────────────
 function ujSwitchTab(btn, tab) {
     document.querySelectorAll('.uj-tab').forEach(t => t.classList.remove('uj-tab--active'));
@@ -31,7 +38,7 @@ async function ujLoadJetonlar() {
             <div class="uj-jeton-item" style="--jc:${j.jetonRengKodu ?? '#9ca3af'}">
                 <div class="uj-jeton-item-icon"><i class="${j.jetonIkon ?? 'bi bi-award-fill'}"></i></div>
                 <div class="uj-jeton-item-name">${j.jetonAd ?? ''}</div>
-                <div class="uj-jeton-item-saat">${j.jetonSaatDeyeri > 0 ? j.jetonSaatDeyeri + ' saat' : 'Cəza'}</div>
+                <div class="uj-jeton-item-saat">${ujDeyerGoster(j)}</div>
                 <div class="uj-jeton-item-date">${ujDate(j.qazanmaTarixi)}</div>
                 ${j.sebeb ? `<div class="uj-jeton-item-sebeb">${j.sebeb}</div>` : ''}
             </div>`).join('');
@@ -95,7 +102,7 @@ function ujRenderSelectList() {
             <div class="uj-jsi-icon"><i class="${j.jetonIkon ?? 'bi bi-award-fill'}"></i></div>
             <div class="uj-jsi-info">
                 <div class="uj-jsi-name">${j.jetonAd ?? ''}</div>
-                <div class="uj-jsi-saat">${j.jetonSaatDeyeri} saat</div>
+                <div class="uj-jsi-saat">${ujDeyerGoster(j)}</div>
             </div>
             <div class="uj-jsi-check"><i class="bi bi-check2"></i></div>
         </div>`).join('');

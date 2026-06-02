@@ -9,6 +9,7 @@ namespace FinNex.Application.DTOs.HR.Jeton
         public JetonNovu Nov { get; set; }
         public JetonRengi Rengi { get; set; }
         public decimal SaatDeyeri { get; set; }
+        public JetonVahid Vahid { get; set; }
         public string Ikon { get; set; } = null!;
         public string RengKodu { get; set; } = null!;
         public string? Tesvir { get; set; }
