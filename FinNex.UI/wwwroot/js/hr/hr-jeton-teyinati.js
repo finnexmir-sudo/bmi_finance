@@ -4,14 +4,20 @@
 let hjtCurrentIkon = '';
 let hjtCurrentReng = '';
 
+// ── Edit modal ────────────────────────────────────────────────────────────────
+
 function hjtOpenEditModal(t) {
     document.getElementById('hjtId').value = t.id;
     document.getElementById('hjtAd').value = t.ad ?? '';
-    document.getElementById('hjtSaat').value = t.saatDeyeri ?? 0;
     document.getElementById('hjtTesvir').value = t.tesvir ?? '';
     document.getElementById('hjtAktiv').checked = !!t.aktivdir;
+    document.getElementById('hjtBirbasaOdenishli').checked = !!t.birbasaOdenishli;
 
-    // İkon və rəng dəyişdirilmir; mövcud dəyərləri saxlayırıq
+    // Saat dəyərini göstər, vahidi saata sıfırla
+    document.getElementById('hjtVahid').value = 'saat';
+    document.getElementById('hjtSaat').value = t.saatDeyeri ?? 0;
+    hjtSyncEditVahid();
+
     hjtCurrentIkon = t.ikon ?? '';
     hjtCurrentReng = t.rengKodu ?? '';
 
@@ -24,15 +30,34 @@ function hjtCloseEditModal() {
     document.getElementById('hjtModal').classList.remove('hj-open');
 }
 
+function hjtSyncEditVahid() {
+    const vahid = document.getElementById('hjtVahid').value;
+    const val = parseFloat(document.getElementById('hjtSaat').value) || 0;
+    const hint = document.getElementById('hjtSaatHint');
+    if (vahid === 'gun') {
+        hint.textContent = `= ${(val * 8).toFixed(2).replace(/\.?0+$/, '')} saat saxlanılacaq`;
+    } else {
+        const gun = val / 8;
+        hint.textContent = gun > 0 && Number.isInteger(gun)
+            ? `= ${gun} gün (${val} saat)`
+            : '';
+    }
+}
+
 async function hjtSubmitEdit() {
+    const vahid = document.getElementById('hjtVahid').value;
+    const rawVal = parseFloat(document.getElementById('hjtSaat').value) || 0;
+    const saatDeyeri = vahid === 'gun' ? rawVal * 8 : rawVal;
+
     const dto = {
-        id: parseInt(document.getElementById('hjtId').value),
-        ad: document.getElementById('hjtAd').value.trim(),
-        saatDeyeri: parseFloat(document.getElementById('hjtSaat').value) || 0,
-        tesvir: document.getElementById('hjtTesvir').value.trim(),
-        ikon: hjtCurrentIkon,
-        rengKodu: hjtCurrentReng,
-        aktivdir: document.getElementById('hjtAktiv').checked
+        id:               parseInt(document.getElementById('hjtId').value),
+        ad:               document.getElementById('hjtAd').value.trim(),
+        saatDeyeri:       saatDeyeri,
+        tesvir:           document.getElementById('hjtTesvir').value.trim(),
+        ikon:             hjtCurrentIkon,
+        rengKodu:         hjtCurrentReng,
+        birbasaOdenishli: document.getElementById('hjtBirbasaOdenishli').checked,
+        aktivdir:         document.getElementById('hjtAktiv').checked
     };
 
     if (!dto.ad) return hjtToast('Ad daxil edin.', 'warn');
@@ -63,7 +88,10 @@ function hjtOpenCreateModal() {
     document.getElementById('hjtcRengPicker').value = '#cd7f32';
     document.getElementById('hjtcIkon').value = 'bi bi-award-fill';
     document.getElementById('hjtcSaat').value = '1';
+    document.getElementById('hjtcVahid').value = 'saat';
+    document.getElementById('hjtcBirbasaOdenishli').checked = false;
     document.getElementById('hjtcTesvir').value = '';
+    hjtcUpdateHint();
     document.getElementById('hjtCreateOverlay').classList.add('hj-open');
     document.getElementById('hjtCreateModal').classList.add('hj-open');
 }
@@ -81,15 +109,34 @@ function hjtcSyncRengKodu() {
     document.getElementById('hjtcRengPicker').value = kod;
 }
 
+function hjtcUpdateHint() {
+    const vahid = document.getElementById('hjtcVahid').value;
+    const val = parseFloat(document.getElementById('hjtcSaat').value) || 0;
+    const hint = document.getElementById('hjtcSaatHint');
+    if (vahid === 'gun') {
+        hint.textContent = `= ${(val * 8).toFixed(2).replace(/\.?0+$/, '')} saat saxlanılacaq`;
+    } else {
+        const gun = val / 8;
+        hint.textContent = Number.isInteger(gun) && gun > 0
+            ? `= ${val} saat (${gun} gün)`
+            : `= ${val} saat saxlanılacaq`;
+    }
+}
+
 async function hjtSubmitCreate() {
+    const vahid = document.getElementById('hjtcVahid').value;
+    const rawVal = parseFloat(document.getElementById('hjtcSaat').value) || 0;
+    const saatDeyeri = vahid === 'gun' ? rawVal * 8 : rawVal;
+
     const dto = {
-        ad:        document.getElementById('hjtcAd').value.trim(),
-        nov:       parseInt(document.getElementById('hjtcNov').value),
-        rengi:     parseInt(document.getElementById('hjtcRengi').value),
-        saatDeyeri: parseFloat(document.getElementById('hjtcSaat').value) || 0,
-        ikon:      document.getElementById('hjtcIkon').value.trim() || 'bi bi-award-fill',
-        rengKodu:  document.getElementById('hjtcRengKodu').value.trim() || '#6b7280',
-        tesvir:    document.getElementById('hjtcTesvir').value.trim()
+        ad:               document.getElementById('hjtcAd').value.trim(),
+        nov:              parseInt(document.getElementById('hjtcNov').value),
+        rengi:            parseInt(document.getElementById('hjtcRengi').value),
+        saatDeyeri:       saatDeyeri,
+        ikon:             document.getElementById('hjtcIkon').value.trim() || 'bi bi-award-fill',
+        rengKodu:         document.getElementById('hjtcRengKodu').value.trim() || '#6b7280',
+        birbasaOdenishli: document.getElementById('hjtcBirbasaOdenishli').checked,
+        tesvir:           document.getElementById('hjtcTesvir').value.trim()
     };
 
     if (!dto.ad) return hjtToast('Ad daxil edin.', 'warn');
@@ -109,6 +156,8 @@ async function hjtSubmitCreate() {
         hjtToast(json.message || 'Xəta baş verdi.', 'error');
     }
 }
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
 
 function hjtToast(msg, type = 'info') {
     const colors = { success: '#22c55e', error: '#ef4444', warn: '#f59e0b', info: '#6366f1' };

@@ -9,6 +9,7 @@ namespace FinNex.Domain.Entities.HR
         public string Ikon { get; set; } = null!;
         public string RengKodu { get; set; } = null!;
         public string? Tesvir { get; set; }
+        public bool BirbasaOdenishli { get; set; } = false;
         public bool Aktivdir { get; set; } = true;
 
         public ICollection<IsciJetonu> IsciJetonlari { get; set; } = new List<IsciJetonu>();

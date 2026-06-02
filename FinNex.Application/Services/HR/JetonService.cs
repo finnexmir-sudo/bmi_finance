@@ -643,14 +643,15 @@ namespace FinNex.Application.Services.HR
 
                 var teyinat = new JetonTeyinati
                 {
-                    Ad         = dto.Ad.Trim(),
-                    Nov        = dto.Nov,
-                    Rengi      = dto.Rengi,
-                    SaatDeyeri = dto.SaatDeyeri,
-                    Ikon       = string.IsNullOrWhiteSpace(dto.Ikon) ? "bi bi-award-fill" : dto.Ikon.Trim(),
-                    RengKodu   = string.IsNullOrWhiteSpace(dto.RengKodu) ? "#6b7280" : dto.RengKodu.Trim(),
-                    Tesvir     = dto.Tesvir?.Trim(),
-                    Aktivdir   = true
+                    Ad                = dto.Ad.Trim(),
+                    Nov               = dto.Nov,
+                    Rengi             = dto.Rengi,
+                    SaatDeyeri        = dto.SaatDeyeri,
+                    Ikon              = string.IsNullOrWhiteSpace(dto.Ikon) ? "bi bi-award-fill" : dto.Ikon.Trim(),
+                    RengKodu          = string.IsNullOrWhiteSpace(dto.RengKodu) ? "#6b7280" : dto.RengKodu.Trim(),
+                    Tesvir            = dto.Tesvir?.Trim(),
+                    BirbasaOdenishli  = dto.BirbasaOdenishli,
+                    Aktivdir          = true
                 };
 
                 await _unitOfWork.Repository<JetonTeyinati>().YaratAsync(teyinat);
@@ -681,12 +682,13 @@ namespace FinNex.Application.Services.HR
                 if (teyinat.Nov == JetonNovu.Musbat && dto.SaatDeyeri < 0)
                     return Result.Fail("Müsbət jeton üçün saat dəyəri mənfi ola bilməz.");
 
-                teyinat.Ad = dto.Ad.Trim();
-                teyinat.SaatDeyeri = dto.SaatDeyeri;
-                teyinat.Tesvir = dto.Tesvir;
-                teyinat.Ikon = string.IsNullOrWhiteSpace(dto.Ikon) ? teyinat.Ikon : dto.Ikon.Trim();
-                teyinat.RengKodu = string.IsNullOrWhiteSpace(dto.RengKodu) ? teyinat.RengKodu : dto.RengKodu.Trim();
-                teyinat.Aktivdir = dto.Aktivdir;
+                teyinat.Ad               = dto.Ad.Trim();
+                teyinat.SaatDeyeri       = dto.SaatDeyeri;
+                teyinat.Tesvir           = dto.Tesvir;
+                teyinat.Ikon             = string.IsNullOrWhiteSpace(dto.Ikon) ? teyinat.Ikon : dto.Ikon.Trim();
+                teyinat.RengKodu         = string.IsNullOrWhiteSpace(dto.RengKodu) ? teyinat.RengKodu : dto.RengKodu.Trim();
+                teyinat.BirbasaOdenishli = dto.BirbasaOdenishli;
+                teyinat.Aktivdir         = dto.Aktivdir;
 
                 await _unitOfWork.Repository<JetonTeyinati>().YenileAsync(teyinat);
                 await _unitOfWork.YaddaSaxlaAsync();
@@ -738,15 +740,16 @@ namespace FinNex.Application.Services.HR
 
         private static JetonTeyinatiListDto MapTeyinat(JetonTeyinati x) => new()
         {
-            Id = x.Id,
-            Ad = x.Ad,
-            Nov = x.Nov,
-            Rengi = x.Rengi,
-            SaatDeyeri = x.SaatDeyeri,
-            Ikon = x.Ikon,
-            RengKodu = x.RengKodu,
-            Tesvir = x.Tesvir,
-            Aktivdir = x.Aktivdir
+            Id               = x.Id,
+            Ad               = x.Ad,
+            Nov              = x.Nov,
+            Rengi            = x.Rengi,
+            SaatDeyeri       = x.SaatDeyeri,
+            Ikon             = x.Ikon,
+            RengKodu         = x.RengKodu,
+            Tesvir           = x.Tesvir,
+            BirbasaOdenishli = x.BirbasaOdenishli,
+            Aktivdir         = x.Aktivdir
         };
 
         private static IsciJetonuListDto MapJeton(IsciJetonu x) => new()

@@ -11,5 +11,6 @@ namespace FinNex.Application.DTOs.HR.Jeton
         public string Ikon { get; set; } = "bi bi-award-fill";
         public string RengKodu { get; set; } = "#6b7280";
         public string? Tesvir { get; set; }
+        public bool BirbasaOdenishli { get; set; } = false;
     }
 }

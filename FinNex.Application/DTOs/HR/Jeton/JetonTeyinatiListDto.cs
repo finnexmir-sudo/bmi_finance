@@ -12,6 +12,7 @@ namespace FinNex.Application.DTOs.HR.Jeton
         public string Ikon { get; set; } = null!;
         public string RengKodu { get; set; } = null!;
         public string? Tesvir { get; set; }
+        public bool BirbasaOdenishli { get; set; }
         public bool Aktivdir { get; set; }
     }
 }
