@@ -1,3 +1,5 @@
+using FinNex.Domain.Entities.HR;
+
 namespace FinNex.Application.DTOs.HR.Jeton
 {
     public class JetonTeyinatiUpdateDto
