@@ -490,15 +490,47 @@ function chatDeleteMsg(msgId) {
     });
 
     // ── Toplu mesaj funksiyaları ─────────────────────────
+    var bulkFayl = null;
+
     function openBulkModal() {
         document.getElementById('bulkModal').style.display = 'flex';
         document.getElementById('bulkMetn').value = '';
         document.getElementById('bulkInfo').textContent = '';
         document.getElementById('bulkSearch').value = '';
+        bulkFayl = null;
+        document.getElementById('bulkFaylInput').value = '';
+        document.getElementById('bulkFaylPreview').innerHTML = '';
         loadDepartments();
         loadEmployees(null);
     }
     function closeBulkModal() { document.getElementById('bulkModal').style.display = 'none'; }
+
+    document.getElementById('bulkFaylInput').addEventListener('change', function () {
+        var f = this.files[0];
+        if (!f) { bulkFayl = null; document.getElementById('bulkFaylPreview').innerHTML = ''; return; }
+        var maxSize = 10 * 1024 * 1024;
+        var allowed = ['.pdf', '.doc', '.docx', '.xls', '.xlsx'];
+        var ext = f.name.substring(f.name.lastIndexOf('.')).toLowerCase();
+        if (f.size > maxSize) {
+            document.getElementById('bulkFaylPreview').innerHTML = '<span style="color:#dc2626;">Fayl 10 MB-dan böyükdür</span>';
+            this.value = ''; bulkFayl = null; return;
+        }
+        if (!allowed.includes(ext)) {
+            document.getElementById('bulkFaylPreview').innerHTML = '<span style="color:#dc2626;">Yalnız PDF, Word, Excel</span>';
+            this.value = ''; bulkFayl = null; return;
+        }
+        bulkFayl = f;
+        var kb = f.size < 1024 * 1024 ? Math.round(f.size / 1024) + ' KB' : (f.size / 1024 / 1024).toFixed(1) + ' MB';
+        document.getElementById('bulkFaylPreview').innerHTML =
+            '<i class="bi bi-paperclip" style="color:#667eea;"></i> ' + escHtml(f.name) +
+            ' <span style="color:#94a3b8;">(' + kb + ')</span>' +
+            ' <span style="cursor:pointer;color:#dc2626;margin-left:4px;" id="bulkFaylSil">✕</span>';
+        document.getElementById('bulkFaylSil').addEventListener('click', function () {
+            bulkFayl = null;
+            document.getElementById('bulkFaylInput').value = '';
+            document.getElementById('bulkFaylPreview').innerHTML = '';
+        });
+    });
 
     function loadDepartments() {
         var select = document.getElementById('bulkTarget');
@@ -548,15 +580,26 @@ function chatDeleteMsg(msgId) {
 
     function sendBulkMessage() {
         var metn = document.getElementById('bulkMetn').value.trim();
-        if (!metn) { document.getElementById('bulkInfo').textContent = 'Mesaj mətni boş ola bilməz!'; document.getElementById('bulkInfo').className = 'chat-bulk-info chat-bulk-info--error'; return; }
+        if (!metn && !bulkFayl) { document.getElementById('bulkInfo').textContent = 'Mesaj mətni və ya fayl lazımdır!'; document.getElementById('bulkInfo').className = 'chat-bulk-info chat-bulk-info--error'; return; }
         var ids = []; document.querySelectorAll('.bulk-emp-cb:checked').forEach(function (cb) { ids.push(parseInt(cb.value)); });
         if (ids.length === 0) { document.getElementById('bulkInfo').textContent = 'Ən azı bir işçi seçilməlidir!'; document.getElementById('bulkInfo').className = 'chat-bulk-info chat-bulk-info--error'; return; }
+
+        var fd = new FormData();
+        if (metn) fd.append('metn', metn);
+        ids.forEach(function (id) { fd.append('isciIdler', id); });
+        if (bulkFayl) fd.append('fayl', bulkFayl);
+
         var btn = document.getElementById('btnSendBulk'); btn.disabled = true; btn.textContent = 'Göndərilir...';
-        fetch('/User/Chat/SendBulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isciIdler: ids, metn: metn }) })
+        fetch('/User/Chat/SendBulk', { method: 'POST', body: fd })
         .then(function (r) { return r.json(); }).then(function (data) {
             btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Göndər';
-            if (data.ok) { document.getElementById('bulkInfo').textContent = data.say + ' işçiyə mesaj göndərildi!'; document.getElementById('bulkInfo').className = 'chat-bulk-info chat-bulk-info--success'; document.getElementById('bulkMetn').value = ''; setTimeout(function () { closeBulkModal(); loadContacts(); }, 1500); }
-            else { document.getElementById('bulkInfo').textContent = data.mesaj || 'Xəta'; document.getElementById('bulkInfo').className = 'chat-bulk-info chat-bulk-info--error'; }
+            if (data.ok) {
+                document.getElementById('bulkInfo').textContent = data.say + ' işçiyə mesaj göndərildi!';
+                document.getElementById('bulkInfo').className = 'chat-bulk-info chat-bulk-info--success';
+                document.getElementById('bulkMetn').value = '';
+                bulkFayl = null; document.getElementById('bulkFaylInput').value = ''; document.getElementById('bulkFaylPreview').innerHTML = '';
+                setTimeout(function () { closeBulkModal(); loadContacts(); }, 1500);
+            } else { document.getElementById('bulkInfo').textContent = data.mesaj || 'Xəta'; document.getElementById('bulkInfo').className = 'chat-bulk-info chat-bulk-info--error'; }
         }).catch(function () { btn.disabled = false; btn.innerHTML = 'Göndər'; document.getElementById('bulkInfo').textContent = 'Şəbəkə xətası!'; document.getElementById('bulkInfo').className = 'chat-bulk-info chat-bulk-info--error'; });
     }
 

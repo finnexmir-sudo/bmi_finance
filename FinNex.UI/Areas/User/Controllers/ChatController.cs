@@ -18,6 +18,7 @@ public class ChatController : Controller
     private readonly IUnitOfWork             _unitOfWork;
     private readonly IWebHostEnvironment     _env;
     private readonly IDesktopBildirisService _desktop;
+    private readonly IConfiguration          _config;
 
     private const int  MesajLimit            = 50;
     private const int  KohneMesajGunLimiti   = 30;
@@ -27,11 +28,13 @@ public class ChatController : Controller
     public ChatController(
         IUnitOfWork             unitOfWork,
         IWebHostEnvironment     env,
-        IDesktopBildirisService desktop)
+        IDesktopBildirisService desktop,
+        IConfiguration          config)
     {
         _unitOfWork = unitOfWork;
         _env        = env;
         _desktop    = desktop;
+        _config     = config;
     }
 
     // ── GET /User/Chat ───────────────────────────────────
@@ -318,22 +321,54 @@ public class ChatController : Controller
 
     // ── POST /User/Chat/SendBulk ───────────────────────────
     [HttpPost]
-    public async Task<IActionResult> SendBulk([FromBody] ChatBulkSendDto dto)
+    public async Task<IActionResult> SendBulk(
+        [FromForm] string?    metn,
+        [FromForm] List<int>? isciIdler,
+        [FromForm] int?       departamentId,
+        IFormFile?            fayl)
     {
-        if (string.IsNullOrWhiteSpace(dto?.Metn))
-            return Json(new { ok = false, mesaj = "Mesaj mətni boş ola bilməz" });
-
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var menim = await _unitOfWork.Repository<Isci>()
             .GetirAsync(x => x.AppUserId == userId && !x.Silinib);
 
         if (menim == null) return Json(new { ok = false, mesaj = "İşçi tapılmadı" });
 
+        if (string.IsNullOrWhiteSpace(metn) && (fayl == null || fayl.Length == 0))
+            return Json(new { ok = false, mesaj = "Mesaj mətni və ya fayl lazımdır" });
+
+        // ── Fayl yüklə (FinNex_DMS/chat/) ──
+        string? faylAdi = null, faylYolu = null, faylTipi = null;
+        long?   faylOlcusu = null;
+
+        if (fayl != null && fayl.Length > 0)
+        {
+            if (fayl.Length > MaxFaylOlcusu)
+                return Json(new { ok = false, mesaj = "Fayl ölçüsü 10 MB-dan çox ola bilməz" });
+
+            var ext = Path.GetExtension(fayl.FileName).ToLowerInvariant();
+            if (!IcazaliTipler.Contains(ext))
+                return Json(new { ok = false, mesaj = "Yalnız PDF, Word, Excel faylları qəbul olunur" });
+
+            var dmsRoot = _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
+            var dir     = Path.Combine(dmsRoot, "chat");
+            Directory.CreateDirectory(dir);
+
+            var uniqueName = $"{Guid.NewGuid()}{ext}";
+            await using var fs = new FileStream(Path.Combine(dir, uniqueName), FileMode.Create);
+            await fayl.CopyToAsync(fs);
+
+            faylAdi    = fayl.FileName;
+            faylYolu   = $"/dms/chat/{uniqueName}";
+            faylTipi   = ext.TrimStart('.');
+            faylOlcusu = fayl.Length;
+        }
+
+        // ── Alıcı siyahısı ──
         List<int> hederIsciIdler;
 
-        if (dto.IsciIdler != null && dto.IsciIdler.Any())
+        if (isciIdler != null && isciIdler.Any())
         {
-            hederIsciIdler = dto.IsciIdler.Where(id => id != menim.Id).Distinct().ToList();
+            hederIsciIdler = isciIdler.Where(id => id != menim.Id).Distinct().ToList();
         }
         else
         {
@@ -341,15 +376,10 @@ public class ChatController : Controller
                 .Query()
                 .Where(t => t.Aktivdir && !t.Isci.Silinib && t.Isci.Status == IsciStatus.Aktiv && t.IsciId != menim.Id);
 
-            if (dto.DepartamentId.HasValue && dto.DepartamentId > 0)
-            {
-                teyinatQuery = teyinatQuery.Where(t => t.DepartamentId == dto.DepartamentId.Value);
-            }
+            if (departamentId.HasValue && departamentId > 0)
+                teyinatQuery = teyinatQuery.Where(t => t.DepartamentId == departamentId.Value);
 
-            hederIsciIdler = await teyinatQuery
-                .Select(t => t.IsciId)
-                .Distinct()
-                .ToListAsync();
+            hederIsciIdler = await teyinatQuery.Select(t => t.IsciId).Distinct().ToListAsync();
         }
 
         if (!hederIsciIdler.Any())
@@ -357,35 +387,34 @@ public class ChatController : Controller
 
         var grupId = Guid.NewGuid();
         var now    = DateTime.Now;
+        var metnTrim = metn?.Trim() ?? "";
 
         foreach (var isciId in hederIsciIdler)
         {
-            var mesaj = new ChatMesaj
+            await _unitOfWork.Repository<ChatMesaj>().YaratAsync(new ChatMesaj
             {
                 GonderenIsciId   = menim.Id,
                 AlanIsciId       = isciId,
-                Metn             = dto.Metn.Trim(),
+                Metn             = metnTrim,
                 Oxunub           = false,
                 GonderilmeTarixi = now,
-                TopluMesajGrupId = grupId
-            };
-            await _unitOfWork.Repository<ChatMesaj>().YaratAsync(mesaj);
+                TopluMesajGrupId = grupId,
+                FaylAdi          = faylAdi,
+                FaylYolu         = faylYolu,
+                FaylTipi         = faylTipi,
+                FaylOlcusu       = faylOlcusu
+            });
         }
 
         await _unitOfWork.YaddaSaxlaAsync();
 
-        // Masaüstü agentə push — hər alıcıya ayrıca.
-        var bulkMetn = dto.Metn.Trim();
+        var pushMetn = !string.IsNullOrWhiteSpace(metnTrim) ? metnTrim : $"📎 {faylAdi}";
         foreach (var isciId in hederIsciIdler)
         {
             try
             {
-                await _desktop.PushAsync(
-                    isciId,
-                    "Yeni Mesaj",
-                    $"{menim.TamAd}: {bulkMetn}",
-                    "/User/Chat",
-                    BildirisNovu.YeniMesaj);
+                await _desktop.PushAsync(isciId, "Yeni Mesaj",
+                    $"{menim.TamAd}: {pushMetn}", "/User/Chat", BildirisNovu.YeniMesaj);
             }
             catch { }
         }
