@@ -66,5 +66,8 @@ namespace FinNex.Domain.Entities.Communication
 
         // İş günü bitdi elanı
         IsGunuBitdi = 43,
+
+        // Erkən çıxış
+        TezCixma = 44,
     }
 }

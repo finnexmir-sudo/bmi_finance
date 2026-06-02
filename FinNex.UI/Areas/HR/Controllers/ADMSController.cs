@@ -1,4 +1,6 @@
+using FinNex.Application.Interfaces.Communication;
 using FinNex.DataAccess.Contexts;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,15 +14,17 @@ public class ADMSController : Controller
     private readonly AppDbContext _db;
     private readonly ILogger<ADMSController> _logger;
     private readonly IJetonTeklifleriService _teklifService;
+    private readonly IBildirisRouter _bildirisRouter;
 
     public static DateTime? SonElaqa { get; private set; }
     public static string? SonSN { get; private set; }
 
-    public ADMSController(AppDbContext db, ILogger<ADMSController> logger, IJetonTeklifleriService teklifService)
+    public ADMSController(AppDbContext db, ILogger<ADMSController> logger, IJetonTeklifleriService teklifService, IBildirisRouter bildirisRouter)
     {
         _db = db;
         _logger = logger;
         _teklifService = teklifService;
+        _bildirisRouter = bildirisRouter;
     }
 
     [HttpGet("cdata")]
@@ -122,20 +126,26 @@ public class ADMSController : Controller
 
             var tarix = vaxt.Date;
 
-            // İş parametrləri — gecikme toleransı
+            // İş parametrləri — gecikme toleransı + erkən çıxış
             TimeSpan standartGiris;
             TimeSpan gecikTolerans;
+            TimeSpan standartCixis;
+            TimeSpan tezCixmaTolerans;
             try
             {
                 var parametri = await _db.Set<IsParametri>()
                     .Where(x => !x.Silinib).FirstOrDefaultAsync();
-                standartGiris = parametri?.StandartGirisVaxti ?? new TimeSpan(9, 0, 0);
-                gecikTolerans = TimeSpan.FromMinutes(parametri?.GecikmeToleransDeqiqe ?? 5);
+                standartGiris     = parametri?.StandartGirisVaxti  ?? new TimeSpan(9, 0, 0);
+                gecikTolerans     = TimeSpan.FromMinutes(parametri?.GecikmeToleransDeqiqe   ?? 5);
+                standartCixis     = parametri?.StandartCixisVaxti  ?? new TimeSpan(17, 45, 0);
+                tezCixmaTolerans  = TimeSpan.FromMinutes(parametri?.TezCixmaToleransDeqiqe ?? 15);
             }
             catch
             {
-                standartGiris = new TimeSpan(9, 0, 0);
-                gecikTolerans = TimeSpan.FromMinutes(5);
+                standartGiris    = new TimeSpan(9, 0, 0);
+                gecikTolerans    = TimeSpan.FromMinutes(5);
+                standartCixis    = new TimeSpan(17, 45, 0);
+                tezCixmaTolerans = TimeSpan.FromMinutes(15);
             }
 
             // Bu gün üçün təsdiqlənmiş İcazə varmı?
@@ -197,6 +207,28 @@ public class ADMSController : Controller
                         movcud.CixisVaxti = vaxt;
                         await _db.SaveChangesAsync();
                         davamiyyetId = movcud.Id;
+
+                        // Erkən çıxış bildirişi
+                        // Rəhbər "İş Bitdi" vurubsa → elan vaxtı hədd olur, yoxsa standart-tolerans
+                        var bugunElan = await _db.Set<IsGunuBitdiElan>()
+                            .Where(x => x.Tarix.Date == tarix)
+                            .FirstOrDefaultAsync();
+                        var tezCixmaHeddi = bugunElan != null
+                            ? bugunElan.BitisVaxti
+                            : standartCixis - tezCixmaTolerans;
+
+                        if (vaxt.TimeOfDay < tezCixmaHeddi)
+                        {
+                            var qalan = (int)(tezCixmaHeddi - vaxt.TimeOfDay).TotalMinutes;
+                            var heddStr = $"{(int)tezCixmaHeddi.TotalHours:D2}:{tezCixmaHeddi.Minutes:D2}";
+                            var elanQeyd = bugunElan != null ? " (rəhbər elanına görə)" : "";
+                            _ = _bildirisRouter.NotifyIsciAsync(
+                                isciId,
+                                BildirisNovu.TezCixma,
+                                "Erkən çıxış qeydə alındı",
+                                $"Siz iş vaxtından{elanQeyd} {qalan} dəqiqə tez çıxdınız. " +
+                                $"Çıxış: {vaxt:HH:mm}, İş vaxtı: {heddStr}.");
+                        }
                     }
                 }
             }
