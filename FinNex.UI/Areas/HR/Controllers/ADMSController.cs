@@ -209,18 +209,25 @@ public class ADMSController : Controller
                         davamiyyetId = movcud.Id;
 
                         // Erkən çıxış bildirişi
-                        var tezCixmaHeddi = standartCixis - tezCixmaTolerans;
+                        // Rəhbər "İş Bitdi" vurubsa → elan vaxtı hədd olur, yoxsa standart-tolerans
+                        var bugunElan = await _db.Set<IsGunuBitdiElan>()
+                            .Where(x => x.Tarix.Date == tarix)
+                            .FirstOrDefaultAsync();
+                        var tezCixmaHeddi = bugunElan != null
+                            ? bugunElan.BitisVaxti
+                            : standartCixis - tezCixmaTolerans;
+
                         if (vaxt.TimeOfDay < tezCixmaHeddi)
                         {
                             var qalan = (int)(tezCixmaHeddi - vaxt.TimeOfDay).TotalMinutes;
+                            var heddStr = $"{(int)tezCixmaHeddi.TotalHours:D2}:{tezCixmaHeddi.Minutes:D2}";
+                            var elanQeyd = bugunElan != null ? " (rəhbər elanına görə)" : "";
                             _ = _bildirisRouter.NotifyIsciAsync(
                                 isciId,
                                 BildirisNovu.TezCixma,
                                 "Erkən çıxış qeydə alındı",
-                                $"Siz iş vaxtı başa çatmadan çıxdınız. " +
-                                $"Çıxış: {vaxt:HH:mm}, " +
-                                $"Standart: {standartCixis.Hours:D2}:{standartCixis.Minutes:D2}. " +
-                                $"Tez çıxış: {qalan} dəqiqə.");
+                                $"Siz iş vaxtından{elanQeyd} {qalan} dəqiqə tez çıxdınız. " +
+                                $"Çıxış: {vaxt:HH:mm}, İş vaxtı: {heddStr}.");
                         }
                     }
                 }
