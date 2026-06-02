@@ -646,9 +646,14 @@ namespace FinNex.Application.Services
         // Rəhbər/HR tesdiqinden sonra Şöbə Rəisinə məlumat bildirişi
         private async Task NotifySobeReisiAsync(Icaze ic)
         {
+            var teyinat = await _unitOfWork.Repository<IsciTeyinat>()
+                .GetirAsync(x => x.IsciId == ic.IsciId && x.Aktivdir && !x.Silinib);
+            if (teyinat == null) return;
+
             var isciAd = await GetIsciAdAsync(ic.IsciId);
             var dovr = $"{ic.IcazeTarixi:dd.MM.yyyy} {ic.BaslamaSaati:hh\\:mm}–{ic.BitisSaati:hh\\:mm}";
-            await _bildirisRouter.NotifyStrukturRoluAsync(
+            await _bildirisRouter.NotifyDepartmentRoleAsync(
+                teyinat.DepartamentId,
                 StrukturRolTipi.SobeReisi,
                 BildirisNovu.IcazeTesdiq,
                 "İcazə təsdiqləndi — məlumat",
