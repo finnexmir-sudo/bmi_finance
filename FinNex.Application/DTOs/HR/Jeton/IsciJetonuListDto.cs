@@ -15,6 +15,7 @@ namespace FinNex.Application.DTOs.HR.Jeton
         public string JetonRengKodu { get; set; } = null!;
         public decimal JetonSaatDeyeri { get; set; }
         public JetonVahid JetonVahid { get; set; }
+        public decimal? QalanSaat { get; set; }
         public DateTime QazanmaTarixi { get; set; }
         public string Sebeb { get; set; } = null!;
         public IsciJetonuStatus Status { get; set; }

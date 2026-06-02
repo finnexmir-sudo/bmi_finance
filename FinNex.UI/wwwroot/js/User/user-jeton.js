@@ -4,11 +4,22 @@
 let ujJetonlar = []; // aktiv jetonlar cache
 let ujSelectedIds = new Set();
 
-// jetonVahid: 1=Saat, 2=Gun
+// jetonVahid: 1=Saat, 2=Gun; qalanSaat: null = tam dəyər
 function ujDeyerGoster(j) {
     if (!j.jetonSaatDeyeri || j.jetonSaatDeyeri <= 0) return 'Cəza';
-    if (j.jetonVahid === 2) return (j.jetonSaatDeyeri / 8) + ' gün';
-    return j.jetonSaatDeyeri + ' saat';
+    const movcut = j.qalanSaat != null ? j.qalanSaat : j.jetonSaatDeyeri;
+    const tam    = j.jetonSaatDeyeri;
+    const qismi  = j.qalanSaat != null && j.qalanSaat !== tam;
+
+    if (j.jetonVahid === 2) {
+        const gun = movcut / 8;
+        return qismi
+            ? `${gun.toFixed(2).replace(/\.?0+$/,'')} gün <span style="color:#9ca3af;font-size:11px;">(${movcut} saat qalıb)</span>`
+            : `${(tam/8).toFixed(2).replace(/\.?0+$/,'')} gün`;
+    }
+    return qismi
+        ? `${movcut} saat <span style="color:#9ca3af;font-size:11px;">(${tam} saatdan)</span>`
+        : `${tam} saat`;
 }
 
 // ── Tab ─────────────────────────────────────────────────
@@ -98,7 +109,7 @@ function ujRenderSelectList() {
     container.innerHTML = ujJetonlar.map(j => `
         <div class="uj-jeton-select-item ${ujSelectedIds.has(j.id) ? 'uj-jeton-select-item--selected' : ''}"
              style="--jc:${j.jetonRengKodu ?? '#9ca3af'}"
-             onclick="ujToggleJeton(${j.id}, ${j.jetonSaatDeyeri})">
+             onclick="ujToggleJeton(${j.id}, ${j.qalanSaat ?? j.jetonSaatDeyeri})">
             <div class="uj-jsi-icon"><i class="${j.jetonIkon ?? 'bi bi-award-fill'}"></i></div>
             <div class="uj-jsi-info">
                 <div class="uj-jsi-name">${j.jetonAd ?? ''}</div>
@@ -118,7 +129,7 @@ function ujToggleJeton(id, saat) {
 function ujUpdateSelectedInfo() {
     const total = ujJetonlar
         .filter(j => ujSelectedIds.has(j.id))
-        .reduce((acc, j) => acc + (j.jetonSaatDeyeri ?? 0), 0);
+        .reduce((acc, j) => acc + (j.qalanSaat ?? j.jetonSaatDeyeri ?? 0), 0);
     const info = document.getElementById('ujSelectedInfo');
     if (ujSelectedIds.size > 0) {
         info.style.display = 'block';

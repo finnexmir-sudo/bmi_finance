@@ -185,7 +185,7 @@ namespace FinNex.Application.Services.HR
                     && x.JetonTeyinati.Nov == JetonNovu.Musbat)
                 .ToListAsync();
 
-            return jetonlar.Sum(x => x.JetonTeyinati.SaatDeyeri);
+            return jetonlar.Sum(x => x.QalanSaat ?? x.JetonTeyinati.SaatDeyeri);
         }
 
         // ── Redim ─────────────────────────────────────────────────────────────
@@ -489,28 +489,44 @@ namespace FinNex.Application.Services.HR
                     .OrderBy(x => x.QazanmaTarixi)
                     .ToListAsync();
 
-                decimal cemSaat = 0;
-                var secilenler = new List<IsciJetonu>();
+                // Mövcud balans yoxlaması
+                decimal totalMovcut = jetonlar.Sum(x => x.QalanSaat ?? x.JetonTeyinati.SaatDeyeri);
+                if (totalMovcut < teleblesaat)
+                    return Result<decimal>.Fail(
+                        $"İşçinin aktiv balansı kifayət etmir ({totalMovcut:0.##} < {teleblesaat:0.##} saat).");
+
+                // FIFO — qismən xərcləmə dəstəklənir
+                decimal qalan = teleblesaat;
+                decimal cemXerclenen = 0;
+
                 foreach (var j in jetonlar)
                 {
-                    if (cemSaat >= teleblesaat) break;
-                    secilenler.Add(j);
-                    cemSaat += j.JetonTeyinati.SaatDeyeri;
-                }
+                    if (qalan <= 0) break;
 
-                if (cemSaat < teleblesaat)
-                    return Result<decimal>.Fail(
-                        $"İşçinin aktiv balansı kifayət etmir ({cemSaat:0.##} < {teleblesaat:0.##} saat).");
+                    decimal movcut = j.QalanSaat ?? j.JetonTeyinati.SaatDeyeri;
 
-                // Tam istifadə et
-                foreach (var j in secilenler)
-                {
-                    j.Status = IsciJetonuStatus.IstifadeOlunub;
+                    if (movcut <= qalan)
+                    {
+                        // Bu jetonu tam xərclə
+                        j.Status = IsciJetonuStatus.IstifadeOlunub;
+                        j.QalanSaat = 0;
+                        cemXerclenen += movcut;
+                        qalan -= movcut;
+                    }
+                    else
+                    {
+                        // Bu jetonu qismən xərclə — qalan hissə aktivdir
+                        j.QalanSaat = movcut - qalan;
+                        cemXerclenen += qalan;
+                        qalan = 0;
+                    }
+
                     await _unitOfWork.Repository<IsciJetonu>().YenileAsync(j);
                 }
+
                 await _unitOfWork.YaddaSaxlaAsync();
 
-                return Result<decimal>.Ok(cemSaat);
+                return Result<decimal>.Ok(cemXerclenen);
             }
             catch (Exception ex)
             {
@@ -768,7 +784,8 @@ namespace FinNex.Application.Services.HR
             JetonRengKodu = x.JetonTeyinati.RengKodu,
             JetonSaatDeyeri = x.JetonTeyinati.SaatDeyeri,
             JetonVahid      = x.JetonTeyinati.Vahid,
-            QazanmaTarixi = x.QazanmaTarixi,
+            QalanSaat       = x.QalanSaat,
+            QazanmaTarixi   = x.QazanmaTarixi,
             Sebeb = x.Sebeb,
             Status = x.Status,
             RedimTelebiId = x.RedimTelebiId
