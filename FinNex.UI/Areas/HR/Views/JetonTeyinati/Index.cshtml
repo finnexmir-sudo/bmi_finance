@@ -170,24 +170,26 @@
             </select>
         </div>
         <div class="hj-field">
-            <label>Rəng <span style="color:#dc2626">*</span></label>
+            <label>Kateqoriya <span style="color:#dc2626">*</span></label>
             <select id="hjtcRengi" class="hj-input" onchange="hjtcSyncRengKodu()">
                 <option value="1" data-kod="#cd7f32">Bürünc</option>
                 <option value="2" data-kod="#a8a9ad">Gümüş</option>
                 <option value="3" data-kod="#ffc200">Qızıl</option>
                 <option value="4" data-kod="#1a1a1a">Qara</option>
+                <option value="ferdi" data-kod="" id="hjtcFerdiOpt" style="display:none;">✏ Fərdi rəng</option>
             </select>
         </div>
         <div class="hj-field">
-            <label>Rəng kodu <span style="color:#dc2626">*</span></label>
+            <label>Görünüş rengi <span style="color:#dc2626">*</span></label>
             <div style="display:flex;gap:8px;align-items:center;">
                 <input type="color" id="hjtcRengPicker" value="#cd7f32"
-                       oninput="document.getElementById('hjtcRengKodu').value=this.value"
+                       oninput="document.getElementById('hjtcRengKodu').value=this.value; hjtcManualColorChange();"
                        style="width:40px;height:36px;padding:2px;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;" />
                 <input type="text" id="hjtcRengKodu" class="hj-input" value="#cd7f32"
                        placeholder="#rrggbb"
-                       oninput="document.getElementById('hjtcRengPicker').value=this.value" />
+                       oninput="document.getElementById('hjtcRengPicker').value=this.value; hjtcManualColorChange();" />
             </div>
+            <small style="color:#6b7280;font-size:12px;">Kateqoriya yuxarıda seçilir, rəng kodu göstəriş üçündür.</small>
         </div>
         <div class="hj-field">
             <label>İkon <span style="font-size:11px;color:#6b7280;">(Bootstrap Icons sinfi)</span></label>

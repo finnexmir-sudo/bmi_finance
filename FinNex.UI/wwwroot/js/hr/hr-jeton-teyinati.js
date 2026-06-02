@@ -80,17 +80,19 @@ async function hjtSubmitEdit() {
 
 // ── Create modal ─────────────────────────────────────────────────────────────
 
+// Tracks the last valid JetonRengi enum value (1-4) separately from dropdown display
+let hjtcLastRengiEnum = 1;
+
 function hjtOpenCreateModal() {
     document.getElementById('hjtcAd').value = '';
     document.getElementById('hjtcNov').value = '1';
-    document.getElementById('hjtcRengi').value = '1';
-    document.getElementById('hjtcRengKodu').value = '#cd7f32';
-    document.getElementById('hjtcRengPicker').value = '#cd7f32';
+    hjtcSetRengiPreset('1', '#cd7f32');
     document.getElementById('hjtcIkon').value = 'bi bi-award-fill';
     document.getElementById('hjtcSaat').value = '1';
     document.getElementById('hjtcVahid').value = 'saat';
     document.getElementById('hjtcBirbasaOdenishli').checked = false;
     document.getElementById('hjtcTesvir').value = '';
+    hjtcLastRengiEnum = 1;
     hjtcUpdateHint();
     document.getElementById('hjtCreateOverlay').classList.add('hj-open');
     document.getElementById('hjtCreateModal').classList.add('hj-open');
@@ -101,10 +103,45 @@ function hjtCloseCreateModal() {
     document.getElementById('hjtCreateModal').classList.remove('hj-open');
 }
 
+// Called when user picks a preset from dropdown
 function hjtcSyncRengKodu() {
     const sel = document.getElementById('hjtcRengi');
+    const val = sel.value;
+    if (!val || val === 'ferdi') return;
     const opt = sel.options[sel.selectedIndex];
     const kod = opt.getAttribute('data-kod') || '#6b7280';
+    hjtcLastRengiEnum = parseInt(val);
+    document.getElementById('hjtcFerdiOpt').style.display = 'none';
+    document.getElementById('hjtcRengKodu').value = kod;
+    document.getElementById('hjtcRengPicker').value = kod;
+}
+
+// Called when user manually changes the color picker or hex input
+function hjtcManualColorChange() {
+    const kod = document.getElementById('hjtcRengKodu').value.trim();
+    // Check if the new color matches any preset exactly
+    const sel = document.getElementById('hjtcRengi');
+    let matched = false;
+    for (let i = 0; i < sel.options.length; i++) {
+        const opt = sel.options[i];
+        if (opt.getAttribute('data-kod') && opt.getAttribute('data-kod').toLowerCase() === kod.toLowerCase()) {
+            sel.value = opt.value;
+            hjtcLastRengiEnum = parseInt(opt.value);
+            document.getElementById('hjtcFerdiOpt').style.display = 'none';
+            matched = true;
+            break;
+        }
+    }
+    if (!matched) {
+        const ferdiOpt = document.getElementById('hjtcFerdiOpt');
+        ferdiOpt.style.display = '';
+        sel.value = 'ferdi';
+    }
+}
+
+function hjtcSetRengiPreset(val, kod) {
+    document.getElementById('hjtcRengi').value = val;
+    document.getElementById('hjtcFerdiOpt').style.display = 'none';
     document.getElementById('hjtcRengKodu').value = kod;
     document.getElementById('hjtcRengPicker').value = kod;
 }
@@ -131,7 +168,7 @@ async function hjtSubmitCreate() {
     const dto = {
         ad:               document.getElementById('hjtcAd').value.trim(),
         nov:              parseInt(document.getElementById('hjtcNov').value),
-        rengi:            parseInt(document.getElementById('hjtcRengi').value),
+        rengi:            hjtcLastRengiEnum,
         saatDeyeri:       saatDeyeri,
         ikon:             document.getElementById('hjtcIkon').value.trim() || 'bi bi-award-fill',
         rengKodu:         document.getElementById('hjtcRengKodu').value.trim() || '#6b7280',
