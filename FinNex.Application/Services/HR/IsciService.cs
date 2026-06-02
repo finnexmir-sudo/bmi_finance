@@ -327,7 +327,7 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
         }
     }
 
-    public async Task<Result> TeyinatRedakteEtAsync(int isciId, int departamentId, int vezifeId)
+    public async Task<Result> TeyinatRedakteEtAsync(int isciId, int departamentId, int vezifeId, DateTime? bitmeTarixi = null)
     {
         try
         {
@@ -341,6 +341,7 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
                     IsciId = isciId,
                     DepartamentId = departamentId,
                     VezifeId = vezifeId,
+                    BitmeTarixi = bitmeTarixi,
                     BaslamaTarixi = DateTime.Today,
                     Esasdir = true,
                     Aktivdir = true
@@ -350,15 +351,13 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
                 return Result.Ok("Yeni təyinat yaradıldı.");
             }
 
-            if (aktiv.DepartamentId == departamentId && aktiv.VezifeId == vezifeId)
-                return Result.Ok("Dəyişiklik yoxdur.");
-
             var entity = await repo.IdIleGetirAsync(aktiv.Id);
             if (entity == null)
                 return Result.Fail("Təyinat tapılmadı.");
 
             entity.DepartamentId = departamentId;
             entity.VezifeId = vezifeId;
+            entity.BitmeTarixi = bitmeTarixi;
             entity.YenilenmeTarixi = DateTime.Now;
 
             var saved = await _unitOfWork.YaddaSaxlaAsync();

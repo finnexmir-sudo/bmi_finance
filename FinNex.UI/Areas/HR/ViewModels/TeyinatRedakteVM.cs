@@ -16,6 +16,9 @@ namespace FinNex.UI.Areas.HR.ViewModels
         [Display(Name = "Vəzifə")]
         public int VezifeId { get; set; }
 
+        [Display(Name = "Müqavilə bitmə tarixi")]
+        public DateTime? BitmeTarixi { get; set; }
+
         public List<SelectListItem> Departamentler { get; set; } = new();
         public List<SelectListItem> Vezifeler { get; set; } = new();
     }
