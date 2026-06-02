@@ -53,6 +53,63 @@ async function hjtSubmitEdit() {
     }
 }
 
+// ── Create modal ─────────────────────────────────────────────────────────────
+
+function hjtOpenCreateModal() {
+    document.getElementById('hjtcAd').value = '';
+    document.getElementById('hjtcNov').value = '1';
+    document.getElementById('hjtcRengi').value = '1';
+    document.getElementById('hjtcRengKodu').value = '#cd7f32';
+    document.getElementById('hjtcRengPicker').value = '#cd7f32';
+    document.getElementById('hjtcIkon').value = 'bi bi-award-fill';
+    document.getElementById('hjtcSaat').value = '1';
+    document.getElementById('hjtcTesvir').value = '';
+    document.getElementById('hjtCreateOverlay').classList.add('hj-open');
+    document.getElementById('hjtCreateModal').classList.add('hj-open');
+}
+
+function hjtCloseCreateModal() {
+    document.getElementById('hjtCreateOverlay').classList.remove('hj-open');
+    document.getElementById('hjtCreateModal').classList.remove('hj-open');
+}
+
+function hjtcSyncRengKodu() {
+    const sel = document.getElementById('hjtcRengi');
+    const opt = sel.options[sel.selectedIndex];
+    const kod = opt.getAttribute('data-kod') || '#6b7280';
+    document.getElementById('hjtcRengKodu').value = kod;
+    document.getElementById('hjtcRengPicker').value = kod;
+}
+
+async function hjtSubmitCreate() {
+    const dto = {
+        ad:        document.getElementById('hjtcAd').value.trim(),
+        nov:       parseInt(document.getElementById('hjtcNov').value),
+        rengi:     parseInt(document.getElementById('hjtcRengi').value),
+        saatDeyeri: parseFloat(document.getElementById('hjtcSaat').value) || 0,
+        ikon:      document.getElementById('hjtcIkon').value.trim() || 'bi bi-award-fill',
+        rengKodu:  document.getElementById('hjtcRengKodu').value.trim() || '#6b7280',
+        tesvir:    document.getElementById('hjtcTesvir').value.trim()
+    };
+
+    if (!dto.ad) return hjtToast('Ad daxil edin.', 'warn');
+
+    const res = await fetch('/HR/JetonTeyinati/Yarat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dto)
+    });
+    const json = await res.json();
+
+    if (json.success) {
+        hjtToast(json.message || 'Yaradıldı.', 'success');
+        hjtCloseCreateModal();
+        setTimeout(() => location.reload(), 600);
+    } else {
+        hjtToast(json.message || 'Xəta baş verdi.', 'error');
+    }
+}
+
 function hjtToast(msg, type = 'info') {
     const colors = { success: '#22c55e', error: '#ef4444', warn: '#f59e0b', info: '#6366f1' };
     const el = document.createElement('div');

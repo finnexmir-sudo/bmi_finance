@@ -19,6 +19,11 @@
                 <p class="hj-subtitle">Jeton növlərinin saat dəyərlərini və adlarını idarə et</p>
             </div>
         </div>
+        <div>
+            <button class="hj-btn hj-btn--primary" onclick="hjtOpenCreateModal()">
+                <i class="bi bi-plus-lg"></i> Yeni Jeton
+            </button>
+        </div>
     </div>
 
     <div class="hj-table-wrap">
@@ -101,6 +106,67 @@
         <button class="hj-btn hj-btn--ghost" onclick="hjtCloseEditModal()">Ləğv et</button>
         <button class="hj-btn hj-btn--primary" onclick="hjtSubmitEdit()">
             <i class="bi bi-check2"></i> Yadda saxla
+        </button>
+    </div>
+</div>
+
+<!-- ── Create Modal ─────────────────────────────────────────── -->
+<div class="hj-overlay" id="hjtCreateOverlay" onclick="hjtCloseCreateModal()"></div>
+<div class="hj-modal" id="hjtCreateModal">
+    <div class="hj-modal-head">
+        <h3><i class="bi bi-plus-circle"></i> Yeni jeton növü əlavə et</h3>
+        <button class="hj-modal-close" onclick="hjtCloseCreateModal()">&times;</button>
+    </div>
+    <div class="hj-modal-body">
+        <div class="hj-field">
+            <label>Ad <span style="color:#dc2626">*</span></label>
+            <input type="text" id="hjtcAd" class="hj-input" placeholder="məs. Platin" />
+        </div>
+        <div class="hj-field">
+            <label>Növ <span style="color:#dc2626">*</span></label>
+            <select id="hjtcNov" class="hj-input">
+                <option value="1">Müsbət (bonus saat)</option>
+                <option value="2">Mənfi (cəza)</option>
+            </select>
+        </div>
+        <div class="hj-field">
+            <label>Rəng <span style="color:#dc2626">*</span></label>
+            <select id="hjtcRengi" class="hj-input" onchange="hjtcSyncRengKodu()">
+                <option value="1" data-kod="#cd7f32">Bürünc</option>
+                <option value="2" data-kod="#a8a9ad">Gümüş</option>
+                <option value="3" data-kod="#ffc200">Qızıl</option>
+                <option value="4" data-kod="#1a1a1a">Qara</option>
+            </select>
+        </div>
+        <div class="hj-field">
+            <label>Rəng kodu <span style="color:#dc2626">*</span></label>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <input type="color" id="hjtcRengPicker" value="#cd7f32"
+                       oninput="document.getElementById('hjtcRengKodu').value=this.value"
+                       style="width:40px;height:36px;padding:2px;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;" />
+                <input type="text" id="hjtcRengKodu" class="hj-input" value="#cd7f32"
+                       placeholder="#rrggbb"
+                       oninput="document.getElementById('hjtcRengPicker').value=this.value" />
+            </div>
+        </div>
+        <div class="hj-field">
+            <label>İkon <span style="font-size:11px;color:#6b7280;">(Bootstrap Icons sinfi)</span></label>
+            <input type="text" id="hjtcIkon" class="hj-input" value="bi bi-award-fill" placeholder="bi bi-award-fill" />
+        </div>
+        <div class="hj-field">
+            <label>Saat dəyəri <span style="color:#dc2626">*</span></label>
+            <input type="number" step="0.25" id="hjtcSaat" class="hj-input" value="1" />
+            <small style="color:#6b7280;font-size:12px">Mənfi (cəza) jetonlar üçün 0 daxil edin.</small>
+        </div>
+        <div class="hj-field">
+            <label>Təsvir</label>
+            <textarea id="hjtcTesvir" class="hj-textarea" rows="2" placeholder="İstəyə bağlı..."></textarea>
+        </div>
+    </div>
+    <div class="hj-modal-foot">
+        <button class="hj-btn hj-btn--ghost" onclick="hjtCloseCreateModal()">Ləğv et</button>
+        <button class="hj-btn hj-btn--primary" onclick="hjtSubmitCreate()">
+            <i class="bi bi-plus-lg"></i> Əlavə et
         </button>
     </div>
 </div>

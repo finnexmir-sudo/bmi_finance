@@ -156,6 +156,7 @@ namespace FinNex.Application.Services
                             return Result<IcazeListDto>.Fail(jetonRes.Message ?? "Jeton xərclənmə xətası.");
                     }
                     await _YaratCixisGirisAsync(entity.Id, false);
+                    await _GecikmeYenileAsync(entity);
                     await NotifySobeReisiAsync(entity);
                     await NotifyHrMalumatAsync(entity);
                 }
@@ -516,6 +517,7 @@ namespace FinNex.Application.Services
                     return Result.Fail(jetonRes.Message ?? "Jeton xərclənmə xətası.");
 
                 await _YaratCixisGirisAsync(icaze.Id, icaze.Birdefelik);
+                await _GecikmeYenileAsync(icaze);
                 await NotifySobeReisiAsync(icaze);
                 await NotifyHrMalumatAsync(icaze);
             }
@@ -557,6 +559,7 @@ namespace FinNex.Application.Services
                     return Result.Fail(jetonRes.Message ?? "Jeton xərclənmə xətası.");
 
                 await _YaratCixisGirisAsync(icaze.Id, birdefelik);
+                await _GecikmeYenileAsync(icaze);
                 await NotifySobeReisiAsync(icaze);
             }
 
@@ -660,6 +663,24 @@ namespace FinNex.Application.Services
                 $"{isciAd} ({dovr}) icazəsi təsdiqləndi.",
                 redirectUrl: $"/User/Icaze/Dovriyye",
                 icazeId: ic.Id, exceptIsciId: ic.IsciId);
+        }
+
+        // İcazə təsdiqləndikdə həmin günkü Gecikme davamiyyət qeydini İcazəli et
+        private async Task _GecikmeYenileAsync(Icaze ic)
+        {
+            var dav = await _unitOfWork.Repository<Davamiyyet>()
+                .GetirAsync(x => x.IsciId == ic.IsciId && x.Tarix.Date == ic.IcazeTarixi.Date);
+
+            if (dav == null || dav.Status != DavamiyyetStatus.Gecikme || !dav.GirisVaxti.HasValue)
+                return;
+
+            var giris = dav.GirisVaxti.Value.TimeOfDay;
+            if (giris >= ic.BaslamaSaati && giris <= ic.BitisSaati)
+            {
+                dav.Status = DavamiyyetStatus.Icazeli;
+                await _unitOfWork.Repository<Davamiyyet>().YenileAsync(dav);
+                await _unitOfWork.YaddaSaxlaAsync();
+            }
         }
 
         // Rəhbər tesdiqinden sonra HR-a məlumat bildirişi (HR fallback deyilsə)

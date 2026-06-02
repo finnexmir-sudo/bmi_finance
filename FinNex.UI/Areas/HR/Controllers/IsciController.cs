@@ -413,7 +413,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 IsciId = id,
                 IsciTamAd = isci.TamAd,
                 DepartamentId = aktivTeyinat.Success && aktivTeyinat.Data != null ? aktivTeyinat.Data.DepartamentId : 0,
-                VezifeId = aktivTeyinat.Success && aktivTeyinat.Data != null ? aktivTeyinat.Data.VezifeId : 0
+                VezifeId = aktivTeyinat.Success && aktivTeyinat.Data != null ? aktivTeyinat.Data.VezifeId : 0,
+                BitmeTarixi = aktivTeyinat.Success && aktivTeyinat.Data != null ? aktivTeyinat.Data.BitmeTarixi : null
             };
 
             await ReloadTeyinatRedakteLists(vm);
@@ -437,7 +438,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             var result = await _isciService.TeyinatRedakteEtAsync(
                 vm.IsciId,
                 vm.DepartamentId,
-                vm.VezifeId);
+                vm.VezifeId,
+                vm.BitmeTarixi);
 
             if (!result.Success)
             {

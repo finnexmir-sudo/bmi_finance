@@ -68,6 +68,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<IcazeCixisGiris> IcazeCixisGirisler { get; set; }
 
     public DbSet<IsciTeyinat> IsciTeyinatlari { get; set; }
+    public DbSet<MuqavileYenileme> MuqavileYenilemeleri { get; set; }
     public DbSet<IsciStrukturRolu> IsciStrukturRollari { get; set; }
     public DbSet<Permission> Permissions { get; set; }
     public DbSet<UserPermission> UserPermissions { get; set; }

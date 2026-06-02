@@ -6,6 +6,9 @@ public interface IJetonService
     // Jeton kataloqu
     Task<IList<JetonTeyinatiListDto>> JetonTeyinatlariGetirAsync();
 
+    // HR: yeni jeton növü yarat
+    Task<Result> JetonTeyinatiYaratAsync(JetonTeyinatiCreateDto dto);
+
     // HR: jeton kataloqunu yenilə (saat dəyəri, ad, status və s.)
     Task<Result> JetonTeyinatiYenileAsync(JetonTeyinatiUpdateDto dto);
 
