@@ -214,6 +214,55 @@ namespace FinNex.Infrastructure.BackgroundJobs
                 _logger.LogError(ex, "Təyinat xatırlatması xətası.");
             }
 
+            // ── 6) Məzuniyyət yeniləmə tarixi 7 günə qalmış — HR-a bildiriş ──
+            int yenilenSayi = 0;
+            try
+            {
+                var hrIscileriYen = await GetHrIsciIdleriAsync(db, userManager);
+
+                var aktifIsciler = await db.Isciler
+                    .Where(i => !i.Silinib && i.Status == IsciStatus.Aktiv)
+                    .Select(i => new { i.Id, i.Ad, i.Soyad, i.IsheQebulTarixi })
+                    .ToListAsync();
+
+                foreach (var isci in aktifIsciler)
+                {
+                    var next = NextRenewDate(isci.IsheQebulTarixi, bugun);
+                    var qalan = (next - bugun).Days;
+
+                    if (qalan < 0 || qalan > 7) continue;
+
+                    foreach (var hrIsciId in hrIscileriYen)
+                    {
+                        var movcud = await db.Set<Xatirlatma>().AnyAsync(x =>
+                            x.EntityTipi == XatirlatmaEntityTipi.MezuniyyetYenilenme
+                            && x.EntityId == isci.Id
+                            && x.IsciId == hrIsciId
+                            && x.XatirlatmaTarixi.Year == bugun.Year
+                            && !x.Silinib);
+
+                        if (!movcud)
+                        {
+                            await xatirlatmaService.SistemXatirlatmasiYaratAsync(new XatirlatmaSistemCreateDto
+                            {
+                                IsciId           = hrIsciId,
+                                Bashliq          = $"Məzuniyyət yeniləməsi: {isci.Ad} {isci.Soyad}",
+                                Qeyd             = $"Yeniləmə tarixi: {next:dd.MM.yyyy}. " +
+                                                   $"{(qalan == 0 ? "Bugün!" : $"{qalan} gün qalıb.")}",
+                                XatirlatmaTarixi = DateTime.Now,
+                                EntityTipi       = XatirlatmaEntityTipi.MezuniyyetYenilenme,
+                                EntityId         = isci.Id
+                            });
+                            yenilenSayi++;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Məzuniyyət yeniləmə xatırlatması xətası.");
+            }
+
             // ── 5) Göndərilməmiş keçmiş xatırlatmaları işarələ ──
             var gonderilemeyenler = await xatirlatmaService.GetGonderilemeyenlerAsync();
             if (gonderilemeyenler.Success && gonderilemeyenler.Data != null)
@@ -225,11 +274,28 @@ namespace FinNex.Infrastructure.BackgroundJobs
             }
 
             _logger.LogInformation(
-                "Xatırlatma dövrü tamamlandı. Tapşırıq: {t}, Görüş: {g}, Məzuniyyət: {m}, Təyinat: {te}",
+                "Xatırlatma dövrü tamamlandı. Tapşırıq: {t}, Görüş: {g}, Məzuniyyət: {m}, Təyinat: {te}, Yeniləmə: {y}",
                 tapshiriqlar.Data?.Count ?? 0,
                 gorushler.Data?.Count ?? 0,
                 mezSayi,
-                teyinatSayi);
+                teyinatSayi,
+                yenilenSayi);
+        }
+
+        private static DateTime NextRenewDate(DateTime hireDate, DateTime today)
+        {
+            int year  = today.Year;
+            int month = hireDate.Month;
+            int day   = Math.Min(hireDate.Day, DateTime.DaysInMonth(year, month));
+            var thisYear = new DateTime(year, month, day);
+
+            if (thisYear < today)
+            {
+                year++;
+                day = Math.Min(hireDate.Day, DateTime.DaysInMonth(year, month));
+                return new DateTime(year, month, day);
+            }
+            return thisYear;
         }
 
         /// <summary>
