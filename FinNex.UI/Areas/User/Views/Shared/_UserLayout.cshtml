@@ -546,7 +546,7 @@
                 {
                     var hrAsasActive = currentArea == "HR" && (currentController is "Dashboard" or "RehberDashboard");
                     var hrKadrActive = currentController is "Isci" or "Departament" or "Vezife" or "Organizasiya" or "MuqavileBitme";
-                    var hrDMActive = (currentArea == "HR" && currentController is "Davamiyyet" or "Mezuniyyet" or "BayramGunu" or "MezuniyyetBalans" or "Xestelik" or "XestelikEzamiyyet" or "IsciStaji" or "Tabel")
+                    var hrDMActive = (currentArea == "HR" && currentController is "Davamiyyet" or "Mezuniyyet" or "BayramGunu" or "MezuniyyetBalans" or "Xestelik" or "IsciStaji" or "Tabel")
                                   || (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye")
                                   || (currentArea == "HR" && currentController == "Ezamiyyet");
                     var hrQymetActive = currentArea == "HR" && currentController is "Performans" or "Telim";
@@ -650,10 +650,6 @@
                             <a asp-area="HR" asp-controller="Xestelik" asp-action="Index"
                                class="fn-nav-item @(currentArea == "HR" && currentController == "Xestelik" ? "active" : "")">
                                 <i class="bi bi-heart-pulse"></i> Xəstəlik
-                            </a>
-                            <a asp-area="HR" asp-controller="XestelikEzamiyyet" asp-action="Index"
-                               class="fn-nav-item @(currentArea == "HR" && currentController == "XestelikEzamiyyet" ? "active" : "")">
-                                <i class="bi bi-airplane-engines"></i> Ezamiyyət (köhnə)
                             </a>
                             <a asp-area="HR" asp-controller="Ezamiyyet" asp-action="Index"
                                class="fn-nav-item @(currentArea == "HR" && currentController == "Ezamiyyet" ? "active" : "")">

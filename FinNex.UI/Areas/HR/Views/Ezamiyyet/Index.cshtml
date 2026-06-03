@@ -48,6 +48,11 @@
     <div class="fn-card" style="padding:14px;margin-bottom:14px">
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
             <div>
+                <label class="fn-label">İşçi</label>
+                <input type="text" id="ezIsci" class="fn-input" style="min-width:200px"
+                       placeholder="Ad ilə axtar…" oninput="ezIsciAxtar()" />
+            </div>
+            <div>
                 <label class="fn-label">Status</label>
                 <select id="ezStatus" class="fn-input" style="min-width:140px" onchange="ezYukle()">
                     <option value="">Hamısı</option>

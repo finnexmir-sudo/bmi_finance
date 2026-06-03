@@ -50,11 +50,12 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         [HttpGet]
         public async Task<IActionResult> GetMuracietler(
-            int? isciId, int? mekanId, int? status, DateTime? baslangic, DateTime? son, int? departamentId)
+            int? isciId, string? isciAd, int? mekanId, int? status, DateTime? baslangic, DateTime? son, int? departamentId)
         {
             var filtr = new EzamiyyetFiltrDto
             {
                 IsciId         = isciId,
+                IsciAd         = isciAd,
                 MekanId        = mekanId,
                 Status         = status.HasValue ? (EzamiyyetStatus?)status.Value : null,
                 BaslangicTarix = baslangic,

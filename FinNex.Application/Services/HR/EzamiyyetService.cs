@@ -41,6 +41,8 @@ namespace FinNex.Application.Services.HR
             {
                 if (filtr.IsciId.HasValue)
                     query = query.Where(x => x.IsciId == filtr.IsciId.Value);
+                if (!string.IsNullOrWhiteSpace(filtr.IsciAd))
+                    query = query.Where(x => x.Isci.TamAd.Contains(filtr.IsciAd));
                 if (filtr.MekanId.HasValue)
                     query = query.Where(x => x.MekanId == filtr.MekanId.Value);
                 if (filtr.Status.HasValue)

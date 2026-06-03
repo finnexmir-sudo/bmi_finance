@@ -1,14 +1,22 @@
 'use strict';
 
 let _ezCurrentId = null;
+let _ezIsciTimer  = null;
+
+function ezIsciAxtar() {
+    clearTimeout(_ezIsciTimer);
+    _ezIsciTimer = setTimeout(ezYukle, 350);
+}
 
 async function ezYukle() {
-    var p = new URLSearchParams();
+    var p      = new URLSearchParams();
+    var isci   = document.getElementById('ezIsci')?.value?.trim();
     var status = document.getElementById('ezStatus')?.value;
     var dep    = document.getElementById('ezDep')?.value;
     var mekan  = document.getElementById('ezMekan')?.value;
     var b      = document.getElementById('ezBaslangic')?.value;
     var s      = document.getElementById('ezSon')?.value;
+    if (isci)   p.append('isciAd', isci);
     if (status) p.append('status', status);
     if (dep)    p.append('departamentId', dep);
     if (mekan)  p.append('mekanId', mekan);
@@ -61,7 +69,7 @@ function ezFilterStatus(s) {
 }
 
 function ezSifirla() {
-    ['ezStatus','ezDep','ezMekan','ezBaslangic','ezSon'].forEach(function (id) {
+    ['ezIsci','ezStatus','ezDep','ezMekan','ezBaslangic','ezSon'].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) el.value = '';
     });

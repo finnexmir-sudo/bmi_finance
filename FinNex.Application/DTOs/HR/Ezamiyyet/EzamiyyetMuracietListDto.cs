@@ -55,6 +55,7 @@ namespace FinNex.Application.DTOs.HR.Ezamiyyet
     public class EzamiyyetFiltrDto
     {
         public int?      IsciId     { get; set; }
+        public string?   IsciAd     { get; set; }
         public int?      MekanId    { get; set; }
         public EzamiyyetStatus? Status { get; set; }
         public DateTime? BaslangicTarix { get; set; }
