@@ -165,6 +165,12 @@ function hjXercGoster(r) {
         return `<span style="color:#0891b2;font-weight:600"><i class="bi bi-person-check"></i> İşçi sorğusu</span>`
              + (xercTarix ? `<br><span style="color:#9ca3af;font-size:11px">xərcləndi: ${xercTarix}</span>` : '');
     }
+    // İzləmə olmadan qismən xərclənmiş aktiv jeton
+    if (r.status === 1 && r.qalanSaat !== null && r.qalanSaat < r.jetonSaatDeyeri) {
+        const xerclenen = (r.jetonSaatDeyeri - r.qalanSaat).toFixed(2).replace(/\.?0+$/, '');
+        return `<span style="color:#f59e0b;font-weight:600"><i class="bi bi-scissors"></i> Qismən (${xerclenen} saat)</span>`
+             + `<br><span style="color:#9ca3af;font-size:11px">tarix məlum deyil</span>`;
+    }
     return '<span style="color:#9ca3af">—</span>';
 }
 
