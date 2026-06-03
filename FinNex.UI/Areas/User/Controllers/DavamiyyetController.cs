@@ -98,17 +98,21 @@ namespace FinNex.UI.Areas.User.Controllers
                 status = (int)x.Status
             }).OrderByDescending(x => x.tarix).ToList();
 
-            var isde = result.Count(x => x.Status == DavamiyyetStatus.Isde);
-            var gecikme = result.Count(x => x.Status == DavamiyyetStatus.Gecikme);
-            var qayib = result.Count(x => x.Status == DavamiyyetStatus.Qayib);
-            var icazeli = result.Count(x => x.Status == DavamiyyetStatus.Icazeli);
-            var xestelik = result.Count(x => x.Status == DavamiyyetStatus.Xestelik);
-            var ezamiyyet = result.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
-
             var ip = await GetIsParametriEntity();
             var tezCixanHeddi = ip.StandartCixisVaxti - TimeSpan.FromMinutes(ip.TezCixmaToleransDeqiqe);
-            var tezCixan = result.Count(x => x.CixisVaxti.HasValue && x.CixisVaxti.Value.TimeOfDay < tezCixanHeddi);
-            var cixisYox = result.Count(x => x.GirisVaxti.HasValue && !x.CixisVaxti.HasValue);
+
+            // İntizamsızlıq statistikası yalnız 01.06.2026-dan sayılır (sistemin canlı başlama tarixi)
+            var intizamBaslangic = new DateTime(2026, 6, 1);
+            var intizamResult = result.Where(x => x.Tarix.Date >= intizamBaslangic).ToList();
+
+            var isde      = result.Count(x => x.Status == DavamiyyetStatus.Isde);
+            var gecikme   = intizamResult.Count(x => x.Status == DavamiyyetStatus.Gecikme);
+            var qayib     = intizamResult.Count(x => x.Status == DavamiyyetStatus.Qayib);
+            var icazeli   = result.Count(x => x.Status == DavamiyyetStatus.Icazeli);
+            var xestelik  = result.Count(x => x.Status == DavamiyyetStatus.Xestelik);
+            var ezamiyyet = result.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
+            var tezCixan  = intizamResult.Count(x => x.CixisVaxti.HasValue && x.CixisVaxti.Value.TimeOfDay < tezCixanHeddi);
+            var cixisYox  = intizamResult.Count(x => x.GirisVaxti.HasValue && !x.CixisVaxti.HasValue);
 
             return Json(new
             {
