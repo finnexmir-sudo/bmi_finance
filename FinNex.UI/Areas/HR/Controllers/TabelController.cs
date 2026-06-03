@@ -40,7 +40,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             int tesdiqStart = sumStart;
 
             // ── Şablonu aç, dəyərləri ƏVVƏLCƏ oxu, sonra sil-yaz ───────
-            var templatePath = Path.Combine(_env.WebRootPath, "templates", "Tabel_isci.xlsx");
+            var templatePath = Path.Combine(_env.ContentRootPath, "App_Data", "Templates", "Tabel_isci.xlsx");
             XLWorkbook wb;
             if (System.IO.File.Exists(templatePath))
             {

@@ -25,6 +25,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="App_Data\Templates\Tabel_isci.xlsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Update="wwwroot\js\PR_Odenis_Tapsirigi\payment-word -Update.js">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
