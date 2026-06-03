@@ -1,6 +1,7 @@
 using FinNex.Application.DTOs.HR.Ezamiyyet;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.Application.Services.HR;
+using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using Microsoft.AspNetCore.Authorization;
