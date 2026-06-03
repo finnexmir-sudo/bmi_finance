@@ -136,6 +136,25 @@ namespace FinNex.UI.Areas.HR.Controllers
             var cAzSaat    = XLColor.FromArgb(0xFF, 0xF0, 0xCC);
             var cYekun     = XLColor.FromArgb(0xE2, 0xEF, 0xDA);
 
+            // ── Mərkəz başlıq: TABEL CƏDVƏLİ + dövr ───────────────────
+            var ayAdlar = new[] { "yanvar","fevral","mart","aprel","may","iyun",
+                                  "iyul","avqust","sentyabr","oktyabr","noyabr","dekabr" };
+            int centerStart = leftEnd + 1;
+            int centerEnd   = tesdiqStart - 1;
+
+            ws.Cell(2, centerStart).Value = "TABEL CƏDVƏLİ";
+            ws.Range(2, centerStart, 2, centerEnd).Merge();
+            ws.Cell(2, centerStart).Style.Font.Bold     = true;
+            ws.Cell(2, centerStart).Style.Font.FontSize = 13;
+            ws.Cell(2, centerStart).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Cell(2, centerStart).Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+
+            ws.Cell(3, centerStart).Value = $"{il}-ci il {ayAdlar[ay - 1]} ayı";
+            ws.Range(3, centerStart, 3, centerEnd).Merge();
+            ws.Cell(3, centerStart).Style.Font.FontSize = 10;
+            ws.Cell(3, centerStart).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Cell(3, centerStart).Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+
             // ── TƏSDİQ bölməsi (şablondan oxunan dəyərlərlə) ────────────
             ws.Cell(1, tesdiqStart).Value = "TƏSDİQ EDİRƏM:";
             ws.Range(1, tesdiqStart, 1, totalCols).Merge();
