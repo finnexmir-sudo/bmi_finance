@@ -37,8 +37,9 @@ namespace FinNex.UI.Areas.HR.Controllers
             int sumStart  = 4 + gunSayi;
             int totalCols = sumStart + 4;
 
-            // ── Şablondan imza dəyərlərini oxu ──────────────────────────────
+            // ── Şablondan dəyərləri oxu ──────────────────────────────────────
             var templatePath = Path.Combine(_env.ContentRootPath, "App_Data", "Templates", "Tabel_isci.xlsx");
+            string tplTesdiqName = "";               // şablonun row 3 sağ tərəfi — müdir adı
             string tplSigNameVal = "müdir müavini ___________________________";
             string tplSigImzaVal = "İmza";
 
@@ -54,6 +55,13 @@ namespace FinNex.UI.Areas.HR.Controllers
                 wb = new XLWorkbook(tplMs);
 
                 var tplWs = wb.Worksheets.First();
+
+                // TƏSDİQ adı: şablonun row 3 sağ tərəfindən oxu (col 34 = 30 günlük şablon AH3)
+                var r3v = tplWs.Cell(3, 34).Value.ToString().Trim();
+                if (!string.IsNullOrWhiteSpace(r3v) && !r3v.StartsWith("("))
+                    tplTesdiqName = r3v;
+
+                // İmza bölməsi: row 8
                 var r8v = tplWs.Cell(8, 2).Value.ToString().Trim();
                 if (!string.IsNullOrWhiteSpace(r8v)) tplSigNameVal = r8v;
                 var r8e = tplWs.Cell(8, 5).Value.ToString().Trim();
@@ -92,7 +100,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var cAzSaat    = XLColor.FromArgb(0xFF, 0xF0, 0xCC);
             var cYekun     = XLColor.FromArgb(0xE2, 0xEF, 0xDA);
 
-            // ── Row 1: TABEL başlığı ──────────────────────────────────────────
+            // ── Row 1: Tam en "TABEL" başlığı ────────────────────────────────
             ws.Cell(1, 1).Value = "TABEL — Əsas iş saatları";
             ws.Range(1, 1, 1, totalCols).Merge();
             ws.Cell(1, 1).Style.Fill.BackgroundColor = cHeader;
@@ -103,22 +111,42 @@ namespace FinNex.UI.Areas.HR.Controllers
             ws.Cell(1, 1).Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
             ws.Row(1).Height = 24;
 
-            // ── Row 2: Dövr ──────────────────────────────────────────────────
+            // ── Row 2: Dövr (sol) + TƏSDİQ EDİRƏM: (sağ) ─────────────────────
             var ayAdlar = new[] { "Yanvar","Fevral","Mart","Aprel","May","İyun",
                                   "İyul","Avqust","Sentyabr","Oktyabr","Noyabr","Dekabr" };
             var ayBaslangicDate = new DateTime(il, ay, 1);
             var ayBitisDate     = new DateTime(il, ay, gunSayi);
             string dovrText = $"Dövr: {il} il, {ayAdlar[ay - 1]} ({ayBaslangicDate:dd.MM.yyyy} – {ayBitisDate:dd.MM.yyyy})";
 
+            int centerEnd = sumStart - 1;
+
             ws.Cell(2, 1).Value = dovrText;
-            ws.Range(2, 1, 2, totalCols).Merge();
+            ws.Range(2, 1, 2, centerEnd).Merge();
             ws.Cell(2, 1).Style.Font.FontSize        = 10;
             ws.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             ws.Cell(2, 1).Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
-            ws.Row(2).Height = 18;
+            ws.Row(2).Height = 20;
 
-            // ── Row 3: Boşluq ────────────────────────────────────────────────
-            ws.Row(3).Height = 6;
+            ws.Cell(2, sumStart).Value = "TƏSDİQ EDİRƏM:";
+            ws.Range(2, sumStart, 2, totalCols).Merge();
+            ws.Cell(2, sumStart).Style.Font.Bold            = true;
+            ws.Cell(2, sumStart).Style.Font.FontSize        = 11;
+            ws.Cell(2, sumStart).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Cell(2, sumStart).Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+
+            // ── Row 3: boş (sol) + müdir adı (sağ, şablondan) ───────────────
+            if (!string.IsNullOrWhiteSpace(tplTesdiqName))
+            {
+                ws.Cell(3, sumStart).Value = tplTesdiqName;
+                ws.Range(3, sumStart, 3, totalCols).Merge();
+                ws.Cell(3, sumStart).Style.Font.FontSize        = 10;
+                ws.Cell(3, sumStart).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Cell(3, sumStart).Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+            }
+            ws.Row(3).Height = 18;
+
+            // ── Row 4: Boşluq ────────────────────────────────────────────────
+            ws.Row(4).Height = 6;
 
             // ── Row 4: Sütun başlıqları (tək sətir) ──────────────────────────
             const int HDR = 4;
