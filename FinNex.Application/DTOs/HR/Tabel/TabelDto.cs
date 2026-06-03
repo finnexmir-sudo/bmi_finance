@@ -5,6 +5,8 @@ namespace FinNex.Application.DTOs.HR.Tabel
         public int Il      { get; set; }
         public int Ay      { get; set; }
         public int GunSayi { get; set; }
+        /// <summary>Bayram ərəfəsi olan iş günlərinin nömrələri (1-indeksli)</summary>
+        public HashSet<int> BayramErtesiGunler { get; set; } = new();
         public List<TabelIsciSatiri> Satirlar { get; set; } = new();
     }
 

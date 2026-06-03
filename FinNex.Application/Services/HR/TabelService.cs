@@ -47,16 +47,38 @@ namespace FinNex.Application.Services.HR
                 .ThenBy(t => t.Isci.TamAd)
                 .ToList();
 
-            // ── Əlillik güzəştləri ──
-            var elilGuzestler = await _uow.Repository<IsciGuzest>()
-                .Query().AsNoTracking()
-                .Include(ig => ig.Guzest)
-                .Where(ig => !ig.Silinib &&
-                             ig.Guzest.Ad.Contains("Əlil") &&
-                             ig.BaslamaTarixi.Date <= ayBitis.Date &&
-                             (ig.BitmeTarixi == null || ig.BitmeTarixi.Value.Date >= ayBaslangic.Date))
-                .ToListAsync();
-            var elilIsciIds = new HashSet<int>(elilGuzestler.Select(ig => ig.IsciId));
+            // ── Günlük saat cədvəlini əvvəlcədən hesabla (bütün işçilər üçün eynidir) ──
+            // Tam 5 günlük həftə: ilk iş günü = 8, qalanı = 7  (8+7+7+7+7 = 36 saat)
+            // Natamam həftə (bayram varsa): hər iş günü = 8
+            var gunBaseSaatlari   = new Dictionary<int, int>(); // gün nömrəsi → saat
+            var bayramErtesiGunler = new HashSet<int>();        // bayram ərəfəsi iş günlərinin nömrəsi
+
+            for (int d = 1; d <= gunSayi; d++)
+            {
+                var gun_      = new DateTime(il, ay, d);
+                bool wend_    = gun_.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+                bool bayr_    = bayramTarihleri.Contains(gun_.Date);
+                bool isGunu_  = isGunuTarihleri.Contains(gun_.Date);
+                if (!(!wend_ || isGunu_) || bayr_) continue; // iş günü deyil
+
+                bool ertesi = bayramTarihleri.Contains(gun_.AddDays(1).Date);
+                if (ertesi) bayramErtesiGunler.Add(d);
+
+                // Bu günün həftəsindəki bütün iş günlərini say (Bazar ertəsi–Cümə)
+                int dow_  = gun_.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)gun_.DayOfWeek;
+                var mon_  = gun_.AddDays(-(dow_ - 1));
+                int wCnt  = 0, dIdx = -1, idx_ = 0;
+                for (int wd = 0; wd < 5; wd++)
+                {
+                    var wday  = mon_.AddDays(wd);
+                    bool wb   = bayramTarihleri.Contains(wday.Date);
+                    bool wig  = isGunuTarihleri.Contains(wday.Date);
+                    bool wwe  = wday.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+                    if ((!wwe || wig) && !wb) { if (wday.Date == gun_.Date) dIdx = idx_; wCnt++; idx_++; }
+                }
+                int base_ = wCnt == 5 ? (dIdx == 0 ? 8 : 7) : 8;
+                gunBaseSaatlari[d] = ertesi ? Math.Min(base_, 7) : base_;
+            }
 
             // ── Məzuniyyətlər (tam təsdiqlənmiş) ──
             var mezuniyyetler = await _uow.Repository<Mezuniyyet>()
@@ -90,9 +112,7 @@ namespace FinNex.Application.Services.HR
 
             foreach (var t in isciler)
             {
-                var isci      = t.Isci;
-                bool isElil   = elilIsciIds.Contains(isci.Id);
-                int normalSaat = isElil ? 7 : 8;
+                var isci = t.Isci;
 
                 var satir = new TabelIsciSatiri
                 {
@@ -107,11 +127,9 @@ namespace FinNex.Application.Services.HR
                 {
                     var gun = new DateTime(il, ay, d);
 
-                    bool isWeekend = gun.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
-                    bool isBayram  = bayramTarihleri.Contains(gun.Date);
-                    bool isIsGunu  = isGunuTarihleri.Contains(gun.Date); // şənbə/bazar iş günü
-
-                    // İş günüdür əgər: (həftəiçi YAXUD iş günü override) VƏ bayram deyil
+                    bool isWeekend    = gun.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+                    bool isBayram     = bayramTarihleri.Contains(gun.Date);
+                    bool isIsGunu     = isGunuTarihleri.Contains(gun.Date);
                     bool isWorkingDay = (!isWeekend || isIsGunu) && !isBayram;
 
                     string kod;
@@ -133,9 +151,8 @@ namespace FinNex.Application.Services.HR
                         else if (hasEzam) { kod = "E"; ezamGun++; }
                         else
                         {
-                            // Bayram ərəfəsi: sabah bayramdırsa → 1 saat az
-                            bool bayramErtesi = bayramTarihleri.Contains(gun.AddDays(1).Date);
-                            int saat = bayramErtesi ? normalSaat - 1 : normalSaat;
+                            // Saat əvvəlcədən hesablanmış cədvəldən götürülür
+                            int saat = gunBaseSaatlari[d];
                             kod = saat.ToString();
                             isGunSayi++;
                             isSaatSayi += saat;
@@ -154,7 +171,12 @@ namespace FinNex.Application.Services.HR
                 satirlar.Add(satir);
             }
 
-            return new TabelAyDto { Il = il, Ay = ay, GunSayi = gunSayi, Satirlar = satirlar };
+            return new TabelAyDto
+            {
+                Il = il, Ay = ay, GunSayi = gunSayi,
+                BayramErtesiGunler = bayramErtesiGunler,
+                Satirlar = satirlar
+            };
         }
     }
 }

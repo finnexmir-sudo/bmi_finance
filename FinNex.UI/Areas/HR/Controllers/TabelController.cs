@@ -137,7 +137,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                         default:
                             int saat = int.Parse(kod);
                             cell.Value = saat;
-                            if (saat < 8)
+                            // Sarı rəng yalnız bayram ərəfəsi günlərə (d 0-indekslidir)
+                            if (data.BayramErtesiGunler.Contains(d + 1))
                                 cell.Style.Fill.BackgroundColor = cAzSaat;
                             break;
                     }
@@ -194,7 +195,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 ("M", "Məzuniyyət",        cMez),
                 ("X", "Xəstəlik",          cXest),
                 ("E", "Ezamiyyət",         cEzam),
-                ("7/6", "Əlil işçi / bayram ərəfəsi (azaldılmış saat)", cAzSaat),
+                ("7",   "Bayram ərəfəsi (azaldılmış saat)",             cAzSaat),
             };
             foreach (var (k, v, r) in legend)
             {
