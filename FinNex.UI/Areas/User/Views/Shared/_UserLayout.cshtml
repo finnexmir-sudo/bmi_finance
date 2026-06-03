@@ -546,7 +546,7 @@
                 {
                     var hrAsasActive = currentArea == "HR" && (currentController is "Dashboard" or "RehberDashboard");
                     var hrKadrActive = currentController is "Isci" or "Departament" or "Vezife" or "Organizasiya" or "MuqavileBitme";
-                    var hrDMActive = (currentArea == "HR" && currentController is "Davamiyyet" or "Mezuniyyet" or "BayramGunu" or "MezuniyyetBalans" or "Xestelik" or "XestelikEzamiyyet" or "IsciStaji")
+                    var hrDMActive = (currentArea == "HR" && currentController is "Davamiyyet" or "Mezuniyyet" or "BayramGunu" or "MezuniyyetBalans" or "Xestelik" or "XestelikEzamiyyet" or "IsciStaji" or "Tabel")
                                   || (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye")
                                   || (currentArea == "HR" && currentController == "Ezamiyyet");
                     var hrQymetActive = currentArea == "HR" && currentController is "Performans" or "Telim";
@@ -663,6 +663,13 @@
                                class="fn-nav-item @(currentArea == "HR" && currentController == "IsciStaji" ? "active" : "")">
                                 <i class="bi bi-award"></i> İşçi Stajı
                             </a>
+                            @if (isHR)
+                            {
+                                <a asp-area="HR" asp-controller="Tabel" asp-action="Index"
+                                   class="fn-nav-item @(currentArea == "HR" && currentController == "Tabel" ? "active" : "")">
+                                    <i class="bi bi-file-earmark-excel"></i> Tabel
+                                </a>
+                            }
                             <a asp-area="User" asp-controller="Icaze" asp-action="Izleme"
                                class="fn-nav-item @(currentController == "Icaze" && currentAction == "Izleme" ? "active" : "")">
                                 <i class="bi bi-bar-chart-line"></i> İcazə İzləmə

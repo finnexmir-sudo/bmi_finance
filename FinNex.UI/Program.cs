@@ -188,6 +188,8 @@ namespace FinNex.UI
             // ── Ezamiyyət modulu ──────────────────────────────────
             builder.Services.AddScoped<FinNex.Application.Services.HR.IEzamiyyetService,
                                         FinNex.Application.Services.HR.EzamiyyetService>();
+            builder.Services.AddScoped<FinNex.Application.Services.HR.ITabelService,
+                                        FinNex.Application.Services.HR.TabelService>();
 
             // ── Oracle (yalnız oxuma) ──────────────────────────
             builder.Services.AddScoped<FinNex.Application.Interfaces.Oracle.IOracleService,
