@@ -1,8 +1,8 @@
 @{
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     ViewData["Title"] = "Ezamiyyət Statistikası";
-    var departamentler = ViewBag.Departamentler as IList<FinNex.Domain.Entities.HR.Departament>
-                         ?? new List<FinNex.Domain.Entities.HR.Departament>();
+    var departamentler = ViewBag.Departamentler as IList<FinNex.Domain.Entities.Structure.Departament>
+                         ?? new List<FinNex.Domain.Entities.Structure.Departament>();
     var mekanlar = ViewBag.Mekanlar as IList<FinNex.Application.DTOs.HR.Ezamiyyet.EzamiyyetMekanListDto>
                    ?? new List<FinNex.Application.DTOs.HR.Ezamiyyet.EzamiyyetMekanListDto>();
 }
