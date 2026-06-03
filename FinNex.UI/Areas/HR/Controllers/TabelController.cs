@@ -26,10 +26,13 @@ namespace FinNex.UI.Areas.HR.Controllers
             if (il < 2020 || il > 2100 || ay < 1 || ay > 12)
                 return BadRequest();
 
-            var data    = await _tabelService.GenerateTabelAsync(il, ay);
-            int gunSayi = data.GunSayi;
-            int sumStart = 4 + gunSayi;        // summary cols start (1-indexed)
-            int totalCols = sumStart + 4;       // 5 summary cols: isgunu, issaati, mez, ezam, xest
+            var data      = await _tabelService.GenerateTabelAsync(il, ay);
+            int gunSayi   = data.GunSayi;
+            int sumStart  = 4 + gunSayi;    // yekun sütunlar başlanğıcı (1-indeks)
+            int totalCols = sumStart + 4;   // 5 yekun sütun
+
+            int leftEnd     = totalCols - 10; // sol bölmə (müəssisə adı) son sütun
+            int tesdiqStart = totalCols - 9;  // "TƏSDİQ EDİRƏM" başlanğıc sütun
 
             using var wb = new XLWorkbook();
             var ws = wb.Worksheets.Add("Tabel");
@@ -42,55 +45,118 @@ namespace FinNex.UI.Areas.HR.Controllers
             var cMez       = XLColor.FromArgb(0xBB, 0xDE, 0xFB);
             var cXest      = XLColor.FromArgb(0xFF, 0xCC, 0xCC);
             var cEzam      = XLColor.FromArgb(0xC8, 0xF0, 0xC8);
-            var cAzSaat    = XLColor.FromArgb(0xFF, 0xF0, 0xCC); // 7 və ya 6 saat (əlil / bayram ərəfəsi)
+            var cAzSaat    = XLColor.FromArgb(0xFF, 0xF0, 0xCC);
             var cYekun     = XLColor.FromArgb(0xE2, 0xEF, 0xDA);
 
             var ayAdlari = new[] { "Yanvar","Fevral","Mart","Aprel","May","İyun",
                                    "İyul","Avqust","Sentyabr","Oktyabr","Noyabr","Dekabr" };
 
-            // ── Sətir 1: Başlıq ──────────────────────────────────
-            ws.Cell(1, 1).Value = $"TABEL — Əsas iş saatları";
-            ws.Range(1, 1, 1, totalCols).Merge();
-            ApplyTitle(ws.Cell(1, 1), cHeader, cHeaderFont, 13);
+            // ── Sətir 1: Müəssisə adı (sol) + TƏSDİQ EDİRƏM (sağ) ──────
+            ws.Cell(1, 1).Value = "\"Bank Melli İran\" Bakı filialı";
+            ws.Range(1, 1, 1, leftEnd).Merge();
+            ws.Cell(1, 1).Style.Font.Bold     = true;
+            ws.Cell(1, 1).Style.Font.FontSize = 11;
+            ws.Cell(1, 1).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
-            // ── Sətir 2: Dövr ────────────────────────────────────
-            ws.Cell(2, 1).Value = $"Dövr: {il} il, {ayAdlari[ay - 1]}  " +
-                                  $"(01.{ay:D2}.{il} – {gunSayi:D2}.{ay:D2}.{il})";
-            ws.Range(2, 1, 2, totalCols).Merge();
+            ws.Cell(1, tesdiqStart).Value = "TƏSDİQ EDİRƏM:";
+            ws.Range(1, tesdiqStart, 1, totalCols).Merge();
+            ws.Cell(1, tesdiqStart).Style.Font.Bold     = true;
+            ws.Cell(1, tesdiqStart).Style.Font.FontSize = 11;
+            ws.Cell(1, tesdiqStart).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Row(1).Height = 20;
+
+            // ── Sətir 2: Alt başlıq (sol) + müdir adı xətti (sağ) ───────
+            ws.Cell(2, 1).Value = "(müəssisənin, idarənin və təşkilatın adı)";
+            ws.Range(2, 1, 2, leftEnd).Merge();
+            ws.Cell(2, 1).Style.Font.Italic   = true;
+            ws.Cell(2, 1).Style.Font.FontSize = 8;
             ws.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            ws.Cell(2, 1).Style.Fill.BackgroundColor = XLColor.FromArgb(0xD6, 0xE4, 0xF0);
+
+            ws.Cell(2, tesdiqStart).Value = "müdir ___________________________";
+            ws.Range(2, tesdiqStart, 2, totalCols).Merge();
+            ws.Cell(2, tesdiqStart).Style.Font.FontSize        = 10;
+            ws.Cell(2, tesdiqStart).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             ws.Row(2).Height = 18;
 
-            ws.Row(3).Height = 5;
+            // ── Sətir 3: Müdirin soyadı yertutucu (sağ) ─────────────────
+            ws.Cell(3, tesdiqStart).Value = "(vəzifəsi, soyadı, adı, atasının adı)";
+            ws.Range(3, tesdiqStart, 3, totalCols).Merge();
+            ws.Cell(3, tesdiqStart).Style.Font.Italic   = true;
+            ws.Cell(3, tesdiqStart).Style.Font.FontSize = 8;
+            ws.Cell(3, tesdiqStart).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Row(3).Height = 14;
 
-            // ── Sətir 4: Başlıq sütunları ────────────────────────
-            const int HR = 4;
-            ws.Cell(HR, 1).Value = "#";
-            ws.Cell(HR, 2).Value = "Soyadı, Adı, Ata adı";
-            ws.Cell(HR, 3).Value = "Vəzifəsi";
+            // ── Sətir 4: Boşluq ─────────────────────────────────────────
+            ws.Row(4).Height = 6;
 
+            // ── Sətir 5: Əsas başlıq ────────────────────────────────────
+            ws.Cell(5, 1).Value = "TABEL (Əsas iş saatları)";
+            ws.Range(5, 1, 5, totalCols).Merge();
+            ApplyTitle(ws.Cell(5, 1), cHeader, cHeaderFont, 14);
+            ws.Row(5).Height = 24;
+
+            // ── Sətir 6: Dövr ───────────────────────────────────────────
+            ws.Cell(6, 1).Value = $"Dövr: {il} il, {ayAdlari[ay - 1]}  " +
+                                  $"(01.{ay:D2}.{il} – {gunSayi:D2}.{ay:D2}.{il})";
+            ws.Range(6, 1, 6, totalCols).Merge();
+            ws.Cell(6, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Cell(6, 1).Style.Fill.BackgroundColor = XLColor.FromArgb(0xD6, 0xE4, 0xF0);
+            ws.Row(6).Height = 16;
+
+            // ── Sətir 7: Boşluq ─────────────────────────────────────────
+            ws.Row(7).Height = 4;
+
+            // ── Sətirlər 8-9: İki sıralı sütun başlığı ─────────────────
+            const int HR1 = 8;  // başlıq etiketləri
+            const int HR2 = 9;  // gün nömrələri
+
+            // Sıra sayı – iki sıraya merge
+            ws.Range(HR1, 1, HR2, 1).Merge();
+            ws.Cell(HR1, 1).Value = "Sıra\nsayı";
+
+            // S.A.A. – iki sıraya merge
+            ws.Range(HR1, 2, HR2, 2).Merge();
+            ws.Cell(HR1, 2).Value = "Soyadı, Adı, Ata adı";
+
+            // Vəzifəsi – iki sıraya merge
+            ws.Range(HR1, 3, HR2, 3).Merge();
+            ws.Cell(HR1, 3).Value = "Vəzifəsi";
+
+            // "Ayın günləri" – HR1-də gün sütunlarına merge
+            ws.Range(HR1, 4, HR1, 3 + gunSayi).Merge();
+            ws.Cell(HR1, 4).Value = "Ayın günləri";
+
+            // Gün nömrələri – HR2-də
             for (int d = 1; d <= gunSayi; d++)
-                ws.Cell(HR, 3 + d).Value = d;
+                ws.Cell(HR2, 3 + d).Value = d;
 
-            ws.Cell(HR, sumStart).Value     = "İş\ngünü";
-            ws.Cell(HR, sumStart + 1).Value = "İş\nsaatı";
-            ws.Cell(HR, sumStart + 2).Value = "Məz.";
-            ws.Cell(HR, sumStart + 3).Value = "Ezam.";
-            ws.Cell(HR, sumStart + 4).Value = "Xəst.";
+            // Yekun sütun başlıqları – iki sıraya merge
+            var sumHdrs = new[] { "İş\ngünü", "İş\nsaatı", "Məz.", "Ezam.", "Xəst." };
+            for (int i = 0; i < 5; i++)
+            {
+                int sc = sumStart + i;
+                ws.Range(HR1, sc, HR2, sc).Merge();
+                ws.Cell(HR1, sc).Value = sumHdrs[i];
+            }
 
-            var hrRange = ws.Range(HR, 1, HR, totalCols);
-            hrRange.Style.Fill.BackgroundColor        = cHeader;
-            hrRange.Style.Font.FontColor              = cHeaderFont;
-            hrRange.Style.Font.Bold                   = true;
-            hrRange.Style.Alignment.Horizontal        = XLAlignmentHorizontalValues.Center;
-            hrRange.Style.Alignment.Vertical          = XLAlignmentVerticalValues.Center;
-            hrRange.Style.Alignment.WrapText          = true;
-            hrRange.Style.Border.OutsideBorder        = XLBorderStyleValues.Medium;
-            hrRange.Style.Border.InsideBorder         = XLBorderStyleValues.Thin;
-            ws.Row(HR).Height = 32;
+            // Başlıq stili (hər iki sıra)
+            for (int hr = HR1; hr <= HR2; hr++)
+            {
+                var hrRange = ws.Range(hr, 1, hr, totalCols);
+                hrRange.Style.Fill.BackgroundColor = cHeader;
+                hrRange.Style.Font.FontColor       = cHeaderFont;
+                hrRange.Style.Font.Bold            = true;
+                hrRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                hrRange.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+                hrRange.Style.Alignment.WrapText   = true;
+                hrRange.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
+                hrRange.Style.Border.InsideBorder  = XLBorderStyleValues.Thin;
+            }
+            ws.Row(HR1).Height = 22;
+            ws.Row(HR2).Height = 18;
 
             // ── Məlumat sətirləri ─────────────────────────────────
-            int dr      = HR + 1;
+            int dr      = HR2 + 1;
             int firstDr = dr;
             int rowNum  = 1;
 
@@ -137,14 +203,12 @@ namespace FinNex.UI.Areas.HR.Controllers
                         default:
                             int saat = int.Parse(kod);
                             cell.Value = saat;
-                            // Sarı rəng yalnız bayram ərəfəsi günlərə (d 0-indekslidir)
                             if (data.BayramErtesiGunler.Contains(d + 1))
                                 cell.Style.Fill.BackgroundColor = cAzSaat;
                             break;
                     }
                 }
 
-                // Yekun sütunlar
                 ws.Cell(dr, sumStart).Value     = satir.IsGunSayi;
                 ws.Cell(dr, sumStart + 1).Value = satir.IsSaatSayi;
                 ws.Cell(dr, sumStart + 2).Value = satir.MezuniyyetGun;
@@ -161,7 +225,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 dr++;
             }
 
-            // ── CƏMİ sətri ────────────────────────────────────────
+            // ── CƏMİ sətri ────────────────────────────────────────────────
             ws.Cell(dr, 1).Value = "CƏMİ";
             ws.Range(dr, 1, dr, 3).Merge();
             ws.Cell(dr, 1).Style.Font.Bold            = true;
@@ -169,18 +233,44 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             for (int i = 0; i <= 4; i++)
             {
-                int sc   = sumStart + i;
-                var fc   = ws.Cell(firstDr, sc);
-                var lc   = ws.Cell(dr - 1, sc);
-                var yc   = ws.Cell(dr, sc);
-                yc.FormulaA1                      = $"=SUM({fc.Address}:{lc.Address})";
-                yc.Style.Font.Bold                = true;
-                yc.Style.Alignment.Horizontal     = XLAlignmentHorizontalValues.Center;
+                int sc = sumStart + i;
+                var fc = ws.Cell(firstDr, sc);
+                var lc = ws.Cell(dr - 1, sc);
+                var yc = ws.Cell(dr, sc);
+                yc.FormulaA1                  = $"=SUM({fc.Address}:{lc.Address})";
+                yc.Style.Font.Bold            = true;
+                yc.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             }
 
-            ws.Range(dr, 1, dr, totalCols).Style.Fill.BackgroundColor  = cYekun;
-            ws.Range(dr, 1, dr, totalCols).Style.Border.OutsideBorder  = XLBorderStyleValues.Medium;
-            ws.Range(dr, 1, dr, totalCols).Style.Border.InsideBorder   = XLBorderStyleValues.Thin;
+            ws.Range(dr, 1, dr, totalCols).Style.Fill.BackgroundColor = cYekun;
+            ws.Range(dr, 1, dr, totalCols).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
+            ws.Range(dr, 1, dr, totalCols).Style.Border.InsideBorder  = XLBorderStyleValues.Thin;
+
+            // ── İmza bölməsi ──────────────────────────────────────────────
+            dr += 3;
+
+            ws.Cell(dr, 1).Value = "Müdir müavini";
+            ws.Range(dr, 1, dr, 2).Merge();
+            ws.Cell(dr, 1).Style.Font.Bold = true;
+
+            ws.Cell(dr, 3).Value = "___________________________";
+            ws.Range(dr, 3, dr, leftEnd).Merge();
+            ws.Cell(dr, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+            ws.Cell(dr, tesdiqStart).Value = "İmza _____________";
+            ws.Range(dr, tesdiqStart, dr, totalCols).Merge();
+            ws.Cell(dr, tesdiqStart).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Row(dr).Height = 20;
+
+            dr++;
+            ws.Cell(dr, 3).Value = "(vəzifəsi, soyadı, adı, atasının adı)";
+            ws.Range(dr, 3, dr, leftEnd).Merge();
+            ws.Cell(dr, 3).Style.Font.Italic   = true;
+            ws.Cell(dr, 3).Style.Font.FontSize = 8;
+            ws.Cell(dr, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Row(dr).Height = 14;
+
+            ws.Row(dr + 1).Height = 6;
 
             // ── Şərti işarələr (legend) ───────────────────────────
             dr += 2;
@@ -190,12 +280,12 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             var legend = new (string Kod, string Ad, XLColor Renk)[]
             {
-                ("İ", "İstirahət günü",   cIstirahit),
-                ("B", "Bayram günü",       cBayram),
-                ("M", "Məzuniyyət",        cMez),
-                ("X", "Xəstəlik",          cXest),
-                ("E", "Ezamiyyət",         cEzam),
-                ("7",   "Bayram ərəfəsi (azaldılmış saat)",             cAzSaat),
+                ("İ", "İstirahət günü",                          cIstirahit),
+                ("B", "Bayram günü",                              cBayram),
+                ("M", "Məzuniyyət",                              cMez),
+                ("X", "Xəstəlik",                                cXest),
+                ("E", "Ezamiyyət",                               cEzam),
+                ("7", "Bayram ərəfəsi (azaldılmış saat)",        cAzSaat),
             };
             foreach (var (k, v, r) in legend)
             {
@@ -218,8 +308,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             ws.Column(sumStart + 3).Width = 6;
             ws.Column(sumStart + 4).Width = 6;
 
-            // Sətirləri dond (başlıq görünsün sürüşdürəndə)
-            ws.SheetView.FreezeRows(HR);
+            // Sütun + sətir dondurma (iki başlıq sırası görünsün)
+            ws.SheetView.FreezeRows(HR2);
             ws.SheetView.FreezeColumns(3);
 
             ws.PageSetup.PageOrientation = XLPageOrientation.Landscape;
@@ -236,12 +326,12 @@ namespace FinNex.UI.Areas.HR.Controllers
 
         private static void ApplyTitle(IXLCell cell, XLColor bg, XLColor fg, double fontSize)
         {
-            cell.Style.Font.Bold              = true;
-            cell.Style.Font.FontSize          = fontSize;
-            cell.Style.Font.FontColor         = fg;
-            cell.Style.Fill.BackgroundColor   = bg;
-            cell.Style.Alignment.Horizontal   = XLAlignmentHorizontalValues.Center;
-            cell.Style.Alignment.Vertical     = XLAlignmentVerticalValues.Center;
+            cell.Style.Font.Bold            = true;
+            cell.Style.Font.FontSize        = fontSize;
+            cell.Style.Font.FontColor       = fg;
+            cell.Style.Fill.BackgroundColor = bg;
+            cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            cell.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
         }
     }
 }
