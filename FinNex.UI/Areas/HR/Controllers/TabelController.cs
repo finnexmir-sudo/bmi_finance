@@ -41,9 +41,23 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             // ── Şablonu aç, dəyərləri ƏVVƏLCƏ oxu, sonra sil-yaz ───────
             var templatePath = Path.Combine(_env.WebRootPath, "templates", "Tabel_isci.xlsx");
-            using var wb = System.IO.File.Exists(templatePath)
-                ? new XLWorkbook(templatePath)
-                : new XLWorkbook();
+            XLWorkbook wb;
+            if (System.IO.File.Exists(templatePath))
+            {
+                // FileShare.ReadWrite — StaticWebAssets fingerprinting ilə kilidlənmə olmasın
+                using var fs = new System.IO.FileStream(
+                    templatePath, System.IO.FileMode.Open,
+                    System.IO.FileAccess.Read, System.IO.FileShare.ReadWrite);
+                var tplMs = new MemoryStream();
+                await fs.CopyToAsync(tplMs);
+                tplMs.Position = 0;
+                wb = new XLWorkbook(tplMs);
+            }
+            else
+            {
+                wb = new XLWorkbook();
+            }
+            using var _ = wb;
 
             // Şablondan oxunan dəyərlərin default-ları
             string tplTesdiqRow2   = "müdir ___________________________";
