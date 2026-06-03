@@ -33,7 +33,7 @@ async function ezYukle() {
             : '<span style="color:#94a3b8;font-size:11px">Tam gün</span>';
         var tarix = r.baslamaTarixi + (r.baslamaTarixi !== r.bitmeTarixi ? '<br><small style="color:#94a3b8">– ' + r.bitmeTarixi + '</small>' : '');
         var sened = r.senedYolu
-            ? '<a href="/dms/' + r.senedYolu + '" target="_blank" style="color:#6366f1;font-size:12px"><i class="bi bi-paperclip"></i> ' + (r.senedAd || 'Sənəd') + '</a>'
+            ? '<a href="/dms/' + r.senedYolu + '" download="' + ezEsc(r.senedAd || 'sened') + '" style="color:#6366f1;font-size:12px"><i class="bi bi-paperclip"></i> ' + (r.senedAd || 'Sənəd') + '</a>'
             : '<span style="color:#94a3b8">—</span>';
         var emel = r.status === 1
             ? '<button class="fn-btn fn-btn--outline fn-btn--sm" onclick="ezOpenModal(' + r.id + ',\'' + ezEsc(r.isciTamAd) + '\',\'' + ezEsc(r.baslig) + '\',\'' + ezEsc(r.mekanAd) + '\',\'' + r.baslamaTarixi + '\',\'' + r.bitmeTarixi + '\')">' +

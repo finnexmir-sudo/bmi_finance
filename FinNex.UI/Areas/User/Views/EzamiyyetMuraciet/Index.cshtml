@@ -121,7 +121,7 @@
                             <td style="padding:10px 14px">
                                 @if (!string.IsNullOrEmpty(item.SenedYolu))
                                 {
-                                    <a href="/dms/@item.SenedYolu" target="_blank" style="color:#6366f1;font-size:12px">
+                                    <a href="/dms/@item.SenedYolu" download="@(item.SenedAd ?? "sened")" style="color:#6366f1;font-size:12px">
                                         <i class="bi bi-paperclip"></i> @(item.SenedAd ?? "Sənəd")
                                     </a>
                                 }
