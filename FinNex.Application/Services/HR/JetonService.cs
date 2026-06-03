@@ -154,7 +154,8 @@ namespace FinNex.Application.Services.HR
                 .Query()
                 .Include(x => x.JetonTeyinati)
                 .Include(x => x.Isci)
-                .Include(x => x.Icaze);
+                .Include(x => x.Icaze)
+                .Include(x => x.RedimTelebi);
 
             if (isciId.HasValue)
                 query = query.Where(x => x.IsciId == isciId.Value);
@@ -794,8 +795,9 @@ namespace FinNex.Application.Services.HR
             QazanmaTarixi   = x.QazanmaTarixi,
             Sebeb = x.Sebeb,
             Status = x.Status,
-            RedimTelebiId = x.RedimTelebiId,
-            IcazeId           = x.IcazeId,
+            RedimTelebiId   = x.RedimTelebiId,
+            RedimNetice     = x.RedimTelebi?.NeticeTarixi,
+            IcazeId         = x.IcazeId,
             IcazeTarixi       = x.Icaze?.IcazeTarixi,
             IcazeBaslamaSaati = x.Icaze != null ? x.Icaze.BaslamaSaati.ToString(@"hh\:mm") : null,
             IcazeBitisSaati   = x.Icaze != null ? x.Icaze.BitisSaati.ToString(@"hh\:mm") : null,
