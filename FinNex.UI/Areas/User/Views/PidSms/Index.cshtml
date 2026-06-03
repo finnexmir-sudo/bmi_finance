@@ -165,59 +165,74 @@
 
     @* ── Tarixçə ── *@
     <div class="fn-card" style="padding:0">
-        <div style="padding:16px 18px;border-bottom:1px solid #e2e8f0">
-            <div style="font-size:14px;font-weight:700;color:#0f172a">SMS tarixçəsi (son 200)</div>
+        <div style="padding:16px 18px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none"
+             onclick="pidTarixceToggle(this)">
+            <div style="font-size:14px;font-weight:700;color:#0f172a">
+                SMS tarixçəsi (son 200)
+                <span style="font-size:12px;font-weight:400;color:#64748b;margin-left:8px">@loglar.Count qeyd</span>
+            </div>
+            <span id="pidTarixceIkon" style="font-size:13px;color:#6366f1;font-weight:600">▼ göstər</span>
         </div>
-        @if (!loglar.Any())
-        {
-            <div style="padding:30px;text-align:center;color:#64748b;font-size:13px">Hələ SMS göndərilməyib.</div>
-        }
-        else
-        {
-            <table style="width:100%;border-collapse:collapse;font-size:13px">
-                <thead style="background:#f8fafc">
-                    <tr>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Tarix</th>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Telefon</th>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Mətn</th>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Şablon</th>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Status</th>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Göndərən</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var l in loglar)
-                    {
-                        <tr style="border-top:1px solid #f1f5f9">
-                            <td style="padding:10px 14px;color:#475569;white-space:nowrap">@l.YaradilmaTarixi.ToString("dd.MM.yy HH:mm")</td>
-                            <td style="padding:10px 14px;color:#0f172a;font-family:monospace">@l.Telefon</td>
-                            <td style="padding:10px 14px;color:#334155;max-width:300px">
-                                <span class="pid-metn-tam" style="display:none;white-space:pre-wrap;word-break:break-word">@l.Metn</span>
-                                <button type="button" class="pid-metn-toggle" onclick="pidMetnToggle(this)"
-                                        style="background:none;border:none;color:#6366f1;cursor:pointer;font-size:11px;padding:2px 0;font-weight:600;text-decoration:underline">
-                                    ▼ mətni gör
-                                </button>
-                            </td>
-                            <td style="padding:10px 14px;color:#64748b">@(l.Sablon?.Ad ?? "—")</td>
-                            <td style="padding:10px 14px">
-                                <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;color:#fff;background:@StatusRengi(l.Status)">
-                                    @StatusText(l.Status)
-                                </span>
-                                @if (!string.IsNullOrEmpty(l.Xeta))
-                                {
-                                    <div style="font-size:11px;color:#dc2626;margin-top:2px" title="@l.Xeta">@(l.Xeta.Length > 40 ? l.Xeta.Substring(0,40) + "…" : l.Xeta)</div>
-                                }
-                            </td>
-                            <td style="padding:10px 14px;color:#64748b">@(l.GonderenIsci?.TamAd ?? "—")</td>
+        <div id="pidTarixceBody" style="display:none;border-top:1px solid #e2e8f0">
+            @if (!loglar.Any())
+            {
+                <div style="padding:30px;text-align:center;color:#64748b;font-size:13px">Hələ SMS göndərilməyib.</div>
+            }
+            else
+            {
+                <table style="width:100%;border-collapse:collapse;font-size:13px">
+                    <thead style="background:#f8fafc">
+                        <tr>
+                            <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Tarix</th>
+                            <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Telefon</th>
+                            <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Mətn</th>
+                            <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Şablon</th>
+                            <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Status</th>
+                            <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Göndərən</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        }
+                    </thead>
+                    <tbody>
+                        @foreach (var l in loglar)
+                        {
+                            <tr style="border-top:1px solid #f1f5f9">
+                                <td style="padding:10px 14px;color:#475569;white-space:nowrap">@l.YaradilmaTarixi.ToString("dd.MM.yy HH:mm")</td>
+                                <td style="padding:10px 14px;color:#0f172a;font-family:monospace">@l.Telefon</td>
+                                <td style="padding:10px 14px;color:#334155;max-width:300px">
+                                    <span class="pid-metn-tam" style="display:none;white-space:pre-wrap;word-break:break-word">@l.Metn</span>
+                                    <button type="button" onclick="pidMetnToggle(this)"
+                                            style="background:none;border:none;color:#6366f1;cursor:pointer;font-size:11px;padding:2px 0;font-weight:600;text-decoration:underline">
+                                        ▼ mətni gör
+                                    </button>
+                                </td>
+                                <td style="padding:10px 14px;color:#64748b">@(l.Sablon?.Ad ?? "—")</td>
+                                <td style="padding:10px 14px">
+                                    <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;color:#fff;background:@StatusRengi(l.Status)">
+                                        @StatusText(l.Status)
+                                    </span>
+                                    @if (!string.IsNullOrEmpty(l.Xeta))
+                                    {
+                                        <div style="font-size:11px;color:#dc2626;margin-top:2px" title="@l.Xeta">@(l.Xeta.Length > 40 ? l.Xeta.Substring(0,40) + "…" : l.Xeta)</div>
+                                    }
+                                </td>
+                                <td style="padding:10px 14px;color:#64748b">@(l.GonderenIsci?.TamAd ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
     </div>
 </div>
 
 <script>
+    function pidTarixceToggle(header) {
+        var body = document.getElementById('pidTarixceBody');
+        var ikon = document.getElementById('pidTarixceIkon');
+        var aciqdir = body.style.display !== 'none';
+        body.style.display = aciqdir ? 'none' : '';
+        ikon.textContent   = aciqdir ? '▼ göstər' : '▲ gizlət';
+    }
+
     function pidMetnToggle(btn) {
         var tam = btn.closest('td').querySelector('.pid-metn-tam');
         var aciqdir = tam.style.display !== 'none';
