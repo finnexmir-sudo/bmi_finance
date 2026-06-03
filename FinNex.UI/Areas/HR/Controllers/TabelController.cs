@@ -89,26 +89,9 @@ namespace FinNex.UI.Areas.HR.Controllers
             // ── Sətir 4: Boşluq ─────────────────────────────────────────
             ws.Row(4).Height = 6;
 
-            // ── Sətir 5: Əsas başlıq ────────────────────────────────────
-            ws.Cell(5, 1).Value = "TABEL (Əsas iş saatları)";
-            ws.Range(5, 1, 5, totalCols).Merge();
-            ApplyTitle(ws.Cell(5, 1), cHeader, cHeaderFont, 14);
-            ws.Row(5).Height = 24;
-
-            // ── Sətir 6: Dövr ───────────────────────────────────────────
-            ws.Cell(6, 1).Value = $"Dövr: {il} il, {ayAdlari[ay - 1]}  " +
-                                  $"(01.{ay:D2}.{il} – {gunSayi:D2}.{ay:D2}.{il})";
-            ws.Range(6, 1, 6, totalCols).Merge();
-            ws.Cell(6, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            ws.Cell(6, 1).Style.Fill.BackgroundColor = XLColor.FromArgb(0xD6, 0xE4, 0xF0);
-            ws.Row(6).Height = 16;
-
-            // ── Sətir 7: Boşluq ─────────────────────────────────────────
-            ws.Row(7).Height = 4;
-
-            // ── Sətirlər 8-9: İki sıralı sütun başlığı ─────────────────
-            const int HR1 = 8;  // başlıq etiketləri
-            const int HR2 = 9;  // gün nömrələri
+            // ── Sətirlər 5-6: İki sıralı sütun başlığı (A5-dən başla) ──
+            const int HR1 = 5;
+            const int HR2 = 6;
 
             // Sıra sayı – iki sıraya merge
             ws.Range(HR1, 1, HR2, 1).Merge();
@@ -246,71 +229,37 @@ namespace FinNex.UI.Areas.HR.Controllers
             ws.Range(dr, 1, dr, totalCols).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
             ws.Range(dr, 1, dr, totalCols).Style.Border.InsideBorder  = XLBorderStyleValues.Thin;
 
-            // ── İmza bölməsi (başlıq bölməsi kimi 3 sıra) ───────────────
+            // ── İmza bölməsi (şablon ilə uyğun — 2 sıra) ───────────────
             dr += 3;
-            int sigEnd = Math.Min(sumStart - 1, 12);
 
-            // Sıra 1 — vəzifə adı (başlıqdakı "TƏSDİQ EDİRƏM:" kimi)
-            ws.Cell(dr, 1).Value = "Müdir müavini";
-            ws.Range(dr, 1, dr, sigEnd).Merge();
-            ws.Cell(dr, 1).Style.Font.Bold     = true;
-            ws.Cell(dr, 1).Style.Font.FontSize = 10;
-            ws.Row(dr).Height = 18;
-            dr++;
-
-            // Sıra 2 — imza xətti (başlıqdakı "müdir ___" kimi)
-            ws.Cell(dr, 1).Value = "___________________________";
-            ws.Range(dr, 1, dr, sigEnd).Merge();
+            // Sıra 1: "müdir müavini ___" label + xətt eyni sətirdə
+            ws.Cell(dr, 1).Value = "müdir müavini ___________________________";
+            ws.Range(dr, 1, dr, 3).Merge();
             ws.Cell(dr, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-
-            ws.Cell(dr, tesdiqStart).Value = "İmza _____________";
-            ws.Range(dr, tesdiqStart, dr, totalCols).Merge();
-            ws.Cell(dr, tesdiqStart).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             ws.Row(dr).Height = 20;
             dr++;
 
-            // Sıra 3 — ad-soyad göstəricisi (başlıqdakı "(vəzifəsi...)" kimi)
+            // Sıra 2: "(vəzifəsi...)" sol tərəfdə + "İmza" sağda
             ws.Cell(dr, 1).Value = "(vəzifəsi, soyadı, adı, atasının adı)";
-            ws.Range(dr, 1, dr, sigEnd).Merge();
+            ws.Range(dr, 1, dr, 3).Merge();
             ws.Cell(dr, 1).Style.Font.Italic   = true;
             ws.Cell(dr, 1).Style.Font.FontSize = 8;
             ws.Cell(dr, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+            ws.Cell(dr, 5).Value = "İmza";
+            ws.Range(dr, 5, dr, 11).Merge();
+            ws.Cell(dr, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             ws.Row(dr).Height = 14;
 
             ws.Row(dr + 1).Height = 6;
 
-            // ── Şərti işarələr (legend — col 4-dən başlayır, bərabər genişlik) ─
+            // ── Şərti işarələr (plain text — şablon kimi) ─────────────
             dr += 2;
-            ws.Cell(dr, 1).Value = "Şərti işarələr:";
-            ws.Cell(dr, 1).Style.Font.Bold = true;
+            ws.Cell(dr, 1).Value = "İşarələr: istirahət günü (İ), bayram günü (B), ezamiyyə günü (E), xəstəlik günü (X), məzuniyyət günü (M), işə gəlmədiyi günlər (G)";
+            ws.Range(dr, 1, dr, totalCols).Merge();
+            ws.Cell(dr, 1).Style.Font.Italic   = true;
+            ws.Cell(dr, 1).Style.Font.FontSize = 9;
             ws.Row(dr).Height = 14;
-            dr++;
-
-            var legend = new (string Kod, string Ad, XLColor Renk)[]
-            {
-                ("İ", "İstirahət günü",                   cIstirahit),
-                ("B", "Bayram günü",                       cBayram),
-                ("M", "Məzuniyyət",                       cMez),
-                ("X", "Xəstəlik",                         cXest),
-                ("E", "Ezamiyyət",                        cEzam),
-                ("7", "Bayram ərəfəsi (azaldılmış saat)", cAzSaat),
-            };
-
-            // Col 4-dən başlanır — bütün gün sütunları bərabər (3.2) genişliyindədir
-            int legCol = 4;
-            foreach (var (k, v, r) in legend)
-            {
-                ws.Cell(dr, legCol).Value = k;
-                ws.Cell(dr, legCol).Style.Fill.BackgroundColor = r;
-                ws.Cell(dr, legCol).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                ws.Cell(dr, legCol).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-                ws.Range(dr, legCol + 1, dr, legCol + 4).Merge();
-                ws.Cell(dr, legCol + 1).Value = " " + v;
-                ws.Cell(dr, legCol + 1).Style.Font.FontSize = 9;
-                ws.Cell(dr, legCol + 1).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-                legCol += 5;
-            }
-            ws.Row(dr).Height = 16;
 
             // ── Sütun eni ─────────────────────────────────────────
             ws.Column(1).Width = 4.5;
