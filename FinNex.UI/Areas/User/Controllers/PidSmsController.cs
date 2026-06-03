@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FinNex.UI.Areas.User.Controllers;
 
 [Area("User")]
-[Authorize]
+[Authorize(Roles = "Admin,PID")]
 public class PidSmsController : Controller
 {
     private readonly IPidSmsService _smsService;
