@@ -1,8 +1,8 @@
 using FinNex.Application.DTOs.HR.Ezamiyyet;
 using FinNex.Application.Interfaces.Communication;
 using FinNex.Application.Services.HR;
-using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
+using FinNex.Domain.Entities.HR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -64,13 +64,13 @@ namespace FinNex.UI.Areas.User.Controllers
             }
 
             var isciAd = user?.UserName ?? "İşçi";
-            await _bildirisRouter.NotifyRolesAsync(
-                new[] { RoleNames.HR, RoleNames.Rehber, RoleNames.SobeReisi, RoleNames.Admin },
+            await _bildirisRouter.NotifyStrukturRoluAsync(
+                StrukturRolTipi.Rehber,
                 BildirisNovu.EzamiyyetMuraciet,
                 "Yeni ezamiyyət müraciəti",
                 $"{isciAd} {dto.BaslamaTarixi:dd.MM.yyyy} – {dto.BitmeTarixi:dd.MM.yyyy} tarixləri üçün ezamiyyət müraciəti göndərdi.",
-                redirectUrl:   Url.Action("Index", "Ezamiyyet", new { area = "HR" }),
-                exceptIsciId:  isciId.Value);
+                redirectUrl:  Url.Action("Index", "Ezamiyyet", new { area = "HR" }),
+                exceptIsciId: isciId.Value);
 
             TempData["Success"] = "Ezamiyyət müraciətiniz göndərildi.";
             return RedirectToAction(nameof(Index));
