@@ -1,6 +1,8 @@
 using FinNex.Application.DTOs.HR.Ezamiyyet;
+using FinNex.Application.Interfaces.Communication;
 using FinNex.Application.Services.HR;
 using FinNex.Domain;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.Structure;
 using FinNex.Domain.Interfaces;
@@ -18,15 +20,18 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IEzamiyyetService _service;
         private readonly UserManager<AppUser> _userManager;
         private readonly IUnitOfWork _uow;
+        private readonly IBildirisRouter _bildirisRouter;
 
         public EzamiyyetController(
             IEzamiyyetService service,
             UserManager<AppUser> userManager,
-            IUnitOfWork uow)
+            IUnitOfWork uow,
+            IBildirisRouter bildirisRouter)
         {
-            _service     = service;
-            _userManager = userManager;
-            _uow         = uow;
+            _service        = service;
+            _userManager    = userManager;
+            _uow            = uow;
+            _bildirisRouter = bildirisRouter;
         }
 
         // ── Müraciət siyahısı (təsdiq paneli) ───────────────
@@ -79,9 +84,29 @@ namespace FinNex.UI.Areas.HR.Controllers
         [HttpPost]
         public async Task<IActionResult> Tesdiq([FromBody] EzamTesdiqDto dto)
         {
-            var isciId = await GetIsciIdAsync();
+            var rehberId = await GetIsciIdAsync();
+
+            // Bildiriş üçün işçinin ID-sini öncədən götür
+            var detay = await _service.DetayAsync(dto.Id);
+
             var (ok, error) = await _service.RehberTesdiqAsync(
-                dto.Id, dto.Tesdiq, dto.Qeyd, isciId ?? 0);
+                dto.Id, dto.Tesdiq, dto.Qeyd, rehberId ?? 0);
+
+            if (ok && detay != null)
+            {
+                var nov  = dto.Tesdiq ? BildirisNovu.EzamiyyetTesdiq : BildirisNovu.EzamiyyetImtina;
+                var metn = dto.Tesdiq
+                    ? $"Ezamiyyət müraciətiniz ({detay.BaslamaTarixi:dd.MM.yyyy} – {detay.BitmeTarixi:dd.MM.yyyy}) təsdiqləndi."
+                    : $"Ezamiyyət müraciətiniz ({detay.BaslamaTarixi:dd.MM.yyyy} – {detay.BitmeTarixi:dd.MM.yyyy}) rədd edildi.{(string.IsNullOrWhiteSpace(dto.Qeyd) ? "" : " Səbəb: " + dto.Qeyd)}";
+
+                await _bildirisRouter.NotifyIsciAsync(
+                    detay.IsciId,
+                    nov,
+                    dto.Tesdiq ? "Ezamiyyət təsdiqləndi" : "Ezamiyyət rədd edildi",
+                    metn,
+                    redirectUrl: Url.Action("Index", "EzamiyyetMuraciet", new { area = "User" }));
+            }
+
             return Json(new { success = ok, message = error });
         }
 
