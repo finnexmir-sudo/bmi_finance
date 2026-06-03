@@ -289,18 +289,18 @@ namespace FinNex.UI.Areas.HR.Controllers
                 ("7", "Bayram ərəfəsi (azaldılmış saat)", cAzSaat),
             };
 
-            int lc = 1;
+            int legCol = 1;
             foreach (var (k, v, r) in legend)
             {
-                ws.Cell(dr, lc).Value = k;
-                ws.Cell(dr, lc).Style.Fill.BackgroundColor = r;
-                ws.Cell(dr, lc).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                ws.Cell(dr, lc).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-                ws.Cell(dr, lc + 1).Value = " " + v;
-                ws.Range(dr, lc + 1, dr, lc + 3).Merge();
-                ws.Cell(dr, lc + 1).Style.Font.FontSize = 9;
-                ws.Cell(dr, lc + 1).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-                lc += 4;
+                ws.Cell(dr, legCol).Value = k;
+                ws.Cell(dr, legCol).Style.Fill.BackgroundColor = r;
+                ws.Cell(dr, legCol).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Cell(dr, legCol).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                ws.Cell(dr, legCol + 1).Value = " " + v;
+                ws.Range(dr, legCol + 1, dr, legCol + 3).Merge();
+                ws.Cell(dr, legCol + 1).Style.Font.FontSize = 9;
+                ws.Cell(dr, legCol + 1).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                legCol += 4;
             }
             ws.Row(dr).Height = 16;
 
