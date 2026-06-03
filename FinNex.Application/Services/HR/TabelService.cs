@@ -96,8 +96,8 @@ namespace FinNex.Application.Services.HR
                         wCnt++; idx++;
                     }
                 }
-                // Tam 5 günlük həftə: ilk iş günü=8, qalanı=7; natamam həftə: 7
-                int elilBase = wCnt == 5 ? (dIdx == 0 ? 8 : 7) : 7;
+                // Tam 5 günlük həftə: 5-ci iş günü=4, qalanı=8; natamam həftə: 8
+                int elilBase = (wCnt == 5 && dIdx == 4) ? 4 : 8;
                 // Bayram ərəfəsi: max 7 (əlil işçi üçün əlavə azalma yoxdur)
                 gunElilSaat[d] = ertesi ? Math.Min(elilBase, 7) : elilBase;
             }

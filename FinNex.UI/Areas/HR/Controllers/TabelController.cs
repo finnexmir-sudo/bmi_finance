@@ -253,8 +253,9 @@ namespace FinNex.UI.Areas.HR.Controllers
             ws.Range(dr, 1, dr, 2).Merge();
             ws.Cell(dr, 1).Style.Font.Bold = true;
 
+            int sigEnd = Math.Min(sumStart - 1, 12);
             ws.Cell(dr, 3).Value = "___________________________";
-            ws.Range(dr, 3, dr, sumStart - 1).Merge();
+            ws.Range(dr, 3, dr, sigEnd).Merge();
             ws.Cell(dr, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
             ws.Cell(dr, tesdiqStart).Value = "İmza _____________";
@@ -264,7 +265,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             dr++;
             ws.Cell(dr, 3).Value = "(vəzifəsi, soyadı, adı, atasının adı)";
-            ws.Range(dr, 3, dr, sumStart - 1).Merge();
+            ws.Range(dr, 3, dr, sigEnd).Merge();
             ws.Cell(dr, 3).Style.Font.Italic   = true;
             ws.Cell(dr, 3).Style.Font.FontSize = 8;
             ws.Cell(dr, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -272,7 +273,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             ws.Row(dr + 1).Height = 6;
 
-            // ── Şərti işarələr (legend) ───────────────────────────
+            // ── Şərti işarələr (legend — yan yana) ───────────────
             dr += 2;
             ws.Cell(dr, 1).Value = "Şərti işarələr:";
             ws.Cell(dr, 1).Style.Font.Bold = true;
@@ -280,21 +281,28 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             var legend = new (string Kod, string Ad, XLColor Renk)[]
             {
-                ("İ", "İstirahət günü",                          cIstirahit),
-                ("B", "Bayram günü",                              cBayram),
-                ("M", "Məzuniyyət",                              cMez),
-                ("X", "Xəstəlik",                                cXest),
-                ("E", "Ezamiyyət",                               cEzam),
-                ("7", "Bayram ərəfəsi (azaldılmış saat)",        cAzSaat),
+                ("İ", "İstirahət günü",                   cIstirahit),
+                ("B", "Bayram günü",                       cBayram),
+                ("M", "Məzuniyyət",                       cMez),
+                ("X", "Xəstəlik",                         cXest),
+                ("E", "Ezamiyyət",                        cEzam),
+                ("7", "Bayram ərəfəsi (azaldılmış saat)", cAzSaat),
             };
+
+            int lc = 1;
             foreach (var (k, v, r) in legend)
             {
-                ws.Cell(dr, 1).Value = k;
-                ws.Cell(dr, 1).Style.Fill.BackgroundColor = r;
-                ws.Cell(dr, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                ws.Cell(dr, 2).Value = "–  " + v;
-                dr++;
+                ws.Cell(dr, lc).Value = k;
+                ws.Cell(dr, lc).Style.Fill.BackgroundColor = r;
+                ws.Cell(dr, lc).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Cell(dr, lc).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                ws.Cell(dr, lc + 1).Value = " " + v;
+                ws.Range(dr, lc + 1, dr, lc + 3).Merge();
+                ws.Cell(dr, lc + 1).Style.Font.FontSize = 9;
+                ws.Cell(dr, lc + 1).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                lc += 4;
             }
+            ws.Row(dr).Height = 16;
 
             // ── Sütun eni ─────────────────────────────────────────
             ws.Column(1).Width = 4.5;
