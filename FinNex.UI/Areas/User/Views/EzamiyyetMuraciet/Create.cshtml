@@ -76,14 +76,18 @@
                         Gündaxili saat aralığı (tam gün deyilsə)
                     </label>
                 </div>
-                <div id="saatDiv" style="display:none;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div id="saatDiv" style="display:none;grid-template-columns:1fr 1fr;gap:12px">
                     <div class="fn-form-group">
                         <label class="fn-label">Başlama saatı</label>
-                        <input type="time" name="BaslamaSaati" class="fn-input" />
+                        <input type="text" name="BaslamaSaati" id="baslamaSaati" class="fn-input"
+                               placeholder="09:00" maxlength="5" inputmode="numeric"
+                               oninput="saatFormat(this)" />
                     </div>
                     <div class="fn-form-group">
                         <label class="fn-label">Bitmə saatı</label>
-                        <input type="time" name="BitisSaati" class="fn-input" />
+                        <input type="text" name="BitisSaati" id="bitisSaati" class="fn-input"
+                               placeholder="17:00" maxlength="5" inputmode="numeric"
+                               oninput="saatFormat(this)" />
                     </div>
                 </div>
             </div>
@@ -133,8 +137,15 @@
     function saatliToggle(cb) {
         var div = document.getElementById('saatDiv');
         div.style.display = cb.checked ? 'grid' : 'none';
-        div.querySelectorAll('input[type=time]').forEach(function (inp) {
-            if (!cb.checked) inp.value = '';
-        });
+        if (!cb.checked) {
+            document.getElementById('baslamaSaati').value = '';
+            document.getElementById('bitisSaati').value = '';
+        }
+    }
+
+    function saatFormat(inp) {
+        var v = inp.value.replace(/[^0-9]/g, '');
+        if (v.length > 2) v = v.slice(0, 2) + ':' + v.slice(2, 4);
+        inp.value = v;
     }
 </script>
