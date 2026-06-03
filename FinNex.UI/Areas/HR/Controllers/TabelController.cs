@@ -41,7 +41,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             // ── Şablonu aç ───────────────────────────────────────────────
             var templatePath = Path.Combine(_env.WebRootPath, "templates", "Tabel_isci.xlsx");
-            using var wb = File.Exists(templatePath)
+            using var wb = System.IO.File.Exists(templatePath)
                 ? new XLWorkbook(templatePath)
                 : new XLWorkbook();
 
