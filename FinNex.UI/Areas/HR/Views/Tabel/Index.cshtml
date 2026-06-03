@@ -42,7 +42,14 @@
                     <select name="ay" class="fn-input">
                         @for (int m = 1; m <= 12; m++)
                         {
-                            <option value="@m" @(m == curAy ? "selected" : "")>@ayAdlari[m - 1]</option>
+                            if (m == curAy)
+                            {
+                                <option value="@m" selected="selected">@ayAdlari[m - 1]</option>
+                            }
+                            else
+                            {
+                                <option value="@m">@ayAdlari[m - 1]</option>
+                            }
                         }
                     </select>
                 </div>
