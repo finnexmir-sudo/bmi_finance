@@ -39,11 +39,19 @@ namespace FinNex.UI.Areas.HR.Controllers
             int leftEnd   = 3;
             int tesdiqStart = sumStart;
 
-            // ── Şablonu aç ───────────────────────────────────────────────
+            // ── Şablonu aç, dəyərləri ƏVVƏLCƏ oxu, sonra sil-yaz ───────
             var templatePath = Path.Combine(_env.WebRootPath, "templates", "Tabel_isci.xlsx");
             using var wb = System.IO.File.Exists(templatePath)
                 ? new XLWorkbook(templatePath)
                 : new XLWorkbook();
+
+            // Şablondan oxunan dəyərlərin default-ları
+            string tplTesdiqRow2   = "müdir ___________________________";
+            string tplSigLineVal   = "";
+            bool   tplSigLineHasBorder = false;
+            string tplSigNameVal   = "müdir müavini ___________________________";
+            string tplSigImzaVal   = "İmza";
+            string tplLegendVal    = "İşarələr: istirahət günü (İ), bayram günü (B), ezamiyyə günü (E), xəstəlik günü (X), məzuniyyət günü (M), işə gəlmədiyi günlər (G)";
 
             IXLWorksheet ws;
             if (wb.Worksheets.Count > 0)
@@ -51,8 +59,26 @@ namespace FinNex.UI.Areas.HR.Controllers
                 ws      = wb.Worksheets.First();
                 ws.Name = "Tabel";
 
-                // Rows 1-3 SOL tərəf şablondan saxlanır (müəssisə adı dəyişdirilə bilər)
-                // Köhnə TƏSDİQ merge-larını sil (col leftEnd+1 dan, rows 1-3)
+                // ── Şablon dəyərləri oxunur (sil-yazdan ƏVVƏL) ──────────
+                // TƏSDİQ sağ tərəf row 2 (col 34 = 30 günlük şablon üçün AH2)
+                var r2v = ws.Cell(2, 34).Value.ToString();
+                if (!string.IsNullOrWhiteSpace(r2v)) tplTesdiqRow2 = r2v;
+
+                // İmza bölməsi — row 7 (xətt/boşluq), row 8 (ad + İmza)
+                tplSigLineVal = ws.Cell(7, 2).Value.ToString();
+                tplSigLineHasBorder = ws.Cell(7, 2).Style.Border.BottomBorder != XLBorderStyleValues.None;
+
+                var r8v = ws.Cell(8, 2).Value.ToString().Trim();
+                if (!string.IsNullOrWhiteSpace(r8v)) tplSigNameVal = r8v;
+
+                var r8e = ws.Cell(8, 5).Value.ToString().Trim();
+                if (!string.IsNullOrWhiteSpace(r8e)) tplSigImzaVal = r8e;
+
+                // Legend — row 12
+                var legV = ws.Cell(12, 2).Value.ToString().Trim();
+                if (!string.IsNullOrWhiteSpace(legV)) tplLegendVal = legV;
+
+                // ── İndi sil ────────────────────────────────────────────
                 foreach (var mr in ws.MergedRanges.ToList())
                 {
                     var fc = mr.FirstCell().Address;
@@ -63,7 +89,6 @@ namespace FinNex.UI.Areas.HR.Controllers
                     for (int c = leftEnd + 1; c <= 50; c++)
                         ws.Cell(r, c).Clear();
 
-                // Row 4+ tamamilə sıfırla
                 foreach (var mr in ws.MergedRanges.ToList())
                     if (mr.FirstCell().Address.RowNumber >= 4)
                         ws.MergedRanges.Remove(mr);
@@ -73,7 +98,6 @@ namespace FinNex.UI.Areas.HR.Controllers
             else
             {
                 ws = wb.Worksheets.Add("Tabel");
-                // Şablon yoxdursa sol tərəf kod ilə yaradılır
                 ws.Cell(1, 1).Value = "\"Bank Melli İran\" Bakı filialı";
                 ws.Range(1, 1, 1, leftEnd).Merge();
                 ws.Cell(1, 1).Style.Font.Bold     = true;
@@ -98,7 +122,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var cAzSaat    = XLColor.FromArgb(0xFF, 0xF0, 0xCC);
             var cYekun     = XLColor.FromArgb(0xE2, 0xEF, 0xDA);
 
-            // ── TƏSDİQ bölməsi (dinamik — aydan asılı sütun) ────────────
+            // ── TƏSDİQ bölməsi (şablondan oxunan dəyərlərlə) ────────────
             ws.Cell(1, tesdiqStart).Value = "TƏSDİQ EDİRƏM:";
             ws.Range(1, tesdiqStart, 1, totalCols).Merge();
             ws.Cell(1, tesdiqStart).Style.Font.Bold     = true;
@@ -106,7 +130,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             ws.Cell(1, tesdiqStart).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             ws.Row(1).Height = 20;
 
-            ws.Cell(2, tesdiqStart).Value = "müdir ___________________________";
+            ws.Cell(2, tesdiqStart).Value = tplTesdiqRow2;   // ← şablondan
             ws.Range(2, tesdiqStart, 2, totalCols).Merge();
             ws.Cell(2, tesdiqStart).Style.Font.FontSize        = 10;
             ws.Cell(2, tesdiqStart).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -254,31 +278,34 @@ namespace FinNex.UI.Areas.HR.Controllers
             ws.Range(dr, 1, dr, totalCols).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
             ws.Range(dr, 1, dr, totalCols).Style.Border.InsideBorder  = XLBorderStyleValues.Thin;
 
-            // ── İmza bölməsi ──────────────────────────────────────────────
+            // ── İmza bölməsi (şablondan oxunan dəyərlərlə) ───────────────
             dr += 3;
 
-            ws.Cell(dr, 1).Value = "müdir müavini ___________________________";
+            // Xətt sırası (şablonun row 7-si)
+            ws.Cell(dr, 1).Value = tplSigLineVal;
             ws.Range(dr, 1, dr, 3).Merge();
             ws.Cell(dr, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            if (tplSigLineHasBorder)
+                ws.Range(dr, 1, dr, 3).Style.Border.BottomBorder = XLBorderStyleValues.Medium;
             ws.Row(dr).Height = 20;
             dr++;
 
-            ws.Cell(dr, 1).Value = "(vəzifəsi, soyadı, adı, atasının adı)";
+            // Ad sırası (şablonun row 8-i) + İmza
+            ws.Cell(dr, 1).Value = tplSigNameVal;
             ws.Range(dr, 1, dr, 3).Merge();
-            ws.Cell(dr, 1).Style.Font.Italic   = true;
-            ws.Cell(dr, 1).Style.Font.FontSize = 8;
+            ws.Cell(dr, 1).Style.Font.FontSize = 9;
             ws.Cell(dr, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            ws.Cell(dr, 5).Value = "İmza";
+            ws.Cell(dr, 5).Value = tplSigImzaVal;
             ws.Range(dr, 5, dr, 11).Merge();
             ws.Cell(dr, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             ws.Row(dr).Height = 14;
 
             ws.Row(dr + 1).Height = 6;
 
-            // ── İşarələr ──────────────────────────────────────────────────
+            // ── İşarələr (şablondan) ──────────────────────────────────────
             dr += 2;
-            ws.Cell(dr, 1).Value = "İşarələr: istirahət günü (İ), bayram günü (B), ezamiyyə günü (E), xəstəlik günü (X), məzuniyyət günü (M), işə gəlmədiyi günlər (G)";
+            ws.Cell(dr, 1).Value = tplLegendVal;
             ws.Range(dr, 1, dr, totalCols).Merge();
             ws.Cell(dr, 1).Style.Font.Italic   = true;
             ws.Cell(dr, 1).Style.Font.FontSize = 9;
