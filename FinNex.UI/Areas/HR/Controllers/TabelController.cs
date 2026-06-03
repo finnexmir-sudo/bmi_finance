@@ -246,37 +246,44 @@ namespace FinNex.UI.Areas.HR.Controllers
             ws.Range(dr, 1, dr, totalCols).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
             ws.Range(dr, 1, dr, totalCols).Style.Border.InsideBorder  = XLBorderStyleValues.Thin;
 
-            // ── İmza bölməsi ──────────────────────────────────────────────
+            // ── İmza bölməsi (başlıq bölməsi kimi 3 sıra) ───────────────
             dr += 3;
-
-            ws.Cell(dr, 1).Value = "Müdir müavini";
-            ws.Range(dr, 1, dr, 2).Merge();
-            ws.Cell(dr, 1).Style.Font.Bold = true;
-
             int sigEnd = Math.Min(sumStart - 1, 12);
-            ws.Cell(dr, 3).Value = "___________________________";
-            ws.Range(dr, 3, dr, sigEnd).Merge();
-            ws.Cell(dr, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+            // Sıra 1 — vəzifə adı (başlıqdakı "TƏSDİQ EDİRƏM:" kimi)
+            ws.Cell(dr, 1).Value = "Müdir müavini";
+            ws.Range(dr, 1, dr, sigEnd).Merge();
+            ws.Cell(dr, 1).Style.Font.Bold     = true;
+            ws.Cell(dr, 1).Style.Font.FontSize = 10;
+            ws.Row(dr).Height = 18;
+            dr++;
+
+            // Sıra 2 — imza xətti (başlıqdakı "müdir ___" kimi)
+            ws.Cell(dr, 1).Value = "___________________________";
+            ws.Range(dr, 1, dr, sigEnd).Merge();
+            ws.Cell(dr, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
             ws.Cell(dr, tesdiqStart).Value = "İmza _____________";
             ws.Range(dr, tesdiqStart, dr, totalCols).Merge();
             ws.Cell(dr, tesdiqStart).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             ws.Row(dr).Height = 20;
-
             dr++;
-            ws.Cell(dr, 3).Value = "(vəzifəsi, soyadı, adı, atasının adı)";
-            ws.Range(dr, 3, dr, sigEnd).Merge();
-            ws.Cell(dr, 3).Style.Font.Italic   = true;
-            ws.Cell(dr, 3).Style.Font.FontSize = 8;
-            ws.Cell(dr, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+            // Sıra 3 — ad-soyad göstəricisi (başlıqdakı "(vəzifəsi...)" kimi)
+            ws.Cell(dr, 1).Value = "(vəzifəsi, soyadı, adı, atasının adı)";
+            ws.Range(dr, 1, dr, sigEnd).Merge();
+            ws.Cell(dr, 1).Style.Font.Italic   = true;
+            ws.Cell(dr, 1).Style.Font.FontSize = 8;
+            ws.Cell(dr, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             ws.Row(dr).Height = 14;
 
             ws.Row(dr + 1).Height = 6;
 
-            // ── Şərti işarələr (legend — yan yana) ───────────────
+            // ── Şərti işarələr (legend — col 4-dən başlayır, bərabər genişlik) ─
             dr += 2;
             ws.Cell(dr, 1).Value = "Şərti işarələr:";
             ws.Cell(dr, 1).Style.Font.Bold = true;
+            ws.Row(dr).Height = 14;
             dr++;
 
             var legend = new (string Kod, string Ad, XLColor Renk)[]
@@ -289,18 +296,19 @@ namespace FinNex.UI.Areas.HR.Controllers
                 ("7", "Bayram ərəfəsi (azaldılmış saat)", cAzSaat),
             };
 
-            int legCol = 1;
+            // Col 4-dən başlanır — bütün gün sütunları bərabər (3.2) genişliyindədir
+            int legCol = 4;
             foreach (var (k, v, r) in legend)
             {
                 ws.Cell(dr, legCol).Value = k;
                 ws.Cell(dr, legCol).Style.Fill.BackgroundColor = r;
                 ws.Cell(dr, legCol).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 ws.Cell(dr, legCol).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                ws.Range(dr, legCol + 1, dr, legCol + 4).Merge();
                 ws.Cell(dr, legCol + 1).Value = " " + v;
-                ws.Range(dr, legCol + 1, dr, legCol + 3).Merge();
                 ws.Cell(dr, legCol + 1).Style.Font.FontSize = 9;
                 ws.Cell(dr, legCol + 1).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-                legCol += 4;
+                legCol += 5;
             }
             ws.Row(dr).Height = 16;
 
