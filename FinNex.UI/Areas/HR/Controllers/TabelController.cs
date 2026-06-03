@@ -31,8 +31,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             int sumStart  = 4 + gunSayi;    // yekun sütunlar başlanğıcı (1-indeks)
             int totalCols = sumStart + 4;   // 5 yekun sütun
 
-            int leftEnd     = totalCols - 10; // sol bölmə (müəssisə adı) son sütun
-            int tesdiqStart = totalCols - 9;  // "TƏSDİQ EDİRƏM" başlanğıc sütun
+            int leftEnd     = 3;          // müəssisə adı: yalnız A-C sütunları
+            int tesdiqStart = sumStart;   // TƏSDİQ: yekun sütunların sahəsindən başlayır
 
             using var wb = new XLWorkbook();
             var ws = wb.Worksheets.Add("Tabel");
@@ -254,7 +254,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             ws.Cell(dr, 1).Style.Font.Bold = true;
 
             ws.Cell(dr, 3).Value = "___________________________";
-            ws.Range(dr, 3, dr, leftEnd).Merge();
+            ws.Range(dr, 3, dr, sumStart - 1).Merge();
             ws.Cell(dr, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
             ws.Cell(dr, tesdiqStart).Value = "İmza _____________";
@@ -264,7 +264,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             dr++;
             ws.Cell(dr, 3).Value = "(vəzifəsi, soyadı, adı, atasının adı)";
-            ws.Range(dr, 3, dr, leftEnd).Merge();
+            ws.Range(dr, 3, dr, sumStart - 1).Merge();
             ws.Cell(dr, 3).Style.Font.Italic   = true;
             ws.Cell(dr, 3).Style.Font.FontSize = 8;
             ws.Cell(dr, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
