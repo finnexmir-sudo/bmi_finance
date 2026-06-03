@@ -24,10 +24,17 @@
                 <div class="fn-form-group">
                     <label class="fn-label">İl</label>
                     <select name="il" class="fn-input">
-                        @for (int y = DateTime.Today.Year + 1; y >= 2020; y--)
+                    @for (int y = DateTime.Today.Year + 1; y >= 2020; y--)
+                    {
+                        if (y == curIl)
                         {
-                            <option value="@y" @(y == curIl ? "selected" : "")>@y</option>
+                            <option value="@y" selected="selected">@y</option>
                         }
+                        else
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    }
                     </select>
                 </div>
                 <div class="fn-form-group">
