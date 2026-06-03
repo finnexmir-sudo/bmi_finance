@@ -7,8 +7,7 @@
 
     int actionTotal = Model.GozleyenMezuniyyetTesdiqi + Model.GozleyenIcazeTesdiqi
                     + Model.GozleyenAvansSayi + Model.MaasLayiheSayi
-                    + Model.GozleyenSenedSayi + Model.KritikMezBalansSayi
-                    + Model.MaasHesablanmamisSayi;
+                    + Model.GozleyenSenedSayi + Model.KritikMezBalansSayi;
 
     var saatIndi = DateTime.Now.Hour;
     var salam = saatIndi < 6 ? "Xeyirli gecələr"
@@ -129,12 +128,6 @@
             <i class="bi bi-file-earmark-check"></i>
             <div class="rd-action-num">@Model.MaasLayiheSayi</div>
             <div class="rd-action-lbl">Maaş təsdiqi gözləyir</div>
-        </a>
-        <a asp-area="HR" asp-controller="Maas" asp-action="Index"
-           class="rd-action-tile @(Model.MaasHesablanmamisSayi > 0 ? "rd-action-tile--warn" : "")">
-            <i class="bi bi-exclamation-circle"></i>
-            <div class="rd-action-num">@Model.MaasHesablanmamisSayi</div>
-            <div class="rd-action-lbl">Bu ay maaş yoxdur</div>
         </a>
         <a asp-area="SenedDovriyyesi" asp-controller="Sened" asp-action="Index"
            class="rd-action-tile @(Model.GozleyenSenedSayi > 0 ? "rd-action-tile--info" : "")">
