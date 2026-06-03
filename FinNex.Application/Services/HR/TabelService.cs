@@ -120,15 +120,6 @@ namespace FinNex.Application.Services.HR
                             x.BitmeTarixi.Date  >= ayBaslangic.Date)
                 .ToListAsync();
 
-            // ── Ezamiyyətlər ──
-            var ezamiyyetler = await _uow.Repository<EzamiyyetMuraciet>()
-                .Query().AsNoTracking()
-                .Where(e => !e.Silinib &&
-                            e.Status == EzamiyyetStatus.Tesdiqlendi &&
-                            e.BaslamaTarixi.Date <= ayBitis.Date &&
-                            e.BitmeTarixi.Date  >= ayBaslangic.Date)
-                .ToListAsync();
-
             // ── Cədvəl qur ──
             var satirlar = new List<TabelIsciSatiri>();
 
@@ -145,7 +136,7 @@ namespace FinNex.Application.Services.HR
                     Departament = t.Departament?.Ad ?? "",
                 };
 
-                int isGunSayi = 0, isSaatSayi = 0, mezGun = 0, ezamGun = 0, xestGun = 0;
+                int isGunSayi = 0, isSaatSayi = 0, mezGun = 0, xestGun = 0;
 
                 for (int d = 1; d <= gunSayi; d++)
                 {
@@ -156,23 +147,28 @@ namespace FinNex.Application.Services.HR
                     bool isIsGunu     = isGunuTarihleri.Contains(gun.Date);
                     bool isWorkingDay = (!isWeekend || isIsGunu) && !isBayram;
 
+                    // Məzuniyyət iş günü olub-olmadığından asılı olmayaraq M kimi qeyd edilir
+                    bool hasMez = mezuniyyetler.Any(m => m.IsciId == isci.Id &&
+                        gun.Date >= m.BaslamaTarixi.Date && gun.Date <= m.BitmeTarixi.Date);
+
                     string kod;
-                    if (!isWorkingDay)
+                    if (hasMez)
+                    {
+                        kod = "M"; mezGun++;
+                    }
+                    else if (!isWorkingDay)
                     {
                         kod = isBayram ? "B" : "İ";
                     }
                     else
                     {
-                        bool hasMez  = mezuniyyetler.Any(m => m.IsciId == isci.Id &&
-                            gun.Date >= m.BaslamaTarixi.Date && gun.Date <= m.BitmeTarixi.Date);
                         bool hasXest = xestelikler.Any(x => x.IsciId == isci.Id &&
                             gun.Date >= x.BaslamaTarixi.Date && gun.Date <= x.BitmeTarixi.Date);
-                        bool hasEzam = ezamiyyetler.Any(e => e.IsciId == isci.Id &&
-                            gun.Date >= e.BaslamaTarixi.Date && gun.Date <= e.BitmeTarixi.Date);
 
-                        if      (hasMez)  { kod = "M"; mezGun++;  }
-                        else if (hasXest) { kod = "X"; xestGun++; }
-                        else if (hasEzam) { kod = "E"; ezamGun++; }
+                        if (hasXest)
+                        {
+                            kod = "X"; xestGun++;
+                        }
                         else
                         {
                             int saat = saatCedveli[d];
@@ -188,7 +184,7 @@ namespace FinNex.Application.Services.HR
                 satir.IsGunSayi     = isGunSayi;
                 satir.IsSaatSayi    = isSaatSayi;
                 satir.MezuniyyetGun = mezGun;
-                satir.EzamiyyetGun  = ezamGun;
+                satir.EzamiyyetGun  = 0;
                 satir.XestelikGun   = xestGun;
 
                 satirlar.Add(satir);

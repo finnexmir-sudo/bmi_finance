@@ -299,8 +299,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             ws.Cell(dr, 1).Value = tplSigLineVal;
             ws.Range(dr, 1, dr, 3).Merge();
             ws.Cell(dr, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            if (tplSigLineHasBorder)
-                ws.Range(dr, 1, dr, 3).Style.Border.BottomBorder = XLBorderStyleValues.Medium;
+            ws.Range(dr, 1, dr, 3).Style.Border.BottomBorder = XLBorderStyleValues.Medium;
             ws.Row(dr).Height = 20;
             dr++;
 
