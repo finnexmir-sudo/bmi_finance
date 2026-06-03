@@ -148,14 +148,10 @@ function hjQalanGoster(r) {
 function hjXercGoster(r) {
     // XerclenmeTarixi varsa istifadə et, yoxsa redim sorğusunun NeticeTarixi-ni
     const tarixRaw = r.xerclenmeTarixi || r.redimNetice || null;
-    const xercTarix = tarixRaw
-        ? new Date(tarixRaw).toLocaleDateString('az-AZ', { day:'2-digit', month:'2-digit', year:'numeric' })
-        : '';
+    const xercTarix = tarixRaw ? hjDate(tarixRaw) : '';
 
     if (r.icazeId) {
-        const icTarix = r.icazeTarixi
-            ? new Date(r.icazeTarixi).toLocaleDateString('az-AZ', { day:'2-digit', month:'2-digit', year:'numeric' })
-            : '';
+        const icTarix = r.icazeTarixi ? hjDate(r.icazeTarixi) : '';
         const saat = (r.icazeBaslamaSaati ?? '') + (r.icazeBitisSaati ? '–' + r.icazeBitisSaati : '');
         return `<span style="color:#6366f1;font-weight:600"><i class="bi bi-clock"></i> İcazə</span>`
              + `<br><span style="color:#374151">${icTarix} ${saat}</span>`
@@ -392,7 +388,9 @@ function hjRedimNov(nov) {
 function hjDate(val) {
     if (!val) return '—';
     const d = new Date(val);
-    return d.toLocaleDateString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${dd}.${mm}.${d.getFullYear()}`;
 }
 
 function hjToast(msg, type = 'info') {
