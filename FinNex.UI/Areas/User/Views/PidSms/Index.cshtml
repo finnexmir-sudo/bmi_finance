@@ -191,7 +191,22 @@
                         <tr style="border-top:1px solid #f1f5f9">
                             <td style="padding:10px 14px;color:#475569;white-space:nowrap">@l.YaradilmaTarixi.ToString("dd.MM.yy HH:mm")</td>
                             <td style="padding:10px 14px;color:#0f172a;font-family:monospace">@l.Telefon</td>
-                            <td style="padding:10px 14px;color:#334155;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@l.Metn">@l.Metn</td>
+                            <td style="padding:10px 14px;color:#334155;max-width:300px">
+                                @if (l.Metn.Length > 70)
+                                {
+                                    <span class="pid-metn-qisa">@(l.Metn.Substring(0, 70))…</span>
+                                    <span class="pid-metn-tam" style="display:none;white-space:pre-wrap;word-break:break-word">@l.Metn</span>
+                                    <br />
+                                    <button type="button" class="pid-metn-toggle" onclick="pidMetnToggle(this)"
+                                            style="background:none;border:none;color:#6366f1;cursor:pointer;font-size:11px;padding:2px 0;font-weight:600;text-decoration:underline">
+                                        ▼ tam mətni gör
+                                    </button>
+                                }
+                                else
+                                {
+                                    @l.Metn
+                                }
+                            </td>
                             <td style="padding:10px 14px;color:#64748b">@(l.Sablon?.Ad ?? "—")</td>
                             <td style="padding:10px 14px">
                                 <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;color:#fff;background:@StatusRengi(l.Status)">
@@ -212,6 +227,16 @@
 </div>
 
 <script>
+    function pidMetnToggle(btn) {
+        var td = btn.closest('td');
+        var qisa = td.querySelector('.pid-metn-qisa');
+        var tam  = td.querySelector('.pid-metn-tam');
+        var aciqdir = tam.style.display !== 'none';
+        qisa.style.display = aciqdir ? '' : 'none';
+        tam.style.display  = aciqdir ? 'none' : '';
+        btn.textContent    = aciqdir ? '▼ tam mətni gör' : '▲ yığ';
+    }
+
     document.getElementById('tekSmsForm').addEventListener('submit', function (e) {
         var tel = document.getElementById('tekTelefon').value.trim();
         var metn = document.getElementById('smsMetn').value.trim();
