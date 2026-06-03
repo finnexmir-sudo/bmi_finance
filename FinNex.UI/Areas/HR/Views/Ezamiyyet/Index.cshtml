@@ -1,0 +1,138 @@
+@using FinNex.Application.DTOs.HR.Ezamiyyet
+@using FinNex.Domain.Entities.HR
+@model IList<EzamiyyetMuracietListDto>
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Ezamiyyət İdarəetməsi";
+    var departamentler = ViewBag.Departamentler as IList<FinNex.Domain.Entities.HR.Departament>
+                         ?? new List<FinNex.Domain.Entities.HR.Departament>();
+    var mekanlar = ViewBag.Mekanlar as IList<EzamiyyetMekanListDto>
+                   ?? new List<EzamiyyetMekanListDto>();
+    var gozleyir = Model.Count(x => x.Status == EzamiyyetStatus.Gozleyir);
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Ezamiyyət İdarəetməsi</div>
+            <div class="fn-page-sub">Müraciətlər, təsdiq, izləmə</div>
+        </div>
+        <a asp-action="Statistika" class="fn-btn fn-btn--outline">
+            <i class="bi bi-bar-chart-line"></i> Statistika
+        </a>
+    </div>
+
+    @* ── KPI ── *@
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        <div class="fn-card" style="padding:14px;text-align:center;cursor:pointer" onclick="ezFilterStatus('')">
+            <div style="font-size:22px;font-weight:700;color:#6366f1" id="kpiCemi">@Model.Count</div>
+            <div style="font-size:12px;color:#64748b">Cəmi</div>
+        </div>
+        <div class="fn-card" style="padding:14px;text-align:center;cursor:pointer;border:2px solid transparent" id="kpiGozKart"
+             onclick="ezFilterStatus('1')">
+            <div style="font-size:22px;font-weight:700;color:#f59e0b" id="kpiGoz">@gozleyir</div>
+            <div style="font-size:12px;color:#64748b">Gözləyir</div>
+        </div>
+        <div class="fn-card" style="padding:14px;text-align:center;cursor:pointer" onclick="ezFilterStatus('2')">
+            <div style="font-size:22px;font-weight:700;color:#22c55e" id="kpiTesdiq">@Model.Count(x=>x.Status==EzamiyyetStatus.Tesdiqlendi)</div>
+            <div style="font-size:12px;color:#64748b">Təsdiqləndi</div>
+        </div>
+        <div class="fn-card" style="padding:14px;text-align:center;cursor:pointer" onclick="ezFilterStatus('3')">
+            <div style="font-size:22px;font-weight:700;color:#ef4444" id="kpiRedd">@Model.Count(x=>x.Status==EzamiyyetStatus.Reddedildi)</div>
+            <div style="font-size:12px;color:#64748b">Rədd edildi</div>
+        </div>
+    </div>
+
+    @* ── Filtrlər ── *@
+    <div class="fn-card" style="padding:14px;margin-bottom:14px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <div>
+                <label class="fn-label">Status</label>
+                <select id="ezStatus" class="fn-input" style="min-width:140px" onchange="ezYukle()">
+                    <option value="">Hamısı</option>
+                    <option value="1">Gözləyir</option>
+                    <option value="2">Təsdiqləndi</option>
+                    <option value="3">Rədd edildi</option>
+                </select>
+            </div>
+            <div>
+                <label class="fn-label">Departament</label>
+                <select id="ezDep" class="fn-input" style="min-width:180px" onchange="ezYukle()">
+                    <option value="">Hamısı</option>
+                    @foreach (var d in departamentler)
+                    {
+                        <option value="@d.Id">@d.Ad</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="fn-label">Məkan</label>
+                <select id="ezMekan" class="fn-input" style="min-width:160px" onchange="ezYukle()">
+                    <option value="">Hamısı</option>
+                    @foreach (var m in mekanlar)
+                    {
+                        <option value="@m.Id">@m.Ad</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="fn-label">Başlama</label>
+                <input type="date" id="ezBaslangic" class="fn-input" onchange="ezYukle()" />
+            </div>
+            <div>
+                <label class="fn-label">Bitiş</label>
+                <input type="date" id="ezSon" class="fn-input" onchange="ezYukle()" />
+            </div>
+            <button class="fn-btn fn-btn--ghost" onclick="ezSifirla()">
+                <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+        </div>
+    </div>
+
+    @* ── Cədvəl ── *@
+    <div class="fn-card" style="padding:0">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead style="background:#f8fafc">
+                <tr>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">İşçi</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Başlıq</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Məkan</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Tarix</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Saat</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Status</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Sənəd</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Əməliyyat</th>
+                </tr>
+            </thead>
+            <tbody id="ezTbody">
+                <tr><td colspan="8" style="padding:30px;text-align:center;color:#94a3b8">Yüklənir…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@* ── Təsdiq modulu ── *@
+<div id="ezOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000" onclick="ezCloseModal()"></div>
+<div id="ezModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1001;background:#fff;border-radius:12px;padding:24px;width:500px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+    <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:16px">
+        <i class="bi bi-briefcase"></i> Ezamiyyət Müraciəti
+    </div>
+    <div id="ezModalBody"></div>
+    <div style="margin-top:14px">
+        <label class="fn-label">Qeyd (rədd zamanı mütləq)</label>
+        <textarea id="ezQeyd" class="fn-input" rows="2" placeholder="Rədd etmə səbəbi…"></textarea>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+        <button class="fn-btn fn-btn--ghost" onclick="ezCloseModal()">Bağla</button>
+        <button class="fn-btn" style="background:#ef4444;color:#fff" onclick="ezTesdiq(false)">
+            <i class="bi bi-x-circle"></i> Rədd et
+        </button>
+        <button class="fn-btn fn-btn--primary" onclick="ezTesdiq(true)">
+            <i class="bi bi-check-circle"></i> Təsdiqlə
+        </button>
+    </div>
+</div>
+
+<script src="~/js/hr/hr-ezamiyyet.js" asp-append-version="true"></script>
+<script>document.addEventListener('DOMContentLoaded', ezYukle);</script>

@@ -185,6 +185,10 @@ namespace FinNex.UI
             // ==================================================
             builder.Services.AddHttpClient("Anthropic");
 
+            // ── Ezamiyyət modulu ──────────────────────────────────
+            builder.Services.AddScoped<FinNex.Application.Services.HR.IEzamiyyetService,
+                                        FinNex.Application.Services.HR.EzamiyyetService>();
+
             // ── Oracle (yalnız oxuma) ──────────────────────────
             builder.Services.AddScoped<FinNex.Application.Interfaces.Oracle.IOracleService,
                                         FinNex.Application.Services.Oracle.OracleService>();
