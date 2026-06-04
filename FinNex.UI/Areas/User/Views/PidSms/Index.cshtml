@@ -87,7 +87,7 @@
             <div style="font-size:14px;font-weight:700;color:#0f172a">
                 <i class="bi bi-people-fill me-1 text-primary"></i> Toplu SMS
             </div>
-            <div style="display:flex;gap:8px;align-items:center">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
                 <button type="button" class="fn-btn fn-btn--outline" id="btnBorcalanlarGetir" onclick="borcalanlarGetir()">
                     <i class="bi bi-cloud-download"></i> Borcalanları Gətir
                 </button>
@@ -95,6 +95,13 @@
                     <i class="bi bi-file-earmark-excel"></i> Excel Yüklə
                 </button>
                 <input type="file" id="excelInput" accept=".xlsx" style="display:none" />
+                <span style="width:1px;height:24px;background:#e2e8f0;display:inline-block;align-self:center"></span>
+                <input type="date" id="odenisGunuTarix" class="fn-input"
+                       value="@DateTime.Today.ToString("yyyy-MM-dd")"
+                       style="width:150px;padding:6px 10px;font-size:13px" />
+                <button type="button" class="fn-btn fn-btn--outline" id="btnOdenisGunuGetir" onclick="odenisGunuGetir()">
+                    <i class="bi bi-calendar2-check"></i> Ödəniş günü olanlar
+                </button>
             </div>
         </div>
 
@@ -269,6 +276,27 @@
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-cloud-download"></i> Borcalanları Gətir';
+        }
+    }
+
+    async function odenisGunuGetir() {
+        var tarix = document.getElementById('odenisGunuTarix').value;
+        if (!tarix) { alert('Tarix seçin.'); return; }
+        var btn = document.getElementById('btnOdenisGunuGetir');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Yüklənir...';
+        gizleXeta(); gizleUgur();
+        try {
+            var url = '@Url.Action("OdenisGunuGetir", "PidSms", new { area = "User" })' + '?tarix=' + encodeURIComponent(tarix);
+            var resp = await fetch(url);
+            var json = await resp.json();
+            if (json.error) { gosterXeta(json.error); return; }
+            cedveldoldir(json.data, json.sorguAdi);
+        } catch (e) {
+            gosterXeta('Şəbəkə xətası: ' + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-calendar2-check"></i> Ödəniş günü olanlar';
         }
     }
 

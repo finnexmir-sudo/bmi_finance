@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using ClosedXML.Excel;
 using FinNex.Application.Interfaces;
@@ -75,6 +76,50 @@ public class PidSmsController : Controller
             TempData["Success"] = $"SMS göndərildi → {log.Telefon}";
 
         return RedirectToAction("Index");
+    }
+
+    // ── Ödəniş günü olanlar ───────────────────────────────
+
+    [HttpGet]
+    public async Task<IActionResult> OdenisGunuGetir(string tarix)
+    {
+        if (!DateTime.TryParseExact(tarix, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out var secilenTarix))
+            return Json(new { error = "Tarix formatı yanlışdır." });
+
+        var ayar = await _sistemAyar.GetirAsync();
+        if (ayar?.PidOdenisGunuSorguId is null)
+            return Json(new { error = "Sistem ayarlarında 'Ödəniş günü' Oracle sorğusu seçilməyib." });
+
+        var sorquResult = await _sorguService.IdIleGetirAsync(ayar.PidOdenisGunuSorguId.Value);
+        if (!sorquResult.Success || sorquResult.Data is null)
+            return Json(new { error = "Oracle sorğusu tapılmadı." });
+
+        if (!sorquResult.Data.Aktiv)
+            return Json(new { error = "Oracle sorğusu deaktividir." });
+
+        // &tarix → 'dd-MM-yyyy' formatında dəyişdir (SQL injection riski yoxdur — yalnız rəqəm və tire)
+        var tarixOracle = secilenTarix.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture);
+        var sql = sorquResult.Data.SorguMetni.Replace("&tarix", tarixOracle);
+
+        try
+        {
+            var rows = await _oracle.SelectAsync(sql);
+            var result = rows.Select(r => new
+            {
+                ad      = GetStr(r, "AD"),
+                telefon = GetStr(r, "MOB") is { Length: > 0 } m ? m
+                        : GetStr(r, "MOBILNIY") is { Length: > 0 } mn ? mn
+                        : GetStr(r, "TELEFON")  is { Length: > 0 } t  ? t
+                        : GetStr(r, "TEL")
+            }).Where(x => !string.IsNullOrWhiteSpace(x.telefon)).ToList();
+
+            return Json(new { data = result, sorguAdi = $"Ödəniş günü — {secilenTarix:dd.MM.yyyy}" });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { error = $"Oracle xətası: {ex.Message}" });
+        }
     }
 
     // ── Şablonlar ─────────────────────────────────────────

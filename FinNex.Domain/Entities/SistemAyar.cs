@@ -11,5 +11,6 @@ public class SistemAyar
     public string KreditImapPassword { get; set; } = "";
 
     // PİD toplu SMS
-    public int? PidTopluSmsOracleSorguId { get; set; }
+    public int? PidTopluSmsOracleSorguId  { get; set; }
+    public int? PidOdenisGunuSorguId      { get; set; }
 }
