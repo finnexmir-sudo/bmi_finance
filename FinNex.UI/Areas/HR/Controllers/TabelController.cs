@@ -40,10 +40,14 @@ namespace FinNex.UI.Areas.HR.Controllers
             // ── Şablonu aç ────────────────────────────────────────────────────
             var templatePath = Path.Combine(_env.ContentRootPath, "App_Data", "Templates", "Tabel_isci.xlsx");
 
-            string tplMudirAd    = "";
-            string tplSigNameVal = "müdir müavini ___________________________";
-            string tplSigImzaVal = "İmza";
-            string tplLegendVal  = "İşarələr: istirahət günü (İ), bayram günü (B), ezamiyyə günü (E), xəstəlik günü (X), məzuniyyət günü (M), işə gəlmədiyi günlər (G)";
+            string tplTesdiqTitle = "TƏSDİQ EDİRƏM:";
+            string tplTesdiqLine2 = " ___________________________";
+            string tplMudirAd     = "";
+            string tplSigLineVal  = "___________________________";
+            string tplImzaLineVal = "___________________";
+            string tplSigNameVal  = "müdir müavini ___________________________";
+            string tplSigImzaVal  = "İmza";
+            string tplLegendVal   = "İşarələr: istirahət günü (İ), bayram günü (B), ezamiyyə günü (E), xəstəlik günü (X), məzuniyyət günü (M), işə gəlmədiyi günlər (G)";
 
             XLWorkbook wb;
             if (System.IO.File.Exists(templatePath))
@@ -66,21 +70,37 @@ namespace FinNex.UI.Areas.HR.Controllers
                 ws.Name = "Tabel";
 
                 // ── Şablon dəyərlərini oxu (məhv etmədən ƏVVƏL) ────────────
-                // Müdir adı: rows 2-3, cols 20-55 arasında ilk məzmunlu xana
-                for (int r = 2; r <= 3 && string.IsNullOrEmpty(tplMudirAd); r++)
-                    for (int c = 20; c <= 55; c++)
-                    {
-                        var v = ws.Cell(r, c).Value.ToString().Trim();
-                        if (!string.IsNullOrWhiteSpace(v) && !v.StartsWith("(")) { tplMudirAd = v; break; }
-                    }
+                // TƏSDİQ sütununu tap (row 1, cols 20-55)
+                int tplTesdiqCol = 0;
+                for (int c = 20; c <= 55; c++)
+                {
+                    var v = ws.Cell(1, c).Value.ToString().Trim();
+                    if (!string.IsNullOrWhiteSpace(v)) { tplTesdiqCol = c; tplTesdiqTitle = v; break; }
+                }
+                if (tplTesdiqCol > 0)
+                {
+                    // Row 2: imza boşluğu (alt xətt)
+                    var v2 = ws.Cell(2, tplTesdiqCol).Value.ToString();
+                    if (!string.IsNullOrWhiteSpace(v2)) tplTesdiqLine2 = v2;
+                    // Row 3: müdir adı
+                    var v3 = ws.Cell(3, tplTesdiqCol).Value.ToString().Trim();
+                    if (!string.IsNullOrWhiteSpace(v3) && !v3.StartsWith("("))
+                        tplMudirAd = v3;
+                }
 
-                // İmza: row 8
+                // İmza xətti: B7, E7
+                var r7b = ws.Cell(7, 2).Value.ToString();
+                if (!string.IsNullOrWhiteSpace(r7b)) tplSigLineVal = r7b;
+                var r7e = ws.Cell(7, 5).Value.ToString();
+                if (!string.IsNullOrWhiteSpace(r7e)) tplImzaLineVal = r7e;
+
+                // İmza adı: B8, E8
                 var r8b = ws.Cell(8, 2).Value.ToString().Trim();
                 if (!string.IsNullOrWhiteSpace(r8b)) tplSigNameVal = r8b;
                 var r8e = ws.Cell(8, 5).Value.ToString().Trim();
                 if (!string.IsNullOrWhiteSpace(r8e)) tplSigImzaVal = r8e;
 
-                // Legend: row 12
+                // Legend: B12
                 var r12 = ws.Cell(12, 2).Value.ToString().Trim();
                 if (!string.IsNullOrWhiteSpace(r12)) tplLegendVal = r12;
 
@@ -147,8 +167,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             ws.Cell(3, cStart).Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
             ws.Row(3).Height = 16;
 
-            // ── Rows 1-3 SAĞ: TƏSDİQ bölməsi ────────────────────────────────
-            ws.Cell(1, sumStart).Value = "TƏSDİQ EDİRƏM:";
+            // ── Rows 1-3 SAĞ: TƏSDİQ bölməsi (şablondan oxunan dəyərlərlə) ──
+            ws.Cell(1, sumStart).Value = tplTesdiqTitle;
             ws.Range(1, sumStart, 1, totalCols).Merge();
             ws.Cell(1, sumStart).Style.Font.Bold     = true;
             ws.Cell(1, sumStart).Style.Font.FontSize = 11;
@@ -156,21 +176,19 @@ namespace FinNex.UI.Areas.HR.Controllers
             ws.Cell(1, sumStart).Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
             ws.Row(1).Height = 20;
 
-            // Row 2 sağ: müdir adı (şablondan oxundu)
-            ws.Cell(2, sumStart).Value = string.IsNullOrWhiteSpace(tplMudirAd)
-                                            ? "müdir ___________________________"
-                                            : tplMudirAd;
+            // Row 2 sağ: imza boşluğu (şablondan oxundu — alt xətt)
+            ws.Cell(2, sumStart).Value = tplTesdiqLine2;
             ws.Range(2, sumStart, 2, totalCols).Merge();
             ws.Cell(2, sumStart).Style.Font.FontSize        = 10;
             ws.Cell(2, sumStart).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             ws.Cell(2, sumStart).Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
-            ws.Cell(2, sumStart).Style.Border.BottomBorder  = XLBorderStyleValues.Thin;
 
-            // Row 3 sağ: (vəzifəsi...)
-            ws.Cell(3, sumStart).Value = "(vəzifəsi, soyadı, adı, atasının adı)";
+            // Row 3 sağ: müdir adı (şablondan oxundu)
+            ws.Cell(3, sumStart).Value = string.IsNullOrWhiteSpace(tplMudirAd)
+                                            ? "müdir ___________________________"
+                                            : tplMudirAd;
             ws.Range(3, sumStart, 3, totalCols).Merge();
-            ws.Cell(3, sumStart).Style.Font.Italic          = true;
-            ws.Cell(3, sumStart).Style.Font.FontSize        = 8;
+            ws.Cell(3, sumStart).Style.Font.FontSize        = 9;
             ws.Cell(3, sumStart).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             ws.Cell(3, sumStart).Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
 
@@ -275,8 +293,13 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             // ── İmza ──────────────────────────────────────────────────────────
             dr += 2;
-            ws.Range(dr, 2, dr, 10).Style.Border.BottomBorder = XLBorderStyleValues.Medium;
-            ws.Row(dr).Height = 20;
+            ws.Cell(dr, 2).Value = tplSigLineVal;
+            ws.Range(dr, 2, dr, 10).Merge();
+            ws.Cell(dr, 2).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Cell(dr, 12).Value = tplImzaLineVal;
+            ws.Range(dr, 12, dr, 18).Merge();
+            ws.Cell(dr, 12).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Row(dr).Height = 18;
             dr++;
 
             ws.Cell(dr, 2).Value = tplSigNameVal;
