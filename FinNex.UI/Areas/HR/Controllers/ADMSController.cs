@@ -155,6 +155,14 @@ public class ADMSController : Controller
                              x.IcazeTarixi.Date == tarix)
                 .FirstOrDefaultAsync();
 
+            // Bu gün üçün təsdiqlənmiş Ezamiyyət varmı?
+            var bugunEzamiyyet = await _db.EzamiyyetMuracietler
+                .Where(x => x.IsciId == isciId && !x.Silinib &&
+                             x.Status == EzamiyyetStatus.Tesdiqlendi &&
+                             x.BaslamaTarixi.Date <= tarix &&
+                             x.BitmeTarixi.Date   >= tarix)
+                .FirstOrDefaultAsync();
+
             // Həmin işçi+tarix üçün mövcud davamiyyət qeydini tap
             var movcud = await _db.Davamiyyetler
                 .FirstOrDefaultAsync(x => x.IsciId == isciId && x.Tarix == tarix);
@@ -175,7 +183,7 @@ public class ADMSController : Controller
                     Tarix = tarix,
                     GirisVaxti = vaxt,
                     CixisVaxti = null,
-                    Status = HesablaStatus(vaxt, bugunIcaze, standartGiris, gecikTolerans)
+                    Status = HesablaStatus(vaxt, bugunIcaze, bugunEzamiyyet, standartGiris, gecikTolerans)
                 };
                 await _db.Davamiyyetler.AddAsync(yeni);
                 await _db.SaveChangesAsync();
@@ -187,7 +195,7 @@ public class ADMSController : Controller
                 {
                     // Giriş yazılmayıb və ya bu oxuma əvvəlkindən ERKƏNdir → girişi yenilə
                     movcud.GirisVaxti = vaxt;
-                    movcud.Status = HesablaStatus(vaxt, bugunIcaze, standartGiris, gecikTolerans);
+                    movcud.Status = HesablaStatus(vaxt, bugunIcaze, bugunEzamiyyet, standartGiris, gecikTolerans);
                     await _db.SaveChangesAsync();
                     davamiyyetId = movcud.Id;
                 }
@@ -217,7 +225,11 @@ public class ADMSController : Controller
                             ? bugunElan.BitisVaxti
                             : standartCixis - tezCixmaTolerans;
 
-                        if (vaxt.TimeOfDay < tezCixmaHeddi)
+                        // Ezamiyyət çıxışı? (BaslamaSaatı ±30 dəq. fərqlə)
+                        bool ezamiyyetCixisi = bugunEzamiyyet?.BaslamaSaati != null &&
+                            Math.Abs((vaxt.TimeOfDay - bugunEzamiyyet.BaslamaSaati.Value).TotalMinutes) <= 30;
+
+                        if (vaxt.TimeOfDay < tezCixmaHeddi && !ezamiyyetCixisi)
                         {
                             var qalan = (int)(tezCixmaHeddi - vaxt.TimeOfDay).TotalMinutes;
                             var heddStr = $"{(int)tezCixmaHeddi.TotalHours:D2}:{tezCixmaHeddi.Minutes:D2}";
@@ -322,18 +334,26 @@ public class ADMSController : Controller
     private static DavamiyyetStatus HesablaStatus(
         DateTime girisVaxti,
         Icaze? bugunIcaze,
+        EzamiyyetMuraciet? bugunEzamiyyet,
         TimeSpan standartGiris,
         TimeSpan gecikTolerans)
     {
         var girisZaman = girisVaxti.TimeOfDay;
 
         // Aktiv icazə varmı və giriş icazə dövrünə düşürmü?
-        // Şərt: giriş vaxtı [icazə.BaslamaSaati, icazə.BitisSaati + tolerans] aralığında
         if (bugunIcaze != null &&
             girisZaman >= bugunIcaze.BaslamaSaati &&
             girisZaman <= bugunIcaze.BitisSaati + gecikTolerans)
         {
             return DavamiyyetStatus.Icazeli;
+        }
+
+        // Səhər ezamiyyəti: giriş ezamiyyətin bitmə saatı + tolerans aralığındadırsa gecikməyib
+        // Məs: ezamiyyət 09:00-11:00 → işçi 10:45-də gəlirsə gecikməyib
+        if (bugunEzamiyyet?.BitisSaati != null &&
+            girisZaman <= bugunEzamiyyet.BitisSaati.Value + gecikTolerans)
+        {
+            return DavamiyyetStatus.Isde;
         }
 
         // Normal gecikme yoxlaması

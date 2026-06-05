@@ -66,6 +66,8 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<BayramGunu> BayramGunleri { get; set; }
     public DbSet<Icaze> Icazeler { get; set; }
     public DbSet<IcazeCixisGiris> IcazeCixisGirisler { get; set; }
+    public DbSet<EzamiyyetMekan> EzamiyyetMekanlar { get; set; }
+    public DbSet<EzamiyyetMuraciet> EzamiyyetMuracietler { get; set; }
 
     public DbSet<IsciTeyinat> IsciTeyinatlari { get; set; }
     public DbSet<MuqavileYenileme> MuqavileYenilemeleri { get; set; }
@@ -1202,6 +1204,12 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasForeignKey(x => x.RedimTelebiId)
             .OnDelete(DeleteBehavior.NoAction);
 
+        builder.Entity<IsciJetonu>()
+            .HasOne(x => x.Icaze)
+            .WithMany()
+            .HasForeignKey(x => x.IcazeId)
+            .OnDelete(DeleteBehavior.NoAction);
+
         builder.Entity<JetonRedimTelebi>()
             .Property(x => x.CemiSaat).HasPrecision(8, 2);
 
@@ -1406,6 +1414,28 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             e.Property(x => x.Kateqoriya).HasMaxLength(100);
             e.Property(x => x.Mezmun).HasColumnType("nvarchar(max)");
             e.HasOne(x => x.YazilanKim).WithMany().HasForeignKey(x => x.YazilanKimId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ── Ezamiyyət modulu ─────────────────────────────────
+        builder.Entity<EzamiyyetMekan>(e =>
+        {
+            e.ToTable("EzamiyyetMekanlar");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Ad).HasMaxLength(200).IsRequired();
+        });
+
+        builder.Entity<EzamiyyetMuraciet>(e =>
+        {
+            e.ToTable("EzamiyyetMuracietler");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Baslig).HasMaxLength(300).IsRequired();
+            e.Property(x => x.SenedYolu).HasMaxLength(500);
+            e.Property(x => x.SenedAd).HasMaxLength(300);
+            e.Property(x => x.Qeyd).HasMaxLength(1000);
+            e.Property(x => x.RehberQeydi).HasMaxLength(500);
+            e.HasOne(x => x.Isci).WithMany().HasForeignKey(x => x.IsciId).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(x => x.Mekan).WithMany(m => m.Muracietler).HasForeignKey(x => x.MekanId).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(x => x.Rehber).WithMany().HasForeignKey(x => x.RehberId).OnDelete(DeleteBehavior.NoAction);
         });
 
     }

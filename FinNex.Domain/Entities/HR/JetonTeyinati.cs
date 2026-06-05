@@ -6,9 +6,11 @@ namespace FinNex.Domain.Entities.HR
         public JetonNovu Nov { get; set; }
         public JetonRengi Rengi { get; set; }
         public decimal SaatDeyeri { get; set; }
+        public JetonVahid Vahid { get; set; } = JetonVahid.Saat;
         public string Ikon { get; set; } = null!;
         public string RengKodu { get; set; } = null!;
         public string? Tesvir { get; set; }
+        public bool BirbasaOdenishli { get; set; } = false;
         public bool Aktivdir { get; set; } = true;
 
         public ICollection<IsciJetonu> IsciJetonlari { get; set; } = new List<IsciJetonu>();

@@ -192,9 +192,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 })
                 .ToList();
 
-            vm.BuHefteBitenMezuniyyet = mezler.Count(x =>
-                x.Status == MezuniyyetStatus.Tesdiqlenib &&
-                x.BitmeTarixi.Date > bugun &&
+            // Hal-hazırda məzuniyyətdə olanlar içindən bu həftə qayıdacaqlar
+            vm.BuHefteBitenMezuniyyet = hazirdaMez.Count(x =>
                 x.BitmeTarixi.Date <= bugun.AddDays(7));
 
             // Rəhbər təsdiqi gözləyən məzuniyyətlər

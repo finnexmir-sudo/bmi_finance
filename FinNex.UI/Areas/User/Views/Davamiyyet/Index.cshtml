@@ -27,9 +27,12 @@
     int cixisH = int.Parse(cixisParts[0]), cixisM = int.Parse(cixisParts[1]);
     int earlyThreshMin = cixisH * 60 + cixisM - tezCixmaTolerans;
 
-    var tezCixanSayi = list.Count(x => x.CixisVaxti.HasValue &&
+    // Erkən çıxış və çıxış yoxdur — yalnız 01.06.2026-dan sayılır (sistemin canlı başlama tarixi)
+    var intizamBaslangic = new DateTime(2026, 6, 1);
+    var intizamList = list.Where(x => x.Tarix.Date >= intizamBaslangic).ToList();
+    var tezCixanSayi = intizamList.Count(x => x.CixisVaxti.HasValue &&
         (x.CixisVaxti.Value.Hour * 60 + x.CixisVaxti.Value.Minute) < earlyThreshMin);
-    var cixisYoxSayi = list.Count(x => x.GirisVaxti.HasValue && !x.CixisVaxti.HasValue);
+    var cixisYoxSayi = intizamList.Count(x => x.GirisVaxti.HasValue && !x.CixisVaxti.HasValue);
 }
 
 <div class="ud-page">

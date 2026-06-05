@@ -14,7 +14,17 @@ namespace FinNex.Domain.Entities.HR
 
         public IsciJetonuStatus Status { get; set; } = IsciJetonuStatus.Aktiv;
 
+        // null = tam dəyər qalıb; dəyər varsa o qədər saat istifadə olunmayıb
+        public decimal? QalanSaat { get; set; }
+
         public int? RedimTelebiId { get; set; }
         public JetonRedimTelebi? RedimTelebi { get; set; }
+
+        // İcazə-based FIFO xərclənməsinin izlənməsi
+        public int? IcazeId { get; set; }
+        public Icaze? Icaze { get; set; }
+
+        // Xərclənmə tarixi (FIFO və ya redim anı)
+        public DateTime? XerclenmeTarixi { get; set; }
     }
 }

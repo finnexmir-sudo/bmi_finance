@@ -87,20 +87,23 @@ async function hjLoadEmeliyyatlar() {
     const isciId = document.getElementById('hjIsciFilter').value;
     const url = isciId ? `/HR/Jeton/GetEmeliyyatlar?isciId=${isciId}` : '/HR/Jeton/GetEmeliyyatlar';
     const tbody = document.getElementById('hjEmeliyyatlarBody');
-    tbody.innerHTML = '<tr><td colspan="6" class="hj-empty">Yüklənir…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="hj-empty">Yüklənir…</td></tr>';
 
     try {
         const res = await fetch(url);
         const json = await res.json();
         if (!json.success || !json.data.length) {
-            tbody.innerHTML = '<tr><td colspan="6" class="hj-empty">Əməliyyat yoxdur.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="hj-empty">Əməliyyat yoxdur.</td></tr>';
             return;
         }
         tbody.innerHTML = json.data.map(r => `
             <tr>
                 <td>${r.isciTamAd ?? '—'}</td>
                 <td>${hjBadge(r)}</td>
-                <td>${hjDate(r.qazanmaTarixi)}</td>
+                <td style="white-space:nowrap">${hjDeyerGoster(r, true)}</td>
+                <td style="white-space:nowrap">${hjQalanGoster(r)}</td>
+                <td style="white-space:nowrap;font-size:12px">${hjXercGoster(r)}</td>
+                <td style="white-space:nowrap">${hjDate(r.qazanmaTarixi)}</td>
                 <td class="hj-td-sebeb">${r.sebeb ?? '—'}</td>
                 <td>${hjStatusBadge(r.status)}</td>
                 <td>
@@ -112,8 +115,59 @@ async function hjLoadEmeliyyatlar() {
                 </td>
             </tr>`).join('');
     } catch {
-        tbody.innerHTML = '<tr><td colspan="6" class="hj-empty">Xəta baş verdi.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="hj-empty">Xəta baş verdi.</td></tr>';
     }
+}
+
+// Jeton tam dəyərini göstərir (vahidə görə saat/gün)
+function hjDeyerGoster(r, tam = false) {
+    const saat = r.jetonSaatDeyeri ?? 0;
+    if (saat <= 0) return '<span style="color:#6b7280">Cəza</span>';
+    if (r.jetonVahid === 2)
+        return `<strong>${(saat / 8).toFixed(2).replace(/\.?0+$/, '')} gün</strong> <span style="color:#9ca3af;font-size:11px">(${saat} saat)</span>`;
+    return `<strong>${saat.toString().replace(/\.?0+$/, '')} saat</strong>`;
+}
+
+// Qalan dəyəri göstərir
+function hjQalanGoster(r) {
+    // Aktiv deyilsə qalan göstərməyə ehtiyac yoxdur
+    if (r.status !== 1) return '<span style="color:#9ca3af">—</span>';
+    const tam = r.jetonSaatDeyeri ?? 0;
+    // qalanSaat null deməkdir tam qalıb
+    const qalan = r.qalanSaat != null ? r.qalanSaat : tam;
+    const renk = qalan < tam ? '#f59e0b' : '#22c55e';
+    if (r.jetonVahid === 2) {
+        const gun = (qalan / 8).toFixed(2).replace(/\.?0+$/, '');
+        return `<span style="color:${renk};font-weight:600">${gun} gün</span>`
+             + (qalan < tam ? ` <span style="color:#9ca3af;font-size:11px">(${qalan} saat)</span>` : '');
+    }
+    return `<span style="color:${renk};font-weight:600">${qalan} saat</span>`;
+}
+
+// Xərclənmə mənbəyini və tarixini göstərir
+function hjXercGoster(r) {
+    // XerclenmeTarixi varsa istifadə et, yoxsa redim sorğusunun NeticeTarixi-ni
+    const tarixRaw = r.xerclenmeTarixi || r.redimNetice || null;
+    const xercTarix = tarixRaw ? hjDate(tarixRaw) : '';
+
+    if (r.icazeId) {
+        const icTarix = r.icazeTarixi ? hjDate(r.icazeTarixi) : '';
+        const saat = (r.icazeBaslamaSaati ?? '') + (r.icazeBitisSaati ? '–' + r.icazeBitisSaati : '');
+        return `<span style="color:#6366f1;font-weight:600"><i class="bi bi-clock"></i> İcazə</span>`
+             + `<br><span style="color:#374151">${icTarix} ${saat}</span>`
+             + (xercTarix ? `<br><span style="color:#9ca3af;font-size:11px">xərcləndi: ${xercTarix}</span>` : '');
+    }
+    if (r.redimTelebiId) {
+        return `<span style="color:#0891b2;font-weight:600"><i class="bi bi-person-check"></i> İşçi sorğusu</span>`
+             + (xercTarix ? `<br><span style="color:#9ca3af;font-size:11px">xərcləndi: ${xercTarix}</span>` : '');
+    }
+    // İzləmə olmadan qismən xərclənmiş aktiv jeton
+    if (r.status === 1 && r.qalanSaat !== null && r.qalanSaat < r.jetonSaatDeyeri) {
+        const xerclenen = (r.jetonSaatDeyeri - r.qalanSaat).toFixed(2).replace(/\.?0+$/, '');
+        return `<span style="color:#f59e0b;font-weight:600"><i class="bi bi-scissors"></i> Qismən (${xerclenen} saat)</span>`
+             + `<br><span style="color:#9ca3af;font-size:11px">tarix məlum deyil</span>`;
+    }
+    return '<span style="color:#9ca3af">—</span>';
 }
 
 // ── Redim sorğuları ───────────────────────────────────────
@@ -334,7 +388,9 @@ function hjRedimNov(nov) {
 function hjDate(val) {
     if (!val) return '—';
     const d = new Date(val);
-    return d.toLocaleDateString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${dd}.${mm}.${d.getFullYear()}`;
 }
 
 function hjToast(msg, type = 'info') {

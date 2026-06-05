@@ -69,5 +69,10 @@ namespace FinNex.Domain.Entities.Communication
 
         // Erkən çıxış
         TezCixma = 44,
+
+        // Ezamiyyət iş axını
+        EzamiyyetMuraciet = 45,
+        EzamiyyetTesdiq   = 46,
+        EzamiyyetImtina   = 47,
     }
 }
