@@ -1,0 +1,152 @@
+@using FinNex.Application.DTOs.HR.Ezamiyyet
+@using FinNex.Domain.Entities.HR
+@model IList<EzamiyyetMuracietListDto>
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Ezamiyyət Müraciətlərim";
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Ezamiyyət</div>
+            <div class="fn-page-sub">Ezamiyyət müraciətləriniz</div>
+        </div>
+        <a asp-action="Create" class="fn-btn fn-btn--primary">
+            <i class="bi bi-plus-lg"></i> Yeni Müraciət
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="fn-alert fn-alert--danger">@TempData["Error"]</div>
+    }
+
+    @* ── KPI sətri ── *@
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        @{
+            var gozleyir    = Model.Count(x => x.Status == EzamiyyetStatus.Gozleyir);
+            var tesdiq      = Model.Count(x => x.Status == EzamiyyetStatus.Tesdiqlendi);
+            var redd        = Model.Count(x => x.Status == EzamiyyetStatus.Reddedildi);
+            var cemiGun     = Model.Where(x => x.Status == EzamiyyetStatus.Tesdiqlendi).Sum(x => x.GunSayi);
+        }
+        <div class="fn-card" style="padding:14px;text-align:center">
+            <div style="font-size:22px;font-weight:700;color:#6366f1">@Model.Count</div>
+            <div style="font-size:12px;color:#64748b">Cəmi müraciət</div>
+        </div>
+        <div class="fn-card" style="padding:14px;text-align:center">
+            <div style="font-size:22px;font-weight:700;color:#22c55e">@tesdiq</div>
+            <div style="font-size:12px;color:#64748b">Təsdiqləndi</div>
+        </div>
+        <div class="fn-card" style="padding:14px;text-align:center">
+            <div style="font-size:22px;font-weight:700;color:#f59e0b">@gozleyir</div>
+            <div style="font-size:12px;color:#64748b">Gözləyir</div>
+        </div>
+        <div class="fn-card" style="padding:14px;text-align:center">
+            <div style="font-size:22px;font-weight:700;color:#0ea5e9">@cemiGun</div>
+            <div style="font-size:12px;color:#64748b">Cəmi gün</div>
+        </div>
+    </div>
+
+    @* ── Müraciət siyahısı ── *@
+    <div class="fn-card" style="padding:0">
+        @if (!Model.Any())
+        {
+            <div style="padding:40px;text-align:center;color:#64748b">
+                <i class="bi bi-briefcase" style="font-size:32px;opacity:.3"></i>
+                <p style="margin-top:8px">Hələ müraciətiniz yoxdur.</p>
+            </div>
+        }
+        else
+        {
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead style="background:#f8fafc">
+                    <tr>
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Başlıq</th>
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Məkan</th>
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Tarix</th>
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Saat</th>
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Status</th>
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Sənəd</th>
+                        <th style="padding:10px 14px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr style="border-top:1px solid #f1f5f9">
+                            <td style="padding:10px 14px;color:#0f172a;font-weight:500">@item.Baslig</td>
+                            <td style="padding:10px 14px;color:#374151">
+                                <i class="bi bi-geo-alt text-muted"></i> @item.MekanAd
+                            </td>
+                            <td style="padding:10px 14px;color:#475569;white-space:nowrap">
+                                @item.BaslamaTarixi.ToString("dd.MM.yyyy")
+                                @if (item.BaslamaTarixi.Date != item.BitmeTarixi.Date)
+                                {
+                                    <span style="color:#94a3b8"> – @item.BitmeTarixi.ToString("dd.MM.yyyy")</span>
+                                }
+                                <br /><span style="font-size:11px;color:#94a3b8">@item.GunSayi gün</span>
+                            </td>
+                            <td style="padding:10px 14px;color:#475569;font-size:12px">
+                                @if (item.BaslamaSaati.HasValue)
+                                {
+                                    @($"{item.BaslamaSaati:hh\\:mm} – {item.BitisSaati:hh\\:mm}")
+                                }
+                                else
+                                {
+                                    <span style="color:#94a3b8">Tam gün</span>
+                                }
+                            </td>
+                            <td style="padding:10px 14px">
+                                @{
+                                    var (bg, txt, lbl) = item.Status switch
+                                    {
+                                        EzamiyyetStatus.Gozleyir    => ("#fef3c7","#b45309","Gözləyir"),
+                                        EzamiyyetStatus.Tesdiqlendi => ("#dcfce7","#15803d","Təsdiqləndi"),
+                                        EzamiyyetStatus.Reddedildi  => ("#fee2e2","#dc2626","Rədd edildi"),
+                                        _                            => ("#f1f5f9","#64748b","Ləğv edildi")
+                                    };
+                                }
+                                <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;background:@bg;color:@txt">@lbl</span>
+                                @if (item.RehberQeydi != null && item.Status == EzamiyyetStatus.Reddedildi)
+                                {
+                                    <div style="font-size:11px;color:#dc2626;margin-top:2px">@item.RehberQeydi</div>
+                                }
+                            </td>
+                            <td style="padding:10px 14px">
+                                @if (!string.IsNullOrEmpty(item.SenedYolu))
+                                {
+                                    <a href="/dms/@item.SenedYolu" download="@(item.SenedAd ?? "sened")" style="color:#6366f1;font-size:12px">
+                                        <i class="bi bi-paperclip"></i> @(item.SenedAd ?? "Sənəd")
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span style="color:#94a3b8;font-size:12px">—</span>
+                                }
+                            </td>
+                            <td style="padding:10px 14px;text-align:right">
+                                @if (item.Status == EzamiyyetStatus.Gozleyir)
+                                {
+                                    <form method="post" asp-action="Legvet" asp-route-id="@item.Id"
+                                          onsubmit="return confirm('Müraciəti ləğv etmək istəyirsiniz?')">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="fn-btn fn-btn--ghost fn-btn--sm" style="color:#dc2626">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+</div>

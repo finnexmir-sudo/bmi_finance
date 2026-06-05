@@ -1,0 +1,151 @@
+@using FinNex.Application.DTOs.HR.Ezamiyyet
+@model EzamiyyetMuracietCreateDto
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Yeni Ezamiyyət Müraciəti";
+    var mekanlar = ViewBag.Mekanlar as IList<EzamiyyetMekanListDto> ?? new List<EzamiyyetMekanListDto>();
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Yeni Ezamiyyət Müraciəti</div>
+            <div class="fn-page-sub">Ezamiyyət məlumatlarını doldurun, rəhbəriniz təsdiq edəcək</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--ghost">
+            <i class="bi bi-arrow-left"></i> Geri
+        </a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="fn-alert fn-alert--danger">@TempData["Error"]</div>
+    }
+
+    <div class="fn-card" style="padding:24px;max-width:720px">
+        <form asp-action="Create" method="post" enctype="multipart/form-data" novalidate>
+            @Html.AntiForgeryToken()
+
+            <div class="fn-form-group">
+                <label class="fn-label">Başlıq *</label>
+                <input type="text" name="Baslig" class="fn-input" placeholder="məs. Bakı — Şəki iş görüşməsi" required />
+            </div>
+
+            <div class="fn-form-group" style="margin-top:14px">
+                <label class="fn-label">Məkan *</label>
+                <div style="display:flex;gap:8px">
+                    <select name="MekanId" id="mekanSelect" class="fn-input" style="flex:1">
+                        <option value="">— seçin —</option>
+                        @foreach (var m in mekanlar)
+                        {
+                            <option value="@m.Id">@m.Ad</option>
+                        }
+                    </select>
+                    <button type="button" class="fn-btn fn-btn--outline" onclick="yeniMekanGoster()"
+                            title="Yeni məkan əlavə et">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+                <div id="yeniMekanDiv" style="display:none;margin-top:8px">
+                    <input type="text" name="YeniMekanAd" id="yeniMekanInp" class="fn-input"
+                           placeholder="Yeni məkan adı..." />
+                    <div style="font-size:11px;color:#64748b;margin-top:3px">
+                        Siyahıda yoxdursa yeni məkan adı yazın — sistem avtomatik əlavə edəcək
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+                <div class="fn-form-group">
+                    <label class="fn-label">Başlama tarixi *</label>
+                    <input type="date" name="BaslamaTarixi" class="fn-input" required
+                           value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Bitmə tarixi *</label>
+                    <input type="date" name="BitmeTarixi" class="fn-input" required
+                           value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+            </div>
+
+            <div style="margin-top:14px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <input type="checkbox" id="saatliCb" onchange="saatliToggle(this)" style="width:16px;height:16px" />
+                    <label for="saatliCb" style="font-size:13px;color:#374151;cursor:pointer">
+                        Gündaxili saat aralığı (tam gün deyilsə)
+                    </label>
+                </div>
+                <div id="saatDiv" style="display:none;grid-template-columns:1fr 1fr;gap:12px">
+                    <div class="fn-form-group">
+                        <label class="fn-label">Başlama saatı</label>
+                        <input type="text" name="BaslamaSaati" id="baslamaSaati" class="fn-input"
+                               placeholder="09:00" maxlength="5" inputmode="numeric"
+                               oninput="saatFormat(this)" />
+                    </div>
+                    <div class="fn-form-group">
+                        <label class="fn-label">Bitmə saatı</label>
+                        <input type="text" name="BitisSaati" id="bitisSaati" class="fn-input"
+                               placeholder="17:00" maxlength="5" inputmode="numeric"
+                               oninput="saatFormat(this)" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="fn-form-group" style="margin-top:14px">
+                <label class="fn-label">Qeyd</label>
+                <textarea name="Qeyd" class="fn-input" rows="3"
+                          placeholder="Əlavə məlumat (istəyə bağlı)"></textarea>
+            </div>
+
+            <div class="fn-form-group" style="margin-top:14px">
+                <label class="fn-label">Sənəd <span style="color:#94a3b8;font-weight:400">(istəyə bağlı)</span></label>
+                <input type="file" name="Sened" class="fn-input"
+                       accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                <div style="font-size:11px;color:#64748b;margin-top:3px">
+                    PDF, Word, şəkil — max 10 MB
+                </div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
+                <a asp-action="Index" class="fn-btn fn-btn--ghost">Ləğv et</a>
+                <button type="submit" class="fn-btn fn-btn--primary">
+                    <i class="bi bi-send"></i> Göndər
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<script>
+    function yeniMekanGoster() {
+        var div = document.getElementById('yeniMekanDiv');
+        var sel = document.getElementById('mekanSelect');
+        var visible = div.style.display !== 'none';
+        if (visible) {
+            div.style.display = 'none';
+            sel.disabled = false;
+        } else {
+            div.style.display = 'block';
+            sel.value = '';
+            sel.disabled = true;
+            document.getElementById('yeniMekanInp').focus();
+        }
+    }
+
+    function saatliToggle(cb) {
+        var div = document.getElementById('saatDiv');
+        div.style.display = cb.checked ? 'grid' : 'none';
+        if (!cb.checked) {
+            document.getElementById('baslamaSaati').value = '';
+            document.getElementById('bitisSaati').value = '';
+        }
+    }
+
+    function saatFormat(inp) {
+        var v = inp.value.replace(/[^0-9]/g, '');
+        if (v.length > 2) v = v.slice(0, 2) + ':' + v.slice(2, 4);
+        inp.value = v;
+    }
+</script>

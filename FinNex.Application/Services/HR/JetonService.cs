@@ -153,7 +153,9 @@ namespace FinNex.Application.Services.HR
             IQueryable<IsciJetonu> query = _unitOfWork.Repository<IsciJetonu>()
                 .Query()
                 .Include(x => x.JetonTeyinati)
-                .Include(x => x.Isci);
+                .Include(x => x.Isci)
+                .Include(x => x.Icaze)
+                .Include(x => x.RedimTelebi);
 
             if (isciId.HasValue)
                 query = query.Where(x => x.IsciId == isciId.Value);
@@ -185,7 +187,7 @@ namespace FinNex.Application.Services.HR
                     && x.JetonTeyinati.Nov == JetonNovu.Musbat)
                 .ToListAsync();
 
-            return jetonlar.Sum(x => x.JetonTeyinati.SaatDeyeri);
+            return jetonlar.Sum(x => x.QalanSaat ?? x.JetonTeyinati.SaatDeyeri);
         }
 
         // ── Redim ─────────────────────────────────────────────────────────────
@@ -406,6 +408,7 @@ namespace FinNex.Application.Services.HR
                 foreach (var j in redim.XerclenenJetonlar)
                 {
                     j.Status = IsciJetonuStatus.IstifadeOlunub;
+                    j.XerclenmeTarixi = DateTime.Now;
                     await _unitOfWork.Repository<IsciJetonu>().YenileAsync(j);
                 }
 
@@ -489,28 +492,48 @@ namespace FinNex.Application.Services.HR
                     .OrderBy(x => x.QazanmaTarixi)
                     .ToListAsync();
 
-                decimal cemSaat = 0;
-                var secilenler = new List<IsciJetonu>();
+                // Mövcud balans yoxlaması
+                decimal totalMovcut = jetonlar.Sum(x => x.QalanSaat ?? x.JetonTeyinati.SaatDeyeri);
+                if (totalMovcut < teleblesaat)
+                    return Result<decimal>.Fail(
+                        $"İşçinin aktiv balansı kifayət etmir ({totalMovcut:0.##} < {teleblesaat:0.##} saat).");
+
+                // FIFO — qismən xərcləmə dəstəklənir
+                decimal qalan = teleblesaat;
+                decimal cemXerclenen = 0;
+
                 foreach (var j in jetonlar)
                 {
-                    if (cemSaat >= teleblesaat) break;
-                    secilenler.Add(j);
-                    cemSaat += j.JetonTeyinati.SaatDeyeri;
-                }
+                    if (qalan <= 0) break;
 
-                if (cemSaat < teleblesaat)
-                    return Result<decimal>.Fail(
-                        $"İşçinin aktiv balansı kifayət etmir ({cemSaat:0.##} < {teleblesaat:0.##} saat).");
+                    decimal movcut = j.QalanSaat ?? j.JetonTeyinati.SaatDeyeri;
 
-                // Tam istifadə et
-                foreach (var j in secilenler)
-                {
-                    j.Status = IsciJetonuStatus.IstifadeOlunub;
+                    if (movcut <= qalan)
+                    {
+                        // Bu jetonu tam xərclə
+                        j.Status = IsciJetonuStatus.IstifadeOlunub;
+                        j.QalanSaat = 0;
+                        cemXerclenen += movcut;
+                        qalan -= movcut;
+                    }
+                    else
+                    {
+                        // Bu jetonu qismən xərclə — qalan hissə aktivdir
+                        j.QalanSaat = movcut - qalan;
+                        cemXerclenen += qalan;
+                        qalan = 0;
+                    }
+
+                    if (icazeId.HasValue)
+                        j.IcazeId = icazeId.Value;
+                    j.XerclenmeTarixi = DateTime.Now;
+
                     await _unitOfWork.Repository<IsciJetonu>().YenileAsync(j);
                 }
+
                 await _unitOfWork.YaddaSaxlaAsync();
 
-                return Result<decimal>.Ok(cemSaat);
+                return Result<decimal>.Ok(cemXerclenen);
             }
             catch (Exception ex)
             {
@@ -643,14 +666,16 @@ namespace FinNex.Application.Services.HR
 
                 var teyinat = new JetonTeyinati
                 {
-                    Ad         = dto.Ad.Trim(),
-                    Nov        = dto.Nov,
-                    Rengi      = dto.Rengi,
-                    SaatDeyeri = dto.SaatDeyeri,
-                    Ikon       = string.IsNullOrWhiteSpace(dto.Ikon) ? "bi bi-award-fill" : dto.Ikon.Trim(),
-                    RengKodu   = string.IsNullOrWhiteSpace(dto.RengKodu) ? "#6b7280" : dto.RengKodu.Trim(),
-                    Tesvir     = dto.Tesvir?.Trim(),
-                    Aktivdir   = true
+                    Ad                = dto.Ad.Trim(),
+                    Nov               = dto.Nov,
+                    Rengi             = dto.Rengi,
+                    SaatDeyeri        = dto.SaatDeyeri,
+                    Vahid             = dto.Vahid,
+                    Ikon              = string.IsNullOrWhiteSpace(dto.Ikon) ? "bi bi-award-fill" : dto.Ikon.Trim(),
+                    RengKodu          = string.IsNullOrWhiteSpace(dto.RengKodu) ? "#6b7280" : dto.RengKodu.Trim(),
+                    Tesvir            = dto.Tesvir?.Trim(),
+                    BirbasaOdenishli  = dto.BirbasaOdenishli,
+                    Aktivdir          = true
                 };
 
                 await _unitOfWork.Repository<JetonTeyinati>().YaratAsync(teyinat);
@@ -681,12 +706,14 @@ namespace FinNex.Application.Services.HR
                 if (teyinat.Nov == JetonNovu.Musbat && dto.SaatDeyeri < 0)
                     return Result.Fail("Müsbət jeton üçün saat dəyəri mənfi ola bilməz.");
 
-                teyinat.Ad = dto.Ad.Trim();
-                teyinat.SaatDeyeri = dto.SaatDeyeri;
-                teyinat.Tesvir = dto.Tesvir;
-                teyinat.Ikon = string.IsNullOrWhiteSpace(dto.Ikon) ? teyinat.Ikon : dto.Ikon.Trim();
-                teyinat.RengKodu = string.IsNullOrWhiteSpace(dto.RengKodu) ? teyinat.RengKodu : dto.RengKodu.Trim();
-                teyinat.Aktivdir = dto.Aktivdir;
+                teyinat.Ad               = dto.Ad.Trim();
+                teyinat.SaatDeyeri       = dto.SaatDeyeri;
+                teyinat.Vahid            = dto.Vahid;
+                teyinat.Tesvir           = dto.Tesvir;
+                teyinat.Ikon             = string.IsNullOrWhiteSpace(dto.Ikon) ? teyinat.Ikon : dto.Ikon.Trim();
+                teyinat.RengKodu         = string.IsNullOrWhiteSpace(dto.RengKodu) ? teyinat.RengKodu : dto.RengKodu.Trim();
+                teyinat.BirbasaOdenishli = dto.BirbasaOdenishli;
+                teyinat.Aktivdir         = dto.Aktivdir;
 
                 await _unitOfWork.Repository<JetonTeyinati>().YenileAsync(teyinat);
                 await _unitOfWork.YaddaSaxlaAsync();
@@ -738,15 +765,17 @@ namespace FinNex.Application.Services.HR
 
         private static JetonTeyinatiListDto MapTeyinat(JetonTeyinati x) => new()
         {
-            Id = x.Id,
-            Ad = x.Ad,
-            Nov = x.Nov,
-            Rengi = x.Rengi,
-            SaatDeyeri = x.SaatDeyeri,
-            Ikon = x.Ikon,
-            RengKodu = x.RengKodu,
-            Tesvir = x.Tesvir,
-            Aktivdir = x.Aktivdir
+            Id               = x.Id,
+            Ad               = x.Ad,
+            Nov              = x.Nov,
+            Rengi            = x.Rengi,
+            SaatDeyeri       = x.SaatDeyeri,
+            Vahid            = x.Vahid,
+            Ikon             = x.Ikon,
+            RengKodu         = x.RengKodu,
+            Tesvir           = x.Tesvir,
+            BirbasaOdenishli = x.BirbasaOdenishli,
+            Aktivdir         = x.Aktivdir
         };
 
         private static IsciJetonuListDto MapJeton(IsciJetonu x) => new()
@@ -761,10 +790,18 @@ namespace FinNex.Application.Services.HR
             JetonIkon = x.JetonTeyinati.Ikon,
             JetonRengKodu = x.JetonTeyinati.RengKodu,
             JetonSaatDeyeri = x.JetonTeyinati.SaatDeyeri,
-            QazanmaTarixi = x.QazanmaTarixi,
+            JetonVahid      = x.JetonTeyinati.Vahid,
+            QalanSaat       = x.QalanSaat,
+            QazanmaTarixi   = x.QazanmaTarixi,
             Sebeb = x.Sebeb,
             Status = x.Status,
-            RedimTelebiId = x.RedimTelebiId
+            RedimTelebiId   = x.RedimTelebiId,
+            RedimNetice     = x.RedimTelebi?.NeticeTarixi,
+            IcazeId         = x.IcazeId,
+            IcazeTarixi       = x.Icaze?.IcazeTarixi,
+            IcazeBaslamaSaati = x.Icaze != null ? x.Icaze.BaslamaSaati.ToString(@"hh\:mm") : null,
+            IcazeBitisSaati   = x.Icaze != null ? x.Icaze.BitisSaati.ToString(@"hh\:mm") : null,
+            XerclenmeTarixi   = x.XerclenmeTarixi,
         };
 
         private static JetonRedimTelebiListDto MapRedim(JetonRedimTelebi x) => new()

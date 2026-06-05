@@ -1,0 +1,154 @@
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Ezamiyyət Statistikası";
+    var departamentler = ViewBag.Departamentler as IList<FinNex.Domain.Entities.Structure.Departament>
+                         ?? new List<FinNex.Domain.Entities.Structure.Departament>();
+    var mekanlar = ViewBag.Mekanlar as IList<FinNex.Application.DTOs.HR.Ezamiyyet.EzamiyyetMekanListDto>
+                   ?? new List<FinNex.Application.DTOs.HR.Ezamiyyet.EzamiyyetMekanListDto>();
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Ezamiyyət Statistikası</div>
+            <div class="fn-page-sub">İşçi üzrə ezamiyyət analitikası</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--ghost">
+            <i class="bi bi-arrow-left"></i> Siyahıya qayıt
+        </a>
+    </div>
+
+    @* ── Bu gün aktiv ezamiyyətlər ── *@
+    <div class="fn-card" style="padding:16px;margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:12px">
+            <i class="bi bi-airplane text-primary"></i> Bu gün aktiv ezamiyyətlər
+        </div>
+        <div id="aktivEzDiv">
+            <span style="color:#94a3b8;font-size:13px">Yüklənir…</span>
+        </div>
+    </div>
+
+    @* ── Filtrlər ── *@
+    <div class="fn-card" style="padding:14px;margin-bottom:14px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <div>
+                <label class="fn-label">Başlama</label>
+                <input type="date" id="stBaslangic" class="fn-input"
+                       value="@DateTime.Today.Year-01-01" onchange="stYukle()" />
+            </div>
+            <div>
+                <label class="fn-label">Bitiş</label>
+                <input type="date" id="stSon" class="fn-input"
+                       value="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="stYukle()" />
+            </div>
+            <div>
+                <label class="fn-label">Departament</label>
+                <select id="stDep" class="fn-input" style="min-width:180px" onchange="stYukle()">
+                    <option value="">Hamısı</option>
+                    @foreach (var d in departamentler)
+                    {
+                        <option value="@d.Id">@d.Ad</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="fn-label">Məkan</label>
+                <select id="stMekan" class="fn-input" style="min-width:160px" onchange="stYukle()">
+                    <option value="">Hamısı</option>
+                    @foreach (var m in mekanlar)
+                    {
+                        <option value="@m.Id">@m.Ad</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+
+    @* ── Statistika cədvəli ── *@
+    <div class="fn-card" style="padding:0">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead style="background:#f8fafc">
+                <tr>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">İşçi</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Departament</th>
+                    <th style="padding:10px 14px;text-align:center;font-weight:600;color:#475569">Cəmi</th>
+                    <th style="padding:10px 14px;text-align:center;font-weight:600;color:#22c55e">Təsdiqləndi</th>
+                    <th style="padding:10px 14px;text-align:center;font-weight:600;color:#ef4444">Rədd edildi</th>
+                    <th style="padding:10px 14px;text-align:center;font-weight:600;color:#f59e0b">Gözləyir</th>
+                    <th style="padding:10px 14px;text-align:center;font-weight:600;color:#6366f1">Cəmi gün</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:#475569">Ən çox məkan</th>
+                </tr>
+            </thead>
+            <tbody id="stTbody">
+                <tr><td colspan="8" style="padding:30px;text-align:center;color:#94a3b8">Yüklənir…</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        stYukle();
+        loadAktivler();
+    });
+
+    async function stYukle() {
+        var p = new URLSearchParams();
+        var b = document.getElementById('stBaslangic').value;
+        var s = document.getElementById('stSon').value;
+        var d = document.getElementById('stDep').value;
+        var m = document.getElementById('stMekan').value;
+        if (b) p.append('baslangic', b);
+        if (s) p.append('son', s);
+        if (d) p.append('departamentId', d);
+        if (m) p.append('mekanId', m);
+
+        var tbody = document.getElementById('stTbody');
+        tbody.innerHTML = '<tr><td colspan="8" style="padding:20px;text-align:center;color:#94a3b8">Yüklənir…</td></tr>';
+
+        var res  = await fetch('/HR/Ezamiyyet/GetStatistika?' + p.toString());
+        var data = await res.json();
+
+        if (!data.length) {
+            tbody.innerHTML = '<tr><td colspan="8" style="padding:20px;text-align:center;color:#94a3b8">Məlumat yoxdur.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(function (r) {
+            return '<tr style="border-top:1px solid #f1f5f9">' +
+                '<td style="padding:10px 14px;font-weight:500;color:#0f172a">' + r.isciTamAd + '</td>' +
+                '<td style="padding:10px 14px;color:#475569">' + (r.departament || '—') + '</td>' +
+                '<td style="padding:10px 14px;text-align:center;color:#6366f1;font-weight:700">' + r.cemiMuraciet + '</td>' +
+                '<td style="padding:10px 14px;text-align:center;color:#22c55e;font-weight:600">' + r.tesdiqlendi + '</td>' +
+                '<td style="padding:10px 14px;text-align:center;color:#ef4444;font-weight:600">' + r.reddedildi + '</td>' +
+                '<td style="padding:10px 14px;text-align:center;color:#f59e0b;font-weight:600">' + r.gozleyir + '</td>' +
+                '<td style="padding:10px 14px;text-align:center;font-weight:700;color:#6366f1">' + r.cemiGun + '</td>' +
+                '<td style="padding:10px 14px;color:#374151">' + (r.enCoxMekan || '—') + '</td>' +
+                '</tr>';
+        }).join('');
+    }
+
+    async function loadAktivler() {
+        var div = document.getElementById('aktivEzDiv');
+        var res  = await fetch('/HR/Ezamiyyet/GetAktivler');
+        var data = await res.json();
+        if (!data.length) {
+            div.innerHTML = '<span style="color:#94a3b8;font-size:13px">Bu gün aktiv ezamiyyət yoxdur.</span>';
+            return;
+        }
+        div.innerHTML = data.map(function (r) {
+            var saat = (r.baslamaSaati && r.bitisSaati)
+                ? r.baslamaSaati + '–' + r.bitisSaati
+                : 'Tam gün';
+            return '<div style="display:inline-flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:6px 12px;margin:3px;font-size:12px">' +
+                '<i class="bi bi-person-fill" style="color:#16a34a"></i>' +
+                '<strong>' + r.isciTamAd + '</strong>' +
+                '<span style="color:#64748b">→ ' + r.mekanAd + '</span>' +
+                '<span style="color:#0ea5e9">' + r.baslamaTarixi + (r.baslamaTarixi !== r.bitmeTarixi ? ' – ' + r.bitmeTarixi : '') + '</span>' +
+                '<span style="color:#64748b;font-size:11px">' + saat + '</span>' +
+                '</div>';
+        }).join('');
+    }
+</script>

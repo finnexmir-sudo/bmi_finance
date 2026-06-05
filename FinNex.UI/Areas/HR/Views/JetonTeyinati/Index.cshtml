@@ -32,7 +32,8 @@
                 <tr>
                     <th>Növ</th>
                     <th>Ad</th>
-                    <th>Saat dəyəri</th>
+                    <th>Dəyər</th>
+                    <th>Ödəniş növü</th>
                     <th>Təsvir</th>
                     <th>Status</th>
                     <th></th>
@@ -48,7 +49,36 @@
                             </span>
                         </td>
                         <td>@t.Ad</td>
-                        <td><strong>@t.SaatDeyeri.ToString("0.##") saat</strong></td>
+                        <td>
+                            @if (t.SaatDeyeri == 0)
+                            {
+                                <span style="color:#9ca3af;">—</span>
+                            }
+                            else if (t.Vahid == FinNex.Domain.Entities.HR.JetonVahid.Gun)
+                            {
+                                var gun2 = t.SaatDeyeri / 8m;
+                                <strong>@gun2.ToString("0.##") gün</strong>
+                                <span style="color:#9ca3af;font-size:12px;"> (@t.SaatDeyeri.ToString("0.##") saat)</span>
+                            }
+                            else
+                            {
+                                <strong>@t.SaatDeyeri.ToString("0.##") saat</strong>
+                            }
+                        </td>
+                        <td>
+                            @if (t.BirbasaOdenishli)
+                            {
+                                <span style="background:#d1fae5;color:#065f46;border-radius:5px;padding:2px 8px;font-size:12px;font-weight:600;">
+                                    <i class="bi bi-cash"></i> Birbaşa ödəniş
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="background:#f1f5f9;color:#64748b;border-radius:5px;padding:2px 8px;font-size:12px;">
+                                    <i class="bi bi-clock"></i> Saat balansı
+                                </span>
+                            }
+                        </td>
                         <td>@(t.Tesvir ?? "—")</td>
                         <td>
                             @if (t.Aktivdir)
@@ -87,13 +117,25 @@
             <input type="text" id="hjtAd" class="hj-input" />
         </div>
         <div class="hj-field">
-            <label>Saat dəyəri</label>
-            <input type="number" step="0.25" id="hjtSaat" class="hj-input" />
-            <small style="color:#6b7280;font-size:12px">Cəza jetonları (Qara) üçün adətən 0 və ya mənfi.</small>
+            <label>Dəyər <span style="color:#dc2626">*</span></label>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <input type="number" step="0.25" id="hjtSaat" class="hj-input" style="flex:1;" />
+                <select id="hjtVahid" class="hj-input" style="width:100px;" onchange="hjtSyncEditVahid()">
+                    <option value="saat">Saat</option>
+                    <option value="gun">Gün (×8)</option>
+                </select>
+            </div>
+            <small style="color:#6b7280;font-size:12px" id="hjtSaatHint"></small>
         </div>
         <div class="hj-field">
             <label>Təsvir</label>
             <textarea id="hjtTesvir" class="hj-textarea" rows="2"></textarea>
+        </div>
+        <div class="hj-field">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="hjtBirbasaOdenishli" />
+                <span>Birbaşa ödənişli <span style="font-size:11px;color:#6b7280;">(gələcəkdə pul ödənişi üçün)</span></span>
+            </label>
         </div>
         <div class="hj-field">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
@@ -130,33 +172,47 @@
             </select>
         </div>
         <div class="hj-field">
-            <label>Rəng <span style="color:#dc2626">*</span></label>
+            <label>Kateqoriya <span style="color:#dc2626">*</span></label>
             <select id="hjtcRengi" class="hj-input" onchange="hjtcSyncRengKodu()">
                 <option value="1" data-kod="#cd7f32">Bürünc</option>
                 <option value="2" data-kod="#a8a9ad">Gümüş</option>
                 <option value="3" data-kod="#ffc200">Qızıl</option>
                 <option value="4" data-kod="#1a1a1a">Qara</option>
+                <option value="ferdi" data-kod="" id="hjtcFerdiOpt" style="display:none;">✏ Fərdi rəng</option>
             </select>
         </div>
         <div class="hj-field">
-            <label>Rəng kodu <span style="color:#dc2626">*</span></label>
+            <label>Görünüş rengi <span style="color:#dc2626">*</span></label>
             <div style="display:flex;gap:8px;align-items:center;">
                 <input type="color" id="hjtcRengPicker" value="#cd7f32"
-                       oninput="document.getElementById('hjtcRengKodu').value=this.value"
+                       oninput="document.getElementById('hjtcRengKodu').value=this.value; hjtcManualColorChange();"
                        style="width:40px;height:36px;padding:2px;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;" />
                 <input type="text" id="hjtcRengKodu" class="hj-input" value="#cd7f32"
                        placeholder="#rrggbb"
-                       oninput="document.getElementById('hjtcRengPicker').value=this.value" />
+                       oninput="document.getElementById('hjtcRengPicker').value=this.value; hjtcManualColorChange();" />
             </div>
+            <small style="color:#6b7280;font-size:12px;">Kateqoriya yuxarıda seçilir, rəng kodu göstəriş üçündür.</small>
         </div>
         <div class="hj-field">
             <label>İkon <span style="font-size:11px;color:#6b7280;">(Bootstrap Icons sinfi)</span></label>
             <input type="text" id="hjtcIkon" class="hj-input" value="bi bi-award-fill" placeholder="bi bi-award-fill" />
         </div>
         <div class="hj-field">
-            <label>Saat dəyəri <span style="color:#dc2626">*</span></label>
-            <input type="number" step="0.25" id="hjtcSaat" class="hj-input" value="1" />
-            <small style="color:#6b7280;font-size:12px">Mənfi (cəza) jetonlar üçün 0 daxil edin.</small>
+            <label>Dəyər <span style="color:#dc2626">*</span></label>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <input type="number" step="0.25" id="hjtcSaat" class="hj-input" style="flex:1;" value="1" oninput="hjtcUpdateHint()" />
+                <select id="hjtcVahid" class="hj-input" style="width:100px;" onchange="hjtcUpdateHint()">
+                    <option value="saat">Saat</option>
+                    <option value="gun">Gün (×8)</option>
+                </select>
+            </div>
+            <small id="hjtcSaatHint" style="color:#6b7280;font-size:12px;">= 1 saat saxlanılacaq</small>
+        </div>
+        <div class="hj-field">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="hjtcBirbasaOdenishli" />
+                <span>Birbaşa ödənişli <span style="font-size:11px;color:#6b7280;">(gələcəkdə pul ödənişi üçün)</span></span>
+            </label>
         </div>
         <div class="hj-field">
             <label>Təsvir</label>

@@ -247,6 +247,21 @@
 </div>
 
 <script>
+    function pidTarixceToggle(header) {
+        var body = document.getElementById('pidTarixceBody');
+        var ikon = document.getElementById('pidTarixceIkon');
+        var aciqdir = body.style.display !== 'none';
+        body.style.display = aciqdir ? 'none' : '';
+        ikon.textContent   = aciqdir ? '▼ göstər' : '▲ gizlət';
+    }
+
+    function pidMetnToggle(btn) {
+        var tam = btn.closest('td').querySelector('.pid-metn-tam');
+        var aciqdir = tam.style.display !== 'none';
+        tam.style.display = aciqdir ? 'none' : '';
+        btn.textContent   = aciqdir ? '▼ mətni gör' : '▲ yığ';
+    }
+
     document.getElementById('tekSmsForm').addEventListener('submit', function (e) {
         var tel = document.getElementById('tekTelefon').value.trim();
         var metn = document.getElementById('smsMetn').value.trim();

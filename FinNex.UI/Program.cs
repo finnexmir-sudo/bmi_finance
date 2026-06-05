@@ -185,6 +185,12 @@ namespace FinNex.UI
             // ==================================================
             builder.Services.AddHttpClient("Anthropic");
 
+            // ── Ezamiyyət modulu ──────────────────────────────────
+            builder.Services.AddScoped<FinNex.Application.Services.HR.IEzamiyyetService,
+                                        FinNex.Application.Services.HR.EzamiyyetService>();
+            builder.Services.AddScoped<FinNex.Application.Services.HR.ITabelService,
+                                        FinNex.Application.Services.HR.TabelService>();
+
             // ── Oracle (yalnız oxuma) ──────────────────────────
             builder.Services.AddScoped<FinNex.Application.Interfaces.Oracle.IOracleService,
                                         FinNex.Application.Services.Oracle.OracleService>();
@@ -1178,7 +1184,14 @@ END
                 app.UseStaticFiles(new StaticFileOptions
                 {
                     FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(dmsRoot),
-                    RequestPath = "/dms"
+                    RequestPath  = "/dms",
+                    OnPrepareResponse = ctx =>
+                    {
+                        var ext = Path.GetExtension(ctx.File.Name).ToLowerInvariant();
+                        var attachExts = new[] { ".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".zip", ".rar" };
+                        if (attachExts.Contains(ext))
+                            ctx.Context.Response.Headers["Content-Disposition"] = "attachment";
+                    }
                 });
             }
 

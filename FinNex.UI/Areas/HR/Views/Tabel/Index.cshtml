@@ -1,0 +1,78 @@
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Tabel";
+    int curIl = (int)ViewBag.Il;
+    int curAy = (int)ViewBag.Ay;
+    var ayAdlari = new[] { "Yanvar","Fevral","Mart","Aprel","May","İyun",
+                           "İyul","Avqust","Sentyabr","Oktyabr","Noyabr","Dekabr" };
+}
+
+<div class="fn-page">
+
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Tabel</div>
+            <div class="fn-page-sub">Aylıq iş saatları cədvəli — Excel export</div>
+        </div>
+    </div>
+
+    <div class="fn-card" style="padding:28px;max-width:460px">
+
+        <form method="get" asp-action="ExportExcel">
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div class="fn-form-group">
+                    <label class="fn-label">İl</label>
+                    <select name="il" class="fn-input">
+                    @for (int y = DateTime.Today.Year + 1; y >= 2020; y--)
+                    {
+                        if (y == curIl)
+                        {
+                            <option value="@y" selected="selected">@y</option>
+                        }
+                        else
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    }
+                    </select>
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Ay</label>
+                    <select name="ay" class="fn-input">
+                        @for (int m = 1; m <= 12; m++)
+                        {
+                            if (m == curAy)
+                            {
+                                <option value="@m" selected="selected">@ayAdlari[m - 1]</option>
+                            }
+                            else
+                            {
+                                <option value="@m">@ayAdlari[m - 1]</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-top:20px">
+                <button type="submit" class="fn-btn fn-btn--primary" style="width:100%">
+                    <i class="bi bi-file-earmark-excel"></i> Excel Yüklə
+                </button>
+            </div>
+
+        </form>
+
+        <div style="margin-top:20px;padding:14px;background:#f8fafc;border-radius:8px;font-size:12px;color:#64748b;line-height:1.7">
+            <div style="font-weight:600;color:#374151;margin-bottom:6px">Kodlar:</div>
+            <span style="background:#d0d0d0;padding:1px 6px;border-radius:4px;margin-right:4px">İ</span> İstirahət &nbsp;
+            <span style="background:#ffcc80;padding:1px 6px;border-radius:4px;margin-right:4px">B</span> Bayram &nbsp;
+            <span style="background:#bbdefb;padding:1px 6px;border-radius:4px;margin-right:4px">M</span> Məzuniyyət &nbsp;
+            <span style="background:#ffcccc;padding:1px 6px;border-radius:4px;margin-right:4px">X</span> Xəstəlik &nbsp;
+            <span style="background:#c8f0c8;padding:1px 6px;border-radius:4px;margin-right:4px">E</span> Ezamiyyət<br>
+            <span style="background:#fff0cc;padding:1px 6px;border-radius:4px;margin-right:4px">7</span> Bayram ərəfəsi (azaldılmış saat)
+        </div>
+
+    </div>
+
+</div>
