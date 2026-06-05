@@ -53,16 +53,43 @@
                         <label asp-for="IsciId" class="fn-label">
                             İşçi <span class="fn-required">*</span>
                         </label>
-                        <select asp-for="IsciId" asp-items="Model.Isciler" class="fn-select" required>
+                        <select asp-for="IsciId" asp-items="Model.Isciler" class="fn-select" required
+                                onchange="isciSecildi(this.value)">
                             <option value="">— İşçi seçin —</option>
                         </select>
                         <span asp-validation-for="IsciId" class="fn-val-msg"></span>
                     </div>
 
-                    @* Növ: yalnız İllik — Xəstəlik və Ezamiyyət üçün ayrıca səhifələr var.
-                       Backend GeriyeQeydEtAsync 3 növü də dəstəkləyir, amma UI yalnız İllik göstərir
-                       (xəstəlik/ezamiyyət axını Xestelik və Ezamiyyet controller-lərindən keçir). *@
+                    @* Növ: yalnız İllik *@
                     <input type="hidden" name="Nov" value="@((int)MezuniyyetNovu.Illik)" />
+
+                    @* ── Jeton ilə əvəzləşdirmə ── *@
+                    <div id="jetonBlok" style="display:none;padding:12px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-left:4px solid #16a34a;border-radius:8px;margin-bottom:18px">
+                        <div style="display:flex;align-items:flex-start;gap:10px">
+                            <div style="flex:1">
+                                <div style="font-size:13px;font-weight:600;color:#15803d;margin-bottom:4px">
+                                    <i class="bi bi-coin me-1"></i> Jeton balansı: <span id="jetonSaatMetn">—</span>
+                                </div>
+                                <div style="font-size:12px;color:#166534;line-height:1.5">
+                                    İşçinin jeton balansı var. Aktiv edildikdə illik məzuniyyət balansı
+                                    <strong>azalmır</strong> — seçilən günlər jetona yazılır.
+                                    Davamiyyət <strong>İcazəli</strong> kimi qeyd olunur, maaşdan tutulma <strong>olmur</strong>.
+                                </div>
+                            </div>
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;white-space:nowrap;padding-top:2px">
+                                <input type="checkbox" asp-for="JetonIleEvezlesdir" id="cbJetonIle"
+                                       style="width:16px;height:16px;cursor:pointer"
+                                       onchange="jetonCheckboxDeyisdi(this)" />
+                                <span style="font-size:13px;font-weight:600;color:#15803d">Jeton ilə əvəzləşdir</span>
+                            </label>
+                        </div>
+                        <div id="jetonXeberdarliq" style="display:none;margin-top:8px;font-size:12px;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:6px 10px">
+                        </div>
+                    </div>
+
+                    <div id="jetonYoxBlok" style="display:none;padding:10px 14px;background:#fef9ec;border:1px solid #fde68a;border-radius:8px;margin-bottom:18px;font-size:12.5px;color:#92400e">
+                        <i class="bi bi-info-circle me-1"></i> Bu işçinin aktiv jeton balansı <strong>yoxdur</strong>. Yalnız illik məzuniyyət balansından istifadə ediləcək.
+                    </div>
 
                     @* ── Tarixlər ── *@
                     <div class="fn-form-row">
@@ -183,6 +210,13 @@
                         </div>
                     </div>
                     <div class="fn-wi-step">
+                        <div class="fn-wi-num"><i class="bi bi-coin" style="font-size:11px"></i></div>
+                        <div class="fn-wi-text">
+                            <strong>Jeton seçimi</strong>
+                            <span>Jeton balansı varsa illik balans toxunulmaz qalır</span>
+                        </div>
+                    </div>
+                    <div class="fn-wi-step">
                         <div class="fn-wi-num"><i class="bi bi-file-earmark-text" style="font-size:11px"></i></div>
                         <div class="fn-wi-text">
                             <strong>Audit</strong>
@@ -197,4 +231,82 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        var jetonSaatBalansi = 0;
+        var jetonBalansiUrl = '@Url.Action("GetJetonBalansi", "Mezuniyyet", new { area = "HR" })';
+
+        async function isciSecildi(isciId) {
+            var jetonBlok    = document.getElementById('jetonBlok');
+            var jetonYoxBlok = document.getElementById('jetonYoxBlok');
+            var cbJeton      = document.getElementById('cbJetonIle');
+            document.getElementById('jetonXeberdarliq').style.display = 'none';
+
+            if (!isciId) {
+                jetonBlok.style.display    = 'none';
+                jetonYoxBlok.style.display = 'none';
+                cbJeton.checked            = false;
+                jetonSaatBalansi           = 0;
+                return;
+            }
+
+            try {
+                var resp = await fetch(jetonBalansiUrl + '?isciId=' + isciId);
+                var data = await resp.json();
+                jetonSaatBalansi = data.saat || 0;
+
+                if (jetonSaatBalansi > 0) {
+                    var gun = Math.floor(jetonSaatBalansi / 8);
+                    document.getElementById('jetonSaatMetn').textContent =
+                        jetonSaatBalansi.toFixed(2) + ' saat' + (gun > 0 ? ' (' + gun + ' tam gün)' : '');
+                    jetonBlok.style.display    = 'block';
+                    jetonYoxBlok.style.display = 'none';
+                } else {
+                    jetonBlok.style.display    = 'none';
+                    jetonYoxBlok.style.display = 'block';
+                    cbJeton.checked            = false;
+                }
+            } catch (e) {
+                jetonBlok.style.display    = 'none';
+                jetonYoxBlok.style.display = 'none';
+            }
+        }
+
+        function jetonCheckboxDeyisdi(cb) {
+            var xbr = document.getElementById('jetonXeberdarliq');
+            if (cb.checked) {
+                var baslama = document.querySelector('[name="BaslamaTarixi"]').value;
+                var bitme   = document.querySelector('[name="BitmeTarixi"]').value;
+                // Qaba təxmini: iş günlərini cəldcə hesabla (həftəsonunu say)
+                var lazimSaat = hesablaLazimSaat(baslama, bitme);
+                if (lazimSaat > jetonSaatBalansi) {
+                    xbr.textContent = 'Diqqət: Seçilən aralıq üçün təxmini ' + lazimSaat + ' saat lazımdır, ' +
+                                      'balansda isə ' + jetonSaatBalansi.toFixed(2) + ' saat var. ' +
+                                      'Dəqiq hesab serverdə yoxlanacaq.';
+                    xbr.style.display = 'block';
+                } else {
+                    xbr.style.display = 'none';
+                }
+            } else {
+                xbr.style.display = 'none';
+            }
+        }
+
+        function hesablaLazimSaat(baslamaStr, bitmeStr) {
+            if (!baslamaStr || !bitmeStr) return 0;
+            var bas = new Date(baslamaStr);
+            var bit = new Date(bitmeStr);
+            var gun = 0;
+            for (var d = new Date(bas); d <= bit; d.setDate(d.getDate() + 1)) {
+                var g = d.getDay();
+                if (g !== 0 && g !== 6) gun++;
+            }
+            return gun * 8;
+        }
+
+        // İşçi artıq seçilibsə (form validation xətasından sonra geri qayıdanda)
+        (function () {
+            var sel = document.querySelector('[name="IsciId"]');
+            if (sel && sel.value) isciSecildi(sel.value);
+        })();
+    </script>
 }

@@ -50,5 +50,12 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         /// hansı il-in seriyasına əlavə olunduğu (default: cari il).
         /// </summary>
         public int? EmrIl { get; set; }
+
+        /// <summary>
+        /// True olduqda illik balans kəsilmir — işçinin jeton balansından
+        /// (isGunu × 8 saat) FIFO ilə xərclənir. Davamiyyət qeydi İcazəli
+        /// kimi qeyd olunur (MaasdanKes = false).
+        /// </summary>
+        public bool JetonIleEvezlesdir { get; set; } = false;
     }
 }

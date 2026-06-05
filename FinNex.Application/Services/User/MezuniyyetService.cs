@@ -3,6 +3,7 @@ using FinNex.Application.Common.Results;
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Communication;
+using FinNex.Application.Interfaces.HR;
 using FinNex.Application.Interfaces.Maas_If;
 using FinNex.Application.Services;
 using FinNex.Domain;
@@ -16,18 +17,21 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
     private readonly IEvezediciTesdiqService _evezediciTesdiqService;
     private readonly IMaasHesablamaService _maasHesablamaService;
     private readonly IBildirisRouter _bildirisRouter;
+    private readonly IJetonService _jetonService;
 
     public MezuniyyetService(
         IUnitOfWork unitOfWork,
         IMapper mapper,
         IEvezediciTesdiqService evezediciTesdiqService,
         IMaasHesablamaService maasHesablamaService,
-        IBildirisRouter bildirisRouter)
+        IBildirisRouter bildirisRouter,
+        IJetonService jetonService)
         : base(unitOfWork, mapper)
     {
         _evezediciTesdiqService = evezediciTesdiqService;
         _maasHesablamaService = maasHesablamaService;
         _bildirisRouter = bildirisRouter;
+        _jetonService = jetonService;
     }
 
     
@@ -1476,8 +1480,18 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 if (isGunu <= 0)
                     return Result<MezuniyyetDto>.Fail("Seçilən aralıqda iş günü yoxdur (yalnız həftəsonu/bayram).");
 
-                // ── 4. Balans yoxlanışı — bütün illərin cəmi qalığı ────
-                if (dto.Nov == MezuniyyetNovu.Illik)
+                // ── 4. Balans yoxlanışı ────────────────────────────────────
+                if (dto.JetonIleEvezlesdir)
+                {
+                    // Jeton rejimi — illik balans tələb olunmur, jeton balansı yoxlanır
+                    var lazimSaat = isGunu * 8m;
+                    var jetonBalansi = await _jetonService.AktivSaatBalansiAsync(dto.IsciId);
+                    if (jetonBalansi < lazimSaat)
+                        return Result<MezuniyyetDto>.Fail(
+                            $"Jeton balansı kifayət etmir. Mövcud: {jetonBalansi:0.##} saat, " +
+                            $"tələb olunur: {lazimSaat:0.##} saat ({isGunu} iş günü × 8).");
+                }
+                else if (dto.Nov == MezuniyyetNovu.Illik)
                 {
                     var umumiQaliq = await _unitOfWork.Repository<MezuniyyetBalans>().Query()
                         .Where(x => !x.Silinib && x.IsciId == dto.IsciId && x.Nov == dto.Nov)
@@ -1563,20 +1577,26 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     EmrRegem = emrRegem,
                     EmrIl = emrIl,
                     EmrSuffiks = suffiks,
-                    // Geriyə qeyd — təsdiq axını keçmir; yalnız HR addımı rəsmi
-                    // olaraq "rəsmiləşdirən" kimi qeyd olunur (audit).
-                    // SobeReisi/Rəhbər boş qalır, çünki onlar həqiqətən təsdiq
-                    // etməyiblər — fake audit yaratmayaq.
                     HrTesdiq = true,
                     HrId = hrIsciId,
-                    HrTesdiqTarixi = indi
+                    HrTesdiqTarixi = indi,
+                    JetonIleOdendi = dto.JetonIleEvezlesdir,
+                    IstifadeOlunanJetonSaat = dto.JetonIleEvezlesdir ? isGunu * 8m : null
                 };
 
                 await _unitOfWork.Repository<Mezuniyyet>().YaratAsync(entity);
                 await _unitOfWork.YaddaSaxlaAsync();
 
-                // ── 6. Balansı yenilə (FIFO — ən köhnə illərdən sırayla kəs) ──
-                if (dto.Nov == MezuniyyetNovu.Illik)
+                // ── 6. Balansı yenilə ──────────────────────────────────────
+                if (dto.JetonIleEvezlesdir)
+                {
+                    // Jeton rejimi: illik balans toxunulmaz qalır, jeton xərclənir
+                    var jetonRes = await _jetonService.IcazeUcunFifoJetonXercleAsync(
+                        dto.IsciId, isGunu * 8m, icazeId: null);
+                    if (!jetonRes.Success)
+                        return Result<MezuniyyetDto>.Fail($"Jeton xərclənmədi: {jetonRes.Message}");
+                }
+                else if (dto.Nov == MezuniyyetNovu.Illik)
                 {
                     await BalansiFifoKesAsync(dto.IsciId, dto.Nov, isGunu);
                 }
@@ -1634,20 +1654,24 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
                 // İşçiyə
                 var sebebMetn = sebebTrim == null ? "" : $" Səbəb: {sebebTrim}";
+                var jetonQeyd = dto.JetonIleEvezlesdir ? " (jeton ilə əvəzləşdirildi)" : "";
                 await _bildirisRouter.NotifyIsciAsync(
                     dto.IsciId,
                     BildirisNovu.MezuniyyetTesdiq,
                     "HR geriyə məzuniyyət qeyd etdi",
-                    $"HR sizin üçün {dovr} ({isGunu} iş günü, {dto.Nov}) məzuniyyəti qeyd etdi.{sebebMetn}",
+                    $"HR sizin üçün {dovr} ({isGunu} iş günü, {dto.Nov}) məzuniyyəti qeyd etdi.{jetonQeyd}{sebebMetn}",
                     redirectUrl: $"/User/Mezuniyyet/Detail/{entity.Id}",
                     mezuniyyetId: entity.Id);
 
-                // Mühasibə (ay sonu maaşa təsir edə bilər)
+                // Mühasibə
+                var muhasibMetn = dto.JetonIleEvezlesdir
+                    ? $"HR {isciAd} üçün {dovr} ({isGunu} iş günü) jeton ilə əvəzləşdirdi — maaşdan tutulma yoxdur."
+                    : $"HR {isciAd} üçün {dovr} ({isGunu} iş günü) məzuniyyəti geriyə qeyd etdi. Ay-sonu maaş hesablamasında nəzərə alın.";
                 await _bildirisRouter.NotifyRolesAsync(
                     new[] { RoleNames.Muhasib, RoleNames.Admin },
                     BildirisNovu.MezuniyyetOdenisGozleyir,
                     "Geriyə qeyd edilmiş məzuniyyət",
-                    $"HR {isciAd} üçün {dovr} ({isGunu} iş günü) məzuniyyəti geriyə qeyd etdi. Ay-sonu maaş hesablamasında nəzərə alın.",
+                    muhasibMetn,
                     redirectUrl: $"/HR/Mezuniyyet/Detal/{entity.Id}",
                     mezuniyyetId: entity.Id, exceptIsciId: dto.IsciId);
 
@@ -1663,8 +1687,11 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     Qeyd = entity.Qeyd
                 };
 
-                var mesaj = $"Geriyə qeyd uğurla rəsmiləşdirildi ({isGunu} iş günü). " +
-                           $"Davamiyyət: {duzeldilenQaib} qayib → icazəli, {yeniQeyd} yeni qeyd yaradıldı.";
+                var mesaj = dto.JetonIleEvezlesdir
+                    ? $"Jeton ilə əvəzləşdirmə uğurla tamamlandı ({isGunu} iş günü, {isGunu * 8} saat jeton xərcləndi). " +
+                      $"Davamiyyət: {duzeldilenQaib} qayib → icazəli, {yeniQeyd} yeni qeyd. Maaşdan tutulma yoxdur."
+                    : $"Geriyə qeyd uğurla rəsmiləşdirildi ({isGunu} iş günü). " +
+                      $"Davamiyyət: {duzeldilenQaib} qayib → icazəli, {yeniQeyd} yeni qeyd yaradıldı.";
                 return Result<MezuniyyetDto>.Ok(resultDto, mesaj);
             }
             catch (Exception ex)

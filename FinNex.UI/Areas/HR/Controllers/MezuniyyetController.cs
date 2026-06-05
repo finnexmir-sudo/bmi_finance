@@ -2,6 +2,7 @@
 using FinNex.Application.DTOs.HR.Mezuniyyet;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Communication;
+using FinNex.Application.Interfaces.HR;
 using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
@@ -28,6 +29,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly IWebHostEnvironment _env;
         private readonly IConfiguration _config;
+        private readonly IJetonService _jetonService;
 
         private static readonly string[] _icazeSenedTipler =
             [".pdf", ".jpg", ".jpeg", ".png"];
@@ -39,7 +41,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             IBildirisService bildirisService,
             IUnitOfWork unitOfWork,
             IWebHostEnvironment env,
-            IConfiguration config)
+            IConfiguration config,
+            IJetonService jetonService)
         {
             _mezuniyyetService = mezuniyyetService;
             _isciService = isciService;
@@ -48,6 +51,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             _unitOfWork = unitOfWork;
             _env = env;
             _config = config;
+            _jetonService = jetonService;
         }
 
         private async Task<int?> GetCurrentIsciIdAsync()
@@ -477,6 +481,15 @@ namespace FinNex.UI.Areas.HR.Controllers
             return thisYear;
         }
 
+        [HttpGet]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> GetJetonBalansi(int isciId)
+        {
+            if (isciId <= 0) return Json(new { saat = 0m, gun = 0m });
+            var saat = await _jetonService.AktivSaatBalansiAsync(isciId);
+            return Json(new { saat, gun = Math.Floor(saat / 8) });
+        }
+
         [HttpPost, ValidateAntiForgeryToken]
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
         public async Task<IActionResult> GeriyeQeyd(GeriyeQeydVM vm)
@@ -504,7 +517,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Sebeb = vm.Sebeb,
                 EmrSuffiks = vm.EmrSuffiks,
                 EmrRegem = vm.EmrRegem,
-                EmrIl = vm.EmrIl
+                EmrIl = vm.EmrIl,
+                JetonIleEvezlesdir = vm.JetonIleEvezlesdir
             };
 
             var result = await _mezuniyyetService.GeriyeQeydEtAsync(dto, hrIsciId.Value);

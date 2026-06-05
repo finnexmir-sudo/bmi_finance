@@ -63,5 +63,14 @@ namespace FinNex.UI.Areas.HR.ViewModels.Mezuniyyet
         };
 
         public int MaksimumKohneGun { get; set; } = 90;
+
+        /// <summary>İllik balans yerinə jeton xərclənsin.</summary>
+        public bool JetonIleEvezlesdir { get; set; } = false;
+
+        /// <summary>
+        /// İşçi seçiləndən sonra AJAX ilə doldurulur — UI-da göstərmək üçün.
+        /// Neçə saatlıq jeton balansı var.
+        /// </summary>
+        public decimal JetonSaatBalansi { get; set; } = 0;
     }
 }

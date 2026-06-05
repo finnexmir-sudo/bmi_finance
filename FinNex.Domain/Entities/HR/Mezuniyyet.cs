@@ -115,5 +115,11 @@ namespace FinNex.Domain.Entities.HR
         public Mezuniyyet? KorreksiyaOlunanMezuniyyet { get; set; }
         public string? SenedYolu       { get; set; }
         public string? KorreksiyaSebebi { get; set; }
+
+        // ── Jeton ilə əvəzləşdirmə ────────────────────────────────────────
+        // HR geriyə qeyd zamanı illik balans yerinə jeton istifadə edibsə true.
+        // İstifadeOlunanJetonSaat — audit üçün xərclənmiş cəmi saat.
+        public bool    JetonIleOdendi          { get; set; } = false;
+        public decimal? IstifadeOlunanJetonSaat { get; set; }
     }
 }
