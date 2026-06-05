@@ -276,6 +276,13 @@
 
     // ── Toplu SMS ──────────────────────────────────────────
 
+    // AZ mobil nömrə validasiyası — leading-0 çıxarılmış 9 rəqəmli formata baxır
+    var GECERLI_PREFIKSLƏR = ['50','51','55','99','70','77','60'];
+    function nomreUygundu(tel) {
+        var r = (String(tel || '').match(/\d/g) || []).join('');
+        return r.length === 9 && GECERLI_PREFIKSLƏR.some(function(p) { return r.startsWith(p); });
+    }
+
     function onizlemeyiGuncelle() {
         var metn = document.getElementById('topluMetn').value;
         var blok = document.getElementById('onizlemeBlok');
@@ -331,13 +338,15 @@
             var cells = tr.querySelectorAll('td');
             if (cells.length < 3) return;
             var ad = cells[1].textContent.trim();
-            var faktiki = tr.getAttribute('data-faktiki') || '';
-            var raqemSayi = (faktiki.match(/\d/g) || []).length;
-            if (raqemSayi > 9) rows.push({ ad: ad, faktikiNomre: faktiki });
+            var telInput = cells[2].querySelector('.tel-input');
+            var tel = telInput ? telInput.value.trim() : '';
+            if (!nomreUygundu(tel)) {
+                rows.push({ ad: ad, telefon: tel, faktikiNomre: tr.getAttribute('data-faktiki') || '' });
+            }
         });
-        if (rows.length === 0) { alert('Uyğunsuz nömrə tapılmadı (faktiki nömrədə rəqəm sayı 9-dan çox olan yoxdur).'); return; }
-        var csv = 'Ad,Faktiki Nömrə\n' + rows.map(function (r) {
-            return '"' + r.ad.replace(/"/g, '""') + '","' + r.faktikiNomre.replace(/"/g, '""') + '"';
+        if (rows.length === 0) { alert('Uyğunsuz nömrə tapılmadı.'); return; }
+        var csv = 'Ad,Nömrə,Faktiki Nömrə\n' + rows.map(function (r) {
+            return '"' + r.ad.replace(/"/g, '""') + '","' + r.telefon.replace(/"/g, '""') + '","' + r.faktikiNomre.replace(/"/g, '""') + '"';
         }).join('\n');
         var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
         var url = URL.createObjectURL(blob);
@@ -405,7 +414,8 @@
         }
         data.forEach(function (item, i) {
             var tr = document.createElement('tr');
-            tr.style.background = i % 2 === 0 ? '#fff' : '#f8fafc';
+            var uygun = nomreUygundu(item.telefon);
+            tr.style.background = uygun ? (i % 2 === 0 ? '#fff' : '#f8fafc') : '#fef2f2';
             tr.setAttribute('data-ad', (item.ad || '').toLowerCase());
             tr.setAttribute('data-tel', (item.telefon || '').toLowerCase());
             tr.setAttribute('data-faktiki', item.faktikiNomre || '');
@@ -418,6 +428,9 @@
                 '<td style="padding:6px 8px;border-top:1px solid #f1f5f9"><input type="text" class="tel-input" value="' + escHtml(item.telefon) + '" style="font-family:monospace;font-size:13px;border:1px solid #e2e8f0;border-radius:4px;padding:3px 6px;width:100%;max-width:150px;background:#fff" />' + faktikiHtml + '</td>' +
                 '<td style="padding:8px 12px;text-align:center;border-top:1px solid #f1f5f9"><button type="button" onclick="siliSatiri(this)" title="Sil" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:15px;padding:0 4px;line-height:1">&times;</button></td>';
             tbody.appendChild(tr);
+            tr.querySelector('.tel-input').addEventListener('input', function() {
+                tr.style.background = nomreUygundu(this.value) ? '#fff' : '#fef2f2';
+            });
         });
         document.getElementById('topluSmsPanel').style.display = 'block';
         document.getElementById('hamisiSec').checked = true;
