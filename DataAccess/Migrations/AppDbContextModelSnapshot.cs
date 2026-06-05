@@ -2613,6 +2613,12 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<int>("IsciId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("JetonIleOdendi")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("IstifadeOlunanJetonSaat")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("Nov")
                         .HasColumnType("int");
 
