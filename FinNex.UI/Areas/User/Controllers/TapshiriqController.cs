@@ -209,6 +209,19 @@ namespace FinNex.UI.Areas.User.Controllers
             return View(mail);
         }
 
+        // ── GET /User/Tapshiriq/QosmaYukle/5 ─────────────────────────
+        public async Task<IActionResult> QosmaYukle(int id)
+        {
+            var isciId = await GetIsciIdAsync();
+            if (isciId == null) return RedirectToLogin();
+
+            var fayl = await _gelenMailService.QosmaGetirAsync(id, isciId.Value);
+            if (fayl == null) return NotFound();
+
+            var bytes = await System.IO.File.ReadAllBytesAsync(fayl.Value.FaylYolu);
+            return File(bytes, fayl.Value.ContentType, fayl.Value.FaylAdi);
+        }
+
         // ── GET /User/Tapshiriq/Edit/5 ─────────────────────────────
         public async Task<IActionResult> Edit(int id)
         {

@@ -18,4 +18,10 @@ public interface IGelenMailService
     Task<bool> ImtinaEtAsync(int mailId, int isciId, string? sebeb);
     Task IsciOxuduIsareEtAsync(int mailId, int isciId);
     Task CavabVerildiIsareEtAsync(int mailId);
+
+    /// <summary>
+    /// Qoşmanı yükləmək üçün fayl məlumatlarını qaytarır.
+    /// İşçinin həmin maila tapşırılmış olması yoxlanılır; deyilsə null qaytarılır.
+    /// </summary>
+    Task<(string FaylYolu, string FaylAdi, string ContentType)?> QosmaGetirAsync(int qosmaId, int isciId);
 }

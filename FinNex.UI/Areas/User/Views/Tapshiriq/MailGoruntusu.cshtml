@@ -114,7 +114,10 @@
                             long b = q.OlcuBayt;
                             string size = b < 1024 ? $"{b} B" : b < 1048576 ? $"{b/1024.0:F1} KB" : $"{b/1048576.0:F1} MB";
 
-                            <div class="gm-attachment-card">
+                            <a class="gm-attachment-card"
+                               asp-action="QosmaYukle" asp-route-id="@q.Id"
+                               style="text-decoration:none;color:inherit"
+                               title="@q.FaylAdi yüklə">
                                 <div class="gm-attachment-icon">
                                     <i class="bi @icon fs-2"></i>
                                 </div>
@@ -122,7 +125,10 @@
                                     <span class="gm-attachment-name">@q.FaylAdi</span>
                                     <span class="gm-attachment-size">@size</span>
                                 </div>
-                            </div>
+                                <div style="margin-left:auto;padding-left:10px;color:#64748b;align-self:center">
+                                    <i class="bi bi-download"></i>
+                                </div>
+                            </a>
                         }
                     </div>
                 </div>
