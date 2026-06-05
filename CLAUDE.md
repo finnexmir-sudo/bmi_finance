@@ -1,5 +1,20 @@
 # BMI Finance — Claude Qaydaları
 
+## Sessiya Başlanğıcı — MƏCBURI YOXLAMA
+
+Hər yeni sessiya açılanda, hər hansı iş başlamadan əvvəl **mütləq** aşağıdakı əmri işlət:
+
+```bash
+git fetch --all && git log --oneline --remotes ^main --no-walk=unsorted 2>/dev/null | head -20
+```
+
+Əgər nəticə boş deyilsə — yəni `main`-ə merge olunmamış remote branch-lar varsa — istifadəçiyə bildir və nə etmək lazım olduğunu soruş. Yeni iş başlatma.
+
+Sessiyanın **sonunda** (işlər tamamlananda) mütləq:
+1. Feature branch-ı `main`-ə merge et
+2. Hər iki branch-ı `push` et
+3. `git log --oneline origin/claude/* ^main` ilə yoxla — nəticə boş olmalıdır
+
 ## Ümumi Prinsiplər
 
 ### Kod yazmadan əvvəl
