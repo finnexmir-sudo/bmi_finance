@@ -82,10 +82,10 @@ namespace FinNex.UI.Areas.HR.Controllers
                     // Row 2: imza boşluğu (alt xətt)
                     var v2 = ws.Cell(2, tplTesdiqCol).Value.ToString();
                     if (!string.IsNullOrWhiteSpace(v2)) tplTesdiqLine2 = v2;
-                    // Row 3: müdir adı
+                    // Row 3: müdir adı və ya (vəzifəsi...) işarəsi
                     var v3 = ws.Cell(3, tplTesdiqCol).Value.ToString().Trim();
-                    if (!string.IsNullOrWhiteSpace(v3) && !v3.StartsWith("("))
-                        tplMudirAd = v3;
+                    if (!string.IsNullOrWhiteSpace(v3))
+                        tplMudirAd = v3; // "(" ilə başlasa da yazılsın
                 }
 
                 // İmza xətti: B7, E7
