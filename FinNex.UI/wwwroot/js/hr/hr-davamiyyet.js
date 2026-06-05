@@ -1062,6 +1062,12 @@ document.addEventListener('DOMContentLoaded', function () {
         var cixisStr = row.getAttribute('data-cixis');
         var isciAd = (row.querySelector('.hrd-emp-name') || {}).textContent || '';
 
+        function minOfDay(d) { return d.getHours() * 60 + d.getMinutes(); }
+        var _np = (isParametriData && isParametriData.naharBaslamaSaati || '13:00').split(':');
+        var naharBaslama = parseInt(_np[0]) * 60 + parseInt(_np[1] || 0);
+        var naharMuddet  = (isParametriData && isParametriData.naharMuddetDeqiqe) || 45;
+        var naharBitis   = naharBaslama + naharMuddet;
+
         var msg;
         if (!girisStr) {
             msg = '<span style="opacity:.6;">Giriş qeydi yoxdur</span>';
@@ -1069,6 +1075,8 @@ document.addEventListener('DOMContentLoaded', function () {
             var cixisDate = new Date(cixisStr);
             var girisDate2 = new Date(girisStr);
             var workedMin = Math.floor((cixisDate - girisDate2) / 60000);
+            if (minOfDay(girisDate2) < naharBaslama && minOfDay(cixisDate) > naharBitis)
+                workedMin = Math.max(0, workedMin - naharMuddet);
             var wh = Math.floor(workedMin / 60);
             var wm = workedMin % 60;
             msg = '&#128682; <strong>' + isciAd + '</strong><br>' +
@@ -1077,6 +1085,8 @@ document.addEventListener('DOMContentLoaded', function () {
             var girisDate = new Date(girisStr);
             var now = new Date();
             var diffMin = Math.max(0, Math.floor((now - girisDate) / 60000));
+            if (minOfDay(girisDate) < naharBaslama && minOfDay(now) > naharBitis)
+                diffMin = Math.max(0, diffMin - naharMuddet);
             var h = Math.floor(diffMin / 60);
             var m = diffMin % 60;
             msg = '&#9200; <strong>' + isciAd + '</strong><br>' +
