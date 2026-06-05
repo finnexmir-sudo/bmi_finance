@@ -62,7 +62,7 @@ public class GelenMailController : Controller
             oxunmamis, isciId, page, 50, q,
             tdFrom, tdTo, tapshirildi, qosmali, deadline);
         var oxunmamisSay = await _mailService.GetOxunmamisSayAsync();
-        var iscilerResult = await _isciService.HamisiniGetirAsync();
+        var iscilerResult = await _isciService.HamisiniGetirAsync(x => x.Status == IsciStatus.Aktiv);
         var isciler = iscilerResult.Success ? iscilerResult.Data!.ToList() : new();
 
         ViewBag.OxunmamisSay  = oxunmamisSay;
@@ -89,7 +89,7 @@ public class GelenMailController : Controller
 
         await _mailService.OxunduIsareEtAsync(id);
 
-        var iscilerResult = await _isciService.HamisiniGetirAsync();
+        var iscilerResult = await _isciService.HamisiniGetirAsync(x => x.Status == IsciStatus.Aktiv);
         var isciler = iscilerResult.Success ? iscilerResult.Data!.ToList() : new();
         ViewBag.Isciler = isciler;
         ViewData["Title"] = mail.Movzu;
@@ -281,7 +281,7 @@ public class GelenMailController : Controller
         var mail = await _mailService.GetDetailAsync(id);
         if (mail == null) return NotFound();
         await _mailService.OxunduIsareEtAsync(id);
-        var iscilerResult = await _isciService.HamisiniGetirAsync();
+        var iscilerResult = await _isciService.HamisiniGetirAsync(x => x.Status == IsciStatus.Aktiv);
         ViewBag.Isciler = iscilerResult.Success ? iscilerResult.Data!.ToList() : new();
         return PartialView("_MailDetail", mail);
     }
