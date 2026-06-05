@@ -22,6 +22,7 @@
             @Html.AntiForgeryToken()
             <input type="hidden" name="PidTopluSmsOracleSorguId" value="@Model.PidTopluSmsOracleSorguId" />
             <input type="hidden" name="PidOdenisGunuSorguId"     value="@Model.PidOdenisGunuSorguId" />
+            <input type="hidden" name="PidZaminlerSorguId"        value="@Model.PidZaminlerSorguId" />
 
             <div class="mb-3">
                 <label class="form-label fw-semibold">IMAP Server</label>
@@ -89,7 +90,7 @@
                 </div>
             </div>
 
-            <div class="mb-4">
+            <div class="mb-3">
                 <label class="form-label fw-semibold">Ödəniş günü olanlar Oracle Sorğusu</label>
                 <select name="PidOdenisGunuSorguId" class="form-select">
                     <option value="">— Seçilməyib —</option>
@@ -101,6 +102,21 @@
                 <div class="form-text">
                     <i class="bi bi-info-circle me-1"></i>
                     "Ödəniş günü olanlar" düyməsi bu sorğudan istifadə edir. Sorğu mətni <code>&amp;tarix</code> parametrini ehtiva etməlidir (Oracle format: <code>dd-mm-yyyy</code>).
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold">VK Borcalan Zaminləri Oracle Sorğusu</label>
+                <select name="PidZaminlerSorguId" class="form-select">
+                    <option value="">— Seçilməyib —</option>
+                    @foreach (var item in ViewBag.ZaminlerSorqular as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? [])
+                    {
+                        <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                    }
+                </select>
+                <div class="form-text">
+                    <i class="bi bi-info-circle me-1"></i>
+                    "VK Borcalan Zaminləri" düyməsi bu sorğudan istifadə edir.
                 </div>
             </div>
 
