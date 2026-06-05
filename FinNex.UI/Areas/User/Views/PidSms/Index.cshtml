@@ -83,24 +83,30 @@
     <div class="fn-card" style="padding:18px;margin-bottom:16px" id="topluSmsCard">
 
         @* Başlıq + düymələr *@
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-            <div style="font-size:14px;font-weight:700;color:#0f172a">
-                <i class="bi bi-people-fill me-1 text-primary"></i> Toplu SMS
+        <div style="margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                <div style="font-size:14px;font-weight:700;color:#0f172a">
+                    <i class="bi bi-people-fill me-1 text-primary"></i> Toplu SMS
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <button type="button" class="fn-btn fn-btn--outline" id="btnBorcalanlarGetir" onclick="borcalanlarGetir()">
+                        <i class="bi bi-cloud-download"></i> Borcalanları Gətir
+                    </button>
+                    <button type="button" class="fn-btn fn-btn--outline" id="btnExcel" onclick="document.getElementById('excelInput').click()">
+                        <i class="bi bi-file-earmark-excel"></i> Excel Yüklə
+                    </button>
+                    <input type="file" id="excelInput" accept=".xlsx" style="display:none" />
+                </div>
             </div>
-            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-                <button type="button" class="fn-btn fn-btn--outline" id="btnBorcalanlarGetir" onclick="borcalanlarGetir()">
-                    <i class="bi bi-cloud-download"></i> Borcalanları Gətir
-                </button>
-                <button type="button" class="fn-btn fn-btn--outline" id="btnExcel" onclick="document.getElementById('excelInput').click()">
-                    <i class="bi bi-file-earmark-excel"></i> Excel Yüklə
-                </button>
-                <input type="file" id="excelInput" accept=".xlsx" style="display:none" />
-                <span style="width:1px;height:24px;background:#e2e8f0;display:inline-block;align-self:center"></span>
+            <div style="margin-top:8px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <span style="font-size:12px;font-weight:600;color:#64748b;white-space:nowrap">
+                    <i class="bi bi-calendar2-check me-1"></i> Ödəniş günü olanlar:
+                </span>
                 <input type="date" id="odenisGunuTarix" class="fn-input"
                        value="@DateTime.Today.ToString("yyyy-MM-dd")"
-                       style="width:150px;padding:6px 10px;font-size:13px" />
-                <button type="button" class="fn-btn fn-btn--outline" id="btnOdenisGunuGetir" onclick="odenisGunuGetir()">
-                    <i class="bi bi-calendar2-check"></i> Ödəniş günü olanlar
+                       style="width:150px;padding:5px 10px;font-size:13px" />
+                <button type="button" class="fn-btn fn-btn--outline" id="btnOdenisGunuGetir" onclick="odenisGunuGetir()" style="white-space:nowrap">
+                    <i class="bi bi-arrow-down-circle"></i> Gətir
                 </button>
             </div>
         </div>
@@ -172,49 +178,63 @@
 
     @* ── Tarixçə ── *@
     <div class="fn-card" style="padding:0">
-        <div style="padding:16px 18px;border-bottom:1px solid #e2e8f0">
-            <div style="font-size:14px;font-weight:700;color:#0f172a">SMS tarixçəsi (son 200)</div>
+        <div style="padding:14px 18px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none"
+             onclick="tarixceToggle()">
+            <div style="font-size:14px;font-weight:700;color:#0f172a">
+                SMS tarixçəsi
+                @if (loglar.Any())
+                {
+                    <span style="font-size:12px;font-weight:400;color:#64748b;margin-left:6px">@loglar.Count qeyd</span>
+                }
+            </div>
+            <button type="button" id="btnTarixce"
+                    style="background:none;border:1px solid #e2e8f0;border-radius:6px;padding:4px 12px;font-size:12px;color:#475569;cursor:pointer;display:flex;align-items:center;gap:5px">
+                <i class="bi bi-chevron-down" id="tarixceIcon"></i>
+                <span id="tarixceBtnMetn">Göstər</span>
+            </button>
         </div>
-        @if (!loglar.Any())
-        {
-            <div style="padding:30px;text-align:center;color:#64748b;font-size:13px">Hələ SMS göndərilməyib.</div>
-        }
-        else
-        {
-            <table style="width:100%;border-collapse:collapse;font-size:13px">
-                <thead style="background:#f8fafc">
-                    <tr>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Tarix</th>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Telefon</th>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Mətn</th>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Şablon</th>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Status</th>
-                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Göndərən</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var l in loglar)
-                    {
-                        <tr style="border-top:1px solid #f1f5f9">
-                            <td style="padding:10px 14px;color:#475569;white-space:nowrap">@l.YaradilmaTarixi.ToString("dd.MM.yy HH:mm")</td>
-                            <td style="padding:10px 14px;color:#0f172a;font-family:monospace">@l.Telefon</td>
-                            <td style="padding:10px 14px;color:#334155;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@l.Metn">@l.Metn</td>
-                            <td style="padding:10px 14px;color:#64748b">@(l.Sablon?.Ad ?? "—")</td>
-                            <td style="padding:10px 14px">
-                                <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;color:#fff;background:@StatusRengi(l.Status)">
-                                    @StatusText(l.Status)
-                                </span>
-                                @if (!string.IsNullOrEmpty(l.Xeta))
-                                {
-                                    <div style="font-size:11px;color:#dc2626;margin-top:2px" title="@l.Xeta">@(l.Xeta.Length > 40 ? l.Xeta.Substring(0,40) + "…" : l.Xeta)</div>
-                                }
-                            </td>
-                            <td style="padding:10px 14px;color:#64748b">@(l.GonderenIsci?.TamAd ?? "—")</td>
+        <div id="tarixceBlok" style="display:none;border-top:1px solid #e2e8f0">
+            @if (!loglar.Any())
+            {
+                <div style="padding:30px;text-align:center;color:#64748b;font-size:13px">Hələ SMS göndərilməyib.</div>
+            }
+            else
+            {
+                <table style="width:100%;border-collapse:collapse;font-size:13px">
+                    <thead style="background:#f8fafc">
+                        <tr>
+                            <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Tarix</th>
+                            <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Telefon</th>
+                            <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Mətn</th>
+                            <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Şablon</th>
+                            <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Status</th>
+                            <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Göndərən</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        }
+                    </thead>
+                    <tbody>
+                        @foreach (var l in loglar)
+                        {
+                            <tr style="border-top:1px solid #f1f5f9">
+                                <td style="padding:10px 14px;color:#475569;white-space:nowrap">@l.YaradilmaTarixi.ToString("dd.MM.yy HH:mm")</td>
+                                <td style="padding:10px 14px;color:#0f172a;font-family:monospace">@l.Telefon</td>
+                                <td style="padding:10px 14px;color:#334155;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@l.Metn">@l.Metn</td>
+                                <td style="padding:10px 14px;color:#64748b">@(l.Sablon?.Ad ?? "—")</td>
+                                <td style="padding:10px 14px">
+                                    <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;color:#fff;background:@StatusRengi(l.Status)">
+                                        @StatusText(l.Status)
+                                    </span>
+                                    @if (!string.IsNullOrEmpty(l.Xeta))
+                                    {
+                                        <div style="font-size:11px;color:#dc2626;margin-top:2px" title="@l.Xeta">@(l.Xeta.Length > 40 ? l.Xeta.Substring(0,40) + "…" : l.Xeta)</div>
+                                    }
+                                </td>
+                                <td style="padding:10px 14px;color:#64748b">@(l.GonderenIsci?.TamAd ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
     </div>
 </div>
 
@@ -431,4 +451,14 @@
     function gosterUgur(msg) { var el = document.getElementById('topluUgur'); el.textContent = msg; el.style.display = 'block'; }
     function gizleUgur()     { document.getElementById('topluUgur').style.display = 'none'; }
     function escHtml(s)      { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function tarixceToggle() {
+        var blok = document.getElementById('tarixceBlok');
+        var icon = document.getElementById('tarixceIcon');
+        var metn = document.getElementById('tarixceBtnMetn');
+        var aciq = blok.style.display !== 'none';
+        blok.style.display = aciq ? 'none' : 'block';
+        icon.className     = aciq ? 'bi bi-chevron-down' : 'bi bi-chevron-up';
+        metn.textContent   = aciq ? 'Göstər' : 'Gizlət';
+    }
 </script>
