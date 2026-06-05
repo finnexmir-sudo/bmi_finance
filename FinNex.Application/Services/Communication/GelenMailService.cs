@@ -437,4 +437,24 @@ public class GelenMailService : IGelenMailService
 
         await _uow.YaddaSaxlaAsync();
     }
+
+    public async Task<(string FaylYolu, string FaylAdi, string ContentType)?> QosmaGetirAsync(int qosmaId, int isciId)
+    {
+        var qosma = await _uow.Repository<GelenMailQosma>().Query()
+            .AsNoTracking()
+            .Where(x => x.Id == qosmaId && !x.Silinib)
+            .FirstOrDefaultAsync();
+
+        if (qosma == null || !File.Exists(qosma.FaylYolu))
+            return null;
+
+        var tapshirildi = await _uow.Repository<GelenMailIsci>().Query()
+            .AsNoTracking()
+            .AnyAsync(x => x.GelenMailId == qosma.GelenMailId && x.IsciId == isciId && !x.Silinib);
+
+        if (!tapshirildi)
+            return null;
+
+        return (qosma.FaylYolu, qosma.FaylAdi, qosma.ContentType);
+    }
 }
