@@ -331,14 +331,13 @@
             var cells = tr.querySelectorAll('td');
             if (cells.length < 3) return;
             var ad = cells[1].textContent.trim();
-            var telInput = cells[2].querySelector('.tel-input');
-            var tel = telInput ? telInput.value.trim() : cells[2].textContent.trim();
-            var raqemSayi = (tel.match(/\d/g) || []).length;
-            if (raqemSayi > 9) rows.push({ ad: ad, telefon: tel });
+            var faktiki = tr.getAttribute('data-faktiki') || '';
+            var raqemSayi = (faktiki.match(/\d/g) || []).length;
+            if (raqemSayi > 9) rows.push({ ad: ad, faktikiNomre: faktiki });
         });
-        if (rows.length === 0) { alert('Uyğunsuz nömrə tapılmadı (rəqəm sayı 9-dan çox olan yoxdur).'); return; }
-        var csv = 'Ad,Telefon\n' + rows.map(function (r) {
-            return '"' + r.ad.replace(/"/g, '""') + '","' + r.telefon.replace(/"/g, '""') + '"';
+        if (rows.length === 0) { alert('Uyğunsuz nömrə tapılmadı (faktiki nömrədə rəqəm sayı 9-dan çox olan yoxdur).'); return; }
+        var csv = 'Ad,Faktiki Nömrə\n' + rows.map(function (r) {
+            return '"' + r.ad.replace(/"/g, '""') + '","' + r.faktikiNomre.replace(/"/g, '""') + '"';
         }).join('\n');
         var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
         var url = URL.createObjectURL(blob);
@@ -409,10 +408,14 @@
             tr.style.background = i % 2 === 0 ? '#fff' : '#f8fafc';
             tr.setAttribute('data-ad', (item.ad || '').toLowerCase());
             tr.setAttribute('data-tel', (item.telefon || '').toLowerCase());
+            tr.setAttribute('data-faktiki', item.faktikiNomre || '');
+            var faktikiHtml = item.faktikiNomre
+                ? '<div style="font-size:11px;color:#94a3b8;margin-top:2px;font-family:monospace" title="Oracle-dəki faktiki nömrə">' + escHtml(item.faktikiNomre) + '</div>'
+                : '';
             tr.innerHTML =
                 '<td style="padding:8px 12px;text-align:center;border-top:1px solid #f1f5f9"><input type="checkbox" class="alici-chk" checked /></td>' +
                 '<td style="padding:8px 12px;color:#0f172a;border-top:1px solid #f1f5f9">' + escHtml(item.ad) + '</td>' +
-                '<td style="padding:6px 8px;border-top:1px solid #f1f5f9"><input type="text" class="tel-input" value="' + escHtml(item.telefon) + '" style="font-family:monospace;font-size:13px;border:1px solid #e2e8f0;border-radius:4px;padding:3px 6px;width:100%;max-width:150px;background:#fff" /></td>' +
+                '<td style="padding:6px 8px;border-top:1px solid #f1f5f9"><input type="text" class="tel-input" value="' + escHtml(item.telefon) + '" style="font-family:monospace;font-size:13px;border:1px solid #e2e8f0;border-radius:4px;padding:3px 6px;width:100%;max-width:150px;background:#fff" />' + faktikiHtml + '</td>' +
                 '<td style="padding:8px 12px;text-align:center;border-top:1px solid #f1f5f9"><button type="button" onclick="siliSatiri(this)" title="Sil" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:15px;padding:0 4px;line-height:1">&times;</button></td>';
             tbody.appendChild(tr);
         });

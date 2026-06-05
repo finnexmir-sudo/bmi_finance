@@ -180,7 +180,8 @@ public class PidSmsController : Controller
                 telefon = GetStr(r, "TELEFON") is { Length: > 0 } t ? t
                         : GetStr(r, "ZAMTEL") is { Length: > 0 } zt ? zt
                         : GetStr(r, "MOB") is { Length: > 0 } m ? m
-                        : GetStr(r, "TEL")
+                        : GetStr(r, "TEL"),
+                faktikiNomre = GetStr(r, "FAKTIKI_NOMRE")
             }).Where(x => !string.IsNullOrWhiteSpace(x.telefon)).ToList();
 
             return Json(new { data = result, sorguAdi = sorquResult.Data.SorguAdi });
@@ -214,7 +215,8 @@ public class PidSmsController : Controller
                 telefon = GetStr(r, "TELEFON") is { Length: > 0 } t  ? t
                         : GetStr(r, "ZAMTEL")  is { Length: > 0 } zt ? zt
                         : GetStr(r, "MOB")     is { Length: > 0 } m  ? m
-                        : GetStr(r, "TEL")
+                        : GetStr(r, "TEL"),
+                faktikiNomre = GetStr(r, "FAKTIKI_NOMRE")
             }).Where(x => !string.IsNullOrWhiteSpace(x.telefon)).ToList();
 
             return Json(new { data = result, sorguAdi = sorquResult.Data.SorguAdi });
