@@ -133,6 +133,7 @@
                 <input type="text" id="topluFilter" class="fn-input" placeholder="Ad və ya telefona görə axtar..."
                        oninput="topluFilterEt()" style="max-width:300px" />
                 <span id="topluSay" style="font-size:13px;color:#64748b;white-space:nowrap"></span>
+                <span id="aktivSiyahiBecj" style="display:none;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe"></span>
                 <button type="button" class="fn-btn fn-btn--outline" onclick="uygunsuzNomrelerExcel()"
                         title="Rəqəm sayı 9-dan çox olan nömrələri Excel-ə çıxart"
                         style="font-size:12px;padding:5px 10px;margin-left:auto;white-space:nowrap">
@@ -324,6 +325,7 @@
             var resp = await fetch('@Url.Action("BorcalanlarGetir", "PidSms", new { area = "User" })');
             var json = await resp.json();
             if (json.error) { gosterXeta(json.error); return; }
+            aktivSiyahiGoster('VK Borcalanlar', 'blue');
             cedveldoldir(json.data, json.sorguAdi);
         } catch (e) {
             gosterXeta('Şəbəkə xətası: ' + e.message);
@@ -342,6 +344,7 @@
             var resp = await fetch('@Url.Action("ZaminlerGetir", "PidSms", new { area = "User" })');
             var json = await resp.json();
             if (json.error) { gosterXeta(json.error); return; }
+            aktivSiyahiGoster('VK Borcalan Zaminləri', 'purple');
             cedveldoldir(json.data, json.sorguAdi);
         } catch (e) {
             gosterXeta('Şəbəkə xətası: ' + e.message);
@@ -389,6 +392,7 @@
             var resp = await fetch(url);
             var json = await resp.json();
             if (json.error) { gosterXeta(json.error); return; }
+            aktivSiyahiGoster('Ödəniş günü — ' + tarix, 'green');
             cedveldoldir(json.data, json.sorguAdi);
         } catch (e) {
             gosterXeta('Şəbəkə xətası: ' + e.message);
@@ -412,6 +416,7 @@
             var resp = await fetch('@Url.Action("ExceldenYukle", "PidSms", new { area = "User" })', { method: 'POST', body: fd });
             var json = await resp.json();
             if (json.error) { gosterXeta(json.error); return; }
+            aktivSiyahiGoster('Excel: ' + this.files[0].name, 'green');
             cedveldoldir(json.data, json.sorguAdi);
         } catch (e) {
             gosterXeta('Şəbəkə xətası: ' + e.message);
@@ -421,6 +426,21 @@
             this.value = '';
         }
     });
+
+    function aktivSiyahiGoster(ad, stil) {
+        var el = document.getElementById('aktivSiyahiBecj');
+        el.textContent = '• ' + ad;
+        el.style.display = 'inline-block';
+        var palettes = {
+            blue:   ['#dbeafe','#1d4ed8','#bfdbfe'],
+            purple: ['#f3e8ff','#7e22ce','#e9d5ff'],
+            green:  ['#dcfce7','#15803d','#bbf7d0']
+        };
+        var p = palettes[stil] || palettes.blue;
+        el.style.background   = p[0];
+        el.style.color        = p[1];
+        el.style.borderColor  = p[2];
+    }
 
     function cedveldoldir(data, sorguAdi) {
         var tbody = document.getElementById('topluTbody');
