@@ -230,7 +230,7 @@ namespace FinNex.Application.Services.HR
                 if (jetonlar.Count != dto.JetonIds.Count)
                     return Result.Fail("Seçilmiş jetonların bir hissəsi etibarsızdır.");
 
-                var baseSaat = jetonlar.Sum(x => x.JetonTeyinati.SaatDeyeri);
+                var baseSaat = jetonlar.Sum(x => x.QalanSaat ?? x.JetonTeyinati.SaatDeyeri);
 
                 // Reytinq əmsalını tətbiq et
                 var (pulAmsali, saatAmsali) = await _reytingService.IsciAmsallariGetirAsync(isciId);
