@@ -196,6 +196,9 @@ namespace FinNex.Application.Services.HR
         {
             try
             {
+                if (dto == null)
+                    return Result.Fail("Sorğu məlumatları alınmadı.");
+
                 if (dto.JetonIds == null || !dto.JetonIds.Any())
                     return Result.Fail("Ən azı bir jeton seçilməlidir.");
 

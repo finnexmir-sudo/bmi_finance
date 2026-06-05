@@ -154,8 +154,8 @@ async function ujSubmitRedim() {
         if (!bas || !bitis) return ujToast('Saat aralığını daxil edin.', 'warn');
         if (bas >= bitis) return ujToast('Bitmə saatı başlamadan sonra olmalıdır.', 'warn');
         body.icazeTarixi = tarix;
-        body.baslamaSaati = bas;
-        body.bitisSaati = bitis;
+        body.baslamaSaati = bas.length === 5 ? bas + ':00' : bas;
+        body.bitisSaati   = bitis.length === 5 ? bitis + ':00' : bitis;
     }
 
     const res = await fetch('/User/Jeton/RedimGonder', {
