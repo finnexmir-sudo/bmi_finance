@@ -27,7 +27,7 @@ public class SistemAyarController : Controller
         var ayar = await _db.SistemAyarlari.FirstOrDefaultAsync()
                    ?? new SistemAyar();
         ViewData["Title"] = "Sistem Ayarları";
-        await YukleSorqular(ayar.PidTopluSmsOracleSorguId);
+        await YukleSorqular(ayar.PidTopluSmsOracleSorguId, ayar.PidOdenisGunuSorguId);
         return View(ayar);
     }
 
@@ -50,16 +50,18 @@ public class SistemAyarController : Controller
             ayar.KreditImapPassword = model.KreditImapPassword.Trim();
 
         ayar.PidTopluSmsOracleSorguId = model.PidTopluSmsOracleSorguId;
+        ayar.PidOdenisGunuSorguId     = model.PidOdenisGunuSorguId;
 
         await _db.SaveChangesAsync();
         TempData["Ugur"] = "Ayarlar yadda saxlandı.";
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task YukleSorqular(int? seciliId = null)
+    private async Task YukleSorqular(int? borcalanSeciliId = null, int? odenisGunuSeciliId = null)
     {
         var result = await _oracleSorguService.HamisiniGetirAsync();
         var aktiv = (result.Data ?? []).Where(x => x.Aktiv).ToList();
-        ViewBag.OracleSorqular = new SelectList(aktiv, "Id", "SorguAdi", seciliId);
+        ViewBag.OracleSorqular         = new SelectList(aktiv, "Id", "SorguAdi", borcalanSeciliId);
+        ViewBag.OdenisGunuSorqular     = new SelectList(aktiv, "Id", "SorguAdi", odenisGunuSeciliId);
     }
 }

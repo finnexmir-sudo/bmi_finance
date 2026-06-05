@@ -20,6 +20,8 @@
     <div class="card-body p-4">
         <form asp-action="Saxla" method="post">
             @Html.AntiForgeryToken()
+            <input type="hidden" name="PidTopluSmsOracleSorguId" value="@Model.PidTopluSmsOracleSorguId" />
+            <input type="hidden" name="PidOdenisGunuSorguId"     value="@Model.PidOdenisGunuSorguId" />
 
             <div class="mb-3">
                 <label class="form-label fw-semibold">IMAP Server</label>
@@ -82,8 +84,23 @@
                 </select>
                 <div class="form-text">
                     <i class="bi bi-info-circle me-1"></i>
-                    PİD SMS səhifəsindəki "Toplu SMS" bölməsi bu sorğudan borcalanları çəkəcək.
+                    "Borcalanları Gətir" düyməsi bu sorğudan istifadə edir.
                     Sorğu <a asp-area="Admin" asp-controller="OracleSorgu" asp-action="Index">Oracle Sorğular</a> səhifəsindən əlavə olunur.
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Ödəniş günü olanlar Oracle Sorğusu</label>
+                <select name="PidOdenisGunuSorguId" class="form-select">
+                    <option value="">— Seçilməyib —</option>
+                    @foreach (var item in ViewBag.OdenisGunuSorqular as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? [])
+                    {
+                        <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                    }
+                </select>
+                <div class="form-text">
+                    <i class="bi bi-info-circle me-1"></i>
+                    "Ödəniş günü olanlar" düyməsi bu sorğudan istifadə edir. Sorğu mətni <code>&amp;tarix</code> parametrini ehtiva etməlidir (Oracle format: <code>dd-mm-yyyy</code>).
                 </div>
             </div>
 
