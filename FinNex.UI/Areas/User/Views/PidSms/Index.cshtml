@@ -164,7 +164,7 @@
                 <div style="padding:10px 14px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;font-size:13px;font-weight:600;color:#374151;display:flex;justify-content:space-between;align-items:center">
                     <span>SMS mətni</span>
                     <span style="font-size:11px;font-weight:400;color:#64748b">
-                        <i class="bi bi-info-circle"></i> <code>{AD}</code> — müştəri adı ilə əvəzlənir
+                        <i class="bi bi-info-circle"></i> <code>{{1}}</code> — ad &nbsp;|&nbsp; <code>{{2}}</code> — ödəniş tarixi
                     </span>
                 </div>
                 <div style="padding:14px;background:#fff">
@@ -291,8 +291,10 @@
         if (!metn) { blok.style.display = 'none'; return; }
         var ilkRow = document.querySelector('#topluTbody tr:not([style*="display: none"])');
         var ilkAd = ilkRow ? (ilkRow.querySelectorAll('td')[1]?.textContent.trim() || '') : '';
+        var ilkTarix = ilkRow ? (ilkRow.getAttribute('data-odenis-tarixi') || '') : '';
         document.getElementById('onizlemeMetn').textContent = metn
             .replace(/\{\{1\}\}/g, ilkAd || '{{1}}')
+            .replace(/\{\{2\}\}/g, ilkTarix || '{{2}}')
             .replace(/\{AD\}/gi, ilkAd || '{AD}');
         document.getElementById('onizlemeAdLabel').textContent = ilkAd ? '(' + ilkAd + ' üçün)' : '';
         blok.style.display = 'block';
@@ -422,6 +424,7 @@
             tr.setAttribute('data-tel', (item.telefon || '').toLowerCase());
             tr.setAttribute('data-faktiki', item.faktikiNomre || '');
             tr.setAttribute('data-uygunsuz', uygun ? '0' : '1');
+            tr.setAttribute('data-odenis-tarixi', item.odenisTarixi || '');
             var faktikiHtml = item.faktikiNomre
                 ? '<div style="font-size:11px;color:#94a3b8;margin-top:2px;font-family:monospace" title="Oracle-dəki faktiki nömrə">' + escHtml(item.faktikiNomre) + '</div>'
                 : '';
@@ -492,7 +495,11 @@
             if (!chk || !chk.checked) return;
             var cells = tr.querySelectorAll('td');
             var telInput = cells[2]?.querySelector('.tel-input');
-            alicilar.push({ ad: cells[1].textContent.trim(), telefon: telInput ? telInput.value.trim() : cells[2].textContent.trim() });
+            alicilar.push({
+                ad: cells[1].textContent.trim(),
+                telefon: telInput ? telInput.value.trim() : cells[2].textContent.trim(),
+                odenisTarixi: tr.getAttribute('data-odenis-tarixi') || ''
+            });
         });
 
         if (alicilar.length === 0) { alert('Heç bir alıcı seçilməyib.'); return; }

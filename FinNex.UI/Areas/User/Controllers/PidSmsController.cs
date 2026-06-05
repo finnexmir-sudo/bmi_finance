@@ -107,11 +107,12 @@ public class PidSmsController : Controller
             var rows = await _oracle.SelectAsync(sql);
             var result = rows.Select(r => new
             {
-                ad      = GetStr(r, "AD"),
-                telefon = GetStr(r, "MOB") is { Length: > 0 } m ? m
-                        : GetStr(r, "MOBILNIY") is { Length: > 0 } mn ? mn
-                        : GetStr(r, "TELEFON")  is { Length: > 0 } t  ? t
-                        : GetStr(r, "TEL")
+                ad           = GetStr(r, "AD"),
+                telefon      = GetStr(r, "MOB") is { Length: > 0 } m ? m
+                             : GetStr(r, "MOBILNIY") is { Length: > 0 } mn ? mn
+                             : GetStr(r, "TELEFON")  is { Length: > 0 } t  ? t
+                             : GetStr(r, "TEL"),
+                odenisTarixi = GetDate(r, "ODENIS_TARIXI")
             }).Where(x => !string.IsNullOrWhiteSpace(x.telefon)).ToList();
 
             return Json(new { data = result, sorguAdi = $"Ödəniş günü — {secilenTarix:dd.MM.yyyy}" });
@@ -236,12 +237,12 @@ public class PidSmsController : Controller
 
         var isciId = await CurrentIsciIdAsync();
 
-        List<(string Ad, string Telefon)>? alicilar;
+        List<(string Ad, string Telefon, string? Extra2)>? alicilar;
         try
         {
             var items = JsonSerializer.Deserialize<List<AliciItem>>(alicilarJson,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            alicilar = items?.Select(x => (x.Ad ?? "", x.Telefon ?? "")).ToList();
+            alicilar = items?.Select(x => (x.Ad ?? "", x.Telefon ?? "", x.OdenisTarixi)).ToList();
         }
         catch
         {
@@ -250,6 +251,7 @@ public class PidSmsController : Controller
 
         if (alicilar is null || alicilar.Count == 0)
             return Json(new { error = "Göndəriləcək alıcı yoxdur." });
+
 
         var (ugur, xeta) = await _smsService.TopluGonderAsync(alicilar, smsMetni, isciId);
         return Json(new { ugur, xeta });
@@ -318,10 +320,21 @@ public class PidSmsController : Controller
         return found.Value?.ToString()?.Trim() ?? "";
     }
 
+    private static string GetDate(Dictionary<string, object?> row, string key)
+    {
+        var found = row.FirstOrDefault(kv =>
+            string.Equals(kv.Key, key, StringComparison.OrdinalIgnoreCase));
+        if (found.Value is DateTime dt) return dt.ToString("dd.MM.yyyy");
+        var s = found.Value?.ToString()?.Trim() ?? "";
+        if (DateTime.TryParse(s, out var parsed)) return parsed.ToString("dd.MM.yyyy");
+        return s;
+    }
+
     private sealed class AliciItem
     {
         public string? Ad { get; set; }
         public string? Telefon { get; set; }
+        public string? OdenisTarixi { get; set; }
     }
 
     [HttpPost]

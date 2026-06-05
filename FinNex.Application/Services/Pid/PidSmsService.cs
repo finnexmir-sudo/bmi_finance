@@ -89,15 +89,16 @@ public class PidSmsService : IPidSmsService
     }
 
     public async Task<(int Ugur, int Xeta)> TopluGonderAsync(
-        IEnumerable<(string Ad, string Telefon)> alicilar,
+        IEnumerable<(string Ad, string Telefon, string? Extra2)> alicilar,
         string smsMetni,
         int? gonderenIsciId)
     {
         int ugur = 0, xeta = 0;
-        foreach (var (ad, telefon) in alicilar)
+        foreach (var (ad, telefon, extra2) in alicilar)
         {
             var metn = smsMetni
                 .Replace("{{1}}", ad)
+                .Replace("{{2}}", extra2 ?? "")
                 .Replace("{AD}", ad, StringComparison.OrdinalIgnoreCase);
             var log = await GonderAsync(telefon, metn, sablonId: null, gonderenIsciId);
             if (log.Status == PidSmsStatus.Xeta) xeta++;
