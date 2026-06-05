@@ -13,4 +13,5 @@ public class SistemAyar
     // PİD toplu SMS
     public int? PidTopluSmsOracleSorguId  { get; set; }
     public int? PidOdenisGunuSorguId      { get; set; }
+    public int? PidZaminlerSorguId        { get; set; }
 }

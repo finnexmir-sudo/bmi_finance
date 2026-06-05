@@ -191,6 +191,40 @@ public class PidSmsController : Controller
         }
     }
 
+    [HttpGet]
+    public async Task<IActionResult> ZaminlerGetir()
+    {
+        var ayar = await _sistemAyar.GetirAsync();
+        if (ayar?.PidZaminlerSorguId is null)
+            return Json(new { error = "Sistem ayarlarında 'VK Borcalan Zaminləri' Oracle sorğusu seçilməyib." });
+
+        var sorquResult = await _sorguService.IdIleGetirAsync(ayar.PidZaminlerSorguId.Value);
+        if (!sorquResult.Success || sorquResult.Data is null)
+            return Json(new { error = "Oracle sorğusu tapılmadı." });
+
+        if (!sorquResult.Data.Aktiv)
+            return Json(new { error = "Oracle sorğusu deaktividir." });
+
+        try
+        {
+            var rows = await _oracle.SelectAsync(sorquResult.Data.SorguMetni);
+            var result = rows.Select(r => new
+            {
+                ad      = GetStr(r, "AD"),
+                telefon = GetStr(r, "TELEFON") is { Length: > 0 } t  ? t
+                        : GetStr(r, "ZAMTEL")  is { Length: > 0 } zt ? zt
+                        : GetStr(r, "MOB")     is { Length: > 0 } m  ? m
+                        : GetStr(r, "TEL")
+            }).Where(x => !string.IsNullOrWhiteSpace(x.telefon)).ToList();
+
+            return Json(new { data = result, sorguAdi = sorquResult.Data.SorguAdi });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { error = $"Oracle xətası: {ex.Message}" });
+        }
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> TopluGonder([FromForm] string alicilarJson, [FromForm] string smsMetni)
