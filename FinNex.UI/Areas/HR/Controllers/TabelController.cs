@@ -310,15 +310,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             ws.Range(dr, 12, dr, 18).Merge();
             ws.Cell(dr, 12).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             ws.Row(dr).Height = 14;
-            dr++;
-
-            ws.Cell(dr, 2).Value = "(vəzifəsi, soyadı, adı, atasının adı)";
-            ws.Range(dr, 2, dr, 10).Merge();
-            ws.Cell(dr, 2).Style.Font.Italic          = true;
-            ws.Cell(dr, 2).Style.Font.FontSize        = 8;
-            ws.Cell(dr, 2).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            ws.Row(dr).Height = 14;
-            dr += 2;
+            dr += 3;
 
             // ── Legend ────────────────────────────────────────────────────────
             ws.Cell(dr, 2).Value = tplLegendVal;
