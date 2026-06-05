@@ -211,6 +211,8 @@
             </div>
         }
 
+        <div id="tapaMsg" style="display:none;margin-bottom:10px;font-size:.84rem;padding:10px 14px;border-radius:8px;font-weight:500"></div>
+
         <form id="tapaForm">
             @Html.AntiForgeryToken()
             <input type="hidden" name="mailId" value="@Model.Id" />
@@ -232,7 +234,6 @@
                 <i class="bi bi-send"></i> Tapşır
             </button>
         </form>
-        <div id="tapaMsg" style="display:none;margin-top:8px;font-size:.84rem;padding:8px 12px;border-radius:6px"></div>
     </div>
 
     @if (Model.SenedId.HasValue)
@@ -331,15 +332,19 @@
                     body: params.toString()
                 });
                 var d = await r.json();
-                tapaMsg.textContent = d.message;
+                tapaMsg.innerHTML = (d.success ? '<i class="bi bi-check-circle-fill me-2"></i>' : '<i class="bi bi-x-circle-fill me-2"></i>') + d.message;
                 tapaMsg.style.background = d.success ? '#d1fae5' : '#fee2e2';
                 tapaMsg.style.color      = d.success ? '#065f46' : '#991b1b';
+                tapaMsg.style.border     = d.success ? '1px solid #6ee7b7' : '1px solid #fca5a5';
                 tapaMsg.style.display    = '';
+                tapaMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             } catch {
-                tapaMsg.textContent   = 'Xəta baş verdi.';
+                tapaMsg.innerHTML        = '<i class="bi bi-x-circle-fill me-2"></i>Xəta baş verdi.';
                 tapaMsg.style.background = '#fee2e2';
                 tapaMsg.style.color      = '#991b1b';
+                tapaMsg.style.border     = '1px solid #fca5a5';
                 tapaMsg.style.display    = '';
+                tapaMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         });
     }
