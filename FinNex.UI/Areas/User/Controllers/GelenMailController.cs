@@ -191,7 +191,7 @@ public class GelenMailController : Controller
                         BildirisNovu.YeniTapshiriq,
                         "Sizə mail tapşırıldı",
                         $"{senderName}: {mail.Movzu}" + (string.IsNullOrWhiteSpace(qeyd) ? "" : $" — {qeyd}"),
-                        "/User/Tapshiriq");
+                        $"/User/Tapshiriq/MailGoruntusu?mailId={mailId}");
                 }
                 catch { }
             }
@@ -302,7 +302,7 @@ public class GelenMailController : Controller
             var senderName = string.IsNullOrWhiteSpace(appUser.Ad) ? (User.Identity?.Name ?? "Rəhbər") : $"{appUser.Ad} {appUser.Soyad}".Trim();
             foreach (var isciId in isciIds)
             {
-                try { await _bildirisService.YaratAsync(isciId, BildirisNovu.YeniTapshiriq, "Sizə mail tapşırıldı", $"{senderName}: {mail.Movzu}" + (string.IsNullOrWhiteSpace(qeyd) ? "" : $" — {qeyd}"), "/User/Tapshiriq"); } catch { }
+                try { await _bildirisService.YaratAsync(isciId, BildirisNovu.YeniTapshiriq, "Sizə mail tapşırıldı", $"{senderName}: {mail.Movzu}" + (string.IsNullOrWhiteSpace(qeyd) ? "" : $" — {qeyd}"), $"/User/Tapshiriq/MailGoruntusu?mailId={mailId}"); } catch { }
             }
         }
         return Json(new { success = true, message = $"{isciIds.Count} işçiyə tapşırıldı." });

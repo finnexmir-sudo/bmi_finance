@@ -183,7 +183,7 @@ public class ChatController : Controller
                 dto.AlanIsciId,
                 "Yeni Mesaj",
                 $"{menim.TamAd}: {mesaj.Metn}",
-                "/User/Chat",
+                $"/User/Chat?isciId={menim.Id}",
                 BildirisNovu.YeniMesaj);
         }
         catch { }
@@ -260,7 +260,7 @@ public class ChatController : Controller
                 alanIsciId,
                 "Yeni Mesaj",
                 $"{menim.TamAd}: {pushMetn}",
-                "/User/Chat",
+                $"/User/Chat?isciId={menim.Id}",
                 BildirisNovu.YeniMesaj);
         }
         catch { }
@@ -414,7 +414,7 @@ public class ChatController : Controller
             try
             {
                 await _desktop.PushAsync(isciId, "Yeni Mesaj",
-                    $"{menim.TamAd}: {pushMetn}", "/User/Chat", BildirisNovu.YeniMesaj);
+                    $"{menim.TamAd}: {pushMetn}", $"/User/Chat?isciId={menim.Id}", BildirisNovu.YeniMesaj);
             }
             catch { }
         }
