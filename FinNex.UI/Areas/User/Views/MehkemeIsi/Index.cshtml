@@ -1,0 +1,159 @@
+@using FinNex.Application.DTOs.Pid
+@using FinNex.Domain.Entities.Pid
+@model IList<MehkemeIsiListDto>
+@{
+    ViewData["Title"] = "Məhkəmə İşləri";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="mi-page">
+    <div class="mi-head">
+        <div>
+            <h2 class="mi-title">Məhkəmə İşləri</h2>
+            <p class="mi-sub">PİD — aktiv və tamamlanmış məhkəmə işlərinin siyahısı</p>
+        </div>
+        <a asp-action="Yarat" class="mi-btn mi-btn--primary">
+            <i class="bi bi-plus-lg"></i> Yeni iş
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="mi-alert mi-alert--success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="mi-alert mi-alert--error">@TempData["Error"]</div>
+    }
+
+    <div class="mi-filter-row">
+        <input type="text" id="miSearch" class="mi-input" placeholder="Qeydiyyat № və ya ad axtar…" />
+        <select id="miStatusFilter" class="mi-select">
+            <option value="">Bütün statuslar</option>
+            <option value="1">Hazırlanır</option>
+            <option value="2">Məhkəmədə</option>
+            <option value="3">İcrada</option>
+            <option value="4">Tamamlandı</option>
+            <option value="5">Bağlandı</option>
+        </select>
+        <select id="miNovFilter" class="mi-select">
+            <option value="">Bütün növlər</option>
+            <option value="1">İpoteka</option>
+            <option value="2">İstehlak</option>
+            <option value="3">Kart krediti</option>
+            <option value="4">Digər</option>
+        </select>
+    </div>
+
+    <div class="mi-table-card">
+        <div class="mi-table-wrap">
+            <table class="mi-table" id="miTable">
+                <thead>
+                    <tr>
+                        <th>Qeydiyyat №</th>
+                        <th>Borclu</th>
+                        <th>Növ</th>
+                        <th>Əsas borc</th>
+                        <th>Məhkəmə xərci</th>
+                        <th>Status</th>
+                        <th>Mərhələ</th>
+                        <th>Tarix</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        @foreach (var item in Model)
+                        {
+                            <tr data-status="@((int)item.Status)" data-nov="@((int)item.Nov)"
+                                data-search="@item.QeydiyyatNomresi @item.BorcluAd">
+                                <td class="mi-nomre">@item.QeydiyyatNomresi</td>
+                                <td>@item.BorcluAd</td>
+                                <td>@Html.Raw(NovBadge(item.Nov))</td>
+                                <td>@(item.EsasBorc.HasValue ? item.EsasBorc.Value.ToString("N2") + " ₼" : "—")</td>
+                                <td>@(item.MehkemeXerci.HasValue ? item.MehkemeXerci.Value.ToString("N2") + " ₼" : "—")</td>
+                                <td>@Html.Raw(StatusBadge(item.Status))</td>
+                                <td><span class="mi-count">@item.MerheleCount</span></td>
+                                <td class="mi-date">@item.YaradilmaTarixi.ToString("dd.MM.yyyy")</td>
+                                <td>
+                                    <a asp-action="Detal" asp-route-id="@item.Id" class="mi-btn-icon" title="Detallar">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9">
+                                <div class="mi-empty">
+                                    <i class="bi bi-inbox"></i>
+                                    <div>Hələ məhkəmə işi yoxdur</div>
+                                    <a asp-action="Yarat" class="mi-btn mi-btn--primary" style="margin-top:12px">Yeni iş yarat</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="mi-footer-count" id="miCount">@Model.Count qeyd</div>
+    </div>
+</div>
+
+@functions {
+    string NovBadge(MehkemeIsiNov nov) => nov switch
+    {
+        MehkemeIsiNov.Ipoteka    => "<span class=\"mi-badge mi-badge--ipoteka\">İpoteka</span>",
+        MehkemeIsiNov.Istehlak   => "<span class=\"mi-badge mi-badge--istehlak\">İstehlak</span>",
+        MehkemeIsiNov.KartKredit => "<span class=\"mi-badge mi-badge--kart\">Kart</span>",
+        _                        => "<span class=\"mi-badge mi-badge--diger\">Digər</span>"
+    };
+
+    string StatusBadge(MehkemeIsiStatus s) => s switch
+    {
+        MehkemeIsiStatus.Hazirlanir => "<span class=\"mi-badge mi-badge--hazir\">Hazırlanır</span>",
+        MehkemeIsiStatus.Mehkemede => "<span class=\"mi-badge mi-badge--mehkeme\">Məhkəmədə</span>",
+        MehkemeIsiStatus.Icra       => "<span class=\"mi-badge mi-badge--icra\">İcrada</span>",
+        MehkemeIsiStatus.Tamamlandi => "<span class=\"mi-badge mi-badge--tamam\">Tamamlandı</span>",
+        MehkemeIsiStatus.Baghlandi  => "<span class=\"mi-badge mi-badge--bagli\">Bağlandı</span>",
+        _                           => ""
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/user-mehkeme.css" asp-append-version="true" />
+}
+
+@section Scripts {
+<script>
+    (function () {
+        var search = document.getElementById('miSearch');
+        var statusSel = document.getElementById('miStatusFilter');
+        var novSel = document.getElementById('miNovFilter');
+        var countEl = document.getElementById('miCount');
+
+        function filter() {
+            var q = search.value.toLowerCase();
+            var st = statusSel.value;
+            var nv = novSel.value;
+            var rows = document.querySelectorAll('#miTable tbody tr[data-status]');
+            var visible = 0;
+            rows.forEach(function (r) {
+                var ok = (!q || r.dataset.search.toLowerCase().includes(q))
+                      && (!st || r.dataset.status === st)
+                      && (!nv || r.dataset.nov === nv);
+                r.style.display = ok ? '' : 'none';
+                if (ok) visible++;
+            });
+            countEl.textContent = visible + ' qeyd';
+        }
+
+        search.addEventListener('input', filter);
+        statusSel.addEventListener('change', filter);
+        novSel.addEventListener('change', filter);
+    })();
+</script>
+}

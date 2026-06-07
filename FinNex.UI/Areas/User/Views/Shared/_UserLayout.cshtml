@@ -62,7 +62,7 @@
         if (currentArea == "PR_Odenis_Tapsirigi") return "umumi";
         if (currentController == "Tesdiq") return "tesdiq";
         if (currentController == "KreditMuraciet") return "kredit";
-        if (currentController == "PidSms") return "pid";
+        if (currentController is "PidSms" or "MehkemeIsi") return "pid";
         if (currentController == "Hesabat" || currentController == "HesabatIzleme") return "hesabat";
         if (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye") return "hr";
         if (currentController is "Davamiyyet" or "Takvim" or "Mezuniyyet" or "Muraciet"
@@ -531,15 +531,46 @@
                 break;
 
             case "pid":
-                <div class="fn-nav-label">PİD</div>
-                <a asp-area="User" asp-controller="PidSms" asp-action="Index"
-                   class="fn-nav-item @(currentController == "PidSms" && currentAction == "Index" ? "active" : "")">
-                    <i class="bi bi-chat-left-text"></i> SMS
-                </a>
-                <a asp-area="User" asp-controller="PidSms" asp-action="Sablonlar"
-                   class="fn-nav-item @(currentController == "PidSms" && currentAction == "Sablonlar" ? "active" : "")">
-                    <i class="bi bi-file-earmark-text"></i> Şablonlar
-                </a>
+                {
+                    var pidSmsActive   = currentController == "PidSms";
+                    var pidMehkActive  = currentController == "MehkemeIsi";
+
+                    <div class="fn-nav-label">PİD</div>
+
+                    <div class="fn-nav-g @(pidSmsActive ? "open" : "")">
+                        <button type="button" class="fn-nav-g-head">
+                            <span>SMS</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="fn-nav-g-body">
+                            <a asp-area="User" asp-controller="PidSms" asp-action="Index"
+                               class="fn-nav-item @(currentController == "PidSms" && currentAction == "Index" ? "active" : "")">
+                                <i class="bi bi-chat-left-text"></i> SMS
+                            </a>
+                            <a asp-area="User" asp-controller="PidSms" asp-action="Sablonlar"
+                               class="fn-nav-item @(currentController == "PidSms" && currentAction == "Sablonlar" ? "active" : "")">
+                                <i class="bi bi-file-earmark-text"></i> Şablonlar
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="fn-nav-g @(pidMehkActive ? "open" : "")">
+                        <button type="button" class="fn-nav-g-head">
+                            <span>Məhkəmə İşləri</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="fn-nav-g-body">
+                            <a asp-area="User" asp-controller="MehkemeIsi" asp-action="Index"
+                               class="fn-nav-item @(currentController == "MehkemeIsi" && currentAction == "Index" ? "active" : "")">
+                                <i class="bi bi-list-ul"></i> Siyahı
+                            </a>
+                            <a asp-area="User" asp-controller="MehkemeIsi" asp-action="Yarat"
+                               class="fn-nav-item @(currentController == "MehkemeIsi" && currentAction == "Yarat" ? "active" : "")">
+                                <i class="bi bi-plus-circle"></i> Yeni iş
+                            </a>
+                        </div>
+                    </div>
+                }
                 break;
 
             case "hr":

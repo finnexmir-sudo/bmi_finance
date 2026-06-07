@@ -134,6 +134,8 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
                            FinNex.Application.Services.Pid.PidSmsSablonService>();
         services.AddScoped<FinNex.Application.Interfaces.Pid.IPidSmsService,
                            FinNex.Application.Services.Pid.PidSmsService>();
+        services.AddScoped<FinNex.Application.Interfaces.Pid.IMehkemeIsiService,
+                           FinNex.Application.Services.Pid.MehkemeIsiService>();
 
         // ── Jeton (Gamification) Modulu ────────────────────
         services.AddScoped<IJetonService, JetonService>();
