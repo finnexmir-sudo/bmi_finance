@@ -84,6 +84,12 @@ function chatDeleteMsg(msgId) {
                 selectContact(parseInt(this.dataset.isciId), this.dataset.ad, this);
             });
         });
+
+        var autoIsciId = parseInt(new URLSearchParams(window.location.search).get('isciId'));
+        if (autoIsciId) {
+            var autoEl = list.querySelector('[data-isci-id="' + autoIsciId + '"]');
+            if (autoEl) selectContact(autoIsciId, autoEl.dataset.ad, autoEl);
+        }
     }
 
     function selectContact(isciId, ad, el) {
