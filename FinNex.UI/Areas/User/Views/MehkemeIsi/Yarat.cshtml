@@ -1,0 +1,128 @@
+@using FinNex.Domain.Entities.Pid
+@model FinNex.Application.DTOs.Pid.MehkemeIsiCreateDto
+@{
+    ViewData["Title"] = "Yeni Məhkəmə İşi";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="mi-page">
+    <div class="mi-head">
+        <div>
+            <h2 class="mi-title">Yeni Məhkəmə İşi</h2>
+            <p class="mi-sub">Qeydiyyat nömrəsi ilə Oracle-dan məlumat çəkin</p>
+        </div>
+        <a asp-action="Index" class="mi-btn mi-btn--ghost">
+            <i class="bi bi-arrow-left"></i> Geri
+        </a>
+    </div>
+
+    <div class="mi-form-card">
+
+        <div class="mi-oracle-lookup">
+            <label class="mi-lbl">Qeydiyyat Nömrəsi (Oracle axtarış)</label>
+            <div class="mi-oracle-row">
+                <input type="text" id="oracleNomre" class="mi-input" maxlength="10"
+                       placeholder="6 rəqəmli №…" />
+                <button type="button" id="oracleAxtar" class="mi-btn mi-btn--primary">
+                    <i class="bi bi-search"></i> Axtar
+                </button>
+            </div>
+            <div id="oracleStatus" class="mi-oracle-status" style="display:none"></div>
+        </div>
+
+        <form asp-action="Yarat" method="post">
+            @Html.AntiForgeryToken()
+            <asp-validation-summary asp-validation-summary="All" class="mi-alert mi-alert--error" />
+
+            <div class="mi-form-grid">
+                <div class="mi-form-group">
+                    <label class="mi-lbl">Qeydiyyat №<span class="mi-req">*</span></label>
+                    <input asp-for="QeydiyyatNomresi" id="fldNomre" class="mi-input" maxlength="20" required />
+                </div>
+                <div class="mi-form-group mi-form-group--wide">
+                    <label class="mi-lbl">Borclu adı<span class="mi-req">*</span></label>
+                    <input asp-for="BorcluAd" id="fldAd" class="mi-input" required />
+                </div>
+                <div class="mi-form-group">
+                    <label class="mi-lbl">Əsas borc (₼)</label>
+                    <input asp-for="EsasBorc" id="fldBorc" class="mi-input" type="number" step="0.01" min="0" />
+                </div>
+                <div class="mi-form-group">
+                    <label class="mi-lbl">Məhkəmə xərci (₼)</label>
+                    <input asp-for="MehkemeXerci" class="mi-input" type="number" step="0.01" min="0" />
+                </div>
+                <div class="mi-form-group">
+                    <label class="mi-lbl">Növ</label>
+                    <select asp-for="Nov" class="mi-select">
+                        <option value="1">İpoteka</option>
+                        <option value="2">İstehlak</option>
+                        <option value="3">Kart krediti</option>
+                        <option value="4">Digər</option>
+                    </select>
+                </div>
+                <div class="mi-form-group">
+                    <label class="mi-lbl">Status</label>
+                    <select asp-for="Status" class="mi-select">
+                        <option value="1">Hazırlanır</option>
+                        <option value="2">Məhkəmədə</option>
+                        <option value="3">İcrada</option>
+                        <option value="4">Tamamlandı</option>
+                        <option value="5">Bağlandı</option>
+                    </select>
+                </div>
+                <div class="mi-form-group">
+                    <label class="mi-lbl">Başlama tarixi</label>
+                    <input asp-for="BaslamaTarixi" class="mi-input" type="date" />
+                </div>
+                <div class="mi-form-group mi-form-group--full">
+                    <label class="mi-lbl">Qeyd</label>
+                    <textarea asp-for="Qeyd" class="mi-textarea" rows="3" placeholder="Əlavə qeyd…"></textarea>
+                </div>
+            </div>
+
+            <div class="mi-form-actions">
+                <button type="submit" class="mi-btn mi-btn--primary">
+                    <i class="bi bi-check-lg"></i> Saxla
+                </button>
+                <a asp-action="Index" class="mi-btn mi-btn--ghost">Ləğv et</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/user-mehkeme.css" asp-append-version="true" />
+}
+
+@section Scripts {
+<script>
+    document.getElementById('oracleAxtar').addEventListener('click', async function () {
+        var nomre = document.getElementById('oracleNomre').value.trim();
+        if (!nomre) return;
+        var statusEl = document.getElementById('oracleStatus');
+        statusEl.style.display = '';
+        statusEl.className = 'mi-oracle-status mi-oracle-status--loading';
+        statusEl.textContent = 'Axtarılır…';
+        this.disabled = true;
+
+        try {
+            var r = await fetch('/User/MehkemeIsi/OracleAxtar?nomre=' + encodeURIComponent(nomre));
+            var json = await r.json();
+            if (json.success) {
+                document.getElementById('fldNomre').value = nomre;
+                document.getElementById('fldAd').value = json.borcluAd ?? '';
+                document.getElementById('fldBorc').value = json.esasBorc != null ? json.esasBorc : '';
+                statusEl.className = 'mi-oracle-status mi-oracle-status--ok';
+                statusEl.textContent = 'Tapıldı: ' + (json.borcluAd ?? '');
+            } else {
+                statusEl.className = 'mi-oracle-status mi-oracle-status--err';
+                statusEl.textContent = json.message ?? 'Tapılmadı.';
+            }
+        } catch {
+            statusEl.className = 'mi-oracle-status mi-oracle-status--err';
+            statusEl.textContent = 'Xəta baş verdi.';
+        }
+        this.disabled = false;
+    });
+</script>
+}

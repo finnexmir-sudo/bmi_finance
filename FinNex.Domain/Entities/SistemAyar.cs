@@ -14,4 +14,7 @@ public class SistemAyar
     public int? PidTopluSmsOracleSorguId  { get; set; }
     public int? PidOdenisGunuSorguId      { get; set; }
     public int? PidZaminlerSorguId        { get; set; }
+
+    // PİD Məhkəmə İşləri — Oracle sorğusu (qeydiyyat № ilə axtarış)
+    public int? PidMehkemeSorguId         { get; set; }
 }

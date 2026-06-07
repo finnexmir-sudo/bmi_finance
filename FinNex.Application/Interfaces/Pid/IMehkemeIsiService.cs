@@ -1,0 +1,20 @@
+using FinNex.Application.DTOs.Pid;
+using FinNex.Domain.Entities.Pid;
+using Microsoft.AspNetCore.Http;
+
+namespace FinNex.Application.Interfaces.Pid;
+
+public interface IMehkemeIsiService
+{
+    Task<IList<MehkemeIsiListDto>> HamisiniGetirAsync();
+    Task<MehkemeIsiDetailDto?> DetailGetirAsync(int id);
+    Task<MehkemeIsi> YaratAsync(MehkemeIsiCreateDto dto, int yaradanIsciId);
+    Task<bool> YenileAsync(int id, MehkemeIsiUpdateDto dto, int yenileyenIsciId);
+    Task<bool> SilAsync(int id, int silenIsciId);
+
+    Task<MehkemeMerhelesi> MerheleElavEtAsync(MehkemeMerheleCreateDto dto, IFormFile? fayl, string dmsRoot, int yaradanIsciId);
+    Task<bool> MerheleSilAsync(int merheleId, int silenIsciId);
+
+    // Oracle lookup — returns ad + esasBorc or error
+    Task<OracleAxtarNeticesi> OracleIleAxtarAsync(string qeydiyyatNomresi);
+}

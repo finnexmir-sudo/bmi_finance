@@ -1,0 +1,78 @@
+using FinNex.Domain.Entities.Pid;
+
+namespace FinNex.Application.DTOs.Pid;
+
+public class MehkemeIsiListDto
+{
+    public int Id                  { get; set; }
+    public string QeydiyyatNomresi { get; set; } = null!;
+    public string BorcluAd         { get; set; } = null!;
+    public decimal? EsasBorc       { get; set; }
+    public decimal? MehkemeXerci   { get; set; }
+    public MehkemeIsiNov Nov       { get; set; }
+    public MehkemeIsiStatus Status { get; set; }
+    public DateTime? BaslamaTarixi { get; set; }
+    public int MerheleCount        { get; set; }
+    public DateTime YaradilmaTarixi { get; set; }
+}
+
+public class MehkemeIsiDetailDto
+{
+    public int Id                  { get; set; }
+    public string QeydiyyatNomresi { get; set; } = null!;
+    public string BorcluAd         { get; set; } = null!;
+    public decimal? EsasBorc       { get; set; }
+    public decimal? MehkemeXerci   { get; set; }
+    public MehkemeIsiNov Nov       { get; set; }
+    public MehkemeIsiStatus Status { get; set; }
+    public DateTime? BaslamaTarixi { get; set; }
+    public string? Qeyd            { get; set; }
+    public DateTime YaradilmaTarixi { get; set; }
+    public IList<MehkemeMerheleDto> Merheleler { get; set; } = new List<MehkemeMerheleDto>();
+}
+
+public class MehkemeMerheleDto
+{
+    public int Id                  { get; set; }
+    public MerheleTipi MerheleTipi { get; set; }
+    public DateTime Tarix          { get; set; }
+    public string? Qeyd            { get; set; }
+    public string? SenedYolu       { get; set; }
+}
+
+public class MehkemeIsiCreateDto
+{
+    public string QeydiyyatNomresi { get; set; } = null!;
+    public string BorcluAd         { get; set; } = null!;
+    public decimal? EsasBorc       { get; set; }
+    public decimal? MehkemeXerci   { get; set; }
+    public MehkemeIsiNov Nov       { get; set; }
+    public MehkemeIsiStatus Status { get; set; } = MehkemeIsiStatus.Hazirlanir;
+    public DateTime? BaslamaTarixi { get; set; }
+    public string? Qeyd            { get; set; }
+}
+
+public class MehkemeIsiUpdateDto
+{
+    public decimal? MehkemeXerci   { get; set; }
+    public MehkemeIsiNov Nov       { get; set; }
+    public MehkemeIsiStatus Status { get; set; }
+    public DateTime? BaslamaTarixi { get; set; }
+    public string? Qeyd            { get; set; }
+}
+
+public class MehkemeMerheleCreateDto
+{
+    public int MehkemeIsiId        { get; set; }
+    public MerheleTipi MerheleTipi { get; set; }
+    public DateTime Tarix          { get; set; }
+    public string? Qeyd            { get; set; }
+}
+
+public class OracleAxtarNeticesi
+{
+    public bool Tapildi            { get; set; }
+    public string? BorcluAd       { get; set; }
+    public decimal? EsasBorc      { get; set; }
+    public string? Xeta           { get; set; }
+}
