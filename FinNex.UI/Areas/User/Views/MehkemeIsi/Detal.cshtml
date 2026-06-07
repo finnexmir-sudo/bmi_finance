@@ -67,21 +67,21 @@
                 <div class="mi-form-grid">
                     <div class="mi-form-group">
                         <label class="mi-lbl">Növ</label>
-                        <select name="Nov" id="eNov" class="mi-select">
-                            <option value="1" @(Model.Nov == MehkemeIsiNov.Ipoteka ? "selected" : "")>İpoteka</option>
-                            <option value="2" @(Model.Nov == MehkemeIsiNov.Istehlak ? "selected" : "")>İstehlak</option>
-                            <option value="3" @(Model.Nov == MehkemeIsiNov.KartKredit ? "selected" : "")>Kart krediti</option>
-                            <option value="4" @(Model.Nov == MehkemeIsiNov.Diger ? "selected" : "")>Digər</option>
+                        <select asp-for="Nov" id="eNov" class="mi-select">
+                            <option value="1">İpoteka</option>
+                            <option value="2">İstehlak</option>
+                            <option value="3">Kart krediti</option>
+                            <option value="4">Digər</option>
                         </select>
                     </div>
                     <div class="mi-form-group">
                         <label class="mi-lbl">Status</label>
-                        <select name="Status" id="eStatus" class="mi-select">
-                            <option value="1" @(Model.Status == MehkemeIsiStatus.Hazirlanir ? "selected" : "")>Hazırlanır</option>
-                            <option value="2" @(Model.Status == MehkemeIsiStatus.Mehkemede ? "selected" : "")>Məhkəmədə</option>
-                            <option value="3" @(Model.Status == MehkemeIsiStatus.Icra ? "selected" : "")>İcrada</option>
-                            <option value="4" @(Model.Status == MehkemeIsiStatus.Tamamlandi ? "selected" : "")>Tamamlandı</option>
-                            <option value="5" @(Model.Status == MehkemeIsiStatus.Baghlandi ? "selected" : "")>Bağlandı</option>
+                        <select asp-for="Status" id="eStatus" class="mi-select">
+                            <option value="1">Hazırlanır</option>
+                            <option value="2">Məhkəmədə</option>
+                            <option value="3">İcrada</option>
+                            <option value="4">Tamamlandı</option>
+                            <option value="5">Bağlandı</option>
                         </select>
                     </div>
                     <div class="mi-form-group">
