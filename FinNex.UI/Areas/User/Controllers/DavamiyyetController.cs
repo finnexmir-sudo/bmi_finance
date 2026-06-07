@@ -99,11 +99,19 @@ namespace FinNex.UI.Areas.User.Controllers
             }).OrderByDescending(x => x.tarix).ToList();
 
             var ip = await GetIsParametriEntity();
-            var tezCixanHeddi = ip.StandartCixisVaxti - TimeSpan.FromMinutes(ip.TezCixmaToleransDeqiqe);
+            var standartHedd = ip.StandartCixisVaxti - TimeSpan.FromMinutes(ip.TezCixmaToleransDeqiqe);
 
             // İntizamsızlıq statistikası yalnız 01.06.2026-dan sayılır (sistemin canlı başlama tarixi)
             var intizamBaslangic = new DateTime(2026, 6, 1);
             var intizamResult = result.Where(x => x.Tarix.Date >= intizamBaslangic).ToList();
+
+            // IsGunuBitdiElan — rəhbər "İş Bitdi" elan etdisə, həmin gün üçün elan vaxtını threshold kimi istifadə et
+            var tarixlerSet = intizamResult.Select(x => x.Tarix.Date).Distinct().ToList();
+            var elanlar = await _unitOfWork.Repository<IsGunuBitdiElan>()
+                .Query().AsNoTracking()
+                .Where(x => tarixlerSet.Contains(x.Tarix.Date) && !x.Silinib)
+                .ToListAsync();
+            var elanDict = elanlar.ToDictionary(x => x.Tarix.Date, x => x.BitisVaxti);
 
             var isde      = result.Count(x => x.Status == DavamiyyetStatus.Isde);
             var gecikme   = result.Count(x => x.Status == DavamiyyetStatus.Gecikme);
@@ -111,8 +119,13 @@ namespace FinNex.UI.Areas.User.Controllers
             var icazeli   = result.Count(x => x.Status == DavamiyyetStatus.Icazeli);
             var xestelik  = result.Count(x => x.Status == DavamiyyetStatus.Xestelik);
             var ezamiyyet = result.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
-            // Erkən çıxış və çıxış yoxdur — yalnız 01.06.2026-dan (sistem canlı başlama tarixi)
-            var tezCixan  = intizamResult.Count(x => x.CixisVaxti.HasValue && x.CixisVaxti.Value.TimeOfDay < tezCixanHeddi);
+            // Erkən çıxış — elan varsa elan vaxtı, yoxdursa standart threshold ilə müqayisə
+            var tezCixan = intizamResult.Count(x =>
+            {
+                if (!x.CixisVaxti.HasValue) return false;
+                var hedd = elanDict.TryGetValue(x.Tarix.Date, out var ev) ? ev : standartHedd;
+                return x.CixisVaxti.Value.TimeOfDay < hedd;
+            });
             var cixisYox  = intizamResult.Count(x => x.GirisVaxti.HasValue && !x.CixisVaxti.HasValue);
 
             return Json(new
