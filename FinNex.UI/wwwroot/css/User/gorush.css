@@ -279,6 +279,83 @@
     color: #92400e;
 }
 
+/* Search & Filter */
+.grsh-searchbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+.grsh-search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 180px;
+}
+
+.grsh-search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    pointer-events: none;
+}
+
+.grsh-search-input {
+    width: 100%;
+    padding: 8px 10px 8px 34px;
+    border: 1px solid #e3e6ea;
+    border-radius: 8px;
+    font-size: .82rem;
+    outline: none;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+    .grsh-search-input:focus {
+        border-color: #3b82f6;
+    }
+
+.grsh-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.grsh-chip {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: 600;
+    border: 1.5px solid #e5e7eb;
+    background: #fff;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+}
+
+    .grsh-chip.active {
+        border-color: #3b82f6;
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .grsh-chip:hover:not(.active) {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+
+.grsh-no-result {
+    padding: 36px;
+    text-align: center;
+    font-size: .85rem;
+    color: #9ca3af;
+    display: none;
+}
+
 /* Empty */
 .grsh-empty {
     padding: 48px;

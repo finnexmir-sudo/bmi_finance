@@ -70,6 +70,23 @@
         </button>
     </div>
 
+    @* Axtarış və filter *@
+    <div class="grsh-searchbar">
+        <div class="grsh-search-wrap">
+            <svg class="grsh-search-icon" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input type="text" id="grshSearch" class="grsh-search-input" placeholder="Tedbir axtar..." autocomplete="off" />
+        </div>
+        <div class="grsh-chips">
+            <button class="grsh-chip active" data-filter="all">Hamısı</button>
+            <button class="grsh-chip" data-filter="grsh-status--plan">Planlanıb</button>
+            <button class="grsh-chip" data-filter="grsh-status--active">Davam edir</button>
+            <button class="grsh-chip" data-filter="grsh-status--done">Tamamlandı</button>
+            <button class="grsh-chip" data-filter="grsh-status--cancel">Ləğv edildi</button>
+        </div>
+    </div>
+
     @* Dəvət olunduğum tədbirlər *@
     <div class="grsh-panel @(Model.AktivTab == "menim" ? "" : "grsh-hidden")"
          data-panel="menim">
@@ -85,7 +102,9 @@
             <div class="grsh-list">
                 @foreach (var g in Model.MenimGorushler.OrderBy(x => x.Tarix))
                 {
-                    <a asp-action="Detay" asp-route-id="@g.Id" class="grsh-card">
+                    <a asp-action="Detay" asp-route-id="@g.Id" class="grsh-card"
+                       data-status="@g.HesablanmisStatusClass"
+                       data-search="@($"{g.Bashliq} {g.TeshkilatciAd} {g.Yer}".ToLower())">
                         <div class="grsh-card-date">
                             <div class="grsh-date-day">@g.Tarix.ToString("dd")</div>
                             <div class="grsh-date-mon">@g.Tarix.ToString("MMM")</div>
@@ -106,6 +125,7 @@
                     </a>
                 }
             </div>
+            <div class="grsh-no-result" id="noResultMenim">Nəticə tapılmadı</div>
         }
     </div>
 
@@ -127,7 +147,9 @@
             <div class="grsh-list">
                 @foreach (var g in Model.TeshkilEtdiklerim.OrderBy(x => x.Tarix))
                 {
-                    <a asp-action="Detay" asp-route-id="@g.Id" class="grsh-card">
+                    <a asp-action="Detay" asp-route-id="@g.Id" class="grsh-card"
+                       data-status="@g.HesablanmisStatusClass"
+                       data-search="@($"{g.Bashliq} {g.Yer}".ToLower())">
                         <div class="grsh-card-date">
                             <div class="grsh-date-day">@g.Tarix.ToString("dd")</div>
                             <div class="grsh-date-mon">@g.Tarix.ToString("MMM")</div>
@@ -147,6 +169,7 @@
                     </a>
                 }
             </div>
+            <div class="grsh-no-result" id="noResultTeshkil">Nəticə tapılmadı</div>
         }
     </div>
 
@@ -154,6 +177,39 @@
 
 @section Scripts {
     <script>
+        let activeFilter = 'all';
+        let searchTerm = '';
+
+        function applyFilter() {
+            const activePanel = document.querySelector('.grsh-panel:not(.grsh-hidden)');
+            if (!activePanel) return;
+            const cards = activePanel.querySelectorAll('.grsh-card');
+            let visible = 0;
+            cards.forEach(card => {
+                const matchSearch = !searchTerm || card.dataset.search.includes(searchTerm);
+                const matchFilter = activeFilter === 'all' || card.dataset.status === activeFilter;
+                const show = matchSearch && matchFilter;
+                card.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+            const noResult = activePanel.querySelector('.grsh-no-result');
+            if (noResult) noResult.style.display = visible === 0 ? 'block' : 'none';
+        }
+
+        document.getElementById('grshSearch').addEventListener('input', function () {
+            searchTerm = this.value.trim().toLowerCase();
+            applyFilter();
+        });
+
+        document.querySelectorAll('.grsh-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.grsh-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                activeFilter = chip.dataset.filter;
+                applyFilter();
+            });
+        });
+
         document.querySelectorAll('.grsh-tab').forEach(btn => {
             btn.addEventListener('click', () => {
                 const target = btn.dataset.tab;
@@ -163,6 +219,7 @@
                     p.classList.toggle('grsh-hidden', p.dataset.panel !== target);
                 });
                 history.replaceState(null, '', `?tab=${target}`);
+                applyFilter();
             });
         });
     </script>
