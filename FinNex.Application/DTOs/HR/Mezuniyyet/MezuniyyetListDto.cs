@@ -15,7 +15,7 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
 
         public string NovText => Nov switch
         {
-            MezuniyyetNovu.Illik => "İllik məzuniyyət",
+            MezuniyyetNovu.Illik => "Əmək məzuniyyəti",
             MezuniyyetNovu.Xestelik => "Xəstəlik məzuniyyəti",
             MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
             MezuniyyetNovu.DovletVezifelerininIcrasi => "Dövlət Vəzifəsi",

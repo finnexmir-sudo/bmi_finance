@@ -58,7 +58,7 @@ namespace FinNex.Application.Interfaces
 
         /// <summary>
         /// Dövlət vəzifəsi korreksiyası (Əmək Məcəlləsi Maddə 173).
-        /// İşçi illik məzuniyyətdə olarkən hərbi çağırış / məhkəmə şahidliyi kimi
+        /// İşçi əmək məzuniyyətində olarkən hərbi çağırış / məhkəmə şahidliyi kimi
         /// dövlət vəzifəsi yerinə yetirirsə:
         ///   a) həmin günlər illik balansa geri qaytarılır (+KorreksiyaGunSayi)
         ///   b) DovletVezifelerininIcrasi növündə yeni məzuniyyət qeydi yaranır

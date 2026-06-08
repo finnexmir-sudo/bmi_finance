@@ -60,7 +60,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
                     if (umumiQaliq < isGunu)
                         return Result<MezuniyyetDto>.Fail(
-                            $"Kifayət qədər illik məzuniyyət balansı yoxdur. Bütün illərin cəmi qalıq: {umumiQaliq} gün, tələb olunur: {isGunu} gün.");
+                            $"Kifayət qədər əmək məzuniyyəti balansı yoxdur. Bütün illərin cəmi qalıq: {umumiQaliq} gün, tələb olunur: {isGunu} gün.");
                 }
 
                 // 3. İşçinin aktiv departamentini tap
@@ -1485,7 +1485,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
                     if (umumiQaliq < isGunu)
                         return Result<MezuniyyetDto>.Fail(
-                            $"İllik məzuniyyət balansı kifayət etmir. Bütün illərin cəmi qalıq: {umumiQaliq} gün, tələb olunur: {isGunu} gün.");
+                            $"Əmək məzuniyyəti balansı kifayət etmir. Bütün illərin cəmi qalıq: {umumiQaliq} gün, tələb olunur: {isGunu} gün.");
                 }
 
                 // ── 5. Entity yarat — bütün addımlar HR tərəfindən təsdiqli ──
@@ -1704,7 +1704,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
             if (original.Nov != MezuniyyetNovu.Illik)
                 return Result<MezuniyyetDto>.Fail(
-                    "Korreksiya yalnız illik məzuniyyətlərə tətbiq edilir. " +
+                    "Korreksiya yalnız əmək məzuniyyətlərinə tətbiq edilir. " +
                     "Xəstəlik və ezamiyyət üçün ayrı prosedur tətbiq olunur.");
 
             // ── 2. Tarix validasiyası ─────────────────────────────────────

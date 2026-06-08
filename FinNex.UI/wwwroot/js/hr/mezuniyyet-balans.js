@@ -58,7 +58,7 @@
     let currentIl = null;
 
     const novAdlari = {
-        1: 'İllik məzuniyyət',
+        1: 'Əmək məzuniyyəti',
         2: 'Xəstəlik məzuniyyəti',
         3: 'Ezamiyyət'
     };
@@ -106,7 +106,7 @@
     // ── İllik cədvəli renderi ────────────────────────────
     function renderIllik(balanslar) {
         if (!balanslar.length) {
-            illikTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">Heç bir il üçün İllik balansı yoxdur</td></tr>';
+            illikTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">Heç bir il üçün Əmək məzuniyyəti balansı yoxdur</td></tr>';
             return;
         }
 

@@ -400,9 +400,9 @@ public class HesabatController : Controller
 
         ws.Cell(1, 1).Value = "İşçi";
         ws.Cell(1, 2).Value = "Departament";
-        ws.Cell(1, 3).Value = "İllik Toplam";
-        ws.Cell(1, 4).Value = "İllik İstifadə";
-        ws.Cell(1, 5).Value = "İllik Qalıq";
+        ws.Cell(1, 3).Value = "Əmək məzuniyyəti (Toplam)";
+        ws.Cell(1, 4).Value = "Əmək məzuniyyəti (İstifadə)";
+        ws.Cell(1, 5).Value = "Əmək məzuniyyəti (Qalıq)";
         ws.Cell(1, 6).Value = "Xəstəlik (İstifadə)";
         ws.Cell(1, 7).Value = "Ezamiyyət (İstifadə)";
 

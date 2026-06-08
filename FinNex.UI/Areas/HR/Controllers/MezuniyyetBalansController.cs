@@ -217,7 +217,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         // POST /HR/MezuniyyetBalans/AddIllikBalans
-        // Müəyyən il üçün İllik məzuniyyət balansı yaradır (və ya artıq varsa
+        // Müəyyən il üçün Əmək məzuniyyəti balansı yaradır (və ya artıq varsa
         // Toplam günü üstə gəlir). Bu HR-a keçmiş illərdə unudulmuş və ya
         // əl ilə əlavə edilmək istənilən günləri yazmağa imkan verir.
         [HttpPost]
@@ -294,7 +294,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
                 foreach (var isci in aktivIsciler)
                 {
-                    // İllik məzuniyyət (əvvəlki ildən maks 5 gün köçürmə ilə)
+                    // Əmək məzuniyyəti (əvvəlki ildən maks 5 gün köçürmə ilə)
                     int kecirilecekGun = 0;
                     if (evvelkiBalansDict.TryGetValue(isci.Id, out var evvelkiBalans))
                     {

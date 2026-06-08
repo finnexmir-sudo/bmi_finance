@@ -13,7 +13,7 @@ namespace FinNex.UI.Areas.User.ViewModels.Mezuniyyet
         public int IsciId { get; set; }
 
         // ── Form sahələri ─────────────────────────────────────
-        public int Nov { get; set; } = 1; // İşçi yalnız İllik (1) müraciət edə bilər
+        public int Nov { get; set; } = 1; // İşçi yalnız Əmək məzuniyyəti (1) müraciət edə bilər
 
         [Required(ErrorMessage = "Başlama tarixi seçilməlidir")]
         public DateTime BaslamaTarixi { get; set; } = DateTime.Today;
@@ -32,7 +32,7 @@ namespace FinNex.UI.Areas.User.ViewModels.Mezuniyyet
         // ── Dropdown məlumatları ───────────────────────────────
         public List<SelectListItem> NovList { get; set; } = new()
         {
-            new SelectListItem("İllik məzuniyyət",      "1"),
+            new SelectListItem("Əmək məzuniyyəti",      "1"),
             new SelectListItem("Xəstəlik məzuniyyəti",  "2"),
             new SelectListItem("Ezamiyyət",             "3"),
         };

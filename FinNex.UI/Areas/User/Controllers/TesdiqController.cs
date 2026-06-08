@@ -165,7 +165,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 EvezediciKonfliktleri = konflikt.Success ? konflikt.Data!.ToList() : new(),
                 NovText = (int)dto.Nov switch
                 {
-                    1 => "İllik məzuniyyət",
+                    1 => "Əmək məzuniyyəti",
                     2 => "Xəstəlik məzuniyyəti",
                     3 => "Ezamiyyət",
                     _ => dto.Nov.ToString()

@@ -267,12 +267,12 @@ namespace FinNex.Application.Services
                 });
             }
 
-            // İllik məzuniyyət 5 gündən az qalıbsa
+            // Əmək məzuniyyəti 5 gündən az qalıbsa
             if (dto.IllikQaligGun <= 5 && dto.IllikQaligGun >= 0)
             {
                 list.Add(new DashboardBildiriDto
                 {
-                    Metn = $"İllik məzuniyyətinizdən cəmi {dto.IllikQaligGun} gün qalıb",
+                    Metn = $"Əmək məzuniyyətinizdən cəmi {dto.IllikQaligGun} gün qalıb",
                     Tarix = DateTime.Now.AddDays(-2),
                     Nov = BildiriNovu.Xeberdarliq
                 });

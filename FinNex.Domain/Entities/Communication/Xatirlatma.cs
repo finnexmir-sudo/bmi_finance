@@ -36,6 +36,6 @@ namespace FinNex.Domain.Entities.Communication
         Icaze = 4,
         Teyinat = 5,      // İşçi təyinatı/müqavilə müddəti bitmə
         GelenMail = 6,    // Gələn maildən aşkar edilmiş deadline
-        MezuniyyetYenilenme = 7  // İllik məzuniyyət yeniləmə tarixi
+        MezuniyyetYenilenme = 7  // Əmək məzuniyyəti yeniləmə tarixi
     }
 }

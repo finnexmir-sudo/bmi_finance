@@ -4,7 +4,7 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet;
 
 /// <summary>
 /// HR-in dövlət vəzifəsi korreksiyası üçün DTO.
-/// İşçi illik məzuniyyətdə olarkən hərbi çağırış / məhkəmə şahidliyi kimi
+/// İşçi əmək məzuniyyətində olarkən hərbi çağırış / məhkəmə şahidliyi kimi
 /// dövlət vəzifəsi yerindyə yetirirsə, HR bu DTO ilə:
 ///   — o günləri balansdan geri qaytarır (+KorreksiyaGunSayi)
 ///   — həmin günlər üçün ayrıca DovletVezifelerininIcrasi qeydi yaradır
@@ -12,7 +12,7 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet;
 /// </summary>
 public class MezuniyyetKorreksiyaDto
 {
-    /// <summary>Düzəliş edilecək əsas illik məzuniyyətin ID-si.</summary>
+    /// <summary>Düzəliş edilecək əsas əmək məzuniyyətinin ID-si.</summary>
     public int MezuniyyetId { get; set; }
 
     /// <summary>İşçinin ID-si (double-check üçün).</summary>

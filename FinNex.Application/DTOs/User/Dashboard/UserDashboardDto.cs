@@ -104,7 +104,7 @@ namespace FinNex.Application.DTOs.HR.Dashboard
 
         public string NovAd => Nov switch
         {
-            MezuniyyetNovu.Illik => "İllik məzuniyyət",
+            MezuniyyetNovu.Illik => "Əmək məzuniyyəti",
             MezuniyyetNovu.Xestelik => "Xəstəlik məzuniyyəti",
             MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
             _ => "Digər"
