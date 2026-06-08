@@ -694,7 +694,7 @@ body.theme-midnight .fn-topnav-dd-item--active {
     padding: 0 4px;
 }
 
-.fn-nav-g.open .fn-nav-g-body {
+.fn-nav-g.open > .fn-nav-g-body {
     max-height: 2000px;
     padding: 2px 4px 6px;
 }
