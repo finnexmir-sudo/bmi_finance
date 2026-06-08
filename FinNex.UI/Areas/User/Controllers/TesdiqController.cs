@@ -292,8 +292,37 @@ namespace FinNex.UI.Areas.User.Controllers
                     return RedirectToAction("Index", "Dashboard");
             }
 
+            if (rol == "Rehber" && status && result.Success)
+            {
+                TempData["Success"] = result.Message;
+                return RedirectToAction(nameof(TapsiriqTeklif), new { mezuniyyetId = id });
+            }
+
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(rol);
+        }
+
+        // GET /User/Tesdiq/TapsiriqTeklif?mezuniyyetId=5
+        public async Task<IActionResult> TapsiriqTeklif(int mezuniyyetId)
+        {
+            var result = await _mezuniyyetService.IdIleGetirAsync(mezuniyyetId);
+            if (!result.Success || result.Data == null)
+                return RedirectToAction(nameof(Rehber));
+
+            var dto = result.Data;
+            var az = new System.Globalization.CultureInfo("az-Latn-AZ");
+            var baslama = dto.BaslamaTarixi.ToString("dd MMMM yyyy", az);
+            var bitis   = dto.BitmeTarixi.ToString("dd MMMM yyyy", az);
+
+            ViewBag.IsciAd  = dto.IsciAdSoyad;
+            ViewBag.Baslama = baslama;
+            ViewBag.Bitis   = bitis;
+            ViewBag.Gun     = dto.IsGunlerininSayi;
+            ViewBag.Tesvir  = Uri.EscapeDataString(
+                $"{dto.IsciAdSoyad} məzuniyyətdə olacaq: {baslama} – {bitis} ({dto.IsGunlerininSayi} iş günü). Müvəqqəti əvəzetmə tapşırığı.");
+
+            ViewData["Title"] = "Tapşırıq Teklifi";
+            return View();
         }
 
         // POST /User/Tesdiq/IcazeTesdiq

@@ -1,0 +1,83 @@
+@{
+    ViewData["Title"] = "Tapşırıq Teklifi";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var isciAd  = (string)(ViewBag.IsciAd  ?? "");
+    var baslama = (string)(ViewBag.Baslama ?? "");
+    var bitis   = (string)(ViewBag.Bitis   ?? "");
+    var gun     = (int)(ViewBag.Gun ?? 0);
+    var tesvir  = (string)(ViewBag.Tesvir ?? "");
+}
+
+@section Styles {
+    <style>
+        .tklf-wrap{max-width:520px;margin:48px auto}
+        .tklf-success{display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 18px;margin-bottom:24px}
+        .tklf-check{width:32px;height:32px;border-radius:50%;background:#22c55e;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+        .tklf-success-text{font-size:.9rem;font-weight:600;color:#15803d}
+        .tklf-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:28px 32px}
+        .tklf-icon{font-size:2rem;margin-bottom:12px}
+        .tklf-title{font-size:1.1rem;font-weight:700;color:#111827;margin-bottom:6px}
+        .tklf-sub{font-size:.85rem;color:#6b7280;margin-bottom:20px;line-height:1.5}
+        .tklf-info{background:#f9fafb;border-radius:8px;padding:14px 16px;margin-bottom:24px;display:flex;flex-direction:column;gap:6px}
+        .tklf-info-row{display:flex;align-items:center;gap:8px;font-size:.83rem;color:#374151}
+        .tklf-info-lbl{font-weight:600;min-width:70px;color:#6b7280;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em}
+        .tklf-divider{border:none;border-top:1px solid #f3f4f6;margin:20px 0}
+        .tklf-actions{display:flex;flex-direction:column;gap:10px}
+        .tklf-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:8px;font-size:.85rem;font-weight:600;text-decoration:none;transition:background .15s;border:none;cursor:pointer;width:100%}
+        .tklf-btn-primary{background:#2563eb;color:#fff}.tklf-btn-primary:hover{background:#1d4ed8;color:#fff}
+        .tklf-btn-ghost{background:#f3f4f6;color:#374151}.tklf-btn-ghost:hover{background:#e5e7eb;color:#374151}
+        .tklf-btn-link{background:none;color:#6b7280;font-size:.82rem;font-weight:500;padding:6px}.tklf-btn-link:hover{color:#374151;background:none}
+    </style>
+}
+
+<div class="fn-page">
+    <div class="tklf-wrap">
+
+        <div class="tklf-success">
+            <div class="tklf-check">✓</div>
+            <div class="tklf-success-text">Məzuniyyət müraciəti təsdiqləndi</div>
+        </div>
+
+        <div class="tklf-card">
+            <div class="tklf-icon">📋</div>
+            <div class="tklf-title">Əvəzetmə tapşırığı vermək istəyirsiniz?</div>
+            <div class="tklf-sub">
+                @isciAd məzuniyyətdə olacaq. İstəsəniz bu müddət üçün başqa işçiyə tapşırıq verə bilərsiniz.
+            </div>
+
+            <div class="tklf-info">
+                <div class="tklf-info-row">
+                    <span class="tklf-info-lbl">İşçi</span>
+                    <span>@isciAd</span>
+                </div>
+                <div class="tklf-info-row">
+                    <span class="tklf-info-lbl">Başlama</span>
+                    <span>@baslama</span>
+                </div>
+                <div class="tklf-info-row">
+                    <span class="tklf-info-lbl">Bitmə</span>
+                    <span>@bitis</span>
+                </div>
+                <div class="tklf-info-row">
+                    <span class="tklf-info-lbl">Müddət</span>
+                    <span>@gun iş günü</span>
+                </div>
+            </div>
+
+            <hr class="tklf-divider" />
+
+            <div class="tklf-actions">
+                <a href="/User/Tapshiriq/Yarat?tesvir=@tesvir" class="tklf-btn tklf-btn-primary">
+                    ＋ Tapşırıq yarat
+                </a>
+                <a asp-controller="Tapshiriq" asp-action="Index" class="tklf-btn tklf-btn-ghost">
+                    Tapşırıqlar siyahısına get
+                </a>
+                <a asp-controller="Tesdiq" asp-action="Rehber" class="tklf-btn tklf-btn-link">
+                    Keç — panelə qayıt
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>

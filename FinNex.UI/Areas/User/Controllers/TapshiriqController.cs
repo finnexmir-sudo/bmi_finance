@@ -78,12 +78,14 @@ namespace FinNex.UI.Areas.User.Controllers
         }
 
         // ── GET /User/Tapshiriq/Yarat ──────────────────────────────
-        public async Task<IActionResult> Yarat()
+        public async Task<IActionResult> Yarat(string? tesvir = null)
         {
             var isciId = await GetIsciIdAsync();
             if (isciId == null) return RedirectToLogin();
 
             var vm = await BuildYaratVMAsync(isciId.Value);
+            if (!string.IsNullOrEmpty(tesvir))
+                vm.Tesvir = Uri.UnescapeDataString(tesvir);
             ViewData["Title"] = "Tapşırıq Yarat";
             return View(vm);
         }
