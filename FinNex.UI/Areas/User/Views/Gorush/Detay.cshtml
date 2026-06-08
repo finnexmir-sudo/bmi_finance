@@ -3,170 +3,201 @@
 @{
     ViewData["Title"] = Model.Bashliq;
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
-    var isciId = (int)(ViewBag.IsciId ?? 0);
-    var menTeshkilatci = Model.TeshkilatciIsciId == isciId;
+    var isciId   = (int)(ViewBag.IsciId ?? 0);
+    var menTesh  = Model.TeshkilatciIsciId == isciId;
+    var bitisStr = Model.BitisSaati.HasValue
+        ? " — " + Model.BitisSaati.Value.ToString(@"hh\:mm") : "";
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/User/gorush.css" asp-append-version="true" />
+    <style>
+        .td-hero{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:28px 32px;margin-bottom:16px}
+        .td-hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:20px}
+        .td-hero-title{font-size:1.35rem;font-weight:700;color:#111827;margin-top:6px;line-height:1.3}
+        .td-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .td-meta-item{display:flex;align-items:flex-start;gap:10px;background:#f9fafb;border-radius:8px;padding:12px 14px}
+        .td-meta-icon{font-size:1.1rem;margin-top:1px;flex-shrink:0}
+        .td-meta-lbl{font-size:.72rem;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+        .td-meta-val{font-size:.88rem;font-weight:600;color:#1f2937}
+        .td-section-title{font-size:.8rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+        .td-agenda{background:#f9fafb;border-radius:8px;padding:16px;font-size:.88rem;color:#374151;line-height:1.7;white-space:pre-wrap}
+        .td-ishtirakci{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f3f4f6}
+        .td-ishtirakci:last-child{border-bottom:none}
+        .td-ic-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0}
+        .td-ic-name{font-size:.88rem;font-weight:600;color:#1f2937}
+        .td-ic-vezife{font-size:.75rem;color:#9ca3af;margin-top:1px}
+        .td-sidebar-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:16px}
+        .td-org-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #f3f4f6}
+        .td-org-av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0}
+        .td-org-lbl{font-size:.72rem;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+        .td-org-name{font-size:.88rem;font-weight:700;color:#1f2937}
+        .td-act-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px 16px;border-radius:8px;font-size:.85rem;font-weight:600;border:none;cursor:pointer;text-decoration:none;transition:background .15s}
+        .td-act-primary{background:#2563eb;color:#fff}.td-act-primary:hover{background:#1d4ed8}
+        .td-act-ghost{background:#f3f4f6;color:#374151}.td-act-ghost:hover{background:#e5e7eb}
+        .td-act-danger{background:#fee2e2;color:#dc2626}.td-act-danger:hover{background:#fecaca}
+        .td-acts{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+        .td-status-done{text-align:center;padding:12px;border-radius:8px;background:#f0fdf4;color:#15803d;font-size:.85rem;font-weight:600}
+        .td-status-legv{text-align:center;padding:12px;border-radius:8px;background:#fef2f2;color:#dc2626;font-size:.85rem;font-weight:600}
+        @@media(max-width:700px){.td-meta-grid{grid-template-columns:1fr}}
+    </style>
 }
 
 <div class="fn-page">
-
     <div style="margin-bottom:16px">
-        <a asp-action="Index" class="grsh-btn grsh-btn--ghost">← Geri</a>
+        <a asp-action="Index" class="grsh-btn grsh-btn--ghost">← Tədbirlərə qayıt</a>
     </div>
 
     <div class="tsk-detay-grid">
 
-        @* ── Sol ── *@
+        {{*── Sol sütun ──*}}
         <div>
-            @* Başlıq kartı *@
-            <div class="tsk-detay-card">
-                <div class="tsk-detay-head">
+
+            {{*── Hero kart ──*}}
+            <div class="td-hero">
+                <div class="td-hero-top">
                     <div>
-                        <span class="grsh-status @Model.HesablanmisStatusClass" style="margin-bottom:6px;display:inline-block">
+                        <span class="grsh-status @Model.HesablanmisStatusClass">
                             @Model.HesablanmisStatusText
                         </span>
-                        <div class="tsk-detay-title">@Model.Bashliq</div>
+                        <div class="td-hero-title">@Model.Bashliq</div>
                     </div>
                 </div>
 
-                <div class="tsk-detay-meta">
-                    <div class="tsk-meta-row">
-                        <span class="tsk-meta-lbl">Təşkilatçı</span>
-                        <span class="tsk-meta-val">@Model.TeshkilatciAd</span>
+                <div class="td-meta-grid">
+                    <div class="td-meta-item">
+                        <div class="td-meta-icon">📅</div>
+                        <div>
+                            <div class="td-meta-lbl">Tarix</div>
+                            <div class="td-meta-val">@Model.Tarix.ToString("dd MMMM yyyy")</div>
+                        </div>
                     </div>
-                    <div class="tsk-meta-row">
-                        <span class="tsk-meta-lbl">Tarix</span>
-                        <span class="tsk-meta-val">@Model.Tarix.ToString("dd MMMM yyyy, dddd")</span>
-                    </div>
-                    <div class="tsk-meta-row">
-                        <span class="tsk-meta-lbl">Başlama</span>
-                        <span class="tsk-meta-val">
-                            @Model.BaslamaSaati.ToString(@"hh\:mm")@(Model.BitisSaati.HasValue ? " — " + Model.BitisSaati.Value.ToString(@"hh\:mm") : "")
-                        </span>
+                    <div class="td-meta-item">
+                        <div class="td-meta-icon">🕐</div>
+                        <div>
+                            <div class="td-meta-lbl">Saat</div>
+                            <div class="td-meta-val">@Model.BaslamaSaati.ToString(@"hh\:mm")@bitisStr</div>
+                        </div>
                     </div>
                     @if (!string.IsNullOrEmpty(Model.Yer))
                     {
-                        <div class="tsk-meta-row">
-                            <span class="tsk-meta-lbl">Yer</span>
-                            <span class="tsk-meta-val">📍 @Model.Yer</span>
+                        <div class="td-meta-item" style="grid-column:1/-1">
+                            <div class="td-meta-icon">📍</div>
+                            <div>
+                                <div class="td-meta-lbl">Yer</div>
+                                <div class="td-meta-val">@Model.Yer</div>
+                            </div>
                         </div>
                     }
                 </div>
             </div>
 
-            @* Gündəm *@
+            {{*── Gündəm ──*}}
             @if (!string.IsNullOrEmpty(Model.Agenda))
             {
-                <div class="tsk-detay-card">
-                    <div class="tsk-sherh-title">Gündəm</div>
-                    <div style="font-size:.85rem;color:#374151;line-height:1.7;white-space:pre-wrap">@Model.Agenda</div>
+                <div class="td-sidebar-card">
+                    <div class="td-section-title">Gündəm</div>
+                    <div class="td-agenda">@Model.Agenda</div>
                 </div>
             }
 
-            @* Görüş qeydləri *@
+            {{*── Qeydlər ──*}}
             @if (!string.IsNullOrEmpty(Model.Qeydler))
             {
-                <div class="tsk-detay-card">
-                    <div class="tsk-sherh-title">Qeydlər</div>
-                    <div style="font-size:.85rem;color:#374151;line-height:1.7;white-space:pre-wrap">@Model.Qeydler</div>
+                <div class="td-sidebar-card">
+                    <div class="td-section-title">Tedbir Qeydləri</div>
+                    <div class="td-agenda">@Model.Qeydler</div>
                 </div>
             }
 
-            @* Qeyd əlavə et (təşkilatçı, bitmiş tedbir üçün) *@
-            @if (menTeshkilatci && Model.Status == GorushStatus.Bitdi
-                        && string.IsNullOrEmpty(Model.Qeydler))
+            {{*── Qeyd əlavə et ──*}}
+            @if (menTesh && Model.Status == GorushStatus.Bitdi && string.IsNullOrEmpty(Model.Qeydler))
             {
-                <div class="tsk-detay-card">
-                    <div class="tsk-sherh-title">Qeyd əlavə et</div>
+                <div class="td-sidebar-card">
+                    <div class="td-section-title">Qeyd əlavə et</div>
                     <form asp-action="QeydEleveEt" method="post">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="gorushId" value="@Model.Id" />
                         <textarea name="qeydler" class="grsh-textarea" rows="4"
-                              placeholder="Tədbirden sonra qeydlər, növbəti addımlar..."></textarea>
-                        <button type="submit" class="grsh-btn grsh-btn--primary"
-                                style="margin-top:8px">Saxla</button>
+                                  placeholder="Tədbirden sonra qeydlər, növbəti addımlar..."></textarea>
+                        <button type="submit" class="td-act-btn td-act-primary" style="margin-top:8px">
+                            Saxla
+                        </button>
                     </form>
                 </div>
             }
 
-            @* İştirakçılar *@
-            <div class="tsk-detay-card">
-                <div class="tsk-sherh-title">
+            {{*── İştirakçılar ──*}}
+            <div class="td-sidebar-card">
+                <div class="td-section-title">
                     İştirakçılar
-                    <span class="tsk-sherh-count">@Model.IshtirakciSayi</span>
+                    <span style="background:#e0e7ff;color:#4338ca;font-size:.72rem;padding:1px 7px;border-radius:20px;margin-left:6px;font-weight:700">
+                        @Model.IshtirakciSayi
+                    </span>
                 </div>
-                <div class="grsh-ishtirakci-cards">
-                    @foreach (var i in Model.Ishtirakcılar)
-                    {
-                        <div class="grsh-ishtirakci-card">
-                            <div class="grsh-ic-avatar">@i.IsciAd.Substring(0, 1)</div>
-                            <div class="grsh-ic-info">
-                                <div class="grsh-ic-name">@i.IsciAd</div>
-                                <div class="grsh-ic-vezife">@i.IsciVezife</div>
-                            </div>
+                @foreach (var i in Model.Ishtirakcılar)
+                {
+                    <div class="td-ishtirakci">
+                        <div class="td-ic-av">@i.IsciAd.Substring(0, 1)</div>
+                        <div>
+                            <div class="td-ic-name">@i.IsciAd</div>
+                            <div class="td-ic-vezife">@i.IsciVezife</div>
                         </div>
-                    }
-                </div>
+                    </div>
+                }
             </div>
         </div>
 
-        @* ── Sağ — yalnız təşkilatçı əməliyyatları ── *@
-        @if (menTeshkilatci)
+        {{*── Sağ sütun — yalnız təşkilatçıya görünür ──*}}
+        @if (menTesh)
         {
             <div>
-                <div class="tsk-detay-card">
-                    <div class="tsk-action-title">Əməliyyatlar</div>
-                    <div style="display:flex;flex-direction:column;gap:8px">
+                <div class="td-sidebar-card">
 
-                        @if (Model.Status == GorushStatus.Planlanib || Model.Status == GorushStatus.Bashladi)
-                        {
-                            <a asp-action="Edit" asp-route-id="@Model.Id"
-                               class="grsh-btn grsh-btn--ghost"
-                               style="justify-content:center">
+                    <div class="td-org-row">
+                        <div class="td-org-av">@Model.TeshkilatciAd.Substring(0,1)</div>
+                        <div>
+                            <div class="td-org-lbl">Təşkilatçı</div>
+                            <div class="td-org-name">@Model.TeshkilatciAd</div>
+                        </div>
+                    </div>
+
+                    @if (Model.Status == GorushStatus.Planlanib || Model.Status == GorushStatus.Bashladi)
+                    {
+                        <div class="td-acts">
+                            <a asp-action="Edit" asp-route-id="@Model.Id" class="td-act-btn td-act-ghost">
                                 ✏️ Redaktə et
                             </a>
-
                             <form asp-action="StatusYenile" method="post">
                                 @Html.AntiForgeryToken()
-                                <input type="hidden" name="id" value="@Model.Id" />
+                                <input type="hidden" name="id"     value="@Model.Id" />
                                 <input type="hidden" name="status" value="3" />
-                                <button type="submit" class="grsh-btn grsh-btn--primary"
-                                        style="width:100%;justify-content:center">
+                                <button type="submit" class="td-act-btn td-act-primary">
                                     ✓ Tedbiri bitir
                                 </button>
                             </form>
-
                             <form asp-action="StatusYenile" method="post"
                                   onsubmit="return confirm('Tedbiri ləğv etmək istəyirsiniz?')">
                                 @Html.AntiForgeryToken()
-                                <input type="hidden" name="id" value="@Model.Id" />
+                                <input type="hidden" name="id"     value="@Model.Id" />
                                 <input type="hidden" name="status" value="4" />
-                                <button type="submit" class="grsh-btn tsk-btn--danger"
-                                        style="width:100%;justify-content:center">
+                                <button type="submit" class="td-act-btn td-act-danger">
                                     ✕ Ləğv et
                                 </button>
                             </form>
-                        }
-
-                        @if (Model.Status == GorushStatus.Bitdi)
-                        {
-                            <div style="text-align:center;color:#6b7280;font-size:.85rem;padding:8px">
-                                ✓ Tedbir tamamlandı
-                            </div>
-                        }
-
-                        @if (Model.Status == GorushStatus.LegvEdildi)
-                        {
-                            <div style="text-align:center;color:#ef4444;font-size:.85rem;padding:8px">
-                                ✕ Ləğv edilib
-                            </div>
-                        }
-                    </div>
+                        </div>
+                    }
+                    else if (Model.Status == GorushStatus.Bitdi)
+                    {
+                        <div class="td-status-done">✓ Tedbir tamamlandı</div>
+                    }
+                    else if (Model.Status == GorushStatus.LegvEdildi)
+                    {
+                        <div class="td-status-legv">✕ Ləğv edilib</div>
+                    }
                 </div>
             </div>
         }
+
     </div>
 </div>
