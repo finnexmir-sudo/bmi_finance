@@ -188,36 +188,19 @@ public class MehkemeIsiService : IMehkemeIsiService
         return true;
     }
 
-    public async Task<OracleAxtarNeticesi> OracleIleAxtarAsync(string qeydiyyatNomresi)
+    public async Task<IList<Dictionary<string, string>>> OracleKreditlerGetirAsync(string qeydiyyatNomresi)
     {
-        try
-        {
-            var ayar = await _sistemAyar.GetirAsync();
-            if (ayar?.PidMehkemeSorguId == null)
-                return new OracleAxtarNeticesi { Tapildi = false, Xeta = "Sistem ayarlarında məhkəmə Oracle sorğusu seçilməyib." };
+        var ayar = await _sistemAyar.GetirAsync();
+        if (ayar?.PidMehkemeSorguId == null)
+            throw new InvalidOperationException("Sistem ayarlarında məhkəmə Oracle sorğusu seçilməyib.");
 
-            var sorguResult = await _sorguService.IdIleGetirAsync(ayar.PidMehkemeSorguId.Value);
-            if (!sorguResult.Success || sorguResult.Data is null || !sorguResult.Data.Aktiv)
-                return new OracleAxtarNeticesi { Tapildi = false, Xeta = "Oracle sorğusu tapılmadı və ya deaktivdir." };
+        var sorguResult = await _sorguService.IdIleGetirAsync(ayar.PidMehkemeSorguId.Value);
+        if (!sorguResult.Success || sorguResult.Data is null || !sorguResult.Data.Aktiv)
+            throw new InvalidOperationException("Oracle sorğusu tapılmadı və ya deaktivdir.");
 
-            var sql = sorguResult.Data.SorguMetni.Replace("&nomre", qeydiyyatNomresi.Trim());
-            var rows = await _oracle.SelectAsync(sql, maxRows: 1);
-
-            if (rows.Count == 0)
-                return new OracleAxtarNeticesi { Tapildi = false, Xeta = "Bu qeydiyyat nömrəsi ilə müştəri tapılmadı." };
-
-            var row = rows[0];
-            var ad = GetStr(row, "AD") ?? GetStr(row, "MUSTERI_AD") ?? GetStr(row, "BORCLU_AD") ?? "";
-            var borcStr = GetStr(row, "ESAS_BORC") ?? GetStr(row, "BORC") ?? GetStr(row, "KREDIT_QALIQ") ?? "";
-            decimal? borc = decimal.TryParse(borcStr, System.Globalization.NumberStyles.Any,
-                System.Globalization.CultureInfo.InvariantCulture, out var b) ? b : null;
-
-            return new OracleAxtarNeticesi { Tapildi = true, BorcluAd = ad, EsasBorc = borc };
-        }
-        catch (Exception ex)
-        {
-            return new OracleAxtarNeticesi { Tapildi = false, Xeta = $"Oracle xətası: {ex.Message}" };
-        }
+        var sql = sorguResult.Data.SorguMetni.Replace("&nomre", qeydiyyatNomresi.Trim());
+        var rows = await _oracle.SelectAsync(sql);
+        return rows.Select(r => r.ToDictionary(kv => kv.Key, kv => kv.Value?.ToString() ?? "")).ToList();
     }
 
     private static string? GetStr(Dictionary<string, object?> row, string key)
