@@ -50,10 +50,8 @@
 
     <div class="tsk-detay-grid">
 
-        {{*── Sol sütun ──*}}
         <div>
 
-            {{*── Hero kart ──*}}
             <div class="td-hero">
                 <div class="td-hero-top">
                     <div>
@@ -92,7 +90,6 @@
                 </div>
             </div>
 
-            {{*── Gündəm ──*}}
             @if (!string.IsNullOrEmpty(Model.Agenda))
             {
                 <div class="td-sidebar-card">
@@ -101,7 +98,6 @@
                 </div>
             }
 
-            {{*── Qeydlər ──*}}
             @if (!string.IsNullOrEmpty(Model.Qeydler))
             {
                 <div class="td-sidebar-card">
@@ -110,7 +106,6 @@
                 </div>
             }
 
-            {{*── Qeyd əlavə et ──*}}
             @if (menTesh && Model.Status == GorushStatus.Bitdi && string.IsNullOrEmpty(Model.Qeydler))
             {
                 <div class="td-sidebar-card">
@@ -127,7 +122,6 @@
                 </div>
             }
 
-            {{*── İştirakçılar ──*}}
             <div class="td-sidebar-card">
                 <div class="td-section-title">
                     İştirakçılar
@@ -148,7 +142,6 @@
             </div>
         </div>
 
-        {{*── Sağ sütun — yalnız təşkilatçıya görünür ──*}}
         @if (menTesh)
         {
             <div>
