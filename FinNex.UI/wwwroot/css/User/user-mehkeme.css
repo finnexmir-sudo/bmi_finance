@@ -115,3 +115,13 @@
 .mi-tl-fayl { font-size: 12px; color: var(--fn-primary,#6366f1); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
 .mi-tl-fayl:hover { text-decoration: underline; }
 .mi-tl-del { position: absolute; top: 14px; right: 0; }
+
+/* Oracle kredit seçim cədvəli */
+.mi-kredit-table-wrap { overflow-x: auto; }
+.mi-kredit-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mi-kredit-table th { background: #f8fafc; color: #475569; font-weight: 700; font-size: 12px; text-align: left; padding: 8px 10px; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+.mi-kredit-table td { padding: 9px 10px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
+.mi-kredit-row { cursor: pointer; transition: background .12s; }
+.mi-kredit-row:hover { background: rgba(99,102,241,.06); }
+.mi-kredit-row--selected { background: rgba(99,102,241,.12) !important; outline: 2px solid #6366f1; outline-offset: -2px; }
+.mi-kredit-row--selected td { font-weight: 600; }

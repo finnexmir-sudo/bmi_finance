@@ -19,7 +19,7 @@
     <div class="mi-form-card">
 
         <div class="mi-oracle-lookup">
-            <label class="mi-lbl">Qeydiyyat Nömrəsi (Oracle axtarış)</label>
+            <label class="mi-lbl">Müştəri qeydiyyat №-si ilə Oracle axtarış</label>
             <div class="mi-oracle-row">
                 <input type="text" id="oracleNomre" class="mi-input" maxlength="10"
                        placeholder="6 rəqəmli №…" />
@@ -28,6 +28,25 @@
                 </button>
             </div>
             <div id="oracleStatus" class="mi-oracle-status" style="display:none"></div>
+            <div id="oracleKreditler" style="display:none;margin-top:12px">
+                <div style="font-size:13px;color:#6b7280;margin-bottom:6px">
+                    Aktiv kreditlər — birini seçin, forma dolsun:
+                </div>
+                <div class="mi-kredit-table-wrap">
+                    <table class="mi-kredit-table">
+                        <thead>
+                            <tr>
+                                <th>Müştəri adı</th>
+                                <th>Sub kod</th>
+                                <th>Hesab</th>
+                                <th>Qalıq</th>
+                                <th>Verilmə tarixi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="oracleKreditBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <form asp-action="Yarat" method="post">
@@ -96,27 +115,74 @@
 
 @section Scripts {
 <script>
+    function getCol(row, ...keys) {
+        for (var k of keys) {
+            for (var rk of Object.keys(row)) {
+                if (rk.toLowerCase() === k.toLowerCase()) return row[rk] ?? '';
+            }
+        }
+        // fallback: partial match
+        for (var k of keys) {
+            for (var rk of Object.keys(row)) {
+                if (rk.toLowerCase().includes(k.toLowerCase())) return row[rk] ?? '';
+            }
+        }
+        return '';
+    }
+
     document.getElementById('oracleAxtar').addEventListener('click', async function () {
         var nomre = document.getElementById('oracleNomre').value.trim();
         if (!nomre) return;
         var statusEl = document.getElementById('oracleStatus');
+        var kreditDiv = document.getElementById('oracleKreditler');
         statusEl.style.display = '';
         statusEl.className = 'mi-oracle-status mi-oracle-status--loading';
         statusEl.textContent = 'Axtarılır…';
+        kreditDiv.style.display = 'none';
         this.disabled = true;
 
         try {
-            var r = await fetch('/User/MehkemeIsi/OracleAxtar?nomre=' + encodeURIComponent(nomre));
+            var r = await fetch('/User/MehkemeIsi/OracleKreditler?nomre=' + encodeURIComponent(nomre));
             var json = await r.json();
-            if (json.success) {
-                document.getElementById('fldNomre').value = nomre;
-                document.getElementById('fldAd').value = json.borcluAd ?? '';
-                document.getElementById('fldBorc').value = json.esasBorc != null ? json.esasBorc : '';
+            if (json.success && json.rows && json.rows.length > 0) {
                 statusEl.className = 'mi-oracle-status mi-oracle-status--ok';
-                statusEl.textContent = 'Tapıldı: ' + (json.borcluAd ?? '');
+                statusEl.textContent = json.rows.length + ' aktiv kredit tapıldı. Birini seçin:';
+
+                var tbody = document.getElementById('oracleKreditBody');
+                tbody.innerHTML = '';
+                json.rows.forEach(function (row) {
+                    var ad       = getCol(row, 'ad', 'musteri_adi', 'name_regnom');
+                    var subKod   = getCol(row, 'sub_kod', 'subkod', 'sub');
+                    var hesab    = getCol(row, 'hesab', 'licschkre', 'kredit_hesab');
+                    var qaliq    = getCol(row, 'qaliq', 'summa', 'qaliq_borc');
+                    var tarix    = getCol(row, 'verilme_tarixi', 'date_open', 'verilme');
+
+                    var tr = document.createElement('tr');
+                    tr.className = 'mi-kredit-row';
+                    tr.innerHTML =
+                        '<td>' + ad + '</td>' +
+                        '<td>' + subKod + '</td>' +
+                        '<td>' + hesab + '</td>' +
+                        '<td>' + qaliq + '</td>' +
+                        '<td>' + tarix + '</td>';
+
+                    tr.addEventListener('click', function () {
+                        document.querySelectorAll('.mi-kredit-row').forEach(function (x) { x.classList.remove('mi-kredit-row--selected'); });
+                        tr.classList.add('mi-kredit-row--selected');
+                        document.getElementById('fldNomre').value = hesab || nomre;
+                        document.getElementById('fldAd').value    = ad;
+                        var numVal = parseFloat((qaliq + '').replace(/[^\d.,-]/g, '').replace(',', '.'));
+                        document.getElementById('fldBorc').value  = isNaN(numVal) ? '' : numVal;
+                    });
+
+                    tbody.appendChild(tr);
+                });
+
+                kreditDiv.style.display = '';
             } else {
                 statusEl.className = 'mi-oracle-status mi-oracle-status--err';
                 statusEl.textContent = json.message ?? 'Tapılmadı.';
+                kreditDiv.style.display = 'none';
             }
         } catch {
             statusEl.className = 'mi-oracle-status mi-oracle-status--err';

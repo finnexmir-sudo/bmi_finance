@@ -93,18 +93,24 @@ public class MehkemeIsiController : Controller
         return RedirectToAction("Index");
     }
 
-    // ── Oracle axtarış ────────────────────────────────────
+    // ── Oracle kredit siyahısı ────────────────────────────
     [HttpGet]
-    public async Task<IActionResult> OracleAxtar(string nomre)
+    public async Task<IActionResult> OracleKreditler(string nomre)
     {
         if (string.IsNullOrWhiteSpace(nomre))
             return Json(new { success = false, message = "Nömrə daxil edin." });
 
-        var r = await _service.OracleIleAxtarAsync(nomre);
-        if (!r.Tapildi)
-            return Json(new { success = false, message = r.Xeta ?? "Tapılmadı." });
-
-        return Json(new { success = true, borcluAd = r.BorcluAd, esasBorc = r.EsasBorc });
+        try
+        {
+            var rows = await _service.OracleKreditlerGetirAsync(nomre);
+            if (rows.Count == 0)
+                return Json(new { success = false, message = "Bu nömrəyə aktiv kredit tapılmadı." });
+            return Json(new { success = true, rows });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
     }
 
     // ── Mərhələ əlavə et ─────────────────────────────────
