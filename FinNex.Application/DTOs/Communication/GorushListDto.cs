@@ -11,7 +11,7 @@ namespace FinNex.Application.DTOs.Communication
         public int TeshkilatciIsciId { get; set; }
         public DateTime Tarix { get; set; }
         public TimeSpan BaslamaSaati { get; set; }
-        public TimeSpan BitisSaati { get; set; }
+        public TimeSpan? BitisSaati { get; set; }
         public string? Yer { get; set; }
         public string? OnlineLink { get; set; }
         public GorushNovu Nov { get; set; }
@@ -62,7 +62,7 @@ namespace FinNex.Application.DTOs.Communication
         public int TeshkilatciIsciId { get; set; }
         public DateTime Tarix { get; set; }
         public TimeSpan BaslamaSaati { get; set; }
-        public TimeSpan BitisSaati { get; set; }
+        public TimeSpan? BitisSaati { get; set; }
         public string? Yer { get; set; }
         public string? OnlineLink { get; set; }
         public GorushNovu Nov { get; set; } = GorushNovu.Offline;
@@ -76,7 +76,7 @@ namespace FinNex.Application.DTOs.Communication
         public int TeshkilatciIsciId { get; set; }
         public DateTime Tarix { get; set; }
         public TimeSpan BaslamaSaati { get; set; }
-        public TimeSpan BitisSaati { get; set; }
+        public TimeSpan? BitisSaati { get; set; }
         public string? Yer { get; set; }
         public string? OnlineLink { get; set; }
         public GorushNovu Nov { get; set; }

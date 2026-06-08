@@ -13,7 +13,7 @@ using FinNex.Domain.Entities.Communication;
             public string? Agenda { get; set; }
             public DateTime Tarix { get; set; }
             public TimeSpan BaslamaSaati { get; set; }
-            public TimeSpan BitisSaati { get; set; }
+            public TimeSpan? BitisSaati { get; set; }
             public string? Yer { get; set; }
             public string? OnlineLink { get; set; }
             public GorushNovu Nov { get; set; } = GorushNovu.Offline;

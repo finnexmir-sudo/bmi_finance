@@ -13,7 +13,7 @@ namespace FinNex.Domain.Entities.Communication
 
         public DateTime Tarix { get; set; }
         public TimeSpan BaslamaSaati { get; set; }
-        public TimeSpan BitisSaati { get; set; }
+        public TimeSpan? BitisSaati { get; set; }
 
         public string? Yer { get; set; }       // Otaq adı və ya ünvan
         public string? OnlineLink { get; set; } // Zoom/Teams linki

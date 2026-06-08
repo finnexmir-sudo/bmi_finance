@@ -42,7 +42,7 @@
                         <div class="grsh-upcoming-info">
                             <div class="grsh-upcoming-name">@g.Bashliq</div>
                             <div class="grsh-upcoming-time">
-                                @g.BaslamaSaati.ToString(@"hh\:mm") — @g.BitisSaati.ToString(@"hh\:mm")
+                                @g.BaslamaSaati.ToString(@"hh\:mm")@(g.BitisSaati.HasValue ? " — " + g.BitisSaati.Value.ToString(@"hh\:mm") : "")
                                 @if (!string.IsNullOrEmpty(g.Yer))
                                 {
                                     <span> · @g.Yer</span>
@@ -96,7 +96,7 @@
                             <div class="grsh-card-title">@g.Bashliq</div>
                             <div class="grsh-card-meta">
                                 <span>@g.TeshkilatciAd</span>
-                                <span>@g.BaslamaSaati.ToString(@"hh\:mm") — @g.BitisSaati.ToString(@"hh\:mm")</span>
+                                <span>@g.BaslamaSaati.ToString(@"hh\:mm")@(g.BitisSaati.HasValue ? " — " + g.BitisSaati.Value.ToString(@"hh\:mm") : "")</span>
                                 @if (!string.IsNullOrEmpty(g.Yer))
                                 {
                                     <span>📍 @g.Yer</span>
@@ -145,7 +145,7 @@
                         <div class="grsh-card-info">
                             <div class="grsh-card-title">@g.Bashliq</div>
                             <div class="grsh-card-meta">
-                                <span>@g.BaslamaSaati.ToString(@"hh\:mm") — @g.BitisSaati.ToString(@"hh\:mm")</span>
+                                <span>@g.BaslamaSaati.ToString(@"hh\:mm")@(g.BitisSaati.HasValue ? " — " + g.BitisSaati.Value.ToString(@"hh\:mm") : "")</span>
                                 @if (!string.IsNullOrEmpty(g.Yer))
                                 {
                                     <span>📍 @g.Yer</span>
