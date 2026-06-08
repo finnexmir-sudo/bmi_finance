@@ -695,9 +695,23 @@ body.theme-midnight .fn-topnav-dd-item--active {
 }
 
 .fn-nav-g.open .fn-nav-g-body {
-    max-height: 1000px;
+    max-height: 2000px;
     padding: 2px 4px 6px;
 }
+
+/* Nested sub-groups (Davamiyyət / Məzuniyyət alt qrupları) */
+.fn-nav-g-body--nested { padding: 0 0 4px 0 !important; }
+.fn-nav-g--sub { margin-bottom: 2px; }
+.fn-nav-g-head--sub {
+    padding: 7px 10px 7px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+    margin-bottom: 0;
+}
+.fn-nav-g--sub .fn-nav-g-body { padding: 0 0 0 10px; }
+.fn-nav-g--sub.open .fn-nav-g-body { padding: 2px 0 4px 10px; }
 
 .fn-sidebar2 .fn-nav-label {
     font-size: 10px;
