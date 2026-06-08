@@ -42,6 +42,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             // (əvvəlki illərdən qalan günlərin tarixçəsini göstərmək üçün)
             var isciler = await _unitOfWork.Repository<Isci>()
                 .Query()
+                .AsNoTracking()
                 .Where(x => !x.Silinib && x.Status == IsciStatus.Aktiv)
                 .Include(x => x.MezuniyyetBalanslari.Where(b => !b.Silinib && b.Il == cariIl))
                 .Include(x => x.IsciTeyinatlari.Where(t => t.BitmeTarixi == null))
@@ -52,9 +53,15 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             // Bütün illərin balansı (həm keçmiş, həm cari) — yan sütunda
             // illər üzrə qalıq göstərmək üçün.
+            // DİQQƏT: AsNoTracking() VACİBDİR. Bu sorğu tracking ilə işləsəydi,
+            // EF Core "relationship fixup" bütün illərin balanslarını yuxarıdakı
+            // isciler-in MezuniyyetBalanslari naviqasiyasına əlavə edər və
+            // filtered Include (b.Il == cariIl) effektiv olmazdı — nəticədə view
+            // əvvəlki ilin balansını cari il kimi göstərərdi.
             var isciIds = isciler.Select(i => i.Id).ToList();
             var butunBalanslar = await _unitOfWork.Repository<MezuniyyetBalans>()
                 .Query()
+                .AsNoTracking()
                 .Where(b => !b.Silinib
                          && b.Nov == MezuniyyetNovu.Illik
                          && isciIds.Contains(b.IsciId))
