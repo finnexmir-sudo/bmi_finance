@@ -74,13 +74,17 @@
             border:1px solid #dbeafe
         }
 
-        /* Yenilənmə / Haqq qazanılmış sütunlar */
-        .mb-renew-cell { text-align:center; white-space:nowrap }
-        .mb-renew-date { font-size:13px; font-weight:600; color:#0f172a }
-        .mb-renew-empty { color:#cbd5e1; font-size:12px; font-style:italic }
-        .mb-haqq-num { font-size:16px; font-weight:700; color:#0f172a; line-height:1 }
-        .mb-haqq-sub { font-size:10.5px; color:#94a3b8; margin-top:3px }
-        .mb-haqq-empty { color:#cbd5e1; font-size:12px; font-style:italic }
+        /* Cari il inline detail (yenilənmə + haqq) */
+        .mb-cari-detail {
+            display:flex; flex-wrap:wrap; gap:4px 10px; margin-top:6px;
+            padding:6px 10px; background:#eff6ff; border-radius:6px; border:1px solid #bfdbfe
+        }
+        .mb-cari-detail-item { font-size:11px; color:#1e40af; font-weight:600; white-space:nowrap }
+        .mb-cari-detail-label { font-weight:400; color:#3b82f6 }
+        .mb-cari-haqq-bar {
+            width:100%; height:3px; background:#bfdbfe; border-radius:2px; margin-top:4px; overflow:hidden
+        }
+        .mb-cari-haqq-bar-fill { height:100%; background:#6366f1; border-radius:2px }
 
         /* Əməliyyat sütunu — daha aydın düymə */
         .mb-btn-edit {
@@ -139,9 +143,7 @@
                             <th style="min-width:200px">İşçi</th>
                             <th>Departament</th>
                             <th style="min-width:240px">Qalıq məzuniyyət (@secilmisIl)</th>
-                            <th style="min-width:200px">İllər üzrə qalıq</th>
-                            <th class="mb-renew-cell" style="min-width:110px">Yenilənmə</th>
-                            <th class="mb-renew-cell" style="min-width:120px">Haqq qazanılmış</th>
+                            <th style="min-width:220px">İllər üzrə qalıq</th>
                             <th style="width:110px">Əməliyyat</th>
                         </tr>
                     </thead>
@@ -253,6 +255,26 @@
                                                     <span class="il">@y.Il @(y.Cari ? "(cari)" : "")</span>
                                                     <span class="gun">@y.Qaliq gün</span>
                                                 </div>
+                                                @if (y.Cari && illik != null)
+                                                {
+                                                    var gorunecekTarix = illik.YenilenmeTarixi ?? illik.YaradilmaTarixi;
+                                                    var haqqPct2 = illik.ToplamGun > 0
+                                                        ? (int)Math.Round((double)haqqGun / illik.ToplamGun * 100)
+                                                        : 0;
+                                                    <div class="mb-cari-detail">
+                                                        <span class="mb-cari-detail-item">
+                                                            <span class="mb-cari-detail-label">Yenilənmə:</span>
+                                                            @gorunecekTarix.ToString("dd.MM.yyyy")
+                                                        </span>
+                                                        <span class="mb-cari-detail-item">
+                                                            <span class="mb-cari-detail-label">Haqq:</span>
+                                                            @haqqGun/@illik.ToplamGun gün
+                                                        </span>
+                                                        <div class="mb-cari-haqq-bar" style="width:100%">
+                                                            <div class="mb-cari-haqq-bar-fill" style="width:@(haqqPct2)%"></div>
+                                                        </div>
+                                                    </div>
+                                                }
                                             }
                                             @if (!cariIlBalansVar)
                                             {
@@ -268,36 +290,6 @@
                                                 Cəm: @cemQaliq gün
                                             </span>
                                         }
-                                    }
-                                </td>
-
-                                @* ═══ Yenilənmə tarixi ═══ *@
-                                <td class="mb-renew-cell">
-                                    @if (illik == null)
-                                    {
-                                        <span class="mb-renew-empty">—</span>
-                                    }
-                                    else
-                                    {
-                                        var gorunecekTarix = illik.YenilenmeTarixi ?? illik.YaradilmaTarixi;
-                                        <div class="mb-renew-date">@gorunecekTarix.ToString("dd.MM.yyyy")</div>
-                                    }
-                                </td>
-
-                                @* ═══ Haqq qazanılmış (yenilənəndən bu günə) ═══ *@
-                                <td class="mb-renew-cell">
-                                    @if (illik == null)
-                                    {
-                                        <span class="mb-haqq-empty">—</span>
-                                    }
-                                    else
-                                    {
-                                        var haqqPct = illik.ToplamGun > 0 ? (int)Math.Round((double)haqqGun / illik.ToplamGun * 100) : 0;
-                                        <div class="mb-haqq-num">@haqqGun <span style="font-size:12px;font-weight:500;color:#64748b">gün</span></div>
-                                        <div style="margin-top:4px;height:4px;background:#f1f5f9;border-radius:2px;width:80px">
-                                            <div style="height:100%;width:@(haqqPct)%;background:#6366f1;border-radius:2px"></div>
-                                        </div>
-                                        <div class="mb-haqq-sub">@(illik.ToplamGun)-dən</div>
                                     }
                                 </td>
 
