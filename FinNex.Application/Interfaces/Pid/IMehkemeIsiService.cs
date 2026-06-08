@@ -15,6 +15,6 @@ public interface IMehkemeIsiService
     Task<MehkemeMerhelesi> MerheleElavEtAsync(MehkemeMerheleCreateDto dto, IFormFile? fayl, string dmsRoot, int yaradanIsciId);
     Task<bool> MerheleSilAsync(int merheleId, int silenIsciId);
 
-    // Oracle lookup — returns ad + esasBorc or error
-    Task<OracleAxtarNeticesi> OracleIleAxtarAsync(string qeydiyyatNomresi);
+    // Oracle: müştərinin bütün aktiv kreditlərini qaytarır (sütun adı → dəyər)
+    Task<IList<Dictionary<string, string>>> OracleKreditlerGetirAsync(string qeydiyyatNomresi);
 }
