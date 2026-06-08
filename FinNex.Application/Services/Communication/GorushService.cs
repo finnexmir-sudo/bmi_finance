@@ -173,8 +173,8 @@ namespace FinNex.Application.Services.Communication
                     await _bildirisService.YaratAsync(
                         isciId: isciId,
                         nov: BildirisNovu.YeniGorush,
-                        bashliq: "Yeni görüşə dəvət",
-                        metn: $"{teshkilatci?.TamAd} sizi '{dto.Bashliq}' görüşünə dəvət etdi. " +
+                        bashliq: "Yeni tədbirə dəvət",
+                        metn: $"{teshkilatci?.TamAd} sizi '{dto.Bashliq}' tədbirinə dəvət etdi. " +
                               $"{dto.Tarix:dd.MM.yyyy} {dto.BaslamaSaati:hh\\:mm}",
                         redirectUrl: $"/User/Gorush/Detay/{entity.Id}");
                 }
@@ -317,8 +317,8 @@ namespace FinNex.Application.Services.Communication
                     await _bildirisService.YaratAsync(
                         isciId: isciId,
                         nov: BildirisNovu.YeniGorush,
-                        bashliq: "Görüşə dəvət",
-                        metn: $"{teshkilatci?.TamAd} sizi '{g.Bashliq}' görüşünə əlavə etdi.",
+                        bashliq: "Tədbirə dəvət",
+                        metn: $"{teshkilatci?.TamAd} sizi '{g.Bashliq}' tədbirinə əlavə etdi.",
                         redirectUrl: $"/User/Gorush/Detay/{g.Id}");
                 }
 
@@ -344,8 +344,8 @@ namespace FinNex.Application.Services.Communication
                     await _bildirisService.YaratAsync(
                         isciId: isciId,
                         nov: BildirisNovu.YeniGorush,
-                        bashliq: "Görüş yeniləndi",
-                        metn: $"'{g.Bashliq}' görüşünün məlumatları yeniləndi.",
+                        bashliq: "Tedbir yeniləndi",
+                        metn: $"'{g.Bashliq}' tədbirinin məlumatları yeniləndi.",
                         redirectUrl: $"/User/Gorush/Detay/{g.Id}");
                 }
 

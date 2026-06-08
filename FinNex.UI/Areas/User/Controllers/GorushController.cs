@@ -105,29 +105,14 @@ namespace FinNex.UI.Areas.User.Controllers
                 BaslamaSaati = vm.BaslamaSaati,
                 BitisSaati = vm.BitisSaati,
                 Yer = vm.Yer,
-                OnlineLink = vm.OnlineLink,
-                Nov = vm.Nov,
+                OnlineLink = null,
+                Nov = GorushNovu.Offline,
                 IshtirakciIsciIdler = vm.SecilmisIshtirakcilar
             };
 
             var result = await _gorushService.YaratAsync(dto);
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Index), new { tab = "teshkil" });
-        }
-
-        // ── POST /User/Gorush/IshtirakciCavab ────────────────
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> IshtirakciCavab(int gorushId,
-            IshtirakciStatus status, string? qeyd)
-        {
-            var isciId = await GetIsciIdAsync();
-            if (isciId == null) return RedirectToLogin();
-
-            var result = await _gorushService.IshtirakciCavabAsync(
-                gorushId, isciId.Value, status, qeyd);
-            TempData[result.Success ? "Success" : "Error"] = result.Message;
-            return RedirectToAction(nameof(Detay), new { id = gorushId });
         }
 
         // ── POST /User/Gorush/QeydEleveEt ────────────────────
@@ -225,8 +210,6 @@ namespace FinNex.UI.Areas.User.Controllers
                 BaslamaSaati = g.BaslamaSaati,
                 BitisSaati = g.BitisSaati,
                 Yer = g.Yer,
-                OnlineLink = g.OnlineLink,
-                Nov = g.Nov,
                 SecilmisIshtirakcilar = secilmisIds,
                 IsciList = iscilerResult.Success
                     ? iscilerResult.Data!
@@ -271,8 +254,8 @@ namespace FinNex.UI.Areas.User.Controllers
                 BaslamaSaati = vm.BaslamaSaati,
                 BitisSaati = vm.BitisSaati,
                 Yer = vm.Yer,
-                OnlineLink = vm.OnlineLink,
-                Nov = vm.Nov,
+                OnlineLink = null,
+                Nov = GorushNovu.Offline,
                 IshtirakciIsciIdler = vm.SecilmisIshtirakcilar
             };
 

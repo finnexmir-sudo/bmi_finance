@@ -20,22 +20,27 @@ namespace FinNex.Application.DTOs.Communication
         public bool MenimIshtirakimVar { get; set; }
         public IshtirakciStatus? MenimStatusum { get; set; }
 
-        public string StatusText => Status switch
+        // Status DB-dən deyil, vaxtdan avtomatik hesablanır.
+        // LegvEdildi/Bitdi — həmişə DB-dən; qalanı vaxtla müəyyən edilir.
+        public string HesablanmisStatusText
         {
-            GorushStatus.Planlanib => "Planlanıb",
-            GorushStatus.Bashladi => "Başladı",
-            GorushStatus.Bitdi => "Bitdi",
-            GorushStatus.LegvEdildi => "Ləğv edildi",
-            _ => ""
-        };
+            get
+            {
+                if (Status == GorushStatus.LegvEdildi) return "Ləğv edildi";
+                if (Status == GorushStatus.Bitdi)      return "Tamamlandı";
+                return DateTime.Now >= Tarix.Date + BaslamaSaati ? "Davam edir" : "Planlanıb";
+            }
+        }
 
-        public string NovText => Nov switch
+        public string HesablanmisStatusClass
         {
-            GorushNovu.Offline => "Offline",
-            GorushNovu.Online => "Online",
-            GorushNovu.Hibrid => "Hibrid",
-            _ => ""
-        };
+            get
+            {
+                if (Status == GorushStatus.LegvEdildi) return "grsh-status--cancel";
+                if (Status == GorushStatus.Bitdi)      return "grsh-status--done";
+                return DateTime.Now >= Tarix.Date + BaslamaSaati ? "grsh-status--active" : "grsh-status--plan";
+            }
+        }
     }
 
     public class GorushDetailDto : GorushListDto

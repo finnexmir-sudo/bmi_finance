@@ -15,8 +15,6 @@ namespace FinNex.UI.Areas.User.ViewModels.Gorush
         public TimeSpan BaslamaSaati { get; set; } = TimeSpan.FromHours(10);
         public TimeSpan? BitisSaati { get; set; }
         public string? Yer { get; set; }
-        public string? OnlineLink { get; set; }
-        public GorushNovu Nov { get; set; } = GorushNovu.Offline;
         public List<int> SecilmisIshtirakcilar { get; set; } = new();
         public List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> IsciList { get; set; } = new();
     }

@@ -1,7 +1,6 @@
-﻿@model FinNex.UI.Areas.User.ViewModels.Gorush.GorushEditVM
-@using FinNex.Domain.Entities.Communication
+@model FinNex.UI.Areas.User.ViewModels.Gorush.GorushEditVM
 @{
-    ViewData["Title"] = "Görüşü Redaktə Et";
+    ViewData["Title"] = "Tedbiri Redaktə Et";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 }
 
@@ -13,7 +12,7 @@
     <div class="grsh-form-wrap">
         <div class="grsh-form-header">
             <a asp-action="Detay" asp-route-id="@Model.Id" class="grsh-back">← Geri</a>
-            <div class="grsh-form-title">Görüşü Redaktə Et</div>
+            <div class="grsh-form-title">Tedbiri Redaktə Et</div>
         </div>
 
         <form asp-action="Edit" method="post" class="grsh-form">
@@ -37,34 +36,20 @@
                     <input asp-for="Tarix" type="date" class="grsh-input" />
                 </div>
                 <div class="grsh-field">
-                    <label class="grsh-label">Növ</label>
-                    <select asp-for="Nov" class="grsh-input" id="novSelect">
-                        <option value="1">Offline</option>
-                        <option value="2">Online</option>
-                        <option value="3">Hibrid</option>
-                    </select>
+                    <label class="grsh-label">Yer</label>
+                    <input asp-for="Yer" class="grsh-input" />
                 </div>
             </div>
 
             <div class="grsh-form-row">
                 <div class="grsh-field">
-                    <label class="grsh-label">Başlama</label>
+                    <label class="grsh-label">Başlama saatı</label>
                     <input asp-for="BaslamaSaati" type="time" class="grsh-input" />
                 </div>
                 <div class="grsh-field">
-                    <label class="grsh-label">Bitmə <span style="font-weight:400;color:#9ca3af;font-size:.8em">(opsional)</span></label>
+                    <label class="grsh-label">Bitmə saatı <span style="font-weight:400;color:#9ca3af;font-size:.8em">(opsional)</span></label>
                     <input asp-for="BitisSaati" type="time" class="grsh-input" />
                 </div>
-            </div>
-
-            <div class="grsh-field" id="yerField">
-                <label class="grsh-label">Yer</label>
-                <input asp-for="Yer" class="grsh-input" />
-            </div>
-
-            <div class="grsh-field" id="linkField">
-                <label class="grsh-label">Online link</label>
-                <input asp-for="OnlineLink" class="grsh-input" />
             </div>
 
             <div class="grsh-field">
@@ -77,8 +62,7 @@
                                    name="SecilmisIshtirakcilar"
                                    value="@item.Value"
                                    class="grsh-checkbox"
-                                   @(Model.SecilmisIshtirakcilar.Contains(int.Parse(item.Value))
-                                                                  ? "checked" : "") />
+                                   @(Model.SecilmisIshtirakcilar.Contains(int.Parse(item.Value)) ? "checked" : "") />
                             <span>@item.Text</span>
                         </label>
                     }
@@ -95,15 +79,3 @@
         </form>
     </div>
 </div>
-
-@section Scripts {
-    <script>
-        function updateFields() {
-            const v = parseInt(document.getElementById('novSelect').value);
-            document.getElementById('yerField').style.display = v === 2 ? 'none' : '';
-            document.getElementById('linkField').style.display = v === 1 ? 'none' : '';
-        }
-        document.getElementById('novSelect').addEventListener('change', updateFields);
-        updateFields();
-    </script>
-}
