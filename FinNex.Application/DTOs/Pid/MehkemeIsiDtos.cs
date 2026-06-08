@@ -36,6 +36,8 @@ public class MehkemeMerheleDto
     public int Id                  { get; set; }
     public MerheleTipi MerheleTipi { get; set; }
     public DateTime Tarix          { get; set; }
+    public string? Hakim           { get; set; }
+    public string? IcraciMemur     { get; set; }
     public string? Qeyd            { get; set; }
     public string? SenedYolu       { get; set; }
 }
@@ -66,6 +68,8 @@ public class MehkemeMerheleCreateDto
     public int MehkemeIsiId        { get; set; }
     public MerheleTipi MerheleTipi { get; set; }
     public DateTime Tarix          { get; set; }
+    public string? Hakim           { get; set; }
+    public string? IcraciMemur     { get; set; }
     public string? Qeyd            { get; set; }
 }
 

@@ -83,6 +83,8 @@ public class MehkemeIsiService : IMehkemeIsiService
                     Id           = m.Id,
                     MerheleTipi  = m.MerheleTipi,
                     Tarix        = m.Tarix,
+                    Hakim        = m.Hakim,
+                    IcraciMemur  = m.IcraciMemur,
                     Qeyd         = m.Qeyd,
                     SenedYolu    = m.SenedYolu
                 }).ToList()
@@ -164,7 +166,9 @@ public class MehkemeIsiService : IMehkemeIsiService
             MehkemeIsiId    = dto.MehkemeIsiId,
             MerheleTipi     = dto.MerheleTipi,
             Tarix           = dto.Tarix,
-            Qeyd            = string.IsNullOrWhiteSpace(dto.Qeyd) ? null : dto.Qeyd.Trim(),
+            Hakim           = string.IsNullOrWhiteSpace(dto.Hakim)       ? null : dto.Hakim.Trim(),
+            IcraciMemur     = string.IsNullOrWhiteSpace(dto.IcraciMemur) ? null : dto.IcraciMemur.Trim(),
+            Qeyd            = string.IsNullOrWhiteSpace(dto.Qeyd)        ? null : dto.Qeyd.Trim(),
             SenedYolu       = senedYolu,
             YaradanIcraciId = yaradanIsciId,
             YaradilmaTarixi = DateTime.Now
