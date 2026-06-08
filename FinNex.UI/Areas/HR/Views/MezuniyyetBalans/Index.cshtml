@@ -74,11 +74,13 @@
             border:1px solid #dbeafe
         }
 
-        /* Xəstəlik / Ezamiyyət — minimalist */
-        .mb-used-cell { text-align:center }
-        .mb-used-num { font-size:16px; font-weight:700; color:#0f172a; line-height:1 }
-        .mb-used-lbl { font-size:10.5px; color:#94a3b8; margin-top:3px }
-        .mb-used-empty { color:#cbd5e1; font-size:12px; font-style:italic }
+        /* Yenilənmə / Haqq qazanılmış sütunlar */
+        .mb-renew-cell { text-align:center; white-space:nowrap }
+        .mb-renew-date { font-size:13px; font-weight:600; color:#0f172a }
+        .mb-renew-empty { color:#cbd5e1; font-size:12px; font-style:italic }
+        .mb-haqq-num { font-size:16px; font-weight:700; color:#0f172a; line-height:1 }
+        .mb-haqq-sub { font-size:10.5px; color:#94a3b8; margin-top:3px }
+        .mb-haqq-empty { color:#cbd5e1; font-size:12px; font-style:italic }
 
         /* Əməliyyat sütunu — daha aydın düymə */
         .mb-btn-edit {
@@ -138,8 +140,8 @@
                             <th>Departament</th>
                             <th style="min-width:240px">Qalıq məzuniyyət (@secilmisIl)</th>
                             <th style="min-width:200px">İllər üzrə qalıq</th>
-                            <th class="mb-used-cell">Xəstəlik</th>
-                            <th class="mb-used-cell">Ezamiyyət</th>
+                            <th class="mb-renew-cell" style="min-width:110px">Yenilənmə</th>
+                            <th class="mb-renew-cell" style="min-width:120px">Haqq qazanılmış</th>
                             <th style="width:110px">Əməliyyat</th>
                         </tr>
                     </thead>
@@ -151,8 +153,18 @@
                             var balanslar = isci.MezuniyyetBalanslari?.ToList() ?? new List<MezuniyyetBalans>();
 
                             var illik = balanslar.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Illik);
-                            var xestelik = balanslar.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Xestelik);
-                            var ezamiyyet = balanslar.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Ezamiyyet);
+
+                            // Haqq qazanılmış hesablama (yalnız cari il üçün)
+                            int haqqGun = 0;
+                            int gecenGun = 0;
+                            int daysInYear = DateTime.IsLeapYear(secilmisIl) ? 366 : 365;
+                            if (illik != null)
+                            {
+                                var refTarix = illik.YaradilmaTarixi.Date;
+                                var bugun = DateTime.Now.Date;
+                                gecenGun = Math.Max(0, Math.Min((bugun - refTarix).Days, daysInYear));
+                                haqqGun = (int)Math.Round((double)gecenGun / daysInYear * illik.ToplamGun);
+                            }
 
                             var balansJson = System.Text.Json.JsonSerializer.Serialize(balanslar.Select(b => new
                             {
@@ -239,7 +251,13 @@
                                             {
                                                 <div class="mb-prev-year-row @(y.Cari ? "mb-year-current" : "")">
                                                     <span class="il">@y.Il @(y.Cari ? "(cari)" : "")</span>
-                                                    <span class="gun">@y.Qaliq gün</span>
+                                                    <span>
+                                                        <span class="gun">@y.Qaliq gün</span>
+                                                        @if (y.Cari && illik != null)
+                                                        {
+                                                            <span style="font-size:10px;color:#1e40af;margin-left:5px;font-weight:500">≈@haqqGun haqq</span>
+                                                        }
+                                                    </span>
                                                 </div>
                                             }
                                             @if (!cariIlBalansVar)
@@ -259,27 +277,34 @@
                                     }
                                 </td>
 
-                                @* ═══ Xəstəlik / Ezamiyyət — yalnız istifadə olunduqda göstər ═══ *@
-                                <td class="mb-used-cell">
-                                    @if (xestelik == null || xestelik.IstifadeOlunanGun == 0)
+                                @* ═══ Yenilənmə tarixi ═══ *@
+                                <td class="mb-renew-cell">
+                                    @if (illik == null)
                                     {
-                                        <span class="mb-used-empty">—</span>
+                                        <span class="mb-renew-empty">—</span>
                                     }
                                     else
                                     {
-                                        <div class="mb-used-num">@xestelik.IstifadeOlunanGun</div>
-                                        <div class="mb-used-lbl">gün</div>
+                                        <div class="mb-renew-date">@illik.YaradilmaTarixi.ToString("dd.MM.yyyy")</div>
+                                        @if (illik.YenilenmeTarixi.HasValue)
+                                        {
+                                            <div style="font-size:10.5px;color:#94a3b8;margin-top:2px">
+                                                son: @illik.YenilenmeTarixi.Value.ToString("dd.MM.yyyy")
+                                            </div>
+                                        }
                                     }
                                 </td>
-                                <td class="mb-used-cell">
-                                    @if (ezamiyyet == null || ezamiyyet.IstifadeOlunanGun == 0)
+
+                                @* ═══ Haqq qazanılmış (yenilənəndən bu günə) ═══ *@
+                                <td class="mb-renew-cell">
+                                    @if (illik == null)
                                     {
-                                        <span class="mb-used-empty">—</span>
+                                        <span class="mb-haqq-empty">—</span>
                                     }
                                     else
                                     {
-                                        <div class="mb-used-num">@ezamiyyet.IstifadeOlunanGun</div>
-                                        <div class="mb-used-lbl">gün</div>
+                                        <div class="mb-haqq-num">@haqqGun</div>
+                                        <div class="mb-haqq-sub">@gecenGun / @daysInYear gün</div>
                                     }
                                 </td>
 
