@@ -63,13 +63,8 @@ public class PidSmsController : Controller
         }
 
         var isciId = await CurrentIsciIdAsync();
-        if (isciId is null)
-        {
-            TempData["Error"] = "İşçi məlumatı tapılmadı.";
-            return RedirectToAction("Index");
-        }
 
-        var log = await _smsService.GonderAsync(telefon, metn, sablonId, isciId.Value);
+        var log = await _smsService.GonderAsync(telefon, metn, sablonId, isciId);
         if (log.Status == Domain.Entities.Pid.PidSmsStatus.Xeta)
             TempData["Error"] = $"SMS göndərilmədi: {log.Xeta}";
         else
