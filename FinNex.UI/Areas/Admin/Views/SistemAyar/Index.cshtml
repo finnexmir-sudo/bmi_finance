@@ -23,6 +23,7 @@
             <input type="hidden" name="PidTopluSmsOracleSorguId" value="@Model.PidTopluSmsOracleSorguId" />
             <input type="hidden" name="PidOdenisGunuSorguId"     value="@Model.PidOdenisGunuSorguId" />
             <input type="hidden" name="PidZaminlerSorguId"        value="@Model.PidZaminlerSorguId" />
+            <input type="hidden" name="PidMehkemeSorguId"         value="@Model.PidMehkemeSorguId" />
 
             <div class="mb-3">
                 <label class="form-label fw-semibold">IMAP Server</label>
@@ -73,6 +74,7 @@
             <input type="hidden" name="KreditImapServer" value="@Model.KreditImapServer" />
             <input type="hidden" name="KreditImapPort" value="@Model.KreditImapPort" />
             <input type="hidden" name="KreditImapEmail" value="@Model.KreditImapEmail" />
+            <input type="hidden" name="PidMehkemeSorguId" value="@Model.PidMehkemeSorguId" />
 
             <div class="mb-3">
                 <label class="form-label fw-semibold">Borcalanlar Oracle Sorğusu</label>
@@ -117,6 +119,43 @@
                 <div class="form-text">
                     <i class="bi bi-info-circle me-1"></i>
                     "VK Borcalan Zaminləri" düyməsi bu sorğudan istifadə edir.
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-floppy-fill me-1"></i>Yadda Saxla
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mt-4" style="max-width:600px">
+    <div class="card-header bg-white border-bottom py-3">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-bank me-2 text-primary"></i>PİD — Məhkəmə İşləri Ayarları</h6>
+    </div>
+    <div class="card-body p-4">
+        <form asp-action="Saxla" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="KreditImapServer"          value="@Model.KreditImapServer" />
+            <input type="hidden" name="KreditImapPort"            value="@Model.KreditImapPort" />
+            <input type="hidden" name="KreditImapEmail"           value="@Model.KreditImapEmail" />
+            <input type="hidden" name="PidTopluSmsOracleSorguId"  value="@Model.PidTopluSmsOracleSorguId" />
+            <input type="hidden" name="PidOdenisGunuSorguId"      value="@Model.PidOdenisGunuSorguId" />
+            <input type="hidden" name="PidZaminlerSorguId"        value="@Model.PidZaminlerSorguId" />
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Məhkəmə kredit axtarışı Oracle Sorğusu</label>
+                <select name="PidMehkemeSorguId" class="form-select">
+                    <option value="">— Seçilməyib —</option>
+                    @foreach (var item in ViewBag.MehkemeSorqular as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? [])
+                    {
+                        <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                    }
+                </select>
+                <div class="form-text">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Yeni məhkəmə işi yaradarkən qeydiyyat nömrəsinə görə aktiv kreditlər bu sorğudan çəkilir.
+                    Sorğu mətni <code>&amp;nomre</code> parametrini ehtiva etməlidir.
                 </div>
             </div>
 
