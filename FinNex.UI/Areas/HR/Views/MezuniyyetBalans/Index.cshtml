@@ -162,7 +162,10 @@
                             var deptAd = teyinat?.Departament?.Ad ?? "—";
                             var balanslar = isci.MezuniyyetBalanslari?.ToList() ?? new List<MezuniyyetBalans>();
 
-                            var illik = balanslar.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Illik);
+                            // DİQQƏT: b.Il == secilmisIl filtri MÜTLƏQDİR. Yoxsa
+                            // naviqasiyaya əvvəlki illərin balansı düşərsə (EF fixup),
+                            // əvvəlki ilin balansı cari il kimi göstərilə bilər.
+                            var illik = balanslar.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Illik && b.Il == secilmisIl);
 
                             // Haqq qazanılmış hesablama (yalnız cari il üçün)
                             int haqqGun = 0;
