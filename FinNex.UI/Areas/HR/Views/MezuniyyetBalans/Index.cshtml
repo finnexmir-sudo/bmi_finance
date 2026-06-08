@@ -49,7 +49,7 @@
         .mb-prog__bar--red    { background:linear-gradient(90deg,#dc2626,#ef4444) }
 
         /* Əvvəlki illər siyahısı */
-        .mb-prev-years { display:flex; flex-direction:column; gap:5px; min-width:130px; max-width:180px }
+        .mb-prev-years { display:flex; flex-direction:column; gap:5px; min-width:150px; max-width:210px }
         .mb-prev-year-row {
             display:flex; justify-content:space-between; align-items:center;
             font-size:12px; padding:5px 11px; background:#f8fafc;
@@ -57,11 +57,8 @@
         }
         .mb-prev-year-row .il { color:#64748b; font-weight:600 }
         .mb-prev-year-row .gun { color:#0f172a; font-weight:700 }
-        .mb-prev-year-row .gun-missing { color:#94a3b8; font-style:italic; font-size:11px; font-weight:500 }
         .mb-year-current { background:#eff6ff !important; border-color:#bfdbfe !important }
         .mb-year-current .il { color:#1e40af }
-        .mb-year-missing { background:#fef2f2 !important; border-color:#fecaca !important }
-        .mb-year-missing .il { color:#991b1b }
         .mb-no-balance {
             font-size:12px; color:#991b1b; background:#fef2f2; border:1px solid #fecaca;
             padding:8px 12px; border-radius:8px; display:inline-flex; align-items:center; gap:6px;
@@ -85,6 +82,17 @@
             width:100%; height:3px; background:#bfdbfe; border-radius:2px; margin-top:4px; overflow:hidden
         }
         .mb-cari-haqq-bar-fill { height:100%; background:#6366f1; border-radius:2px }
+        .mb-haqq-formula { color:#64748b; font-weight:400; font-size:10px; margin-left:2px }
+
+        /* "hələ verilməyib" — neytral, səliqəli (qırmızı xəta deyil) */
+        .mb-year-pending {
+            background:#f8fafc !important; border:1px dashed #cbd5e1 !important
+        }
+        .mb-year-pending .il { color:#64748b; font-weight:600 }
+        .gun-pending {
+            color:#94a3b8; font-size:11px; font-weight:500;
+            display:inline-flex; align-items:center; gap:4px
+        }
 
         /* Əməliyyat sütunu — daha aydın düymə */
         .mb-btn-edit {
@@ -231,65 +239,66 @@
                                 </td>
 
                                 @* ═══ İllər üzrə qalıq (hər il ayrıca) ═══ *@
+                                @*  Cari il əsas sütunla EYNİ mənbədən (illik) gəlir ki, *@
+                                @*  iki sütun arasında ziddiyyət olmasın. Keçmiş illər isə *@
+                                @*  illerList-dən (yalnız qalığı olanlar). *@
                                 <td>
                                     @{
-                                        var cariIlBalansVar = illerList != null && illerList.Any(x => x.Cari);
-                                        var gostersilecekIller = illerList?.Where(x => x.Cari || x.Qaliq > 0).OrderByDescending(x => x.Il).ToList() ?? new();
+                                        var kecmisIller = illerList?
+                                            .Where(x => !x.Cari && x.Qaliq > 0)
+                                            .OrderByDescending(x => x.Il)
+                                            .ToList() ?? new();
+                                        var cemQaliq = (illik?.QaliqGun ?? 0) + kecmisIller.Sum(y => y.Qaliq);
                                     }
-                                    @if (!gostersilecekIller.Any() && !cariIlBalansVar)
-                                    {
-                                        <div class="mb-prev-years">
-                                            <div class="mb-prev-year-row mb-year-missing">
-                                                <span class="il">@secilmisIl</span>
-                                                <span class="gun-missing">hələ verilməyib</span>
-                                            </div>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        var cemQaliq = gostersilecekIller.Sum(y => y.Qaliq);
-                                        <div class="mb-prev-years">
-                                            @foreach (var y in gostersilecekIller)
-                                            {
-                                                <div class="mb-prev-year-row @(y.Cari ? "mb-year-current" : "")">
-                                                    <span class="il">@y.Il @(y.Cari ? "(cari)" : "")</span>
-                                                    <span class="gun">@y.Qaliq gün</span>
-                                                </div>
-                                                @if (y.Cari && illik != null)
-                                                {
-                                                    var gorunecekTarix = illik.YenilenmeTarixi ?? illik.YaradilmaTarixi;
-                                                    var haqqPct2 = illik.ToplamGun > 0
-                                                        ? (int)Math.Round((double)haqqGun / illik.ToplamGun * 100)
-                                                        : 0;
-                                                    <div class="mb-cari-detail">
-                                                        <span class="mb-cari-detail-item">
-                                                            <span class="mb-cari-detail-label">Yenilənmə:</span>
-                                                            @gorunecekTarix.ToString("dd.MM.yyyy")
-                                                        </span>
-                                                        <span class="mb-cari-detail-item">
-                                                            <span class="mb-cari-detail-label">Haqq:</span>
-                                                            @haqqGun/@illik.ToplamGun gün
-                                                        </span>
-                                                        <div class="mb-cari-haqq-bar" style="width:100%">
-                                                            <div class="mb-cari-haqq-bar-fill" style="width:@(haqqPct2)%"></div>
-                                                        </div>
-                                                    </div>
-                                                }
-                                            }
-                                            @if (!cariIlBalansVar)
-                                            {
-                                                <div class="mb-prev-year-row mb-year-missing">
-                                                    <span class="il">@secilmisIl (cari)</span>
-                                                    <span class="gun-missing">hələ verilməyib</span>
-                                                </div>
-                                            }
-                                        </div>
-                                        @if (gostersilecekIller.Count >= 2)
+                                    <div class="mb-prev-years">
+                                        @* Cari il — illik mövcuddursa real qalıq, yoxsa "hələ verilməyib" *@
+                                        @if (illik != null)
                                         {
-                                            <span class="mb-prev-cemi">
-                                                Cəm: @cemQaliq gün
-                                            </span>
+                                            <div class="mb-prev-year-row mb-year-current">
+                                                <span class="il">@secilmisIl (cari)</span>
+                                                <span class="gun">@illik.QaliqGun gün</span>
+                                            </div>
+                                            var gorunecekTarix = illik.YenilenmeTarixi ?? illik.YaradilmaTarixi;
+                                            var haqqPct2 = illik.ToplamGun > 0
+                                                ? (int)Math.Round((double)haqqGun / illik.ToplamGun * 100)
+                                                : 0;
+                                            <div class="mb-cari-detail">
+                                                <span class="mb-cari-detail-item">
+                                                    <span class="mb-cari-detail-label">Yenilənmə:</span>
+                                                    @gorunecekTarix.ToString("dd.MM.yyyy")
+                                                </span>
+                                                <span class="mb-cari-detail-item">
+                                                    <span class="mb-cari-detail-label">Haqq qazanılmış:</span>
+                                                    @haqqGun/@illik.ToplamGun gün
+                                                    <span class="mb-haqq-formula">(@gecenGun/@daysInYear×@illik.ToplamGun)</span>
+                                                </span>
+                                                <div class="mb-cari-haqq-bar">
+                                                    <div class="mb-cari-haqq-bar-fill" style="width:@(haqqPct2)%"></div>
+                                                </div>
+                                            </div>
                                         }
+                                        else
+                                        {
+                                            <div class="mb-prev-year-row mb-year-pending">
+                                                <span class="il">@secilmisIl (cari)</span>
+                                                <span class="gun-pending">
+                                                    <i class="bi bi-hourglass-split"></i> hələ verilməyib
+                                                </span>
+                                            </div>
+                                        }
+
+                                        @* Keçmiş illər — qalığı olanlar *@
+                                        @foreach (var y in kecmisIller)
+                                        {
+                                            <div class="mb-prev-year-row">
+                                                <span class="il">@y.Il</span>
+                                                <span class="gun">@y.Qaliq gün</span>
+                                            </div>
+                                        }
+                                    </div>
+                                    @if (illik != null && kecmisIller.Any())
+                                    {
+                                        <span class="mb-prev-cemi">Cəm: @cemQaliq gün</span>
                                     }
                                 </td>
 
