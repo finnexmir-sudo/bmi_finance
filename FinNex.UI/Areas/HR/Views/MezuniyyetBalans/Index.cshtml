@@ -261,7 +261,11 @@
                                                 <span class="il">@secilmisIl (cari)</span>
                                                 <span class="gun">@illik.QaliqGun gün</span>
                                             </div>
-                                            var gorunecekTarix = illik.YenilenmeTarixi ?? illik.YaradilmaTarixi;
+                                            // Növbəti yenilənmə = cari balans dövrünün başlanğıcı (YaradilmaTarixi)
+                                            // + 1 il. Haqq qazanılmış da eyni başlanğıcdan hesablanır (refTarix),
+                                            // beləliklə qutu daxilində ardıcıl olur. Audit YenilenmeTarixi-yə
+                                            // güvənmirik — o, HR balansı redaktə edəndə dəyişir.
+                                            var gorunecekTarix = illik.YaradilmaTarixi.Date.AddYears(1);
                                             var haqqPct2 = illik.ToplamGun > 0
                                                 ? (int)Math.Round((double)haqqGun / illik.ToplamGun * 100)
                                                 : 0;
