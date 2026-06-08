@@ -108,7 +108,7 @@ namespace FinNex.Domain.Entities.HR
 
         // ── Dövlət Vəzifəsi Korreksiyası ─────────────────────────────────
         // DovletVezifelerininIcrasi növündə yaradılan qeydlər üçün:
-        //   KorreksiyaOlunanMezuniyyetId — hansı illik məzuniyyətin yerinə gəlir
+        //   KorreksiyaOlunanMezuniyyetId — hansı əmək məzuniyyətinin yerinə gəlir
         //   SenedYolu                    — yüklənmiş rəsmi sənəd (hərbi əmr, məhkəmə vərəqəsi)
         //   KorreksiyaSebebi             — HR-in qeyd etdiyi açıqlama
         public int?    KorreksiyaOlunanMezuniyyetId { get; set; }

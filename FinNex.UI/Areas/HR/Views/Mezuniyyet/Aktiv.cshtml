@@ -26,7 +26,7 @@
     };
     string NovText(MezuniyyetNovu n) => n switch
     {
-        MezuniyyetNovu.Illik => "İllik",
+        MezuniyyetNovu.Illik => "Əmək məzuniyyəti",
         MezuniyyetNovu.Xestelik => "Xəstəlik",
         MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
         _ => n.ToString()
@@ -98,7 +98,7 @@
         </div>
         <select id="novFilter" class="fn-input" style="max-width:180px">
             <option value="">Bütün növlər</option>
-            <option value="@((int)MezuniyyetNovu.Illik)">İllik</option>
+            <option value="@((int)MezuniyyetNovu.Illik)">Əmək məzuniyyəti</option>
             <option value="@((int)MezuniyyetNovu.Xestelik)">Xəstəlik</option>
             <option value="@((int)MezuniyyetNovu.Ezamiyyet)">Ezamiyyət</option>
         </select>

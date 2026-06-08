@@ -288,7 +288,7 @@
         let html = '<table class="rp-table">';
         html += '<thead><tr>';
         html += '<th>İşçi</th>';
-        html += '<th class="rp-th-center">İllik (T/İ/Q)</th>';
+        html += '<th class="rp-th-center">Əmək məzuniyyəti (T/İ/Q)</th>';
         html += '<th class="rp-th-center">Xəstəlik</th>';
         html += '<th class="rp-th-center">Ezamiyyət</th>';
         html += '</tr></thead><tbody>';

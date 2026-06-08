@@ -154,7 +154,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             string NovText(MezuniyyetNovu n) => n switch
             {
-                MezuniyyetNovu.Illik => "İllik məzuniyyət",
+                MezuniyyetNovu.Illik => "Əmək məzuniyyəti",
                 MezuniyyetNovu.Xestelik => "Xəstəlik məzuniyyəti",
                 MezuniyyetNovu.Ezamiyyet => "Ezamiyyət",
                 _ => n.ToString()

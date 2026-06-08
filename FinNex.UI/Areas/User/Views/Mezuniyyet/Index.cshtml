@@ -26,7 +26,7 @@
 
     string NovIconColor(string novText) => novText switch
     {
-        "İllik məzuniyyət"      => "#2d6cdf",
+        "Əmək məzuniyyəti"      => "#2d6cdf",
         "Xəstəlik məzuniyyəti"  => "#d85a30",
         _                       => "#1e9b6b"
     };
@@ -56,7 +56,7 @@
                 </svg>
             </div>
             <div class="fn-bc-body">
-                <div class="fn-bc-title">İllik məzuniyyət</div>
+                <div class="fn-bc-title">Əmək məzuniyyəti</div>
                 <div class="fn-bc-nums">
                     <span class="fn-bc-big" style="color:#1e9b6b">@Model.IllikQaligGun</span>
                     <span class="fn-bc-slash">/</span>
@@ -131,7 +131,7 @@
             <label class="fn-filter-lbl">Növ</label>
             <select name="nov" class="fn-select fn-select--sm" onchange="this.form.submit()">
                 <option value="">Hamısı</option>
-                <option value="İllik məzuniyyət" selected="@(Model.FilterNov == "İllik məzuniyyət")">İllik</option>
+                <option value="Əmək məzuniyyəti" selected="@(Model.FilterNov == "Əmək məzuniyyəti")">Əmək məzuniyyəti</option>
                 <option value="Xəstəlik məzuniyyəti" selected="@(Model.FilterNov == "Xəstəlik məzuniyyəti")">Xəstəlik</option>
                 <option value="Ezamiyyət" selected="@(Model.FilterNov == "Ezamiyyət")">Ezamiyyət</option>
             </select>
