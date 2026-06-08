@@ -11,6 +11,26 @@
     var standartGun = (int)(ViewBag.StandartIllikGun ?? 21);
 }
 
+@functions {
+    // Ən son keçmiş işə qəbul ildönümü = cari məzuniyyət dövrünün başlanğıcı.
+    // Yenilənmə tsikli audit tarixinə yox, işçinin işə qəbul ildönümünə bağlıdır.
+    // 29 fevral kimi hüdud hallarını ayın son gününə clamp edir.
+    static DateTime SonIldonum(DateTime iseQebul, DateTime bugun)
+    {
+        int il = bugun.Year;
+        int ay = iseQebul.Month;
+        int gun = Math.Min(iseQebul.Day, DateTime.DaysInMonth(il, ay));
+        var buIl = new DateTime(il, ay, gun);
+        if (buIl > bugun)
+        {
+            il--;
+            gun = Math.Min(iseQebul.Day, DateTime.DaysInMonth(il, ay));
+            return new DateTime(il, ay, gun);
+        }
+        return buIl;
+    }
+}
+
 @section Styles {
     <link rel="stylesheet" href="~/css/hr/mezuniyyet-balans.css" asp-append-version="true" />
     <style>
@@ -167,15 +187,20 @@
                             // əvvəlki ilin balansı cari il kimi göstərilə bilər.
                             var illik = balanslar.FirstOrDefault(b => b.Nov == MezuniyyetNovu.Illik && b.Il == secilmisIl);
 
-                            // Haqq qazanılmış hesablama (yalnız cari il üçün)
+                            // Yenilənmə tsikli işə qəbul ildönümünə bağlıdır:
+                            //   sonYenilenme    = ən son keçmiş ildönümü (cari dövrün başlanğıcı)
+                            //   novbetiYenilenme = son yenilənmə + 1 il (göstəriləcək yenilənmə tarixi)
+                            var bugun = DateTime.Now.Date;
+                            var sonYenilenme = SonIldonum(isci.IsheQebulTarixi.Date, bugun);
+                            var novbetiYenilenme = sonYenilenme.AddYears(1);
+
+                            // Haqq qazanılmış: yenilənəndən (son ildönümündən) bu günə qədər
                             int haqqGun = 0;
                             int gecenGun = 0;
                             int daysInYear = DateTime.IsLeapYear(secilmisIl) ? 366 : 365;
                             if (illik != null)
                             {
-                                var refTarix = illik.YaradilmaTarixi.Date;
-                                var bugun = DateTime.Now.Date;
-                                gecenGun = Math.Max(0, Math.Min((bugun - refTarix).Days, daysInYear));
+                                gecenGun = Math.Max(0, Math.Min((bugun - sonYenilenme).Days, daysInYear));
                                 haqqGun = (int)Math.Round((double)gecenGun / daysInYear * illik.ToplamGun);
                             }
 
@@ -261,11 +286,8 @@
                                                 <span class="il">@secilmisIl (cari)</span>
                                                 <span class="gun">@illik.QaliqGun gün</span>
                                             </div>
-                                            // Növbəti yenilənmə = cari balans dövrünün başlanğıcı (YaradilmaTarixi)
-                                            // + 1 il. Haqq qazanılmış da eyni başlanğıcdan hesablanır (refTarix),
-                                            // beləliklə qutu daxilində ardıcıl olur. Audit YenilenmeTarixi-yə
-                                            // güvənmirik — o, HR balansı redaktə edəndə dəyişir.
-                                            var gorunecekTarix = illik.YaradilmaTarixi.Date.AddYears(1);
+                                            // Növbəti yenilənmə = işə qəbul ildönümü əsasında (yuxarıda hesablanıb)
+                                            var gorunecekTarix = novbetiYenilenme;
                                             var haqqPct2 = illik.ToplamGun > 0
                                                 ? (int)Math.Round((double)haqqGun / illik.ToplamGun * 100)
                                                 : 0;
