@@ -13,6 +13,10 @@ namespace FinNex.Domain.Entities.Communication
 
         public IshtirakciStatus Status { get; set; } = IshtirakciStatus.Gozleyir;
         public string? Qeyd { get; set; }
+
+        // ADMS çıxış/qayıdış izlənməsi (yalnız Offline görüşlər)
+        public DateTime? CihazCixisVaxti { get; set; }
+        public DateTime? CihazQayidisVaxti { get; set; }
     }
 
     public enum IshtirakciStatus

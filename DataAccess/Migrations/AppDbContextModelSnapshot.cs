@@ -479,6 +479,12 @@ namespace FinNex.DataAccess.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime?>("CihazCixisVaxti")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CihazQayidisVaxti")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("GorushId")
                         .HasColumnType("int");
 

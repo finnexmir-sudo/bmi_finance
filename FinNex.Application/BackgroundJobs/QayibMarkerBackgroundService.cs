@@ -1,5 +1,6 @@
 // Infrastructure/BackgroundJobs/QayibMarkerBackgroundService.cs
 using FinNex.DataAccess.Contexts;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -115,6 +116,22 @@ namespace FinNex.Infrastructure.BackgroundJobs
             var icazeSet = new HashSet<string>(
                 icazeQeydler.Select(x => $"{x.IsciId}|{x.Tarix:yyyy-MM-dd}"));
 
+            // Backfill dövründəki offline görüş iştirakçıları — Qayib yerinə Icazeli yazılacaq
+            var gorushIshtirakcilar = await db.GorushIshtirakcilar
+                .AsNoTracking()
+                .Where(x => !x.Silinib
+                         && x.Gorush.Nov == GorushNovu.Offline
+                         && x.Gorush.Status != GorushStatus.LegvEdildi
+                         && x.Gorush.Tarix.Date >= baslanic
+                         && x.Gorush.Tarix.Date <= bugun
+                         && x.Status != IshtirakciStatus.Redd
+                         && x.Status != IshtirakciStatus.IshtiraketmeyecekBildirib)
+                .Select(x => new { x.IsciId, Tarix = x.Gorush.Tarix.Date })
+                .ToListAsync(ct);
+
+            var gorushSet = new HashSet<string>(
+                gorushIshtirakcilar.Select(x => $"{x.IsciId}|{x.Tarix:yyyy-MM-dd}"));
+
             var indi = DateTime.Now;
             var yeniQeydler = new List<Davamiyyet>();
 
@@ -144,8 +161,8 @@ namespace FinNex.Infrastructure.BackgroundJobs
                     var key = $"{isci.Id}|{gun:yyyy-MM-dd}";
                     if (movcudSet.Contains(key)) continue;
 
-                    // Həmin gün üçün təsdiqlənmiş icazə varsa Icazeli yaz, Qayib yox
-                    var status = icazeSet.Contains(key)
+                    // Həmin gün üçün icazə və ya offline görüş varsa Icazeli yaz, Qayib yox
+                    var status = (icazeSet.Contains(key) || gorushSet.Contains(key))
                         ? DavamiyyetStatus.Icazeli
                         : DavamiyyetStatus.Qayib;
 
@@ -162,12 +179,39 @@ namespace FinNex.Infrastructure.BackgroundJobs
                 }
             }
 
-            if (yeniQeydler.Count == 0) return;
+            if (yeniQeydler.Count > 0)
+            {
+                await db.Set<Davamiyyet>().AddRangeAsync(yeniQeydler, ct);
+                await db.SaveChangesAsync(ct);
+                _logger.LogInformation("QayibMarker: {Count} Qayib qeydi yaradıldı", yeniQeydler.Count);
+            }
 
-            await db.Set<Davamiyyet>().AddRangeAsync(yeniQeydler, ct);
-            await db.SaveChangesAsync(ct);
+            // Dünən görüşdən qayıtmayan iştirakçıların CihazQayidisVaxti-ni iş günü sonuna qoy
+            var oncekiGun = bugun.AddDays(-1);
+            var aciqCixislar = await db.GorushIshtirakcilar
+                .Include(x => x.Gorush)
+                .Where(x => !x.Silinib
+                         && x.CihazCixisVaxti != null
+                         && x.CihazQayidisVaxti == null
+                         && x.Gorush.Tarix.Date == oncekiGun)
+                .ToListAsync(ct);
 
-            _logger.LogInformation("QayibMarker: {Count} Qayib qeydi yaradıldı", yeniQeydler.Count);
+            if (aciqCixislar.Count > 0)
+            {
+                var isParam = await db.Set<IsParametri>()
+                    .AsNoTracking()
+                    .Where(x => !x.Silinib)
+                    .FirstOrDefaultAsync(ct);
+                var gunSonu = isParam?.StandartCixisVaxti ?? new TimeSpan(17, 45, 0);
+
+                foreach (var gi in aciqCixislar)
+                    gi.CihazQayidisVaxti = gi.Gorush.Tarix.Date.Add(gunSonu);
+
+                await db.SaveChangesAsync(ct);
+                _logger.LogInformation(
+                    "GörüşMarker: {Count} açıq çıxış iş günü sonuna qədər kapatıldı",
+                    aciqCixislar.Count);
+            }
         }
     }
 }

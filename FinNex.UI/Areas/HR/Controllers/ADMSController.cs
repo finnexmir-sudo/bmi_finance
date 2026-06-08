@@ -229,7 +229,14 @@ public class ADMSController : Controller
                         bool ezamiyyetCixisi = bugunEzamiyyet?.BaslamaSaati != null &&
                             Math.Abs((vaxt.TimeOfDay - bugunEzamiyyet.BaslamaSaati.Value).TotalMinutes) <= 30;
 
-                        if (vaxt.TimeOfDay < tezCixmaHeddi && !ezamiyyetCixisi)
+                        // Görüş çıxışı? — offline görüşün başlama saatı ±30 dəq.
+                        bool gorushCixisi = false;
+                        if (!ezamiyyetCixisi && vaxt.TimeOfDay < tezCixmaHeddi)
+                        {
+                            gorushCixisi = await QeydGorushCixisiAsync(isciId, vaxt, tarix);
+                        }
+
+                        if (vaxt.TimeOfDay < tezCixmaHeddi && !ezamiyyetCixisi && !gorushCixisi)
                         {
                             var qalan = (int)(tezCixmaHeddi - vaxt.TimeOfDay).TotalMinutes;
                             var heddStr = $"{(int)tezCixmaHeddi.TotalHours:D2}:{tezCixmaHeddi.Minutes:D2}";
@@ -252,6 +259,9 @@ public class ADMSController : Controller
             // Paralel: İcazə çıxış/qayıdış izlənməsi
             await ProcessIcazeCixisGirisAsync(isciId, vaxt);
 
+            // Paralel: Görüş qayıdışı izlənməsi (işçi görüşdən qayıdıbsa qeydə al)
+            await ProcessGorushQayidisAsync(isciId, vaxt);
+
             // Jeton tövsiyəsi yoxlaması (gecikme, iş norması aşma)
             if (davamiyyetId.HasValue)
                 await _teklifService.DavamiyyetYoxlaAsync(davamiyyetId.Value);
@@ -259,6 +269,85 @@ public class ADMSController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "AttLog parse xətası: {Line}", line);
+        }
+    }
+
+    // Görüş çıxışını qeydə alır. Əgər işçinin bu gün offline görüşü varsa
+    // və çıxış vaxtı görüşün başlama saatına ±30 dəq yaxındırsa → CihazCixisVaxti yazır.
+    // True qaytarır — erkən çıxış bildirişi göndərilməsin.
+    private async Task<bool> QeydGorushCixisiAsync(int isciId, DateTime vaxt, DateTime tarix)
+    {
+        try
+        {
+            var baslamadan = vaxt.TimeOfDay - TimeSpan.FromMinutes(30);
+            var baslamaya  = vaxt.TimeOfDay + TimeSpan.FromMinutes(30);
+
+            var gi = await _db.GorushIshtirakcilar
+                .Include(x => x.Gorush)
+                .Where(x => x.IsciId == isciId
+                         && !x.Silinib
+                         && x.Gorush.Tarix.Date == tarix
+                         && x.Gorush.Nov == GorushNovu.Offline
+                         && x.Gorush.Status != GorushStatus.LegvEdildi
+                         && x.CihazCixisVaxti == null
+                         && x.Status != IshtirakciStatus.Redd
+                         && x.Status != IshtirakciStatus.IshtiraketmeyecekBildirib
+                         && x.Gorush.BaslamaSaati >= baslamadan
+                         && x.Gorush.BaslamaSaati <= baslamaya)
+                .FirstOrDefaultAsync();
+
+            if (gi == null) return false;
+
+            gi.CihazCixisVaxti = vaxt;
+            _db.Update(gi);
+            await _db.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Görüş çıxışı: IsciId={IsciId}, GorushId={GorushId}, Vaxt={Vaxt}",
+                isciId, gi.GorushId, vaxt);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Görüş çıxış qeyd xətası: IsciId={IsciId}", isciId);
+            return false;
+        }
+    }
+
+    // İşçinin açıq görüş çıxışı varsa (görüşə gedib, hələ qayıtmayıb) qayıdışı qeydə alır.
+    // Skan çıxışdan ən az 5 dəq. sonra olmalıdır ki duplikat skan sayılmasın.
+    private async Task ProcessGorushQayidisAsync(int isciId, DateTime vaxt)
+    {
+        try
+        {
+            var tarix = vaxt.Date;
+
+            var gi = await _db.GorushIshtirakcilar
+                .Where(x => x.IsciId == isciId
+                         && !x.Silinib
+                         && x.Gorush.Tarix.Date == tarix
+                         && x.CihazCixisVaxti != null
+                         && x.CihazQayidisVaxti == null)
+                .Include(x => x.Gorush)
+                .FirstOrDefaultAsync();
+
+            if (gi == null) return;
+
+            // Duplikat skan qoruması
+            if (vaxt < gi.CihazCixisVaxti!.Value.AddMinutes(5)) return;
+
+            gi.CihazQayidisVaxti = vaxt;
+            _db.Update(gi);
+            await _db.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Görüşdən qayıdış: IsciId={IsciId}, GorushId={GorushId}, Vaxt={Vaxt}",
+                isciId, gi.GorushId, vaxt);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Görüş qayıdış izlənmə xətası: IsciId={IsciId}", isciId);
         }
     }
 
