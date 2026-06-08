@@ -641,11 +641,9 @@
                         </div>
                     </div>
 
-                    @{
-                        var hrDavSubActive = (currentArea == "HR" && currentController is "Davamiyyet" or "BayramGunu" or "IsciStaji" or "Tabel")
-                                          || (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye");
-                        var hrMezSubActive = currentArea == "HR" && currentController is "Mezuniyyet" or "MezuniyyetBalans" or "Xestelik" or "Ezamiyyet";
-                    }
+                    var hrDavSubActive = (currentArea == "HR" && currentController is "Davamiyyet" or "BayramGunu" or "IsciStaji" or "Tabel")
+                                      || (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye");
+                    var hrMezSubActive = currentArea == "HR" && currentController is "Mezuniyyet" or "MezuniyyetBalans" or "Xestelik" or "Ezamiyyet";
                     <div class="fn-nav-g @(hrDMActive ? "open" : "")">
                         <button type="button" class="fn-nav-g-head">
                             <span>Davamiyyət & Məzuniyyət</span>
