@@ -110,7 +110,8 @@ public class PidSmsController : Controller
                 odenisTarixi = GetDate(r, "ODENIS_TARIXI")
             }).Where(x => !string.IsNullOrWhiteSpace(x.telefon)).ToList();
 
-            return Json(new { data = result, sorguAdi = $"Ödəniş günü — {secilenTarix:dd.MM.yyyy}" });
+            var rawData = rows.Select(r => r.ToDictionary(kv => kv.Key, kv => kv.Value?.ToString() ?? "")).ToList();
+            return Json(new { data = result, rawData, sorguAdi = $"Ödəniş günü — {secilenTarix:dd.MM.yyyy}" });
         }
         catch (Exception ex)
         {
@@ -180,7 +181,8 @@ public class PidSmsController : Controller
                 faktikiNomre = GetStr(r, "FAKTIKI_NOMRE")
             }).Where(x => !string.IsNullOrWhiteSpace(x.telefon)).ToList();
 
-            return Json(new { data = result, sorguAdi = sorquResult.Data.SorguAdi });
+            var rawData = rows.Select(r => r.ToDictionary(kv => kv.Key, kv => kv.Value?.ToString() ?? "")).ToList();
+            return Json(new { data = result, rawData, sorguAdi = sorquResult.Data.SorguAdi });
         }
         catch (Exception ex)
         {
@@ -215,7 +217,8 @@ public class PidSmsController : Controller
                 faktikiNomre = GetStr(r, "FAKTIKI_NOMRE")
             }).Where(x => !string.IsNullOrWhiteSpace(x.telefon)).ToList();
 
-            return Json(new { data = result, sorguAdi = sorquResult.Data.SorguAdi });
+            var rawData = rows.Select(r => r.ToDictionary(kv => kv.Key, kv => kv.Value?.ToString() ?? "")).ToList();
+            return Json(new { data = result, rawData, sorguAdi = sorquResult.Data.SorguAdi });
         }
         catch (Exception ex)
         {

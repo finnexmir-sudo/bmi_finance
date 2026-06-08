@@ -31,9 +31,14 @@
             <div class="fn-page-title">SMS</div>
             <div class="fn-page-sub">Problemli İşlər Departamenti — Göyərçin gateway</div>
         </div>
-        <a asp-action="Sablonlar" class="fn-btn fn-btn--outline">
-            <i class="bi bi-file-earmark-text"></i> Şablonları idarə et
-        </a>
+        <div style="display:flex;gap:8px;align-items:center">
+            <button type="button" onclick="location.reload()" class="fn-btn fn-btn--outline" title="Səhifəni yenilə">
+                <i class="bi bi-arrow-clockwise"></i> Yenilə
+            </button>
+            <a asp-action="Sablonlar" class="fn-btn fn-btn--outline">
+                <i class="bi bi-file-earmark-text"></i> Şablonları idarə et
+            </a>
+        </div>
     </div>
 
     @if (TempData["Success"] != null)
@@ -134,11 +139,18 @@
                        oninput="topluFilterEt()" style="max-width:300px" />
                 <span id="topluSay" style="font-size:13px;color:#64748b;white-space:nowrap"></span>
                 <span id="aktivSiyahiBecj" style="display:none;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe"></span>
-                <button type="button" class="fn-btn fn-btn--outline" onclick="uygunsuzNomrelerExcel()"
-                        title="Rəqəm sayı 9-dan çox olan nömrələri Excel-ə çıxart"
-                        style="font-size:12px;padding:5px 10px;margin-left:auto;white-space:nowrap">
-                    <i class="bi bi-file-earmark-excel text-warning"></i> Uyğunsuz Nömrələr
-                </button>
+                <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+                    <button type="button" class="fn-btn fn-btn--outline" onclick="tamSiyahiExcel()"
+                            title="Tam SQL nəticəsini Excel-ə çıxart"
+                            style="font-size:12px;padding:5px 10px;white-space:nowrap;color:#15803d;border-color:#86efac">
+                        <i class="bi bi-file-earmark-excel"></i> Tam siyahı → Excel
+                    </button>
+                    <button type="button" class="fn-btn fn-btn--outline" onclick="uygunsuzNomrelerExcel()"
+                            title="Rəqəm sayı 9-dan çox olan nömrələri Excel-ə çıxart"
+                            style="font-size:12px;padding:5px 10px;white-space:nowrap">
+                        <i class="bi bi-file-earmark-excel text-warning"></i> Uyğunsuz Nömrələr
+                    </button>
+                </div>
             </div>
 
             @* Cədvəl *@
@@ -248,6 +260,27 @@
 </div>
 
 <script>
+    var pidRawData = []; // tam Oracle nəticəsi
+
+    function tamSiyahiExcel() {
+        if (!pidRawData || !pidRawData.length) { alert('Əvvəlcə siyahını yükləyin.'); return; }
+        var headers = Object.keys(pidRawData[0]);
+        var csv = headers.join(',') + '\n' + pidRawData.map(function (r) {
+            return headers.map(function (h) {
+                return '"' + String(r[h] || '').replace(/"/g, '""') + '"';
+            }).join(',');
+        }).join('\n');
+        var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'pid_siyahisi.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
     function pidTarixceToggle(header) {
         var body = document.getElementById('pidTarixceBody');
         var ikon = document.getElementById('pidTarixceIkon');
@@ -326,7 +359,7 @@
             var json = await resp.json();
             if (json.error) { gosterXeta(json.error); return; }
             aktivSiyahiGoster('VK Borcalanlar', 'blue');
-            cedveldoldir(json.data, json.sorguAdi);
+            cedveldoldir(json.data, json.sorguAdi, json.rawData);
         } catch (e) {
             gosterXeta('Şəbəkə xətası: ' + e.message);
         } finally {
@@ -345,7 +378,7 @@
             var json = await resp.json();
             if (json.error) { gosterXeta(json.error); return; }
             aktivSiyahiGoster('VK Borcalan Zaminləri', 'purple');
-            cedveldoldir(json.data, json.sorguAdi);
+            cedveldoldir(json.data, json.sorguAdi, json.rawData);
         } catch (e) {
             gosterXeta('Şəbəkə xətası: ' + e.message);
         } finally {
@@ -393,7 +426,7 @@
             var json = await resp.json();
             if (json.error) { gosterXeta(json.error); return; }
             aktivSiyahiGoster('Ödəniş günü — ' + tarix, 'green');
-            cedveldoldir(json.data, json.sorguAdi);
+            cedveldoldir(json.data, json.sorguAdi, json.rawData);
         } catch (e) {
             gosterXeta('Şəbəkə xətası: ' + e.message);
         } finally {
@@ -417,7 +450,7 @@
             var json = await resp.json();
             if (json.error) { gosterXeta(json.error); return; }
             aktivSiyahiGoster('Excel: ' + this.files[0].name, 'green');
-            cedveldoldir(json.data, json.sorguAdi);
+            cedveldoldir(json.data, json.sorguAdi, json.rawData);
         } catch (e) {
             gosterXeta('Şəbəkə xətası: ' + e.message);
         } finally {
@@ -442,7 +475,8 @@
         el.style.borderColor  = p[2];
     }
 
-    function cedveldoldir(data, sorguAdi) {
+    function cedveldoldir(data, sorguAdi, rawData) {
+        pidRawData = rawData || [];
         var tbody = document.getElementById('topluTbody');
         tbody.innerHTML = '';
         if (!data || data.length === 0) {
