@@ -251,13 +251,7 @@
                                             {
                                                 <div class="mb-prev-year-row @(y.Cari ? "mb-year-current" : "")">
                                                     <span class="il">@y.Il @(y.Cari ? "(cari)" : "")</span>
-                                                    <span>
-                                                        <span class="gun">@y.Qaliq gün</span>
-                                                        @if (y.Cari && illik != null)
-                                                        {
-                                                            <span style="font-size:10px;color:#1e40af;margin-left:5px;font-weight:500">≈@haqqGun haqq</span>
-                                                        }
-                                                    </span>
+                                                    <span class="gun">@y.Qaliq gün</span>
                                                 </div>
                                             }
                                             @if (!cariIlBalansVar)
@@ -285,13 +279,8 @@
                                     }
                                     else
                                     {
-                                        <div class="mb-renew-date">@illik.YaradilmaTarixi.ToString("dd.MM.yyyy")</div>
-                                        @if (illik.YenilenmeTarixi.HasValue)
-                                        {
-                                            <div style="font-size:10.5px;color:#94a3b8;margin-top:2px">
-                                                son: @illik.YenilenmeTarixi.Value.ToString("dd.MM.yyyy")
-                                            </div>
-                                        }
+                                        var gorunecekTarix = illik.YenilenmeTarixi ?? illik.YaradilmaTarixi;
+                                        <div class="mb-renew-date">@gorunecekTarix.ToString("dd.MM.yyyy")</div>
                                     }
                                 </td>
 
@@ -303,8 +292,12 @@
                                     }
                                     else
                                     {
-                                        <div class="mb-haqq-num">@haqqGun</div>
-                                        <div class="mb-haqq-sub">@gecenGun / @daysInYear gün</div>
+                                        var haqqPct = illik.ToplamGun > 0 ? (int)Math.Round((double)haqqGun / illik.ToplamGun * 100) : 0;
+                                        <div class="mb-haqq-num">@haqqGun <span style="font-size:12px;font-weight:500;color:#64748b">gün</span></div>
+                                        <div style="margin-top:4px;height:4px;background:#f1f5f9;border-radius:2px;width:80px">
+                                            <div style="height:100%;width:@(haqqPct)%;background:#6366f1;border-radius:2px"></div>
+                                        </div>
+                                        <div class="mb-haqq-sub">@(illik.ToplamGun)-dən</div>
                                     }
                                 </td>
 
