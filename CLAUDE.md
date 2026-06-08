@@ -39,6 +39,28 @@ Sessiyanın **sonunda** (işlər tamamlananda) mütləq:
 - İkiqat sayılma riskini hər zaman nəzərə al (korreksiya + orijinal).
 - SQL migration vermədən əvvəl `SELECT` ilə nə dəyişəcəyini göstər.
 
+## EF Core — Filtered Include + Tracking Tələsi (KRİTİK)
+
+Tracking ilə işləyən sorğuda `Include(x => x.Nav.Where(...))` (filtered include)
+istifadə edirsənsə və **eyni `DbContext`-də** sonradan həmin entity tipini başqa
+bir tracking sorğusu ilə yükləyirsənsə — EF Core "relationship fixup" həmin
+əlavə sətirləri birinci sorğunun naviqasiya kolleksiyasına **avtomatik yapışdırır**
+və filtered Include effektsiz qalır.
+
+Real nümunə (MezuniyyetBalans): `isciler` sorğusu yalnız cari ilin balansını
+yükləmək üçün `Include(...Where(b => b.Il == cariIl))` istifadə edirdi, amma
+sonrakı `butunBalanslar` sorğusu (tracking) bütün illəri yüklədi. Nəticədə
+işçinin əvvəlki illərinin balansı naviqasiyaya düşdü və view onu cari il kimi
+göstərdi — cari il balansı olmayan işçidə əvvəlki ilin günlərini "2026" kimi
+göstərdi.
+
+**Qaydalar:**
+- Yalnız oxumaq üçün olan sorğularda həmişə `.AsNoTracking()` istifadə et.
+- Eyni context-də eyni entity tipini iki dəfə yükləyirsənsə, ən azı sonrakı
+  sorğuda `.AsNoTracking()` qoy ki, fixup baş verməsin.
+- View/servisdə naviqasiyadan oxuyanda filtri **bir daha** tətbiq et
+  (məs. `b.Il == secilmisIl`) — yalnız Include filtrinə güvənmə.
+
 ## Xəta Etirafı
 
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.
