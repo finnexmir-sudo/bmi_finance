@@ -48,7 +48,7 @@
                     <div class="tsk-meta-row">
                         <span class="tsk-meta-lbl">Saat</span>
                         <span class="tsk-meta-val">
-                            @Model.BaslamaSaati.ToString(@"hh\:mm") — @Model.BitisSaati.ToString(@"hh\:mm")
+                            @Model.BaslamaSaati.ToString(@"hh\:mm")@(Model.BitisSaati.HasValue ? " — " + Model.BitisSaati.Value.ToString(@"hh\:mm") : "")
                         </span>
                     </div>
                     @if (!string.IsNullOrEmpty(Model.Yer))

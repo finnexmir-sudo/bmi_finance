@@ -419,7 +419,7 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<TimeSpan>("BaslamaSaati")
                         .HasColumnType("time");
 
-                    b.Property<TimeSpan>("BitisSaati")
+                    b.Property<TimeSpan?>("BitisSaati")
                         .HasColumnType("time");
 
                     b.Property<int>("Nov")
