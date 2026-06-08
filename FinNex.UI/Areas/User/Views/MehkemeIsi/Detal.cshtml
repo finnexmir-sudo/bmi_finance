@@ -27,9 +27,10 @@
         <div class="mi-alert mi-alert--error">@TempData["Error"]</div>
     }
 
-    <div class="mi-detal-grid">
+    <!-- Yuxarı sıra: iş məlumatları + yeni mərhələ formu -->
+    <div class="mi-detal-top">
 
-        <!-- Sol: Məlumatlar kartı -->
+        <!-- Sol: baxış kartı -->
         <div class="mi-info-card" id="viewCard">
             <div class="mi-info-title">İş məlumatları</div>
             <dl class="mi-dl">
@@ -48,7 +49,6 @@
                 <dt>Yaradılma</dt>
                 <dd>@Model.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</dd>
             </dl>
-
             <form asp-action="Sil" method="post" style="margin-top:16px"
                   onsubmit="return confirm('Bu məhkəmə işini silmək istədiyinizə əminsiniz?')">
                 @Html.AntiForgeryToken()
@@ -59,7 +59,7 @@
             </form>
         </div>
 
-        <!-- Sol: Redaktə formu (gizli) -->
+        <!-- Sol: redaktə formu (gizli) -->
         <div class="mi-info-card" id="editCard" style="display:none">
             <div class="mi-info-title">Redaktə</div>
             <form id="editForm">
@@ -67,7 +67,7 @@
                 <div class="mi-form-grid">
                     <div class="mi-form-group">
                         <label class="mi-lbl">Növ</label>
-                        <select asp-for="Nov" id="eNov" class="mi-select">
+                        <select asp-for="Nov" class="mi-select">
                             <option value="1">İpoteka</option>
                             <option value="2">İstehlak</option>
                             <option value="3">Kart krediti</option>
@@ -76,7 +76,7 @@
                     </div>
                     <div class="mi-form-group">
                         <label class="mi-lbl">Status</label>
-                        <select asp-for="Status" id="eStatus" class="mi-select">
+                        <select asp-for="Status" class="mi-select">
                             <option value="1">Hazırlanır</option>
                             <option value="2">Məhkəmədə</option>
                             <option value="3">İcrada</option>
@@ -108,89 +108,128 @@
             </form>
         </div>
 
-        <!-- Sağ: Mərhələlər -->
-        <div class="mi-timeline-col">
-            <div class="mi-info-card">
-                <div class="mi-info-title">Yeni mərhələ</div>
-                <form asp-action="MerheleElave" method="post" enctype="multipart/form-data">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="MehkemeIsiId" value="@Model.Id" />
-                    <div class="mi-form-grid">
-                        <div class="mi-form-group">
-                            <label class="mi-lbl">Növ</label>
-                            <select name="MerheleTipi" class="mi-select">
-                                <option value="1">İddia verildi</option>
-                                <option value="2">Məhkəmə iclası</option>
-                                <option value="3">Qərar verildi</option>
-                                <option value="4">İcra bağlandı</option>
-                                <option value="5">Ödənildi</option>
-                                <option value="6">Digər</option>
-                            </select>
-                        </div>
-                        <div class="mi-form-group">
-                            <label class="mi-lbl">Tarix</label>
-                            <input name="Tarix" class="mi-input" type="date"
-                                   value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
-                        </div>
-                        <div class="mi-form-group mi-form-group--full">
-                            <label class="mi-lbl">Qeyd</label>
-                            <textarea name="Qeyd" class="mi-textarea" rows="2" placeholder="Mərhələ qeydi…"></textarea>
-                        </div>
-                        <div class="mi-form-group mi-form-group--full">
-                            <label class="mi-lbl">Sənəd (ixtiyari)</label>
-                            <input type="file" name="fayl" class="mi-input" accept=".pdf,.doc,.docx,.jpg,.png" />
-                        </div>
+        <!-- Sağ: yeni mərhələ formu -->
+        <div class="mi-info-card mi-merhele-form">
+            <div class="mi-info-title">Yeni mərhələ əlavə et</div>
+            <form asp-action="MerheleElave" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="MehkemeIsiId" value="@Model.Id" />
+                <div class="mi-form-grid mi-form-grid--3">
+                    <div class="mi-form-group">
+                        <label class="mi-lbl">Növ</label>
+                        <select name="MerheleTipi" class="mi-select">
+                            <option value="1">İddia verildi</option>
+                            <option value="2">Məhkəmə iclası</option>
+                            <option value="3">Qərar verildi</option>
+                            <option value="4">İcra bağlandı</option>
+                            <option value="5">Ödənildi</option>
+                            <option value="6">Digər</option>
+                        </select>
                     </div>
-                    <button type="submit" class="mi-btn mi-btn--primary mi-btn--sm">
-                        <i class="bi bi-plus-lg"></i> Əlavə et
-                    </button>
-                </form>
-            </div>
-
-            <div class="mi-timeline">
-                @if (Model.Merheleler.Any())
-                {
-                    @foreach (var m in Model.Merheleler)
-                    {
-                        <div class="mi-tl-item">
-                            <div class="mi-tl-dot @TlDotClass(m.MerheleTipi)"></div>
-                            <div class="mi-tl-body">
-                                <div class="mi-tl-head">
-                                    <span class="mi-tl-tipi">@MerheleTipiAd(m.MerheleTipi)</span>
-                                    <span class="mi-tl-tarix">@m.Tarix.ToString("dd.MM.yyyy")</span>
-                                </div>
-                                @if (!string.IsNullOrWhiteSpace(m.Qeyd))
-                                {
-                                    <div class="mi-tl-qeyd">@m.Qeyd</div>
-                                }
-                                @if (!string.IsNullOrWhiteSpace(m.SenedYolu))
-                                {
-                                    <a href="/dms/@m.SenedYolu" target="_blank" class="mi-tl-fayl">
-                                        <i class="bi bi-file-earmark"></i> Sənəd
-                                    </a>
-                                }
-                                <form asp-action="MerheleSil" method="post" class="mi-tl-del"
-                                      onsubmit="return confirm('Bu mərhələni silmək istədiyinizə əminsiniz?')">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="merheleId" value="@m.Id" />
-                                    <input type="hidden" name="ishId" value="@Model.Id" />
-                                    <button type="submit" class="mi-btn-icon mi-btn-icon--danger" title="Sil">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    }
-                }
-                else
-                {
-                    <div class="mi-empty" style="padding:24px 0">
-                        <i class="bi bi-clock-history"></i>
-                        <div>Hələ mərhələ yoxdur</div>
+                    <div class="mi-form-group">
+                        <label class="mi-lbl">Tarix</label>
+                        <input name="Tarix" class="mi-input" type="date"
+                               value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
                     </div>
-                }
-            </div>
+                    <div class="mi-form-group">
+                        <label class="mi-lbl">Hakim</label>
+                        <input name="Hakim" class="mi-input" maxlength="200" placeholder="Ad Soyad…" />
+                    </div>
+                    <div class="mi-form-group">
+                        <label class="mi-lbl">İcraçı memur</label>
+                        <input name="IcraciMemur" class="mi-input" maxlength="200" placeholder="Ad Soyad…" />
+                    </div>
+                    <div class="mi-form-group">
+                        <label class="mi-lbl">Sənəd (ixtiyari)</label>
+                        <input type="file" name="fayl" class="mi-input" accept=".pdf,.doc,.docx,.jpg,.png" />
+                    </div>
+                    <div class="mi-form-group mi-form-group--full">
+                        <label class="mi-lbl">Qeyd</label>
+                        <textarea name="Qeyd" class="mi-textarea" rows="2" placeholder="Mərhələ qeydi…"></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="mi-btn mi-btn--primary mi-btn--sm">
+                    <i class="bi bi-plus-lg"></i> Əlavə et
+                </button>
+            </form>
         </div>
+    </div>
+
+    <!-- Mərhələlər cədvəli — tam en -->
+    <div class="mi-info-card" style="margin-top:20px">
+        <div class="mi-info-title" style="display:flex;justify-content:space-between;align-items:center">
+            <span>Mərhələlər</span>
+            <span class="mi-merhele-count">@Model.Merheleler.Count qeyd</span>
+        </div>
+
+        @if (Model.Merheleler.Any())
+        {
+            <div class="mi-merhele-table-wrap">
+                <table class="mi-merhele-table">
+                    <thead>
+                        <tr>
+                            <th>Növ</th>
+                            <th>Tarix</th>
+                            <th>Hakim</th>
+                            <th>İcraçı memur</th>
+                            <th>Qeyd</th>
+                            <th>Sənəd</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in Model.Merheleler)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="mi-badge @MerheleBadgeClass(m.MerheleTipi)">
+                                        @MerheleTipiAd(m.MerheleTipi)
+                                    </span>
+                                </td>
+                                <td class="mi-td-nowrap">@m.Tarix.ToString("dd.MM.yyyy")</td>
+                                <td>@(string.IsNullOrWhiteSpace(m.Hakim) ? "—" : m.Hakim)</td>
+                                <td>@(string.IsNullOrWhiteSpace(m.IcraciMemur) ? "—" : m.IcraciMemur)</td>
+                                <td class="mi-td-qeyd" title="@m.Qeyd">
+                                    @if (!string.IsNullOrWhiteSpace(m.Qeyd))
+                                    {
+                                        @(m.Qeyd.Length > 60 ? m.Qeyd[..60] + "…" : m.Qeyd)
+                                    }
+                                    else { <span class="mi-muted">—</span> }
+                                </td>
+                                <td class="mi-td-nowrap">
+                                    @if (!string.IsNullOrWhiteSpace(m.SenedYolu))
+                                    {
+                                        <a href="/dms/@m.SenedYolu" target="_blank"
+                                           class="mi-btn-icon" title="Sənədi aç">
+                                            <i class="bi bi-file-earmark-arrow-down"></i>
+                                        </a>
+                                    }
+                                    else { <span class="mi-muted">—</span> }
+                                </td>
+                                <td>
+                                    <form asp-action="MerheleSil" method="post"
+                                          onsubmit="return confirm('Bu mərhələni silmək istədiyinizə əminsiniz?')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="merheleId" value="@m.Id" />
+                                        <input type="hidden" name="ishId" value="@Model.Id" />
+                                        <button type="submit" class="mi-btn-icon mi-btn-icon--danger" title="Sil">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="mi-empty" style="padding:24px 0">
+                <i class="bi bi-clock-history"></i>
+                <div>Hələ mərhələ yoxdur</div>
+            </div>
+        }
     </div>
 </div>
 
@@ -206,27 +245,27 @@
     string StatusBadge(MehkemeIsiStatus s) => s switch
     {
         MehkemeIsiStatus.Hazirlanir => "<span class=\"mi-badge mi-badge--hazir\">Hazırlanır</span>",
-        MehkemeIsiStatus.Mehkemede => "<span class=\"mi-badge mi-badge--mehkeme\">Məhkəmədə</span>",
+        MehkemeIsiStatus.Mehkemede  => "<span class=\"mi-badge mi-badge--mehkeme\">Məhkəmədə</span>",
         MehkemeIsiStatus.Icra       => "<span class=\"mi-badge mi-badge--icra\">İcrada</span>",
         MehkemeIsiStatus.Tamamlandi => "<span class=\"mi-badge mi-badge--tamam\">Tamamlandı</span>",
         MehkemeIsiStatus.Baghlandi  => "<span class=\"mi-badge mi-badge--bagli\">Bağlandı</span>",
         _                           => ""
     };
 
-    string TlDotClass(MerheleTipi t) => t switch
+    string MerheleBadgeClass(MerheleTipi t) => t switch
     {
-        MerheleTipi.IddiaVerildi  => "mi-tl-dot--blue",
-        MerheleTipi.MehkemeIclasi => "mi-tl-dot--amber",
-        MerheleTipi.QerarVerildi  => "mi-tl-dot--green",
-        MerheleTipi.IcraBaglandi  => "mi-tl-dot--purple",
-        MerheleTipi.Odendi        => "mi-tl-dot--teal",
-        _                         => "mi-tl-dot--gray"
+        MerheleTipi.IddiaVerildi  => "mi-badge--blue",
+        MerheleTipi.MehkemeIclasi => "mi-badge--amber",
+        MerheleTipi.QerarVerildi  => "mi-badge--tamam",
+        MerheleTipi.IcraBaglandi  => "mi-badge--icra",
+        MerheleTipi.Odendi        => "mi-badge--mehkeme",
+        _                         => "mi-badge--diger"
     };
 
     string MerheleTipiAd(MerheleTipi t) => t switch
     {
         MerheleTipi.IddiaVerildi  => "İddia verildi",
-        MerheleTipi.MehkemeIclasi => "Məhkəmə iclası",
+        MerheleTipi.MehkemeIclasi => "Məhk. iclası",
         MerheleTipi.QerarVerildi  => "Qərar verildi",
         MerheleTipi.IcraBaglandi  => "İcra bağlandı",
         MerheleTipi.Odendi        => "Ödənildi",

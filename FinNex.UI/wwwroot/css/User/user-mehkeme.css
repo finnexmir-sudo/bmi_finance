@@ -84,9 +84,18 @@
 .mi-oracle-status--ok  { background: rgba(34,197,94,.1);  color: #15803d; font-weight: 600; }
 .mi-oracle-status--err { background: rgba(239,68,68,.1); color: #b91c1c; }
 
-/* Detail grid */
+/* Detail grid (köhnə — saxlanılır geriyə uyğunluq üçün) */
 .mi-detal-grid { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
 @media (max-width: 860px) { .mi-detal-grid { grid-template-columns: 1fr; } }
+
+/* Yeni detal yuxarı sıra: məlumat kartı + mərhələ formu */
+.mi-detal-top { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; margin-bottom: 0; }
+.mi-detal-top .mi-merhele-form { grid-column: 2; }
+@media (max-width: 900px) { .mi-detal-top { grid-template-columns: 1fr; } .mi-detal-top .mi-merhele-form { grid-column: 1; } }
+
+/* 3 sütunlu form grid mərhələ formu üçün */
+.mi-form-grid--3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 700px) { .mi-form-grid--3 { grid-template-columns: 1fr 1fr; } }
 
 /* Info card */
 .mi-info-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 20px; }
@@ -125,3 +134,17 @@
 .mi-kredit-row:hover { background: rgba(99,102,241,.06); }
 .mi-kredit-row--selected { background: rgba(99,102,241,.12) !important; outline: 2px solid #6366f1; outline-offset: -2px; }
 .mi-kredit-row--selected td { font-weight: 600; }
+
+/* Mərhələlər cədvəli */
+.mi-merhele-table-wrap { overflow-x: auto; margin-top: 4px; }
+.mi-merhele-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mi-merhele-table th { background: #f8fafc; color: #475569; font-weight: 700; font-size: 12px; text-align: left; padding: 9px 12px; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+.mi-merhele-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; color: #1e293b; vertical-align: middle; }
+.mi-merhele-table tbody tr:hover { background: #f8fafc; }
+.mi-merhele-table tbody tr:last-child td { border-bottom: none; }
+.mi-td-nowrap { white-space: nowrap; }
+.mi-td-qeyd { max-width: 240px; color: #475569; }
+.mi-muted { color: #cbd5e1; }
+.mi-merhele-count { font-size: 12px; background: #f1f5f9; color: #64748b; padding: 3px 10px; border-radius: 20px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.mi-badge--blue   { background: rgba(59,130,246,.1);  color: #1d4ed8; }
+.mi-badge--amber  { background: rgba(245,158,11,.12); color: #92400e; }

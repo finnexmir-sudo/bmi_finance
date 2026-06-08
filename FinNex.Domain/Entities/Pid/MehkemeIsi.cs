@@ -20,6 +20,8 @@ public class MehkemeMerhelesi : BaseEntity
     public MehkemeIsi MehkemeIsi   { get; set; } = null!;
     public MerheleTipi MerheleTipi { get; set; }
     public DateTime Tarix          { get; set; }
+    public string? Hakim           { get; set; }   // məhkəmə hakiminin adı
+    public string? IcraciMemur     { get; set; }   // icra məmurunun adı
     public string? Qeyd            { get; set; }
     public string? SenedYolu       { get; set; }   // FinNex_DMS relative path
 }
