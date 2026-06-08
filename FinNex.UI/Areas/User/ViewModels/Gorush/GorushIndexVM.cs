@@ -12,9 +12,10 @@ namespace FinNex.UI.Areas.User.ViewModels.Gorush
 
         public List<GorushListDto> YaxinlashanGorushler =>
             MenimGorushler
-                .Where(x => x.Tarix >= DateTime.Today &&
-                            x.Tarix <= DateTime.Today.AddDays(7) &&
-                            x.Status == GorushStatus.Planlanib)
+                .Where(x => x.Tarix.Date >= DateTime.Today &&
+                            x.Tarix.Date <= DateTime.Today.AddDays(7) &&
+                            x.Status != GorushStatus.LegvEdildi &&
+                            x.Status != GorushStatus.Bitdi)
                 .OrderBy(x => x.Tarix)
                 .ToList();
     }
