@@ -154,7 +154,6 @@ namespace FinNex.UI.Areas.User.Controllers
                 TeshkilatciIsciId = isciId,
                 IsciList = iscilerResult.Success
                     ? iscilerResult.Data!
-                        .Where(x => x.Id != isciId)
                         .Select(x => new SelectListItem(x.TamAd, x.Id.ToString()))
                         .ToList()
                     : new()
