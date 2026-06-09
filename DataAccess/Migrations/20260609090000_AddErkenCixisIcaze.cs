@@ -1,9 +1,14 @@
+using FinNex.DataAccess.Contexts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace DataAccess.Migrations
+namespace FinNex.DataAccess.Migrations
 {
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20260609090000_AddErkenCixisIcaze")]
     public partial class AddErkenCixisIcaze : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
