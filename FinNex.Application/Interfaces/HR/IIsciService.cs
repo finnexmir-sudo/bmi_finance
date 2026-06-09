@@ -23,6 +23,9 @@ public interface IIsciService : IServiceAsync<Isci, IsciListDto, IsciCreateDto, 
     /// </summary>
     Task<Result> IbanYenileAsync(int isciId, string? iban);
 
+    Task<IList<IsciHesabDto>> GetIsciHesabSiyahisiAsync();
+    Task<Result> HesabYenileAsync(int isciId, string? hesab);
+
     /// <summary>
     /// Server-side səhifələmə və axtarış üçün.
     /// </summary>
