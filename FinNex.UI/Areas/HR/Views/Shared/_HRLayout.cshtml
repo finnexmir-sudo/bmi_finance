@@ -12,6 +12,7 @@
 
     var isWorkOpen =
         currentController == "Isci" ||
+        currentController == "IsciHesab" ||
         currentController == "Davamiyyet" ||
         currentController == "Mezuniyyet" ||
         currentController == "Maas";
@@ -110,6 +111,13 @@
                            asp-controller="Isci"
                            asp-action="Index">
                             İşçilər
+                        </a>
+
+                        <a class="hr-nav-sub-item @(currentController == "IsciHesab" ? "active" : "")"
+                           asp-area="HR"
+                           asp-controller="IsciHesab"
+                           asp-action="Index">
+                            Bank Hesabları
                         </a>
 
                         <a class="hr-nav-sub-item @(currentController == "Davamiyyet" ? "active" : "")"
