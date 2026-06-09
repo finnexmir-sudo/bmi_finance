@@ -1030,14 +1030,9 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         // Təsdiqlənmiş məzuniyyəti ləğv edəndə balansı geri qaytar
         if (m.Status == MezuniyyetStatus.Tesdiqlenib)
         {
-            var balans = await _unitOfWork.Repository<MezuniyyetBalans>()
-                .GetirAsync(x => x.IsciId == m.IsciId && x.Il == m.BaslamaTarixi.Year && x.Nov == m.Nov);
-
-            if (balans != null)
-            {
-                balans.IstifadeOlunanGun = Math.Max(0, balans.IstifadeOlunanGun - m.IsGunlerininSayi);
-                await _unitOfWork.Repository<MezuniyyetBalans>().YenileAsync(balans);
-            }
+            // BalansiFifoKesAsync EfektivGunSayi istifadə edib, çox il üzrə kəsmiş ola bilər.
+            // BalansiGeriQaytarAsync (LIFO) eyni miqdarı düzgün şəkildə geri qaytarır.
+            await BalansiGeriQaytarAsync(m.IsciId, m.Nov, m.EfektivGunSayi);
 
             // Davamiyyətdəki icazəli/xəstəlik/ezamiyyət qeydlərini sil
             var davQeydleri = await _unitOfWork.Repository<Davamiyyet>()
