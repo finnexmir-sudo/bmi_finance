@@ -440,4 +440,63 @@ public class IsciService : ServiceAsync<Isci, IsciListDto, IsciCreateDto, IsciUp
             return Result.Fail($"IBAN yenilənmədi: {ex.Message}");
         }
     }
+
+    public async Task<IList<IsciHesabDto>> GetIsciHesabSiyahisiAsync()
+    {
+        var list = await _unitOfWork.Repository<Isci>()
+            .Query().AsNoTracking()
+            .Where(x => x.Status != IsciStatus.IshtenCixib)
+            .Include(x => x.Maliye)
+            .Include(x => x.IsciTeyinatlari).ThenInclude(t => t.Departament)
+            .OrderBy(x => x.Sira).ThenBy(x => x.Ad).ThenBy(x => x.Soyad)
+            .ToListAsync();
+
+        return list.Select(x => new IsciHesabDto
+        {
+            IsciId      = x.Id,
+            TamAd       = $"{x.Ad} {x.Soyad}" + (x.AtaAdi != null ? $" {x.AtaAdi}" : ""),
+            Departament = x.IsciTeyinatlari
+                           .Where(t => t.BitmeTarixi == null)
+                           .FirstOrDefault()?.Departament?.Ad,
+            BankHesabNo = x.Maliye?.BankHesabNo
+        }).ToList();
+    }
+
+    public async Task<Result> HesabYenileAsync(int isciId, string? hesab)
+    {
+        try
+        {
+            string? normalized = null;
+            if (!string.IsNullOrWhiteSpace(hesab))
+            {
+                normalized = new string(hesab.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToUpperInvariant();
+                if (normalized.Length > 34)
+                    return Result.Fail("Hesab nömrəsi çox uzundur (maks. 34 simvol).");
+            }
+
+            var maliyeRepo = _unitOfWork.Repository<IsciMaliye>();
+            var maliye = await maliyeRepo.GetirAsync(x => x.IsciId == isciId);
+
+            if (maliye == null)
+            {
+                maliye = new IsciMaliye { IsciId = isciId, CariMaas = 0, BankHesabNo = normalized };
+                await maliyeRepo.YaratAsync(maliye);
+            }
+            else
+            {
+                if (string.Equals(maliye.BankHesabNo, normalized, StringComparison.Ordinal))
+                    return Result.Ok();
+                maliye.BankHesabNo = normalized;
+                maliye.YenilenmeTarixi = DateTime.Now;
+                await maliyeRepo.YenileAsync(maliye);
+            }
+
+            await _unitOfWork.YaddaSaxlaAsync();
+            return Result.Ok("Hesab yeniləndi.");
+        }
+        catch (Exception ex)
+        {
+            return Result.Fail($"Xəta: {ex.Message}");
+        }
+    }
 }
