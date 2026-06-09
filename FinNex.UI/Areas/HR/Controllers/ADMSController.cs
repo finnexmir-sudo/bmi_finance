@@ -225,9 +225,16 @@ public class ADMSController : Controller
                             ? bugunElan.BitisVaxti
                             : standartCixis - tezCixmaTolerans;
 
-                        // Ezamiyyət çıxışı? (BaslamaSaatı ±30 dəq. fərqlə)
-                        bool ezamiyyetCixisi = bugunEzamiyyet?.BaslamaSaati != null &&
-                            Math.Abs((vaxt.TimeOfDay - bugunEzamiyyet.BaslamaSaati.Value).TotalMinutes) <= 30;
+                        // Ezamiyyət çıxışı? (BaslamaSaatı ±30 dəq. fərqlə, yaxud tam gün ezamiyyət)
+                        bool ezamiyyetCixisi = bugunEzamiyyet != null &&
+                            (bugunEzamiyyet.BaslamaSaati == null ||
+                             Math.Abs((vaxt.TimeOfDay - bugunEzamiyyet.BaslamaSaati.Value).TotalMinutes) <= 30);
+
+                        if (ezamiyyetCixisi && bugunEzamiyyet != null)
+                        {
+                            movcud.Status = DavamiyyetStatus.Ezamiyyet;
+                            await _db.SaveChangesAsync();
+                        }
 
                         // Görüş çıxışı? — offline görüşün başlama saatı ±30 dəq.
                         bool gorushCixisi = false;
