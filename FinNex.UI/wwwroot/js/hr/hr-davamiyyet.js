@@ -1041,26 +1041,30 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── İşçi sırası klik → keçən iş vaxtı ─────────────────────────────
+    // ── İşçi sırası klik → keçən iş vaxtı + erkən çıxış icazəsi ──────
     var elapsedTooltip = document.createElement('div');
     elapsedTooltip.id = 'hrdElapsedTooltip';
     elapsedTooltip.style.cssText =
         'position:fixed;z-index:9999;background:#1e293b;color:#f1f5f9;' +
         'padding:10px 16px;border-radius:10px;font-size:13px;' +
         'box-shadow:0 4px 20px rgba(0,0,0,.35);display:none;white-space:nowrap;' +
-        'line-height:1.6;pointer-events:none;';
+        'line-height:1.6;min-width:220px;';
     document.body.appendChild(elapsedTooltip);
 
     var suppressElapsedClose = false;
+    var erkenCixisEndpoint = document.querySelector('.hrd-page')
+        ?.getAttribute('data-endpoint-erkencixis') || '';
 
     tableBody.addEventListener('click', function (e) {
-        if (e.target.closest('button')) return;
+        if (e.target.closest('button[data-action="erken-icaze"]')) return;
         var row = e.target.closest('tr[data-giris]');
         if (!row) return;
 
-        var girisStr = row.getAttribute('data-giris');
-        var cixisStr = row.getAttribute('data-cixis');
-        var isciAd = (row.querySelector('.hrd-emp-name') || {}).textContent || '';
+        var girisStr  = row.getAttribute('data-giris');
+        var cixisStr  = row.getAttribute('data-cixis');
+        var isciAd    = (row.querySelector('.hrd-emp-name') || {}).textContent || '';
+        var isciId    = row.getAttribute('data-isci-id') || '';
+        var hasIcaze  = row.getAttribute('data-erken-icaze') === '1';
 
         function minOfDay(d) { return d.getHours() * 60 + d.getMinutes(); }
         var _np = (isParametriData && isParametriData.naharBaslamaSaati || '13:00').split(':');
@@ -1072,9 +1076,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!girisStr) {
             msg = '<span style="opacity:.6;">Giriş qeydi yoxdur</span>';
         } else if (cixisStr) {
-            var cixisDate = new Date(cixisStr);
+            var cixisDate  = new Date(cixisStr);
             var girisDate2 = new Date(girisStr);
-            var workedMin = Math.floor((cixisDate - girisDate2) / 60000);
+            var workedMin  = Math.floor((cixisDate - girisDate2) / 60000);
             if (minOfDay(girisDate2) < naharBaslama && minOfDay(cixisDate) > naharBitis)
                 workedMin = Math.max(0, workedMin - naharMuddet);
             var wh = Math.floor(workedMin / 60);
@@ -1092,6 +1096,20 @@ document.addEventListener('DOMContentLoaded', function () {
             msg = '&#9200; <strong>' + isciAd + '</strong><br>' +
                   '<span style="color:#34d399;font-size:14px;font-weight:600;">' + h + ' saat ' + m + ' dəqiqə</span>' +
                   '<span style="opacity:.6;font-size:11px;margin-left:6px;">işdədir</span>';
+
+            // Erkən çıxış icazə düyməsi (yalnız işdə olan işçilər üçün)
+            var icazeHtml;
+            if (hasIcaze) {
+                icazeHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);font-size:11px;color:#34d399;">&#10003; Erkən çıxış icazəsi verildi</div>';
+            } else {
+                icazeHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);">' +
+                    '<button data-action="erken-icaze" data-isci-id="' + isciId + '" ' +
+                    'style="background:#3b82f6;color:#fff;border:none;padding:6px 12px;border-radius:6px;' +
+                    'font-size:11px;cursor:pointer;width:100%;font-weight:600;white-space:nowrap;">' +
+                    'İşdən erkən getməsinə icazə ver' +
+                    '</button></div>';
+            }
+            msg += icazeHtml;
         }
 
         elapsedTooltip.innerHTML = msg;
@@ -1099,16 +1117,55 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var x = e.clientX + 14;
         var y = e.clientY - 14;
-        if (x + 260 > window.innerWidth) x = e.clientX - 260;
-        if (y + 70 > window.innerHeight) y = e.clientY - 70;
+        if (x + 240 > window.innerWidth) x = e.clientX - 240;
+        if (y + 100 > window.innerHeight) y = e.clientY - 100;
         elapsedTooltip.style.left = x + 'px';
         elapsedTooltip.style.top = y + 'px';
 
         suppressElapsedClose = true;
     });
 
-    document.addEventListener('click', function () {
+    // Erkən çıxış icazəsi AJAX
+    elapsedTooltip.addEventListener('click', function (e) {
+        var btn = e.target.closest('button[data-action="erken-icaze"]');
+        if (!btn) return;
+        e.stopPropagation();
+
+        var isciId = btn.getAttribute('data-isci-id');
+        btn.disabled = true;
+        btn.textContent = '...';
+
+        var csrf = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        fetch(erkenCixisEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'RequestVerificationToken': csrf,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: 'isciId=' + encodeURIComponent(isciId)
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.success) {
+                btn.parentElement.outerHTML =
+                    '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);font-size:11px;color:#34d399;">&#10003; Erkən çıxış icazəsi verildi</div>';
+                var activeRow = tableBody.querySelector('tr[data-isci-id="' + isciId + '"]');
+                if (activeRow) activeRow.setAttribute('data-erken-icaze', '1');
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'İşdən erkən getməsinə icazə ver';
+            }
+        })
+        .catch(function () {
+            btn.disabled = false;
+            btn.textContent = 'İşdən erkən getməsinə icazə ver';
+        });
+    });
+
+    document.addEventListener('click', function (e) {
         if (suppressElapsedClose) { suppressElapsedClose = false; return; }
+        if (elapsedTooltip.contains(e.target)) return;
         elapsedTooltip.style.display = 'none';
     });
 

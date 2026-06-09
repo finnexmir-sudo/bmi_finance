@@ -8,7 +8,8 @@
     var list = Model ?? new List<DavamiyyetListDto>();
     var bugun = DateTime.Today;
 
-    var mezuniyyetIsciIds = ViewBag.MezuniyyetIsciIds as HashSet<int> ?? new HashSet<int>();
+    var mezuniyyetIsciIds  = ViewBag.MezuniyyetIsciIds  as HashSet<int> ?? new HashSet<int>();
+    var erkenCixisIcazeIds = ViewBag.ErkenCixisIcazeIds as HashSet<int> ?? new HashSet<int>();
     var mezuniyyetSayi = (int)(ViewBag.MezuniyyetSayi ?? 0);
     var gelibSayi = list.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
     var gecikmeSayi = list.Count(x => x.Status == DavamiyyetStatus.Gecikme);
@@ -42,7 +43,8 @@
      data-endpoint-isciaxtar="@Url.Action("DavamiyyetIsciAxtar", "RehberDashboard", new { area = "HR" })"
      data-endpoint-exportexcel="@Url.Action("DavamiyyetExportExcel", "RehberDashboard", new { area = "HR" })"
      data-endpoint-tarixler="@Url.Action("DavamiyyetMovcudTarixler", "RehberDashboard", new { area = "HR" })"
-     data-endpoint-devicestatus="">
+     data-endpoint-devicestatus=""
+     data-endpoint-erkencixis="@Url.Action("ErkenCixisIcazeVer", "RehberDashboard", new { area = "HR" })">
 
     @* ── Başlıq ── *@
     <div class="hrd-head">
@@ -297,6 +299,8 @@
                                 (item.GirisVaxti.Value.Hour > 9 || (item.GirisVaxti.Value.Hour == 9 && item.GirisVaxti.Value.Minute > 5));
                             <tr data-giris="@(item.GirisVaxti.HasValue ? item.GirisVaxti.Value.ToString("yyyy-MM-ddTHH:mm:ss") : "")"
                                 data-cixis="@(item.CixisVaxti.HasValue ? item.CixisVaxti.Value.ToString("yyyy-MM-ddTHH:mm:ss") : "")"
+                                data-isci-id="@item.IsciId"
+                                data-erken-icaze="@(erkenCixisIcazeIds.Contains(item.IsciId) ? "1" : "0")"
                                 style="cursor:pointer;">
                                 <td>
                                     <div class="hrd-emp">

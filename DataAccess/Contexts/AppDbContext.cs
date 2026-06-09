@@ -60,6 +60,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<DsmfTarixce> DsmfTarixceler { get; set; }
     public DbSet<Davamiyyet> Davamiyyetler { get; set; }
     public DbSet<IsGunuBitdiElan> IsGunuBitdiElanlar { get; set; }
+    public DbSet<ErkenCixisIcaze> ErkenCixisIcazeler { get; set; }
     // Məzuniyyət modulu üçün yeni DbSet-lər
     public DbSet<Mezuniyyet> Mezuniyyetler { get; set; }
     public DbSet<MezuniyyetBalans> MezuniyyetBalanslari { get; set; }

@@ -236,7 +236,11 @@ public class ADMSController : Controller
                             gorushCixisi = await QeydGorushCixisiAsync(isciId, vaxt, tarix);
                         }
 
-                        if (vaxt.TimeOfDay < tezCixmaHeddi && !ezamiyyetCixisi && !gorushCixisi)
+                        // Rəhbər erkən çıxış icazəsi verilibmi?
+                        bool rehberIcazesi = await _db.Set<ErkenCixisIcaze>()
+                            .AnyAsync(x => x.IsciId == isciId && x.Tarix == tarix);
+
+                        if (vaxt.TimeOfDay < tezCixmaHeddi && !ezamiyyetCixisi && !gorushCixisi && !rehberIcazesi)
                         {
                             var qalan = (int)(tezCixmaHeddi - vaxt.TimeOfDay).TotalMinutes;
                             var heddStr = $"{(int)tezCixmaHeddi.TotalHours:D2}:{tezCixmaHeddi.Minutes:D2}";

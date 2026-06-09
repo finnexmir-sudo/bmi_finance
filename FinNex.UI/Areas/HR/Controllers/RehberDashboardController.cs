@@ -448,8 +448,54 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
             catch { ViewBag.MezuniyyetSayi = 0; ViewBag.MezuniyyetIsciIds = new HashSet<int>(); }
 
+            // Bugün erkən çıxış icazəsi verilmiş işçi ID-ləri
+            try
+            {
+                var erkenIds = await _uow.Repository<ErkenCixisIcaze>()
+                    .Query().AsNoTracking()
+                    .Where(x => x.Tarix == bugun)
+                    .Select(x => x.IsciId)
+                    .ToListAsync();
+                ViewBag.ErkenCixisIcazeIds = erkenIds.ToHashSet();
+            }
+            catch { ViewBag.ErkenCixisIcazeIds = new HashSet<int>(); }
+
             ViewData["Title"] = "Davamiyyət";
             return View(list);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ErkenCixisIcazeVer(int isciId)
+        {
+            try
+            {
+                var appUser = await _userManager.GetUserAsync(User);
+                var icazeVeren = appUser?.IsciId ?? 0;
+                var bugun = DateTime.Today;
+
+                var varMi = await _uow.Repository<ErkenCixisIcaze>()
+                    .Query()
+                    .AnyAsync(x => x.IsciId == isciId && x.Tarix == bugun);
+
+                if (!varMi)
+                {
+                    await _uow.Repository<ErkenCixisIcaze>().AddAsync(new ErkenCixisIcaze
+                    {
+                        IsciId = isciId,
+                        Tarix = bugun,
+                        IcazeVerenIsciId = icazeVeren,
+                        YaradildiVaxt = DateTime.Now
+                    });
+                    await _uow.SaveAsync();
+                }
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ErkenCixisIcazeVer xətası. IsciId={IsciId}", isciId);
+                return Json(new { success = false });
+            }
         }
 
         // ═══════════════════════════════════════════════════════════════
