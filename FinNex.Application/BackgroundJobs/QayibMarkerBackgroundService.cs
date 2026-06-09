@@ -186,8 +186,15 @@ namespace FinNex.Infrastructure.BackgroundJobs
                 _logger.LogInformation("QayibMarker: {Count} Qayib qeydi yaradıldı", yeniQeydler.Count);
             }
 
-            // Dünən görüşdən qayıtmayan iştirakçıların CihazQayidisVaxti-ni iş günü sonuna qoy
+            // İş parametrləri (hər iki cleanup üçün bir dəfə yüklə)
             var oncekiGun = bugun.AddDays(-1);
+            var isParamForCleanup = await db.Set<IsParametri>()
+                .AsNoTracking()
+                .Where(x => !x.Silinib)
+                .FirstOrDefaultAsync(ct);
+            var gunSonu = isParamForCleanup?.StandartCixisVaxti ?? new TimeSpan(17, 45, 0);
+
+            // Dünən görüşdən qayıtmayan iştirakçıların CihazQayidisVaxti-ni iş günü sonuna qoy
             var aciqCixislar = await db.GorushIshtirakcilar
                 .Include(x => x.Gorush)
                 .Where(x => !x.Silinib
@@ -198,12 +205,6 @@ namespace FinNex.Infrastructure.BackgroundJobs
 
             if (aciqCixislar.Count > 0)
             {
-                var isParam = await db.Set<IsParametri>()
-                    .AsNoTracking()
-                    .Where(x => !x.Silinib)
-                    .FirstOrDefaultAsync(ct);
-                var gunSonu = isParam?.StandartCixisVaxti ?? new TimeSpan(17, 45, 0);
-
                 foreach (var gi in aciqCixislar)
                     gi.CihazQayidisVaxti = gi.Gorush.Tarix.Date.Add(gunSonu);
 
@@ -211,6 +212,27 @@ namespace FinNex.Infrastructure.BackgroundJobs
                 _logger.LogInformation(
                     "GörüşMarker: {Count} açıq çıxış iş günü sonuna qədər kapatıldı",
                     aciqCixislar.Count);
+            }
+
+            // Dünən ezamiyyətdən qayıtmayan işçilərin CihazQayidisVaxti-ni iş günü sonuna qoy
+            var aciqEzamCixislar = await db.Set<EzamiyyetMuraciet>()
+                .Where(x => !x.Silinib
+                         && x.Status == EzamiyyetStatus.Tesdiqlendi
+                         && x.CihazCixisVaxti   != null
+                         && x.CihazQayidisVaxti == null
+                         && x.BaslamaTarixi.Date <= oncekiGun
+                         && x.BitmeTarixi.Date   >= oncekiGun)
+                .ToListAsync(ct);
+
+            if (aciqEzamCixislar.Count > 0)
+            {
+                foreach (var ez in aciqEzamCixislar)
+                    ez.CihazQayidisVaxti = oncekiGun.Add(gunSonu);
+
+                await db.SaveChangesAsync(ct);
+                _logger.LogInformation(
+                    "EzamiyyətMarker: {Count} açıq çıxış iş günü sonuna qədər kapatıldı",
+                    aciqEzamCixislar.Count);
             }
         }
     }

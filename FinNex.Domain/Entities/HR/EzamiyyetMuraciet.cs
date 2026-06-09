@@ -30,5 +30,9 @@ namespace FinNex.Domain.Entities.HR
         public Isci?     Rehber              { get; set; }
         public DateTime? RehberTesdiqTarixi  { get; set; }
         public string?   RehberQeydi         { get; set; }
+
+        // ADMS cihaz izləmə — ezamiyyət çıxış/qayıdış
+        public DateTime? CihazCixisVaxti   { get; set; }
+        public DateTime? CihazQayidisVaxti { get; set; }
     }
 }
