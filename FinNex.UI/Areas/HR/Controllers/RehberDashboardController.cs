@@ -479,7 +479,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
                 if (!varMi)
                 {
-                    await _uow.Repository<ErkenCixisIcaze>().AddAsync(new ErkenCixisIcaze
+                    await _uow.Repository<ErkenCixisIcaze>().YaratAsync(new ErkenCixisIcaze
                     {
                         IsciId = isciId,
                         Tarix = bugun,
