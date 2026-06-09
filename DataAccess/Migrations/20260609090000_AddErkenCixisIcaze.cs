@@ -12,11 +12,17 @@ namespace DataAccess.Migrations
                 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'ErkenCixisIcazeler')
                 BEGIN
                     CREATE TABLE [ErkenCixisIcazeler] (
-                        [Id]                INT IDENTITY(1,1) NOT NULL,
-                        [IsciId]            INT NOT NULL,
-                        [Tarix]             DATE NOT NULL,
-                        [IcazeVerenIsciId]  INT NOT NULL,
-                        [YaradildiVaxt]     DATETIME2 NOT NULL,
+                        [Id]                    INT IDENTITY(1,1) NOT NULL,
+                        [IsciId]                INT NOT NULL,
+                        [Tarix]                 DATE NOT NULL,
+                        [IcazeVerenIsciId]      INT NOT NULL,
+                        [YaradilmaTarixi]       DATETIME2 NOT NULL DEFAULT GETDATE(),
+                        [YaradanIcraciId]       INT NULL,
+                        [YenileyenIcraciId]     INT NULL,
+                        [SilenIcraciId]         INT NULL,
+                        [YenilenmeTarixi]       DATETIME2 NULL,
+                        [Silinib]               BIT NOT NULL DEFAULT 0,
+                        [SilinmeTarixi]         DATETIME2 NULL,
                         CONSTRAINT [PK_ErkenCixisIcazeler] PRIMARY KEY ([Id]),
                         CONSTRAINT [FK_ErkenCixisIcazeler_Isciler_IsciId]
                             FOREIGN KEY ([IsciId]) REFERENCES [Isciler] ([Id])

@@ -483,10 +483,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                     {
                         IsciId = isciId,
                         Tarix = bugun,
-                        IcazeVerenIsciId = icazeVeren,
-                        YaradildiVaxt = DateTime.Now
+                        IcazeVerenIsciId = icazeVeren
                     });
-                    await _uow.SaveAsync();
+                    await _uow.YaddaSaxlaAsync();
                 }
 
                 return Json(new { success = true });
