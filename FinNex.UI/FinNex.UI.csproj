@@ -42,4 +42,10 @@
     <Folder Include="wwwroot\js\User\Hesabat\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="app_offline.htm">
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
