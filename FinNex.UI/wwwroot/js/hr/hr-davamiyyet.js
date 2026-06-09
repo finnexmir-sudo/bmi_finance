@@ -1131,6 +1131,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!btn) return;
         e.stopPropagation();
 
+        var isciAdText = elapsedTooltip.querySelector('strong')?.textContent || 'işçi';
+        if (!confirm(isciAdText + ' üçün erkən çıxış icazəsi verilsin?')) return;
+
         var isciId = btn.getAttribute('data-isci-id');
         btn.disabled = true;
         btn.textContent = '...';
