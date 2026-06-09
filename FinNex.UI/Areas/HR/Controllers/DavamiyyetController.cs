@@ -120,6 +120,24 @@ namespace FinNex.UI.Areas.HR.Controllers
                 }
                 catch { mezuniyyetIsciIds = new HashSet<int>(); }
 
+                // Erkən çıxış icazəsi olan işçilər (tarix+isciId cütü)
+                var erkenIcazeSet = new HashSet<(int, DateTime)>();
+                try
+                {
+                    var eiBaslangic = (baslangic ?? tarix ?? DateTime.Today).Date;
+                    var eiSon       = (son       ?? tarix ?? DateTime.Today).Date;
+                    var eiList = await _unitOfWork.Repository<ErkenCixisIcaze>()
+                        .Query().AsNoTracking()
+                        .Where(x => !x.Silinib &&
+                                    x.Tarix.Date >= eiBaslangic &&
+                                    x.Tarix.Date <= eiSon)
+                        .Select(x => new { x.IsciId, x.Tarix })
+                        .ToListAsync();
+                    foreach (var ei in eiList)
+                        erkenIcazeSet.Add((ei.IsciId, ei.Tarix.Date));
+                }
+                catch { }
+
                 // tezCixanSayi — per-record data hesablandıqdan sonra doldurulur
                 var tezCixanSayi = 0;
 
@@ -150,7 +168,11 @@ namespace FinNex.UI.Areas.HR.Controllers
                     var gunHedd = elanDict.TryGetValue(x.Tarix.Date, out var elanVaxt)
                         ? elanVaxt
                         : gunCixis - tezCixmaTolerans;
-                    var tezCixanFlag = x.CixisVaxti.HasValue && x.CixisVaxti.Value.TimeOfDay < gunHedd;
+                    var tezCixanFlag = x.CixisVaxti.HasValue
+                        && x.CixisVaxti.Value.TimeOfDay < gunHedd
+                        && x.Status != DavamiyyetStatus.Ezamiyyet
+                        && x.Status != DavamiyyetStatus.Icazeli
+                        && !erkenIcazeSet.Contains((x.IsciId, x.Tarix.Date));
 
                     // Nahar çıxılması — işçi nahar başlamadan gəlib, nahar bitdikdən sonra çıxıbsa
                     int? islemeSaatiDeq = null;

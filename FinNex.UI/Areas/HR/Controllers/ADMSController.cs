@@ -225,9 +225,16 @@ public class ADMSController : Controller
                             ? bugunElan.BitisVaxti
                             : standartCixis - tezCixmaTolerans;
 
-                        // Ezamiyyət çıxışı? — BaslamaSaati ±30 dəq., çıxışı qeydə al
-                        bool ezamiyyetCixisi = await QeydEzamiyyetCixisiAsync(
-                            isciId, vaxt, tarix, bugunEzamiyyet);
+                        // Ezamiyyət çıxışı? (BaslamaSaatı ±30 dəq. fərqlə, yaxud tam gün ezamiyyət)
+                        bool ezamiyyetCixisi = bugunEzamiyyet != null &&
+                            (bugunEzamiyyet.BaslamaSaati == null ||
+                             Math.Abs((vaxt.TimeOfDay - bugunEzamiyyet.BaslamaSaati.Value).TotalMinutes) <= 30);
+
+                        if (ezamiyyetCixisi && bugunEzamiyyet != null)
+                        {
+                            movcud.Status = DavamiyyetStatus.Ezamiyyet;
+                            await _db.SaveChangesAsync();
+                        }
 
                         // Görüş çıxışı? — offline görüşün başlama saatı ±30 dəq.
                         bool gorushCixisi = false;
@@ -236,11 +243,7 @@ public class ADMSController : Controller
                             gorushCixisi = await QeydGorushCixisiAsync(isciId, vaxt, tarix);
                         }
 
-                        // Rəhbər erkən çıxış icazəsi verilibmi?
-                        bool rehberIcazesi = await _db.Set<ErkenCixisIcaze>()
-                            .AnyAsync(x => x.IsciId == isciId && x.Tarix == tarix);
-
-                        if (vaxt.TimeOfDay < tezCixmaHeddi && !ezamiyyetCixisi && !gorushCixisi && !rehberIcazesi)
+                        if (vaxt.TimeOfDay < tezCixmaHeddi && !ezamiyyetCixisi && !gorushCixisi)
                         {
                             var qalan = (int)(tezCixmaHeddi - vaxt.TimeOfDay).TotalMinutes;
                             var heddStr = $"{(int)tezCixmaHeddi.TotalHours:D2}:{tezCixmaHeddi.Minutes:D2}";
@@ -263,11 +266,8 @@ public class ADMSController : Controller
             // Paralel: İcazə çıxış/qayıdış izlənməsi
             await ProcessIcazeCixisGirisAsync(isciId, vaxt);
 
-            // Paralel: Görüş qayıdışı izlənməsi
+            // Paralel: Görüş qayıdışı izlənməsi (işçi görüşdən qayıdıbsa qeydə al)
             await ProcessGorushQayidisAsync(isciId, vaxt);
-
-            // Paralel: Ezamiyyət qayıdışı izlənməsi
-            await ProcessEzamiyyetQayidisAsync(isciId, vaxt);
 
             // Jeton tövsiyəsi yoxlaması (gecikme, iş norması aşma)
             if (davamiyyetId.HasValue)
@@ -276,72 +276,6 @@ public class ADMSController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "AttLog parse xətası: {Line}", line);
-        }
-    }
-
-    // Ezamiyyət çıxışını qeydə alır. BaslamaSaati ±30 dəq. aralığında çıxış olarsa
-    // CihazCixisVaxti yazır və true qaytarır → Tez Çıxış bildirişi göndərilmir.
-    private async Task<bool> QeydEzamiyyetCixisiAsync(
-        int isciId, DateTime vaxt, DateTime tarix, EzamiyyetMuraciet? bugunEzamiyyet)
-    {
-        try
-        {
-            if (bugunEzamiyyet?.BaslamaSaati == null) return false;
-            if (bugunEzamiyyet.CihazCixisVaxti != null) return true; // artıq qeydə alınıb
-
-            var diff = Math.Abs((vaxt.TimeOfDay - bugunEzamiyyet.BaslamaSaati.Value).TotalMinutes);
-            if (diff > 30) return false;
-
-            bugunEzamiyyet.CihazCixisVaxti = vaxt;
-            _db.Update(bugunEzamiyyet);
-            await _db.SaveChangesAsync();
-
-            _logger.LogInformation(
-                "Ezamiyyət çıxışı: IsciId={IsciId}, EzamId={EzamId}, Vaxt={Vaxt}",
-                isciId, bugunEzamiyyet.Id, vaxt);
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Ezamiyyət çıxış qeyd xətası: IsciId={IsciId}", isciId);
-            return false;
-        }
-    }
-
-    // Ezamiyyətdən qayıdışı qeydə alır.
-    // CihazCixisVaxti var, CihazQayidisVaxti yoxdursa və skan ≥5 dəq. sonradırsa → yazır.
-    private async Task ProcessEzamiyyetQayidisAsync(int isciId, DateTime vaxt)
-    {
-        try
-        {
-            var tarix = vaxt.Date;
-
-            var ezam = await _db.EzamiyyetMuracietler
-                .Where(x => x.IsciId == isciId
-                         && !x.Silinib
-                         && x.Status == EzamiyyetStatus.Tesdiqlendi
-                         && x.BaslamaTarixi.Date <= tarix
-                         && x.BitmeTarixi.Date   >= tarix
-                         && x.CihazCixisVaxti    != null
-                         && x.CihazQayidisVaxti  == null)
-                .FirstOrDefaultAsync();
-
-            if (ezam == null) return;
-
-            if (vaxt < ezam.CihazCixisVaxti!.Value.AddMinutes(5)) return;
-
-            ezam.CihazQayidisVaxti = vaxt;
-            _db.Update(ezam);
-            await _db.SaveChangesAsync();
-
-            _logger.LogInformation(
-                "Ezamiyyətdən qayıdış: IsciId={IsciId}, EzamId={EzamId}, Vaxt={Vaxt}",
-                isciId, ezam.Id, vaxt);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Ezamiyyət qayıdış izlənmə xətası: IsciId={IsciId}", isciId);
         }
     }
 

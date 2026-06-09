@@ -117,6 +117,18 @@
                         </div>
                     </div>
 
+                    <!-- Maliyyə Məlumatları -->
+                    <div>
+                        <div class="isci-section-label">Maliyyə Məlumatları</div>
+                        <div class="isci-form-grid-3" style="margin-top:12px;">
+                            <div class="isci-field">
+                                <label class="isci-label">IBAN</label>
+                                <input asp-for="Iban" class="isci-input isci-input--mono" placeholder="AZ00BRES00000000000000000000" maxlength="28" style="text-transform:uppercase" />
+                                <span asp-validation-for="Iban" class="isci-error"></span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- İş Məlumatları -->
                     <div>
                         <div class="isci-section-label">İş Məlumatları</div>

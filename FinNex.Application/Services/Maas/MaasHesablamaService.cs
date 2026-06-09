@@ -1041,14 +1041,11 @@ namespace FinNex.Application.Services.HR
             catch { }
 
             // 16. Aylıq qazanc tarixçəsinə avtomatik əlavə (sliding window 12 ay)
-            // Məzuniyyət ödənişi baza qazanca DAXİLDİR (mühasib tərəfindən təsdiqlənib).
-            // Yalnız birdəfəlik ödənişlər (xəstəlik şirkət payı, IH-07, VM 98.2.1) çıxılır.
+            // Məzuniyyət bazası = BrutMaaş (bütün gəlir komponentləri daxildir).
+            // IH-07, VM 98.2.1 əlavə təminatlardır — adi gəlirdir, çıxılmır.
             try
             {
-                // Bazaya düşən gəlir = brüt - xəstəlik şirkət payı - IH07 - VM9821
-                // Məzuniyyət ödənişi çıxılmır — tam gross məzuniyyət bazasına daxildir.
-                decimal qazanc = brutMaas - xestelikSirketOdenis
-                                 - input.IH07Meblegi - input.VM9821Meblegi;
+                decimal qazanc = brutMaas;
                 if (qazanc < 0) qazanc = 0;
 
                 // Xəstəlik ödənişinin yeni DSMF-əsaslı düsturu üçün DSMF məbləğləri də saxlanılır.
