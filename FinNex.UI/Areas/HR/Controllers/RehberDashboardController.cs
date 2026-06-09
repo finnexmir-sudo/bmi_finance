@@ -1,5 +1,6 @@
 using ClosedXML.Excel;
 using FinNex.Domain;
+using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
 using FinNex.Domain.Entities.SenedDovriyyesi;
@@ -786,8 +787,21 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Select(x => x.IsciId)
                 .ToListAsync();
 
+            // Offline görüş iştirakçıları gözlənilənlər siyahısından çıxarılır
+            var gorushIstirakciIds = await _uow.Repository<GorushIshtirakci>()
+                .Query()
+                .AsNoTracking()
+                .Where(x => !x.Silinib
+                         && x.Gorush.Nov == GorushNovu.Offline
+                         && x.Gorush.Status != GorushStatus.LegvEdildi
+                         && x.Gorush.Tarix.Date == hedef
+                         && x.Status != IshtirakciStatus.Redd
+                         && x.Status != IshtirakciStatus.IshtiraketmeyecekBildirib)
+                .Select(x => x.IsciId)
+                .ToListAsync();
+
             var gozlenilenler = aktivIsciler
-                .Where(i => !qeydiOlanlar.Contains(i.Id))
+                .Where(i => !qeydiOlanlar.Contains(i.Id) && !gorushIstirakciIds.Contains(i.Id))
                 .Select(i =>
                 {
                     var esasTeyinat = i.IsciTeyinatlari
