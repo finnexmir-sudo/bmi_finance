@@ -1,0 +1,30 @@
+/* ═══════ Bank Hesab Nömrələri ═══════ */
+.bh-page  { padding: 24px 28px; max-width: 1300px; margin: 0 auto; }
+
+.bh-head  { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.bh-title { font-size: 1.35rem; font-weight: 800; color: #1a1d29; }
+.bh-sub   { font-size: 0.85rem; color: #8a93a8; margin-top: 2px; }
+
+.bh-alert { padding: 10px 16px; border-radius: 9px; font-size: 13px; font-weight: 600; margin-bottom: 14px; display: none; }
+.bh-alert--ok  { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.bh-alert--err { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+.bh-card  { background: #fff; border-radius: 14px; border: 1px solid #e9ecef; box-shadow: 0 4px 18px rgba(15,26,46,.04); overflow-x: auto; }
+
+.bh-table { width: 100%; border-collapse: collapse; }
+.bh-table thead th { background: #f7f9fc; padding: 11px 16px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: #5a647a; border-bottom: 1px solid #eef0f5; text-align: left; white-space: nowrap; }
+.bh-table td       { padding: 10px 16px; border-bottom: 1px solid #f1f3f7; font-size: 13.5px; color: #1a2332; vertical-align: middle; }
+.bh-table tbody tr:last-child td { border-bottom: none; }
+.bh-table tbody tr:hover td      { background: #fafbfd; }
+
+.bh-num  { color: #94a3b8; font-size: 12px; font-weight: 700; width: 36px; }
+.bh-dept { color: #5a647a; font-size: 13px; }
+.bh-name { font-weight: 700; }
+
+.bh-input { width: 100%; padding: 8px 12px; border: 1.5px solid #e2e6ef; border-radius: 8px; font-size: 13px; font-family: 'Courier New', monospace; color: #1a2332; background: #fafbfd; box-sizing: border-box; transition: border .15s; }
+.bh-input:focus { outline: none; border-color: #2d6cdf; background: #fff; }
+.bh-input::placeholder { font-family: inherit; font-size: 12px; color: #b0bac9; text-transform: none; }
+
+.bh-btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 700; border: none; cursor: pointer; transition: all .15s; font-family: inherit; white-space: nowrap; background: #1e9b6b; color: #fff; }
+.bh-btn:hover    { background: #178057; }
+.bh-btn:disabled { opacity: .55; cursor: default; }
