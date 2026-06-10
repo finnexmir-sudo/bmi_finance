@@ -212,6 +212,33 @@ namespace FinNex.Infrastructure.BackgroundJobs
                     "GörüşMarker: {Count} açıq çıxış iş günü sonuna qədər kapatıldı",
                     aciqCixislar.Count);
             }
+
+            // Dünən ezamiyyətdən qayıtmayan işçilərin CihazQayidisVaxti-ni iş günü sonuna qoy
+            var aciqEzamCixislar = await db.Set<EzamiyyetMuraciet>()
+                .Where(x => !x.Silinib
+                         && x.Status         == EzamiyyetStatus.Tesdiqlendi
+                         && x.CihazCixisVaxti  != null
+                         && x.CihazQayidisVaxti == null
+                         && x.BaslamaTarixi.Date <= oncekiGun
+                         && x.BitmeTarixi.Date   >= oncekiGun)
+                .ToListAsync(ct);
+
+            if (aciqEzamCixislar.Count > 0)
+            {
+                var ezIsParam = await db.Set<IsParametri>()
+                    .AsNoTracking()
+                    .Where(x => !x.Silinib)
+                    .FirstOrDefaultAsync(ct);
+                var ezGunSonu = ezIsParam?.StandartCixisVaxti ?? new TimeSpan(17, 45, 0);
+
+                foreach (var ez in aciqEzamCixislar)
+                    ez.CihazQayidisVaxti = oncekiGun.Add(ezGunSonu);
+
+                await db.SaveChangesAsync(ct);
+                _logger.LogInformation(
+                    "EzamiyyetMarker: {Count} açıq ezamiyyət çıxışı iş günü sonuna qədər kapatıldı",
+                    aciqEzamCixislar.Count);
+            }
         }
     }
 }
