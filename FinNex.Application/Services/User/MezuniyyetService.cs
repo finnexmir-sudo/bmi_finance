@@ -936,7 +936,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 HrTesdiqTarixi = m.HrTesdiqTarixi,
                 ImtinaSebebi = m.ImtinaSebebi,
                 YaradilmaTarixi = m.YaradilmaTarixi,
-                JetonleOdend = m.JetonleOdend,
+                JetonIleOdendi = m.JetonIleOdendi,
                 IstifadeOlunanJetonSaat = m.IstifadeOlunanJetonSaat,
             }).ToList();
 

@@ -118,10 +118,9 @@ namespace FinNex.Domain.Entities.HR
 
         // ── Jeton ilə əvəzlənmə ──────────────────────────────────
         // HR bu məzuniyyəti işçinin jeton balansından ödəyibsə:
-        //   JetonleOdend = true  → maaş hesablamasında kəsinti VƏ ödəniş OLMUR
+        //   JetonIleOdendi = true  → maaş hesablamasında kəsinti VƏ ödəniş OLMUR
         //   IstifadeOlunanJetonSaat — neçə jeton saatı xərcləndi (audit üçün)
-        [Column("JetonIleOdendi")]
-        public bool     JetonleOdend           { get; set; } = false;
+        public bool     JetonIleOdendi         { get; set; } = false;
         public decimal? IstifadeOlunanJetonSaat { get; set; }
     }
 }
