@@ -185,7 +185,16 @@
                             </td>
                             <td style="padding:11px 14px;color:#3d4557;">@m.BaslamaTarixi.ToString("dd.MM.yyyy")</td>
                             <td style="padding:11px 14px;color:#3d4557;">@m.BitmeTarixi.ToString("dd.MM.yyyy")</td>
-                            <td style="padding:11px 14px;text-align:center;font-weight:600;color:#1a2332;">@m.IsGunlerininSayi</td>
+                            <td style="padding:11px 14px;text-align:center;font-weight:600;color:#1a2332;">
+                                @m.IsGunlerininSayi
+                                @if (m.JetonleOdend)
+                                {
+                                    <span title="Jeton ilə ödənilib — maaş kəsintisi yoxdur"
+                                          style="display:inline-flex;align-items:center;gap:3px;margin-left:4px;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(108,92,231,.12);color:#6c5ce7;vertical-align:middle;">
+                                        <i class="bi bi-coin" style="font-size:10px;"></i> Jeton
+                                    </span>
+                                }
+                            </td>
                             <td style="padding:11px 14px;">
                                 @if (Model.AktivTab == "tarixce")
                                 {

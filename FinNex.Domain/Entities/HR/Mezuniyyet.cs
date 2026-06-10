@@ -115,5 +115,12 @@ namespace FinNex.Domain.Entities.HR
         public Mezuniyyet? KorreksiyaOlunanMezuniyyet { get; set; }
         public string? SenedYolu       { get; set; }
         public string? KorreksiyaSebebi { get; set; }
+
+        // ── Jeton ilə əvəzlənmə ──────────────────────────────────
+        // HR bu məzuniyyəti işçinin jeton balansından ödəyibsə:
+        //   JetonleOdend = true  → maaş hesablamasında kəsinti VƏ ödəniş OLMUR
+        //   IstifadeOlunanJetonSaat — neçə jeton saatı xərcləndi (audit üçün)
+        public bool     JetonleOdend           { get; set; } = false;
+        public decimal? IstifadeOlunanJetonSaat { get; set; }
     }
 }
