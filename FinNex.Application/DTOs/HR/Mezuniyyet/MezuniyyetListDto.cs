@@ -67,7 +67,7 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         public bool MuracietSahibiHrdirmi { get; set; }
 
         // Jeton ilə əvəzlənmə
-        public bool JetonleOdend { get; set; }
+        public bool JetonIleOdendi { get; set; }
         public decimal? IstifadeOlunanJetonSaat { get; set; }
 
         // Keçilmiş addımlar — rol əsaslı workflow üçün

@@ -1162,7 +1162,7 @@ namespace FinNex.Application.Services.HR
                     // üzərindəki korreksiya kimi yaranır — həmin günlər artıq Illik qeyd
                     // tərəfindən sayılır, ikiqat saymamaq üçün burada çıxarılır.
                     x.Nov != MezuniyyetNovu.DovletVezifelerininIcrasi &&
-                    !x.JetonleOdend &&
+                    !x.JetonIleOdendi &&
                     (x.IsGunlerininSayiManual ?? x.IsGunlerininSayi) > 0 &&
                     x.BaslamaTarixi <= ayBitis &&
                     x.BitmeTarixi >= ayBaslangic);
