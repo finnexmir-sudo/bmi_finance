@@ -301,6 +301,11 @@
                                                                 {
                                                                     <span style="color:#8590a6">—</span>
                                                                 }
+                                                                @if (ic.CixisQayidisAnomaliya)
+                                                                {
+                                                                    <span title="Cihaz çıxış/qayıdışı icazə pəncərəsinə uyğun gəlmir — yoxlanmalıdır"
+                                                                          style="margin-left:5px;color:#b45309;font-weight:700;cursor:help">⚠</span>
+                                                                }
                                                             </td>
                                                             <td>@(string.IsNullOrEmpty(ic.Sebeb) ? "—" : ic.Sebeb)</td>
                                                             <td>

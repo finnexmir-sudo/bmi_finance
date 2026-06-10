@@ -255,6 +255,20 @@ namespace FinNex.UI.Areas.User.Controllers
             return View(result.Success ? result.Data!.ToList() : new());
         }
 
+        // ── POST /User/Icaze/CixisGirisDuzelt ── HR əl ilə düzəliş (insan faktoru) ──
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = $"{RoleNames.HR},{RoleNames.Admin}")]
+        public async Task<IActionResult> CixisGirisDuzelt(int icazeId, string? cixisVaxt, string? qayidisVaxt)
+        {
+            DateTime? cixis = DateTime.TryParse(cixisVaxt, out var c) ? c : (DateTime?)null;
+            DateTime? qayidis = DateTime.TryParse(qayidisVaxt, out var q) ? q : (DateTime?)null;
+
+            var result = await _icazeService.CixisGirisDuzeltAsync(icazeId, cixis, qayidis);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Dovriyye));
+        }
+
         // ── POST /User/Icaze/Legv ──────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]

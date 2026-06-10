@@ -27,5 +27,8 @@ namespace FinNex.Application.Interfaces
 
         // Cihaz çıxış/qayıdış dövriyyəsi
         Task<Result<IList<IcazeDovriyyeDto>>> GetDovriyyeAsync(DateTime? tarixFrom, DateTime? tarixTo, int? departamentId, string? axtaris);
+
+        // HR əl ilə düzəliş — cihaz çıxış/qayıdış vaxtlarını yeniləyir (insan faktoru halları)
+        Task<Result> CixisGirisDuzeltAsync(int icazeId, DateTime? cixisVaxt, DateTime? qayidisVaxt);
     }
 }

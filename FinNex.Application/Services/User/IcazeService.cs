@@ -889,6 +889,38 @@ namespace FinNex.Application.Services
             }
         }
 
+        // HR əl ilə düzəliş — cihaz çıxış/qayıdış vaxtlarını yeniləyir (insan faktoru:
+        // təsadüfi tanınma, səhv skan və s. hallarda HR qiymətləri düzəldə bilsin).
+        public async Task<Result> CixisGirisDuzeltAsync(int icazeId, DateTime? cixisVaxt, DateTime? qayidisVaxt)
+        {
+            try
+            {
+                var icaze = await _unitOfWork.Repository<Icaze>()
+                    .GetirAsync(x => x.Id == icazeId, include: q => q.Include(i => i.CixisGiris));
+                if (icaze?.CixisGiris == null)
+                    return Result.Fail("İcazə və ya çıxış/giriş qeydi tapılmadı.");
+
+                if (cixisVaxt.HasValue && qayidisVaxt.HasValue && qayidisVaxt.Value < cixisVaxt.Value)
+                    return Result.Fail("Qayıdış vaxtı çıxış vaxtından əvvəl ola bilməz.");
+
+                var cg = icaze.CixisGiris;
+                cg.CixisVaxt = cixisVaxt;
+                cg.QayidisVaxt = qayidisVaxt;
+                cg.Status = qayidisVaxt.HasValue
+                    ? IcazeCixisGirisStatus.Tamamlandi
+                    : (cixisVaxt.HasValue ? IcazeCixisGirisStatus.Cixdi : IcazeCixisGirisStatus.Gozlenir);
+                cg.YenilenmeTarixi = DateTime.Now;
+
+                await _unitOfWork.Repository<IcazeCixisGiris>().YenileAsync(cg);
+                await _unitOfWork.YaddaSaxlaAsync();
+                return Result.Ok("Çıxış/qayıdış vaxtı yeniləndi.");
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail($"Düzəliş xətası: {ex.Message}");
+            }
+        }
+
         public async Task<Result<IList<IcazeListDto>>> GetFiltrliAsync(
             DateTime? tarixFrom, DateTime? tarixTo, int? departamentId, int? status, string? axtaris)
         {

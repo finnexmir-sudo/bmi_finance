@@ -105,6 +105,20 @@ namespace FinNex.Application.DTOs.HR.Icaze
             IcazeCixisGirisStatus.LegvEdildi => "Ləğv edildi",
             _                                 => "—"
         };
+
+        // Cihaz çıxış/qayıdışı icazə pəncərəsinə uyğun gəlmirsə şübhəlidir (insan
+        // faktoru — təsadüfi tanınma və s.). HR yoxlamalıdır.
+        public bool CixisQayidisAnomaliya
+        {
+            get
+            {
+                var basDt = IcazeTarixi.Date + BaslamaSaati;
+                var bitDt = IcazeTarixi.Date + BitisSaati;
+                if (CixisVaxt.HasValue && CixisVaxt.Value < basDt.AddMinutes(-30)) return true;
+                if (!Birdefelik && QayidisVaxt.HasValue && QayidisVaxt.Value > bitDt.AddMinutes(60)) return true;
+                return false;
+            }
+        }
     }
 
     // ── Detallı baxış üçün ──────────────────────────────
@@ -146,5 +160,19 @@ namespace FinNex.Application.DTOs.HR.Icaze
             IcazeCixisGirisStatus.LegvEdildi => "Ləğv edildi",
             _                                 => "—"
         };
+
+        // Cihaz çıxış/qayıdışı icazə pəncərəsinə uyğun gəlmirsə şübhəlidir (insan
+        // faktoru — təsadüfi tanınma və s.). HR yoxlamalıdır.
+        public bool CixisQayidisAnomaliya
+        {
+            get
+            {
+                var basDt = IcazeTarixi.Date + BaslamaSaati;
+                var bitDt = IcazeTarixi.Date + BitisSaati;
+                if (CixisVaxt.HasValue && CixisVaxt.Value < basDt.AddMinutes(-30)) return true;
+                if (!Birdefelik && QayidisVaxt.HasValue && QayidisVaxt.Value > bitDt.AddMinutes(60)) return true;
+                return false;
+            }
+        }
     }
 }
