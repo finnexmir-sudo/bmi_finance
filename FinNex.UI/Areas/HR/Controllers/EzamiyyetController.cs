@@ -78,6 +78,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                 x.RehberQeydi, x.GeriDonusQeydi,
                 cihazCixisVaxti   = x.CihazCixisVaxti?.ToString("dd.MM.yyyy HH:mm"),
                 cihazQayidisVaxti = x.CihazQayidisVaxti?.ToString("dd.MM.yyyy HH:mm"),
+                cihazCixisIso     = x.CihazCixisVaxti?.ToString("yyyy-MM-ddTHH:mm"),
+                cihazQayidisIso   = x.CihazQayidisVaxti?.ToString("yyyy-MM-ddTHH:mm"),
+                bitmeIso          = x.BitmeTarixi.ToString("yyyy-MM-dd"),
                 yaradilmaTarixi   = x.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")
             }));
         }
@@ -111,6 +114,19 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             return Json(new { success = ok, message = error });
+        }
+
+        // ── HR əl ilə cihaz çıxış/qayıdış düzəlişi (insan faktoru) ──
+        // "qayıtmayıb" və ya səhər icazəsi yanlış oxunan qeydləri HR əl ilə düzəldir.
+        [HttpPost]
+        [Authorize(Roles = $"{RoleNames.Admin},{RoleNames.HR}")]
+        public async Task<IActionResult> CihazQayidisDuzelt([FromBody] EzamCihazDuzeltDto dto)
+        {
+            DateTime? cixis   = DateTime.TryParse(dto.CixisVaxt,   out var c) ? c : (DateTime?)null;
+            DateTime? qayidis = DateTime.TryParse(dto.QayidisVaxt, out var q) ? q : (DateTime?)null;
+
+            var (ok, error) = await _service.CihazQayidisDuzeltAsync(dto.Id, cixis, qayidis);
+            return Json(new { success = ok, message = ok ? "Cihaz çıxış/qayıdış vaxtı yeniləndi." : error });
         }
 
         // ── Statistika ────────────────────────────────────────
@@ -190,5 +206,12 @@ namespace FinNex.UI.Areas.HR.Controllers
         public int    Id     { get; set; }
         public bool   Tesdiq { get; set; }
         public string? Qeyd  { get; set; }
+    }
+
+    public class EzamCihazDuzeltDto
+    {
+        public int     Id          { get; set; }
+        public string? CixisVaxt   { get; set; }
+        public string? QayidisVaxt { get; set; }
     }
 }

@@ -214,6 +214,32 @@ namespace FinNex.Application.Services.HR
             return (true, null);
         }
 
+        // ── HR əl ilə cihaz çıxış/qayıdış düzəlişi ────────────
+        // İnsan faktoru: işçi qayıdışını cihazda qeyd etmədikdə və ya cihaz
+        // səhər icazəsini yanlış oxuduqda HR çıxış/qayıdış vaxtını əl ilə düzəldir.
+        // Boş (null) ötürülən sahə təmizlənir.
+        public async Task<(bool ok, string? error)> CihazQayidisDuzeltAsync(
+            int id, DateTime? cixisVaxt, DateTime? qayidisVaxt)
+        {
+            var entity = await _uow.Repository<EzamiyyetMuraciet>()
+                .Query()
+                .FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
+            if (entity == null)
+                return (false, "Müraciət tapılmadı.");
+            if (entity.Status != EzamiyyetStatus.Tesdiqlendi)
+                return (false, "Yalnız təsdiqlənmiş ezamiyyətin cihaz vaxtı düzəldilə bilər.");
+            if (cixisVaxt.HasValue && qayidisVaxt.HasValue && qayidisVaxt.Value < cixisVaxt.Value)
+                return (false, "Qayıdış vaxtı çıxış vaxtından əvvəl ola bilməz.");
+
+            entity.CihazCixisVaxti   = cixisVaxt;
+            entity.CihazQayidisVaxti = qayidisVaxt;
+            entity.YenilenmeTarixi   = DateTime.Now;
+
+            await _uow.Repository<EzamiyyetMuraciet>().YenileAsync(entity);
+            await _uow.YaddaSaxlaAsync();
+            return (true, null);
+        }
+
         // ── Məkan ─────────────────────────────────────────────
 
         public async Task<IList<EzamiyyetMekanListDto>> MekanlarAsync()

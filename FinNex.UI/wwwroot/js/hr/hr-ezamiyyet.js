@@ -50,6 +50,13 @@ async function ezYukle() {
             ? '<button class="fn-btn fn-btn--outline fn-btn--sm" onclick="ezOpenModal(' + r.id + ',\'' + ezEsc(r.isciTamAd) + '\',\'' + ezEsc(r.baslig) + '\',\'' + ezEsc(r.mekanAd) + '\',\'' + r.baslamaTarixi + '\',\'' + r.bitmeTarixi + '\')">' +
               '<i class="bi bi-check-square"></i> Bax</button>'
             : '<span style="font-size:11px;color:#94a3b8">' + (r.rehberTamAd ? r.rehberTamAd + '<br>' + (r.rehberTesdiqTarixi || '') : '') + '</span>';
+        // Təsdiqlənmiş ezamiyyət üçün HR/Admin əl ilə çıxış/qayıdış düzəlişi
+        if (window.ezCanEdit && r.status === 2) {
+            emel += '<br><button class="fn-btn fn-btn--outline fn-btn--sm" style="margin-top:4px" ' +
+                    'onclick="ezOpenDuzelt(' + r.id + ',\'' + ezEsc(r.isciTamAd) + '\',\'' +
+                    (r.cihazCixisIso || '') + '\',\'' + (r.cihazQayidisIso || '') + '\',\'' + (r.bitmeIso || '') + '\')">' +
+                    '<i class="bi bi-pencil"></i> Düzəlt</button>';
+        }
         var geriNot = r.geriDonusQeydi
             ? '<div style="margin-top:4px;font-size:11px;color:#166534;background:#f0fdf4;padding:3px 7px;border-radius:5px"><i class="bi bi-check2-circle"></i> ' + ezEsc(r.geriDonusQeydi) + '</div>'
             : '';
@@ -128,6 +135,39 @@ async function ezTesdiq(tesdiq) {
     var json = await res.json();
     if (json.success === false) { alert(json.message || 'Xəta baş verdi.'); return; }
     ezCloseModal();
+    ezYukle();
+}
+
+// ── HR əl ilə çıxış/qayıdış düzəlişi (insan faktoru) ──
+function ezOpenDuzelt(id, isci, cixisIso, qayidisIso, bitmeIso) {
+    document.getElementById('ezDuzId').value = id;
+    document.getElementById('ezDuzAd').textContent = isci || '';
+    document.getElementById('ezDuzCixis').value = cixisIso || '';
+    // qayıdış boşdursa, çıxış varsa son günün iş sonunu (17:45) təklif et
+    document.getElementById('ezDuzQayidis').value =
+        qayidisIso || ((cixisIso && bitmeIso) ? bitmeIso + 'T17:45' : '');
+    document.getElementById('ezDuzOverlay').style.display = 'block';
+    document.getElementById('ezDuzModal').style.display   = 'block';
+}
+
+function ezDuzeltClose() {
+    document.getElementById('ezDuzOverlay').style.display = 'none';
+    document.getElementById('ezDuzModal').style.display   = 'none';
+}
+
+async function ezDuzeltSaxla() {
+    var id      = document.getElementById('ezDuzId').value;
+    var cixis   = document.getElementById('ezDuzCixis').value;
+    var qayidis = document.getElementById('ezDuzQayidis').value;
+    if (!id) return;
+    var res = await fetch('/HR/Ezamiyyet/CihazQayidisDuzelt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: parseInt(id, 10), cixisVaxt: cixis, qayidisVaxt: qayidis })
+    });
+    var json = await res.json();
+    if (json.success === false) { alert(json.message || 'Xəta baş verdi.'); return; }
+    ezDuzeltClose();
     ezYukle();
 }
 

@@ -138,5 +138,31 @@
     </div>
 </div>
 
+@* ── Cihaz çıxış/qayıdış düzəliş modulu (HR/Admin əl ilə) ── *@
+<div id="ezDuzOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1002" onclick="ezDuzeltClose()"></div>
+<div id="ezDuzModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1003;background:#fff;border-radius:12px;padding:22px;width:400px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+    <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:4px">
+        <i class="bi bi-pencil-square"></i> Çıxış/qayıdış düzəlişi
+    </div>
+    <div id="ezDuzAd" style="font-size:13px;color:#6b7280;margin-bottom:14px"></div>
+    <input type="hidden" id="ezDuzId" />
+    <div style="margin-bottom:12px">
+        <label class="fn-label">Faktiki çıxış</label>
+        <input type="datetime-local" id="ezDuzCixis" class="fn-input" />
+    </div>
+    <div style="margin-bottom:8px">
+        <label class="fn-label">Faktiki qayıdış</label>
+        <input type="datetime-local" id="ezDuzQayidis" class="fn-input" />
+    </div>
+    <div style="font-size:11px;color:#94a3b8;margin-bottom:16px">Boş buraxsanız həmin sahə təmizlənir.</div>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button class="fn-btn fn-btn--ghost" onclick="ezDuzeltClose()">Ləğv</button>
+        <button class="fn-btn fn-btn--primary" onclick="ezDuzeltSaxla()"><i class="bi bi-check-circle"></i> Yadda saxla</button>
+    </div>
+</div>
+
+<script>
+    window.ezCanEdit = @((User.IsInRole(FinNex.Domain.RoleNames.Admin) || User.IsInRole(FinNex.Domain.RoleNames.HR)) ? "true" : "false");
+</script>
 <script src="~/js/hr/hr-ezamiyyet.js" asp-append-version="true"></script>
 <script>document.addEventListener('DOMContentLoaded', ezYukle);</script>

@@ -21,6 +21,10 @@ namespace FinNex.Application.Services.HR
         Task<(bool ok, string? error)> LegvEtAsync(int id, int isciId);
         Task<(bool ok, string? error)> GeriQeydElavEtAsync(int id, int isciId, string? qeyd);
 
+        // HR əl ilə cihaz çıxış/qayıdış düzəlişi (insan faktoru — qayıtmayıb qeydləri)
+        Task<(bool ok, string? error)> CihazQayidisDuzeltAsync(
+            int id, DateTime? cixisVaxt, DateTime? qayidisVaxt);
+
         Task<IList<EzamiyyetMekanListDto>> MekanlarAsync();
         Task<EzamiyyetMekan?> YeniMekanYaratAsync(string ad);
 
