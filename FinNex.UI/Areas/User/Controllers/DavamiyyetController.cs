@@ -187,6 +187,38 @@ namespace FinNex.UI.Areas.User.Controllers
             }
             catch { }
 
+            // Təsdiqlənmiş SAAT İCAZƏLƏRİ (günün sonunu örtən) — erkən çıxışı bağışlayır
+            var icazeList = new List<(DateTime Tarix, TimeSpan Bas, TimeSpan Bit)>();
+            try
+            {
+                var ics = await _unitOfWork.Repository<Icaze>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib && x.IsciId == isciId &&
+                                x.Status == IcazeStatus.Tesdiqlenib &&
+                                tarixlerSet.Contains(x.IcazeTarixi.Date))
+                    .Select(x => new { x.IcazeTarixi, x.BaslamaSaati, x.BitisSaati })
+                    .ToListAsync();
+                foreach (var i in ics)
+                    icazeList.Add((i.IcazeTarixi.Date, i.BaslamaSaati, i.BitisSaati));
+            }
+            catch { }
+
+            // Təsdiqlənmiş EZAMİYYƏTLƏR — tarixi əhatə edən
+            var ezamiyyetList = new List<(DateTime Bas, DateTime Bit, TimeSpan? BasSaat)>();
+            try
+            {
+                var ezs = await _unitOfWork.Repository<EzamiyyetMuraciet>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib && x.IsciId == isciId &&
+                                x.Status == EzamiyyetStatus.Tesdiqlendi &&
+                                x.BitmeTarixi.Date >= intizamBaslangic)
+                    .Select(x => new { x.BaslamaTarixi, x.BitmeTarixi, x.BaslamaSaati })
+                    .ToListAsync();
+                foreach (var e in ezs)
+                    ezamiyyetList.Add((e.BaslamaTarixi.Date, e.BitmeTarixi.Date, e.BaslamaSaati));
+            }
+            catch { }
+
             // Per-record erkən çıxış (HR GetByTarix ilə eyni düstur)
             foreach (var x in intizamResult)
             {
@@ -196,7 +228,17 @@ namespace FinNex.UI.Areas.User.Controllers
                 if (erkenIcazeDates.Contains(x.Tarix.Date)) continue;
                 var gunCixis = bayramDict.TryGetValue(x.Tarix.Date, out var bv) ? bv : standartCixis;
                 var hedd = elanDict.TryGetValue(x.Tarix.Date, out var ev) ? ev : gunCixis - tezCixmaTolerans;
-                if (x.CixisVaxti.Value.TimeOfDay < hedd) netice.TezCixanIds.Add(x.Id);
+                var cixisTod = x.CixisVaxti.Value.TimeOfDay;
+                if (cixisTod >= hedd) continue;   // erkən deyil
+
+                // Təsdiqlənmiş saat icazəsi (günün sonunu örtən) və ya ezamiyyət bağışlayır
+                bool icazeOrtuyur = icazeList.Any(i => i.Tarix == x.Tarix.Date &&
+                    i.Bit >= hedd && cixisTod >= i.Bas - tezCixmaTolerans);
+                bool ezamiyyetOrtuyur = ezamiyyetList.Any(e => e.Bas <= x.Tarix.Date && e.Bit >= x.Tarix.Date &&
+                    (e.BasSaat == null || cixisTod >= e.BasSaat.Value - tezCixmaTolerans));
+                if (icazeOrtuyur || ezamiyyetOrtuyur) continue;
+
+                netice.TezCixanIds.Add(x.Id);
             }
 
             // Təsdiqlənmiş məzuniyyət günləri — İcazəli sayğacından çıxılır (HR məntiqi)

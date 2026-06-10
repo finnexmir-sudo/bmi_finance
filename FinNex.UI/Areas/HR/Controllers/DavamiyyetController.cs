@@ -138,6 +138,40 @@ namespace FinNex.UI.Areas.HR.Controllers
                 }
                 catch { }
 
+                // Təsdiqlənmiş SAAT İCAZƏLƏRİ — günün sonunu örtən icazə erkən çıxışı bağışlayır
+                var icazeList = new List<(int IsciId, DateTime Tarix, TimeSpan Bas, TimeSpan Bit)>();
+                try
+                {
+                    var icB = (baslangic ?? tarix ?? DateTime.Today).Date;
+                    var icS = (son ?? tarix ?? DateTime.Today).Date;
+                    var ics = await _unitOfWork.Repository<Icaze>()
+                        .Query().AsNoTracking()
+                        .Where(x => !x.Silinib && x.Status == IcazeStatus.Tesdiqlenib &&
+                                    x.IcazeTarixi.Date >= icB && x.IcazeTarixi.Date <= icS)
+                        .Select(x => new { x.IsciId, x.IcazeTarixi, x.BaslamaSaati, x.BitisSaati })
+                        .ToListAsync();
+                    foreach (var i in ics)
+                        icazeList.Add((i.IsciId, i.IcazeTarixi.Date, i.BaslamaSaati, i.BitisSaati));
+                }
+                catch { }
+
+                // Təsdiqlənmiş EZAMİYYƏTLƏR — tarix aralığını örtən
+                var ezamiyyetList = new List<(int IsciId, DateTime Bas, DateTime Bit, TimeSpan? BasSaat)>();
+                try
+                {
+                    var ezB = (baslangic ?? tarix ?? DateTime.Today).Date;
+                    var ezS = (son ?? tarix ?? DateTime.Today).Date;
+                    var ezs = await _unitOfWork.Repository<EzamiyyetMuraciet>()
+                        .Query().AsNoTracking()
+                        .Where(x => !x.Silinib && x.Status == EzamiyyetStatus.Tesdiqlendi &&
+                                    x.BaslamaTarixi.Date <= ezS && x.BitmeTarixi.Date >= ezB)
+                        .Select(x => new { x.IsciId, x.BaslamaTarixi, x.BitmeTarixi, x.BaslamaSaati })
+                        .ToListAsync();
+                    foreach (var e in ezs)
+                        ezamiyyetList.Add((e.IsciId, e.BaslamaTarixi.Date, e.BitmeTarixi.Date, e.BaslamaSaati));
+                }
+                catch { }
+
                 // tezCixanSayi — per-record data hesablandıqdan sonra doldurulur
                 var tezCixanSayi = 0;
 
@@ -168,11 +202,26 @@ namespace FinNex.UI.Areas.HR.Controllers
                     var gunHedd = elanDict.TryGetValue(x.Tarix.Date, out var elanVaxt)
                         ? elanVaxt
                         : gunCixis - tezCixmaTolerans;
+
+                    // Təsdiqlənmiş saat icazəsi / ezamiyyət erkən çıxışı bağışlayır:
+                    //  - İcazə: günün sonunu örtür (BitisSaati >= hədd) və çıxış icazə başlanğıcı ətrafındadır
+                    //  - Ezamiyyət: həmin tarixi əhatə edir (saat varsa çıxış başlanğıc ətrafında, yoxdursa tam gün)
+                    var cixisTod = x.CixisVaxti?.TimeOfDay ?? TimeSpan.Zero;
+                    bool icazeOrtuyur = x.CixisVaxti.HasValue && icazeList.Any(i =>
+                        i.IsciId == x.IsciId && i.Tarix == x.Tarix.Date &&
+                        i.Bit >= gunHedd &&
+                        cixisTod >= i.Bas - tezCixmaTolerans);
+                    bool ezamiyyetOrtuyur = x.CixisVaxti.HasValue && ezamiyyetList.Any(e =>
+                        e.IsciId == x.IsciId && e.Bas <= x.Tarix.Date && e.Bit >= x.Tarix.Date &&
+                        (e.BasSaat == null || cixisTod >= e.BasSaat.Value - tezCixmaTolerans));
+
                     var tezCixanFlag = x.CixisVaxti.HasValue
                         && x.CixisVaxti.Value.TimeOfDay < gunHedd
                         && x.Status != DavamiyyetStatus.Ezamiyyet
                         && x.Status != DavamiyyetStatus.Icazeli
-                        && !erkenIcazeSet.Contains((x.IsciId, x.Tarix.Date));
+                        && !erkenIcazeSet.Contains((x.IsciId, x.Tarix.Date))
+                        && !icazeOrtuyur
+                        && !ezamiyyetOrtuyur;
 
                     // Nahar çıxılması — işçi nahar başlamadan gəlib, nahar bitdikdən sonra çıxıbsa
                     int? islemeSaatiDeq = null;
