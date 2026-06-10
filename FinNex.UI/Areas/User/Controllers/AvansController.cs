@@ -146,13 +146,13 @@ namespace FinNex.UI.Areas.User.Controllers
             await _unitOfWork.Repository<Avans>().YaratAsync(entity);
             await _unitOfWork.YaddaSaxlaAsync();
 
-            // Bildiriş — Mühasib + HR + Admin
+            // Bildiriş — yalnız Muhasib
             var isci = await _unitOfWork.Repository<Isci>()
                 .GetirAsync(x => x.Id == isciId.Value, izlemeden: true);
             var isciAd = isci?.TamAd ?? $"İşçi #{isciId.Value}";
 
             await _bildirisRouter.NotifyRolesAsync(
-                new[] { RoleNames.Muhasib, RoleNames.HR, RoleNames.Admin },
+                new[] { RoleNames.Muhasib },
                 BildirisNovu.AvansMuraciet,
                 "Yeni avans müraciəti",
                 $"{isciAd} {buAy.Year}/{buAy.Month:D2} ayı üçün {mebleg:N2} ₼ avans tələb edir.",
