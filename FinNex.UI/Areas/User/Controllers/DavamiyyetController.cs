@@ -113,16 +113,37 @@ namespace FinNex.UI.Areas.User.Controllers
                 .ToListAsync();
             var elanDict = elanlar.ToDictionary(x => x.Tarix.Date, x => x.BitisVaxti);
 
+            // Birdefelik icazəsi olan günlər — bu günlər erkən çıxış sayılmır
+            var birdefelikGunler = new HashSet<DateTime>();
+            try
+            {
+                var bList = await _unitOfWork.Repository<IcazeCixisGiris>()
+                    .Query().AsNoTracking()
+                    .Include(x => x.Icaze)
+                    .Where(x => !x.Silinib
+                             && x.Birdefelik
+                             && x.Status != IcazeCixisGirisStatus.LegvEdildi
+                             && x.Icaze.IsciId == isciId.Value
+                             && tarixlerSet.Contains(x.Icaze.IcazeTarixi.Date))
+                    .Select(x => x.Icaze.IcazeTarixi.Date)
+                    .ToListAsync();
+                foreach (var d in bList) birdefelikGunler.Add(d);
+            }
+            catch { }
+
             var isde      = result.Count(x => x.Status == DavamiyyetStatus.Isde);
             var gecikme   = result.Count(x => x.Status == DavamiyyetStatus.Gecikme);
             var qayib     = result.Count(x => x.Status == DavamiyyetStatus.Qayib);
             var icazeli   = result.Count(x => x.Status == DavamiyyetStatus.Icazeli);
             var xestelik  = result.Count(x => x.Status == DavamiyyetStatus.Xestelik);
             var ezamiyyet = result.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
-            // Erkən çıxış — elan varsa elan vaxtı, yoxdursa standart threshold ilə müqayisə
+            // Erkən çıxış — icazəli/ezamiyyət/birdefelik günlər xaric edilir
             var tezCixan = intizamResult.Count(x =>
             {
                 if (!x.CixisVaxti.HasValue) return false;
+                if (x.Status == DavamiyyetStatus.Icazeli)   return false;
+                if (x.Status == DavamiyyetStatus.Ezamiyyet) return false;
+                if (birdefelikGunler.Contains(x.Tarix.Date)) return false;
                 var hedd = elanDict.TryGetValue(x.Tarix.Date, out var ev) ? ev : standartHedd;
                 return x.CixisVaxti.Value.TimeOfDay < hedd;
             });
