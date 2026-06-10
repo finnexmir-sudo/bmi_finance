@@ -63,9 +63,20 @@
                            value="@DateTime.Today.ToString("yyyy-MM-dd")" />
                 </div>
                 <div class="fn-form-group">
+                    <label class="fn-label">Başlama saatı</label>
+                    <input type="time" name="BaslamaSaati" class="fn-input" />
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+                <div class="fn-form-group">
                     <label class="fn-label">Bitmə tarixi *</label>
                     <input type="date" name="BitmeTarixi" class="fn-input" required
                            value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="fn-form-group">
+                    <label class="fn-label">Bitmə saatı</label>
+                    <input type="time" name="BitisSaati" class="fn-input" />
                 </div>
             </div>
 
