@@ -75,6 +75,7 @@ public static class ServiceRegistration // Class mütəq mütəq static olmalıd
         services.AddScoped<IDavamiyyetService, DavamiyyetService>();
         services.AddScoped<IAyliqElaveService, AyliqElaveService>();
         services.AddScoped<IIsciSiralamaService, IsciSiralamaService>();
+        services.AddScoped<IKompensasiyaService, KompensasiyaService>();
         // Məzuniyyət Modulu Servisləri
         services.AddScoped<IMezuniyyetService, MezuniyyetService>();
         services.AddScoped<IIcazeService, IcazeService>();

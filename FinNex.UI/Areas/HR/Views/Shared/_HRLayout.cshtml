@@ -15,6 +15,7 @@
         currentController == "IsciHesab" ||
         currentController == "Davamiyyet" ||
         currentController == "Mezuniyyet" ||
+        currentController == "Kompensasiya" ||
         currentController == "Maas";
 
 
@@ -146,6 +147,13 @@
                            asp-controller="XestelikEzamiyyet"
                            asp-action="Index">
                             Ezamiyyət
+                        </a>
+
+                        <a class="hr-nav-sub-item @(currentController == "Kompensasiya" ? "active" : "")"
+                           asp-area="HR"
+                           asp-controller="Kompensasiya"
+                           asp-action="Index">
+                            Məzuniyyət Kompensasiyası
                         </a>
 
                         <a class="hr-nav-sub-item @(currentController == "Maas" ? "active" : "")"

@@ -1,0 +1,106 @@
+@model IList<FinNex.Application.DTOs.HR.Kompensasiya.KompensasiyaListDto>
+@using FinNex.Domain.Entities.HR
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Məzuniyyət Kompensasiyası";
+
+    string StatusText(KompensasiyaStatus s) => s switch
+    {
+        KompensasiyaStatus.Layihe => "Layihə",
+        KompensasiyaStatus.Tesdiqlenib => "Təsdiqlənib",
+        KompensasiyaStatus.MaasaDaxilEdildi => "Maaşa daxil edilib",
+        KompensasiyaStatus.LegvEdildi => "Ləğv edilib",
+        _ => "-"
+    };
+    string StatusClass(KompensasiyaStatus s) => s switch
+    {
+        KompensasiyaStatus.MaasaDaxilEdildi => "fn-badge--done",
+        KompensasiyaStatus.Tesdiqlenib => "fn-badge--review",
+        KompensasiyaStatus.Layihe => "fn-badge--wait",
+        KompensasiyaStatus.LegvEdildi => "fn-badge--rejected",
+        _ => ""
+    };
+
+    var ayAdlari = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+        "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Məzuniyyət Kompensasiyası</div>
+            <div class="fn-page-sub">İstifadə edilməmiş əmək məzuniyyəti günlərinə görə kompensasiya hesablamaları</div>
+        </div>
+        <a asp-action="Yarat" class="fn-btn fn-btn--primary">
+            <i class="bi bi-plus-lg"></i> Yeni Kompensasiya
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Error"]</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="fn-empty-state">
+            <div class="fn-empty-icon">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                    <rect x="6" y="9" width="28" height="22" rx="2" stroke="#dde1ea" stroke-width="2"/>
+                    <path d="M6 15h28M14 6v6M26 6v6" stroke="#dde1ea" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="fn-empty-title">Hələ kompensasiya hesablanmayıb</div>
+            <div class="fn-empty-sub">Yeni hesablama üçün yuxarıdakı düyməni basın</div>
+        </div>
+    }
+    else
+    {
+        <div class="fn-card" style="padding:0">
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead style="background:#f8fafc">
+                    <tr>
+                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">İşçi</th>
+                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Ayrılma tarixi</th>
+                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Hesablanan ay</th>
+                        <th style="text-align:right;padding:10px 14px;font-weight:600;color:#475569">Gün</th>
+                        <th style="text-align:right;padding:10px 14px;font-weight:600;color:#475569">Məbləğ</th>
+                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Status</th>
+                        <th style="text-align:right;padding:10px 14px;font-weight:600;color:#475569">Yaradılıb</th>
+                        <th style="width:1%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var k in Model)
+                    {
+                        <tr style="border-top:1px solid #f1f5f9">
+                            <td style="padding:10px 14px;color:#0f172a;font-weight:500">@k.IsciAdSoyad</td>
+                            <td style="padding:10px 14px;color:#475569;white-space:nowrap">@k.AyrilmaTarixi.ToString("dd.MM.yyyy")</td>
+                            <td style="padding:10px 14px;color:#475569">@ayAdlari[k.HesablananAy] @k.HesablananIl</td>
+                            <td style="padding:10px 14px;text-align:right;font-family:monospace;color:#0f172a">@k.CemiKompensasiyaGun.ToString("N2")</td>
+                            <td style="padding:10px 14px;text-align:right;font-family:monospace;font-weight:600;color:#0f172a">@k.CemiMebleg.ToString("N2") ₼</td>
+                            <td style="padding:10px 14px"><span class="fn-badge @StatusClass(k.Status)">@StatusText(k.Status)</span></td>
+                            <td style="padding:10px 14px;text-align:right;color:#94a3b8;white-space:nowrap;font-size:12px">@k.YaradilmaTarixi.ToString("dd.MM HH:mm")</td>
+                            <td style="padding:10px 14px;white-space:nowrap">
+                                <a asp-action="Detal" asp-route-id="@k.Id" class="fn-btn fn-btn--outline fn-btn--sm" style="padding:4px 10px">Detal</a>
+                                @if (k.Status != KompensasiyaStatus.MaasaDaxilEdildi && k.Status != KompensasiyaStatus.LegvEdildi)
+                                {
+                                    <form asp-action="LegvEt" method="post" style="display:inline-block;margin-left:4px"
+                                          onsubmit="return confirm('Bu kompensasiyanı ləğv etmək istəyirsiniz?')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@k.Id" />
+                                        <button type="submit" class="fn-btn fn-btn--danger-sm">Ləğv</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

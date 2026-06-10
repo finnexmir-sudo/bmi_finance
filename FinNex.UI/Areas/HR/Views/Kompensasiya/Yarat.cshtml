@@ -1,0 +1,225 @@
+@model FinNex.UI.Areas.HR.ViewModels.Kompensasiya.KompensasiyaYaratVM
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Yeni Kompensasiya";
+    var ayAdlari = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+        "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <a asp-action="Index" style="font-size:13px;color:#64748b;text-decoration:none">‹ Geri</a>
+            <div class="fn-page-title" style="margin-top:4px">Yeni Kompensasiya</div>
+            <div class="fn-page-sub">İşçini və ayrılma tarixini seçin — sistem avtomatik hesablayacaq</div>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:16px;align-items:flex-start">
+
+        @* ── SOL: form ───────────────────── *@
+        <form asp-action="Yarat" method="post" id="frm">
+            @Html.AntiForgeryToken()
+
+            <div class="fn-card" style="padding:18px">
+                <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:14px">Giriş məlumatları</div>
+
+                <div asp-validation-summary="ModelOnly" class="fn-alert fn-alert--error"></div>
+
+                <div class="fn-form-group">
+                    <label class="fn-label">İşçi *</label>
+                    <select asp-for="IsciId" asp-items="Model.Isciler" class="fn-input" id="isciSec">
+                        <option value="">— seçin —</option>
+                    </select>
+                    <span asp-validation-for="IsciId" class="fn-error"></span>
+                </div>
+
+                <div class="fn-form-group" style="margin-top:12px">
+                    <label class="fn-label">Ayrılma tarixi *</label>
+                    <input asp-for="AyrilmaTarixi" type="date" class="fn-input" id="ayrilmaTar" />
+                    <span asp-validation-for="AyrilmaTarixi" class="fn-error"></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+                    <div class="fn-form-group">
+                        <label class="fn-label">Hesablanan il *</label>
+                        <input asp-for="HesablananIl" type="number" min="2020" max="2099" class="fn-input" />
+                    </div>
+                    <div class="fn-form-group">
+                        <label class="fn-label">Hesablanan ay *</label>
+                        <select asp-for="HesablananAy" class="fn-input">
+                            @for (int i = 1; i <= 12; i++)
+                            {
+                                <option value="@i" selected="@(Model.HesablananAy == i)">@ayAdlari[i]</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="fn-form-group" style="margin-top:12px">
+                    <label class="fn-label">Qeyd (istəyə bağlı)</label>
+                    <textarea asp-for="Qeyd" rows="2" class="fn-input" maxlength="500"
+                              placeholder="Mühasibat üçün izah, əlavə şərhlər..."></textarea>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;gap:8px;margin-top:16px">
+                    <button type="button" class="fn-btn fn-btn--outline" onclick="hesabla()">
+                        <i class="bi bi-calculator"></i> Hesabla (preview)
+                    </button>
+                    <button type="submit" class="fn-btn fn-btn--primary" id="saxlaBtn" disabled>
+                        <i class="bi bi-save"></i> Yadda saxla
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        @* ── SAĞ: preview panel ───────────── *@
+        <div id="previewPanel">
+            <div class="fn-card" style="padding:24px;text-align:center;color:#94a3b8">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style="opacity:.4;margin-bottom:8px">
+                    <rect x="6" y="9" width="28" height="22" rx="2" stroke="#94a3b8" stroke-width="1.5"/>
+                    <path d="M6 15h28" stroke="#94a3b8" stroke-width="1.5"/>
+                </svg>
+                <div style="font-size:13px">İşçini və ayrılma tarixini seçib "Hesabla" düyməsini basın.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function hesabla() {
+        var isciId = parseInt(document.getElementById('isciSec').value || 0);
+        var ayr = document.getElementById('ayrilmaTar').value;
+        if (!isciId) { alert('İşçi seçin.'); return; }
+        if (!ayr) { alert('Ayrılma tarixi daxil edin.'); return; }
+
+        var panel = document.getElementById('previewPanel');
+        panel.innerHTML = '<div class="fn-card" style="padding:30px;text-align:center;color:#64748b;font-size:13px">Hesablanır...</div>';
+
+        try {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var resp = await fetch('@Url.Action("Hesabla", "Kompensasiya", new { area = "HR" })', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
+                body: JSON.stringify({ isciId: isciId, ayrilmaTarixi: ayr })
+            });
+            var json = await resp.json();
+            if (json.error) {
+                panel.innerHTML = '<div class="fn-card" style="padding:20px;background:#fef2f2;color:#dc2626;font-size:13px">'
+                                 + json.error + '</div>';
+                document.getElementById('saxlaBtn').disabled = true;
+                return;
+            }
+            renderPreview(json.data);
+            document.getElementById('saxlaBtn').disabled = false;
+        } catch (e) {
+            panel.innerHTML = '<div class="fn-card" style="padding:20px;background:#fef2f2;color:#dc2626;font-size:13px">Şəbəkə xətası: ' + e.message + '</div>';
+        }
+    }
+
+    function fmt(n, d) { return Number(n || 0).toFixed(d == null ? 2 : d); }
+    function fmtMon(n) { return Number(n || 0).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function renderPreview(d) {
+        var panel = document.getElementById('previewPanel');
+        var html = '';
+
+        // Profil
+        html += '<div class="fn-card" style="padding:16px 18px;margin-bottom:12px">';
+        html += '<div style="font-size:13px;color:#64748b">İşçi</div>';
+        html += '<div style="font-size:18px;font-weight:700;color:#0f172a;margin-top:2px">' + esc(d.isciAdSoyad) + '</div>';
+        if (d.departamentAd || d.vezifeAd) {
+            html += '<div style="font-size:12px;color:#94a3b8;margin-top:2px">' + esc(d.departamentAd || '') + ' · ' + esc(d.vezifeAd || '') + '</div>';
+        }
+        html += '<div style="font-size:12px;color:#64748b;margin-top:8px">'
+              + 'İşə qəbul: <b>' + d.iseQebulTarixi.substr(0,10) + '</b> · '
+              + 'Ayrılma: <b>' + d.ayrilmaTarixi.substr(0,10) + '</b>'
+              + '</div>';
+        html += '</div>';
+
+        // Gün hesablanması
+        html += '<div class="fn-card" style="padding:16px 18px;margin-bottom:12px">';
+        html += '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px">Gün Hesablanması</div>';
+
+        // Keçmiş illər
+        if (d.kecmisIller && d.kecmisIller.length > 0) {
+            html += '<div style="font-size:11px;color:#64748b;text-transform:uppercase;margin-bottom:4px">Keçmiş illər qalığı</div>';
+            d.kecmisIller.forEach(function (il) {
+                html += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid #f1f5f9">';
+                html += '<span style="color:#475569">' + il.il + ': ' + fmt(il.toplamGun, 0) + ' toplam − ' + fmt(il.istifadeOlunanGun, 0) + ' istifadə</span>';
+                html += '<span style="font-weight:600;color:' + (il.qaligGun > 0 ? '#16a34a' : '#94a3b8') + '">' + fmt(il.qaligGun) + ' gün</span>';
+                html += '</div>';
+            });
+            html += '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;font-weight:700;border-top:2px solid #e2e8f0;margin-top:4px">';
+            html += '<span>Keçmiş cəm</span>';
+            html += '<span style="color:#16a34a">' + fmt(d.kecmisQaligGun) + ' gün</span>';
+            html += '</div>';
+        }
+
+        // Cari anniversary ili prorate
+        html += '<div style="font-size:11px;color:#64748b;text-transform:uppercase;margin:12px 0 4px">Cari anniversary ili prorate</div>';
+        html += '<div style="font-size:12px;color:#475569">Anniversary başlanğıcı: <b>' + d.anniversaryBaslangic.substr(0,10) + '</b>';
+        if (d.sonuncuMezuniyyetIsheQebulTarixindenGoturuldu) {
+            html += ' <span style="color:#b45309">(yeni işçi — işə qəbul tarixindən)</span>';
+        }
+        html += '</div>';
+        html += '<div style="font-size:12px;color:#475569;margin-top:2px">Keçən gün: <b>' + d.kecenGunSayi + '</b> · İllik hüquq: <b>' + fmt(d.cariIlToplamGun, 0) + '</b> · İstifadə: <b>' + fmt(d.cariIlIstifadeOlunan, 0) + '</b></div>';
+        html += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;font-weight:600;margin-top:4px">';
+        html += '<span style="color:#475569">(' + d.kecenGunSayi + '/365) × ' + fmt(d.cariIlToplamGun, 0) + ' − ' + fmt(d.cariIlIstifadeOlunan, 0) + '</span>';
+        html += '<span style="color:#16a34a">' + fmt(d.cariIlProrateGun) + ' gün</span>';
+        html += '</div>';
+
+        // YEKUN GÜN
+        html += '<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:15px;font-weight:700;border-top:2px solid #0f172a;margin-top:8px">';
+        html += '<span>CƏMİ KOMPENSASİYA GÜNLƏRİ</span>';
+        html += '<span style="color:#0f172a">' + fmt(d.cemiKompensasiyaGun) + ' gün</span>';
+        html += '</div>';
+
+        html += '</div>';
+
+        // Pul hesablanması
+        html += '<div class="fn-card" style="padding:16px 18px;margin-bottom:12px">';
+        html += '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px">Gündəlik Dərəcə (məzuniyyət düsturu ilə)</div>';
+        html += '<div style="display:grid;grid-template-columns:auto auto;gap:6px 14px;font-size:12.5px">';
+        html += '<span style="color:#64748b">Son 12 ay düzəlmiş cəm (S):</span><span style="text-align:right;font-family:monospace">' + fmtMon(d.son12AyDuzelmisQazanc) + ' ₼</span>';
+        html += '<span style="color:#64748b">MH (S/12/30.4):</span><span style="text-align:right;font-family:monospace' + (d.qalib === 'MH' ? ';color:#16a34a;font-weight:700' : '') + '">' + fmtMon(d.gunlukMezPul) + ' ₼/gün</span>';
+        html += '<span style="color:#64748b">ƏH (Maaş/ayİşGün):</span><span style="text-align:right;font-family:monospace' + (d.qalib === 'ƏH' ? ';color:#16a34a;font-weight:700' : '') + '">' + fmtMon(d.gunlukMaas) + ' ₼/gün</span>';
+        html += '<span style="color:#0f172a;font-weight:600">MAX (' + d.qalib + ' qalib):</span><span style="text-align:right;font-family:monospace;font-weight:700">' + fmtMon(d.gunlukRate) + ' ₼/gün</span>';
+        html += '</div>';
+        html += '</div>';
+
+        // YEKUN MƏBLƏĞ
+        html += '<div class="fn-card" style="padding:18px;background:linear-gradient(to bottom right,#ecfdf5,#fff);border:2px solid #16a34a">';
+        html += '<div style="font-size:12px;color:#15803d;font-weight:600;text-transform:uppercase;margin-bottom:4px">YEKUN KOMPENSASİYA MƏBLƏĞİ</div>';
+        html += '<div style="font-size:28px;font-weight:800;color:#15803d">' + fmtMon(d.cemiMebleg) + ' ₼</div>';
+        html += '<div style="font-size:12px;color:#475569;margin-top:4px">' + fmt(d.cemiKompensasiyaGun) + ' gün × ' + fmtMon(d.gunlukRate) + ' ₼/gün</div>';
+        html += '</div>';
+
+        // Xəbərdarlıqlar
+        if (d.xeberdarliqlar && d.xeberdarliqlar.length > 0) {
+            html += '<div class="fn-card" style="padding:12px 16px;margin-top:12px;background:#fffbeb;border:1px solid #fcd34d">';
+            html += '<div style="font-size:11px;font-weight:700;color:#b45309;margin-bottom:6px">⚠ XƏBƏRDARLIQLAR</div>';
+            d.xeberdarliqlar.forEach(function (x) {
+                html += '<div style="font-size:12px;color:#92400e;margin:2px 0">• ' + esc(x) + '</div>';
+            });
+            html += '</div>';
+        }
+
+        // İzahatlar (collapsible)
+        if (d.izahatlar && d.izahatlar.length > 0) {
+            html += '<details class="fn-card" style="margin-top:12px;padding:12px 16px"><summary style="cursor:pointer;font-size:12px;font-weight:600;color:#64748b">İzahat addımları (' + d.izahatlar.length + ')</summary>';
+            html += '<div style="margin-top:8px">';
+            d.izahatlar.forEach(function (i) {
+                html += '<div style="font-size:12px;color:#475569;padding:2px 0;border-bottom:1px solid #f1f5f9">' + esc(i) + '</div>';
+            });
+            html += '</div></details>';
+        }
+
+        panel.innerHTML = html;
+    }
+</script>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}
