@@ -361,9 +361,18 @@ namespace FinNex.Application.Services.HR
                 };
 
                 await _uow.Repository<MezuniyyetKompensasiyasi>().YaratAsync(entity);
-                await _uow.YaddaSaxlaAsync();
 
-                return Result<int>.Ok(entity.Id, "Kompensasiya hesablandı və yadda saxlandı.");
+                // Yaradılan kimi kompensasiya günləri məzuniyyət balansından çıxılır
+                // (FIFO — ən köhnə il əvvəl). Beləcə işçi həm günü saxlayıb, həm
+                // pulunu ala bilməz. Balans tam ədəddir, ona görə yuvarlaqlaşdırılır.
+                int cixilacaqGun = (int)Math.Round(cemiGun, MidpointRounding.AwayFromZero);
+                await BalansdanCixAsync(dto.IsciId, cixilacaqGun);
+                entity.BalansdanCixilib = cixilacaqGun > 0;
+
+                await _uow.YaddaSaxlaAsync();   // entity + balans birlikdə commit olunur
+
+                return Result<int>.Ok(entity.Id,
+                    "Kompensasiya hesablandı, yadda saxlandı və balansdan çıxıldı.");
             }
             catch (Exception ex)
             {
@@ -481,8 +490,21 @@ namespace FinNex.Application.Services.HR
                 e.Status = KompensasiyaStatus.LegvEdildi;
                 e.YenilenmeTarixi = DateTime.Now;
                 await _uow.Repository<MezuniyyetKompensasiyasi>().YenileAsync(e);
+
+                // Ləğv — yalnız yaradılanda balansdan çıxılmış qeydlər üçün günləri
+                // geri qaytar (ən yeni il əvvəl — çıxmanın əksinə). Köhnə qeydlər
+                // (BalansdanCixilib=false) fantom qaytarma verməsin.
+                string mesaj = "Kompensasiya ləğv edildi.";
+                if (e.BalansdanCixilib)
+                {
+                    int qaytarilacaqGun = (int)Math.Round(e.CemiKompensasiyaGun, MidpointRounding.AwayFromZero);
+                    await BalansaGeriQaytarAsync(e.IsciId, qaytarilacaqGun);
+                    e.BalansdanCixilib = false;
+                    mesaj = "Kompensasiya ləğv edildi, günlər balansa qaytarıldı.";
+                }
+
                 await _uow.YaddaSaxlaAsync();
-                return Result.Ok("Kompensasiya ləğv edildi.");
+                return Result.Ok(mesaj);
             }
             catch (Exception ex)
             {
@@ -513,6 +535,61 @@ namespace FinNex.Application.Services.HR
             e.YenilenmeTarixi = DateTime.Now;
             await _uow.Repository<MezuniyyetKompensasiyasi>().YenileAsync(e);
             await _uow.YaddaSaxlaAsync();
+        }
+
+        // ─── BALANS: ÇIX (FIFO — ən köhnə il əvvəl) ──────────────
+        // İllik məzuniyyət balansından `gun` qədər çıxır (IstifadeOlunanGun artırır).
+        // MezuniyyetService-dəki məzuniyyət düşmə məntiqi ilə eyni qaydadır.
+        // Commit etmir — çağıran YaddaSaxlaAsync edir.
+        private async Task BalansdanCixAsync(int isciId, int gun)
+        {
+            if (gun <= 0) return;
+            var repo = _uow.Repository<MezuniyyetBalans>();
+            var balanslar = await repo.Query()
+                .Where(b => !b.Silinib && b.IsciId == isciId
+                         && b.Nov == MezuniyyetNovu.Illik
+                         && (b.ToplamGun - b.IstifadeOlunanGun) > 0)
+                .OrderBy(b => b.Il)
+                .ToListAsync();
+
+            int qalan = gun;
+            foreach (var b in balanslar)
+            {
+                if (qalan <= 0) break;
+                int ilinQaligi = b.ToplamGun - b.IstifadeOlunanGun;
+                int kesilecek = Math.Min(ilinQaligi, qalan);
+                b.IstifadeOlunanGun += kesilecek;
+                b.YenilenmeTarixi = DateTime.Now;
+                await repo.YenileAsync(b);
+                qalan -= kesilecek;
+            }
+            // qalan > 0 qalsa (balans çatmasa) — borc yazılmır; kompensasiya
+            // onsuz da mövcud qalıqdan çox ola bilməz (YaratAsync-də validasiya var).
+        }
+
+        // ─── BALANS: GERİ QAYTAR (ən yeni il əvvəl — çıxmanın əksinə) ──
+        // Ləğv zamanı çıxılan günləri geri verir (IstifadeOlunanGun azaldır).
+        private async Task BalansaGeriQaytarAsync(int isciId, int gun)
+        {
+            if (gun <= 0) return;
+            var repo = _uow.Repository<MezuniyyetBalans>();
+            var balanslar = await repo.Query()
+                .Where(b => !b.Silinib && b.IsciId == isciId
+                         && b.Nov == MezuniyyetNovu.Illik
+                         && b.IstifadeOlunanGun > 0)
+                .OrderByDescending(b => b.Il)
+                .ToListAsync();
+
+            int qalan = gun;
+            foreach (var b in balanslar)
+            {
+                if (qalan <= 0) break;
+                int qaytarila = Math.Min(b.IstifadeOlunanGun, qalan);
+                b.IstifadeOlunanGun -= qaytarila;
+                b.YenilenmeTarixi = DateTime.Now;
+                await repo.YenileAsync(b);
+                qalan -= qaytarila;
+            }
         }
     }
 }

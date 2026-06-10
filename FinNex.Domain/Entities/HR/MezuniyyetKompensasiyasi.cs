@@ -51,6 +51,12 @@ namespace FinNex.Domain.Entities.HR
         public KompensasiyaStatus Status { get; set; } = KompensasiyaStatus.Layihe;
         public string? Qeyd { get; set; }
         public int HesablayanIsciId { get; set; }
+
+        // Yaradılan kimi günlər məzuniyyət balansından çıxılıbsa true. Ləğv
+        // zamanı yalnız bu true olan qeydlərin günləri balansa geri qaytarılır
+        // (köhnə — çıxma məntiqindən əvvəl yaradılmış — qeydlər fantom qaytarma
+        // verməsin deyə).
+        public bool BalansdanCixilib { get; set; } = false;
     }
 
     public enum KompensasiyaStatus
