@@ -320,6 +320,11 @@ namespace FinNex.Application.Services.HR
                 string? autoOverrideQeyd = null;
                 if (dto.ManualGunSayi.HasValue && dto.ManualGunSayi.Value > 0)
                 {
+                    if (dto.ManualGunSayi.Value > c.CemiKompensasiyaGun)
+                        return Result<int>.Fail(
+                            $"Qismi gün ({dto.ManualGunSayi.Value:N2}) mövcud kompensasiya " +
+                            $"günündən ({c.CemiKompensasiyaGun:N2}) çox ola bilməz.");
+
                     cemiGun = dto.ManualGunSayi.Value;
                     cemiMebleg = Math.Round(cemiGun * c.GunlukRate, 2);
                     autoOverrideQeyd =

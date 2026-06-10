@@ -132,7 +132,24 @@
     function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
     function renderPreview(d) {
+        window._kompData = d;  // qismi gün dəyişəndə yenidən render üçün saxla
         var panel = document.getElementById('previewPanel');
+
+        // Effektiv gün/məbləğ: qismi (manual) gün seçilibsə onu, yoxsa tam qalıq.
+        var maxGun = Number(d.cemiKompensasiyaGun || 0);
+        var manualEl = document.getElementById('ManualGunSayi');
+        if (manualEl) manualEl.max = (Math.round(maxGun * 100) / 100);   // input limiti = mövcud gün
+        var manual = parseFloat(manualEl ? manualEl.value : '');
+        var qismi = (!isNaN(manual) && manual > 0);
+        if (qismi && manual > maxGun) {                                  // mövcuddan artıq olmaz
+            manual = maxGun;
+            if (manualEl) manualEl.value = (Math.round(maxGun * 100) / 100);
+        }
+        var effektivGun = qismi ? manual : maxGun;
+        var effektivMebleg = qismi
+            ? Math.round(manual * Number(d.gunlukRate || 0) * 100) / 100
+            : Number(d.cemiMebleg || 0);
+
         var html = '';
 
         // Profil
@@ -182,9 +199,16 @@
 
         // YEKUN GÜN
         html += '<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:15px;font-weight:700;border-top:2px solid #0f172a;margin-top:8px">';
-        html += '<span>CƏMİ KOMPENSASİYA GÜNLƏRİ</span>';
+        html += '<span>CƏMİ KOMPENSASİYA GÜNLƏRİ (mövcud)</span>';
         html += '<span style="color:#0f172a">' + fmt(d.cemiKompensasiyaGun) + ' gün</span>';
         html += '</div>';
+
+        if (qismi) {
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;font-size:14px;font-weight:700;color:#b45309;background:#fffbeb;border-radius:6px;margin-top:6px">';
+            html += '<span>Qismi seçilmiş (kompensasiya olunan)</span>';
+            html += '<span>' + fmt(effektivGun) + ' gün</span>';
+            html += '</div>';
+        }
 
         html += '</div>';
 
@@ -201,9 +225,9 @@
 
         // YEKUN MƏBLƏĞ
         html += '<div class="fn-card" style="padding:18px;background:linear-gradient(to bottom right,#ecfdf5,#fff);border:2px solid #16a34a">';
-        html += '<div style="font-size:12px;color:#15803d;font-weight:600;text-transform:uppercase;margin-bottom:4px">YEKUN KOMPENSASİYA MƏBLƏĞİ</div>';
-        html += '<div style="font-size:28px;font-weight:800;color:#15803d">' + fmtMon(d.cemiMebleg) + ' ₼</div>';
-        html += '<div style="font-size:12px;color:#475569;margin-top:4px">' + fmt(d.cemiKompensasiyaGun) + ' gün × ' + fmtMon(d.gunlukRate) + ' ₼/gün</div>';
+        html += '<div style="font-size:12px;color:#15803d;font-weight:600;text-transform:uppercase;margin-bottom:4px">YEKUN KOMPENSASİYA MƏBLƏĞİ' + (qismi ? ' (QİSMİ)' : '') + '</div>';
+        html += '<div style="font-size:28px;font-weight:800;color:#15803d">' + fmtMon(effektivMebleg) + ' ₼</div>';
+        html += '<div style="font-size:12px;color:#475569;margin-top:4px">' + fmt(effektivGun) + ' gün × ' + fmtMon(d.gunlukRate) + ' ₼/gün</div>';
         html += '</div>';
 
         // Xəbərdarlıqlar
@@ -228,6 +252,14 @@
 
         panel.innerHTML = html;
     }
+
+    // Qismi gün dəyişdikcə preview-i dərhal yenilə (əvvəlcədən hesablanmış data varsa)
+    document.addEventListener('DOMContentLoaded', function () {
+        var m = document.getElementById('ManualGunSayi');
+        if (m) m.addEventListener('input', function () {
+            if (window._kompData) renderPreview(window._kompData);
+        });
+    });
 </script>
 
 @section Scripts {
