@@ -741,6 +741,16 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Select(x => x.IsciId)
                 .ToListAsync();
 
+            // Həmin gün üçün təsdiqlənmiş icazəsi olan işçilər
+            var icazeliIsciIds = new HashSet<int>(
+                await _uow.Repository<Icaze>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib
+                             && x.Status == IcazeStatus.Tesdiqlenib
+                             && x.IcazeTarixi.Date == hedef)
+                    .Select(x => x.IsciId)
+                    .ToListAsync());
+
             var gozlenilenler = aktivIsciler
                 .Where(i => !qeydiOlanlar.Contains(i.Id))
                 .Select(i =>
@@ -749,6 +759,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                         .Where(t => t.Esasdir && !t.Silinib)
                         .FirstOrDefault()
                         ?? i.IsciTeyinatlari.FirstOrDefault(t => !t.Silinib);
+                    int st = icazeliIsciIds.Contains(i.Id)
+                        ? 4                                          // İcazəli
+                        : (hedef < DateTime.Today ? 3 : 0);         // Qayib / Gözlənilir
                     return new
                     {
                         id = 0,
@@ -758,7 +771,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                         tarix = hedef,
                         girisVaxti = (DateTime?)null,
                         cixisVaxti = (DateTime?)null,
-                        status = hedef < DateTime.Today ? 3 : 0
+                        status = st
                     };
                 })
                 .OrderBy(x => x.isciTamAd)
