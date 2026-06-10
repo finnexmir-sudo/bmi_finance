@@ -318,8 +318,15 @@
                             int eH = eDeq / 60; int eM = eDeq % 60;
 
                             <div style="margin:14px 0;padding:12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px">
+                                @if (Model.NaharNezereAlinmasin)
+                                {
+                                    <div style="font-size:12px;color:#92400e;background:#fef3c7;padding:7px 10px;border-radius:6px;margin-bottom:10px;font-weight:600">
+                                        ⚠ İşçi müraciətdə <strong>nahara çıxmadığını</strong> qeyd edib — nahar icazəyə qatılıb.
+                                    </div>
+                                }
                                 <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:13px;color:#374151">
                                     <input type="checkbox" name="naharNezereAlinmasin" id="naharCheck" value="true"
+                                           checked="@(Model.NaharNezereAlinmasin ? "checked" : null)"
                                            style="width:15px;height:15px;margin-top:2px;accent-color:#0369a1;flex-shrink:0" />
                                     <span>
                                         <strong>Naharı nəzərə alma</strong>
