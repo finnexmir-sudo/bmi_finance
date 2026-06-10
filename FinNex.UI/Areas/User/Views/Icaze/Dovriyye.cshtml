@@ -14,6 +14,22 @@
     };
 }
 
+<style>
+    .dov-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .dov-table thead th {
+        padding: 11px 14px; text-align: left; font-weight: 600;
+        color: #475569; background: #f8fafc; white-space: nowrap;
+        border-bottom: 1px solid #e8ecf2;
+    }
+    .dov-table tbody td {
+        padding: 10px 14px; color: #1a2332;
+        border-bottom: 1px solid #f1f5f9; vertical-align: middle;
+    }
+    .dov-table tbody tr:last-child td { border-bottom: none; }
+    .dov-table tbody tr:hover { background: #fafbfc; }
+    .dov-table th:last-child, .dov-table td:last-child { text-align: right; }
+</style>
+
 <div class="fn-page">
 
     <div class="fn-page-head">
@@ -110,8 +126,8 @@
     }
     else
     {
-        <div class="fn-card" style="padding:0;overflow:hidden">
-            <table class="km-table" style="font-size:13px">
+        <div class="fn-card" style="padding:0;overflow-x:auto">
+            <table class="dov-table">
                 <thead>
                     <tr>
                         <th>İşçi</th>
