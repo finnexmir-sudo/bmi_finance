@@ -30,5 +30,8 @@ namespace FinNex.Domain.Entities.HR
         public Isci?     Rehber              { get; set; }
         public DateTime? RehberTesdiqTarixi  { get; set; }
         public string?   RehberQeydi         { get; set; }
+
+        // Geri dönüş notu — işçi ezamiyyətdən qayıtdıqdan sonra əlavə edir
+        public string? GeriDonusQeydi { get; set; }
     }
 }

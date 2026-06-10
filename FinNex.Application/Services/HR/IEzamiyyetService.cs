@@ -19,6 +19,7 @@ namespace FinNex.Application.Services.HR
             int id, bool tesdiq, string? qeyd, int rehberId);
 
         Task<(bool ok, string? error)> LegvEtAsync(int id, int isciId);
+        Task<(bool ok, string? error)> GeriQeydElavEtAsync(int id, int isciId, string? qeyd);
 
         Task<IList<EzamiyyetMekanListDto>> MekanlarAsync();
         Task<EzamiyyetMekan?> YeniMekanYaratAsync(string ad);

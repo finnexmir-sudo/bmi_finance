@@ -69,29 +69,6 @@
                 </div>
             </div>
 
-            <div style="margin-top:14px">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-                    <input type="checkbox" id="saatliCb" onchange="saatliToggle(this)" style="width:16px;height:16px" />
-                    <label for="saatliCb" style="font-size:13px;color:#374151;cursor:pointer">
-                        Gündaxili saat aralığı (tam gün deyilsə)
-                    </label>
-                </div>
-                <div id="saatDiv" style="display:none;grid-template-columns:1fr 1fr;gap:12px">
-                    <div class="fn-form-group">
-                        <label class="fn-label">Başlama saatı</label>
-                        <input type="text" name="BaslamaSaati" id="baslamaSaati" class="fn-input"
-                               placeholder="09:00" maxlength="5" inputmode="numeric"
-                               oninput="saatFormat(this)" />
-                    </div>
-                    <div class="fn-form-group">
-                        <label class="fn-label">Bitmə saatı</label>
-                        <input type="text" name="BitisSaati" id="bitisSaati" class="fn-input"
-                               placeholder="17:00" maxlength="5" inputmode="numeric"
-                               oninput="saatFormat(this)" />
-                    </div>
-                </div>
-            </div>
-
             <div class="fn-form-group" style="margin-top:14px">
                 <label class="fn-label">Qeyd</label>
                 <textarea name="Qeyd" class="fn-input" rows="3"
@@ -122,8 +99,7 @@
     function yeniMekanGoster() {
         var div = document.getElementById('yeniMekanDiv');
         var sel = document.getElementById('mekanSelect');
-        var visible = div.style.display !== 'none';
-        if (visible) {
+        if (div.style.display !== 'none') {
             div.style.display = 'none';
             sel.disabled = false;
         } else {
@@ -132,20 +108,5 @@
             sel.disabled = true;
             document.getElementById('yeniMekanInp').focus();
         }
-    }
-
-    function saatliToggle(cb) {
-        var div = document.getElementById('saatDiv');
-        div.style.display = cb.checked ? 'grid' : 'none';
-        if (!cb.checked) {
-            document.getElementById('baslamaSaati').value = '';
-            document.getElementById('bitisSaati').value = '';
-        }
-    }
-
-    function saatFormat(inp) {
-        var v = inp.value.replace(/[^0-9]/g, '');
-        if (v.length > 2) v = v.slice(0, 2) + ':' + v.slice(2, 4);
-        inp.value = v;
     }
 </script>
