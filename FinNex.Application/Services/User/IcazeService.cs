@@ -860,25 +860,76 @@ namespace FinNex.Application.Services
                                         .ThenInclude(t => t.Departament),
                         izlemeden: true);
 
+                // ── Fallback: bağlanmamış (Gözlənir) icazələrdə cihaz çıxışını Davamiyyətdən götür ──
+                // Canlı ADMS hook işləməyibsə (seed data, yaxud oxuma təsdiqdən əvvəl gəlib),
+                // həmin günün Davamiyyət çıxışı icazə pəncərəsinin İÇİNDƏdirsə onu faktiki çıxış
+                // kimi GÖSTƏRİR (DB-yə YAZMIR). Yalnız çıxış — qayıdış təxmin edilmir, çünki xam
+                // cihaz oxumaları saxlanmır (qayıdan işçidə son çıxış günün sonu olur, icazə yox).
+                var eksikler = list
+                    .Where(c => c.CixisVaxt == null &&
+                                c.Status == IcazeCixisGirisStatus.Gozlenir)
+                    .ToList();
+
+                var davCixisMap = new Dictionary<string, DateTime>();
+                if (eksikler.Count > 0)
+                {
+                    var isciIdler = eksikler.Select(c => c.Icaze.IsciId).Distinct().ToList();
+                    var minT = eksikler.Min(c => c.Icaze.IcazeTarixi.Date);
+                    var maxT = eksikler.Max(c => c.Icaze.IcazeTarixi.Date);
+
+                    var davlar = await _unitOfWork.Repository<Davamiyyet>()
+                        .Query()
+                        .AsNoTracking()
+                        .Where(d => !d.Silinib && isciIdler.Contains(d.IsciId)
+                                 && d.Tarix.Date >= minT && d.Tarix.Date <= maxT
+                                 && d.CixisVaxti != null)
+                        .Select(d => new { d.IsciId, Tarix = d.Tarix.Date, d.CixisVaxti })
+                        .ToListAsync();
+
+                    davCixisMap = davlar
+                        .GroupBy(d => $"{d.IsciId}|{d.Tarix:yyyy-MM-dd}")
+                        .ToDictionary(g => g.Key, g => g.Max(d => d.CixisVaxti!.Value));
+                }
+
+                // İcazə pəncərəsinin içindəki cihaz çıxışını qaytarır (yoxsa null)
+                DateTime? FaktikiCixisGoster(IcazeCixisGiris c)
+                {
+                    if (c.CixisVaxt != null || c.Status != IcazeCixisGirisStatus.Gozlenir)
+                        return null;
+                    var key = $"{c.Icaze.IsciId}|{c.Icaze.IcazeTarixi:yyyy-MM-dd}";
+                    if (!davCixisMap.TryGetValue(key, out var dcx)) return null;
+                    var t = dcx.TimeOfDay;
+                    if (t >= c.Icaze.BaslamaSaati - TimeSpan.FromMinutes(15) &&
+                        t <= c.Icaze.BitisSaati  + TimeSpan.FromMinutes(15))
+                        return dcx;
+                    return null;
+                }
+
                 var dtos = list
                     .OrderByDescending(x => x.Icaze.IcazeTarixi)
-                    .Select(c => new IcazeDovriyyeDto
+                    .Select(c =>
                     {
-                        IcazeId = c.IcazeId,
-                        IsciAdSoyad = c.Icaze.Isci.TamAd,
-                        SobeAdi = c.Icaze.Isci.IsciTeyinatlari
-                            .Where(t => t.Aktivdir)
-                            .Select(t => t.Departament?.Ad)
-                            .FirstOrDefault() ?? "-",
-                        IcazeTarixi = c.Icaze.IcazeTarixi,
-                        BaslamaSaati = c.Icaze.BaslamaSaati,
-                        BitisSaati = c.Icaze.BitisSaati,
-                        PlanlananSaat = c.Icaze.IcazeSaati,
-                        Birdefelik = c.Birdefelik,
-                        CixisVaxt = c.CixisVaxt,
-                        QayidisVaxt = c.QayidisVaxt,
-                        FaktikiSaat = c.FaktikiSaat,
-                        CixisStatus = c.Status,
+                        var faktikiCixis = FaktikiCixisGoster(c);
+                        return new IcazeDovriyyeDto
+                        {
+                            IcazeId = c.IcazeId,
+                            IsciAdSoyad = c.Icaze.Isci.TamAd,
+                            SobeAdi = c.Icaze.Isci.IsciTeyinatlari
+                                .Where(t => t.Aktivdir)
+                                .Select(t => t.Departament?.Ad)
+                                .FirstOrDefault() ?? "-",
+                            IcazeTarixi = c.Icaze.IcazeTarixi,
+                            BaslamaSaati = c.Icaze.BaslamaSaati,
+                            BitisSaati = c.Icaze.BitisSaati,
+                            PlanlananSaat = c.Icaze.IcazeSaati,
+                            Birdefelik = c.Birdefelik,
+                            CixisVaxt = c.CixisVaxt ?? faktikiCixis,
+                            QayidisVaxt = c.QayidisVaxt,
+                            FaktikiSaat = c.FaktikiSaat,
+                            CixisStatus = faktikiCixis != null
+                                ? IcazeCixisGirisStatus.Cixdi
+                                : c.Status,
+                        };
                     }).ToList();
 
                 return Result<IList<IcazeDovriyyeDto>>.Ok(dtos);
