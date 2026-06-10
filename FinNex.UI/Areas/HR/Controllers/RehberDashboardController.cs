@@ -1,6 +1,5 @@
 using ClosedXML.Excel;
 using FinNex.Domain;
-using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.PR_Odenis_Tapsirigi;
 using FinNex.Domain.Entities.SenedDovriyyesi;
@@ -449,53 +448,8 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
             catch { ViewBag.MezuniyyetSayi = 0; ViewBag.MezuniyyetIsciIds = new HashSet<int>(); }
 
-            // Bugün erkən çıxış icazəsi verilmiş işçi ID-ləri
-            try
-            {
-                var erkenIds = await _uow.Repository<ErkenCixisIcaze>()
-                    .Query().AsNoTracking()
-                    .Where(x => x.Tarix == bugun)
-                    .Select(x => x.IsciId)
-                    .ToListAsync();
-                ViewBag.ErkenCixisIcazeIds = erkenIds.ToHashSet();
-            }
-            catch { ViewBag.ErkenCixisIcazeIds = new HashSet<int>(); }
-
             ViewData["Title"] = "Davamiyyət";
             return View(list);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> ErkenCixisIcazeVer(int isciId)
-        {
-            try
-            {
-                var appUser = await _userManager.GetUserAsync(User);
-                var icazeVeren = appUser?.IsciId ?? 0;
-                var bugun = DateTime.Today;
-
-                var varMi = await _uow.Repository<ErkenCixisIcaze>()
-                    .Query()
-                    .AnyAsync(x => x.IsciId == isciId && x.Tarix == bugun);
-
-                if (!varMi)
-                {
-                    await _uow.Repository<ErkenCixisIcaze>().YaratAsync(new ErkenCixisIcaze
-                    {
-                        IsciId = isciId,
-                        Tarix = bugun,
-                        IcazeVerenIsciId = icazeVeren
-                    });
-                    await _uow.YaddaSaxlaAsync();
-                }
-
-                return Json(new { success = true });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ErkenCixisIcazeVer xətası. IsciId={IsciId}", isciId);
-                return Json(new { success = false });
-            }
         }
 
         // ═══════════════════════════════════════════════════════════════
@@ -787,27 +741,27 @@ namespace FinNex.UI.Areas.HR.Controllers
                 .Select(x => x.IsciId)
                 .ToListAsync();
 
-            // Offline görüş iştirakçıları gözlənilənlər siyahısından çıxarılır
-            var gorushIstirakciIds = await _uow.Repository<GorushIshtirakci>()
-                .Query()
-                .AsNoTracking()
-                .Where(x => !x.Silinib
-                         && x.Gorush.Nov == GorushNovu.Offline
-                         && x.Gorush.Status != GorushStatus.LegvEdildi
-                         && x.Gorush.Tarix.Date == hedef
-                         && x.Status != IshtirakciStatus.Redd
-                         && x.Status != IshtirakciStatus.IshtiraketmeyecekBildirib)
-                .Select(x => x.IsciId)
-                .ToListAsync();
+            // Həmin gün üçün təsdiqlənmiş icazəsi olan işçilər
+            var icazeliIsciIds = new HashSet<int>(
+                await _uow.Repository<Icaze>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib
+                             && x.Status == IcazeStatus.Tesdiqlenib
+                             && x.IcazeTarixi.Date == hedef)
+                    .Select(x => x.IsciId)
+                    .ToListAsync());
 
             var gozlenilenler = aktivIsciler
-                .Where(i => !qeydiOlanlar.Contains(i.Id) && !gorushIstirakciIds.Contains(i.Id))
+                .Where(i => !qeydiOlanlar.Contains(i.Id))
                 .Select(i =>
                 {
                     var esasTeyinat = i.IsciTeyinatlari
                         .Where(t => t.Esasdir && !t.Silinib)
                         .FirstOrDefault()
                         ?? i.IsciTeyinatlari.FirstOrDefault(t => !t.Silinib);
+                    int st = icazeliIsciIds.Contains(i.Id)
+                        ? 4                                          // İcazəli
+                        : (hedef < DateTime.Today ? 3 : 0);         // Qayib / Gözlənilir
                     return new
                     {
                         id = 0,
@@ -817,7 +771,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                         tarix = hedef,
                         girisVaxti = (DateTime?)null,
                         cixisVaxti = (DateTime?)null,
-                        status = hedef < DateTime.Today ? 3 : 0
+                        status = st
                     };
                 })
                 .OrderBy(x => x.isciTamAd)
