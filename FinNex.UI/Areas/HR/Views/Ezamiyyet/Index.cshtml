@@ -148,13 +148,19 @@
     <input type="hidden" id="ezDuzId" />
     <div style="margin-bottom:12px">
         <label class="fn-label">Faktiki çıxış</label>
-        <input type="datetime-local" id="ezDuzCixis" class="fn-input" />
+        <div style="display:flex;gap:8px">
+            <input type="date" id="ezDuzCixisD" class="fn-input" style="flex:1" />
+            <input type="text" id="ezDuzCixisT" class="fn-input" style="width:92px;text-align:center;letter-spacing:.5px" placeholder="SS:DD" maxlength="5" inputmode="numeric" />
+        </div>
     </div>
     <div style="margin-bottom:8px">
         <label class="fn-label">Faktiki qayıdış</label>
-        <input type="datetime-local" id="ezDuzQayidis" class="fn-input" />
+        <div style="display:flex;gap:8px">
+            <input type="date" id="ezDuzQayidisD" class="fn-input" style="flex:1" />
+            <input type="text" id="ezDuzQayidisT" class="fn-input" style="width:92px;text-align:center;letter-spacing:.5px" placeholder="SS:DD" maxlength="5" inputmode="numeric" />
+        </div>
     </div>
-    <div style="font-size:11px;color:#94a3b8;margin-bottom:16px">Boş buraxsanız həmin sahə təmizlənir.</div>
+    <div style="font-size:11px;color:#94a3b8;margin-bottom:16px">Saat 24 formatında (SS:DD). Boş buraxsanız həmin sahə təmizlənir.</div>
     <div style="display:flex;justify-content:flex-end;gap:8px">
         <button class="fn-btn fn-btn--ghost" onclick="ezDuzeltClose()">Ləğv</button>
         <button class="fn-btn fn-btn--primary" onclick="ezDuzeltSaxla()"><i class="bi bi-check-circle"></i> Yadda saxla</button>

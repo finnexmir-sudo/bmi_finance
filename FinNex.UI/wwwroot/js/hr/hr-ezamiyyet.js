@@ -139,13 +139,26 @@ async function ezTesdiq(tesdiq) {
 }
 
 // ── HR əl ilə çıxış/qayıdış düzəlişi (insan faktoru) ──
+function ezSplitIso(iso) {              // "2026-06-09T15:30" → ["2026-06-09","15:30"]
+    if (!iso) return ['', ''];
+    var p = iso.split('T');
+    return [p[0] || '', (p[1] || '').slice(0, 5)];
+}
+
 function ezOpenDuzelt(id, isci, cixisIso, qayidisIso, bitmeIso) {
     document.getElementById('ezDuzId').value = id;
     document.getElementById('ezDuzAd').textContent = isci || '';
-    document.getElementById('ezDuzCixis').value = cixisIso || '';
-    // qayıdış boşdursa, çıxış varsa son günün iş sonunu (17:45) təklif et
-    document.getElementById('ezDuzQayidis').value =
-        qayidisIso || ((cixisIso && bitmeIso) ? bitmeIso + 'T17:45' : '');
+
+    var cx = ezSplitIso(cixisIso);
+    document.getElementById('ezDuzCixisD').value = cx[0];
+    document.getElementById('ezDuzCixisT').value = cx[1];
+
+    var qy = ezSplitIso(qayidisIso);
+    // qayıdış boşdursa, çıxış varsa son günün (bitmə) 17:45-ni təklif et
+    if (!qayidisIso && cixisIso && bitmeIso) { qy = [bitmeIso, '17:45']; }
+    document.getElementById('ezDuzQayidisD').value = qy[0];
+    document.getElementById('ezDuzQayidisT').value = qy[1];
+
     document.getElementById('ezDuzOverlay').style.display = 'block';
     document.getElementById('ezDuzModal').style.display   = 'block';
 }
@@ -156,10 +169,25 @@ function ezDuzeltClose() {
 }
 
 async function ezDuzeltSaxla() {
-    var id      = document.getElementById('ezDuzId').value;
-    var cixis   = document.getElementById('ezDuzCixis').value;
-    var qayidis = document.getElementById('ezDuzQayidis').value;
+    var id = document.getElementById('ezDuzId').value;
     if (!id) return;
+
+    var re = /^([01]?\d|2[0-3]):[0-5]\d$/;     // 24 saat SS:DD
+    function birlesdir(dId, tId, etiket) {
+        var d = document.getElementById(dId).value;
+        var t = document.getElementById(tId).value.trim();
+        if (!d && !t) return '';               // hər ikisi boş → təmizlə
+        if (!d || !t)  throw etiket + ' üçün həm tarix, həm saat seçilməlidir.';
+        if (!re.test(t)) throw etiket + ' saatı düzgün deyil (SS:DD, məs: 17:45).';
+        return d + 'T' + t;
+    }
+
+    var cixis, qayidis;
+    try {
+        cixis   = birlesdir('ezDuzCixisD',   'ezDuzCixisT',   'Çıxış');
+        qayidis = birlesdir('ezDuzQayidisD', 'ezDuzQayidisT', 'Qayıdış');
+    } catch (msg) { alert(msg); return; }
+
     var res = await fetch('/HR/Ezamiyyet/CihazQayidisDuzelt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

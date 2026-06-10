@@ -212,6 +212,8 @@
                                     <button type="button" class="dovEdit"
                                             data-id="@item.IcazeId"
                                             data-ad="@item.IsciAdSoyad"
+                                            data-tarix="@item.IcazeTarixi.ToString("yyyy-MM-dd")"
+                                            data-tarix-text="@item.IcazeTarixi.ToString("dd.MM.yyyy")"
                                             data-cixis="@(item.CixisVaxt?.ToString("yyyy-MM-ddTHH:mm"))"
                                             data-qayidis="@(item.QayidisVaxt?.ToString("yyyy-MM-ddTHH:mm"))"
                                             title="Çıxış/qayıdış vaxtını düzəlt"
@@ -235,20 +237,25 @@
         <div style="background:#fff;border-radius:12px;padding:22px;width:380px;max-width:92vw;box-shadow:0 10px 40px rgba(0,0,0,.2)">
             <h3 style="margin:0 0 4px;font-size:16px;color:#1a2332">Çıxış/qayıdış düzəlişi</h3>
             <div id="dovEditAd" style="font-size:13px;color:#6b7280;margin-bottom:14px"></div>
-            <form method="post" asp-area="User" asp-controller="Icaze" asp-action="CixisGirisDuzelt">
+            <form id="dovEditForm" method="post" asp-area="User" asp-controller="Icaze" asp-action="CixisGirisDuzelt">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="icazeId" id="dovEditId" />
+                <input type="hidden" name="cixisVaxt" id="dovEditCixisHidden" />
+                <input type="hidden" name="qayidisVaxt" id="dovEditQayidisHidden" />
+                <div style="background:#f8fafc;border-radius:8px;padding:8px 12px;font-size:13px;color:#374151;margin-bottom:14px">
+                    İcazə tarixi: <strong id="dovEditTarixText"></strong>
+                </div>
                 <div style="margin-bottom:12px">
-                    <label style="display:block;font-size:12px;color:#374151;margin-bottom:4px">Faktiki çıxış</label>
-                    <input type="datetime-local" name="cixisVaxt" id="dovEditCixis"
-                           style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px" />
+                    <label style="display:block;font-size:12px;color:#374151;margin-bottom:4px">Faktiki çıxış saatı</label>
+                    <input type="text" id="dovEditCixisSaat" inputmode="numeric" placeholder="məs: 11:33" maxlength="5"
+                           style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:15px;letter-spacing:.5px" />
                 </div>
                 <div style="margin-bottom:8px">
-                    <label style="display:block;font-size:12px;color:#374151;margin-bottom:4px">Faktiki qayıdış</label>
-                    <input type="datetime-local" name="qayidisVaxt" id="dovEditQayidis"
-                           style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px" />
+                    <label style="display:block;font-size:12px;color:#374151;margin-bottom:4px">Faktiki qayıdış saatı</label>
+                    <input type="text" id="dovEditQayidisSaat" inputmode="numeric" placeholder="məs: 17:45" maxlength="5"
+                           style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:15px;letter-spacing:.5px" />
                 </div>
-                <div style="font-size:11px;color:#94a3b8;margin-bottom:16px">Boş buraxsanız həmin sahə təmizlənir.</div>
+                <div style="font-size:11px;color:#94a3b8;margin-bottom:16px">24 saat formatı (SS:DD). Boş buraxsanız həmin sahə təmizlənir.</div>
                 <div style="display:flex;justify-content:flex-end;gap:8px">
                     <button type="button" id="dovEditCancel"
                             style="border:1px solid #d1d5db;background:#fff;border-radius:8px;padding:8px 16px;cursor:pointer;color:#374151">Ləğv</button>
@@ -265,15 +272,36 @@
         (function () {
             var modal = document.getElementById('dovEditModal');
             if (!modal) return;
+            var form = document.getElementById('dovEditForm');
+            var curTarix = '';
+            var re = /^([01]?\d|2[0-3]):[0-5]\d$/; // 24 saat SS:DD
+
+            function hhmm(iso) {            // "2026-06-10T11:33" → "11:33"
+                if (!iso) return '';
+                return (iso.split('T')[1] || '').slice(0, 5);
+            }
+
             document.querySelectorAll('.dovEdit').forEach(function (b) {
                 b.addEventListener('click', function () {
                     document.getElementById('dovEditId').value = b.dataset.id;
                     document.getElementById('dovEditAd').textContent = b.dataset.ad || '';
-                    document.getElementById('dovEditCixis').value = b.dataset.cixis || '';
-                    document.getElementById('dovEditQayidis').value = b.dataset.qayidis || '';
+                    curTarix = b.dataset.tarix || '';
+                    document.getElementById('dovEditTarixText').textContent = b.dataset.tarixText || curTarix;
+                    document.getElementById('dovEditCixisSaat').value = hhmm(b.dataset.cixis);
+                    document.getElementById('dovEditQayidisSaat').value = hhmm(b.dataset.qayidis);
                     modal.style.display = 'flex';
                 });
             });
+
+            form.addEventListener('submit', function (e) {
+                var ct = document.getElementById('dovEditCixisSaat').value.trim();
+                var qt = document.getElementById('dovEditQayidisSaat').value.trim();
+                if (ct && !re.test(ct)) { e.preventDefault(); alert('Çıxış saatı düzgün deyil (SS:DD, məs: 09:30).'); return; }
+                if (qt && !re.test(qt)) { e.preventDefault(); alert('Qayıdış saatı düzgün deyil (SS:DD, məs: 17:45).'); return; }
+                document.getElementById('dovEditCixisHidden').value   = ct ? (curTarix + 'T' + ct) : '';
+                document.getElementById('dovEditQayidisHidden').value = qt ? (curTarix + 'T' + qt) : '';
+            });
+
             document.getElementById('dovEditCancel').addEventListener('click', function () { modal.style.display = 'none'; });
             modal.addEventListener('click', function (e) { if (e.target === modal) modal.style.display = 'none'; });
         })();
