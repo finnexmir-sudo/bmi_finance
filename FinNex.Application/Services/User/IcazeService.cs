@@ -452,7 +452,7 @@ namespace FinNex.Application.Services
         }
 
         // Rəhbər təsdiq edir → Tesdiqlenib + IcazeCixisGiris yaranır
-        public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal jetonOdenenSaat = 0, bool naharNezereAlinmasin = false)
+        public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal jetonOdenenSaat = 0, bool naharNezereAlinmasin = false, bool birdefelik = false)
         {
             var icaze = await _unitOfWork.Repository<Icaze>().GetirAsync(x => x.Id == id);
             if (icaze == null) return Result.Fail("İcazə tapılmadı.");
@@ -503,6 +503,7 @@ namespace FinNex.Application.Services
 
             // Rəhbər SON təsdiqdir — HR addımı çıxarıldı (təsdiq rəhbərlə yekunlaşır).
             icaze.Status = IcazeStatus.Tesdiqlenib;
+            icaze.Birdefelik = birdefelik;   // rəhbər birdəfəlik (qayıtmayacaq) işarələyə bilər
 
             await _unitOfWork.Repository<Icaze>().YenileAsync(icaze);
             await _unitOfWork.YaddaSaxlaAsync();
