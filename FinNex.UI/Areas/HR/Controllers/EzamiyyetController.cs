@@ -76,7 +76,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                 x.Qeyd, x.RehberTamAd,
                 rehberTesdiqTarixi = x.RehberTesdiqTarixi?.ToString("dd.MM.yyyy HH:mm"),
                 x.RehberQeydi, x.GeriDonusQeydi,
-                yaradilmaTarixi    = x.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")
+                cihazCixisVaxti   = x.CihazCixisVaxti?.ToString("dd.MM.yyyy HH:mm"),
+                cihazQayidisVaxti = x.CihazQayidisVaxti?.ToString("dd.MM.yyyy HH:mm"),
+                yaradilmaTarixi   = x.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")
             }));
         }
 

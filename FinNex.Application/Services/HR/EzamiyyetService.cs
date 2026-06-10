@@ -349,7 +349,9 @@ namespace FinNex.Application.Services.HR
                 RehberTesdiqTarixi  = x.RehberTesdiqTarixi,
                 RehberQeydi         = x.RehberQeydi,
                 GeriDonusQeydi      = x.GeriDonusQeydi,
-                YaradilmaTarixi     = x.YaradilmaTarixi
+                CihazCixisVaxti    = x.CihazCixisVaxti,
+                CihazQayidisVaxti  = x.CihazQayidisVaxti,
+                YaradilmaTarixi    = x.YaradilmaTarixi
             };
         }
     }
