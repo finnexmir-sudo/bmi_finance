@@ -89,13 +89,23 @@
                 @* ── Səbəb ── *@
                 <div class="fn-form-group">
                     <label asp-for="Sebeb" class="fn-label">
-                        Səbəb
-                        <span class="fn-label-hint">(istəyə bağlı)</span>
+                        Səbəb <span style="color:#dc2626">*</span>
                     </label>
                     <textarea asp-for="Sebeb" rows="3"
                               class="fn-textarea"
                               placeholder="İcazənin səbəbini qısaca yazın..."></textarea>
                     <span asp-validation-for="Sebeb" class="fn-val-msg"></span>
+                </div>
+
+                @* ── Nahar fasiləsini icazəyə qatmaq ── *@
+                <div class="fn-form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500">
+                        <input asp-for="NaharNezereAlinmasin" type="checkbox" style="width:16px;height:16px" />
+                        <span>Nahara çıxmıram — nahar fasiləsini icazəyə qatıram</span>
+                    </label>
+                    <span class="fn-label-hint" style="margin-left:24px;display:block;margin-top:4px">
+                        İşarələnsə icazə <strong>3 saat 45 dəqiqəyə</strong> qədər ola bilər (əks halda maksimum 3 saat).
+                    </span>
                 </div>
 
                 @* ── Jeton (yalnız Rəhbər üçün) ── *@

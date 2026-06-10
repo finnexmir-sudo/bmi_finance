@@ -72,6 +72,19 @@ namespace FinNex.Application.Services
                 if (dto.BitisSaati <= dto.BaslamaSaati)
                     return Result<IcazeListDto>.Fail("Bitme saati baslama saatindan sonra olmalidir.");
 
+                // Səbəb məcburidir
+                if (string.IsNullOrWhiteSpace(dto.Sebeb))
+                    return Result<IcazeListDto>.Fail("İcazə səbəbi mütləq qeyd edilməlidir.");
+
+                // Maksimum müddət — adi icazə 3 saat; nahar fasiləsi icazəyə qatılırsa 3 saat 45 dəqiqə
+                var icazeDeq = (int)(dto.BitisSaati - dto.BaslamaSaati).TotalMinutes;
+                var maxDeq = dto.NaharNezereAlinmasin ? 225 : 180;   // 3s45d : 3s
+                if (icazeDeq > maxDeq)
+                    return Result<IcazeListDto>.Fail(
+                        dto.NaharNezereAlinmasin
+                            ? "Nahar icazəyə qatıldıqda icazə 3 saat 45 dəqiqədən çox ola bilməz."
+                            : "İcazə 3 saatdan çox ola bilməz. Nahara çıxmırsınızsa müraciətdə qeyd edin (max 3 saat 45 dəqiqə).");
+
                 // YENİ AXİN:
                 //   Rəhbər müraciəti   → birbaşa Tesdiqlenib (özü Rəhbər olduğu üçün)
                 //   HR müraciəti        → birbaşa Tesdiqlenib (özü HR olduğu üçün)
@@ -121,6 +134,7 @@ namespace FinNex.Application.Services
                     BaslamaSaati = dto.BaslamaSaati,
                     BitisSaati = dto.BitisSaati,
                     Sebeb = dto.Sebeb,
+                    NaharNezereAlinmasin = dto.NaharNezereAlinmasin,
                     Status = ilkinStatus
                 };
 

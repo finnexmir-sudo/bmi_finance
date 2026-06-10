@@ -19,8 +19,12 @@ namespace FinNex.Application.DTOs.HR.Icaze
         [Required(ErrorMessage = "Bitmə saatı seçilməlidir")]
         public TimeSpan BitisSaati { get; set; }
 
+        [Required(ErrorMessage = "Səbəb mütləq qeyd edilməlidir")]
         [MaxLength(500, ErrorMessage = "Səbəb 500 simvoldan çox ola bilməz")]
         public string? Sebeb { get; set; }
+
+        // Nahar fasiləsini icazəyə qatır (işçi nahara çıxmır) — max 3 saat 45 dəqiqəyə imkan verir
+        public bool NaharNezereAlinmasin { get; set; } = false;
 
         // Rol əsaslı workflow — controller tərəfindən doldurulur
         public bool MuracietSahibiRehberdirmi { get; set; }
