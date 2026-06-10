@@ -126,6 +126,30 @@ public class ADMSController : Controller
 
             var tarix = vaxt.Date;
 
+            // Xam cihaz oxumasını saxla — BÜTÜN punch-lar (icazə/ezamiyyət çıxış-qayıdışını
+            // sonradan, təsdiqdən sonra və qayıdan işçidə də dəqiq bərpa etmək üçün).
+            // Eyni oxuma (işçi+vaxt) təkrar gəlsə yazılmır.
+            try
+            {
+                bool oxumaVar = await _db.Set<CihazOxuma>()
+                    .AnyAsync(o => o.IsciId == isciId && o.Vaxt == vaxt);
+                if (!oxumaVar)
+                {
+                    await _db.Set<CihazOxuma>().AddAsync(new CihazOxuma
+                    {
+                        IsciId   = isciId,
+                        Vaxt     = vaxt,
+                        Nov      = nov,
+                        Girisdir = girisdir
+                    });
+                    await _db.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CihazOxuma saxlama xətası: IsciId={IsciId}, Vaxt={Vaxt}", isciId, vaxt);
+            }
+
             // İş parametrləri — gecikme toleransı + erkən çıxış
             TimeSpan standartGiris;
             TimeSpan gecikTolerans;
