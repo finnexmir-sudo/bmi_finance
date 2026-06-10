@@ -24,8 +24,10 @@ namespace FinNex.Application.DTOs.HR.Ezamiyyet
         public string?  RehberTamAd         { get; set; }
         public DateTime? RehberTesdiqTarixi { get; set; }
         public string?  RehberQeydi         { get; set; }
-        public string?  GeriDonusQeydi      { get; set; }
-        public DateTime YaradilmaTarixi     { get; set; }
+        public string?   GeriDonusQeydi      { get; set; }
+        public DateTime? CihazCixisVaxti    { get; set; }
+        public DateTime? CihazQayidisVaxti  { get; set; }
+        public DateTime  YaradilmaTarixi    { get; set; }
 
         public int GunSayi => (BitmeTarixi.Date - BaslamaTarixi.Date).Days + 1;
 

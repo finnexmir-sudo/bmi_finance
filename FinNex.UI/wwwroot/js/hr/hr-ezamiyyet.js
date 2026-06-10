@@ -37,6 +37,12 @@ async function ezYukle() {
     tbody.innerHTML = data.map(function (r) {
         var st = ezStatusBadge(r.status);
         var tarix = r.baslamaTarixi + (r.baslamaTarixi !== r.bitmeTarixi ? '<br><small style="color:#94a3b8">– ' + r.bitmeTarixi + '</small>' : '');
+        if (r.cihazCixisVaxti) {
+            tarix += '<br><small style="color:#6366f1"><i class="bi bi-box-arrow-right"></i> ' + r.cihazCixisVaxti + '</small>';
+            tarix += r.cihazQayidisVaxti
+                ? '<br><small style="color:#22c55e"><i class="bi bi-box-arrow-in-left"></i> ' + r.cihazQayidisVaxti + '</small>'
+                : '<br><small style="color:#f59e0b"><i class="bi bi-hourglass-split"></i> qayıtmayıb</small>';
+        }
         var sened = r.senedYolu
             ? '<a href="/dms/' + r.senedYolu + '" download="' + ezEsc(r.senedAd || 'sened') + '" style="color:#6366f1;font-size:12px"><i class="bi bi-paperclip"></i> ' + (r.senedAd || 'Sənəd') + '</a>'
             : '<span style="color:#94a3b8">—</span>';
