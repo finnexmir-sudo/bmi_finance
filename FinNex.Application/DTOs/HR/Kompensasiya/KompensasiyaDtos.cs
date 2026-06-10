@@ -70,6 +70,12 @@ namespace FinNex.Application.DTOs.HR.Kompensasiya
         public int HesablananIl { get; set; }
         public int HesablananAy { get; set; }
         public string? Qeyd { get; set; }
+
+        /// <summary>
+        /// Manual override — boş buraxılsa avtomatik (qalıq + prorate) hesablanır.
+        /// Doldurulsa yalnız bu gün sayı kompensasiya olunur (gündəlik rate eyni qalır).
+        /// </summary>
+        public decimal? ManualGunSayi { get; set; }
     }
 
     /// <summary>

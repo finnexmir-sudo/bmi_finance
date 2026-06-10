@@ -27,6 +27,10 @@ namespace FinNex.UI.Areas.HR.ViewModels.Kompensasiya
         [StringLength(500)]
         public string? Qeyd { get; set; }
 
+        [Display(Name = "Kompensasiya günü (qismi)")]
+        [Range(0, 365, ErrorMessage = "Gün sayı 0–365 aralığında olmalıdır")]
+        public decimal? ManualGunSayi { get; set; }
+
         public List<SelectListItem> Isciler { get; set; } = new();
     }
 }

@@ -310,6 +310,23 @@ namespace FinNex.Application.Services.HR
                     return Result<int>.Fail(calc.Message ?? "Hesablama uğursuz.");
 
                 var c = calc.Data;
+
+                // Manual override (qismi kompensasiya) — HR yalnız müəyyən gün sayını
+                // kompensasiya etmək istəsə (məs. işçi aktiv qalır, qalan günlərin bir
+                // hissəsini pulla alır). Boş buraxılsa avtomatik (tam) hesablanır.
+                // Gündəlik rate eyni qalır, yalnız gün sayı dəyişir.
+                decimal cemiGun = c.CemiKompensasiyaGun;
+                decimal cemiMebleg = c.CemiMebleg;
+                string? autoOverrideQeyd = null;
+                if (dto.ManualGunSayi.HasValue && dto.ManualGunSayi.Value > 0)
+                {
+                    cemiGun = dto.ManualGunSayi.Value;
+                    cemiMebleg = Math.Round(cemiGun * c.GunlukRate, 2);
+                    autoOverrideQeyd =
+                        $"Manual override: {cemiGun:N2} gün × {c.GunlukRate:N4} ₼/gün = {cemiMebleg:N2} ₼ " +
+                        $"(avtomatik hesablanan {c.CemiKompensasiyaGun:N2} gün override olundu).";
+                }
+
                 var entity = new MezuniyyetKompensasiyasi
                 {
                     IsciId = dto.IsciId,
@@ -319,16 +336,20 @@ namespace FinNex.Application.Services.HR
                     KecenGunSayi = c.KecenGunSayi,
                     KecmisQaligGun = c.KecmisQaligGun,
                     CariIlProrateGun = c.CariIlProrateGun,
-                    CemiKompensasiyaGun = c.CemiKompensasiyaGun,
+                    CemiKompensasiyaGun = cemiGun,
                     Son12AyDuzelmisQazanc = c.Son12AyDuzelmisQazanc,
                     GunlukMezPul = c.GunlukMezPul,
                     GunlukMaas = c.GunlukMaas,
                     GunlukRate = c.GunlukRate,
-                    CemiMebleg = c.CemiMebleg,
+                    CemiMebleg = cemiMebleg,
                     HesablananIl = dto.HesablananIl,
                     HesablananAy = dto.HesablananAy,
                     Status = KompensasiyaStatus.Layihe,
-                    Qeyd = dto.Qeyd?.Trim(),
+                    Qeyd = string.IsNullOrWhiteSpace(autoOverrideQeyd)
+                        ? dto.Qeyd?.Trim()
+                        : (string.IsNullOrWhiteSpace(dto.Qeyd)
+                            ? autoOverrideQeyd
+                            : dto.Qeyd.Trim() + Environment.NewLine + autoOverrideQeyd),
                     HesablayanIsciId = hesablayanIsciId,
                     YaradanIcraciId = hesablayanIsciId,
                     YaradilmaTarixi = DateTime.Now

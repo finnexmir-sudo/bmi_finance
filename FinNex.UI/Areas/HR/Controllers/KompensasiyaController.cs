@@ -71,7 +71,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 AyrilmaTarixi = vm.AyrilmaTarixi,
                 HesablananIl = vm.HesablananIl,
                 HesablananAy = vm.HesablananAy,
-                Qeyd = vm.Qeyd
+                Qeyd = vm.Qeyd,
+                ManualGunSayi = vm.ManualGunSayi
             };
             var r = await _service.YaratAsync(dto, hesablayanIsciId);
             if (!r.Success)
