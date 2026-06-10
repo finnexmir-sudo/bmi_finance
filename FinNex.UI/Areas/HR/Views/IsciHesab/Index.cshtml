@@ -2,52 +2,57 @@
 @model IList<IsciHesabDto>
 @{
     ViewData["Title"] = "Bank Hesab Nömrələri";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 }
 
-<div class="fn-page">
+@section Styles {
+    <link rel="stylesheet" href="~/css/hr/isci-hesab.css" asp-append-version="true" />
+}
+
+<div class="bh-page">
     @Html.AntiForgeryToken()
 
-    <div class="fn-page-head">
+    <div class="bh-head">
         <div>
-            <div class="fn-page-title">Bank Hesab Nömrələri</div>
-            <div class="fn-page-sub">İşçilərin bank hesab nömrələrini idarə edin</div>
+            <div class="bh-title">Bank Hesab Nömrələri</div>
+            <div class="bh-sub">İşçilərin bank hesab nömrələrini daxil edin və ya yeniləyin</div>
         </div>
     </div>
 
-    <div id="hesab-alert" style="display:none;margin-bottom:12px;" class="fn-alert"></div>
+    <div id="bh-alert" class="bh-alert"></div>
 
-    <div class="fn-card" style="overflow:auto;">
-        <table class="fn-table">
+    <div class="bh-card">
+        <table class="bh-table">
             <thead>
                 <tr>
-                    <th style="width:40px;">#</th>
+                    <th class="bh-num">#</th>
                     <th>Ad Soyad</th>
                     <th>Departament</th>
-                    <th style="min-width:260px;">Hesab Nömrəsi</th>
-                    <th style="width:110px;"></th>
+                    <th style="min-width:280px;">Hesab Nömrəsi</th>
+                    <th style="width:120px;"></th>
                 </tr>
             </thead>
             <tbody>
                 @for (int i = 0; i < Model.Count; i++)
                 {
                     var isci = Model[i];
-                    <tr id="row-@isci.IsciId">
-                        <td class="fn-td-muted">@(i + 1)</td>
-                        <td><strong>@isci.TamAd</strong></td>
-                        <td class="fn-td-muted">@(isci.Departament ?? "—")</td>
+                    <tr>
+                        <td class="bh-num">@(i + 1)</td>
+                        <td class="bh-name">@isci.TamAd</td>
+                        <td class="bh-dept">@(isci.Departament ?? "—")</td>
                         <td>
                             <input type="text"
-                                   class="fn-input hesab-input"
+                                   class="bh-input"
                                    data-isci-id="@isci.IsciId"
                                    value="@isci.BankHesabNo"
                                    placeholder="Hesab nömrəsi daxil edin"
-                                   maxlength="34"
-                                   style="font-family:monospace;text-transform:uppercase;" />
+                                   maxlength="34" />
                         </td>
                         <td>
-                            <button class="fn-btn fn-btn--sm fn-btn--primary saxla-btn"
-                                    data-isci-id="@isci.IsciId"
-                                    type="button">
+                            <button class="bh-btn" type="button" data-isci-id="@isci.IsciId">
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                    <path d="M2 6.5l2.5 2.5 5.5-5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
                                 Yadda saxla
                             </button>
                         </td>
@@ -56,50 +61,42 @@
             </tbody>
         </table>
     </div>
-
 </div>
 
 @section Scripts {
     <script>
-        document.querySelectorAll('.saxla-btn').forEach(btn => {
+        document.querySelectorAll('.bh-btn').forEach(btn => {
             btn.addEventListener('click', async function () {
-                const isciId = this.dataset.isciId;
-                const input  = document.querySelector(`.hesab-input[data-isci-id="${isciId}"]`);
-                const hesab  = input.value.trim().toUpperCase();
+                const id    = this.dataset.isciId;
+                const input = document.querySelector(`.bh-input[data-isci-id="${id}"]`);
+                const hesab = input.value.trim().toUpperCase();
 
                 this.disabled = true;
-                this.textContent = '...';
+                this.innerHTML = '...';
+
+                const fd = new FormData();
+                fd.append('isciId', id);
+                fd.append('hesab', hesab);
+                fd.append('__RequestVerificationToken',
+                    document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '');
 
                 try {
-                    const fd = new FormData();
-                    fd.append('isciId', isciId);
-                    fd.append('hesab', hesab);
-                    fd.append('__RequestVerificationToken', getToken());
-
-                    const res  = await fetch('@Url.Action("Saxla", "IsciHesab", new { area = "HR" })', {
-                        method: 'POST',
-                        body: fd
-                    });
+                    const res  = await fetch('@Url.Action("Saxla", "IsciHesab", new { area = "HR" })', { method: 'POST', body: fd });
                     const data = await res.json();
-
-                    showAlert(data.ok, data.ok ? 'Yadda saxlandı.' : (data.error || 'Xəta baş verdi.'));
                     if (data.ok) input.value = hesab;
+                    showAlert(data.ok, data.ok ? 'Yadda saxlandı.' : (data.error ?? 'Xəta baş verdi.'));
                 } catch {
                     showAlert(false, 'Sorğu göndərilmədi.');
                 } finally {
                     this.disabled = false;
-                    this.textContent = 'Yadda saxla';
+                    this.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6.5l2.5 2.5 5.5-5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Yadda saxla';
                 }
             });
         });
 
-        function getToken() {
-            return document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
-        }
-
         function showAlert(ok, msg) {
-            const el = document.getElementById('hesab-alert');
-            el.className = 'fn-alert ' + (ok ? 'fn-alert--success' : 'fn-alert--error');
+            const el = document.getElementById('bh-alert');
+            el.className = 'bh-alert ' + (ok ? 'bh-alert--ok' : 'bh-alert--err');
             el.textContent = msg;
             el.style.display = 'block';
             setTimeout(() => { el.style.display = 'none'; }, 3000);
