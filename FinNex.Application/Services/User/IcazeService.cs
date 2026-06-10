@@ -799,6 +799,50 @@ namespace FinNex.Application.Services
                     - (double)x.JetonOdenenSaat
                     - (x.NaharNezereAlinmasin ? naharSaat : 0));
 
+                // ── Fallback: bağlanmamış (Gözlənir) icazədə cihaz çıxışını Davamiyyətdən göstər ──
+                // Dövriyyə ilə eyni məntiq — canlı hook işləməyibsə (seed/təsdiqdən əvvəl oxuma),
+                // həmin günün Davamiyyət çıxışı icazə pəncərəsinin içindədirsə çıxış kimi göstərilir.
+                var izEksikler = list
+                    .Where(ic => ic.CixisGiris != null
+                              && ic.CixisGiris.CixisVaxt == null
+                              && ic.CixisGiris.Status == IcazeCixisGirisStatus.Gozlenir)
+                    .ToList();
+
+                var davCixisMap = new Dictionary<string, DateTime>();
+                if (izEksikler.Count > 0)
+                {
+                    var isciIdler = izEksikler.Select(ic => ic.IsciId).Distinct().ToList();
+                    var minT = izEksikler.Min(ic => ic.IcazeTarixi.Date);
+                    var maxT = izEksikler.Max(ic => ic.IcazeTarixi.Date);
+
+                    var davlar = await _unitOfWork.Repository<Davamiyyet>()
+                        .Query()
+                        .AsNoTracking()
+                        .Where(d => !d.Silinib && isciIdler.Contains(d.IsciId)
+                                 && d.Tarix.Date >= minT && d.Tarix.Date <= maxT
+                                 && d.CixisVaxti != null)
+                        .Select(d => new { d.IsciId, Tarix = d.Tarix.Date, d.CixisVaxti })
+                        .ToListAsync();
+
+                    davCixisMap = davlar
+                        .GroupBy(d => $"{d.IsciId}|{d.Tarix:yyyy-MM-dd}")
+                        .ToDictionary(g => g.Key, g => g.Max(d => d.CixisVaxti!.Value));
+                }
+
+                DateTime? IzlemeCixisGoster(Icaze ic)
+                {
+                    if (ic.CixisGiris == null || ic.CixisGiris.CixisVaxt != null ||
+                        ic.CixisGiris.Status != IcazeCixisGirisStatus.Gozlenir)
+                        return null;
+                    var key = $"{ic.IsciId}|{ic.IcazeTarixi:yyyy-MM-dd}";
+                    if (!davCixisMap.TryGetValue(key, out var dcx)) return null;
+                    var t = dcx.TimeOfDay;
+                    if (t >= ic.BaslamaSaati - TimeSpan.FromMinutes(15) &&
+                        t <= ic.BitisSaati  + TimeSpan.FromMinutes(15))
+                        return dcx;
+                    return null;
+                }
+
                 var grouped = list
                     .GroupBy(x => x.IsciId)
                     .Select(g =>
@@ -822,7 +866,13 @@ namespace FinNex.Application.Services
                             UmumSaat = g.Sum(x => EfektivSaat(x)),
                             TesdiqSaat = g.Where(x => x.Status == IcazeStatus.Tesdiqlenib).Sum(x => EfektivSaat(x)),
                             SonIcazeTarixi = g.Max(x => (DateTime?)x.IcazeTarixi),
-                            Icazeler = g.OrderByDescending(x => x.IcazeTarixi).Select(MapToListDto).ToList(),
+                            Icazeler = g.OrderByDescending(x => x.IcazeTarixi).Select(x =>
+                            {
+                                var dto = MapToListDto(x);
+                                var faktikiCixis = IzlemeCixisGoster(x);
+                                if (faktikiCixis != null) dto.CixisVaxt = faktikiCixis;
+                                return dto;
+                            }).ToList(),
                         };
                     })
                     .OrderBy(x => x.SobeAdi).ThenBy(x => x.IsciAdSoyad)
