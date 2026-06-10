@@ -105,6 +105,10 @@
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/><path d="M6 3.5v3l2 1.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
             Ən çox saat
         </a>
+        <a href="@SortUrl("faktiki")" class="iz-sort-btn @(sirala == "faktiki" ? "active" : "")">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/><path d="M3.5 6.5l1.8 1.8L8.5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Ən çox faktiki
+        </a>
         <a href="@SortUrl("imtina")" class="iz-sort-btn @(sirala == "imtina" ? "active" : "")">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/><path d="M4 4l4 4M8 4l-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
             Ən çox imtina
@@ -207,6 +211,7 @@
                             <th>Gözləmədə</th>
                             <th>İmtina</th>
                             <th>Təsdiq saatı</th>
+                            <th>Faktiki saat</th>
                             <th>Son icazə</th>
                         </tr>
                     </thead>
@@ -256,6 +261,17 @@
                                     <span class="iz-saat">@ist.TesdiqSaat.ToString("0.#")</span>
                                     <span class="iz-saat-lbl"> saat</span>
                                 </td>
+                                <td title="Cihazdan faktiki çıxış–qayıdış müddətlərinin cəmi">
+                                    @if (ist.FaktikiSaat > 0)
+                                    {
+                                        <span class="iz-saat" style="color:#2d6cdf">@ist.FaktikiSaat.ToString("0.#")</span>
+                                        <span class="iz-saat-lbl"> saat</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="iz-saat-lbl">—</span>
+                                    }
+                                </td>
                                 <td class="iz-isci-sub">
                                     @(ist.SonIcazeTarixi?.ToString("dd.MM.yyyy") ?? "—")
                                 </td>
@@ -263,7 +279,7 @@
 
                             @* Genişlənmiş detay sıra *@
                             <tr class="iz-detail-row" id="@detailId">
-                                <td colspan="10">
+                                <td colspan="11">
                                     <div class="iz-detail-inner">
                                         <div class="iz-detail-title">@ist.IsciAdSoyad — İcazələr (@ist.CemiMuraciet)</div>
                                         @if (ist.Icazeler.Any())

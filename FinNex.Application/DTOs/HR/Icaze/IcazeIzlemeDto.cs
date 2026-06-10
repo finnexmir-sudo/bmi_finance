@@ -15,6 +15,9 @@ namespace FinNex.Application.DTOs.HR.Icaze
         public double UmumSaat { get; set; }
         public double TesdiqSaat { get; set; }
 
+        // Faktiki cihaz müddətlərinin cəmi (qayıdış − çıxış) — yalnız datası olan icazələr
+        public double FaktikiSaat { get; set; }
+
         public DateTime? SonIcazeTarixi { get; set; }
 
         public List<IcazeListDto> Icazeler { get; set; } = new();

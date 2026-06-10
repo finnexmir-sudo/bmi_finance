@@ -205,6 +205,7 @@ namespace FinNex.UI.Areas.User.Controllers
             {
                 "cemi"   => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
                 "saat"   => isciler.OrderByDescending(x => x.TesdiqSaat).ToList(),
+                "faktiki"=> isciler.OrderByDescending(x => x.FaktikiSaat).ToList(),
                 "imtina" => isciler.OrderByDescending(x => x.ImtinaEdildiSayi).ToList(),
                 _        => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
             };

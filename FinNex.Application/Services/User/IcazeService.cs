@@ -886,6 +886,21 @@ namespace FinNex.Application.Services
                     {
                         var ilk = g.First();
                         var aktivTeyinat = ilk.Isci?.IsciTeyinatlari?.FirstOrDefault(t => t.Aktivdir);
+
+                        var icazeDtolar = g.OrderByDescending(x => x.IcazeTarixi).Select(x =>
+                        {
+                            var dto = MapToListDto(x);
+                            if (x.CixisGiris != null && x.CixisGiris.CixisVaxt == null &&
+                                x.CixisGiris.Status == IcazeCixisGirisStatus.Gozlenir)
+                            {
+                                var (fcx, fqy) = IcazeFaktikiBerpa(x.IsciId, x.IcazeTarixi,
+                                    x.BaslamaSaati, x.BitisSaati, rawXerite, davXerite);
+                                if (fcx != null) dto.CixisVaxt = fcx;
+                                if (fqy != null) dto.QayidisVaxt = fqy;
+                            }
+                            return dto;
+                        }).ToList();
+
                         return new IcazeIsciIstatistikDto
                         {
                             IsciId = g.Key,
@@ -902,20 +917,12 @@ namespace FinNex.Application.Services
                             ImtinaEdildiSayi = g.Count(x => x.Status == IcazeStatus.ImtinaEdildi),
                             UmumSaat = g.Sum(x => EfektivSaat(x)),
                             TesdiqSaat = g.Where(x => x.Status == IcazeStatus.Tesdiqlenib).Sum(x => EfektivSaat(x)),
+                            FaktikiSaat = icazeDtolar
+                                .Where(d => !d.Birdefelik && d.CixisVaxt.HasValue && d.QayidisVaxt.HasValue
+                                         && d.QayidisVaxt.Value > d.CixisVaxt.Value)
+                                .Sum(d => (d.QayidisVaxt!.Value - d.CixisVaxt!.Value).TotalHours),
                             SonIcazeTarixi = g.Max(x => (DateTime?)x.IcazeTarixi),
-                            Icazeler = g.OrderByDescending(x => x.IcazeTarixi).Select(x =>
-                            {
-                                var dto = MapToListDto(x);
-                                if (x.CixisGiris != null && x.CixisGiris.CixisVaxt == null &&
-                                    x.CixisGiris.Status == IcazeCixisGirisStatus.Gozlenir)
-                                {
-                                    var (fcx, fqy) = IcazeFaktikiBerpa(x.IsciId, x.IcazeTarixi,
-                                        x.BaslamaSaati, x.BitisSaati, rawXerite, davXerite);
-                                    if (fcx != null) dto.CixisVaxt = fcx;
-                                    if (fqy != null) dto.QayidisVaxt = fqy;
-                                }
-                                return dto;
-                            }).ToList(),
+                            Icazeler = icazeDtolar,
                         };
                     })
                     .OrderBy(x => x.SobeAdi).ThenBy(x => x.IsciAdSoyad)
