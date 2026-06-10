@@ -75,7 +75,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 x.SenedYolu, x.SenedAd,
                 x.Qeyd, x.RehberTamAd,
                 rehberTesdiqTarixi = x.RehberTesdiqTarixi?.ToString("dd.MM.yyyy HH:mm"),
-                x.RehberQeydi,
+                x.RehberQeydi, x.GeriDonusQeydi,
                 yaradilmaTarixi    = x.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")
             }));
         }

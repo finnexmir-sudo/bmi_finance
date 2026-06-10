@@ -193,6 +193,27 @@ namespace FinNex.Application.Services.HR
             return (true, null);
         }
 
+        // ── Geri dönüş notu ───────────────────────────────────
+
+        public async Task<(bool ok, string? error)> GeriQeydElavEtAsync(int id, int isciId, string? qeyd)
+        {
+            var entity = await _uow.Repository<EzamiyyetMuraciet>()
+                .Query()
+                .FirstOrDefaultAsync(x => x.Id == id && x.IsciId == isciId && !x.Silinib);
+            if (entity == null)
+                return (false, "Müraciət tapılmadı.");
+            if (entity.Status != EzamiyyetStatus.Tesdiqlendi)
+                return (false, "Yalnız təsdiqlənmiş ezamiyyətlərə not əlavə edilə bilər.");
+            if (entity.BitmeTarixi.Date > DateTime.Today)
+                return (false, "Ezamiyyət hələ bitməyib.");
+
+            entity.GeriDonusQeydi  = qeyd?.Trim();
+            entity.YenilenmeTarixi = DateTime.Now;
+            await _uow.Repository<EzamiyyetMuraciet>().YenileAsync(entity);
+            await _uow.YaddaSaxlaAsync();
+            return (true, null);
+        }
+
         // ── Məkan ─────────────────────────────────────────────
 
         public async Task<IList<EzamiyyetMekanListDto>> MekanlarAsync()
@@ -327,6 +348,7 @@ namespace FinNex.Application.Services.HR
                 RehberTamAd         = x.Rehber?.TamAd,
                 RehberTesdiqTarixi  = x.RehberTesdiqTarixi,
                 RehberQeydi         = x.RehberQeydi,
+                GeriDonusQeydi      = x.GeriDonusQeydi,
                 YaradilmaTarixi     = x.YaradilmaTarixi
             };
         }

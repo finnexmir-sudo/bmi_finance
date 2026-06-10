@@ -31,8 +31,7 @@ namespace FinNex.Domain.Entities.HR
         public DateTime? RehberTesdiqTarixi  { get; set; }
         public string?   RehberQeydi         { get; set; }
 
-        // ADMS cihaz izləmə — ezamiyyət çıxış/qayıdış
-        public DateTime? CihazCixisVaxti   { get; set; }
-        public DateTime? CihazQayidisVaxti { get; set; }
+        // Geri dönüş notu — işçi ezamiyyətdən qayıtdıqdan sonra əlavə edir
+        public string? GeriDonusQeydi { get; set; }
     }
 }

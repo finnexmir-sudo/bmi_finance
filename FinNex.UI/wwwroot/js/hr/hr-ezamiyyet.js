@@ -24,21 +24,18 @@ async function ezYukle() {
     if (s)      p.append('son', s);
 
     var tbody = document.getElementById('ezTbody');
-    tbody.innerHTML = '<tr><td colspan="8" style="padding:20px;text-align:center;color:#94a3b8">Yüklənir…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:#94a3b8">Yüklənir…</td></tr>';
 
     var res  = await fetch('/HR/Ezamiyyet/GetMuracietler?' + p.toString());
     var data = await res.json();
 
     if (!data.length) {
-        tbody.innerHTML = '<tr><td colspan="8" style="padding:20px;text-align:center;color:#94a3b8">Müraciət yoxdur.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:#94a3b8">Müraciət yoxdur.</td></tr>';
         return;
     }
 
     tbody.innerHTML = data.map(function (r) {
         var st = ezStatusBadge(r.status);
-        var saat = (r.baslamaSaati && r.bitisSaati)
-            ? '<span style="font-size:12px;color:#374151">' + r.baslamaSaati + '–' + r.bitisSaati + '</span>'
-            : '<span style="color:#94a3b8;font-size:11px">Tam gün</span>';
         var tarix = r.baslamaTarixi + (r.baslamaTarixi !== r.bitmeTarixi ? '<br><small style="color:#94a3b8">– ' + r.bitmeTarixi + '</small>' : '');
         var sened = r.senedYolu
             ? '<a href="/dms/' + r.senedYolu + '" download="' + ezEsc(r.senedAd || 'sened') + '" style="color:#6366f1;font-size:12px"><i class="bi bi-paperclip"></i> ' + (r.senedAd || 'Sənəd') + '</a>'
@@ -47,6 +44,9 @@ async function ezYukle() {
             ? '<button class="fn-btn fn-btn--outline fn-btn--sm" onclick="ezOpenModal(' + r.id + ',\'' + ezEsc(r.isciTamAd) + '\',\'' + ezEsc(r.baslig) + '\',\'' + ezEsc(r.mekanAd) + '\',\'' + r.baslamaTarixi + '\',\'' + r.bitmeTarixi + '\')">' +
               '<i class="bi bi-check-square"></i> Bax</button>'
             : '<span style="font-size:11px;color:#94a3b8">' + (r.rehberTamAd ? r.rehberTamAd + '<br>' + (r.rehberTesdiqTarixi || '') : '') + '</span>';
+        var geriNot = r.geriDonusQeydi
+            ? '<div style="margin-top:4px;font-size:11px;color:#166534;background:#f0fdf4;padding:3px 7px;border-radius:5px"><i class="bi bi-check2-circle"></i> ' + ezEsc(r.geriDonusQeydi) + '</div>'
+            : '';
 
         return '<tr style="border-top:1px solid #f1f5f9">' +
             '<td style="padding:10px 14px"><strong>' + r.isciTamAd + '</strong>' +
@@ -54,9 +54,9 @@ async function ezYukle() {
             '<td style="padding:10px 14px;color:#0f172a">' + r.baslig + '</td>' +
             '<td style="padding:10px 14px;color:#374151"><i class="bi bi-geo-alt text-muted"></i> ' + r.mekanAd + '</td>' +
             '<td style="padding:10px 14px;white-space:nowrap">' + tarix + '<br><small style="color:#6366f1">' + r.gunSayi + ' gün</small></td>' +
-            '<td style="padding:10px 14px">' + saat + '</td>' +
             '<td style="padding:10px 14px">' + st +
-                (r.rehberQeydi && r.status === 3 ? '<br><small style="color:#ef4444">' + r.rehberQeydi + '</small>' : '') + '</td>' +
+                (r.rehberQeydi && r.status === 3 ? '<br><small style="color:#ef4444">' + r.rehberQeydi + '</small>' : '') +
+                geriNot + '</td>' +
             '<td style="padding:10px 14px">' + sened + '</td>' +
             '<td style="padding:10px 14px">' + emel + '</td>' +
             '</tr>';

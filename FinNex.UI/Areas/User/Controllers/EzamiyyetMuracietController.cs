@@ -77,6 +77,17 @@ namespace FinNex.UI.Areas.User.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GeriQeyd(int id, string? qeyd)
+        {
+            var isciId = await GetIsciIdAsync();
+            if (isciId == null) return Unauthorized();
+            var (ok, error) = await _service.GeriQeydElavEtAsync(id, isciId.Value, qeyd);
+            TempData[ok ? "Success" : "Error"] = ok ? "Geri dönüş notu saxlandı." : error;
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
         public async Task<IActionResult> Legvet(int id)
         {
             var isciId = await GetIsciIdAsync();
