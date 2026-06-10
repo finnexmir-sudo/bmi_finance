@@ -501,45 +501,25 @@ namespace FinNex.Application.Services
                 return Result.Ok("Rəhbər qərarı qeydə alındı.");
             }
 
-            // Müraciətçinin HR rolu varmı? Varsa bu addımda bitir
-            var muracietciHrdir = await _unitOfWork.Repository<IsciStrukturRolu>()
-                .MovcuddurmuAsync(x =>
-                    x.IsciId == icaze.IsciId &&
-                    x.RolTipi == StrukturRolTipi.Hr &&
-                    x.Aktivdir);
-
-            icaze.Status = muracietciHrdir ? IcazeStatus.Tesdiqlenib : IcazeStatus.HrTesdiqinde;
-
-            if (muracietciHrdir)
-            {
-                icaze.Birdefelik = icaze.Birdefelik; // HR olmadığı üçün birdefelik burda false qalır
-                icaze.HrTesdiq = true;
-                icaze.HrTesdiqTarixi = DateTime.Now;
-            }
+            // Rəhbər SON təsdiqdir — HR addımı çıxarıldı (təsdiq rəhbərlə yekunlaşır).
+            icaze.Status = IcazeStatus.Tesdiqlenib;
 
             await _unitOfWork.Repository<Icaze>().YenileAsync(icaze);
             await _unitOfWork.YaddaSaxlaAsync();
 
             await NotifyIsciProgressAsync(icaze, "Rəhbər", true, qeyd);
 
-            if (icaze.Status == IcazeStatus.Tesdiqlenib)
-            {
-                // HR müraciət edib, Rəhbər təsdiqlədi → birbaşa tesdiqlenib.
-                // Jeton miqdarı varsa indicə FIFO ilə xərclənir.
-                var jetonRes = await _ConsumeJetonsForIcazeAsync(icaze);
-                if (!jetonRes.Success)
-                    return Result.Fail(jetonRes.Message ?? "Jeton xərclənmə xətası.");
+            // Finalization — rəhbər son təsdiq olduğu üçün həmişə icra olunur:
+            // jeton FIFO xərclənir, çıxış/giriş qeydi yaranır, gecikmə yenilənir,
+            // şöbə rəisi və HR məlumatlandırılır.
+            var jetonRes = await _ConsumeJetonsForIcazeAsync(icaze);
+            if (!jetonRes.Success)
+                return Result.Fail(jetonRes.Message ?? "Jeton xərclənmə xətası.");
 
-                await _YaratCixisGirisAsync(icaze.Id, icaze.Birdefelik);
-                await _GecikmeYenileAsync(icaze);
-                await NotifySobeReisiAsync(icaze);
-                await NotifyHrMalumatAsync(icaze);
-            }
-            else
-            {
-                // Normal işçi — HR-a göndər
-                await NotifyAllHrAsync(icaze);
-            }
+            await _YaratCixisGirisAsync(icaze.Id, icaze.Birdefelik);
+            await _GecikmeYenileAsync(icaze);
+            await NotifySobeReisiAsync(icaze);
+            await NotifyHrMalumatAsync(icaze);
 
             return Result.Ok("Rəhbər qərarı qeydə alındı.");
         }
@@ -807,6 +787,18 @@ namespace FinNex.Application.Services
                             .Include(i => i.CixisGiris),
                         izlemeden: true);
 
+                // Nahar müddəti (saat) — nahar icazəyə qatılıbsa icazə saatından çıxılır
+                // (işçi nahar haqqını istifadə etməyib).
+                var izParam = await _unitOfWork.Repository<IsParametri>()
+                    .Query().AsNoTracking().Where(x => !x.Silinib).FirstOrDefaultAsync();
+                double naharSaat = (izParam?.NaharMuddetDeqiqe ?? 45) / 60.0;
+
+                // Effektiv icazə saatı = xam saat − jeton (bonus, sayılmır) − nahar (istifadə edilməyib)
+                double EfektivSaat(Icaze x) => Math.Max(0,
+                    x.IcazeSaati
+                    - (double)x.JetonOdenenSaat
+                    - (x.NaharNezereAlinmasin ? naharSaat : 0));
+
                 var grouped = list
                     .GroupBy(x => x.IsciId)
                     .Select(g =>
@@ -827,8 +819,8 @@ namespace FinNex.Application.Services
                                 x.Status == IcazeStatus.RehberTesdiqinde ||
                                 x.Status == IcazeStatus.HrTesdiqinde),
                             ImtinaEdildiSayi = g.Count(x => x.Status == IcazeStatus.ImtinaEdildi),
-                            UmumSaat = g.Sum(x => x.IcazeSaati),
-                            TesdiqSaat = g.Where(x => x.Status == IcazeStatus.Tesdiqlenib).Sum(x => x.IcazeSaati),
+                            UmumSaat = g.Sum(x => EfektivSaat(x)),
+                            TesdiqSaat = g.Where(x => x.Status == IcazeStatus.Tesdiqlenib).Sum(x => EfektivSaat(x)),
                             SonIcazeTarixi = g.Max(x => (DateTime?)x.IcazeTarixi),
                             Icazeler = g.OrderByDescending(x => x.IcazeTarixi).Select(MapToListDto).ToList(),
                         };
