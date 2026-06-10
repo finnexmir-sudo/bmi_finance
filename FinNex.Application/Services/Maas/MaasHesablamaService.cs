@@ -200,6 +200,40 @@ namespace FinNex.Application.Services.HR
                 });
             }
 
+            // 5a. MƏZUNIYYƏT KOMPENSASİYASI (varsa) — istifadə edilməmiş əmək məzuniyyəti
+            //     günlərinə görə kompensasiya /HR/Kompensasiya səhifəsində hesablanıb
+            //     Layihe/Tesdiqlenib statusunda saxlanılır. Maaş hesablananda gəlir kimi
+            //     BRUT-a əlavə olunur (vergi tutulur, NET-də əks olunur); maaş saxlandıqdan
+            //     sonra status MaasaDaxilEdildi olur (aşağıda 15b).
+            //     DİQQƏT: dövrəvi DI-dan qaçmaq üçün IKompensasiyaService inject EDİLMİR —
+            //     cədvəl birbaşa repozitoriyadan oxunur.
+            decimal mezKompensasiyaMebleg = 0;
+            MezuniyyetKompensasiyasi? aktivKompensasiya = null;
+            try
+            {
+                aktivKompensasiya = await _unitOfWork.Repository<MezuniyyetKompensasiyasi>()
+                    .Query()
+                    .FirstOrDefaultAsync(x => x.IsciId == input.IsciId
+                                           && x.HesablananIl == input.Il
+                                           && x.HesablananAy == input.Ay
+                                           && !x.Silinib
+                                           && (x.Status == KompensasiyaStatus.Layihe
+                                            || x.Status == KompensasiyaStatus.Tesdiqlenib));
+            }
+            catch { /* kompensasiya cədvəli xətası maaş hesablamasını dayandırmasın */ }
+
+            if (aktivKompensasiya != null)
+            {
+                mezKompensasiyaMebleg = aktivKompensasiya.CemiMebleg;
+                izahatlar.Add(new HesablamaIzahiDto
+                {
+                    Addim = "İstifadə edilməmiş Məz. Kompensasiyası",
+                    Izah = $"{aktivKompensasiya.CemiKompensasiyaGun:N2} gün × {aktivKompensasiya.GunlukRate:N4} ₼/gün — /HR/Kompensasiya/Detal/{aktivKompensasiya.Id}",
+                    Mebleg = mezKompensasiyaMebleg,
+                    Tip = "gelir"
+                });
+            }
+
             // 5.1 İşdən çıxma kəsintisi — həmin ayda işdən çıxıbsa yalnız işlənmiş günlər ödənir
             decimal cixisKesintisi = 0;
             if (isci.Status == IsciStatus.IshtenCixib &&
@@ -684,6 +718,7 @@ namespace FinNex.Application.Services.HR
                 + input.VM9821Meblegi
                 - input.CerimeMeblegi
                 + korreksiyaGelir
+                + mezKompensasiyaMebleg
                 - korreksiyaKesinti;
 
             if (esasBrut < 0) esasBrut = 0;
@@ -1039,6 +1074,26 @@ namespace FinNex.Application.Services.HR
                 await _unitOfWork.YaddaSaxlaAsync();
             }
             catch { }
+
+            // 15b. Məzuniyyət kompensasiyasını bu Maas-a bağla — status MaasaDaxilEdildi,
+            //      MaasId set olunur (IsareLamasiniYadda məntiqi, dövrəvi DI olmadan).
+            if (aktivKompensasiya != null)
+            {
+                try
+                {
+                    var komp = await _unitOfWork.Repository<MezuniyyetKompensasiyasi>()
+                        .Query().FirstOrDefaultAsync(x => x.Id == aktivKompensasiya.Id);
+                    if (komp != null)
+                    {
+                        komp.Status = KompensasiyaStatus.MaasaDaxilEdildi;
+                        komp.MaasId = maas.Id;
+                        komp.YenilenmeTarixi = DateTime.Now;
+                        await _unitOfWork.Repository<MezuniyyetKompensasiyasi>().YenileAsync(komp);
+                        await _unitOfWork.YaddaSaxlaAsync();
+                    }
+                }
+                catch { /* işarələmə xətası maaşı pozmasın */ }
+            }
 
             // 16. Aylıq qazanc tarixçəsinə avtomatik əlavə (sliding window 12 ay)
             // Məzuniyyət bazası = BrutMaaş (bütün gəlir komponentləri daxildir).
