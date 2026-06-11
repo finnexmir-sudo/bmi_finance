@@ -6,9 +6,11 @@ using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.Structure;
 using FinNex.Domain.Interfaces;
+using FinNex.UI.Areas.HR.ViewModels.Ezamiyyet;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.UI.Areas.HR.Controllers
@@ -83,6 +85,46 @@ namespace FinNex.UI.Areas.HR.Controllers
                 bitmeIso          = x.BitmeTarixi.ToString("yyyy-MM-dd"),
                 yaradilmaTarixi   = x.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")
             }));
+        }
+
+        // ── İşçi-qruplu izləmə (rəhbər/HR baxışı: cəmi, gün, faktiki saat + detay) ──
+        public async Task<IActionResult> IsciIzleme(
+            DateTime? tarixFrom, DateTime? tarixTo, int? departamentId,
+            string? axtaris, int? status, string? sirala)
+        {
+            var filtr = new EzamiyyetFiltrDto
+            {
+                BaslangicTarix = tarixFrom,
+                SonTarix       = tarixTo,
+                DepartamentId  = departamentId,
+                IsciAd         = string.IsNullOrWhiteSpace(axtaris) ? null : axtaris.Trim(),
+                Status         = status.HasValue ? (EzamiyyetStatus?)status.Value : null
+            };
+
+            var isciler = await _service.GetIsciEzamIzlemeAsync(filtr);
+
+            var s = string.IsNullOrEmpty(sirala) ? "cemi" : sirala;
+            isciler = s switch
+            {
+                "gun"     => isciler.OrderByDescending(x => x.CemiGun).ToList(),
+                "faktiki" => isciler.OrderByDescending(x => x.FaktikiSaat).ToList(),
+                _         => isciler.OrderByDescending(x => x.CemiEzam).ToList(),
+            };
+
+            var departamentler = await _uow.Repository<Departament>()
+                .Query().AsNoTracking().Where(x => !x.Silinib).OrderBy(x => x.Ad).ToListAsync();
+
+            var vm = new EzamiyyetIzlemeVM
+            {
+                Isciler = isciler,
+                Filtr   = filtr,
+                Departamentler = departamentler
+                    .Select(d => new SelectListItem(d.Ad, d.Id.ToString()))
+                    .Prepend(new SelectListItem("Bütün şöbələr", ""))
+                    .ToList()
+            };
+            ViewData["Sirala"] = s;
+            return View(vm);
         }
 
         // ── Rəhbər təsdiq ────────────────────────────────────

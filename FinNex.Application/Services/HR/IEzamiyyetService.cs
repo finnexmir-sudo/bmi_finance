@@ -7,6 +7,7 @@ namespace FinNex.Application.Services.HR
     {
         Task<IList<EzamiyyetMuracietListDto>> IsciMuracietleriAsync(int isciId);
         Task<IList<EzamiyyetMuracietListDto>> HamisiniGetirAsync(EzamiyyetFiltrDto? filtr = null);
+        Task<IList<EzamiyyetIsciIzlemeDto>> GetIsciEzamIzlemeAsync(EzamiyyetFiltrDto? filtr = null);
         Task<IList<EzamiyyetMuracietListDto>> GozleyenlerAsync();
         Task<EzamiyyetMuracietListDto?> DetayAsync(int id);
 

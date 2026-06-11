@@ -60,6 +60,38 @@ namespace FinNex.Application.Services.HR
             return list.Select(Map).ToList();
         }
 
+        // Rəhbər/HR üçün işçi-qruplu izləmə: cəmi səfər, gün, faktiki saat + detay siyahısı
+        public async Task<IList<EzamiyyetIsciIzlemeDto>> GetIsciEzamIzlemeAsync(EzamiyyetFiltrDto? filtr = null)
+        {
+            var list = await HamisiniGetirAsync(filtr);
+
+            return list
+                .GroupBy(x => x.IsciId)
+                .Select(g =>
+                {
+                    var ilk = g.First();
+                    var ezamlar = g.OrderByDescending(x => x.BaslamaTarixi).ToList();
+                    return new EzamiyyetIsciIzlemeDto
+                    {
+                        IsciId          = g.Key,
+                        IsciAdSoyad     = ilk.IsciTamAd,
+                        IsciSekil       = ilk.IsciSekil,
+                        SobeAdi         = string.IsNullOrEmpty(ilk.IsciSobe) ? "-" : ilk.IsciSobe!,
+                        VezifeAdi       = ilk.IsciVezife,
+                        CemiEzam        = g.Count(),
+                        TesdiqlenibSayi = g.Count(x => x.Status == EzamiyyetStatus.Tesdiqlendi),
+                        GozlemeSayi     = g.Count(x => x.Status == EzamiyyetStatus.Gozleyir),
+                        ReddSayi        = g.Count(x => x.Status == EzamiyyetStatus.Reddedildi),
+                        CemiGun         = g.Sum(x => x.GunSayi),
+                        FaktikiSaat     = ezamlar.Where(x => x.FaktikiSaat.HasValue).Sum(x => x.FaktikiSaat!.Value),
+                        SonEzamTarixi   = g.Max(x => (DateTime?)x.BaslamaTarixi),
+                        Ezamlar         = ezamlar
+                    };
+                })
+                .OrderBy(x => x.SobeAdi).ThenBy(x => x.IsciAdSoyad)
+                .ToList();
+        }
+
         public async Task<IList<EzamiyyetMuracietListDto>> GozleyenlerAsync()
         {
             var list = await _uow.Repository<EzamiyyetMuraciet>()
@@ -359,6 +391,7 @@ namespace FinNex.Application.Services.HR
                 IsciId              = x.IsciId,
                 IsciTamAd           = x.Isci?.TamAd ?? "",
                 IsciVezife          = teyinat?.Vezife?.Ad,
+                IsciSobe            = teyinat?.Departament?.Ad,
                 Baslig              = x.Baslig,
                 MekanId             = x.MekanId,
                 MekanAd             = x.Mekan?.Ad ?? "",

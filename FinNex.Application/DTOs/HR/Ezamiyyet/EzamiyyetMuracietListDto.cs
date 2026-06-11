@@ -9,6 +9,7 @@ namespace FinNex.Application.DTOs.HR.Ezamiyyet
         public string   IsciTamAd     { get; set; } = null!;
         public string?  IsciSekil     { get; set; }
         public string?  IsciVezife    { get; set; }
+        public string?  IsciSobe      { get; set; }
         public string   Baslig        { get; set; } = null!;
         public int      MekanId       { get; set; }
         public string   MekanAd       { get; set; } = null!;
@@ -32,6 +33,15 @@ namespace FinNex.Application.DTOs.HR.Ezamiyyet
         public int GunSayi => (BitmeTarixi.Date - BaslamaTarixi.Date).Days + 1;
 
         public bool TamGun => BaslamaSaati == null && BitisSaati == null;
+
+        // Faktiki cihaz müddəti (saat) — yalnız EYNİ gün çıxış+qayıdış olduqda hesablanır.
+        // Çoxgünlük səfərlərdə saat metrikası mənasızdır (gün ilə ölçülür) → null.
+        public double? FaktikiSaat =>
+            (CihazCixisVaxti.HasValue && CihazQayidisVaxti.HasValue
+             && CihazQayidisVaxti.Value > CihazCixisVaxti.Value
+             && CihazQayidisVaxti.Value.Date == CihazCixisVaxti.Value.Date)
+                ? Math.Round((CihazQayidisVaxti.Value - CihazCixisVaxti.Value).TotalHours, 2)
+                : (double?)null;
     }
 
     public class EzamiyyetMekanListDto
@@ -53,6 +63,29 @@ namespace FinNex.Application.DTOs.HR.Ezamiyyet
         public int    Gozleyir      { get; set; }
         public int    CemiGun       { get; set; }
         public string? EnCoxMekan   { get; set; }
+    }
+
+    // Rəhbər/HR üçün işçi-qruplu ezamiyyət izləmə (cəmi, gün, faktiki saat + detay)
+    public class EzamiyyetIsciIzlemeDto
+    {
+        public int      IsciId        { get; set; }
+        public string   IsciAdSoyad   { get; set; } = null!;
+        public string?  IsciSekil     { get; set; }
+        public string   SobeAdi       { get; set; } = "-";
+        public string?  VezifeAdi     { get; set; }
+
+        public int      CemiEzam         { get; set; }
+        public int      TesdiqlenibSayi  { get; set; }
+        public int      GozlemeSayi      { get; set; }
+        public int      ReddSayi         { get; set; }
+        public int      CemiGun          { get; set; }
+
+        // Eyni gün çıxış+qayıdışı olan səfərlərin faktiki saatlarının cəmi
+        public double   FaktikiSaat      { get; set; }
+
+        public DateTime? SonEzamTarixi   { get; set; }
+
+        public List<EzamiyyetMuracietListDto> Ezamlar { get; set; } = new();
     }
 
     public class EzamiyyetFiltrDto
