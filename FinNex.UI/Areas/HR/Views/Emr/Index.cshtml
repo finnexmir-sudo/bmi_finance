@@ -1,0 +1,110 @@
+@using FinNex.Domain.Entities.HR
+@model IList<EmrSayghaci>
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Əmr Sayğacları";
+    var cariIl = DateTime.Now.Year;
+
+    string NovAd(EmrNovu n) => n switch {
+        EmrNovu.Mezuniyyet      => "Məzuniyyət (K/M)",
+        EmrNovu.MaasDeyisikliyi => "Maaş dəyişikliyi (MD)",
+        EmrNovu.IseQebul        => "İşə qəbul (İQ)",
+        EmrNovu.Xitam           => "Xitam (X)",
+        EmrNovu.Ezamiyyet       => "Ezamiyyət (E)",
+        _                       => n.ToString()
+    };
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Əmr Sayğacları</div>
+            <div class="fn-page-sub">Hər növ üzrə son verilmiş əmr nömrəsi — növbəti generasiya buradan davam edir</div>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px">
+            <i class="bi bi-check2-circle"></i> @TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div style="background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["Error"]
+        </div>
+    }
+
+    @* ── Son nömrəni təyin et ── *@
+    <div class="fn-card" style="padding:18px;margin-bottom:18px;max-width:640px">
+        <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:4px">
+            <i class="bi bi-pencil-square"></i> Son nömrəni əl ilə təyin et
+        </div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:14px">
+            Köhnə (kağız) əmrlərin davamı üçün: son verilmiş nömrəni yazın — sistem növbəti əmri <strong>(nömrə + 1)</strong>-dən başlayacaq.
+        </div>
+        <form asp-action="SonNomreTeyinEt" method="post">
+            @Html.AntiForgeryToken()
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+                <div style="flex:1;min-width:170px">
+                    <label class="fn-label">Növ</label>
+                    <select name="nov" class="fn-input">
+                        @foreach (var n in Enum.GetValues<EmrNovu>())
+                        {
+                            <option value="@((int)n)">@NovAd(n)</option>
+                        }
+                    </select>
+                </div>
+                <div style="width:90px">
+                    <label class="fn-label">İl</label>
+                    <input type="number" name="il" class="fn-input" value="@cariIl" min="2000" max="2100" />
+                </div>
+                <div style="width:120px">
+                    <label class="fn-label">Son nömrə</label>
+                    <input type="number" name="sonNomre" class="fn-input" value="0" min="0" />
+                </div>
+                <button type="submit" class="fn-btn fn-btn--primary">
+                    <i class="bi bi-check-circle"></i> Təyin et
+                </button>
+            </div>
+        </form>
+    </div>
+
+    @* ── Cari sayğaclar ── *@
+    <div class="fn-card" style="padding:0;overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid #eef2f7;font-weight:700;color:#0f172a;font-size:14px">
+            Cari sayğaclar
+        </div>
+        @if (!Model.Any())
+        {
+            <div style="padding:22px;text-align:center;color:#94a3b8;font-size:13px">
+                Hələ sayğac yoxdur — ilk əmr təsdiqləndikdə avtomatik yaranacaq.
+            </div>
+        }
+        else
+        {
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead>
+                    <tr style="background:#f8fafc;color:#475569;text-align:left">
+                        <th style="padding:10px 18px">Növ</th>
+                        <th style="padding:10px 18px">İl</th>
+                        <th style="padding:10px 18px">Son nömrə</th>
+                        <th style="padding:10px 18px">Növbəti</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model)
+                    {
+                        <tr style="border-top:1px solid #f1f5f9">
+                            <td style="padding:10px 18px;font-weight:600;color:#0f172a">@NovAd(s.Nov)</td>
+                            <td style="padding:10px 18px">@s.Il</td>
+                            <td style="padding:10px 18px">@s.SonNomre</td>
+                            <td style="padding:10px 18px"><span style="font-family:monospace;font-weight:700;color:#1e40af;background:#eff6ff;padding:2px 8px;border-radius:6px">@(s.SonNomre + 1)</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

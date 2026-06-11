@@ -6,6 +6,7 @@ using FinNex.Application.Interfaces.Communication;
 using FinNex.Application.Interfaces.HR;
 using FinNex.Application.Interfaces.Maas_If;
 using FinNex.Application.Services;
+using FinNex.Application.Services.HR;
 using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
@@ -18,6 +19,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
     private readonly IMaasHesablamaService _maasHesablamaService;
     private readonly IBildirisRouter _bildirisRouter;
     private readonly IJetonService _jetonService;
+    private readonly IEmrService _emrService;
 
     public MezuniyyetService(
         IUnitOfWork unitOfWork,
@@ -25,13 +27,15 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         IEvezediciTesdiqService evezediciTesdiqService,
         IMaasHesablamaService maasHesablamaService,
         IBildirisRouter bildirisRouter,
-        IJetonService jetonService)
+        IJetonService jetonService,
+        IEmrService emrService)
         : base(unitOfWork, mapper)
     {
         _evezediciTesdiqService = evezediciTesdiqService;
         _maasHesablamaService = maasHesablamaService;
         _bildirisRouter = bildirisRouter;
         _jetonService = jetonService;
+        _emrService = emrService;
     }
 
     
@@ -385,16 +389,20 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
         }
 
         // Əmr nömrəsi — yalnız HR təsdiq edərkən (imtina halında verilmir).
-        // Hər il 1-dən başlayır; rəqəm hissəsi ayrıca saxlanır ki, araya
-        // düşmüş əmr halları üçün sonradan suffiks ("a", "b" ...) əlavə edilsin.
+        // Mərkəzi əmr reyestrindən (IEmrService) alınır: Emr cədvəlinə sətir yazılır,
+        // nömrə isə (Nov=Mezuniyyet, il) sayğacından gəlir. HR son nömrəni əl ilə
+        // təyin edibsə, generasiya oradan davam edir. Göstərmək üçün EmrRegem/EmrIl
+        // məzuniyyətdə də saxlanır (köhnə format/UI toxunulmaz qalır).
         if (status && !m.EmrRegem.HasValue)
         {
-            var il = m.HrTesdiqTarixi.Value.Year;
-            var sonRegem = await _unitOfWork.Repository<Mezuniyyet>().Query()
-                .Where(x => !x.Silinib && x.EmrIl == il && x.EmrRegem != null)
-                .MaxAsync(x => (int?)x.EmrRegem) ?? 0;
-            m.EmrRegem = sonRegem + 1;
-            m.EmrIl = il;
+            var emr = await _emrService.YeniEmrAsync(
+                EmrNovu.Mezuniyyet,
+                elaqeliEntityId: m.Id,
+                tarix: m.HrTesdiqTarixi,
+                metn: $"Məzuniyyət əmri — İşçi #{m.IsciId} ({m.BaslamaTarixi:dd.MM.yyyy}–{m.BitmeTarixi:dd.MM.yyyy})",
+                verenIsciId: hrId);
+            m.EmrRegem = emr.Nomre;
+            m.EmrIl    = emr.Il;
             // EmrSuffiks — default null; UI-dan əl ilə verilə bilər
         }
 

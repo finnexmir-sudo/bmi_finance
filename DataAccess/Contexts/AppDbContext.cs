@@ -72,6 +72,10 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<EzamiyyetMekan> EzamiyyetMekanlar { get; set; }
     public DbSet<EzamiyyetMuraciet> EzamiyyetMuracietler { get; set; }
 
+    // Mərkəzi əmr reyestri + nömrə sayğacı (məzuniyyət, maaş dəyişikliyi, ...)
+    public DbSet<Emr> Emrler { get; set; }
+    public DbSet<EmrSayghaci> EmrSayghaclari { get; set; }
+
     public DbSet<IsciTeyinat> IsciTeyinatlari { get; set; }
     public DbSet<MuqavileYenileme> MuqavileYenilemeleri { get; set; }
     public DbSet<IsciStrukturRolu> IsciStrukturRollari { get; set; }
@@ -597,6 +601,14 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         builder.Entity<Davamiyyet>()
             .HasIndex(x => new { x.IsciId, x.Tarix })
             .IsUnique();
+
+        // Əmr sayğacı — hər (Nov, Il) cütü üçün bir sayğac sətri (unikal)
+        builder.Entity<EmrSayghaci>()
+            .HasIndex(x => new { x.Nov, x.Il })
+            .IsUnique();
+        // Əmr reyestri — növ+il+nömrə üzrə axtarış/sıralama
+        builder.Entity<Emr>()
+            .HasIndex(x => new { x.Nov, x.Il, x.Nomre });
         builder.Entity<Mezuniyyet>()
             .HasOne(x => x.Isci)
             .WithMany()

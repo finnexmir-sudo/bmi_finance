@@ -647,7 +647,7 @@
 
                     var hrDavSubActive = (currentArea == "HR" && currentController is "Davamiyyet" or "BayramGunu" or "IsciStaji" or "Tabel")
                                       || (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye");
-                    var hrMezSubActive = currentArea == "HR" && currentController is "Mezuniyyet" or "MezuniyyetBalans" or "Xestelik" or "Ezamiyyet";
+                    var hrMezSubActive = currentArea == "HR" && currentController is "Mezuniyyet" or "MezuniyyetBalans" or "Xestelik" or "Ezamiyyet" or "Emr";
                     <div class="fn-nav-g @(hrDMActive ? "open" : "")">
                         <button type="button" class="fn-nav-g-head">
                             <span>Davamiyyət & Məzuniyyət</span>
@@ -733,6 +733,10 @@
                                     <a asp-area="HR" asp-controller="Ezamiyyet" asp-action="IsciIzleme"
                                        class="fn-nav-item @(currentArea == "HR" && currentController == "Ezamiyyet" ? "active" : "")">
                                         <i class="bi bi-briefcase-fill"></i> Ezamiyyət İzləmə
+                                    </a>
+                                    <a asp-area="HR" asp-controller="Emr" asp-action="Index"
+                                       class="fn-nav-item @(currentArea == "HR" && currentController == "Emr" ? "active" : "")">
+                                        <i class="bi bi-hash"></i> Əmr Sayğacları
                                     </a>
                                 </div>
                             </div>
