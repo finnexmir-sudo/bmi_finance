@@ -627,6 +627,31 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             YaradilmaTarixi = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Unspecified),
             Silinib = false
         });
+        // Əmək haqqı əməliyyat yazılışı (provodka) hesabları — şablondakı nömrələrlə.
+        // Rezident/qeyri-rezident bölgüsü işçinin bank hesabı prefiksinə görədir (41015 → qeyri-rezident).
+        var maasHesabSeedTarix = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
+        builder.Entity<MuhasibatHesabi>().HasData(
+            new MuhasibatHesabi { Id = 2,  Acar = "MaasKliring",                Ad = "Əmək haqqı — klirinq (45050)",                  HesabNomresi = "45050000000000400000", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 3,  Acar = "MaasXercRezident",          Ad = "Əmək haqqı xərci — rezident",                   HesabNomresi = "90020000010000700000", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 4,  Acar = "MaasXercQeyriRezident",     Ad = "Əmək haqqı xərci — qeyri-rezident",             HesabNomresi = "90020000020000700000", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 5,  Acar = "MukafatXercRezident",       Ad = "Mükafat xərci — rezident",                      HesabNomresi = "90021000000000700000", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 6,  Acar = "MukafatXercQeyriRezident",  Ad = "Mükafat xərci — qeyri-rezident",                HesabNomresi = "90021000000000700001", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 7,  Acar = "ElaveXercRezident",         Ad = "Əlavə əmək haqqı xərci — rezident",             HesabNomresi = "90020000040000700000", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 8,  Acar = "ElaveXercQeyriRezident",    Ad = "Əlavə əmək haqqı xərci — qeyri-rezident",       HesabNomresi = "90020000070000700000", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 9,  Acar = "MezuniyyetXercRezident",    Ad = "Məzuniyyət haqqı xərci — rezident",             HesabNomresi = "90020000030000700000", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 10, Acar = "MezuniyyetXercQeyriRezident", Ad = "Məzuniyyət haqqı xərci — qeyri-rezident",     HesabNomresi = "90020000080000700000", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 11, Acar = "MdssEdenXercRezident",      Ad = "MDSS işəgötürən xərci — rezident",              HesabNomresi = "90022000000000700000", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 12, Acar = "MdssEdenXercQeyriRezident", Ad = "MDSS işəgötürən xərci — qeyri-rezident",        HesabNomresi = "90022000000000700002", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 13, Acar = "IssizlikEdenXerc",          Ad = "İşsizlik işəgötürən xərci",                     HesabNomresi = "90022000000000700001", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 14, Acar = "TibbiEdenXerc",             Ad = "İcbari tibbi işəgötürən xərci",                 HesabNomresi = "90022000000000700004", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 15, Acar = "MdssKredit",                Ad = "MDSS öhdəlik (işəgötürən)",                     HesabNomresi = "45110000000000400001", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 16, Acar = "MdssOlunanKredit",          Ad = "MDSS öhdəlik (sığortaolunan)",                  HesabNomresi = "45110000000000400002", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 17, Acar = "IssizlikEdenKredit",        Ad = "İşsizlik öhdəlik (işəgötürən)",                 HesabNomresi = "45110000000000400003", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 18, Acar = "IssizlikOlunanKredit",      Ad = "İşsizlik öhdəlik (sığortaolunan)",              HesabNomresi = "45110000000000400004", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 19, Acar = "TibbiEdenKredit",           Ad = "İcbari tibbi öhdəlik (işəgötürən)",             HesabNomresi = "45110000000000400005", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 20, Acar = "TibbiOlunanKredit",         Ad = "İcbari tibbi öhdəlik (sığortaolunan)",          HesabNomresi = "45110000000000400006", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 21, Acar = "GelirVergisiKredit",        Ad = "Gəlir vergisi öhdəlik",                         HesabNomresi = "45103000000000400000", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false }
+        );
         builder.Entity<Mezuniyyet>()
             .HasOne(x => x.Isci)
             .WithMany()
