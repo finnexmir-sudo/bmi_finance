@@ -113,6 +113,37 @@ namespace FinNex.UI.Areas.HR.Controllers
             string suf = IlSuffiks(il);
             string Q(string s) => $"{il}-{suf} il {ayAdlar[ay]} ayı üzrə {s}";
 
+            // Avansların cəmi (ay üzrə təsdiqlənmiş/ödənilmiş) — bağlanma sətri üçün
+            var avansCemi = await _unitOfWork.Repository<Avans>()
+                .Query()
+                .Where(x => !x.Silinib && x.Il == il && x.Ay == ay
+                         && (x.Status == AvansStatus.Tesdiqlenib || x.Status == AvansStatus.Odenilib))
+                .SumAsync(x => x.Mebleg);
+
+            // Qabaqcadan ödənilmiş məzuniyyət — maaşın saxlanmış izahından
+            // "Mezuniyyet (qabaqcadan ödənildi)" sətrinin (= net ödənilmiş) cəmi.
+            // Bilərəkdən izahdan oxunur ki, maaş detalında göstərilən dəyərlə dəqiq uyğun gəlsin.
+            decimal mezQabaqcadanCemi = 0m;
+            foreach (var m in maaslar)
+            {
+                if (string.IsNullOrWhiteSpace(m.HesablamaIzahi)) continue;
+                try
+                {
+                    var izahlar = JsonSerializer.Deserialize<List<HesablamaIzahiDto>>(m.HesablamaIzahi);
+                    if (izahlar != null)
+                        mezQabaqcadanCemi += izahlar
+                            .Where(z => z.Addim == "Mezuniyyet (qabaqcadan ödənildi)")
+                            .Sum(z => z.Mebleg);
+                }
+                catch { /* pozuq izah JSON — keç */ }
+            }
+
+            // Xəstəlik — şirkətin ödədiyi müavinət (SirketOdenis, brütə əlavə olunan) ay üzrə cəmi
+            var xestelikSirketCemi = await _unitOfWork.Repository<XestelikOdenis>()
+                .Query()
+                .Where(x => !x.Silinib && x.Il == il && x.Ay == ay)
+                .SumAsync(x => x.SirketOdenis);
+
             // Provodka sətirləri: (Debet, Kredit, Məbləğ, Qeyd)
             var setirler = new List<(string Debet, string Kredit, decimal Mebleg, string Qeyd)>
             {
@@ -125,6 +156,14 @@ namespace FinNex.UI.Areas.HR.Controllers
                 (Hesab("ElaveXercQeyriRezident"),   kliring, CemRez("Overtime", true),            Q("qeyri-rezident işçiyə əlavə əmək haqqı xərci")),
                 (Hesab("MezuniyyetXercRezident"),   kliring, CemRez("Məzuniyyət Ödənişi", false), Q("rezident işçilərə məzuniyyət haqqı")),
                 (Hesab("MezuniyyetXercQeyriRezident"), kliring, CemRez("Məzuniyyət Ödənişi", true), Q("qeyri-rezident işçilərə məzuniyyət haqqı")),
+
+                // Hesablanma — xəstəlik müavinəti (Debet müavinət xərci, Kredit klirinq)
+                (Hesab("MuavinetXerc"), kliring, xestelikSirketCemi, Q("sığortaedən tərəfindən ödənilən müavinət haqqları")),
+
+                // Bağlanma — avansların cəmi (Debet klirinq, Kredit avans hesabı = AvansDebet)
+                (kliring, Hesab("AvansDebet"), avansCemi, Q("avansların bağlanılması")),
+                // Bağlanma — qabaqcadan ödənilmiş məzuniyyət (Debet klirinq, Kredit prepaid öhdəlik)
+                (kliring, Hesab("MezuniyyetQabaqcadanKredit"), mezQabaqcadanCemi, Q("qabaqcadan ödənilmiş məzuniyyət haqqının bağlanılması")),
 
                 // B) İşəgötürən sosial ayırmalar (Debet xərc 90022, Kredit öhdəlik)
                 (Hesab("MdssEdenXercRezident"),      Hesab("MdssKredit"),         CemRez("DSMF (İşəgötürən)", false), Q("rezident işçilər üçün sığortaedənin hesabına ödənilən MDSS haqqı")),
