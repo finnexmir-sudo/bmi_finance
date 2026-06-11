@@ -265,6 +265,7 @@
                                                         <th>Tarix</th>
                                                         <th>Məkan / Başlıq</th>
                                                         <th>Müddət</th>
+                                                        <th>Planlaşdırılan saat</th>
                                                         <th>Faktiki çıxış</th>
                                                         <th>Faktiki qayıdış</th>
                                                         <th>Faktiki saat</th>
@@ -293,6 +294,20 @@
                                                                 }
                                                             </td>
                                                             <td><strong>@ez.GunSayi gün</strong></td>
+                                                            <td>
+                                                                @if (ez.BaslamaSaati.HasValue && ez.BitisSaati.HasValue)
+                                                                {
+                                                                    <span>@ez.BaslamaSaati.Value.ToString(@"hh\:mm") – @ez.BitisSaati.Value.ToString(@"hh\:mm")</span>
+                                                                }
+                                                                else if (ez.BaslamaSaati.HasValue)
+                                                                {
+                                                                    <span>@ez.BaslamaSaati.Value.ToString(@"hh\:mm")-dən</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span style="color:#8590a6">Tam gün</span>
+                                                                }
+                                                            </td>
                                                             <td>@(ez.CihazCixisVaxti.HasValue ? ez.CihazCixisVaxti.Value.ToString("dd.MM HH:mm") : "—")</td>
                                                             <td>@(ez.CihazQayidisVaxti.HasValue ? ez.CihazQayidisVaxti.Value.ToString("dd.MM HH:mm") : "—")</td>
                                                             <td>
