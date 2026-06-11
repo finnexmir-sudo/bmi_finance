@@ -13,6 +13,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Hosting;
+using FinNex.Application.Services.HR;
+using NPOI.HSSF.UserModel;
+using NPOI.SS.UserModel;
+using System.IO;
 
 namespace FinNex.UI.Areas.HR.Controllers
 {
@@ -27,6 +32,8 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly IBildirisRouter _bildirisRouter;
         private readonly UserManager<AppUser> _userManager;
         private readonly IAyliqElaveService _ayliqElaveService;
+        private readonly IMuhasibatHesabService _muhasibatHesabService;
+        private readonly IWebHostEnvironment _env;
 
         public MaasController(
             IMaasService maasService,
@@ -35,7 +42,9 @@ namespace FinNex.UI.Areas.HR.Controllers
             IBildirisService bildirisService,
             IBildirisRouter bildirisRouter,
             UserManager<AppUser> userManager,
-            IAyliqElaveService ayliqElaveService)
+            IAyliqElaveService ayliqElaveService,
+            IMuhasibatHesabService muhasibatHesabService,
+            IWebHostEnvironment env)
         {
             _maasService = maasService;
             _hesablamaService = hesablamaService;
@@ -44,7 +53,153 @@ namespace FinNex.UI.Areas.HR.Controllers
             _bildirisRouter = bildirisRouter;
             _userManager = userManager;
             _ayliqElaveService = ayliqElaveService;
+            _muhasibatHesabService = muhasibatHesabService;
+            _env = env;
         }
+
+        // ── Əmək haqqı əməliyyat yazılışı (provodka) — .xls ──────────
+        // Seçilmiş ay üzrə hesablanmış maaşlardan tam əməliyyat yazılışı:
+        //   A) Hesablanma/xərc — rezident/qeyri-rezident (bank hesabı 41015 → qeyri-rezident)
+        //   B) İşəgötürən sosial ayırmalar (MDSS/işsizlik/icbari tibbi)
+        //   C) İşçi tutulmaları (MDSS/işsizlik/icbari tibbi/gəlir vergisi)
+        //   E) İşçi başına net ödəniş (Kredit = bank hesabı)
+        // Sabit hesablar Mühasibat Hesabları (MuhasibatHesabi) ayarından gəlir.
+        // QEYD: status filtri yoxdur — ay üzrə bütün hesablanmış (silinməmiş) maaşlar.
+        public async Task<IActionResult> PravodkaExport(int il, int ay)
+        {
+            if (ay < 1 || ay > 12)
+            {
+                TempData["Error"] = "Ay düzgün deyil.";
+                return RedirectToAction(nameof(Index), new { il, ay });
+            }
+
+            // Sabit hesabları lüğətə yüklə (Açar → nömrə)
+            var hamiHesab = await _muhasibatHesabService.HamisiAsync();
+            var hesabMap = hamiHesab
+                .Where(h => h.Aktiv && !h.Silinib && !string.IsNullOrWhiteSpace(h.HesabNomresi))
+                .ToDictionary(h => h.Acar, h => h.HesabNomresi!.Trim(), StringComparer.OrdinalIgnoreCase);
+            string Hesab(string acar) => hesabMap.TryGetValue(acar, out var v) ? v : "";
+
+            var kliring = Hesab("MaasKliring");
+            if (string.IsNullOrWhiteSpace(kliring))
+            {
+                TempData["Error"] = "Klirinq hesabı (MaasKliring) təyin edilməyib — Mühasibat Hesabları səhifəsindən təyin edin.";
+                return RedirectToAction(nameof(Index), new { il, ay });
+            }
+
+            // Ay üzrə hesablanmış maaşlar (detallarla) — Index ilə eyni mənbə
+            var maaslar = await _unitOfWork.Repository<Maas>()
+                .Query()
+                .Where(x => !x.Silinib && x.Il == il && x.Ay == ay)
+                .Include(x => x.Isci).ThenInclude(i => i.Maliye)
+                .Include(x => x.Detallar).ThenInclude(d => d.MaasNovu)
+                .OrderBy(x => x.Isci.Sira).ThenBy(x => x.Isci.Soyad).ThenBy(x => x.Isci.Ad)
+                .ToListAsync();
+
+            if (maaslar.Count == 0)
+            {
+                TempData["Error"] = $"{il}/{ay:D2} üçün hesablanmış maaş tapılmadı.";
+                return RedirectToAction(nameof(Index), new { il, ay });
+            }
+
+            // Köməkçilər
+            decimal Detay(Maas m, string ad) => m.Detallar.Where(d => d.MaasNovu?.Ad == ad).Sum(d => d.Mebleg);
+            bool QeyriRez(Maas m) => (m.Isci?.Maliye?.BankHesabNo?.Trim() ?? "").StartsWith("41015");
+            decimal CemRez(string ad, bool qeyri) => maaslar.Where(m => QeyriRez(m) == qeyri).Sum(m => Detay(m, ad));
+            decimal Cem(string ad) => maaslar.Sum(m => Detay(m, ad));
+
+            string[] ayAdlar = { "", "yanvar", "fevral", "mart", "aprel", "may", "iyun",
+                                 "iyul", "avqust", "sentyabr", "oktyabr", "noyabr", "dekabr" };
+            string suf = IlSuffiks(il);
+            string Q(string s) => $"{il}-{suf} il {ayAdlar[ay]} ayı üzrə {s}";
+
+            // Provodka sətirləri: (Debet, Kredit, Məbləğ, Qeyd)
+            var setirler = new List<(string Debet, string Kredit, decimal Mebleg, string Qeyd)>
+            {
+                // A) Hesablanma — xərc (Debet xərc, Kredit klirinq)
+                (Hesab("MaasXercRezident"),         kliring, CemRez("Əsas Əməkhaqqı", false),     Q("rezident işçilərə əmək haqqı")),
+                (Hesab("MaasXercQeyriRezident"),    kliring, CemRez("Əsas Əməkhaqqı", true),      Q("qeyri-rezident işçilərə əmək haqqı")),
+                (Hesab("MukafatXercRezident"),      kliring, CemRez("Bonus/Mükafat", false),      Q("rezident işçilərə mükafat")),
+                (Hesab("MukafatXercQeyriRezident"), kliring, CemRez("Bonus/Mükafat", true),       Q("qeyri-rezident işçilərə mükafat")),
+                (Hesab("ElaveXercRezident"),        kliring, CemRez("Overtime", false),           Q("rezident işçiyə əlavə əmək haqqı xərci")),
+                (Hesab("ElaveXercQeyriRezident"),   kliring, CemRez("Overtime", true),            Q("qeyri-rezident işçiyə əlavə əmək haqqı xərci")),
+                (Hesab("MezuniyyetXercRezident"),   kliring, CemRez("Məzuniyyət Ödənişi", false), Q("rezident işçilərə məzuniyyət haqqı")),
+                (Hesab("MezuniyyetXercQeyriRezident"), kliring, CemRez("Məzuniyyət Ödənişi", true), Q("qeyri-rezident işçilərə məzuniyyət haqqı")),
+
+                // B) İşəgötürən sosial ayırmalar (Debet xərc 90022, Kredit öhdəlik)
+                (Hesab("MdssEdenXercRezident"),      Hesab("MdssKredit"),         CemRez("DSMF (İşəgötürən)", false), Q("rezident işçilər üçün sığortaedənin hesabına ödənilən MDSS haqqı")),
+                (Hesab("MdssEdenXercQeyriRezident"), Hesab("MdssKredit"),         CemRez("DSMF (İşəgötürən)", true),  Q("qeyri-rezident işçilər üçün sığortaedənin hesabına ödənilən MDSS haqqı")),
+                (Hesab("IssizlikEdenXerc"),          Hesab("IssizlikEdenKredit"), Cem("İşsizlik Sığortası (İşəgötürən)"), Q("sığortaedənin hesabına ödənilən işsizlik üzrə sığorta haqqı")),
+                (Hesab("TibbiEdenXerc"),             Hesab("TibbiEdenKredit"),    Cem("İTSS (İşəgötürən)"),           Q("sığortaedənin hesabına ödənilən icbari tibbi sığorta haqqı")),
+
+                // C) İşçi tutulmaları (Debet klirinq, Kredit öhdəlik)
+                (kliring, Hesab("MdssOlunanKredit"),     Cem("DSMF (İşçi)"),               Q("sığortaolunanların hesabına ödənilən MDSS haqqı")),
+                (kliring, Hesab("IssizlikOlunanKredit"), Cem("İşsizlik Sığortası (İşçi)"), Q("sığortaolunanların hesabına ödənilən işsizlik üzrə sığorta haqqı")),
+                (kliring, Hesab("TibbiOlunanKredit"),    Cem("İTSS"),                      Q("sığortaolunanların hesabına ödənilən icbari tibbi sığorta haqqı")),
+                (kliring, Hesab("GelirVergisiKredit"),   Cem("Gəlir Vergisi"),             Q("ödənilmiş məbləğdən gəlir vergisi")),
+            };
+
+            // E) İşçi başına net ödəniş (Debet klirinq, Kredit bank hesabı)
+            foreach (var m in maaslar)
+            {
+                var bank = m.Isci?.Maliye?.BankHesabNo?.Trim() ?? "";
+                setirler.Add((kliring, bank, m.NetMebleg, Q("əmək haqqı")));
+            }
+
+            // ── Şablonu aç və doldur (avans ilə eyni üsul) ──
+            var templatePath = Path.Combine(_env.ContentRootPath, "App_Data", "Muhasibat", "Emek_haqqi_hesablama.xls");
+            if (!System.IO.File.Exists(templatePath))
+            {
+                TempData["Error"] = "Şablon tapılmadı: App_Data/Muhasibat/Emek_haqqi_hesablama.xls";
+                return RedirectToAction(nameof(Index), new { il, ay });
+            }
+
+            HSSFWorkbook wb;
+            using (var tfs = new FileStream(templatePath, FileMode.Open, FileAccess.Read))
+                wb = new HSSFWorkbook(tfs);
+
+            var sheet = wb.GetSheet("Ipoteka") ?? wb.GetSheetAt(0);
+
+            var ornek = sheet.GetRow(1);
+            var colStil = new ICellStyle[10];
+            for (int c = 0; c < 10; c++) colStil[c] = ornek?.GetCell(c)?.CellStyle;
+            var textStyle = wb.CreateCellStyle(); textStyle.DataFormat = wb.CreateDataFormat().GetFormat("@");
+            var pulStyle = wb.CreateCellStyle();  pulStyle.DataFormat  = wb.CreateDataFormat().GetFormat("0.00");
+
+            for (int rr = sheet.LastRowNum; rr >= 1; rr--)
+            {
+                var rw = sheet.GetRow(rr);
+                if (rw != null) sheet.RemoveRow(rw);
+            }
+
+            int r = 1;
+            foreach (var s in setirler)
+            {
+                var row = sheet.CreateRow(r);
+                var c0 = row.CreateCell(0); c0.SetCellValue(r);               if (colStil[0] != null) c0.CellStyle = colStil[0]; // № (sıra)
+                var c3 = row.CreateCell(3); c3.SetCellValue(s.Debet);         c3.CellStyle = colStil[3] ?? textStyle;             // Debet
+                var c5 = row.CreateCell(5); c5.SetCellValue(s.Kredit);        c5.CellStyle = colStil[5] ?? textStyle;             // Kredit
+                var c6 = row.CreateCell(6); c6.SetCellValue((double)s.Mebleg); c6.CellStyle = colStil[6] ?? pulStyle;            // Məbləğ
+                var c9 = row.CreateCell(9); c9.SetCellValue(s.Qeyd);          if (colStil[9] != null) c9.CellStyle = colStil[9];  // Qeyd
+                r++;
+            }
+
+            byte[] bytes;
+            using (var ms = new MemoryStream())
+            {
+                wb.Write(ms, true);
+                bytes = ms.ToArray();
+            }
+            return File(bytes, "application/vnd.ms-excel", $"Emek_haqqi_hesablama_{il}_{ay:D2}.xls");
+        }
+
+        private static string IlSuffiks(int il) => (il % 10) switch
+        {
+            1 or 2 or 5 or 7 or 8 => "ci",
+            3 or 4                => "cü",
+            9                     => "cu",
+            _                     => "cı"   // 0, 6
+        };
 
         // ── GET /HR/Maas ─────────────────────────────────────────
         // Əsas siyahı — hər işçi, hər sütun ayrı məbləğ

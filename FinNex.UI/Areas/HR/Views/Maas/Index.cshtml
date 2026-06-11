@@ -126,6 +126,18 @@
                     Bank Köçürmə Faylı
                 </a>
             }
+            @if (canTopluHesabla)
+            {
+                <a asp-area="HR" asp-controller="Maas" asp-action="PravodkaExport"
+                   asp-route-il="@il" asp-route-ay="@ay"
+                   class="mi-btn mi-btn--outline" title="Seçilmiş ay üzrə əmək haqqı əməliyyat yazılışı (.xls)">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <rect x="1.5" y="1.5" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+                        <path d="M4 4.5h5M4 6.5h5M4 8.5h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                    </svg>
+                    Əməliyyat yazılışı (.xls)
+                </a>
+            }
             @if (showHesabla)
             {
                 var qalanSayi = aktivIsciSayi - aktivHesablanmis;
