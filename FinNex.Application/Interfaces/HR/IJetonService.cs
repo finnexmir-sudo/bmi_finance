@@ -55,6 +55,10 @@ public interface IJetonService
     // həmin jetonları "İstifadə olunub" edir. Tam xərclənir — qismən deyil.
     Task<Result<decimal>> IcazeUcunFifoJetonXercleAsync(int isciId, decimal teleblesaat, int? icazeId = null);
 
+    // İcazə ləğvində jetonu geri qaytarır (reverse-FIFO). Dəyişiklikləri stage edir
+    // (save etmir) — çağıran tək tranzaksiyada saxlamalıdır.
+    Task<Result> IcazeJetonuGeriQaytarAsync(int isciId, decimal saat);
+
     // İşçinin redim tarixçəsi
     Task<IList<JetonRedimTelebiListDto>> IsciRedimTarixcesiGetirAsync(int isciId);
 

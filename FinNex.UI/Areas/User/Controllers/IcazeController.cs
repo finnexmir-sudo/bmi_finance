@@ -284,6 +284,19 @@ namespace FinNex.UI.Areas.User.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // ── POST /User/Icaze/RehberHrLegv — Rəhbər/HR təsdiqlənmişi ləğv edir ──
+        [HttpPost]
+        [Authorize(Roles = $"{RoleNames.HR},{RoleNames.Rehber},{RoleNames.Admin}")]
+        public async Task<IActionResult> RehberHrLegv(int id, string? sebeb)
+        {
+            if (string.IsNullOrWhiteSpace(sebeb))
+                return Json(new { success = false, message = "Ləğv səbəbi mütləqdir." });
+
+            var legvEden = await GetCurrentIsciIdAsync();
+            var result = await _icazeService.RehberHrLegvEtAsync(id, legvEden ?? 0, sebeb);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+
         // ══ Köməkçi metodlar ══════════════════════════════════
 
         private async Task<int?> GetCurrentIsciIdAsync()

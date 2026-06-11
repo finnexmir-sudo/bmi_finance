@@ -234,6 +234,51 @@ namespace FinNex.Application.Services
             }
         }
 
+        // Rəhbər/HR — təsdiqlənmiş icazəni ləğv edir (sahibə bağlı deyil).
+        // Səbəb məcburi; keçmiş icazə ləğv olunmur; jeton istifadə olunubsa geri qaytarılır.
+        public async Task<Result> RehberHrLegvEtAsync(int icazeId, int legvEdenIsciId, string sebeb)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(sebeb))
+                    return Result.Fail("Ləğv səbəbi mütləqdir.");
+
+                var icaze = await _unitOfWork.Repository<Icaze>().IdIleGetirAsync(icazeId);
+                if (icaze == null)
+                    return Result.Fail("İcazə tapılmadı.");
+                if (icaze.Status != IcazeStatus.Tesdiqlenib)
+                    return Result.Fail("Yalnız təsdiqlənmiş icazə ləğv edilə bilər.");
+                if (icaze.IcazeTarixi.Date < DateTime.Today)
+                    return Result.Fail("Keçmiş icazəni ləğv etmək mümkün deyil.");
+
+                // CixisGiris varsa ləğv et
+                var cixisGiris = await _unitOfWork.Repository<IcazeCixisGiris>()
+                    .GetirAsync(x => x.IcazeId == icazeId);
+                if (cixisGiris != null)
+                {
+                    cixisGiris.Status = IcazeCixisGirisStatus.LegvEdildi;
+                    await _unitOfWork.Repository<IcazeCixisGiris>().YenileAsync(cixisGiris);
+                }
+
+                // Jeton geri qaytar (istifadə olunubsa) — stage edir, aşağıdakı save ilə birgə
+                if (icaze.JetonOdenenSaat > 0)
+                    await _jetonService.IcazeJetonuGeriQaytarAsync(icaze.IsciId, icaze.JetonOdenenSaat);
+
+                icaze.Status        = IcazeStatus.ImtinaEdildi;   // ayrıca "ləğv" statusu yoxdur
+                icaze.ImtinaSebebi  = $"Ləğv (Rəhbər/HR): {sebeb.Trim()}";
+                icaze.Silinib       = true;
+                icaze.SilinmeTarixi = DateTime.Now;
+                await _unitOfWork.Repository<Icaze>().YenileAsync(icaze);
+                await _unitOfWork.YaddaSaxlaAsync();
+
+                return Result.Ok("İcazə ləğv edildi.");
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail($"Ləğv xətası: {ex.Message}");
+            }
+        }
+
         public async Task<Result<IcazeDetailDto>> GetDetayAsync(int icazeId)
         {
             try

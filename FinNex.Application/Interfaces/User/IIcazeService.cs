@@ -9,6 +9,9 @@ namespace FinNex.Application.Interfaces
         Task<Result<IList<IcazeListDto>>> GetIsciIcazeleriAsync(int isciId);
         Task<Result<IcazeListDto>> YaratAsync(IcazeCreateDto dto);
         Task<Result> LegvEtAsync(int icazeId, int isciId);
+        // Rəhbər/HR — təsdiqlənmiş icazəni ləğv edir (sahibə bağlı deyil, səbəb məcburi,
+        // keçmiş deyil). Jeton istifadə olunubsa geri qaytarır.
+        Task<Result> RehberHrLegvEtAsync(int icazeId, int legvEdenIsciId, string sebeb);
         Task<Result<IcazeDetailDto>> GetDetayAsync(int icazeId);
 
         // Təsdiq paneli üçün

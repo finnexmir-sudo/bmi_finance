@@ -290,6 +290,33 @@ namespace FinNex.Application.Services.HR
             return (true, null);
         }
 
+        // Rəhbər/HR — təsdiqlənmiş ezamiyyəti ləğv edir (sahibə bağlı deyil).
+        // Səbəb məcburi; yalnız bu gün/gələcək (bitmiş ezamiyyət ləğv olunmur).
+        public async Task<(bool ok, string? error)> RehberHrLegvEtAsync(int id, int legvEdenIsciId, string sebeb)
+        {
+            if (string.IsNullOrWhiteSpace(sebeb))
+                return (false, "Ləğv səbəbi mütləqdir.");
+
+            var entity = await _uow.Repository<EzamiyyetMuraciet>()
+                .Query()
+                .FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
+            if (entity == null)
+                return (false, "Müraciət tapılmadı.");
+            if (entity.Status != EzamiyyetStatus.Tesdiqlendi)
+                return (false, "Yalnız təsdiqlənmiş ezamiyyət ləğv edilə bilər.");
+            if (entity.BitmeTarixi.Date < DateTime.Today)
+                return (false, "Keçmiş (bitmiş) ezamiyyəti ləğv etmək mümkün deyil.");
+
+            entity.Status          = EzamiyyetStatus.Legvedildi;
+            entity.Silinib         = true;
+            entity.SilinmeTarixi   = DateTime.Now;
+            entity.YenilenmeTarixi = DateTime.Now;
+            entity.GeriDonusQeydi  = $"Ləğv (Rəhbər/HR): {sebeb.Trim()}";
+            await _uow.Repository<EzamiyyetMuraciet>().YenileAsync(entity);
+            await _uow.YaddaSaxlaAsync();
+            return (true, null);
+        }
+
         // ── Geri dönüş notu ───────────────────────────────────
 
         public async Task<(bool ok, string? error)> GeriQeydElavEtAsync(int id, int isciId, string? qeyd)

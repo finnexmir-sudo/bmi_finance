@@ -294,6 +294,7 @@
                                                         <th>Faktiki qayıdış</th>
                                                         <th>Səbəb</th>
                                                         <th>Status</th>
+                                                        <th>Əməliyyat</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -332,6 +333,17 @@
                                                                     <span style="color:#8590a6;font-size:.7rem"> (@ic.ImtinaSebebi)</span>
                                                                 }
                                                             </td>
+                                                            <td>
+                                                                @if ((User.IsInRole("HR") || User.IsInRole("Rehber") || User.IsInRole("Admin"))
+                                                                     && ic.Status == IcazeStatus.Tesdiqlenib
+                                                                     && ic.IcazeTarixi.Date >= DateTime.Today)
+                                                                {
+                                                                    <button type="button" onclick="icazeLegvEt(@ic.Id)"
+                                                                            style="padding:3px 10px;font-size:12px;background:#e0566a;color:#fff;border:none;border-radius:6px;cursor:pointer">
+                                                                        Ləğv et
+                                                                    </button>
+                                                                }
+                                                            </td>
                                                         </tr>
                                                     }
                                                 </tbody>
@@ -354,6 +366,23 @@
 
 @section Scripts {
     <script>
+        async function icazeLegvEt(id) {
+            var sebeb = prompt("Ləğv səbəbini yazın (məcburi):");
+            if (sebeb === null) return;
+            sebeb = sebeb.trim();
+            if (!sebeb) { alert("Səbəb mütləqdir."); return; }
+            try {
+                var resp = await fetch('@Url.Action("RehberHrLegv", "Icaze")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ id: id, sebeb: sebeb })
+                });
+                var data = await resp.json();
+                alert(data.message);
+                if (data.success) location.reload();
+            } catch (e) { alert("Xəta: " + e); }
+        }
+
         function toggleRow(detailId, btn) {
             var row = document.getElementById(detailId);
             var isOpen = row.classList.toggle('is-open');
