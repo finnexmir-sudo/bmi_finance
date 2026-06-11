@@ -7232,11 +7232,6 @@ namespace FinNex.DataAccess.Migrations
                     b.Navigation("Isci");
                 });
 
-            modelBuilder.Entity("FinNex.Domain.Entities.HR.EzamiyyetMekan", b =>
-                {
-                    b.Navigation("Muracietler");
-                });
-
             modelBuilder.Entity("FinNex.Domain.Entities.HR.EzamiyyetMuraciet", b =>
                 {
                     b.HasOne("FinNex.Domain.Entities.HR.Isci", "Isci")
@@ -7261,6 +7256,11 @@ namespace FinNex.DataAccess.Migrations
                     b.Navigation("Mekan");
 
                     b.Navigation("Rehber");
+                });
+
+            modelBuilder.Entity("FinNex.Domain.Entities.HR.EzamiyyetMekan", b =>
+                {
+                    b.Navigation("Muracietler");
                 });
 #pragma warning restore 612, 618
         }
