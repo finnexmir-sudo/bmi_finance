@@ -21,7 +21,7 @@ namespace FinNex.Application.Interfaces
         // jetonOdenenSaat: rəhbər icazənin neçə saatını jetonla ödənmiş kimi
         // qeydə alır. 0 = tam adi icazə. HR final təsdiqdə həmin saat qədər
         // jeton işçidən FIFO ilə xərclənir.
-        Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal jetonOdenenSaat = 0, bool naharNezereAlinmasin = false);
+        Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal jetonOdenenSaat = 0, bool naharNezereAlinmasin = false, bool birdefelik = false);
         Task<Result> HrTesdiqAsync(int id, bool status, string? qeyd, int hrId = 0, bool birdefelik = false);
         Task<Result<IList<IcazeListDto>>> GetFiltrliAsync(DateTime? tarixFrom, DateTime? tarixTo, int? departamentId, int? status, string? axtaris);
 
