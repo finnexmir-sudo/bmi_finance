@@ -5,6 +5,7 @@ using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -22,17 +23,20 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly IBildirisRouter _bildirisRouter;
         private readonly IMuhasibatHesabService _muhasibatHesabService;
+        private readonly IWebHostEnvironment _env;
 
         public AvansController(
             IUnitOfWork unitOfWork,
             UserManager<AppUser> userManager,
             IBildirisRouter bildirisRouter,
-            IMuhasibatHesabService muhasibatHesabService)
+            IMuhasibatHesabService muhasibatHesabService,
+            IWebHostEnvironment env)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
             _bildirisRouter = bildirisRouter;
             _muhasibatHesabService = muhasibatHesabService;
+            _env = env;
         }
 
         // ── GET /HR/Avans ────────────────────────────────────
@@ -101,31 +105,47 @@ namespace FinNex.UI.Areas.HR.Controllers
                                   "iyul", "avqust", "sentyabr", "oktyabr", "noyabr", "dekabr" };
             var qeyd = $"{il}-{IlSuffiks(il)} il {ayAdlar[ay]} ayı üzrə avans əmək haqqı";
 
-            var wb = new HSSFWorkbook();
-            var sheet = wb.CreateSheet("Ipoteka");
+            // Şablonu aç — fontlar, sütun enləri, başlıqlar, "Ipoteka" sheet qorunur
+            var templatePath = Path.Combine(_env.ContentRootPath, "App_Data", "Muhasibat", "Avans hesablama.xls");
+            if (!System.IO.File.Exists(templatePath))
+            {
+                TempData["Error"] = "Şablon tapılmadı: App_Data/Muhasibat/Avans hesablama.xls";
+                return RedirectToAction(nameof(Index));
+            }
 
-            // Hesab nömrələri 20 rəqəm — MƏTN formatı (rəqəm olsa dəqiqlik itər)
-            var textStyle = wb.CreateCellStyle();
-            textStyle.DataFormat = wb.CreateDataFormat().GetFormat("@");
-            var pulStyle = wb.CreateCellStyle();
-            pulStyle.DataFormat = wb.CreateDataFormat().GetFormat("0.00");
+            HSSFWorkbook wb;
+            using (var tfs = new FileStream(templatePath, FileMode.Open, FileAccess.Read))
+                wb = new HSSFWorkbook(tfs);
 
-            string[] basliqlar = { "Sənədin №", "Əməliyyat kodu", "SHD", "Debet", "SHK",
-                                   "Kredit", "Məbləğ", "Operation code", "Ölkə kodu", "Qeyd" };
-            var head = sheet.CreateRow(0);
-            for (int c = 0; c < basliqlar.Length; c++)
-                head.CreateCell(c).SetCellValue(basliqlar[c]);
+            var sheet = wb.GetSheet("Ipoteka") ?? wb.GetSheetAt(0);
+
+            // Nümunə data sətrinin (index 1) cell stillərini tut — format (mətn/rəqəm) qorunsun
+            var ornek = sheet.GetRow(1);
+            var colStil = new ICellStyle[10];
+            for (int c = 0; c < 10; c++) colStil[c] = ornek?.GetCell(c)?.CellStyle;
+
+            // Fallback stillər (şablonda nümunə sətir yoxdursa)
+            var textStyle = wb.CreateCellStyle(); textStyle.DataFormat = wb.CreateDataFormat().GetFormat("@");
+            var pulStyle = wb.CreateCellStyle();  pulStyle.DataFormat  = wb.CreateDataFormat().GetFormat("0.00");
+
+            // Başlıqdan (row 0) sonrakı bütün sətirləri sil, yalnız header qalsın
+            for (int rr = sheet.LastRowNum; rr >= 1; rr--)
+            {
+                var rw = sheet.GetRow(rr);
+                if (rw != null) sheet.RemoveRow(rw);
+            }
 
             int r = 1;
             foreach (var a in avanslar)
             {
                 var iban = a.Isci?.Maliye?.BankHesabNo?.Trim() ?? "";
                 var row = sheet.CreateRow(r);
-                row.CreateCell(0).SetCellValue(r);                                              // Sənədin № (sıra)
-                var dCell = row.CreateCell(3); dCell.SetCellValue(debetHesab);  dCell.CellStyle = textStyle; // Debet (sabit)
-                var fCell = row.CreateCell(5); fCell.SetCellValue(iban);        fCell.CellStyle = textStyle; // Kredit (işçi hesabı)
-                var gCell = row.CreateCell(6); gCell.SetCellValue((double)a.Mebleg); gCell.CellStyle = pulStyle; // Məbləğ
-                row.CreateCell(9).SetCellValue(qeyd);                                           // Qeyd
+
+                var c0 = row.CreateCell(0); c0.SetCellValue(r);               if (colStil[0] != null) c0.CellStyle = colStil[0]; // Sənədin № (sıra)
+                var c3 = row.CreateCell(3); c3.SetCellValue(debetHesab);      c3.CellStyle = colStil[3] ?? textStyle;             // Debet (sabit)
+                var c5 = row.CreateCell(5); c5.SetCellValue(iban);            c5.CellStyle = colStil[5] ?? textStyle;             // Kredit (işçi hesabı)
+                var c6 = row.CreateCell(6); c6.SetCellValue((double)a.Mebleg); c6.CellStyle = colStil[6] ?? pulStyle;            // Məbləğ
+                var c9 = row.CreateCell(9); c9.SetCellValue(qeyd);            if (colStil[9] != null) c9.CellStyle = colStil[9];  // Qeyd
                 r++;
             }
 
