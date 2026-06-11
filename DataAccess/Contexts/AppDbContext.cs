@@ -76,6 +76,9 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<Emr> Emrler { get; set; }
     public DbSet<EmrSayghaci> EmrSayghaclari { get; set; }
 
+    // Mühasibat (proводka) hesabları — açar→hesab (avans, maaş və s.)
+    public DbSet<MuhasibatHesabi> MuhasibatHesablari { get; set; }
+
     public DbSet<IsciTeyinat> IsciTeyinatlari { get; set; }
     public DbSet<MuqavileYenileme> MuqavileYenilemeleri { get; set; }
     public DbSet<IsciStrukturRolu> IsciStrukturRollari { get; set; }
@@ -609,6 +612,21 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         // Əmr reyestri — növ+il+nömrə üzrə axtarış/sıralama
         builder.Entity<Emr>()
             .HasIndex(x => new { x.Nov, x.Il, x.Nomre });
+
+        // Mühasibat hesabları — açar unikal; avans Debet hesabı default seed
+        builder.Entity<MuhasibatHesabi>()
+            .HasIndex(x => x.Acar)
+            .IsUnique();
+        builder.Entity<MuhasibatHesabi>().HasData(new MuhasibatHesabi
+        {
+            Id = 1,
+            Acar = "AvansDebet",
+            Ad = "Avans — Debet hesabı (proводka)",
+            HesabNomresi = "25052000010000300000",
+            Aktiv = true,
+            YaradilmaTarixi = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Unspecified),
+            Silinib = false
+        });
         builder.Entity<Mezuniyyet>()
             .HasOne(x => x.Isci)
             .WithMany()
