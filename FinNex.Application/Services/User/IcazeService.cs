@@ -828,6 +828,28 @@ namespace FinNex.Application.Services
             return (null, null);
         }
 
+        // Bir icazənin FAKTİKİ saatı (Dövriyyə və İzləmə eyni məntiqlə işləsin deyə tək yerdə):
+        //  • adi icazə  → qayıdış − çıxış (hər iki vaxt olmalıdır, yoxdursa null)
+        //  • birdəfəlik → işçi qayıtmır, ona görə çıxışdan planlaşdırılan icazə sonuna
+        //    (BitisSaati) qədər sayılır. Çıxış yoxdursa, yaxud çıxış icazə sonundan
+        //    sonradırsa null (faktiki ölçülə bilmir).
+        private static double? IcazeFaktikiSaat(
+            DateTime? cixis, DateTime? qayidis, bool birdefelik,
+            DateTime icazeTarixi, TimeSpan bitisSaati)
+        {
+            if (cixis == null) return null;
+
+            if (birdefelik)
+            {
+                var icazeSonu = icazeTarixi.Date + bitisSaati;
+                var saat = (icazeSonu - cixis.Value).TotalHours;
+                return saat > 0 ? Math.Round(saat, 2) : (double?)null;
+            }
+
+            if (qayidis == null || qayidis.Value <= cixis.Value) return null;
+            return Math.Round((qayidis.Value - cixis.Value).TotalHours, 2);
+        }
+
         public async Task<Result<IList<IcazeIsciIstatistikDto>>> GetIsciIzlemeAsync(IcazeIzlemeFiltrDto filtr)
         {
             try
@@ -918,9 +940,10 @@ namespace FinNex.Application.Services
                             UmumSaat = g.Sum(x => EfektivSaat(x)),
                             TesdiqSaat = g.Where(x => x.Status == IcazeStatus.Tesdiqlenib).Sum(x => EfektivSaat(x)),
                             FaktikiSaat = icazeDtolar
-                                .Where(d => !d.Birdefelik && d.CixisVaxt.HasValue && d.QayidisVaxt.HasValue
-                                         && d.QayidisVaxt.Value > d.CixisVaxt.Value)
-                                .Sum(d => (d.QayidisVaxt!.Value - d.CixisVaxt!.Value).TotalHours),
+                                .Select(d => IcazeFaktikiSaat(d.CixisVaxt, d.QayidisVaxt, d.Birdefelik,
+                                                              d.IcazeTarixi, d.BitisSaati))
+                                .Where(s => s.HasValue)
+                                .Sum(s => s!.Value),
                             SonIcazeTarixi = g.Max(x => (DateTime?)x.IcazeTarixi),
                             Icazeler = icazeDtolar,
                         };
@@ -984,8 +1007,14 @@ namespace FinNex.Application.Services
                             ? IcazeFaktikiBerpa(c.Icaze.IsciId, c.Icaze.IcazeTarixi,
                                                 c.Icaze.BaslamaSaati, c.Icaze.BitisSaati, rawXerite, davXerite)
                             : ((DateTime?)null, (DateTime?)null);
-                        double? faktiki = c.FaktikiSaat ??
-                            (fcx != null && fqy != null ? Math.Round((fqy.Value - fcx.Value).TotalHours, 2) : (double?)null);
+                        var effCixis = c.CixisVaxt ?? fcx;
+                        var effQayidis = c.QayidisVaxt ?? fqy;
+                        // Birdəfəlikdə qayıdış olmur — faktiki çıxışdan icazə sonuna sayılır.
+                        // Adi icazədə saxlanmış (canlı) dəyər varsa ona üstünlük verilir,
+                        // yoxsa çıxış/qayıdış cütünə görə hesablanır.
+                        double? faktiki = (!c.Birdefelik ? c.FaktikiSaat : null)
+                            ?? IcazeFaktikiSaat(effCixis, effQayidis, c.Birdefelik,
+                                                c.Icaze.IcazeTarixi, c.Icaze.BitisSaati);
                         return new IcazeDovriyyeDto
                         {
                             IcazeId = c.IcazeId,
@@ -999,8 +1028,8 @@ namespace FinNex.Application.Services
                             BitisSaati = c.Icaze.BitisSaati,
                             PlanlananSaat = c.Icaze.IcazeSaati,
                             Birdefelik = c.Birdefelik,
-                            CixisVaxt = c.CixisVaxt ?? fcx,
-                            QayidisVaxt = c.QayidisVaxt ?? fqy,
+                            CixisVaxt = effCixis,
+                            QayidisVaxt = effQayidis,
                             FaktikiSaat = faktiki,
                             CixisStatus = fcx != null
                                 ? (fqy != null ? IcazeCixisGirisStatus.Tamamlandi : IcazeCixisGirisStatus.Cixdi)
