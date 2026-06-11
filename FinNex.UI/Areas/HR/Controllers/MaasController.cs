@@ -120,6 +120,24 @@ namespace FinNex.UI.Areas.HR.Controllers
                          && (x.Status == AvansStatus.Tesdiqlenib || x.Status == AvansStatus.Odenilib))
                 .SumAsync(x => x.Mebleg);
 
+            // Qabaqcadan ödənilmiş məzuniyyət — maaşın saxlanmış izahından
+            // "Mezuniyyet (qabaqcadan ödənildi)" sətrinin (= net ödənilmiş) cəmi.
+            // Bilərəkdən izahdan oxunur ki, maaş detalında göstərilən dəyərlə dəqiq uyğun gəlsin.
+            decimal mezQabaqcadanCemi = 0m;
+            foreach (var m in maaslar)
+            {
+                if (string.IsNullOrWhiteSpace(m.HesablamaIzahi)) continue;
+                try
+                {
+                    var izahlar = JsonSerializer.Deserialize<List<HesablamaIzahiDto>>(m.HesablamaIzahi);
+                    if (izahlar != null)
+                        mezQabaqcadanCemi += izahlar
+                            .Where(z => z.Addim == "Mezuniyyet (qabaqcadan ödənildi)")
+                            .Sum(z => z.Mebleg);
+                }
+                catch { /* pozuq izah JSON — keç */ }
+            }
+
             // Provodka sətirləri: (Debet, Kredit, Məbləğ, Qeyd)
             var setirler = new List<(string Debet, string Kredit, decimal Mebleg, string Qeyd)>
             {
@@ -135,6 +153,8 @@ namespace FinNex.UI.Areas.HR.Controllers
 
                 // Bağlanma — avansların cəmi (Debet klirinq, Kredit avans hesabı = AvansDebet)
                 (kliring, Hesab("AvansDebet"), avansCemi, Q("avansların bağlanılması")),
+                // Bağlanma — qabaqcadan ödənilmiş məzuniyyət (Debet klirinq, Kredit prepaid öhdəlik)
+                (kliring, Hesab("MezuniyyetQabaqcadanKredit"), mezQabaqcadanCemi, Q("qabaqcadan ödənilmiş məzuniyyət haqqının bağlanılması")),
 
                 // B) İşəgötürən sosial ayırmalar (Debet xərc 90022, Kredit öhdəlik)
                 (Hesab("MdssEdenXercRezident"),      Hesab("MdssKredit"),         CemRez("DSMF (İşəgötürən)", false), Q("rezident işçilər üçün sığortaedənin hesabına ödənilən MDSS haqqı")),

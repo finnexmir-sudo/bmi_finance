@@ -650,7 +650,9 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             new MuhasibatHesabi { Id = 18, Acar = "IssizlikOlunanKredit",      Ad = "İşsizlik öhdəlik (sığortaolunan)",              HesabNomresi = "45110000000000400004", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
             new MuhasibatHesabi { Id = 19, Acar = "TibbiEdenKredit",           Ad = "İcbari tibbi öhdəlik (işəgötürən)",             HesabNomresi = "45110000000000400005", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
             new MuhasibatHesabi { Id = 20, Acar = "TibbiOlunanKredit",         Ad = "İcbari tibbi öhdəlik (sığortaolunan)",          HesabNomresi = "45110000000000400006", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
-            new MuhasibatHesabi { Id = 21, Acar = "GelirVergisiKredit",        Ad = "Gəlir vergisi öhdəlik",                         HesabNomresi = "45103000000000400000", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false }
+            new MuhasibatHesabi { Id = 21, Acar = "GelirVergisiKredit",        Ad = "Gəlir vergisi öhdəlik",                         HesabNomresi = "45103000000000400000", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 22, Acar = "MezuniyyetQabaqcadanKredit", Ad = "Qabaqcadan ödənilmiş məzuniyyət (öhdəlik)",     HesabNomresi = "25052000020000300000", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false },
+            new MuhasibatHesabi { Id = 23, Acar = "MuavinetXerc",              Ad = "Sığortaedən müavinət xərci (xəstəlik)",         HesabNomresi = "90020000050000700000", Aktiv = true, YaradilmaTarixi = maasHesabSeedTarix, Silinib = false }
         );
         builder.Entity<Mezuniyyet>()
             .HasOne(x => x.Isci)
