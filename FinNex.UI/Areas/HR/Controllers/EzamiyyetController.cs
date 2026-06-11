@@ -101,7 +101,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Status         = status.HasValue ? (EzamiyyetStatus?)status.Value : null
             };
 
-            var isciler = await _service.GetIsciEzamIzlemeAsync(filtr);
+            var isciler = (await _service.GetIsciEzamIzlemeAsync(filtr)).ToList();
 
             var s = string.IsNullOrEmpty(sirala) ? "cemi" : sirala;
             isciler = s switch
