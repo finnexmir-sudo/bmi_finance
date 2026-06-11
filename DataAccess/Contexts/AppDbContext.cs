@@ -621,7 +621,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
         {
             Id = 1,
             Acar = "AvansDebet",
-            Ad = "Avans — Debet hesabı (proводka)",
+            Ad = "Avans — Debet hesabı (əməliyyat yazılışı)",
             HesabNomresi = "25052000010000300000",
             Aktiv = true,
             YaradilmaTarixi = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Unspecified),

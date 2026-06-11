@@ -69,7 +69,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             return View(list);
         }
 
-        // ── Pravodka (proводka) Excel — seçilmiş ay üzrə təsdiqlənmiş avanslar ──
+        // ── Əməliyyatın yazılışı (Excel) — seçilmiş ay üzrə təsdiqlənmiş avanslar ──
         // Hər avans bir sətir: Debet sabit (ayardan), Kredit = işçinin bank hesabı.
         // .xls (NPOI/HSSF) — bank idxalı formatı. Avans statusu DƏYİŞMİR (təkrar export olar).
         public async Task<IActionResult> PravodkaExport(int il, int ay)
