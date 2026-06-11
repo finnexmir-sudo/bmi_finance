@@ -148,19 +148,21 @@
     <input type="hidden" id="ezDuzId" />
     <div style="margin-bottom:12px">
         <label class="fn-label">Faktiki çıxış</label>
-        <div style="display:flex;gap:8px">
-            <input type="date" id="ezDuzCixisD" class="fn-input" style="flex:1" />
+        <div style="display:flex;gap:8px;align-items:center">
+            <span id="ezDuzCixisDLbl" style="flex:1;font-size:13px;color:#475569;background:#f8fafc;border-radius:6px;padding:7px 10px"></span>
             <input type="text" id="ezDuzCixisT" class="fn-input" style="width:92px;text-align:center;letter-spacing:.5px" placeholder="SS:DD" maxlength="5" inputmode="numeric" />
         </div>
+        <input type="hidden" id="ezDuzCixisD" />
     </div>
     <div style="margin-bottom:8px">
         <label class="fn-label">Faktiki qayıdış</label>
-        <div style="display:flex;gap:8px">
-            <input type="date" id="ezDuzQayidisD" class="fn-input" style="flex:1" />
+        <div style="display:flex;gap:8px;align-items:center">
+            <span id="ezDuzQayidisDLbl" style="flex:1;font-size:13px;color:#475569;background:#f8fafc;border-radius:6px;padding:7px 10px"></span>
             <input type="text" id="ezDuzQayidisT" class="fn-input" style="width:92px;text-align:center;letter-spacing:.5px" placeholder="SS:DD" maxlength="5" inputmode="numeric" />
         </div>
+        <input type="hidden" id="ezDuzQayidisD" />
     </div>
-    <div style="font-size:11px;color:#94a3b8;margin-bottom:16px">Saat 24 formatında (SS:DD). Boş buraxsanız həmin sahə təmizlənir.</div>
+    <div style="font-size:11px;color:#94a3b8;margin-bottom:16px">Yalnız saatı daxil edin (SS:DD, 24 saat) — tarix səfərə görə avtomatikdir. Saatı boş buraxsanız həmin sahə təmizlənir.</div>
     <div style="display:flex;justify-content:flex-end;gap:8px">
         <button class="fn-btn fn-btn--ghost" onclick="ezDuzeltClose()">Ləğv</button>
         <button class="fn-btn fn-btn--primary" onclick="ezDuzeltSaxla()"><i class="bi bi-check-circle"></i> Yadda saxla</button>

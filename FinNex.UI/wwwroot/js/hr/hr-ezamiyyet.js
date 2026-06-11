@@ -54,7 +54,7 @@ async function ezYukle() {
         if (window.ezCanEdit && r.status === 2) {
             emel += '<br><button class="fn-btn fn-btn--outline fn-btn--sm" style="margin-top:4px" ' +
                     'onclick="ezOpenDuzelt(' + r.id + ',\'' + ezEsc(r.isciTamAd) + '\',\'' +
-                    (r.cihazCixisIso || '') + '\',\'' + (r.cihazQayidisIso || '') + '\',\'' + (r.bitmeIso || '') + '\')">' +
+                    (r.cihazCixisIso || '') + '\',\'' + (r.cihazQayidisIso || '') + '\',\'' + (r.baslamaIso || '') + '\',\'' + (r.bitmeIso || '') + '\')">' +
                     '<i class="bi bi-pencil"></i> Düzəlt</button>';
         }
         var geriNot = r.geriDonusQeydi
@@ -145,22 +145,34 @@ function ezSplitIso(iso) {              // "2026-06-09T15:30" → ["2026-06-09",
     return [p[0] || '', (p[1] || '').slice(0, 5)];
 }
 
-function ezOpenDuzelt(id, isci, cixisIso, qayidisIso, bitmeIso) {
+function ezOpenDuzelt(id, isci, cixisIso, qayidisIso, baslamaIso, bitmeIso) {
     document.getElementById('ezDuzId').value = id;
     document.getElementById('ezDuzAd').textContent = isci || '';
 
+    // Çıxış tarixi səfərin başlama tarixindən (mövcud çıxış varsa ondan) — HR yalnız saat yazır
     var cx = ezSplitIso(cixisIso);
-    document.getElementById('ezDuzCixisD').value = cx[0];
+    var cixisDate = cx[0] || baslamaIso || '';
+    document.getElementById('ezDuzCixisD').value = cixisDate;
     document.getElementById('ezDuzCixisT').value = cx[1];
+    document.getElementById('ezDuzCixisDLbl').textContent = ezFmtDate(cixisDate);
 
+    // Qayıdış tarixi səfərin bitmə tarixindən; qayıdış saatı boşdursa, çıxış varsa 17:45 təklif
     var qy = ezSplitIso(qayidisIso);
-    // qayıdış boşdursa, çıxış varsa son günün (bitmə) 17:45-ni təklif et
-    if (!qayidisIso && cixisIso && bitmeIso) { qy = [bitmeIso, '17:45']; }
-    document.getElementById('ezDuzQayidisD').value = qy[0];
-    document.getElementById('ezDuzQayidisT').value = qy[1];
+    var qayidisDate = qy[0] || bitmeIso || '';
+    var qayidisTime = qy[1] || ((!qayidisIso && cixisIso) ? '17:45' : '');
+    document.getElementById('ezDuzQayidisD').value = qayidisDate;
+    document.getElementById('ezDuzQayidisT').value = qayidisTime;
+    document.getElementById('ezDuzQayidisDLbl').textContent = ezFmtDate(qayidisDate);
 
     document.getElementById('ezDuzOverlay').style.display = 'block';
     document.getElementById('ezDuzModal').style.display   = 'block';
+}
+
+// "2026-06-03" → "03.06.2026"
+function ezFmtDate(iso) {
+    if (!iso) return '—';
+    var p = iso.split('-');
+    return p.length === 3 ? p[2] + '.' + p[1] + '.' + p[0] : iso;
 }
 
 function ezDuzeltClose() {
@@ -174,11 +186,11 @@ async function ezDuzeltSaxla() {
 
     var re = /^([01]?\d|2[0-3]):[0-5]\d$/;     // 24 saat SS:DD
     function birlesdir(dId, tId, etiket) {
-        var d = document.getElementById(dId).value;
+        var d = document.getElementById(dId).value;        // tarix avtomatik (səfərdən)
         var t = document.getElementById(tId).value.trim();
-        if (!d && !t) return '';               // hər ikisi boş → təmizlə
-        if (!d || !t)  throw etiket + ' üçün həm tarix, həm saat seçilməlidir.';
+        if (!t) return '';                                 // saat boş → sahəni təmizlə
         if (!re.test(t)) throw etiket + ' saatı düzgün deyil (SS:DD, məs: 17:45).';
+        if (!d) throw etiket + ' üçün səfər tarixi tapılmadı.';
         return d + 'T' + t;
     }
 

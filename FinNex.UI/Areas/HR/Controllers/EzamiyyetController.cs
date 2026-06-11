@@ -82,6 +82,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 cihazQayidisVaxti = x.CihazQayidisVaxti?.ToString("dd.MM.yyyy HH:mm"),
                 cihazCixisIso     = x.CihazCixisVaxti?.ToString("yyyy-MM-ddTHH:mm"),
                 cihazQayidisIso   = x.CihazQayidisVaxti?.ToString("yyyy-MM-ddTHH:mm"),
+                baslamaIso        = x.BaslamaTarixi.ToString("yyyy-MM-dd"),
                 bitmeIso          = x.BitmeTarixi.ToString("yyyy-MM-dd"),
                 yaradilmaTarixi   = x.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")
             }));
