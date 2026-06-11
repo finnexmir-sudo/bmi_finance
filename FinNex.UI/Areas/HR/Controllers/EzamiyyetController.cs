@@ -159,6 +159,32 @@ namespace FinNex.UI.Areas.HR.Controllers
             return Json(new { success = ok, message = error });
         }
 
+        // ── Rəhbər/HR — təsdiqlənmiş ezamiyyəti ləğv et (səbəb məcburi) ──
+        [HttpPost]
+        [Authorize(Roles = $"{RoleNames.Admin},{RoleNames.HR},{RoleNames.Rehber}")]
+        public async Task<IActionResult> LegvEt(int id, string? sebeb)
+        {
+            if (string.IsNullOrWhiteSpace(sebeb))
+                return Json(new { success = false, message = "Ləğv səbəbi mütləqdir." });
+
+            var legvEden = await GetIsciIdAsync();
+            var detay = await _service.DetayAsync(id);
+
+            var (ok, error) = await _service.RehberHrLegvEtAsync(id, legvEden ?? 0, sebeb);
+
+            if (ok && detay != null)
+            {
+                await _bildirisRouter.NotifyIsciAsync(
+                    detay.IsciId,
+                    BildirisNovu.EzamiyyetImtina,
+                    "Ezamiyyət ləğv edildi",
+                    $"Ezamiyyət müraciətiniz ({detay.BaslamaTarixi:dd.MM.yyyy} – {detay.BitmeTarixi:dd.MM.yyyy}) Rəhbər/HR tərəfindən ləğv edildi. Səbəb: {sebeb}",
+                    redirectUrl: Url.Action("Index", "EzamiyyetMuraciet", new { area = "User" }));
+            }
+
+            return Json(new { success = ok, message = ok ? "Ezamiyyət ləğv edildi." : error });
+        }
+
         // ── HR əl ilə cihaz çıxış/qayıdış düzəlişi (insan faktoru) ──
         // "qayıtmayıb" və ya səhər icazəsi yanlış oxunan qeydləri HR əl ilə düzəldir.
         [HttpPost]

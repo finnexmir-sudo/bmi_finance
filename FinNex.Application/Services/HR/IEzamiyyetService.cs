@@ -20,6 +20,9 @@ namespace FinNex.Application.Services.HR
             int id, bool tesdiq, string? qeyd, int rehberId);
 
         Task<(bool ok, string? error)> LegvEtAsync(int id, int isciId);
+        // Rəhbər/HR — təsdiqlənmiş ezamiyyəti ləğv edir (sahibə bağlı deyil, səbəb məcburi,
+        // keçmiş/bitmiş olmamalı). Yalnız bu gün və gələcək.
+        Task<(bool ok, string? error)> RehberHrLegvEtAsync(int id, int legvEdenIsciId, string sebeb);
         Task<(bool ok, string? error)> GeriQeydElavEtAsync(int id, int isciId, string? qeyd);
 
         // HR əl ilə cihaz çıxış/qayıdış düzəlişi (insan faktoru — qayıtmayıb qeydləri)

@@ -270,6 +270,7 @@
                                                         <th>Faktiki qayıdış</th>
                                                         <th>Faktiki saat</th>
                                                         <th>Status</th>
+                                                        <th>Əməliyyat</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -324,6 +325,17 @@
                                                                 <span class="iz-status-dot @StatusDotClass(ez.Status)"></span>
                                                                 @StatusText(ez.Status)
                                                             </td>
+                                                            <td>
+                                                                @if ((User.IsInRole("HR") || User.IsInRole("Rehber") || User.IsInRole("Admin"))
+                                                                     && ez.Status == EzamiyyetStatus.Tesdiqlendi
+                                                                     && ez.BitmeTarixi.Date >= DateTime.Today)
+                                                                {
+                                                                    <button type="button" onclick="ezamLegvEt(@ez.Id)"
+                                                                            style="padding:3px 10px;font-size:12px;background:#e0566a;color:#fff;border:none;border-radius:6px;cursor:pointer">
+                                                                        Ləğv et
+                                                                    </button>
+                                                                }
+                                                            </td>
                                                         </tr>
                                                     }
                                                 </tbody>
@@ -346,6 +358,23 @@
 
 @section Scripts {
     <script>
+        async function ezamLegvEt(id) {
+            var sebeb = prompt("Ləğv səbəbini yazın (məcburi):");
+            if (sebeb === null) return;
+            sebeb = sebeb.trim();
+            if (!sebeb) { alert("Səbəb mütləqdir."); return; }
+            try {
+                var resp = await fetch('@Url.Action("LegvEt", "Ezamiyyet")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ id: id, sebeb: sebeb })
+                });
+                var data = await resp.json();
+                alert(data.message);
+                if (data.success) location.reload();
+            } catch (e) { alert("Xəta: " + e); }
+        }
+
         function toggleRow(detailId, btn) {
             var row = document.getElementById(detailId);
             var isOpen = row.classList.toggle('is-open');
