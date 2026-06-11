@@ -43,6 +43,33 @@
         </div>
     </div>
 
+    @* ── Pravodka (proводka) Excel — mühasib üçün ── *@
+    <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;background:#f8fafc;border:1px solid #e8edf3;border-radius:10px;padding:14px 16px;margin-bottom:16px">
+        <div>
+            <div style="font-size:13px;font-weight:700;color:#0f172a">Avans pravodkası (.xls)</div>
+            <div style="font-size:11px;color:#64748b">Seçilmiş ay üzrə təsdiqlənmiş avanslar — Debet sabit (ayardan), Kredit işçinin bank hesabı</div>
+        </div>
+        <form asp-action="PravodkaExport" method="get" style="display:flex;align-items:flex-end;gap:8px;margin-left:auto">
+            <div>
+                <label style="font-size:11px;color:#64748b;display:block">İl</label>
+                <input type="number" name="il" value="@DateTime.Now.Year" min="2020" max="2100"
+                       style="width:90px;padding:7px 10px;border:1px solid #d7dee8;border-radius:8px" />
+            </div>
+            <div>
+                <label style="font-size:11px;color:#64748b;display:block">Ay</label>
+                <select name="ay" style="padding:7px 10px;border:1px solid #d7dee8;border-radius:8px">
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        <option value="@m" selected="@(m == DateTime.Now.Month ? "selected" : null)">@ayAdlar[m]</option>
+                    }
+                </select>
+            </div>
+            <button type="submit" style="background:#1e9b6b;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer">
+                <i class="bi bi-file-earmark-excel"></i> Pravodka yüklə
+            </button>
+        </form>
+    </div>
+
     @if (TempData["Success"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show">

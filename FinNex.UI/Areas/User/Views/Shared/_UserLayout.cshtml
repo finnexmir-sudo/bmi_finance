@@ -816,7 +816,8 @@
             case "muhasibat":
                 {
                     var mhMaasActive = currentController is "Maas" or "MezuniyyetOdenis" or "IsciAyliqQazanc" or "AyliqElave"
-                                       || (currentController == "Avans" && currentArea == "HR");
+                                       || (currentController == "Avans" && currentArea == "HR")
+                                       || (currentController == "Muhasibat" && currentArea == "HR");
                     var mhParamActive = currentController is "MaasParametri" or "Guzest" or "IsciGuzest" or "IsciHYS";
                     var mhMaliyyeActive = currentController == "Budce" || (currentArea == "HR" && (currentController == "Xerc" || currentController == "XercKateqoriya" || currentController == "XercHesabat" || currentController == "DovriOdenis" || currentController == "GozlenilenXerc" || currentController == "MaliyyeDashboard"));
                     var mhAnyActive = mhMaasActive || mhParamActive || mhMaliyyeActive;
@@ -846,6 +847,10 @@
                             <a asp-area="HR" asp-controller="Avans" asp-action="Index"
                                class="fn-nav-item @(currentController == "Avans" && currentArea == "HR" ? "active" : "")">
                                 <i class="bi bi-cash-coin"></i> Avans Müraciətləri
+                            </a>
+                            <a asp-area="HR" asp-controller="Muhasibat" asp-action="Hesablar"
+                               class="fn-nav-item @(currentController == "Muhasibat" && currentArea == "HR" ? "active" : "")">
+                                <i class="bi bi-bank"></i> Mühasibat Hesabları
                             </a>
                         </div>
                     </div>
