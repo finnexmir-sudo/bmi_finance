@@ -212,18 +212,10 @@
                     </div>
                     }
 
-                    @* Step 3: HR — yalnız bu addımdan keçibsə göstər *@
+                    @* HR addımı təsdiq zəncirindən çıxarıldı — rəhbər son təsdiqdir.
+                       Yalnız köhnə qeydlər (HR təsdiq/imtina qeydi olanlar) üçün göstərilir. *@
                     @{
-                        // HR addımı: HR qeydi var, və ya status HrTesdiqinde, ya da addım hələ qabaq mərhələdədir
-                        bool hrAddimi = Model.HrTesdiq.HasValue
-                            || Model.Status == (int)FinNex.Domain.Entities.HR.MezuniyyetStatus.HrTesdiqinde
-                            || Model.Status < (int)FinNex.Domain.Entities.HR.MezuniyyetStatus.HrTesdiqinde;
-                        // Tesdiqlenib statusunda olub HR qeydi yoxdursa atlandı (HR özü muraciet edib)
-                        if (Model.Status == (int)FinNex.Domain.Entities.HR.MezuniyyetStatus.Tesdiqlenib
-                            && !Model.HrTesdiq.HasValue)
-                        {
-                            hrAddimi = false;
-                        }
+                        bool hrAddimi = Model.HrTesdiq.HasValue;
 
                         // Görünən addım sayını hesabla — HR-ın nömrəsi düzgün dursun
                         int hrNo = 1;
