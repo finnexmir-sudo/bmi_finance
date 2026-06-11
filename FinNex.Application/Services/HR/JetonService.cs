@@ -190,6 +190,40 @@ namespace FinNex.Application.Services.HR
             return jetonlar.Sum(x => x.QalanSaat ?? x.JetonTeyinati.SaatDeyeri);
         }
 
+        // İcazə ləğv olunanda jetonu geri qaytarır (reverse-FIFO: ən son qazanılandan).
+        // QEYD: dəyişiklikləri stage edir, YaddaSaxlaAsync ÇAĞIRMIR — çağıran tək
+        // tranzaksiyada saxlamalıdır (atomik icazə ləğvi + jeton bərpası üçün).
+        public async Task<Result> IcazeJetonuGeriQaytarAsync(int isciId, decimal saat)
+        {
+            if (saat <= 0) return Result.Ok();
+            var jetonlar = await _unitOfWork.Repository<IsciJetonu>()
+                .Query()
+                .Include(x => x.JetonTeyinati)
+                .Where(x => x.IsciId == isciId
+                    && x.JetonTeyinati.Nov == JetonNovu.Musbat
+                    && x.RedimTelebiId == null
+                    && (x.Status == IsciJetonuStatus.IstifadeOlunub || x.Status == IsciJetonuStatus.Aktiv))
+                .OrderByDescending(x => x.QazanmaTarixi)
+                .ToListAsync();
+
+            decimal qalan = saat;
+            foreach (var j in jetonlar)
+            {
+                if (qalan <= 0) break;
+                decimal tam    = j.JetonTeyinati.SaatDeyeri;
+                decimal movcut = j.QalanSaat ?? tam;
+                decimal bosluq = tam - movcut;          // bu jetonda neçə saat geri qoyula bilər
+                if (bosluq <= 0) continue;
+                decimal qoy = Math.Min(bosluq, qalan);
+                j.QalanSaat = movcut + qoy;
+                if (j.Status == IsciJetonuStatus.IstifadeOlunub && j.QalanSaat > 0)
+                    j.Status = IsciJetonuStatus.Aktiv;
+                qalan -= qoy;
+                await _unitOfWork.Repository<IsciJetonu>().YenileAsync(j);
+            }
+            return Result.Ok();
+        }
+
         // ── Redim ─────────────────────────────────────────────────────────────
 
         public async Task<Result> RedimTelebiYaratAsync(int isciId, JetonRedimTelebiCreateDto dto)
