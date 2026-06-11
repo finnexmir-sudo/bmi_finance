@@ -138,6 +138,12 @@ namespace FinNex.UI.Areas.HR.Controllers
                 catch { /* pozuq izah JSON — keç */ }
             }
 
+            // Xəstəlik — şirkətin ödədiyi müavinət (SirketOdenis, brütə əlavə olunan) ay üzrə cəmi
+            var xestelikSirketCemi = await _unitOfWork.Repository<XestelikOdenis>()
+                .Query()
+                .Where(x => !x.Silinib && x.Il == il && x.Ay == ay)
+                .SumAsync(x => x.SirketOdenis);
+
             // Provodka sətirləri: (Debet, Kredit, Məbləğ, Qeyd)
             var setirler = new List<(string Debet, string Kredit, decimal Mebleg, string Qeyd)>
             {
@@ -150,6 +156,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                 (Hesab("ElaveXercQeyriRezident"),   kliring, CemRez("Overtime", true),            Q("qeyri-rezident işçiyə əlavə əmək haqqı xərci")),
                 (Hesab("MezuniyyetXercRezident"),   kliring, CemRez("Məzuniyyət Ödənişi", false), Q("rezident işçilərə məzuniyyət haqqı")),
                 (Hesab("MezuniyyetXercQeyriRezident"), kliring, CemRez("Məzuniyyət Ödənişi", true), Q("qeyri-rezident işçilərə məzuniyyət haqqı")),
+
+                // Hesablanma — xəstəlik müavinəti (Debet müavinət xərci, Kredit klirinq)
+                (Hesab("MuavinetXerc"), kliring, xestelikSirketCemi, Q("sığortaedən tərəfindən ödənilən müavinət haqqları")),
 
                 // Bağlanma — avansların cəmi (Debet klirinq, Kredit avans hesabı = AvansDebet)
                 (kliring, Hesab("AvansDebet"), avansCemi, Q("avansların bağlanılması")),
