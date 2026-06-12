@@ -125,13 +125,29 @@
         const cInp  = row.querySelector('.mth-inp--c');
         // Fərqli gəlir input əsas sırada deyil, əlaqəli detail sırasında yerləşir
         const detailRow = document.querySelector(`tr.mth-detail-row[data-detail-for="${row.dataset.isci}"]`);
-        const fgInps = detailRow ? Array.from(detailRow.querySelectorAll('.mth-inp--fg')) : [];
+        // Standart fərqli gəlir (IH-07/VM — tam vergiyə cəlb) və konfiqurasiyalı (data-cfg) ayrılır
+        const fgInps = detailRow ? Array.from(detailRow.querySelectorAll('.mth-inp--fg:not([data-cfg])')) : [];
+        const cfgInps = detailRow ? Array.from(detailRow.querySelectorAll('.mth-inp--fg[data-cfg]')) : [];
         const done = row.classList.contains('done');
 
         const bonus = parseFloat(bInp?.value || 0) || 0;
         const overtime = parseFloat(ovInp?.value || 0) || 0;
         const cerime = parseFloat(cInp?.value || 0) || 0;
         const ferqliGelir = fgInps.reduce((s, inp) => s + (parseFloat(inp.value || 0) || 0), 0);
+
+        // Konfiqurasiyalı gəlirlər — hər birinin bayraqlarına görə baza töhfələri (server ilə eyni)
+        let cfgCemi = 0, cfgVergi = 0, cfgDsmf = 0, cfgIss = 0, cfgItss = 0, cfgGuz = 0;
+        cfgInps.forEach(inp => {
+            const m = parseFloat(inp.value || 0) || 0;
+            if (!m) return;
+            cfgCemi += m;
+            const azad = parseFloat(inp.dataset.azad || 0) || 0;
+            if (inp.dataset.vergi === '1') cfgVergi += Math.max(0, m - azad);
+            if (inp.dataset.dsmf === '1') cfgDsmf += m;
+            if (inp.dataset.iss === '1') cfgIss += m;
+            if (inp.dataset.itss === '1') cfgItss += m;
+            if (inp.dataset.guz === '1') cfgGuz += m;
+        });
 
         // İşəgötürən HYS payı (əvvəlcə hesablanır — brüt-ə daxildir)
         const hysIsv  = Math.round(hys * (HYS_ISV_FAIZ / 100) * 100) / 100;
@@ -146,7 +162,7 @@
             esas - mezKesinti + mezOdenis
                  - xesKesinti + xesSirketOdenis
                  - qayibKesinti
-                 + bonus + overtime + ferqliGelir - cerime,
+                 + bonus + overtime + ferqliGelir + cfgCemi - cerime,
             0);
         const brut = esasBrut;  // GROSS = işlədiyi məbləğ (preview ilə eyni)
 
@@ -161,13 +177,16 @@
         //     vergiBazasi = esasBrut − HYS                 (gəlir vergisi; xəstəlik daxil)
         //     dsmfBazasi  = esasBrut − HYS − Xəstəlik      (DSMF işçi/işəgötürən)
         //     itssBazasi  = esasBrut + HYSişv − Xəstəlik   (İTSS+İşsizlik; işəgötürən HYS DAXİL)
-        const vergiBazasi = Math.max(0, esasBrut - hys);
-        const dsmfBazasi  = Math.max(0, vergiBazasi - xesSirketOdenis);
-        const itssBazasi  = Math.max(0, esasBrut + hysIsv - xesSirketOdenis);
+        // Konfiqurasiyalı gəlir esasBrut-a tam daxildir; hər baza üçün yalnız o haqqa cəlb
+        // olunan hissə qalır (cfgCemi çıxılır, müvafiq hissə geri əlavə olunur). cfg=0-da əvvəlki kimi.
+        const vergiBazasi    = Math.max(0, esasBrut - hys - cfgCemi + cfgVergi);
+        const dsmfBazasi     = Math.max(0, esasBrut - hys - xesSirketOdenis - cfgCemi + cfgDsmf);
+        const issizlikBazasi = Math.max(0, esasBrut + hysIsv - xesSirketOdenis - cfgCemi + cfgIss);
+        const itssBazasi     = Math.max(0, esasBrut + hysIsv - xesSirketOdenis - cfgCemi + cfgItss);
 
         // Standart güzəşt — maaş + məz.avansı COMBINED brüt ≤ 2500 olmalıdır
         // (FerdiHesablaAsync ilə eyni məntiq: brutMaasGuzestYoxlama = brutMaas + mezuniyyetAvansBrutu)
-        const standartGuzest = brut > 0 && (brut + mavBrut) <= FIRST_BRACKET_MAX ? VERGI_GUZESTI : 0;
+        const standartGuzest = brut > 0 && (brut + mavBrut - (cfgCemi - cfgGuz)) <= FIRST_BRACKET_MAX ? VERGI_GUZESTI : 0;
         const vergilenecek = Math.max(0, vergiBazasi - standartGuzest - isciGuzest);
 
         // NET MAAŞ — məzuniyyət avansı varsa, BIRLƏŞDİRİLMIŞ vergi əsasında hesablanır.
@@ -180,13 +199,14 @@
         // Hesablama addımları üçün ara dəyərlər (mav kartında göstərilir)
         let mavCVergiBazasi = 0, mavCombined = 0, mavCTaxes = 0, mavSalaryTaxes = 0;
         if (mavBrut > 0) {
-            const cVergiBazasi  = Math.max(0, esasBrut + mavBrut - hys);
-            const cDsmfBazasi   = Math.max(0, cVergiBazasi - xesSirketOdenis);
-            const cItssBazasi   = Math.max(0, esasBrut + mavBrut + hysIsv - xesSirketOdenis);
+            const cVergiBazasi  = Math.max(0, esasBrut + mavBrut - hys - cfgCemi + cfgVergi);
+            const cDsmfBazasi   = Math.max(0, esasBrut + mavBrut - hys - xesSirketOdenis - cfgCemi + cfgDsmf);
+            const cIssBazasi    = Math.max(0, esasBrut + mavBrut + hysIsv - xesSirketOdenis - cfgCemi + cfgIss);
+            const cItssBazasi   = Math.max(0, esasBrut + mavBrut + hysIsv - xesSirketOdenis - cfgCemi + cfgItss);
             const cVergilenecek = Math.max(0, cVergiBazasi - standartGuzest - isciGuzest);
             const cGelirV = hesablaTutulma(cVergilenecek, 1, 0);
             const cDsmf   = hesablaTutulma(cDsmfBazasi,   2, 0);
-            const cIss    = hesablaTutulma(cItssBazasi,   3, FLAT.issizlik);
+            const cIss    = hesablaTutulma(cIssBazasi,    3, FLAT.issizlik);
             const cItss   = hesablaTutulma(cItssBazasi,   4, 0);
             // Maaşa düşən hissə = cəmi − avans payı (server-tərəfli server side avans vergiləri)
             gelirV = Math.max(0, Math.round((cGelirV - mavGelirV) * 100) / 100);
@@ -208,7 +228,7 @@
         } else {
             gelirV  = hesablaTutulma(vergilenecek, 1, 0);
             dsmf    = hesablaTutulma(dsmfBazasi,   2, 0);
-            iss     = hesablaTutulma(itssBazasi,   3, FLAT.issizlik);
+            iss     = hesablaTutulma(issizlikBazasi, 3, FLAT.issizlik);
             itss    = hesablaTutulma(itssBazasi,   4, 0);
             tutulma = gelirV + dsmf + iss + itss + avans;
             // NET = brut (işlədiyi) − 4 vergi − HYS işçi − avans.
@@ -218,17 +238,19 @@
 
         // İşəgötürən xərcləri — məzuniyyət avansı varsa BIRLƏŞMIŞ baza üzərindən
         // (FerdiHesablaAsync ilə eyni: aylıq cəmi gəlir 3088.23 → DSMF işv 429.52)
-        let dsmfIsvBaza, itssIsvBaza;
+        let dsmfIsvBaza, itssIsvBaza, issizlikIsvBaza;
         if (mavBrut > 0) {
-            dsmfIsvBaza = Math.max(0, esasBrut + mavBrut - hys - xesSirketOdenis);
-            itssIsvBaza = Math.max(0, esasBrut + mavBrut + hysIsv - xesSirketOdenis);
+            dsmfIsvBaza     = Math.max(0, esasBrut + mavBrut - hys - xesSirketOdenis - cfgCemi + cfgDsmf);
+            issizlikIsvBaza = Math.max(0, esasBrut + mavBrut + hysIsv - xesSirketOdenis - cfgCemi + cfgIss);
+            itssIsvBaza     = Math.max(0, esasBrut + mavBrut + hysIsv - xesSirketOdenis - cfgCemi + cfgItss);
         } else {
-            dsmfIsvBaza = dsmfBazasi;
-            itssIsvBaza = itssBazasi;
+            dsmfIsvBaza     = dsmfBazasi;
+            issizlikIsvBaza = issizlikBazasi;
+            itssIsvBaza     = itssBazasi;
         }
         const dsmfIsv = hesablaTutulma(dsmfIsvBaza, 7, 0);
         const itssIsv = hesablaTutulma(itssIsvBaza, 9, 0);
-        const issIsv  = hesablaTutulma(itssIsvBaza, 8, FLAT.issizlikIsv);
+        const issIsv  = hesablaTutulma(issizlikIsvBaza, 8, FLAT.issizlikIsv);
         const sirketCemi = dsmfIsv + issIsv + itssIsv + hysIsv;
 
         return {

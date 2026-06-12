@@ -696,6 +696,13 @@
                                                                 <span class="mth-inp-pfx mth-inp-pfx--plus">+</span>
                                                                 <input type="hidden" name="ferdiElaveler[@i].ElaveGelirler[@gn].NovId" value="@nov.Id" />
                                                                 <input type="number" class="mth-inp mth-inp--fg"
+                                                                       data-cfg="1"
+                                                                       data-vergi="@(nov.VergiyeCelb ? 1 : 0)"
+                                                                       data-dsmf="@(nov.DsmfyeCelb ? 1 : 0)"
+                                                                       data-iss="@(nov.IssizliyeCelb ? 1 : 0)"
+                                                                       data-itss="@(nov.ItsseCelb ? 1 : 0)"
+                                                                       data-guz="@(nov.GuzestHeddineDaxil ? 1 : 0)"
+                                                                       data-azad="@nov.GelirVergisiAzadMebleg.ToString(System.Globalization.CultureInfo.InvariantCulture)"
                                                                        name="ferdiElaveler[@i].ElaveGelirler[@gn].Mebleg"
                                                                        min="0" step="0.01" placeholder="0.00"
                                                                        @(isDone ? "readonly" : "")/>
