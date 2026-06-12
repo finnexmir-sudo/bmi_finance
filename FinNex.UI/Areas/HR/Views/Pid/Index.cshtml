@@ -1,0 +1,84 @@
+@using FinNex.Domain.Entities.HR
+@model List<PidMehkemeIsi>
+@{
+    ViewData["Title"] = "PID — Məhkəmə İşləri";
+}
+
+<div style="padding:16px 20px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <h3 style="margin:0;color:#0f172a">PID — Məhkəmə İşləri</h3>
+        <span style="background:#eef2ff;color:#3730a3;border-radius:20px;padding:2px 12px;font-weight:600">@Model.Count</span>
+    </div>
+    <div style="color:#64748b;font-size:13px;margin-top:4px">Köhnə "Məhkəmə 2021-2026" Excel sheet-inə uyğun. İclaslar ayrıca saxlanılır.</div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div style="margin-top:12px;background:#dcfce7;border:1px solid #86efac;color:#166534;border-radius:8px;padding:10px 14px">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div style="margin-top:12px;background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;border-radius:8px;padding:10px 14px">@TempData["Error"]</div>
+    }
+
+    <div style="display:flex;gap:12px;align-items:flex-end;margin:16px 0;flex-wrap:wrap">
+        <form method="get" asp-action="Index" style="display:flex;gap:8px;align-items:center">
+            <input name="axtar" value="@ViewBag.Axtar" placeholder="Borclu / hesab / sənəd axtar…"
+                   style="padding:8px 12px;border:1px solid #d7dee8;border-radius:8px;width:280px" />
+            <button type="submit" style="padding:8px 16px;background:#2563eb;color:#fff;border:none;border-radius:8px;cursor:pointer">Axtar</button>
+            @if (!string.IsNullOrEmpty(ViewBag.Axtar as string))
+            {
+                <a asp-action="Index" style="padding:8px 14px;border:1px solid #d7dee8;border-radius:8px;color:#334155;text-decoration:none">Sıfırla</a>
+            }
+        </form>
+
+        <form method="post" asp-action="Import" enctype="multipart/form-data"
+              style="margin-left:auto;display:flex;gap:8px;align-items:center;background:#f8fafc;border:1px solid #e8edf3;border-radius:10px;padding:10px 14px">
+            <span style="font-size:12px;color:#64748b">Excel import (Məhkəmə sheet):</span>
+            <input type="file" name="fayl" accept=".xls,.xlsx" required style="font-size:12px" />
+            <button type="submit" style="padding:8px 16px;background:#1e9b6b;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer">İmport et</button>
+        </form>
+    </div>
+
+    <div style="overflow-x:auto;border:1px solid #e8edf3;border-radius:10px">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+                <tr style="background:#f1f5f9;text-align:left;color:#475569">
+                    <th style="padding:10px 12px">Sıra</th>
+                    <th style="padding:10px 12px">Status</th>
+                    <th style="padding:10px 12px">Borclu</th>
+                    <th style="padding:10px 12px">Kredit növü</th>
+                    <th style="padding:10px 12px">Hesab / Subkod</th>
+                    <th style="padding:10px 12px">Məhkəməyə verilmə</th>
+                    <th style="padding:10px 12px">Sənəd / Hakim</th>
+                    <th style="padding:10px 12px">İclaslar</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="8" style="padding:20px;text-align:center;color:#94a3b8">Hələ məlumat yoxdur — Excel-dən import edin.</td></tr>
+                }
+                @foreach (var x in Model)
+                {
+                    <tr style="border-top:1px solid #eef2f7">
+                        <td style="padding:8px 12px">@x.Sira</td>
+                        <td style="padding:8px 12px">
+                            <span style="background:@(x.Status != null && x.Status.Contains("BAĞLANDI") ? "#dcfce7" : "#fef9c3");padding:2px 8px;border-radius:6px;font-size:12px">@x.Status</span>
+                        </td>
+                        <td style="padding:8px 12px;font-weight:600;color:#0f172a">@x.BorcluAd</td>
+                        <td style="padding:8px 12px">@x.KreditNovu</td>
+                        <td style="padding:8px 12px;font-family:monospace;font-size:12px">@x.KreditHesabi@(string.IsNullOrEmpty(x.Subkod) ? "" : " / " + x.Subkod)</td>
+                        <td style="padding:8px 12px">@(x.MehkemeyeVerilmeTarixi?.ToString("dd.MM.yyyy"))</td>
+                        <td style="padding:8px 12px;color:#475569">@x.MehkemeSenedi</td>
+                        <td style="padding:8px 12px">
+                            @foreach (var ic in x.Iclaslar.OrderBy(i => i.Tarix))
+                            {
+                                <span style="display:inline-block;background:#eff6ff;color:#1e40af;border-radius:6px;padding:1px 7px;margin:1px;font-size:12px">@(ic.Tarix?.ToString("dd.MM.yyyy")) @ic.Saat</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
