@@ -179,6 +179,61 @@ namespace FinNex.UI.Areas.HR.Controllers
                 (kliring, Hesab("GelirVergisiKredit"),   Cem("Gəlir Vergisi"),             Q("ödənilmiş məbləğdən gəlir vergisi")),
             };
 
+            // D) HYS (Həyat Yığım Sığortası) — şirkət üzrə (IsciHYS-dən, ay tarix-aralığı ilə).
+            //    Hesablar şirkət adına görə: "HysOhdelik:{Şirkət}" (Kt öhdəlik), "HysEdenXerc:{Şirkət}" (Dt işəgötürən xərc).
+            //    İşçidən tutulan (sığortaolunan):  Dt klirinq / Kt öhdəlik       = Σ Mebleg.
+            //    İşəgötürən payı (sığortaedən):    Dt işəgötürən-xərc / Kt öhdəlik = Σ(hər sətir × faiz).
+            //    Sətir-sətir yuvarlaqlaşma maaş hesablaması ilə eyni nəticə verir.
+            var hysAyBas = new DateTime(il, ay, 1);
+            var hysAyBit = hysAyBas.AddMonths(1).AddDays(-1);
+
+            var hysParam = await _unitOfWork.Repository<MaasParametri>()
+                .Query()
+                .Where(x => x.Aktivdir && !x.Silinib
+                         && x.Nov == MaasParametrNovu.HysIsegoturenFaizi
+                         && x.BaslamaTarixi <= hysAyBit
+                         && (x.BitmeTarixi == null || x.BitmeTarixi >= hysAyBas))
+                .OrderByDescending(x => x.BaslamaTarixi)
+                .FirstOrDefaultAsync();
+            decimal hysIsvFaiz = hysParam?.Deyer ?? 15m;
+
+            var hysList = await _unitOfWork.Repository<IsciHYS>()
+                .Query()
+                .Where(x => !x.Silinib
+                         && x.Sirket != null && x.Sirket != ""
+                         && x.BaslamaTarixi <= hysAyBit
+                         && (x.BitmeTarixi == null || x.BitmeTarixi >= hysAyBas))
+                .ToListAsync();
+
+            var hysSirketsiz = new List<string>();
+            foreach (var grp in hysList.GroupBy(x => x.Sirket!.Trim()).OrderBy(g => g.Key))
+            {
+                var sirket = grp.Key;
+                if (string.IsNullOrWhiteSpace(sirket)) continue;
+                decimal olunan = grp.Sum(x => x.Mebleg);
+                decimal eden   = grp.Sum(x => Math.Round(x.Mebleg * (hysIsvFaiz / 100m), 2));
+                var ohdelik  = Hesab($"HysOhdelik:{sirket}");
+                var edenXerc = Hesab($"HysEdenXerc:{sirket}");
+                if (string.IsNullOrWhiteSpace(ohdelik) || string.IsNullOrWhiteSpace(edenXerc))
+                {
+                    hysSirketsiz.Add(sirket);
+                    continue;
+                }
+                if (olunan > 0)
+                    setirler.Add((kliring, ohdelik, olunan,
+                        Q($"{sirket} sığorta şirkətinə ödənilən həyatın yığım sığortası haqqı (sığortaolunan)")));
+                if (eden > 0)
+                    setirler.Add((edenXerc, ohdelik, eden,
+                        Q($"{sirket} sığorta şirkətinə ödənilən həyatın yığım sığortası haqqı (sığortaedən)")));
+            }
+            if (hysSirketsiz.Count > 0)
+            {
+                TempData["Error"] = "HYS hesabları təyin olunmayan şirkət(lər): " + string.Join(", ", hysSirketsiz)
+                    + ". Mühasibat Hesabları səhifəsindən bu açarları əlavə edin → "
+                    + string.Join("; ", hysSirketsiz.Select(s => $"HysOhdelik:{s} + HysEdenXerc:{s}"));
+                return RedirectToAction(nameof(Index), new { il, ay });
+            }
+
             // İşçi başına net — cari (bank) hesabı olmayan işçi provodkanı pozar (boş Kredit).
             // Sessiz keçmə yoxdur — bank üçün kritikdir, data düzəldilməlidir.
             var banksiz = maaslar
