@@ -113,12 +113,9 @@ namespace FinNex.UI.Areas.HR.Controllers
             string suf = IlSuffiks(il);
             string Q(string s) => $"{il}-{suf} il {ayAdlar[ay]} ayı üzrə {s}";
 
-            // Avansların cəmi (ay üzrə təsdiqlənmiş/ödənilmiş) — bağlanma sətri üçün
-            var avansCemi = await _unitOfWork.Repository<Avans>()
-                .Query()
-                .Where(x => !x.Silinib && x.Il == il && x.Ay == ay
-                         && (x.Status == AvansStatus.Tesdiqlenib || x.Status == AvansStatus.Odenilib))
-                .SumAsync(x => x.Mebleg);
+            // Avansların cəmi — net-dən faktiki tutulan "Avans Kəsintisi" detalı ilə EYNİ mənbə.
+            // (DB-dən ayrıca oxunsa, hesablama vaxtı ilə uyğunsuzluq klirinq balansını pozur.)
+            var avansCemi = Cem("Avans Kəsintisi");
 
             // Qabaqcadan ödənilmiş məzuniyyət — maaşın saxlanmış izahından
             // "Mezuniyyet (qabaqcadan ödənildi)" sətrinin (= net ödənilmiş) cəmi.
@@ -148,12 +145,16 @@ namespace FinNex.UI.Areas.HR.Controllers
             var setirler = new List<(string Debet, string Kredit, decimal Mebleg, string Qeyd)>
             {
                 // A) Hesablanma — xərc (Debet xərc, Kredit klirinq)
-                (Hesab("MaasXercRezident"),         kliring, CemRez("Əsas Əməkhaqqı", false),     Q("rezident işçilərə əmək haqqı")),
-                (Hesab("MaasXercQeyriRezident"),    kliring, CemRez("Əsas Əməkhaqqı", true),      Q("qeyri-rezident işçilərə əmək haqqı")),
+                // Maaş xərci = işlənmiş günə düşən (hesablanmış) məbləğ:
+                //   "Əsas Əməkhaqqı" (tam baza) − "Davamiyyət Kəsintisi" (qayıb/məzuniyyət/xəstəlik günləri).
+                //   Məzuniyyət/xəstəlik haqqı ayrıca sətirlərdə (aşağıda) gəlir.
+                (Hesab("MaasXercRezident"),         kliring, CemRez("Əsas Əməkhaqqı", false) - CemRez("Davamiyyət Kəsintisi", false), Q("rezident işçilərə əmək haqqı")),
+                (Hesab("MaasXercQeyriRezident"),    kliring, CemRez("Əsas Əməkhaqqı", true)  - CemRez("Davamiyyət Kəsintisi", true),  Q("qeyri-rezident işçilərə əmək haqqı")),
                 (Hesab("MukafatXercRezident"),      kliring, CemRez("Bonus/Mükafat", false),      Q("rezident işçilərə mükafat")),
                 (Hesab("MukafatXercQeyriRezident"), kliring, CemRez("Bonus/Mükafat", true),       Q("qeyri-rezident işçilərə mükafat")),
-                (Hesab("ElaveXercRezident"),        kliring, CemRez("Overtime", false),           Q("rezident işçiyə əlavə əmək haqqı xərci")),
-                (Hesab("ElaveXercQeyriRezident"),   kliring, CemRez("Overtime", true),            Q("qeyri-rezident işçiyə əlavə əmək haqqı xərci")),
+                // Əlavə əmək haqqı xərci = Overtime + IH-07 əlavə təminat (hər ikisi ayrı detaldır).
+                (Hesab("ElaveXercRezident"),        kliring, CemRez("Overtime", false) + CemRez("IH-07 Əlavə Təminat", false), Q("rezident işçiyə əlavə əmək haqqı xərci")),
+                (Hesab("ElaveXercQeyriRezident"),   kliring, CemRez("Overtime", true)  + CemRez("IH-07 Əlavə Təminat", true),  Q("qeyri-rezident işçiyə əlavə əmək haqqı xərci")),
                 (Hesab("MezuniyyetXercRezident"),   kliring, CemRez("Məzuniyyət Ödənişi", false), Q("rezident işçilərə məzuniyyət haqqı")),
                 (Hesab("MezuniyyetXercQeyriRezident"), kliring, CemRez("Məzuniyyət Ödənişi", true), Q("qeyri-rezident işçilərə məzuniyyət haqqı")),
 
@@ -178,10 +179,23 @@ namespace FinNex.UI.Areas.HR.Controllers
                 (kliring, Hesab("GelirVergisiKredit"),   Cem("Gəlir Vergisi"),             Q("ödənilmiş məbləğdən gəlir vergisi")),
             };
 
+            // İşçi başına net — cari (bank) hesabı olmayan işçi provodkanı pozar (boş Kredit).
+            // Sessiz keçmə yoxdur — bank üçün kritikdir, data düzəldilməlidir.
+            var banksiz = maaslar
+                .Where(m => string.IsNullOrWhiteSpace(m.Isci?.Maliye?.BankHesabNo))
+                .Select(m => $"{m.Isci?.Ad} {m.Isci?.Soyad}".Trim())
+                .ToList();
+            if (banksiz.Count > 0)
+            {
+                TempData["Error"] = "Cari (bank) hesabı təyin olunmayan işçilər var — provodka yaradıla bilməz: "
+                                    + string.Join(", ", banksiz);
+                return RedirectToAction(nameof(Index), new { il, ay });
+            }
+
             // E) İşçi başına net ödəniş (Debet klirinq, Kredit bank hesabı)
             foreach (var m in maaslar)
             {
-                var bank = m.Isci?.Maliye?.BankHesabNo?.Trim() ?? "";
+                var bank = m.Isci!.Maliye!.BankHesabNo!.Trim();
                 setirler.Add((kliring, bank, m.NetMebleg, Q("əmək haqqı")));
             }
 
