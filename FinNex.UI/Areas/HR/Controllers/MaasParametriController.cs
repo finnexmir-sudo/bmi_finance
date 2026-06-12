@@ -388,6 +388,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                     n.Id,
                     n.Ad,
                     n.VergiyeCelb,
+                    n.GelirVergisiAzadMebleg,
                     n.DsmfyeCelb,
                     n.IssizliyeCelb,
                     n.ItsseCelb,
@@ -405,6 +406,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         public async Task<IActionResult> NovCreate(
             string ad,
             bool vergiyeCelb,
+            decimal gelirVergisiAzadMebleg,
             bool dsmfyeCelb,
             bool issizliyeCelb,
             bool itsseCelb,
@@ -414,6 +416,8 @@ namespace FinNex.UI.Areas.HR.Controllers
         {
             if (string.IsNullOrWhiteSpace(ad))
                 return Json(new { success = false, message = "Ad boş ola bilməz." });
+            if (gelirVergisiAzadMebleg < 0)
+                return Json(new { success = false, message = "Vergidən azad məbləğ mənfi ola bilməz." });
 
             var movcud = await _unitOfWork.Repository<MaasNovu>()
                 .Query()
@@ -428,6 +432,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Aktivdir = true,
                 ManualGelir = true,
                 VergiyeCelb = vergiyeCelb,
+                GelirVergisiAzadMebleg = gelirVergisiAzadMebleg,
                 DsmfyeCelb = dsmfyeCelb,
                 IssizliyeCelb = issizliyeCelb,
                 ItsseCelb = itsseCelb,
@@ -449,6 +454,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             int id,
             string ad,
             bool vergiyeCelb,
+            decimal gelirVergisiAzadMebleg,
             bool dsmfyeCelb,
             bool issizliyeCelb,
             bool itsseCelb,
@@ -473,6 +479,7 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             entity.Ad = ad.Trim();
             entity.VergiyeCelb = vergiyeCelb;
+            entity.GelirVergisiAzadMebleg = gelirVergisiAzadMebleg < 0 ? 0m : gelirVergisiAzadMebleg;
             entity.DsmfyeCelb = dsmfyeCelb;
             entity.IssizliyeCelb = issizliyeCelb;
             entity.ItsseCelb = itsseCelb;

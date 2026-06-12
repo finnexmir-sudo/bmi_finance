@@ -324,6 +324,7 @@ const MaasParametri = (() => {
         document.getElementById('mpNovId').value = '';
         ['mpNovVergi', 'mpNovDsmf', 'mpNovIssizlik', 'mpNovItss', 'mpNovGuzest', 'mpNovMezOrt']
             .forEach(cid => { document.getElementById(cid).checked = true; });
+        document.getElementById('mpNovVergiAzad').value = '0';
         document.getElementById('mpNovAktivdirWrap').style.display = 'none';
         document.getElementById('mpNovModalTitle').textContent = 'Yeni Gəlir Növü';
         novOverlay().classList.add('mp-active');
@@ -338,6 +339,7 @@ const MaasParametri = (() => {
                 document.getElementById('mpNovId').value = d.id ?? d.Id;
                 document.getElementById('mpNovAd').value = d.ad ?? d.Ad ?? '';
                 document.getElementById('mpNovVergi').checked = d.vergiyeCelb ?? d.VergiyeCelb;
+                document.getElementById('mpNovVergiAzad').value = d.gelirVergisiAzadMebleg ?? d.GelirVergisiAzadMebleg ?? 0;
                 document.getElementById('mpNovDsmf').checked = d.dsmfyeCelb ?? d.DsmfyeCelb;
                 document.getElementById('mpNovIssizlik').checked = d.issizliyeCelb ?? d.IssizliyeCelb;
                 document.getElementById('mpNovItss').checked = d.itsseCelb ?? d.ItsseCelb;
@@ -370,6 +372,7 @@ const MaasParametri = (() => {
         fd.append('__RequestVerificationToken', token());
         fd.append('ad', ad);
         fd.append('vergiyeCelb', document.getElementById('mpNovVergi').checked);
+        fd.append('gelirVergisiAzadMebleg', (document.getElementById('mpNovVergiAzad').value || '0').replace('.', ','));
         fd.append('dsmfyeCelb', document.getElementById('mpNovDsmf').checked);
         fd.append('issizliyeCelb', document.getElementById('mpNovIssizlik').checked);
         fd.append('itsseCelb', document.getElementById('mpNovItss').checked);
