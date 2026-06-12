@@ -46,6 +46,38 @@
                 <dd>@(Model.BaslamaTarixi.HasValue ? Model.BaslamaTarixi.Value.ToString("dd.MM.yyyy") : "—")</dd>
                 <dt>Qeyd</dt>
                 <dd>@(string.IsNullOrWhiteSpace(Model.Qeyd) ? "—" : Model.Qeyd)</dd>
+                <dt>Hesab / Subkod</dt>
+                <dd>@(string.IsNullOrEmpty(Model.KreditHesabi) ? "—" : Model.KreditHesabi)@(string.IsNullOrEmpty(Model.Subkod) ? "" : " / " + Model.Subkod)</dd>
+                <dt>Qalan borc</dt>
+                <dd>@(Model.QalanBorc.HasValue ? Model.QalanBorc.Value.ToString("N2") + " ₼" : "—")</dd>
+                <dt>Son ödəniş tarixi</dt>
+                <dd>@(Model.SonOdenisTarixi?.ToString("dd.MM.yyyy") ?? "—")</dd>
+                <dt>Qeydiyyatı (rayon)</dt>
+                <dd>@(string.IsNullOrEmpty(Model.Qeydiyyati) ? "—" : Model.Qeydiyyati)</dd>
+                <dt>Əmək haqqı məlumatı</dt>
+                <dd>@(string.IsNullOrEmpty(Model.EmekHaqqiMelumati) ? "—" : Model.EmekHaqqiMelumati)</dd>
+                <dt>DYP sorğu tarixi</dt>
+                <dd>@(Model.DypSorguTarixi?.ToString("dd.MM.yyyy") ?? "—")</dd>
+                <dt>Adına sorğu</dt>
+                <dd>@(string.IsNullOrEmpty(Model.AdinaSorgu) ? "—" : Model.AdinaSorgu)</dd>
+                <dt>Əmlaka həbs</dt>
+                <dd>@(string.IsNullOrEmpty(Model.EmlakaHebs) ? "—" : Model.EmlakaHebs)</dd>
+                <dt>Stop</dt>
+                <dd>@(string.IsNullOrEmpty(Model.Stop) ? "—" : Model.Stop)</dd>
+                <dt>İcra məmuru</dt>
+                <dd>@(string.IsNullOrEmpty(Model.IcraMemuru) ? "—" : Model.IcraMemuru)</dd>
+                <dt>İcraçı son işlər</dt>
+                <dd>@(string.IsNullOrEmpty(Model.IcraSonIsler) ? "—" : Model.IcraSonIsler)</dd>
+                <dt>Doğum tarixi</dt>
+                <dd>@(Model.DogumTarixi?.ToString("dd.MM.yyyy") ?? "—")</dd>
+                <dt>Zamin</dt>
+                <dd>@(string.IsNullOrEmpty(Model.Zamin) ? "—" : Model.Zamin)</dd>
+                <dt>Qətnamə tarixi</dt>
+                <dd>@(Model.QetnameTarixi?.ToString("dd.MM.yyyy") ?? "—")</dd>
+                <dt>İş yeri</dt>
+                <dd>@(string.IsNullOrEmpty(Model.IsYeri) ? "—" : Model.IsYeri)</dd>
+                <dt>İcra qeydi</dt>
+                <dd>@(string.IsNullOrEmpty(Model.IcraQeyd) ? "—" : Model.IcraQeyd)</dd>
                 <dt>Yaradılma</dt>
                 <dd>@Model.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")</dd>
             </dl>
@@ -98,6 +130,41 @@
                         <label class="mi-lbl">Qeyd</label>
                         <textarea name="Qeyd" class="mi-textarea" rows="2">@Model.Qeyd</textarea>
                     </div>
+
+                    <div class="mi-form-group"><label class="mi-lbl">Hesab №</label>
+                        <input name="KreditHesabi" class="mi-input" value="@Model.KreditHesabi" /></div>
+                    <div class="mi-form-group"><label class="mi-lbl">Subkod</label>
+                        <input name="Subkod" class="mi-input" value="@Model.Subkod" /></div>
+                    <div class="mi-form-group"><label class="mi-lbl">Qalan borc (₼)</label>
+                        <input name="QalanBorc" class="mi-input" type="number" step="0.01" value="@Model.QalanBorc" /></div>
+                    <div class="mi-form-group"><label class="mi-lbl">Son ödəniş tarixi</label>
+                        <input name="SonOdenisTarixi" class="mi-input" type="date" value="@(Model.SonOdenisTarixi?.ToString("yyyy-MM-dd"))" /></div>
+                    <div class="mi-form-group"><label class="mi-lbl">Qeydiyyatı (rayon)</label>
+                        <input name="Qeydiyyati" class="mi-input" value="@Model.Qeydiyyati" /></div>
+                    <div class="mi-form-group"><label class="mi-lbl">Əmək haqqı məlumatı</label>
+                        <input name="EmekHaqqiMelumati" class="mi-input" value="@Model.EmekHaqqiMelumati" /></div>
+                    <div class="mi-form-group"><label class="mi-lbl">DYP sorğu tarixi</label>
+                        <input name="DypSorguTarixi" class="mi-input" type="date" value="@(Model.DypSorguTarixi?.ToString("yyyy-MM-dd"))" /></div>
+                    <div class="mi-form-group"><label class="mi-lbl">Adına sorğu</label>
+                        <input name="AdinaSorgu" class="mi-input" value="@Model.AdinaSorgu" /></div>
+                    <div class="mi-form-group"><label class="mi-lbl">Əmlaka həbs</label>
+                        <input name="EmlakaHebs" class="mi-input" value="@Model.EmlakaHebs" /></div>
+                    <div class="mi-form-group"><label class="mi-lbl">Stop</label>
+                        <input name="Stop" class="mi-input" value="@Model.Stop" /></div>
+                    <div class="mi-form-group"><label class="mi-lbl">İcra məmuru</label>
+                        <input name="IcraMemuru" class="mi-input" value="@Model.IcraMemuru" /></div>
+                    <div class="mi-form-group"><label class="mi-lbl">Doğum tarixi</label>
+                        <input name="DogumTarixi" class="mi-input" type="date" value="@(Model.DogumTarixi?.ToString("yyyy-MM-dd"))" /></div>
+                    <div class="mi-form-group"><label class="mi-lbl">Zamin</label>
+                        <input name="Zamin" class="mi-input" value="@Model.Zamin" /></div>
+                    <div class="mi-form-group"><label class="mi-lbl">Qətnamə tarixi</label>
+                        <input name="QetnameTarixi" class="mi-input" type="date" value="@(Model.QetnameTarixi?.ToString("yyyy-MM-dd"))" /></div>
+                    <div class="mi-form-group"><label class="mi-lbl">İş yeri</label>
+                        <input name="IsYeri" class="mi-input" value="@Model.IsYeri" /></div>
+                    <div class="mi-form-group mi-form-group--full"><label class="mi-lbl">İcraçı son işlər</label>
+                        <textarea name="IcraSonIsler" class="mi-textarea" rows="2">@Model.IcraSonIsler</textarea></div>
+                    <div class="mi-form-group mi-form-group--full"><label class="mi-lbl">İcra qeydi</label>
+                        <textarea name="IcraQeyd" class="mi-textarea" rows="2">@Model.IcraQeyd</textarea></div>
                 </div>
                 <div class="mi-form-actions">
                     <button type="button" id="btnSaveEdit" class="mi-btn mi-btn--primary mi-btn--sm">
