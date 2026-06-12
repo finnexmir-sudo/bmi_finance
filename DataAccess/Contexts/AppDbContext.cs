@@ -72,10 +72,6 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<EzamiyyetMekan> EzamiyyetMekanlar { get; set; }
     public DbSet<EzamiyyetMuraciet> EzamiyyetMuracietler { get; set; }
 
-    // PID (Problemli İşlər) — məhkəmə işləri + iclaslar
-    public DbSet<PidMehkemeIsi> PidMehkemeIsleri { get; set; }
-    public DbSet<PidMehkemeIclas> PidMehkemeIclaslari { get; set; }
-
     // Mərkəzi əmr reyestri + nömrə sayğacı (məzuniyyət, maaş dəyişikliyi, ...)
     public DbSet<Emr> Emrler { get; set; }
     public DbSet<EmrSayghaci> EmrSayghaclari { get; set; }

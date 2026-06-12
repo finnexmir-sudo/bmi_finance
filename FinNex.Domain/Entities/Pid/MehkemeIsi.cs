@@ -11,6 +11,27 @@ public class MehkemeIsi : BaseEntity
     public DateTime? BaslamaTarixi { get; set; }
     public string? Qeyd            { get; set; }
 
+    // ── Müştəri açarı (gələcəkdə Oracle/başqa data çəkmək üçün əsas açar) ──
+    public string? KreditHesabi    { get; set; }   // hesab №
+    public string? Subkod          { get; set; }   // subkod
+
+    // ── İcra mərhələsi detalları (Excel "İcrada olan işlər" sheet-inə uyğun) ──
+    public decimal?  QalanBorc        { get; set; }   // qalan borc
+    public DateTime? SonOdenisTarixi  { get; set; }   // son ödəniş tarixi
+    public string?   Qeydiyyati       { get; set; }   // rayon / qeydiyyatı
+    public string?   EmekHaqqiMelumati{ get; set; }   // əmək haqqı / ödəniş məlumatı
+    public DateTime? DypSorguTarixi   { get; set; }   // DYP sorğu tarixi
+    public string?   AdinaSorgu       { get; set; }   // adına sorğu (avtomobil/əmlak)
+    public string?   EmlakaHebs       { get; set; }   // əmlaka həbs barədə
+    public string?   Stop             { get; set; }   // stop barədə
+    public string?   IcraMemuru       { get; set; }   // icra məmuru (iş səviyyəsində)
+    public string?   IcraSonIsler     { get; set; }   // icraçı son işlər / son görüşmə
+    public DateTime? DogumTarixi      { get; set; }   // borclunun doğum tarixi
+    public string?   Zamin            { get; set; }   // zamin
+    public DateTime? QetnameTarixi    { get; set; }   // qətnamə tarixi
+    public string?   IsYeri           { get; set; }   // iş yeri
+    public string?   IcraQeyd         { get; set; }   // icra üzrə qeyd
+
     public ICollection<MehkemeMerhelesi> Merheleler { get; set; } = new List<MehkemeMerhelesi>();
 }
 
