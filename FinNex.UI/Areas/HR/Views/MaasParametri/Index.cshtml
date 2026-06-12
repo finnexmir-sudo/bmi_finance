@@ -589,6 +589,74 @@
         </div>
     </div>
 
+    @* ═══════════ BÖLMƏ: KONFİQURASİYALI GƏLİR NÖVLƏRİ ═══════════ *@
+    <div class="mp-section">
+        <div class="mp-section-head">
+            <i class="bi bi-plus-square-dotted"></i>
+            <h2>Konfiqurasiyalı Gəlir Növləri</h2>
+            <span class="mp-section-sub">Mühasibin yaratdığı xüsusi gəlirlər (məs. əsgərlik müavinəti) — vergi rejimi bayraqlarla təyin olunur</span>
+            <button class="mp-btn-mini" id="mpOpenNovCreate" style="margin-left:auto;">
+                <i class="bi bi-plus-lg"></i> Yeni növ
+            </button>
+        </div>
+        <div class="mp-tax-body">
+            @{
+                var gelirNovleri = ViewBag.GelirNovleri as List<FinNex.Domain.Entities.HR.MaasNovu>
+                                   ?? new List<FinNex.Domain.Entities.HR.MaasNovu>();
+            }
+            @if (gelirNovleri.Count == 0)
+            {
+                <div class="mp-flat-note" style="padding:12px 4px;color:#999;">
+                    Hələ konfiqurasiyalı gəlir növü yoxdur. <b>Yeni növ</b> ilə əlavə edin.
+                </div>
+            }
+            else
+            {
+                <table class="mp-bracket-table">
+                    <thead>
+                        <tr>
+                            <th>Ad</th>
+                            <th class="mp-center" style="width:64px;">Gəlir v.</th>
+                            <th class="mp-center" style="width:64px;">DSMF</th>
+                            <th class="mp-center" style="width:64px;">İşsizlik</th>
+                            <th class="mp-center" style="width:64px;">İTSS</th>
+                            <th class="mp-center" style="width:80px;">2500 hədd</th>
+                            <th class="mp-center" style="width:80px;">Status</th>
+                            <th class="mp-right" style="width:80px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var n in gelirNovleri)
+                        {
+                            <tr data-nov-id="@n.Id">
+                                <td class="mp-araliq">@n.Ad</td>
+                                <td class="mp-center">@(n.VergiyeCelb ? "✓" : "—")</td>
+                                <td class="mp-center">@(n.DsmfyeCelb ? "✓" : "—")</td>
+                                <td class="mp-center">@(n.IssizliyeCelb ? "✓" : "—")</td>
+                                <td class="mp-center">@(n.ItsseCelb ? "✓" : "—")</td>
+                                <td class="mp-center">@(n.GuzestHeddineDaxil ? "✓" : "—")</td>
+                                <td class="mp-center">
+                                    @if (n.Aktivdir)
+                                    {
+                                        <span class="mp-badge mp-badge--aktiv">Aktiv</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="mp-badge mp-badge--deaktiv">Deaktiv</span>
+                                    }
+                                </td>
+                                <td class="mp-right">
+                                    <button class="mp-card-btn mp-card-btn--edit" data-edit-nov-id="@n.Id" title="Redaktə et"><i class="bi bi-pencil-square"></i></button>
+                                    <button class="mp-card-btn mp-card-btn--delete" data-delete-nov-id="@n.Id" title="Sil"><i class="bi bi-trash3"></i></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
     @* ── Flat parametr modal ── *@
     <div id="mpModalOverlay" class="mp-modal-overlay">
         <div class="mp-modal">
@@ -740,6 +808,55 @@
             <div class="mp-modal-footer">
                 <button class="mp-btn-secondary" id="mpPilleCancelBtn">Ləğv et</button>
                 <button id="mpPilleSaveBtn" class="mp-btn-save">
+                    <i class="bi bi-check-lg"></i> Yadda saxla
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @* ── Gəlir növü modal ── *@
+    <div id="mpNovModalOverlay" class="mp-modal-overlay">
+        <div class="mp-modal">
+            <div class="mp-modal-header">
+                <h3 id="mpNovModalTitle">Yeni Gəlir Növü</h3>
+                <button class="mp-modal-close" id="mpNovCloseBtn">&times;</button>
+            </div>
+            <div class="mp-modal-body">
+                <form id="mpNovForm">
+                    <input type="hidden" id="mpNovId" />
+
+                    <div class="mp-form-group">
+                        <label for="mpNovAd">Ad</label>
+                        <input type="text" id="mpNovAd" class="mp-form-control" placeholder="məs: Əsgərlik müavinəti" />
+                    </div>
+
+                    <div class="mp-form-group">
+                        <label>Vergi / haqq rejimi <span class="mp-label-hint">(qeyd = tutulur)</span></label>
+                        <div class="mp-form-check"><input type="checkbox" id="mpNovVergi" checked /><label for="mpNovVergi">Gəlir vergisi tutulur</label></div>
+                        <div class="mp-form-check"><input type="checkbox" id="mpNovDsmf" checked /><label for="mpNovDsmf">DSMF (MDSS) tutulur</label></div>
+                        <div class="mp-form-check"><input type="checkbox" id="mpNovIssizlik" checked /><label for="mpNovIssizlik">İşsizlik sığortası tutulur</label></div>
+                        <div class="mp-form-check"><input type="checkbox" id="mpNovItss" checked /><label for="mpNovItss">İTSS (icbari tibbi) tutulur</label></div>
+                    </div>
+
+                    <div class="mp-form-group">
+                        <div class="mp-form-check"><input type="checkbox" id="mpNovGuzest" checked /><label for="mpNovGuzest">200 AZN güzəşt həddinə (2500) sayılır</label></div>
+                        <div class="mp-form-check"><input type="checkbox" id="mpNovMezOrt" checked /><label for="mpNovMezOrt">Məzuniyyət 12-ay ortalamasına daxildir</label></div>
+                    </div>
+
+                    <div class="mp-form-group">
+                        <label for="mpNovProvodka">Provodka xərc hesabı açarı <span class="mp-label-hint">(istəğə bağlı)</span></label>
+                        <input type="text" id="mpNovProvodka" class="mp-form-control" placeholder="məs: EsgerlikMuavinetXerc" />
+                    </div>
+
+                    <div id="mpNovAktivdirWrap" class="mp-form-group mp-form-check" style="display:none;">
+                        <input type="checkbox" id="mpNovAktivdir" checked />
+                        <label for="mpNovAktivdir">Aktivdir</label>
+                    </div>
+                </form>
+            </div>
+            <div class="mp-modal-footer">
+                <button class="mp-btn-secondary" id="mpNovCancelBtn">Ləğv et</button>
+                <button id="mpNovSaveBtn" class="mp-btn-save">
                     <i class="bi bi-check-lg"></i> Yadda saxla
                 </button>
             </div>

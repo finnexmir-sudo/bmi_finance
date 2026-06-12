@@ -35,6 +35,13 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             ViewBag.VergiPilleleri = pilleler;
 
+            // Konfiqurasiyalı (manual) gəlir növləri — mühasibin yaratdığı xüsusi gəlirlər
+            ViewBag.GelirNovleri = await _unitOfWork.Repository<MaasNovu>()
+                .Query()
+                .Where(x => !x.Silinib && x.ManualGelir)
+                .OrderBy(x => x.Ad)
+                .ToListAsync();
+
             ViewData["Title"] = "Vergi Parametrləri";
             return View(parametrler);
         }
@@ -354,6 +361,153 @@ namespace FinNex.UI.Areas.HR.Controllers
             await _unitOfWork.YaddaSaxlaAsync();
 
             return Json(new { success = true, message = "Parametr uğurla silindi." });
+        }
+
+        // ───────────────────────────────────────────────────────────
+        // MaasNovu (konfiqurasiyalı gəlir növləri) CRUD
+        // Yalnız ManualGelir=true növlər — mühasib özü yaradır və vergi
+        // rejimini bayraqlarla təyin edir. Sabit (sistem) növlərə toxunulmur.
+        // ───────────────────────────────────────────────────────────
+
+        // GET /HR/MaasParametri/NovGetById/5
+        [HttpGet]
+        public async Task<IActionResult> NovGetById(int id)
+        {
+            var n = await _unitOfWork.Repository<MaasNovu>()
+                .Query()
+                .FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
+
+            if (n == null)
+                return Json(new { success = false, message = "Gəlir növü tapılmadı." });
+
+            return Json(new
+            {
+                success = true,
+                data = new
+                {
+                    n.Id,
+                    n.Ad,
+                    n.VergiyeCelb,
+                    n.DsmfyeCelb,
+                    n.IssizliyeCelb,
+                    n.ItsseCelb,
+                    n.GuzestHeddineDaxil,
+                    n.MezuniyyetOrtalamasinaDaxil,
+                    n.ProvodkaHesabAcari,
+                    n.Aktivdir
+                }
+            });
+        }
+
+        // POST /HR/MaasParametri/NovCreate
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> NovCreate(
+            string ad,
+            bool vergiyeCelb,
+            bool dsmfyeCelb,
+            bool issizliyeCelb,
+            bool itsseCelb,
+            bool guzestHeddineDaxil,
+            bool mezuniyyetOrtalamasinaDaxil,
+            string? provodkaHesabAcari)
+        {
+            if (string.IsNullOrWhiteSpace(ad))
+                return Json(new { success = false, message = "Ad boş ola bilməz." });
+
+            var movcud = await _unitOfWork.Repository<MaasNovu>()
+                .Query()
+                .AnyAsync(x => !x.Silinib && x.Ad == ad.Trim());
+            if (movcud)
+                return Json(new { success = false, message = "Bu adda növ artıq mövcuddur." });
+
+            var entity = new MaasNovu
+            {
+                Ad = ad.Trim(),
+                Tip = MaasDetayTipi.Gelir,
+                Aktivdir = true,
+                ManualGelir = true,
+                VergiyeCelb = vergiyeCelb,
+                DsmfyeCelb = dsmfyeCelb,
+                IssizliyeCelb = issizliyeCelb,
+                ItsseCelb = itsseCelb,
+                GuzestHeddineDaxil = guzestHeddineDaxil,
+                MezuniyyetOrtalamasinaDaxil = mezuniyyetOrtalamasinaDaxil,
+                ProvodkaHesabAcari = string.IsNullOrWhiteSpace(provodkaHesabAcari) ? null : provodkaHesabAcari.Trim()
+            };
+
+            await _unitOfWork.Repository<MaasNovu>().YaratAsync(entity);
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            return Json(new { success = true, message = "Gəlir növü uğurla əlavə edildi." });
+        }
+
+        // POST /HR/MaasParametri/NovEdit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> NovEdit(
+            int id,
+            string ad,
+            bool vergiyeCelb,
+            bool dsmfyeCelb,
+            bool issizliyeCelb,
+            bool itsseCelb,
+            bool guzestHeddineDaxil,
+            bool mezuniyyetOrtalamasinaDaxil,
+            string? provodkaHesabAcari,
+            bool aktivdir)
+        {
+            var entity = await _unitOfWork.Repository<MaasNovu>()
+                .Query()
+                .FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
+
+            if (entity == null)
+                return Json(new { success = false, message = "Gəlir növü tapılmadı." });
+
+            // Sabit sistem növləri (ManualGelir=false) burada dəyişdirilmir
+            if (!entity.ManualGelir)
+                return Json(new { success = false, message = "Sistem növü bu səhifədən dəyişdirilə bilməz." });
+
+            if (string.IsNullOrWhiteSpace(ad))
+                return Json(new { success = false, message = "Ad boş ola bilməz." });
+
+            entity.Ad = ad.Trim();
+            entity.VergiyeCelb = vergiyeCelb;
+            entity.DsmfyeCelb = dsmfyeCelb;
+            entity.IssizliyeCelb = issizliyeCelb;
+            entity.ItsseCelb = itsseCelb;
+            entity.GuzestHeddineDaxil = guzestHeddineDaxil;
+            entity.MezuniyyetOrtalamasinaDaxil = mezuniyyetOrtalamasinaDaxil;
+            entity.ProvodkaHesabAcari = string.IsNullOrWhiteSpace(provodkaHesabAcari) ? null : provodkaHesabAcari.Trim();
+            entity.Aktivdir = aktivdir;
+
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            return Json(new { success = true, message = "Gəlir növü uğurla yeniləndi." });
+        }
+
+        // POST /HR/MaasParametri/NovDelete/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> NovDelete(int id)
+        {
+            var entity = await _unitOfWork.Repository<MaasNovu>()
+                .Query()
+                .FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
+
+            if (entity == null)
+                return Json(new { success = false, message = "Gəlir növü tapılmadı." });
+
+            if (!entity.ManualGelir)
+                return Json(new { success = false, message = "Sistem növü silinə bilməz." });
+
+            entity.Silinib = true;
+            entity.SilinmeTarixi = DateTime.Now;
+            entity.Aktivdir = false;
+
+            await _unitOfWork.YaddaSaxlaAsync();
+
+            return Json(new { success = true, message = "Gəlir növü uğurla silindi." });
         }
     }
 }
