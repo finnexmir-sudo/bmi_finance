@@ -27,6 +27,24 @@ public class MehkemeIsiDetailDto
     public MehkemeIsiStatus Status { get; set; }
     public DateTime? BaslamaTarixi { get; set; }
     public string? Qeyd            { get; set; }
+    // Müştəri açarı + İcra detalları
+    public string? KreditHesabi      { get; set; }
+    public string? Subkod            { get; set; }
+    public decimal?  QalanBorc        { get; set; }
+    public DateTime? SonOdenisTarixi  { get; set; }
+    public string?   Qeydiyyati       { get; set; }
+    public string?   EmekHaqqiMelumati{ get; set; }
+    public DateTime? DypSorguTarixi   { get; set; }
+    public string?   AdinaSorgu       { get; set; }
+    public string?   EmlakaHebs       { get; set; }
+    public string?   Stop             { get; set; }
+    public string?   IcraMemuru       { get; set; }
+    public string?   IcraSonIsler     { get; set; }
+    public DateTime? DogumTarixi      { get; set; }
+    public string?   Zamin            { get; set; }
+    public DateTime? QetnameTarixi    { get; set; }
+    public string?   IsYeri           { get; set; }
+    public string?   IcraQeyd         { get; set; }
     public DateTime YaradilmaTarixi { get; set; }
     public IList<MehkemeMerheleDto> Merheleler { get; set; } = new List<MehkemeMerheleDto>();
 }
@@ -61,6 +79,24 @@ public class MehkemeIsiUpdateDto
     public MehkemeIsiStatus Status { get; set; }
     public DateTime? BaslamaTarixi { get; set; }
     public string? Qeyd            { get; set; }
+    // Müştəri açarı + İcra detalları
+    public string? KreditHesabi      { get; set; }
+    public string? Subkod            { get; set; }
+    public decimal?  QalanBorc        { get; set; }
+    public DateTime? SonOdenisTarixi  { get; set; }
+    public string?   Qeydiyyati       { get; set; }
+    public string?   EmekHaqqiMelumati{ get; set; }
+    public DateTime? DypSorguTarixi   { get; set; }
+    public string?   AdinaSorgu       { get; set; }
+    public string?   EmlakaHebs       { get; set; }
+    public string?   Stop             { get; set; }
+    public string?   IcraMemuru       { get; set; }
+    public string?   IcraSonIsler     { get; set; }
+    public DateTime? DogumTarixi      { get; set; }
+    public string?   Zamin            { get; set; }
+    public DateTime? QetnameTarixi    { get; set; }
+    public string?   IsYeri           { get; set; }
+    public string?   IcraQeyd         { get; set; }
 }
 
 public class MehkemeMerheleCreateDto
