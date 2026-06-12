@@ -923,6 +923,13 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.Iller = IlSiyahisi(cIl);
             ViewBag.Aylar = AySiyahisi(cAy);
 
+            // Konfiqurasiyalı manual gəlir növləri — toplu hesablamada hər işçi üçün dinamik textbox
+            ViewBag.ManualGelirNovleri = await _unitOfWork.Repository<MaasNovu>()
+                .Query()
+                .Where(x => x.Aktivdir && !x.Silinib && x.ManualGelir)
+                .OrderBy(x => x.Ad)
+                .ToListAsync();
+
             ViewData["Title"] = "Toplu Maaş Hesablaması";
             return View(isciler);
         }
@@ -956,7 +963,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                 Il = il,
                 Ay = ay,
                 FerdiElaveler = ferdiElaveler.Where(x =>
-                    x.BonusMeblegi > 0 || x.CerimeMeblegi > 0 || x.IH07Meblegi > 0 || x.VM9821Meblegi > 0).ToList()
+                    x.BonusMeblegi > 0 || x.CerimeMeblegi > 0 || x.IH07Meblegi > 0 || x.VM9821Meblegi > 0
+                    || (x.ElaveGelirler != null && x.ElaveGelirler.Any(e => e.Mebleg > 0))).ToList()
             };
 
             var r = await _hesablamaService.TopluHesablaAsync(input);
