@@ -8,6 +8,7 @@ using FinNex.Domain.Interfaces;
 using FinNex.Application.DTOs.HR.Icaze;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Maas_If;
+using FinNex.Application.Services.HR;
 using FinNex.Application.Interfaces.Structur;
 using FinNex.UI.Areas.User.ViewModels.Icaze;
 using FinNex.UI.Areas.HR.ViewModels;
@@ -617,6 +618,39 @@ namespace FinNex.UI.Areas.HR.Controllers
                 }
                 catch { }
 
+                // ── Əlil işçi qısaldılmış Cümə qaydası (Tabel ilə eyni) ──────────────
+                // Əlil işçi TAM 5 günlük həftənin 5-ci iş günü (Cümə) net ≥4 saat işləyibsə tez çıxan sayılmır.
+                var elilIsciIds = new HashSet<int>();
+                var elilBayramSet = new HashSet<DateTime>();
+                try
+                {
+                    var hedefIsciler = result.Select(x => x.IsciId).Distinct().ToList();
+                    var minHedef = hedefTarixler.Count > 0 ? hedefTarixler.Min() : DateTime.Today;
+                    var maxHedef = hedefTarixler.Count > 0 ? hedefTarixler.Max() : DateTime.Today;
+                    var elilGuzestler = await _uow.Repository<IsciGuzest>()
+                        .Query().AsNoTracking()
+                        .Where(ig => !ig.Silinib && hedefIsciler.Contains(ig.IsciId) &&
+                                     ig.Guzest.Ad.Contains("Əlil") &&
+                                     ig.BaslamaTarixi.Date <= maxHedef &&
+                                     (ig.BitmeTarixi == null || ig.BitmeTarixi.Value.Date >= minHedef))
+                        .Select(ig => ig.IsciId)
+                        .ToListAsync();
+                    elilIsciIds = new HashSet<int>(elilGuzestler);
+
+                    if (elilIsciIds.Count > 0)
+                    {
+                        var bayramBas = minHedef.AddDays(-7);
+                        var elilBayramlar = await _uow.Repository<BayramGunu>()
+                            .Query().AsNoTracking()
+                            .Where(b => !b.Silinib && b.Tip == GunTipi.Bayram &&
+                                        b.Tarix.Date >= bayramBas && b.Tarix.Date <= maxHedef)
+                            .Select(b => b.Tarix)
+                            .ToListAsync();
+                        elilBayramSet = new HashSet<DateTime>(elilBayramlar.Select(d => d.Date));
+                    }
+                }
+                catch { /* IsciGuzest/BayramGunu mövcud deyilsə əlil qaydası keçilir */ }
+
                 var tezCixanSayi = 0;
                 var data = result.Select(x =>
                 {
@@ -624,7 +658,6 @@ namespace FinNex.UI.Areas.HR.Controllers
                     var gunHedd = elanDict.TryGetValue(x.Tarix.Date, out var elanVaxt)
                         ? elanVaxt
                         : gunCixis - tezCixmaTolerans;
-                    var tezCixanFlag = x.CixisVaxti.HasValue && x.CixisVaxti.Value.TimeOfDay < gunHedd;
 
                     int? islemeSaatiDeq = null;
                     bool naharCixildi = false;
@@ -638,6 +671,14 @@ namespace FinNex.UI.Areas.HR.Controllers
                         }
                         islemeSaatiDeq = Math.Max(0, diff);
                     }
+
+                    // Əlil işçi qısaldılmış Cümə günü net ≥4 saat (240 dəq) işləyibsə tez çıxan sayılmır
+                    bool elilCumeBagisla = elilIsciIds.Contains(x.IsciId)
+                        && EmekRejimiHelper.ElilQisaldilmisGun(x.Tarix.Date, elilBayramSet)
+                        && (islemeSaatiDeq ?? 0) >= 240;
+
+                    var tezCixanFlag = x.CixisVaxti.HasValue && x.CixisVaxti.Value.TimeOfDay < gunHedd
+                        && !elilCumeBagisla;
 
                     return new
                     {

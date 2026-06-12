@@ -1,4 +1,5 @@
 using FinNex.Application.DTOs.HR.Davamiyyet;
+using FinNex.Application.Services.HR;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
@@ -144,6 +145,8 @@ namespace FinNex.UI.Areas.User.Controllers
             var ip = await GetIsParametriEntity();
             var standartCixis = ip.StandartCixisVaxti;
             var tezCixmaTolerans = TimeSpan.FromMinutes(ip.TezCixmaToleransDeqiqe);
+            var naharBaslama = ip.NaharBaslamaSaati;
+            var naharBitis = naharBaslama.Add(TimeSpan.FromMinutes(ip.NaharMuddetDeqiqe));
 
             // Erkən çıxış / çıxış yoxdur statistikası yalnız 01.06.2026-dan (sistemin canlı başlama tarixi)
             var intizamBaslangic = new DateTime(2026, 6, 1);
@@ -173,6 +176,39 @@ namespace FinNex.UI.Areas.User.Controllers
                 foreach (var b in bayramlar) bayramDict[b.Tarix.Date] = b.XususiBitisVaxti!.Value;
             }
             catch { }
+
+            // ── Əlil işçi qısaldılmış Cümə qaydası (Tabel ilə eyni) ──────────────
+            // Əlil işçi TAM 5 günlük həftənin 5-ci iş günü (Cümə) net ≥4 saat işləyibsə
+            // erkən çıxış sayılmır — tabeldə həmin gün onsuz da 4 saat yazılır.
+            bool isElil = false;
+            var elilBayramSet = new HashSet<DateTime>();
+            try
+            {
+                if (tarixlerSet.Count > 0)
+                {
+                    var minTarix = tarixlerSet.Min();
+                    var maxTarix = tarixlerSet.Max();
+                    isElil = await _unitOfWork.Repository<IsciGuzest>()
+                        .Query().AsNoTracking()
+                        .AnyAsync(ig => !ig.Silinib && ig.IsciId == isciId &&
+                                        ig.Guzest.Ad.Contains("Əlil") &&
+                                        ig.BaslamaTarixi.Date <= maxTarix &&
+                                        (ig.BitmeTarixi == null || ig.BitmeTarixi.Value.Date >= minTarix));
+                    if (isElil)
+                    {
+                        // Həftə Bazar ertəsindən başlaya bildiyi üçün 7 gün geriyə qədər bayramları çək
+                        var bayramBas = minTarix.AddDays(-7);
+                        var elilBayramlar = await _unitOfWork.Repository<BayramGunu>()
+                            .Query().AsNoTracking()
+                            .Where(b => !b.Silinib && b.Tip == GunTipi.Bayram &&
+                                        b.Tarix.Date >= bayramBas && b.Tarix.Date <= maxTarix)
+                            .Select(b => b.Tarix)
+                            .ToListAsync();
+                        elilBayramSet = new HashSet<DateTime>(elilBayramlar.Select(d => d.Date));
+                    }
+                }
+            }
+            catch { /* IsciGuzest/BayramGunu mövcud deyilsə əlil qaydası keçilir */ }
 
             // ErkenCixisIcaze — HR ilə eyni mənbə: erkən çıxış icazəsi olan günlər
             var erkenIcazeDates = new HashSet<DateTime>();
@@ -237,6 +273,20 @@ namespace FinNex.UI.Areas.User.Controllers
                 bool ezamiyyetOrtuyur = ezamiyyetList.Any(e => e.Bas <= x.Tarix.Date && e.Bit >= x.Tarix.Date &&
                     (e.BasSaat == null || cixisTod >= e.BasSaat.Value - tezCixmaTolerans));
                 if (icazeOrtuyur || ezamiyyetOrtuyur) continue;
+
+                // Əlil işçi qısaldılmış Cümə günü net ≥4 saat (240 dəq) işləyibsə erkən çıxış bağışlanır
+                if (isElil && EmekRejimiHelper.ElilQisaldilmisGun(x.Tarix.Date, elilBayramSet))
+                {
+                    int netDeq = 0;
+                    if (x.GirisVaxti.HasValue && x.CixisVaxti.HasValue)
+                    {
+                        netDeq = (int)(x.CixisVaxti.Value - x.GirisVaxti.Value).TotalMinutes;
+                        if (x.CixisVaxti.Value.TimeOfDay > naharBitis && x.GirisVaxti.Value.TimeOfDay < naharBaslama)
+                            netDeq -= ip.NaharMuddetDeqiqe;
+                        netDeq = Math.Max(0, netDeq);
+                    }
+                    if (netDeq >= 240) continue;
+                }
 
                 netice.TezCixanIds.Add(x.Id);
             }

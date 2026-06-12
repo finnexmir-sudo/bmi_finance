@@ -1,6 +1,7 @@
 using ClosedXML.Excel;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Communication;
+using FinNex.Application.Services.HR;
 using FinNex.Domain;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
@@ -196,6 +197,41 @@ namespace FinNex.UI.Areas.HR.Controllers
                 }
                 catch { /* BayramGunu cədvəli mövcud deyilsə keç */ }
 
+                // ── Əlil işçi qısaldılmış Cümə qaydası (Tabel ilə eyni) ──────────────
+                // Əlil işçi TAM 5 günlük həftənin 5-ci iş günü (Cümə) net ≥4 saat işləyibsə
+                // erkən çıxış sayılmır — tabeldə həmin gün onsuz da 4 saat yazılır.
+                var elilIsciIds = new HashSet<int>();
+                var elilBayramSet = new HashSet<DateTime>();
+                try
+                {
+                    var hedefIsciler = result.Select(x => x.IsciId).Distinct().ToList();
+                    var minHedef = hedefTarixler.Count > 0 ? hedefTarixler.Min() : DateTime.Today;
+                    var maxHedef = hedefTarixler.Count > 0 ? hedefTarixler.Max() : DateTime.Today;
+                    var elilGuzestler = await _unitOfWork.Repository<IsciGuzest>()
+                        .Query().AsNoTracking()
+                        .Where(ig => !ig.Silinib && hedefIsciler.Contains(ig.IsciId) &&
+                                     ig.Guzest.Ad.Contains("Əlil") &&
+                                     ig.BaslamaTarixi.Date <= maxHedef &&
+                                     (ig.BitmeTarixi == null || ig.BitmeTarixi.Value.Date >= minHedef))
+                        .Select(ig => ig.IsciId)
+                        .ToListAsync();
+                    elilIsciIds = new HashSet<int>(elilGuzestler);
+
+                    if (elilIsciIds.Count > 0)
+                    {
+                        // Həftə Bazar ertəsindən başlaya bildiyi üçün 7 gün geriyə qədər bayramları çək
+                        var bayramBas = minHedef.AddDays(-7);
+                        var elilBayramlar = await _unitOfWork.Repository<BayramGunu>()
+                            .Query().AsNoTracking()
+                            .Where(b => !b.Silinib && b.Tip == GunTipi.Bayram &&
+                                        b.Tarix.Date >= bayramBas && b.Tarix.Date <= maxHedef)
+                            .Select(b => b.Tarix)
+                            .ToListAsync();
+                        elilBayramSet = new HashSet<DateTime>(elilBayramlar.Select(d => d.Date));
+                    }
+                }
+                catch { /* IsciGuzest/BayramGunu mövcud deyilsə əlil qaydası keçilir */ }
+
                 var data = result.Select(x =>
                 {
                     var gunCixis = bayramDict.TryGetValue(x.Tarix.Date, out var bv) ? bv : standartCixis;
@@ -215,15 +251,8 @@ namespace FinNex.UI.Areas.HR.Controllers
                         e.IsciId == x.IsciId && e.Bas <= x.Tarix.Date && e.Bit >= x.Tarix.Date &&
                         (e.BasSaat == null || cixisTod >= e.BasSaat.Value - tezCixmaTolerans));
 
-                    var tezCixanFlag = x.CixisVaxti.HasValue
-                        && x.CixisVaxti.Value.TimeOfDay < gunHedd
-                        && x.Status != DavamiyyetStatus.Ezamiyyet
-                        && x.Status != DavamiyyetStatus.Icazeli
-                        && !erkenIcazeSet.Contains((x.IsciId, x.Tarix.Date))
-                        && !icazeOrtuyur
-                        && !ezamiyyetOrtuyur;
-
-                    // Nahar çıxılması — işçi nahar başlamadan gəlib, nahar bitdikdən sonra çıxıbsa
+                    // Nahar çıxılması — işçi nahar başlamadan gəlib, nahar bitdikdən sonra çıxıbsa.
+                    // (Əlil 4 saat qaydası NET işləmə saatına baxdığı üçün tezCixan-dan ƏVVƏL hesablanır.)
                     int? islemeSaatiDeq = null;
                     bool naharCixildi = false;
                     if (x.GirisVaxti.HasValue && x.CixisVaxti.HasValue)
@@ -236,6 +265,20 @@ namespace FinNex.UI.Areas.HR.Controllers
                         }
                         islemeSaatiDeq = Math.Max(0, diff);
                     }
+
+                    // Əlil işçi qısaldılmış Cümə günü net ≥4 saat (240 dəq) işləyibsə erkən çıxış bağışlanır
+                    bool elilCumeBagisla = elilIsciIds.Contains(x.IsciId)
+                        && EmekRejimiHelper.ElilQisaldilmisGun(x.Tarix.Date, elilBayramSet)
+                        && (islemeSaatiDeq ?? 0) >= 240;
+
+                    var tezCixanFlag = x.CixisVaxti.HasValue
+                        && x.CixisVaxti.Value.TimeOfDay < gunHedd
+                        && x.Status != DavamiyyetStatus.Ezamiyyet
+                        && x.Status != DavamiyyetStatus.Icazeli
+                        && !erkenIcazeSet.Contains((x.IsciId, x.Tarix.Date))
+                        && !icazeOrtuyur
+                        && !ezamiyyetOrtuyur
+                        && !elilCumeBagisla;
 
                     return new
                     {
