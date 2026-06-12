@@ -873,6 +873,63 @@ namespace FinNex.Application.Services
             return (null, null);
         }
 
+        // ── Cihaz çıxış/qayıdışını xam punch-lardan bərpa edib SAXLAYIR ──────────
+        // Boşluq idi: əvvəlki backfill yalnız "heç nə yazılmayıb" (CixisVaxt null, Gözlənir)
+        // halını EKRANA göstərirdi; "çıxış var, qayıdış yox" (Status=Cixdi) halını buraxırdı
+        // və heç vaxt saxlamırdı. Nəticədə canlı yol qayıdışı buraxanda (punch CihazOxuma-da
+        // olsa belə) qayıdış əbədi boş qalırdı. Bu metod hər iki halı tutub bazaya yazır.
+        private async Task IcazeCihazVaxtBerpaEtAsync()
+        {
+            var bugun = DateTime.Now.Date;
+            var eksikler = await _unitOfWork.Repository<IcazeCixisGiris>()
+                .Query()
+                .Include(cg => cg.Icaze)
+                .Where(cg => !cg.Silinib
+                          && !cg.Birdefelik
+                          && cg.QayidisVaxt == null
+                          && (cg.Status == IcazeCixisGirisStatus.Gozlenir
+                              || cg.Status == IcazeCixisGirisStatus.Cixdi)
+                          && cg.Icaze.Status == IcazeStatus.Tesdiqlenib
+                          && cg.Icaze.IcazeTarixi.Date <= bugun
+                          && cg.Icaze.IcazeTarixi.Date >= bugun.AddDays(-92))
+                .ToListAsync();
+            if (eksikler.Count == 0) return;
+
+            var isciIdler = eksikler.Select(cg => cg.Icaze.IsciId).Distinct().ToList();
+            var minT = eksikler.Min(cg => cg.Icaze.IcazeTarixi.Date);
+            var maxT = eksikler.Max(cg => cg.Icaze.IcazeTarixi.Date);
+            var (raw, davCixis) = await CihazBerpaXeritesiAsync(isciIdler, minT, maxT);
+
+            bool deyisdi = false;
+            foreach (var cg in eksikler)
+            {
+                var (fcx, fqy) = IcazeFaktikiBerpa(cg.Icaze.IsciId, cg.Icaze.IcazeTarixi,
+                    cg.Icaze.BaslamaSaati, cg.Icaze.BitisSaati, raw, davCixis);
+
+                bool dey = false;
+                if (cg.CixisVaxt == null && fcx != null)
+                {
+                    cg.CixisVaxt = fcx;
+                    if (cg.Status == IcazeCixisGirisStatus.Gozlenir)
+                        cg.Status = IcazeCixisGirisStatus.Cixdi;
+                    dey = true;
+                }
+                if (cg.QayidisVaxt == null && fqy != null)
+                {
+                    cg.QayidisVaxt = fqy;                              // ← əsas düzəliş: qayıdış saxlanılır
+                    cg.Status = IcazeCixisGirisStatus.Tamamlandi;
+                    dey = true;
+                }
+                if (dey)
+                {
+                    cg.YenilenmeTarixi = DateTime.Now;
+                    await _unitOfWork.Repository<IcazeCixisGiris>().YenileAsync(cg);
+                    deyisdi = true;
+                }
+            }
+            if (deyisdi) await _unitOfWork.YaddaSaxlaAsync();
+        }
+
         // Bir icazənin FAKTİKİ saatı (Dövriyyə və İzləmə eyni məntiqlə işləsin deyə tək yerdə):
         //  • adi icazə  → qayıdış − çıxış (hər iki vaxt olmalıdır, yoxdursa null)
         //  • birdəfəlik → işçi qayıtmır, ona görə çıxışdan planlaşdırılan icazə sonuna
@@ -899,6 +956,8 @@ namespace FinNex.Application.Services
         {
             try
             {
+                await IcazeCihazVaxtBerpaEtAsync();   // cihaz çıxış/qayıdışını xam punch-lardan bərpa edib saxla
+
                 var list = await _unitOfWork.Repository<Icaze>()
                     .HamisiniGetirAsync(
                         predicate: x =>
@@ -1009,6 +1068,8 @@ namespace FinNex.Application.Services
         {
             try
             {
+                await IcazeCihazVaxtBerpaEtAsync();   // cihaz çıxış/qayıdışını xam punch-lardan bərpa edib saxla
+
                 var list = await _unitOfWork.Repository<IcazeCixisGiris>()
                     .HamisiniGetirAsync(
                         predicate: x =>
