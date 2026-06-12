@@ -1,7 +1,14 @@
-﻿using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Entities.HR;
 
 namespace FinNex.Application.DTOs.HR.Maas
 {
+    // Konfiqurasiyalı manual gəlir növü üçün işçi üzrə daxil edilən məbləğ
+    public class ElaveGelirGirisi
+    {
+        public int NovId { get; set; }        // MaasNovu.Id (ManualGelir=true)
+        public decimal Mebleg { get; set; }
+    }
+
     public class FerdiHesablaInputDto
     {
         public int IsciId { get; set; }
@@ -17,6 +24,9 @@ namespace FinNex.Application.DTOs.HR.Maas
 
         // VM-nin 98.2.1-ci maddəsinə əsasən vergiyə cəlb olunan gəlirlər
         public decimal VM9821Meblegi { get; set; } = 0;
+
+        // Konfiqurasiyalı manual gəlir növləri üzrə məbləğlər (vergi rejimi növün bayraqlarından)
+        public List<ElaveGelirGirisi> ElaveGelirler { get; set; } = new();
     }
 
     public class FerdiElaveDto
@@ -30,5 +40,7 @@ namespace FinNex.Application.DTOs.HR.Maas
         public decimal IH07Meblegi { get; set; } = 0;
         // VM-nin 98.2.1-ci maddəsinə əsasən vergiyə cəlb olunan gəlirlər
         public decimal VM9821Meblegi { get; set; } = 0;
+        // Konfiqurasiyalı manual gəlir növləri üzrə məbləğlər
+        public List<ElaveGelirGirisi> ElaveGelirler { get; set; } = new();
     }
 }

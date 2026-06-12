@@ -95,7 +95,8 @@ namespace FinNex.Application.Services.HR
                     CerimeMeblegi = elave?.CerimeMeblegi ?? 0,
                     CerimeAciqlama = elave?.CerimeAciqlama,
                     IH07Meblegi = elave?.IH07Meblegi ?? 0,
-                    VM9821Meblegi = elave?.VM9821Meblegi ?? 0
+                    VM9821Meblegi = elave?.VM9821Meblegi ?? 0,
+                    ElaveGelirler = elave?.ElaveGelirler ?? new()
                 };
 
                 var r = await FerdiHesablaAsync(ferdiInput);
@@ -704,7 +705,35 @@ namespace FinNex.Application.Services.HR
                 });
             }
 
-            // 9. BRUT = əsas maaş ± düzəlişlər + işəgötürən HYS payı (işçinin ümumi gəliri)
+            // 8.7. Konfiqurasiyalı manual gəlir növləri — işçi üzrə daxil edilən məbləğlər.
+            //      Hər növün vergi rejimi öz bayraqlarından gəlir. elave=0 olduqda hesablama
+            //      əvvəlki kimi qalır (reqressiya təhlükəsiz).
+            var elaveGirisler = (input.ElaveGelirler ?? new List<ElaveGelirGirisi>())
+                .Where(e => e.NovId > 0 && e.Mebleg != 0).ToList();
+            decimal elaveCemi = 0m, elaveVergiTaxable = 0m, elaveDsmf = 0m,
+                    elaveIssizlik = 0m, elaveItss = 0m, elaveGuzest = 0m;
+            var elaveDetallar = new List<(string Ad, decimal Mebleg)>();
+            if (elaveGirisler.Count > 0)
+            {
+                var elaveNovIdler = elaveGirisler.Select(e => e.NovId).Distinct().ToList();
+                var elaveNovler = await _unitOfWork.Repository<MaasNovu>()
+                    .HamisiniGetirAsync(x => x.Aktivdir && !x.Silinib && x.ManualGelir && elaveNovIdler.Contains(x.Id));
+                foreach (var g in elaveGirisler)
+                {
+                    var nov = elaveNovler.FirstOrDefault(n => n.Id == g.NovId);
+                    if (nov == null) continue;          // növ tapılmadı/deaktiv — keç
+                    decimal m = g.Mebleg;
+                    elaveCemi += m;
+                    if (nov.VergiyeCelb)        elaveVergiTaxable += Math.Max(0m, m - nov.GelirVergisiAzadMebleg);
+                    if (nov.DsmfyeCelb)         elaveDsmf         += m;
+                    if (nov.IssizliyeCelb)      elaveIssizlik     += m;
+                    if (nov.ItsseCelb)          elaveItss         += m;
+                    if (nov.GuzestHeddineDaxil) elaveGuzest       += m;
+                    elaveDetallar.Add((nov.Ad, m));
+                }
+            }
+
+            // 9. BRUT = əsas maaş ± düzəlişlər + işəgötürən HYS payı + konfiqurasiyalı gəlirlər
             decimal esasBrut = esasMaas
                 - cixisKesintisi
                 - mezKesinti
@@ -719,7 +748,8 @@ namespace FinNex.Application.Services.HR
                 - input.CerimeMeblegi
                 + korreksiyaGelir
                 + mezKompensasiyaMebleg
-                - korreksiyaKesinti;
+                - korreksiyaKesinti
+                + elaveCemi;
 
             if (esasBrut < 0) esasBrut = 0;
             decimal brutMaas = esasBrut + hysIsegoturen;
@@ -750,9 +780,15 @@ namespace FinNex.Application.Services.HR
             //   - vergiBazasi   = esasBrut − HYS                (gəlir vergisi üçün; xəstəlik daxildir)
             //   - dsmfBazasi    = esasBrut − HYS − Xəstəlik     (DSMF işçi/işəgötürən)
             //   - itssBazasi    = esasBrut + HYSişv − Xəstəlik  (İTSS+İşsizlik; işəgötürən HYS DAXİL)
-            decimal vergiBazasi = Math.Max(0, esasBrut + mezuniyyetAvansBrutu - hysMebleg);
-            decimal dsmfBazasi  = Math.Max(0, vergiBazasi - xestelikSirketOdenis);
-            decimal itssBazasi  = Math.Max(0, esasBrut + mezuniyyetAvansBrutu + hysIsegoturen - xestelikSirketOdenis);
+            // esasBrut konfiqurasiyalı gəlirlərin TAM məbləğini ehtiva edir; hər baza üçün
+            // həmin gəlirlərin yalnız o haqqa cəlb olunan hissəsi qalmalıdır → tam elaveCemi
+            // çıxılır, müvafiq hissə geri əlavə olunur. elave=0-da bazalar əvvəlki kimi qalır.
+            // İşsizlik və İTSS ayrı bazalara bölünür (konfiqurasiyalı gəlir biri üçün cəlb,
+            // digəri üçün azad ola bilər); elave=0-da hər ikisi köhnə itssBazasi-na bərabərdir.
+            decimal vergiBazasi    = Math.Max(0, esasBrut + mezuniyyetAvansBrutu - hysMebleg - elaveCemi + elaveVergiTaxable);
+            decimal dsmfBazasi     = Math.Max(0, esasBrut + mezuniyyetAvansBrutu - hysMebleg - xestelikSirketOdenis - elaveCemi + elaveDsmf);
+            decimal issizlikBazasi = Math.Max(0, esasBrut + mezuniyyetAvansBrutu + hysIsegoturen - xestelikSirketOdenis - elaveCemi + elaveIssizlik);
+            decimal itssBazasi     = Math.Max(0, esasBrut + mezuniyyetAvansBrutu + hysIsegoturen - xestelikSirketOdenis - elaveCemi + elaveItss);
 
             if (hysMebleg > 0)
             {
@@ -836,7 +872,9 @@ namespace FinNex.Application.Services.HR
             //     HYS çıxıldıqdan sonrakı baza istifadə olunur.
             // Standart güzəşt: GROSS (maaş + işv.HYS + məzuniyyət avansı brütü) ≤ 2500 olmalıdır.
             // Məzuniyyət avansı ayrıca ödənilsə də, həmin ayın ümumi gəliri sayılır → threshold-a daxildir.
-            decimal brutMaasGuzestYoxlama = brutMaas + mezuniyyetAvansBrutu;
+            // brutMaas elaveCemi-ni tam ehtiva edir; 2500 güzəşt həddinə yalnız
+            // GuzestHeddineDaxil=true olan konfiqurasiyalı gəlirlər sayılmalıdır.
+            decimal brutMaasGuzestYoxlama = brutMaas + mezuniyyetAvansBrutu - (elaveCemi - elaveGuzest);
             decimal standartGuzest = brutMaasGuzestYoxlama <= firstBracketMax ? p.VergiGuzestiMeblegi : 0m;
 
             decimal vergilenecek = Math.Max(0, vergiBazasi - standartGuzest - maxIsciGuzesti);
@@ -891,7 +929,7 @@ namespace FinNex.Application.Services.HR
             //   İşsizlik+İTSS  — itssBazasi (esasBrut − Xəstəlik)
             decimal gelirVergisi   = HesablaTutulma(vergilenecek, MaasParametrNovu.GelirVergisiFaizi,       p.GelirVergisiFaizi,       out var gvIzah);
             decimal dsmfIsci       = HesablaTutulma(dsmfBazasi,   MaasParametrNovu.DsmfFaizi,               p.DsmfFaizi,               out var dsmfIzah);
-            decimal issizlikIsci   = Math.Round(itssBazasi * (p.IssizlikSigortasiFaizi / 100m), 2);
+            decimal issizlikIsci   = Math.Round(issizlikBazasi * (p.IssizlikSigortasiFaizi / 100m), 2);
             decimal itss           = HesablaTutulma(itssBazasi,   MaasParametrNovu.IcbariTibbiSigortaFaizi, p.IcbariTibbiSigortaFaizi, out var itssIzah);
 
             string dsmfAzadIzahi()
@@ -945,7 +983,7 @@ namespace FinNex.Application.Services.HR
             //   DSMF işəgötürən           — dsmfBazasi (HYS + xəstəlik çıxılıb)
             //   İşsizlik+İTSS işəgötürən  — itssBazasi (xəstəlik çıxılıb)
             decimal dsmfIsegoturen     = HesablaTutulma(dsmfBazasi, MaasParametrNovu.DsmfIsegoturenFaizi,             p.DsmfIsegotürenFaizi,     out var dsmfIsvIzah);
-            decimal issizlikIsegoturen = Math.Round(itssBazasi * (p.IssizlikIsegotürenFaizi / 100m), 2);
+            decimal issizlikIsegoturen = Math.Round(issizlikBazasi * (p.IssizlikIsegotürenFaizi / 100m), 2);
             decimal itssIsegoturen     = HesablaTutulma(itssBazasi, MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi, p.IcbariTibbiSigortaFaizi, out var itssIsvIzah);
 
             // HYS işəgötürən payı artıq 8.6-da hesablanıb (hysIsegoturen)
@@ -1038,6 +1076,14 @@ namespace FinNex.Application.Services.HR
                 DetayEkle("Əvvəlki Ay Artıq Ödəniş Kəsintisi", MaasDetayTipi.Tutulma,         korreksiyaKesinti, korreksiyaAciq),
                 DetayEkle("Əvvəlki Ay Kompensasiyası",          MaasDetayTipi.Gelir,           korreksiyaGelir,   korreksiyaAciq),
             };
+
+            // Konfiqurasiyalı manual gəlirləri də detal kimi əlavə et (breakdown + provodka üçün).
+            foreach (var (elaveAd, elaveMbl) in elaveDetallar)
+            {
+                var elaveRes = DetayEkle(elaveAd, MaasDetayTipi.Gelir, elaveMbl);
+                if (!elaveRes.Success)
+                    return Result<MaasHesablaNeticesiDto>.Fail(elaveRes.Message);
+            }
 
             var ilkXeta = xetalar.FirstOrDefault(x => !x.Success);
             if (ilkXeta != null)
