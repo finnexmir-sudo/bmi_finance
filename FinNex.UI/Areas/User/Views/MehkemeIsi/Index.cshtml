@@ -102,7 +102,7 @@
                         <th class="ms-primary">Son əməliyyat</th>
                         <th class="ms-primary">Status</th>
                         <th class="ms-primary">Son fəaliyyət</th>
-                        <th>İş</th>
+                        <th class="ms-col-ish">İş</th>
                     </tr>
                 </thead>
 
@@ -179,14 +179,14 @@
                                 <td class="ms-item10" title="@x.SonFealiyyet">
                                     @if (!string.IsNullOrWhiteSpace(x.SonFealiyyet))
                                     {
-                                        @(x.SonFealiyyet.Length > 70 ? x.SonFealiyyet[..70] + "…" : x.SonFealiyyet)
+                                        <div class="ms-clip">@x.SonFealiyyet</div>
                                     }
                                     else
                                     {
                                         <span class="ms-muted">—</span>
                                     }
                                 </td>
-                                <td onclick="event.stopPropagation()">
+                                <td class="ms-col-ish" onclick="event.stopPropagation()">
                                     @if (x.IsAcilib && x.MehkemeIsiId.HasValue)
                                     {
                                         <div class="ms-ish-on"><span class="ms-dot"></span>İzlənir <span class="ms-mrh">@x.MerheleSayi mərhələ</span></div>
@@ -201,7 +201,7 @@
                                             <input type="hidden" name="acar.KreditHesabi" value="@x.KreditHesabi" />
                                             <input type="hidden" name="acar.Ks" value="@x.Ks" />
                                             <input type="hidden" name="acar.BorcluAd" value="@x.BorcluAd" />
-                                            <button type="submit" class="ms-btn-xs"><i class="bi bi-plus-lg"></i> İş aç</button>
+                                            <button type="submit" class="ms-btn-xs ms-btn-isac"><i class="bi bi-plus-lg"></i> İş aç</button>
                                         </form>
                                     }
                                 </td>

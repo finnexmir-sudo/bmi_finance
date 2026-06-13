@@ -223,14 +223,18 @@
 .ms-st-odendi   { background: rgba(34,197,94,.12); color: #15803d; }
 .ms-st-diger    { background: #f1f5f9; color: #475569; }
 
-.ms-item10 { max-width: 240px; white-space: normal; color: #475569; line-height: 1.35; }
+.ms-item10 { color: #475569; }
+.ms-clip { max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .ms-ish-on { display: inline-flex; align-items: center; gap: 5px; color: #15803d; font-weight: 700; font-size: 11.5px; }
 .ms-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
 .ms-mrh { background: #f1f5f9; color: #475569; border-radius: 20px; padding: 1px 7px; font-size: 10.5px; font-weight: 700; }
-.ms-btn-xs { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 700; cursor: pointer; border: 1.5px solid #e2e8f0; background: #fff; color: #334155; text-decoration: none; margin-top: 4px; }
+.ms-btn-xs { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 700; cursor: pointer; border: 1.5px solid #e2e8f0; background: #fff; color: #334155; text-decoration: none; margin-top: 4px; white-space: nowrap; }
 .ms-btn-xs:hover { background: #f8fafc; }
 .ms-btn-xs--open { background: #eef2ff; border-color: #c7d2fe; color: #4338ca; }
+.ms-btn-isac { background: #e0e7ff; border-color: #a5b4fc; color: #3730a3; font-weight: 800; }
+.ms-btn-isac:hover { background: #c7d2fe; }
+.ms-col-ish { min-width: 100px; }
 
 /* Zaminlər — gizli, klikdə açılır */
 .ms-zamin { display: none; }
