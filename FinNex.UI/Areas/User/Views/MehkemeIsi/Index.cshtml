@@ -1,127 +1,256 @@
 @using FinNex.Application.DTOs.Pid
-@using FinNex.Domain.Entities.Pid
-@model IList<MehkemeIsiListDto>
+@model MehkemeSiyahiResultDto
 @{
     ViewData["Title"] = "Məhkəmə İşləri";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    string M(decimal? v) => v.HasValue ? v.Value.ToString("N2") + " ₼" : "—";
+    string Txt(string? s) => string.IsNullOrWhiteSpace(s) ? "—" : s;
+
+    string StatusClass(string? s)
+    {
+        var u = (s ?? "").ToUpperInvariant();
+        if (u.Contains("İCRA") || u.Contains("ICRA")) return "ms-st-icra";
+        if (u.Contains("MƏHK") || u.Contains("MEHK")) return "ms-st-mehkeme";
+        if (u.Contains("NOTAR")) return "ms-st-notarius";
+        if (u.Contains("ÖDƏN") || u.Contains("ODEN") || u.Contains("BAĞL") || u.Contains("BAGL")) return "ms-st-odendi";
+        return "ms-st-diger";
+    }
+
+    var statuslar = Model.Satirlar
+        .Select(x => x.Status)
+        .Where(x => !string.IsNullOrWhiteSpace(x))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(x => x)
+        .ToList();
 }
 
-<div class="mi-page">
-    <div class="mi-head">
+<div class="ms-page">
+    <div class="ms-head">
         <div>
-            <h2 class="mi-title">Məhkəmə İşləri</h2>
-            <p class="mi-sub">PİD — aktiv və tamamlanmış məhkəmə işlərinin siyahısı</p>
+            <h2 class="ms-title">Məhkəmə İşləri</h2>
+            <p class="ms-sub">PİD — problemli kreditlərin canlı siyahısı (Oracle) + proqram izləməsi</p>
         </div>
-        <a asp-action="Yarat" class="mi-btn mi-btn--primary">
-            <i class="bi bi-plus-lg"></i> Yeni iş
-        </a>
+        <div style="display:flex;gap:8px">
+            <button type="button" class="ms-btn ms-btn--ghost" id="msToggleCols">
+                <i class="bi bi-layout-three-columns"></i> Detallı sütunlar
+            </button>
+            <a asp-action="Index" class="ms-btn ms-btn--primary"><i class="bi bi-arrow-clockwise"></i> Yenilə</a>
+        </div>
     </div>
 
     @if (TempData["Success"] != null)
     {
-        <div class="mi-alert mi-alert--success">@TempData["Success"]</div>
+        <div class="ms-alert ms-alert--success">@TempData["Success"]</div>
     }
     @if (TempData["Error"] != null)
     {
-        <div class="mi-alert mi-alert--error">@TempData["Error"]</div>
+        <div class="ms-alert ms-alert--error">@TempData["Error"]</div>
     }
 
-    <div class="mi-filter-row">
-        <input type="text" id="miSearch" class="mi-input" placeholder="Qeydiyyat № və ya ad axtar…" />
-        <select id="miStatusFilter" class="mi-select">
+    @if (!Model.Konfiqurasiyali)
+    {
+        <div class="ms-alert ms-alert--warn">
+            <i class="bi bi-exclamation-triangle"></i>
+            Məhkəmə siyahı Oracle sorğusu seçilməyib.
+            <a asp-area="Admin" asp-controller="SistemAyar" asp-action="Index">Sistem Ayarları → PİD Məhkəmə İşləri</a>
+            bölməsindən "Tam siyahı" sorğusunu seçin.
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(Model.Xeta))
+    {
+        <div class="ms-alert ms-alert--error"><i class="bi bi-x-octagon"></i> @Model.Xeta</div>
+    }
+
+    <div class="ms-filter">
+        <input type="text" id="msSearch" class="ms-input ms-grow" placeholder="🔍 Borclu adı, hesab № və ya FİN axtar…" />
+        <select id="msStatus" class="ms-input">
             <option value="">Bütün statuslar</option>
-            <option value="1">Hazırlanır</option>
-            <option value="2">Məhkəmədə</option>
-            <option value="3">İcrada</option>
-            <option value="4">Tamamlandı</option>
-            <option value="5">Bağlandı</option>
+            @foreach (var s in statuslar)
+            {
+                <option value="@s">@s</option>
+            }
         </select>
-        <select id="miNovFilter" class="mi-select">
-            <option value="">Bütün növlər</option>
-            <option value="1">İpoteka</option>
-            <option value="2">İstehlak</option>
-            <option value="3">Kart krediti</option>
-            <option value="4">Digər</option>
+        <select id="msIsh" class="ms-input">
+            <option value="">İş: hamısı</option>
+            <option value="1">İzlənənlər</option>
+            <option value="0">İş açılmayanlar</option>
         </select>
     </div>
 
-    <div class="mi-table-card">
-        <div class="mi-table-wrap">
-            <table class="mi-table" id="miTable">
+    @Html.AntiForgeryToken()
+
+    <div class="ms-card">
+        <div class="ms-twrap">
+            <table class="ms-table" id="msTable">
                 <thead>
                     <tr>
-                        <th>Qeydiyyat №</th>
-                        <th>Borclu</th>
-                        <th>Növ</th>
-                        <th>Əsas borc</th>
-                        <th>Məhkəmə xərci</th>
-                        <th>Status</th>
-                        <th>Mərhələ</th>
-                        <th>Tarix</th>
-                        <th></th>
+                        <th class="ms-ctoggle"></th>
+                        <th class="ms-primary">Region</th>
+                        <th class="ms-primary">Borclu</th>
+                        <th>Qərardad</th>
+                        <th class="ms-primary">Hesab № / K.S.</th>
+                        <th class="ms-primary ms-num">Qalıq</th>
+                        <th class="ms-primary ms-num">V.K. Qalıq</th>
+                        <th class="ms-primary ms-num">% məbləği</th>
+                        <th class="ms-primary ms-num">V.K. % məbləği</th>
+                        <th class="ms-extra ms-num">Faiz</th>
+                        <th class="ms-extra ms-num">Kreditin məbləği</th>
+                        <th class="ms-extra">Verilmə</th>
+                        <th class="ms-extra ms-num">Overdue gün</th>
+                        <th class="ms-extra">Telefon</th>
+                        <th class="ms-primary">Son əməliyyat</th>
+                        <th class="ms-primary">Status</th>
+                        <th class="ms-primary">Son fəaliyyət</th>
+                        <th>İş</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @if (Model.Any())
+
+                @if (Model.Satirlar.Any())
+                {
+                    @foreach (var x in Model.Satirlar)
                     {
-                        @foreach (var item in Model)
-                        {
-                            <tr data-status="@((int)item.Status)" data-nov="@((int)item.Nov)"
-                                data-search="@item.QeydiyyatNomresi @item.BorcluAd">
-                                <td class="mi-nomre">@item.QeydiyyatNomresi</td>
-                                <td>@item.BorcluAd</td>
-                                <td>@Html.Raw(NovBadge(item.Nov))</td>
-                                <td>@(item.EsasBorc.HasValue ? item.EsasBorc.Value.ToString("N2") + " ₼" : "—")</td>
-                                <td>@(item.MehkemeXerci.HasValue ? item.MehkemeXerci.Value.ToString("N2") + " ₼" : "—")</td>
-                                <td>@Html.Raw(StatusBadge(item.Status))</td>
-                                <td><span class="mi-count">@item.MerheleCount</span></td>
-                                <td class="mi-date">@item.YaradilmaTarixi.ToString("dd.MM.yyyy")</td>
+                        var hasZamin = x.Zaminler.Any();
+                        <tbody class="ms-grp"
+                               data-hesab="@x.KreditHesabi"
+                               data-ks="@x.Ks"
+                               data-search="@($"{x.BorcluAd} {x.KreditHesabi} {string.Join(" ", x.Zaminler.Select(z => z.Ad + " " + z.Fin))}")"
+                               data-status="@x.Status"
+                               data-ish="@(x.IsAcilib ? "1" : "0")">
+                            <tr class="ms-borclu" onclick="msRowClick(event,this.parentElement)" style="@(hasZamin ? "cursor:pointer" : "cursor:default")">
+                                <td class="ms-ctoggle">
+                                    @if (hasZamin)
+                                    {
+                                        <span class="ms-caret"><i class="bi bi-chevron-right"></i></span>
+                                    }
+                                </td>
+                                <td class="ms-accent">@Txt(x.Region)</td>
                                 <td>
-                                    <a asp-action="Detal" asp-route-id="@item.Id" class="mi-btn-icon" title="Detallar">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
+                                    <div class="ms-bname">@Txt(x.BorcluAd)</div>
+                                    <div class="ms-btip">
+                                        @if (!string.IsNullOrWhiteSpace(x.KreditinNovu))
+                                        {
+                                            <span class="ms-nov">@x.KreditinNovu</span>
+                                        }
+                                        @if (hasZamin)
+                                        {
+                                            <span class="ms-zcount"><i class="bi bi-people-fill"></i> @x.Zaminler.Count zamin</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="ms-znil">zaminsiz</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="ms-qd" onclick="event.stopPropagation()">
+                                    <span class="ms-apptag">PROQRAM</span>
+                                    <div class="ms-qd-box" contenteditable="true"
+                                         data-orig="@x.Qerardad"
+                                         data-placeholder="Qərardad yaz…"
+                                         onblur="msSaveQerardad(this)">@x.Qerardad</div>
+                                </td>
+                                <td>
+                                    <span class="ms-hesab">@x.KreditHesabi</span>
+                                    @if (!string.IsNullOrWhiteSpace(x.Ks))
+                                    {
+                                        <span class="ms-ks">K.S. @x.Ks</span>
+                                    }
+                                </td>
+                                <td class="ms-num">@M(x.Qaliq)</td>
+                                <td class="ms-num @(x.VkQaliq > 0 ? "ms-vk" : "")">@M(x.VkQaliq)</td>
+                                <td class="ms-num">@M(x.FaizMeblegi)</td>
+                                <td class="ms-num @(x.VkFaizMeblegi > 0 ? "ms-vk" : "")">@M(x.VkFaizMeblegi)</td>
+                                <td class="ms-extra ms-num">@Txt(x.Faiz)</td>
+                                <td class="ms-extra ms-num">@M(x.KreditinMeblegi)</td>
+                                <td class="ms-extra">@Txt(x.VerilmeTarixi)</td>
+                                <td class="ms-extra ms-num">@Txt(x.OverdueGun)</td>
+                                <td class="ms-extra">@Txt(x.Telefon)</td>
+                                <td>@Txt(x.SonEmeliyyatTarixi)</td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(x.Status))
+                                    {
+                                        <span class="ms-badge @StatusClass(x.Status)">@x.Status</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="ms-muted">—</span>
+                                    }
+                                </td>
+                                <td class="ms-item10" title="@x.SonFealiyyet">
+                                    @if (!string.IsNullOrWhiteSpace(x.SonFealiyyet))
+                                    {
+                                        @(x.SonFealiyyet.Length > 70 ? x.SonFealiyyet[..70] + "…" : x.SonFealiyyet)
+                                    }
+                                    else
+                                    {
+                                        <span class="ms-muted">—</span>
+                                    }
+                                </td>
+                                <td onclick="event.stopPropagation()">
+                                    @if (x.IsAcilib && x.MehkemeIsiId.HasValue)
+                                    {
+                                        <div class="ms-ish-on"><span class="ms-dot"></span>İzlənir <span class="ms-mrh">@x.MerheleSayi mərhələ</span></div>
+                                        <a asp-action="Detal" asp-route-id="@x.MehkemeIsiId" class="ms-btn-xs ms-btn-xs--open">
+                                            <i class="bi bi-eye"></i> Aç
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="IsAch" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="acar.KreditHesabi" value="@x.KreditHesabi" />
+                                            <input type="hidden" name="acar.Ks" value="@x.Ks" />
+                                            <input type="hidden" name="acar.BorcluAd" value="@x.BorcluAd" />
+                                            <button type="submit" class="ms-btn-xs"><i class="bi bi-plus-lg"></i> İş aç</button>
+                                        </form>
+                                    }
                                 </td>
                             </tr>
-                        }
+
+                            @if (hasZamin)
+                            {
+                                <tr class="ms-zamin"><td colspan="20" class="ms-zhead">ZAMİNLƏR (@x.Zaminler.Count)</td></tr>
+                                @for (int zi = 0; zi < x.Zaminler.Count; zi++)
+                                {
+                                    var z = x.Zaminler[zi];
+                                    <tr class="ms-zamin">
+                                        <td class="ms-zindent"><span class="ms-ztree">└</span></td>
+                                        <td colspan="20">
+                                            <div class="ms-zline">
+                                                <span class="ms-ztag">Zamin @(zi + 1)</span>
+                                                <span class="ms-zname">@Txt(z.Ad)</span>
+                                                @if (!string.IsNullOrWhiteSpace(z.Fin))      { <span class="ms-zchip"><b>FİN:</b> @z.Fin</span> }
+                                                @if (!string.IsNullOrWhiteSpace(z.DogumTarixi)) { <span class="ms-zchip"><b>Doğum:</b> @z.DogumTarixi</span> }
+                                                @if (!string.IsNullOrWhiteSpace(z.Telefon))  { <span class="ms-zchip"><b>Tel:</b> @z.Telefon</span> }
+                                                @if (!string.IsNullOrWhiteSpace(z.Unvan))    { <span class="ms-zchip"><b>Ünvan:</b> @z.Unvan</span> }
+                                                @if (!string.IsNullOrWhiteSpace(z.Gelir))    { <span class="ms-zchip"><b>Aylıq gəlir:</b> @z.Gelir</span> }
+                                                @if (!string.IsNullOrWhiteSpace(z.BorcYuku)) { <span class="ms-zchip"><b>Borc yükü:</b> @z.BorcYuku</span> }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
                     }
-                    else
-                    {
+                }
+                else
+                {
+                    <tbody>
                         <tr>
-                            <td colspan="9">
-                                <div class="mi-empty">
+                            <td colspan="18">
+                                <div class="ms-empty">
                                     <i class="bi bi-inbox"></i>
-                                    <div>Hələ məhkəmə işi yoxdur</div>
-                                    <a asp-action="Yarat" class="mi-btn mi-btn--primary" style="margin-top:12px">Yeni iş yarat</a>
+                                    <div>@(Model.Konfiqurasiyali ? "Siyahı boşdur" : "Sorğu seçildikdən sonra siyahı buraya gələcək")</div>
                                 </div>
                             </td>
                         </tr>
-                    }
-                </tbody>
+                    </tbody>
+                }
             </table>
         </div>
-        <div class="mi-footer-count" id="miCount">@Model.Count qeyd</div>
+        <div class="ms-foot" id="msCount">@Model.Satirlar.Count kredit</div>
     </div>
 </div>
-
-@functions {
-    string NovBadge(MehkemeIsiNov nov) => nov switch
-    {
-        MehkemeIsiNov.Ipoteka    => "<span class=\"mi-badge mi-badge--ipoteka\">İpoteka</span>",
-        MehkemeIsiNov.Istehlak   => "<span class=\"mi-badge mi-badge--istehlak\">İstehlak</span>",
-        MehkemeIsiNov.KartKredit => "<span class=\"mi-badge mi-badge--kart\">Kart</span>",
-        _                        => "<span class=\"mi-badge mi-badge--diger\">Digər</span>"
-    };
-
-    string StatusBadge(MehkemeIsiStatus s) => s switch
-    {
-        MehkemeIsiStatus.Hazirlanir => "<span class=\"mi-badge mi-badge--hazir\">Hazırlanır</span>",
-        MehkemeIsiStatus.Mehkemede => "<span class=\"mi-badge mi-badge--mehkeme\">Məhkəmədə</span>",
-        MehkemeIsiStatus.Icra       => "<span class=\"mi-badge mi-badge--icra\">İcrada</span>",
-        MehkemeIsiStatus.Tamamlandi => "<span class=\"mi-badge mi-badge--tamam\">Tamamlandı</span>",
-        MehkemeIsiStatus.Baghlandi  => "<span class=\"mi-badge mi-badge--bagli\">Bağlandı</span>",
-        _                           => ""
-    };
-}
 
 @section Styles {
     <link rel="stylesheet" href="~/css/User/user-mehkeme.css" asp-append-version="true" />
@@ -129,31 +258,72 @@
 
 @section Scripts {
 <script>
-    (function () {
-        var search = document.getElementById('miSearch');
-        var statusSel = document.getElementById('miStatusFilter');
-        var novSel = document.getElementById('miNovFilter');
-        var countEl = document.getElementById('miCount');
+    // Detallı (boz) sütunları aç/bağla
+    document.getElementById('msToggleCols').addEventListener('click', function () {
+        document.getElementById('msTable').classList.toggle('ms-show-extra');
+        this.classList.toggle('ms-btn--primary');
+    });
 
-        function filter() {
-            var q = search.value.toLowerCase();
-            var st = statusSel.value;
-            var nv = novSel.value;
-            var rows = document.querySelectorAll('#miTable tbody tr[data-status]');
-            var visible = 0;
-            rows.forEach(function (r) {
-                var ok = (!q || r.dataset.search.toLowerCase().includes(q))
-                      && (!st || r.dataset.status === st)
-                      && (!nv || r.dataset.nov === nv);
-                r.style.display = ok ? '' : 'none';
-                if (ok) visible++;
-            });
-            countEl.textContent = visible + ' qeyd';
+    // Borclu sətrinə klik → zaminlər açılır/bağlanır
+    function msRowClick(e, tb) {
+        if (e.target.closest('.ms-qd, a, button, form, [contenteditable]')) return;
+        if (!tb.querySelector('.ms-zamin')) return;   // zamin yoxdursa heç nə etmə
+        tb.classList.toggle('open');
+    }
+
+    // Qərardad inline yadda saxla (dəyişibsə)
+    var msToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    async function msSaveQerardad(box) {
+        var text = box.innerText.trim();
+        if (text === (box.dataset.orig || '').trim()) return;
+        var tb = box.closest('tbody');
+        var fd = new FormData();
+        fd.append('acar.KreditHesabi', tb.dataset.hesab || '');
+        fd.append('acar.Ks', tb.dataset.ks || '');
+        fd.append('qerardad', text);
+        fd.append('__RequestVerificationToken', msToken);
+        box.classList.add('ms-qd-saving');
+        try {
+            var r = await fetch('/User/MehkemeIsi/QerardadYaz', { method: 'POST', body: fd });
+            var j = await r.json();
+            box.classList.remove('ms-qd-saving');
+            if (j.success) {
+                box.dataset.orig = text;
+                box.classList.add('ms-qd-saved');
+                setTimeout(function () { box.classList.remove('ms-qd-saved'); }, 1200);
+            } else {
+                box.classList.add('ms-qd-err');
+            }
+        } catch {
+            box.classList.remove('ms-qd-saving');
+            box.classList.add('ms-qd-err');
         }
+    }
 
-        search.addEventListener('input', filter);
-        statusSel.addEventListener('change', filter);
-        novSel.addEventListener('change', filter);
+    // Filtr
+    (function () {
+        var s = document.getElementById('msSearch');
+        var st = document.getElementById('msStatus');
+        var ish = document.getElementById('msIsh');
+        var cnt = document.getElementById('msCount');
+        function f() {
+            var q = s.value.toLowerCase();
+            var sv = st.value;
+            var iv = ish.value;
+            var groups = document.querySelectorAll('#msTable tbody.ms-grp');
+            var vis = 0;
+            groups.forEach(function (g) {
+                var ok = (!q || (g.dataset.search || '').toLowerCase().includes(q))
+                      && (!sv || g.dataset.status === sv)
+                      && (!iv || g.dataset.ish === iv);
+                g.style.display = ok ? '' : 'none';
+                if (ok) vis++;
+            });
+            cnt.textContent = vis + ' kredit';
+        }
+        s.addEventListener('input', f);
+        st.addEventListener('change', f);
+        ish.addEventListener('change', f);
     })();
 </script>
 }

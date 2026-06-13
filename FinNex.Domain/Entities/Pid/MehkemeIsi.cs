@@ -2,10 +2,12 @@ namespace FinNex.Domain.Entities.Pid;
 
 public class MehkemeIsi : BaseEntity
 {
-    public string QeydiyyatNomresi { get; set; } = null!;   // 6-rəqəmli PİD qeydiyyat №
-    public string BorcluAd         { get; set; } = null!;   // Oracle-dan gələn ad
-    public decimal? EsasBorc       { get; set; }             // Oracle-dan gələn əsas borc
+    public string QeydiyyatNomresi { get; set; } = null!;   // kredit hesabı (licschkre) — kompozit açarın 1-ci hissəsi
+    public string? KreditSubHesab  { get; set; }             // subschkre / K.S. (məs. "00") — kompozit açarın 2-ci hissəsi
+    public string BorcluAd         { get; set; } = null!;   // Oracle-dan snapshot edilən ad
+    public decimal? EsasBorc       { get; set; }             // Oracle-dan snapshot edilən əsas borc
     public decimal? MehkemeXerci   { get; set; }             // əl ilə daxil edilən məhkəmə xərci
+    public string? Qerardad        { get; set; }             // proqramda redaktə olunan məhkəmə qərardadı (Oracle-da yox)
     public MehkemeIsiNov  Nov      { get; set; } = MehkemeIsiNov.Diger;
     public MehkemeIsiStatus Status { get; set; } = MehkemeIsiStatus.Hazirlanir;
     public DateTime? BaslamaTarixi { get; set; }

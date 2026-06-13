@@ -15,6 +15,9 @@ public class SistemAyar
     public int? PidOdenisGunuSorguId      { get; set; }
     public int? PidZaminlerSorguId        { get; set; }
 
-    // PİD Məhkəmə İşləri — Oracle sorğusu (qeydiyyat № ilə axtarış)
+    // PİD Məhkəmə İşləri — Oracle sorğusu (qeydiyyat № ilə tək kredit axtarışı, &nomre)
     public int? PidMehkemeSorguId         { get; set; }
+
+    // PİD Məhkəmə İşləri — tam siyahı sorğusu (parametrsiz, bütün problemli kreditlər + zaminlər)
+    public int? PidMehkemeSiyahiSorguId   { get; set; }
 }

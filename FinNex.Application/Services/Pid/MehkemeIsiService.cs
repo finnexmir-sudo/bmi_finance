@@ -7,6 +7,7 @@ using FinNex.Domain.Entities.Pid;
 using FinNex.Domain.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace FinNex.Application.Services.Pid;
 
@@ -207,11 +208,215 @@ public class MehkemeIsiService : IMehkemeIsiService
         return rows.Select(r => r.ToDictionary(kv => kv.Key, kv => kv.Value?.ToString() ?? "")).ToList();
     }
 
-    private static string? GetStr(Dictionary<string, object?> row, string key)
+    // ── Yeni siyahı modeli ───────────────────────────────────────
+    public async Task<MehkemeSiyahiResultDto> SiyahiGetirAsync()
     {
-        foreach (var k in row.Keys)
-            if (string.Equals(k, key, StringComparison.OrdinalIgnoreCase))
-                return row[k]?.ToString()?.Trim();
+        var result = new MehkemeSiyahiResultDto();
+
+        var ayar = await _sistemAyar.GetirAsync();
+        if (ayar?.PidMehkemeSiyahiSorguId == null)
+        {
+            result.Konfiqurasiyali = false;
+            result.Xeta = "Sistem ayarlarında məhkəmə siyahı sorğusu seçilməyib.";
+            return result;
+        }
+        result.Konfiqurasiyali = true;
+
+        var sorguResult = await _sorguService.IdIleGetirAsync(ayar.PidMehkemeSiyahiSorguId.Value);
+        if (!sorguResult.Success || sorguResult.Data is null || !sorguResult.Data.Aktiv)
+        {
+            result.Xeta = "Oracle siyahı sorğusu tapılmadı və ya deaktivdir.";
+            return result;
+        }
+
+        List<Dictionary<string, object?>> rows;
+        try
+        {
+            rows = await _oracle.SelectAsync(sorguResult.Data.SorguMetni, maxRows: 5000);
+        }
+        catch (Exception ex)
+        {
+            result.Xeta = "Oracle sorğusu icra olunmadı: " + ex.Message;
+            return result;
+        }
+
+        // SQL tracking qeydləri — kompozit açara görə (yalnız oxuma → AsNoTracking, fixup-dan qaçmaq üçün)
+        var izlenenler = await _uow.Repository<MehkemeIsi>()
+            .Query()
+            .Where(x => !x.Silinib)
+            .Include(x => x.Merheleler)
+            .AsNoTracking()
+            .ToListAsync();
+
+        var map = new Dictionary<string, MehkemeIsi>(StringComparer.OrdinalIgnoreCase);
+        foreach (var rec in izlenenler)
+            map[Acar(rec.QeydiyyatNomresi, rec.KreditSubHesab)] = rec;
+
+        foreach (var row in rows)
+        {
+            var satir = new MehkemeKreditSatirDto
+            {
+                KreditHesabi       = (GetStr(row, "kredit_hesabi", "licschkre", "hesab") ?? "").Trim(),
+                Ks                 = (GetStr(row, "ks", "subschkre", "sub") ?? "").Trim(),
+                Region             = GetStr(row, "region"),
+                BorcluAd           = GetStr(row, "adi", "ad", "borclu_ad", "name_regnom"),
+                Qaliq              = GetDec(row, "qaliq", "summa"),
+                VkQaliq            = GetDec(row, "vk_qaliq", "summa_19"),
+                FaizMeblegi        = GetDec(row, "faiz_meblegi"),
+                VkFaizMeblegi      = GetDec(row, "vk_faiz_meblegi"),
+                SonEmeliyyatTarixi = GetStr(row, "son_emel_tarixi"),
+                Status             = GetStr(row, "item_01"),
+                SonFealiyyet       = GetStr(row, "item_10"),
+                Faiz               = GetStr(row, "faiz"),
+                Ehtiyat            = GetStr(row, "ehtiyat"),
+                KreditinMeblegi    = GetDec(row, "kreditin_meblegi", "summakre"),
+                VerilmeTarixi      = GetStr(row, "verilme_tarixi"),
+                OverdueGun         = GetStr(row, "real_overdue_day"),
+                Telefon            = GetStr(row, "phone_numbers"),
+                Mobil              = GetStr(row, "mobile_numbers"),
+                KreditinNovu       = GetStr(row, "kreditin_novu"),
+                GirovunNovu        = GetStr(row, "girovun_novu"),
+                Sektor             = GetStr(row, "sektor_name", "sektor"),
+                Item02             = GetStr(row, "item_02"),
+                DogumTarixi        = GetStr(row, "dogum_tarixi"),
+                Zaminler           = ParseZaminler(row)
+            };
+
+            if (map.TryGetValue(Acar(satir.KreditHesabi, satir.Ks), out var rec))
+            {
+                satir.IsAcilib     = true;
+                satir.MehkemeIsiId = rec.Id;
+                satir.Qerardad     = rec.Qerardad;
+                satir.MerheleSayi  = rec.Merheleler.Count(m => !m.Silinib);
+            }
+
+            result.Satirlar.Add(satir);
+        }
+
+        return result;
+    }
+
+    public async Task<int> QerardadYazAsync(MehkemeKreditAcarDto acar, string? qerardad, int isciId)
+    {
+        var rec = await GetOrCreateAsync(acar, isciId);
+        rec.Qerardad          = string.IsNullOrWhiteSpace(qerardad) ? null : qerardad.Trim();
+        rec.YenileyenIcraciId = isciId;
+        rec.YenilenmeTarixi   = DateTime.Now;
+        await _uow.Repository<MehkemeIsi>().YenileAsync(rec);
+        await _uow.YaddaSaxlaAsync();
+        return rec.Id;
+    }
+
+    public async Task<MehkemeIsi> IsAchAsync(MehkemeKreditAcarDto acar, int isciId)
+        => await GetOrCreateAsync(acar, isciId);
+
+    private async Task<MehkemeIsi> GetOrCreateAsync(MehkemeKreditAcarDto acar, int isciId)
+    {
+        var hesab = (acar.KreditHesabi ?? "").Trim();
+        var ks    = (acar.Ks ?? "").Trim();
+
+        var rec = await _uow.Repository<MehkemeIsi>()
+            .Query()
+            .FirstOrDefaultAsync(x => !x.Silinib
+                && x.QeydiyyatNomresi == hesab
+                && (x.KreditSubHesab ?? "") == ks);
+
+        if (rec != null) return rec;
+
+        rec = new MehkemeIsi
+        {
+            QeydiyyatNomresi = hesab,
+            KreditSubHesab   = ks,
+            BorcluAd         = string.IsNullOrWhiteSpace(acar.BorcluAd) ? "(naməlum)" : acar.BorcluAd.Trim(),
+            EsasBorc         = acar.EsasBorc,
+            Nov              = MehkemeIsiNov.Diger,
+            Status           = MehkemeIsiStatus.Hazirlanir,
+            YaradanIcraciId  = isciId,
+            YaradilmaTarixi  = DateTime.Now
+        };
+        await _uow.Repository<MehkemeIsi>().YaratAsync(rec);
+        await _uow.YaddaSaxlaAsync();
+        return rec;
+    }
+
+    // ── Parsing köməkçiləri ──────────────────────────────────────
+    private static string Acar(string? hesab, string? ks)
+        => $"{(hesab ?? "").Trim()}|{(ks ?? "").Trim()}";
+
+    private static List<MehkemeZaminDto> ParseZaminler(Dictionary<string, object?> row)
+    {
+        var list = new List<MehkemeZaminDto>();
+        for (int i = 1; i <= 5; i++)
+        {
+            var ad = GetStr(row, $"zamin_{i}_ad");
+            if (string.IsNullOrWhiteSpace(ad)) continue;
+            list.Add(new MehkemeZaminDto
+            {
+                Ad          = ad,
+                Fin         = GetStr(row, $"zamin_{i}_fin"),
+                DogumTarixi = GetStr(row, $"zamin_{i}_dogum_tarixi"),
+                DogumYeri   = GetStr(row, $"zamin_{i}_dogum_yeri"),
+                Olke        = GetStr(row, $"zamin_{i}_olke"),
+                Telefon     = GetStr(row, $"zamin_{i}_telefon"),
+                Unvan       = GetStr(row, $"zamin_{i}_unvan"),
+                Gelir       = GetStr(row, $"zamin_{i}_gelir"),
+                BorcYuku    = GetStr(row, $"zamin_{i}_borc_yuku")
+            });
+        }
+        return list;
+    }
+
+    private static string? GetStr(Dictionary<string, object?> row, params string[] keys)
+    {
+        foreach (var key in keys)
+            foreach (var kv in row)
+                if (string.Equals(kv.Key, key, StringComparison.OrdinalIgnoreCase))
+                {
+                    var s = kv.Value?.ToString()?.Trim();
+                    if (!string.IsNullOrEmpty(s)) return s;
+                }
         return null;
+    }
+
+    private static decimal? GetDec(Dictionary<string, object?> row, params string[] keys)
+    {
+        foreach (var key in keys)
+            foreach (var kv in row)
+                if (string.Equals(kv.Key, key, StringComparison.OrdinalIgnoreCase) && kv.Value != null)
+                {
+                    switch (kv.Value)
+                    {
+                        case decimal dm: return dm;
+                        case double db:  return (decimal)db;
+                        case float fl:   return (decimal)fl;
+                        case int it:     return it;
+                        case long lg:    return lg;
+                    }
+                    var s = kv.Value.ToString()?.Trim();
+                    if (string.IsNullOrEmpty(s)) return null;
+                    var d = ParseFlexible(s.Replace(" ", "").Replace("₼", ""));
+                    if (d.HasValue) return d;
+                }
+        return null;
+    }
+
+    // Həm "16253.05", həm "16253,05", həm "16.253,05" formatını düzgün oxuyur
+    private static decimal? ParseFlexible(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return null;
+        bool hasDot = s.Contains('.');
+        bool hasComma = s.Contains(',');
+        if (hasDot && hasComma)
+        {
+            if (s.LastIndexOf(',') > s.LastIndexOf('.'))
+                s = s.Replace(".", "").Replace(",", ".");   // vergül onluqdur
+            else
+                s = s.Replace(",", "");                       // nöqtə onluqdur
+        }
+        else if (hasComma)
+        {
+            s = s.Replace(",", ".");
+        }
+        return decimal.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var d) ? d : null;
     }
 }

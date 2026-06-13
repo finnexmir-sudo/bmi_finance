@@ -17,4 +17,13 @@ public interface IMehkemeIsiService
 
     // Oracle: müştərinin bütün aktiv kreditlərini qaytarır (sütun adı → dəyər)
     Task<IList<Dictionary<string, string>>> OracleKreditlerGetirAsync(string qeydiyyatNomresi);
+
+    // Yeni siyahı modeli: Oracle-dan bütün problemli kreditlər (canlı) + proqram izləməsi (SQL)
+    Task<MehkemeSiyahiResultDto> SiyahiGetirAsync();
+
+    // Qərardad yaz (qeyd yoxdursa kompozit açarla yaradır — upsert)
+    Task<int> QerardadYazAsync(MehkemeKreditAcarDto acar, string? qerardad, int isciId);
+
+    // İş aç: kompozit açarla izləmə qeydi yaradır (varsa mövcudu qaytarır)
+    Task<MehkemeIsi> IsAchAsync(MehkemeKreditAcarDto acar, int isciId);
 }

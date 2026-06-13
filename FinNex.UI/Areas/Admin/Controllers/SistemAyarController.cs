@@ -27,7 +27,7 @@ public class SistemAyarController : Controller
         var ayar = await _db.SistemAyarlari.FirstOrDefaultAsync()
                    ?? new SistemAyar();
         ViewData["Title"] = "Sistem Ayarları";
-        await YukleSorqular(ayar.PidTopluSmsOracleSorguId, ayar.PidOdenisGunuSorguId, ayar.PidZaminlerSorguId, ayar.PidMehkemeSorguId);
+        await YukleSorqular(ayar.PidTopluSmsOracleSorguId, ayar.PidOdenisGunuSorguId, ayar.PidZaminlerSorguId, ayar.PidMehkemeSorguId, ayar.PidMehkemeSiyahiSorguId);
         return View(ayar);
     }
 
@@ -53,13 +53,14 @@ public class SistemAyarController : Controller
         ayar.PidOdenisGunuSorguId     = model.PidOdenisGunuSorguId;
         ayar.PidZaminlerSorguId       = model.PidZaminlerSorguId;
         ayar.PidMehkemeSorguId        = model.PidMehkemeSorguId;
+        ayar.PidMehkemeSiyahiSorguId  = model.PidMehkemeSiyahiSorguId;
 
         await _db.SaveChangesAsync();
         TempData["Ugur"] = "Ayarlar yadda saxlandı.";
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task YukleSorqular(int? borcalanSeciliId = null, int? odenisGunuSeciliId = null, int? zaminlerSeciliId = null, int? mehkemeSeciliId = null)
+    private async Task YukleSorqular(int? borcalanSeciliId = null, int? odenisGunuSeciliId = null, int? zaminlerSeciliId = null, int? mehkemeSeciliId = null, int? mehkemeSiyahiSeciliId = null)
     {
         var result = await _oracleSorguService.HamisiniGetirAsync();
         var aktiv = (result.Data ?? []).Where(x => x.Aktiv).ToList();
@@ -67,5 +68,6 @@ public class SistemAyarController : Controller
         ViewBag.OdenisGunuSorqular     = new SelectList(aktiv, "Id", "SorguAdi", odenisGunuSeciliId);
         ViewBag.ZaminlerSorqular       = new SelectList(aktiv, "Id", "SorguAdi", zaminlerSeciliId);
         ViewBag.MehkemeSorqular        = new SelectList(aktiv, "Id", "SorguAdi", mehkemeSeciliId);
+        ViewBag.MehkemeSiyahiSorqular  = new SelectList(aktiv, "Id", "SorguAdi", mehkemeSiyahiSeciliId);
     }
 }

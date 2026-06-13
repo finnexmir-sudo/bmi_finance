@@ -148,3 +148,102 @@
 .mi-merhele-count { font-size: 12px; background: #f1f5f9; color: #64748b; padding: 3px 10px; border-radius: 20px; font-weight: 600; text-transform: none; letter-spacing: 0; }
 .mi-badge--blue   { background: rgba(59,130,246,.1);  color: #1d4ed8; }
 .mi-badge--amber  { background: rgba(245,158,11,.12); color: #92400e; }
+
+/* ============================================================
+   Yeni canlı siyahı (ms-) — Oracle + proqram izləməsi
+   ============================================================ */
+.ms-page { padding: 22px; max-width: 1500px; margin: 0 auto; }
+.ms-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+.ms-title { font-size: 1.4rem; font-weight: 800; margin: 0; color: var(--fn-text,#1e293b); }
+.ms-sub { font-size: 13px; color: var(--fn-muted,#64748b); margin: 3px 0 0; }
+
+.ms-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 15px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1.5px solid #e2e8f0; text-decoration: none; background: #fff; color: #1e293b; transition: background .15s; }
+.ms-btn--primary { background: var(--fn-primary,#6366f1); color: #fff; border-color: transparent; }
+.ms-btn--primary:hover { background: #4f46e5; color: #fff; }
+.ms-btn--ghost:hover { background: #f8fafc; }
+
+.ms-alert { padding: 12px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.ms-alert--success { background: rgba(34,197,94,.1); color: #15803d; }
+.ms-alert--error   { background: rgba(239,68,68,.1); color: #b91c1c; }
+.ms-alert--warn    { background: rgba(245,158,11,.12); color: #92400e; }
+.ms-alert a { color: inherit; font-weight: 800; text-decoration: underline; }
+
+.ms-filter { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+.ms-input { padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; background: #fff; color: #1e293b; outline: none; }
+.ms-input:focus { border-color: var(--fn-primary,#6366f1); }
+.ms-grow { flex: 1 1 280px; }
+
+.ms-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+.ms-twrap { overflow-x: auto; }
+.ms-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.ms-table thead th { background: #f8fafc; padding: 9px 12px; text-align: left; font-weight: 700; color: #475569; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+.ms-table th.ms-primary { border-top: 3px solid #facc15; }      /* sarı = əsas sütun */
+.ms-table th.ms-extra, .ms-table td.ms-extra { display: none; }
+.ms-table.ms-show-extra th.ms-extra, .ms-table.ms-show-extra td.ms-extra { display: table-cell; }
+.ms-table th.ms-extra { background: #f3f4f6; }
+.ms-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.ms-grp { border-bottom: 1px solid #e2e8f0; }
+.ms-grp:last-child { border-bottom: none; }
+.ms-borclu td { padding: 11px 12px; border-bottom: 1px solid #eef2f7; vertical-align: middle; white-space: nowrap; }
+.ms-borclu:hover { background: #fafbff; }
+.ms-grp.open .ms-borclu { background: #f5f7ff; }
+.ms-accent { border-left: 4px solid var(--fn-primary,#6366f1); }
+.ms-bname { font-weight: 800; color: #0f172a; white-space: normal; }
+.ms-btip { font-size: 11px; color: #64748b; margin-top: 2px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ms-nov { background: #f1f5f9; color: #475569; border-radius: 20px; padding: 2px 8px; font-size: 10.5px; font-weight: 700; }
+.ms-zcount { display: inline-flex; align-items: center; gap: 4px; background: #eef2ff; color: #4338ca; border-radius: 20px; padding: 2px 9px; font-size: 10.5px; font-weight: 800; }
+.ms-znil { color: #94a3b8; font-style: italic; font-size: 10.5px; }
+
+.ms-ctoggle { width: 30px; text-align: center; }
+.ms-caret { display: inline-block; transition: transform .15s; color: var(--fn-primary,#6366f1); }
+.ms-grp.open .ms-caret { transform: rotate(90deg); }
+
+.ms-hesab { font-family: ui-monospace, monospace; color: var(--fn-primary,#6366f1); font-weight: 700; }
+.ms-ks { display: inline-block; background: #eef2ff; color: #4338ca; border-radius: 5px; padding: 1px 6px; font-size: 11px; font-weight: 700; margin-left: 6px; }
+.ms-vk { color: #b91c1c; font-weight: 700; }
+.ms-muted { color: #cbd5e1; }
+
+/* Qərardad — proqram sahəsi */
+.ms-qd { min-width: 180px; max-width: 240px; white-space: normal; }
+.ms-apptag { display: inline-block; font-size: 9.5px; font-weight: 800; letter-spacing: .04em; color: #7c3aed; background: #f5f3ff; border-radius: 4px; padding: 1px 5px; margin-bottom: 4px; }
+.ms-qd-box { border: 1px dashed #cbd5e1; border-radius: 7px; padding: 6px 8px; background: #fffef5; color: #3f3f46; line-height: 1.35; min-height: 30px; outline: none; }
+.ms-qd-box:focus { border-color: var(--fn-primary,#6366f1); border-style: solid; background: #fff; }
+.ms-qd-box:empty:before { content: attr(data-placeholder); color: #a1a1aa; font-style: italic; }
+.ms-qd-saving { opacity: .5; }
+.ms-qd-saved { border-color: #22c55e !important; background: #f0fdf4 !important; }
+.ms-qd-err { border-color: #ef4444 !important; background: #fef2f2 !important; }
+
+/* Status badge */
+.ms-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.ms-st-icra     { background: #fef3c7; color: #b45309; }
+.ms-st-mehkeme  { background: #e0e7ff; color: #4338ca; }
+.ms-st-notarius { background: #ccfbf1; color: #0f766e; }
+.ms-st-odendi   { background: rgba(34,197,94,.12); color: #15803d; }
+.ms-st-diger    { background: #f1f5f9; color: #475569; }
+
+.ms-item10 { max-width: 240px; white-space: normal; color: #475569; line-height: 1.35; }
+
+.ms-ish-on { display: inline-flex; align-items: center; gap: 5px; color: #15803d; font-weight: 700; font-size: 11.5px; }
+.ms-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+.ms-mrh { background: #f1f5f9; color: #475569; border-radius: 20px; padding: 1px 7px; font-size: 10.5px; font-weight: 700; }
+.ms-btn-xs { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 700; cursor: pointer; border: 1.5px solid #e2e8f0; background: #fff; color: #334155; text-decoration: none; margin-top: 4px; }
+.ms-btn-xs:hover { background: #f8fafc; }
+.ms-btn-xs--open { background: #eef2ff; border-color: #c7d2fe; color: #4338ca; }
+
+/* Zaminlər — gizli, klikdə açılır */
+.ms-zamin { display: none; }
+.ms-grp.open .ms-zamin { display: table-row; }
+.ms-zamin td { padding: 7px 12px; border-bottom: 1px solid #f1f5f9; background: #f8f9ff; vertical-align: middle; }
+.ms-zhead { font-size: 10.5px; font-weight: 800; letter-spacing: .04em; color: #6366f1; background: #eef2ff !important; }
+.ms-zindent { border-left: 4px solid #c7d2fe; width: 30px; }
+.ms-ztree { color: #c7d2fe; font-size: 13px; margin-left: 10px; }
+.ms-zline { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.ms-ztag { display: inline-block; background: #e0e7ff; color: #4338ca; border-radius: 5px; padding: 2px 8px; font-size: 10.5px; font-weight: 800; }
+.ms-zname { font-weight: 700; color: #1e293b; }
+.ms-zchip { font-size: 11.5px; color: #475569; background: #fff; border: 1px solid #e9ecf5; border-radius: 6px; padding: 2px 8px; }
+.ms-zchip b { color: #64748b; font-weight: 600; }
+
+.ms-empty { text-align: center; padding: 40px 16px; color: #94a3b8; font-size: 14px; }
+.ms-empty i { font-size: 2rem; display: block; margin-bottom: 10px; }
+.ms-foot { padding: 10px 14px; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9; }

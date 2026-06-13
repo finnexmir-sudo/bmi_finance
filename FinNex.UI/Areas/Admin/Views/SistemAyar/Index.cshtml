@@ -24,6 +24,7 @@
             <input type="hidden" name="PidOdenisGunuSorguId"     value="@Model.PidOdenisGunuSorguId" />
             <input type="hidden" name="PidZaminlerSorguId"        value="@Model.PidZaminlerSorguId" />
             <input type="hidden" name="PidMehkemeSorguId"         value="@Model.PidMehkemeSorguId" />
+            <input type="hidden" name="PidMehkemeSiyahiSorguId"   value="@Model.PidMehkemeSiyahiSorguId" />
 
             <div class="mb-3">
                 <label class="form-label fw-semibold">IMAP Server</label>
@@ -75,6 +76,7 @@
             <input type="hidden" name="KreditImapPort" value="@Model.KreditImapPort" />
             <input type="hidden" name="KreditImapEmail" value="@Model.KreditImapEmail" />
             <input type="hidden" name="PidMehkemeSorguId" value="@Model.PidMehkemeSorguId" />
+            <input type="hidden" name="PidMehkemeSiyahiSorguId" value="@Model.PidMehkemeSiyahiSorguId" />
 
             <div class="mb-3">
                 <label class="form-label fw-semibold">Borcalanlar Oracle Sorğusu</label>
@@ -144,7 +146,23 @@
             <input type="hidden" name="PidZaminlerSorguId"        value="@Model.PidZaminlerSorguId" />
 
             <div class="mb-4">
-                <label class="form-label fw-semibold">Məhkəmə kredit axtarışı Oracle Sorğusu</label>
+                <label class="form-label fw-semibold">Məhkəmə — Tam siyahı Oracle Sorğusu</label>
+                <select name="PidMehkemeSiyahiSorguId" class="form-select">
+                    <option value="">— Seçilməyib —</option>
+                    @foreach (var item in ViewBag.MehkemeSiyahiSorqular as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? [])
+                    {
+                        <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                    }
+                </select>
+                <div class="form-text">
+                    <i class="bi bi-info-circle me-1"></i>
+                    <strong>Məhkəmə İşləri</strong> səhifəsi açılanda bütün problemli kreditlər (zaminlərlə) bu sorğudan çəkilir.
+                    <strong>Parametrsiz</strong> sorğudur — bütün siyahını qaytarır.
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Məhkəmə — Tək kredit axtarışı Oracle Sorğusu</label>
                 <select name="PidMehkemeSorguId" class="form-select">
                     <option value="">— Seçilməyib —</option>
                     @foreach (var item in ViewBag.MehkemeSorqular as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? [])
@@ -154,7 +172,7 @@
                 </select>
                 <div class="form-text">
                     <i class="bi bi-info-circle me-1"></i>
-                    Yeni məhkəmə işi yaradarkən qeydiyyat nömrəsinə görə aktiv kreditlər bu sorğudan çəkilir.
+                    Köhnə "Yeni iş" formasında qeydiyyat nömrəsinə görə axtarış üçün.
                     Sorğu mətni <code>&amp;nomre</code> parametrini ehtiva etməlidir.
                 </div>
             </div>

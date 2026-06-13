@@ -35,11 +35,40 @@ public class MehkemeIsiController : Controller
     private string DmsRoot =>
         _config["DocumentStorage:RootPath"] ?? @"C:\FinNex_DMS";
 
-    // ── Siyahı ────────────────────────────────────────────
+    // ── Siyahı (canlı Oracle + proqram izləməsi) ──────────
     public async Task<IActionResult> Index()
     {
-        var list = await _service.HamisiniGetirAsync();
-        return View(list);
+        var model = await _service.SiyahiGetirAsync();
+        return View(model);
+    }
+
+    // ── Qərardad yaz (inline, AJAX — qeyd yoxdursa yaradır) ─
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> QerardadYaz(MehkemeKreditAcarDto acar, string? qerardad)
+    {
+        if (string.IsNullOrWhiteSpace(acar.KreditHesabi))
+            return Json(new { success = false, message = "Kredit hesabı tapılmadı." });
+
+        var isciId = await CurrentIsciIdAsync() ?? 0;
+        var id = await _service.QerardadYazAsync(acar, qerardad, isciId);
+        return Json(new { success = true, id });
+    }
+
+    // ── İş aç (izləmə qeydi yarat → Detal) ─────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> IsAch(MehkemeKreditAcarDto acar)
+    {
+        if (string.IsNullOrWhiteSpace(acar.KreditHesabi))
+        {
+            TempData["Error"] = "Kredit hesabı tapılmadı.";
+            return RedirectToAction("Index");
+        }
+
+        var isciId = await CurrentIsciIdAsync() ?? 0;
+        var rec = await _service.IsAchAsync(acar, isciId);
+        return RedirectToAction("Detal", new { id = rec.Id });
     }
 
     // ── Yarat formu ───────────────────────────────────────
