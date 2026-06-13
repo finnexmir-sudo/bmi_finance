@@ -152,7 +152,7 @@
 /* ============================================================
    Yeni canlı siyahı (ms-) — Oracle + proqram izləməsi
    ============================================================ */
-.ms-page { padding: 18px 24px; max-width: none; margin: 0; }
+.ms-page { padding: 0; max-width: none; margin: 0; }
 .ms-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
 .ms-title { font-size: 1.4rem; font-weight: 800; margin: 0; color: var(--fn-text,#1e293b); }
 .ms-sub { font-size: 13px; color: var(--fn-muted,#64748b); margin: 3px 0 0; }
@@ -174,10 +174,10 @@
 .ms-grow { flex: 1 1 280px; }
 
 .ms-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
-.ms-twrap { overflow: auto; max-height: calc(100vh - 215px); }
+.ms-twrap { overflow: auto; max-height: calc(100vh - 240px); }
 .ms-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .ms-table thead th { position: sticky; top: 0; z-index: 3; background: #f8fafc; padding: 9px 12px; text-align: left; font-weight: 700; color: #475569; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
-.ms-col-ad { min-width: 220px; }
+.ms-col-ad { min-width: 250px; }
 .ms-table th.ms-primary { border-top: 3px solid #facc15; }      /* sarı = əsas sütun */
 .ms-table th.ms-extra, .ms-table td.ms-extra { display: none; }
 .ms-table.ms-show-extra th.ms-extra, .ms-table.ms-show-extra td.ms-extra { display: table-cell; }
@@ -190,7 +190,7 @@
 .ms-borclu:hover { background: #fafbff; }
 .ms-grp.open .ms-borclu { background: #f5f7ff; }
 .ms-accent { border-left: 4px solid var(--fn-primary,#6366f1); }
-.ms-bname { font-weight: 800; color: #0f172a; white-space: normal; }
+.ms-bname { font-weight: 800; color: #0f172a; white-space: nowrap; }
 .ms-btip { font-size: 11px; color: #64748b; margin-top: 2px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .ms-nov { background: #f1f5f9; color: #475569; border-radius: 20px; padding: 2px 8px; font-size: 10.5px; font-weight: 700; }
 .ms-zcount { display: inline-flex; align-items: center; gap: 4px; background: #eef2ff; color: #4338ca; border-radius: 20px; padding: 2px 9px; font-size: 10.5px; font-weight: 800; }

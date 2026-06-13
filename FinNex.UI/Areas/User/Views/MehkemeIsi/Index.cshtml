@@ -325,5 +325,18 @@
         st.addEventListener('change', f);
         ish.addEventListener('change', f);
     })();
+
+    // Cədvəlin hündürlüyünü ekrana dəqiq uyğunlaşdır — üfüqi scroll həmişə
+    // cədvəlin altında görünsün (səhifəni tam aşağı sürükləmək lazım olmasın)
+    function msFitHeight() {
+        var tw = document.querySelector('.ms-twrap');
+        if (!tw) return;
+        var top = tw.getBoundingClientRect().top;
+        var foot = document.querySelector('.ms-foot');
+        var footH = foot ? foot.offsetHeight : 0;
+        tw.style.maxHeight = Math.max(240, window.innerHeight - top - footH - 14) + 'px';
+    }
+    msFitHeight();
+    window.addEventListener('resize', msFitHeight);
 </script>
 }
