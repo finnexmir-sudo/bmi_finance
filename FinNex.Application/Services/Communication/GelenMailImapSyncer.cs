@@ -29,10 +29,13 @@ public class GelenMailImapSyncer : IGelenMailImapSyncer
         _attachmentBaseDir = config["GelenMail:AttachmentDir"] ?? Path.Combine("wwwroot", "mail-qosmalar");
     }
 
-    public async Task<int> SyncNowAsync(string imapHost, string email, string password, CancellationToken ct = default)
+    public async Task<int> SyncNowAsync(string imapHost, string email, string password, int sahibUserId, CancellationToken ct = default)
     {
+        // Dublikat yoxlaması YALNIZ bu sahibin mailləri üzrə — eyni mail başqa
+        // sahibə də gələ bilər, ona görə qlobal deyil, sahibə görə yoxlanır.
         var knownIds = await _db.Set<GelenMail>()
             .AsNoTracking()
+            .Where(x => x.SahibUserId == sahibUserId)
             .Select(x => x.MessageId)
             .ToListAsync(ct);
         var knownSet = new HashSet<string>(knownIds);
@@ -63,6 +66,7 @@ public class GelenMailImapSyncer : IGelenMailImapSyncer
             var gelenMail = new GelenMail
             {
                 MessageId = msgId,
+                SahibUserId = sahibUserId,
                 KimdenAd = msg.From.Mailboxes.FirstOrDefault()?.Name ?? "",
                 KimdenEmail = msg.From.Mailboxes.FirstOrDefault()?.Address ?? "",
                 Movzu = msg.Subject ?? "",

@@ -896,6 +896,52 @@ END
                 }
                 catch { }
 
+                // GelenMailler — SahibUserId (mail izolyasiyası: hər istifadəçi yalnız öz qutusu)
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailler' AND COLUMN_NAME='SahibUserId')
+                            ALTER TABLE [GelenMailler] ADD [SahibUserId] INT NULL;
+                    ");
+                }
+                catch { }
+
+                // Köhnə (sahibsiz) mailləri sinxron edən hesaba bağla — sync precedensi: əvvəl Rəhbər, sonra Admin
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='GelenMailler' AND COLUMN_NAME='SahibUserId')
+                        BEGIN
+                            DECLARE @owner INT = (
+                                SELECT TOP 1 u.Id
+                                FROM AspNetUsers u
+                                JOIN AspNetUserRoles ur ON ur.UserId = u.Id
+                                JOIN AspNetRoles r ON r.Id = ur.RoleId
+                                WHERE u.MailSmtpEmail IS NOT NULL AND LTRIM(RTRIM(u.MailSmtpEmail)) <> ''
+                                  AND r.[Name] IN ('Rehber','Admin')
+                                ORDER BY CASE WHEN r.[Name] = 'Rehber' THEN 0 ELSE 1 END, u.Id
+                            );
+                            IF @owner IS NOT NULL
+                                UPDATE [GelenMailler] SET [SahibUserId] = @owner WHERE [SahibUserId] IS NULL;
+                        END
+                    ");
+                }
+                catch { }
+
+                // MessageId unikallığı qlobaldan (SahibUserId + MessageId) birgəyə keçir — eyni mail fərqli sahibə gələ bilər
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"
+                        IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_GelenMailler_MessageId' AND object_id = OBJECT_ID('GelenMailler'))
+                            DROP INDEX [IX_GelenMailler_MessageId] ON [GelenMailler];
+                        IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'UX_GelenMailler_Sahib_MessageId' AND object_id = OBJECT_ID('GelenMailler'))
+                            CREATE UNIQUE INDEX [UX_GelenMailler_Sahib_MessageId] ON [GelenMailler] ([SahibUserId], [MessageId]);
+                        IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_GelenMailler_SahibUserId' AND object_id = OBJECT_ID('GelenMailler'))
+                            CREATE INDEX [IX_GelenMailler_SahibUserId] ON [GelenMailler] ([SahibUserId]);
+                    ");
+                }
+                catch { }
+
                 // DovriOdenisler cədvəli
                 try
                 {

@@ -5,6 +5,11 @@ namespace FinNex.Domain.Entities.Communication;
 public class GelenMail : BaseEntity
 {
     public string MessageId { get; set; } = null!;   // IMAP Message-ID header
+
+    // Mail sahibi — qutusu sinxron olunan istifadəçi (AppUser.Id).
+    // İzolyasiya üçün: hər Rəhbər/Admin yalnız öz qutusunun maillərini görür.
+    public int? SahibUserId { get; set; }
+
     public string KimdenAd { get; set; } = "";
     public string KimdenEmail { get; set; } = null!;
     public string Movzu { get; set; } = "";
