@@ -42,19 +42,30 @@ public class GelenMailSyncService : BackgroundService
         {
             try
             {
-                using var scope = _scopeFactory.CreateScope();
-                var (imapHost, email, password) = await GetImapCredentialsAsync(scope);
+                List<(int userId, string imapHost, string email, string password)> hesablar;
+                using (var scope = _scopeFactory.CreateScope())
+                    hesablar = await GetAllImapCredentialsAsync(scope);
 
-                if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+                if (hesablar.Count == 0)
                 {
                     _logger.LogWarning("GelenMail: heç bir istifadəçidə IMAP məlumatları tapılmadı.");
                 }
                 else
                 {
-                    var syncer = scope.ServiceProvider.GetRequiredService<IGelenMailImapSyncer>();
-                    var count = await syncer.SyncNowAsync(imapHost, email, password, stoppingToken);
-                    if (count > 0)
-                        await SendRehberBildirisAsync(scope, count, stoppingToken);
+                    // Hər istifadəçinin qutusu AYRICA sinxronlaşır və mail öz sahibinə möhürlənir.
+                    // Hər biri öz scope-unda işləyir ki, EF tracking/fixup sahiblər arasında qarışmasın.
+                    foreach (var hesab in hesablar)
+                    {
+                        try
+                        {
+                            using var syncScope = _scopeFactory.CreateScope();
+                            var syncer = syncScope.ServiceProvider.GetRequiredService<IGelenMailImapSyncer>();
+                            var count = await syncer.SyncNowAsync(hesab.imapHost, hesab.email, hesab.password, hesab.userId, stoppingToken);
+                            if (count > 0)
+                                await SendOwnerBildirisAsync(syncScope, hesab.userId, count, stoppingToken);
+                        }
+                        catch (Exception ex) { _logger.LogError(ex, "GelenMail sync xətası (user {UserId})", hesab.userId); }
+                    }
                 }
             }
             catch (Exception ex) { _logger.LogError(ex, "GelenMailSyncService xətası"); }
@@ -67,18 +78,20 @@ public class GelenMailSyncService : BackgroundService
         }
     }
 
-    // AppUser-dən ilk konfiqurasiya edilmiş IMAP məlumatlarını götür
-    private static async Task<(string imapHost, string email, string password)> GetImapCredentialsAsync(IServiceScope scope)
+    // Mail məlumatı konfiqurasiya edilmiş BÜTÜN Rəhbər/Admin istifadəçiləri (hərə öz qutusu)
+    private static async Task<List<(int userId, string imapHost, string email, string password)>> GetAllImapCredentialsAsync(IServiceScope scope)
     {
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var dpProvider = scope.ServiceProvider.GetRequiredService<IDataProtectionProvider>();
-        var protector = dpProvider.CreateProtector("MailSmtpParol");
+        var dpProvider  = scope.ServiceProvider.GetRequiredService<IDataProtectionProvider>();
+        var protector   = dpProvider.CreateProtector("MailSmtpParol");
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
         var rehberUsers = await userManager.GetUsersInRoleAsync(RoleNames.Rehber);
         var adminUsers  = await userManager.GetUsersInRoleAsync(RoleNames.Admin);
-        var candidates  = rehberUsers.Concat(adminUsers);
+        var candidates  = rehberUsers.Concat(adminUsers)
+            .GroupBy(u => u.Id)
+            .Select(g => g.First());
 
+        var list = new List<(int userId, string imapHost, string email, string password)>();
         foreach (var user in candidates)
         {
             if (string.IsNullOrWhiteSpace(user.MailSmtpEmail) || string.IsNullOrWhiteSpace(user.MailSmtpParol))
@@ -88,12 +101,12 @@ public class GelenMailSyncService : BackgroundService
             {
                 var password = protector.Unprotect(user.MailSmtpParol);
                 var imapHost = GelenMailImapSyncer.DeriveImapHost(user.MailSmtpHost, user.MailSmtpEmail);
-                return (imapHost, user.MailSmtpEmail, password);
+                list.Add((user.Id, imapHost, user.MailSmtpEmail, password));
             }
             catch { }
         }
 
-        return ("", "", "");
+        return list;
     }
 
     private async Task MaybeRunEscalationAsync(CancellationToken ct)
@@ -110,71 +123,65 @@ public class GelenMailSyncService : BackgroundService
         var today = now.Date;
         var inSevenDays = today.AddDays(7);
 
+        // Deadline-lı maillər sahibə görə qruplaşır — hər sahibə YALNIZ öz maillərinin
+        // xülasəsi gedir (mövzular başqa istifadəçiyə sızmasın).
         var deadlineMails = await db.Set<GelenMail>()
             .AsNoTracking()
-            .Where(x => !x.Silinib && x.DedlaynTarix.HasValue)
-            .Select(x => new { x.Movzu, x.DedlaynTarix })
+            .Where(x => !x.Silinib && x.DedlaynTarix.HasValue && x.SahibUserId != null)
+            .Select(x => new { x.SahibUserId, x.Movzu, x.DedlaynTarix })
             .ToListAsync(ct);
 
-        var geciken    = deadlineMails.Where(m => m.DedlaynTarix!.Value.Date < today).ToList();
-        var yaxinlasan = deadlineMails.Where(m => m.DedlaynTarix!.Value.Date >= today && m.DedlaynTarix.Value.Date <= inSevenDays).ToList();
-
-        if (geciken.Count == 0 && yaxinlasan.Count == 0) return;
-
-        var lines = new System.Text.StringBuilder();
-        if (geciken.Count > 0)
+        foreach (var grup in deadlineMails.GroupBy(x => x.SahibUserId!.Value))
         {
-            lines.Append($"Gecikənlər ({geciken.Count}): ");
-            lines.Append(string.Join("; ", geciken.Take(3).Select(m => $"{m.Movzu} ({m.DedlaynTarix!.Value:dd.MM})")));
-            if (geciken.Count > 3) lines.Append($" +{geciken.Count - 3}");
-        }
-        if (yaxinlasan.Count > 0)
-        {
-            if (lines.Length > 0) lines.Append(" | ");
-            lines.Append($"Yaxınlaşanlar ({yaxinlasan.Count}): ");
-            lines.Append(string.Join("; ", yaxinlasan.Take(3).Select(m => $"{m.Movzu} ({m.DedlaynTarix!.Value:dd.MM})")));
-            if (yaxinlasan.Count > 3) lines.Append($" +{yaxinlasan.Count - 3}");
-        }
+            var geciken    = grup.Where(m => m.DedlaynTarix!.Value.Date < today).ToList();
+            var yaxinlasan = grup.Where(m => m.DedlaynTarix!.Value.Date >= today && m.DedlaynTarix.Value.Date <= inSevenDays).ToList();
 
-        var bashliq = $"Dedlayn xülasəsi — {geciken.Count} gecikən, {yaxinlasan.Count} yaxınlaşan";
-        await SendEscalationBildirisAsync(scope, bashliq, lines.ToString(), ct);
+            if (geciken.Count == 0 && yaxinlasan.Count == 0) continue;
+
+            var lines = new System.Text.StringBuilder();
+            if (geciken.Count > 0)
+            {
+                lines.Append($"Gecikənlər ({geciken.Count}): ");
+                lines.Append(string.Join("; ", geciken.Take(3).Select(m => $"{m.Movzu} ({m.DedlaynTarix!.Value:dd.MM})")));
+                if (geciken.Count > 3) lines.Append($" +{geciken.Count - 3}");
+            }
+            if (yaxinlasan.Count > 0)
+            {
+                if (lines.Length > 0) lines.Append(" | ");
+                lines.Append($"Yaxınlaşanlar ({yaxinlasan.Count}): ");
+                lines.Append(string.Join("; ", yaxinlasan.Take(3).Select(m => $"{m.Movzu} ({m.DedlaynTarix!.Value:dd.MM})")));
+                if (yaxinlasan.Count > 3) lines.Append($" +{yaxinlasan.Count - 3}");
+            }
+
+            var bashliq = $"Dedlayn xülasəsi — {geciken.Count} gecikən, {yaxinlasan.Count} yaxınlaşan";
+            await SendOwnerNotificationAsync(scope, grup.Key, bashliq, lines.ToString());
+        }
     }
 
-    private async Task SendEscalationBildirisAsync(IServiceScope scope, string bashliq, string metn, CancellationToken ct)
+    // Yeni mail bildirişi — yalnız qutu sahibinə
+    private async Task SendOwnerBildirisAsync(IServiceScope scope, int ownerUserId, int count, CancellationToken ct)
+    {
+        var bashliq = count == 1 ? "Yeni mail" : $"{count} yeni mail";
+        var metn    = count == 1
+            ? "Gələn qutunuza 1 yeni mail daxil oldu."
+            : $"Gələn qutunuza {count} yeni mail daxil oldu.";
+
+        await SendOwnerNotificationAsync(scope, ownerUserId, bashliq, metn);
+    }
+
+    // Ortaq köməkçi — bildirişi yalnız sahibin işçi profilinə göndərir
+    private async Task SendOwnerNotificationAsync(IServiceScope scope, int ownerUserId, string bashliq, string metn)
     {
         try
         {
-            var userManager    = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var userManager     = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
             var bildirisService = scope.ServiceProvider.GetRequiredService<IBildirisService>();
-            var rehberUsers    = await userManager.GetUsersInRoleAsync(RoleNames.Rehber);
-            foreach (var user in rehberUsers)
-            {
-                if (user.IsciId is null) continue;
-                await bildirisService.YaratAsync(user.IsciId.Value, BildirisNovu.YeniGelenMail, bashliq, metn, "/User/GelenMail");
-            }
+
+            var owner = await userManager.FindByIdAsync(ownerUserId.ToString());
+            if (owner == null || owner.IsciId == null) return;
+
+            await bildirisService.YaratAsync(owner.IsciId.Value, BildirisNovu.YeniGelenMail, bashliq, metn, "/User/GelenMail");
         }
-        catch (Exception ex) { _logger.LogError(ex, "Eskalasiya bildiris göndərmə xətası"); }
-    }
-
-    private async Task SendRehberBildirisAsync(IServiceScope scope, int count, CancellationToken ct)
-    {
-        try
-        {
-            var userManager    = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-            var bildirisService = scope.ServiceProvider.GetRequiredService<IBildirisService>();
-            var rehberUsers    = await userManager.GetUsersInRoleAsync(RoleNames.Rehber);
-
-            var bashliq = count == 1 ? "Yeni mail" : $"{count} yeni mail";
-            var metn    = count == 1
-                ? "Gələn qutunuza 1 yeni mail daxil oldu."
-                : $"Gələn qutunuza {count} yeni mail daxil oldu.";
-
-            foreach (var user in rehberUsers)
-            {
-                if (user.IsciId is null) continue;
-                await bildirisService.YaratAsync(user.IsciId.Value, BildirisNovu.YeniGelenMail, bashliq, metn, "/User/GelenMail");
-            }
-        }
-        catch (Exception ex) { _logger.LogError(ex, "Rehber bildiris göndərmə xətası"); }
+        catch (Exception ex) { _logger.LogError(ex, "Mail bildiriş göndərmə xətası (user {UserId})", ownerUserId); }
     }
 }

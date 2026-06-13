@@ -55,13 +55,16 @@ public class GelenMailController : Controller
         bool? tapshirildi, bool? qosmali, string? deadline,
         int page = 1)
     {
+        var appUser = await _userManager.GetUserAsync(User);
+        if (appUser == null) return Unauthorized();
+
         DateTime? tdFrom = DateTime.TryParse(tarixden, out var tf) ? tf : null;
         DateTime? tdTo   = DateTime.TryParse(tarixe,   out var tt) ? tt : null;
 
         var mails = await _mailService.GetListAsync(
             oxunmamis, isciId, page, 50, q,
-            tdFrom, tdTo, tapshirildi, qosmali, deadline);
-        var oxunmamisSay = await _mailService.GetOxunmamisSayAsync();
+            tdFrom, tdTo, tapshirildi, qosmali, deadline, appUser.Id);
+        var oxunmamisSay = await _mailService.GetOxunmamisSayAsync(appUser.Id);
         var iscilerResult = await _isciService.HamisiniGetirAsync(x => x.Status == IsciStatus.Aktiv);
         var isciler = iscilerResult.Success ? iscilerResult.Data!.ToList() : new();
 
@@ -84,10 +87,13 @@ public class GelenMailController : Controller
     // Səhifəni dərhal qaytarır — AI ayrı endpoint ilə çağırılır
     public async Task<IActionResult> Detail(int id)
     {
-        var mail = await _mailService.GetDetailAsync(id);
+        var appUser = await _userManager.GetUserAsync(User);
+        if (appUser == null) return Unauthorized();
+
+        var mail = await _mailService.GetDetailAsync(id, appUser.Id);
         if (mail == null) return NotFound();
 
-        await _mailService.OxunduIsareEtAsync(id);
+        await _mailService.OxunduIsareEtAsync(id, appUser.Id);
 
         var iscilerResult = await _isciService.HamisiniGetirAsync(x => x.Status == IsciStatus.Aktiv);
         var isciler = iscilerResult.Success ? iscilerResult.Data!.ToList() : new();
@@ -101,7 +107,10 @@ public class GelenMailController : Controller
     [HttpPost]
     public async Task<IActionResult> RunAI(int id)
     {
-        var mail = await _mailService.GetDetailAsync(id);
+        var appUser = await _userManager.GetUserAsync(User);
+        if (appUser == null) return Unauthorized();
+
+        var mail = await _mailService.GetDetailAsync(id, appUser.Id);
         if (mail == null) return NotFound();
 
         if (!string.IsNullOrEmpty(mail.AIXulase))
@@ -118,13 +127,12 @@ public class GelenMailController : Controller
             mail.MetinDuz,
             qosmaMetinler);
 
-        await _mailService.SaveAINeticAsync(id, netic);
+        await _mailService.SaveAINeticAsync(id, netic, appUser.Id);
 
         // Deadline tapıldısa Xatırlatma yarat
         if (netic.DedlaynTarix.HasValue && netic.DedlaynTarix.Value > DateTime.Now)
         {
-            var appUser = await _userManager.GetUserAsync(User);
-            if (appUser?.IsciId != null)
+            if (appUser.IsciId != null)
             {
                 var novLabel = netic.DedlaynNov switch
                 {
@@ -173,7 +181,12 @@ public class GelenMailController : Controller
         var appUser = await _userManager.GetUserAsync(User);
         if (appUser == null) return Unauthorized();
 
-        var mail = await _mailService.GetDetailAsync(mailId);
+        var mail = await _mailService.GetDetailAsync(mailId, appUser.Id);
+        if (mail == null)
+        {
+            TempData["Error"] = "Mail tapılmadı.";
+            return RedirectToAction(nameof(Index));
+        }
         await _mailService.TapaAsync(mailId, isciIds, qeyd, appUser.Id);
 
         // Hər tapşırılan işçiyə bildiris göndər
@@ -205,7 +218,10 @@ public class GelenMailController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Sil(int id)
     {
-        await _mailService.SilAsync(id);
+        var appUser = await _userManager.GetUserAsync(User);
+        if (appUser == null) return Unauthorized();
+
+        await _mailService.SilAsync(id, appUser.Id);
         TempData["Success"] = "Mail silindi.";
         return RedirectToAction(nameof(Index));
     }
@@ -218,14 +234,19 @@ public class GelenMailController : Controller
         if (appUser == null) return Unauthorized();
 
         // Duplikat yoxlaması — əvvəlcədən sənəd dövriyyəsindədirsə əlavə etmə
-        var mailDetail = await _mailService.GetDetailAsync(mailId);
-        if (mailDetail?.SenedId.HasValue == true)
+        var mailDetail = await _mailService.GetDetailAsync(mailId, appUser.Id);
+        if (mailDetail == null)
+        {
+            TempData["Error"] = "Mail tapılmadı.";
+            return RedirectToAction(nameof(Index));
+        }
+        if (mailDetail.SenedId.HasValue)
         {
             TempData["Error"] = "Bu mail artıq sənəd dövriyyəsindədir.";
             return RedirectToAction(nameof(Detail), new { id = mailId });
         }
 
-        var senedId = await _mailService.SenedeCevir(mailId, qosmaId, appUser.Id, appUser.IsciId);
+        var senedId = await _mailService.SenedeCevir(mailId, qosmaId, appUser.Id, appUser.IsciId, appUser.Id);
 
         if (senedId.HasValue)
             TempData["Success"] = "Qoşma sənəd dövriyyəsinə əlavə edildi.";
@@ -249,7 +270,8 @@ public class GelenMailController : Controller
     [HttpGet]
     public async Task<IActionResult> OxunmamisSay()
     {
-        var say = await _mailService.GetOxunmamisSayAsync();
+        var appUser = await _userManager.GetUserAsync(User);
+        var say = await _mailService.GetOxunmamisSayAsync(appUser?.Id);
         return Json(new { say });
     }
 
@@ -265,7 +287,7 @@ public class GelenMailController : Controller
         {
             var password = _protector.Unprotect(appUser.MailSmtpParol);
             var imapHost = FinNex.Application.Services.Communication.GelenMailImapSyncer.DeriveImapHost(appUser.MailSmtpHost, appUser.MailSmtpEmail);
-            var count = await _imapSyncer.SyncNowAsync(imapHost, appUser.MailSmtpEmail, password);
+            var count = await _imapSyncer.SyncNowAsync(imapHost, appUser.MailSmtpEmail, password, appUser.Id);
             return Json(new { success = true, count, message = count > 0 ? $"{count} yeni mail tapıldı." : "Yeni mail yoxdur." });
         }
         catch (Exception ex)
@@ -278,9 +300,11 @@ public class GelenMailController : Controller
     [HttpGet]
     public async Task<IActionResult> MailPanel(int id)
     {
-        var mail = await _mailService.GetDetailAsync(id);
+        var appUser = await _userManager.GetUserAsync(User);
+        if (appUser == null) return Unauthorized();
+        var mail = await _mailService.GetDetailAsync(id, appUser.Id);
         if (mail == null) return NotFound();
-        await _mailService.OxunduIsareEtAsync(id);
+        await _mailService.OxunduIsareEtAsync(id, appUser.Id);
         var iscilerResult = await _isciService.HamisiniGetirAsync(x => x.Status == IsciStatus.Aktiv);
         ViewBag.Isciler = iscilerResult.Success ? iscilerResult.Data!.ToList() : new();
         return PartialView("_MailDetail", mail);
@@ -295,7 +319,8 @@ public class GelenMailController : Controller
             return Json(new { success = false, message = "Ən az bir işçi seçin." });
         var appUser = await _userManager.GetUserAsync(User);
         if (appUser == null) return Unauthorized();
-        var mail = await _mailService.GetDetailAsync(mailId);
+        var mail = await _mailService.GetDetailAsync(mailId, appUser.Id);
+        if (mail == null) return Json(new { success = false, message = "Mail tapılmadı." });
         await _mailService.TapaAsync(mailId, isciIds, qeyd, appUser.Id);
         if (mail != null)
         {
@@ -320,7 +345,7 @@ public class GelenMailController : Controller
             return Json(new { success = false, message = "SMTP məlumatları tapılmadı. Profil → Mail Ayarları bölməsindən əlavə edin." });
         var smtpParol = _protector.Unprotect(appUser.MailSmtpParol);
         var (ok, xeta) = await _smtp.GonderAsync(dto.KimeEmail, dto.KimeAd, dto.Movzu, dto.CavabMetni, appUser.MailSmtpEmail, smtpParol, appUser.MailSmtpHost, string.IsNullOrWhiteSpace(dto.MessageId) ? null : dto.MessageId);
-        if (ok) await _mailService.CavabVerildiIsareEtAsync(dto.MailId);
+        if (ok) await _mailService.CavabVerildiIsareEtAsync(dto.MailId, appUser.Id);
         return Json(new { success = ok, message = ok ? "Cavab göndərildi." : $"Xəta: {xeta}" });
     }
 
@@ -328,7 +353,10 @@ public class GelenMailController : Controller
     [HttpGet]
     public async Task<IActionResult> Cavab(int id)
     {
-        var mail = await _mailService.GetDetailAsync(id);
+        var appUser = await _userManager.GetUserAsync(User);
+        if (appUser == null) return Unauthorized();
+
+        var mail = await _mailService.GetDetailAsync(id, appUser.Id);
         if (mail == null) return NotFound();
 
         var dto = new MailCavabDto
@@ -355,7 +383,10 @@ public class GelenMailController : Controller
     [HttpPost]
     public async Task<IActionResult> AICavabHazirla(int id)
     {
-        var mail = await _mailService.GetDetailAsync(id);
+        var appUser = await _userManager.GetUserAsync(User);
+        if (appUser == null) return Unauthorized();
+
+        var mail = await _mailService.GetDetailAsync(id, appUser.Id);
         if (mail == null) return NotFound();
 
         var metin = await _ai.MailCavabHazirlaAsync(
@@ -399,7 +430,7 @@ public class GelenMailController : Controller
 
         if (ok)
         {
-            await _mailService.CavabVerildiIsareEtAsync(dto.MailId);
+            await _mailService.CavabVerildiIsareEtAsync(dto.MailId, appUser.Id);
             TempData["Success"] = $"Cavab {dto.KimeEmail} ünvanına göndərildi.";
             return RedirectToAction(nameof(Detail), new { id = dto.MailId });
         }

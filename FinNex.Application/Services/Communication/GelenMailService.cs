@@ -17,7 +17,7 @@ public class GelenMailService : IGelenMailService
         _uow = uow;
     }
 
-    public async Task<List<GelenMailListDto>> GetListAsync(bool? oxunmamis = null, int? tapalanIsciId = null, int page = 1, int pageSize = 50, string? axtaris = null, DateTime? tarixden = null, DateTime? tarixe = null, bool? tapshirildi = null, bool? qosmali = null, string? deadlineFilter = null)
+    public async Task<List<GelenMailListDto>> GetListAsync(bool? oxunmamis = null, int? tapalanIsciId = null, int page = 1, int pageSize = 50, string? axtaris = null, DateTime? tarixden = null, DateTime? tarixe = null, bool? tapshirildi = null, bool? qosmali = null, string? deadlineFilter = null, int? sahibUserId = null)
     {
         IQueryable<GelenMail> query = _uow.Repository<GelenMail>().Query()
             .AsNoTracking()
@@ -25,6 +25,10 @@ public class GelenMailService : IGelenMailService
             .Include(x => x.TapalanIsci)
             .Include(x => x.TapalanIsciler).ThenInclude(ti => ti.Isci)
             .Include(x => x.Qosmalar);
+
+        // İzolyasiya — yalnız bu sahibin (öz qutusunun) mailləri
+        if (sahibUserId.HasValue)
+            query = query.Where(x => x.SahibUserId == sahibUserId.Value);
 
         if (oxunmamis == true)
             query = query.Where(x => !x.Oxunub);
@@ -85,11 +89,17 @@ public class GelenMailService : IGelenMailService
         }).ToList();
     }
 
-    public async Task<GelenMailDetailDto?> GetDetailAsync(int id)
+    public async Task<GelenMailDetailDto?> GetDetailAsync(int id, int? sahibUserId = null)
     {
-        var m = await _uow.Repository<GelenMail>().Query()
+        var query = _uow.Repository<GelenMail>().Query()
             .AsNoTracking()
-            .Where(x => x.Id == id && !x.Silinib)
+            .Where(x => x.Id == id && !x.Silinib);
+
+        // İzolyasiya — sahib verilibsə yalnız onun maili açıla bilər (URL ilə sızmanın qarşısı)
+        if (sahibUserId.HasValue)
+            query = query.Where(x => x.SahibUserId == sahibUserId.Value);
+
+        var m = await query
             .Include(x => x.TapalanIsci)
             .Include(x => x.TapalanIsciler).ThenInclude(ti => ti.Isci)
             .Include(x => x.Qosmalar)
@@ -143,13 +153,16 @@ public class GelenMailService : IGelenMailService
         };
     }
 
-    public async Task OxunduIsareEtAsync(int id)
+    public async Task OxunduIsareEtAsync(int id, int? sahibUserId = null)
     {
         var mail = await _uow.Repository<GelenMail>().Query()
             .Where(x => x.Id == id && !x.Silinib)
             .FirstOrDefaultAsync();
 
-        if (mail != null && !mail.Oxunub)
+        if (mail == null) return;
+        if (sahibUserId.HasValue && mail.SahibUserId != sahibUserId.Value) return;
+
+        if (!mail.Oxunub)
         {
             mail.Oxunub = true;
             mail.OxunmaTarixi = DateTime.Now;
@@ -165,6 +178,9 @@ public class GelenMailService : IGelenMailService
             .FirstOrDefaultAsync();
 
         if (mail == null || isciIds.Count == 0) return false;
+
+        // Yalnız mailin sahibi onu tapşıra bilər (rehberUserId = cari istifadəçi = sahib)
+        if (mail.SahibUserId != rehberUserId) return false;
 
         // Köhnə tapşırmaları sil
         foreach (var old in mail.TapalanIsciler.ToList())
@@ -194,7 +210,7 @@ public class GelenMailService : IGelenMailService
         return true;
     }
 
-    public async Task<int?> SenedeCevir(int mailId, int qosmaId, int yaradanUserId, int? isciId)
+    public async Task<int?> SenedeCevir(int mailId, int qosmaId, int yaradanUserId, int? isciId, int? sahibUserId = null)
     {
         var mail = await _uow.Repository<GelenMail>().Query()
             .Where(x => x.Id == mailId && !x.Silinib)
@@ -202,6 +218,7 @@ public class GelenMailService : IGelenMailService
             .FirstOrDefaultAsync();
 
         if (mail == null) return null;
+        if (sahibUserId.HasValue && mail.SahibUserId != sahibUserId.Value) return null;
         if (mail.SenedId.HasValue) return null;
 
         var qosma = mail.Qosmalar.FirstOrDefault(q => q.Id == qosmaId && !q.Silinib);
@@ -378,30 +395,37 @@ public class GelenMailService : IGelenMailService
             .ToList();
     }
 
-    public async Task<int> GetOxunmamisSayAsync()
+    public async Task<int> GetOxunmamisSayAsync(int? sahibUserId = null)
     {
-        return await _uow.Repository<GelenMail>().Query()
+        var query = _uow.Repository<GelenMail>().Query()
             .AsNoTracking()
-            .CountAsync(x => !x.Silinib && !x.Oxunub);
+            .Where(x => !x.Silinib && !x.Oxunub);
+
+        if (sahibUserId.HasValue)
+            query = query.Where(x => x.SahibUserId == sahibUserId.Value);
+
+        return await query.CountAsync();
     }
 
-    public async Task SilAsync(int id)
+    public async Task SilAsync(int id, int? sahibUserId = null)
     {
         var mail = await _uow.Repository<GelenMail>().Query()
             .Where(x => x.Id == id && !x.Silinib)
             .FirstOrDefaultAsync();
         if (mail == null) return;
+        if (sahibUserId.HasValue && mail.SahibUserId != sahibUserId.Value) return;
         mail.Silinib = true;
         mail.SilinmeTarixi = DateTime.Now;
         await _uow.YaddaSaxlaAsync();
     }
 
-    public async Task CavabVerildiIsareEtAsync(int mailId)
+    public async Task CavabVerildiIsareEtAsync(int mailId, int? sahibUserId = null)
     {
         var mail = await _uow.Repository<GelenMail>().Query()
             .Where(x => x.Id == mailId && !x.Silinib)
             .FirstOrDefaultAsync();
         if (mail == null) return;
+        if (sahibUserId.HasValue && mail.SahibUserId != sahibUserId.Value) return;
         mail.CavabVerildi = true;
         await _uow.YaddaSaxlaAsync();
     }
@@ -418,12 +442,13 @@ public class GelenMailService : IGelenMailService
         await _uow.YaddaSaxlaAsync();
     }
 
-    public async Task SaveAINeticAsync(int id, AIMailTahlilNetic netic)
+    public async Task SaveAINeticAsync(int id, AIMailTahlilNetic netic, int? sahibUserId = null)
     {
         var mail = await _uow.Repository<GelenMail>().Query()
             .Where(x => x.Id == id && !x.Silinib)
             .FirstOrDefaultAsync();
         if (mail == null) return;
+        if (sahibUserId.HasValue && mail.SahibUserId != sahibUserId.Value) return;
 
         mail.AIXulase = netic.Xulase;
         mail.AITahlilTarixi = DateTime.Now;
