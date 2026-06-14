@@ -1,0 +1,115 @@
+@using FinNex.Application.DTOs.Pid
+@model IList<MehkemeCedvelListDto>
+@{
+    ViewData["Title"] = "Məhkəmə İşləri";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var axtaris = ViewData["Axtaris"] as string;
+}
+
+<style>
+    .mc-bar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+    .mc-inp { padding:8px 12px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:13px; outline:none; }
+    .mc-inp:focus { border-color:#6366f1; }
+    .mc-grow { flex:1 1 240px; }
+    .mc-import { margin-left:auto; display:flex; gap:8px; align-items:center; background:#f5f7ff; border:1.5px dashed #c7d2fe; border-radius:10px; padding:8px 12px; }
+    .mc-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:none; }
+    .mc-btn--p { background:#6366f1; color:#fff; }
+    .mc-btn--g { background:#fff; color:#334155; border:1.5px solid #e2e8f0; }
+    .mc-card { background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; overflow:hidden; }
+    .mc-tw { overflow-x:auto; }
+    .mc-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+    .mc-table thead th { background:#f8fafc; padding:9px 12px; text-align:left; font-weight:700; color:#475569; border-bottom:2px solid #e2e8f0; white-space:nowrap; }
+    .mc-table td { padding:9px 12px; border-bottom:1px solid #eef2f7; vertical-align:top; }
+    .mc-table tbody tr:hover { background:#fafbff; }
+    .mc-st { display:inline-block; padding:2px 8px; border-radius:20px; font-size:10.5px; font-weight:800; background:#f1f5f9; color:#475569; white-space:nowrap; }
+    .mc-st--bagli { background:rgba(34,197,94,.12); color:#15803d; }
+    .mc-iclas { font-size:11.5px; color:#475569; }
+    .mc-iclas span { display:inline-block; background:#eef2ff; color:#4338ca; border-radius:5px; padding:1px 6px; margin:1px; }
+    .mc-ks { display:inline-block; background:#eef2ff; color:#4338ca; border-radius:5px; padding:1px 6px; font-size:11px; font-weight:700; margin-left:4px; }
+    .mc-hesab { font-family:ui-monospace,monospace; color:#6366f1; font-weight:700; }
+    .mc-foot { padding:10px 14px; font-size:12px; color:#64748b; border-top:1px solid #f1f5f9; }
+    .mc-iconbtn { border:1.5px solid #fecaca; background:#fff; border-radius:7px; padding:4px 9px; cursor:pointer; font-size:12px; color:#b91c1c; }
+    .mc-empty { text-align:center; padding:36px; color:#94a3b8; }
+</style>
+
+<div style="padding:4px 0">
+    @if (TempData["Success"] != null) { <div class="alert alert-success py-2">@TempData["Success"]</div> }
+    @if (TempData["Error"] != null)   { <div class="alert alert-danger py-2">@TempData["Error"]</div> }
+
+    <div class="mc-bar">
+        <form method="get" style="display:flex;gap:8px;flex:1 1 240px">
+            <input type="text" name="axtaris" value="@axtaris" class="mc-inp mc-grow" placeholder="🔍 Borclu adı və ya hesab № axtar…" />
+            <button type="submit" class="mc-btn mc-btn--g"><i class="bi bi-funnel"></i> Axtar</button>
+        </form>
+        <form asp-action="Import" method="post" enctype="multipart/form-data" class="mc-import">
+            @Html.AntiForgeryToken()
+            <i class="bi bi-file-earmark-excel" style="color:#15803d"></i>
+            <input type="file" name="fayl" accept=".xls,.xlsx" required class="mc-inp" style="padding:5px" />
+            <button type="submit" class="mc-btn mc-btn--p"><i class="bi bi-upload"></i> Excel import</button>
+        </form>
+    </div>
+
+    <div class="mc-card">
+        <div class="mc-tw">
+            <table class="mc-table">
+                <thead>
+                    <tr>
+                        <th>Sıra</th>
+                        <th>Status</th>
+                        <th>Borclu</th>
+                        <th>Kredit növü</th>
+                        <th>Hesab № / Subkod</th>
+                        <th>Məhkəməyə verilmə</th>
+                        <th>Sənəd / hakim</th>
+                        <th>İclaslar</th>
+                        <th>Qətnamə</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        @foreach (var x in Model)
+                        {
+                            <tr>
+                                <td>@(x.Sira?.ToString() ?? "—")</td>
+                                <td><span class="mc-st @(x.Status != null && (x.Status.Contains("BAĞ") || x.Status.Contains("BAG")) ? "mc-st--bagli" : "")">@(string.IsNullOrWhiteSpace(x.Status) ? "—" : x.Status)</span></td>
+                                <td style="font-weight:600;white-space:nowrap">@x.BorcluAd</td>
+                                <td>@(string.IsNullOrWhiteSpace(x.KreditNovu) ? "—" : x.KreditNovu)</td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(x.KreditHesabi)) { <span class="mc-hesab">@x.KreditHesabi</span> } else { <span>—</span> }
+                                    @if (!string.IsNullOrWhiteSpace(x.Subkod)) { <span class="mc-ks">@x.Subkod</span> }
+                                </td>
+                                <td style="white-space:nowrap">@(x.MehkemeyeVerilmeTarixi?.ToString("dd.MM.yyyy") ?? "—")</td>
+                                <td style="max-width:200px">@(string.IsNullOrWhiteSpace(x.MehkemeSenedi) ? "—" : x.MehkemeSenedi)</td>
+                                <td class="mc-iclas">
+                                    @if (x.Iclaslar.Any())
+                                    {
+                                        @foreach (var ic in x.Iclaslar)
+                                        {
+                                            <span>@(ic.Tarix?.ToString("dd.MM.yyyy") ?? "—")@(string.IsNullOrWhiteSpace(ic.Saat) ? "" : " " + ic.Saat)</span>
+                                        }
+                                    }
+                                    else { <span style="background:none;color:#cbd5e1">—</span> }
+                                </td>
+                                <td style="white-space:nowrap">@(x.QetnameTarixi?.ToString("dd.MM.yyyy") ?? "—")</td>
+                                <td>
+                                    <form asp-action="Sil" method="post" onsubmit="return confirm('Bu iş silinsin?');" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@x.Id" />
+                                        <button type="submit" class="mc-iconbtn"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="10"><div class="mc-empty"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>Hələ iş yoxdur. Yuxarıdan <b>Excel import</b> et və ya Excel-dən çək.</div></td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="mc-foot">@Model.Count iş</div>
+    </div>
+</div>
