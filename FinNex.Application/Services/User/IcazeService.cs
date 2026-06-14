@@ -72,6 +72,19 @@ namespace FinNex.Application.Services
                 if (dto.BitisSaati <= dto.BaslamaSaati)
                     return Result<IcazeListDto>.Fail("Bitme saati baslama saatindan sonra olmalidir.");
 
+                // Səbəb məcburidir
+                if (string.IsNullOrWhiteSpace(dto.Sebeb))
+                    return Result<IcazeListDto>.Fail("İcazə səbəbi mütləq qeyd edilməlidir.");
+
+                // Maksimum müddət — adi icazə 3 saat; nahar fasiləsi icazəyə qatılırsa 3 saat 45 dəqiqə
+                var icazeDeq = (int)(dto.BitisSaati - dto.BaslamaSaati).TotalMinutes;
+                var maxDeq = dto.NaharNezereAlinmasin ? 225 : 180;   // 3s45d : 3s
+                if (icazeDeq > maxDeq)
+                    return Result<IcazeListDto>.Fail(
+                        dto.NaharNezereAlinmasin
+                            ? "Nahar icazəyə qatıldıqda icazə 3 saat 45 dəqiqədən çox ola bilməz."
+                            : "İcazə 3 saatdan çox ola bilməz. Nahara çıxmırsınızsa müraciətdə qeyd edin (max 3 saat 45 dəqiqə).");
+
                 // YENİ AXİN:
                 //   Rəhbər müraciəti   → birbaşa Tesdiqlenib (özü Rəhbər olduğu üçün)
                 //   HR müraciəti        → birbaşa Tesdiqlenib (özü HR olduğu üçün)
@@ -121,6 +134,7 @@ namespace FinNex.Application.Services
                     BaslamaSaati = dto.BaslamaSaati,
                     BitisSaati = dto.BitisSaati,
                     Sebeb = dto.Sebeb,
+                    NaharNezereAlinmasin = dto.NaharNezereAlinmasin,
                     Status = ilkinStatus
                 };
 
@@ -217,6 +231,51 @@ namespace FinNex.Application.Services
             catch (Exception ex)
             {
                 return Result.Fail($"Legv zamani xeta: {ex.Message}");
+            }
+        }
+
+        // Rəhbər/HR — təsdiqlənmiş icazəni ləğv edir (sahibə bağlı deyil).
+        // Səbəb məcburi; keçmiş icazə ləğv olunmur; jeton istifadə olunubsa geri qaytarılır.
+        public async Task<Result> RehberHrLegvEtAsync(int icazeId, int legvEdenIsciId, string sebeb)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(sebeb))
+                    return Result.Fail("Ləğv səbəbi mütləqdir.");
+
+                var icaze = await _unitOfWork.Repository<Icaze>().IdIleGetirAsync(icazeId);
+                if (icaze == null)
+                    return Result.Fail("İcazə tapılmadı.");
+                if (icaze.Status != IcazeStatus.Tesdiqlenib)
+                    return Result.Fail("Yalnız təsdiqlənmiş icazə ləğv edilə bilər.");
+                if (icaze.IcazeTarixi.Date < DateTime.Today)
+                    return Result.Fail("Keçmiş icazəni ləğv etmək mümkün deyil.");
+
+                // CixisGiris varsa ləğv et
+                var cixisGiris = await _unitOfWork.Repository<IcazeCixisGiris>()
+                    .GetirAsync(x => x.IcazeId == icazeId);
+                if (cixisGiris != null)
+                {
+                    cixisGiris.Status = IcazeCixisGirisStatus.LegvEdildi;
+                    await _unitOfWork.Repository<IcazeCixisGiris>().YenileAsync(cixisGiris);
+                }
+
+                // Jeton geri qaytar (istifadə olunubsa) — stage edir, aşağıdakı save ilə birgə
+                if (icaze.JetonOdenenSaat > 0)
+                    await _jetonService.IcazeJetonuGeriQaytarAsync(icaze.IsciId, icaze.JetonOdenenSaat);
+
+                icaze.Status        = IcazeStatus.ImtinaEdildi;   // ayrıca "ləğv" statusu yoxdur
+                icaze.ImtinaSebebi  = $"Ləğv (Rəhbər/HR): {sebeb.Trim()}";
+                icaze.Silinib       = true;
+                icaze.SilinmeTarixi = DateTime.Now;
+                await _unitOfWork.Repository<Icaze>().YenileAsync(icaze);
+                await _unitOfWork.YaddaSaxlaAsync();
+
+                return Result.Ok("İcazə ləğv edildi.");
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail($"Ləğv xətası: {ex.Message}");
             }
         }
 
@@ -438,7 +497,7 @@ namespace FinNex.Application.Services
         }
 
         // Rəhbər təsdiq edir → Tesdiqlenib + IcazeCixisGiris yaranır
-        public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal jetonOdenenSaat = 0, bool naharNezereAlinmasin = false)
+        public async Task<Result> RehberTesdiqAsync(int id, bool status, string? qeyd, int rehberId = 0, decimal jetonOdenenSaat = 0, bool naharNezereAlinmasin = false, bool birdefelik = false)
         {
             var icaze = await _unitOfWork.Repository<Icaze>().GetirAsync(x => x.Id == id);
             if (icaze == null) return Result.Fail("İcazə tapılmadı.");
@@ -487,45 +546,26 @@ namespace FinNex.Application.Services
                 return Result.Ok("Rəhbər qərarı qeydə alındı.");
             }
 
-            // Müraciətçinin HR rolu varmı? Varsa bu addımda bitir
-            var muracietciHrdir = await _unitOfWork.Repository<IsciStrukturRolu>()
-                .MovcuddurmuAsync(x =>
-                    x.IsciId == icaze.IsciId &&
-                    x.RolTipi == StrukturRolTipi.Hr &&
-                    x.Aktivdir);
-
-            icaze.Status = muracietciHrdir ? IcazeStatus.Tesdiqlenib : IcazeStatus.HrTesdiqinde;
-
-            if (muracietciHrdir)
-            {
-                icaze.Birdefelik = icaze.Birdefelik; // HR olmadığı üçün birdefelik burda false qalır
-                icaze.HrTesdiq = true;
-                icaze.HrTesdiqTarixi = DateTime.Now;
-            }
+            // Rəhbər SON təsdiqdir — HR addımı çıxarıldı (təsdiq rəhbərlə yekunlaşır).
+            icaze.Status = IcazeStatus.Tesdiqlenib;
+            icaze.Birdefelik = birdefelik;   // rəhbər birdəfəlik (qayıtmayacaq) işarələyə bilər
 
             await _unitOfWork.Repository<Icaze>().YenileAsync(icaze);
             await _unitOfWork.YaddaSaxlaAsync();
 
             await NotifyIsciProgressAsync(icaze, "Rəhbər", true, qeyd);
 
-            if (icaze.Status == IcazeStatus.Tesdiqlenib)
-            {
-                // HR müraciət edib, Rəhbər təsdiqlədi → birbaşa tesdiqlenib.
-                // Jeton miqdarı varsa indicə FIFO ilə xərclənir.
-                var jetonRes = await _ConsumeJetonsForIcazeAsync(icaze);
-                if (!jetonRes.Success)
-                    return Result.Fail(jetonRes.Message ?? "Jeton xərclənmə xətası.");
+            // Finalization — rəhbər son təsdiq olduğu üçün həmişə icra olunur:
+            // jeton FIFO xərclənir, çıxış/giriş qeydi yaranır, gecikmə yenilənir,
+            // şöbə rəisi və HR məlumatlandırılır.
+            var jetonRes = await _ConsumeJetonsForIcazeAsync(icaze);
+            if (!jetonRes.Success)
+                return Result.Fail(jetonRes.Message ?? "Jeton xərclənmə xətası.");
 
-                await _YaratCixisGirisAsync(icaze.Id, icaze.Birdefelik);
-                await _GecikmeYenileAsync(icaze);
-                await NotifySobeReisiAsync(icaze);
-                await NotifyHrMalumatAsync(icaze);
-            }
-            else
-            {
-                // Normal işçi — HR-a göndər
-                await NotifyAllHrAsync(icaze);
-            }
+            await _YaratCixisGirisAsync(icaze.Id, icaze.Birdefelik);
+            await _GecikmeYenileAsync(icaze);
+            await NotifySobeReisiAsync(icaze);
+            await NotifyHrMalumatAsync(icaze);
 
             return Result.Ok("Rəhbər qərarı qeydə alındı.");
         }
@@ -614,15 +654,10 @@ namespace FinNex.Application.Services
             switch (ic.Status)
             {
                 case IcazeStatus.RehberTesdiqinde:
-                    // Directly use structural role — doesn't require AppUser.IsciId link
-                    await _bildirisRouter.NotifyStrukturRoluAsync(
-                        StrukturRolTipi.Rehber,
-                        BildirisNovu.IcazeMuraciet, bashliq, metn,
-                        redirectUrl: $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Rehber",
-                        icazeId: ic.Id, exceptIsciId: ic.IsciId);
-                    // Also notify Admin via Identity role
-                    await _bildirisRouter.NotifyRoleAsync(
-                        RoleNames.Admin,
+                    // Rəhbər + Admin Identity rolları ilə bildiriş (main konvensiyası —
+                    // MezuniyyetService və s. ilə eyni). Struktur rolu cədvəlinə güvənmir.
+                    await _bildirisRouter.NotifyRolesAsync(
+                        new[] { RoleNames.Rehber, RoleNames.Admin },
                         BildirisNovu.IcazeMuraciet, bashliq, metn,
                         redirectUrl: $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Rehber",
                         icazeId: ic.Id, exceptIsciId: ic.IsciId);
@@ -630,16 +665,8 @@ namespace FinNex.Application.Services
 
                 case IcazeStatus.HrTesdiqinde:
                     var hrUrl = $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Hr";
-                    await _bildirisRouter.NotifyStrukturRoluAsync(
-                        StrukturRolTipi.Hr,
-                        BildirisNovu.IcazeMuraciet, bashliq, metn,
-                        redirectUrl: hrUrl, icazeId: ic.Id, exceptIsciId: ic.IsciId);
-                    await _bildirisRouter.NotifyRoleAsync(
-                        RoleNames.HR,
-                        BildirisNovu.IcazeMuraciet, bashliq, metn,
-                        redirectUrl: hrUrl, icazeId: ic.Id, exceptIsciId: ic.IsciId);
-                    await _bildirisRouter.NotifyRoleAsync(
-                        RoleNames.Admin,
+                    await _bildirisRouter.NotifyRolesAsync(
+                        new[] { RoleNames.HR, RoleNames.Admin },
                         BildirisNovu.IcazeMuraciet, bashliq, metn,
                         redirectUrl: hrUrl, icazeId: ic.Id, exceptIsciId: ic.IsciId);
                     break;
@@ -688,8 +715,8 @@ namespace FinNex.Application.Services
         {
             var isciAd = await GetIsciAdAsync(ic.IsciId);
             var dovr = $"{ic.IcazeTarixi:dd.MM.yyyy} {ic.BaslamaSaati:hh\\:mm}–{ic.BitisSaati:hh\\:mm}";
-            await _bildirisRouter.NotifyStrukturRoluAsync(
-                StrukturRolTipi.Hr,
+            await _bildirisRouter.NotifyRolesAsync(
+                new[] { RoleNames.HR, RoleNames.Admin },
                 BildirisNovu.IcazeTesdiq,
                 "İcazə təsdiqləndi — məlumat",
                 $"{isciAd} ({dovr}) icazəsi rəhbər tərəfindən təsdiqləndi.",
@@ -701,8 +728,8 @@ namespace FinNex.Application.Services
         {
             var isciAd = await GetIsciAdAsync(ic.IsciId);
             var dovr = $"{ic.IcazeTarixi:dd.MM.yyyy} {ic.BaslamaSaati:hh\\:mm}–{ic.BitisSaati:hh\\:mm}";
-            await _bildirisRouter.NotifyStrukturRoluAsync(
-                StrukturRolTipi.Rehber,
+            await _bildirisRouter.NotifyRolesAsync(
+                new[] { RoleNames.Rehber, RoleNames.Admin },
                 BildirisNovu.IcazeMuraciet,
                 "İcazə müraciəti — Rəhbər təsdiqi gözləyir",
                 $"{isciAd} ({dovr}) icazəsi şöbə rəisi tərəfindən təsdiqlənib.",
@@ -717,12 +744,8 @@ namespace FinNex.Application.Services
             var bashliq = "İcazə müraciəti — HR təsdiqi gözləyir";
             var metn = $"{isciAd} ({dovr}) icazəsi rəhbər tərəfindən təsdiqlənib.";
             var url = $"/User/Tesdiq/IcazeDetal/{ic.Id}?rol=Hr";
-            await _bildirisRouter.NotifyStrukturRoluAsync(
-                StrukturRolTipi.Hr,
-                BildirisNovu.IcazeMuraciet, bashliq, metn,
-                redirectUrl: url, icazeId: ic.Id, exceptIsciId: ic.IsciId);
-            await _bildirisRouter.NotifyRoleAsync(
-                RoleNames.HR,
+            await _bildirisRouter.NotifyRolesAsync(
+                new[] { RoleNames.HR, RoleNames.Admin },
                 BildirisNovu.IcazeMuraciet, bashliq, metn,
                 redirectUrl: url, icazeId: ic.Id, exceptIsciId: ic.IsciId);
         }
@@ -785,10 +808,156 @@ namespace FinNex.Application.Services
             CixisGirisStatus = icaze.CixisGiris?.Status,
         };
 
+        // ── Cihaz oxuma bərpası üçün batch xəritələr ─────────
+        // Xam cihaz oxumaları (varsa — dəqiq, qayıdışı da verir) + Davamiyyət son
+        // çıxışı (xam yoxdursa fallback) bir dəfəyə yüklənir (N+1 olmasın).
+        private async Task<(Dictionary<string, List<DateTime>> raw, Dictionary<string, DateTime> davCixis)>
+            CihazBerpaXeritesiAsync(List<int> isciIdler, DateTime minT, DateTime maxT)
+        {
+            var raw = new Dictionary<string, List<DateTime>>();
+            var davCixis = new Dictionary<string, DateTime>();
+            if (isciIdler.Count == 0) return (raw, davCixis);
+
+            var oxumalar = await _unitOfWork.Repository<CihazOxuma>()
+                .Query().AsNoTracking()
+                .Where(o => !o.Silinib && isciIdler.Contains(o.IsciId)
+                         && o.Vaxt.Date >= minT && o.Vaxt.Date <= maxT)
+                .Select(o => new { o.IsciId, o.Vaxt })
+                .ToListAsync();
+            raw = oxumalar
+                .GroupBy(o => $"{o.IsciId}|{o.Vaxt:yyyy-MM-dd}")
+                .ToDictionary(g => g.Key, g => g.Select(x => x.Vaxt).OrderBy(v => v).ToList());
+
+            var davlar = await _unitOfWork.Repository<Davamiyyet>()
+                .Query().AsNoTracking()
+                .Where(d => !d.Silinib && isciIdler.Contains(d.IsciId)
+                         && d.Tarix.Date >= minT && d.Tarix.Date <= maxT
+                         && d.CixisVaxti != null)
+                .Select(d => new { d.IsciId, Tarix = d.Tarix.Date, d.CixisVaxti })
+                .ToListAsync();
+            davCixis = davlar
+                .GroupBy(d => $"{d.IsciId}|{d.Tarix:yyyy-MM-dd}")
+                .ToDictionary(g => g.Key, g => g.Max(d => d.CixisVaxti!.Value));
+
+            return (raw, davCixis);
+        }
+
+        // İcazə pəncərəsi üçün faktiki çıxış/qayıdışı bərpa edir:
+        //  1) Xam oxumalar varsa — pəncərə içindəki İLK = çıxış, SON = qayıdış
+        //     (işçi çıxıb-qayıdıbsa da düzgün tutulur).
+        //  2) Yoxdursa — Davamiyyət son çıxışı (yalnız çıxış, pəncərə içindədirsə).
+        private static (DateTime? cixis, DateTime? qayidis) IcazeFaktikiBerpa(
+            int isciId, DateTime tarix, TimeSpan baslama, TimeSpan bitis,
+            Dictionary<string, List<DateTime>> raw, Dictionary<string, DateTime> davCixis)
+        {
+            var key = $"{isciId}|{tarix:yyyy-MM-dd}";
+            var alt = baslama - TimeSpan.FromMinutes(15);
+            var ust = bitis + TimeSpan.FromMinutes(15);
+
+            if (raw.TryGetValue(key, out var punchlar))
+            {
+                var pencere = punchlar.Where(v => v.TimeOfDay >= alt && v.TimeOfDay <= ust).ToList();
+                if (pencere.Count > 0)
+                {
+                    var cx = pencere[0];
+                    DateTime? qy = (pencere.Count > 1 && pencere[^1] > cx.AddMinutes(5))
+                        ? pencere[^1] : (DateTime?)null;
+                    return (cx, qy);
+                }
+            }
+
+            if (davCixis.TryGetValue(key, out var dcx) &&
+                dcx.TimeOfDay >= alt && dcx.TimeOfDay <= ust)
+                return (dcx, null);
+
+            return (null, null);
+        }
+
+        // ── Cihaz çıxış/qayıdışını xam punch-lardan bərpa edib SAXLAYIR ──────────
+        // Boşluq idi: əvvəlki backfill yalnız "heç nə yazılmayıb" (CixisVaxt null, Gözlənir)
+        // halını EKRANA göstərirdi; "çıxış var, qayıdış yox" (Status=Cixdi) halını buraxırdı
+        // və heç vaxt saxlamırdı. Nəticədə canlı yol qayıdışı buraxanda (punch CihazOxuma-da
+        // olsa belə) qayıdış əbədi boş qalırdı. Bu metod hər iki halı tutub bazaya yazır.
+        private async Task IcazeCihazVaxtBerpaEtAsync()
+        {
+            var bugun = DateTime.Now.Date;
+            var eksikler = await _unitOfWork.Repository<IcazeCixisGiris>()
+                .Query()
+                .Include(cg => cg.Icaze)
+                .Where(cg => !cg.Silinib
+                          && !cg.Birdefelik
+                          && cg.QayidisVaxt == null
+                          && (cg.Status == IcazeCixisGirisStatus.Gozlenir
+                              || cg.Status == IcazeCixisGirisStatus.Cixdi)
+                          && cg.Icaze.Status == IcazeStatus.Tesdiqlenib
+                          && cg.Icaze.IcazeTarixi.Date <= bugun
+                          && cg.Icaze.IcazeTarixi.Date >= bugun.AddDays(-92))
+                .ToListAsync();
+            if (eksikler.Count == 0) return;
+
+            var isciIdler = eksikler.Select(cg => cg.Icaze.IsciId).Distinct().ToList();
+            var minT = eksikler.Min(cg => cg.Icaze.IcazeTarixi.Date);
+            var maxT = eksikler.Max(cg => cg.Icaze.IcazeTarixi.Date);
+            var (raw, davCixis) = await CihazBerpaXeritesiAsync(isciIdler, minT, maxT);
+
+            bool deyisdi = false;
+            foreach (var cg in eksikler)
+            {
+                var (fcx, fqy) = IcazeFaktikiBerpa(cg.Icaze.IsciId, cg.Icaze.IcazeTarixi,
+                    cg.Icaze.BaslamaSaati, cg.Icaze.BitisSaati, raw, davCixis);
+
+                bool dey = false;
+                if (cg.CixisVaxt == null && fcx != null)
+                {
+                    cg.CixisVaxt = fcx;
+                    if (cg.Status == IcazeCixisGirisStatus.Gozlenir)
+                        cg.Status = IcazeCixisGirisStatus.Cixdi;
+                    dey = true;
+                }
+                if (cg.QayidisVaxt == null && fqy != null)
+                {
+                    cg.QayidisVaxt = fqy;                              // ← əsas düzəliş: qayıdış saxlanılır
+                    cg.Status = IcazeCixisGirisStatus.Tamamlandi;
+                    dey = true;
+                }
+                if (dey)
+                {
+                    cg.YenilenmeTarixi = DateTime.Now;
+                    await _unitOfWork.Repository<IcazeCixisGiris>().YenileAsync(cg);
+                    deyisdi = true;
+                }
+            }
+            if (deyisdi) await _unitOfWork.YaddaSaxlaAsync();
+        }
+
+        // Bir icazənin FAKTİKİ saatı (Dövriyyə və İzləmə eyni məntiqlə işləsin deyə tək yerdə):
+        //  • adi icazə  → qayıdış − çıxış (hər iki vaxt olmalıdır, yoxdursa null)
+        //  • birdəfəlik → işçi qayıtmır, ona görə çıxışdan planlaşdırılan icazə sonuna
+        //    (BitisSaati) qədər sayılır. Çıxış yoxdursa, yaxud çıxış icazə sonundan
+        //    sonradırsa null (faktiki ölçülə bilmir).
+        private static double? IcazeFaktikiSaat(
+            DateTime? cixis, DateTime? qayidis, bool birdefelik,
+            DateTime icazeTarixi, TimeSpan bitisSaati)
+        {
+            if (cixis == null) return null;
+
+            if (birdefelik)
+            {
+                var icazeSonu = icazeTarixi.Date + bitisSaati;
+                var saat = (icazeSonu - cixis.Value).TotalHours;
+                return saat > 0 ? Math.Round(saat, 2) : (double?)null;
+            }
+
+            if (qayidis == null || qayidis.Value <= cixis.Value) return null;
+            return Math.Round((qayidis.Value - cixis.Value).TotalHours, 2);
+        }
+
         public async Task<Result<IList<IcazeIsciIstatistikDto>>> GetIsciIzlemeAsync(IcazeIzlemeFiltrDto filtr)
         {
             try
             {
+                await IcazeCihazVaxtBerpaEtAsync();   // cihaz çıxış/qayıdışını xam punch-lardan bərpa edib saxla
+
                 var list = await _unitOfWork.Repository<Icaze>()
                     .HamisiniGetirAsync(
                         predicate: x =>
@@ -810,12 +979,54 @@ namespace FinNex.Application.Services
                             .Include(i => i.CixisGiris),
                         izlemeden: true);
 
+                // Nahar müddəti (saat) — nahar icazəyə qatılıbsa icazə saatından çıxılır
+                // (işçi nahar haqqını istifadə etməyib).
+                var izParam = await _unitOfWork.Repository<IsParametri>()
+                    .Query().AsNoTracking().Where(x => !x.Silinib).FirstOrDefaultAsync();
+                double naharSaat = (izParam?.NaharMuddetDeqiqe ?? 45) / 60.0;
+
+                // Effektiv icazə saatı = xam saat − jeton (bonus, sayılmır) − nahar (istifadə edilməyib)
+                double EfektivSaat(Icaze x) => Math.Max(0,
+                    x.IcazeSaati
+                    - (double)x.JetonOdenenSaat
+                    - (x.NaharNezereAlinmasin ? naharSaat : 0));
+
+                // ── Bağlanmamış (Gözlənir) icazədə faktiki çıxış/qayıdışı cihaz datasından bərpa et ──
+                // Dövriyyə ilə eyni məntiq: xam oxuma (varsa — qayıdış da), yoxsa Davamiyyət çıxışı.
+                var izEksikler = list
+                    .Where(ic => ic.CixisGiris != null
+                              && ic.CixisGiris.CixisVaxt == null
+                              && ic.CixisGiris.Status == IcazeCixisGirisStatus.Gozlenir)
+                    .ToList();
+
+                var (rawXerite, davXerite) = izEksikler.Count > 0
+                    ? await CihazBerpaXeritesiAsync(
+                        izEksikler.Select(ic => ic.IsciId).Distinct().ToList(),
+                        izEksikler.Min(ic => ic.IcazeTarixi.Date),
+                        izEksikler.Max(ic => ic.IcazeTarixi.Date))
+                    : (new Dictionary<string, List<DateTime>>(), new Dictionary<string, DateTime>());
+
                 var grouped = list
                     .GroupBy(x => x.IsciId)
                     .Select(g =>
                     {
                         var ilk = g.First();
                         var aktivTeyinat = ilk.Isci?.IsciTeyinatlari?.FirstOrDefault(t => t.Aktivdir);
+
+                        var icazeDtolar = g.OrderByDescending(x => x.IcazeTarixi).Select(x =>
+                        {
+                            var dto = MapToListDto(x);
+                            if (x.CixisGiris != null && x.CixisGiris.CixisVaxt == null &&
+                                x.CixisGiris.Status == IcazeCixisGirisStatus.Gozlenir)
+                            {
+                                var (fcx, fqy) = IcazeFaktikiBerpa(x.IsciId, x.IcazeTarixi,
+                                    x.BaslamaSaati, x.BitisSaati, rawXerite, davXerite);
+                                if (fcx != null) dto.CixisVaxt = fcx;
+                                if (fqy != null) dto.QayidisVaxt = fqy;
+                            }
+                            return dto;
+                        }).ToList();
+
                         return new IcazeIsciIstatistikDto
                         {
                             IsciId = g.Key,
@@ -830,10 +1041,15 @@ namespace FinNex.Application.Services
                                 x.Status == IcazeStatus.RehberTesdiqinde ||
                                 x.Status == IcazeStatus.HrTesdiqinde),
                             ImtinaEdildiSayi = g.Count(x => x.Status == IcazeStatus.ImtinaEdildi),
-                            UmumSaat = g.Sum(x => x.IcazeSaati),
-                            TesdiqSaat = g.Where(x => x.Status == IcazeStatus.Tesdiqlenib).Sum(x => x.IcazeSaati),
+                            UmumSaat = g.Sum(x => EfektivSaat(x)),
+                            TesdiqSaat = g.Where(x => x.Status == IcazeStatus.Tesdiqlenib).Sum(x => EfektivSaat(x)),
+                            FaktikiSaat = icazeDtolar
+                                .Select(d => IcazeFaktikiSaat(d.CixisVaxt, d.QayidisVaxt, d.Birdefelik,
+                                                              d.IcazeTarixi, d.BitisSaati))
+                                .Where(s => s.HasValue)
+                                .Sum(s => s!.Value),
                             SonIcazeTarixi = g.Max(x => (DateTime?)x.IcazeTarixi),
-                            Icazeler = g.OrderByDescending(x => x.IcazeTarixi).Select(MapToListDto).ToList(),
+                            Icazeler = icazeDtolar,
                         };
                     })
                     .OrderBy(x => x.SobeAdi).ThenBy(x => x.IsciAdSoyad)
@@ -852,6 +1068,8 @@ namespace FinNex.Application.Services
         {
             try
             {
+                await IcazeCihazVaxtBerpaEtAsync();   // cihaz çıxış/qayıdışını xam punch-lardan bərpa edib saxla
+
                 var list = await _unitOfWork.Repository<IcazeCixisGiris>()
                     .HamisiniGetirAsync(
                         predicate: x =>
@@ -871,25 +1089,58 @@ namespace FinNex.Application.Services
                                         .ThenInclude(t => t.Departament),
                         izlemeden: true);
 
+                // ── Bağlanmamış (Gözlənir) icazələrdə faktiki çıxış/qayıdışı cihaz datasından bərpa et ──
+                // Canlı ADMS hook işləməyibsə (seed, yaxud oxuma təsdiqdən əvvəl gəlib), xam cihaz
+                // oxumalarından (varsa — qayıdış da daxil), yoxdursa Davamiyyət çıxışından bərpa
+                // olunur və GÖSTƏRİLİR (DB-yə YAZMIR).
+                var eksikler = list
+                    .Where(c => c.CixisVaxt == null &&
+                                c.Status == IcazeCixisGirisStatus.Gozlenir)
+                    .ToList();
+
+                var (rawXerite, davXerite) = eksikler.Count > 0
+                    ? await CihazBerpaXeritesiAsync(
+                        eksikler.Select(c => c.Icaze.IsciId).Distinct().ToList(),
+                        eksikler.Min(c => c.Icaze.IcazeTarixi.Date),
+                        eksikler.Max(c => c.Icaze.IcazeTarixi.Date))
+                    : (new Dictionary<string, List<DateTime>>(), new Dictionary<string, DateTime>());
+
                 var dtos = list
                     .OrderByDescending(x => x.Icaze.IcazeTarixi)
-                    .Select(c => new IcazeDovriyyeDto
+                    .Select(c =>
                     {
-                        IcazeId = c.IcazeId,
-                        IsciAdSoyad = c.Icaze.Isci.TamAd,
-                        SobeAdi = c.Icaze.Isci.IsciTeyinatlari
-                            .Where(t => t.Aktivdir)
-                            .Select(t => t.Departament?.Ad)
-                            .FirstOrDefault() ?? "-",
-                        IcazeTarixi = c.Icaze.IcazeTarixi,
-                        BaslamaSaati = c.Icaze.BaslamaSaati,
-                        BitisSaati = c.Icaze.BitisSaati,
-                        PlanlananSaat = c.Icaze.IcazeSaati,
-                        Birdefelik = c.Birdefelik,
-                        CixisVaxt = c.CixisVaxt,
-                        QayidisVaxt = c.QayidisVaxt,
-                        FaktikiSaat = c.FaktikiSaat,
-                        CixisStatus = c.Status,
+                        var (fcx, fqy) = (c.CixisVaxt == null && c.Status == IcazeCixisGirisStatus.Gozlenir)
+                            ? IcazeFaktikiBerpa(c.Icaze.IsciId, c.Icaze.IcazeTarixi,
+                                                c.Icaze.BaslamaSaati, c.Icaze.BitisSaati, rawXerite, davXerite)
+                            : ((DateTime?)null, (DateTime?)null);
+                        var effCixis = c.CixisVaxt ?? fcx;
+                        var effQayidis = c.QayidisVaxt ?? fqy;
+                        // Birdəfəlikdə qayıdış olmur — faktiki çıxışdan icazə sonuna sayılır.
+                        // Adi icazədə saxlanmış (canlı) dəyər varsa ona üstünlük verilir,
+                        // yoxsa çıxış/qayıdış cütünə görə hesablanır.
+                        double? faktiki = (!c.Birdefelik ? c.FaktikiSaat : null)
+                            ?? IcazeFaktikiSaat(effCixis, effQayidis, c.Birdefelik,
+                                                c.Icaze.IcazeTarixi, c.Icaze.BitisSaati);
+                        return new IcazeDovriyyeDto
+                        {
+                            IcazeId = c.IcazeId,
+                            IsciAdSoyad = c.Icaze.Isci.TamAd,
+                            SobeAdi = c.Icaze.Isci.IsciTeyinatlari
+                                .Where(t => t.Aktivdir)
+                                .Select(t => t.Departament?.Ad)
+                                .FirstOrDefault() ?? "-",
+                            IcazeTarixi = c.Icaze.IcazeTarixi,
+                            BaslamaSaati = c.Icaze.BaslamaSaati,
+                            BitisSaati = c.Icaze.BitisSaati,
+                            PlanlananSaat = c.Icaze.IcazeSaati,
+                            Birdefelik = c.Birdefelik,
+                            CixisVaxt = effCixis,
+                            QayidisVaxt = effQayidis,
+                            FaktikiSaat = faktiki,
+                            CixisStatus = fcx != null
+                                ? (fqy != null ? IcazeCixisGirisStatus.Tamamlandi : IcazeCixisGirisStatus.Cixdi)
+                                : c.Status,
+                        };
                     }).ToList();
 
                 return Result<IList<IcazeDovriyyeDto>>.Ok(dtos);
@@ -897,6 +1148,38 @@ namespace FinNex.Application.Services
             catch (Exception ex)
             {
                 return Result<IList<IcazeDovriyyeDto>>.Fail($"Dövriyyə məlumatları gətirilmədi: {ex.Message}");
+            }
+        }
+
+        // HR əl ilə düzəliş — cihaz çıxış/qayıdış vaxtlarını yeniləyir (insan faktoru:
+        // təsadüfi tanınma, səhv skan və s. hallarda HR qiymətləri düzəldə bilsin).
+        public async Task<Result> CixisGirisDuzeltAsync(int icazeId, DateTime? cixisVaxt, DateTime? qayidisVaxt)
+        {
+            try
+            {
+                var icaze = await _unitOfWork.Repository<Icaze>()
+                    .GetirAsync(x => x.Id == icazeId, include: q => q.Include(i => i.CixisGiris));
+                if (icaze?.CixisGiris == null)
+                    return Result.Fail("İcazə və ya çıxış/giriş qeydi tapılmadı.");
+
+                if (cixisVaxt.HasValue && qayidisVaxt.HasValue && qayidisVaxt.Value < cixisVaxt.Value)
+                    return Result.Fail("Qayıdış vaxtı çıxış vaxtından əvvəl ola bilməz.");
+
+                var cg = icaze.CixisGiris;
+                cg.CixisVaxt = cixisVaxt;
+                cg.QayidisVaxt = qayidisVaxt;
+                cg.Status = qayidisVaxt.HasValue
+                    ? IcazeCixisGirisStatus.Tamamlandi
+                    : (cixisVaxt.HasValue ? IcazeCixisGirisStatus.Cixdi : IcazeCixisGirisStatus.Gozlenir);
+                cg.YenilenmeTarixi = DateTime.Now;
+
+                await _unitOfWork.Repository<IcazeCixisGiris>().YenileAsync(cg);
+                await _unitOfWork.YaddaSaxlaAsync();
+                return Result.Ok("Çıxış/qayıdış vaxtı yeniləndi.");
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail($"Düzəliş xətası: {ex.Message}");
             }
         }
 

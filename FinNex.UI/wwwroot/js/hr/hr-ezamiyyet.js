@@ -50,6 +50,13 @@ async function ezYukle() {
             ? '<button class="fn-btn fn-btn--outline fn-btn--sm" onclick="ezOpenModal(' + r.id + ',\'' + ezEsc(r.isciTamAd) + '\',\'' + ezEsc(r.baslig) + '\',\'' + ezEsc(r.mekanAd) + '\',\'' + r.baslamaTarixi + '\',\'' + r.bitmeTarixi + '\')">' +
               '<i class="bi bi-check-square"></i> Bax</button>'
             : '<span style="font-size:11px;color:#94a3b8">' + (r.rehberTamAd ? r.rehberTamAd + '<br>' + (r.rehberTesdiqTarixi || '') : '') + '</span>';
+        // Təsdiqlənmiş ezamiyyət üçün HR/Admin əl ilə çıxış/qayıdış düzəlişi
+        if (window.ezCanEdit && r.status === 2) {
+            emel += '<br><button class="fn-btn fn-btn--outline fn-btn--sm" style="margin-top:4px" ' +
+                    'onclick="ezOpenDuzelt(' + r.id + ',\'' + ezEsc(r.isciTamAd) + '\',\'' +
+                    (r.cihazCixisIso || '') + '\',\'' + (r.cihazQayidisIso || '') + '\',\'' + (r.baslamaIso || '') + '\',\'' + (r.bitmeIso || '') + '\')">' +
+                    '<i class="bi bi-pencil"></i> Düzəlt</button>';
+        }
         var geriNot = r.geriDonusQeydi
             ? '<div style="margin-top:4px;font-size:11px;color:#166534;background:#f0fdf4;padding:3px 7px;border-radius:5px"><i class="bi bi-check2-circle"></i> ' + ezEsc(r.geriDonusQeydi) + '</div>'
             : '';
@@ -128,6 +135,79 @@ async function ezTesdiq(tesdiq) {
     var json = await res.json();
     if (json.success === false) { alert(json.message || 'Xəta baş verdi.'); return; }
     ezCloseModal();
+    ezYukle();
+}
+
+// ── HR əl ilə çıxış/qayıdış düzəlişi (insan faktoru) ──
+function ezSplitIso(iso) {              // "2026-06-09T15:30" → ["2026-06-09","15:30"]
+    if (!iso) return ['', ''];
+    var p = iso.split('T');
+    return [p[0] || '', (p[1] || '').slice(0, 5)];
+}
+
+function ezOpenDuzelt(id, isci, cixisIso, qayidisIso, baslamaIso, bitmeIso) {
+    document.getElementById('ezDuzId').value = id;
+    document.getElementById('ezDuzAd').textContent = isci || '';
+
+    // Çıxış tarixi səfərin başlama tarixindən (mövcud çıxış varsa ondan) — HR yalnız saat yazır
+    var cx = ezSplitIso(cixisIso);
+    var cixisDate = cx[0] || baslamaIso || '';
+    document.getElementById('ezDuzCixisD').value = cixisDate;
+    document.getElementById('ezDuzCixisT').value = cx[1];
+    document.getElementById('ezDuzCixisDLbl').textContent = ezFmtDate(cixisDate);
+
+    // Qayıdış tarixi səfərin bitmə tarixindən; qayıdış saatı boşdursa, çıxış varsa 17:45 təklif
+    var qy = ezSplitIso(qayidisIso);
+    var qayidisDate = qy[0] || bitmeIso || '';
+    var qayidisTime = qy[1] || ((!qayidisIso && cixisIso) ? '17:45' : '');
+    document.getElementById('ezDuzQayidisD').value = qayidisDate;
+    document.getElementById('ezDuzQayidisT').value = qayidisTime;
+    document.getElementById('ezDuzQayidisDLbl').textContent = ezFmtDate(qayidisDate);
+
+    document.getElementById('ezDuzOverlay').style.display = 'block';
+    document.getElementById('ezDuzModal').style.display   = 'block';
+}
+
+// "2026-06-03" → "03.06.2026"
+function ezFmtDate(iso) {
+    if (!iso) return '—';
+    var p = iso.split('-');
+    return p.length === 3 ? p[2] + '.' + p[1] + '.' + p[0] : iso;
+}
+
+function ezDuzeltClose() {
+    document.getElementById('ezDuzOverlay').style.display = 'none';
+    document.getElementById('ezDuzModal').style.display   = 'none';
+}
+
+async function ezDuzeltSaxla() {
+    var id = document.getElementById('ezDuzId').value;
+    if (!id) return;
+
+    var re = /^([01]?\d|2[0-3]):[0-5]\d$/;     // 24 saat SS:DD
+    function birlesdir(dId, tId, etiket) {
+        var d = document.getElementById(dId).value;        // tarix avtomatik (səfərdən)
+        var t = document.getElementById(tId).value.trim();
+        if (!t) return '';                                 // saat boş → sahəni təmizlə
+        if (!re.test(t)) throw etiket + ' saatı düzgün deyil (SS:DD, məs: 17:45).';
+        if (!d) throw etiket + ' üçün səfər tarixi tapılmadı.';
+        return d + 'T' + t;
+    }
+
+    var cixis, qayidis;
+    try {
+        cixis   = birlesdir('ezDuzCixisD',   'ezDuzCixisT',   'Çıxış');
+        qayidis = birlesdir('ezDuzQayidisD', 'ezDuzQayidisT', 'Qayıdış');
+    } catch (msg) { alert(msg); return; }
+
+    var res = await fetch('/HR/Ezamiyyet/CihazQayidisDuzelt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: parseInt(id, 10), cixisVaxt: cixis, qayidisVaxt: qayidis })
+    });
+    var json = await res.json();
+    if (json.success === false) { alert(json.message || 'Xəta baş verdi.'); return; }
+    ezDuzeltClose();
     ezYukle();
 }
 

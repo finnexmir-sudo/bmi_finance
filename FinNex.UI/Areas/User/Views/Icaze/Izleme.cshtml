@@ -105,6 +105,10 @@
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/><path d="M6 3.5v3l2 1.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
             Ən çox saat
         </a>
+        <a href="@SortUrl("faktiki")" class="iz-sort-btn @(sirala == "faktiki" ? "active" : "")">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/><path d="M3.5 6.5l1.8 1.8L8.5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Ən çox faktiki
+        </a>
         <a href="@SortUrl("imtina")" class="iz-sort-btn @(sirala == "imtina" ? "active" : "")">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/><path d="M4 4l4 4M8 4l-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
             Ən çox imtina
@@ -207,6 +211,7 @@
                             <th>Gözləmədə</th>
                             <th>İmtina</th>
                             <th>Təsdiq saatı</th>
+                            <th>Faktiki saat</th>
                             <th>Son icazə</th>
                         </tr>
                     </thead>
@@ -256,6 +261,17 @@
                                     <span class="iz-saat">@ist.TesdiqSaat.ToString("0.#")</span>
                                     <span class="iz-saat-lbl"> saat</span>
                                 </td>
+                                <td title="Cihazdan faktiki çıxış–qayıdış müddətlərinin cəmi">
+                                    @if (ist.FaktikiSaat > 0)
+                                    {
+                                        <span class="iz-saat" style="color:#2d6cdf">@ist.FaktikiSaat.ToString("0.#")</span>
+                                        <span class="iz-saat-lbl"> saat</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="iz-saat-lbl">—</span>
+                                    }
+                                </td>
                                 <td class="iz-isci-sub">
                                     @(ist.SonIcazeTarixi?.ToString("dd.MM.yyyy") ?? "—")
                                 </td>
@@ -263,7 +279,7 @@
 
                             @* Genişlənmiş detay sıra *@
                             <tr class="iz-detail-row" id="@detailId">
-                                <td colspan="10">
+                                <td colspan="11">
                                     <div class="iz-detail-inner">
                                         <div class="iz-detail-title">@ist.IsciAdSoyad — İcazələr (@ist.CemiMuraciet)</div>
                                         @if (ist.Icazeler.Any())
@@ -274,8 +290,11 @@
                                                         <th>Tarix</th>
                                                         <th>Saat aralığı</th>
                                                         <th>Müddət</th>
+                                                        <th>Faktiki çıxış</th>
+                                                        <th>Faktiki qayıdış</th>
                                                         <th>Səbəb</th>
                                                         <th>Status</th>
+                                                        <th>Əməliyyat</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -285,6 +304,26 @@
                                                             <td>@ic.IcazeTarixi.ToString("dd.MM.yyyy")</td>
                                                             <td>@ic.BaslamaSaati.ToString(@"hh\:mm") – @ic.BitisSaati.ToString(@"hh\:mm")</td>
                                                             <td><strong>@ic.IcazeSaati.ToString("0.#") saat</strong></td>
+                                                            <td>@(ic.CixisVaxt.HasValue ? ic.CixisVaxt.Value.ToString("HH:mm") : "—")</td>
+                                                            <td>
+                                                                @if (ic.QayidisVaxt.HasValue)
+                                                                {
+                                                                    <span>@ic.QayidisVaxt.Value.ToString("HH:mm")</span>
+                                                                }
+                                                                else if (ic.Birdefelik)
+                                                                {
+                                                                    <span style="color:#8590a6">birdəfəlik</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span style="color:#8590a6">—</span>
+                                                                }
+                                                                @if (ic.CixisQayidisAnomaliya)
+                                                                {
+                                                                    <span title="Cihaz çıxış/qayıdışı icazə pəncərəsinə uyğun gəlmir — yoxlanmalıdır"
+                                                                          style="margin-left:5px;color:#b45309;font-weight:700;cursor:help">⚠</span>
+                                                                }
+                                                            </td>
                                                             <td>@(string.IsNullOrEmpty(ic.Sebeb) ? "—" : ic.Sebeb)</td>
                                                             <td>
                                                                 <span class="iz-status-dot @StatusDotClass(ic.Status)"></span>
@@ -292,6 +331,17 @@
                                                                 @if (!string.IsNullOrEmpty(ic.ImtinaSebebi))
                                                                 {
                                                                     <span style="color:#8590a6;font-size:.7rem"> (@ic.ImtinaSebebi)</span>
+                                                                }
+                                                            </td>
+                                                            <td>
+                                                                @if ((User.IsInRole("HR") || User.IsInRole("Rehber") || User.IsInRole("Admin"))
+                                                                     && ic.Status == IcazeStatus.Tesdiqlenib
+                                                                     && ic.IcazeTarixi.Date >= DateTime.Today)
+                                                                {
+                                                                    <button type="button" onclick="icazeLegvEt(@ic.Id)"
+                                                                            style="padding:3px 10px;font-size:12px;background:#e0566a;color:#fff;border:none;border-radius:6px;cursor:pointer">
+                                                                        Ləğv et
+                                                                    </button>
                                                                 }
                                                             </td>
                                                         </tr>
@@ -316,6 +366,23 @@
 
 @section Scripts {
     <script>
+        async function icazeLegvEt(id) {
+            var sebeb = prompt("Ləğv səbəbini yazın (məcburi):");
+            if (sebeb === null) return;
+            sebeb = sebeb.trim();
+            if (!sebeb) { alert("Səbəb mütləqdir."); return; }
+            try {
+                var resp = await fetch('@Url.Action("RehberHrLegv", "Icaze")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ id: id, sebeb: sebeb })
+                });
+                var data = await resp.json();
+                alert(data.message);
+                if (data.success) location.reload();
+            } catch (e) { alert("Xəta: " + e); }
+        }
+
         function toggleRow(detailId, btn) {
             var row = document.getElementById(detailId);
             var isOpen = row.classList.toggle('is-open');

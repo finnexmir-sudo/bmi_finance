@@ -213,14 +213,19 @@ namespace FinNex.Infrastructure.BackgroundJobs
                     aciqCixislar.Count);
             }
 
-            // Dünən ezamiyyətdən qayıtmayan işçilərin CihazQayidisVaxti-ni iş günü sonuna qoy
+            // Bitmiş, amma cihazdan qayıdışı qeyd olunmamış ezamiyyətlər — işçinin
+            // yazdığı SON günün (BitmeTarixi) iş günü sonuna qədər kapatılır.
+            //  - Yalnız bitmiş səfərlər (BitmeTarixi < bugün) — davam edən səfər
+            //    vaxtından əvvəl kapatılmır.
+            //  - Son 90 gün backfill — xidmət bir neçə gecə işləməsə belə qalmış
+            //    (qayıtmayıb) qeydlər növbəti işləmədə avtomatik bağlanır.
             var aciqEzamCixislar = await db.Set<EzamiyyetMuraciet>()
                 .Where(x => !x.Silinib
                          && x.Status         == EzamiyyetStatus.Tesdiqlendi
                          && x.CihazCixisVaxti  != null
                          && x.CihazQayidisVaxti == null
-                         && x.BaslamaTarixi.Date <= oncekiGun
-                         && x.BitmeTarixi.Date   >= oncekiGun)
+                         && x.BitmeTarixi.Date < bugun
+                         && x.BitmeTarixi.Date >= bugun.AddDays(-90))
                 .ToListAsync(ct);
 
             if (aciqEzamCixislar.Count > 0)
@@ -232,11 +237,11 @@ namespace FinNex.Infrastructure.BackgroundJobs
                 var ezGunSonu = ezIsParam?.StandartCixisVaxti ?? new TimeSpan(17, 45, 0);
 
                 foreach (var ez in aciqEzamCixislar)
-                    ez.CihazQayidisVaxti = oncekiGun.Add(ezGunSonu);
+                    ez.CihazQayidisVaxti = ez.BitmeTarixi.Date.Add(ezGunSonu);
 
                 await db.SaveChangesAsync(ct);
                 _logger.LogInformation(
-                    "EzamiyyetMarker: {Count} açıq ezamiyyət çıxışı iş günü sonuna qədər kapatıldı",
+                    "EzamiyyetMarker: {Count} açıq ezamiyyət çıxışı son günün iş günü sonuna kapatıldı",
                     aciqEzamCixislar.Count);
             }
         }

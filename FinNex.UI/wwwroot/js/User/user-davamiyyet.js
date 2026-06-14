@@ -97,13 +97,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function applyTezCixanFilter(records) {
-        var cp = parseTime(ip.cixisVaxti);
-        var hedd = (cp.h * 60 + cp.m) - (ip.tezCixmaTolerans || 15);
-        return records.filter(function (r) {
-            if (!r.cixisVaxti) return false;
-            var d = new Date(r.cixisVaxti);
-            return (d.getHours() * 60 + d.getMinutes()) < hedd;
-        });
+        // Server (HR məntiqi) ilə hesablanmış tezCixan bayrağına görə süz
+        return records.filter(function (r) { return r.tezCixan === true; });
     }
 
     function parseTime(str) {
@@ -145,8 +140,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var giris = parseTime(ip.girisVaxti);
         var lateThreshMin = giris.h * 60 + giris.m + (ip.gecikmeTolerans || 5);
-        var cixis = parseTime(ip.cixisVaxti);
-        var earlyThreshMin = cixis.h * 60 + cixis.m - (ip.tezCixmaTolerans || 15);
 
         var html = '';
         records.forEach(function (r) {
@@ -162,9 +155,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             var cixisHtml = '<span class="ud-nodata">--:--</span>';
             if (r.cixisVaxti) {
-                var ct = new Date(r.cixisVaxti);
-                var ctMin = ct.getHours() * 60 + ct.getMinutes();
-                var earlyCls = ctMin < earlyThreshMin ? ' ud-time--early' : '';
+                var earlyCls = r.tezCixan ? ' ud-time--early' : '';
                 cixisHtml = '<span class="ud-time' + earlyCls + '">' + formatTime(r.cixisVaxti) + '</span>';
             }
 

@@ -61,6 +61,29 @@ göstərdi.
 - View/servisdə naviqasiyadan oxuyanda filtri **bir daha** tətbiq et
   (məs. `b.Il == secilmisIl`) — yalnız Include filtrinə güvənmə.
 
+## Metod İmzası Dəyişikliyi — İnterfeys + İmplementasiya + Çağırış (KRİTİK)
+
+Bir servis metodunun imzasına parametr əlavə edəndə **üç yeri eyni anda** yenilə:
+
+1. **İnterfeys** (`I<Modul>Service.cs`)
+2. **İmplementasiya** (`<Modul>Service.cs`)
+3. **Bütün çağırış yerləri** (Controller-lər və başqa servislər)
+
+Real nümunə (RehberTesdiqAsync): `birdefelik` parametri implementasiyaya
+(`IcazeService`) və controller-ə (`TesdiqController`) əlavə edildi, amma
+**interfeysə əlavə edilmədi**. C#-da default dəyəri olsa belə, 7 parametrli
+metod 6 parametrli interfeys üzvünü implementasiya **etmir** — ayrı imzadır.
+Nəticədə `FinNex.Application` build olmadı (CS0535 + CS1501), bu da `FinNex.UI`-ı
+**köhnə DLL-ə** bağladı və əlaqəsiz görünən kaskad xəta verdi (CS1061
+`FaktikiSaat` tapılmır — halbuki DTO-da var idi).
+
+**Qaydalar:**
+- İmza dəyişikliyindən sonra "işləyir" demə — `dotnet build` ilə **0 xəta**
+  olduğunu isbat et. Build mümkün deyilsə, üç qatın imzasını əl ilə tutuşdur
+  və yoxlanmadığını açıq qeyd et.
+- Bir layihə build olmayanda asılı layihələrdəki xətalar yalançı istiqamətə
+  yönəldə bilər — **kök səbəb həmişə build olmayan layihədədir**, oradan başla.
+
 ## Xəta Etirafı
 
 - Səhv aşkar olarsa dərhal bildirr — gizlətmə, bəhanə axtarma.

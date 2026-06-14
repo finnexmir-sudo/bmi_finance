@@ -368,7 +368,8 @@
 .mp-tax-type--flat    { background: rgba(45,108,223,.1); color: #2d6cdf; }
 .mp-tax-type--none    { background: rgba(239,68,68,.1);  color: #dc2626; }
 
-.mp-tax-action .mp-btn-mini {
+.mp-tax-action .mp-btn-mini,
+.mp-section-head .mp-btn-mini {
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -383,7 +384,8 @@
     font-family: inherit;
     transition: .15s;
 }
-.mp-tax-action .mp-btn-mini:hover {
+.mp-tax-action .mp-btn-mini:hover,
+.mp-section-head .mp-btn-mini:hover {
     background: #6366f1;
     color: #fff;
     border-color: #6366f1;

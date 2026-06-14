@@ -1,0 +1,393 @@
+@using FinNex.Domain.Entities.HR
+@using FinNex.Application.DTOs.HR.Ezamiyyet
+@model FinNex.UI.Areas.HR.ViewModels.Ezamiyyet.EzamiyyetIzlemeVM
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Ezamiyyət İzləmə";
+    var sirala = ViewData["Sirala"]?.ToString() ?? "cemi";
+
+    string StatusText(EzamiyyetStatus s) => s switch {
+        EzamiyyetStatus.Gozleyir    => "Gözləyir",
+        EzamiyyetStatus.Tesdiqlendi => "Təsdiqləndi",
+        EzamiyyetStatus.Reddedildi  => "Rədd edildi",
+        EzamiyyetStatus.Legvedildi  => "Ləğv edildi",
+        _                           => "—"
+    };
+    string StatusDotClass(EzamiyyetStatus s) => s switch {
+        EzamiyyetStatus.Tesdiqlendi => "iz-status-dot--ok",
+        EzamiyyetStatus.Reddedildi  => "iz-status-dot--reject",
+        EzamiyyetStatus.Legvedildi  => "iz-status-dot--reject",
+        _                           => "iz-status-dot--wait"
+    };
+
+    string SortUrl(string key) => Url.Action("IsciIzleme", "Ezamiyyet", new {
+        area = "HR",
+        tarixFrom     = Model.Filtr.BaslangicTarix?.ToString("yyyy-MM-dd"),
+        tarixTo       = Model.Filtr.SonTarix?.ToString("yyyy-MM-dd"),
+        departamentId = Model.Filtr.DepartamentId,
+        axtaris       = Model.Filtr.IsciAd,
+        status        = (int?)Model.Filtr.Status,
+        sirala        = key
+    }) ?? "#";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/icaze-izleme.css" asp-append-version="true" />
+    <style>
+        .iz-sort-bar { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+        .iz-sort-btn {
+            display:inline-flex; align-items:center; gap:4px;
+            padding:5px 13px; border-radius:20px; font-size:.76rem; font-weight:600;
+            border:1px solid #dde2ec; background:#f7f8fc; color:#5a6478;
+            text-decoration:none; transition:all .15s;
+        }
+        .iz-sort-btn:hover { background:#eff2fb; border-color:#b0bcf0; color:#2563eb; }
+        .iz-sort-btn.active { background:#2563eb; border-color:#2563eb; color:#fff; }
+        .iz-rank { display:inline-flex; align-items:center; justify-content:center;
+                   width:22px; height:22px; border-radius:50%; font-size:.7rem; font-weight:700; }
+        .iz-rank--1 { background:#ffd700; color:#7a5a00; }
+        .iz-rank--2 { background:#c0c0c0; color:#444; }
+        .iz-rank--3 { background:#cd7f32; color:#fff; }
+        .iz-rank--n { background:#f0f2f7; color:#8590a6; }
+    </style>
+}
+
+<div class="fn-page">
+
+    @* ── Başlıq ── *@
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Ezamiyyət İzləmə</div>
+            <div class="fn-page-sub">İşçilərin ezamiyyət səfərlərinin xülasəsi — cəmi, gün, faktiki saat</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline">
+            <i class="bi bi-list-check"></i> İdarəetmə / Düzəliş
+        </a>
+    </div>
+
+    @* ── KPI kartları ── *@
+    <div class="iz-kpi-row">
+        <div class="iz-kpi iz-kpi--blue">
+            <div class="iz-kpi-val">@Model.UmumIsci</div>
+            <div class="iz-kpi-lbl">İşçi</div>
+        </div>
+        <div class="iz-kpi iz-kpi--indigo">
+            <div class="iz-kpi-val">@Model.UmumEzam</div>
+            <div class="iz-kpi-lbl">Cəmi ezamiyyət</div>
+        </div>
+        <div class="iz-kpi iz-kpi--green">
+            <div class="iz-kpi-val">@Model.UmumTesdiq</div>
+            <div class="iz-kpi-lbl">Təsdiqlənib</div>
+        </div>
+        <div class="iz-kpi iz-kpi--amber">
+            <div class="iz-kpi-val">@Model.UmumGun</div>
+            <div class="iz-kpi-lbl">Cəmi gün</div>
+        </div>
+        <div class="iz-kpi iz-kpi--teal">
+            <div class="iz-kpi-val">@Model.UmumFaktiki.ToString("0.#")</div>
+            <div class="iz-kpi-lbl">Faktiki saat</div>
+        </div>
+    </div>
+
+    @* ── Sıralama ── *@
+    <div class="iz-sort-bar">
+        <span style="font-size:.76rem;color:#8590a6;align-self:center;font-weight:600;">Sırala:</span>
+        <a href="@SortUrl("cemi")" class="iz-sort-btn @(sirala == "cemi" ? "active" : "")">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 9h8M2 6h5M2 3h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            Ən çox səfər
+        </a>
+        <a href="@SortUrl("gun")" class="iz-sort-btn @(sirala == "gun" ? "active" : "")">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="2" y="3" width="8" height="7" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M2 5h8M4.5 2v2M7.5 2v2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            Ən çox gün
+        </a>
+        <a href="@SortUrl("faktiki")" class="iz-sort-btn @(sirala == "faktiki" ? "active" : "")">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/><path d="M6 3.5v3l2 1.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+            Ən çox faktiki saat
+        </a>
+    </div>
+
+    @* ── Filtr ── *@
+    <div class="iz-filter-card">
+        <form method="get" asp-action="IsciIzleme">
+            <input type="hidden" name="sirala" value="@sirala" />
+            <div class="iz-filter-grid">
+                <div>
+                    <label class="iz-filter-lbl">Tarixdən</label>
+                    <input type="date" name="tarixFrom"
+                           value="@Model.Filtr.BaslangicTarix?.ToString("yyyy-MM-dd")"
+                           class="iz-input" />
+                </div>
+                <div>
+                    <label class="iz-filter-lbl">Tarixə qədər</label>
+                    <input type="date" name="tarixTo"
+                           value="@Model.Filtr.SonTarix?.ToString("yyyy-MM-dd")"
+                           class="iz-input" />
+                </div>
+                <div>
+                    <label class="iz-filter-lbl">Şöbə</label>
+                    <select name="departamentId" class="iz-input">
+                        @foreach (var d in Model.Departamentler)
+                        {
+                            <option value="@d.Value"
+                                    selected="@(d.Value == Model.Filtr.DepartamentId?.ToString() ? "selected" : null)">
+                                @d.Text
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="iz-filter-lbl">Status</label>
+                    <select name="status" class="iz-input">
+                        <option value="">Hamısı</option>
+                        <option value="1" selected="@((int?)Model.Filtr.Status == 1 ? "selected" : null)">Gözləyir</option>
+                        <option value="2" selected="@((int?)Model.Filtr.Status == 2 ? "selected" : null)">Təsdiqləndi</option>
+                        <option value="3" selected="@((int?)Model.Filtr.Status == 3 ? "selected" : null)">Rədd edildi</option>
+                        <option value="4" selected="@((int?)Model.Filtr.Status == 4 ? "selected" : null)">Ləğv edildi</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="iz-filter-lbl">İşçi adı</label>
+                    <input type="text" name="axtaris"
+                           value="@Model.Filtr.IsciAd"
+                           placeholder="Ad, soyad axtar..."
+                           class="iz-input" />
+                </div>
+            </div>
+            <div class="iz-filter-actions">
+                <button type="submit" class="iz-btn iz-btn--primary">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.3"/>
+                        <path d="M9 9l2.5 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                    </svg>
+                    Axtar
+                </button>
+                <a href="@Url.Action("IsciIzleme")" class="iz-btn iz-btn--ghost">Sıfırla</a>
+            </div>
+        </form>
+    </div>
+
+    @* ── Cədvəl ── *@
+    <div class="iz-table-card">
+        <div class="iz-table-header">
+            <span class="iz-table-count">@Model.Isciler.Count işçi</span>
+        </div>
+
+        @if (!Model.Isciler.Any())
+        {
+            <div class="iz-empty">
+                <div class="iz-empty-icon">
+                    <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                        <circle cx="18" cy="18" r="13" stroke="#c8cdd8" stroke-width="1.5"/>
+                        <path d="M18 11v8l4 3" stroke="#c8cdd8" stroke-width="1.4" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="iz-empty-title">Nəticə tapılmadı</div>
+                <div class="iz-empty-sub">Filtr parametrlərini dəyişdirməyə cəhd edin</div>
+            </div>
+        }
+        else
+        {
+            <div class="iz-table-wrap">
+                <table class="iz-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th></th>
+                            <th>İşçi</th>
+                            <th>Şöbə / Vəzifə</th>
+                            <th>Cəmi səfər</th>
+                            <th>Təsdiqlənib</th>
+                            <th>Gözləyir</th>
+                            <th>Cəmi gün</th>
+                            <th>Faktiki saat</th>
+                            <th>Son ezamiyyət</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var (ist, idx) in Model.Isciler.Select((x, i) => (x, i)))
+                        {
+                            var detailId = $"ez-detail-{idx}";
+                            var rank = idx + 1;
+                            var rankClass = rank == 1 ? "iz-rank--1" : rank == 2 ? "iz-rank--2" : rank == 3 ? "iz-rank--3" : "iz-rank--n";
+
+                            <tr data-toggle="@detailId">
+                                <td><span class="iz-rank @rankClass">@rank</span></td>
+                                <td>
+                                    <button class="iz-expand-btn" id="btn-ez-row-@idx"
+                                            onclick="toggleRow('@detailId', this); event.stopPropagation();"
+                                            title="Səfərləri göstər">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                            <path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </button>
+                                </td>
+                                <td><div class="iz-isci-name">@ist.IsciAdSoyad</div></td>
+                                <td>
+                                    <div class="iz-isci-sub">@ist.SobeAdi</div>
+                                    @if (!string.IsNullOrEmpty(ist.VezifeAdi))
+                                    {
+                                        <div class="iz-isci-sub">@ist.VezifeAdi</div>
+                                    }
+                                </td>
+                                <td><span class="iz-badge iz-badge--total">@ist.CemiEzam</span></td>
+                                <td><span class="iz-badge iz-badge--ok">@ist.TesdiqlenibSayi</span></td>
+                                <td><span class="iz-badge iz-badge--wait">@ist.GozlemeSayi</span></td>
+                                <td>
+                                    <span class="iz-saat">@ist.CemiGun</span>
+                                    <span class="iz-saat-lbl"> gün</span>
+                                </td>
+                                <td title="Eyni gün cihaz çıxış–qayıdışı olan səfərlərin faktiki saat cəmi">
+                                    @if (ist.FaktikiSaat > 0)
+                                    {
+                                        <span class="iz-saat" style="color:#2d6cdf">@ist.FaktikiSaat.ToString("0.#")</span>
+                                        <span class="iz-saat-lbl"> saat</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="iz-saat-lbl">—</span>
+                                    }
+                                </td>
+                                <td class="iz-isci-sub">
+                                    @(ist.SonEzamTarixi?.ToString("dd.MM.yyyy") ?? "—")
+                                </td>
+                            </tr>
+
+                            @* Genişlənmiş detay sıra *@
+                            <tr class="iz-detail-row" id="@detailId">
+                                <td colspan="10">
+                                    <div class="iz-detail-inner">
+                                        <div class="iz-detail-title">@ist.IsciAdSoyad — Ezamiyyətlər (@ist.CemiEzam)</div>
+                                        @if (ist.Ezamlar.Any())
+                                        {
+                                            <table class="iz-mini-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Tarix</th>
+                                                        <th>Məkan / Başlıq</th>
+                                                        <th>Müddət</th>
+                                                        <th>Planlaşdırılan saat</th>
+                                                        <th>Faktiki çıxış</th>
+                                                        <th>Faktiki qayıdış</th>
+                                                        <th>Faktiki saat</th>
+                                                        <th>Status</th>
+                                                        <th>Əməliyyat</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var ez in ist.Ezamlar)
+                                                    {
+                                                        <tr>
+                                                            <td>
+                                                                @if (ez.BaslamaTarixi.Date == ez.BitmeTarixi.Date)
+                                                                {
+                                                                    @ez.BaslamaTarixi.ToString("dd.MM.yyyy")
+                                                                }
+                                                                else
+                                                                {
+                                                                    @($"{ez.BaslamaTarixi:dd.MM} – {ez.BitmeTarixi:dd.MM.yyyy}")
+                                                                }
+                                                            </td>
+                                                            <td>
+                                                                <div>@ez.MekanAd</div>
+                                                                @if (!string.IsNullOrEmpty(ez.Baslig))
+                                                                {
+                                                                    <div class="iz-isci-sub">@ez.Baslig</div>
+                                                                }
+                                                            </td>
+                                                            <td><strong>@ez.GunSayi gün</strong></td>
+                                                            <td>
+                                                                @if (ez.BaslamaSaati.HasValue && ez.BitisSaati.HasValue)
+                                                                {
+                                                                    <span>@ez.BaslamaSaati.Value.ToString(@"hh\:mm") – @ez.BitisSaati.Value.ToString(@"hh\:mm")</span>
+                                                                }
+                                                                else if (ez.BaslamaSaati.HasValue)
+                                                                {
+                                                                    <span>@ez.BaslamaSaati.Value.ToString(@"hh\:mm")-dən</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span style="color:#8590a6">Tam gün</span>
+                                                                }
+                                                            </td>
+                                                            <td>@(ez.CihazCixisVaxti.HasValue ? ez.CihazCixisVaxti.Value.ToString("dd.MM HH:mm") : "—")</td>
+                                                            <td>@(ez.CihazQayidisVaxti.HasValue ? ez.CihazQayidisVaxti.Value.ToString("dd.MM HH:mm") : "—")</td>
+                                                            <td>
+                                                                @if (ez.FaktikiSaat.HasValue)
+                                                                {
+                                                                    <span style="color:#2d6cdf;font-weight:600">@ez.FaktikiSaat.Value.ToString("0.##") saat</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span style="color:#8590a6">—</span>
+                                                                }
+                                                            </td>
+                                                            <td>
+                                                                <span class="iz-status-dot @StatusDotClass(ez.Status)"></span>
+                                                                @StatusText(ez.Status)
+                                                            </td>
+                                                            <td>
+                                                                @if ((User.IsInRole("HR") || User.IsInRole("Rehber") || User.IsInRole("Admin"))
+                                                                     && ez.Status == EzamiyyetStatus.Tesdiqlendi
+                                                                     && ez.BitmeTarixi.Date >= DateTime.Today)
+                                                                {
+                                                                    <button type="button" onclick="ezamLegvEt(@ez.Id)"
+                                                                            style="padding:3px 10px;font-size:12px;background:#e0566a;color:#fff;border:none;border-radius:6px;cursor:pointer">
+                                                                        Ləğv et
+                                                                    </button>
+                                                                }
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        }
+                                        else
+                                        {
+                                            <span class="iz-isci-sub">Heç bir ezamiyyət tapılmadı.</span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        async function ezamLegvEt(id) {
+            var sebeb = prompt("Ləğv səbəbini yazın (məcburi):");
+            if (sebeb === null) return;
+            sebeb = sebeb.trim();
+            if (!sebeb) { alert("Səbəb mütləqdir."); return; }
+            try {
+                var resp = await fetch('@Url.Action("LegvEt", "Ezamiyyet")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ id: id, sebeb: sebeb })
+                });
+                var data = await resp.json();
+                alert(data.message);
+                if (data.success) location.reload();
+            } catch (e) { alert("Xəta: " + e); }
+        }
+
+        function toggleRow(detailId, btn) {
+            var row = document.getElementById(detailId);
+            var isOpen = row.classList.toggle('is-open');
+            btn.classList.toggle('is-open', isOpen);
+        }
+
+        document.querySelectorAll('.iz-table [data-toggle]').forEach(function (tr) {
+            tr.style.cursor = 'pointer';
+            tr.addEventListener('click', function () {
+                var detailId = tr.getAttribute('data-toggle');
+                var btn = tr.querySelector('.iz-expand-btn');
+                if (btn) toggleRow(detailId, btn);
+            });
+        });
+    </script>
+}

@@ -1,4 +1,5 @@
 using FinNex.Application.DTOs.HR.Davamiyyet;
+using FinNex.Application.Services.HR;
 using FinNex.Domain;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Interfaces;
@@ -37,6 +38,13 @@ namespace FinNex.UI.Areas.User.Controllers
             var all = await _davamiyyetService.IsciUzreAsync(isciId.Value);
             var list = all.Where(x => x.Tarix.Year == cariIl).ToList();
 
+            // Statistika HR ilə eyni məntiqlə hesablanır (erkən çıxış üçün ErkenCixisIcaze +
+            // BayramGunu + IsGunuBitdiElan + status istisnaları; İcazəli sayından məzuniyyət
+            // günləri çıxılır). View yalnız hazır rəqəmləri oxuyur.
+            var hesablama = await HesablaAsync(isciId.Value, list);
+            ViewBag.Stats = hesablama.Stats;
+            ViewBag.TezCixanIds = hesablama.TezCixanIds;
+
             var ip = await GetIsParametriEntity();
             ViewBag.GirisVaxti = ip.StandartGirisVaxti.ToString(@"hh\:mm");
             ViewBag.CixisVaxti = ip.StandartCixisVaxti.ToString(@"hh\:mm");
@@ -68,92 +76,45 @@ namespace FinNex.UI.Areas.User.Controllers
             if (isciId == null)
                 return Unauthorized();
 
-            IList<DavamiyyetListDto> result;
-
             var allRecords = await _davamiyyetService.IsciUzreAsync(isciId.Value);
 
+            // umumi — status filtrindən ƏVVƏL: KPI-lar HR-dakı kimi sabit qalsın deyə
+            IList<DavamiyyetListDto> umumi;
             if (baslangic.HasValue && son.HasValue)
             {
-                result = allRecords
+                umumi = allRecords
                     .Where(x => x.Tarix.Date >= baslangic.Value.Date && x.Tarix.Date <= son.Value.Date)
                     .ToList();
             }
             else
             {
                 var cariIl = DateTime.Today.Year;
-                result = allRecords.Where(x => x.Tarix.Year == cariIl).ToList();
+                umumi = allRecords.Where(x => x.Tarix.Year == cariIl).ToList();
             }
 
+            var hesablama = await HesablaAsync(isciId.Value, umumi);
+
+            // Status filtri yalnız cədvələ tətbiq olunur, statistikaya yox
+            IEnumerable<DavamiyyetListDto> gosteris = umumi;
             if (status.HasValue)
             {
-                result = result.Where(x => (int)x.Status == status.Value).ToList();
+                gosteris = gosteris.Where(x => (int)x.Status == status.Value);
+                // İcazəli süzgəcində məzuniyyət günləri çıxarılır ki, sayğacla uyğun olsun
+                if (status.Value == (int)DavamiyyetStatus.Icazeli)
+                    gosteris = gosteris.Where(x => !hesablama.MezuniyyetIcazeliIds.Contains(x.Id));
             }
 
-            var records = result.Select(x => new
+            var records = gosteris.Select(x => new
             {
                 id = x.Id,
                 tarix = x.Tarix,
                 girisVaxti = x.GirisVaxti,
                 cixisVaxti = x.CixisVaxti,
-                status = (int)x.Status
+                status = (int)x.Status,
+                tezCixan = hesablama.TezCixanIds.Contains(x.Id)
             }).OrderByDescending(x => x.tarix).ToList();
 
-            var ip = await GetIsParametriEntity();
-            var standartHedd = ip.StandartCixisVaxti - TimeSpan.FromMinutes(ip.TezCixmaToleransDeqiqe);
-
-            // İntizamsızlıq statistikası yalnız 01.06.2026-dan sayılır (sistemin canlı başlama tarixi)
-            var intizamBaslangic = new DateTime(2026, 6, 1);
-            var intizamResult = result.Where(x => x.Tarix.Date >= intizamBaslangic).ToList();
-
-            // IsGunuBitdiElan — rəhbər "İş Bitdi" elan etdisə, həmin gün üçün elan vaxtını threshold kimi istifadə et
-            var tarixlerSet = intizamResult.Select(x => x.Tarix.Date).Distinct().ToList();
-            var elanlar = await _unitOfWork.Repository<IsGunuBitdiElan>()
-                .Query().AsNoTracking()
-                .Where(x => tarixlerSet.Contains(x.Tarix.Date) && !x.Silinib)
-                .ToListAsync();
-            var elanDict = elanlar.ToDictionary(x => x.Tarix.Date, x => x.BitisVaxti);
-
-            // Birdefelik icazəsi olan günlər — bu günlər erkən çıxış sayılmır
-            var birdefelikGunler = new HashSet<DateTime>();
-            try
-            {
-                var bList = await _unitOfWork.Repository<IcazeCixisGiris>()
-                    .Query().AsNoTracking()
-                    .Include(x => x.Icaze)
-                    .Where(x => !x.Silinib
-                             && x.Birdefelik
-                             && x.Status != IcazeCixisGirisStatus.LegvEdildi
-                             && x.Icaze.IsciId == isciId.Value
-                             && tarixlerSet.Contains(x.Icaze.IcazeTarixi.Date))
-                    .Select(x => x.Icaze.IcazeTarixi.Date)
-                    .ToListAsync();
-                foreach (var d in bList) birdefelikGunler.Add(d);
-            }
-            catch { }
-
-            var isde      = result.Count(x => x.Status == DavamiyyetStatus.Isde);
-            var gecikme   = result.Count(x => x.Status == DavamiyyetStatus.Gecikme);
-            var qayib     = result.Count(x => x.Status == DavamiyyetStatus.Qayib);
-            var icazeli   = result.Count(x => x.Status == DavamiyyetStatus.Icazeli);
-            var xestelik  = result.Count(x => x.Status == DavamiyyetStatus.Xestelik);
-            var ezamiyyet = result.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
-            // Erkən çıxış — icazəli/ezamiyyət/birdefelik günlər xaric edilir
-            var tezCixan = intizamResult.Count(x =>
-            {
-                if (!x.CixisVaxti.HasValue) return false;
-                if (x.Status == DavamiyyetStatus.Icazeli)   return false;
-                if (x.Status == DavamiyyetStatus.Ezamiyyet) return false;
-                if (birdefelikGunler.Contains(x.Tarix.Date)) return false;
-                var hedd = elanDict.TryGetValue(x.Tarix.Date, out var ev) ? ev : standartHedd;
-                return x.CixisVaxti.Value.TimeOfDay < hedd;
-            });
-            var cixisYox  = intizamResult.Count(x => x.GirisVaxti.HasValue && !x.CixisVaxti.HasValue);
-
-            return Json(new
-            {
-                records,
-                stats = new { isde, gecikme, qayib, icazeli, xestelik, ezamiyyet, tezCixan, cixisYox, cemi = result.Count }
-            });
+            return Json(new { records, stats = hesablama.Stats });
         }
 
         private async Task<int?> GetCurrentIsciIdAsync()
@@ -172,5 +133,226 @@ namespace FinNex.UI.Areas.User.Controllers
             }
             catch { return new IsParametri(); }
         }
+
+        // ── HR (GetByTarix) ilə eyni intizam məntiqi ─────────────────────────
+        // Erkən çıxış həddi: BayramGunu (qısa gün) → IsGunuBitdiElan ("İş Bitdi")
+        // → standart çıxış − tolerans. İcazəli/Ezamiyyət statusları və ErkenCixisIcaze
+        // (icazə günləri) erkən çıxış sayılmır. İcazəli sayğacından isə təsdiqlənmiş
+        // məzuniyyət günləri çıxılır (HR davranışı).
+        private async Task<DavamiyyetHesablamaNeticesi> HesablaAsync(int isciId, IList<DavamiyyetListDto> records)
+        {
+            var netice = new DavamiyyetHesablamaNeticesi();
+            var ip = await GetIsParametriEntity();
+            var standartCixis = ip.StandartCixisVaxti;
+            var tezCixmaTolerans = TimeSpan.FromMinutes(ip.TezCixmaToleransDeqiqe);
+            var naharBaslama = ip.NaharBaslamaSaati;
+            var naharBitis = naharBaslama.Add(TimeSpan.FromMinutes(ip.NaharMuddetDeqiqe));
+
+            // Erkən çıxış / çıxış yoxdur statistikası yalnız 01.06.2026-dan (sistemin canlı başlama tarixi)
+            var intizamBaslangic = new DateTime(2026, 6, 1);
+            var intizamResult = records.Where(x => x.Tarix.Date >= intizamBaslangic).ToList();
+            var tarixlerSet = intizamResult.Select(x => x.Tarix.Date).Distinct().ToList();
+
+            // IsGunuBitdiElan — "İş Bitdi" elan olunan günlərdə elan vaxtı həddir
+            var elanDict = new Dictionary<DateTime, TimeSpan>();
+            try
+            {
+                var elanlar = await _unitOfWork.Repository<IsGunuBitdiElan>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib && tarixlerSet.Contains(x.Tarix.Date))
+                    .ToListAsync();
+                foreach (var e in elanlar) elanDict[e.Tarix.Date] = e.BitisVaxti;
+            }
+            catch { }
+
+            // BayramGunu — qısa günlərin xüsusi bitmə vaxtı
+            var bayramDict = new Dictionary<DateTime, TimeSpan>();
+            try
+            {
+                var bayramlar = await _unitOfWork.Repository<BayramGunu>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib && tarixlerSet.Contains(x.Tarix.Date) && x.XususiBitisVaxti.HasValue)
+                    .ToListAsync();
+                foreach (var b in bayramlar) bayramDict[b.Tarix.Date] = b.XususiBitisVaxti!.Value;
+            }
+            catch { }
+
+            // ── Əlil işçi qısaldılmış Cümə qaydası (Tabel ilə eyni) ──────────────
+            // Əlil işçi TAM 5 günlük həftənin 5-ci iş günü (Cümə) net ≥4 saat işləyibsə
+            // erkən çıxış sayılmır — tabeldə həmin gün onsuz da 4 saat yazılır.
+            bool isElil = false;
+            var elilBayramSet = new HashSet<DateTime>();
+            try
+            {
+                if (tarixlerSet.Count > 0)
+                {
+                    var minTarix = tarixlerSet.Min();
+                    var maxTarix = tarixlerSet.Max();
+                    isElil = await _unitOfWork.Repository<IsciGuzest>()
+                        .Query().AsNoTracking()
+                        .AnyAsync(ig => !ig.Silinib && ig.IsciId == isciId &&
+                                        ig.Guzest.Ad.Contains("Əlil") &&
+                                        ig.BaslamaTarixi.Date <= maxTarix &&
+                                        (ig.BitmeTarixi == null || ig.BitmeTarixi.Value.Date >= minTarix));
+                    if (isElil)
+                    {
+                        // Həftə Bazar ertəsindən başlaya bildiyi üçün 7 gün geriyə qədər bayramları çək
+                        var bayramBas = minTarix.AddDays(-7);
+                        var elilBayramlar = await _unitOfWork.Repository<BayramGunu>()
+                            .Query().AsNoTracking()
+                            .Where(b => !b.Silinib && b.Tip == GunTipi.Bayram &&
+                                        b.Tarix.Date >= bayramBas && b.Tarix.Date <= maxTarix)
+                            .Select(b => b.Tarix)
+                            .ToListAsync();
+                        elilBayramSet = new HashSet<DateTime>(elilBayramlar.Select(d => d.Date));
+                    }
+                }
+            }
+            catch { /* IsciGuzest/BayramGunu mövcud deyilsə əlil qaydası keçilir */ }
+
+            // ErkenCixisIcaze — HR ilə eyni mənbə: erkən çıxış icazəsi olan günlər
+            var erkenIcazeDates = new HashSet<DateTime>();
+            try
+            {
+                var eiList = await _unitOfWork.Repository<ErkenCixisIcaze>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib && x.IsciId == isciId && tarixlerSet.Contains(x.Tarix.Date))
+                    .Select(x => x.Tarix)
+                    .ToListAsync();
+                foreach (var d in eiList) erkenIcazeDates.Add(d.Date);
+            }
+            catch { }
+
+            // Təsdiqlənmiş SAAT İCAZƏLƏRİ (günün sonunu örtən) — erkən çıxışı bağışlayır
+            var icazeList = new List<(DateTime Tarix, TimeSpan Bas, TimeSpan Bit)>();
+            try
+            {
+                var ics = await _unitOfWork.Repository<Icaze>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib && x.IsciId == isciId &&
+                                x.Status == IcazeStatus.Tesdiqlenib &&
+                                tarixlerSet.Contains(x.IcazeTarixi.Date))
+                    .Select(x => new { x.IcazeTarixi, x.BaslamaSaati, x.BitisSaati })
+                    .ToListAsync();
+                foreach (var i in ics)
+                    icazeList.Add((i.IcazeTarixi.Date, i.BaslamaSaati, i.BitisSaati));
+            }
+            catch { }
+
+            // Təsdiqlənmiş EZAMİYYƏTLƏR — tarixi əhatə edən
+            var ezamiyyetList = new List<(DateTime Bas, DateTime Bit, TimeSpan? BasSaat)>();
+            try
+            {
+                var ezs = await _unitOfWork.Repository<EzamiyyetMuraciet>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib && x.IsciId == isciId &&
+                                x.Status == EzamiyyetStatus.Tesdiqlendi &&
+                                x.BitmeTarixi.Date >= intizamBaslangic)
+                    .Select(x => new { x.BaslamaTarixi, x.BitmeTarixi, x.BaslamaSaati })
+                    .ToListAsync();
+                foreach (var e in ezs)
+                    ezamiyyetList.Add((e.BaslamaTarixi.Date, e.BitmeTarixi.Date, e.BaslamaSaati));
+            }
+            catch { }
+
+            // Per-record erkən çıxış (HR GetByTarix ilə eyni düstur)
+            foreach (var x in intizamResult)
+            {
+                if (!x.CixisVaxti.HasValue) continue;
+                if (x.Status == DavamiyyetStatus.Icazeli) continue;
+                if (x.Status == DavamiyyetStatus.Ezamiyyet) continue;
+                if (erkenIcazeDates.Contains(x.Tarix.Date)) continue;
+                var gunCixis = bayramDict.TryGetValue(x.Tarix.Date, out var bv) ? bv : standartCixis;
+                var hedd = elanDict.TryGetValue(x.Tarix.Date, out var ev) ? ev : gunCixis - tezCixmaTolerans;
+                var cixisTod = x.CixisVaxti.Value.TimeOfDay;
+                if (cixisTod >= hedd) continue;   // erkən deyil
+
+                // Təsdiqlənmiş saat icazəsi (günün sonunu örtən) və ya ezamiyyət bağışlayır
+                bool icazeOrtuyur = icazeList.Any(i => i.Tarix == x.Tarix.Date &&
+                    i.Bit >= hedd && cixisTod >= i.Bas - tezCixmaTolerans);
+                bool ezamiyyetOrtuyur = ezamiyyetList.Any(e => e.Bas <= x.Tarix.Date && e.Bit >= x.Tarix.Date &&
+                    (e.BasSaat == null || cixisTod >= e.BasSaat.Value - tezCixmaTolerans));
+                if (icazeOrtuyur || ezamiyyetOrtuyur) continue;
+
+                // Əlil işçi qısaldılmış Cümə günü net ≥4 saat (240 dəq) işləyibsə erkən çıxış bağışlanır
+                if (isElil && EmekRejimiHelper.ElilQisaldilmisGun(x.Tarix.Date, elilBayramSet))
+                {
+                    int netDeq = 0;
+                    if (x.GirisVaxti.HasValue && x.CixisVaxti.HasValue)
+                    {
+                        netDeq = (int)(x.CixisVaxti.Value - x.GirisVaxti.Value).TotalMinutes;
+                        if (x.CixisVaxti.Value.TimeOfDay > naharBitis && x.GirisVaxti.Value.TimeOfDay < naharBaslama)
+                            netDeq -= ip.NaharMuddetDeqiqe;
+                        netDeq = Math.Max(0, netDeq);
+                    }
+                    if (netDeq >= 240) continue;
+                }
+
+                netice.TezCixanIds.Add(x.Id);
+            }
+
+            // Təsdiqlənmiş məzuniyyət günləri — İcazəli sayğacından çıxılır (HR məntiqi)
+            if (records.Any())
+            {
+                try
+                {
+                    var minTarix = records.Min(x => x.Tarix.Date);
+                    var maxTarix = records.Max(x => x.Tarix.Date);
+                    var mezuniyyetler = await _unitOfWork.Repository<Mezuniyyet>()
+                        .Query().AsNoTracking()
+                        .Where(x => !x.Silinib && x.IsciId == isciId &&
+                                    x.Status == MezuniyyetStatus.Tesdiqlenib &&
+                                    x.BaslamaTarixi.Date <= maxTarix &&
+                                    x.BitmeTarixi.Date >= minTarix)
+                        .Select(x => new { x.BaslamaTarixi, x.BitmeTarixi })
+                        .ToListAsync();
+
+                    foreach (var x in records)
+                    {
+                        if (x.Status != DavamiyyetStatus.Icazeli) continue;
+                        var d = x.Tarix.Date;
+                        if (mezuniyyetler.Any(m => d >= m.BaslamaTarixi.Date && d <= m.BitmeTarixi.Date))
+                            netice.MezuniyyetIcazeliIds.Add(x.Id);
+                    }
+                }
+                catch { }
+            }
+
+            netice.Stats = new DavamiyyetStatlar
+            {
+                Isde      = records.Count(x => x.Status == DavamiyyetStatus.Isde),
+                Gecikme   = records.Count(x => x.Status == DavamiyyetStatus.Gecikme),
+                Qayib     = records.Count(x => x.Status == DavamiyyetStatus.Qayib),
+                Icazeli   = records.Count(x => x.Status == DavamiyyetStatus.Icazeli && !netice.MezuniyyetIcazeliIds.Contains(x.Id)),
+                Xestelik  = records.Count(x => x.Status == DavamiyyetStatus.Xestelik),
+                Ezamiyyet = records.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet),
+                TezCixan  = netice.TezCixanIds.Count,
+                CixisYox  = intizamResult.Count(x => x.GirisVaxti.HasValue && !x.CixisVaxti.HasValue),
+                Cemi      = records.Count
+            };
+
+            return netice;
+        }
+
+        private class DavamiyyetHesablamaNeticesi
+        {
+            public DavamiyyetStatlar Stats { get; set; } = new();
+            public HashSet<int> TezCixanIds { get; set; } = new();
+            public HashSet<int> MezuniyyetIcazeliIds { get; set; } = new();
+        }
+    }
+
+    // İlk yükləmə (ViewBag) və GetMyRecords (JSON) üçün ümumi statistika konteyneri
+    public class DavamiyyetStatlar
+    {
+        public int Isde { get; set; }
+        public int Gecikme { get; set; }
+        public int Qayib { get; set; }
+        public int Icazeli { get; set; }
+        public int Xestelik { get; set; }
+        public int Ezamiyyet { get; set; }
+        public int TezCixan { get; set; }
+        public int CixisYox { get; set; }
+        public int Cemi { get; set; }
     }
 }

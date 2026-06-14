@@ -7,6 +7,7 @@ namespace FinNex.Application.Services.HR
     {
         Task<IList<EzamiyyetMuracietListDto>> IsciMuracietleriAsync(int isciId);
         Task<IList<EzamiyyetMuracietListDto>> HamisiniGetirAsync(EzamiyyetFiltrDto? filtr = null);
+        Task<IList<EzamiyyetIsciIzlemeDto>> GetIsciEzamIzlemeAsync(EzamiyyetFiltrDto? filtr = null);
         Task<IList<EzamiyyetMuracietListDto>> GozleyenlerAsync();
         Task<EzamiyyetMuracietListDto?> DetayAsync(int id);
 
@@ -19,7 +20,14 @@ namespace FinNex.Application.Services.HR
             int id, bool tesdiq, string? qeyd, int rehberId);
 
         Task<(bool ok, string? error)> LegvEtAsync(int id, int isciId);
+        // Rəhbər/HR — təsdiqlənmiş ezamiyyəti ləğv edir (sahibə bağlı deyil, səbəb məcburi,
+        // keçmiş/bitmiş olmamalı). Yalnız bu gün və gələcək.
+        Task<(bool ok, string? error)> RehberHrLegvEtAsync(int id, int legvEdenIsciId, string sebeb);
         Task<(bool ok, string? error)> GeriQeydElavEtAsync(int id, int isciId, string? qeyd);
+
+        // HR əl ilə cihaz çıxış/qayıdış düzəlişi (insan faktoru — qayıtmayıb qeydləri)
+        Task<(bool ok, string? error)> CihazQayidisDuzeltAsync(
+            int id, DateTime? cixisVaxt, DateTime? qayidisVaxt);
 
         Task<IList<EzamiyyetMekanListDto>> MekanlarAsync();
         Task<EzamiyyetMekan?> YeniMekanYaratAsync(string ad);

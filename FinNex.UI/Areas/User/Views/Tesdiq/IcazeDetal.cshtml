@@ -212,18 +212,10 @@
                     </div>
                     }
 
-                    @* Step 3: HR — yalnız bu addımdan keçibsə göstər *@
+                    @* HR addımı təsdiq zəncirindən çıxarıldı — rəhbər son təsdiqdir.
+                       Yalnız köhnə qeydlər (HR təsdiq/imtina qeydi olanlar) üçün göstərilir. *@
                     @{
-                        // HR addımı: HR qeydi var, və ya status HrTesdiqinde, ya da addım hələ qabaq mərhələdədir
-                        bool hrAddimi = Model.HrTesdiq.HasValue
-                            || Model.Status == (int)FinNex.Domain.Entities.HR.MezuniyyetStatus.HrTesdiqinde
-                            || Model.Status < (int)FinNex.Domain.Entities.HR.MezuniyyetStatus.HrTesdiqinde;
-                        // Tesdiqlenib statusunda olub HR qeydi yoxdursa atlandı (HR özü muraciet edib)
-                        if (Model.Status == (int)FinNex.Domain.Entities.HR.MezuniyyetStatus.Tesdiqlenib
-                            && !Model.HrTesdiq.HasValue)
-                        {
-                            hrAddimi = false;
-                        }
+                        bool hrAddimi = Model.HrTesdiq.HasValue;
 
                         // Görünən addım sayını hesabla — HR-ın nömrəsi düzgün dursun
                         int hrNo = 1;
@@ -318,8 +310,15 @@
                             int eH = eDeq / 60; int eM = eDeq % 60;
 
                             <div style="margin:14px 0;padding:12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px">
+                                @if (Model.NaharNezereAlinmasin)
+                                {
+                                    <div style="font-size:12px;color:#92400e;background:#fef3c7;padding:7px 10px;border-radius:6px;margin-bottom:10px;font-weight:600">
+                                        ⚠ İşçi müraciətdə <strong>nahara çıxmadığını</strong> qeyd edib — nahar icazəyə qatılıb.
+                                    </div>
+                                }
                                 <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:13px;color:#374151">
                                     <input type="checkbox" name="naharNezereAlinmasin" id="naharCheck" value="true"
+                                           checked="@(Model.NaharNezereAlinmasin ? "checked" : null)"
                                            style="width:15px;height:15px;margin-top:2px;accent-color:#0369a1;flex-shrink:0" />
                                     <span>
                                         <strong>Naharı nəzərə alma</strong>
@@ -352,6 +351,15 @@
                                 0 = tam adi icazə. Bu rəqəm təsdiqləndikdən sonra HR tərəfindən jetonlardan tutulur.
                             </small>
                         </div>
+
+                        <label style="display:flex;align-items:center;gap:8px;margin:6px 0 12px;font-size:13px;color:#374151;cursor:pointer">
+                            <input type="checkbox" name="birdefelik" value="true"
+                                   style="width:16px;height:16px;accent-color:#e8b84b" />
+                            <span>
+                                <strong>Birdəfəlik çıxış</strong>
+                                <span style="color:#8a93a8;font-size:11px;display:block">İşçi qayıtmayacaq — faktiki müddət hesablanmayacaq</span>
+                            </span>
+                        </label>
 
                         <script>
                         (function(){

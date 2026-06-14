@@ -647,7 +647,7 @@
 
                     var hrDavSubActive = (currentArea == "HR" && currentController is "Davamiyyet" or "BayramGunu" or "IsciStaji" or "Tabel")
                                       || (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye");
-                    var hrMezSubActive = currentArea == "HR" && currentController is "Mezuniyyet" or "MezuniyyetBalans" or "Xestelik" or "Ezamiyyet";
+                    var hrMezSubActive = currentArea == "HR" && currentController is "Mezuniyyet" or "MezuniyyetBalans" or "Xestelik" or "Ezamiyyet" or "Emr";
                     <div class="fn-nav-g @(hrDMActive ? "open" : "")">
                         <button type="button" class="fn-nav-g-head">
                             <span>Davamiyyət & Məzuniyyət</span>
@@ -722,13 +722,21 @@
                                        class="fn-nav-item @(currentArea == "HR" && currentController == "MezuniyyetBalans" ? "active" : "")">
                                         <i class="bi bi-bar-chart"></i> Məzuniyyət Balansı
                                     </a>
+                                    <a asp-area="HR" asp-controller="Kompensasiya" asp-action="Index"
+                                       class="fn-nav-item @(currentArea == "HR" && currentController == "Kompensasiya" ? "active" : "")">
+                                        <i class="bi bi-cash-coin"></i> Məzuniyyət Kompensasiyası
+                                    </a>
                                     <a asp-area="HR" asp-controller="Xestelik" asp-action="Index"
                                        class="fn-nav-item @(currentArea == "HR" && currentController == "Xestelik" ? "active" : "")">
                                         <i class="bi bi-heart-pulse"></i> Xəstəlik
                                     </a>
-                                    <a asp-area="HR" asp-controller="Ezamiyyet" asp-action="Index"
+                                    <a asp-area="HR" asp-controller="Ezamiyyet" asp-action="IsciIzleme"
                                        class="fn-nav-item @(currentArea == "HR" && currentController == "Ezamiyyet" ? "active" : "")">
                                         <i class="bi bi-briefcase-fill"></i> Ezamiyyət İzləmə
+                                    </a>
+                                    <a asp-area="HR" asp-controller="Emr" asp-action="Index"
+                                       class="fn-nav-item @(currentArea == "HR" && currentController == "Emr" ? "active" : "")">
+                                        <i class="bi bi-hash"></i> Əmr Sayğacları
                                     </a>
                                 </div>
                             </div>
@@ -808,7 +816,8 @@
             case "muhasibat":
                 {
                     var mhMaasActive = currentController is "Maas" or "MezuniyyetOdenis" or "IsciAyliqQazanc" or "AyliqElave"
-                                       || (currentController == "Avans" && currentArea == "HR");
+                                       || (currentController == "Avans" && currentArea == "HR")
+                                       || (currentController == "Muhasibat" && currentArea == "HR");
                     var mhParamActive = currentController is "MaasParametri" or "Guzest" or "IsciGuzest" or "IsciHYS";
                     var mhMaliyyeActive = currentController == "Budce" || (currentArea == "HR" && (currentController == "Xerc" || currentController == "XercKateqoriya" || currentController == "XercHesabat" || currentController == "DovriOdenis" || currentController == "GozlenilenXerc" || currentController == "MaliyyeDashboard"));
                     var mhAnyActive = mhMaasActive || mhParamActive || mhMaliyyeActive;
@@ -838,6 +847,10 @@
                             <a asp-area="HR" asp-controller="Avans" asp-action="Index"
                                class="fn-nav-item @(currentController == "Avans" && currentArea == "HR" ? "active" : "")">
                                 <i class="bi bi-cash-coin"></i> Avans Müraciətləri
+                            </a>
+                            <a asp-area="HR" asp-controller="Muhasibat" asp-action="Hesablar"
+                               class="fn-nav-item @(currentController == "Muhasibat" && currentArea == "HR" ? "active" : "")">
+                                <i class="bi bi-bank"></i> Mühasibat Hesabları
                             </a>
                         </div>
                     </div>

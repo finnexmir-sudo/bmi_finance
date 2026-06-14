@@ -126,6 +126,30 @@ public class ADMSController : Controller
 
             var tarix = vaxt.Date;
 
+            // Xam cihaz oxumasını saxla — BÜTÜN punch-lar (icazə/ezamiyyət çıxış-qayıdışını
+            // sonradan, təsdiqdən sonra və qayıdan işçidə də dəqiq bərpa etmək üçün).
+            // Eyni oxuma (işçi+vaxt) təkrar gəlsə yazılmır.
+            try
+            {
+                bool oxumaVar = await _db.Set<CihazOxuma>()
+                    .AnyAsync(o => o.IsciId == isciId && o.Vaxt == vaxt);
+                if (!oxumaVar)
+                {
+                    await _db.Set<CihazOxuma>().AddAsync(new CihazOxuma
+                    {
+                        IsciId   = isciId,
+                        Vaxt     = vaxt,
+                        Nov      = nov,
+                        Girisdir = girisdir
+                    });
+                    await _db.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CihazOxuma saxlama xətası: IsciId={IsciId}, Vaxt={Vaxt}", isciId, vaxt);
+            }
+
             // İş parametrləri — gecikme toleransı + erkən çıxış
             TimeSpan standartGiris;
             TimeSpan gecikTolerans;
@@ -386,10 +410,36 @@ public class ADMSController : Controller
 
             if (cg.CixisVaxt == null)
             {
-                // İlk skan icazə başlama saatından sonradırsa çıxış say
                 var icazeBaslamaDateTime = tarix + icaze.BaslamaSaati;
-                if (vaxt >= icazeBaslamaDateTime.AddMinutes(-15))
+
+                // İşçi icazə başlanğıcından ƏVVƏL işə gəlibmi?
+                //  - Gəlibsə → indi çıxır (adi çıxış, günün ortasındakı icazə).
+                //  - Gəlməyibsə (səhər iş başlama saatından icazəli) → fiziki çıxış
+                //    YOXDUR; bu ilk oxuma çıxış deyil, icazədən QAYIDIŞ-dır.
+                var dav = await _db.Davamiyyetler
+                    .FirstOrDefaultAsync(d => d.IsciId == isciId && d.Tarix.Date == tarix);
+                bool icazedenEvvelGelib = dav != null && dav.GirisVaxti.HasValue &&
+                                          dav.GirisVaxti.Value < icazeBaslamaDateTime;
+
+                if (!icazedenEvvelGelib)
                 {
+                    // Səhər icazəli: çıxış = icazə başlanğıcı (o vaxtdan yoxdur),
+                    // ilk oxuma = qayıdış. CixisGiris tamamlanır ki, günün sonu
+                    // oxuması (işdən getmə) icazə qayıdışı kimi sayılmasın.
+                    cg.CixisVaxt = icazeBaslamaDateTime;
+                    cg.QayidisVaxt = vaxt;
+                    cg.Status = IcazeCixisGirisStatus.Tamamlandi;
+
+                    _db.Update(cg);
+                    await _db.SaveChangesAsync();
+
+                    _logger.LogInformation(
+                        "İcazə qayıdışı (səhər icazəli) qeydə alındı: IsciId={IsciId}, IcazeId={IcazeId}, Vaxt={Vaxt}",
+                        isciId, icaze.Id, vaxt);
+                }
+                else if (vaxt >= icazeBaslamaDateTime.AddMinutes(-15))
+                {
+                    // Günün ortasında icazə — işçi gəlib, indi çıxır
                     cg.CixisVaxt = vaxt;
                     cg.Status = cg.Birdefelik
                         ? IcazeCixisGirisStatus.Tamamlandi

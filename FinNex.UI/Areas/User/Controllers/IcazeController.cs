@@ -130,6 +130,7 @@ namespace FinNex.UI.Areas.User.Controllers
                 BaslamaSaati = basTs,
                 BitisSaati = bitisTs,
                 Sebeb = vm.Sebeb,
+                NaharNezereAlinmasin = vm.NaharNezereAlinmasin,
                 MuracietSahibiRehberdirmi = User.IsInRole(RoleNames.Rehber),
                 MuracietSahibiSobeReisidirmi = User.IsInRole(RoleNames.SobeReisi),
                 MuracietSahibiHrdirmi = User.IsInRole(RoleNames.HR),
@@ -204,6 +205,7 @@ namespace FinNex.UI.Areas.User.Controllers
             {
                 "cemi"   => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
                 "saat"   => isciler.OrderByDescending(x => x.TesdiqSaat).ToList(),
+                "faktiki"=> isciler.OrderByDescending(x => x.FaktikiSaat).ToList(),
                 "imtina" => isciler.OrderByDescending(x => x.ImtinaEdildiSayi).ToList(),
                 _        => isciler.OrderByDescending(x => x.CemiMuraciet).ToList(),
             };
@@ -254,6 +256,20 @@ namespace FinNex.UI.Areas.User.Controllers
             return View(result.Success ? result.Data!.ToList() : new());
         }
 
+        // ── POST /User/Icaze/CixisGirisDuzelt ── HR əl ilə düzəliş (insan faktoru) ──
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = $"{RoleNames.HR},{RoleNames.Admin}")]
+        public async Task<IActionResult> CixisGirisDuzelt(int icazeId, string? cixisVaxt, string? qayidisVaxt)
+        {
+            DateTime? cixis = DateTime.TryParse(cixisVaxt, out var c) ? c : (DateTime?)null;
+            DateTime? qayidis = DateTime.TryParse(qayidisVaxt, out var q) ? q : (DateTime?)null;
+
+            var result = await _icazeService.CixisGirisDuzeltAsync(icazeId, cixis, qayidis);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Dovriyye));
+        }
+
         // ── POST /User/Icaze/Legv ──────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -266,6 +282,19 @@ namespace FinNex.UI.Areas.User.Controllers
 
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Index));
+        }
+
+        // ── POST /User/Icaze/RehberHrLegv — Rəhbər/HR təsdiqlənmişi ləğv edir ──
+        [HttpPost]
+        [Authorize(Roles = $"{RoleNames.HR},{RoleNames.Rehber},{RoleNames.Admin}")]
+        public async Task<IActionResult> RehberHrLegv(int id, string? sebeb)
+        {
+            if (string.IsNullOrWhiteSpace(sebeb))
+                return Json(new { success = false, message = "Ləğv səbəbi mütləqdir." });
+
+            var legvEden = await GetCurrentIsciIdAsync();
+            var result = await _icazeService.RehberHrLegvEtAsync(id, legvEden ?? 0, sebeb);
+            return Json(new { success = result.Success, message = result.Message });
         }
 
         // ══ Köməkçi metodlar ══════════════════════════════════

@@ -315,6 +315,102 @@ const MaasParametri = (() => {
             .catch(() => toast('Silmə zamanı xəta baş verdi.', 'error'));
     }
 
+    // ── Gəlir Növü (konfiqurasiyalı) CRUD ──
+    const novOverlay = () => document.getElementById('mpNovModalOverlay');
+
+    function novOpenCreate() {
+        const f = document.getElementById('mpNovForm');
+        if (f) f.reset();
+        document.getElementById('mpNovId').value = '';
+        ['mpNovVergi', 'mpNovDsmf', 'mpNovIssizlik', 'mpNovItss', 'mpNovGuzest', 'mpNovMezOrt']
+            .forEach(cid => { document.getElementById(cid).checked = true; });
+        document.getElementById('mpNovVergiAzad').value = '0';
+        document.getElementById('mpNovAktivdirWrap').style.display = 'none';
+        document.getElementById('mpNovModalTitle').textContent = 'Yeni Gəlir Növü';
+        novOverlay().classList.add('mp-active');
+    }
+
+    function novOpenEdit(id) {
+        fetch(`/HR/MaasParametri/NovGetById/${id}`)
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) { toast(data.message, 'error'); return; }
+                const d = data.data;
+                document.getElementById('mpNovId').value = d.id ?? d.Id;
+                document.getElementById('mpNovAd').value = d.ad ?? d.Ad ?? '';
+                document.getElementById('mpNovVergi').checked = d.vergiyeCelb ?? d.VergiyeCelb;
+                document.getElementById('mpNovVergiAzad').value = d.gelirVergisiAzadMebleg ?? d.GelirVergisiAzadMebleg ?? 0;
+                document.getElementById('mpNovDsmf').checked = d.dsmfyeCelb ?? d.DsmfyeCelb;
+                document.getElementById('mpNovIssizlik').checked = d.issizliyeCelb ?? d.IssizliyeCelb;
+                document.getElementById('mpNovItss').checked = d.itsseCelb ?? d.ItsseCelb;
+                document.getElementById('mpNovGuzest').checked = d.guzestHeddineDaxil ?? d.GuzestHeddineDaxil;
+                document.getElementById('mpNovMezOrt').checked = d.mezuniyyetOrtalamasinaDaxil ?? d.MezuniyyetOrtalamasinaDaxil;
+                document.getElementById('mpNovProvodka').value = d.provodkaHesabAcari ?? d.ProvodkaHesabAcari ?? '';
+                document.getElementById('mpNovAktivdir').checked = d.aktivdir ?? d.Aktivdir ?? true;
+                document.getElementById('mpNovAktivdirWrap').style.display = 'flex';
+                document.getElementById('mpNovModalTitle').textContent = 'Gəlir Növünü Redaktə Et';
+                novOverlay().classList.add('mp-active');
+            })
+            .catch(() => toast('Məlumat yüklənərkən xəta baş verdi.', 'error'));
+    }
+
+    function novCloseModal() {
+        novOverlay().classList.remove('mp-active');
+    }
+
+    function novSave() {
+        const adEl = document.getElementById('mpNovAd');
+        const ad = adEl.value.trim();
+        if (!ad) { adEl.classList.add('mp-invalid'); toast('Ad boş ola bilməz.', 'error'); return; }
+        adEl.classList.remove('mp-invalid');
+
+        const id = document.getElementById('mpNovId').value;
+        const isEdit = id !== '';
+        const url = isEdit ? `/HR/MaasParametri/NovEdit/${id}` : '/HR/MaasParametri/NovCreate';
+
+        const fd = new FormData();
+        fd.append('__RequestVerificationToken', token());
+        fd.append('ad', ad);
+        fd.append('vergiyeCelb', document.getElementById('mpNovVergi').checked);
+        fd.append('gelirVergisiAzadMebleg', (document.getElementById('mpNovVergiAzad').value || '0').replace('.', ','));
+        fd.append('dsmfyeCelb', document.getElementById('mpNovDsmf').checked);
+        fd.append('issizliyeCelb', document.getElementById('mpNovIssizlik').checked);
+        fd.append('itsseCelb', document.getElementById('mpNovItss').checked);
+        fd.append('guzestHeddineDaxil', document.getElementById('mpNovGuzest').checked);
+        fd.append('mezuniyyetOrtalamasinaDaxil', document.getElementById('mpNovMezOrt').checked);
+        fd.append('provodkaHesabAcari', document.getElementById('mpNovProvodka').value);
+        if (isEdit) fd.append('aktivdir', document.getElementById('mpNovAktivdir').checked);
+
+        const btn = document.getElementById('mpNovSaveBtn');
+        btn.disabled = true;
+        fetch(url, { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                if (data.success) {
+                    toast(data.message, 'success');
+                    novCloseModal();
+                    setTimeout(() => location.reload(), 600);
+                } else {
+                    toast(data.message, 'error');
+                }
+            })
+            .catch(() => { btn.disabled = false; toast('Xəta baş verdi.', 'error'); });
+    }
+
+    function novRemove(id) {
+        if (!confirm('Bu gəlir növünü silmək istədiyinizə əminsiniz?')) return;
+        const fd = new FormData();
+        fd.append('__RequestVerificationToken', token());
+        fetch(`/HR/MaasParametri/NovDelete/${id}`, { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) { toast(data.message, 'success'); setTimeout(() => location.reload(), 600); }
+                else { toast(data.message, 'error'); }
+            })
+            .catch(() => toast('Silmə zamanı xəta baş verdi.', 'error'));
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         init();
 
@@ -334,6 +430,18 @@ const MaasParametri = (() => {
         if (pilleCancelBtn) pilleCancelBtn.addEventListener('click', pilleCloseModal);
         const pilleSaveBtn = document.getElementById('mpPilleSaveBtn');
         if (pilleSaveBtn) pilleSaveBtn.addEventListener('click', pilleSave);
+
+        // Gəlir növü buttons (may not exist on all pages)
+        const novCreateBtn = document.getElementById('mpOpenNovCreate');
+        if (novCreateBtn) novCreateBtn.addEventListener('click', novOpenCreate);
+        const novCloseBtn = document.getElementById('mpNovCloseBtn');
+        if (novCloseBtn) novCloseBtn.addEventListener('click', novCloseModal);
+        const novCancelBtn = document.getElementById('mpNovCancelBtn');
+        if (novCancelBtn) novCancelBtn.addEventListener('click', novCloseModal);
+        const novSaveBtn = document.getElementById('mpNovSaveBtn');
+        if (novSaveBtn) novSaveBtn.addEventListener('click', novSave);
+        const nOverlay = novOverlay();
+        if (nOverlay) nOverlay.addEventListener('click', e => { if (e.target === nOverlay) novCloseModal(); });
 
         // Pillə modal close on overlay/Escape
         const pOverlay = pilleOverlay();
@@ -370,8 +478,18 @@ const MaasParametri = (() => {
             if (editPille) { pilleOpenEdit(parseInt(editPille.getAttribute('data-edit-pille-id'))); return; }
             const deletePille = e.target.closest('[data-delete-pille-id]');
             if (deletePille) { pilleRemove(parseInt(deletePille.getAttribute('data-delete-pille-id'))); return; }
+
+            // Gəlir növü edit/delete
+            const editNov = e.target.closest('[data-edit-nov-id]');
+            if (editNov) { novOpenEdit(parseInt(editNov.getAttribute('data-edit-nov-id'))); return; }
+            const deleteNov = e.target.closest('[data-delete-nov-id]');
+            if (deleteNov) { novRemove(parseInt(deleteNov.getAttribute('data-delete-nov-id'))); return; }
         });
     });
 
-    return { openCreate, openEdit, closeModal, save, remove, pilleOpenCreate, pilleOpenEdit, pilleSave, pilleRemove };
+    return {
+        openCreate, openEdit, closeModal, save, remove,
+        pilleOpenCreate, pilleOpenEdit, pilleSave, pilleRemove,
+        novOpenCreate, novOpenEdit, novCloseModal, novSave, novRemove
+    };
 })();

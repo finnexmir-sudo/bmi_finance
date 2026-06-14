@@ -340,7 +340,7 @@ namespace FinNex.UI.Areas.User.Controllers
                     result = await _icazeService.SobeReisiTesdiqAsync(id, status, qeyd, tesdiqciIsciId);
                     break;
                 case "Rehber":
-                    result = await _icazeService.RehberTesdiqAsync(id, status, qeyd, tesdiqciIsciId, jetonOdenenSaat, naharNezereAlinmasin);
+                    result = await _icazeService.RehberTesdiqAsync(id, status, qeyd, tesdiqciIsciId, jetonOdenenSaat, naharNezereAlinmasin, birdefelik);
                     break;
                 case "Hr":
                     result = await _icazeService.HrTesdiqAsync(id, status, qeyd, tesdiqciIsciId, birdefelik);

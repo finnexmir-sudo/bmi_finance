@@ -60,6 +60,103 @@ namespace FinNex.Application.Services.HR
             return list.Select(Map).ToList();
         }
 
+        // Rəhbər/HR üçün işçi-qruplu izləmə: cəmi səfər, gün, faktiki saat + detay siyahısı
+        public async Task<IList<EzamiyyetIsciIzlemeDto>> GetIsciEzamIzlemeAsync(EzamiyyetFiltrDto? filtr = null)
+        {
+            // Cihaz çıxış/qayıdış vaxtlarını xam CihazOxuma punch-larından bərpa et
+            // (İcazə/Görüşdə olan, ezamiyyətdə çatışmayan mexanizm).
+            await CihazVaxtlariniBerpaEtAsync(filtr);
+
+            var list = await HamisiniGetirAsync(filtr);
+
+            return list
+                .GroupBy(x => x.IsciId)
+                .Select(g =>
+                {
+                    var ilk = g.First();
+                    var ezamlar = g.OrderByDescending(x => x.BaslamaTarixi).ToList();
+                    return new EzamiyyetIsciIzlemeDto
+                    {
+                        IsciId          = g.Key,
+                        IsciAdSoyad     = ilk.IsciTamAd,
+                        IsciSekil       = ilk.IsciSekil,
+                        SobeAdi         = string.IsNullOrEmpty(ilk.IsciSobe) ? "-" : ilk.IsciSobe!,
+                        VezifeAdi       = ilk.IsciVezife,
+                        CemiEzam        = g.Count(),
+                        TesdiqlenibSayi = g.Count(x => x.Status == EzamiyyetStatus.Tesdiqlendi),
+                        GozlemeSayi     = g.Count(x => x.Status == EzamiyyetStatus.Gozleyir),
+                        ReddSayi        = g.Count(x => x.Status == EzamiyyetStatus.Reddedildi),
+                        CemiGun         = g.Sum(x => x.GunSayi),
+                        FaktikiSaat     = ezamlar.Where(x => x.FaktikiSaat.HasValue).Sum(x => x.FaktikiSaat!.Value),
+                        SonEzamTarixi   = g.Max(x => (DateTime?)x.BaslamaTarixi),
+                        Ezamlar         = ezamlar
+                    };
+                })
+                .OrderBy(x => x.SobeAdi).ThenBy(x => x.IsciAdSoyad)
+                .ToList();
+        }
+
+        // ── Cihaz çıxış/qayıdışın xam CihazOxuma-dan bərpası ──────────
+        // İcazə/Görüşdə mövcud olan, ezamiyyətdə çatışmayan mexanizm. Təsdiqlənmiş,
+        // saatlı (qismən günlük) ezamiyyətin CihazCixisVaxti boşdursa — həmin işçinin
+        // o günkü cihaz punch-larından pəncərə (BaslamaSaati−15dəq .. BitisSaati+15dəq)
+        // içində İLK = çıxış, SON = qayıdış tutulub yazılır. Punch-lar artıq CihazOxuma-da
+        // saxlandığı üçün təsdiqdən sonra gələn punch da, keçmiş səfərlər də bərpa olunur.
+        private async Task CihazVaxtlariniBerpaEtAsync(EzamiyyetFiltrDto? filtr)
+        {
+            var bugun = DateTime.Now.Date;
+            var q = _uow.Repository<EzamiyyetMuraciet>()
+                .Query()
+                .Where(x => !x.Silinib
+                         && x.Status == EzamiyyetStatus.Tesdiqlendi
+                         && x.CihazCixisVaxti == null
+                         && x.BaslamaSaati != null                       // yalnız saatlı (qismən günlük)
+                         && x.BaslamaTarixi.Date <= bugun
+                         && x.BaslamaTarixi.Date >= bugun.AddDays(-92));  // yaxın 3 ay
+            if (filtr?.IsciId != null)
+                q = q.Where(x => x.IsciId == filtr.IsciId.Value);
+
+            var berpaLazim = await q.ToListAsync();   // tracked — saxlamaq üçün
+            if (berpaLazim.Count == 0) return;
+
+            var isciIdler = berpaLazim.Select(x => x.IsciId).Distinct().ToList();
+            var minT = berpaLazim.Min(x => x.BaslamaTarixi.Date);
+            var maxT = berpaLazim.Max(x => x.BitmeTarixi.Date);
+
+            var oxumalar = await _uow.Repository<CihazOxuma>()
+                .Query().AsNoTracking()
+                .Where(o => !o.Silinib && isciIdler.Contains(o.IsciId)
+                         && o.Vaxt.Date >= minT && o.Vaxt.Date <= maxT)
+                .Select(o => new { o.IsciId, o.Vaxt })
+                .ToListAsync();
+
+            var raw = oxumalar
+                .GroupBy(o => $"{o.IsciId}|{o.Vaxt:yyyy-MM-dd}")
+                .ToDictionary(g => g.Key, g => g.Select(p => p.Vaxt).OrderBy(v => v).ToList());
+
+            bool deyisdi = false;
+            foreach (var ez in berpaLazim)
+            {
+                var key = $"{ez.IsciId}|{ez.BaslamaTarixi:yyyy-MM-dd}";
+                if (!raw.TryGetValue(key, out var punchlar)) continue;
+
+                var alt = (ez.BaslamaSaati ?? TimeSpan.Zero) - TimeSpan.FromMinutes(15);
+                var ust = (ez.BitisSaati ?? new TimeSpan(23, 59, 59)) + TimeSpan.FromMinutes(15);
+                var pencere = punchlar.Where(v => v.TimeOfDay >= alt && v.TimeOfDay <= ust).ToList();
+                if (pencere.Count == 0) continue;
+
+                ez.CihazCixisVaxti = pencere[0];                                    // ilk = çıxış
+                if (pencere.Count > 1 && pencere[^1] > pencere[0].AddMinutes(5))
+                    ez.CihazQayidisVaxti = pencere[^1];                             // son = qayıdış
+                ez.YenilenmeTarixi = DateTime.Now;
+                await _uow.Repository<EzamiyyetMuraciet>().YenileAsync(ez);
+                deyisdi = true;
+            }
+
+            if (deyisdi)
+                await _uow.YaddaSaxlaAsync();
+        }
+
         public async Task<IList<EzamiyyetMuracietListDto>> GozleyenlerAsync()
         {
             var list = await _uow.Repository<EzamiyyetMuraciet>()
@@ -193,6 +290,33 @@ namespace FinNex.Application.Services.HR
             return (true, null);
         }
 
+        // Rəhbər/HR — təsdiqlənmiş ezamiyyəti ləğv edir (sahibə bağlı deyil).
+        // Səbəb məcburi; yalnız bu gün/gələcək (bitmiş ezamiyyət ləğv olunmur).
+        public async Task<(bool ok, string? error)> RehberHrLegvEtAsync(int id, int legvEdenIsciId, string sebeb)
+        {
+            if (string.IsNullOrWhiteSpace(sebeb))
+                return (false, "Ləğv səbəbi mütləqdir.");
+
+            var entity = await _uow.Repository<EzamiyyetMuraciet>()
+                .Query()
+                .FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
+            if (entity == null)
+                return (false, "Müraciət tapılmadı.");
+            if (entity.Status != EzamiyyetStatus.Tesdiqlendi)
+                return (false, "Yalnız təsdiqlənmiş ezamiyyət ləğv edilə bilər.");
+            if (entity.BitmeTarixi.Date < DateTime.Today)
+                return (false, "Keçmiş (bitmiş) ezamiyyəti ləğv etmək mümkün deyil.");
+
+            entity.Status          = EzamiyyetStatus.Legvedildi;
+            entity.Silinib         = true;
+            entity.SilinmeTarixi   = DateTime.Now;
+            entity.YenilenmeTarixi = DateTime.Now;
+            entity.GeriDonusQeydi  = $"Ləğv (Rəhbər/HR): {sebeb.Trim()}";
+            await _uow.Repository<EzamiyyetMuraciet>().YenileAsync(entity);
+            await _uow.YaddaSaxlaAsync();
+            return (true, null);
+        }
+
         // ── Geri dönüş notu ───────────────────────────────────
 
         public async Task<(bool ok, string? error)> GeriQeydElavEtAsync(int id, int isciId, string? qeyd)
@@ -209,6 +333,32 @@ namespace FinNex.Application.Services.HR
 
             entity.GeriDonusQeydi  = qeyd?.Trim();
             entity.YenilenmeTarixi = DateTime.Now;
+            await _uow.Repository<EzamiyyetMuraciet>().YenileAsync(entity);
+            await _uow.YaddaSaxlaAsync();
+            return (true, null);
+        }
+
+        // ── HR əl ilə cihaz çıxış/qayıdış düzəlişi ────────────
+        // İnsan faktoru: işçi qayıdışını cihazda qeyd etmədikdə və ya cihaz
+        // səhər icazəsini yanlış oxuduqda HR çıxış/qayıdış vaxtını əl ilə düzəldir.
+        // Boş (null) ötürülən sahə təmizlənir.
+        public async Task<(bool ok, string? error)> CihazQayidisDuzeltAsync(
+            int id, DateTime? cixisVaxt, DateTime? qayidisVaxt)
+        {
+            var entity = await _uow.Repository<EzamiyyetMuraciet>()
+                .Query()
+                .FirstOrDefaultAsync(x => x.Id == id && !x.Silinib);
+            if (entity == null)
+                return (false, "Müraciət tapılmadı.");
+            if (entity.Status != EzamiyyetStatus.Tesdiqlendi)
+                return (false, "Yalnız təsdiqlənmiş ezamiyyətin cihaz vaxtı düzəldilə bilər.");
+            if (cixisVaxt.HasValue && qayidisVaxt.HasValue && qayidisVaxt.Value < cixisVaxt.Value)
+                return (false, "Qayıdış vaxtı çıxış vaxtından əvvəl ola bilməz.");
+
+            entity.CihazCixisVaxti   = cixisVaxt;
+            entity.CihazQayidisVaxti = qayidisVaxt;
+            entity.YenilenmeTarixi   = DateTime.Now;
+
             await _uow.Repository<EzamiyyetMuraciet>().YenileAsync(entity);
             await _uow.YaddaSaxlaAsync();
             return (true, null);
@@ -333,6 +483,7 @@ namespace FinNex.Application.Services.HR
                 IsciId              = x.IsciId,
                 IsciTamAd           = x.Isci?.TamAd ?? "",
                 IsciVezife          = teyinat?.Vezife?.Ad,
+                IsciSobe            = teyinat?.Departament?.Ad,
                 Baslig              = x.Baslig,
                 MekanId             = x.MekanId,
                 MekanAd             = x.Mekan?.Ad ?? "",

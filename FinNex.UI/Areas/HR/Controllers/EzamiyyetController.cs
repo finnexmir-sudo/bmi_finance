@@ -6,9 +6,11 @@ using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
 using FinNex.Domain.Entities.Structure;
 using FinNex.Domain.Interfaces;
+using FinNex.UI.Areas.HR.ViewModels.Ezamiyyet;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinNex.UI.Areas.HR.Controllers
@@ -78,8 +80,52 @@ namespace FinNex.UI.Areas.HR.Controllers
                 x.RehberQeydi, x.GeriDonusQeydi,
                 cihazCixisVaxti   = x.CihazCixisVaxti?.ToString("dd.MM.yyyy HH:mm"),
                 cihazQayidisVaxti = x.CihazQayidisVaxti?.ToString("dd.MM.yyyy HH:mm"),
+                cihazCixisIso     = x.CihazCixisVaxti?.ToString("yyyy-MM-ddTHH:mm"),
+                cihazQayidisIso   = x.CihazQayidisVaxti?.ToString("yyyy-MM-ddTHH:mm"),
+                baslamaIso        = x.BaslamaTarixi.ToString("yyyy-MM-dd"),
+                bitmeIso          = x.BitmeTarixi.ToString("yyyy-MM-dd"),
                 yaradilmaTarixi   = x.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm")
             }));
+        }
+
+        // ── İşçi-qruplu izləmə (rəhbər/HR baxışı: cəmi, gün, faktiki saat + detay) ──
+        public async Task<IActionResult> IsciIzleme(
+            DateTime? tarixFrom, DateTime? tarixTo, int? departamentId,
+            string? axtaris, int? status, string? sirala)
+        {
+            var filtr = new EzamiyyetFiltrDto
+            {
+                BaslangicTarix = tarixFrom,
+                SonTarix       = tarixTo,
+                DepartamentId  = departamentId,
+                IsciAd         = string.IsNullOrWhiteSpace(axtaris) ? null : axtaris.Trim(),
+                Status         = status.HasValue ? (EzamiyyetStatus?)status.Value : null
+            };
+
+            var isciler = (await _service.GetIsciEzamIzlemeAsync(filtr)).ToList();
+
+            var s = string.IsNullOrEmpty(sirala) ? "cemi" : sirala;
+            isciler = s switch
+            {
+                "gun"     => isciler.OrderByDescending(x => x.CemiGun).ToList(),
+                "faktiki" => isciler.OrderByDescending(x => x.FaktikiSaat).ToList(),
+                _         => isciler.OrderByDescending(x => x.CemiEzam).ToList(),
+            };
+
+            var departamentler = await _uow.Repository<Departament>()
+                .Query().AsNoTracking().Where(x => !x.Silinib).OrderBy(x => x.Ad).ToListAsync();
+
+            var vm = new EzamiyyetIzlemeVM
+            {
+                Isciler = isciler,
+                Filtr   = filtr,
+                Departamentler = departamentler
+                    .Select(d => new SelectListItem(d.Ad, d.Id.ToString()))
+                    .Prepend(new SelectListItem("Bütün şöbələr", ""))
+                    .ToList()
+            };
+            ViewData["Sirala"] = s;
+            return View(vm);
         }
 
         // ── Rəhbər təsdiq ────────────────────────────────────
@@ -111,6 +157,45 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
 
             return Json(new { success = ok, message = error });
+        }
+
+        // ── Rəhbər/HR — təsdiqlənmiş ezamiyyəti ləğv et (səbəb məcburi) ──
+        [HttpPost]
+        [Authorize(Roles = $"{RoleNames.Admin},{RoleNames.HR},{RoleNames.Rehber}")]
+        public async Task<IActionResult> LegvEt(int id, string? sebeb)
+        {
+            if (string.IsNullOrWhiteSpace(sebeb))
+                return Json(new { success = false, message = "Ləğv səbəbi mütləqdir." });
+
+            var legvEden = await GetIsciIdAsync();
+            var detay = await _service.DetayAsync(id);
+
+            var (ok, error) = await _service.RehberHrLegvEtAsync(id, legvEden ?? 0, sebeb);
+
+            if (ok && detay != null)
+            {
+                await _bildirisRouter.NotifyIsciAsync(
+                    detay.IsciId,
+                    BildirisNovu.EzamiyyetImtina,
+                    "Ezamiyyət ləğv edildi",
+                    $"Ezamiyyət müraciətiniz ({detay.BaslamaTarixi:dd.MM.yyyy} – {detay.BitmeTarixi:dd.MM.yyyy}) Rəhbər/HR tərəfindən ləğv edildi. Səbəb: {sebeb}",
+                    redirectUrl: Url.Action("Index", "EzamiyyetMuraciet", new { area = "User" }));
+            }
+
+            return Json(new { success = ok, message = ok ? "Ezamiyyət ləğv edildi." : error });
+        }
+
+        // ── HR əl ilə cihaz çıxış/qayıdış düzəlişi (insan faktoru) ──
+        // "qayıtmayıb" və ya səhər icazəsi yanlış oxunan qeydləri HR əl ilə düzəldir.
+        [HttpPost]
+        [Authorize(Roles = $"{RoleNames.Admin},{RoleNames.HR}")]
+        public async Task<IActionResult> CihazQayidisDuzelt([FromBody] EzamCihazDuzeltDto dto)
+        {
+            DateTime? cixis   = DateTime.TryParse(dto.CixisVaxt,   out var c) ? c : (DateTime?)null;
+            DateTime? qayidis = DateTime.TryParse(dto.QayidisVaxt, out var q) ? q : (DateTime?)null;
+
+            var (ok, error) = await _service.CihazQayidisDuzeltAsync(dto.Id, cixis, qayidis);
+            return Json(new { success = ok, message = ok ? "Cihaz çıxış/qayıdış vaxtı yeniləndi." : error });
         }
 
         // ── Statistika ────────────────────────────────────────
@@ -190,5 +275,12 @@ namespace FinNex.UI.Areas.HR.Controllers
         public int    Id     { get; set; }
         public bool   Tesdiq { get; set; }
         public string? Qeyd  { get; set; }
+    }
+
+    public class EzamCihazDuzeltDto
+    {
+        public int     Id          { get; set; }
+        public string? CixisVaxt   { get; set; }
+        public string? QayidisVaxt { get; set; }
     }
 }

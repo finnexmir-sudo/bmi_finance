@@ -19,8 +19,12 @@ namespace FinNex.Application.DTOs.HR.Icaze
         [Required(ErrorMessage = "Bitmə saatı seçilməlidir")]
         public TimeSpan BitisSaati { get; set; }
 
+        [Required(ErrorMessage = "Səbəb mütləq qeyd edilməlidir")]
         [MaxLength(500, ErrorMessage = "Səbəb 500 simvoldan çox ola bilməz")]
         public string? Sebeb { get; set; }
+
+        // Nahar fasiləsini icazəyə qatır (işçi nahara çıxmır) — max 3 saat 45 dəqiqəyə imkan verir
+        public bool NaharNezereAlinmasin { get; set; } = false;
 
         // Rol əsaslı workflow — controller tərəfindən doldurulur
         public bool MuracietSahibiRehberdirmi { get; set; }
@@ -101,6 +105,20 @@ namespace FinNex.Application.DTOs.HR.Icaze
             IcazeCixisGirisStatus.LegvEdildi => "Ləğv edildi",
             _                                 => "—"
         };
+
+        // Cihaz çıxış/qayıdışı icazə pəncərəsinə uyğun gəlmirsə şübhəlidir (insan
+        // faktoru — təsadüfi tanınma və s.). HR yoxlamalıdır.
+        public bool CixisQayidisAnomaliya
+        {
+            get
+            {
+                var basDt = IcazeTarixi.Date + BaslamaSaati;
+                var bitDt = IcazeTarixi.Date + BitisSaati;
+                if (CixisVaxt.HasValue && CixisVaxt.Value < basDt.AddMinutes(-30)) return true;
+                if (!Birdefelik && QayidisVaxt.HasValue && QayidisVaxt.Value > bitDt.AddMinutes(60)) return true;
+                return false;
+            }
+        }
     }
 
     // ── Detallı baxış üçün ──────────────────────────────
@@ -142,5 +160,19 @@ namespace FinNex.Application.DTOs.HR.Icaze
             IcazeCixisGirisStatus.LegvEdildi => "Ləğv edildi",
             _                                 => "—"
         };
+
+        // Cihaz çıxış/qayıdışı icazə pəncərəsinə uyğun gəlmirsə şübhəlidir (insan
+        // faktoru — təsadüfi tanınma və s.). HR yoxlamalıdır.
+        public bool CixisQayidisAnomaliya
+        {
+            get
+            {
+                var basDt = IcazeTarixi.Date + BaslamaSaati;
+                var bitDt = IcazeTarixi.Date + BitisSaati;
+                if (CixisVaxt.HasValue && CixisVaxt.Value < basDt.AddMinutes(-30)) return true;
+                if (!Birdefelik && QayidisVaxt.HasValue && QayidisVaxt.Value > bitDt.AddMinutes(60)) return true;
+                return false;
+            }
+        }
     }
 }

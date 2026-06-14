@@ -1,0 +1,96 @@
+@using FinNex.Domain.Entities.HR
+@model IList<MuhasibatHesabi>
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Mühasibat Hesabları";
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Mühasibat Hesabları</div>
+            <div class="fn-page-sub">Əməliyyat yazılışı hesabları (açar→hesab) — avans Debet hesabı və gələcəkdə maaş hesabları</div>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px">
+            <i class="bi bi-check2-circle"></i> @TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div style="background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["Error"]
+        </div>
+    }
+
+    @* ── Mövcud hesablar ── *@
+    <div class="fn-card" style="padding:0;overflow:hidden;margin-bottom:18px">
+        <div style="padding:14px 18px;border-bottom:1px solid #eef2f7;font-weight:700;color:#0f172a;font-size:14px">Hesablar</div>
+        @if (!Model.Any())
+        {
+            <div style="padding:22px;text-align:center;color:#94a3b8;font-size:13px">Hesab yoxdur — aşağıdan əlavə edin.</div>
+        }
+        else
+        {
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead>
+                    <tr style="background:#f8fafc;color:#475569;text-align:left">
+                        <th style="padding:10px 18px">Açar</th>
+                        <th style="padding:10px 18px">Ad</th>
+                        <th style="padding:10px 18px">Hesab nömrəsi</th>
+                        <th style="padding:10px 18px">Aktiv</th>
+                        <th style="padding:10px 18px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var h in Model)
+                    {
+                        <tr style="border-top:1px solid #f1f5f9">
+                            <form asp-action="HesabSaxla" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="acar" value="@h.Acar" />
+                                <td style="padding:8px 18px;font-family:monospace;font-weight:700;color:#1e40af">@h.Acar</td>
+                                <td style="padding:8px 18px"><input name="ad" value="@h.Ad" style="width:100%;min-width:160px;padding:6px 9px;border:1px solid #d7dee8;border-radius:6px" /></td>
+                                <td style="padding:8px 18px"><input name="hesabNomresi" value="@h.HesabNomresi" style="width:100%;min-width:200px;padding:6px 9px;border:1px solid #d7dee8;border-radius:6px;font-family:monospace" /></td>
+                                <td style="padding:8px 18px">
+                                    <input type="hidden" name="aktiv" value="false" />
+                                    <input type="checkbox" name="aktiv" value="true" @(h.Aktiv ? "checked" : "") />
+                                </td>
+                                <td style="padding:8px 18px">
+                                    <button type="submit" class="fn-btn fn-btn--primary" style="padding:6px 12px"><i class="bi bi-check-circle"></i> Saxla</button>
+                                </td>
+                            </form>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    @* ── Yeni hesab əlavə et ── *@
+    <div class="fn-card" style="padding:18px;max-width:680px">
+        <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:12px"><i class="bi bi-plus-circle"></i> Yeni hesab</div>
+        <form asp-action="HesabSaxla" method="post">
+            @Html.AntiForgeryToken()
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+                <div style="flex:1;min-width:150px">
+                    <label class="fn-label">Açar (məs. MaasDebet)</label>
+                    <input name="acar" class="fn-input" placeholder="AvansDebet" />
+                </div>
+                <div style="flex:1;min-width:150px">
+                    <label class="fn-label">Ad</label>
+                    <input name="ad" class="fn-input" placeholder="İzah" />
+                </div>
+                <div style="flex:2;min-width:200px">
+                    <label class="fn-label">Hesab nömrəsi</label>
+                    <input name="hesabNomresi" class="fn-input" style="font-family:monospace" placeholder="25052000010000300000" />
+                </div>
+                <input type="hidden" name="aktiv" value="true" />
+                <button type="submit" class="fn-btn fn-btn--primary"><i class="bi bi-plus-lg"></i> Əlavə et</button>
+            </div>
+        </form>
+    </div>
+</div>
