@@ -304,12 +304,21 @@
         .mi-zamin-card { border:1.5px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:14px; background:#fafbff; }
         .mi-zamin-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
         .mi-zamin-head strong { font-size:14px; color:#0f172a; }
-        .mi-zamin-add { border:1.5px dashed #c7d2fe; border-radius:10px; padding:14px; background:#f5f7ff; }
+        .mi-zamin-id { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+        .mi-zamin-chip { font-size:12px; color:#475569; background:#fff; border:1px solid #e9ecf5; border-radius:6px; padding:2px 8px; }
+        .mi-zamin-chip b { color:#64748b; font-weight:600; }
     </style>
     <div class="mi-info-card" style="margin-top:20px">
         <div class="mi-info-title" style="display:flex;justify-content:space-between;align-items:center">
             <span>Zaminlər — İcra subyektləri</span>
-            <span class="mi-merhele-count">@Model.Zaminler.Count zamin</span>
+            <span style="display:flex;gap:10px;align-items:center">
+                <span class="mi-merhele-count">@Model.Zaminler.Count zamin</span>
+                <form asp-action="ZaminleriYukle" method="post" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ishId" value="@Model.Id" />
+                    <button type="submit" class="mi-btn mi-btn--ghost mi-btn--sm"><i class="bi bi-cloud-download"></i> Oracle-dan zaminləri çək</button>
+                </form>
+            </span>
         </div>
 
         @foreach (var z in Model.Zaminler)
@@ -324,18 +333,19 @@
                         <button type="submit" class="mi-btn-icon mi-btn-icon--danger" title="Sil"><i class="bi bi-trash"></i></button>
                     </form>
                 </div>
+                <div class="mi-zamin-id">
+                    @if (!string.IsNullOrWhiteSpace(z.Fin)) { <span class="mi-zamin-chip"><b>FİN:</b> @z.Fin</span> }
+                    @if (!string.IsNullOrWhiteSpace(z.DogumTarixi)) { <span class="mi-zamin-chip"><b>Doğum:</b> @z.DogumTarixi</span> }
+                    @if (!string.IsNullOrWhiteSpace(z.Telefon)) { <span class="mi-zamin-chip"><b>Tel:</b> @z.Telefon</span> }
+                    @if (!string.IsNullOrWhiteSpace(z.Unvan)) { <span class="mi-zamin-chip"><b>Ünvan:</b> @z.Unvan</span> }
+                </div>
                 <form asp-action="ZaminYenile" method="post">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="Id" value="@z.Id" />
                     <input type="hidden" name="MehkemeIsiId" value="@Model.Id" />
                     <div class="mi-form-grid mi-form-grid--3">
-                        <div class="mi-form-group"><label class="mi-lbl">Ad Soyad</label><input name="Ad" class="mi-input" value="@z.Ad" /></div>
-                        <div class="mi-form-group"><label class="mi-lbl">FİN</label><input name="Fin" class="mi-input" value="@z.Fin" /></div>
-                        <div class="mi-form-group"><label class="mi-lbl">Doğum tarixi</label><input name="DogumTarixi" class="mi-input" value="@z.DogumTarixi" placeholder="gg.aa.iiii" /></div>
-                        <div class="mi-form-group"><label class="mi-lbl">Telefon</label><input name="Telefon" class="mi-input" value="@z.Telefon" /></div>
-                        <div class="mi-form-group"><label class="mi-lbl">Ünvan</label><input name="Unvan" class="mi-input" value="@z.Unvan" /></div>
-                        <div class="mi-form-group"><label class="mi-lbl">İş yeri</label><input name="IsYeri" class="mi-input" value="@z.IsYeri" /></div>
                         <div class="mi-form-group"><label class="mi-lbl">Əmək haqqına tutulma</label><input name="EmekHaqqiTutulma" class="mi-input" value="@z.EmekHaqqiTutulma" /></div>
+                        <div class="mi-form-group"><label class="mi-lbl">İş yeri</label><input name="IsYeri" class="mi-input" value="@z.IsYeri" /></div>
                         <div class="mi-form-group"><label class="mi-lbl">Əmlaka həbs</label><input name="EmlakaHebs" class="mi-input" value="@z.EmlakaHebs" /></div>
                         <div class="mi-form-group"><label class="mi-lbl">Stop</label><input name="Stop" class="mi-input" value="@z.Stop" /></div>
                         <div class="mi-form-group"><label class="mi-lbl">İcra məmuru</label><input name="IcraMemuru" class="mi-input" value="@z.IcraMemuru" /></div>
@@ -344,36 +354,18 @@
                         <div class="mi-form-group mi-form-group--full"><label class="mi-lbl">İcraçı son işlər</label><input name="IcraSonIsler" class="mi-input" value="@z.IcraSonIsler" /></div>
                         <div class="mi-form-group mi-form-group--full"><label class="mi-lbl">İcra qeydi</label><textarea name="IcraQeyd" class="mi-textarea" rows="2">@z.IcraQeyd</textarea></div>
                     </div>
-                    <button type="submit" class="mi-btn mi-btn--primary mi-btn--sm"><i class="bi bi-check-lg"></i> Saxla</button>
+                    <button type="submit" class="mi-btn mi-btn--primary mi-btn--sm"><i class="bi bi-check-lg"></i> İcra məlumatını saxla</button>
                 </form>
             </div>
         }
 
         @if (!Model.Zaminler.Any())
         {
-            <div class="mi-empty" style="padding:14px 0"><i class="bi bi-people"></i><div>Hələ zamin əlavə edilməyib</div></div>
+            <div class="mi-empty" style="padding:18px 0">
+                <i class="bi bi-people"></i>
+                <div>Zamin yoxdur — yuxarıdakı <b>"Oracle-dan zaminləri çək"</b> düyməsi ilə yüklə</div>
+            </div>
         }
-
-        <!-- Yeni zamin əlavə et -->
-        <div class="mi-zamin-add">
-            <div class="mi-info-title" style="margin-bottom:10px">Yeni zamin əlavə et</div>
-            <form asp-action="ZaminElave" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="MehkemeIsiId" value="@Model.Id" />
-                <div class="mi-form-grid mi-form-grid--3">
-                    <div class="mi-form-group"><label class="mi-lbl">Ad Soyad *</label><input name="Ad" class="mi-input" required /></div>
-                    <div class="mi-form-group"><label class="mi-lbl">FİN</label><input name="Fin" class="mi-input" /></div>
-                    <div class="mi-form-group"><label class="mi-lbl">Doğum tarixi</label><input name="DogumTarixi" class="mi-input" placeholder="gg.aa.iiii" /></div>
-                    <div class="mi-form-group"><label class="mi-lbl">Telefon</label><input name="Telefon" class="mi-input" /></div>
-                    <div class="mi-form-group"><label class="mi-lbl">Ünvan</label><input name="Unvan" class="mi-input" /></div>
-                    <div class="mi-form-group"><label class="mi-lbl">İş yeri</label><input name="IsYeri" class="mi-input" /></div>
-                    <div class="mi-form-group"><label class="mi-lbl">Əmək haqqına tutulma</label><input name="EmekHaqqiTutulma" class="mi-input" /></div>
-                    <div class="mi-form-group"><label class="mi-lbl">Əmlaka həbs</label><input name="EmlakaHebs" class="mi-input" /></div>
-                    <div class="mi-form-group"><label class="mi-lbl">Stop</label><input name="Stop" class="mi-input" /></div>
-                </div>
-                <button type="submit" class="mi-btn mi-btn--primary mi-btn--sm"><i class="bi bi-plus-lg"></i> Zamin əlavə et</button>
-            </form>
-        </div>
     </div>
 </div>
 

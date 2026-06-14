@@ -200,4 +200,17 @@ public class MehkemeIsiController : Controller
         await _service.ZaminSilAsync(zaminId, isciId);
         return RedirectToAction("Detal", new { id = ishId });
     }
+
+    // ── Zaminləri Oracle-dan çək (kimlik avtomatik) ──────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ZaminleriYukle(int ishId)
+    {
+        var isciId = await CurrentIsciIdAsync() ?? 0;
+        var sayi = await _service.ZaminleriOracledanYukleAsync(ishId, isciId);
+        TempData["Success"] = sayi > 0
+            ? $"{sayi} zamin Oracle-dan yükləndi."
+            : "Yeni zamin tapılmadı (artıq yüklənib və ya Oracle-da bu kreditin zamini yoxdur).";
+        return RedirectToAction("Detal", new { id = ishId });
+    }
 }

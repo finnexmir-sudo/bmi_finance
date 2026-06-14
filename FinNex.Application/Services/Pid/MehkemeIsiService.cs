@@ -148,11 +148,7 @@ public class MehkemeIsiService : IMehkemeIsiService
             .FirstOrDefaultAsync(x => x.Id == dto.Id && !x.Silinib);
         if (z == null) return false;
 
-        z.Ad               = (dto.Ad ?? "").Trim();
-        z.Fin              = dto.Fin?.Trim();
-        z.DogumTarixi      = dto.DogumTarixi?.Trim();
-        z.Telefon          = dto.Telefon?.Trim();
-        z.Unvan            = dto.Unvan?.Trim();
+        // Kimlik (Ad, Fin, ...) Oracle-dan gəlir — redaktə olunmur; yalnız icra qatı yenilənir
         z.EmekHaqqiTutulma = dto.EmekHaqqiTutulma?.Trim();
         z.IsYeri           = dto.IsYeri?.Trim();
         z.EmlakaHebs       = dto.EmlakaHebs?.Trim();
@@ -181,6 +177,54 @@ public class MehkemeIsiService : IMehkemeIsiService
         await _uow.Repository<MehkemeZamin>().YenileAsync(z);
         await _uow.YaddaSaxlaAsync();
         return true;
+    }
+
+    // Bu kreditin zaminlərini Oracle-dan (Siyahı sorğusu) çəkib MehkemeZamin kimi yarat.
+    // Mövcud zaminin (FİN/Ad açarına görə) icra məlumatına toxunmur.
+    public async Task<int> ZaminleriOracledanYukleAsync(int mehkemeIsiId, int isciId)
+    {
+        var ish = await _uow.Repository<MehkemeIsi>().Query()
+            .FirstOrDefaultAsync(x => x.Id == mehkemeIsiId && !x.Silinib);
+        if (ish == null) return 0;
+
+        var hesab = !string.IsNullOrWhiteSpace(ish.QeydiyyatNomresi) ? ish.QeydiyyatNomresi.Trim()
+                  : (ish.KreditHesabi ?? "").Trim();
+        var ks    = !string.IsNullOrWhiteSpace(ish.KreditSubHesab) ? ish.KreditSubHesab.Trim()
+                  : (ish.Subkod ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(hesab)) return 0;
+
+        var siyahi = await SiyahiGetirAsync();
+        var row = siyahi.Satirlar.FirstOrDefault(s =>
+            s.KreditHesabi.Trim() == hesab &&
+            (string.IsNullOrWhiteSpace(ks) || s.Ks.Trim() == ks));
+        if (row == null || row.Zaminler.Count == 0) return 0;
+
+        var movcud = await _uow.Repository<MehkemeZamin>().Query()
+            .Where(z => z.MehkemeIsiId == mehkemeIsiId && !z.Silinib).ToListAsync();
+
+        int sayi = 0;
+        foreach (var oz in row.Zaminler)
+        {
+            var key = (oz.Fin ?? oz.Ad ?? "").Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(key)) continue;
+            bool varDiya = movcud.Any(m => ((m.Fin ?? m.Ad ?? "").Trim().ToLowerInvariant()) == key);
+            if (varDiya) continue;   // artıq var — icra məlumatını qoru
+
+            await _uow.Repository<MehkemeZamin>().YaratAsync(new MehkemeZamin
+            {
+                MehkemeIsiId    = mehkemeIsiId,
+                Ad              = string.IsNullOrWhiteSpace(oz.Ad) ? "(naməlum)" : oz.Ad.Trim(),
+                Fin             = oz.Fin?.Trim(),
+                DogumTarixi     = oz.DogumTarixi?.Trim(),
+                Telefon         = oz.Telefon?.Trim(),
+                Unvan           = oz.Unvan?.Trim(),
+                YaradanIcraciId = isciId,
+                YaradilmaTarixi = DateTime.Now
+            });
+            sayi++;
+        }
+        if (sayi > 0) await _uow.YaddaSaxlaAsync();
+        return sayi;
     }
 
     private static ZaminIcraDto MapZamin(MehkemeZamin z) => new()
