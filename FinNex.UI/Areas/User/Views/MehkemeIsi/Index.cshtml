@@ -90,10 +90,11 @@
                         <th class="ms-primary ms-col-ad">Borclu</th>
                         <th>Qərardad</th>
                         <th class="ms-primary">Hesab № / K.S.</th>
-                        <th class="ms-primary ms-num">Qalıq</th>
-                        <th class="ms-primary ms-num">V.K. Qalıq</th>
-                        <th class="ms-primary ms-num">% məbləği</th>
-                        <th class="ms-primary ms-num">V.K. % məbləği</th>
+                        <th class="ms-primary ms-num">Tam Qalıq</th>
+                        <th class="ms-extra ms-num">Qalıq</th>
+                        <th class="ms-extra ms-num">V.K. Qalıq</th>
+                        <th class="ms-extra ms-num">% məbləği</th>
+                        <th class="ms-extra ms-num">V.K. % məbləği</th>
                         <th class="ms-extra ms-num">Faiz</th>
                         <th class="ms-extra ms-num">Kreditin məbləği</th>
                         <th class="ms-extra">Verilmə</th>
@@ -156,10 +157,11 @@
                                         <span class="ms-ks">K.S. @x.Ks</span>
                                     }
                                 </td>
-                                <td class="ms-num">@M(x.Qaliq)</td>
-                                <td class="ms-num @(x.VkQaliq > 0 ? "ms-vk" : "")">@M(x.VkQaliq)</td>
-                                <td class="ms-num">@M(x.FaizMeblegi)</td>
-                                <td class="ms-num @(x.VkFaizMeblegi > 0 ? "ms-vk" : "")">@M(x.VkFaizMeblegi)</td>
+                                <td class="ms-num ms-tamqaliq">@M(x.TamQaliq)</td>
+                                <td class="ms-extra ms-num">@M(x.Qaliq)</td>
+                                <td class="ms-extra ms-num @(x.VkQaliq > 0 ? "ms-vk" : "")">@M(x.VkQaliq)</td>
+                                <td class="ms-extra ms-num">@M(x.FaizMeblegi)</td>
+                                <td class="ms-extra ms-num @(x.VkFaizMeblegi > 0 ? "ms-vk" : "")">@M(x.VkFaizMeblegi)</td>
                                 <td class="ms-extra ms-num">@Txt(x.Faiz)</td>
                                 <td class="ms-extra ms-num">@M(x.KreditinMeblegi)</td>
                                 <td class="ms-extra">@Txt(x.VerilmeTarixi)</td>

@@ -203,6 +203,7 @@
 .ms-hesab { font-family: ui-monospace, monospace; color: var(--fn-primary,#6366f1); font-weight: 700; }
 .ms-ks { display: inline-block; background: #eef2ff; color: #4338ca; border-radius: 5px; padding: 1px 6px; font-size: 11px; font-weight: 700; margin-left: 6px; }
 .ms-vk { color: #b91c1c; font-weight: 700; }
+.ms-tamqaliq { font-weight: 800; color: #0f172a; font-size: 13px; }
 .ms-muted { color: #cbd5e1; }
 
 /* Qərardad — proqram sahəsi */

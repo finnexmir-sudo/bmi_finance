@@ -294,6 +294,7 @@ public class MehkemeIsiService : IMehkemeIsiService
                 Ks                 = (GetStr(row, "ks", "subschkre", "sub") ?? "").Trim(),
                 Region             = GetStr(row, "region"),
                 BorcluAd           = GetStr(row, "adi", "ad", "borclu_ad", "name_regnom"),
+                TamQaliq           = GetDec(row, "tam_qaliq", "tamqaliq", "tam_qaliq_meblegi"),
                 Qaliq              = GetDec(row, "qaliq", "summa"),
                 VkQaliq            = GetDec(row, "vk_qaliq", "summa_19"),
                 FaizMeblegi        = GetDec(row, "faiz_meblegi"),

@@ -10,6 +10,7 @@ public class MehkemeKreditSatirDto
     // ── Oracle: əsas (sarı) sütunlar ──
     public string? Region             { get; set; }
     public string? BorcluAd           { get; set; }
+    public decimal? TamQaliq          { get; set; }   // tam qalıq (əsas göstərici)
     public decimal? Qaliq             { get; set; }
     public decimal? VkQaliq           { get; set; }   // vaxtı keçmiş qalıq
     public decimal? FaizMeblegi       { get; set; }
