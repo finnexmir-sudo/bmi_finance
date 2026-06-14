@@ -17,6 +17,13 @@ public class MehkemeIsi : BaseEntity
     public string? KreditHesabi    { get; set; }   // hesab №
     public string? Subkod          { get; set; }   // subkod
 
+    // ── Məhkəmə mərhələsi (Excel "Məhkəmə" sheet-inə uyğun) ──
+    public int?      Sira                   { get; set; }   // Excel sıra №
+    public string?   MehkemeStatusMetn      { get; set; }   // Excel status (BORC BAĞLANDI...) — sərbəst mətn
+    public string?   KreditNovuMetn         { get; set; }   // Excel kredit növü (Daşınmaz...) — sərbəst mətn
+    public DateTime? MehkemeyeVerilmeTarixi { get; set; }
+    public string?   MehkemeSenedi          { get; set; }   // sənəd № + hakim
+
     // ── İcra mərhələsi detalları (Excel "İcrada olan işlər" sheet-inə uyğun) ──
     public decimal?  QalanBorc        { get; set; }   // qalan borc
     public DateTime? SonOdenisTarixi  { get; set; }   // son ödəniş tarixi
