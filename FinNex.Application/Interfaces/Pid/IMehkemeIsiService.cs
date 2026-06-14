@@ -15,6 +15,11 @@ public interface IMehkemeIsiService
     Task<MehkemeMerhelesi> MerheleElavEtAsync(MehkemeMerheleCreateDto dto, IFormFile? fayl, string dmsRoot, int yaradanIsciId);
     Task<bool> MerheleSilAsync(int merheleId, int silenIsciId);
 
+    // Zamin (icra subyekti)
+    Task<int> ZaminElaveEtAsync(ZaminIcraCreateDto dto, int isciId);
+    Task<bool> ZaminYenileAsync(ZaminIcraUpdateDto dto, int isciId);
+    Task<bool> ZaminSilAsync(int zaminId, int isciId);
+
     // Oracle: müştərinin bütün aktiv kreditlərini qaytarır (sütun adı → dəyər)
     Task<IList<Dictionary<string, string>>> OracleKreditlerGetirAsync(string qeydiyyatNomresi);
 

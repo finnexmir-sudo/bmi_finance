@@ -165,4 +165,39 @@ public class MehkemeIsiController : Controller
         await _service.MerheleSilAsync(merheleId, isciId);
         return RedirectToAction("Detal", new { id = ishId });
     }
+
+    // ── Zamin (icra subyekti) ─────────────────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ZaminElave(ZaminIcraCreateDto dto)
+    {
+        if (dto.MehkemeIsiId <= 0 || string.IsNullOrWhiteSpace(dto.Ad))
+        {
+            TempData["Error"] = "Zamin adı və iş ID lazımdır.";
+            return RedirectToAction("Detal", new { id = dto.MehkemeIsiId });
+        }
+        var isciId = await CurrentIsciIdAsync() ?? 0;
+        await _service.ZaminElaveEtAsync(dto, isciId);
+        TempData["Success"] = "Zamin əlavə edildi.";
+        return RedirectToAction("Detal", new { id = dto.MehkemeIsiId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ZaminYenile(ZaminIcraUpdateDto dto)
+    {
+        var isciId = await CurrentIsciIdAsync() ?? 0;
+        await _service.ZaminYenileAsync(dto, isciId);
+        TempData["Success"] = "Zamin yeniləndi.";
+        return RedirectToAction("Detal", new { id = dto.MehkemeIsiId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ZaminSil(int zaminId, int ishId)
+    {
+        var isciId = await CurrentIsciIdAsync() ?? 0;
+        await _service.ZaminSilAsync(zaminId, isciId);
+        return RedirectToAction("Detal", new { id = ishId });
+    }
 }

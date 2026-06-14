@@ -64,6 +64,10 @@ public class MehkemeIsiService : IMehkemeIsiService
 
         if (x == null) return null;
 
+        var zaminler = await _uow.Repository<MehkemeZamin>().Query()
+            .Where(z => z.MehkemeIsiId == id && !z.Silinib)
+            .OrderBy(z => z.Id).AsNoTracking().ToListAsync();
+
         return new MehkemeIsiDetailDto
         {
             Id                = x.Id,
@@ -105,9 +109,99 @@ public class MehkemeIsiService : IMehkemeIsiService
                     IcraciMemur  = m.IcraciMemur,
                     Qeyd         = m.Qeyd,
                     SenedYolu    = m.SenedYolu
-                }).ToList()
+                }).ToList(),
+            Zaminler          = zaminler.Select(MapZamin).ToList()
         };
     }
+
+    // ── Zamin icra qatı ──────────────────────────────────
+    public async Task<int> ZaminElaveEtAsync(ZaminIcraCreateDto dto, int isciId)
+    {
+        var z = new MehkemeZamin
+        {
+            MehkemeIsiId     = dto.MehkemeIsiId,
+            Ad               = (dto.Ad ?? "").Trim(),
+            Fin              = dto.Fin?.Trim(),
+            DogumTarixi      = dto.DogumTarixi?.Trim(),
+            Telefon          = dto.Telefon?.Trim(),
+            Unvan            = dto.Unvan?.Trim(),
+            EmekHaqqiTutulma = dto.EmekHaqqiTutulma?.Trim(),
+            IsYeri           = dto.IsYeri?.Trim(),
+            EmlakaHebs       = dto.EmlakaHebs?.Trim(),
+            Stop             = dto.Stop?.Trim(),
+            IcraMemuru       = dto.IcraMemuru?.Trim(),
+            IcraSonIsler     = dto.IcraSonIsler?.Trim(),
+            DypSorgu         = dto.DypSorgu?.Trim(),
+            AdinaSorgu       = dto.AdinaSorgu?.Trim(),
+            IcraQeyd         = dto.IcraQeyd?.Trim(),
+            YaradanIcraciId  = isciId,
+            YaradilmaTarixi  = DateTime.Now
+        };
+        await _uow.Repository<MehkemeZamin>().YaratAsync(z);
+        await _uow.YaddaSaxlaAsync();
+        return z.Id;
+    }
+
+    public async Task<bool> ZaminYenileAsync(ZaminIcraUpdateDto dto, int isciId)
+    {
+        var z = await _uow.Repository<MehkemeZamin>().Query()
+            .FirstOrDefaultAsync(x => x.Id == dto.Id && !x.Silinib);
+        if (z == null) return false;
+
+        z.Ad               = (dto.Ad ?? "").Trim();
+        z.Fin              = dto.Fin?.Trim();
+        z.DogumTarixi      = dto.DogumTarixi?.Trim();
+        z.Telefon          = dto.Telefon?.Trim();
+        z.Unvan            = dto.Unvan?.Trim();
+        z.EmekHaqqiTutulma = dto.EmekHaqqiTutulma?.Trim();
+        z.IsYeri           = dto.IsYeri?.Trim();
+        z.EmlakaHebs       = dto.EmlakaHebs?.Trim();
+        z.Stop             = dto.Stop?.Trim();
+        z.IcraMemuru       = dto.IcraMemuru?.Trim();
+        z.IcraSonIsler     = dto.IcraSonIsler?.Trim();
+        z.DypSorgu         = dto.DypSorgu?.Trim();
+        z.AdinaSorgu       = dto.AdinaSorgu?.Trim();
+        z.IcraQeyd         = dto.IcraQeyd?.Trim();
+        z.YenileyenIcraciId = isciId;
+        z.YenilenmeTarixi   = DateTime.Now;
+
+        await _uow.Repository<MehkemeZamin>().YenileAsync(z);
+        await _uow.YaddaSaxlaAsync();
+        return true;
+    }
+
+    public async Task<bool> ZaminSilAsync(int zaminId, int isciId)
+    {
+        var z = await _uow.Repository<MehkemeZamin>().Query()
+            .FirstOrDefaultAsync(x => x.Id == zaminId && !x.Silinib);
+        if (z == null) return false;
+        z.Silinib       = true;
+        z.SilinmeTarixi = DateTime.Now;
+        z.SilenIcraciId = isciId;
+        await _uow.Repository<MehkemeZamin>().YenileAsync(z);
+        await _uow.YaddaSaxlaAsync();
+        return true;
+    }
+
+    private static ZaminIcraDto MapZamin(MehkemeZamin z) => new()
+    {
+        Id               = z.Id,
+        MehkemeIsiId     = z.MehkemeIsiId,
+        Ad               = z.Ad,
+        Fin              = z.Fin,
+        DogumTarixi      = z.DogumTarixi,
+        Telefon          = z.Telefon,
+        Unvan            = z.Unvan,
+        EmekHaqqiTutulma = z.EmekHaqqiTutulma,
+        IsYeri           = z.IsYeri,
+        EmlakaHebs       = z.EmlakaHebs,
+        Stop             = z.Stop,
+        IcraMemuru       = z.IcraMemuru,
+        IcraSonIsler     = z.IcraSonIsler,
+        DypSorgu         = z.DypSorgu,
+        AdinaSorgu       = z.AdinaSorgu,
+        IcraQeyd         = z.IcraQeyd
+    };
 
     public async Task<MehkemeIsi> YaratAsync(MehkemeIsiCreateDto dto, int yaradanIsciId)
     {

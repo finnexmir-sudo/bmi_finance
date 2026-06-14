@@ -47,6 +47,7 @@ public class MehkemeIsiDetailDto
     public string?   IcraQeyd         { get; set; }
     public DateTime YaradilmaTarixi { get; set; }
     public IList<MehkemeMerheleDto> Merheleler { get; set; } = new List<MehkemeMerheleDto>();
+    public IList<ZaminIcraDto> Zaminler { get; set; } = new List<ZaminIcraDto>();
 }
 
 public class MehkemeMerheleDto
