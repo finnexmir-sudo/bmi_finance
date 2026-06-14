@@ -1,7 +1,7 @@
 @using FinNex.Application.DTOs.Pid
 @model MehkemeSiyahiResultDto
 @{
-    ViewData["Title"] = "Məhkəmə İşləri";
+    ViewData["Title"] = "Aktiv Müştərilər";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
 
     string M(decimal? v) => v.HasValue ? v.Value.ToString("N2") + " ₼" : "—";
@@ -28,8 +28,8 @@
 <div class="ms-page">
     <div class="ms-head">
         <div>
-            <h2 class="ms-title">Məhkəmə İşləri</h2>
-            <p class="ms-sub">PİD — problemli kreditlərin canlı siyahısı (Oracle) + proqram izləməsi</p>
+            <h2 class="ms-title">Aktiv Müştərilər</h2>
+            <p class="ms-sub">PİD — problemli kreditlərin canlı siyahısı (Oracle)</p>
         </div>
         <div style="display:flex;gap:8px">
             <button type="button" class="ms-btn ms-btn--ghost" id="msToggleCols">
