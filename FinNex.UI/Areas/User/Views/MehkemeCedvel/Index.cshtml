@@ -41,6 +41,7 @@
             <input type="text" name="axtaris" value="@axtaris" class="mc-inp mc-grow" placeholder="🔍 Borclu adı və ya hesab № axtar…" />
             <button type="submit" class="mc-btn mc-btn--g"><i class="bi bi-funnel"></i> Axtar</button>
         </form>
+        <button type="button" class="mc-btn mc-btn--p" onclick="mcOpenAdd()"><i class="bi bi-plus-lg"></i> Yeni iş</button>
         <form asp-action="Import" method="post" enctype="multipart/form-data" class="mc-import">
             @Html.AntiForgeryToken()
             <i class="bi bi-file-earmark-excel" style="color:#15803d"></i>
@@ -113,3 +114,60 @@
         <div class="mc-foot">@Model.Count iş</div>
     </div>
 </div>
+
+<!-- Yeni iş modal -->
+<div class="modal fade" id="mcModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form asp-action="Yarat" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title">Yeni məhkəmə işi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-2"><label class="form-label fw-semibold">Sıra</label><input name="Sira" type="number" class="form-control" /></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Status</label><input name="Status" class="form-control" placeholder="BORC BAĞLANDI / davam edir" /></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Borclu ad-soyad *</label><input name="BorcluAd" class="form-control" required /></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Kredit növü</label><input name="KreditNovu" class="form-control" /></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Hesab №</label><input name="KreditHesabi" class="form-control" /></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Subkod</label><input name="Subkod" class="form-control" /></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Məhkəməyə verilmə</label><input name="MehkemeyeVerilmeTarixi" type="date" class="form-control" /></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Qətnamə tarixi</label><input name="QetnameTarixi" type="date" class="form-control" /></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Sənəd / hakim</label><input name="MehkemeSenedi" class="form-control" /></div>
+                        <div class="col-12"><label class="form-label fw-semibold">Qeyd</label><input name="Qeyd" class="form-control" /></div>
+                    </div>
+                    <hr />
+                    <label class="form-label fw-semibold">İclaslar (tarix + saat)</label>
+                    <div id="mcIclaslar"></div>
+                    <button type="button" class="btn btn-sm btn-light mt-2" onclick="mcAddIclas()"><i class="bi bi-plus"></i> İclas əlavə et</button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Bağla</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-floppy"></i> Saxla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var mcModal = new bootstrap.Modal(document.getElementById('mcModal'));
+    function mcOpenAdd() {
+        document.getElementById('mcIclaslar').innerHTML = '';
+        mcAddIclas();
+        mcModal.show();
+    }
+    function mcAddIclas() {
+        var div = document.createElement('div');
+        div.className = 'row g-2 mb-2 mc-iclas-row';
+        div.innerHTML =
+            '<div class="col-md-5"><input type="date" name="IclasTarix" class="form-control form-control-sm" /></div>' +
+            '<div class="col-md-5"><input name="IclasSaat" class="form-control form-control-sm" placeholder="Saat (məs. 14.40)" /></div>' +
+            '<div class="col-md-2"><button type="button" class="btn btn-sm btn-light" onclick="this.closest(\'.mc-iclas-row\').remove()"><i class="bi bi-x-lg"></i></button></div>';
+        document.getElementById('mcIclaslar').appendChild(div);
+    }
+</script>
+}

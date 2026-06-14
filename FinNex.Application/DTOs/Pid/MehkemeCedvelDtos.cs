@@ -41,3 +41,21 @@ public class MehkemeCedvelIclasImportDto
     public DateTime? Tarix { get; set; }
     public string? Saat { get; set; }
 }
+
+// Əl ilə yeni iş (forma)
+public class MehkemeCedvelCreateDto
+{
+    public int? Sira { get; set; }
+    public string? Status { get; set; }
+    public string BorcluAd { get; set; } = "";
+    public string? KreditNovu { get; set; }
+    public string? KreditHesabi { get; set; }
+    public string? Subkod { get; set; }
+    public string? MehkemeyeVerilmeTarixi { get; set; }   // input type=date "yyyy-MM-dd"
+    public string? MehkemeSenedi { get; set; }
+    public string? QetnameTarixi { get; set; }
+    public string? Qeyd { get; set; }
+    // Paralel siyahılar (formadan dinamik iclas sətirləri)
+    public List<string>? IclasTarix { get; set; }
+    public List<string>? IclasSaat { get; set; }
+}

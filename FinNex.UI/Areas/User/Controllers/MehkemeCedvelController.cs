@@ -98,6 +98,20 @@ public class MehkemeCedvelController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Yarat(MehkemeCedvelCreateDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.BorcluAd))
+        {
+            TempData["Error"] = "Borclu adı məcburidir.";
+            return RedirectToAction(nameof(Index));
+        }
+        await _service.YaratAsync(dto, await CurrentIsciIdAsync());
+        TempData["Success"] = "İş əlavə edildi.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Sil(int id)
     {
         await _service.SilAsync(id, await CurrentIsciIdAsync());

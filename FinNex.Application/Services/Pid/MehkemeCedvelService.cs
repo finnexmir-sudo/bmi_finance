@@ -3,6 +3,7 @@ using FinNex.Application.Interfaces.Pid;
 using FinNex.Domain.Entities.Pid;
 using FinNex.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace FinNex.Application.Services.Pid;
 
@@ -73,6 +74,50 @@ public class MehkemeCedvelService : IMehkemeCedvelService
         }
         await _uow.YaddaSaxlaAsync();
         return (isS, iclasS);
+    }
+
+    public async Task<int> YaratAsync(MehkemeCedvelCreateDto dto, int isciId)
+    {
+        var e = new MehkemeCedvel
+        {
+            Sira = dto.Sira,
+            Status = dto.Status?.Trim(),
+            BorcluAd = (dto.BorcluAd ?? "").Trim(),
+            KreditNovu = dto.KreditNovu?.Trim(),
+            KreditHesabi = dto.KreditHesabi?.Trim(),
+            Subkod = dto.Subkod?.Trim(),
+            MehkemeyeVerilmeTarixi = ParseDate(dto.MehkemeyeVerilmeTarixi),
+            MehkemeSenedi = dto.MehkemeSenedi?.Trim(),
+            QetnameTarixi = ParseDate(dto.QetnameTarixi),
+            Qeyd = dto.Qeyd?.Trim(),
+            YaradanIcraciId = isciId,
+            YaradilmaTarixi = DateTime.Now
+        };
+
+        if (dto.IclasTarix != null)
+        {
+            for (int i = 0; i < dto.IclasTarix.Count; i++)
+            {
+                var t = ParseDate(dto.IclasTarix[i]);
+                var saat = (dto.IclasSaat != null && i < dto.IclasSaat.Count) ? dto.IclasSaat[i]?.Trim() : null;
+                if (t == null && string.IsNullOrWhiteSpace(saat)) continue;
+                e.Iclaslar.Add(new MehkemeCedvelIclas { Tarix = t, Saat = saat, YaradilmaTarixi = DateTime.Now });
+            }
+        }
+
+        await _uow.Repository<MehkemeCedvel>().YaratAsync(e);
+        await _uow.YaddaSaxlaAsync();
+        return e.Id;
+    }
+
+    private static DateTime? ParseDate(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return null;
+        s = s.Trim();
+        string[] f = { "yyyy-MM-dd", "dd.MM.yyyy", "dd-MM-yyyy", "d.M.yyyy" };
+        if (DateTime.TryParseExact(s, f, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d)) return d;
+        if (DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out d)) return d;
+        return null;
     }
 
     public async Task<bool> SilAsync(int id, int isciId)
