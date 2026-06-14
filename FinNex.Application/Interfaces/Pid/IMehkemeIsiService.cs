@@ -20,6 +20,7 @@ public interface IMehkemeIsiService
     Task<bool> ZaminYenileAsync(ZaminIcraUpdateDto dto, int isciId);
     Task<bool> ZaminSilAsync(int zaminId, int isciId);
     Task<int> ZaminleriOracledanYukleAsync(int mehkemeIsiId, int isciId);
+    Task<int> ZaminleriSnapshotEtAsync(int mehkemeIsiId, List<MehkemeZaminDto> zaminler, int isciId);
 
     // Oracle: müştərinin bütün aktiv kreditlərini qaytarır (sütun adı → dəyər)
     Task<IList<Dictionary<string, string>>> OracleKreditlerGetirAsync(string qeydiyyatNomresi);

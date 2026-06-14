@@ -85,7 +85,6 @@
             <table class="ms-table" id="msTable">
                 <thead>
                     <tr>
-                        <th class="ms-ctoggle"></th>
                         <th class="ms-primary">Region</th>
                         <th class="ms-primary ms-col-ad">Borclu</th>
                         <th>Qərardad</th>
@@ -118,13 +117,7 @@
                                data-search="@($"{x.BorcluAd} {x.KreditHesabi} {string.Join(" ", x.Zaminler.Select(z => z.Ad + " " + z.Fin))}")"
                                data-status="@x.Status"
                                data-ish="@(x.IsAcilib ? "1" : "0")">
-                            <tr class="ms-borclu" onclick="msRowClick(event,this.parentElement)" style="@(hasZamin ? "cursor:pointer" : "cursor:default")">
-                                <td class="ms-ctoggle">
-                                    @if (hasZamin)
-                                    {
-                                        <span class="ms-caret"><i class="bi bi-chevron-right"></i></span>
-                                    }
-                                </td>
+                            <tr class="ms-borclu">
                                 <td class="ms-accent">@Txt(x.Region)</td>
                                 <td class="ms-col-ad">
                                     <div class="ms-bname">@Txt(x.BorcluAd)</div>
@@ -188,13 +181,17 @@
                                         <span class="ms-muted">—</span>
                                     }
                                 </td>
-                                <td class="ms-col-ish" onclick="event.stopPropagation()">
+                                <td class="ms-col-ish">
+                                    @{ var zJson = System.Text.Json.JsonSerializer.Serialize(x.Zaminler); }
                                     @if (x.IsAcilib && x.MehkemeIsiId.HasValue)
                                     {
-                                        <div class="ms-ish-on"><span class="ms-dot"></span>İzlənir <span class="ms-mrh">@x.MerheleSayi mərhələ</span></div>
-                                        <a asp-action="Detal" asp-route-id="@x.MehkemeIsiId" class="ms-btn-xs ms-btn-xs--open">
-                                            <i class="bi bi-eye"></i> Aç
-                                        </a>
+                                        <form asp-action="AcVeBax" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@x.MehkemeIsiId" />
+                                            <input type="hidden" name="zaminler" value="@zJson" />
+                                            <button type="submit" class="ms-btn-xs ms-btn-xs--open"><i class="bi bi-eye"></i> Aç</button>
+                                        </form>
+                                        <div class="ms-ish-meta"><span class="ms-dot"></span> İzlənir · @x.MerheleSayi mərhələ</div>
                                     }
                                     else
                                     {
@@ -203,35 +200,13 @@
                                             <input type="hidden" name="acar.KreditHesabi" value="@x.KreditHesabi" />
                                             <input type="hidden" name="acar.Ks" value="@x.Ks" />
                                             <input type="hidden" name="acar.BorcluAd" value="@x.BorcluAd" />
+                                            <input type="hidden" name="zaminler" value="@zJson" />
                                             <button type="submit" class="ms-btn-xs ms-btn-isac"><i class="bi bi-plus-lg"></i> İş aç</button>
                                         </form>
                                     }
                                 </td>
                             </tr>
 
-                            @if (hasZamin)
-                            {
-                                <tr class="ms-zamin"><td colspan="20" class="ms-zhead">ZAMİNLƏR (@x.Zaminler.Count)</td></tr>
-                                @for (int zi = 0; zi < x.Zaminler.Count; zi++)
-                                {
-                                    var z = x.Zaminler[zi];
-                                    <tr class="ms-zamin">
-                                        <td class="ms-zindent"><span class="ms-ztree">└</span></td>
-                                        <td colspan="20">
-                                            <div class="ms-zline">
-                                                <span class="ms-ztag">Zamin @(zi + 1)</span>
-                                                <span class="ms-zname">@Txt(z.Ad)</span>
-                                                @if (!string.IsNullOrWhiteSpace(z.Fin))      { <span class="ms-zchip"><b>FİN:</b> @z.Fin</span> }
-                                                @if (!string.IsNullOrWhiteSpace(z.DogumTarixi)) { <span class="ms-zchip"><b>Doğum:</b> @z.DogumTarixi</span> }
-                                                @if (!string.IsNullOrWhiteSpace(z.Telefon))  { <span class="ms-zchip"><b>Tel:</b> @z.Telefon</span> }
-                                                @if (!string.IsNullOrWhiteSpace(z.Unvan))    { <span class="ms-zchip"><b>Ünvan:</b> @z.Unvan</span> }
-                                                @if (!string.IsNullOrWhiteSpace(z.Gelir))    { <span class="ms-zchip"><b>Aylıq gəlir:</b> @z.Gelir</span> }
-                                                @if (!string.IsNullOrWhiteSpace(z.BorcYuku)) { <span class="ms-zchip"><b>Borc yükü:</b> @z.BorcYuku</span> }
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            }
                         </tbody>
                     }
                 }

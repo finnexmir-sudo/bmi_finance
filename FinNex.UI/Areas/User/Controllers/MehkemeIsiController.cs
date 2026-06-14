@@ -58,7 +58,7 @@ public class MehkemeIsiController : Controller
     // ── İş aç (izləmə qeydi yarat → Detal) ─────────────────
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> IsAch(MehkemeKreditAcarDto acar)
+    public async Task<IActionResult> IsAch(MehkemeKreditAcarDto acar, string? zaminler)
     {
         if (string.IsNullOrWhiteSpace(acar.KreditHesabi))
         {
@@ -68,7 +68,30 @@ public class MehkemeIsiController : Controller
 
         var isciId = await CurrentIsciIdAsync() ?? 0;
         var rec = await _service.IsAchAsync(acar, isciId);
+        await SnapshotZaminlerAsync(rec.Id, zaminler, isciId);
         return RedirectToAction("Detal", new { id = rec.Id });
+    }
+
+    // ── Aç + zaminləri ana sorğu datasından avtomatik doldur ──
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AcVeBax(int id, string? zaminler)
+    {
+        var isciId = await CurrentIsciIdAsync() ?? 0;
+        await SnapshotZaminlerAsync(id, zaminler, isciId);
+        return RedirectToAction("Detal", new { id });
+    }
+
+    private async Task SnapshotZaminlerAsync(int mehkemeIsiId, string? zaminlerJson, int isciId)
+    {
+        if (string.IsNullOrWhiteSpace(zaminlerJson)) return;
+        try
+        {
+            var list = System.Text.Json.JsonSerializer.Deserialize<List<MehkemeZaminDto>>(zaminlerJson);
+            if (list != null && list.Count > 0)
+                await _service.ZaminleriSnapshotEtAsync(mehkemeIsiId, list, isciId);
+        }
+        catch { /* JSON səhvdirsə snapshot atlanır */ }
     }
 
     // ── Yarat formu ───────────────────────────────────────

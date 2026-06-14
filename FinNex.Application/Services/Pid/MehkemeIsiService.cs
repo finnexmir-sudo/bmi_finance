@@ -227,6 +227,38 @@ public class MehkemeIsiService : IMehkemeIsiService
         return sayi;
     }
 
+    // Zaminləri Siyahı datasından (ana sorğu) snapshot et — Oracle-a yeni sorğu atmadan
+    public async Task<int> ZaminleriSnapshotEtAsync(int mehkemeIsiId, List<MehkemeZaminDto> zaminler, int isciId)
+    {
+        if (zaminler == null || zaminler.Count == 0) return 0;
+
+        var movcud = await _uow.Repository<MehkemeZamin>().Query()
+            .Where(z => z.MehkemeIsiId == mehkemeIsiId && !z.Silinib).ToListAsync();
+
+        int sayi = 0;
+        foreach (var oz in zaminler)
+        {
+            var key = (oz.Fin ?? oz.Ad ?? "").Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(key)) continue;
+            if (movcud.Any(m => ((m.Fin ?? m.Ad ?? "").Trim().ToLowerInvariant()) == key)) continue;
+
+            await _uow.Repository<MehkemeZamin>().YaratAsync(new MehkemeZamin
+            {
+                MehkemeIsiId    = mehkemeIsiId,
+                Ad              = string.IsNullOrWhiteSpace(oz.Ad) ? "(naməlum)" : oz.Ad.Trim(),
+                Fin             = oz.Fin?.Trim(),
+                DogumTarixi     = oz.DogumTarixi?.Trim(),
+                Telefon         = oz.Telefon?.Trim(),
+                Unvan           = oz.Unvan?.Trim(),
+                YaradanIcraciId = isciId,
+                YaradilmaTarixi = DateTime.Now
+            });
+            sayi++;
+        }
+        if (sayi > 0) await _uow.YaddaSaxlaAsync();
+        return sayi;
+    }
+
     private static ZaminIcraDto MapZamin(MehkemeZamin z) => new()
     {
         Id               = z.Id,
