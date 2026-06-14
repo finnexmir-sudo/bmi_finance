@@ -62,7 +62,7 @@
         if (currentArea == "PR_Odenis_Tapsirigi") return "umumi";
         if (currentController == "Tesdiq") return "tesdiq";
         if (currentController == "KreditMuraciet") return "kredit";
-        if (currentController is "PidSms" or "MehkemeIsi") return "pid";
+        if (currentController is "PidSms" or "MehkemeIsi" or "OdenisNezareti") return "pid";
         if (currentController == "Hesabat" || currentController == "HesabatIzleme") return "hesabat";
         if (currentController == "Icaze" && currentAction is "Izleme" or "Dovriyye") return "hr";
         if (currentController is "Davamiyyet" or "Takvim" or "Mezuniyyet" or "Muraciet"
@@ -533,7 +533,7 @@
             case "pid":
                 {
                     var pidSmsActive   = currentController == "PidSms";
-                    var pidMehkActive  = currentController == "MehkemeIsi";
+                    var pidMehkActive  = currentController is "MehkemeIsi" or "OdenisNezareti";
 
                     <div class="fn-nav-label">PİD</div>
 
@@ -567,6 +567,10 @@
                             <a asp-area="User" asp-controller="MehkemeIsi" asp-action="Yarat"
                                class="fn-nav-item @(currentController == "MehkemeIsi" && currentAction == "Yarat" ? "active" : "")">
                                 <i class="bi bi-plus-circle"></i> Yeni iş
+                            </a>
+                            <a asp-area="User" asp-controller="OdenisNezareti" asp-action="Index"
+                               class="fn-nav-item @(currentController == "OdenisNezareti" ? "active" : "")">
+                                <i class="bi bi-cash-stack"></i> Ödənişə Nəzarət
                             </a>
                         </div>
                     </div>

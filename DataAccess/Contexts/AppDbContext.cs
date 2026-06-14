@@ -177,6 +177,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<FinNex.Domain.Entities.Pid.PidSmsLog> PidSmsLoglar { get; set; }
     public DbSet<FinNex.Domain.Entities.Pid.MehkemeIsi> MehkemeIsleri { get; set; }
     public DbSet<FinNex.Domain.Entities.Pid.MehkemeMerhelesi> MehkemeMerheleri { get; set; }
+    public DbSet<FinNex.Domain.Entities.Pid.OdenisNezareti> OdenisNezaretleri { get; set; }
 
     public DbSet<OracleSorgu> OracleSorgular { get; set; }
 
