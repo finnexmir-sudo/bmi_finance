@@ -1054,6 +1054,7 @@ namespace FinNex.Application.Services.HR
                 DetayEkle("Overtime",                          MaasDetayTipi.Gelir,           overtimeMebleg,     "Aylıq əlavə qeydindən"),
                 DetayEkle("IH-07 Əlavə Təminat",               MaasDetayTipi.Gelir,           input.IH07Meblegi,        "18.02.2016 tarixli IH-07 saylı əmrlə əlavə təminat"),
                 DetayEkle("VM 98.2.1 Gəlirləri",              MaasDetayTipi.Gelir,           input.VM9821Meblegi,      "VM-nin 98.2.1-ci maddəsinə əsasən vergiyə cəlb olunan gəlirlər"),
+                DetayEkle("Məzuniyyət Kompensasiyası",         MaasDetayTipi.Gelir,           mezKompensasiyaMebleg, aktivKompensasiya != null ? $"{aktivKompensasiya.CemiKompensasiyaGun:N2} gün × {aktivKompensasiya.GunlukRate:N4} ₼/gün (istifadə edilməmiş məzuniyyət)" : null),
                 // Kəsintilər
                 DetayEkle("Davamiyyət Kəsintisi",              MaasDetayTipi.Tutulma,         umumiDavamKesinti,  davamAciq),
                 DetayEkle("Gecikdirmə Cəriməsi",               MaasDetayTipi.Tutulma,         input.CerimeMeblegi, input.CerimeAciqlama),

@@ -463,7 +463,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 pul[3]  = esas;                                   // Müqavilə üzrə aylıq əmək haqqı
                 pul[4]  = esas - davam;                           // Hesablanmış (işlənmiş) əmək haqqı
                 pul[5]  = Detay(m, "IH-07 Əlavə Təminat");
-                pul[6]  = 0m;                                     // məzuniyyət kompensasiyası — ayrıca maaş detalı yoxdur
+                pul[6]  = Detay(m, "Məzuniyyət Kompensasiyası"); // istifadə edilməmiş məzuniyyət kompensasiyası
                 pul[7]  = 0m;                                     // orta əmək haqqı saxlanılan günlər — detal yoxdur
                 pul[8]  = Detay(m, "Məzuniyyət Ödənişi");
                 pul[9]  = Detay(m, "Bonus/Mükafat");
