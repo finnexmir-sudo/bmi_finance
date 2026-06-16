@@ -14,10 +14,10 @@ namespace FinNex.UI.Areas.User.Controllers;
 [Authorize(Roles = "Admin,PID")]
 public class MehkemeCedvelController : Controller
 {
-    private readonly IMehkemeCedvelService _service;
+    private readonly IMehkemeIsiService _service;
     private readonly UserManager<AppUser> _userManager;
 
-    public MehkemeCedvelController(IMehkemeCedvelService service, UserManager<AppUser> userManager)
+    public MehkemeCedvelController(IMehkemeIsiService service, UserManager<AppUser> userManager)
     {
         _service = service;
         _userManager = userManager;
@@ -31,7 +31,7 @@ public class MehkemeCedvelController : Controller
 
     public async Task<IActionResult> Index(string? axtaris)
     {
-        var list = await _service.HamisiniGetirAsync(axtaris);
+        var list = await _service.MehkemeSiyahisiAsync(axtaris);
         ViewData["Axtaris"] = axtaris;
         return View(list);
     }
@@ -91,7 +91,7 @@ public class MehkemeCedvelController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var (isS, iclasS) = await _service.ImportAsync(isler, await CurrentIsciIdAsync());
+        var (isS, iclasS) = await _service.MehkemeImportAsync(isler, await CurrentIsciIdAsync());
         TempData["Success"] = $"İmport: {isS} iş, {iclasS} iclas əlavə olundu.";
         return RedirectToAction(nameof(Index));
     }
@@ -105,7 +105,7 @@ public class MehkemeCedvelController : Controller
             TempData["Error"] = "Borclu adı məcburidir.";
             return RedirectToAction(nameof(Index));
         }
-        await _service.YaratAsync(dto, await CurrentIsciIdAsync());
+        await _service.MehkemeYaratAsync(dto, await CurrentIsciIdAsync());
         TempData["Success"] = "İş əlavə edildi.";
         return RedirectToAction(nameof(Index));
     }
