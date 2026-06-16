@@ -520,127 +520,107 @@
         const ay = (document.querySelector('[data-period-ay]')?.dataset?.periodAy) || '';
         const il = (document.querySelector('[data-period-il]')?.dataset?.periodIl) || '';
 
+        // Mühasib cədvəli ilə eyni sütunlar (server ExcelIxrac ilə eyni struktur)
         const headers = [
-            '#', 'Ad Soyad', 'Departament', 'Əsas maaş',
-            'Bonus', 'Overtime', 'Fərqli gəlir', 'Cərimə',
-            'Məz. günü', 'Məz. ödəniş', 'Məz. kəsinti',
-            'Xəs. şirkət gün', 'Xəs. şirkət ödəniş', 'Xəs. DSMF gün', 'Xəs. DSMF ödəniş', 'Xəs. kəsinti',
-            'GROSS',
-            'Standart güzəşt', 'İşçi güzəşti', 'Vergilənəcək',
-            'Gəlir V.', 'DSMF', 'İşsizlik', 'İTSS', 'HYS işçi', 'Avans', 'Cəmi tutulma',
-            'NET',
-            'DSMF işv.', 'İşsizlik işv.', 'İTSS işv.', 'HYS işv.', 'Ümumi şirkət xərci'
+            '№', 'S.A.A.', 'Vəzifəsi',
+            'Müqavilə üzrə aylıq əmək haqqı',
+            'Hesablanmış aylıq əmək haqqı',
+            '18.02.2016-cı il tarixli IH-07 saylı əmrlə əlavə təminat',
+            'İstifadə edilməmiş əmək məzuniyyəti günlərinə görə kompessasiya ödənişi',
+            'Orta əmək haqqı saxlanılan günlər üçün hesablanmış orta əmək haqqı',
+            'Məzuniyyət haqqı', 'Mükafat', 'Bayram hədiyyəsi',
+            'Müsabiqə qalibinə verilən hədiyyə', 'Xəstəlik vərəqəsi',
+            'Yalnız mdss haqqı hesablanan digər gəlirlər',
+            'VM-nin 98.2.1-ci maddəsinə əsasən vergiyə cəlb olunan gəlirlər',
+            'VM-nin 98.2.3-cü maddəsinə əsasən vergiyə cəlb olunan gəlirlər',
+            'Əlavə əmək haqqı',
+            'HYS müqavilələri üzrə 3 il tamam olmamış qayıdan məbləğlər',
+            'Cəmi hesablanmış aylıq ödənişlər',
+            'Ödənilmiş həyatın yığım sığortası haqqları',
+            'İşgötürən tərəfindən ödənilən həyatın yığım sığortası haqqları',
+            'Tutulmuş m.d.s.s. haqları (10%)',
+            'Tutulmuş işsizlikdən sığorta haqqları (0.5%)',
+            'Gəlir vergisi', 'Icbari Tibbi Sığorta (2 %)', 'Avans',
+            'Güvənli Sığorta üzrə çıxılmalar', 'Tutulmuşdur', 'Ödənilməlidir',
+            'İşəgötürən tərəfindən ödənilən MDSS haqqı',
+            'İşəgötürən tərəfindən ödənilən İTS haqqı',
+            'Cari hesablar'
         ];
+        const COLS = headers.length; // 32
 
         const num = v => (v && v > 0) ? Number(v).toFixed(2).replace('.', ',') : '0,00';
         const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
             ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]);
 
-        let totals = {
-            esas: 0, bonus: 0, overtime: 0, ferqli: 0, cerime: 0,
-            mezOdenis: 0, mezKesinti: 0, xesSirket: 0, xesDsmf: 0, xesKesinti: 0,
-            brut: 0, gelirV: 0, dsmf: 0, iss: 0, itss: 0, hys: 0, avans: 0, tutulma: 0, net: 0,
-            dsmfIsv: 0, issIsv: 0, itssIsv: 0, hysIsv: 0, sirketCemi: 0
-        };
-
+        const tot = new Array(COLS).fill(0);
         const visibleRows = rows.filter(r => !r.classList.contains('mth-hidden'));
+
         let bodyRows = visibleRows.map((row, i) => {
             const d = rd(row);
-            const ad = row.querySelector('.mth-name-primary')?.textContent?.trim() || '';
-            const dept = row.querySelector('.mth-name-dept')?.textContent?.trim() || '';
+            const ad   = row.querySelector('.mth-name-primary')?.textContent?.trim() || '';
+            const vez  = row.dataset.vezife || '—';
+            const iban = row.dataset.iban || '';
 
-            totals.esas += d.esas;
-            totals.bonus += d.bonus;
-            totals.overtime += d.overtime;
-            totals.ferqli += d.ferqliGelir;
-            totals.cerime += d.cerime;
-            totals.mezOdenis += d.mezOdenis;
-            totals.mezKesinti += d.mezKesinti;
-            totals.xesSirket += d.xesSirketOdenis;
-            totals.xesDsmf += d.xesDsmfOdenis;
-            totals.xesKesinti += d.xesKesinti;
-            totals.brut += d.brut;
-            totals.gelirV += d.gelirV + d.mavGelirV;
-            totals.dsmf   += d.dsmf  + d.mavDsmf;
-            totals.iss    += d.iss   + d.mavIss;
-            totals.itss   += d.itss  + d.mavItss;
-            totals.hys += d.hys;
-            totals.avans += d.avans;
-            totals.tutulma += d.tutulma;
-            totals.net += d.net;
-            totals.dsmfIsv += d.dsmfIsv;
-            totals.issIsv += d.issIsv;
-            totals.itssIsv += d.itssIsv;
-            totals.hysIsv += d.hysIsv;
-            totals.sirketCemi += d.sirketCemi;
+            // IH-07 / VM 98.2.1 / konfiqurasiyalı gəlirlər — detal sətrindən ayrıca oxunur
+            const dr = getDetailRow(row);
+            const ih07 = dr ? (parseFloat(dr.querySelector('input[name$=".IH07Meblegi"]')?.value || 0) || 0) : 0;
+            const vm98 = dr ? (parseFloat(dr.querySelector('input[name$=".VM9821Meblegi"]')?.value || 0) || 0) : 0;
+            const cfg  = dr ? Array.from(dr.querySelectorAll('.mth-inp--fg[data-cfg]'))
+                                  .reduce((s, inp) => s + (parseFloat(inp.value || 0) || 0), 0) : 0;
 
+            const gross = d.brut + d.mavBrut;   // cəmi hesablanmış (məzuniyyət avansı brütü daxil)
+            const v = new Array(COLS).fill(0);
+            v[3]  = d.esas;                                                 // Müqavilə üzrə
+            v[4]  = d.esas - d.mezKesinti - d.xesKesinti - d.qayibKesinti;  // Hesablanmış (işlənmiş)
+            v[5]  = ih07;                                                   // IH-07
+            v[8]  = d.mezOdenis + d.mavBrut;                               // Məzuniyyət haqqı (+ avans brütü)
+            v[9]  = d.bonus;                                                // Mükafat
+            v[12] = d.xesSirketOdenis;                                      // Xəstəlik vərəqəsi
+            v[13] = cfg;                                                    // Yalnız mdss / digər gəlirlər
+            v[14] = vm98;                                                   // VM 98.2.1
+            v[16] = d.overtime;                                             // Əlavə əmək haqqı
+            v[18] = gross;                                                  // Cəmi hesablanmış
+            v[19] = d.hys;                                                  // Ödənilmiş HYS (işçi)
+            v[20] = d.hysIsv;                                               // İşgötürən HYS
+            v[21] = d.dsmf   + d.mavDsmf;                                   // MDSS (işçi)
+            v[22] = d.iss    + d.mavIss;                                    // İşsizlik (işçi)
+            v[23] = d.gelirV + d.mavGelirV;                                 // Gəlir vergisi
+            v[24] = d.itss   + d.mavItss;                                   // İTSS (işçi)
+            v[25] = d.avans  + d.mavNet;                                    // Avans (+ məz. avansı net)
+            v[27] = gross - d.net;                                          // Tutulmuşdur = brüt − net
+            v[28] = d.net;                                                  // Ödənilməlidir (net)
+            v[29] = d.dsmfIsv;                                              // İşəgötürən MDSS
+            v[30] = d.itssIsv;                                              // İşəgötürən İTS
+
+            for (let c = 3; c <= 30; c++) tot[c] += v[c];
+
+            const m = c => `<td style="text-align:right">${num(v[c])}</td>`;
             return `<tr>
                 <td style="text-align:center">${i + 1}</td>
                 <td>${esc(ad)}</td>
-                <td>${esc(dept)}</td>
-                <td style="text-align:right">${num(d.esas)}</td>
-                <td style="text-align:right">${num(d.bonus)}</td>
-                <td style="text-align:right">${num(d.overtime)}</td>
-                <td style="text-align:right">${num(d.ferqliGelir)}</td>
-                <td style="text-align:right">${num(d.cerime)}</td>
-                <td style="text-align:center">${d.mezGun || ''}</td>
-                <td style="text-align:right">${num(d.mezOdenis)}</td>
-                <td style="text-align:right">${num(d.mezKesinti)}</td>
-                <td style="text-align:center">${d.xesSirketGun || ''}</td>
-                <td style="text-align:right">${num(d.xesSirketOdenis)}</td>
-                <td style="text-align:center">${d.xesDsmfGun || ''}</td>
-                <td style="text-align:right">${num(d.xesDsmfOdenis)}</td>
-                <td style="text-align:right">${num(d.xesKesinti)}</td>
-                <td style="text-align:right;font-weight:bold;background:#e8f5ee">${num(d.brut)}</td>
-                <td style="text-align:right">${num(d.standartGuzest)}</td>
-                <td style="text-align:right">${num(d.isciGuzest)}</td>
-                <td style="text-align:right">${num(d.vergilenecek)}</td>
-                <td style="text-align:right">${num(d.gelirV + d.mavGelirV)}</td>
-                <td style="text-align:right">${num(d.dsmf  + d.mavDsmf)}</td>
-                <td style="text-align:right">${num(d.iss   + d.mavIss)}</td>
-                <td style="text-align:right">${num(d.itss  + d.mavItss)}</td>
-                <td style="text-align:right">${num(d.hys)}</td>
-                <td style="text-align:right">${num(d.avans)}</td>
-                <td style="text-align:right;color:#c83838">${num(d.tutulma + d.hys)}</td>
-                <td style="text-align:right;font-weight:bold;background:#fff7e0">${num(d.net)}</td>
-                <td style="text-align:right">${num(d.dsmfIsv)}</td>
-                <td style="text-align:right">${num(d.issIsv)}</td>
-                <td style="text-align:right">${num(d.itssIsv)}</td>
-                <td style="text-align:right">${num(d.hysIsv)}</td>
-                <td style="text-align:right;font-weight:bold">${num(d.sirketCemi)}</td>
+                <td>${esc(vez)}</td>
+                ${m(3)}${m(4)}${m(5)}${m(6)}${m(7)}${m(8)}${m(9)}${m(10)}${m(11)}${m(12)}${m(13)}${m(14)}${m(15)}${m(16)}${m(17)}
+                <td style="text-align:right;font-weight:bold;background:#e8f5ee">${num(v[18])}</td>
+                ${m(19)}${m(20)}${m(21)}${m(22)}${m(23)}${m(24)}${m(25)}${m(26)}
+                <td style="text-align:right;color:#c83838">${num(v[27])}</td>
+                <td style="text-align:right;font-weight:bold;background:#fff7e0">${num(v[28])}</td>
+                ${m(29)}${m(30)}
+                <td>${esc(iban)}</td>
             </tr>`;
         }).join('');
 
+        const tm = c => `<td style="text-align:right">${num(tot[c])}</td>`;
         const totalRow = `<tr style="background:#f1f5f9;font-weight:bold">
-            <td colspan="3" style="text-align:right">CƏMİ — ${visibleRows.length} işçi</td>
-            <td style="text-align:right">${num(totals.esas)}</td>
-            <td style="text-align:right">${num(totals.bonus)}</td>
-            <td style="text-align:right">${num(totals.overtime)}</td>
-            <td style="text-align:right">${num(totals.ferqli)}</td>
-            <td style="text-align:right">${num(totals.cerime)}</td>
+            <td style="text-align:center">—</td>
+            <td>CƏMİ — ${visibleRows.length} işçi</td>
             <td></td>
-            <td style="text-align:right">${num(totals.mezOdenis)}</td>
-            <td style="text-align:right">${num(totals.mezKesinti)}</td>
+            ${tm(3)}${tm(4)}${tm(5)}${tm(6)}${tm(7)}${tm(8)}${tm(9)}${tm(10)}${tm(11)}${tm(12)}${tm(13)}${tm(14)}${tm(15)}${tm(16)}${tm(17)}
+            <td style="text-align:right;background:#e8f5ee">${num(tot[18])}</td>
+            ${tm(19)}${tm(20)}${tm(21)}${tm(22)}${tm(23)}${tm(24)}${tm(25)}${tm(26)}
+            <td style="text-align:right;color:#c83838">${num(tot[27])}</td>
+            <td style="text-align:right;background:#fff7e0">${num(tot[28])}</td>
+            ${tm(29)}${tm(30)}
             <td></td>
-            <td style="text-align:right">${num(totals.xesSirket)}</td>
-            <td></td>
-            <td style="text-align:right">${num(totals.xesDsmf)}</td>
-            <td style="text-align:right">${num(totals.xesKesinti)}</td>
-            <td style="text-align:right;background:#e8f5ee">${num(totals.brut)}</td>
-            <td colspan="3"></td>
-            <td style="text-align:right">${num(totals.gelirV)}</td>
-            <td style="text-align:right">${num(totals.dsmf)}</td>
-            <td style="text-align:right">${num(totals.iss)}</td>
-            <td style="text-align:right">${num(totals.itss)}</td>
-            <td style="text-align:right">${num(totals.hys)}</td>
-            <td style="text-align:right">${num(totals.avans)}</td>
-            <td style="text-align:right;color:#c83838">${num(totals.tutulma + totals.hys)}</td>
-            <td style="text-align:right;background:#fff7e0">${num(totals.net)}</td>
-            <td style="text-align:right">${num(totals.dsmfIsv)}</td>
-            <td style="text-align:right">${num(totals.issIsv)}</td>
-            <td style="text-align:right">${num(totals.itssIsv)}</td>
-            <td style="text-align:right">${num(totals.hysIsv)}</td>
-            <td style="text-align:right">${num(totals.sirketCemi)}</td>
         </tr>`;
 
         const headerRow = '<tr style="background:#1a2332;color:#fff;font-weight:bold">' +

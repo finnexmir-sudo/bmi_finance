@@ -345,6 +345,47 @@ namespace FinNex.UI.Areas.HR.Controllers
             string[] ayAdlar = { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
                                  "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
 
+            // ── Qabaqcadan ödənilmiş məzuniyyət avansı (Index ilə eyni məntiq) ──
+            // Ay ərzində ödənilmiş məzuniyyət avansının brütü + tutulmaları işçi
+            // başına hesablanır ki, maaş cədvəlində birləşdirilmiş göstərilsin.
+            var ayBas = new DateTime(il, ay, 1);
+            var ayBit = ayBas.AddMonths(1).AddDays(-1);
+            var odenilmisAvanslar = await _unitOfWork.Repository<Mezuniyyet>()
+                .Query()
+                .Where(x => !x.Silinib
+                    && x.OdenisTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis
+                    && x.OdenisStatus == MezuniyyetOdenisStatus.Odenilib
+                    && x.BaslamaTarixi >= ayBas && x.BaslamaTarixi <= ayBit)
+                .ToListAsync();
+
+            var mezAvansMap = new Dictionary<int, (decimal brut, decimal net, decimal gelirV, decimal dsmf, decimal iss, decimal itss)>();
+            foreach (var av in odenilmisAvanslar)
+            {
+                var mm = maaslar.FirstOrDefault(x => x.IsciId == av.IsciId);
+                if (mm == null) continue;
+
+                decimal avBrut = (av.OdenenMeblegBrut.HasValue && av.OdenenMeblegBrut > 0)
+                    ? av.OdenenMeblegBrut.Value
+                    : (await _hesablamaService.MezuniyyetOdenisiDetalliHesablaAsync(av.IsciId, av.BaslamaTarixi, av.BitmeTarixi)).CemiOdenis;
+
+                var salaryTax   = await _hesablamaService.TutulmalariHesablaAsync(mm.BrutMebleg, ayBas, av.IsciId);
+                var combinedTax = await _hesablamaService.TutulmalariHesablaAsync(mm.BrutMebleg + avBrut, ayBas, av.IsciId);
+
+                var entry = (
+                    brut:   avBrut,
+                    net:    av.OdenenMebleg ?? 0,
+                    gelirV: combinedTax.GelirVergisi - salaryTax.GelirVergisi,
+                    dsmf:   combinedTax.DsmfIsci     - salaryTax.DsmfIsci,
+                    iss:    combinedTax.IssizlikIsci - salaryTax.IssizlikIsci,
+                    itss:   combinedTax.Itss         - salaryTax.Itss);
+
+                if (mezAvansMap.TryGetValue(av.IsciId, out var ex))
+                    mezAvansMap[av.IsciId] = (ex.brut + entry.brut, ex.net + entry.net,
+                        ex.gelirV + entry.gelirV, ex.dsmf + entry.dsmf, ex.iss + entry.iss, ex.itss + entry.itss);
+                else
+                    mezAvansMap[av.IsciId] = entry;
+            }
+
             // Sütun başlıqları — mühasib cədvəli ilə eyni (32 sütun: A..AF)
             string[] basliqlar = {
                 "№", "S.A.A.", "Vəzifəsi",
@@ -443,10 +484,25 @@ namespace FinNex.UI.Areas.HR.Controllers
                 pul[24] = Detay(m, "İTSS");                       // işçi icbari tibbi
                 pul[25] = Detay(m, "Avans Kəsintisi");
                 pul[26] = 0m;                                     // güvənli sığorta — detal yoxdur
-                pul[27] = m.BrutMebleg - m.NetMebleg;             // tutulmuşdur (cəmi)
                 pul[28] = m.NetMebleg;                            // ödənilməlidir (net)
                 pul[29] = Detay(m, "DSMF (İşəgötürən)");
                 pul[30] = Detay(m, "İTSS (İşəgötürən)");
+
+                // Qabaqcadan ödənilmiş məzuniyyət avansını işçi sətrinə birləşdir:
+                // brütü gəlirə (məzuniyyət + cəmi), tutulmaları kəsinti sütunlarına,
+                // ödənilmiş net-i "Avans" sütununa. NET dəyişmir — avans artıq ödənilib,
+                // brüt(+avans) − bütün tutulmalar(+avans net) = cari NET (balanslaşır).
+                if (mezAvansMap.TryGetValue(m.IsciId, out var mav))
+                {
+                    pul[8]  += mav.brut;     // Məzuniyyət haqqı (brüt)
+                    pul[18] += mav.brut;     // Cəmi hesablanmış (brüt)
+                    pul[21] += mav.dsmf;     // DSMF (İşçi)
+                    pul[22] += mav.iss;      // İşsizlik (İşçi)
+                    pul[23] += mav.gelirV;   // Gəlir vergisi
+                    pul[24] += mav.itss;     // İTSS (işçi)
+                    pul[25] += mav.net;      // Avans (qabaqcadan ödənilmiş net)
+                }
+                pul[27] = pul[18] - m.NetMebleg;                  // Tutulmuşdur = cəmi brüt − net
 
                 var row = sheet.CreateRow(r);
                 var c0 = row.CreateCell(0); c0.SetCellValue(sira); c0.CellStyle = numStyle;

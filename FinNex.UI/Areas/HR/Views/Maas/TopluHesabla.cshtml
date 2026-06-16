@@ -422,6 +422,8 @@
                                     data-mav-iss="@mavIssStr"
                                     data-mav-itss="@mavItssStr"
                                     data-mav-net="@mavNetStr"
+                                    data-vezife="@(teyin?.Vezife?.Ad ?? "—")"
+                                    data-iban="@(GetIban(isci.Id) ?? "")"
                                     class="mth-row @(isDone ? "done" : "")">
 
                                     @* Checkbox *@
