@@ -17,6 +17,8 @@ using Microsoft.AspNetCore.Hosting;
 using FinNex.Application.Services.HR;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
+using NPOI.SS.Util;
+using NPOI.XSSF.UserModel;
 using System.IO;
 
 namespace FinNex.UI.Areas.HR.Controllers
@@ -308,6 +310,177 @@ namespace FinNex.UI.Areas.HR.Controllers
             9                     => "cu",
             _                     => "cı"   // 0, 6
         };
+
+        // ── Əmək haqqı cədvəli (mühasib formatı) — .xlsx ──────────────
+        // "Excel İxrac" düyməsi: seçilmiş ay üzrə hesablanmış maaşları
+        // mühasibin istifadə etdiyi cədvəllə EYNİ sütun strukturunda ixrac edir.
+        // Mənbə Index/PravodkaExport ilə eynidir (silinməmiş, ay üzrə bütün maaşlar).
+        public async Task<IActionResult> ExcelIxrac(int il, int ay)
+        {
+            if (ay < 1 || ay > 12)
+            {
+                TempData["Error"] = "Ay düzgün deyil.";
+                return RedirectToAction(nameof(Index), new { il, ay });
+            }
+
+            var maaslar = await _unitOfWork.Repository<Maas>()
+                .Query()
+                .Where(x => !x.Silinib && x.Il == il && x.Ay == ay)
+                .Include(x => x.Isci).ThenInclude(i => i.Maliye)
+                .Include(x => x.Isci).ThenInclude(i => i.IsciTeyinatlari.Where(t => t.BitmeTarixi == null))
+                    .ThenInclude(t => t.Vezife)
+                .Include(x => x.Detallar).ThenInclude(d => d.MaasNovu)
+                .OrderBy(x => x.Isci.Sira).ThenBy(x => x.Isci.Soyad).ThenBy(x => x.Isci.Ad)
+                .ToListAsync();
+
+            if (maaslar.Count == 0)
+            {
+                TempData["Error"] = $"{il}/{ay:D2} üçün hesablanmış maaş tapılmadı.";
+                return RedirectToAction(nameof(Index), new { il, ay });
+            }
+
+            // Detal məbləği — MaasNovu adına görə (calc-dakı DetayEkle adları ilə eyni).
+            decimal Detay(Maas m, string ad) => m.Detallar.Where(d => d.MaasNovu?.Ad == ad).Sum(d => d.Mebleg);
+
+            string[] ayAdlar = { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+                                 "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+
+            // Sütun başlıqları — mühasib cədvəli ilə eyni (32 sütun: A..AF)
+            string[] basliqlar = {
+                "№", "S.A.A.", "Vəzifəsi",
+                "Müqavilə üzrə aylıq əmək haqqı",
+                "Hesablanmış aylıq əmək haqqı",
+                "18.02.2016-cı il tarixli IH-07 saylı əmrlə əlavə təminat",
+                "İstifadə edilməmiş əmək məzuniyyəti günlərinə görə kompessasiya ödənişi",
+                "Orta əmək haqqı saxlanılan günlər üçün hesablanmış orta əmək haqqı",
+                "Məzuniyyət haqqı", "Mükafat", "Bayram hədiyyəsi",
+                "Müsabiqə qalibinə verilən hədiyyə", "Xəstəlik vərəqəsi",
+                "Yalnız mdss haqqı hesablanan digər gəlirlər",
+                "VM-nin 98.2.1-ci maddəsinə əsasən vergiyə cəlb olunan gəlirlər",
+                "VM-nin 98.2.3-cü maddəsinə əsasən vergiyə cəlb olunan gəlirlər",
+                "Əlavə əmək haqqı",
+                "HYS müqavilələri üzrə 3 il tamam olmamış qayıdan məbləğlər",
+                "Cəmi hesablanmış aylıq ödənişlər",
+                "Ödənilmiş həyatın yığım sığortası haqqları",
+                "İşgötürən tərəfindən ödənilən həyatın yığım sığortası haqqları",
+                "Tutulmuş m.d.s.s. haqları (10%)",
+                "Tutulmuş işsizlikdən sığorta haqqları (0.5%)",
+                "Gəlir vergisi", "Icbari Tibbi Sığorta (2 %)", "Avans",
+                "Güvənli Sığorta üzrə çıxılmalar", "Tutulmuşdur", "Ödənilməlidir",
+                "İşəgötürən tərəfindən ödənilən MDSS haqqı",
+                "İşəgötürən tərəfindən ödənilən İTS haqqı",
+                "Cari hesablar"
+            };
+            // Mühasib cədvəlindəki məntiqi nömrələmə (başlıqların altındakı sətir)
+            string[] nomreler = {
+                "1","2","3","4","5","6","7","8","9","10","","","11","12","13","14","15",
+                "","16","17","","18","18-1","19","","20","21","22","23","","","23"
+            };
+            int colCount = basliqlar.Length;
+
+            var wb = new XSSFWorkbook();
+            var sheet = wb.CreateSheet($"{ayAdlar[ay]} {il}");
+            short pulFmt = wb.CreateDataFormat().GetFormat("#,##0.00");
+
+            IFont Font(bool bold, double size) { var f = wb.CreateFont(); f.IsBold = bold; f.FontHeightInPoints = size; return f; }
+            void Cerceve(ICellStyle s) { s.BorderTop = BorderStyle.Thin; s.BorderBottom = BorderStyle.Thin; s.BorderLeft = BorderStyle.Thin; s.BorderRight = BorderStyle.Thin; }
+
+            var titleStyle = wb.CreateCellStyle(); titleStyle.SetFont(Font(true, 11)); titleStyle.Alignment = HorizontalAlignment.Center; titleStyle.VerticalAlignment = VerticalAlignment.Center; titleStyle.WrapText = true;
+            var headStyle = wb.CreateCellStyle(); headStyle.SetFont(Font(true, 8)); headStyle.Alignment = HorizontalAlignment.Center; headStyle.VerticalAlignment = VerticalAlignment.Center; headStyle.WrapText = true; Cerceve(headStyle); headStyle.FillForegroundColor = IndexedColors.Grey25Percent.Index; headStyle.FillPattern = FillPattern.SolidForeground;
+            var numStyle = wb.CreateCellStyle(); numStyle.SetFont(Font(false, 8)); numStyle.Alignment = HorizontalAlignment.Center; Cerceve(numStyle);
+            var textStyle = wb.CreateCellStyle(); textStyle.SetFont(Font(false, 9)); textStyle.VerticalAlignment = VerticalAlignment.Center; textStyle.WrapText = true; Cerceve(textStyle);
+            var moneyStyle = wb.CreateCellStyle(); moneyStyle.SetFont(Font(false, 9)); moneyStyle.DataFormat = pulFmt; Cerceve(moneyStyle);
+            var totalText = wb.CreateCellStyle(); totalText.SetFont(Font(true, 9)); totalText.Alignment = HorizontalAlignment.Right; Cerceve(totalText);
+            var totalMoney = wb.CreateCellStyle(); totalMoney.SetFont(Font(true, 9)); totalMoney.DataFormat = pulFmt; Cerceve(totalMoney);
+
+            // Başlıq sətri (merged)
+            var titleRow = sheet.CreateRow(0); titleRow.HeightInPoints = 34;
+            var tcell = titleRow.CreateCell(0);
+            tcell.SetCellValue($"\"Bank Melli İran\" Bakı filialının işçilərinin {il}-{IlSuffiks(il)} ilin {ayAdlar[ay]} ayı üzrə əmək haqqı və ona bərabər tutulan ödənişlər cədvəli");
+            tcell.CellStyle = titleStyle;
+            sheet.AddMergedRegion(new CellRangeAddress(0, 0, 0, colCount - 1));
+
+            // Sütun adları
+            var headRow = sheet.CreateRow(1); headRow.HeightInPoints = 72;
+            for (int c = 0; c < colCount; c++) { var cell = headRow.CreateCell(c); cell.SetCellValue(basliqlar[c]); cell.CellStyle = headStyle; }
+
+            // Nömrələmə sətri
+            var numRow = sheet.CreateRow(2);
+            for (int c = 0; c < colCount; c++) { var cell = numRow.CreateCell(c); cell.SetCellValue(c < nomreler.Length ? nomreler[c] : ""); cell.CellStyle = numStyle; }
+
+            // Data sətirləri
+            int r = 3, sira = 0;
+            var cemler = new decimal[colCount];
+            foreach (var m in maaslar)
+            {
+                sira++;
+                decimal esas = Detay(m, "Əsas Əməkhaqqı");
+                decimal davam = Detay(m, "Davamiyyət Kəsintisi");
+                var vez = m.Isci.IsciTeyinatlari.FirstOrDefault()?.Vezife?.Ad ?? "—";
+
+                var pul = new decimal[colCount];
+                pul[3]  = esas;                                   // Müqavilə üzrə aylıq əmək haqqı
+                pul[4]  = esas - davam;                           // Hesablanmış (işlənmiş) əmək haqqı
+                pul[5]  = Detay(m, "IH-07 Əlavə Təminat");
+                pul[6]  = 0m;                                     // məzuniyyət kompensasiyası — ayrıca maaş detalı yoxdur
+                pul[7]  = 0m;                                     // orta əmək haqqı saxlanılan günlər — detal yoxdur
+                pul[8]  = Detay(m, "Məzuniyyət Ödənişi");
+                pul[9]  = Detay(m, "Bonus/Mükafat");
+                pul[10] = 0m;                                     // bayram hədiyyəsi
+                pul[11] = 0m;                                     // müsabiqə hədiyyəsi
+                pul[12] = Detay(m, "Xəstəlik Ödənişi");
+                pul[13] = Detay(m, "Fərqli Gəlir");               // yalnız MDSS hesablanan digər gəlir
+                pul[14] = Detay(m, "VM 98.2.1 Gəlirləri");
+                pul[15] = 0m;                                     // VM 98.2.3 — detal yoxdur
+                pul[16] = Detay(m, "Overtime");                   // əlavə əmək haqqı
+                pul[17] = 0m;                                     // HYS qayıdan məbləğlər — detal yoxdur
+                pul[18] = m.BrutMebleg;                           // cəmi hesablanmış
+                pul[19] = Detay(m, "HYS (İşçi)");
+                pul[20] = Detay(m, "HYS (İşəgötürən)");
+                pul[21] = Detay(m, "DSMF (İşçi)");
+                pul[22] = Detay(m, "İşsizlik Sığortası (İşçi)");
+                pul[23] = Detay(m, "Gəlir Vergisi");
+                pul[24] = Detay(m, "İTSS");                       // işçi icbari tibbi
+                pul[25] = Detay(m, "Avans Kəsintisi");
+                pul[26] = 0m;                                     // güvənli sığorta — detal yoxdur
+                pul[27] = m.BrutMebleg - m.NetMebleg;             // tutulmuşdur (cəmi)
+                pul[28] = m.NetMebleg;                            // ödənilməlidir (net)
+                pul[29] = Detay(m, "DSMF (İşəgötürən)");
+                pul[30] = Detay(m, "İTSS (İşəgötürən)");
+
+                var row = sheet.CreateRow(r);
+                var c0 = row.CreateCell(0); c0.SetCellValue(sira); c0.CellStyle = numStyle;
+                var c1 = row.CreateCell(1); c1.SetCellValue($"{m.Isci.Soyad} {m.Isci.Ad} {m.Isci.AtaAdi}".Trim()); c1.CellStyle = textStyle;
+                var c2 = row.CreateCell(2); c2.SetCellValue(vez); c2.CellStyle = textStyle;
+                for (int c = 3; c <= 30; c++) { var cell = row.CreateCell(c); cell.SetCellValue((double)pul[c]); cell.CellStyle = moneyStyle; cemler[c] += pul[c]; }
+                var c31 = row.CreateCell(31); c31.SetCellValue(m.Isci.Maliye?.BankHesabNo ?? ""); c31.CellStyle = textStyle;
+                r++;
+            }
+
+            // Cəmi sətri
+            var totalRow = sheet.CreateRow(r);
+            for (int c = 0; c < colCount; c++)
+            {
+                var cell = totalRow.CreateCell(c);
+                if (c == 1) { cell.SetCellValue("CƏMİ"); cell.CellStyle = totalText; }
+                else if (c >= 3 && c <= 30) { cell.SetCellValue((double)cemler[c]); cell.CellStyle = totalMoney; }
+                else { cell.SetCellValue(""); cell.CellStyle = totalText; }
+            }
+
+            // Sütun enləri (1/256 simvol)
+            sheet.SetColumnWidth(0, 5 * 256);
+            sheet.SetColumnWidth(1, 28 * 256);
+            sheet.SetColumnWidth(2, 18 * 256);
+            for (int c = 3; c <= 30; c++) sheet.SetColumnWidth(c, 13 * 256);
+            sheet.SetColumnWidth(31, 24 * 256);
+            sheet.CreateFreezePane(3, 3);
+
+            byte[] bytes;
+            using (var ms = new MemoryStream()) { wb.Write(ms, true); bytes = ms.ToArray(); }
+            return File(bytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"Emek_haqqi_cedveli_{il}_{ay:D2}.xlsx");
+        }
 
         // ── GET /HR/Maas ─────────────────────────────────────────
         // Əsas siyahı — hər işçi, hər sütun ayrı məbləğ
