@@ -22,11 +22,6 @@ public interface IMehkemeIsiService
     Task<int> ZaminleriOracledanYukleAsync(int mehkemeIsiId, int isciId);
     Task<int> ZaminleriSnapshotEtAsync(int mehkemeIsiId, List<MehkemeZaminDto> zaminler, int isciId);
 
-    // Məhkəmə İşləri (vahid dosye görünüşü) — Variant A
-    Task<IList<MehkemeIsiCourtListDto>> MehkemeSiyahisiAsync(string? axtaris = null);
-    Task<(int isSayi, int iclasSayi)> MehkemeImportAsync(List<MehkemeCedvelImportDto> isler, int isciId);
-    Task<int> MehkemeYaratAsync(MehkemeCedvelCreateDto dto, int isciId);
-
     // Oracle: müştərinin bütün aktiv kreditlərini qaytarır (sütun adı → dəyər)
     Task<IList<Dictionary<string, string>>> OracleKreditlerGetirAsync(string qeydiyyatNomresi);
 

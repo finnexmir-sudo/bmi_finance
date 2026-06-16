@@ -19,7 +19,8 @@ public class MehkemeCedvelService : IMehkemeCedvelService
         if (!string.IsNullOrWhiteSpace(axtaris))
         {
             var a = axtaris.Trim();
-            q = q.Where(x => x.BorcluAd.Contains(a) || (x.KreditHesabi != null && x.KreditHesabi.Contains(a)));
+            q = q.Where(x => x.BorcluAd.Contains(a)
+                          || (x.MehkemeIsNomresi != null && x.MehkemeIsNomresi.Contains(a)));
         }
 
         var list = await q.Include(x => x.Iclaslar)
@@ -29,17 +30,13 @@ public class MehkemeCedvelService : IMehkemeCedvelService
         {
             Id = x.Id,
             Sira = x.Sira,
-            Status = x.Status,
             BorcluAd = x.BorcluAd,
-            KreditNovu = x.KreditNovu,
-            KreditHesabi = x.KreditHesabi,
-            Subkod = x.Subkod,
+            GirovunNovu = x.GirovunNovu,
             MehkemeyeVerilmeTarixi = x.MehkemeyeVerilmeTarixi,
-            MehkemeSenedi = x.MehkemeSenedi,
-            QetnameTarixi = x.QetnameTarixi,
-            Qeyd = x.Qeyd,
+            MehkemeIsNomresi = x.MehkemeIsNomresi,
+            Hakim = x.Hakim,
             Iclaslar = x.Iclaslar.Where(i => !i.Silinib).OrderBy(i => i.Tarix)
-                .Select(i => new MehkemeCedvelIclasDto { Id = i.Id, Tarix = i.Tarix, Saat = i.Saat, Netice = i.Netice })
+                .Select(i => new MehkemeCedvelIclasDto { Id = i.Id, Tarix = i.Tarix, Saat = i.Saat })
                 .ToList()
         }).ToList();
     }
@@ -56,16 +53,17 @@ public class MehkemeCedvelService : IMehkemeCedvelService
             var e = new MehkemeCedvel
             {
                 Sira = d.Sira,
-                Status = d.Status?.Trim(),
                 BorcluAd = d.BorcluAd.Trim(),
-                KreditNovu = d.KreditNovu?.Trim(),
+                GirovunNovu = d.GirovunNovu?.Trim(),
                 MehkemeyeVerilmeTarixi = d.MehkemeyeVerilmeTarixi,
-                MehkemeSenedi = d.MehkemeSenedi?.Trim(),
+                MehkemeIsNomresi = d.MehkemeIsNomresi?.Trim(),
+                Hakim = d.Hakim?.Trim(),
                 YaradanIcraciId = isciId,
                 YaradilmaTarixi = DateTime.Now
             };
             foreach (var ic in d.Iclaslar)
             {
+                if (ic.Tarix == null && string.IsNullOrWhiteSpace(ic.Saat)) continue;
                 e.Iclaslar.Add(new MehkemeCedvelIclas { Tarix = ic.Tarix, Saat = ic.Saat?.Trim(), YaradilmaTarixi = DateTime.Now });
                 iclasS++;
             }
@@ -81,15 +79,11 @@ public class MehkemeCedvelService : IMehkemeCedvelService
         var e = new MehkemeCedvel
         {
             Sira = dto.Sira,
-            Status = dto.Status?.Trim(),
             BorcluAd = (dto.BorcluAd ?? "").Trim(),
-            KreditNovu = dto.KreditNovu?.Trim(),
-            KreditHesabi = dto.KreditHesabi?.Trim(),
-            Subkod = dto.Subkod?.Trim(),
+            GirovunNovu = dto.GirovunNovu?.Trim(),
             MehkemeyeVerilmeTarixi = ParseDate(dto.MehkemeyeVerilmeTarixi),
-            MehkemeSenedi = dto.MehkemeSenedi?.Trim(),
-            QetnameTarixi = ParseDate(dto.QetnameTarixi),
-            Qeyd = dto.Qeyd?.Trim(),
+            MehkemeIsNomresi = dto.MehkemeIsNomresi?.Trim(),
+            Hakim = dto.Hakim?.Trim(),
             YaradanIcraciId = isciId,
             YaradilmaTarixi = DateTime.Now
         };

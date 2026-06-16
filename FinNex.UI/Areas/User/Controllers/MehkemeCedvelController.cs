@@ -14,10 +14,10 @@ namespace FinNex.UI.Areas.User.Controllers;
 [Authorize(Roles = "Admin,PID")]
 public class MehkemeCedvelController : Controller
 {
-    private readonly IMehkemeIsiService _service;
+    private readonly IMehkemeCedvelService _service;
     private readonly UserManager<AppUser> _userManager;
 
-    public MehkemeCedvelController(IMehkemeIsiService service, UserManager<AppUser> userManager)
+    public MehkemeCedvelController(IMehkemeCedvelService service, UserManager<AppUser> userManager)
     {
         _service = service;
         _userManager = userManager;
@@ -31,7 +31,7 @@ public class MehkemeCedvelController : Controller
 
     public async Task<IActionResult> Index(string? axtaris)
     {
-        var list = await _service.MehkemeSiyahisiAsync(axtaris);
+        var list = await _service.HamisiniGetirAsync(axtaris);
         ViewData["Axtaris"] = axtaris;
         return View(list);
     }
@@ -52,11 +52,11 @@ public class MehkemeCedvelController : Controller
         {
             using var stream = fayl.OpenReadStream();
             var wb = new HSSFWorkbook(stream);
-            var sheet = SheetTap(wb, "Məhkəmə") ?? wb.GetSheetAt(0);
+            var sheet = SheetTap(wb, "Məhkəmə") ?? SheetTap(wb, "hk") ?? wb.GetSheetAt(0);
 
-            // Data ~4-cü sətirdən (0-əsaslı 3). Sütun xəritəsi:
-            //  A0=Status, B1=Sıra, C2=Ad, G6=KreditNövü, H7=VerilməTarixi, I8=Sənəd/Hakim
-            //  J9-dan (tarix, saat) cütləri → iclaslar
+            // Sütun xəritəsi (Excel "Məhkəmə 2021-2026" — başlıq 3-cü sətir, data 4-cü sətirdən):
+            //  1=Sıra, 2=Ad, 6=Girovun növü, 7=Verilmə tarixi, 8=İş №/hakim
+            //  9-dan (tarix, saat) cütləri → iclaslar
             isler = new List<MehkemeCedvelImportDto>();
             for (int r = 3; r <= sheet.LastRowNum; r++)
             {
@@ -68,14 +68,13 @@ public class MehkemeCedvelController : Controller
 
                 var d = new MehkemeCedvelImportDto
                 {
-                    Status = Metn(row, 0),
                     Sira = (int?)Reqem(row, 1),
                     BorcluAd = ad.Trim(),
-                    KreditNovu = Metn(row, 6),
+                    GirovunNovu = Metn(row, 6),
                     MehkemeyeVerilmeTarixi = Tarix(row, 7),
-                    MehkemeSenedi = Metn(row, 8)
+                    MehkemeIsNomresi = Metn(row, 8)
                 };
-                for (int c = 9; c <= 24; c += 2)
+                for (int c = 9; c <= 40; c += 2)
                 {
                     var t = Tarix(row, c);
                     var saat = Metn(row, c + 1);
@@ -91,7 +90,7 @@ public class MehkemeCedvelController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var (isS, iclasS) = await _service.MehkemeImportAsync(isler, await CurrentIsciIdAsync());
+        var (isS, iclasS) = await _service.ImportAsync(isler, await CurrentIsciIdAsync());
         TempData["Success"] = $"İmport: {isS} iş, {iclasS} iclas əlavə olundu.";
         return RedirectToAction(nameof(Index));
     }
@@ -102,10 +101,10 @@ public class MehkemeCedvelController : Controller
     {
         if (string.IsNullOrWhiteSpace(dto.BorcluAd))
         {
-            TempData["Error"] = "Borclu adı məcburidir.";
+            TempData["Error"] = "Müştəri adı məcburidir.";
             return RedirectToAction(nameof(Index));
         }
-        await _service.MehkemeYaratAsync(dto, await CurrentIsciIdAsync());
+        await _service.YaratAsync(dto, await CurrentIsciIdAsync());
         TempData["Success"] = "İş əlavə edildi.";
         return RedirectToAction(nameof(Index));
     }

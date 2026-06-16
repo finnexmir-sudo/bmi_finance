@@ -1,5 +1,5 @@
 @using FinNex.Application.DTOs.Pid
-@model IList<MehkemeIsiCourtListDto>
+@model IList<MehkemeCedvelListDto>
 @{
     ViewData["Title"] = "Məhkəmə İşləri";
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
@@ -17,20 +17,16 @@
     .mc-btn--g { background:#fff; color:#334155; border:1.5px solid #e2e8f0; }
     .mc-card { background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; overflow:hidden; }
     .mc-tw { overflow-x:auto; }
-    .mc-table { width:100%; border-collapse:collapse; font-size:12.5px; }
-    .mc-table thead th { background:#f8fafc; padding:9px 12px; text-align:left; font-weight:700; color:#475569; border-bottom:2px solid #e2e8f0; white-space:nowrap; }
-    .mc-table td { padding:9px 12px; border-bottom:1px solid #eef2f7; vertical-align:top; }
+    .mc-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .mc-table thead th { background:#f8fafc; padding:10px 14px; text-align:left; font-weight:700; color:#475569; border-bottom:2px solid #e2e8f0; white-space:nowrap; }
+    .mc-table td { padding:10px 14px; border-bottom:1px solid #eef2f7; vertical-align:top; }
     .mc-table tbody tr:hover { background:#fafbff; }
-    .mc-st { display:inline-block; padding:2px 8px; border-radius:20px; font-size:10.5px; font-weight:800; background:#f1f5f9; color:#475569; white-space:nowrap; }
-    .mc-st--bagli { background:rgba(34,197,94,.12); color:#15803d; }
-    .mc-iclas { font-size:11.5px; color:#475569; }
-    .mc-iclas span { display:inline-block; background:#eef2ff; color:#4338ca; border-radius:5px; padding:1px 6px; margin:1px; }
-    .mc-ks { display:inline-block; background:#eef2ff; color:#4338ca; border-radius:5px; padding:1px 6px; font-size:11px; font-weight:700; margin-left:4px; }
-    .mc-hesab { font-family:ui-monospace,monospace; color:#6366f1; font-weight:700; }
+    .mc-sira { display:inline-block; min-width:26px; text-align:center; background:#f1f5f9; color:#475569; border-radius:6px; padding:2px 7px; font-weight:800; font-size:12px; }
+    .mc-girov { display:inline-block; background:#eef2ff; color:#4338ca; border-radius:5px; padding:2px 8px; font-size:12px; font-weight:600; }
+    .mc-iclas span { display:inline-block; background:#eef2ff; color:#4338ca; border-radius:5px; padding:1px 7px; margin:1px; font-size:12px; }
+    .mc-hakim { color:#64748b; font-size:12px; }
     .mc-foot { padding:10px 14px; font-size:12px; color:#64748b; border-top:1px solid #f1f5f9; }
-    .mc-iconbtn { border:1.5px solid #fecaca; background:#fff; border-radius:7px; padding:4px 9px; cursor:pointer; font-size:12px; color:#b91c1c; }
-    .mc-open { display:inline-flex; align-items:center; gap:5px; padding:4px 11px; border-radius:7px; font-size:12px; font-weight:700; text-decoration:none; background:#6366f1; color:#fff; margin-right:6px; }
-    .mc-open:hover { background:#4f46e5; color:#fff; }
+    .mc-iconbtn { border:1.5px solid #fecaca; background:#fff; border-radius:7px; padding:5px 10px; cursor:pointer; font-size:12px; color:#b91c1c; }
     .mc-empty { text-align:center; padding:36px; color:#94a3b8; }
 </style>
 
@@ -40,7 +36,7 @@
 
     <div class="mc-bar">
         <form method="get" style="display:flex;gap:8px;flex:1 1 240px">
-            <input type="text" name="axtaris" value="@axtaris" class="mc-inp mc-grow" placeholder="🔍 Borclu adı və ya hesab № axtar…" />
+            <input type="text" name="axtaris" value="@axtaris" class="mc-inp mc-grow" placeholder="🔍 Müştəri adı və ya iş № axtar…" />
             <button type="submit" class="mc-btn mc-btn--g"><i class="bi bi-funnel"></i> Axtar</button>
         </form>
         <button type="button" class="mc-btn mc-btn--p" onclick="mcOpenAdd()"><i class="bi bi-plus-lg"></i> Yeni iş</button>
@@ -58,14 +54,11 @@
                 <thead>
                     <tr>
                         <th>Sıra</th>
-                        <th>Status</th>
-                        <th>Borclu</th>
-                        <th>Kredit növü</th>
-                        <th>Hesab № / Subkod</th>
+                        <th>Müştəri adı</th>
+                        <th>Girovun növü</th>
                         <th>Məhkəməyə verilmə</th>
-                        <th>Sənəd / hakim</th>
-                        <th>İclaslar</th>
-                        <th>Qətnamə</th>
+                        <th>Məhkəmə iş № / Hakim</th>
+                        <th>Məhkəmə keçirilmə (tarix / saat)</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -75,29 +68,26 @@
                         @foreach (var x in Model)
                         {
                             <tr>
-                                <td>@(x.Sira?.ToString() ?? "—")</td>
-                                <td><span class="mc-st @(x.Status != null && (x.Status.Contains("BAĞ") || x.Status.Contains("BAG")) ? "mc-st--bagli" : "")">@(string.IsNullOrWhiteSpace(x.Status) ? "—" : x.Status)</span></td>
+                                <td><span class="mc-sira">@(x.Sira?.ToString() ?? "—")</span></td>
                                 <td style="font-weight:600;white-space:nowrap">@x.BorcluAd</td>
-                                <td>@(string.IsNullOrWhiteSpace(x.KreditNovu) ? "—" : x.KreditNovu)</td>
-                                <td>
-                                    @if (!string.IsNullOrWhiteSpace(x.KreditHesabi)) { <span class="mc-hesab">@x.KreditHesabi</span> } else { <span>—</span> }
-                                    @if (!string.IsNullOrWhiteSpace(x.Subkod)) { <span class="mc-ks">@x.Subkod</span> }
-                                </td>
+                                <td>@if (!string.IsNullOrWhiteSpace(x.GirovunNovu)) { <span class="mc-girov">@x.GirovunNovu</span> } else { <span>—</span> }</td>
                                 <td style="white-space:nowrap">@(x.MehkemeyeVerilmeTarixi?.ToString("dd.MM.yyyy") ?? "—")</td>
-                                <td style="max-width:200px">@(string.IsNullOrWhiteSpace(x.MehkemeSenedi) ? "—" : x.MehkemeSenedi)</td>
+                                <td style="max-width:260px">
+                                    @if (!string.IsNullOrWhiteSpace(x.MehkemeIsNomresi)) { <div>@x.MehkemeIsNomresi</div> }
+                                    @if (!string.IsNullOrWhiteSpace(x.Hakim)) { <div class="mc-hakim"><i class="bi bi-person-badge"></i> @x.Hakim</div> }
+                                    @if (string.IsNullOrWhiteSpace(x.MehkemeIsNomresi) && string.IsNullOrWhiteSpace(x.Hakim)) { <span>—</span> }
+                                </td>
                                 <td class="mc-iclas">
                                     @if (x.Iclaslar.Any())
                                     {
                                         @foreach (var ic in x.Iclaslar)
                                         {
-                                            <span>@(ic.Tarix?.ToString("dd.MM.yyyy") ?? "—")@(string.IsNullOrWhiteSpace(ic.Saat) ? "" : " " + ic.Saat)</span>
+                                            <span>@(ic.Tarix?.ToString("dd.MM.yyyy") ?? "—")@(string.IsNullOrWhiteSpace(ic.Saat) ? "" : " · " + ic.Saat)</span>
                                         }
                                     }
-                                    else { <span style="background:none;color:#cbd5e1">—</span> }
+                                    else { <span style="color:#cbd5e1">—</span> }
                                 </td>
-                                <td style="white-space:nowrap">@(x.QetnameTarixi?.ToString("dd.MM.yyyy") ?? "—")</td>
                                 <td style="white-space:nowrap">
-                                    <a asp-area="User" asp-controller="MehkemeIsi" asp-action="Detal" asp-route-id="@x.Id" class="mc-open"><i class="bi bi-folder2-open"></i> Aç</a>
                                     <form asp-action="Sil" method="post" onsubmit="return confirm('Bu iş silinsin?');" style="display:inline">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@x.Id" />
@@ -109,7 +99,7 @@
                     }
                     else
                     {
-                        <tr><td colspan="10"><div class="mc-empty"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>Hələ iş yoxdur. Yuxarıdan <b>Excel import</b> et və ya Excel-dən çək.</div></td></tr>
+                        <tr><td colspan="7"><div class="mc-empty"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px"></i>Hələ iş yoxdur. Yuxarıdan <b>Yeni iş</b> əlavə et və ya <b>Excel import</b> et.</div></td></tr>
                     }
                 </tbody>
             </table>
@@ -131,20 +121,16 @@
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-2"><label class="form-label fw-semibold">Sıra</label><input name="Sira" type="number" class="form-control" /></div>
-                        <div class="col-md-4"><label class="form-label fw-semibold">Status</label><input name="Status" class="form-control" placeholder="BORC BAĞLANDI / davam edir" /></div>
-                        <div class="col-md-6"><label class="form-label fw-semibold">Borclu ad-soyad *</label><input name="BorcluAd" class="form-control" required /></div>
-                        <div class="col-md-4"><label class="form-label fw-semibold">Kredit növü</label><input name="KreditNovu" class="form-control" /></div>
-                        <div class="col-md-4"><label class="form-label fw-semibold">Hesab №</label><input name="KreditHesabi" class="form-control" /></div>
-                        <div class="col-md-4"><label class="form-label fw-semibold">Subkod</label><input name="Subkod" class="form-control" /></div>
-                        <div class="col-md-4"><label class="form-label fw-semibold">Məhkəməyə verilmə</label><input name="MehkemeyeVerilmeTarixi" type="date" class="form-control" /></div>
-                        <div class="col-md-4"><label class="form-label fw-semibold">Qətnamə tarixi</label><input name="QetnameTarixi" type="date" class="form-control" /></div>
-                        <div class="col-md-4"><label class="form-label fw-semibold">Sənəd / hakim</label><input name="MehkemeSenedi" class="form-control" /></div>
-                        <div class="col-12"><label class="form-label fw-semibold">Qeyd</label><input name="Qeyd" class="form-control" /></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Müştəri adı *</label><input name="BorcluAd" class="form-control" required /></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Girovun növü</label><input name="GirovunNovu" class="form-control" placeholder="Daşınmaz / Avtomobil…" /></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Məhkəməyə verilmə tarixi</label><input name="MehkemeyeVerilmeTarixi" type="date" class="form-control" /></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Məhkəmə iş / sənəd №</label><input name="MehkemeIsNomresi" class="form-control" /></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Hakim</label><input name="Hakim" class="form-control" /></div>
                     </div>
                     <hr />
-                    <label class="form-label fw-semibold">İclaslar (tarix + saat)</label>
+                    <label class="form-label fw-semibold">Məhkəmə keçirilmə tarixləri (tarix + saat)</label>
                     <div id="mcIclaslar"></div>
-                    <button type="button" class="btn btn-sm btn-light mt-2" onclick="mcAddIclas()"><i class="bi bi-plus"></i> İclas əlavə et</button>
+                    <button type="button" class="btn btn-sm btn-light mt-2" onclick="mcAddIclas()"><i class="bi bi-plus"></i> Tarix əlavə et</button>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Bağla</button>
