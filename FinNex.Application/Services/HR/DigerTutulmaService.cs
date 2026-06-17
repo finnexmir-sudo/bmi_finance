@@ -83,6 +83,7 @@ namespace FinNex.Application.Services.HR
                         Mebleg = x.Mebleg,
                         MuddetAy = x.MuddetAy,
                         AyliqMebleg = x.AyliqMebleg,
+                        SonAyMebleg = x.Mebleg - x.AyliqMebleg * (x.MuddetAy - 1),
                         BaslamaIl = x.BaslamaIl,
                         BaslamaAy = x.BaslamaAy,
                         BitmeIl = sonIndex / 12,

@@ -10,7 +10,7 @@
     <div class="fn-page-head">
         <div>
             <div class="fn-page-title">İşçidən Digər Tutulma</div>
-            <div class="fn-page-sub">Sığorta və s. — işçidən aylıq tutulan pay. Maaşa təsir etmir; yalnız əməliyyat yazılışında (provodka) net ödənişdən çıxılır.</div>
+            <div class="fn-page-sub">Sığorta və s. — işçidən aylıq tutulan pay. Maaşa təsir etmir; yalnız əməliyyat yazılışında (provodka) net ödənişdən çıxılır. <strong>Son ay</strong> yuvarlaqlaşma qalığını udur — beləcə müddət üzrə cəm dəqiq ümumi məbləğ olur.</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
             <a asp-action="ExcelIxrac" class="fn-btn fn-btn--outline" title="Mühasib yoxlaması üçün Excel">
@@ -62,7 +62,10 @@
                             <td style="padding:10px 14px;color:#0f172a;font-weight:500">@t.IsciAdSoyad</td>
                             <td style="padding:10px 14px;text-align:right;font-family:monospace;color:#0f172a">@t.Mebleg.ToString("N2") ₼</td>
                             <td style="padding:10px 14px;text-align:center;color:#475569">@t.MuddetAy ay</td>
-                            <td style="padding:10px 14px;text-align:right;font-family:monospace;font-weight:600;color:#0f172a">@t.AyliqMebleg.ToString("N2") ₼</td>
+                            <td style="padding:10px 14px;text-align:right;font-family:monospace">
+                                <div style="font-weight:600;color:#0f172a">@t.AyliqMebleg.ToString("N2") ₼</div>
+                                <div style="font-size:11px;color:#94a3b8">son ay @t.SonAyMebleg.ToString("N2") ₼</div>
+                            </td>
                             <td style="padding:10px 14px;text-align:center;white-space:nowrap;min-width:96px">
                                 <div style="font-weight:600;color:#0f172a">@t.TutulubSayi / @t.MuddetAy ay</div>
                                 <div style="font-size:11px;color:#94a3b8">qalıq @t.QalanMebleg.ToString("N2") ₼</div>

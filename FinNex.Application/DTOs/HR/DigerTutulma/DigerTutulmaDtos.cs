@@ -9,6 +9,8 @@ namespace FinNex.Application.DTOs.HR.DigerTutulma
         public decimal Mebleg { get; set; }
         public int MuddetAy { get; set; }
         public decimal AyliqMebleg { get; set; }
+        /// <summary>Son ay tutulması (yuvarlaqlaşma qalığını udur) = Mebleg − Aylıq×(müddət−1).</summary>
+        public decimal SonAyMebleg { get; set; }
         public int BaslamaIl { get; set; }
         public int BaslamaAy { get; set; }
         public int BitmeIl { get; set; }

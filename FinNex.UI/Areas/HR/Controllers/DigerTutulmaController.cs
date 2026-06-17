@@ -54,7 +54,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             var ws = wb.Worksheets.Add("Digər Tutulma");
 
             var basliqlar = new[] { "№", "İşçi", "Ümumi məbləğ", "Müddət (ay)", "Aylıq",
-                "Tutulub", "Qalıq", "Dövr", "Açıqlama", "Yaradılıb" };
+                "Son ay", "Tutulub", "Qalıq", "Dövr", "Açıqlama", "Yaradılıb" };
             for (int c = 0; c < basliqlar.Length; c++)
                 ws.Cell(1, c + 1).Value = basliqlar[c];
             var headRange = ws.Range(1, 1, 1, basliqlar.Length);
@@ -70,14 +70,16 @@ namespace FinNex.UI.Areas.HR.Controllers
                 ws.Cell(row, 3).Value = (double)t.Mebleg;
                 ws.Cell(row, 4).Value = (double)t.MuddetAy;
                 ws.Cell(row, 5).Value = (double)t.AyliqMebleg;
-                ws.Cell(row, 6).Value = $"{t.TutulubSayi} / {t.MuddetAy}";
-                ws.Cell(row, 7).Value = (double)t.QalanMebleg;
-                ws.Cell(row, 8).Value = $"{ayAdlari[t.BaslamaAy]} {t.BaslamaIl} — {ayAdlari[t.BitmeAy]} {t.BitmeIl}";
-                ws.Cell(row, 9).Value = t.Aciqlama ?? "";
-                ws.Cell(row, 10).Value = t.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm");
+                ws.Cell(row, 6).Value = (double)t.SonAyMebleg;
+                ws.Cell(row, 7).Value = $"{t.TutulubSayi} / {t.MuddetAy}";
+                ws.Cell(row, 8).Value = (double)t.QalanMebleg;
+                ws.Cell(row, 9).Value = $"{ayAdlari[t.BaslamaAy]} {t.BaslamaIl} — {ayAdlari[t.BitmeAy]} {t.BitmeIl}";
+                ws.Cell(row, 10).Value = t.Aciqlama ?? "";
+                ws.Cell(row, 11).Value = t.YaradilmaTarixi.ToString("dd.MM.yyyy HH:mm");
                 ws.Cell(row, 3).Style.NumberFormat.Format = "#,##0.00";
                 ws.Cell(row, 5).Style.NumberFormat.Format = "#,##0.00";
-                ws.Cell(row, 7).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, 6).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, 8).Style.NumberFormat.Format = "#,##0.00";
                 row++;
             }
 
@@ -85,13 +87,15 @@ namespace FinNex.UI.Areas.HR.Controllers
             ws.Cell(row, 2).Value = "CƏMİ";
             ws.Cell(row, 3).Value = (double)list.Sum(t => t.Mebleg);
             ws.Cell(row, 5).Value = (double)list.Sum(t => t.AyliqMebleg);
-            ws.Cell(row, 7).Value = (double)list.Sum(t => t.QalanMebleg);
+            ws.Cell(row, 6).Value = (double)list.Sum(t => t.SonAyMebleg);
+            ws.Cell(row, 8).Value = (double)list.Sum(t => t.QalanMebleg);
             var totalRange = ws.Range(row, 1, row, basliqlar.Length);
             totalRange.Style.Font.Bold = true;
             totalRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#f1f5f9");
             ws.Cell(row, 3).Style.NumberFormat.Format = "#,##0.00";
             ws.Cell(row, 5).Style.NumberFormat.Format = "#,##0.00";
-            ws.Cell(row, 7).Style.NumberFormat.Format = "#,##0.00";
+            ws.Cell(row, 6).Style.NumberFormat.Format = "#,##0.00";
+            ws.Cell(row, 8).Style.NumberFormat.Format = "#,##0.00";
 
             ws.Columns().AdjustToContents();
 
