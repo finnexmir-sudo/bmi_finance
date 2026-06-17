@@ -1,0 +1,76 @@
+@model IList<FinNex.Application.DTOs.HR.DigerTutulma.DigerTutulmaListDto>
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "İşçidən Digər Tutulma";
+    var ayAdlari = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+        "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">İşçidən Digər Tutulma</div>
+            <div class="fn-page-sub">Sığorta və s. — işçidən aylıq tutulan pay. Maaşa təsir etmir; yalnız əməliyyat yazılışında (provodka) net ödənişdən çıxılır.</div>
+        </div>
+        <a asp-action="Yarat" class="fn-btn fn-btn--primary">
+            <i class="bi bi-plus-lg"></i> Yeni Tutulma
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="fn-alert fn-alert--success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px">@TempData["Error"]</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="fn-empty-state">
+            <div class="fn-empty-title">Hələ tutulma əlavə edilməyib</div>
+            <div class="fn-empty-sub">Yeni tutulma üçün yuxarıdakı düyməni basın</div>
+        </div>
+    }
+    else
+    {
+        <div class="fn-card" style="padding:0">
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead style="background:#f8fafc">
+                    <tr>
+                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">İşçi</th>
+                        <th style="text-align:right;padding:10px 14px;font-weight:600;color:#475569">Ümumi məbləğ</th>
+                        <th style="text-align:center;padding:10px 14px;font-weight:600;color:#475569">Müddət</th>
+                        <th style="text-align:right;padding:10px 14px;font-weight:600;color:#475569">Aylıq</th>
+                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Dövr</th>
+                        <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Açıqlama</th>
+                        <th style="text-align:right;padding:10px 14px;font-weight:600;color:#475569">Yaradılıb</th>
+                        <th style="width:1%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in Model)
+                    {
+                        <tr style="border-top:1px solid #f1f5f9">
+                            <td style="padding:10px 14px;color:#0f172a;font-weight:500">@t.IsciAdSoyad</td>
+                            <td style="padding:10px 14px;text-align:right;font-family:monospace;color:#0f172a">@t.Mebleg.ToString("N2") ₼</td>
+                            <td style="padding:10px 14px;text-align:center;color:#475569">@t.MuddetAy ay</td>
+                            <td style="padding:10px 14px;text-align:right;font-family:monospace;font-weight:600;color:#0f172a">@t.AyliqMebleg.ToString("N2") ₼</td>
+                            <td style="padding:10px 14px;color:#475569;white-space:nowrap">@ayAdlari[t.BaslamaAy] @t.BaslamaIl — @ayAdlari[t.BitmeAy] @t.BitmeIl</td>
+                            <td style="padding:10px 14px;color:#94a3b8">@t.Aciqlama</td>
+                            <td style="padding:10px 14px;text-align:right;color:#94a3b8;white-space:nowrap;font-size:12px">@t.YaradilmaTarixi.ToString("dd.MM HH:mm")</td>
+                            <td style="padding:10px 14px;white-space:nowrap">
+                                <form asp-action="Sil" asp-route-id="@t.Id" method="post"
+                                      onsubmit="return confirm('Bu tutulmanı silmək istədiyinizə əminsiniz?');" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="fn-btn fn-btn--outline fn-btn--sm" style="padding:4px 10px;color:#dc2626">Sil</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

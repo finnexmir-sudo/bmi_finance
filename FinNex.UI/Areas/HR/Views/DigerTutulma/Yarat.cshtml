@@ -1,0 +1,91 @@
+@model FinNex.UI.Areas.HR.ViewModels.DigerTutulma.DigerTutulmaYaratVM
+@{
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    ViewData["Title"] = "Yeni Tutulma";
+    var ayAdlari = new[] { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+        "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+}
+
+<div class="fn-page">
+    <div class="fn-page-head">
+        <div>
+            <div class="fn-page-title">Yeni Tutulma</div>
+            <div class="fn-page-sub">İşçi, ümumi məbləğ və müddəti seçin — sistem aylıq paya bölür</div>
+        </div>
+        <a asp-action="Index" class="fn-btn fn-btn--outline">‹ Geri</a>
+    </div>
+
+    <div class="fn-card" style="max-width:640px">
+        <form asp-action="Yarat" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="All" class="text-danger" style="font-size:13px;margin-bottom:10px"></div>
+
+            <div style="margin-bottom:14px">
+                <label style="display:block;font-size:13px;font-weight:600;color:#334155;margin-bottom:5px">İşçi *</label>
+                <select asp-for="IsciId" asp-items="Model.Isciler" class="fn-input" style="width:100%">
+                    <option value="">— Seçin —</option>
+                </select>
+            </div>
+
+            <div style="display:flex;gap:14px;margin-bottom:14px">
+                <div style="flex:1">
+                    <label style="display:block;font-size:13px;font-weight:600;color:#334155;margin-bottom:5px">Ümumi məbləğ (işçinin payı) *</label>
+                    <input asp-for="Mebleg" id="dtMebleg" type="number" step="0.01" min="0" class="fn-input" style="width:100%" placeholder="0.00" />
+                </div>
+                <div style="width:130px">
+                    <label style="display:block;font-size:13px;font-weight:600;color:#334155;margin-bottom:5px">Müddət (ay) *</label>
+                    <input asp-for="MuddetAy" id="dtMuddet" type="number" min="1" class="fn-input" style="width:100%" />
+                </div>
+            </div>
+
+            <div style="display:flex;gap:14px;margin-bottom:14px">
+                <div style="width:130px">
+                    <label style="display:block;font-size:13px;font-weight:600;color:#334155;margin-bottom:5px">Başlama ili *</label>
+                    <input asp-for="BaslamaIl" type="number" min="2000" class="fn-input" style="width:100%" />
+                </div>
+                <div style="flex:1">
+                    <label style="display:block;font-size:13px;font-weight:600;color:#334155;margin-bottom:5px">Başlama ayı *</label>
+                    <select asp-for="BaslamaAy" class="fn-input" style="width:100%">
+                        @for (int i = 1; i <= 12; i++)
+                        {
+                            <option value="@i">@ayAdlari[i]</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom:14px">
+                <label style="display:block;font-size:13px;font-weight:600;color:#334155;margin-bottom:5px">Açıqlama</label>
+                <textarea asp-for="Aciqlama" class="fn-input" style="width:100%;min-height:60px" placeholder="məs. Xəstəlik sığortası — işçi payı"></textarea>
+            </div>
+
+            <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:14px">
+                Hər ay tutulacaq: <strong id="dtAyliq" style="color:#0369a1">0.00 ₼</strong>
+                <span style="color:#64748b;font-size:12px">(ümumi ÷ müddət)</span>
+            </div>
+
+            <button type="submit" class="fn-btn fn-btn--primary">
+                <i class="bi bi-save"></i> Yadda saxla
+            </button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const m = document.getElementById('dtMebleg');
+            const d = document.getElementById('dtMuddet');
+            const out = document.getElementById('dtAyliq');
+            function hesabla() {
+                const mb = parseFloat(m.value || 0) || 0;
+                const ay = parseInt(d.value || 0) || 0;
+                out.textContent = (ay > 0 ? (mb / ay) : 0).toFixed(2).replace('.', ',') + ' ₼';
+            }
+            m.addEventListener('input', hesabla);
+            d.addEventListener('input', hesabla);
+            hesabla();
+        })();
+    </script>
+}

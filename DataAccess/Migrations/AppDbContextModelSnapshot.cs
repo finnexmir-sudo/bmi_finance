@@ -1470,6 +1470,64 @@ namespace FinNex.DataAccess.Migrations
                     b.ToTable("AyliqElaveQeydleri");
                 });
 
+            modelBuilder.Entity("FinNex.Domain.Entities.HR.IsciDigerTutulma", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Aciqlama")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("AyliqMebleg")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("BaslamaAy")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BaslamaIl")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IsciId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Mebleg")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("MuddetAy")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SilenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Silinib")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SilinmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YaradanIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("YaradilmaTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("YenilenmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YenileyenIcraciId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("IsciDigerTutulmalari");
+                });
+
             modelBuilder.Entity("FinNex.Domain.Entities.HR.BayramGunu", b =>
                 {
                     b.Property<int>("Id")

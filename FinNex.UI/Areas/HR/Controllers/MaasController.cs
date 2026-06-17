@@ -35,6 +35,7 @@ namespace FinNex.UI.Areas.HR.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly IAyliqElaveService _ayliqElaveService;
         private readonly IMuhasibatHesabService _muhasibatHesabService;
+        private readonly IDigerTutulmaService _digerTutulmaService;
         private readonly IWebHostEnvironment _env;
 
         public MaasController(
@@ -46,6 +47,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             UserManager<AppUser> userManager,
             IAyliqElaveService ayliqElaveService,
             IMuhasibatHesabService muhasibatHesabService,
+            IDigerTutulmaService digerTutulmaService,
             IWebHostEnvironment env)
         {
             _maasService = maasService;
@@ -56,6 +58,7 @@ namespace FinNex.UI.Areas.HR.Controllers
             _userManager = userManager;
             _ayliqElaveService = ayliqElaveService;
             _muhasibatHesabService = muhasibatHesabService;
+            _digerTutulmaService = digerTutulmaService;
             _env = env;
         }
 
@@ -249,12 +252,29 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return RedirectToAction(nameof(Index), new { il, ay });
             }
 
+            // İşçidən digər tutulma (sığorta və s.) — bu ay aktiv olan aylıq paylar.
+            // Maaşa təsir etmir; yalnız burada net ödənişdən çıxılır + ayrıca öhdəlik sətri.
+            var digerTutulmaMap = await _digerTutulmaService.GetAyTutulmaMapAsync(il, ay);
+            decimal digerTutulmaCemi = digerTutulmaMap.Values.Sum();
+            string digerTutulmaHesab = Hesab("IsciDigerTutulmaKredit");
+            if (digerTutulmaCemi > 0 && string.IsNullOrWhiteSpace(digerTutulmaHesab))
+            {
+                TempData["Error"] = "İşçidən digər tutulma hesabı (açar: IsciDigerTutulmaKredit) təyin edilməyib — Mühasibat Hesabları səhifəsindən təyin edin.";
+                return RedirectToAction(nameof(Index), new { il, ay });
+            }
+
             // E) İşçi başına net ödəniş (Debet klirinq, Kredit bank hesabı)
+            //    İşçidən digər tutulma varsa, net ödəniş həmin pay qədər azalır.
             foreach (var m in maaslar)
             {
                 var bank = m.Isci!.Maliye!.BankHesabNo!.Trim();
-                setirler.Add((kliring, bank, m.NetMebleg, Q("əmək haqqı")));
+                decimal digerTutulma = digerTutulmaMap.TryGetValue(m.IsciId, out var dv) ? dv : 0m;
+                setirler.Add((kliring, bank, m.NetMebleg - digerTutulma, Q("əmək haqqı")));
             }
+
+            // İşçidən digər tutulma — cəmi öhdəlik (Debet klirinq, Kredit öhdəlik hesabı)
+            if (digerTutulmaCemi > 0)
+                setirler.Add((kliring, digerTutulmaHesab, digerTutulmaCemi, Q("işçidən digər tutulma")));
 
             // ── Şablonu aç və doldur (avans ilə eyni üsul) ──
             var templatePath = Path.Combine(_env.ContentRootPath, "App_Data", "Muhasibat", "Emek_haqqi_hesablama.xls");
