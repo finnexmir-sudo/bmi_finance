@@ -234,7 +234,7 @@
 
                             <button type="button" class="ibx-btn ibx-btn--danger"
                                     onclick="openReddModal(@s.Id.ToString())">
-                                Rədd et
+                                İmtina et
                             </button>
                         </div>
                     </div>
@@ -355,10 +355,10 @@
 
 </div>
 
-@* Rədd Modal *@
+@* İmtina Modal *@
 <div class="ibx-modal-overlay" id="reddModal" @* style="display:none" *@>
     <div class="ibx-modal">
-        <div class="ibx-modal-title">Rədd etmə səbəbi</div>
+        <div class="ibx-modal-title">İmtina səbəbi</div>
         <form asp-action="EvezediciRedd" method="post" id="reddForm">
             @Html.AntiForgeryToken()
             <input type="hidden" name="id" id="reddSorguId" />
@@ -369,7 +369,7 @@
                         onclick="closeReddModal()">
                     Ləğv et
                 </button>
-                <button type="submit" class="ibx-btn ibx-btn--danger">Rədd et</button>
+                <button type="submit" class="ibx-btn ibx-btn--danger">İmtina et</button>
             </div>
         </form>
     </div>

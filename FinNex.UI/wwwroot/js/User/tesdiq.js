@@ -58,10 +58,10 @@
             modalConfirmBtn && (modalConfirmBtn.textContent = 'Bəli, Təsdiqlə');
         } else {
             modalIcon && modalIcon.classList.replace('tsd-modal-icon--approve', 'tsd-modal-icon--reject');
-            modalTitle && (modalTitle.textContent = 'Müraciəti rədd edin');
-            modalSub && (modalSub.textContent = 'Bu müraciəti rədd etmək istədiyinizə əminsiniz? İmtina səbəbini qeyd edin.');
+            modalTitle && (modalTitle.textContent = 'Müraciətə imtina edin');
+            modalSub && (modalSub.textContent = 'Bu müraciətə imtina etmək istədiyinizə əminsiniz? İmtina səbəbini qeyd edin.');
             modalConfirmBtn && modalConfirmBtn.classList.replace('tsd-btn--approve', 'tsd-btn--reject');
-            modalConfirmBtn && (modalConfirmBtn.textContent = 'Bəli, Rədd et');
+            modalConfirmBtn && (modalConfirmBtn.textContent = 'Bəli, İmtina et');
         }
 
         if (modalHiddenStatus) modalHiddenStatus.value = approve ? 'true' : 'false';

@@ -50,7 +50,7 @@ document.getElementById('kohneBildirisToggle')?.addEventListener('click', functi
     this.setAttribute('aria-expanded', String(!open));
 });
 
-// Rədd modal
+// İmtina modal
 function openReddModal(id) {
     document.getElementById('reddSorguId').value = id;
     document.getElementById('reddModal').classList.add('open');
