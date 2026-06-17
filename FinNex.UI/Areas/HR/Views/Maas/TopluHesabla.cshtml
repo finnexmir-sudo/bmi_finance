@@ -400,6 +400,11 @@
                                 var mavItssStr   = mavItss.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
                                 var mavNetStr    = mavNet.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
 
+                                // Məzuniyyət kompensasiyası (istifadə edilməmiş — server hesablamasında brüt-a qatılır)
+                                var kompMap = ViewBag.IsciKompensasiyaMap as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+                                decimal kompensasiyaMebleg = kompMap.TryGetValue(isci.Id, out var kompVal) ? kompVal : 0m;
+                                var kompensasiyaStr = kompensasiyaMebleg.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
                                 <tr data-isci="@isci.Id"
                                     data-esas="@esas.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
                                     data-isci-guzest="@isciGuzestMeblegStr"
@@ -422,6 +427,7 @@
                                     data-mav-iss="@mavIssStr"
                                     data-mav-itss="@mavItssStr"
                                     data-mav-net="@mavNetStr"
+                                    data-kompensasiya="@kompensasiyaStr"
                                     data-vezife="@(teyin?.Vezife?.Ad ?? "—")"
                                     data-iban="@(GetIban(isci.Id) ?? "")"
                                     class="mth-row @(isDone ? "done" : "")">
@@ -562,6 +568,30 @@
                                                         </div>
                                                     </div>
                                                 </div>
+
+                                                @* Məzuniyyət Kompensasiyası — istifadə edilməmiş (işdən çıxma); yalnız varsa *@
+                                                @if (kompensasiyaMebleg > 0)
+                                                {
+                                                    <div class="mth-detail-card">
+                                                        <div class="mth-detail-card-head" style="color:#0ea5e9;">
+                                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                                <rect x="1.5" y="2" width="11" height="10" rx="1.5" stroke="#0ea5e9" stroke-width="1.2"/>
+                                                                <path d="M4.5 7h5M7 4.5v5" stroke="#0ea5e9" stroke-width="1.2" stroke-linecap="round"/>
+                                                            </svg>
+                                                            <span>Kompensasiya</span>
+                                                        </div>
+                                                        <div class="mth-detail-card-body">
+                                                            <div class="mth-detail-item">
+                                                                <span class="mth-detail-lbl">İstifadə edilməmiş məz.</span>
+                                                                <span class="n n--b">@kompensasiyaMebleg.ToString("N2") ₼</span>
+                                                            </div>
+                                                            <div class="mth-detail-item">
+                                                                <span class="mth-detail-lbl" style="color:#8a93a8;">Gəlirə (brüt) qatılır</span>
+                                                                <span></span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
 
                                                 @* Xəstəlik *@
                                                 <div class="mth-detail-card">

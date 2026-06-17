@@ -80,6 +80,8 @@
         const isciGuzestAd = row.dataset.isciGuzestAd || '';
         const hys = parseFloat(row.dataset.hys || 0) || 0;
         const avans = parseFloat(row.dataset.avans || 0) || 0;
+        // Məzuniyyət kompensasiyası — server kimi brüt-a (esasBrut) qatılır (tam vergiyə cəlb)
+        const kompensasiya = parseFloat(row.dataset.kompensasiya || 0) || 0;
         // Məzuniyyət + Xəstəlik preview üçün server-tərəfi yüklənmiş data
         // (mezKesinti və xesKesinti server-də FerdiHesablaAsync ilə eyni düsturla
         // hesablanır → preview GROSS/NET həqiqi hesablanacaq rəqəmlə üst-üstə düşür)
@@ -162,7 +164,7 @@
             esas - mezKesinti + mezOdenis
                  - xesKesinti + xesSirketOdenis
                  - qayibKesinti
-                 + bonus + overtime + ferqliGelir + cfgCemi - cerime,
+                 + bonus + overtime + ferqliGelir + cfgCemi + kompensasiya - cerime,
             0);
         const brut = esasBrut;  // GROSS = işlədiyi məbləğ (preview ilə eyni)
 
@@ -257,7 +259,7 @@
             esas, bonus, overtime, cerime, ferqliGelir, brut, vergilenecek,
             vergiBazasi, dsmfBazasi, itssBazasi,
             standartGuzest, isciGuzest, isciGuzestAd,
-            hys, hysIsv, avans,
+            hys, hysIsv, avans, kompensasiya,
             mezGun, mezOdenis, mezKesinti,
             xesSirketGun, xesDsmfGun, xesSirketOdenis, xesDsmfOdenis, xesKesinti,
             qayibGun, qayibKesinti,
@@ -573,6 +575,7 @@
             v[3]  = d.esas;                                                 // Müqavilə üzrə
             v[4]  = d.esas - d.mezKesinti - d.xesKesinti - d.qayibKesinti;  // Hesablanmış (işlənmiş)
             v[5]  = ih07;                                                   // IH-07
+            v[6]  = d.kompensasiya;                                         // İstifadə edilməmiş məzuniyyət kompensasiyası
             v[8]  = d.mezOdenis + d.mavBrut;                               // Məzuniyyət haqqı (+ avans brütü)
             v[9]  = d.bonus;                                                // Mükafat
             v[12] = d.xesSirketOdenis;                                      // Xəstəlik vərəqəsi

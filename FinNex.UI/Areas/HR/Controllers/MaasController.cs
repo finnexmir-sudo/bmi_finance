@@ -1118,6 +1118,20 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
             ViewBag.IsciMezAvansMap = isciMezAvansMap;
 
+            // Məzuniyyət kompensasiyası (istifadə edilməmiş əmək məzuniyyəti) — preview-da
+            // gəlirə (brüt) qatılsın deyə. Server hesablaması ilə EYNİ status filtri:
+            // Layihe/Tesdiqlenib, həmin il/ay üçün. (MaasHesablamaService 5a bölmə.)
+            var isciKompensasiyaMap = new Dictionary<int, decimal>();
+            var aktivKompensasiyalar = await _unitOfWork.Repository<MezuniyyetKompensasiyasi>()
+                .Query()
+                .Where(x => !x.Silinib
+                    && x.HesablananIl == cIl && x.HesablananAy == cAy
+                    && (x.Status == KompensasiyaStatus.Layihe || x.Status == KompensasiyaStatus.Tesdiqlenib))
+                .ToListAsync();
+            foreach (var k in aktivKompensasiyalar)
+                isciKompensasiyaMap[k.IsciId] = k.CemiMebleg;
+            ViewBag.IsciKompensasiyaMap = isciKompensasiyaMap;
+
             // Əvvəlki ay korreksiyası preview — mühasib öncədən görsün deyə
             // (post-maaş daxil edilmiş xəstəlik/məzuniyyət üçün cari aya tətbiq olunacaq düzəliş)
             var isciKorreksiyaMap = new Dictionary<int, (decimal kesinti, decimal gelir, string? aciq)>();
