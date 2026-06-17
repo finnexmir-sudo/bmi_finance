@@ -12,9 +12,14 @@
             <div class="fn-page-title">İşçidən Digər Tutulma</div>
             <div class="fn-page-sub">Sığorta və s. — işçidən aylıq tutulan pay. Maaşa təsir etmir; yalnız əməliyyat yazılışında (provodka) net ödənişdən çıxılır.</div>
         </div>
-        <a asp-action="Yarat" class="fn-btn fn-btn--primary">
-            <i class="bi bi-plus-lg"></i> Yeni Tutulma
-        </a>
+        <div style="display:flex;gap:8px;align-items:center">
+            <a asp-action="ExcelIxrac" class="fn-btn fn-btn--outline" title="Mühasib yoxlaması üçün Excel">
+                <i class="bi bi-file-earmark-excel"></i> Excel-ə Yüklə
+            </a>
+            <a asp-action="Yarat" class="fn-btn fn-btn--primary">
+                <i class="bi bi-plus-lg"></i> Yeni Tutulma
+            </a>
+        </div>
     </div>
 
     @if (TempData["Success"] != null)

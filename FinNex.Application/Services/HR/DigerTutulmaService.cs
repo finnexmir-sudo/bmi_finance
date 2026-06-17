@@ -88,7 +88,8 @@ namespace FinNex.Application.Services.HR
                         BitmeIl = sonIndex / 12,
                         BitmeAy = sonIndex % 12 + 1,
                         TutulubSayi = tutulubSayi,
-                        QalanMebleg = Math.Max(0m, x.Mebleg - tutulubSayi * x.AyliqMebleg),
+                        // Tam bitibsə qalıq dəqiq 0 (son ay qalığı udduğu üçün)
+                        QalanMebleg = tutulubSayi >= x.MuddetAy ? 0m : Math.Max(0m, x.Mebleg - tutulubSayi * x.AyliqMebleg),
                         Aciqlama = x.Aciqlama,
                         Aktiv = x.Aktiv,
                         YaradilmaTarixi = x.YaradilmaTarixi
@@ -134,7 +135,13 @@ namespace FinNex.Application.Services.HR
             {
                 int index = (il - x.BaslamaIl) * 12 + (ay - x.BaslamaAy);
                 if (index >= 0 && index < x.MuddetAy)
-                    map[x.IsciId] = (map.TryGetValue(x.IsciId, out var c) ? c : 0m) + x.AyliqMebleg;
+                {
+                    // Son ay yuvarlaqlaşma qalığını udur ki, müddət üzrə cəm DƏQİQ = Mebleg olsun.
+                    decimal ayliq = index == x.MuddetAy - 1
+                        ? x.Mebleg - x.AyliqMebleg * (x.MuddetAy - 1)
+                        : x.AyliqMebleg;
+                    map[x.IsciId] = (map.TryGetValue(x.IsciId, out var c) ? c : 0m) + ayliq;
+                }
             }
             return map;
         }
