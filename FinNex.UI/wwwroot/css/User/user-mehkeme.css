@@ -256,3 +256,111 @@
 .ms-empty { text-align: center; padding: 40px 16px; color: #94a3b8; font-size: 14px; }
 .ms-empty i { font-size: 2rem; display: block; margin-bottom: 10px; }
 .ms-foot { padding: 10px 14px; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9; }
+
+/* ════════════════════════════════════════════════════════
+   Detal (dt-) — yeni dizayn (Kərpic 2)
+   ════════════════════════════════════════════════════════ */
+.dt-page { padding: 22px; max-width: 1200px; margin: 0 auto; }
+
+/* Başlıq */
+.dt-hero { display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
+           background:#fff; border:1.5px solid #e2e8f0; border-left:5px solid var(--fn-primary,#6366f1);
+           border-radius:14px; padding:18px 22px; margin-bottom:16px; }
+.dt-hero-name { font-size:1.5rem; font-weight:800; color:#0f172a; line-height:1.2; }
+.dt-hero-meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.dt-hero-side { display:flex; flex-direction:column; align-items:flex-end; gap:12px; flex-shrink:0; }
+.dt-actions { display:flex; gap:8px; }
+.dt-chip { font-size:12px; color:#475569; background:#f1f5f9; border-radius:7px; padding:3px 10px; font-weight:600; white-space:nowrap; }
+.dt-chip b { color:#94a3b8; font-weight:700; }
+
+/* Status pill */
+.dt-status { font-size:13px; font-weight:800; padding:7px 18px; border-radius:30px; white-space:nowrap; }
+.dt-status--sm { font-size:11px; padding:3px 12px; }
+.dt-st-hazir   { background:#f1f5f9; color:#475569; }
+.dt-st-mehkeme { background:#e0e7ff; color:#4338ca; }
+.dt-st-icra    { background:#fef3c7; color:#b45309; }
+.dt-st-tamam   { background:rgba(34,197,94,.14); color:#15803d; }
+.dt-st-bagli   { background:rgba(239,68,68,.12); color:#b91c1c; }
+
+/* Maliyyə stat kartları */
+.dt-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.dt-stat { background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; padding:14px 16px; }
+.dt-stat-lbl { font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.03em; }
+.dt-stat-val { font-size:1.25rem; font-weight:800; color:#0f172a; margin-top:6px; font-variant-numeric:tabular-nums; }
+.dt-stat--danger .dt-stat-val { color:#b91c1c; }
+.dt-note { font-size:11.5px; color:#94a3b8; font-style:italic; margin:9px 2px 16px; display:flex; align-items:center; gap:5px; }
+
+/* Kartlar */
+.dt-card { background:#fff; border:1.5px solid #e2e8f0; border-radius:14px; padding:18px 20px; margin-bottom:16px; }
+.dt-card-h { display:flex; align-items:center; justify-content:space-between; gap:10px;
+             font-size:14px; font-weight:800; color:#0f172a; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid #f1f5f9; }
+.dt-card-h > span:first-child i { color:var(--fn-primary,#6366f1); margin-right:6px; }
+.dt-sub { font-size:12px; font-weight:600; color:#94a3b8; }
+
+/* Faktlar */
+.dt-facts { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:18px; }
+.dt-fact-lbl { font-size:11px; color:#64748b; font-weight:600; }
+.dt-fact-val { font-size:14px; color:#0f172a; font-weight:700; margin-top:3px; }
+
+/* Timeline */
+.dt-tl { position:relative; padding-left:24px; margin-bottom:6px; }
+.dt-tl::before { content:''; position:absolute; left:7px; top:5px; bottom:5px; width:2px; background:#e2e8f0; }
+.dt-tl-item { position:relative; padding-bottom:16px; }
+.dt-tl-item:last-child { padding-bottom:0; }
+.dt-tl-dot { position:absolute; left:-21px; top:2px; width:12px; height:12px; border-radius:50%;
+             background:var(--fn-primary,#6366f1); border:2px solid #fff; box-shadow:0 0 0 2px #e0e7ff; }
+.dt-tl-top { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.dt-tl-date { font-weight:800; color:#0f172a; font-size:13px; }
+.dt-tl-doc { font-size:12px; color:var(--fn-primary,#6366f1); text-decoration:none; font-weight:600; }
+.dt-tl-doc:hover { text-decoration:underline; }
+.dt-tl-del { margin-left:auto; }
+.dt-tl-meta { font-size:12px; color:#64748b; margin-top:4px; display:flex; gap:14px; flex-wrap:wrap; }
+.dt-tl-meta b { color:#475569; font-weight:700; }
+.dt-tl-note { font-size:13px; color:#475569; margin-top:4px; line-height:1.45; }
+
+/* Subyekt kartları */
+.dt-subj { border:1.5px solid #e7e9f3; border-radius:12px; padding:14px 16px; margin-bottom:12px; background:#fafbff; }
+.dt-subj:last-child { margin-bottom:0; }
+.dt-subj--borclu { border-left:4px solid var(--fn-primary,#6366f1); }
+.dt-subj--zamin  { border-left:4px solid #c7d2fe; }
+.dt-subj-h { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+.dt-subj-name { font-size:14px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:6px; }
+.dt-role { font-size:10px; font-weight:800; padding:2px 9px; border-radius:20px; letter-spacing:.03em; }
+.dt-role--borclu { background:#e0e7ff; color:#3730a3; }
+.dt-role--zamin  { background:#f1f5f9; color:#64748b; }
+.dt-subj-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+.dt-kv { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:11px 16px; }
+.dt-kv-lbl { font-size:11px; color:#64748b; font-weight:600; }
+.dt-kv-val { font-size:13px; color:#1e293b; margin-top:1px; font-weight:600; }
+.dt-kv-val--empty { color:#cbd5e1; font-weight:400; }
+.dt-subj-note { font-size:12.5px; color:#475569; margin-top:10px; line-height:1.45;
+                background:#fff; border:1px solid #eef2f7; border-radius:8px; padding:8px 10px; }
+.dt-subj-note b { color:#334155; }
+
+/* details (əlavə / redaktə) */
+.dt-add { margin-top:16px; border-top:1px dashed #e2e8f0; padding-top:12px; }
+.dt-add > summary { cursor:pointer; font-size:13px; font-weight:700; color:var(--fn-primary,#6366f1);
+                    list-style:none; display:inline-flex; align-items:center; gap:6px; }
+.dt-add > summary::-webkit-details-marker { display:none; }
+.dt-add--sm { margin-top:12px; padding-top:10px; }
+.dt-add--sm > summary { font-size:12px; color:#64748b; }
+
+/* Sənədlər */
+.dt-doc { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid #f1f5f9; font-size:13px; }
+.dt-doc:last-child { border-bottom:none; }
+.dt-doc > i { color:#64748b; }
+.dt-doc-date { color:#64748b; }
+.dt-doc a { margin-left:auto; }
+
+/* Empty */
+.dt-empty { text-align:center; color:#94a3b8; padding:22px 16px; font-size:13px; }
+.dt-empty i { font-size:1.7rem; display:block; margin-bottom:8px; color:#cbd5e1; }
+
+/* Sil */
+.dt-danger-row { display:flex; justify-content:flex-end; margin-top:4px; }
+
+@media (max-width:760px) {
+    .dt-stats { grid-template-columns:repeat(2,1fr); }
+    .dt-hero { flex-direction:column; }
+    .dt-hero-side { align-items:flex-start; }
+}
