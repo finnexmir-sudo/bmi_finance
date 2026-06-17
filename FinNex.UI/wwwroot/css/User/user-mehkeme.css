@@ -364,3 +364,31 @@
     .dt-hero { flex-direction:column; }
     .dt-hero-side { align-items:flex-start; }
 }
+
+/* İcra subyektləri cədvəli (dt-table) */
+.dt-twrap { overflow-x:auto; border:1px solid #eef2f7; border-radius:10px; }
+.dt-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+.dt-table thead th { background:#f8fafc; padding:9px 11px; text-align:left; font-weight:700; color:#475569; border-bottom:1.5px solid #e2e8f0; white-space:nowrap; }
+.dt-table td { padding:9px 11px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+.dt-table th.dt-ex, .dt-table td.dt-ex { display:none; }
+.dt-table.dt-show-ex th.dt-ex, .dt-table.dt-show-ex td.dt-ex { display:table-cell; }
+.dt-grp { border-bottom:1px solid #e9edf5; }
+.dt-grp:last-child > .dt-row td { border-bottom:none; }
+.dt-row { cursor:pointer; transition:background .12s; }
+.dt-row:hover { background:#f8faff; }
+.dt-grp.open .dt-row { background:#f1f5ff; }
+.dt-row--borclu td:first-child { border-left:3px solid var(--fn-primary,#6366f1); }
+.dt-row--zamin td:first-child { border-left:3px solid #c7d2fe; }
+.dt-ad { font-weight:700; color:#0f172a; white-space:nowrap; max-width:220px; overflow:hidden; text-overflow:ellipsis; }
+.dt-c { max-width:170px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#334155; }
+.dt-muted { color:#cbd5e1; }
+.dt-row-act { width:34px; text-align:center; color:#94a3b8; }
+.dt-chev { transition:transform .15s; }
+.dt-grp.open .dt-chev { transform:rotate(180deg); }
+.dt-detail { display:none; }
+.dt-grp.open .dt-detail { display:table-row; }
+.dt-detail > td { background:#fafbff; padding:0 !important; }
+.dt-detail-in { padding:14px 16px; }
+.dt-detail-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px; }
+.dt-detail-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.dt-subj-hint { font-size:12px; color:#94a3b8; margin-top:10px; display:flex; align-items:center; gap:6px; }
