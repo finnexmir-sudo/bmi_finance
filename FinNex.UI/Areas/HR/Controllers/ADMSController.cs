@@ -187,9 +187,30 @@ public class ADMSController : Controller
                              x.BitmeTarixi.Date   >= tarix)
                 .FirstOrDefaultAsync();
 
+            // Bu gün üçün təsdiqlənmiş Məzuniyyət (illik / xəstəlik və s. — ezamiyyət xaric) varmı?
+            // Varsa, işçi həmin gün işdə deyil; səhvən cihaza basılan barmaq oxuması
+            // davamiyyət statusunu (İcazəli / Xəstəlik) Gecikməyə çevirməməlidir.
+            var bugunMezuniyyet = await _db.Mezuniyyetler
+                .Where(x => x.IsciId == isciId && !x.Silinib &&
+                             x.Status == MezuniyyetStatus.Tesdiqlenib &&
+                             x.Nov != MezuniyyetNovu.Ezamiyyet &&
+                             x.BaslamaTarixi.Date <= tarix &&
+                             x.BitmeTarixi.Date   >= tarix)
+                .FirstOrDefaultAsync();
+
             // Həmin işçi+tarix üçün mövcud davamiyyət qeydini tap
             var movcud = await _db.Davamiyyetler
                 .FirstOrDefaultAsync(x => x.IsciId == isciId && x.Tarix == tarix);
+
+            // Məzuniyyət günündə cihaz oxuması davamiyyətə təsir etməməlidir.
+            // (Xam punch yuxarıda CihazOxuma cədvəlində saxlanılıb — audit üçün qalır.)
+            if (bugunMezuniyyet != null)
+            {
+                _logger.LogInformation(
+                    "Məzuniyyət günü cihaz oxuması ignor edildi (status dəyişmir): IsciId={IsciId}, Tarix={Tarix}, Vaxt={Vaxt}",
+                    isciId, tarix, vaxt);
+                return;
+            }
 
             // İş başlama vaxtı — 9:00. Bu vaxta qədər hər yeni oxuma "duplikat giriş
             // cəhdi" kimi qəbul olunur (işçi qayıdıb ikinci dəfə barmağını basa bilər
