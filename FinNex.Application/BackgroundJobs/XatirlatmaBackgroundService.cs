@@ -114,54 +114,10 @@ namespace FinNex.Infrastructure.BackgroundJobs
                 }
             }
 
-            // ── 3) Məzuniyyət bitmə — 10 iş günü qalmış, HR-a bildiriş ──
+            // ── 3) Məzuniyyət bitmə bildirişi — HR TƏLƏBİ İLƏ DAYANDIRILIB ──
+            // HR-a məzuniyyətin bitmə tarixi barədə xatırlatma artıq göndərilmir.
+            // (mezSayi 0 qalır — aşağıdakı yekun statistika logunda istifadə olunur.)
             int mezSayi = 0;
-            try
-            {
-                var bayramlar = await GetBayramTarixleriAsync(db, bugun.Year);
-                var hedeftarix = IsGunuHesabla(bugun, BILDIRISH_IS_GUNU, bayramlar);
-
-                // Təsdiqlənmiş və BitmeTarixi tam hedef günə düşən məzuniyyətlər
-                var bitmekUzreOlanlar = await db.Mezuniyyetler
-                    .Include(m => m.Isci)
-                    .Where(m => !m.Silinib
-                        && m.Status == MezuniyyetStatus.Tesdiqlenib
-                        && m.BitmeTarixi.Date == hedeftarix.Date)
-                    .ToListAsync();
-
-                var hrIscileri = await GetHrIsciIdleriAsync(db, userManager);
-
-                foreach (var mez in bitmekUzreOlanlar)
-                {
-                    foreach (var hrIsciId in hrIscileri)
-                    {
-                        // Dublikat yoxla
-                        var movcud = await db.Set<Xatirlatma>().AnyAsync(x =>
-                            x.EntityTipi == XatirlatmaEntityTipi.Mezuniyyet
-                            && x.EntityId == mez.Id
-                            && x.IsciId == hrIsciId
-                            && !x.Silinib);
-
-                        if (!movcud)
-                        {
-                            await xatirlatmaService.SistemXatirlatmasiYaratAsync(new XatirlatmaSistemCreateDto
-                            {
-                                IsciId = hrIsciId,
-                                Bashliq = $"Məzuniyyət bitir: {mez.Isci.Ad} {mez.Isci.Soyad}",
-                                Qeyd = $"Bitmə tarixi: {mez.BitmeTarixi:dd.MM.yyyy} ({mez.Nov}). 10 iş günü qalıb.",
-                                XatirlatmaTarixi = DateTime.Now,
-                                EntityTipi = XatirlatmaEntityTipi.Mezuniyyet,
-                                EntityId = mez.Id
-                            });
-                            mezSayi++;
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Məzuniyyət xatırlatması xətası.");
-            }
 
             // ── 4) Təyinat/müqavilə bitmə — 10 iş günü qalmış, HR-a bildiriş ──
             int teyinatSayi = 0;
