@@ -87,6 +87,7 @@
                     <tr>
                         <th class="ms-primary">Region</th>
                         <th class="ms-primary ms-col-ad">Borclu</th>
+                        <th>Növ / Zamin</th>
                         <th>Qərardad</th>
                         <th class="ms-primary">Hesab № / K.S.</th>
                         <th class="ms-primary ms-num">Tam Qalıq</th>
@@ -121,23 +122,22 @@
                                 <td class="ms-accent">@Txt(x.Region)</td>
                                 <td class="ms-col-ad">
                                     <div class="ms-bname">@Txt(x.BorcluAd)</div>
-                                    <div class="ms-btip">
-                                        @if (!string.IsNullOrWhiteSpace(x.KreditinNovu))
-                                        {
-                                            <span class="ms-nov">@x.KreditinNovu</span>
-                                        }
-                                        @if (hasZamin)
-                                        {
-                                            <span class="ms-zcount"><i class="bi bi-people-fill"></i> @x.Zaminler.Count zamin</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="ms-znil">zaminsiz</span>
-                                        }
-                                    </div>
+                                </td>
+                                <td class="ms-tipzamin">
+                                    @if (!string.IsNullOrWhiteSpace(x.KreditinNovu))
+                                    {
+                                        <span class="ms-nov">@x.KreditinNovu</span>
+                                    }
+                                    @if (hasZamin)
+                                    {
+                                        <span class="ms-zcount"><i class="bi bi-people-fill"></i> @x.Zaminler.Count zamin</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="ms-znil">zaminsiz</span>
+                                    }
                                 </td>
                                 <td class="ms-qd" onclick="event.stopPropagation()">
-                                    <span class="ms-apptag">PROQRAM</span>
                                     <div class="ms-qd-box" contenteditable="true"
                                          data-orig="@x.Qerardad"
                                          data-placeholder="Qərardad yaz…"
@@ -191,7 +191,6 @@
                                             <input type="hidden" name="zaminler" value="@zJson" />
                                             <button type="submit" class="ms-btn-xs ms-btn-xs--open"><i class="bi bi-eye"></i> Aç</button>
                                         </form>
-                                        <div class="ms-ish-meta"><span class="ms-dot"></span> İzlənir · @x.MerheleSayi mərhələ</div>
                                     }
                                     else
                                     {
@@ -214,7 +213,7 @@
                 {
                     <tbody>
                         <tr>
-                            <td colspan="18">
+                            <td colspan="19">
                                 <div class="ms-empty">
                                     <i class="bi bi-inbox"></i>
                                     <div>@(Model.Konfiqurasiyali ? "Siyahı boşdur" : "Sorğu seçildikdən sonra siyahı buraya gələcək")</div>

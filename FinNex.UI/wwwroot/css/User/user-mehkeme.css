@@ -195,6 +195,8 @@
 .ms-nov { background: #f1f5f9; color: #475569; border-radius: 20px; padding: 2px 8px; font-size: 10.5px; font-weight: 700; }
 .ms-zcount { display: inline-flex; align-items: center; gap: 4px; background: #eef2ff; color: #4338ca; border-radius: 20px; padding: 2px 9px; font-size: 10.5px; font-weight: 800; }
 .ms-znil { color: #94a3b8; font-style: italic; font-size: 10.5px; }
+.ms-tipzamin { white-space: nowrap; }
+.ms-tipzamin .ms-nov { margin-right: 6px; }
 
 .ms-ctoggle { width: 30px; text-align: center; }
 .ms-caret { display: inline-block; transition: transform .15s; color: var(--fn-primary,#6366f1); }
