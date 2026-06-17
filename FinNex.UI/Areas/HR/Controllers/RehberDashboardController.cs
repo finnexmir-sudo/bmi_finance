@@ -449,8 +449,61 @@ namespace FinNex.UI.Areas.HR.Controllers
             }
             catch { ViewBag.MezuniyyetSayi = 0; ViewBag.MezuniyyetIsciIds = new HashSet<int>(); }
 
+            // Bugün erkən çıxış icazəsi verilmiş işçilər — rəhbər səhifədə görsün
+            try
+            {
+                var erkenIcazeIds = await _uow.Repository<ErkenCixisIcaze>()
+                    .Query().AsNoTracking()
+                    .Where(x => !x.Silinib && x.Tarix.Date == bugun)
+                    .Select(x => x.IsciId)
+                    .ToListAsync();
+                ViewBag.ErkenCixisIcazeIds = erkenIcazeIds.ToHashSet();
+            }
+            catch { ViewBag.ErkenCixisIcazeIds = new HashSet<int>(); }
+
             ViewData["Title"] = "Davamiyyət";
             return View(list);
+        }
+
+        // ── POST: Erkən çıxış icazəsi ver (YALNIZ bugün üçün) ──────────
+        // Rəhbər davamiyyət səhifəsində işçiyə bugünə icazə verir → ErkenCixisIcaze
+        // qeydi yaranır və davamiyyət həmin günü "tez çıxdı" saymır. İdempotent.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ErkenCixisIcazeVer(int isciId)
+        {
+            if (isciId <= 0)
+                return Json(new { success = false, message = "İşçi seçilməyib." });
+
+            try
+            {
+                var bugun = DateTime.Today;
+
+                // Dublikat — bu gün üçün artıq icazə varsa təkrar yaratma
+                var movcud = await _uow.Repository<ErkenCixisIcaze>()
+                    .Query()
+                    .AnyAsync(x => !x.Silinib && x.IsciId == isciId && x.Tarix.Date == bugun);
+                if (movcud)
+                    return Json(new { success = true, message = "Artıq verilib." });
+
+                var istifadeci = await _userManager.GetUserAsync(User);
+                var verenIsciId = istifadeci?.IsciId ?? 0;
+
+                await _uow.Repository<ErkenCixisIcaze>().YaratAsync(new ErkenCixisIcaze
+                {
+                    IsciId = isciId,
+                    Tarix = bugun,
+                    IcazeVerenIsciId = verenIsciId
+                });
+                await _uow.YaddaSaxlaAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ErkenCixisIcazeVer xətası — isciId={IsciId}", isciId);
+                return Json(new { success = false, message = "Xəta baş verdi." });
+            }
         }
 
         // ═══════════════════════════════════════════════════════════════
