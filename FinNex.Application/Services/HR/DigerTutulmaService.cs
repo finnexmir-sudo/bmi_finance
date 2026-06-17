@@ -67,10 +67,14 @@ namespace FinNex.Application.Services.HR
                     .Where(x => !x.Silinib)
                     .ToDictionaryAsync(x => x.Id, x => $"{x.Ad} {x.Soyad}");
 
+                var indi = DateTime.Now;
                 var list = qeydler.Select(x =>
                 {
                     // Son tutulma ayı = başlama + (müddət − 1) ay
                     int sonIndex = (x.BaslamaIl * 12 + (x.BaslamaAy - 1)) + (x.MuddetAy - 1);
+                    // Cədvəl üzrə cari aya qədər tutulan ay (başlama ayı daxil, müddətlə məhdud)
+                    int kecen = (indi.Year - x.BaslamaIl) * 12 + (indi.Month - x.BaslamaAy) + 1;
+                    int tutulubSayi = Math.Clamp(kecen, 0, x.MuddetAy);
                     return new DigerTutulmaListDto
                     {
                         Id = x.Id,
@@ -83,6 +87,8 @@ namespace FinNex.Application.Services.HR
                         BaslamaAy = x.BaslamaAy,
                         BitmeIl = sonIndex / 12,
                         BitmeAy = sonIndex % 12 + 1,
+                        TutulubSayi = tutulubSayi,
+                        QalanMebleg = Math.Max(0m, x.Mebleg - tutulubSayi * x.AyliqMebleg),
                         Aciqlama = x.Aciqlama,
                         Aktiv = x.Aktiv,
                         YaradilmaTarixi = x.YaradilmaTarixi

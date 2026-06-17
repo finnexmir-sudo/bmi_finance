@@ -13,6 +13,12 @@ namespace FinNex.Application.DTOs.HR.DigerTutulma
         public int BaslamaAy { get; set; }
         public int BitmeIl { get; set; }
         public int BitmeAy { get; set; }
+
+        /// <summary>Cədvəl üzrə cari aya qədər tutulan ay sayı (0..MuddetAy).</summary>
+        public int TutulubSayi { get; set; }
+        /// <summary>Hələ tutulmamış qalıq məbləğ.</summary>
+        public decimal QalanMebleg { get; set; }
+
         public string? Aciqlama { get; set; }
         public bool Aktiv { get; set; }
         public DateTime YaradilmaTarixi { get; set; }

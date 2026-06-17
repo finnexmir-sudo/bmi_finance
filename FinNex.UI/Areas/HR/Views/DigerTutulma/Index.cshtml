@@ -43,6 +43,7 @@
                         <th style="text-align:right;padding:10px 14px;font-weight:600;color:#475569">Ümumi məbləğ</th>
                         <th style="text-align:center;padding:10px 14px;font-weight:600;color:#475569">Müddət</th>
                         <th style="text-align:right;padding:10px 14px;font-weight:600;color:#475569">Aylıq</th>
+                        <th style="text-align:center;padding:10px 14px;font-weight:600;color:#475569">Tutulub</th>
                         <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Dövr</th>
                         <th style="text-align:left;padding:10px 14px;font-weight:600;color:#475569">Açıqlama</th>
                         <th style="text-align:right;padding:10px 14px;font-weight:600;color:#475569">Yaradılıb</th>
@@ -57,6 +58,13 @@
                             <td style="padding:10px 14px;text-align:right;font-family:monospace;color:#0f172a">@t.Mebleg.ToString("N2") ₼</td>
                             <td style="padding:10px 14px;text-align:center;color:#475569">@t.MuddetAy ay</td>
                             <td style="padding:10px 14px;text-align:right;font-family:monospace;font-weight:600;color:#0f172a">@t.AyliqMebleg.ToString("N2") ₼</td>
+                            <td style="padding:10px 14px;text-align:center;white-space:nowrap;min-width:96px">
+                                <div style="font-weight:600;color:#0f172a">@t.TutulubSayi / @t.MuddetAy ay</div>
+                                <div style="font-size:11px;color:#94a3b8">qalıq @t.QalanMebleg.ToString("N2") ₼</div>
+                                <div style="height:4px;background:#e2e8f0;border-radius:2px;margin-top:4px;overflow:hidden">
+                                    <div style="height:100%;width:@(t.MuddetAy > 0 ? (t.TutulubSayi * 100 / t.MuddetAy) : 0)%;background:#0ea5e9"></div>
+                                </div>
+                            </td>
                             <td style="padding:10px 14px;color:#475569;white-space:nowrap">@ayAdlari[t.BaslamaAy] @t.BaslamaIl — @ayAdlari[t.BitmeAy] @t.BitmeIl</td>
                             <td style="padding:10px 14px;color:#94a3b8">@t.Aciqlama</td>
                             <td style="padding:10px 14px;text-align:right;color:#94a3b8;white-space:nowrap;font-size:12px">@t.YaradilmaTarixi.ToString("dd.MM HH:mm")</td>
