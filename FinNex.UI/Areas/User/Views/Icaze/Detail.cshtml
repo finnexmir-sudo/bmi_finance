@@ -215,8 +215,12 @@
                     </span>
                 </div>
                 <div class="fn-info-row">
-                    <span class="fn-ir-lbl">Müddət</span>
+                    <span class="fn-ir-lbl">Müddət (plan)</span>
                     <span class="fn-ir-val">@Model.IcazeSaati.ToString("F1") saat</span>
+                </div>
+                <div class="fn-info-row">
+                    <span class="fn-ir-lbl">Faktiki istifadə</span>
+                    <span class="fn-ir-val">@(Model.FaktikiSaat.HasValue ? Model.FaktikiSaat.Value.ToString("F1") + " saat" : "—")</span>
                 </div>
                 <div class="fn-info-row">
                     <span class="fn-ir-lbl">Əvəzedici</span>

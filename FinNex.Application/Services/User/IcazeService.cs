@@ -38,6 +38,10 @@ namespace FinNex.Application.Services
         {
             try
             {
+                // Bağlanmamış icazələrdə cihaz çıxış/qayıdışını xam punch-lardan bərpa et
+                // ki, faktiki saat dəqiq olsun (HR İzləmə səhifəsi ilə eyni mənbə).
+                await IcazeCihazVaxtBerpaEtAsync();
+
                 var list = await _unitOfWork.Repository<Icaze>()
                     .HamisiniGetirAsync(
                         x => x.IsciId == isciId,
@@ -283,6 +287,9 @@ namespace FinNex.Application.Services
         {
             try
             {
+                // Cihaz çıxış/qayıdışını bərpa et ki, faktiki saat dəqiq olsun.
+                await IcazeCihazVaxtBerpaEtAsync();
+
                 var icaze = await _unitOfWork.Repository<Icaze>()
                     .GetirAsync(
                         x => x.Id == icazeId,
@@ -326,6 +333,8 @@ namespace FinNex.Application.Services
                     CixisVaxt = icaze.CixisGiris?.CixisVaxt,
                     QayidisVaxt = icaze.CixisGiris?.QayidisVaxt,
                     CixisGirisStatus = icaze.CixisGiris?.Status,
+                    FaktikiSaat = IcazeFaktikiSaat(icaze.CixisGiris?.CixisVaxt, icaze.CixisGiris?.QayidisVaxt,
+                                                   icaze.Birdefelik, icaze.IcazeTarixi, icaze.BitisSaati),
                 };
 
                 return Result<IcazeDetailDto>.Ok(dto);
@@ -806,6 +815,8 @@ namespace FinNex.Application.Services
             CixisVaxt = icaze.CixisGiris?.CixisVaxt,
             QayidisVaxt = icaze.CixisGiris?.QayidisVaxt,
             CixisGirisStatus = icaze.CixisGiris?.Status,
+            FaktikiSaat = IcazeFaktikiSaat(icaze.CixisGiris?.CixisVaxt, icaze.CixisGiris?.QayidisVaxt,
+                                           icaze.Birdefelik, icaze.IcazeTarixi, icaze.BitisSaati),
         };
 
         // ── Cihaz oxuma bərpası üçün batch xəritələr ─────────

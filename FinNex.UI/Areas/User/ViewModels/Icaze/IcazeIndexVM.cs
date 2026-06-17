@@ -23,8 +23,9 @@ namespace FinNex.UI.Areas.User.ViewModels.Icaze
         public int ImtinaCem => Icazeler
             .Count(x => x.WorkflowMerhele == "İmtina edildi");
 
+        // Təsdiqlənmiş icazələrin FAKTİKİ istifadəsi (faktiki varsa o, yoxdursa planlaşdırılan).
         public double IstifadeOlunanSaat => Icazeler
             .Where(x => x.WorkflowMerhele == "Təsdiqlənib")
-            .Sum(x => x.IcazeSaati);
+            .Sum(x => x.IstifadeSaati);
     }
 }

@@ -54,6 +54,11 @@ namespace FinNex.Application.DTOs.HR.Icaze
         public TimeSpan BaslamaSaati { get; set; }
         public TimeSpan BitisSaati { get; set; }
         public double IcazeSaati { get; set; }
+        // Faktiki istifadə (cihaz çıxış/qayıdışından): adi icazə → qayıdış−çıxış;
+        // birdəfəlik → çıxışdan icazə sonuna. Punch yoxdursa null. Servis doldurur.
+        public double? FaktikiSaat { get; set; }
+        // İstifadə olunan saat = faktiki varsa o, yoxdursa planlaşdırılan (icazə pəncərəsi).
+        public double IstifadeSaati => FaktikiSaat ?? IcazeSaati;
 
         public string? Sebeb { get; set; }
         public IcazeStatus Status { get; set; }
