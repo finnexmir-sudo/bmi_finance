@@ -45,6 +45,7 @@ namespace FinNex.Application.Services.HR
                 };
 
                 await _uow.Repository<IsciDigerTutulma>().YaratAsync(entity);
+                await _uow.YaddaSaxlaAsync();
                 return Result<int>.Ok(entity.Id, "Tutulma yadda saxlanıldı.");
             }
             catch (Exception ex)
@@ -107,6 +108,7 @@ namespace FinNex.Application.Services.HR
                 e.Silinib = true;
                 e.SilinmeTarixi = DateTime.Now;
                 await _uow.Repository<IsciDigerTutulma>().YenileAsync(e);
+                await _uow.YaddaSaxlaAsync();
                 return Result.Ok();
             }
             catch (Exception ex)
