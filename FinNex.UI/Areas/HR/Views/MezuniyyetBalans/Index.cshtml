@@ -170,7 +170,7 @@
                         <tr>
                             <th style="min-width:200px">İşçi</th>
                             <th>Departament</th>
-                            <th style="min-width:240px">Qalıq məzuniyyət (@secilmisIl)</th>
+                            <th style="min-width:240px">Qalıq məzuniyyət (bütöv)</th>
                             <th style="min-width:220px">İllər üzrə qalıq</th>
                             <th style="width:110px">Əməliyyat</th>
                         </tr>
@@ -215,7 +215,17 @@
 
                             // İllər üzrə qalıq (cari il də daxil)
                             var illerList = illerUzreQaliq.TryGetValue(isci.Id, out var list) ? list : null;
-                            var umumiQaliq = (illerList?.Sum(x => x.Qaliq) ?? 0) + (illik == null ? 0 : 0);
+
+                            // Bütöv qalıq = cari il + keçmiş illərin qalığı. Cari il üçün illik.QaliqGun
+                            // (filtered Include mənbəyi) götürülür ki, sağ sütundakı "Cəm" ilə eyni qiymət
+                            // olsun və EF "relationship fixup" ziddiyyəti yaranmasın.
+                            var kecmisIller = illerList?
+                                .Where(x => !x.Cari && x.Qaliq > 0)
+                                .OrderByDescending(x => x.Il)
+                                .ToList() ?? new();
+                            var kecmisQaliqSum = kecmisIller.Sum(x => x.Qaliq);
+                            var cariQaliq = illik?.QaliqGun ?? 0;
+                            var umumiQaliq = cariQaliq + kecmisQaliqSum;
 
                             <tr>
                                 <td>
@@ -231,7 +241,7 @@
 
                                 @* ═══ Qalıq məzuniyyət (cari il əsas göstəriş) ═══ *@
                                 <td>
-                                    @if (illik == null)
+                                    @if (umumiQaliq <= 0 && illik == null)
                                     {
                                         <div class="mb-no-balance">
                                             <i class="bi bi-hourglass-split"></i> @secilmisIl-ci il məzuniyyəti təyin edilməyib
@@ -239,27 +249,33 @@
                                     }
                                     else
                                     {
-                                        var pct = illik.ToplamGun > 0
+                                        // Böyük rəqəm — BÜTÖV qalıq (bütün illər). Progress bar cari ilin
+                                        // istifadə vəziyyətini göstərir (aktiv tsikl).
+                                        var pct = (illik != null && illik.ToplamGun > 0)
                                             ? (int)Math.Round((double)illik.QaliqGun / illik.ToplamGun * 100)
-                                            : 0;
+                                            : (umumiQaliq > 0 ? 100 : 0);
                                         var cls = pct > 50 ? "green" : (pct >= 20 ? "yellow" : "red");
 
                                         <div class="mb-balance-block">
                                             <div class="mb-qaliq-row">
-                                                <span class="mb-qaliq-big">@illik.QaliqGun</span>
+                                                <span class="mb-qaliq-big">@umumiQaliq</span>
                                                 <span class="mb-qaliq-unit">gün qalır</span>
                                             </div>
                                             <div class="mb-prog">
                                                 <div class="mb-prog__bar mb-prog__bar--@cls" style="width:@(pct)%"></div>
                                             </div>
                                             <div class="mb-istifade-info">
-                                                @if (illik.IstifadeOlunanGun > 0)
+                                                @if (illik != null)
                                                 {
-                                                    <span><strong>@illik.IstifadeOlunanGun</strong> gün istifadə edilib · @illik.ToplamGun toplam</span>
+                                                    <span>Cari il (@secilmisIl): <strong>@cariQaliq</strong> gün</span>
+                                                    @if (kecmisQaliqSum > 0)
+                                                    {
+                                                        <span> · keçmiş illər: <strong>@kecmisQaliqSum</strong> gün</span>
+                                                    }
                                                 }
                                                 else
                                                 {
-                                                    <span>@illik.ToplamGun gün verilib · istifadə olunmayıb</span>
+                                                    <span><i class="bi bi-exclamation-triangle" style="color:#d97706"></i> Cari il təyin edilməyib · keçmiş illər: <strong>@kecmisQaliqSum</strong> gün</span>
                                                 }
                                             </div>
                                         </div>
@@ -271,13 +287,7 @@
                                 @*  iki sütun arasında ziddiyyət olmasın. Keçmiş illər isə *@
                                 @*  illerList-dən (yalnız qalığı olanlar). *@
                                 <td>
-                                    @{
-                                        var kecmisIller = illerList?
-                                            .Where(x => !x.Cari && x.Qaliq > 0)
-                                            .OrderByDescending(x => x.Il)
-                                            .ToList() ?? new();
-                                        var cemQaliq = (illik?.QaliqGun ?? 0) + kecmisIller.Sum(y => y.Qaliq);
-                                    }
+                                    @* kecmisIller və umumiQaliq yuxarıda (əsas sütunla eyni mənbədən) hesablanıb *@
                                     <div class="mb-prev-years">
                                         @* Cari il — illik mövcuddursa real qalıq, yoxsa "hələ verilməyib" *@
                                         @if (illik != null)
@@ -327,7 +337,7 @@
                                     </div>
                                     @if (illik != null && kecmisIller.Any())
                                     {
-                                        <span class="mb-prev-cemi">Cəm: @cemQaliq gün</span>
+                                        <span class="mb-prev-cemi">Cəm: @umumiQaliq gün</span>
                                     }
                                 </td>
 
