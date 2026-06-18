@@ -788,7 +788,7 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             new[] { RoleNames.Muhasib, RoleNames.Admin },
             BildirisNovu.MezuniyyetImtina,
             "Məzuniyyət ödənişi — ləğv edildi",
-            $"{isciAd} üçün {dovr} məzuniyyəti HR tərəfindən ləğv edildi. Gözləyən qabaqcadan ödənişi İCRA ETMƏYİN.",
+            $"{isciAd} üçün {dovr} məzuniyyəti ləğv edildi. Gözləyən qabaqcadan ödənişi İCRA ETMƏYİN.",
             redirectUrl: "/HR/MezuniyyetOdenis",
             mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
     }
@@ -1196,6 +1196,17 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             m.Status != MezuniyyetStatus.Tesdiqlenib)
             return Result.Fail("Bu statusda ləğv etmək mümkün deyil.");
 
+        // Qabaqcadan ödəniş artıq icra olunub/planlanıbsa — ləğv bloklanır.
+        // (Pul köçürülüb; geri-alınma HR/Mühasib tərəfindən əl ilə həll olunmalıdır.)
+        // Qeyd: OdenisStatus yalnız təsdiqlənmiş məzuniyyətdə qeyri-default olur,
+        // ona görə bu yoxlama proses-də olan müraciətləri təsir etmir.
+        if (m.OdenisStatus == MezuniyyetOdenisStatus.Odenilib ||
+            m.OdenisStatus == MezuniyyetOdenisStatus.PlanliOdenis)
+            return Result.Fail("Qabaqcadan ödəniş artıq icra olunub — ləğv mümkün deyil. HR ilə əlaqə saxlayın.");
+
+        // Yalnız hələ ödənilməmiş (Gozleyir) avans varsa — Mühasibə ləğv bildirişi gedəcək
+        var avansGozleyirdi = m.OdenisStatus == MezuniyyetOdenisStatus.Gozleyir;
+
         // Təsdiqlənmiş məzuniyyəti ləğv edəndə balansı geri qaytar
         if (m.Status == MezuniyyetStatus.Tesdiqlenib)
         {
@@ -1215,10 +1226,24 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
 
             foreach (var dav in davQeydleri)
                 await _unitOfWork.Repository<Davamiyyet>().YumshakSilAsync(dav.Id);
+
+            // Gözləyən qabaqcadan ödənişi sıfırla (ödəniş hələ edilməyib).
+            // m tracked-dir; aşağıdakı YumshakSilAsync(id) → Update(m) bu dəyişiklikləri də saxlayır.
+            if (avansGozleyirdi)
+            {
+                m.OdenenMebleg = null;
+                m.OdenenMeblegBrut = null;
+                m.OdenisStatus = MezuniyyetOdenisStatus.TetbiqEdilmir;
+                m.PlanliOdenisTarixi = null;
+            }
         }
 
         await _unitOfWork.Repository<Mezuniyyet>().YumshakSilAsync(id);
         await _unitOfWork.YaddaSaxlaAsync();
+
+        // Gözləyən avans ləğv olundusa Mühasibi xəbərdar et
+        if (avansGozleyirdi)
+            await NotifyMuhasibForCancelAsync(m);
 
         return Result.Ok("Müraciət ləğv edildi.");
     }
