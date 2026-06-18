@@ -670,7 +670,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     : Math.floor((new Date(r.cixisVaxti) - new Date(r.girisVaxti)) / 60000);
                 var h = Math.floor(totalMin / 60);
                 var m = totalMin % 60;
-                var durCls = h < 8 ? 'hrd-dur hrd-dur--short' : 'hrd-dur hrd-dur--ok';
+                // Qırmızı server tərəfdən hesablanır — yalnız uyğunsuzluqda (İş Bitdi /
+                // icazə / ezamiyyət / fərdi icazə örtmürsə). Köhnə "h < 8" deyil.
+                var durCls = r.isSaatiQirmizi ? 'hrd-dur hrd-dur--short' : 'hrd-dur hrd-dur--ok';
                 var naharTip = r.naharCixildi ? ' <span style="font-size:10px;color:#94a3b8;margin-left:3px;" title="Nahar çıxılıb"><i class="bi bi-cup-hot"></i></span>' : '';
                 duration = '<span class="' + durCls + '">' + h + ' s ' + m + ' d</span>' + naharTip;
             }
@@ -729,7 +731,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 actionCell = '<td></td>';
             }
 
-            html += '<tr data-giris="' + (r.girisVaxti || '') + '" data-cixis="' + (r.cixisVaxti || '') + '" style="cursor:pointer;">' +
+            html += '<tr data-giris="' + (r.girisVaxti || '') + '" data-cixis="' + (r.cixisVaxti || '') +
+                '" data-isci-id="' + (r.isciId || '') +
+                '" data-erken-icaze="' + (r.erkenIcaze ? '1' : '0') +
+                '" data-issaati-qirmizi="' + (r.isSaatiQirmizi ? '1' : '0') +
+                '" data-issaati-sebeb="' + ((r.isSaatiSebeb || '').replace(/"/g, '&quot;')) + '" style="cursor:pointer;">' +
                 '<td><div class="hrd-emp"><div class="hrd-emp-av">' + initials + '</div><div class="hrd-emp-name">' + r.isciTamAd + '</div></div></td>' +
                 '<td><span class="hrd-dept">' + r.departamentAd + '</span></td>' +
                 '<td><div class="hrd-date">' + tarix + '</div></td>' +
@@ -1085,6 +1091,14 @@ document.addEventListener('DOMContentLoaded', function () {
             var wm = workedMin % 60;
             msg = '&#128682; <strong>' + isciAd + '</strong><br>' +
                   '<span style="opacity:.7;font-size:12px;">İşdən çıxıb · Cəmi: ' + wh + ' saat ' + wm + ' dəqiqə</span>';
+            // İş saati səbəbi — niyə qırmızı (və ya niyə qırmızı deyil) izahı
+            var issaatiSebeb = row.getAttribute('data-issaati-sebeb') || '';
+            if (issaatiSebeb) {
+                var qirmizidir = row.getAttribute('data-issaati-qirmizi') === '1';
+                msg += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);font-size:11px;line-height:1.5;' +
+                       (qirmizidir ? 'color:#fca5a5;' : 'color:#86efac;') + '">' +
+                       (qirmizidir ? '&#9888;&#65039; ' : '&#10003; ') + issaatiSebeb + '</div>';
+            }
         } else {
             var girisDate = new Date(girisStr);
             var now = new Date();

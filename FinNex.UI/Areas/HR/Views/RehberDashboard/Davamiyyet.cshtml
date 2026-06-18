@@ -328,8 +328,9 @@
                                     @if (item.GirisVaxti.HasValue && item.CixisVaxti.HasValue)
                                     {
                                         var dur = item.CixisVaxti.Value - item.GirisVaxti.Value;
-                                        var cls = dur.TotalHours < 8 ? "hrd-dur--short" : "hrd-dur--ok";
-                                        <span class="hrd-dur @cls">@dur.Hours s @dur.Minutes d</span>
+                                        @* Qırmızı qərarı JS hidratlaşmada server məntiqi ilə tətbiq olunur
+                                           (İş Bitdi/icazə/ezamiyyət/fərdi icazə nəzərə alınır). SSR neytral. *@
+                                        <span class="hrd-dur hrd-dur--ok">@dur.Hours s @dur.Minutes d</span>
                                     }
                                     else { <span class="hrd-nodata">---</span> }
                                 </td>

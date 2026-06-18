@@ -704,6 +704,79 @@ namespace FinNex.UI.Areas.HR.Controllers
                 }
                 catch { /* IsciGuzest/BayramGunu mövcud deyilsə əlil qaydası keçilir */ }
 
+                // ── İş saati uyğunsuzluq örtükləri ─────────────────────────────
+                // Erkən çıxış İŞ SAATINI qırmızı etmir əgər: fərdi erkən çıxış icazəsi,
+                // təsdiqlənmiş saatlıq icazə (çıxış icazə başlanğıcından gec) və ya
+                // təsdiqlənmiş ezamiyyət örtürsə. (İş Bitdi/standart çıxış onsuz da
+                // tezCixanFlag-da nəzərə alınır.)
+                var hedefIsciSet = result.Select(x => x.IsciId).Distinct().ToList();
+
+                var erkenCixisSet = new HashSet<(int, DateTime)>();
+                try
+                {
+                    var erkenler = await _uow.Repository<ErkenCixisIcaze>()
+                        .Query().AsNoTracking()
+                        .Where(x => !x.Silinib && x.Tarix.Date >= elanBaslangic && x.Tarix.Date <= elanSon
+                                 && hedefIsciSet.Contains(x.IsciId))
+                        .Select(x => new { x.IsciId, x.Tarix })
+                        .ToListAsync();
+                    foreach (var e in erkenler) erkenCixisSet.Add((e.IsciId, e.Tarix.Date));
+                }
+                catch { }
+
+                // Təsdiqlənmiş saatlıq icazə: (işçi, tarix) → ən erkən başlama saatı
+                var icazeBasDict = new Dictionary<(int, DateTime), TimeSpan>();
+                try
+                {
+                    var icazeler = await _uow.Repository<Icaze>()
+                        .Query().AsNoTracking()
+                        .Where(x => !x.Silinib && x.Status == IcazeStatus.Tesdiqlenib
+                                 && x.IcazeTarixi.Date >= elanBaslangic && x.IcazeTarixi.Date <= elanSon
+                                 && hedefIsciSet.Contains(x.IsciId))
+                        .Select(x => new { x.IsciId, x.IcazeTarixi, x.BaslamaSaati })
+                        .ToListAsync();
+                    foreach (var ic in icazeler)
+                    {
+                        var k = (ic.IsciId, ic.IcazeTarixi.Date);
+                        if (!icazeBasDict.TryGetValue(k, out var v) || ic.BaslamaSaati < v)
+                            icazeBasDict[k] = ic.BaslamaSaati;
+                    }
+                }
+                catch { }
+
+                // Təsdiqlənmiş ezamiyyət. Saatlıq olanda (işçi, tarix) → ən erkən başlama
+                // saatı; tam günlük (saatsız) olanda isə ezamFullSet — istənilən çıxışı örtür.
+                var ezamBasDict = new Dictionary<(int, DateTime), TimeSpan>();
+                var ezamFullSet = new HashSet<(int, DateTime)>();
+                try
+                {
+                    var ezamlar = await _uow.Repository<EzamiyyetMuraciet>()
+                        .Query().AsNoTracking()
+                        .Where(x => !x.Silinib && x.Status == EzamiyyetStatus.Tesdiqlendi
+                                 && x.BaslamaTarixi.Date <= elanSon && x.BitmeTarixi.Date >= elanBaslangic
+                                 && hedefIsciSet.Contains(x.IsciId))
+                        .Select(x => new { x.IsciId, x.BaslamaTarixi, x.BitmeTarixi, x.BaslamaSaati })
+                        .ToListAsync();
+                    foreach (var ez in ezamlar)
+                    {
+                        for (var d = ez.BaslamaTarixi.Date; d <= ez.BitmeTarixi.Date; d = d.AddDays(1))
+                        {
+                            if (d < elanBaslangic || d > elanSon) continue;
+                            var k = (ez.IsciId, d);
+                            if (ez.BaslamaSaati == null)
+                                ezamFullSet.Add(k);
+                            else
+                            {
+                                var bas = ez.BaslamaSaati.Value;
+                                if (!ezamBasDict.TryGetValue(k, out var v) || bas < v) ezamBasDict[k] = bas;
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                const int normaDeq = 480; // 8 saat (net iş vaxtı) — iş saati qırmızı həddi
+
                 var tezCixanSayi = 0;
                 var data = result.Select(x =>
                 {
@@ -733,9 +806,64 @@ namespace FinNex.UI.Areas.HR.Controllers
                     var tezCixanFlag = x.CixisVaxti.HasValue && x.CixisVaxti.Value.TimeOfDay < gunHedd
                         && !elilCumeBagisla;
 
+                    // ── İŞ SAATI qırmızı qərarı + səbəb (rəhbərə izah üçün) ──────
+                    // Qırmızı yalnız UYĞUNSUZLUQDA: az işləyib + erkən çıxıb + heç bir
+                    // örtük (İş Bitdi / fərdi icazə / icazə / ezamiyyət) yoxdur.
+                    var gunKey = (x.IsciId, x.Tarix.Date);
+                    var cixisTime = x.CixisVaxti?.TimeOfDay;
+                    bool erkenIcazeVar = erkenCixisSet.Contains(gunKey);
+                    bool isSaatiAz = islemeSaatiDeq.HasValue && islemeSaatiDeq.Value < normaDeq;
+                    bool isSaatiQirmizi = false;
+                    string isSaatiSebeb = "";
+
+                    if (!islemeSaatiDeq.HasValue)
+                    {
+                        // Giriş/çıxış tam deyil — iş saati hesablanmır
+                    }
+                    else if (!isSaatiAz)
+                    {
+                        isSaatiSebeb = "Tam iş günü işlənib.";
+                    }
+                    else if (!tezCixanFlag)
+                    {
+                        isSaatiSebeb = elanDict.ContainsKey(x.Tarix.Date)
+                            ? $"İş günü erkən bitirilib ({elanDict[x.Tarix.Date].ToString(@"hh\:mm")}) — erkən çıxış sayılmır."
+                            : "Standart çıxış vaxtında gedib — erkən çıxış sayılmır.";
+                    }
+                    else if (erkenIcazeVar)
+                    {
+                        isSaatiSebeb = "Rəhbər fərdi erkən çıxış icazəsi verib.";
+                    }
+                    else if (ezamFullSet.Contains(gunKey))
+                    {
+                        isSaatiSebeb = "Təsdiqlənmiş (tam günlük) ezamiyyət var — erkən çıxış sayılmır.";
+                    }
+                    else if (icazeBasDict.TryGetValue(gunKey, out var icBas) && cixisTime.HasValue && cixisTime.Value >= icBas)
+                    {
+                        isSaatiSebeb = $"Təsdiqlənmiş icazə var ({icBas.ToString(@"hh\:mm")}-dan) — çıxış icazə daxilindədir.";
+                    }
+                    else if (ezamBasDict.TryGetValue(gunKey, out var ezBas) && cixisTime.HasValue && cixisTime.Value >= ezBas)
+                    {
+                        isSaatiSebeb = $"Təsdiqlənmiş ezamiyyət var ({ezBas.ToString(@"hh\:mm")}-dan) — çıxış onunla uyğundur.";
+                    }
+                    else
+                    {
+                        isSaatiQirmizi = true;
+                        var ws = islemeSaatiDeq.Value / 60;
+                        var wm = islemeSaatiDeq.Value % 60;
+                        var cixisStr = cixisTime.HasValue ? cixisTime.Value.ToString(@"hh\:mm") : "—";
+                        if (icazeBasDict.TryGetValue(gunKey, out var icBas2))
+                            isSaatiSebeb = $"İcazə {icBas2.ToString(@"hh\:mm")}-dan başlayır, amma işçi ondan ƏVVƏL ({cixisStr}) çıxıb. İşlənmə: {ws} s {wm} d.";
+                        else if (ezamBasDict.TryGetValue(gunKey, out var ezBas2))
+                            isSaatiSebeb = $"Ezamiyyət {ezBas2.ToString(@"hh\:mm")}-dan başlayır, amma işçi ondan ƏVVƏL ({cixisStr}) çıxıb. İşlənmə: {ws} s {wm} d.";
+                        else
+                            isSaatiSebeb = $"İş günü bitməyib, erkən çıxıb ({cixisStr}) — icazə/ezamiyyət/fərdi icazə yoxdur. İşlənmə: {ws} s {wm} d (norma {normaDeq / 60} s).";
+                    }
+
                     return new
                     {
                         id = x.Id,
+                        isciId = x.IsciId,
                         isciTamAd = x.IsciTamAd ?? "-",
                         departamentAd = x.DepartamentAd ?? "-",
                         tarix = x.Tarix,
@@ -746,7 +874,10 @@ namespace FinNex.UI.Areas.HR.Controllers
                         qayibSebebi = x.QayibSebebi ?? "",
                         tezCixan = tezCixanFlag,
                         islemeSaatiDeq,
-                        naharCixildi
+                        naharCixildi,
+                        erkenIcaze = erkenIcazeVar,
+                        isSaatiQirmizi,
+                        isSaatiSebeb
                     };
                 }).OrderByDescending(x => x.tarix).ThenBy(x => x.isciTamAd).ToList();
                 tezCixanSayi = data.Count(x => x.tezCixan);
