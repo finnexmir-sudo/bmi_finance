@@ -43,11 +43,15 @@ async function ezYukle() {
                 ? '<br><small style="color:#22c55e"><i class="bi bi-box-arrow-in-left"></i> ' + r.cihazQayidisVaxti + '</small>'
                 : '<br><small style="color:#f59e0b"><i class="bi bi-hourglass-split"></i> qayıtmayıb</small>';
         }
+        // İşçinin yazdığı gündaxili saat aralığı (varsa) — rəhbər hansı saatda gedəcəyini görsün
+        var saat = r.baslamaSaati
+            ? '<br><small style="color:#0ea5e9"><i class="bi bi-clock"></i> ' + r.baslamaSaati + (r.bitisSaati ? '–' + r.bitisSaati : '') + '</small>'
+            : '';
         var sened = r.senedYolu
             ? '<a href="/dms/' + r.senedYolu + '" download="' + ezEsc(r.senedAd || 'sened') + '" style="color:#6366f1;font-size:12px"><i class="bi bi-paperclip"></i> ' + (r.senedAd || 'Sənəd') + '</a>'
             : '<span style="color:#94a3b8">—</span>';
         var emel = r.status === 1
-            ? '<button class="fn-btn fn-btn--outline fn-btn--sm" onclick="ezOpenModal(' + r.id + ',\'' + ezEsc(r.isciTamAd) + '\',\'' + ezEsc(r.baslig) + '\',\'' + ezEsc(r.mekanAd) + '\',\'' + r.baslamaTarixi + '\',\'' + r.bitmeTarixi + '\')">' +
+            ? '<button class="fn-btn fn-btn--outline fn-btn--sm" onclick="ezOpenModal(' + r.id + ',\'' + ezEsc(r.isciTamAd) + '\',\'' + ezEsc(r.baslig) + '\',\'' + ezEsc(r.mekanAd) + '\',\'' + r.baslamaTarixi + '\',\'' + r.bitmeTarixi + '\',\'' + (r.baslamaSaati || '') + '\',\'' + (r.bitisSaati || '') + '\')">' +
               '<i class="bi bi-check-square"></i> Bax</button>'
             : '<span style="font-size:11px;color:#94a3b8">' + (r.rehberTamAd ? r.rehberTamAd + '<br>' + (r.rehberTesdiqTarixi || '') : '') + '</span>';
         // Təsdiqlənmiş ezamiyyət üçün HR/Admin əl ilə çıxış/qayıdış düzəlişi
@@ -66,7 +70,7 @@ async function ezYukle() {
                 (r.isciVezife ? '<br><small style="color:#94a3b8">' + r.isciVezife + '</small>' : '') + '</td>' +
             '<td style="padding:10px 14px;color:#0f172a">' + r.baslig + '</td>' +
             '<td style="padding:10px 14px;color:#374151"><i class="bi bi-geo-alt text-muted"></i> ' + r.mekanAd + '</td>' +
-            '<td style="padding:10px 14px;white-space:nowrap">' + tarix + '<br><small style="color:#6366f1">' + r.gunSayi + ' gün</small></td>' +
+            '<td style="padding:10px 14px;white-space:nowrap">' + tarix + '<br><small style="color:#6366f1">' + r.gunSayi + ' gün</small>' + saat + '</td>' +
             '<td style="padding:10px 14px">' + st +
                 (r.rehberQeydi && r.status === 3 ? '<br><small style="color:#ef4444">' + r.rehberQeydi + '</small>' : '') +
                 geriNot + '</td>' +
@@ -100,15 +104,17 @@ function ezStatusBadge(s) {
     return '<span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;background:' + d[0] + ';color:' + d[1] + '">' + d[2] + '</span>';
 }
 
-function ezOpenModal(id, isci, baslig, mekan, bas, bit) {
+function ezOpenModal(id, isci, baslig, mekan, bas, bit, basSaat, bitSaat) {
     _ezCurrentId = id;
     document.getElementById('ezQeyd').value = '';
+    var saatMetn = basSaat ? (basSaat + (bitSaat ? ' – ' + bitSaat : '')) : 'Tam gün';
     document.getElementById('ezModalBody').innerHTML =
         '<div style="background:#f8fafc;border-radius:8px;padding:12px;font-size:13px">' +
         '<div style="margin-bottom:6px"><strong>İşçi:</strong> ' + isci + '</div>' +
         '<div style="margin-bottom:6px"><strong>Başlıq:</strong> ' + baslig + '</div>' +
         '<div style="margin-bottom:6px"><strong>Məkan:</strong> ' + mekan + '</div>' +
-        '<div><strong>Tarix:</strong> ' + bas + (bas !== bit ? ' – ' + bit : '') + '</div>' +
+        '<div style="margin-bottom:6px"><strong>Tarix:</strong> ' + bas + (bas !== bit ? ' – ' + bit : '') + '</div>' +
+        '<div><strong>Saat:</strong> <span style="color:#0ea5e9"><i class="bi bi-clock"></i> ' + saatMetn + '</span></div>' +
         '</div>';
     document.getElementById('ezOverlay').style.display = 'block';
     document.getElementById('ezModal').style.display   = 'block';

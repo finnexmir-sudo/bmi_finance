@@ -63,8 +63,11 @@
                            value="@DateTime.Today.ToString("yyyy-MM-dd")" />
                 </div>
                 <div class="fn-form-group">
-                    <label class="fn-label">Başlama saatı</label>
-                    <input type="time" name="BaslamaSaati" class="fn-input" />
+                    <label class="fn-label">Başlama saatı <span style="color:#94a3b8;font-weight:400">(istəyə bağlı)</span></label>
+                    <input type="text" name="BaslamaSaati" id="ezBaslamaSaati"
+                           pattern="^([01]?\d|2[0-3]):[0-5]\d$"
+                           placeholder="09:00" maxlength="5" inputmode="numeric"
+                           class="fn-input" autocomplete="off" />
                 </div>
             </div>
 
@@ -75,8 +78,11 @@
                            value="@DateTime.Today.ToString("yyyy-MM-dd")" />
                 </div>
                 <div class="fn-form-group">
-                    <label class="fn-label">Bitmə saatı</label>
-                    <input type="time" name="BitisSaati" class="fn-input" />
+                    <label class="fn-label">Bitmə saatı <span style="color:#94a3b8;font-weight:400">(istəyə bağlı)</span></label>
+                    <input type="text" name="BitisSaati" id="ezBitisSaati"
+                           pattern="^([01]?\d|2[0-3]):[0-5]\d$"
+                           placeholder="18:00" maxlength="5" inputmode="numeric"
+                           class="fn-input" autocomplete="off" />
                 </div>
             </div>
 
@@ -120,4 +126,15 @@
             document.getElementById('yeniMekanInp').focus();
         }
     }
+
+    // ── Saat mask (icazə ilə eyni): yalnız rəqəm yazılır, ":" avtomatik qoyulur ──
+    function ezMaskSaat(e) {
+        var raw = e.target.value.replace(/[^\d]/g, '');
+        if (raw.length > 4) raw = raw.substring(0, 4);
+        e.target.value = raw.length >= 3 ? raw.substring(0, 2) + ':' + raw.substring(2) : raw;
+    }
+    ['ezBaslamaSaati', 'ezBitisSaati'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('input', ezMaskSaat);
+    });
 </script>

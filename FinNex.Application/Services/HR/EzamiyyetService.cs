@@ -471,7 +471,11 @@ namespace FinNex.Application.Services.HR
         private static TimeSpan? ParseSaat(string? s)
         {
             if (string.IsNullOrWhiteSpace(s)) return null;
-            return TimeSpan.TryParse(s, out var ts) ? ts : null;
+            if (!TimeSpan.TryParse(s.Trim(), out var ts)) return null;
+            // Yalnız gündaxili saat (00:00–23:59). Kolonsuz "9" kimi dəyər TimeSpan-da
+            // 9 GÜN kimi parse olunduğundan, 1 gündən böyük/bərabər nəticələri rədd edirik.
+            if (ts < TimeSpan.Zero || ts >= TimeSpan.FromDays(1)) return null;
+            return ts;
         }
 
         private static EzamiyyetMuracietListDto Map(EzamiyyetMuraciet x)
