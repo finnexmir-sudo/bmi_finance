@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function () {
             case 3: return '<span class="ud-badge ud-badge--qayib"><span class="ud-badge-dot"></span>Qayıb</span>';
             case 4: return '<span class="ud-badge ud-badge--icazeli"><span class="ud-badge-dot"></span>İcazəli</span>';
             case 5: return '<span class="ud-badge" style="background:rgba(168,85,247,.1);color:#a855f7;"><span class="ud-badge-dot"></span>Xəstəlik</span>';
-            case 6: return '<span class="ud-badge" style="background:rgba(249,115,22,.1);color:#f97316;"><span class="ud-badge-dot"></span>Ezamiyyət</span>';
+            case 6: return '<span class="ud-badge" style="background:rgba(13,148,136,.1);color:#0d9488;"><span class="ud-badge-dot" style="background:#0d9488;"></span>Ezamiyyət</span>';
             default: return '<span class="ud-badge">Naməlum</span>';
         }
     }
