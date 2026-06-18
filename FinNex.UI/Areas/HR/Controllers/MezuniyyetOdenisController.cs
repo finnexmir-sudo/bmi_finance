@@ -178,6 +178,11 @@ namespace FinNex.UI.Areas.HR.Controllers
             ViewBag.Itss = itssSum;
             ViewBag.UmumiTutulma = umumiTutulma;
 
+            // Avans hazırlıq yoxlaması — əvvəlki ay maaşı bağlanıbmı (12 aylıq pəncərə tam olsun)
+            var (evvelkiAyBagli, evvelkiAyAdi) = await EvvelkiAyMaasiBaglidirAsync(mez);
+            ViewBag.EvvelkiAyBaglidir = evvelkiAyBagli;
+            ViewBag.EvvelkiAyAdi = evvelkiAyAdi;
+
             ViewBag.Mezuniyyet = mez;
             return View(hesab);
         }
@@ -213,6 +218,15 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return RedirectToAction(nameof(Detail), new { id });
             }
 
+            // Avans yalnız əvvəlki ay maaşı bağlandıqdan sonra — 12 aylıq orta düzgün olsun
+            var (eaBagli, eaAdi) = await EvvelkiAyMaasiBaglidirAsync(mez);
+            if (!eaBagli)
+            {
+                TempData["Error"] = $"Avans ödənişi üçün əvvəlki ayın ({eaAdi}) maaşı hələ hesablanmayıb. " +
+                                    "Maaş bağlandıqdan sonra ödəyin — yoxsa 12 aylıq orta natamam olur.";
+                return RedirectToAction(nameof(Detail), new { id });
+            }
+
             // HTML number input həmişə "456.52" formatında POST edir, amma Azərbaycan
             // culture-ı vergülü decimal separator kimi gözləyir → səhv parse olunub
             // rəqəm 100 qat böyüyürdü. InvariantCulture ilə (həm dot həm comma qəbul)
@@ -235,11 +249,13 @@ namespace FinNex.UI.Areas.HR.Controllers
                 }
             }
 
-            decimal? yekunMebleg = parsedMebleg ?? mez.OdenenMebleg;
+            // Default canlı məbləğ view-dan (redakteEdilmisMebleg) gəlir. Boşdursa
+            // dondurulmuş OdenenMebleg-ə KEÇMİRİK — məbləğ açıq tələb olunur.
+            decimal? yekunMebleg = parsedMebleg;
 
             if (yekunMebleg == null || yekunMebleg <= 0)
             {
-                TempData["Error"] = "Ödəniş məbləği düzgün deyil.";
+                TempData["Error"] = "Ödəniş məbləği daxil edilməyib.";
                 return RedirectToAction(nameof(Detail), new { id });
             }
 
@@ -313,6 +329,15 @@ namespace FinNex.UI.Areas.HR.Controllers
                 return RedirectToAction(nameof(Detail), new { id });
             }
 
+            // Avans yalnız əvvəlki ay maaşı bağlandıqdan sonra icra edilə bilər
+            var (eaBagliIcra, eaAdiIcra) = await EvvelkiAyMaasiBaglidirAsync(mez);
+            if (!eaBagliIcra)
+            {
+                TempData["Error"] = $"Avans ödənişi üçün əvvəlki ayın ({eaAdiIcra}) maaşı hələ hesablanmayıb. " +
+                                    "Maaş bağlandıqdan sonra icra edin.";
+                return RedirectToAction(nameof(Detail), new { id });
+            }
+
             if (mez.OdenenMebleg == null || mez.OdenenMebleg <= 0)
             {
                 TempData["Error"] = "Ödəniş məbləği təsdiqlənməyib. Əvvəlcə 'Planla' addımını tamamlayın.";
@@ -346,6 +371,23 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             TempData["Success"] = $"Ödəniş icra edildi ({mez.OdenenMebleg:N2} ₼).";
             return RedirectToAction(nameof(Index));
+        }
+
+        private static readonly string[] AzAylar =
+            { "", "Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun",
+              "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr" };
+
+        // Avans ödənişi yalnız məzuniyyət başlama ayından ƏVVƏLKİ ayın maaşı bağlandıqdan
+        // (həmin ay üçün IsciAyliqQazanc qeydi yarandıqdan) sonra edilə bilər. Əks halda
+        // məzuniyyət pulunun 12 aylıq orta bazası natamam pəncərəyə düşür və səhv olur.
+        private async Task<(bool baglidir, string ayAdi)> EvvelkiAyMaasiBaglidirAsync(Mezuniyyet mez)
+        {
+            var evvelki = new DateTime(mez.BaslamaTarixi.Year, mez.BaslamaTarixi.Month, 1).AddMonths(-1);
+            var baglidir = await _unitOfWork.Repository<IsciAyliqQazanc>()
+                .Query()
+                .AnyAsync(x => x.IsciId == mez.IsciId && x.Il == evvelki.Year
+                            && x.Ay == evvelki.Month && !x.Silinib);
+            return (baglidir, $"{AzAylar[evvelki.Month]} {evvelki.Year}");
         }
 
         // Məzuniyyətin başlanğıcından bir iş günü əvvəlki tarix — həftəsonu və
