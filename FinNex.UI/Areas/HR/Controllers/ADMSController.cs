@@ -290,15 +290,25 @@ public class ADMSController : Controller
 
                         if (vaxt.TimeOfDay < tezCixmaHeddi && !ezamiyyetCixisi && !gorushCixisi)
                         {
-                            var qalan = (int)(tezCixmaHeddi - vaxt.TimeOfDay).TotalMinutes;
-                            var heddStr = $"{(int)tezCixmaHeddi.TotalHours:D2}:{tezCixmaHeddi.Minutes:D2}";
-                            var elanQeyd = bugunElan != null ? " (rəhbər elanına görə)" : "";
-                            _ = _bildirisRouter.NotifyIsciAsync(
-                                isciId,
-                                BildirisNovu.TezCixma,
-                                "Erkən çıxış qeydə alındı",
-                                $"Siz iş vaxtından{elanQeyd} {qalan} dəqiqə tez çıxdınız. " +
-                                $"Çıxış: {vaxt:HH:mm}, İş vaxtı: {heddStr}.");
+                            // Əlavə örtüklər (rəhbər davamiyyət səhifəsi ilə eyni məntiq):
+                            //  • Təsdiqlənmiş saatlıq icazə — çıxış icazə başlanğıcından gecdirsə
+                            //  • Rəhbərin verdiyi fərdi erkən çıxış icazəsi
+                            bool icazeCixisi = bugunIcaze != null && vaxt.TimeOfDay >= bugunIcaze.BaslamaSaati;
+                            bool ferdiCixisIcazesi = !icazeCixisi && await _db.Set<ErkenCixisIcaze>()
+                                .AnyAsync(x => !x.Silinib && x.IsciId == isciId && x.Tarix.Date == tarix);
+
+                            if (!icazeCixisi && !ferdiCixisIcazesi)
+                            {
+                                var qalan = (int)(tezCixmaHeddi - vaxt.TimeOfDay).TotalMinutes;
+                                var heddStr = $"{(int)tezCixmaHeddi.TotalHours:D2}:{tezCixmaHeddi.Minutes:D2}";
+                                var elanQeyd = bugunElan != null ? " (rəhbər elanına görə)" : "";
+                                _ = _bildirisRouter.NotifyIsciAsync(
+                                    isciId,
+                                    BildirisNovu.TezCixma,
+                                    "Erkən çıxış qeydə alındı",
+                                    $"Siz iş vaxtından{elanQeyd} {qalan} dəqiqə tez çıxdınız. " +
+                                    $"Çıxış: {vaxt:HH:mm}, İş vaxtı: {heddStr}.");
+                            }
                         }
                     }
                 }
