@@ -501,6 +501,68 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
     }
 
     // ════════════════════════════════════════════════════════════
+    // HR DÜZƏLİŞ (təsdiqdən sonra, başlanğıc keçməyib)
+    // ════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// HR təsdiqlənmiş məzuniyyətin ödəniş tipini dəyişir (ay-sonu ↔ qabaqcadan).
+    /// Şərtlər: Status=Təsdiqlənib, başlanğıc keçməyib, avans hələ icra olunmayıb
+    /// (Odenilib/PlanliOdenis → bloklanır). Qabaqcadana keçəndə məbləğ hesablanır,
+    /// status Gözləyir olur, Mühasibə bildiriş gedir. Maaş hesablaması data-əsaslı
+    /// olduğu üçün (OdenisTipi-yə görə) avtomatik uyğunlaşır.
+    /// </summary>
+    public async Task<Result> HrOdenisTipiDeyisAsync(int id, MezuniyyetOdenisTipi yeniTipi, int hrId)
+    {
+        var m = await _unitOfWork.Repository<Mezuniyyet>().GetirAsync(x => x.Id == id);
+        if (m == null) return Result.Fail("Müraciət tapılmadı.");
+
+        if (m.Status != MezuniyyetStatus.Tesdiqlenib)
+            return Result.Fail("Yalnız təsdiqlənmiş məzuniyyətdə ödəniş tipi dəyişdirilə bilər.");
+
+        if (m.BaslamaTarixi.Date <= DateTime.Today)
+            return Result.Fail("Məzuniyyət başlayıb (və ya bu gün başlayır) — ödəniş tipi dəyişdirilə bilməz.");
+
+        if (m.OdenisStatus == MezuniyyetOdenisStatus.Odenilib ||
+            m.OdenisStatus == MezuniyyetOdenisStatus.PlanliOdenis)
+            return Result.Fail("Qabaqcadan ödəniş artıq icra olunub/planlanıb — dəyişiklik mümkün deyil. (Pulun geri-alınması əl ilə həll olunmalıdır.)");
+
+        if (m.OdenisTipi == yeniTipi)
+            return Result.Fail("Ödəniş tipi onsuz da bu tipdədir.");
+
+        m.OdenisTipi = yeniTipi;
+
+        if (yeniTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis)
+        {
+            // Avansa keçid — HrTesdiqAsync ilə eyni məntiq
+            var hesab = await _maasHesablamaService
+                .MezuniyyetOdenisiDetalliHesablaAsync(m.IsciId, m.BaslamaTarixi, m.BitmeTarixi);
+            m.OdenenMebleg = hesab.CemiOdenis;
+            m.OdenisStatus = MezuniyyetOdenisStatus.Gozleyir;
+        }
+        else // AySonuOdenis
+        {
+            // Ay-sonuna qayıdış — avans qeydləri sıfırlanır (ödəniş hələ edilməyib)
+            m.OdenenMebleg = null;
+            m.OdenenMeblegBrut = null;
+            m.OdenisStatus = MezuniyyetOdenisStatus.TetbiqEdilmir;
+            m.PlanliOdenisTarixi = null;
+        }
+
+        await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(m);
+        await _unitOfWork.YaddaSaxlaAsync();
+
+        // Mühasibə bildiriş (yeni tipə görə)
+        if (yeniTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis)
+            await NotifyMuhasibForAdvancePaymentAsync(m);
+        else
+            await NotifyMuhasibForMonthEndPaymentAsync(m);
+
+        return Result.Ok(yeniTipi == MezuniyyetOdenisTipi.QabaqcadanOdenis
+            ? "Ödəniş tipi 'Qabaqcadan ödəniş'-ə dəyişdirildi. Mühasibə bildiriş göndərildi."
+            : "Ödəniş tipi 'Ay sonu ödəniş'-ə dəyişdirildi.");
+    }
+
+    // ════════════════════════════════════════════════════════════
     // Bildiriş köməkçiləri — bütün məzuniyyət iş axını üçün
     // ════════════════════════════════════════════════════════════
 

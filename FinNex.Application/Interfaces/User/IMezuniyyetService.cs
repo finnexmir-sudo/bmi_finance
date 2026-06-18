@@ -24,6 +24,11 @@ namespace FinNex.Application.Interfaces
         Task<Result<IList<MezuniyyetListDto>>> GetIsciMezuniyyetleriAsync(int isciId);
         Task<Result> LegvEtAsync(int id, int isciId);
 
+        // ── HR Düzəliş (təsdiqdən sonra, başlanğıc keçməyib) ──
+        // Kərpic 1: ödəniş tipini dəyiş (ay-sonu ↔ qabaqcadan).
+        // Avans artıq icra olunubsa (Odenilib/PlanliOdenis) bloklanır.
+        Task<Result> HrOdenisTipiDeyisAsync(int id, MezuniyyetOdenisTipi yeniTipi, int hrId);
+
         // Təsdiq paneli üçün
         Task<Result<IList<MezuniyyetListDto>>> GetGozlemededeAsync();
         Task<Result<IList<MezuniyyetListDto>>> GetRehberTesdiqindeAsync();
