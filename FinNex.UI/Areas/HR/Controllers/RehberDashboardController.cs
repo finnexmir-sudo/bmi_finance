@@ -806,58 +806,59 @@ namespace FinNex.UI.Areas.HR.Controllers
                     var tezCixanFlag = x.CixisVaxti.HasValue && x.CixisVaxti.Value.TimeOfDay < gunHedd
                         && !elilCumeBagisla;
 
-                    // ── İŞ SAATI qırmızı qərarı + səbəb (rəhbərə izah üçün) ──────
-                    // Qırmızı yalnız UYĞUNSUZLUQDA: az işləyib + erkən çıxıb + heç bir
-                    // örtük (İş Bitdi / fərdi icazə / icazə / ezamiyyət) yoxdur.
+                    // ── Erkən çıxış uyğunsuzluğu (ÇIXIŞ + İŞ SAATI qırmızısı) ────
+                    // İş Bitdi / standart çıxış onsuz da tezCixanFlag-da nəzərə alınıb.
+                    // Əlavə örtüklər: fərdi icazə, icazə (çıxış icazə başlanğıcından gec),
+                    // ezamiyyət. Örtük varsa heç bir sütun qırmızı OLMUR.
                     var gunKey = (x.IsciId, x.Tarix.Date);
                     var cixisTime = x.CixisVaxti?.TimeOfDay;
                     bool erkenIcazeVar = erkenCixisSet.Contains(gunKey);
                     bool isSaatiAz = islemeSaatiDeq.HasValue && islemeSaatiDeq.Value < normaDeq;
-                    bool isSaatiQirmizi = false;
-                    string isSaatiSebeb = "";
 
-                    if (!islemeSaatiDeq.HasValue)
-                    {
-                        // Giriş/çıxış tam deyil — iş saati hesablanmır
-                    }
-                    else if (!isSaatiAz)
-                    {
-                        isSaatiSebeb = "Tam iş günü işlənib.";
-                    }
-                    else if (!tezCixanFlag)
-                    {
-                        isSaatiSebeb = elanDict.ContainsKey(x.Tarix.Date)
-                            ? $"İş günü erkən bitirilib ({elanDict[x.Tarix.Date].ToString(@"hh\:mm")}) — erkən çıxış sayılmır."
-                            : "Standart çıxış vaxtında gedib — erkən çıxış sayılmır.";
-                    }
-                    else if (erkenIcazeVar)
-                    {
-                        isSaatiSebeb = "Rəhbər fərdi erkən çıxış icazəsi verib.";
-                    }
+                    bool ortukVar = false;
+                    string ortukSebeb = "";
+                    if (erkenIcazeVar)
+                    { ortukVar = true; ortukSebeb = "Rəhbər fərdi erkən çıxış icazəsi verib."; }
                     else if (ezamFullSet.Contains(gunKey))
-                    {
-                        isSaatiSebeb = "Təsdiqlənmiş (tam günlük) ezamiyyət var — erkən çıxış sayılmır.";
-                    }
-                    else if (icazeBasDict.TryGetValue(gunKey, out var icBas) && cixisTime.HasValue && cixisTime.Value >= icBas)
-                    {
-                        isSaatiSebeb = $"Təsdiqlənmiş icazə var ({icBas.ToString(@"hh\:mm")}-dan) — çıxış icazə daxilindədir.";
-                    }
-                    else if (ezamBasDict.TryGetValue(gunKey, out var ezBas) && cixisTime.HasValue && cixisTime.Value >= ezBas)
-                    {
-                        isSaatiSebeb = $"Təsdiqlənmiş ezamiyyət var ({ezBas.ToString(@"hh\:mm")}-dan) — çıxış onunla uyğundur.";
-                    }
+                    { ortukVar = true; ortukSebeb = "Təsdiqlənmiş (tam günlük) ezamiyyət var — erkən çıxış sayılmır."; }
+                    else if (icazeBasDict.TryGetValue(gunKey, out var icBasC) && cixisTime.HasValue && cixisTime.Value >= icBasC)
+                    { ortukVar = true; ortukSebeb = $"Təsdiqlənmiş icazə var ({icBasC.ToString(@"hh\:mm")}-dan) — çıxış icazə daxilindədir."; }
+                    else if (ezamBasDict.TryGetValue(gunKey, out var ezBasC) && cixisTime.HasValue && cixisTime.Value >= ezBasC)
+                    { ortukVar = true; ortukSebeb = $"Təsdiqlənmiş ezamiyyət var ({ezBasC.ToString(@"hh\:mm")}-dan) — çıxış onunla uyğundur."; }
+
+                    // ÇIXIŞ qırmızı: erkən çıxıb (tezCixan) + örtük yoxdur.
+                    // İŞ SAATI qırmızı: bundan əlavə 8 saatdan az işləyib.
+                    bool cixisQirmizi = tezCixanFlag && !ortukVar;
+                    bool isSaatiQirmizi = isSaatiAz && cixisQirmizi;
+
+                    // Pop-up izahı (çıxış + iş saati birlikdə)
+                    string isSaatiSebeb;
+                    if (!x.CixisVaxti.HasValue)
+                        isSaatiSebeb = "";
+                    else if (!tezCixanFlag)
+                        isSaatiSebeb = elanDict.ContainsKey(x.Tarix.Date)
+                            ? $"İş günü erkən bitirilib ({elanDict[x.Tarix.Date].ToString(@"hh\:mm")}) — vaxtında gedib, erkən çıxış sayılmır."
+                            : "Standart çıxış vaxtında gedib — erkən çıxış sayılmır.";
+                    else if (ortukVar)
+                        isSaatiSebeb = ortukSebeb;
                     else
                     {
-                        isSaatiQirmizi = true;
-                        var ws = islemeSaatiDeq.Value / 60;
-                        var wm = islemeSaatiDeq.Value % 60;
                         var cixisStr = cixisTime.HasValue ? cixisTime.Value.ToString(@"hh\:mm") : "—";
+                        string isaatPart = "";
+                        if (islemeSaatiDeq.HasValue)
+                        {
+                            var ws = islemeSaatiDeq.Value / 60;
+                            var wm = islemeSaatiDeq.Value % 60;
+                            isaatPart = isSaatiAz
+                                ? $" İşlənmə: {ws} s {wm} d (norma {normaDeq / 60} s)."
+                                : $" İşlənmə: {ws} s {wm} d.";
+                        }
                         if (icazeBasDict.TryGetValue(gunKey, out var icBas2))
-                            isSaatiSebeb = $"İcazə {icBas2.ToString(@"hh\:mm")}-dan başlayır, amma işçi ondan ƏVVƏL ({cixisStr}) çıxıb. İşlənmə: {ws} s {wm} d.";
+                            isSaatiSebeb = $"İcazə {icBas2.ToString(@"hh\:mm")}-dan başlayır, amma işçi ondan ƏVVƏL ({cixisStr}) çıxıb.{isaatPart}";
                         else if (ezamBasDict.TryGetValue(gunKey, out var ezBas2))
-                            isSaatiSebeb = $"Ezamiyyət {ezBas2.ToString(@"hh\:mm")}-dan başlayır, amma işçi ondan ƏVVƏL ({cixisStr}) çıxıb. İşlənmə: {ws} s {wm} d.";
+                            isSaatiSebeb = $"Ezamiyyət {ezBas2.ToString(@"hh\:mm")}-dan başlayır, amma işçi ondan ƏVVƏL ({cixisStr}) çıxıb.{isaatPart}";
                         else
-                            isSaatiSebeb = $"İş günü bitməyib, erkən çıxıb ({cixisStr}) — icazə/ezamiyyət/fərdi icazə yoxdur. İşlənmə: {ws} s {wm} d (norma {normaDeq / 60} s).";
+                            isSaatiSebeb = $"İş günü bitməyib, erkən çıxıb ({cixisStr}) — icazə/ezamiyyət/fərdi icazə yoxdur.{isaatPart}";
                     }
 
                     return new
@@ -873,6 +874,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                         maasdanKes = x.MaasdanKes,
                         qayibSebebi = x.QayibSebebi ?? "",
                         tezCixan = tezCixanFlag,
+                        cixisQirmizi,
                         islemeSaatiDeq,
                         naharCixildi,
                         erkenIcaze = erkenIcazeVar,
@@ -880,7 +882,9 @@ namespace FinNex.UI.Areas.HR.Controllers
                         isSaatiSebeb
                     };
                 }).OrderByDescending(x => x.tarix).ThenBy(x => x.isciTamAd).ToList();
-                tezCixanSayi = data.Count(x => x.tezCixan);
+                // "Tez çıxan" sayı sütun qırmızısı ilə eyni — örtüklü (icazə/ezamiyyət/
+                // fərdi icazə) erkən çıxışlar problemli sayılmır.
+                tezCixanSayi = data.Count(x => x.cixisQirmizi);
 
                 var gelib = umumi.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
                 var gecikme = umumi.Count(x => x.Status == DavamiyyetStatus.Gecikme);

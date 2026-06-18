@@ -585,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     records = records.filter(function (r) { return clientFilterStatuses.indexOf(r.status) >= 0; });
                 }
                 if (filterTezCixan) {
-                    records = records.filter(function (r) { return r.tezCixan === true; });
+                    records = records.filter(function (r) { return r.cixisQirmizi === true; });
                 }
                 if (filterCixisYox) {
                     records = records.filter(function (r) {
@@ -660,8 +660,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
-            // Tez çıxma qeyd — server tərəfdən hesablanır (BayramGünü xüsusi saatı nəzərə alır)
-            var cixisClass = (r.cixisVaxti && r.tezCixan) ? 'hrd-time hrd-time--early' : 'hrd-time';
+            // ÇIXIŞ qırmızı — server tərəfdən (cixisQirmizi): erkən çıxıb + örtük
+            // (İş Bitdi / icazə / ezamiyyət / fərdi icazə) yoxdursa. Köhnə "tezCixan" deyil.
+            var cixisClass = (r.cixisVaxti && r.cixisQirmizi) ? 'hrd-time hrd-time--early' : 'hrd-time';
 
             var duration = '<span class="hrd-nodata">---</span>';
             if (r.girisVaxti && r.cixisVaxti) {
@@ -735,6 +736,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 '" data-isci-id="' + (r.isciId || '') +
                 '" data-erken-icaze="' + (r.erkenIcaze ? '1' : '0') +
                 '" data-issaati-qirmizi="' + (r.isSaatiQirmizi ? '1' : '0') +
+                '" data-cixis-qirmizi="' + (r.cixisQirmizi ? '1' : '0') +
                 '" data-issaati-sebeb="' + ((r.isSaatiSebeb || '').replace(/"/g, '&quot;')) + '" style="cursor:pointer;">' +
                 '<td><div class="hrd-emp"><div class="hrd-emp-av">' + initials + '</div><div class="hrd-emp-name">' + r.isciTamAd + '</div></div></td>' +
                 '<td><span class="hrd-dept">' + r.departamentAd + '</span></td>' +
@@ -1091,10 +1093,10 @@ document.addEventListener('DOMContentLoaded', function () {
             var wm = workedMin % 60;
             msg = '&#128682; <strong>' + isciAd + '</strong><br>' +
                   '<span style="opacity:.7;font-size:12px;">İşdən çıxıb · Cəmi: ' + wh + ' saat ' + wm + ' dəqiqə</span>';
-            // İş saati səbəbi — niyə qırmızı (və ya niyə qırmızı deyil) izahı
+            // Çıxış/iş saati səbəbi — niyə qırmızı (və ya niyə qırmızı deyil) izahı
             var issaatiSebeb = row.getAttribute('data-issaati-sebeb') || '';
             if (issaatiSebeb) {
-                var qirmizidir = row.getAttribute('data-issaati-qirmizi') === '1';
+                var qirmizidir = row.getAttribute('data-cixis-qirmizi') === '1';
                 msg += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);font-size:11px;line-height:1.5;' +
                        (qirmizidir ? 'color:#fca5a5;' : 'color:#86efac;') + '">' +
                        (qirmizidir ? '&#9888;&#65039; ' : '&#10003; ') + issaatiSebeb + '</div>';
