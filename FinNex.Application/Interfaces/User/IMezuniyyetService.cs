@@ -29,6 +29,11 @@ namespace FinNex.Application.Interfaces
         // Avans artıq icra olunubsa (Odenilib/PlanliOdenis) bloklanır.
         Task<Result> HrOdenisTipiDeyisAsync(int id, MezuniyyetOdenisTipi yeniTipi, int hrId);
 
+        // Kərpic 2: HR təsdiqlənmiş məzuniyyəti ləğv edir (başlanğıc keçməyib).
+        // Balans geri qaytarılır, davamiyyət təmizlənir; avans icra olunubsa bloklanır,
+        // yalnız gözləyən (Gozleyir) avans sıfırlanır + Mühasibə bildiriş gedir.
+        Task<Result> HrLegvEtAsync(int id, string? sebeb, int hrId);
+
         // Təsdiq paneli üçün
         Task<Result<IList<MezuniyyetListDto>>> GetGozlemededeAsync();
         Task<Result<IList<MezuniyyetListDto>>> GetRehberTesdiqindeAsync();

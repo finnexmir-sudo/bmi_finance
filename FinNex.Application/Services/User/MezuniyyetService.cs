@@ -562,6 +562,77 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             : "Ödəniş tipi 'Ay sonu ödəniş'-ə dəyişdirildi.");
     }
 
+    /// <summary>
+    /// HR təsdiqlənmiş məzuniyyəti ləğv edir (başlanğıc keçməyib).
+    /// Şərtlər: Status=Təsdiqlənib, başlanğıc keçməyib, avans icra olunmayıb
+    /// (Odenilib/PlanliOdenis → bloklanır). Balans LIFO ilə geri qaytarılır,
+    /// davamiyyət qeydləri silinir, yalnız gözləyən (Gozleyir) avans sıfırlanır
+    /// və Mühasibə ləğv bildirişi gedir. Ləğv səbəbi audit üçün saxlanır,
+    /// qeyd soft-delete olunur (işçi-ləğvi ilə eyni davranış).
+    /// </summary>
+    public async Task<Result> HrLegvEtAsync(int id, string? sebeb, int hrId)
+    {
+        var m = await _unitOfWork.Repository<Mezuniyyet>().IdIleGetirAsync(id);
+        if (m == null) return Result.Fail("Müraciət tapılmadı.");
+
+        if (m.Status != MezuniyyetStatus.Tesdiqlenib)
+            return Result.Fail("Yalnız təsdiqlənmiş məzuniyyət HR tərəfindən ləğv edilə bilər.");
+
+        if (m.BaslamaTarixi.Date <= DateTime.Today)
+            return Result.Fail("Məzuniyyət başlayıb (və ya bu gün başlayır) — HR ləğvi mümkün deyil.");
+
+        if (m.OdenisStatus == MezuniyyetOdenisStatus.Odenilib ||
+            m.OdenisStatus == MezuniyyetOdenisStatus.PlanliOdenis)
+            return Result.Fail("Qabaqcadan ödəniş artıq icra olunub/planlanıb — ləğv mümkün deyil. Əvvəlcə pulun geri-alınması əl ilə həll olunmalıdır.");
+
+        // Yalnız hələ ödənilməmiş (Gozleyir) avans — Mühasibə ləğv bildirişi gedəcək
+        var avansGozleyirdi = m.OdenisStatus == MezuniyyetOdenisStatus.Gozleyir;
+
+        // Balansı geri qaytar — FifoKes ilə kəsilən eyni effektiv gün sayı (LIFO)
+        await BalansiGeriQaytarAsync(m.IsciId, m.Nov, m.EfektivGunSayi);
+
+        // Davamiyyətdəki icazəli/xəstəlik/ezamiyyət qeydlərini sil
+        var davQeydleri = await _unitOfWork.Repository<Davamiyyet>()
+            .HamisiniGetirAsync(x =>
+                x.IsciId == m.IsciId &&
+                (x.Status == DavamiyyetStatus.Icazeli ||
+                 x.Status == DavamiyyetStatus.Xestelik ||
+                 x.Status == DavamiyyetStatus.Ezamiyyet) &&
+                x.Tarix >= m.BaslamaTarixi &&
+                x.Tarix <= m.BitmeTarixi);
+        foreach (var dav in davQeydleri)
+            await _unitOfWork.Repository<Davamiyyet>().YumshakSilAsync(dav.Id);
+
+        // Gözləyən avansı sıfırla (ödəniş hələ edilməyib)
+        if (avansGozleyirdi)
+        {
+            m.OdenenMebleg = null;
+            m.OdenenMeblegBrut = null;
+            m.OdenisStatus = MezuniyyetOdenisStatus.TetbiqEdilmir;
+            m.PlanliOdenisTarixi = null;
+        }
+
+        // Audit: ləğv səbəbi + status (soft-delete-dən əvvəl yazılır — eyni tracked instance)
+        m.Status = MezuniyyetStatus.LegvEdildi;
+        m.ImtinaSebebi = string.IsNullOrWhiteSpace(sebeb)
+            ? "HR tərəfindən ləğv edildi."
+            : sebeb.Trim();
+        await _unitOfWork.Repository<Mezuniyyet>().YenileAsync(m);
+
+        // Aktiv siyahılardan çıxsın
+        await _unitOfWork.Repository<Mezuniyyet>().YumshakSilAsync(id);
+        await _unitOfWork.YaddaSaxlaAsync();
+
+        // Bildirişlər
+        await NotifyIsciForHrCancelAsync(m, sebeb);
+        if (avansGozleyirdi)
+            await NotifyMuhasibForCancelAsync(m);
+
+        return Result.Ok(avansGozleyirdi
+            ? "Məzuniyyət ləğv edildi. Gözləyən ödəniş sıfırlandı, Mühasibə bildiriş göndərildi."
+            : "Məzuniyyət ləğv edildi.");
+    }
+
     // ════════════════════════════════════════════════════════════
     // Bildiriş köməkçiləri — bütün məzuniyyət iş axını üçün
     // ════════════════════════════════════════════════════════════
@@ -693,6 +764,32 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
             "Məzuniyyət ödənişi — qabaqcadan",
             $"{isciAd} üçün {dovr} məzuniyyət ödənişi gözləyir{mebleg}.",
             redirectUrl: $"/HR/MezuniyyetOdenis/Detail/{m.Id}",
+            mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
+    }
+
+    private async Task NotifyIsciForHrCancelAsync(Mezuniyyet m, string? sebeb)
+    {
+        var dovr = $"{m.BaslamaTarixi:dd.MM.yyyy} – {m.BitmeTarixi:dd.MM.yyyy}";
+        var sebebMetn = string.IsNullOrWhiteSpace(sebeb) ? "" : $" Səbəb: {sebeb.Trim()}";
+        await _bildirisRouter.NotifyIsciAsync(
+            m.IsciId,
+            BildirisNovu.MezuniyyetImtina,
+            "Məzuniyyət — HR tərəfindən ləğv edildi",
+            $"{dovr} təsdiqlənmiş məzuniyyətiniz HR tərəfindən ləğv edildi.{sebebMetn}",
+            redirectUrl: "/User/Mezuniyyet/Index",
+            mezuniyyetId: m.Id);
+    }
+
+    private async Task NotifyMuhasibForCancelAsync(Mezuniyyet m)
+    {
+        var isciAd = await GetIsciAdAsync(m.IsciId);
+        var dovr = $"{m.BaslamaTarixi:dd.MM.yyyy} – {m.BitmeTarixi:dd.MM.yyyy}";
+        await _bildirisRouter.NotifyRolesAsync(
+            new[] { RoleNames.Muhasib, RoleNames.Admin },
+            BildirisNovu.MezuniyyetImtina,
+            "Məzuniyyət ödənişi — ləğv edildi",
+            $"{isciAd} üçün {dovr} məzuniyyəti HR tərəfindən ləğv edildi. Gözləyən qabaqcadan ödənişi İCRA ETMƏYİN.",
+            redirectUrl: "/HR/MezuniyyetOdenis",
             mezuniyyetId: m.Id, exceptIsciId: m.IsciId);
     }
 

@@ -200,6 +200,22 @@ namespace FinNex.UI.Areas.HR.Controllers
             return RedirectToAction(nameof(Detal), new { id });
         }
 
+        // HR təsdiqlənmiş məzuniyyəti ləğv edir. Uğur halında qeyd soft-delete olur,
+        // ona görə Detal NotFound verər → siyahıya qayıt. Bloklanarsa Detal-da xəta göstər.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> HrLegvEt(int id, string? sebeb)
+        {
+            var isciId = await GetCurrentIsciIdAsync();
+            if (isciId == null) return Forbid();
+            var result = await _mezuniyyetService.HrLegvEtAsync(id, sebeb, isciId.Value);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return result.Success
+                ? RedirectToAction(nameof(Hr))
+                : RedirectToAction(nameof(Detal), new { id });
+        }
+
         [HttpGet]
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
         [HttpGet]
