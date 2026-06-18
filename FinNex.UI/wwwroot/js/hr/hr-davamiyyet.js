@@ -1103,29 +1103,40 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         } else {
             var girisDate = new Date(girisStr);
-            var now = new Date();
-            var diffMin = Math.max(0, Math.floor((now - girisDate) / 60000));
-            if (minOfDay(girisDate) < naharBaslama && minOfDay(now) > naharBitis)
-                diffMin = Math.max(0, diffMin - naharMuddet);
-            var h = Math.floor(diffMin / 60);
-            var m = diffMin % 60;
-            msg = '&#9200; <strong>' + isciAd + '</strong><br>' +
-                  '<span style="color:#34d399;font-size:14px;font-weight:600;">' + h + ' saat ' + m + ' dəqiqə</span>' +
-                  '<span style="opacity:.6;font-size:11px;margin-left:6px;">işdədir</span>';
-
-            // Erkən çıxış icazə düyməsi (yalnız işdə olan işçilər üçün)
-            var icazeHtml;
-            if (hasIcaze) {
-                icazeHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);font-size:11px;color:#34d399;">&#10003; Erkən çıxış icazəsi verildi</div>';
+            var bugun = new Date();
+            var eyniGun = girisDate.getFullYear() === bugun.getFullYear()
+                       && girisDate.getMonth() === bugun.getMonth()
+                       && girisDate.getDate() === bugun.getDate();
+            if (!eyniGun) {
+                // Keçmiş (və ya gələcək) tarix — "işdədir" sayğacı və erkən çıxış
+                // icazəsi YALNIZ cari gün üçündür (keçmiş gündə mənası yoxdur).
+                msg = '&#128682; <strong>' + isciAd + '</strong><br>' +
+                      '<span style="opacity:.7;font-size:12px;">Çıxış qeydi yoxdur (keçmiş tarix).</span>';
             } else {
-                icazeHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);">' +
-                    '<button data-action="erken-icaze" data-isci-id="' + isciId + '" ' +
-                    'style="background:#3b82f6;color:#fff;border:none;padding:6px 12px;border-radius:6px;' +
-                    'font-size:11px;cursor:pointer;width:100%;font-weight:600;white-space:nowrap;">' +
-                    'İşdən erkən getməsinə icazə ver' +
-                    '</button></div>';
+                var now = new Date();
+                var diffMin = Math.max(0, Math.floor((now - girisDate) / 60000));
+                if (minOfDay(girisDate) < naharBaslama && minOfDay(now) > naharBitis)
+                    diffMin = Math.max(0, diffMin - naharMuddet);
+                var h = Math.floor(diffMin / 60);
+                var m = diffMin % 60;
+                msg = '&#9200; <strong>' + isciAd + '</strong><br>' +
+                      '<span style="color:#34d399;font-size:14px;font-weight:600;">' + h + ' saat ' + m + ' dəqiqə</span>' +
+                      '<span style="opacity:.6;font-size:11px;margin-left:6px;">işdədir</span>';
+
+                // Erkən çıxış icazə düyməsi (yalnız bu gün işdə olan işçilər üçün)
+                var icazeHtml;
+                if (hasIcaze) {
+                    icazeHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);font-size:11px;color:#34d399;">&#10003; Erkən çıxış icazəsi verildi</div>';
+                } else {
+                    icazeHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);">' +
+                        '<button data-action="erken-icaze" data-isci-id="' + isciId + '" ' +
+                        'style="background:#3b82f6;color:#fff;border:none;padding:6px 12px;border-radius:6px;' +
+                        'font-size:11px;cursor:pointer;width:100%;font-weight:600;white-space:nowrap;">' +
+                        'İşdən erkən getməsinə icazə ver' +
+                        '</button></div>';
+                }
+                msg += icazeHtml;
             }
-            msg += icazeHtml;
         }
 
         elapsedTooltip.innerHTML = msg;
