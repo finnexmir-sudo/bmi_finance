@@ -34,6 +34,12 @@ namespace FinNex.Application.Interfaces
         // yalnız gözləyən (Gozleyir) avans sıfırlanır + Mühasibə bildiriş gedir.
         Task<Result> HrLegvEtAsync(int id, string? sebeb, int hrId);
 
+        // Kərpic 3: HR təsdiqlənmiş məzuniyyətin tarixlərini dəyişir (başlanğıc keçməyib).
+        // Köhnə günlər balansa qaytarılır, yeni günlər kəsilir; davamiyyət uzlaşdırılır
+        // (üst-üstə düşən günlər saxlanır). Avans gözləyirsə məbləğ yenidən hesablanır.
+        // Avans icra olunubsa və ya dövlət-vəzifə korreksiyası varsa bloklanır.
+        Task<Result> HrTarixDeyisAsync(int id, DateTime yeniBaslama, DateTime yeniBitme, string? sebeb, int hrId);
+
         // Təsdiq paneli üçün
         Task<Result<IList<MezuniyyetListDto>>> GetGozlemededeAsync();
         Task<Result<IList<MezuniyyetListDto>>> GetRehberTesdiqindeAsync();

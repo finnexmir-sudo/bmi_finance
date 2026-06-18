@@ -216,6 +216,19 @@ namespace FinNex.UI.Areas.HR.Controllers
                 : RedirectToAction(nameof(Detal), new { id });
         }
 
+        // HR təsdiqlənmiş məzuniyyətin tarixlərini dəyişir. Qeyd qalır → Detal-a qayıt.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> HrTarixDeyis(int id, DateTime yeniBaslama, DateTime yeniBitme, string? sebeb)
+        {
+            var isciId = await GetCurrentIsciIdAsync();
+            if (isciId == null) return Forbid();
+            var result = await _mezuniyyetService.HrTarixDeyisAsync(id, yeniBaslama, yeniBitme, sebeb, isciId.Value);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Detal), new { id });
+        }
+
         [HttpGet]
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
         [HttpGet]

@@ -79,6 +79,17 @@
                     <i class="bi bi-x-circle"></i> Ləğv et
                 </button>
             }
+            @if ((User.IsInRole(RoleNames.HR) || User.IsInRole(RoleNames.Admin))
+                 && m.Status == MezuniyyetStatus.Tesdiqlenib
+                 && m.BaslamaTarixi.Date > DateTime.Today
+                 && m.OdenisStatus != MezuniyyetOdenisStatus.Odenilib
+                 && m.OdenisStatus != MezuniyyetOdenisStatus.PlanliOdenis)
+            {
+                <button type="button" onclick="tarixModalAc()"
+                        style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px solid #6366f1;background:#eef2ff;color:#4338ca;font-size:13px;font-weight:600;cursor:pointer;">
+                    <i class="bi bi-calendar-event"></i> Tarix dəyiş
+                </button>
+            }
             @{
                 var backAction = string.IsNullOrEmpty(Model.ReturnAction) ? "Hr" : Model.ReturnAction;
                 var backActionMapped = backAction switch
@@ -315,6 +326,59 @@
         <script>
             function legvModalAc() { document.getElementById('legvModal').style.display = 'flex'; }
             function legvModalBag() { document.getElementById('legvModal').style.display = 'none'; }
+        </script>
+    }
+
+    @* ── HR Tarix dəyiş — modal (eyni şərtlər: təsdiqli, başlanğıc keçməyib, avans icra olunmayıb) ── *@
+    @if ((User.IsInRole(RoleNames.HR) || User.IsInRole(RoleNames.Admin))
+         && m.Status == MezuniyyetStatus.Tesdiqlenib
+         && m.BaslamaTarixi.Date > DateTime.Today
+         && m.OdenisStatus != MezuniyyetOdenisStatus.Odenilib
+         && m.OdenisStatus != MezuniyyetOdenisStatus.PlanliOdenis)
+    {
+        var minTarix = DateTime.Today.AddDays(1).ToString("yyyy-MM-dd");
+
+        <div id="tarixModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1050;align-items:center;justify-content:center;">
+            <div style="background:#fff;border-radius:12px;width:100%;max-width:480px;margin:16px;box-shadow:0 8px 32px rgba(0,0,0,.18);">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e4e8f0;">
+                    <div style="font-size:15px;font-weight:700;color:#1a2332;">
+                        <i class="bi bi-calendar-event" style="margin-right:6px;color:#4338ca;"></i>
+                        Məzuniyyət tarixini dəyiş
+                    </div>
+                    <button type="button" onclick="tarixModalBag()" style="background:none;border:none;font-size:18px;color:#6b7280;cursor:pointer;line-height:1;">×</button>
+                </div>
+                <form asp-area="HR" asp-controller="Mezuniyyet" asp-action="HrTarixDeyis" method="post">
+                    <input type="hidden" name="id" value="@m.Id" />
+                    <div style="padding:20px;">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                            <div>
+                                <label class="fn-sbi-label">Yeni başlama tarixi</label>
+                                <input type="date" name="yeniBaslama" class="fn-input" required
+                                       value="@m.BaslamaTarixi.ToString("yyyy-MM-dd")" min="@minTarix" />
+                            </div>
+                            <div>
+                                <label class="fn-sbi-label">Yeni bitmə tarixi</label>
+                                <input type="date" name="yeniBitme" class="fn-input" required
+                                       value="@m.BitmeTarixi.ToString("yyyy-MM-dd")" min="@minTarix" />
+                            </div>
+                        </div>
+                        <div style="margin-bottom:12px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:10px 12px;font-size:12px;color:#3730a3;line-height:1.6;">
+                            <i class="bi bi-info-circle" style="margin-right:5px;"></i>
+                            Balans və davamiyyət yeni tarixlərə görə yenilənəcək. Gözləyən qabaqcadan ödəniş varsa məbləğ yenidən hesablanacaq.
+                        </div>
+                        <label class="fn-sbi-label">Səbəb (opsional)</label>
+                        <textarea name="sebeb" class="fn-input" rows="2" placeholder="Tarix dəyişikliyinin səbəbi..."></textarea>
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #e4e8f0;">
+                        <button type="button" onclick="tarixModalBag()" style="padding:8px 18px;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer;">İmtina</button>
+                        <button type="submit" style="padding:8px 18px;border-radius:8px;border:none;background:#4338ca;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Yenilə</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script>
+            function tarixModalAc() { document.getElementById('tarixModal').style.display = 'flex'; }
+            function tarixModalBag() { document.getElementById('tarixModal').style.display = 'none'; }
         </script>
     }
 
