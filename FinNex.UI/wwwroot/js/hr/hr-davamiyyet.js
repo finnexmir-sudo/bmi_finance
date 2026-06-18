@@ -645,7 +645,11 @@ document.addEventListener('DOMContentLoaded', function () {
         records.forEach(function (r) {
             var initials = r.isciTamAd.substring(0, 2).toUpperCase();
             var tarix = formatDate(r.tarix);
-            var giris = r.girisVaxti ? formatTime(r.girisVaxti) : '<span class="hrd-nodata">--:--</span>';
+            var giris = r.girisVaxti
+                ? formatTime(r.girisVaxti)
+                : (r.cixisVaxti
+                    ? '<span style="color:#dc2626;font-size:10.5px;font-weight:600;white-space:nowrap;" title="Cihaza səhər baxılmayıb — yalnız çıxış qeyd olunub">Giriş qeyd olunmayıb</span>'
+                    : '<span class="hrd-nodata">--:--</span>');
             var cixis = r.cixisVaxti ? formatTime(r.cixisVaxti) : '<span class="hrd-nodata">--:--</span>';
 
             var girisClass = 'hrd-time';

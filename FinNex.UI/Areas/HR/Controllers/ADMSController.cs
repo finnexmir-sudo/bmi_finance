@@ -222,23 +222,68 @@ public class ADMSController : Controller
 
             if (movcud == null)
             {
-                var yeni = new Davamiyyet
+                // İlk punch saat 13:00-dan sonradırsa, bu, böyük ehtimalla ÇIXIŞ-dır
+                // (işçi səhər cihaza baxmayıb, getməyə yaxın basıb). Cihaz IN/OUT istiqaməti
+                // etibarsız olduğundan vaxta görə qərar veririk. Giriş kimi yox — çıxış kimi
+                // yazırıq, giriş boş qalır ("giriş qeyd olunmayıb").
+                var cixisKimiHedd = tarix.AddHours(13);
+                if (vaxt >= cixisKimiHedd)
                 {
-                    IsciId = isciId,
-                    Tarix = tarix,
-                    GirisVaxti = vaxt,
-                    CixisVaxti = null,
-                    Status = HesablaStatus(vaxt, bugunIcaze, bugunEzamiyyet, standartGiris, gecikTolerans)
-                };
-                await _db.Davamiyyetler.AddAsync(yeni);
-                await _db.SaveChangesAsync();
-                davamiyyetId = yeni.Id;
+                    var yeniCixis = new Davamiyyet
+                    {
+                        IsciId = isciId,
+                        Tarix = tarix,
+                        GirisVaxti = null,
+                        CixisVaxti = vaxt,
+                        Status = DavamiyyetStatus.Isde   // gəlib (çıxışı var), giriş qeyd olunmayıb
+                    };
+                    await _db.Davamiyyetler.AddAsync(yeniCixis);
+                    await _db.SaveChangesAsync();
+                    davamiyyetId = yeniCixis.Id;
+                }
+                else
+                {
+                    var yeni = new Davamiyyet
+                    {
+                        IsciId = isciId,
+                        Tarix = tarix,
+                        GirisVaxti = vaxt,
+                        CixisVaxti = null,
+                        Status = HesablaStatus(vaxt, bugunIcaze, bugunEzamiyyet, standartGiris, gecikTolerans)
+                    };
+                    await _db.Davamiyyetler.AddAsync(yeni);
+                    await _db.SaveChangesAsync();
+                    davamiyyetId = yeni.Id;
+                }
             }
             else
             {
-                if (movcud.GirisVaxti == null || vaxt < movcud.GirisVaxti)
+                if (movcud.GirisVaxti == null)
                 {
-                    // Giriş yazılmayıb və ya bu oxuma əvvəlkindən ERKƏNdir → girişi yenilə
+                    // Çıxış-only qeyd (ilk punch ≥13:00 çıxış kimi yazılıb, giriş yoxdur).
+                    if (movcud.CixisVaxti.HasValue && vaxt > movcud.CixisVaxti.Value)
+                    {
+                        // Daha gec punch gəldi → əvvəlki "çıxış" əslində GİRİŞ idi, bu yeni
+                        // punch çıxışdır (məs. işçi günorta gəlib, axşam getdi). Swap.
+                        movcud.GirisVaxti = movcud.CixisVaxti;
+                        movcud.CixisVaxti = vaxt;
+                        movcud.Status = HesablaStatus(movcud.GirisVaxti.Value, bugunIcaze, bugunEzamiyyet, standartGiris, gecikTolerans);
+                        await _db.SaveChangesAsync();
+                        davamiyyetId = movcud.Id;
+                    }
+                    else if (!movcud.CixisVaxti.HasValue || vaxt < movcud.CixisVaxti.Value)
+                    {
+                        // Daha erkən punch → əsl giriş budur, çıxış olduğu kimi qalır.
+                        movcud.GirisVaxti = vaxt;
+                        movcud.Status = HesablaStatus(vaxt, bugunIcaze, bugunEzamiyyet, standartGiris, gecikTolerans);
+                        await _db.SaveChangesAsync();
+                        davamiyyetId = movcud.Id;
+                    }
+                    // vaxt == CixisVaxti → dublikat punch, dəyişiklik yox
+                }
+                else if (vaxt < movcud.GirisVaxti)
+                {
+                    // Bu oxuma mövcud girişdən ERKƏNdir → girişi yenilə
                     movcud.GirisVaxti = vaxt;
                     movcud.Status = HesablaStatus(vaxt, bugunIcaze, bugunEzamiyyet, standartGiris, gecikTolerans);
                     await _db.SaveChangesAsync();

@@ -315,6 +315,10 @@
                                     {
                                         <span class="hrd-time @(isLate ? "hrd-time--late" : "")">@item.GirisVaxti.Value.ToString("HH:mm")</span>
                                     }
+                                    else if (item.CixisVaxti.HasValue)
+                                    {
+                                        <span style="color:#dc2626;font-size:10.5px;font-weight:600;white-space:nowrap;" title="Cihaza səhər baxılmayıb — yalnız çıxış qeyd olunub">Giriş qeyd olunmayıb</span>
+                                    }
                                     else { <span class="hrd-nodata">--:--</span> }
                                 </td>
                                 <td>
