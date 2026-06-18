@@ -186,6 +186,20 @@ namespace FinNex.UI.Areas.HR.Controllers
             return RedirectToAction(nameof(Hr));
         }
 
+        // HR düzəliş: təsdiqlənmiş məzuniyyətin ödəniş tipini dəyiş (ay-sonu ↔ qabaqcadan).
+        // Avans artıq icra olunubsa servis bloklayır. Detal səhifəsinə qayıdır.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
+        public async Task<IActionResult> HrOdenisTipiDeyis(int id, MezuniyyetOdenisTipi yeniTipi)
+        {
+            var isciId = await GetCurrentIsciIdAsync();
+            if (isciId == null) return Forbid();
+            var result = await _mezuniyyetService.HrOdenisTipiDeyisAsync(id, yeniTipi, isciId.Value);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Detal), new { id });
+        }
+
         [HttpGet]
         [Authorize(Roles = RoleNames.HR + "," + RoleNames.Admin)]
         [HttpGet]

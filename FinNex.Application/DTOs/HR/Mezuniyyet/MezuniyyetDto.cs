@@ -38,6 +38,12 @@ namespace FinNex.Application.DTOs.HR.Mezuniyyet
         public bool? HrTesdiq { get; set; }
         public DateTime? HrTesdiqTarixi { get; set; }
 
+        // Ödəniş (ay-sonu ↔ qabaqcadan) — HR düzəliş üçün
+        public MezuniyyetOdenisTipi OdenisTipi { get; set; } = MezuniyyetOdenisTipi.AySonuOdenis;
+        public MezuniyyetOdenisStatus OdenisStatus { get; set; } = MezuniyyetOdenisStatus.TetbiqEdilmir;
+        public decimal? OdenenMebleg { get; set; }
+        public DateTime? PlanliOdenisTarixi { get; set; }
+
         // Ɗmr nömrəsi (K/M) — HR təsdiqindən sonra avtomatik verilir
         public int? EmrRegem { get; set; }
         public string? EmrSuffiks { get; set; }
