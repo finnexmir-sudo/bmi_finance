@@ -1127,8 +1127,20 @@ body {
 }
 
 .fn-ad--late {
-    background: #ffedd5;
-    color: #9a3412;
+    background: #b91c1c;
+    color: #fff;
+    font-weight: 700;
+}
+
+.fn-ad--ezamiyyet {
+    background: #fde68a;
+    color: #854d0e;
+    font-weight: 600;
+}
+
+.fn-ad--xestelik {
+    background: #dbeafe;
+    color: #1e40af;
     font-weight: 600;
 }
 

@@ -73,6 +73,8 @@ namespace FinNex.UI.Areas.User.Models
                         2 => "Gecikme",
                         3 => "Qayıb",
                         4 => "İcazəli",
+                        5 => "Xəstəlik",
+                        6 => "Ezamiyyət",
                         _ => ""
                     },
                     HefteSonu = g.HefteSonu,
