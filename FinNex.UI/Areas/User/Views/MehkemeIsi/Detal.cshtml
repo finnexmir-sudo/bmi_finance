@@ -98,6 +98,69 @@
             <div class="dt-note"><i class="bi bi-info-circle"></i> Bu kredit Oracle aktiv siyahısında yoxdur — maliyyə əl ilə doldurulur.</div>
         }
 
+        <!-- ═══ Məhkəmə xərcləri (bir neçə ola bilər) ═══ -->
+        <div class="dt-card">
+            <div class="dt-card-h">
+                <span><i class="bi bi-cash-stack"></i> Məhkəmə xərcləri <span class="dt-sub">(fərqli məhkəmələr)</span></span>
+                <span class="dt-sub">Cəm: <b>@M(Model.MehkemeXerci)</b></span>
+            </div>
+            @if (Model.Xercler.Any())
+            {
+                <div class="dt-twrap">
+                    <table class="dt-table">
+                        <thead>
+                            <tr><th class="ms-num">Məbləğ</th><th>Tarix</th><th>Məhkəmə / qeyd</th><th class="dt-row-act"></th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var xc in Model.Xercler)
+                            {
+                                <tr>
+                                    <td class="ms-num"><b>@M(xc.Mebleg)</b></td>
+                                    <td>@D(xc.Tarix)</td>
+                                    <td>@V(xc.Mehkeme)</td>
+                                    <td class="dt-row-act">
+                                        <form asp-action="XercSil" method="post" onsubmit="return confirm('Bu xərc silinsin?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="xerciId" value="@xc.Id" />
+                                            <input type="hidden" name="ishId" value="@Model.Id" />
+                                            <button type="submit" class="mi-btn-icon mi-btn-icon--danger" title="Sil"><i class="bi bi-x"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="dt-empty"><i class="bi bi-cash"></i> Hələ xərc əlavə edilməyib</div>
+            }
+
+            <details class="dt-add">
+                <summary><i class="bi bi-plus-lg"></i> Xərc əlavə et</summary>
+                <form asp-action="XercElave" method="post" style="margin-top:12px">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="MehkemeIsiId" value="@Model.Id" />
+                    <div class="mi-form-grid mi-form-grid--3">
+                        <div class="mi-form-group">
+                            <label class="mi-lbl">Məbləğ (₼)</label>
+                            <input name="Mebleg" class="mi-input" type="number" step="0.01" min="0" required />
+                        </div>
+                        <div class="mi-form-group">
+                            <label class="mi-lbl">Tarix</label>
+                            <input name="Tarix" class="mi-input" type="date" />
+                        </div>
+                        <div class="mi-form-group">
+                            <label class="mi-lbl">Məhkəmə / qeyd</label>
+                            <input name="Mehkeme" class="mi-input" maxlength="200" placeholder="məs. Apellyasiya məhkəməsi…" />
+                        </div>
+                    </div>
+                    <button type="submit" class="mi-btn mi-btn--primary mi-btn--sm"><i class="bi bi-plus-lg"></i> Əlavə et</button>
+                </form>
+            </details>
+        </div>
+
         <!-- ═══ Məhkəmə fazası ═══ -->
         <div class="dt-card">
             <div class="dt-card-h">
@@ -393,10 +456,6 @@
                         <option value="4">Tamamlandı</option>
                         <option value="5">Bağlandı</option>
                     </select>
-                </div>
-                <div class="mi-form-group">
-                    <label class="mi-lbl">Məhkəmə xərci (₼)</label>
-                    <input name="MehkemeXerci" class="mi-input" type="number" step="0.01" min="0" value="@Model.MehkemeXerci" />
                 </div>
                 <div class="mi-form-group">
                     <label class="mi-lbl">Məhkəməyə verilmə tarixi</label>

@@ -42,6 +42,7 @@ public class MehkemeIsi : BaseEntity
     public string?   IcraQeyd         { get; set; }   // icra üzrə qeyd
 
     public ICollection<MehkemeMerhelesi> Merheleler { get; set; } = new List<MehkemeMerhelesi>();
+    public ICollection<MehkemeXerci> Xercler { get; set; } = new List<MehkemeXerci>();
 }
 
 public class MehkemeMerhelesi : BaseEntity
@@ -54,6 +55,16 @@ public class MehkemeMerhelesi : BaseEntity
     public string? IcraciMemur     { get; set; }   // icra məmurunun adı
     public string? Qeyd            { get; set; }
     public string? SenedYolu       { get; set; }   // FinNex_DMS relative path
+}
+
+// Bir məhkəmə işinin xərci — fərqli məhkəmələrə müraciətdə bir neçə dəfə ola bilər
+public class MehkemeXerci : BaseEntity
+{
+    public int MehkemeIsiId      { get; set; }
+    public MehkemeIsi MehkemeIsi { get; set; } = null!;
+    public decimal Mebleg        { get; set; }   // xərc məbləği (₼)
+    public DateTime? Tarix       { get; set; }   // ödəmə / qeyd tarixi
+    public string? Mehkeme       { get; set; }   // hansı məhkəmə / qeyd
 }
 
 public enum MehkemeIsiNov

@@ -68,6 +68,10 @@ public class MehkemeIsiService : IMehkemeIsiService
             .Where(z => z.MehkemeIsiId == id && !z.Silinib)
             .OrderBy(z => z.Id).AsNoTracking().ToListAsync();
 
+        var xercler = await _uow.Repository<MehkemeXerci>().Query()
+            .Where(xc => xc.MehkemeIsiId == id && !xc.Silinib)
+            .OrderBy(xc => xc.Tarix).AsNoTracking().ToListAsync();
+
         var dto = new MehkemeIsiDetailDto
         {
             Id                = x.Id,
@@ -113,6 +117,13 @@ public class MehkemeIsiService : IMehkemeIsiService
                 }).ToList(),
             Zaminler          = zaminler.Select(MapZamin).ToList()
         };
+
+        // Məhkəmə xərcləri (bir neçə ola bilər) — siyahı + cəm; cəm "Məhkəmə xərci" kartına gedir
+        dto.Xercler = xercler.Select(xc => new MehkemeXerciDto
+        {
+            Id = xc.Id, Mebleg = xc.Mebleg, Tarix = xc.Tarix, Mehkeme = xc.Mehkeme
+        }).ToList();
+        if (xercler.Count > 0) dto.MehkemeXerci = xercler.Sum(xc => xc.Mebleg);
 
         // Maliyyəni Oracle canlısından çək (aktiv siyahıda olan kreditlər üçün);
         // siyahıda olmayanların məbləğləri əl ilə doldurulur (snapshot qalır).
@@ -355,7 +366,6 @@ public class MehkemeIsiService : IMehkemeIsiService
         var entity = await _uow.Repository<MehkemeIsi>().IdIleGetirAsync(id);
         if (entity == null || entity.Silinib) return false;
 
-        entity.MehkemeXerci      = dto.MehkemeXerci;
         entity.Status            = dto.Status;
         entity.BaslamaTarixi     = dto.BaslamaTarixi;
         entity.Qeyd              = string.IsNullOrWhiteSpace(dto.Qeyd) ? null : dto.Qeyd.Trim();
@@ -442,6 +452,35 @@ public class MehkemeIsiService : IMehkemeIsiService
         m.SilinmeTarixi = DateTime.Now;
 
         await _uow.Repository<MehkemeMerhelesi>().YenileAsync(m);
+        await _uow.YaddaSaxlaAsync();
+        return true;
+    }
+
+    // ── Məhkəmə xərci (bir işdə bir neçə ola bilər) ───────
+    public async Task<int> XercElaveEtAsync(MehkemeXerciCreateDto dto, int isciId)
+    {
+        var x = new MehkemeXerci
+        {
+            MehkemeIsiId    = dto.MehkemeIsiId,
+            Mebleg          = dto.Mebleg,
+            Tarix           = dto.Tarix,
+            Mehkeme         = string.IsNullOrWhiteSpace(dto.Mehkeme) ? null : dto.Mehkeme.Trim(),
+            YaradanIcraciId = isciId,
+            YaradilmaTarixi = DateTime.Now
+        };
+        await _uow.Repository<MehkemeXerci>().YaratAsync(x);
+        await _uow.YaddaSaxlaAsync();
+        return x.Id;
+    }
+
+    public async Task<bool> XercSilAsync(int xerciId, int isciId)
+    {
+        var x = await _uow.Repository<MehkemeXerci>().IdIleGetirAsync(xerciId);
+        if (x == null || x.Silinib) return false;
+        x.Silinib       = true;
+        x.SilenIcraciId = isciId;
+        x.SilinmeTarixi = DateTime.Now;
+        await _uow.Repository<MehkemeXerci>().YenileAsync(x);
         await _uow.YaddaSaxlaAsync();
         return true;
     }

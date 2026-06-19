@@ -15,6 +15,10 @@ public interface IMehkemeIsiService
     Task<MehkemeMerhelesi> MerheleElavEtAsync(MehkemeMerheleCreateDto dto, IFormFile? fayl, string dmsRoot, int yaradanIsciId);
     Task<bool> MerheleSilAsync(int merheleId, int silenIsciId);
 
+    // Məhkəmə xərci (bir işdə bir neçə ola bilər — fərqli məhkəmələr)
+    Task<int> XercElaveEtAsync(MehkemeXerciCreateDto dto, int isciId);
+    Task<bool> XercSilAsync(int xerciId, int isciId);
+
     // Zamin (icra subyekti)
     Task<int> ZaminElaveEtAsync(ZaminIcraCreateDto dto, int isciId);
     Task<bool> ZaminYenileAsync(ZaminIcraUpdateDto dto, int isciId);

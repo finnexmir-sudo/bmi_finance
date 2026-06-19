@@ -189,6 +189,31 @@ public class MehkemeIsiController : Controller
         return RedirectToAction("Detal", new { id = ishId });
     }
 
+    // ── Məhkəmə xərci əlavə / sil ─────────────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> XercElave(MehkemeXerciCreateDto dto)
+    {
+        if (dto.MehkemeIsiId <= 0 || dto.Mebleg <= 0)
+        {
+            TempData["Error"] = "Xərc məbləği düzgün deyil.";
+            return RedirectToAction("Detal", new { id = dto.MehkemeIsiId });
+        }
+        var isciId = await CurrentIsciIdAsync() ?? 0;
+        await _service.XercElaveEtAsync(dto, isciId);
+        TempData["Success"] = "Məhkəmə xərci əlavə edildi.";
+        return RedirectToAction("Detal", new { id = dto.MehkemeIsiId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> XercSil(int xerciId, int ishId)
+    {
+        var isciId = await CurrentIsciIdAsync() ?? 0;
+        await _service.XercSilAsync(xerciId, isciId);
+        return RedirectToAction("Detal", new { id = ishId });
+    }
+
     // ── Zamin (icra subyekti) ─────────────────────────────
     [HttpPost]
     [ValidateAntiForgeryToken]
