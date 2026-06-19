@@ -675,34 +675,18 @@ namespace FinNex.UI.Areas.HR.Controllers
                 // Əlil işçi TAM 5 günlük həftənin 5-ci iş günü (Cümə) net ≥4 saat işləyibsə tez çıxan sayılmır.
                 var elilIsciIds = new HashSet<int>();
                 var elilBayramSet = new HashSet<DateTime>();
+                bool elilDataOk = false;
                 try
                 {
                     var hedefIsciler = result.Select(x => x.IsciId).Distinct().ToList();
                     var minHedef = hedefTarixler.Count > 0 ? hedefTarixler.Min() : DateTime.Today;
                     var maxHedef = hedefTarixler.Count > 0 ? hedefTarixler.Max() : DateTime.Today;
-                    var elilGuzestler = await _uow.Repository<IsciGuzest>()
-                        .Query().AsNoTracking()
-                        .Where(ig => !ig.Silinib && hedefIsciler.Contains(ig.IsciId) &&
-                                     ig.Guzest.Ad.Contains("Əlil") &&
-                                     ig.BaslamaTarixi.Date <= maxHedef &&
-                                     (ig.BitmeTarixi == null || ig.BitmeTarixi.Value.Date >= minHedef))
-                        .Select(ig => ig.IsciId)
-                        .ToListAsync();
-                    elilIsciIds = new HashSet<int>(elilGuzestler);
-
-                    if (elilIsciIds.Count > 0)
-                    {
-                        var bayramBas = minHedef.AddDays(-7);
-                        var elilBayramlar = await _uow.Repository<BayramGunu>()
-                            .Query().AsNoTracking()
-                            .Where(b => !b.Silinib && b.Tip == GunTipi.Bayram &&
-                                        b.Tarix.Date >= bayramBas && b.Tarix.Date <= maxHedef)
-                            .Select(b => b.Tarix)
-                            .ToListAsync();
-                        elilBayramSet = new HashSet<DateTime>(elilBayramlar.Select(d => d.Date));
-                    }
+                    // Mərkəzi mənbə (EmekRejimiHelper) — HR/Rəhbər/User eyni datadan
+                    (elilIsciIds, elilBayramSet) = await EmekRejimiHelper.ElilQisaldilmisDataAsync(
+                        _uow, hedefIsciler, minHedef, maxHedef);
+                    elilDataOk = true;
                 }
-                catch { /* IsciGuzest/BayramGunu mövcud deyilsə əlil qaydası keçilir */ }
+                catch { elilDataOk = false; /* təhlükəsiz: yüklənmə alınmasa bağışlama YOX, erkən çıxış tutulur */ }
 
                 // ── İş saati uyğunsuzluq örtükləri ─────────────────────────────
                 // Erkən çıxış İŞ SAATINI qırmızı etmir əgər: fərdi erkən çıxış icazəsi,
@@ -798,8 +782,10 @@ namespace FinNex.UI.Areas.HR.Controllers
                         islemeSaatiDeq = Math.Max(0, diff);
                     }
 
-                    // Əlil işçi qısaldılmış Cümə günü net ≥4 saat (240 dəq) işləyibsə tez çıxan sayılmır
-                    bool elilCumeBagisla = elilIsciIds.Contains(x.IsciId)
+                    // Əlil işçi qısaldılmış Cümə günü net ≥4 saat (240 dəq) işləyibsə tez çıxan sayılmır.
+                    // elilDataOk false-dursa (yüklənmə xətası) bağışlama tətbiq olunmur → təhlükəsiz tərəf.
+                    bool elilCumeBagisla = elilDataOk
+                        && elilIsciIds.Contains(x.IsciId)
                         && EmekRejimiHelper.ElilQisaldilmisGun(x.Tarix.Date, elilBayramSet)
                         && (islemeSaatiDeq ?? 0) >= 240;
 

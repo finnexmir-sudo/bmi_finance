@@ -188,27 +188,14 @@ namespace FinNex.UI.Areas.User.Controllers
                 {
                     var minTarix = tarixlerSet.Min();
                     var maxTarix = tarixlerSet.Max();
-                    isElil = await _unitOfWork.Repository<IsciGuzest>()
-                        .Query().AsNoTracking()
-                        .AnyAsync(ig => !ig.Silinib && ig.IsciId == isciId &&
-                                        ig.Guzest.Ad.Contains("Əlil") &&
-                                        ig.BaslamaTarixi.Date <= maxTarix &&
-                                        (ig.BitmeTarixi == null || ig.BitmeTarixi.Value.Date >= minTarix));
-                    if (isElil)
-                    {
-                        // Həftə Bazar ertəsindən başlaya bildiyi üçün 7 gün geriyə qədər bayramları çək
-                        var bayramBas = minTarix.AddDays(-7);
-                        var elilBayramlar = await _unitOfWork.Repository<BayramGunu>()
-                            .Query().AsNoTracking()
-                            .Where(b => !b.Silinib && b.Tip == GunTipi.Bayram &&
-                                        b.Tarix.Date >= bayramBas && b.Tarix.Date <= maxTarix)
-                            .Select(b => b.Tarix)
-                            .ToListAsync();
-                        elilBayramSet = new HashSet<DateTime>(elilBayramlar.Select(d => d.Date));
-                    }
+                    // Mərkəzi mənbə (EmekRejimiHelper) — HR/Rəhbər/User eyni datadan
+                    var (elilIds, bSet) = await EmekRejimiHelper.ElilQisaldilmisDataAsync(
+                        _unitOfWork, new[] { isciId }, minTarix, maxTarix);
+                    isElil = elilIds.Contains(isciId);
+                    elilBayramSet = bSet;
                 }
             }
-            catch { /* IsciGuzest/BayramGunu mövcud deyilsə əlil qaydası keçilir */ }
+            catch { isElil = false; /* təhlükəsiz: yüklənmə alınmasa bağışlama YOX, erkən çıxış tutulur */ }
 
             // ErkenCixisIcaze — HR ilə eyni mənbə: erkən çıxış icazəsi olan günlər
             var erkenIcazeDates = new HashSet<DateTime>();

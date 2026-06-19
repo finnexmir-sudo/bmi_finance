@@ -1,3 +1,7 @@
+using FinNex.Domain.Entities.HR;
+using FinNex.Domain.Interfaces;
+using Microsoft.EntityFrameworkCore;
+
 namespace FinNex.Application.Services.HR
 {
     /// <summary>
@@ -33,6 +37,48 @@ namespace FinNex.Application.Services.HR
             }
             // Tam 5 günlük həftə VƏ bu gün 5-ci iş günü (Cümə)
             return isGunSayi == 5 && gunIndeksi == 4;
+        }
+
+        /// <summary>
+        /// Əlil-Cümə qaydası üçün lazım olan datanı TƏK mənbədən yükləyir:
+        /// (a) verilən işçilərdən hansıları əlil güzəştlidir, (b) həftəni əhatə edən bayram
+        /// (qeyri-iş) günləri. HR, Rəhbər və User davamiyyəti eyni datadan qidalansın deyə buradadır
+        /// (3 yerdə ayrıca yazılsa, biri digərindən ayrıla bilər — bu, məhz baş verən problemdir).
+        /// Xəta UDULMUR — problem olarsa çağıran tərəf təhlükəsiz davransın (bağışlamadan tutsun).
+        /// </summary>
+        public static async Task<(HashSet<int> elilIsciIds, HashSet<DateTime> bayramSet)>
+            ElilQisaldilmisDataAsync(IUnitOfWork uow, IReadOnlyCollection<int> hedefIsciler,
+                                     DateTime minHedef, DateTime maxHedef)
+        {
+            var elilIsciIds = new HashSet<int>();
+            var bayramSet = new HashSet<DateTime>();
+            if (hedefIsciler == null || hedefIsciler.Count == 0)
+                return (elilIsciIds, bayramSet);
+
+            var isciIdler = hedefIsciler.ToList();
+            var ids = await uow.Repository<IsciGuzest>()
+                .Query().AsNoTracking()
+                .Where(ig => !ig.Silinib && isciIdler.Contains(ig.IsciId) &&
+                             ig.Guzest.Ad.Contains("Əlil") &&
+                             ig.BaslamaTarixi.Date <= maxHedef &&
+                             (ig.BitmeTarixi == null || ig.BitmeTarixi.Value.Date >= minHedef))
+                .Select(ig => ig.IsciId)
+                .ToListAsync();
+            elilIsciIds = new HashSet<int>(ids);
+
+            if (elilIsciIds.Count > 0)
+            {
+                // Həftə Bazar ertəsindən başlaya bildiyi üçün 7 gün geriyə qədər bayramları çək
+                var bayramBas = minHedef.AddDays(-7);
+                var bayramlar = await uow.Repository<BayramGunu>()
+                    .Query().AsNoTracking()
+                    .Where(b => !b.Silinib && b.Tip == GunTipi.Bayram &&
+                                b.Tarix.Date >= bayramBas && b.Tarix.Date <= maxHedef)
+                    .Select(b => b.Tarix)
+                    .ToListAsync();
+                bayramSet = new HashSet<DateTime>(bayramlar.Select(d => d.Date));
+            }
+            return (elilIsciIds, bayramSet);
         }
     }
 }
