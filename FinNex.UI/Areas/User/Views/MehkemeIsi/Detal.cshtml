@@ -277,11 +277,6 @@
                 <span><i class="bi bi-people"></i> İcra subyektləri <span class="dt-sub">(borclu + zaminlər)</span></span>
                 <span style="display:flex;gap:8px;align-items:center">
                     <button type="button" class="mi-btn mi-btn--ghost mi-btn--sm" id="dtToggleCols"><i class="bi bi-layout-three-columns"></i> Detallı sütunlar</button>
-                    <form asp-action="ZaminleriYukle" method="post" style="display:inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="ishId" value="@Model.Id" />
-                        <button type="submit" class="mi-btn mi-btn--ghost mi-btn--sm"><i class="bi bi-cloud-download"></i> Oracle-dan zaminləri çək</button>
-                    </form>
                 </span>
             </div>
 
@@ -403,7 +398,7 @@
 
             @if (!Model.Zaminler.Any())
             {
-                <div class="dt-subj-hint"><i class="bi bi-info-circle"></i> Zamin yoxdur — yuxarıdakı <b>"Oracle-dan zaminləri çək"</b> ilə yüklə</div>
+                <div class="dt-subj-hint"><i class="bi bi-info-circle"></i> Zamin yoxdur — iş açılanda əsas sorğudan avtomatik yüklənir</div>
             }
         </div>
 
