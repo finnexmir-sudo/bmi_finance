@@ -85,7 +85,14 @@
                 <div class="dt-stat-val">@D(Model.SonOdenisTarixi)</div>
             </div>
         </div>
-        <div class="dt-note"><i class="bi bi-info-circle"></i> Maliyyə hələ snapshot-dur — növbəti kərpicdə Oracle canlısına keçəcək.</div>
+        @if (Model.MaliyyeCanli)
+        {
+            <div class="dt-note"><i class="bi bi-broadcast"></i> Maliyyə Oracle canlısındandır — Məhkəmə xərci əl ilə daxil edilir.</div>
+        }
+        else
+        {
+            <div class="dt-note"><i class="bi bi-info-circle"></i> Bu kredit Oracle aktiv siyahısında yoxdur — maliyyə əl ilə doldurulur.</div>
+        }
 
         <!-- ═══ Məhkəmə fazası ═══ -->
         <div class="dt-card">

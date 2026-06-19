@@ -68,7 +68,7 @@ public class MehkemeIsiService : IMehkemeIsiService
             .Where(z => z.MehkemeIsiId == id && !z.Silinib)
             .OrderBy(z => z.Id).AsNoTracking().ToListAsync();
 
-        return new MehkemeIsiDetailDto
+        var dto = new MehkemeIsiDetailDto
         {
             Id                = x.Id,
             QeydiyyatNomresi  = x.QeydiyyatNomresi,
@@ -112,7 +112,50 @@ public class MehkemeIsiService : IMehkemeIsiService
                 }).ToList(),
             Zaminler          = zaminler.Select(MapZamin).ToList()
         };
+
+        // Maliyyəni Oracle canlısından çək (aktiv siyahıda olan kreditlər üçün);
+        // siyahıda olmayanların məbləğləri əl ilə doldurulur (snapshot qalır).
+        await CanliMaliyyeniTetbiqEtAsync(x, dto);
+
+        return dto;
     }
+
+    // ── Detal səhifəsi üçün Oracle canlı maliyyəsi (hesab + K.S. açarı) ──
+    private async Task CanliMaliyyeniTetbiqEtAsync(MehkemeIsi ish, MehkemeIsiDetailDto dto)
+    {
+        var hesab = !string.IsNullOrWhiteSpace(ish.QeydiyyatNomresi) ? ish.QeydiyyatNomresi.Trim()
+                  : (ish.KreditHesabi ?? "").Trim();
+        var ks    = !string.IsNullOrWhiteSpace(ish.KreditSubHesab) ? ish.KreditSubHesab.Trim()
+                  : (ish.Subkod ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(hesab)) return;
+
+        MehkemeSiyahiResultDto siyahi;
+        try { siyahi = await SiyahiGetirAsync(); }
+        catch { return; }   // Oracle əlçatmazdırsa snapshot qalsın
+        if (siyahi.Satirlar.Count == 0) return;
+
+        var row = siyahi.Satirlar.FirstOrDefault(s =>
+            s.KreditHesabi.Trim() == hesab &&
+            (string.IsNullOrWhiteSpace(ks) || s.Ks.Trim() == ks));
+        if (row == null) return;   // Oracle aktiv siyahısında yoxdur → əl ilə doldurulacaq
+
+        // Əsas borc = qalıq + vaxtı keçmiş qalıq (sırf əsas borc, faizsiz)
+        if (row.Qaliq.HasValue || row.VkQaliq.HasValue)
+            dto.EsasBorc = (row.Qaliq ?? 0m) + (row.VkQaliq ?? 0m);
+
+        // Qalan borc = tam qalıq (əsas + faiz + cərimə) = 1-ci səhifədəki "Tam Qalıq"
+        dto.QalanBorc = row.TamQaliq;
+
+        // Son ödəniş tarixi = son əməliyyat tarixi (Oracle "dd.MM.yyyy")
+        var t = ParseTarix(row.SonEmeliyyatTarixi);
+        if (t.HasValue) dto.SonOdenisTarixi = t;
+
+        dto.MaliyyeCanli = true;
+    }
+
+    private static DateTime? ParseTarix(string? s)
+        => DateTime.TryParseExact((s ?? "").Trim(), "dd.MM.yyyy",
+               CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : (DateTime?)null;
 
     // ── Zamin icra qatı ──────────────────────────────────
     public async Task<int> ZaminElaveEtAsync(ZaminIcraCreateDto dto, int isciId)

@@ -45,6 +45,7 @@ public class MehkemeIsiDetailDto
     public DateTime? QetnameTarixi    { get; set; }
     public string?   IsYeri           { get; set; }
     public string?   IcraQeyd         { get; set; }
+    public bool      MaliyyeCanli     { get; set; }   // maliyyə Oracle canlısındandırmı (yoxsa əl ilə/snapshot)
     public DateTime YaradilmaTarixi { get; set; }
     public IList<MehkemeMerheleDto> Merheleler { get; set; } = new List<MehkemeMerheleDto>();
     public IList<ZaminIcraDto> Zaminler { get; set; } = new List<ZaminIcraDto>();
