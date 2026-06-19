@@ -43,6 +43,7 @@ public class MehkemeIsi : BaseEntity
 
     public ICollection<MehkemeMerhelesi> Merheleler { get; set; } = new List<MehkemeMerhelesi>();
     public ICollection<MehkemeXerci> Xercler { get; set; } = new List<MehkemeXerci>();
+    public ICollection<MehkemeSened> Senedler { get; set; } = new List<MehkemeSened>();
 }
 
 public class MehkemeMerhelesi : BaseEntity
@@ -65,6 +66,25 @@ public class MehkemeXerci : BaseEntity
     public decimal Mebleg        { get; set; }   // xərc məbləği (₼)
     public DateTime? Tarix       { get; set; }   // ödəmə / qeyd tarixi
     public string? Mehkeme       { get; set; }   // hansı məhkəmə / qeyd
+}
+
+// İşə birbaşa yüklənən sənəd (mərhələdən asılı olmayan)
+public class MehkemeSened : BaseEntity
+{
+    public int MehkemeIsiId      { get; set; }
+    public MehkemeIsi MehkemeIsi { get; set; } = null!;
+    public string Ad             { get; set; } = null!;   // başlıq
+    public MehkemeSenedNovu Novu { get; set; } = MehkemeSenedNovu.Diger;
+    public string FaylYolu       { get; set; } = null!;   // FinNex_DMS nisbi yol (mehkeme/...)
+    public DateTime? Tarix       { get; set; }
+}
+
+public enum MehkemeSenedNovu
+{
+    IddiaErizesi = 1,
+    Qetname      = 2,
+    IcraVereqesi = 3,
+    Diger        = 4
 }
 
 public enum MehkemeIsiNov

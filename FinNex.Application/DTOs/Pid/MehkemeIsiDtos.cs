@@ -54,6 +54,7 @@ public class MehkemeIsiDetailDto
     public IList<MehkemeMerheleDto> Merheleler { get; set; } = new List<MehkemeMerheleDto>();
     public IList<ZaminIcraDto> Zaminler { get; set; } = new List<ZaminIcraDto>();
     public IList<MehkemeXerciDto> Xercler { get; set; } = new List<MehkemeXerciDto>();
+    public IList<MehkemeSenedDto> Senedler { get; set; } = new List<MehkemeSenedDto>();
 }
 
 public class MehkemeMerheleDto
@@ -131,6 +132,22 @@ public class MehkemeXerciCreateDto
     public decimal Mebleg   { get; set; }
     public DateTime? Tarix  { get; set; }
     public string? Mehkeme  { get; set; }
+}
+
+public class MehkemeSenedDto
+{
+    public int Id                { get; set; }
+    public string Ad             { get; set; } = "";
+    public MehkemeSenedNovu Novu { get; set; }
+    public string FaylYolu       { get; set; } = "";
+    public DateTime? Tarix       { get; set; }
+}
+
+public class MehkemeSenedCreateDto
+{
+    public int MehkemeIsiId      { get; set; }
+    public string? Ad            { get; set; }
+    public MehkemeSenedNovu Novu { get; set; }
 }
 
 public class OracleAxtarNeticesi

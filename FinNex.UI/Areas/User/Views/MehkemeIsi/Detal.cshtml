@@ -406,24 +406,74 @@
         <div class="dt-card">
             <div class="dt-card-h">
                 <span><i class="bi bi-folder2-open"></i> Sənədlər</span>
-                <span class="dt-sub">@docs.Count fayl</span>
+                <span class="dt-sub">@(docs.Count + Model.Senedler.Count) fayl</span>
             </div>
-            @if (docs.Any())
+
+            @* İşə birbaşa yüklənən sənədlər *@
+            @foreach (var s in Model.Senedler)
             {
-                @foreach (var m in docs.OrderBy(x => x.Tarix))
-                {
-                    <div class="dt-doc">
-                        <i class="bi bi-file-earmark-text"></i>
-                        <span class="mi-badge @MerheleBadgeClass(m.MerheleTipi)">@MerheleTipiAd(m.MerheleTipi)</span>
-                        <span class="dt-doc-date">@m.Tarix.ToString("dd.MM.yyyy")</span>
-                        <a href="/dms/@m.SenedYolu" target="_blank" class="mi-btn mi-btn--ghost mi-btn--sm"><i class="bi bi-download"></i> Aç</a>
-                    </div>
-                }
+                <div class="dt-doc">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span class="mi-badge @SenedNovBadge(s.Novu)">@SenedNovAd(s.Novu)</span>
+                    <span class="dt-doc-name">@s.Ad</span>
+                    @if (s.Tarix.HasValue)
+                    {
+                        <span class="dt-doc-date">@s.Tarix.Value.ToString("dd.MM.yyyy")</span>
+                    }
+                    <a href="/dms/@s.FaylYolu" target="_blank" class="mi-btn mi-btn--ghost mi-btn--sm"><i class="bi bi-download"></i> Aç</a>
+                    <form asp-action="SenedSil" method="post" onsubmit="return confirm('Bu sənəd silinsin?');" style="display:inline;margin-left:4px">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="senedId" value="@s.Id" />
+                        <input type="hidden" name="ishId" value="@Model.Id" />
+                        <button type="submit" class="mi-btn-icon mi-btn-icon--danger" title="Sil"><i class="bi bi-x"></i></button>
+                    </form>
+                </div>
             }
-            else
+
+            @* Mərhələyə bağlı sənədlər *@
+            @foreach (var m in docs.OrderBy(x => x.Tarix))
+            {
+                <div class="dt-doc">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span class="mi-badge @MerheleBadgeClass(m.MerheleTipi)">@MerheleTipiAd(m.MerheleTipi)</span>
+                    <span class="dt-doc-name dt-doc-name--muted">Mərhələ faylı</span>
+                    <span class="dt-doc-date">@m.Tarix.ToString("dd.MM.yyyy")</span>
+                    <a href="/dms/@m.SenedYolu" target="_blank" class="mi-btn mi-btn--ghost mi-btn--sm"><i class="bi bi-download"></i> Aç</a>
+                </div>
+            }
+
+            @if (!docs.Any() && !Model.Senedler.Any())
             {
                 <div class="dt-empty"><i class="bi bi-folder2"></i> Hələ sənəd yoxdur</div>
             }
+
+            <details class="dt-add">
+                <summary><i class="bi bi-plus-lg"></i> Sənəd yüklə</summary>
+                <form asp-action="SenedYukle" method="post" enctype="multipart/form-data" style="margin-top:12px">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="MehkemeIsiId" value="@Model.Id" />
+                    <div class="mi-form-grid mi-form-grid--3">
+                        <div class="mi-form-group">
+                            <label class="mi-lbl">Növ</label>
+                            <select name="Novu" class="mi-select">
+                                <option value="1">İddia ərizəsi</option>
+                                <option value="2">Qətnamə</option>
+                                <option value="3">İcra vərəqəsi</option>
+                                <option value="4" selected>Digər</option>
+                            </select>
+                        </div>
+                        <div class="mi-form-group">
+                            <label class="mi-lbl">Başlıq</label>
+                            <input name="Ad" class="mi-input" maxlength="200" placeholder="Sənəd adı (boş olsa fayl adı)" />
+                        </div>
+                        <div class="mi-form-group">
+                            <label class="mi-lbl">Fayl</label>
+                            <input type="file" name="fayl" class="mi-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required />
+                        </div>
+                    </div>
+                    <button type="submit" class="mi-btn mi-btn--primary mi-btn--sm"><i class="bi bi-upload"></i> Yüklə</button>
+                </form>
+            </details>
         </div>
 
         <!-- Sil -->
@@ -520,6 +570,22 @@
         MerheleTipi.IcraBaglandi  => "İcra bağlandı",
         MerheleTipi.Odendi        => "Ödənildi",
         _                         => "Digər"
+    };
+
+    string SenedNovAd(MehkemeSenedNovu n) => n switch
+    {
+        MehkemeSenedNovu.IddiaErizesi => "İddia ərizəsi",
+        MehkemeSenedNovu.Qetname      => "Qətnamə",
+        MehkemeSenedNovu.IcraVereqesi => "İcra vərəqəsi",
+        _                             => "Digər"
+    };
+
+    string SenedNovBadge(MehkemeSenedNovu n) => n switch
+    {
+        MehkemeSenedNovu.IddiaErizesi => "mi-badge--blue",
+        MehkemeSenedNovu.Qetname      => "mi-badge--tamam",
+        MehkemeSenedNovu.IcraVereqesi => "mi-badge--icra",
+        _                             => "mi-badge--diger"
     };
 }
 

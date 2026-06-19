@@ -19,6 +19,10 @@ public interface IMehkemeIsiService
     Task<int> XercElaveEtAsync(MehkemeXerciCreateDto dto, int isciId);
     Task<bool> XercSilAsync(int xerciId, int isciId);
 
+    // Sənədlər (işə birbaşa yüklənən)
+    Task<int> SenedYukleAsync(MehkemeSenedCreateDto dto, IFormFile fayl, string dmsRoot, int isciId);
+    Task<bool> SenedSilAsync(int senedId, int isciId);
+
     // Zamin (icra subyekti)
     Task<int> ZaminElaveEtAsync(ZaminIcraCreateDto dto, int isciId);
     Task<bool> ZaminYenileAsync(ZaminIcraUpdateDto dto, int isciId);

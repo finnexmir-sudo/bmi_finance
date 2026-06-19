@@ -214,6 +214,31 @@ public class MehkemeIsiController : Controller
         return RedirectToAction("Detal", new { id = ishId });
     }
 
+    // ── Sənəd yüklə / sil ─────────────────────────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SenedYukle(MehkemeSenedCreateDto dto, IFormFile? fayl)
+    {
+        if (dto.MehkemeIsiId <= 0 || fayl == null || fayl.Length == 0)
+        {
+            TempData["Error"] = "Fayl seçilməyib.";
+            return RedirectToAction("Detal", new { id = dto.MehkemeIsiId });
+        }
+        var isciId = await CurrentIsciIdAsync() ?? 0;
+        await _service.SenedYukleAsync(dto, fayl, DmsRoot, isciId);
+        TempData["Success"] = "Sənəd yükləndi.";
+        return RedirectToAction("Detal", new { id = dto.MehkemeIsiId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SenedSil(int senedId, int ishId)
+    {
+        var isciId = await CurrentIsciIdAsync() ?? 0;
+        await _service.SenedSilAsync(senedId, isciId);
+        return RedirectToAction("Detal", new { id = ishId });
+    }
+
     // ── Zamin (icra subyekti) ─────────────────────────────
     [HttpPost]
     [ValidateAntiForgeryToken]

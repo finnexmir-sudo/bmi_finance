@@ -72,6 +72,10 @@ public class MehkemeIsiService : IMehkemeIsiService
             .Where(xc => xc.MehkemeIsiId == id && !xc.Silinib)
             .OrderBy(xc => xc.Tarix).AsNoTracking().ToListAsync();
 
+        var senedler = await _uow.Repository<MehkemeSened>().Query()
+            .Where(s => s.MehkemeIsiId == id && !s.Silinib)
+            .OrderByDescending(s => s.Tarix).AsNoTracking().ToListAsync();
+
         var dto = new MehkemeIsiDetailDto
         {
             Id                = x.Id,
@@ -124,6 +128,11 @@ public class MehkemeIsiService : IMehkemeIsiService
             Id = xc.Id, Mebleg = xc.Mebleg, Tarix = xc.Tarix, Mehkeme = xc.Mehkeme
         }).ToList();
         if (xercler.Count > 0) dto.MehkemeXerci = xercler.Sum(xc => xc.Mebleg);
+
+        dto.Senedler = senedler.Select(s => new MehkemeSenedDto
+        {
+            Id = s.Id, Ad = s.Ad, Novu = s.Novu, FaylYolu = s.FaylYolu, Tarix = s.Tarix
+        }).ToList();
 
         // Maliyyəni Oracle canlısından çək (aktiv siyahıda olan kreditlər üçün);
         // siyahıda olmayanların məbləğləri əl ilə doldurulur (snapshot qalır).
@@ -482,6 +491,45 @@ public class MehkemeIsiService : IMehkemeIsiService
         x.SilenIcraciId = isciId;
         x.SilinmeTarixi = DateTime.Now;
         await _uow.Repository<MehkemeXerci>().YenileAsync(x);
+        await _uow.YaddaSaxlaAsync();
+        return true;
+    }
+
+    // ── Sənədlər (işə birbaşa yüklənən) ───────────────────
+    public async Task<int> SenedYukleAsync(MehkemeSenedCreateDto dto, IFormFile fayl, string dmsRoot, int isciId)
+    {
+        var dir = Path.Combine(dmsRoot, "mehkeme");
+        Directory.CreateDirectory(dir);
+        var ext = Path.GetExtension(fayl.FileName);
+        var fileName = $"{Guid.NewGuid()}{ext}";
+        await using (var fs = new FileStream(Path.Combine(dir, fileName), FileMode.Create))
+            await fayl.CopyToAsync(fs);
+
+        var s = new MehkemeSened
+        {
+            MehkemeIsiId    = dto.MehkemeIsiId,
+            Ad              = string.IsNullOrWhiteSpace(dto.Ad)
+                              ? Path.GetFileNameWithoutExtension(fayl.FileName)
+                              : dto.Ad.Trim(),
+            Novu            = dto.Novu,
+            FaylYolu        = $"mehkeme/{fileName}",
+            Tarix           = DateTime.Now,
+            YaradanIcraciId = isciId,
+            YaradilmaTarixi = DateTime.Now
+        };
+        await _uow.Repository<MehkemeSened>().YaratAsync(s);
+        await _uow.YaddaSaxlaAsync();
+        return s.Id;
+    }
+
+    public async Task<bool> SenedSilAsync(int senedId, int isciId)
+    {
+        var s = await _uow.Repository<MehkemeSened>().IdIleGetirAsync(senedId);
+        if (s == null || s.Silinib) return false;
+        s.Silinib       = true;
+        s.SilenIcraciId = isciId;
+        s.SilinmeTarixi = DateTime.Now;
+        await _uow.Repository<MehkemeSened>().YenileAsync(s);
         await _uow.YaddaSaxlaAsync();
         return true;
     }
