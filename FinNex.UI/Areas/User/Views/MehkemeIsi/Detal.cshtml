@@ -52,7 +52,7 @@
             <span class="dt-status @statusCls">@statusText</span>
             <div class="dt-actions">
                 <button class="mi-btn mi-btn--ghost mi-btn--sm" id="btnEdit"><i class="bi bi-pencil"></i> Redaktə</button>
-                <a asp-action="Index" class="mi-btn mi-btn--ghost mi-btn--sm"><i class="bi bi-arrow-left"></i> Geri</a>
+                <a asp-action="Index" id="btnGeri" class="mi-btn mi-btn--ghost mi-btn--sm"><i class="bi bi-arrow-left"></i> Geri</a>
             </div>
         </div>
     </div>
@@ -558,6 +558,17 @@
     document.getElementById('btnCancelEdit').addEventListener('click', function () {
         document.getElementById('editCard').style.display = 'none';
         document.getElementById('readView').style.display = '';
+    });
+
+    // "Geri": redaktə açıqdırsa oxuma görünüşünə qayıt (siyahıya getmə); deyilsə siyahıya
+    document.getElementById('btnGeri').addEventListener('click', function (e) {
+        var ec = document.getElementById('editCard');
+        if (ec && ec.style.display !== 'none') {
+            e.preventDefault();
+            ec.style.display = 'none';
+            document.getElementById('readView').style.display = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     });
 
     document.getElementById('btnSaveEdit').addEventListener('click', async function () {
