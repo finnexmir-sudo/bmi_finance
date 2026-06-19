@@ -176,9 +176,9 @@
 .ms-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
 .ms-twrap { overflow: auto; max-height: calc(100vh - 240px); }
 .ms-table { width: 100%; border-collapse: collapse; font-size: 13px; color: #334155; }
-.ms-table thead th { position: sticky; top: 0; z-index: 3; background: #f8fafc; padding: 10px 14px; text-align: left; font-size: 12px; font-weight: 600; color: #64748b; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+.ms-table thead th { position: sticky; top: 0; z-index: 3; background: #eef2f6; padding: 10px 14px; text-align: left; font-size: 12px; font-weight: 700; color: #475569; border-bottom: 2px solid #cbd5e1; border-right: 1px solid #e2e8f0; white-space: nowrap; }
 .ms-col-ad { min-width: 250px; }
-.ms-table th.ms-primary { border-top: 3px solid #facc15; }      /* sarı = əsas sütun */
+.ms-table th.ms-primary { }      /* sadə cədvəl — sarı vurğu silindi */
 .ms-table th.ms-extra, .ms-table td.ms-extra { display: none; }
 .ms-table.ms-show-extra th.ms-extra, .ms-table.ms-show-extra td.ms-extra { display: table-cell; }
 .ms-table th.ms-extra { background: #f3f4f6; }
@@ -186,15 +186,17 @@
 
 .ms-grp { border-bottom: 1px solid #e2e8f0; }
 .ms-grp:last-child { border-bottom: none; }
-.ms-borclu td { padding: 12px 14px; border-bottom: 1px solid #eef2f7; vertical-align: middle; white-space: nowrap; }
-.ms-borclu:hover { background: #fafbff; }
-.ms-grp.open .ms-borclu { background: #f5f7ff; }
-.ms-accent { border-left: 4px solid var(--fn-primary,#6366f1); }
+.ms-borclu td { padding: 9px 14px; border-bottom: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; vertical-align: middle; white-space: nowrap; }
+/* Zebra — növbələşən sətirlər (cədvəl görünüşü) */
+.ms-grp:nth-of-type(even) .ms-borclu td { background: #f8fafc; }
+.ms-borclu:hover td { background: #eff6ff !important; }
+.ms-grp.open .ms-borclu td { background: #eef2ff !important; }
+.ms-accent { font-weight: 600; color: #475569; }
 .ms-bname { font-weight: 700; color: #0f172a; white-space: nowrap; }
 .ms-btip { font-size: 11px; color: #64748b; margin-top: 2px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.ms-nov { background: #f1f5f9; color: #64748b; border-radius: 20px; padding: 2px 9px; font-size: 11.5px; font-weight: 600; }
-.ms-zcount { display: inline-flex; align-items: center; gap: 4px; background: #eef2ff; color: #4338ca; border-radius: 20px; padding: 2px 9px; font-size: 11.5px; font-weight: 700; }
-.ms-znil { color: #94a3b8; font-style: italic; font-size: 11.5px; }
+.ms-nov { color: #475569; font-size: 13px; font-weight: 500; }
+.ms-zcount { color: #64748b; font-size: 12.5px; font-weight: 500; }
+.ms-znil { color: #94a3b8; font-style: italic; font-size: 12.5px; }
 .ms-tipzamin { white-space: nowrap; }
 .ms-tipzamin .ms-nov { margin-right: 6px; }
 
@@ -220,12 +222,12 @@
 .ms-qd-err { border-color: #ef4444 !important; background: #fef2f2 !important; }
 
 /* Status badge */
-.ms-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
-.ms-st-icra     { background: #fef3c7; color: #b45309; }
-.ms-st-mehkeme  { background: #e0e7ff; color: #4338ca; }
-.ms-st-notarius { background: #ccfbf1; color: #0f766e; }
-.ms-st-odendi   { background: rgba(34,197,94,.12); color: #15803d; }
-.ms-st-diger    { background: #f1f5f9; color: #475569; }
+.ms-badge { display: inline-block; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.ms-st-icra     { color: #b45309; }
+.ms-st-mehkeme  { color: #4338ca; }
+.ms-st-notarius { color: #0f766e; }
+.ms-st-odendi   { color: #15803d; }
+.ms-st-diger    { color: #64748b; }
 
 .ms-item10 { color: #475569; }
 .ms-clip { max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
