@@ -1,0 +1,190 @@
+@using FinNex.Application.DTOs.Pid
+@using FinNex.Domain.Entities.Pid
+@model IList<MehkemeIsiListDto>
+@{
+    ViewData["Title"] = "Məhkəmə İşləri";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    string D(DateTime? d) => d.HasValue ? d.Value.ToString("dd.MM.yyyy") : "—";
+    string Txt(string? s) => string.IsNullOrWhiteSpace(s) ? "—" : s;
+    string M(decimal? v) => v.HasValue ? v.Value.ToString("N2") + " ₼" : "—";
+
+    string NovAd(MehkemeIsiNov n) => n switch
+    {
+        MehkemeIsiNov.Ipoteka    => "İpoteka",
+        MehkemeIsiNov.Istehlak   => "İstehlak",
+        MehkemeIsiNov.KartKredit => "Kart krediti",
+        _                        => "Digər"
+    };
+    string NovClass(MehkemeIsiNov n) => n switch
+    {
+        MehkemeIsiNov.Ipoteka    => "mi-badge--ipoteka",
+        MehkemeIsiNov.Istehlak   => "mi-badge--istehlak",
+        MehkemeIsiNov.KartKredit => "mi-badge--kart",
+        _                        => "mi-badge--diger"
+    };
+    string StatusAd(MehkemeIsiStatus s) => s switch
+    {
+        MehkemeIsiStatus.Hazirlanir => "Hazırlanır",
+        MehkemeIsiStatus.Mehkemede  => "Məhkəmədə",
+        MehkemeIsiStatus.Icra       => "İcrada",
+        MehkemeIsiStatus.Tamamlandi => "Tamamlandı",
+        MehkemeIsiStatus.Baghlandi  => "Bağlandı",
+        _                           => s.ToString()
+    };
+    string StatusClass(MehkemeIsiStatus s) => s switch
+    {
+        MehkemeIsiStatus.Hazirlanir => "mi-badge--hazir",
+        MehkemeIsiStatus.Mehkemede  => "mi-badge--mehkeme",
+        MehkemeIsiStatus.Icra       => "mi-badge--icra",
+        MehkemeIsiStatus.Tamamlandi => "mi-badge--tamam",
+        MehkemeIsiStatus.Baghlandi  => "mi-badge--bagli",
+        _                           => "mi-badge--diger"
+    };
+
+    var statuslar = Enum.GetValues<MehkemeIsiStatus>();
+}
+
+<div class="mi-page">
+    <div class="mi-head">
+        <div>
+            <h2 class="mi-title">Məhkəmə İşləri</h2>
+            <p class="mi-sub">İzlənən bütün məhkəmə işlərinin icmal siyahısı</p>
+        </div>
+        <div style="display:flex;gap:8px">
+            <a asp-action="Index" class="mi-btn mi-btn--ghost"><i class="bi bi-people"></i> Aktiv Müştərilər</a>
+            <a asp-action="Yarat" class="mi-btn mi-btn--primary"><i class="bi bi-plus-circle"></i> Yeni iş</a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="mi-alert mi-alert--success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="mi-alert mi-alert--error">@TempData["Error"]</div>
+    }
+
+    <div class="mi-filter-row">
+        <input type="text" id="mxSearch" class="mi-input" placeholder="🔍 Müştəri adı və ya qeydiyyat № axtar…" />
+        <select id="mxStatus" class="mi-select">
+            <option value="">Bütün statuslar</option>
+            @foreach (var s in statuslar)
+            {
+                <option value="@((int)s)">@StatusAd(s)</option>
+            }
+        </select>
+    </div>
+
+    <div class="mi-table-card">
+        <div class="mi-table-wrap">
+            <table class="mi-table" id="mxTable">
+                <thead>
+                    <tr>
+                        <th style="width:46px">№</th>
+                        <th>Müştəri</th>
+                        <th>Qeydiyyat №</th>
+                        <th>Növ</th>
+                        <th>Status</th>
+                        <th style="text-align:right">Əsas borc</th>
+                        <th style="text-align:right">Məhkəmə xərci</th>
+                        <th>Məhkəməyə verilmə</th>
+                        <th>Qətnamə tarixi</th>
+                        <th>Hakim</th>
+                        <th style="text-align:center">Mərhələ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        var i = 0;
+                        @foreach (var x in Model)
+                        {
+                            i++;
+                            var url = Url.Action("Detal", new { id = x.Id });
+                            <tr class="mx-row" style="cursor:pointer"
+                                data-href="@url"
+                                data-search="@($"{x.BorcluAd} {x.QeydiyyatNomresi}")"
+                                data-status="@((int)x.Status)">
+                                <td>@i</td>
+                                <td>
+                                    <a asp-action="Detal" asp-route-id="@x.Id" class="mx-name">@Txt(x.BorcluAd)</a>
+                                </td>
+                                <td><span class="mi-nomre">@Txt(x.QeydiyyatNomresi)</span></td>
+                                <td><span class="mi-badge @NovClass(x.Nov)">@NovAd(x.Nov)</span></td>
+                                <td><span class="mi-badge @StatusClass(x.Status)">@StatusAd(x.Status)</span></td>
+                                <td style="text-align:right">@M(x.EsasBorc)</td>
+                                <td style="text-align:right">@M(x.MehkemeXerci)</td>
+                                <td class="mi-date">@D(x.BaslamaTarixi)</td>
+                                <td class="mi-date">@D(x.QetnameTarixi)</td>
+                                <td>@Txt(x.Hakim)</td>
+                                <td style="text-align:center"><span class="mi-count">@x.MerheleCount</span></td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="11">
+                                <div class="mi-empty">
+                                    <i class="bi bi-folder2-open"></i>
+                                    <div>Hələ heç bir məhkəmə işi izlənmir.</div>
+                                    <div style="margin-top:6px;font-size:13px">
+                                        <a asp-action="Index">Aktiv Müştərilər</a> siyahısından iş açın və ya
+                                        <a asp-action="Yarat">yeni iş</a> yaradın.
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="mi-footer-count" id="mxCount">@Model.Count iş</div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/user-mehkeme.css" asp-append-version="true" />
+    <style>
+        .mx-name { font-weight: 700; color: #0f172a; text-decoration: none; }
+        .mx-name:hover { color: var(--fn-primary,#6366f1); text-decoration: underline; }
+        #mxTable tbody tr.mx-row:hover { background: #f1f5ff; }
+    </style>
+}
+
+@section Scripts {
+<script>
+    // Sətrə klik → Detal (ad linkinə birbaşa klik öz işini görür)
+    document.querySelectorAll('#mxTable tbody tr.mx-row').forEach(function (tr) {
+        tr.addEventListener('click', function (e) {
+            if (e.target.closest('a')) return;
+            var href = tr.dataset.href;
+            if (href) window.location.href = href;
+        });
+    });
+
+    // Filtr (axtarış + status)
+    (function () {
+        var s   = document.getElementById('mxSearch');
+        var st  = document.getElementById('mxStatus');
+        var cnt = document.getElementById('mxCount');
+        var rows = Array.prototype.slice.call(document.querySelectorAll('#mxTable tbody tr.mx-row'));
+        function f() {
+            var q  = s.value.trim().toLowerCase();
+            var sv = st.value;
+            var vis = 0;
+            rows.forEach(function (r) {
+                var ok = (!q  || (r.dataset.search || '').toLowerCase().includes(q))
+                      && (!sv || r.dataset.status === sv);
+                r.style.display = ok ? '' : 'none';
+                if (ok) vis++;
+            });
+            cnt.textContent = vis + ' iş';
+        }
+        s.addEventListener('input', f);
+        st.addEventListener('change', f);
+    })();
+</script>
+}

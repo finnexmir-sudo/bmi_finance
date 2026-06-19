@@ -42,6 +42,13 @@ public class MehkemeIsiController : Controller
         return View(model);
     }
 
+    // ── Məhkəmə İşləri (izlənən bütün işlərin icmal siyahısı) ──
+    public async Task<IActionResult> Isler()
+    {
+        var model = await _service.HamisiniGetirAsync();
+        return View(model);
+    }
+
     // ── Qərardad yaz (inline, AJAX — qeyd yoxdursa yaradır) ─
     [HttpPost]
     [ValidateAntiForgeryToken]

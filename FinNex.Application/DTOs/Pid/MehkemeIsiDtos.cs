@@ -12,6 +12,8 @@ public class MehkemeIsiListDto
     public MehkemeIsiNov Nov       { get; set; }
     public MehkemeIsiStatus Status { get; set; }
     public DateTime? BaslamaTarixi { get; set; }
+    public DateTime? QetnameTarixi { get; set; }
+    public string? Hakim           { get; set; }
     public int MerheleCount        { get; set; }
     public DateTime YaradilmaTarixi { get; set; }
 }

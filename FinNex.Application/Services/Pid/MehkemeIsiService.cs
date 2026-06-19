@@ -49,6 +49,9 @@ public class MehkemeIsiService : IMehkemeIsiService
             Nov               = x.Nov,
             Status            = x.Status,
             BaslamaTarixi     = x.BaslamaTarixi,
+            QetnameTarixi     = x.QetnameTarixi,
+            Hakim             = x.Merheleler.Where(m => !m.Silinib && !string.IsNullOrWhiteSpace(m.Hakim))
+                                            .OrderByDescending(m => m.Tarix).Select(m => m.Hakim).FirstOrDefault(),
             MerheleCount      = x.Merheleler.Count(m => !m.Silinib),
             YaradilmaTarixi   = x.YaradilmaTarixi
         }).ToList();
