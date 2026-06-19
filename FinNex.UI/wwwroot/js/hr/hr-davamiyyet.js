@@ -433,14 +433,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // Client-side xüsusi filterlər üçün helper
     function applySpecialFilter(records, statusVal) {
         if (statusVal === 'tezCixan') {
-            var cp = parseTime(isParametriData.cixisVaxti);
-            var cixisTotal = cp.hours * 60 + cp.minutes;
-            var hedd = cixisTotal - (isParametriData.tezCixmaTolerans || 15);
-            return records.filter(function (r) {
-                if (!r.cixisVaxti) return false;
-                var d = new Date(r.cixisVaxti);
-                return (d.getHours() * 60 + d.getMinutes()) < hedd;
-            });
+            // Server-in tezCixan bayrağı ilə filtrlə — KPI sayğacı ilə HƏMİŞƏ uyğun olsun.
+            // (Server bütün örtükləri tətbiq edir: elil/icazə/ezamiyyət + "İş Bitdi" həddi;
+            //  client yenidən hesablamasın ki, sayğac=1, siyahı=0 fərqi yaranmasın.)
+            return records.filter(function (r) { return r.tezCixan === true; });
         }
         if (statusVal === 'cixisYox') {
             return records.filter(function (r) {
