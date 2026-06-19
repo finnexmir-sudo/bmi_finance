@@ -1,4 +1,5 @@
 using FinNex.Application.Interfaces.Communication;
+using FinNex.Application.Services.HR;
 using FinNex.DataAccess.Contexts;
 using FinNex.Domain.Entities.Communication;
 using FinNex.Domain.Entities.HR;
@@ -155,6 +156,8 @@ public class ADMSController : Controller
             TimeSpan gecikTolerans;
             TimeSpan standartCixis;
             TimeSpan tezCixmaTolerans;
+            TimeSpan naharBaslama;
+            int naharMuddet;
             try
             {
                 var parametri = await _db.Set<IsParametri>()
@@ -163,6 +166,8 @@ public class ADMSController : Controller
                 gecikTolerans     = TimeSpan.FromMinutes(parametri?.GecikmeToleransDeqiqe   ?? 5);
                 standartCixis     = parametri?.StandartCixisVaxti  ?? new TimeSpan(17, 45, 0);
                 tezCixmaTolerans  = TimeSpan.FromMinutes(parametri?.TezCixmaToleransDeqiqe ?? 15);
+                naharBaslama      = parametri?.NaharBaslamaSaati   ?? new TimeSpan(13, 0, 0);
+                naharMuddet       = parametri?.NaharMuddetDeqiqe   ?? 45;
             }
             catch
             {
@@ -170,6 +175,8 @@ public class ADMSController : Controller
                 gecikTolerans    = TimeSpan.FromMinutes(5);
                 standartCixis    = new TimeSpan(17, 45, 0);
                 tezCixmaTolerans = TimeSpan.FromMinutes(15);
+                naharBaslama     = new TimeSpan(13, 0, 0);
+                naharMuddet      = 45;
             }
 
             // Bu gün üçün təsdiqlənmiş İcazə varmı?
@@ -342,7 +349,37 @@ public class ADMSController : Controller
                             bool ferdiCixisIcazesi = !icazeCixisi && await _db.Set<ErkenCixisIcaze>()
                                 .AnyAsync(x => !x.Silinib && x.IsciId == isciId && x.Tarix.Date == tarix);
 
-                            if (!icazeCixisi && !ferdiCixisIcazesi)
+                            // Əlil işçi qısaldılmış Cümə (TAM 5 günlük həftə) net ≥4 saat işləyibsə —
+                            // erkən çıxış bildirişi GÖNDƏRİLMƏSİN (davamiyyət səhifələri ilə eyni qayda).
+                            bool elilCumeBagisla = false;
+                            try
+                            {
+                                bool isElil = await _db.Set<IsciGuzest>().AsNoTracking()
+                                    .AnyAsync(ig => !ig.Silinib && ig.IsciId == isciId &&
+                                                    ig.Guzest.Ad.Contains("Əlil") &&
+                                                    ig.BaslamaTarixi.Date <= tarix &&
+                                                    (ig.BitmeTarixi == null || ig.BitmeTarixi.Value.Date >= tarix));
+                                if (isElil && movcud.GirisVaxti.HasValue)
+                                {
+                                    var bayramBas = tarix.AddDays(-7);
+                                    var bayramTarixler = await _db.Set<BayramGunu>().AsNoTracking()
+                                        .Where(b => !b.Silinib && b.Tip == GunTipi.Bayram &&
+                                                    b.Tarix.Date >= bayramBas && b.Tarix.Date <= tarix)
+                                        .Select(b => b.Tarix).ToListAsync();
+                                    var bayramSet = new HashSet<DateTime>(bayramTarixler.Select(d => d.Date));
+                                    if (EmekRejimiHelper.ElilQisaldilmisGun(tarix.Date, bayramSet))
+                                    {
+                                        var naharBitis = naharBaslama.Add(TimeSpan.FromMinutes(naharMuddet));
+                                        int netDeq = (int)(vaxt - movcud.GirisVaxti.Value).TotalMinutes;
+                                        if (vaxt.TimeOfDay > naharBitis && movcud.GirisVaxti.Value.TimeOfDay < naharBaslama)
+                                            netDeq -= naharMuddet;
+                                        elilCumeBagisla = netDeq >= 240;
+                                    }
+                                }
+                            }
+                            catch { elilCumeBagisla = false; /* təhlükəsiz: şübhədə bildiriş GÖNDƏRİLİR */ }
+
+                            if (!icazeCixisi && !ferdiCixisIcazesi && !elilCumeBagisla)
                             {
                                 var qalan = (int)(tezCixmaHeddi - vaxt.TimeOfDay).TotalMinutes;
                                 var heddStr = $"{(int)tezCixmaHeddi.TotalHours:D2}:{tezCixmaHeddi.Minutes:D2}";
