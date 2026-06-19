@@ -85,6 +85,7 @@
             <table class="ms-table" id="msTable">
                 <thead>
                     <tr>
+                        <th class="ms-col-ish">İş</th>
                         <th class="ms-primary">Region</th>
                         <th class="ms-primary ms-col-ad">Borclu</th>
                         <th>Növ / Zamin</th>
@@ -103,7 +104,6 @@
                         <th class="ms-primary">Son əməliyyat</th>
                         <th class="ms-primary">Status</th>
                         <th class="ms-primary">Son fəaliyyət</th>
-                        <th class="ms-col-ish">İş</th>
                     </tr>
                 </thead>
 
@@ -119,6 +119,29 @@
                                data-status="@x.Status"
                                data-ish="@(x.IsAcilib ? "1" : "0")">
                             <tr class="ms-borclu">
+                                <td class="ms-col-ish">
+                                    @{ var zJson = System.Text.Json.JsonSerializer.Serialize(x.Zaminler); }
+                                    @if (x.IsAcilib && x.MehkemeIsiId.HasValue)
+                                    {
+                                        <form asp-action="AcVeBax" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@x.MehkemeIsiId" />
+                                            <input type="hidden" name="zaminler" value="@zJson" />
+                                            <button type="submit" class="ms-btn-xs ms-btn-xs--open"><i class="bi bi-eye"></i> Aç</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="IsAch" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="acar.KreditHesabi" value="@x.KreditHesabi" />
+                                            <input type="hidden" name="acar.Ks" value="@x.Ks" />
+                                            <input type="hidden" name="acar.BorcluAd" value="@x.BorcluAd" />
+                                            <input type="hidden" name="zaminler" value="@zJson" />
+                                            <button type="submit" class="ms-btn-xs ms-btn-isac"><i class="bi bi-plus-lg"></i> İş aç</button>
+                                        </form>
+                                    }
+                                </td>
                                 <td class="ms-accent">@Txt(x.Region)</td>
                                 <td class="ms-col-ad">
                                     <div class="ms-bname">@Txt(x.BorcluAd)</div>
@@ -179,29 +202,6 @@
                                     else
                                     {
                                         <span class="ms-muted">—</span>
-                                    }
-                                </td>
-                                <td class="ms-col-ish">
-                                    @{ var zJson = System.Text.Json.JsonSerializer.Serialize(x.Zaminler); }
-                                    @if (x.IsAcilib && x.MehkemeIsiId.HasValue)
-                                    {
-                                        <form asp-action="AcVeBax" method="post">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@x.MehkemeIsiId" />
-                                            <input type="hidden" name="zaminler" value="@zJson" />
-                                            <button type="submit" class="ms-btn-xs ms-btn-xs--open"><i class="bi bi-eye"></i> Aç</button>
-                                        </form>
-                                    }
-                                    else
-                                    {
-                                        <form asp-action="IsAch" method="post">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="acar.KreditHesabi" value="@x.KreditHesabi" />
-                                            <input type="hidden" name="acar.Ks" value="@x.Ks" />
-                                            <input type="hidden" name="acar.BorcluAd" value="@x.BorcluAd" />
-                                            <input type="hidden" name="zaminler" value="@zJson" />
-                                            <button type="submit" class="ms-btn-xs ms-btn-isac"><i class="bi bi-plus-lg"></i> İş aç</button>
-                                        </form>
                                     }
                                 </td>
                             </tr>

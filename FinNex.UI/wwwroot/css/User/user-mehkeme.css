@@ -241,8 +241,8 @@
 .ms-btn-xs--open { background: #eef2ff; border-color: #c7d2fe; color: #4338ca; }
 .ms-btn-isac { background: #e0e7ff; border-color: #a5b4fc; color: #3730a3; font-weight: 800; }
 .ms-btn-isac:hover { background: #c7d2fe; }
-/* "İş" sütunu sağda sabit — üfüqi scroll-da həmişə görünsün */
-.ms-col-ish { position: sticky; right: 0; min-width: 110px; background: #fff; border-left: 1px solid #e5e7eb; box-shadow: -6px 0 8px -6px rgba(15,23,42,.15); }
+/* "İş" sütunu solda sabit — cədvəlin əvvəlinə yapışıq, həmişə görünür */
+.ms-col-ish { position: sticky; left: 0; min-width: 110px; background: #fff; border-right: 1px solid #e5e7eb; box-shadow: 6px 0 8px -6px rgba(15,23,42,.15); }
 .ms-borclu td.ms-col-ish { z-index: 2; }
 .ms-table thead th.ms-col-ish { z-index: 4; background: #eef2f6; }
 
