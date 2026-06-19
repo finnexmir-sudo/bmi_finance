@@ -147,18 +147,23 @@ namespace FinNex.Application.Services.HR
                     bool isIsGunu     = isGunuTarihleri.Contains(gun.Date);
                     bool isWorkingDay = (!isWeekend || isIsGunu) && !isBayram;
 
-                    // Məzuniyyət iş günü olub-olmadığından asılı olmayaraq M kimi qeyd edilir
                     bool hasMez = mezuniyyetler.Any(m => m.IsciId == isci.Id &&
                         gun.Date >= m.BaslamaTarixi.Date && gun.Date <= m.BitmeTarixi.Date);
 
                     string kod;
-                    if (hasMez)
+                    if (isBayram)
+                    {
+                        // Bayram (qeyri-iş) günü məzuniyyətdən ÜSTÜNDÜR — bayram günü məzuniyyət
+                        // sayılmır: "B" yazılır və Məz. sayğacına daxil edilmir.
+                        kod = "B";
+                    }
+                    else if (hasMez)
                     {
                         kod = "M"; mezGun++;
                     }
                     else if (!isWorkingDay)
                     {
-                        kod = isBayram ? "B" : "İ";
+                        kod = "İ"; // bayram artıq yuxarıda yoxlanıldı — burada yalnız həftə sonu (İstirahət)
                     }
                     else
                     {
