@@ -198,7 +198,7 @@
                                 <span class="dt-tl-date">@m.Tarix.ToString("dd.MM.yyyy")</span>
                                 @if (!string.IsNullOrWhiteSpace(m.SenedYolu))
                                 {
-                                    <a href="/dms/@m.SenedYolu" target="_blank" class="dt-tl-doc"><i class="bi bi-paperclip"></i> Sənəd</a>
+                                    <a href="/dms/@m.SenedYolu" target="@(FaylBaxilabilir(m.SenedYolu) ? "_blank" : null)" download="@(FaylBaxilabilir(m.SenedYolu) ? null : "")" class="dt-tl-doc"><i class="bi bi-paperclip"></i> Sənəd</a>
                                 }
                                 <form asp-action="MerheleSil" method="post" class="dt-tl-del"
                                       onsubmit="return confirm('Bu mərhələ silinsin?');">
@@ -420,7 +420,7 @@
                     {
                         <span class="dt-doc-date">@s.Tarix.Value.ToString("dd.MM.yyyy")</span>
                     }
-                    <a href="/dms/@s.FaylYolu" target="_blank" class="mi-btn mi-btn--ghost mi-btn--sm"><i class="bi bi-download"></i> Aç</a>
+                    <a href="/dms/@s.FaylYolu" target="@(FaylBaxilabilir(s.FaylYolu) ? "_blank" : null)" download="@(FaylBaxilabilir(s.FaylYolu) ? null : "")" class="mi-btn mi-btn--ghost mi-btn--sm"><i class="bi bi-box-arrow-up-right"></i> Aç</a>
                     <form asp-action="SenedSil" method="post" onsubmit="return confirm('Bu sənəd silinsin?');" style="display:inline;margin-left:4px">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="senedId" value="@s.Id" />
@@ -438,7 +438,7 @@
                     <span class="mi-badge @MerheleBadgeClass(m.MerheleTipi)">@MerheleTipiAd(m.MerheleTipi)</span>
                     <span class="dt-doc-name dt-doc-name--muted">Mərhələ faylı</span>
                     <span class="dt-doc-date">@m.Tarix.ToString("dd.MM.yyyy")</span>
-                    <a href="/dms/@m.SenedYolu" target="_blank" class="mi-btn mi-btn--ghost mi-btn--sm"><i class="bi bi-download"></i> Aç</a>
+                    <a href="/dms/@m.SenedYolu" target="@(FaylBaxilabilir(m.SenedYolu) ? "_blank" : null)" download="@(FaylBaxilabilir(m.SenedYolu) ? null : "")" class="mi-btn mi-btn--ghost mi-btn--sm"><i class="bi bi-box-arrow-up-right"></i> Aç</a>
                 </div>
             }
 
@@ -541,6 +541,13 @@
     string D(DateTime? d) => d.HasValue ? d.Value.ToString("dd.MM.yyyy") : "—";
     string M(decimal? v) => v.HasValue ? v.Value.ToString("N2") + " ₼" : "—";
     string V(string? s) => string.IsNullOrWhiteSpace(s) ? "—" : s;
+
+    // Brauzerdə baxıla bilən faylmı (PDF/şəkil) — yoxsa birbaşa yüklənsin (docx, xlsx…)
+    bool FaylBaxilabilir(string? yol)
+    {
+        var ext = System.IO.Path.GetExtension(yol ?? "").ToLowerInvariant();
+        return ext is ".pdf" or ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp";
+    }
     string Dg(string? s) => string.IsNullOrWhiteSpace(s) ? "" : s.Split(' ')[0];
 
     string StatusOracleCls(string? s)
