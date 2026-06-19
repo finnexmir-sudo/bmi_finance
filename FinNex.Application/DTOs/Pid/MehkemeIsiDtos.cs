@@ -48,6 +48,7 @@ public class MehkemeIsiDetailDto
     public string?   Qerardad         { get; set; }   // məhkəmə qətnaməsi (mətn, əl ilə — yalnız Detal)
     public decimal?  FaizBorcu        { get; set; }   // faiz_meblegi + vk_faiz_meblegi (Oracle canlı)
     public string?   TeminatMetn      { get; set; }   // girovun_novu (Oracle canlı) — Təminat
+    public string?   StatusMetn       { get; set; }   // item_01 (Oracle canlı) — Status
     public bool      MaliyyeCanli     { get; set; }   // maliyyə Oracle canlısındandırmı (yoxsa əl ilə/snapshot)
     public DateTime YaradilmaTarixi { get; set; }
     public IList<MehkemeMerheleDto> Merheleler { get; set; } = new List<MehkemeMerheleDto>();

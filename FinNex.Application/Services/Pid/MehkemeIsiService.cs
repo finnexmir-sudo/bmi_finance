@@ -165,6 +165,11 @@ public class MehkemeIsiService : IMehkemeIsiService
         // Təminat = girovun növü (Oracle: girovun_novu)
         if (!string.IsNullOrWhiteSpace(row.GirovunNovu)) dto.TeminatMetn = row.GirovunNovu;
 
+        // Status = Oracle item_01 (canlı); Doğum tarixi = Oracle dogum_tarixi
+        if (!string.IsNullOrWhiteSpace(row.Status)) dto.StatusMetn = row.Status;
+        var dgt = ParseTarix(row.DogumTarixi);
+        if (dgt.HasValue) dto.DogumTarixi = dgt;
+
         // Son ödəniş tarixi = son əməliyyat tarixi (Oracle "dd.MM.yyyy")
         var t = ParseTarix(row.SonEmeliyyatTarixi);
         if (t.HasValue) dto.SonOdenisTarixi = t;
@@ -366,12 +371,9 @@ public class MehkemeIsiService : IMehkemeIsiService
         var entity = await _uow.Repository<MehkemeIsi>().IdIleGetirAsync(id);
         if (entity == null || entity.Silinib) return false;
 
-        entity.Status            = dto.Status;
         entity.BaslamaTarixi     = dto.BaslamaTarixi;
         entity.Qeyd              = string.IsNullOrWhiteSpace(dto.Qeyd) ? null : dto.Qeyd.Trim();
         entity.Qerardad          = string.IsNullOrWhiteSpace(dto.Qerardad) ? null : dto.Qerardad.Trim();
-        entity.KreditHesabi      = dto.KreditHesabi;
-        entity.Subkod            = dto.Subkod;
         entity.Qeydiyyati        = dto.Qeydiyyati;
         entity.EmekHaqqiMelumati = dto.EmekHaqqiMelumati;
         entity.DypSorguTarixi    = dto.DypSorguTarixi;
@@ -380,7 +382,6 @@ public class MehkemeIsiService : IMehkemeIsiService
         entity.Stop              = dto.Stop;
         entity.IcraMemuru        = dto.IcraMemuru;
         entity.IcraSonIsler      = dto.IcraSonIsler;
-        entity.DogumTarixi       = dto.DogumTarixi;
         entity.Zamin             = dto.Zamin;
         entity.QetnameTarixi     = dto.QetnameTarixi;
         entity.IsYeri            = dto.IsYeri;
