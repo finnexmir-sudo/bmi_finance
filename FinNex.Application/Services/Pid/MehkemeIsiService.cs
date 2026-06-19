@@ -383,6 +383,9 @@ public class MehkemeIsiService : IMehkemeIsiService
         var entity = await _uow.Repository<MehkemeIsi>().IdIleGetirAsync(id);
         if (entity == null || entity.Silinib) return false;
 
+        // ── Məhkəmə mərhələsi (əl ilə izləmə — Oracle deyil) ──
+        entity.Nov               = dto.Nov;      // İpoteka/İstehlak/Kart/Digər
+        entity.Status            = dto.Status;   // iş axını: Hazırlanır→Məhkəmədə→İcra→Tamamlandı→Bağlandı
         entity.BaslamaTarixi     = dto.BaslamaTarixi;
         entity.Qeyd              = string.IsNullOrWhiteSpace(dto.Qeyd) ? null : dto.Qeyd.Trim();
         entity.Qerardad          = string.IsNullOrWhiteSpace(dto.Qerardad) ? null : dto.Qerardad.Trim();
