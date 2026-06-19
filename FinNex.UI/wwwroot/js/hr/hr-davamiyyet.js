@@ -581,7 +581,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     records = records.filter(function (r) { return clientFilterStatuses.indexOf(r.status) >= 0; });
                 }
                 if (filterTezCixan) {
-                    records = records.filter(function (r) { return r.cixisQirmizi === true; });
+                    // HR GetByTarix per-record "tezCixan" qaytarır (cixisQirmizi yalnız Rəhbər-dədir).
+                    // Sayğac da stats.tezCixan-dır → eyni sahə ilə süzək ki, sayğac=siyahı olsun.
+                    records = records.filter(function (r) { return r.tezCixan === true; });
                 }
                 if (filterCixisYox) {
                     records = records.filter(function (r) {
