@@ -146,6 +146,13 @@ public class MehkemeIsiService : IMehkemeIsiService
         // Qalan borc = tam qalıq (əsas + faiz + cərimə) = 1-ci səhifədəki "Tam Qalıq"
         dto.QalanBorc = row.TamQaliq;
 
+        // Faiz borcu = hesablanmış faiz + vaxtı keçmiş faiz/cərimə
+        if (row.FaizMeblegi.HasValue || row.VkFaizMeblegi.HasValue)
+            dto.FaizBorcu = (row.FaizMeblegi ?? 0m) + (row.VkFaizMeblegi ?? 0m);
+
+        // Təminat = girovun növü (Oracle: girovun_novu)
+        if (!string.IsNullOrWhiteSpace(row.GirovunNovu)) dto.TeminatMetn = row.GirovunNovu;
+
         // Son ödəniş tarixi = son əməliyyat tarixi (Oracle "dd.MM.yyyy")
         var t = ParseTarix(row.SonEmeliyyatTarixi);
         if (t.HasValue) dto.SonOdenisTarixi = t;

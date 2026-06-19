@@ -38,7 +38,7 @@
                 {
                     <span class="dt-chip"><b>Hesab:</b> @Model.KreditHesabi@(string.IsNullOrWhiteSpace(Model.Subkod) ? "" : " / " + Model.Subkod)</span>
                 }
-                <span class="dt-chip"><b>Təminat:</b> @novText</span>
+                <span class="dt-chip"><b>Təminat:</b> @(string.IsNullOrWhiteSpace(Model.TeminatMetn) ? novText : Model.TeminatMetn)</span>
                 @if (Model.DogumTarixi.HasValue)
                 {
                     <span class="dt-chip"><b>Doğum:</b> @D(Model.DogumTarixi)</span>
@@ -68,13 +68,17 @@
 
         <!-- Maliyyə -->
         <div class="dt-stats">
+            <div class="dt-stat dt-stat--danger">
+                <div class="dt-stat-lbl">Tam borc</div>
+                <div class="dt-stat-val">@M(Model.QalanBorc)</div>
+            </div>
             <div class="dt-stat">
                 <div class="dt-stat-lbl">Əsas borc</div>
                 <div class="dt-stat-val">@M(Model.EsasBorc)</div>
             </div>
-            <div class="dt-stat dt-stat--danger">
-                <div class="dt-stat-lbl">Qalan borc</div>
-                <div class="dt-stat-val">@M(Model.QalanBorc)</div>
+            <div class="dt-stat">
+                <div class="dt-stat-lbl">Faiz borcu</div>
+                <div class="dt-stat-val">@M(Model.FaizBorcu)</div>
             </div>
             <div class="dt-stat">
                 <div class="dt-stat-lbl">Məhkəmə xərci</div>
