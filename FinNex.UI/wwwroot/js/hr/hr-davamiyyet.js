@@ -662,9 +662,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
-            // ÇIXIŞ qırmızı — server tərəfdən (cixisQirmizi): erkən çıxıb + örtük
-            // (İş Bitdi / icazə / ezamiyyət / fərdi icazə) yoxdursa. Köhnə "tezCixan" deyil.
-            var cixisClass = (r.cixisVaxti && r.cixisQirmizi) ? 'hrd-time hrd-time--early' : 'hrd-time';
+            // ÇIXIŞ qırmızı — server tərəfdən r.tezCixan: erkən çıxıb + örtük yoxdur
+            // (İş Bitdi / icazə / ezamiyyət / fərdi icazə / elil hamısı tezCixan-ın içindədir).
+            var cixisClass = (r.cixisVaxti && r.tezCixan) ? 'hrd-time hrd-time--early' : 'hrd-time';
 
             var duration = '<span class="hrd-nodata">---</span>';
             if (r.girisVaxti && r.cixisVaxti) {
@@ -673,9 +673,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     : Math.floor((new Date(r.cixisVaxti) - new Date(r.girisVaxti)) / 60000);
                 var h = Math.floor(totalMin / 60);
                 var m = totalMin % 60;
-                // Qırmızı server tərəfdən hesablanır — yalnız uyğunsuzluqda (İş Bitdi /
-                // icazə / ezamiyyət / fərdi icazə örtmürsə). Köhnə "h < 8" deyil.
-                var durCls = r.isSaatiQirmizi ? 'hrd-dur hrd-dur--short' : 'hrd-dur hrd-dur--ok';
+                // İŞ SAATI qırmızı: erkən çıxıb (tezCixan) VƏ net işləmə normadan (8 saat = 480 dəq) azdırsa.
+                var isSaatiQirmizi = r.tezCixan && r.islemeSaatiDeq != null && r.islemeSaatiDeq < 480;
+                var durCls = isSaatiQirmizi ? 'hrd-dur hrd-dur--short' : 'hrd-dur hrd-dur--ok';
                 var naharTip = r.naharCixildi ? ' <span style="font-size:10px;color:#94a3b8;margin-left:3px;" title="Nahar çıxılıb"><i class="bi bi-cup-hot"></i></span>' : '';
                 duration = '<span class="' + durCls + '">' + h + ' s ' + m + ' d</span>' + naharTip;
             }
