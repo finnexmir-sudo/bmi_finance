@@ -52,6 +52,7 @@ public class MehkemeIsiService : IMehkemeIsiService
             QetnameTarixi     = x.QetnameTarixi,
             Hakim             = x.Merheleler.Where(m => !m.Silinib && !string.IsNullOrWhiteSpace(m.Hakim))
                                             .OrderByDescending(m => m.Tarix).Select(m => m.Hakim).FirstOrDefault(),
+            Teminat           = x.KreditNovuMetn,
             MerheleCount      = x.Merheleler.Count(m => !m.Silinib),
             YaradilmaTarixi   = x.YaradilmaTarixi
         }).ToList();
@@ -407,6 +408,74 @@ public class MehkemeIsiService : IMehkemeIsiService
         await _uow.Repository<MehkemeIsi>().YenileAsync(entity);
         await _uow.YaddaSaxlaAsync();
         return true;
+    }
+
+    // ── Excel "Məhkəmə" sheet → MehkemeIsi (arxiv idxalı) ──────────────────
+    // Təkrar idxalı atlayır (ad + məhkəməyə verilmə tarixi açarı ilə).
+    // İclas tarixləri "Məhkəmə iclası" mərhələsi kimi yazılır. Oracle yazılmır.
+    public async Task<(int isSayi, int merheleSayi)> ExcelImportAsync(IList<MehkemeCedvelImportDto> rows, int isciId)
+    {
+        if (rows == null || rows.Count == 0) return (0, 0);
+
+        var movcud = await _uow.Repository<MehkemeIsi>().Query().AsNoTracking()
+            .Where(x => !x.Silinib)
+            .Select(x => new { x.BorcluAd, x.MehkemeyeVerilmeTarixi })
+            .ToListAsync();
+        var acarlar = new HashSet<string>(movcud.Select(m =>
+            (m.BorcluAd ?? "").Trim().ToLowerInvariant() + "|" +
+            (m.MehkemeyeVerilmeTarixi?.ToString("yyyy-MM-dd") ?? "")));
+
+        int isSayi = 0, merheleSayi = 0;
+        var repo = _uow.Repository<MehkemeIsi>();
+
+        foreach (var r in rows)
+        {
+            var ad = (r.BorcluAd ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(ad)) continue;
+
+            var acar = ad.ToLowerInvariant() + "|" + (r.MehkemeyeVerilmeTarixi?.ToString("yyyy-MM-dd") ?? "");
+            if (!acarlar.Add(acar)) continue;   // artıq var (və ya bu idxalda təkrar) — atla
+
+            var isNo = string.IsNullOrWhiteSpace(r.MehkemeIsNomresi) ? null : r.MehkemeIsNomresi.Trim();
+            // QeydiyyatNomresi NVARCHAR(20) NOT NULL — qısa marker saxla (truncate riski yox);
+            // tam iş № onsuz da MehkemeSenedi-də qalır (nvarchar max).
+            var qeydNo = (isNo != null && isNo.Length <= 20) ? isNo
+                       : (r.Sira.HasValue ? $"ARX-{r.Sira}" : "ARX");
+            var entity = new MehkemeIsi
+            {
+                QeydiyyatNomresi       = qeydNo,
+                BorcluAd               = ad,
+                Sira                   = r.Sira,
+                KreditNovuMetn         = string.IsNullOrWhiteSpace(r.GirovunNovu) ? null : r.GirovunNovu.Trim(),
+                MehkemeSenedi          = isNo,
+                BaslamaTarixi          = r.MehkemeyeVerilmeTarixi,
+                MehkemeyeVerilmeTarixi = r.MehkemeyeVerilmeTarixi,
+                Status                 = MehkemeIsiStatus.Mehkemede,   // Excel arxivi → məhkəmə mərhələsində
+                Nov                    = MehkemeIsiNov.Diger,
+                YaradanIcraciId        = isciId,
+                YaradilmaTarixi        = DateTime.Now
+            };
+
+            foreach (var ic in r.Iclaslar)
+            {
+                if (ic.Tarix == null && string.IsNullOrWhiteSpace(ic.Saat)) continue;
+                entity.Merheleler.Add(new MehkemeMerhelesi
+                {
+                    MerheleTipi     = MerheleTipi.MehkemeIclasi,
+                    Tarix           = ic.Tarix ?? r.MehkemeyeVerilmeTarixi ?? DateTime.Today,
+                    Qeyd            = string.IsNullOrWhiteSpace(ic.Saat) ? null : "Saat: " + ic.Saat.Trim(),
+                    YaradanIcraciId = isciId,
+                    YaradilmaTarixi = DateTime.Now
+                });
+                merheleSayi++;
+            }
+
+            await repo.YaratAsync(entity);
+            isSayi++;
+        }
+
+        if (isSayi > 0) await _uow.YaddaSaxlaAsync();
+        return (isSayi, merheleSayi);
     }
 
     public async Task<bool> SilAsync(int id, int silenIsciId)

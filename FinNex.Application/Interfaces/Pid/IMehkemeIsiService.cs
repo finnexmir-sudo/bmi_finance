@@ -41,4 +41,7 @@ public interface IMehkemeIsiService
 
     // İş aç: kompozit açarla izləmə qeydi yaradır (varsa mövcudu qaytarır)
     Task<MehkemeIsi> IsAchAsync(MehkemeKreditAcarDto acar, int isciId);
+
+    // Excel "Məhkəmə" sheet → MehkemeIsi (arxiv idxalı; təkrarları atlayır)
+    Task<(int isSayi, int merheleSayi)> ExcelImportAsync(IList<MehkemeCedvelImportDto> rows, int isciId);
 }

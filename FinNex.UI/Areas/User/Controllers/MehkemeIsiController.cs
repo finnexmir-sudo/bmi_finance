@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using NPOI.SS.UserModel;
+using System.Globalization;
 
 namespace FinNex.UI.Areas.User.Controllers;
 
@@ -47,6 +49,131 @@ public class MehkemeIsiController : Controller
     {
         var model = await _service.HamisiniGetirAsync();
         return View(model);
+    }
+
+    // ── Excel "Məhkəmə" sheet → MehkemeIsi arxivi ──────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequestSizeLimit(20_000_000)]
+    public async Task<IActionResult> Import(IFormFile? fayl)
+    {
+        if (fayl == null || fayl.Length == 0)
+        {
+            TempData["Error"] = "Fayl seçilməyib.";
+            return RedirectToAction(nameof(Isler));
+        }
+
+        List<MehkemeCedvelImportDto> isler;
+        try
+        {
+            using var stream = fayl.OpenReadStream();
+            var ext = System.IO.Path.GetExtension(fayl.FileName).ToLowerInvariant();
+            IWorkbook wb = ext == ".xlsx"
+                ? new NPOI.XSSF.UserModel.XSSFWorkbook(stream)
+                : new NPOI.HSSF.UserModel.HSSFWorkbook(stream);
+            var sheet = SheetTap(wb, "Məhkəmə") ?? SheetTap(wb, "hk") ?? wb.GetSheetAt(0);
+
+            // Sütun xəritəsi: 1=Sıra, 2=Ad, 6=Girovun növü, 7=Verilmə tarixi,
+            //                 8=İş №/hakim, 9-dan (tarix,saat) cütləri → iclaslar
+            isler = new List<MehkemeCedvelImportDto>();
+            for (int r = 3; r <= sheet.LastRowNum; r++)
+            {
+                var row = sheet.GetRow(r);
+                if (row == null) continue;
+
+                var ad = Metn(row, 2);
+                if (string.IsNullOrWhiteSpace(ad)) continue;
+
+                var d = new MehkemeCedvelImportDto
+                {
+                    Sira = (int?)Reqem(row, 1),
+                    BorcluAd = ad.Trim(),
+                    GirovunNovu = Metn(row, 6),
+                    MehkemeyeVerilmeTarixi = Tarix(row, 7),
+                    MehkemeIsNomresi = Metn(row, 8)
+                };
+                for (int c = 9; c <= 40; c += 2)
+                {
+                    var t = Tarix(row, c);
+                    var saat = Metn(row, c + 1);
+                    if (t == null && string.IsNullOrWhiteSpace(saat)) continue;
+                    d.Iclaslar.Add(new MehkemeCedvelIclasImportDto { Tarix = t, Saat = saat });
+                }
+                isler.Add(d);
+            }
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = "İmport xətası: " + ex.Message;
+            return RedirectToAction(nameof(Isler));
+        }
+
+        var isciId = await CurrentIsciIdAsync() ?? 0;
+        var (isS, merheleS) = await _service.ExcelImportAsync(isler, isciId);
+        TempData[isS > 0 ? "Success" : "Error"] = isS > 0
+            ? $"İmport: {isS} yeni iş, {merheleS} iclas əlavə olundu."
+            : "Yeni iş tapılmadı — bütün sətirlər artıq mövcuddur.";
+        return RedirectToAction(nameof(Isler));
+    }
+
+    // ── NPOI xana köməkçiləri (Excel "Məhkəmə" sheet) ──────
+    private static ISheet? SheetTap(IWorkbook wb, string contains)
+    {
+        for (int i = 0; i < wb.NumberOfSheets; i++)
+            if (wb.GetSheetName(i).Contains(contains, StringComparison.OrdinalIgnoreCase))
+                return wb.GetSheetAt(i);
+        return null;
+    }
+
+    private static string? Metn(IRow row, int c)
+    {
+        var cell = row.GetCell(c);
+        if (cell == null) return null;
+        return cell.CellType switch
+        {
+            CellType.String  => string.IsNullOrWhiteSpace(cell.StringCellValue) ? null : cell.StringCellValue.Trim(),
+            CellType.Numeric => cell.NumericCellValue.ToString(CultureInfo.InvariantCulture),
+            CellType.Boolean => cell.BooleanCellValue ? "1" : "0",
+            CellType.Formula => SafeFormula(cell),
+            _ => null
+        };
+    }
+
+    private static string? SafeFormula(ICell cell)
+    {
+        try { return cell.StringCellValue?.Trim(); }
+        catch { try { return cell.NumericCellValue.ToString(CultureInfo.InvariantCulture); } catch { return null; } }
+    }
+
+    private static double? Reqem(IRow row, int c)
+    {
+        var cell = row.GetCell(c);
+        if (cell == null) return null;
+        if (cell.CellType == CellType.Numeric) return cell.NumericCellValue;
+        if (cell.CellType == CellType.String && double.TryParse(cell.StringCellValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var d)) return d;
+        return null;
+    }
+
+    private static readonly string[] _tarixFormatlar = { "dd.MM.yyyy", "d.M.yyyy", "dd.MM.yy", "d.M.yy", "dd/MM/yyyy" };
+
+    private static DateTime? Tarix(IRow row, int c)
+    {
+        var cell = row.GetCell(c);
+        if (cell == null) return null;
+        try
+        {
+            if (cell.CellType == CellType.Numeric && DateUtil.IsCellDateFormatted(cell))
+                return cell.DateCellValue;
+        }
+        catch { /* tarix deyil */ }
+
+        var s = Metn(row, c);
+        if (string.IsNullOrWhiteSpace(s)) return null;
+        if (DateTime.TryParseExact(s, _tarixFormatlar, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
+            return dt;
+        if (DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt2))
+            return dt2;
+        return null;
     }
 
     // ── Qərardad yaz (inline, AJAX — qeyd yoxdursa yaradır) ─

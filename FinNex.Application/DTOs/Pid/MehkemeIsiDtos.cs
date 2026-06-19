@@ -14,6 +14,7 @@ public class MehkemeIsiListDto
     public DateTime? BaslamaTarixi { get; set; }
     public DateTime? QetnameTarixi { get; set; }
     public string? Hakim           { get; set; }
+    public string? Teminat         { get; set; }   // girovun növü (Excel "Girovun növü" / KreditNovuMetn)
     public int MerheleCount        { get; set; }
     public DateTime YaradilmaTarixi { get; set; }
 }

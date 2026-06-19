@@ -51,8 +51,14 @@
             <h2 class="mi-title">Məhkəmə İşləri</h2>
             <p class="mi-sub">İzlənən bütün məhkəmə işlərinin icmal siyahısı</p>
         </div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <a asp-action="Index" class="mi-btn mi-btn--ghost"><i class="bi bi-people"></i> Aktiv Müştərilər</a>
+            <form asp-action="Import" method="post" enctype="multipart/form-data" class="mx-import" title="Köhnə Excel arxivini import et (təkrarlar atlanır)">
+                @Html.AntiForgeryToken()
+                <i class="bi bi-file-earmark-excel" style="color:#15803d"></i>
+                <input type="file" name="fayl" accept=".xls,.xlsx" required class="mx-file" />
+                <button type="submit" class="mi-btn mi-btn--ghost mi-btn--sm"><i class="bi bi-upload"></i> Excel import</button>
+            </form>
             <a asp-action="Yarat" class="mi-btn mi-btn--primary"><i class="bi bi-plus-circle"></i> Yeni iş</a>
         </div>
     </div>
@@ -86,6 +92,7 @@
                         <th>Müştəri</th>
                         <th>Qeydiyyat №</th>
                         <th>Növ</th>
+                        <th>Təminat</th>
                         <th>Status</th>
                         <th style="text-align:right">Əsas borc</th>
                         <th style="text-align:right">Məhkəmə xərci</th>
@@ -113,6 +120,7 @@
                                 </td>
                                 <td><span class="mi-nomre">@Txt(x.QeydiyyatNomresi)</span></td>
                                 <td><span class="mi-badge @NovClass(x.Nov)">@NovAd(x.Nov)</span></td>
+                                <td>@Txt(x.Teminat)</td>
                                 <td><span class="mi-badge @StatusClass(x.Status)">@StatusAd(x.Status)</span></td>
                                 <td style="text-align:right">@M(x.EsasBorc)</td>
                                 <td style="text-align:right">@M(x.MehkemeXerci)</td>
@@ -126,7 +134,7 @@
                     else
                     {
                         <tr>
-                            <td colspan="11">
+                            <td colspan="12">
                                 <div class="mi-empty">
                                     <i class="bi bi-folder2-open"></i>
                                     <div>Hələ heç bir məhkəmə işi izlənmir.</div>
@@ -151,6 +159,8 @@
         .mx-name { font-weight: 700; color: #0f172a; text-decoration: none; }
         .mx-name:hover { color: var(--fn-primary,#6366f1); text-decoration: underline; }
         #mxTable tbody tr.mx-row:hover { background: #f1f5ff; }
+        .mx-import { display: flex; gap: 8px; align-items: center; background: #f5f7ff; border: 1.5px dashed #c7d2fe; border-radius: 10px; padding: 5px 10px; }
+        .mx-file { font-size: 12px; max-width: 190px; }
     </style>
 }
 
