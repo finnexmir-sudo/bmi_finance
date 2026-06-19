@@ -79,6 +79,7 @@ public class MehkemeIsiService : IMehkemeIsiService
             Status            = x.Status,
             BaslamaTarixi     = x.BaslamaTarixi,
             Qeyd              = x.Qeyd,
+            Qerardad          = x.Qerardad,
             KreditHesabi      = x.KreditHesabi,
             Subkod            = x.Subkod,
             QalanBorc         = x.QalanBorc,
@@ -355,14 +356,12 @@ public class MehkemeIsiService : IMehkemeIsiService
         if (entity == null || entity.Silinib) return false;
 
         entity.MehkemeXerci      = dto.MehkemeXerci;
-        entity.Nov               = dto.Nov;
         entity.Status            = dto.Status;
         entity.BaslamaTarixi     = dto.BaslamaTarixi;
         entity.Qeyd              = string.IsNullOrWhiteSpace(dto.Qeyd) ? null : dto.Qeyd.Trim();
+        entity.Qerardad          = string.IsNullOrWhiteSpace(dto.Qerardad) ? null : dto.Qerardad.Trim();
         entity.KreditHesabi      = dto.KreditHesabi;
         entity.Subkod            = dto.Subkod;
-        entity.QalanBorc         = dto.QalanBorc;
-        entity.SonOdenisTarixi   = dto.SonOdenisTarixi;
         entity.Qeydiyyati        = dto.Qeydiyyati;
         entity.EmekHaqqiMelumati = dto.EmekHaqqiMelumati;
         entity.DypSorguTarixi    = dto.DypSorguTarixi;

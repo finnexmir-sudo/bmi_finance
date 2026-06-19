@@ -45,6 +45,7 @@ public class MehkemeIsiDetailDto
     public DateTime? QetnameTarixi    { get; set; }
     public string?   IsYeri           { get; set; }
     public string?   IcraQeyd         { get; set; }
+    public string?   Qerardad         { get; set; }   // məhkəmə qətnaməsi (mətn, əl ilə — yalnız Detal)
     public decimal?  FaizBorcu        { get; set; }   // faiz_meblegi + vk_faiz_meblegi (Oracle canlı)
     public string?   TeminatMetn      { get; set; }   // girovun_novu (Oracle canlı) — Təminat
     public bool      MaliyyeCanli     { get; set; }   // maliyyə Oracle canlısındandırmı (yoxsa əl ilə/snapshot)
@@ -78,6 +79,7 @@ public class MehkemeIsiCreateDto
 
 public class MehkemeIsiUpdateDto
 {
+    public string? Qerardad        { get; set; }   // məhkəmə qətnaməsi (mətn)
     public decimal? MehkemeXerci   { get; set; }
     public MehkemeIsiNov Nov       { get; set; }
     public MehkemeIsiStatus Status { get; set; }

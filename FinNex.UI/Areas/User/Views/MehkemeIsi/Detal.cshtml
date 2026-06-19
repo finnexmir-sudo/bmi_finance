@@ -380,14 +380,9 @@
         <form id="editForm">
             @Html.AntiForgeryToken()
             <div class="mi-form-grid">
-                <div class="mi-form-group">
-                    <label class="mi-lbl">Növ</label>
-                    <select asp-for="Nov" class="mi-select">
-                        <option value="1">İpoteka</option>
-                        <option value="2">İstehlak</option>
-                        <option value="3">Kart krediti</option>
-                        <option value="4">Digər</option>
-                    </select>
+                <div class="mi-form-group mi-form-group--full">
+                    <label class="mi-lbl">Qətnamə</label>
+                    <textarea name="Qerardad" class="mi-textarea" rows="3" placeholder="Məhkəmə qətnaməsi…">@Model.Qerardad</textarea>
                 </div>
                 <div class="mi-form-group">
                     <label class="mi-lbl">Status</label>
@@ -416,10 +411,6 @@
                     <input name="KreditHesabi" class="mi-input" value="@Model.KreditHesabi" /></div>
                 <div class="mi-form-group"><label class="mi-lbl">Subkod</label>
                     <input name="Subkod" class="mi-input" value="@Model.Subkod" /></div>
-                <div class="mi-form-group"><label class="mi-lbl">Qalan borc (₼)</label>
-                    <input name="QalanBorc" class="mi-input" type="number" step="0.01" value="@Model.QalanBorc" /></div>
-                <div class="mi-form-group"><label class="mi-lbl">Son ödəniş tarixi</label>
-                    <input name="SonOdenisTarixi" class="mi-input" type="date" value="@(Model.SonOdenisTarixi?.ToString("yyyy-MM-dd"))" /></div>
                 <div class="mi-form-group"><label class="mi-lbl">Qeydiyyatı (rayon)</label>
                     <input name="Qeydiyyati" class="mi-input" value="@Model.Qeydiyyati" /></div>
                 <div class="mi-form-group"><label class="mi-lbl">Əmək haqqı məlumatı</label>

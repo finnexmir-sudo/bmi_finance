@@ -160,11 +160,15 @@
                                         <span class="ms-znil">zaminsiz</span>
                                     }
                                 </td>
-                                <td class="ms-qd" onclick="event.stopPropagation()">
-                                    <div class="ms-qd-box" contenteditable="true"
-                                         data-orig="@x.Qerardad"
-                                         data-placeholder="Qətnamə yaz…"
-                                         onblur="msSaveQerardad(this)">@x.Qerardad</div>
+                                <td class="ms-qd">
+                                    @if (!string.IsNullOrWhiteSpace(x.Qerardad))
+                                    {
+                                        <div class="ms-qd-text">@x.Qerardad</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="ms-muted">—</span>
+                                    }
                                 </td>
                                 <td>
                                     <span class="ms-hesab">@x.KreditHesabi</span>
@@ -247,34 +251,7 @@
         tb.classList.toggle('open');
     }
 
-    // Qərardad inline yadda saxla (dəyişibsə)
-    var msToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
-    async function msSaveQerardad(box) {
-        var text = box.innerText.trim();
-        if (text === (box.dataset.orig || '').trim()) return;
-        var tb = box.closest('tbody');
-        var fd = new FormData();
-        fd.append('acar.KreditHesabi', tb.dataset.hesab || '');
-        fd.append('acar.Ks', tb.dataset.ks || '');
-        fd.append('qerardad', text);
-        fd.append('__RequestVerificationToken', msToken);
-        box.classList.add('ms-qd-saving');
-        try {
-            var r = await fetch('/User/MehkemeIsi/QerardadYaz', { method: 'POST', body: fd });
-            var j = await r.json();
-            box.classList.remove('ms-qd-saving');
-            if (j.success) {
-                box.dataset.orig = text;
-                box.classList.add('ms-qd-saved');
-                setTimeout(function () { box.classList.remove('ms-qd-saved'); }, 1200);
-            } else {
-                box.classList.add('ms-qd-err');
-            }
-        } catch {
-            box.classList.remove('ms-qd-saving');
-            box.classList.add('ms-qd-err');
-        }
-    }
+    // Qətnamə yalnız Detal səhifəsində redaktə olunur (inline save silindi).
 
     // Filtr
     (function () {
