@@ -195,7 +195,7 @@
                             <span class="dt-tl-dot"></span>
                             <div class="dt-tl-top">
                                 <span class="mi-badge @MerheleBadgeClass(m.MerheleTipi)">@MerheleTipiAd(m.MerheleTipi)</span>
-                                <span class="dt-tl-date">@m.Tarix.ToString("dd.MM.yyyy")</span>
+                                <span class="dt-tl-date">@m.Tarix.ToString("dd.MM.yyyy")@(string.IsNullOrWhiteSpace(m.Saat) ? "" : " · " + m.Saat)</span>
                                 @if (!string.IsNullOrWhiteSpace(m.SenedYolu))
                                 {
                                     <a href="/dms/@m.SenedYolu" target="@(FaylBaxilabilir(m.SenedYolu) ? "_blank" : null)" download="@(FaylBaxilabilir(m.SenedYolu) ? null : "")" class="dt-tl-doc"><i class="bi bi-paperclip"></i> Sənəd</a>
@@ -248,6 +248,10 @@
                         <div class="mi-form-group">
                             <label class="mi-lbl">Tarix</label>
                             <input name="Tarix" class="mi-input" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                        </div>
+                        <div class="mi-form-group">
+                            <label class="mi-lbl">Saat <span class="dt-sub">(iclas / görüş)</span></label>
+                            <input name="Saat" class="mi-input" type="time" />
                         </div>
                         <div class="mi-form-group">
                             <label class="mi-lbl">Hakim</label>

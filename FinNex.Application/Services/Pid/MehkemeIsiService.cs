@@ -118,6 +118,7 @@ public class MehkemeIsiService : IMehkemeIsiService
                     Id           = m.Id,
                     MerheleTipi  = m.MerheleTipi,
                     Tarix        = m.Tarix,
+                    Saat         = m.Saat,
                     Hakim        = m.Hakim,
                     IcraciMemur  = m.IcraciMemur,
                     Qeyd         = m.Qeyd,
@@ -463,7 +464,7 @@ public class MehkemeIsiService : IMehkemeIsiService
                 {
                     MerheleTipi     = MerheleTipi.MehkemeIclasi,
                     Tarix           = ic.Tarix ?? r.MehkemeyeVerilmeTarixi ?? DateTime.Today,
-                    Qeyd            = string.IsNullOrWhiteSpace(ic.Saat) ? null : "Saat: " + ic.Saat.Trim(),
+                    Saat            = string.IsNullOrWhiteSpace(ic.Saat) ? null : ic.Saat.Trim(),
                     YaradanIcraciId = isciId,
                     YaradilmaTarixi = DateTime.Now
                 });
@@ -515,6 +516,7 @@ public class MehkemeIsiService : IMehkemeIsiService
             MehkemeIsiId    = dto.MehkemeIsiId,
             MerheleTipi     = dto.MerheleTipi,
             Tarix           = dto.Tarix,
+            Saat            = string.IsNullOrWhiteSpace(dto.Saat)        ? null : dto.Saat.Trim(),
             Hakim           = string.IsNullOrWhiteSpace(dto.Hakim)       ? null : dto.Hakim.Trim(),
             IcraciMemur     = string.IsNullOrWhiteSpace(dto.IcraciMemur) ? null : dto.IcraciMemur.Trim(),
             Qeyd            = string.IsNullOrWhiteSpace(dto.Qeyd)        ? null : dto.Qeyd.Trim(),
