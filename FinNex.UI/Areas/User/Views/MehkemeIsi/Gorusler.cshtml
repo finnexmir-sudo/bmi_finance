@@ -57,7 +57,19 @@
         </div>
     </div>
 
-    <div class="ms-filter">
+    <div class="gr-bar">
+        <div class="gr-chips">
+            <button type="button" class="gr-chip active" data-range="all">Hamısı</button>
+            <button type="button" class="gr-chip" data-range="today">Bu gün</button>
+            <button type="button" class="gr-chip" data-range="7">7 gün</button>
+            <button type="button" class="gr-chip" data-range="30">30 gün</button>
+        </div>
+        <div class="gr-range">
+            <i class="bi bi-calendar-range"></i>
+            <input type="date" id="grFrom" class="ms-input" title="Başlanğıc tarix" />
+            <span>—</span>
+            <input type="date" id="grTo" class="ms-input" title="Son tarix" />
+        </div>
         <input type="text" id="grSearch" class="ms-input ms-grow" placeholder="🔍 Müştəri, iş № və ya hakim axtar…" />
         <span class="gr-count" id="grCount">@Model.Count görüş</span>
     </div>
@@ -67,7 +79,7 @@
         foreach (var g in gruplar)
         {
             var bugundur = g.Key == bugun;
-            <div class="gr-day @(bugundur ? "gr-day--today" : "")">
+            <div class="gr-day @(bugundur ? "gr-day--today" : "")" data-date="@g.Key.ToString("yyyy-MM-dd")">
                 <div class="gr-day-head">
                     <i class="bi bi-calendar-event"></i>
                     <span class="gr-day-date">@g.Key.ToString("dd.MM.yyyy")</span>
@@ -89,11 +101,15 @@
                             {
                                 <span class="gr-qeyd">@x.Qeyd</span>
                             }
+                            <i class="bi bi-chevron-right gr-go"></i>
                         </a>
                     }
                 </div>
             </div>
         }
+        <div class="gr-empty-filter" id="grNoMatch" style="display:none">
+            <i class="bi bi-search"></i> Seçilmiş tarix/axtarışa uyğun görüş yoxdur.
+        </div>
     }
     else
     {
@@ -104,7 +120,15 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/User/user-mehkeme.css" asp-append-version="true" />
     <style>
-        .gr-count { font-size:12px; color:#64748b; font-weight:600; }
+        .gr-bar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+        .gr-chips { display:inline-flex; gap:6px; flex-wrap:wrap; }
+        .gr-chip { padding:7px 14px; border:1.5px solid #e2e8f0; border-radius:20px; background:#fff; color:#475569; font-size:12.5px; font-weight:700; cursor:pointer; transition:all .12s; }
+        .gr-chip:hover { background:#f8fafc; border-color:#cbd5e1; }
+        .gr-chip.active { background:var(--fn-primary,#6366f1); color:#fff; border-color:transparent; }
+        .gr-range { display:inline-flex; gap:6px; align-items:center; color:#94a3b8; }
+        .gr-range .ms-input { padding:7px 10px; }
+        .gr-count { font-size:12px; color:#64748b; font-weight:700; white-space:nowrap; }
+
         .gr-day { background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; margin-bottom:14px; overflow:hidden; }
         .gr-day--today { border-color:#fca5a5; box-shadow:0 0 0 1px #fecaca; }
         .gr-day-head { display:flex; align-items:center; gap:10px; padding:11px 16px; background:#f8fafc; border-bottom:1px solid #eef2f7; }
@@ -126,31 +150,73 @@
         .gr-iz, .gr-hakim { font-size:12.5px; color:#475569; display:inline-flex; align-items:center; gap:5px; max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .gr-iz > i, .gr-hakim > i { color:#94a3b8; }
         .gr-qeyd { font-size:12.5px; color:#64748b; font-style:italic; }
+        .gr-go { margin-left:auto; color:#cbd5e1; }
+        .gr-item:hover .gr-go { color:var(--fn-primary,#6366f1); }
+        .gr-empty-filter { text-align:center; color:#94a3b8; padding:30px; font-size:14px; }
     </style>
 }
 
 @section Scripts {
 <script>
     (function () {
-        var s = document.getElementById('grSearch');
-        var cnt = document.getElementById('grCount');
-        var items = Array.prototype.slice.call(document.querySelectorAll('.gr-item'));
-        function f() {
-            var q = s.value.trim().toLowerCase();
+        var search  = document.getElementById('grSearch');
+        var cnt     = document.getElementById('grCount');
+        var fromInp = document.getElementById('grFrom');
+        var toInp   = document.getElementById('grTo');
+        var noMatch = document.getElementById('grNoMatch');
+        var chips   = Array.prototype.slice.call(document.querySelectorAll('.gr-chip'));
+        var days    = Array.prototype.slice.call(document.querySelectorAll('.gr-day'));
+        if (!days.length) return;
+
+        var activeRange = 'all';
+        function pad(n){ return n < 10 ? '0' + n : '' + n; }
+        function ymd(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+
+        function computeRange() {
+            var cf = fromInp.value, ct = toInp.value;
+            if (cf || ct) return { from: cf || '0000-01-01', to: ct || '9999-12-31' };
+            var t = new Date(); t.setHours(0, 0, 0, 0);
+            if (activeRange === 'today') return { from: ymd(t), to: ymd(t) };
+            if (activeRange === '7')  { var d = new Date(t); d.setDate(d.getDate() + 7);  return { from: ymd(t), to: ymd(d) }; }
+            if (activeRange === '30') { var e = new Date(t); e.setDate(e.getDate() + 30); return { from: ymd(t), to: ymd(e) }; }
+            return { from: '0000-01-01', to: '9999-12-31' };
+        }
+
+        function apply() {
+            var q = search.value.trim().toLowerCase();
+            var r = computeRange();
             var vis = 0;
-            items.forEach(function (it) {
-                var ok = !q || (it.dataset.search || '').toLowerCase().includes(q);
-                it.style.display = ok ? '' : 'none';
-                if (ok) vis++;
-            });
-            // axtarışda boş qalan günləri gizlət
-            document.querySelectorAll('.gr-day').forEach(function (day) {
-                var any = Array.prototype.slice.call(day.querySelectorAll('.gr-item')).some(function (i) { return i.style.display !== 'none'; });
-                day.style.display = any ? '' : 'none';
+            days.forEach(function (day) {
+                var dd = day.dataset.date || '';
+                var inRange = dd >= r.from && dd <= r.to;
+                var anyVisible = false;
+                Array.prototype.slice.call(day.querySelectorAll('.gr-item')).forEach(function (it) {
+                    var ok = inRange && (!q || (it.dataset.search || '').toLowerCase().includes(q));
+                    it.style.display = ok ? '' : 'none';
+                    if (ok) { anyVisible = true; vis++; }
+                });
+                day.style.display = anyVisible ? '' : 'none';
             });
             cnt.textContent = vis + ' görüş';
+            if (noMatch) noMatch.style.display = vis === 0 ? '' : 'none';
         }
-        s.addEventListener('input', f);
+
+        chips.forEach(function (c) {
+            c.addEventListener('click', function () {
+                chips.forEach(function (x) { x.classList.remove('active'); });
+                c.classList.add('active');
+                activeRange = c.dataset.range;
+                fromInp.value = ''; toInp.value = '';   // çip seçiləndə xüsusi aralığı təmizlə
+                apply();
+            });
+        });
+        [fromInp, toInp].forEach(function (inp) {
+            inp.addEventListener('change', function () {
+                chips.forEach(function (x) { x.classList.remove('active'); });  // xüsusi aralıq çipləri ləğv edir
+                apply();
+            });
+        });
+        search.addEventListener('input', apply);
     })();
 </script>
 }
