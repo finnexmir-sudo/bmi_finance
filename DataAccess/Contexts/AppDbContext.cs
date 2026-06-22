@@ -1331,17 +1331,25 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             .HasForeignKey(x => x.IsciId)
             .OnDelete(DeleteBehavior.NoAction);
 
+        // Seed sətirləri üçün sabit tarix — entity-nin DateTime.Now default-u hər
+        // Add-Migration-da dəyişib UpdateData "drift"i yaradırdı; sabit tarix bunu dayandırır.
+        var seedTarix = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
+
         // ── XercKateqoriyasi Seed Data ────────────────────────
-        builder.Entity<XercKateqoriyasi>().HasData(
+        var xercKateqoriyaSeed = new[]
+        {
             new XercKateqoriyasi { Id = 1, Ad = "Taksi", Ikon = "bi-taxi-front", Aktivdir = true },
             new XercKateqoriyasi { Id = 2, Ad = "Yemək", Ikon = "bi-cup-hot", Aktivdir = true },
             new XercKateqoriyasi { Id = 3, Ad = "Ofis ləvazimatı", Ikon = "bi-printer", Aktivdir = true },
             new XercKateqoriyasi { Id = 4, Ad = "Səfər xərcləri", Ikon = "bi-airplane", Aktivdir = true },
             new XercKateqoriyasi { Id = 5, Ad = "Digər", Ikon = "bi-three-dots", Aktivdir = true }
-        );
+        };
+        foreach (var s in xercKateqoriyaSeed) s.YaradilmaTarixi = seedTarix;
+        builder.Entity<XercKateqoriyasi>().HasData(xercKateqoriyaSeed);
 
         // ── MaasNovu Seed Data ────────────────────────────────────
-        builder.Entity<MaasNovu>().HasData(
+        var maasNovuSeed = new[]
+        {
             new MaasNovu { Id = 1, Ad = "Əsas Əməkhaqqı", Tip = MaasDetayTipi.Gelir, Aktivdir = true },
             new MaasNovu { Id = 2, Ad = "Bonus/Mükafat", Tip = MaasDetayTipi.Gelir, Aktivdir = true },
             new MaasNovu { Id = 3, Ad = "Məzuniyyət Ödənişi", Tip = MaasDetayTipi.Gelir, Aktivdir = true },
@@ -1358,21 +1366,27 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             new MaasNovu { Id = 14, Ad = "Fərqli Gəlir", Tip = MaasDetayTipi.Gelir, Aktivdir = true },
             new MaasNovu { Id = 17, Ad = "IH-07 Əlavə Təminat", Tip = MaasDetayTipi.Gelir, Aktivdir = true },
             new MaasNovu { Id = 18, Ad = "VM 98.2.1 Gəlirləri", Tip = MaasDetayTipi.Gelir, Aktivdir = true }
-        );
+        };
+        foreach (var s in maasNovuSeed) s.YaradilmaTarixi = seedTarix;
+        builder.Entity<MaasNovu>().HasData(maasNovuSeed);
 
         // ── MaasParametri Seed Data ───────────────────────────────
-        builder.Entity<MaasParametri>().HasData(
+        var maasParametriSeed = new[]
+        {
             new MaasParametri { Id = 1, Nov = MaasParametrNovu.GelirVergisiFaizi, Tip = MaasParametrTipi.Faiz, Deyer = 14m, Aciqlama = "2026", BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
             new MaasParametri { Id = 2, Nov = MaasParametrNovu.DsmfFaizi, Tip = MaasParametrTipi.Faiz, Deyer = 3m, Aciqlama = "2026", BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
             new MaasParametri { Id = 3, Nov = MaasParametrNovu.IssizlikSigortasiFaizi, Tip = MaasParametrTipi.Faiz, Deyer = 0.5m, Aciqlama = "2026", BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
             new MaasParametri { Id = 4, Nov = MaasParametrNovu.IcbariTibbiSigortaFaizi, Tip = MaasParametrTipi.Faiz, Deyer = 2m, Aciqlama = "2026", BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
             new MaasParametri { Id = 5, Nov = MaasParametrNovu.MinimumEmekHaqqi, Tip = MaasParametrTipi.Mebleg, Deyer = 345m, Aciqlama = "2026", BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
             new MaasParametri { Id = 6, Nov = MaasParametrNovu.VergiGuzestiMeblegi, Tip = MaasParametrTipi.Mebleg, Deyer = 200m, Aciqlama = "2026", BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true }
-        );
+        };
+        foreach (var s in maasParametriSeed) s.YaradilmaTarixi = seedTarix;
+        builder.Entity<MaasParametri>().HasData(maasParametriSeed);
 
         // ── VergiPille Seed Data — 2026 pilləli vergi dərəcələri ──
         // Qeyri-neft/Qeyri-dövlət sektoru üçün rəsmi qaydalar
-        builder.Entity<VergiPille>().HasData(
+        var vergiPilleSeed = new[]
+        {
             // Gəlir Vergisi: 0-2500 → 3%; 2500-8000 → 75+10%; 8000+ → 625+14%
             new VergiPille { Id = 1, Nov = MaasParametrNovu.GelirVergisiFaizi, Sira = 1, AsagiHedd = 0m,    YuxariHedd = 2500m,  Faiz = 3m,  SabitMebleg = 0m,    Aciqlama = "2026: 0–2500 AZN → 3%",           BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
             new VergiPille { Id = 2, Nov = MaasParametrNovu.GelirVergisiFaizi, Sira = 2, AsagiHedd = 2500m, YuxariHedd = 8000m,  Faiz = 10m, SabitMebleg = 75m,   Aciqlama = "2026: 2500–8000 AZN → 75+10%",    BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
@@ -1394,7 +1408,9 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, int>
             // İTSS (İşəgötürən): 0-2500 → 2%; 2500+ → 50+0.5%  (işçi ilə eynidir)
             new VergiPille { Id = 11, Nov = MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi, Sira = 1, AsagiHedd = 0m,    YuxariHedd = 2500m, Faiz = 2m,   SabitMebleg = 0m,  Aciqlama = "2026: 0–2500 AZN → 2%",       BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true },
             new VergiPille { Id = 12, Nov = MaasParametrNovu.IcbariTibbiSigortaIsegoturenFaizi, Sira = 2, AsagiHedd = 2500m, YuxariHedd = null,  Faiz = 0.5m, SabitMebleg = 50m, Aciqlama = "2026: 2500+ AZN → 50+0.5%",   BaslamaTarixi = new DateTime(2026, 1, 1), Aktivdir = true }
-        );
+        };
+        foreach (var s in vergiPilleSeed) s.YaradilmaTarixi = seedTarix;
+        builder.Entity<VergiPille>().HasData(vergiPilleSeed);
 
         // ── Gələn Mail Modulu ─────────────────────────────────
         builder.Entity<GelenMail>()
