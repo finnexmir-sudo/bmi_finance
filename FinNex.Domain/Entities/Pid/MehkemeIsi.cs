@@ -34,6 +34,8 @@ public class MehkemeIsi : BaseEntity
     public string?   EmlakaHebs       { get; set; }   // əmlaka həbs barədə
     public string?   Stop             { get; set; }   // stop barədə
     public string?   IcraMemuru       { get; set; }   // icra məmuru (iş səviyyəsində)
+    public string?   Hakim            { get; set; }   // məhkəmə hakimi (iş səviyyəsində — bir dənə)
+    public string?   IsNomresi        { get; set; }   // məhkəmə / iş nömrəsi (iş səviyyəsində — bir dənə)
     public string?   IcraSonIsler     { get; set; }   // icraçı son işlər / son görüşmə
     public DateTime? DogumTarixi      { get; set; }   // borclunun doğum tarixi
     public string?   Zamin            { get; set; }   // zamin

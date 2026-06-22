@@ -173,6 +173,18 @@
 
             <div class="dt-facts">
                 <div>
+                    <div class="dt-fact-lbl">Məhkəmə / İş №</div>
+                    <div class="dt-fact-val">@V(Model.IsNomresi)</div>
+                </div>
+                <div>
+                    <div class="dt-fact-lbl">Hakim</div>
+                    <div class="dt-fact-val">@V(Model.Hakim)</div>
+                </div>
+                <div>
+                    <div class="dt-fact-lbl">İcraçı (icra məmuru)</div>
+                    <div class="dt-fact-val">@V(Model.IcraMemuru)</div>
+                </div>
+                <div>
                     <div class="dt-fact-lbl">Məhkəməyə verilmə</div>
                     <div class="dt-fact-val">@D(Model.BaslamaTarixi)</div>
                 </div>
@@ -253,18 +265,6 @@
                         <div class="mi-form-group">
                             <label class="mi-lbl">Saat <span class="dt-sub">(24 saat — SS:DD)</span></label>
                             <input name="Saat" id="merheleSaat" class="mi-input" type="text" inputmode="numeric" placeholder="məs: 14:40" maxlength="5" />
-                        </div>
-                        <div class="mi-form-group mi-form-group--full">
-                            <label class="mi-lbl">Məhkəmə / İş №</label>
-                            <input name="IsNomresi" class="mi-input" maxlength="500" placeholder="məs: Sabunçu RM  e-2(008)-8842/2021, e-2(008)-922/2022" />
-                        </div>
-                        <div class="mi-form-group">
-                            <label class="mi-lbl">Hakim</label>
-                            <input name="Hakim" class="mi-input" maxlength="200" placeholder="məs: Mahmudova Həqiqət" />
-                        </div>
-                        <div class="mi-form-group">
-                            <label class="mi-lbl">İcraçı memur</label>
-                            <input name="IcraciMemur" class="mi-input" maxlength="200" placeholder="Ad Soyad…" />
                         </div>
                         <div class="mi-form-group">
                             <label class="mi-lbl">Sənəd (ixtiyari)</label>
@@ -530,6 +530,18 @@
                     <label class="mi-lbl">Qətnamə tarixi</label>
                     <input name="QetnameTarixi" class="mi-input" type="date" value="@(Model.QetnameTarixi?.ToString("yyyy-MM-dd"))" />
                 </div>
+                <div class="mi-form-group">
+                    <label class="mi-lbl">Hakim <span class="dt-sub">(bir dənə)</span></label>
+                    <input name="Hakim" class="mi-input" value="@Model.Hakim" placeholder="məs: Mahmudova Həqiqət" />
+                </div>
+                <div class="mi-form-group">
+                    <label class="mi-lbl">İcraçı (icra məmuru)</label>
+                    <input name="IcraMemuru" class="mi-input" value="@Model.IcraMemuru" placeholder="Ad Soyad…" />
+                </div>
+                <div class="mi-form-group mi-form-group--full">
+                    <label class="mi-lbl">Məhkəmə / İş №</label>
+                    <input name="IsNomresi" class="mi-input" value="@Model.IsNomresi" placeholder="məs: Sabunçu RM  e-2(008)-8842/2021, e-2(008)-922/2022" />
+                </div>
                 <div class="mi-form-group mi-form-group--full">
                     <label class="mi-lbl">Qətnamə (mətn)</label>
                     <input name="Qerardad" class="mi-input" value="@Model.Qerardad" placeholder="Məhkəmə qətnaməsi…" />
@@ -553,8 +565,6 @@
                     <input name="DypSorguTarixi" class="mi-input" type="date" value="@(Model.DypSorguTarixi?.ToString("yyyy-MM-dd"))" /></div>
                 <div class="mi-form-group"><label class="mi-lbl">Adına sorğu</label>
                     <input name="AdinaSorgu" class="mi-input" value="@Model.AdinaSorgu" /></div>
-                <div class="mi-form-group"><label class="mi-lbl">İcra məmuru</label>
-                    <input name="IcraMemuru" class="mi-input" value="@Model.IcraMemuru" /></div>
                 <div class="mi-form-group"><label class="mi-lbl">Əmlaka həbs</label>
                     <input name="EmlakaHebs" class="mi-input" value="@Model.EmlakaHebs" /></div>
                 <div class="mi-form-group"><label class="mi-lbl">Stop</label>

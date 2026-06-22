@@ -50,8 +50,7 @@ public class MehkemeIsiService : IMehkemeIsiService
             Status            = x.Status,
             BaslamaTarixi     = x.BaslamaTarixi,
             QetnameTarixi     = x.QetnameTarixi,
-            Hakim             = x.Merheleler.Where(m => !m.Silinib && !string.IsNullOrWhiteSpace(m.Hakim))
-                                            .OrderByDescending(m => m.Tarix).Select(m => m.Hakim).FirstOrDefault(),
+            Hakim             = x.Hakim,
             Teminat           = x.KreditNovuMetn,
             MerheleCount      = x.Merheleler.Count(m => !m.Silinib),
             YaradilmaTarixi   = x.YaradilmaTarixi
@@ -103,6 +102,8 @@ public class MehkemeIsiService : IMehkemeIsiService
             EmlakaHebs        = x.EmlakaHebs,
             Stop              = x.Stop,
             IcraMemuru        = x.IcraMemuru,
+            Hakim             = x.Hakim,
+            IsNomresi         = x.IsNomresi,
             IcraSonIsler      = x.IcraSonIsler,
             DogumTarixi       = x.DogumTarixi,
             Zamin             = x.Zamin,
@@ -399,6 +400,8 @@ public class MehkemeIsiService : IMehkemeIsiService
         entity.EmlakaHebs        = dto.EmlakaHebs;
         entity.Stop              = dto.Stop;
         entity.IcraMemuru        = dto.IcraMemuru;
+        entity.Hakim             = dto.Hakim;        // iş səviyyəsində (bir dənə)
+        entity.IsNomresi         = dto.IsNomresi;    // iş səviyyəsində (bir dənə)
         entity.IcraSonIsler      = dto.IcraSonIsler;
         entity.Zamin             = dto.Zamin;
         entity.QetnameTarixi     = dto.QetnameTarixi;
@@ -450,6 +453,7 @@ public class MehkemeIsiService : IMehkemeIsiService
                 Sira                   = r.Sira,
                 KreditNovuMetn         = string.IsNullOrWhiteSpace(r.GirovunNovu) ? null : r.GirovunNovu.Trim(),
                 MehkemeSenedi          = isNo,
+                IsNomresi              = isNo,
                 BaslamaTarixi          = r.MehkemeyeVerilmeTarixi,
                 MehkemeyeVerilmeTarixi = r.MehkemeyeVerilmeTarixi,
                 Status                 = MehkemeIsiStatus.Mehkemede,   // Excel arxivi → məhkəmə mərhələsində
