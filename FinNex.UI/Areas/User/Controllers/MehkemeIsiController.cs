@@ -275,6 +275,28 @@ public class MehkemeIsiController : Controller
         return Json(new { success = true, message = "Yeniləndi." });
     }
 
+    // ── Məhkəmə fazası yenilə (yalnız litiqasiya sahələri) ──
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MehkemeFaza(int id, MehkemeIsiUpdateDto dto)
+    {
+        var isciId = await CurrentIsciIdAsync() ?? 0;
+        var ok = await _service.MehkemeFazaYenileAsync(id, dto, isciId);
+        TempData[ok ? "Success" : "Error"] = ok ? "Məhkəmə fazası yeniləndi." : "Tapılmadı.";
+        return RedirectToAction("Detal", new { id });
+    }
+
+    // ── İcra fazası yenilə (yalnız icra/borclu sahələri) ──
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> IcraFaza(int id, MehkemeIsiUpdateDto dto)
+    {
+        var isciId = await CurrentIsciIdAsync() ?? 0;
+        var ok = await _service.IcraFazaYenileAsync(id, dto, isciId);
+        TempData[ok ? "Success" : "Error"] = ok ? "İcra fazası yeniləndi." : "Tapılmadı.";
+        return RedirectToAction("Detal", new { id });
+    }
+
     // ── Sil ───────────────────────────────────────────────
     [HttpPost]
     [ValidateAntiForgeryToken]

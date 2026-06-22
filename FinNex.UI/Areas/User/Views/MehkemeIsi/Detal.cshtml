@@ -51,8 +51,7 @@
         <div class="dt-hero-side">
             <span class="dt-status @statusCls">@statusText</span>
             <div class="dt-actions">
-                <button class="mi-btn mi-btn--ghost mi-btn--sm" id="btnEdit"><i class="bi bi-pencil"></i> Redaktə</button>
-                <a asp-action="Index" id="btnGeri" class="mi-btn mi-btn--ghost mi-btn--sm"><i class="bi bi-arrow-left"></i> Geri</a>
+                <a asp-action="Index" class="mi-btn mi-btn--ghost mi-btn--sm"><i class="bi bi-arrow-left"></i> Geri</a>
             </div>
         </div>
     </div>
@@ -105,10 +104,13 @@
         <div class="dt-card">
             <div class="dt-card-h">
                 <span><i class="bi bi-bank"></i> Məhkəmə fazası</span>
-                <span class="dt-sub">@Model.Merheleler.Count mərhələ</span>
+                <span style="display:flex;gap:8px;align-items:center">
+                    <span class="dt-sub">@Model.Merheleler.Count mərhələ</span>
+                    <button type="button" class="mi-btn mi-btn--ghost mi-btn--sm" id="btnMehEdit"><i class="bi bi-pencil"></i> Redaktə</button>
+                </span>
             </div>
 
-            <div class="dt-facts">
+            <div class="dt-facts" id="mehFacts">
                 <div>
                     <div class="dt-fact-lbl">Məhkəmə / İş №</div>
                     <div class="dt-fact-val">@V(Model.IsNomresi)</div>
@@ -118,8 +120,8 @@
                     <div class="dt-fact-val">@V(Model.Hakim)</div>
                 </div>
                 <div>
-                    <div class="dt-fact-lbl">İcraçı (icra məmuru)</div>
-                    <div class="dt-fact-val">@V(Model.IcraMemuru)</div>
+                    <div class="dt-fact-lbl">Növ</div>
+                    <div class="dt-fact-val">@novText</div>
                 </div>
                 <div>
                     <div class="dt-fact-lbl">Məhkəməyə verilmə</div>
@@ -134,6 +136,61 @@
                     <div class="dt-fact-val"><span class="dt-status dt-status--sm @stCls">@stName</span></div>
                 </div>
             </div>
+
+            <!-- Məhkəmə fazası redaktə (gizli) -->
+            <form id="mehEdit" asp-action="MehkemeFaza" method="post" style="display:none;margin-bottom:6px">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <div class="mi-form-grid mi-form-grid--3">
+                    <div class="mi-form-group">
+                        <label class="mi-lbl">Status (iş axını)</label>
+                        <select name="Status" class="mi-select">
+                            <option value="1" selected="@(Model.Status == MehkemeIsiStatus.Hazirlanir ? "selected" : null)">Hazırlanır</option>
+                            <option value="2" selected="@(Model.Status == MehkemeIsiStatus.Mehkemede ? "selected" : null)">Məhkəmədə</option>
+                            <option value="3" selected="@(Model.Status == MehkemeIsiStatus.Icra ? "selected" : null)">İcrada</option>
+                            <option value="4" selected="@(Model.Status == MehkemeIsiStatus.Tamamlandi ? "selected" : null)">Tamamlandı</option>
+                            <option value="5" selected="@(Model.Status == MehkemeIsiStatus.Baghlandi ? "selected" : null)">Bağlandı</option>
+                        </select>
+                    </div>
+                    <div class="mi-form-group">
+                        <label class="mi-lbl">Növ</label>
+                        <select name="Nov" class="mi-select">
+                            <option value="1" selected="@(Model.Nov == MehkemeIsiNov.Ipoteka ? "selected" : null)">İpoteka</option>
+                            <option value="2" selected="@(Model.Nov == MehkemeIsiNov.Istehlak ? "selected" : null)">İstehlak</option>
+                            <option value="3" selected="@(Model.Nov == MehkemeIsiNov.KartKredit ? "selected" : null)">Kart krediti</option>
+                            <option value="4" selected="@(Model.Nov == MehkemeIsiNov.Diger ? "selected" : null)">Digər</option>
+                        </select>
+                    </div>
+                    <div class="mi-form-group">
+                        <label class="mi-lbl">Hakim</label>
+                        <input name="Hakim" class="mi-input" value="@Model.Hakim" placeholder="məs: Mahmudova Həqiqət" />
+                    </div>
+                    <div class="mi-form-group">
+                        <label class="mi-lbl">Məhkəməyə verilmə tarixi</label>
+                        <input name="BaslamaTarixi" class="mi-input" type="date" value="@(Model.BaslamaTarixi.HasValue ? Model.BaslamaTarixi.Value.ToString("yyyy-MM-dd") : "")" />
+                    </div>
+                    <div class="mi-form-group">
+                        <label class="mi-lbl">Qətnamə tarixi</label>
+                        <input name="QetnameTarixi" class="mi-input" type="date" value="@(Model.QetnameTarixi?.ToString("yyyy-MM-dd"))" />
+                    </div>
+                    <div class="mi-form-group mi-form-group--full">
+                        <label class="mi-lbl">Məhkəmə / İş №</label>
+                        <input name="IsNomresi" class="mi-input" value="@Model.IsNomresi" placeholder="məs: Sabunçu RM  e-2(008)-8842/2021" />
+                    </div>
+                    <div class="mi-form-group mi-form-group--full">
+                        <label class="mi-lbl">Qətnamə (mətn)</label>
+                        <input name="Qerardad" class="mi-input" value="@Model.Qerardad" placeholder="Məhkəmə qətnaməsi…" />
+                    </div>
+                    <div class="mi-form-group mi-form-group--full">
+                        <label class="mi-lbl">Ümumi qeyd</label>
+                        <textarea name="Qeyd" class="mi-textarea" rows="2">@Model.Qeyd</textarea>
+                    </div>
+                </div>
+                <div class="mi-form-actions">
+                    <button type="submit" class="mi-btn mi-btn--primary mi-btn--sm"><i class="bi bi-check-lg"></i> Saxla</button>
+                    <button type="button" class="mi-btn mi-btn--ghost mi-btn--sm" id="btnMehCancel">Ləğv et</button>
+                </div>
+            </form>
 
             @if (Model.Merheleler.Any())
             {
@@ -267,15 +324,24 @@
                                         @if (Model.DogumTarixi.HasValue) { <span class="dt-chip"><b>Doğum:</b> @D(Model.DogumTarixi)</span> }
                                         @if (!string.IsNullOrWhiteSpace(Model.KreditHesabi)) { <span class="dt-chip"><b>Hesab:</b> @Model.KreditHesabi@(string.IsNullOrWhiteSpace(Model.Subkod) ? "" : " / " + Model.Subkod)</span> }
                                     </div>
-                                    @if (!string.IsNullOrWhiteSpace(Model.IcraSonIsler))
-                                    {
-                                        <div class="dt-subj-note"><b>İcraçı son işlər:</b> @Model.IcraSonIsler</div>
-                                    }
-                                    @if (!string.IsNullOrWhiteSpace(Model.IcraQeyd))
-                                    {
-                                        <div class="dt-subj-note"><b>Qeyd:</b> @Model.IcraQeyd</div>
-                                    }
-                                    <button type="button" class="mi-btn mi-btn--primary mi-btn--sm dt-edit-borclu" style="margin-top:10px"><i class="bi bi-pencil"></i> Borclu məlumatını redaktə et</button>
+                                    <form asp-action="IcraFaza" method="post" style="margin-top:6px">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@Model.Id" />
+                                        <div class="mi-form-grid mi-form-grid--3">
+                                            <div class="mi-form-group"><label class="mi-lbl">Qeydiyyatı (rayon)</label><input name="Qeydiyyati" class="mi-input" value="@Model.Qeydiyyati" /></div>
+                                            <div class="mi-form-group"><label class="mi-lbl">Əmək haqqı məlumatı</label><input name="EmekHaqqiMelumati" class="mi-input" value="@Model.EmekHaqqiMelumati" /></div>
+                                            <div class="mi-form-group"><label class="mi-lbl">İş yeri</label><input name="IsYeri" class="mi-input" value="@Model.IsYeri" /></div>
+                                            <div class="mi-form-group"><label class="mi-lbl">İcra məmuru</label><input name="IcraMemuru" class="mi-input" value="@Model.IcraMemuru" /></div>
+                                            <div class="mi-form-group"><label class="mi-lbl">DYP sorğu tarixi</label><input name="DypSorguTarixi" class="mi-input" type="date" value="@(Model.DypSorguTarixi?.ToString("yyyy-MM-dd"))" /></div>
+                                            <div class="mi-form-group"><label class="mi-lbl">Adına sorğu</label><input name="AdinaSorgu" class="mi-input" value="@Model.AdinaSorgu" /></div>
+                                            <div class="mi-form-group"><label class="mi-lbl">Əmlaka həbs</label><input name="EmlakaHebs" class="mi-input" value="@Model.EmlakaHebs" /></div>
+                                            <div class="mi-form-group"><label class="mi-lbl">Stop</label><input name="Stop" class="mi-input" value="@Model.Stop" /></div>
+                                            <div class="mi-form-group"><label class="mi-lbl">Zamin (mətn)</label><input name="Zamin" class="mi-input" value="@Model.Zamin" /></div>
+                                            <div class="mi-form-group mi-form-group--full"><label class="mi-lbl">İcraçı son işlər</label><input name="IcraSonIsler" class="mi-input" value="@Model.IcraSonIsler" /></div>
+                                            <div class="mi-form-group mi-form-group--full"><label class="mi-lbl">İcra qeydi</label><textarea name="IcraQeyd" class="mi-textarea" rows="2">@Model.IcraQeyd</textarea></div>
+                                        </div>
+                                        <button type="submit" class="mi-btn mi-btn--primary mi-btn--sm"><i class="bi bi-check-lg"></i> Saxla</button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -493,95 +559,6 @@
         </form>
     </div>
 
-    <!-- ═══ Redaktə formu (gizli) ═══ -->
-    <div class="dt-card" id="editCard" style="display:none">
-        <div class="dt-card-h"><span><i class="bi bi-pencil-square"></i> Redaktə</span></div>
-        <form id="editForm">
-            @Html.AntiForgeryToken()
-
-            <!-- ── Məhkəmə mərhələsi ── -->
-            <div class="dt-edit-sec"><i class="bi bi-bank"></i> Məhkəmə mərhələsi</div>
-            <div class="mi-form-grid">
-                <div class="mi-form-group">
-                    <label class="mi-lbl">Status (iş axını)</label>
-                    <select name="Status" class="mi-select">
-                        <option value="1" selected="@(Model.Status == MehkemeIsiStatus.Hazirlanir ? "selected" : null)">Hazırlanır</option>
-                        <option value="2" selected="@(Model.Status == MehkemeIsiStatus.Mehkemede ? "selected" : null)">Məhkəmədə</option>
-                        <option value="3" selected="@(Model.Status == MehkemeIsiStatus.Icra ? "selected" : null)">İcrada</option>
-                        <option value="4" selected="@(Model.Status == MehkemeIsiStatus.Tamamlandi ? "selected" : null)">Tamamlandı</option>
-                        <option value="5" selected="@(Model.Status == MehkemeIsiStatus.Baghlandi ? "selected" : null)">Bağlandı</option>
-                    </select>
-                </div>
-                <div class="mi-form-group">
-                    <label class="mi-lbl">Növ</label>
-                    <select name="Nov" class="mi-select">
-                        <option value="1" selected="@(Model.Nov == MehkemeIsiNov.Ipoteka ? "selected" : null)">İpoteka</option>
-                        <option value="2" selected="@(Model.Nov == MehkemeIsiNov.Istehlak ? "selected" : null)">İstehlak</option>
-                        <option value="3" selected="@(Model.Nov == MehkemeIsiNov.KartKredit ? "selected" : null)">Kart krediti</option>
-                        <option value="4" selected="@(Model.Nov == MehkemeIsiNov.Diger ? "selected" : null)">Digər</option>
-                    </select>
-                </div>
-                <div class="mi-form-group">
-                    <label class="mi-lbl">Məhkəməyə verilmə tarixi</label>
-                    <input name="BaslamaTarixi" class="mi-input" type="date" value="@(Model.BaslamaTarixi.HasValue ? Model.BaslamaTarixi.Value.ToString("yyyy-MM-dd") : "")" />
-                </div>
-                <div class="mi-form-group">
-                    <label class="mi-lbl">Qətnamə tarixi</label>
-                    <input name="QetnameTarixi" class="mi-input" type="date" value="@(Model.QetnameTarixi?.ToString("yyyy-MM-dd"))" />
-                </div>
-                <div class="mi-form-group">
-                    <label class="mi-lbl">Hakim <span class="dt-sub">(bir dənə)</span></label>
-                    <input name="Hakim" class="mi-input" value="@Model.Hakim" placeholder="məs: Mahmudova Həqiqət" />
-                </div>
-                <div class="mi-form-group">
-                    <label class="mi-lbl">İcraçı (icra məmuru)</label>
-                    <input name="IcraMemuru" class="mi-input" value="@Model.IcraMemuru" placeholder="Ad Soyad…" />
-                </div>
-                <div class="mi-form-group mi-form-group--full">
-                    <label class="mi-lbl">Məhkəmə / İş №</label>
-                    <input name="IsNomresi" class="mi-input" value="@Model.IsNomresi" placeholder="məs: Sabunçu RM  e-2(008)-8842/2021, e-2(008)-922/2022" />
-                </div>
-                <div class="mi-form-group mi-form-group--full">
-                    <label class="mi-lbl">Qətnamə (mətn)</label>
-                    <input name="Qerardad" class="mi-input" value="@Model.Qerardad" placeholder="Məhkəmə qətnaməsi…" />
-                </div>
-                <div class="mi-form-group mi-form-group--full">
-                    <label class="mi-lbl">Ümumi qeyd</label>
-                    <textarea name="Qeyd" class="mi-textarea" rows="2">@Model.Qeyd</textarea>
-                </div>
-            </div>
-
-            <!-- ── İcra mərhələsi ── -->
-            <div class="dt-edit-sec"><i class="bi bi-hammer"></i> İcra mərhələsi</div>
-            <div class="mi-form-grid">
-                <div class="mi-form-group"><label class="mi-lbl">Qeydiyyatı (rayon)</label>
-                    <input name="Qeydiyyati" class="mi-input" value="@Model.Qeydiyyati" /></div>
-                <div class="mi-form-group"><label class="mi-lbl">Əmək haqqı məlumatı</label>
-                    <input name="EmekHaqqiMelumati" class="mi-input" value="@Model.EmekHaqqiMelumati" /></div>
-                <div class="mi-form-group"><label class="mi-lbl">İş yeri</label>
-                    <input name="IsYeri" class="mi-input" value="@Model.IsYeri" /></div>
-                <div class="mi-form-group"><label class="mi-lbl">DYP sorğu tarixi</label>
-                    <input name="DypSorguTarixi" class="mi-input" type="date" value="@(Model.DypSorguTarixi?.ToString("yyyy-MM-dd"))" /></div>
-                <div class="mi-form-group"><label class="mi-lbl">Adına sorğu</label>
-                    <input name="AdinaSorgu" class="mi-input" value="@Model.AdinaSorgu" /></div>
-                <div class="mi-form-group"><label class="mi-lbl">Əmlaka həbs</label>
-                    <input name="EmlakaHebs" class="mi-input" value="@Model.EmlakaHebs" /></div>
-                <div class="mi-form-group"><label class="mi-lbl">Stop</label>
-                    <input name="Stop" class="mi-input" value="@Model.Stop" /></div>
-                <div class="mi-form-group"><label class="mi-lbl">Zamin (mətn)</label>
-                    <input name="Zamin" class="mi-input" value="@Model.Zamin" /></div>
-                <div class="mi-form-group mi-form-group--full"><label class="mi-lbl">İcraçı son işlər</label>
-                    <textarea name="IcraSonIsler" class="mi-textarea" rows="2">@Model.IcraSonIsler</textarea></div>
-                <div class="mi-form-group mi-form-group--full"><label class="mi-lbl">İcra qeydi</label>
-                    <textarea name="IcraQeyd" class="mi-textarea" rows="2">@Model.IcraQeyd</textarea></div>
-            </div>
-
-            <div class="mi-form-actions">
-                <button type="button" id="btnSaveEdit" class="mi-btn mi-btn--primary mi-btn--sm"><i class="bi bi-check-lg"></i> Saxla</button>
-                <button type="button" id="btnCancelEdit" class="mi-btn mi-btn--ghost mi-btn--sm">Ləğv et</button>
-            </div>
-        </form>
-    </div>
 </div>
 
 @functions {
@@ -691,15 +668,7 @@
         }
     })();
 
-    function openEdit() {
-        document.getElementById('readView').style.display = 'none';
-        document.getElementById('editCard').style.display = '';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    document.getElementById('btnEdit').addEventListener('click', openEdit);
-    document.querySelectorAll('.dt-edit-borclu').forEach(function (b) { b.addEventListener('click', openEdit); });
-
-    // Subyekt cədvəli — sətri aç/bağla (detal + redaktə)
+    // Subyekt cədvəli — sətri aç/bağla (detal + inline redaktə)
     function dtToggle(e, row) {
         if (e.target.closest('a, button, form, input, textarea, select, label')) return;
         row.closest('tbody').classList.toggle('open');
@@ -710,33 +679,19 @@
         document.getElementById('dtSubjTable').classList.toggle('dt-show-ex');
         this.classList.toggle('mi-btn--primary');
     });
-    document.getElementById('btnCancelEdit').addEventListener('click', function () {
-        document.getElementById('editCard').style.display = 'none';
-        document.getElementById('readView').style.display = '';
-    });
 
-    // "Geri": redaktə açıqdırsa oxuma görünüşünə qayıt (siyahıya getmə); deyilsə siyahıya
-    document.getElementById('btnGeri').addEventListener('click', function (e) {
-        var ec = document.getElementById('editCard');
-        if (ec && ec.style.display !== 'none') {
-            e.preventDefault();
-            ec.style.display = 'none';
-            document.getElementById('readView').style.display = '';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Məhkəmə fazası — faktlar ↔ redaktə forması (yerində)
+    (function () {
+        var btn = document.getElementById('btnMehEdit');
+        var cancel = document.getElementById('btnMehCancel');
+        var facts = document.getElementById('mehFacts');
+        var form = document.getElementById('mehEdit');
+        function show(edit) {
+            if (facts) facts.style.display = edit ? 'none' : '';
+            if (form) form.style.display = edit ? '' : 'none';
         }
-    });
-
-    document.getElementById('btnSaveEdit').addEventListener('click', async function () {
-        var form = document.getElementById('editForm');
-        var data = new FormData(form);
-        var params = new URLSearchParams();
-        for (var [k, v] of data.entries()) params.append(k, v);
-        try {
-            var r = await fetch('/User/MehkemeIsi/Yenile/' + ishId, { method: 'POST', body: params });
-            var json = await r.json();
-            if (json.success) { location.reload(); }
-            else { alert(json.message || 'Xəta baş verdi.'); }
-        } catch { alert('Xəta baş verdi.'); }
-    });
+        if (btn) btn.addEventListener('click', function () { show(true); });
+        if (cancel) cancel.addEventListener('click', function () { show(false); });
+    })();
 </script>
 }

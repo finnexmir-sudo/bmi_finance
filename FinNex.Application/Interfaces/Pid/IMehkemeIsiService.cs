@@ -11,6 +11,8 @@ public interface IMehkemeIsiService
     Task<MehkemeIsiDetailDto?> DetailGetirAsync(int id);
     Task<MehkemeIsi> YaratAsync(MehkemeIsiCreateDto dto, int yaradanIsciId);
     Task<bool> YenileAsync(int id, MehkemeIsiUpdateDto dto, int yenileyenIsciId);
+    Task<bool> MehkemeFazaYenileAsync(int id, MehkemeIsiUpdateDto dto, int yenileyenIsciId);
+    Task<bool> IcraFazaYenileAsync(int id, MehkemeIsiUpdateDto dto, int yenileyenIsciId);
     Task<bool> SilAsync(int id, int silenIsciId);
 
     Task<MehkemeMerhelesi> MerheleElavEtAsync(MehkemeMerheleCreateDto dto, IFormFile? fayl, string dmsRoot, int yaradanIsciId);

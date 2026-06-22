@@ -518,6 +518,53 @@ public class MehkemeIsiService : IMehkemeIsiService
         return (isSayi, merheleSayi);
     }
 
+    // ── Məhkəmə fazası (yalnız litiqasiya sahələri) ──
+    public async Task<bool> MehkemeFazaYenileAsync(int id, MehkemeIsiUpdateDto dto, int isciId)
+    {
+        var entity = await _uow.Repository<MehkemeIsi>().IdIleGetirAsync(id);
+        if (entity == null || entity.Silinib) return false;
+
+        entity.Status        = dto.Status;
+        entity.Nov           = dto.Nov;
+        entity.BaslamaTarixi = dto.BaslamaTarixi;
+        entity.QetnameTarixi = dto.QetnameTarixi;
+        entity.Hakim         = dto.Hakim;
+        entity.IsNomresi     = dto.IsNomresi;
+        entity.Qerardad      = string.IsNullOrWhiteSpace(dto.Qerardad) ? null : dto.Qerardad.Trim();
+        entity.Qeyd          = string.IsNullOrWhiteSpace(dto.Qeyd) ? null : dto.Qeyd.Trim();
+        entity.YenileyenIcraciId = isciId;
+        entity.YenilenmeTarixi   = DateTime.Now;
+
+        await _uow.Repository<MehkemeIsi>().YenileAsync(entity);
+        await _uow.YaddaSaxlaAsync();
+        return true;
+    }
+
+    // ── İcra fazası (yalnız icra/borclu sahələri) ──
+    public async Task<bool> IcraFazaYenileAsync(int id, MehkemeIsiUpdateDto dto, int isciId)
+    {
+        var entity = await _uow.Repository<MehkemeIsi>().IdIleGetirAsync(id);
+        if (entity == null || entity.Silinib) return false;
+
+        entity.IcraMemuru        = dto.IcraMemuru;
+        entity.Qeydiyyati        = dto.Qeydiyyati;
+        entity.EmekHaqqiMelumati = dto.EmekHaqqiMelumati;
+        entity.IsYeri            = dto.IsYeri;
+        entity.DypSorguTarixi    = dto.DypSorguTarixi;
+        entity.AdinaSorgu        = dto.AdinaSorgu;
+        entity.EmlakaHebs        = dto.EmlakaHebs;
+        entity.Stop              = dto.Stop;
+        entity.IcraSonIsler      = dto.IcraSonIsler;
+        entity.IcraQeyd          = dto.IcraQeyd;
+        entity.Zamin             = dto.Zamin;
+        entity.YenileyenIcraciId = isciId;
+        entity.YenilenmeTarixi   = DateTime.Now;
+
+        await _uow.Repository<MehkemeIsi>().YenileAsync(entity);
+        await _uow.YaddaSaxlaAsync();
+        return true;
+    }
+
     public async Task<bool> SilAsync(int id, int silenIsciId)
     {
         var entity = await _uow.Repository<MehkemeIsi>().IdIleGetirAsync(id);
