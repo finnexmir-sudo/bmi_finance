@@ -223,12 +223,12 @@ namespace FinNex.UI.Areas.HR.Controllers
                         : gunCixis - tezCixmaTolerans;
 
                     // Təsdiqlənmiş saat icazəsi / ezamiyyət erkən çıxışı bağışlayır:
-                    //  - İcazə: günün sonunu örtür (BitisSaati >= hədd) və çıxış icazə başlanğıcı ətrafındadır
+                    //  - İcazə: çıxış icazənin başlanğıcından sonradır (Rəhbər paneli ilə EYNİ məntiq —
+                    //    yarım günlük icazə də erkən çıxışı örtür; gün-sonu/BitisSaati tələbi YOXDUR)
                     //  - Ezamiyyət: həmin tarixi əhatə edir (saat varsa çıxış başlanğıc ətrafında, yoxdursa tam gün)
                     var cixisTod = x.CixisVaxti?.TimeOfDay ?? TimeSpan.Zero;
                     bool icazeOrtuyur = x.CixisVaxti.HasValue && icazeList.Any(i =>
                         i.IsciId == x.IsciId && i.Tarix == x.Tarix.Date &&
-                        i.Bit >= gunHedd &&
                         cixisTod >= i.Bas - tezCixmaTolerans);
                     bool ezamiyyetOrtuyur = x.CixisVaxti.HasValue && ezamiyyetList.Any(e =>
                         e.IsciId == x.IsciId && e.Bas <= x.Tarix.Date && e.Bit >= x.Tarix.Date &&
