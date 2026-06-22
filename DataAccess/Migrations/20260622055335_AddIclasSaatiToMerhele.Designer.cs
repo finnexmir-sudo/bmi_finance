@@ -4,6 +4,7 @@ using FinNex.DataAccess.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FinNex.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260622055335_AddIclasSaatiToMerhele")]
+    partial class AddIclasSaatiToMerhele
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -7371,9 +7374,6 @@ namespace FinNex.DataAccess.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("IcraciMemur")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("IsNomresi")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("MehkemeIsiId")
