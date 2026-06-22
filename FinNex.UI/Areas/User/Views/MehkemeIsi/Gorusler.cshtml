@@ -23,25 +23,6 @@
         var n = (d.Date - bugun).Days;
         return n == 0 ? "bu gün" : n == 1 ? "sabah" : $"{n} gün sonra";
     }
-    string TipAd(MerheleTipi t) => t switch
-    {
-        MerheleTipi.IddiaVerildi  => "İddia verildi",
-        MerheleTipi.MehkemeIclasi => "Məhkəmə iclası",
-        MerheleTipi.QerarVerildi  => "Qərar verildi",
-        MerheleTipi.IcraBaglandi  => "İcra bağlandı",
-        MerheleTipi.Odendi        => "Ödənildi",
-        _                         => "Digər"
-    };
-    string TipClass(MerheleTipi t) => t switch
-    {
-        MerheleTipi.IddiaVerildi  => "mi-badge--blue",
-        MerheleTipi.MehkemeIclasi => "mi-badge--amber",
-        MerheleTipi.QerarVerildi  => "mi-badge--tamam",
-        MerheleTipi.IcraBaglandi  => "mi-badge--icra",
-        MerheleTipi.Odendi        => "mi-badge--mehkeme",
-        _                         => "mi-badge--diger"
-    };
-
     var gruplar = Model.GroupBy(x => x.Tarix.Date).OrderBy(g => g.Key).ToList();
 }
 
@@ -94,7 +75,6 @@
                            data-search="@($"{x.BorcluAd} {x.QeydiyyatNomresi} {x.IsNomresi} {x.Hakim}")">
                             <span class="gr-time"><i class="bi bi-clock"></i> @(string.IsNullOrWhiteSpace(x.Saat) ? "—" : x.Saat)</span>
                             <span class="gr-name">@x.BorcluAd</span>
-                            <span class="mi-badge @TipClass(x.MerheleTipi)">@TipAd(x.MerheleTipi)</span>
                             <span class="gr-iz" title="@x.IsNomresi"><i class="bi bi-bank"></i> @Txt(x.IsNomresi)</span>
                             <span class="gr-hakim" title="@x.Hakim"><i class="bi bi-person-badge"></i> @Txt(x.Hakim)</span>
                             @if (!string.IsNullOrWhiteSpace(x.Qeyd))

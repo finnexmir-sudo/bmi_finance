@@ -101,69 +101,6 @@
             <div class="dt-note"><i class="bi bi-info-circle"></i> Bu kredit Oracle aktiv siyahısında yoxdur — maliyyə əl ilə doldurulur.</div>
         }
 
-        <!-- ═══ Məhkəmə xərcləri (bir neçə ola bilər) ═══ -->
-        <div class="dt-card">
-            <div class="dt-card-h">
-                <span><i class="bi bi-cash-stack"></i> Məhkəmə xərcləri <span class="dt-sub">(fərqli məhkəmələr)</span></span>
-                <span class="dt-sub">Cəm: <b>@M(Model.MehkemeXerci)</b></span>
-            </div>
-            @if (Model.Xercler.Any())
-            {
-                <div class="dt-twrap">
-                    <table class="dt-table">
-                        <thead>
-                            <tr><th class="ms-num">Məbləğ</th><th>Tarix</th><th>Məhkəmə / qeyd</th><th class="dt-row-act"></th></tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var xc in Model.Xercler)
-                            {
-                                <tr>
-                                    <td class="ms-num"><b>@M(xc.Mebleg)</b></td>
-                                    <td>@D(xc.Tarix)</td>
-                                    <td>@V(xc.Mehkeme)</td>
-                                    <td class="dt-row-act">
-                                        <form asp-action="XercSil" method="post" onsubmit="return confirm('Bu xərc silinsin?');">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="xerciId" value="@xc.Id" />
-                                            <input type="hidden" name="ishId" value="@Model.Id" />
-                                            <button type="submit" class="mi-btn-icon mi-btn-icon--danger" title="Sil"><i class="bi bi-x"></i></button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-            else
-            {
-                <div class="dt-empty"><i class="bi bi-cash"></i> Hələ xərc əlavə edilməyib</div>
-            }
-
-            <details class="dt-add">
-                <summary><i class="bi bi-plus-lg"></i> Xərc əlavə et</summary>
-                <form asp-action="XercElave" method="post" style="margin-top:12px">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="MehkemeIsiId" value="@Model.Id" />
-                    <div class="mi-form-grid mi-form-grid--3">
-                        <div class="mi-form-group">
-                            <label class="mi-lbl">Məbləğ (₼)</label>
-                            <input name="Mebleg" class="mi-input" type="number" step="0.01" min="0" required />
-                        </div>
-                        <div class="mi-form-group">
-                            <label class="mi-lbl">Tarix</label>
-                            <input name="Tarix" class="mi-input" type="date" />
-                        </div>
-                        <div class="mi-form-group">
-                            <label class="mi-lbl">Məhkəmə / qeyd</label>
-                            <input name="Mehkeme" class="mi-input" maxlength="200" placeholder="məs. Apellyasiya məhkəməsi…" />
-                        </div>
-                    </div>
-                    <button type="submit" class="mi-btn mi-btn--primary mi-btn--sm"><i class="bi bi-plus-lg"></i> Əlavə et</button>
-                </form>
-            </details>
-        </div>
-
         <!-- ═══ Məhkəmə fazası ═══ -->
         <div class="dt-card">
             <div class="dt-card-h">
@@ -249,12 +186,11 @@
                     <div class="mi-form-grid mi-form-grid--3">
                         <div class="mi-form-group">
                             <label class="mi-lbl">Növ</label>
-                            <select name="MerheleTipi" class="mi-select">
-                                <option value="1">İddia verildi</option>
-                                <option value="2">Məhkəmə iclası</option>
-                                <option value="3">Qərar verildi</option>
-                                <option value="4">İcra bağlandı</option>
-                                <option value="5">Ödənildi</option>
+                            <select name="MerheleTipi" id="merheleNov" class="mi-select">
+                                <option value="2">Məhkəmə iclası (görüş)</option>
+                                <option value="7">Qətnamə gəldi</option>
+                                <option value="8">Ekspertizaya göndərildi</option>
+                                <option value="9">Geri qaytarıldı</option>
                                 <option value="6">Digər</option>
                             </select>
                         </div>
@@ -262,7 +198,7 @@
                             <label class="mi-lbl">Tarix</label>
                             <input name="Tarix" class="mi-input" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
                         </div>
-                        <div class="mi-form-group">
+                        <div class="mi-form-group" id="merheleSaatGroup">
                             <label class="mi-lbl">Saat <span class="dt-sub">(24 saat — SS:DD)</span></label>
                             <input name="Saat" id="merheleSaat" class="mi-input" type="text" inputmode="numeric" autocomplete="off" placeholder="məs: 14:40" maxlength="5" />
                         </div>
@@ -485,6 +421,69 @@
             </details>
         </div>
 
+        <!-- ═══ Məhkəmə xərcləri (bir neçə ola bilər) — ən aşağıda ═══ -->
+        <div class="dt-card">
+            <div class="dt-card-h">
+                <span><i class="bi bi-cash-stack"></i> Məhkəmə xərcləri <span class="dt-sub">(fərqli məhkəmələr)</span></span>
+                <span class="dt-sub">Cəm: <b>@M(Model.MehkemeXerci)</b></span>
+            </div>
+            @if (Model.Xercler.Any())
+            {
+                <div class="dt-twrap">
+                    <table class="dt-table">
+                        <thead>
+                            <tr><th class="ms-num">Məbləğ</th><th>Tarix</th><th>Məhkəmə / qeyd</th><th class="dt-row-act"></th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var xc in Model.Xercler)
+                            {
+                                <tr>
+                                    <td class="ms-num"><b>@M(xc.Mebleg)</b></td>
+                                    <td>@D(xc.Tarix)</td>
+                                    <td>@V(xc.Mehkeme)</td>
+                                    <td class="dt-row-act">
+                                        <form asp-action="XercSil" method="post" onsubmit="return confirm('Bu xərc silinsin?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="xerciId" value="@xc.Id" />
+                                            <input type="hidden" name="ishId" value="@Model.Id" />
+                                            <button type="submit" class="mi-btn-icon mi-btn-icon--danger" title="Sil"><i class="bi bi-x"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="dt-empty"><i class="bi bi-cash"></i> Hələ xərc əlavə edilməyib</div>
+            }
+
+            <details class="dt-add">
+                <summary><i class="bi bi-plus-lg"></i> Xərc əlavə et</summary>
+                <form asp-action="XercElave" method="post" style="margin-top:12px">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="MehkemeIsiId" value="@Model.Id" />
+                    <div class="mi-form-grid mi-form-grid--3">
+                        <div class="mi-form-group">
+                            <label class="mi-lbl">Məbləğ (₼)</label>
+                            <input name="Mebleg" class="mi-input" type="number" step="0.01" min="0" required />
+                        </div>
+                        <div class="mi-form-group">
+                            <label class="mi-lbl">Tarix</label>
+                            <input name="Tarix" class="mi-input" type="date" />
+                        </div>
+                        <div class="mi-form-group">
+                            <label class="mi-lbl">Məhkəmə / qeyd</label>
+                            <input name="Mehkeme" class="mi-input" maxlength="200" placeholder="məs. Apellyasiya məhkəməsi…" />
+                        </div>
+                    </div>
+                    <button type="submit" class="mi-btn mi-btn--primary mi-btn--sm"><i class="bi bi-plus-lg"></i> Əlavə et</button>
+                </form>
+            </details>
+        </div>
+
         <!-- Sil -->
         <form asp-action="Sil" method="post" class="dt-danger-row"
               onsubmit="return confirm('Bu məhkəmə işini silmək istədiyinizə əminsiniz?')">
@@ -609,22 +608,28 @@
 
     string MerheleBadgeClass(MerheleTipi t) => t switch
     {
-        MerheleTipi.IddiaVerildi  => "mi-badge--blue",
-        MerheleTipi.MehkemeIclasi => "mi-badge--amber",
-        MerheleTipi.QerarVerildi  => "mi-badge--tamam",
-        MerheleTipi.IcraBaglandi  => "mi-badge--icra",
-        MerheleTipi.Odendi        => "mi-badge--mehkeme",
-        _                         => "mi-badge--diger"
+        MerheleTipi.MehkemeIclasi          => "mi-badge--amber",
+        MerheleTipi.QetnameGeldi           => "mi-badge--tamam",
+        MerheleTipi.EkspertizayaGonderildi => "mi-badge--blue",
+        MerheleTipi.GeriQaytarildi         => "mi-badge--bagli",
+        MerheleTipi.IddiaVerildi           => "mi-badge--blue",
+        MerheleTipi.QerarVerildi           => "mi-badge--tamam",
+        MerheleTipi.IcraBaglandi           => "mi-badge--icra",
+        MerheleTipi.Odendi                 => "mi-badge--mehkeme",
+        _                                  => "mi-badge--diger"
     };
 
     string MerheleTipiAd(MerheleTipi t) => t switch
     {
-        MerheleTipi.IddiaVerildi  => "İddia verildi",
-        MerheleTipi.MehkemeIclasi => "Məhk. iclası",
-        MerheleTipi.QerarVerildi  => "Qərar verildi",
-        MerheleTipi.IcraBaglandi  => "İcra bağlandı",
-        MerheleTipi.Odendi        => "Ödənildi",
-        _                         => "Digər"
+        MerheleTipi.MehkemeIclasi          => "Məhkəmə iclası",
+        MerheleTipi.QetnameGeldi           => "Qətnamə gəldi",
+        MerheleTipi.EkspertizayaGonderildi => "Ekspertizaya göndərildi",
+        MerheleTipi.GeriQaytarildi         => "Geri qaytarıldı",
+        MerheleTipi.IddiaVerildi           => "İddia verildi",
+        MerheleTipi.QerarVerildi           => "Qərar verildi",
+        MerheleTipi.IcraBaglandi           => "İcra bağlandı",
+        MerheleTipi.Odendi                 => "Ödənildi",
+        _                                  => "Digər"
     };
 
     string SenedNovAd(MehkemeSenedNovu n) => n switch
@@ -656,6 +661,17 @@
     (function () {
         var f = document.getElementById('merheleForm');
         var saat = document.getElementById('merheleSaat');
+        var nov = document.getElementById('merheleNov');
+        var saatGroup = document.getElementById('merheleSaatGroup');
+
+        // Saat yalnız "Məhkəmə iclası" (görüş) üçün görünür; digər növlərdə gizlənir
+        function toggleSaat() {
+            var iclasdir = nov && nov.value === '2';
+            if (saatGroup) saatGroup.style.display = iclasdir ? '' : 'none';
+            if (!iclasdir && saat) saat.value = '';
+        }
+        if (nov) { nov.addEventListener('change', toggleSaat); toggleSaat(); }
+
         if (saat) {
             // "1400" yazanda avtomatik "14:00" (2 rəqəmdən sonra ":" salır)
             saat.addEventListener('input', function () {

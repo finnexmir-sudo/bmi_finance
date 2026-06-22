@@ -41,11 +41,11 @@ public class MehkemeIsiService : IMehkemeIsiService
 
         return list.Select(x =>
         {
-            var merheleler = x.Merheleler.Where(m => !m.Silinib).ToList();
+            // yalnız "Məhkəmə iclası" (görüş) tipli mərhələlər iclas sayılır
+            var iclaslar = x.Merheleler.Where(m => !m.Silinib && m.MerheleTipi == MerheleTipi.MehkemeIclasi).ToList();
             var bugun = DateTime.Today;
-            // növbəti iclas: bu gün və sonrası ən yaxını; yoxdursa ən son keçmiş iclas
-            var novbeti = merheleler.Where(m => m.Tarix.Date >= bugun).OrderBy(m => m.Tarix).FirstOrDefault()
-                          ?? merheleler.OrderByDescending(m => m.Tarix).FirstOrDefault();
+            var novbeti = iclaslar.Where(m => m.Tarix.Date >= bugun).OrderBy(m => m.Tarix).FirstOrDefault()
+                          ?? iclaslar.OrderByDescending(m => m.Tarix).FirstOrDefault();
             return new MehkemeIsiListDto
             {
                 Id                = x.Id,
@@ -61,7 +61,7 @@ public class MehkemeIsiService : IMehkemeIsiService
                 NovbetiIclasSaat  = novbeti?.Saat,
                 Hakim             = x.Hakim,
                 Teminat           = x.KreditNovuMetn,
-                MerheleCount      = merheleler.Count,
+                MerheleCount      = iclaslar.Count,
                 YaradilmaTarixi   = x.YaradilmaTarixi
             };
         }).ToList();
@@ -71,7 +71,8 @@ public class MehkemeIsiService : IMehkemeIsiService
     {
         var bugun = DateTime.Today;
         var merheleler = await _uow.Repository<MehkemeMerhelesi>().Query().AsNoTracking()
-            .Where(m => !m.Silinib && m.Tarix >= bugun && !m.MehkemeIsi.Silinib)
+            .Where(m => !m.Silinib && m.Tarix >= bugun && !m.MehkemeIsi.Silinib
+                        && m.MerheleTipi == MerheleTipi.MehkemeIclasi)
             .Include(m => m.MehkemeIsi)
             .OrderBy(m => m.Tarix).ThenBy(m => m.Saat)
             .ToListAsync();

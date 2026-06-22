@@ -110,10 +110,13 @@ public enum MehkemeIsiStatus
 
 public enum MerheleTipi
 {
-    IddiaVerildi   = 1,
-    MehkemeIclasi  = 2,
-    QerarVerildi   = 3,
-    IcraBaglandi   = 4,
-    Odendi         = 5,
-    Diger          = 6
+    IddiaVerildi   = 1,   // köhnə — geriyə uyğunluq üçün saxlanılır
+    MehkemeIclasi  = 2,   // görüş / iclas — yalnız bunda saat olur
+    QerarVerildi   = 3,   // köhnə
+    IcraBaglandi   = 4,   // köhnə
+    Odendi         = 5,   // köhnə
+    Diger          = 6,
+    QetnameGeldi           = 7,
+    EkspertizayaGonderildi = 8,
+    GeriQaytarildi         = 9
 }
