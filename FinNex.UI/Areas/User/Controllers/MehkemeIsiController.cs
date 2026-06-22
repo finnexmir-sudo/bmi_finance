@@ -51,6 +51,13 @@ public class MehkemeIsiController : Controller
         return View(model);
     }
 
+    // ── Yaxınlaşan görüşlər (bütün işlər üzrə gələcək iclaslar) ──
+    public async Task<IActionResult> Gorusler()
+    {
+        var model = await _service.YaxinlasanGoruslerAsync();
+        return View(model);
+    }
+
     // ── Excel "Məhkəmə" sheet → MehkemeIsi arxivi ──────────
     [HttpPost]
     [ValidateAntiForgeryToken]

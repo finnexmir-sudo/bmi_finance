@@ -21,6 +21,20 @@ public class MehkemeIsiListDto
     public DateTime YaradilmaTarixi { get; set; }
 }
 
+// Yaxınlaşan görüş/iclas (bütün işlər üzrə — gündəlik səhifəsi)
+public class YaxinlasanGorusDto
+{
+    public int MehkemeIsiId        { get; set; }
+    public string BorcluAd         { get; set; } = "";
+    public string? QeydiyyatNomresi { get; set; }
+    public DateTime Tarix          { get; set; }
+    public string? Saat            { get; set; }
+    public MerheleTipi MerheleTipi { get; set; }
+    public string? IsNomresi       { get; set; }   // iş səviyyəsində məhkəmə / iş №
+    public string? Hakim           { get; set; }   // iş səviyyəsində hakim
+    public string? Qeyd            { get; set; }
+}
+
 public class MehkemeIsiDetailDto
 {
     public int Id                  { get; set; }

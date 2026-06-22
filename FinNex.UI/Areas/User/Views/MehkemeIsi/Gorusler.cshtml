@@ -1,0 +1,156 @@
+@using FinNex.Application.DTOs.Pid
+@using FinNex.Domain.Entities.Pid
+@model IList<YaxinlasanGorusDto>
+@{
+    ViewData["Title"] = "Yaxınlaşan görüşlər";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+
+    var bugun = DateTime.Today;
+    string Txt(string? s) => string.IsNullOrWhiteSpace(s) ? "—" : s;
+
+    string Dow(DateTime d) => d.DayOfWeek switch
+    {
+        DayOfWeek.Monday    => "Bazar ertəsi",
+        DayOfWeek.Tuesday   => "Çərşənbə axşamı",
+        DayOfWeek.Wednesday => "Çərşənbə",
+        DayOfWeek.Thursday  => "Cümə axşamı",
+        DayOfWeek.Friday    => "Cümə",
+        DayOfWeek.Saturday  => "Şənbə",
+        _                   => "Bazar"
+    };
+    string Rel(DateTime d)
+    {
+        var n = (d.Date - bugun).Days;
+        return n == 0 ? "bu gün" : n == 1 ? "sabah" : $"{n} gün sonra";
+    }
+    string TipAd(MerheleTipi t) => t switch
+    {
+        MerheleTipi.IddiaVerildi  => "İddia verildi",
+        MerheleTipi.MehkemeIclasi => "Məhkəmə iclası",
+        MerheleTipi.QerarVerildi  => "Qərar verildi",
+        MerheleTipi.IcraBaglandi  => "İcra bağlandı",
+        MerheleTipi.Odendi        => "Ödənildi",
+        _                         => "Digər"
+    };
+    string TipClass(MerheleTipi t) => t switch
+    {
+        MerheleTipi.IddiaVerildi  => "mi-badge--blue",
+        MerheleTipi.MehkemeIclasi => "mi-badge--amber",
+        MerheleTipi.QerarVerildi  => "mi-badge--tamam",
+        MerheleTipi.IcraBaglandi  => "mi-badge--icra",
+        MerheleTipi.Odendi        => "mi-badge--mehkeme",
+        _                         => "mi-badge--diger"
+    };
+
+    var gruplar = Model.GroupBy(x => x.Tarix.Date).OrderBy(g => g.Key).ToList();
+}
+
+<div class="ms-page">
+    <div class="ms-head">
+        <div>
+            <h2 class="ms-title">Yaxınlaşan görüşlər</h2>
+            <p class="ms-sub">İzlənən işlər üzrə bu gün və sonrakı məhkəmə iclasları</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <a asp-action="Isler" class="ms-btn ms-btn--ghost"><i class="bi bi-bank"></i> Məhkəmə İşləri</a>
+            <a asp-action="Index" class="ms-btn ms-btn--ghost"><i class="bi bi-people"></i> Aktiv Müştərilər</a>
+        </div>
+    </div>
+
+    <div class="ms-filter">
+        <input type="text" id="grSearch" class="ms-input ms-grow" placeholder="🔍 Müştəri, iş № və ya hakim axtar…" />
+        <span class="gr-count" id="grCount">@Model.Count görüş</span>
+    </div>
+
+    @if (gruplar.Any())
+    {
+        foreach (var g in gruplar)
+        {
+            var bugundur = g.Key == bugun;
+            <div class="gr-day @(bugundur ? "gr-day--today" : "")">
+                <div class="gr-day-head">
+                    <i class="bi bi-calendar-event"></i>
+                    <span class="gr-day-date">@g.Key.ToString("dd.MM.yyyy")</span>
+                    <span class="gr-day-dow">@Dow(g.Key)</span>
+                    <span class="gr-day-rel">@Rel(g.Key)</span>
+                    <span class="gr-day-cnt">@g.Count() görüş</span>
+                </div>
+                <div class="gr-day-body">
+                    @foreach (var x in g.OrderBy(i => i.Saat))
+                    {
+                        <a href="@Url.Action("Detal", new { id = x.MehkemeIsiId })" class="gr-item"
+                           data-search="@($"{x.BorcluAd} {x.QeydiyyatNomresi} {x.IsNomresi} {x.Hakim}")">
+                            <span class="gr-time"><i class="bi bi-clock"></i> @(string.IsNullOrWhiteSpace(x.Saat) ? "—" : x.Saat)</span>
+                            <span class="gr-name">@x.BorcluAd</span>
+                            <span class="mi-badge @TipClass(x.MerheleTipi)">@TipAd(x.MerheleTipi)</span>
+                            <span class="gr-iz" title="@x.IsNomresi"><i class="bi bi-bank"></i> @Txt(x.IsNomresi)</span>
+                            <span class="gr-hakim" title="@x.Hakim"><i class="bi bi-person-badge"></i> @Txt(x.Hakim)</span>
+                            @if (!string.IsNullOrWhiteSpace(x.Qeyd))
+                            {
+                                <span class="gr-qeyd">@x.Qeyd</span>
+                            }
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="ms-card"><div class="ms-empty"><i class="bi bi-calendar-x"></i><div>Yaxınlaşan görüş yoxdur.</div></div></div>
+    }
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/user-mehkeme.css" asp-append-version="true" />
+    <style>
+        .gr-count { font-size:12px; color:#64748b; font-weight:600; }
+        .gr-day { background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; margin-bottom:14px; overflow:hidden; }
+        .gr-day--today { border-color:#fca5a5; box-shadow:0 0 0 1px #fecaca; }
+        .gr-day-head { display:flex; align-items:center; gap:10px; padding:11px 16px; background:#f8fafc; border-bottom:1px solid #eef2f7; }
+        .gr-day--today .gr-day-head { background:#fef2f2; }
+        .gr-day-head > i { color:var(--fn-primary,#6366f1); }
+        .gr-day--today .gr-day-head > i { color:#dc2626; }
+        .gr-day-date { font-weight:800; color:#0f172a; font-size:14px; }
+        .gr-day-dow { color:#64748b; font-size:13px; }
+        .gr-day-rel { font-size:11px; font-weight:800; background:#eef2ff; color:#4338ca; border-radius:20px; padding:2px 10px; }
+        .gr-day--today .gr-day-rel { background:#fee2e2; color:#b91c1c; }
+        .gr-day-cnt { margin-left:auto; font-size:12px; color:#94a3b8; font-weight:600; }
+        .gr-day-body { display:flex; flex-direction:column; }
+        .gr-item { display:flex; align-items:center; gap:14px; padding:11px 16px; border-bottom:1px solid #f1f5f9; text-decoration:none; color:#334155; transition:background .12s; flex-wrap:wrap; }
+        .gr-item:last-child { border-bottom:none; }
+        .gr-item:hover { background:#f5f7ff; }
+        .gr-time { font-weight:800; color:#0f172a; min-width:78px; display:inline-flex; align-items:center; gap:5px; font-variant-numeric:tabular-nums; }
+        .gr-time > i { color:#94a3b8; font-weight:400; }
+        .gr-name { font-weight:700; color:#0f172a; min-width:200px; }
+        .gr-iz, .gr-hakim { font-size:12.5px; color:#475569; display:inline-flex; align-items:center; gap:5px; max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .gr-iz > i, .gr-hakim > i { color:#94a3b8; }
+        .gr-qeyd { font-size:12.5px; color:#64748b; font-style:italic; }
+    </style>
+}
+
+@section Scripts {
+<script>
+    (function () {
+        var s = document.getElementById('grSearch');
+        var cnt = document.getElementById('grCount');
+        var items = Array.prototype.slice.call(document.querySelectorAll('.gr-item'));
+        function f() {
+            var q = s.value.trim().toLowerCase();
+            var vis = 0;
+            items.forEach(function (it) {
+                var ok = !q || (it.dataset.search || '').toLowerCase().includes(q);
+                it.style.display = ok ? '' : 'none';
+                if (ok) vis++;
+            });
+            // axtarışda boş qalan günləri gizlət
+            document.querySelectorAll('.gr-day').forEach(function (day) {
+                var any = Array.prototype.slice.call(day.querySelectorAll('.gr-item')).some(function (i) { return i.style.display !== 'none'; });
+                day.style.display = any ? '' : 'none';
+            });
+            cnt.textContent = vis + ' görüş';
+        }
+        s.addEventListener('input', f);
+    })();
+</script>
+}

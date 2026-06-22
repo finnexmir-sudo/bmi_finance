@@ -67,6 +67,29 @@ public class MehkemeIsiService : IMehkemeIsiService
         }).ToList();
     }
 
+    public async Task<IList<YaxinlasanGorusDto>> YaxinlasanGoruslerAsync()
+    {
+        var bugun = DateTime.Today;
+        var merheleler = await _uow.Repository<MehkemeMerhelesi>().Query().AsNoTracking()
+            .Where(m => !m.Silinib && m.Tarix >= bugun && !m.MehkemeIsi.Silinib)
+            .Include(m => m.MehkemeIsi)
+            .OrderBy(m => m.Tarix).ThenBy(m => m.Saat)
+            .ToListAsync();
+
+        return merheleler.Select(m => new YaxinlasanGorusDto
+        {
+            MehkemeIsiId     = m.MehkemeIsiId,
+            BorcluAd         = m.MehkemeIsi.BorcluAd,
+            QeydiyyatNomresi = m.MehkemeIsi.QeydiyyatNomresi,
+            Tarix            = m.Tarix,
+            Saat             = m.Saat,
+            MerheleTipi      = m.MerheleTipi,
+            IsNomresi        = m.MehkemeIsi.IsNomresi,
+            Hakim            = m.MehkemeIsi.Hakim,
+            Qeyd             = m.Qeyd
+        }).ToList();
+    }
+
     public async Task<MehkemeIsiDetailDto?> DetailGetirAsync(int id)
     {
         var x = await _uow.Repository<MehkemeIsi>()
