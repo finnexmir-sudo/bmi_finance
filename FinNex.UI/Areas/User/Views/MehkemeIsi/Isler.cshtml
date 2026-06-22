@@ -45,36 +45,36 @@
     var statuslar = Enum.GetValues<MehkemeIsiStatus>();
 }
 
-<div class="mi-page">
-    <div class="mi-head">
+<div class="ms-page">
+    <div class="ms-head">
         <div>
-            <h2 class="mi-title">Məhkəmə İşləri</h2>
-            <p class="mi-sub">İzlənən bütün məhkəmə işlərinin icmal siyahısı</p>
+            <h2 class="ms-title">Məhkəmə İşləri</h2>
+            <p class="ms-sub">İzlənən bütün məhkəmə işlərinin icmal siyahısı</p>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <a asp-action="Index" class="mi-btn mi-btn--ghost"><i class="bi bi-people"></i> Aktiv Müştərilər</a>
+            <a asp-action="Index" class="ms-btn ms-btn--ghost"><i class="bi bi-people"></i> Aktiv Müştərilər</a>
             <form asp-action="Import" method="post" enctype="multipart/form-data" class="mx-import" title="Köhnə Excel arxivini import et (təkrarlar atlanır)">
                 @Html.AntiForgeryToken()
                 <i class="bi bi-file-earmark-excel" style="color:#15803d"></i>
                 <input type="file" name="fayl" accept=".xls,.xlsx" required class="mx-file" />
-                <button type="submit" class="mi-btn mi-btn--ghost mi-btn--sm"><i class="bi bi-upload"></i> Excel import</button>
+                <button type="submit" class="ms-btn ms-btn--ghost"><i class="bi bi-upload"></i> Excel import</button>
             </form>
-            <a asp-action="Yarat" class="mi-btn mi-btn--primary"><i class="bi bi-plus-circle"></i> Yeni iş</a>
+            <a asp-action="Yarat" class="ms-btn ms-btn--primary"><i class="bi bi-plus-circle"></i> Yeni iş</a>
         </div>
     </div>
 
     @if (TempData["Success"] != null)
     {
-        <div class="mi-alert mi-alert--success">@TempData["Success"]</div>
+        <div class="ms-alert ms-alert--success">@TempData["Success"]</div>
     }
     @if (TempData["Error"] != null)
     {
-        <div class="mi-alert mi-alert--error">@TempData["Error"]</div>
+        <div class="ms-alert ms-alert--error">@TempData["Error"]</div>
     }
 
-    <div class="mi-filter-row">
-        <input type="text" id="mxSearch" class="mi-input" placeholder="🔍 Müştəri adı və ya qeydiyyat № axtar…" />
-        <select id="mxStatus" class="mi-select">
+    <div class="ms-filter">
+        <input type="text" id="mxSearch" class="ms-input ms-grow" placeholder="🔍 Müştəri adı və ya qeydiyyat № axtar…" />
+        <select id="mxStatus" class="ms-input">
             <option value="">Bütün statuslar</option>
             @foreach (var s in statuslar)
             {
@@ -83,19 +83,19 @@
         </select>
     </div>
 
-    <div class="mi-table-card">
-        <div class="mi-table-wrap">
-            <table class="mi-table" id="mxTable">
+    <div class="ms-card">
+        <div class="ms-twrap">
+            <table class="ms-table" id="mxTable">
                 <thead>
                     <tr>
                         <th style="width:46px">№</th>
-                        <th>Müştəri</th>
+                        <th class="ms-col-ad">Müştəri</th>
                         <th>Qeydiyyat №</th>
                         <th>Növ</th>
                         <th>Təminat</th>
                         <th>Status</th>
-                        <th style="text-align:right">Əsas borc</th>
-                        <th style="text-align:right">Məhkəmə xərci</th>
+                        <th class="ms-num">Əsas borc</th>
+                        <th class="ms-num">Məhkəmə xərci</th>
                         <th>Məhkəməyə verilmə</th>
                         <th>Qətnamə tarixi</th>
                         <th>Hakim</th>
@@ -110,20 +110,20 @@
                         {
                             i++;
                             var url = Url.Action("Detal", new { id = x.Id });
-                            <tr class="mx-row" style="cursor:pointer"
+                            <tr class="mx-row"
                                 data-href="@url"
                                 data-search="@($"{x.BorcluAd} {x.QeydiyyatNomresi}")"
                                 data-status="@((int)x.Status)">
-                                <td>@i</td>
-                                <td>
+                                <td class="mx-sira">@i</td>
+                                <td class="ms-col-ad">
                                     <a asp-action="Detal" asp-route-id="@x.Id" class="mx-name">@Txt(x.BorcluAd)</a>
                                 </td>
                                 <td><span class="mi-nomre">@Txt(x.QeydiyyatNomresi)</span></td>
                                 <td><span class="mi-badge @NovClass(x.Nov)">@NovAd(x.Nov)</span></td>
                                 <td>@Txt(x.Teminat)</td>
                                 <td><span class="mi-badge @StatusClass(x.Status)">@StatusAd(x.Status)</span></td>
-                                <td style="text-align:right">@M(x.EsasBorc)</td>
-                                <td style="text-align:right">@M(x.MehkemeXerci)</td>
+                                <td class="ms-num">@M(x.EsasBorc)</td>
+                                <td class="ms-num">@M(x.MehkemeXerci)</td>
                                 <td class="mi-date">@D(x.BaslamaTarixi)</td>
                                 <td class="mi-date">@D(x.QetnameTarixi)</td>
                                 <td>@Txt(x.Hakim)</td>
@@ -133,9 +133,9 @@
                     }
                     else
                     {
-                        <tr>
+                        <tr class="mx-empty-row">
                             <td colspan="12">
-                                <div class="mi-empty">
+                                <div class="ms-empty">
                                     <i class="bi bi-folder2-open"></i>
                                     <div>Hələ heç bir məhkəmə işi izlənmir.</div>
                                     <div style="margin-top:6px;font-size:13px">
@@ -149,16 +149,22 @@
                 </tbody>
             </table>
         </div>
-        <div class="mi-footer-count" id="mxCount">@Model.Count iş</div>
+        <div class="ms-foot" id="mxCount">@Model.Count iş</div>
     </div>
 </div>
 
 @section Styles {
     <link rel="stylesheet" href="~/css/User/user-mehkeme.css" asp-append-version="true" />
     <style>
+        /* İcmal cədvəli — Aktiv Müştərilər (ms-) grid görünüşü */
+        #mxTable tbody td { padding: 9px 14px; border-bottom: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; white-space: nowrap; vertical-align: middle; }
+        #mxTable tbody td:last-child { border-right: none; }
+        #mxTable tbody tr.mx-row { cursor: pointer; }
+        #mxTable tbody tr.mx-row:nth-child(even) td { background: #f8fafc; }
+        #mxTable tbody tr.mx-row:hover td { background: #eff6ff; }
+        .mx-sira { color: #94a3b8; font-weight: 700; text-align: center; }
         .mx-name { font-weight: 700; color: #0f172a; text-decoration: none; }
         .mx-name:hover { color: var(--fn-primary,#6366f1); text-decoration: underline; }
-        #mxTable tbody tr.mx-row:hover { background: #f1f5ff; }
         .mx-import { display: flex; gap: 8px; align-items: center; background: #f5f7ff; border: 1.5px dashed #c7d2fe; border-radius: 10px; padding: 5px 10px; }
         .mx-file { font-size: 12px; max-width: 190px; }
     </style>
