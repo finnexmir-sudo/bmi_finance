@@ -71,18 +71,33 @@
                 <div class="gr-day-body">
                     @foreach (var x in g.OrderBy(i => i.Saat))
                     {
-                        <a href="@Url.Action("Detal", new { id = x.MehkemeIsiId })" class="gr-item"
-                           data-search="@($"{x.BorcluAd} {x.QeydiyyatNomresi} {x.IsNomresi} {x.Hakim}")">
-                            <span class="gr-time"><i class="bi bi-clock"></i> @(string.IsNullOrWhiteSpace(x.Saat) ? "—" : x.Saat)</span>
-                            <span class="gr-name">@x.BorcluAd</span>
-                            <span class="gr-iz" title="@x.IsNomresi"><i class="bi bi-bank"></i> @Txt(x.IsNomresi)</span>
-                            <span class="gr-hakim" title="@x.Hakim"><i class="bi bi-person-badge"></i> @Txt(x.Hakim)</span>
-                            @if (!string.IsNullOrWhiteSpace(x.Qeyd))
-                            {
-                                <span class="gr-qeyd">@x.Qeyd</span>
-                            }
-                            <i class="bi bi-chevron-right gr-go"></i>
-                        </a>
+                        var ezamQeyd = $"Müştəri: {x.BorcluAd}"
+                            + (string.IsNullOrWhiteSpace(x.IsNomresi) ? "" : $" · İş №: {x.IsNomresi}")
+                            + (string.IsNullOrWhiteSpace(x.Hakim) ? "" : $" · Hakim: {x.Hakim}");
+                        var ezamUrl = Url.Action("Create", "EzamiyyetMuraciet", new
+                        {
+                            area = "User",
+                            tarix = x.Tarix.ToString("yyyy-MM-dd"),
+                            saat = x.Saat,
+                            baslig = $"Məhkəmə iclası — {x.BorcluAd}",
+                            mekan = x.IsNomresi,
+                            qeyd = ezamQeyd
+                        });
+                        <div class="gr-item" data-search="@($"{x.BorcluAd} {x.QeydiyyatNomresi} {x.IsNomresi} {x.Hakim}")">
+                            <a href="@Url.Action("Detal", new { id = x.MehkemeIsiId })" class="gr-item-main">
+                                <span class="gr-time"><i class="bi bi-clock"></i> @(string.IsNullOrWhiteSpace(x.Saat) ? "—" : x.Saat)</span>
+                                <span class="gr-name">@x.BorcluAd</span>
+                                <span class="gr-iz" title="@x.IsNomresi"><i class="bi bi-bank"></i> @Txt(x.IsNomresi)</span>
+                                <span class="gr-hakim" title="@x.Hakim"><i class="bi bi-person-badge"></i> @Txt(x.Hakim)</span>
+                                @if (!string.IsNullOrWhiteSpace(x.Qeyd))
+                                {
+                                    <span class="gr-qeyd">@x.Qeyd</span>
+                                }
+                            </a>
+                            <a class="gr-ezam" href="@ezamUrl" title="Bu görüş üçün ezamiyyət müraciəti yarat">
+                                <i class="bi bi-airplane"></i> Ezamiyyət
+                            </a>
+                        </div>
                     }
                 </div>
             </div>
@@ -121,17 +136,19 @@
         .gr-day--today .gr-day-rel { background:#fee2e2; color:#b91c1c; }
         .gr-day-cnt { margin-left:auto; font-size:12px; color:#94a3b8; font-weight:600; }
         .gr-day-body { display:flex; flex-direction:column; }
-        .gr-item { display:flex; align-items:center; gap:14px; padding:11px 16px; border-bottom:1px solid #f1f5f9; text-decoration:none; color:#334155; transition:background .12s; flex-wrap:wrap; }
+        .gr-item { display:flex; align-items:center; gap:10px; border-bottom:1px solid #f1f5f9; transition:background .12s; }
         .gr-item:last-child { border-bottom:none; }
         .gr-item:hover { background:#f5f7ff; }
+        .gr-item-main { display:flex; align-items:center; gap:14px; flex:1 1 auto; min-width:0; flex-wrap:wrap; padding:11px 16px; text-decoration:none; color:#334155; }
+        .gr-ezam { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; margin-right:14px; padding:6px 12px; border:1.5px solid #c7d2fe; border-radius:8px; background:#eef2ff; color:#4338ca; font-size:12.5px; font-weight:700; text-decoration:none; transition:background .12s; }
+        .gr-ezam:hover { background:#e0e7ff; border-color:#a5b4fc; }
+        .gr-ezam > i { font-size:13px; }
         .gr-time { font-weight:800; color:#0f172a; min-width:78px; display:inline-flex; align-items:center; gap:5px; font-variant-numeric:tabular-nums; }
         .gr-time > i { color:#94a3b8; font-weight:400; }
         .gr-name { font-weight:700; color:#0f172a; min-width:200px; }
         .gr-iz, .gr-hakim { font-size:12.5px; color:#475569; display:inline-flex; align-items:center; gap:5px; max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .gr-iz > i, .gr-hakim > i { color:#94a3b8; }
         .gr-qeyd { font-size:12.5px; color:#64748b; font-style:italic; }
-        .gr-go { margin-left:auto; color:#cbd5e1; }
-        .gr-item:hover .gr-go { color:var(--fn-primary,#6366f1); }
         .gr-empty-filter { text-align:center; color:#94a3b8; padding:30px; font-size:14px; }
     </style>
 }

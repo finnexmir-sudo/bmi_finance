@@ -39,11 +39,22 @@ namespace FinNex.UI.Areas.User.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Create()
+        public async Task<IActionResult> Create(DateTime? tarix, string? saat, string? baslig, string? mekan, string? qeyd)
         {
             var mekanlar = await _service.MekanlarAsync();
             ViewBag.Mekanlar = mekanlar;
-            return View();
+
+            // Öncədən doldurma (məs. məhkəmə görüşü → ezamiyyət linki). Parametr yoxdursa boş gəlir.
+            var model = new EzamiyyetMuracietCreateDto
+            {
+                Baslig        = baslig ?? "",
+                BaslamaTarixi = tarix ?? DateTime.Today,
+                BitmeTarixi   = tarix ?? DateTime.Today,
+                BaslamaSaati  = saat,
+                YeniMekanAd   = mekan,
+                Qeyd          = qeyd
+            };
+            return View(model);
         }
 
         [HttpPost]
