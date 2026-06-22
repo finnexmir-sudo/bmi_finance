@@ -39,21 +39,31 @@ public class MehkemeIsiService : IMehkemeIsiService
             .OrderByDescending(x => x.YaradilmaTarixi)
             .ToListAsync();
 
-        return list.Select(x => new MehkemeIsiListDto
+        return list.Select(x =>
         {
-            Id                = x.Id,
-            QeydiyyatNomresi  = x.QeydiyyatNomresi,
-            BorcluAd          = x.BorcluAd,
-            EsasBorc          = x.EsasBorc,
-            MehkemeXerci      = x.MehkemeXerci,
-            Nov               = x.Nov,
-            Status            = x.Status,
-            BaslamaTarixi     = x.BaslamaTarixi,
-            QetnameTarixi     = x.QetnameTarixi,
-            Hakim             = x.Hakim,
-            Teminat           = x.KreditNovuMetn,
-            MerheleCount      = x.Merheleler.Count(m => !m.Silinib),
-            YaradilmaTarixi   = x.YaradilmaTarixi
+            var merheleler = x.Merheleler.Where(m => !m.Silinib).ToList();
+            var bugun = DateTime.Today;
+            // növbəti iclas: bu gün və sonrası ən yaxını; yoxdursa ən son keçmiş iclas
+            var novbeti = merheleler.Where(m => m.Tarix.Date >= bugun).OrderBy(m => m.Tarix).FirstOrDefault()
+                          ?? merheleler.OrderByDescending(m => m.Tarix).FirstOrDefault();
+            return new MehkemeIsiListDto
+            {
+                Id                = x.Id,
+                QeydiyyatNomresi  = x.QeydiyyatNomresi,
+                BorcluAd          = x.BorcluAd,
+                EsasBorc          = x.EsasBorc,
+                MehkemeXerci      = x.MehkemeXerci,
+                Nov               = x.Nov,
+                Status            = x.Status,
+                BaslamaTarixi     = x.BaslamaTarixi,
+                QetnameTarixi     = x.QetnameTarixi,
+                NovbetiIclasTarix = novbeti?.Tarix,
+                NovbetiIclasSaat  = novbeti?.Saat,
+                Hakim             = x.Hakim,
+                Teminat           = x.KreditNovuMetn,
+                MerheleCount      = merheleler.Count,
+                YaradilmaTarixi   = x.YaradilmaTarixi
+            };
         }).ToList();
     }
 

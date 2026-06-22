@@ -98,8 +98,9 @@
                         <th class="ms-num">Məhkəmə xərci</th>
                         <th>Məhkəməyə verilmə</th>
                         <th>Qətnamə tarixi</th>
+                        <th>Növbəti iclas</th>
                         <th>Hakim</th>
-                        <th style="text-align:center">Mərhələ</th>
+                        <th style="text-align:center">İclas</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -126,6 +127,16 @@
                                 <td class="ms-num">@M(x.MehkemeXerci)</td>
                                 <td class="mi-date">@D(x.BaslamaTarixi)</td>
                                 <td class="mi-date">@D(x.QetnameTarixi)</td>
+                                <td class="mi-date">
+                                    @if (x.NovbetiIclasTarix.HasValue)
+                                    {
+                                        <span>@x.NovbetiIclasTarix.Value.ToString("dd.MM.yyyy")@(string.IsNullOrWhiteSpace(x.NovbetiIclasSaat) ? "" : " · " + x.NovbetiIclasSaat)</span>
+                                    }
+                                    else
+                                    {
+                                        <span>—</span>
+                                    }
+                                </td>
                                 <td>@Txt(x.Hakim)</td>
                                 <td style="text-align:center"><span class="mi-count">@x.MerheleCount</span></td>
                             </tr>
@@ -134,7 +145,7 @@
                     else
                     {
                         <tr class="mx-empty-row">
-                            <td colspan="12">
+                            <td colspan="13">
                                 <div class="ms-empty">
                                     <i class="bi bi-folder2-open"></i>
                                     <div>Hələ heç bir məhkəmə işi izlənmir.</div>

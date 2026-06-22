@@ -13,6 +13,8 @@ public class MehkemeIsiListDto
     public MehkemeIsiStatus Status { get; set; }
     public DateTime? BaslamaTarixi { get; set; }
     public DateTime? QetnameTarixi { get; set; }
+    public DateTime? NovbetiIclasTarix { get; set; }   // yaxınlaşan (yoxdursa ən son) iclas tarixi
+    public string?   NovbetiIclasSaat  { get; set; }   // həmin iclasın saatı
     public string? Hakim           { get; set; }
     public string? Teminat         { get; set; }   // girovun növü (Excel "Girovun növü" / KreditNovuMetn)
     public int MerheleCount        { get; set; }
