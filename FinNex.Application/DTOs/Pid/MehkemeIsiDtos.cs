@@ -66,6 +66,7 @@ public class MehkemeMerheleDto
     public MerheleTipi MerheleTipi { get; set; }
     public DateTime Tarix          { get; set; }
     public string? Saat            { get; set; }
+    public string? IsNomresi       { get; set; }
     public string? Hakim           { get; set; }
     public string? IcraciMemur     { get; set; }
     public string? Qeyd            { get; set; }
@@ -118,6 +119,7 @@ public class MehkemeMerheleCreateDto
     public MerheleTipi MerheleTipi { get; set; }
     public DateTime Tarix          { get; set; }
     public string? Saat            { get; set; }
+    public string? IsNomresi       { get; set; }
     public string? Hakim           { get; set; }
     public string? IcraciMemur     { get; set; }
     public string? Qeyd            { get; set; }

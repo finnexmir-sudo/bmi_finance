@@ -53,6 +53,7 @@ public class MehkemeMerhelesi : BaseEntity
     public MerheleTipi MerheleTipi { get; set; }
     public DateTime Tarix          { get; set; }
     public string? Saat            { get; set; }   // iclas/görüş saatı (məs. "14:40") — Excel görüş saatı
+    public string? IsNomresi       { get; set; }   // məhkəmə adı + iş nömrəsi (məs. "Sabunçu RM  e-2(008)-8842/2021, ...")
     public string? Hakim           { get; set; }   // məhkəmə hakiminin adı
     public string? IcraciMemur     { get; set; }   // icra məmurunun adı
     public string? Qeyd            { get; set; }
