@@ -264,7 +264,7 @@
                         </div>
                         <div class="mi-form-group">
                             <label class="mi-lbl">Saat <span class="dt-sub">(24 saat — SS:DD)</span></label>
-                            <input name="Saat" id="merheleSaat" class="mi-input" type="text" inputmode="numeric" placeholder="məs: 14:40" maxlength="5" />
+                            <input name="Saat" id="merheleSaat" class="mi-input" type="text" inputmode="numeric" autocomplete="off" placeholder="məs: 14:40" maxlength="5" />
                         </div>
                         <div class="mi-form-group">
                             <label class="mi-lbl">Sənəd (ixtiyari)</label>
@@ -652,19 +652,27 @@
 <script>
     var ishId = @Model.Id;
 
-    // Mərhələ formu — saat 24 saat formatında (SS:DD) yoxlanışı (İcazə ilə eyni)
+    // Mərhələ formu — saat 24 saat formatı (SS:DD): yazarkən ":" avtomatik + yoxlanış
     (function () {
         var f = document.getElementById('merheleForm');
-        if (!f) return;
-        f.addEventListener('submit', function (e) {
-            var saat = document.getElementById('merheleSaat');
-            var v = (saat ? saat.value : '').trim();
-            if (v && !/^([01]?\d|2[0-3]):[0-5]\d$/.test(v)) {
-                e.preventDefault();
-                alert('Saat düzgün deyil — 24 saat formatı (SS:DD), məs: 14:40.');
-                saat.focus();
-            }
-        });
+        var saat = document.getElementById('merheleSaat');
+        if (saat) {
+            // "1400" yazanda avtomatik "14:00" (2 rəqəmdən sonra ":" salır)
+            saat.addEventListener('input', function () {
+                var d = this.value.replace(/\D/g, '').slice(0, 4);
+                this.value = d.length > 2 ? d.slice(0, 2) + ':' + d.slice(2) : d;
+            });
+        }
+        if (f) {
+            f.addEventListener('submit', function (e) {
+                var v = (saat ? saat.value : '').trim();
+                if (v && !/^([01]?\d|2[0-3]):[0-5]\d$/.test(v)) {
+                    e.preventDefault();
+                    alert('Saat düzgün deyil — 24 saat formatı (SS:DD), məs: 14:40.');
+                    if (saat) saat.focus();
+                }
+            });
+        }
     })();
 
     function openEdit() {
