@@ -1,5 +1,13 @@
 document.addEventListener('DOMContentLoaded', function () {
 
+    // Örtük-nəzərli "problemli erkən çıxış": Rəhbər paneli cixisQirmizi qaytarır
+    // (erkən + icazə/ezamiyyət/fərdi/elil örtüyü YOXDUR); HR səhifəsində tezCixan
+    // onsuz da örtük-nəzərlidir. Rəng/sayğac/filtr bununla işləsin.
+    function erkenProblemli(r) {
+        return (r.cixisQirmizi !== undefined && r.cixisQirmizi !== null)
+            ? (r.cixisQirmizi === true) : (r.tezCixan === true);
+    }
+
     // ── Endpoint URL-ləri ──────────────────────────────────────────
     // Səhifənin kök elementində `data-endpoint-*` atributu varsa onun dəyəri
     // istifadə olunur (boş dəyər → endpoint deaktiv); yoxdursa default HR
@@ -433,10 +441,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // Client-side xüsusi filterlər üçün helper
     function applySpecialFilter(records, statusVal) {
         if (statusVal === 'tezCixan') {
-            // Server-in tezCixan bayrağı ilə filtrlə — KPI sayğacı ilə HƏMİŞƏ uyğun olsun.
-            // (Server bütün örtükləri tətbiq edir: elil/icazə/ezamiyyət + "İş Bitdi" həddi;
-            //  client yenidən hesablamasın ki, sayğac=1, siyahı=0 fərqi yaranmasın.)
-            return records.filter(function (r) { return r.tezCixan === true; });
+            // Örtük-nəzərli problemli erkən çıxış (Rəhbər: cixisQirmizi, HR: tezCixan) — KPI ilə uyğun.
+            return records.filter(erkenProblemli);
         }
         if (statusVal === 'cixisYox') {
             return records.filter(function (r) {
@@ -581,9 +587,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     records = records.filter(function (r) { return clientFilterStatuses.indexOf(r.status) >= 0; });
                 }
                 if (filterTezCixan) {
-                    // HR GetByTarix per-record "tezCixan" qaytarır (cixisQirmizi yalnız Rəhbər-dədir).
-                    // Sayğac da stats.tezCixan-dır → eyni sahə ilə süzək ki, sayğac=siyahı olsun.
-                    records = records.filter(function (r) { return r.tezCixan === true; });
+                    // Örtük-nəzərli problemli erkən çıxış (Rəhbər: cixisQirmizi, HR: tezCixan) — sayğac=siyahı.
+                    records = records.filter(erkenProblemli);
                 }
                 if (filterCixisYox) {
                     records = records.filter(function (r) {
@@ -662,9 +667,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
-            // ÇIXIŞ qırmızı — server tərəfdən r.tezCixan: erkən çıxıb + örtük yoxdur
-            // (İş Bitdi / icazə / ezamiyyət / fərdi icazə / elil hamısı tezCixan-ın içindədir).
-            var cixisClass = (r.cixisVaxti && r.tezCixan) ? 'hrd-time hrd-time--early' : 'hrd-time';
+            // ÇIXIŞ qırmızı — yalnız ÖRTÜK-NƏZƏRLİ problemli erkən çıxışda.
+            // (İcazə / ezamiyyət / fərdi icazə / elil örtüyü varsa qırmızı OLMUR.)
+            var cixisClass = (r.cixisVaxti && erkenProblemli(r)) ? 'hrd-time hrd-time--early' : 'hrd-time';
 
             var duration = '<span class="hrd-nodata">---</span>';
             if (r.girisVaxti && r.cixisVaxti) {
@@ -673,8 +678,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     : Math.floor((new Date(r.cixisVaxti) - new Date(r.girisVaxti)) / 60000);
                 var h = Math.floor(totalMin / 60);
                 var m = totalMin % 60;
-                // İŞ SAATI qırmızı: erkən çıxıb (tezCixan) VƏ net işləmə normadan (8 saat = 480 dəq) azdırsa.
-                var isSaatiQirmizi = r.tezCixan && r.islemeSaatiDeq != null && r.islemeSaatiDeq < 480;
+                // İŞ SAATI qırmızı: problemli erkən çıxış VƏ net işləmə normadan (8 saat = 480 dəq) azdırsa.
+                var isSaatiQirmizi = erkenProblemli(r) && r.islemeSaatiDeq != null && r.islemeSaatiDeq < 480;
                 var durCls = isSaatiQirmizi ? 'hrd-dur hrd-dur--short' : 'hrd-dur hrd-dur--ok';
                 var naharTip = r.naharCixildi ? ' <span style="font-size:10px;color:#94a3b8;margin-left:3px;" title="Nahar çıxılıb"><i class="bi bi-cup-hot"></i></span>' : '';
                 duration = '<span class="' + durCls + '">' + h + ' s ' + m + ' d</span>' + naharTip;
