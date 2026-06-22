@@ -772,6 +772,9 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<bool>("Oxunub")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("SahibUserId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("SenedId")
                         .HasColumnType("int");
 
@@ -1468,64 +1471,6 @@ namespace FinNex.DataAccess.Migrations
                     b.HasIndex("IsciId");
 
                     b.ToTable("AyliqElaveQeydleri");
-                });
-
-            modelBuilder.Entity("FinNex.Domain.Entities.HR.IsciDigerTutulma", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Aciqlama")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("Aktiv")
-                        .HasColumnType("bit");
-
-                    b.Property<decimal>("AyliqMebleg")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("BaslamaAy")
-                        .HasColumnType("int");
-
-                    b.Property<int>("BaslamaIl")
-                        .HasColumnType("int");
-
-                    b.Property<int>("IsciId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("Mebleg")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("MuddetAy")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("SilenIcraciId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("Silinib")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("SilinmeTarixi")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("YaradanIcraciId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("YaradilmaTarixi")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("YenilenmeTarixi")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("YenileyenIcraciId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("IsciDigerTutulmalari");
                 });
 
             modelBuilder.Entity("FinNex.Domain.Entities.HR.BayramGunu", b =>
@@ -2850,6 +2795,64 @@ namespace FinNex.DataAccess.Migrations
                     b.ToTable("IsciAyliqQazanclar");
                 });
 
+            modelBuilder.Entity("FinNex.Domain.Entities.HR.IsciDigerTutulma", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Aciqlama")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("AyliqMebleg")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("BaslamaAy")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BaslamaIl")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IsciId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Mebleg")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("MuddetAy")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SilenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Silinib")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SilinmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YaradanIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("YaradilmaTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("YenilenmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YenileyenIcraciId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("IsciDigerTutulmalari");
+                });
+
             modelBuilder.Entity("FinNex.Domain.Entities.HR.IsciGuzest", b =>
                 {
                     b.Property<int>("Id")
@@ -3678,6 +3681,30 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<bool>("Aktivdir")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("DsmfyeCelb")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("GelirVergisiAzadMebleg")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("GuzestHeddineDaxil")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IssizliyeCelb")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ItsseCelb")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ManualGelir")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("MezuniyyetOrtalamasinaDaxil")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ProvodkaHesabAcari")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int?>("SilenIcraciId")
                         .HasColumnType("int");
 
@@ -3689,6 +3716,9 @@ namespace FinNex.DataAccess.Migrations
 
                     b.Property<int>("Tip")
                         .HasColumnType("int");
+
+                    b.Property<bool>("VergiyeCelb")
+                        .HasColumnType("bit");
 
                     b.Property<int?>("YaradanIcraciId")
                         .HasColumnType("int");
@@ -3715,144 +3745,272 @@ namespace FinNex.DataAccess.Migrations
                             Id = 1,
                             Ad = "Əsas Əməkhaqqı",
                             Aktivdir = true,
+                            DsmfyeCelb = true,
+                            GelirVergisiAzadMebleg = 0m,
+                            GuzestHeddineDaxil = true,
+                            IssizliyeCelb = true,
+                            ItsseCelb = true,
+                            ManualGelir = false,
+                            MezuniyyetOrtalamasinaDaxil = true,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2987)
+                            VergiyeCelb = true,
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8597)
                         },
                         new
                         {
                             Id = 2,
                             Ad = "Bonus/Mükafat",
                             Aktivdir = true,
+                            DsmfyeCelb = true,
+                            GelirVergisiAzadMebleg = 0m,
+                            GuzestHeddineDaxil = true,
+                            IssizliyeCelb = true,
+                            ItsseCelb = true,
+                            ManualGelir = false,
+                            MezuniyyetOrtalamasinaDaxil = true,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2987)
+                            VergiyeCelb = true,
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8602)
                         },
                         new
                         {
                             Id = 3,
                             Ad = "Məzuniyyət Ödənişi",
                             Aktivdir = true,
+                            DsmfyeCelb = true,
+                            GelirVergisiAzadMebleg = 0m,
+                            GuzestHeddineDaxil = true,
+                            IssizliyeCelb = true,
+                            ItsseCelb = true,
+                            ManualGelir = false,
+                            MezuniyyetOrtalamasinaDaxil = true,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2987)
+                            VergiyeCelb = true,
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8602)
                         },
                         new
                         {
                             Id = 4,
                             Ad = "Davamiyyət Kəsintisi",
                             Aktivdir = true,
+                            DsmfyeCelb = true,
+                            GelirVergisiAzadMebleg = 0m,
+                            GuzestHeddineDaxil = true,
+                            IssizliyeCelb = true,
+                            ItsseCelb = true,
+                            ManualGelir = false,
+                            MezuniyyetOrtalamasinaDaxil = true,
                             Silinib = false,
                             Tip = 2,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2992)
+                            VergiyeCelb = true,
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8602)
                         },
                         new
                         {
                             Id = 5,
                             Ad = "Gecikdirmə Cəriməsi",
                             Aktivdir = true,
+                            DsmfyeCelb = true,
+                            GelirVergisiAzadMebleg = 0m,
+                            GuzestHeddineDaxil = true,
+                            IssizliyeCelb = true,
+                            ItsseCelb = true,
+                            ManualGelir = false,
+                            MezuniyyetOrtalamasinaDaxil = true,
                             Silinib = false,
                             Tip = 2,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2992)
+                            VergiyeCelb = true,
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8602)
                         },
                         new
                         {
                             Id = 6,
                             Ad = "Gəlir Vergisi",
                             Aktivdir = true,
+                            DsmfyeCelb = true,
+                            GelirVergisiAzadMebleg = 0m,
+                            GuzestHeddineDaxil = true,
+                            IssizliyeCelb = true,
+                            ItsseCelb = true,
+                            ManualGelir = false,
+                            MezuniyyetOrtalamasinaDaxil = true,
                             Silinib = false,
                             Tip = 2,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2992)
+                            VergiyeCelb = true,
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8602)
                         },
                         new
                         {
                             Id = 7,
                             Ad = "DSMF (İşçi)",
                             Aktivdir = true,
+                            DsmfyeCelb = true,
+                            GelirVergisiAzadMebleg = 0m,
+                            GuzestHeddineDaxil = true,
+                            IssizliyeCelb = true,
+                            ItsseCelb = true,
+                            ManualGelir = false,
+                            MezuniyyetOrtalamasinaDaxil = true,
                             Silinib = false,
                             Tip = 2,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2992)
+                            VergiyeCelb = true,
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8607)
                         },
                         new
                         {
                             Id = 8,
                             Ad = "İşsizlik Sığortası (İşçi)",
                             Aktivdir = true,
+                            DsmfyeCelb = true,
+                            GelirVergisiAzadMebleg = 0m,
+                            GuzestHeddineDaxil = true,
+                            IssizliyeCelb = true,
+                            ItsseCelb = true,
+                            ManualGelir = false,
+                            MezuniyyetOrtalamasinaDaxil = true,
                             Silinib = false,
                             Tip = 2,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2992)
+                            VergiyeCelb = true,
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8607)
                         },
                         new
                         {
                             Id = 9,
                             Ad = "İTSS",
                             Aktivdir = true,
+                            DsmfyeCelb = true,
+                            GelirVergisiAzadMebleg = 0m,
+                            GuzestHeddineDaxil = true,
+                            IssizliyeCelb = true,
+                            ItsseCelb = true,
+                            ManualGelir = false,
+                            MezuniyyetOrtalamasinaDaxil = true,
                             Silinib = false,
                             Tip = 2,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2997)
+                            VergiyeCelb = true,
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8607)
                         },
                         new
                         {
                             Id = 10,
                             Ad = "DSMF (İşəgötürən)",
                             Aktivdir = true,
+                            DsmfyeCelb = true,
+                            GelirVergisiAzadMebleg = 0m,
+                            GuzestHeddineDaxil = true,
+                            IssizliyeCelb = true,
+                            ItsseCelb = true,
+                            ManualGelir = false,
+                            MezuniyyetOrtalamasinaDaxil = true,
                             Silinib = false,
                             Tip = 3,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2997)
+                            VergiyeCelb = true,
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8607)
                         },
                         new
                         {
                             Id = 11,
                             Ad = "İşsizlik Sığortası (İşəgötürən)",
                             Aktivdir = true,
+                            DsmfyeCelb = true,
+                            GelirVergisiAzadMebleg = 0m,
+                            GuzestHeddineDaxil = true,
+                            IssizliyeCelb = true,
+                            ItsseCelb = true,
+                            ManualGelir = false,
+                            MezuniyyetOrtalamasinaDaxil = true,
                             Silinib = false,
                             Tip = 3,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2997)
+                            VergiyeCelb = true,
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8607)
                         },
                         new
                         {
                             Id = 12,
                             Ad = "İTSS (İşəgötürən)",
                             Aktivdir = true,
+                            DsmfyeCelb = true,
+                            GelirVergisiAzadMebleg = 0m,
+                            GuzestHeddineDaxil = true,
+                            IssizliyeCelb = true,
+                            ItsseCelb = true,
+                            ManualGelir = false,
+                            MezuniyyetOrtalamasinaDaxil = true,
                             Silinib = false,
                             Tip = 3,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2997)
+                            VergiyeCelb = true,
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8611)
                         },
                         new
                         {
                             Id = 13,
                             Ad = "Xəstəlik Ödənişi",
                             Aktivdir = true,
+                            DsmfyeCelb = true,
+                            GelirVergisiAzadMebleg = 0m,
+                            GuzestHeddineDaxil = true,
+                            IssizliyeCelb = true,
+                            ItsseCelb = true,
+                            ManualGelir = false,
+                            MezuniyyetOrtalamasinaDaxil = true,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2997)
+                            VergiyeCelb = true,
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8611)
                         },
                         new
                         {
                             Id = 14,
                             Ad = "Fərqli Gəlir",
                             Aktivdir = true,
+                            DsmfyeCelb = true,
+                            GelirVergisiAzadMebleg = 0m,
+                            GuzestHeddineDaxil = true,
+                            IssizliyeCelb = true,
+                            ItsseCelb = true,
+                            ManualGelir = false,
+                            MezuniyyetOrtalamasinaDaxil = true,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2997)
+                            VergiyeCelb = true,
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8611)
                         },
                         new
                         {
                             Id = 17,
                             Ad = "IH-07 Əlavə Təminat",
                             Aktivdir = true,
+                            DsmfyeCelb = true,
+                            GelirVergisiAzadMebleg = 0m,
+                            GuzestHeddineDaxil = true,
+                            IssizliyeCelb = true,
+                            ItsseCelb = true,
+                            ManualGelir = false,
+                            MezuniyyetOrtalamasinaDaxil = true,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3002)
+                            VergiyeCelb = true,
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8611)
                         },
                         new
                         {
                             Id = 18,
                             Ad = "VM 98.2.1 Gəlirləri",
                             Aktivdir = true,
+                            DsmfyeCelb = true,
+                            GelirVergisiAzadMebleg = 0m,
+                            GuzestHeddineDaxil = true,
+                            IssizliyeCelb = true,
+                            ItsseCelb = true,
+                            ManualGelir = false,
+                            MezuniyyetOrtalamasinaDaxil = true,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3002)
+                            VergiyeCelb = true,
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8611)
                         });
                 });
 
@@ -3926,7 +4084,7 @@ namespace FinNex.DataAccess.Migrations
                             Nov = 1,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3026)
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8631)
                         },
                         new
                         {
@@ -3938,7 +4096,7 @@ namespace FinNex.DataAccess.Migrations
                             Nov = 2,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3031)
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8636)
                         },
                         new
                         {
@@ -3950,7 +4108,7 @@ namespace FinNex.DataAccess.Migrations
                             Nov = 3,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3036)
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8641)
                         },
                         new
                         {
@@ -3962,7 +4120,7 @@ namespace FinNex.DataAccess.Migrations
                             Nov = 4,
                             Silinib = false,
                             Tip = 1,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3036)
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8641)
                         },
                         new
                         {
@@ -3974,7 +4132,7 @@ namespace FinNex.DataAccess.Migrations
                             Nov = 5,
                             Silinib = false,
                             Tip = 2,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3036)
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8641)
                         },
                         new
                         {
@@ -3986,7 +4144,7 @@ namespace FinNex.DataAccess.Migrations
                             Nov = 6,
                             Silinib = false,
                             Tip = 2,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3041)
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8641)
                         });
                 });
 
@@ -5496,7 +5654,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 0m,
                             Silinib = false,
                             Sira = 1,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3060),
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8665),
                             YuxariHedd = 2500m
                         },
                         new
@@ -5511,7 +5669,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 75m,
                             Silinib = false,
                             Sira = 2,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3065),
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8670),
                             YuxariHedd = 8000m
                         },
                         new
@@ -5526,7 +5684,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 625m,
                             Silinib = false,
                             Sira = 3,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3070)
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8675)
                         },
                         new
                         {
@@ -5540,7 +5698,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 0m,
                             Silinib = false,
                             Sira = 1,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3070),
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8675),
                             YuxariHedd = 200m
                         },
                         new
@@ -5555,7 +5713,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 6m,
                             Silinib = false,
                             Sira = 2,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3070)
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8679)
                         },
                         new
                         {
@@ -5569,7 +5727,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 0m,
                             Silinib = false,
                             Sira = 1,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3084),
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8679),
                             YuxariHedd = 200m
                         },
                         new
@@ -5584,7 +5742,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 44m,
                             Silinib = false,
                             Sira = 2,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3089),
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8679),
                             YuxariHedd = 8000m
                         },
                         new
@@ -5599,7 +5757,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 1214m,
                             Silinib = false,
                             Sira = 3,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3089)
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8684)
                         },
                         new
                         {
@@ -5613,7 +5771,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 0m,
                             Silinib = false,
                             Sira = 1,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3089),
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8684),
                             YuxariHedd = 2500m
                         },
                         new
@@ -5628,7 +5786,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 50m,
                             Silinib = false,
                             Sira = 2,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3094)
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8708)
                         },
                         new
                         {
@@ -5642,7 +5800,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 0m,
                             Silinib = false,
                             Sira = 1,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3094),
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8708),
                             YuxariHedd = 2500m
                         },
                         new
@@ -5657,7 +5815,7 @@ namespace FinNex.DataAccess.Migrations
                             SabitMebleg = 50m,
                             Silinib = false,
                             Sira = 2,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(3099)
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8713)
                         });
                 });
 
@@ -5847,7 +6005,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Ikon = "bi-taxi-front",
                             Silinib = false,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2929)
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8539)
                         },
                         new
                         {
@@ -5856,7 +6014,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Ikon = "bi-cup-hot",
                             Silinib = false,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2934)
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8548)
                         },
                         new
                         {
@@ -5865,7 +6023,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Ikon = "bi-printer",
                             Silinib = false,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2939)
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8553)
                         },
                         new
                         {
@@ -5874,7 +6032,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Ikon = "bi-airplane",
                             Silinib = false,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2944)
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8558)
                         },
                         new
                         {
@@ -5883,7 +6041,7 @@ namespace FinNex.DataAccess.Migrations
                             Aktivdir = true,
                             Ikon = "bi-three-dots",
                             Silinib = false,
-                            YaradilmaTarixi = new DateTime(2026, 6, 12, 8, 46, 46, 619, DateTimeKind.Local).AddTicks(2944)
+                            YaradilmaTarixi = new DateTime(2026, 6, 19, 12, 33, 54, 608, DateTimeKind.Local).AddTicks(8558)
                         });
                 });
 
@@ -6971,6 +7129,104 @@ namespace FinNex.DataAccess.Migrations
                     b.ToTable("OdenisTapsirigiNomreleri");
                 });
 
+            modelBuilder.Entity("FinNex.Domain.Entities.Pid.MehkemeCedvel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BorcluAd")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GirovunNovu")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Hakim")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MehkemeIsNomresi")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("MehkemeyeVerilmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("SilenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Silinib")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SilinmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("Sira")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("YaradanIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("YaradilmaTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("YenilenmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YenileyenIcraciId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MehkemeCedveller");
+                });
+
+            modelBuilder.Entity("FinNex.Domain.Entities.Pid.MehkemeCedvelIclas", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("MehkemeCedvelId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Saat")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("SilenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Silinib")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SilinmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("Tarix")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YaradanIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("YaradilmaTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("YenilenmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YenileyenIcraciId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MehkemeCedvelId");
+
+                    b.ToTable("MehkemeCedvelIclaslar");
+                });
+
             modelBuilder.Entity("FinNex.Domain.Entities.Pid.MehkemeIsi", b =>
                 {
                     b.Property<int>("Id")
@@ -7019,14 +7275,32 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<string>("KreditHesabi")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("KreditNovuMetn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("KreditSubHesab")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MehkemeSenedi")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MehkemeStatusMetn")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<decimal?>("MehkemeXerci")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("MehkemeyeVerilmeTarixi")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("Nov")
                         .HasColumnType("int");
 
                     b.Property<decimal?>("QalanBorc")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Qerardad")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("QetnameTarixi")
                         .HasColumnType("datetime2");
@@ -7049,6 +7323,9 @@ namespace FinNex.DataAccess.Migrations
 
                     b.Property<DateTime?>("SilinmeTarixi")
                         .HasColumnType("datetime2");
+
+                    b.Property<int?>("Sira")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("SonOdenisTarixi")
                         .HasColumnType("datetime2");
@@ -7140,6 +7417,243 @@ namespace FinNex.DataAccess.Migrations
                     b.HasIndex("MehkemeIsiId");
 
                     b.ToTable("MehkemeMerheleri");
+                });
+
+            modelBuilder.Entity("FinNex.Domain.Entities.Pid.MehkemeSened", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Ad")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FaylYolu")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("MehkemeIsiId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Novu")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SilenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Silinib")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SilinmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("Tarix")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YaradanIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("YaradilmaTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("YenilenmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YenileyenIcraciId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MehkemeIsiId");
+
+                    b.ToTable("MehkemeSenedler");
+                });
+
+            modelBuilder.Entity("FinNex.Domain.Entities.Pid.MehkemeXerci", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Mebleg")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Mehkeme")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("MehkemeIsiId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SilenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Silinib")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SilinmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("Tarix")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YaradanIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("YaradilmaTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("YenilenmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YenileyenIcraciId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MehkemeIsiId");
+
+                    b.ToTable("MehkemeXercler");
+                });
+
+            modelBuilder.Entity("FinNex.Domain.Entities.Pid.MehkemeZamin", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Ad")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AdinaSorgu")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DogumTarixi")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DypSorgu")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmekHaqqiTutulma")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmlakaHebs")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Fin")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IcraMemuru")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IcraQeyd")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IcraSonIsler")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IsYeri")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("MehkemeIsiId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SilenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Silinib")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SilinmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Stop")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Telefon")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Unvan")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("YaradanIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("YaradilmaTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("YenilenmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YenileyenIcraciId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MehkemeZaminler");
+                });
+
+            modelBuilder.Entity("FinNex.Domain.Entities.Pid.OdenisNezareti", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BalansNovu")
+                        .HasColumnType("int");
+
+                    b.Property<string>("HesabNomresi")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MusteriAdi")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OdenisVeziyyeti")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Qeyd")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("SilenIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Silinib")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SilinmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("SonOdenisTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Teyinat")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("YaradanIcraciId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("YaradilmaTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("YenilenmeTarixi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YenileyenIcraciId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("OdenisNezaretleri");
                 });
 
             modelBuilder.Entity("FinNex.Domain.Entities.Pid.PidSmsLog", b =>
@@ -7765,6 +8279,9 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<string>("KreditImapServer")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("PidMehkemeSiyahiSorguId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("PidMehkemeSorguId")
                         .HasColumnType("int");
@@ -9370,10 +9887,43 @@ namespace FinNex.DataAccess.Migrations
                     b.Navigation("Valyuta");
                 });
 
+            modelBuilder.Entity("FinNex.Domain.Entities.Pid.MehkemeCedvelIclas", b =>
+                {
+                    b.HasOne("FinNex.Domain.Entities.Pid.MehkemeCedvel", "MehkemeCedvel")
+                        .WithMany("Iclaslar")
+                        .HasForeignKey("MehkemeCedvelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MehkemeCedvel");
+                });
+
             modelBuilder.Entity("FinNex.Domain.Entities.Pid.MehkemeMerhelesi", b =>
                 {
                     b.HasOne("FinNex.Domain.Entities.Pid.MehkemeIsi", "MehkemeIsi")
                         .WithMany("Merheleler")
+                        .HasForeignKey("MehkemeIsiId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MehkemeIsi");
+                });
+
+            modelBuilder.Entity("FinNex.Domain.Entities.Pid.MehkemeSened", b =>
+                {
+                    b.HasOne("FinNex.Domain.Entities.Pid.MehkemeIsi", "MehkemeIsi")
+                        .WithMany("Senedler")
+                        .HasForeignKey("MehkemeIsiId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MehkemeIsi");
+                });
+
+            modelBuilder.Entity("FinNex.Domain.Entities.Pid.MehkemeXerci", b =>
+                {
+                    b.HasOne("FinNex.Domain.Entities.Pid.MehkemeIsi", "MehkemeIsi")
+                        .WithMany("Xercler")
                         .HasForeignKey("MehkemeIsiId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -9763,9 +10313,18 @@ namespace FinNex.DataAccess.Migrations
                     b.Navigation("MusteriHesablari");
                 });
 
+            modelBuilder.Entity("FinNex.Domain.Entities.Pid.MehkemeCedvel", b =>
+                {
+                    b.Navigation("Iclaslar");
+                });
+
             modelBuilder.Entity("FinNex.Domain.Entities.Pid.MehkemeIsi", b =>
                 {
                     b.Navigation("Merheleler");
+
+                    b.Navigation("Senedler");
+
+                    b.Navigation("Xercler");
                 });
 
             modelBuilder.Entity("FinNex.Domain.Entities.SenedDovriyyesi.Sened", b =>
