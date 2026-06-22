@@ -627,14 +627,6 @@ namespace FinNex.UI.Areas.HR.Controllers
                 }
                 catch { mezuniyyetIsciIds = new HashSet<int>(); }
 
-                var result = status.HasValue
-                    ? umumi.Where(x => (int)x.Status == status.Value).ToList()
-                    : umumi;
-
-                // status=4 (İcazəli) filtri zamanı məzuniyyətdəkiləri çıxar
-                if (status.HasValue && status.Value == (int)DavamiyyetStatus.Icazeli)
-                    result = result.Where(x => !mezuniyyetIsciIds.Contains(x.IsciId)).ToList();
-
                 // IsParametri — nahar və TezCixan hesablaması üçün
                 IsParametri parametri;
                 try { parametri = await _uow.Repository<IsParametri>().Query().AsNoTracking().Where(x => !x.Silinib).FirstOrDefaultAsync() ?? new IsParametri(); }
@@ -644,6 +636,41 @@ namespace FinNex.UI.Areas.HR.Controllers
                 var tezCixmaTolerans = TimeSpan.FromMinutes(parametri.TezCixmaToleransDeqiqe);
                 var naharBaslama = parametri.NaharBaslamaSaati;
                 var naharBitis = naharBaslama.Add(TimeSpan.FromMinutes(parametri.NaharMuddetDeqiqe));
+
+                // Təsdiqlənmiş SAAT İCAZƏLƏRİ — "indi icazədə" siyahısı üçün (Bas..Bit)
+                var icazeListW = new List<(int IsciId, DateTime Tarix, TimeSpan Bas, TimeSpan Bit)>();
+                try
+                {
+                    var icW_B = (baslangic ?? tarix ?? DateTime.Today).Date;
+                    var icW_S = (son ?? tarix ?? DateTime.Today).Date;
+                    var icsW = await _uow.Repository<Icaze>()
+                        .Query().AsNoTracking()
+                        .Where(x => !x.Silinib && x.Status == IcazeStatus.Tesdiqlenib &&
+                                    x.IcazeTarixi.Date >= icW_B && x.IcazeTarixi.Date <= icW_S)
+                        .Select(x => new { x.IsciId, x.IcazeTarixi, x.BaslamaSaati, x.BitisSaati })
+                        .ToListAsync();
+                    foreach (var i in icsW)
+                        icazeListW.Add((i.IsciId, i.IcazeTarixi.Date, i.BaslamaSaati, i.BitisSaati));
+                }
+                catch { }
+
+                // "İcazəli (indi)" — CANLI: işçi (1) təsdiqlənmiş icazəsi var, (2) FAKTİKİ çıxıb
+                // (çıxış icazə başlanğıcından sonra) və (3) bu gündürsə indiki saat pəncərədədir
+                // (Bas ≤ indi ≤ Bit). Keçmiş gün → həmin gün icazəni faktiki işlədib.
+                var indiSaatIcaze = DateTime.Now.TimeOfDay;
+                var icazeliIndiIds = new HashSet<int>(umumi
+                    .Where(x => x.CixisVaxti.HasValue && icazeListW.Any(i =>
+                        i.IsciId == x.IsciId && i.Tarix == x.Tarix.Date &&
+                        x.CixisVaxti.Value.TimeOfDay >= i.Bas - tezCixmaTolerans &&
+                        (x.Tarix.Date != DateTime.Today || (indiSaatIcaze >= i.Bas && indiSaatIcaze <= i.Bit))))
+                    .Select(x => x.IsciId));
+
+                // status=4 (İcazəli) → "indi icazədə" canlı siyahısı; digər statuslar adi filtr
+                var result = (status.HasValue && status.Value == (int)DavamiyyetStatus.Icazeli)
+                    ? umumi.Where(x => icazeliIndiIds.Contains(x.IsciId) && !mezuniyyetIsciIds.Contains(x.IsciId)).ToList()
+                    : status.HasValue
+                        ? umumi.Where(x => (int)x.Status == status.Value).ToList()
+                        : umumi;
 
                 var elanBaslangic = (baslangic ?? tarix ?? DateTime.Today).Date;
                 var elanSon = (son ?? tarix ?? DateTime.Today).Date;
@@ -875,7 +902,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 var gelib = umumi.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
                 var gecikme = umumi.Count(x => x.Status == DavamiyyetStatus.Gecikme);
                 var qayib = umumi.Count(x => x.Status == DavamiyyetStatus.Qayib);
-                var icazeli = umumi.Count(x => x.Status == DavamiyyetStatus.Icazeli && !mezuniyyetIsciIds.Contains(x.IsciId));
+                var icazeli = umumi.Count(x => icazeliIndiIds.Contains(x.IsciId) && !mezuniyyetIsciIds.Contains(x.IsciId));
                 var xestelik = umumi.Count(x => x.Status == DavamiyyetStatus.Xestelik);
                 var ezamiyyet = umumi.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
 

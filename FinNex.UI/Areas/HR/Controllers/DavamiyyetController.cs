@@ -156,6 +156,17 @@ namespace FinNex.UI.Areas.HR.Controllers
                 }
                 catch { }
 
+                // "İcazəli (indi)" — CANLI: işçi (1) təsdiqlənmiş icazəsi var, (2) FAKTİKİ çıxıb
+                // (çıxış icazə başlanğıcından sonra) və (3) bu gündürsə indiki saat pəncərədədir
+                // (Bas ≤ indi ≤ Bit). Keçmiş gün → həmin gün icazəni faktiki işlədib.
+                var indiSaatIcaze = DateTime.Now.TimeOfDay;
+                var icazeliIndiIds = new HashSet<int>(umumi
+                    .Where(x => x.CixisVaxti.HasValue && icazeList.Any(i =>
+                        i.IsciId == x.IsciId && i.Tarix == x.Tarix.Date &&
+                        x.CixisVaxti.Value.TimeOfDay >= i.Bas - tezCixmaTolerans &&
+                        (x.Tarix.Date != DateTime.Today || (indiSaatIcaze >= i.Bas && indiSaatIcaze <= i.Bit))))
+                    .Select(x => x.IsciId));
+
                 // Təsdiqlənmiş EZAMİYYƏTLƏR — tarix aralığını örtən
                 var ezamiyyetList = new List<(int IsciId, DateTime Bas, DateTime Bit, TimeSpan? BasSaat)>();
                 try
@@ -176,13 +187,12 @@ namespace FinNex.UI.Areas.HR.Controllers
                 // tezCixanSayi — per-record data hesablandıqdan sonra doldurulur
                 var tezCixanSayi = 0;
 
-                var result = status.HasValue
-                    ? umumi.Where(x => (int)x.Status == status.Value).ToList()
-                    : umumi;
-
-                // status=4 (İcazəli) filtri zamanı məzuniyyətdəkiləri çıxar
-                if (status.HasValue && status.Value == (int)DavamiyyetStatus.Icazeli)
-                    result = result.Where(x => !mezuniyyetIsciIds.Contains(x.IsciId)).ToList();
+                // status=4 (İcazəli) → "indi icazədə" canlı siyahısı; digər statuslar adi filtr
+                var result = (status.HasValue && status.Value == (int)DavamiyyetStatus.Icazeli)
+                    ? umumi.Where(x => icazeliIndiIds.Contains(x.IsciId) && !mezuniyyetIsciIds.Contains(x.IsciId)).ToList()
+                    : status.HasValue
+                        ? umumi.Where(x => (int)x.Status == status.Value).ToList()
+                        : umumi;
 
                 // Nəticədəki bütün tarixlər üçün BayramGunu xüsusi bitmə vaxtlarını toplu çək
                 var hedefTarixler = result.Select(x => x.Tarix.Date).Distinct().ToList();
@@ -289,7 +299,7 @@ namespace FinNex.UI.Areas.HR.Controllers
                 var gelib = umumi.Count(x => x.Status == DavamiyyetStatus.Isde || x.Status == DavamiyyetStatus.Gecikme);
                 var gecikme = umumi.Count(x => x.Status == DavamiyyetStatus.Gecikme);
                 var qayib = umumi.Count(x => x.Status == DavamiyyetStatus.Qayib);
-                var icazeli = umumi.Count(x => x.Status == DavamiyyetStatus.Icazeli && !mezuniyyetIsciIds.Contains(x.IsciId));
+                var icazeli = umumi.Count(x => icazeliIndiIds.Contains(x.IsciId) && !mezuniyyetIsciIds.Contains(x.IsciId));
                 var xestelik = umumi.Count(x => x.Status == DavamiyyetStatus.Xestelik);
                 var ezamiyyet = umumi.Count(x => x.Status == DavamiyyetStatus.Ezamiyyet);
 
