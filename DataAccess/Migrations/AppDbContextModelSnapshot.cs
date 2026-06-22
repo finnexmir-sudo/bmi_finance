@@ -7382,9 +7382,6 @@ namespace FinNex.DataAccess.Migrations
                     b.Property<string>("Qeyd")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Saat")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("SenedYolu")
                         .HasColumnType("nvarchar(max)");
 
