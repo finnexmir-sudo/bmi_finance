@@ -236,6 +236,10 @@ namespace FinNex.Application.Services.HR
                 if (dto.JetonIds == null || !dto.JetonIds.Any())
                     return Result.Fail("Ən azı bir jeton seçilməlidir.");
 
+                // "Maaşa əlavə" hələlik deaktivdir (gələcəkdə açılacaq) — UI-da da gizlidir
+                if (dto.RedimNovu == RedimNovu.MaasaElave)
+                    return Result.Fail("Maaşa əlavə hələlik deaktivdir — yalnız icazə seçimi mümkündür.");
+
                 // İcazə sorğularında tarix və saat məcburidir
                 if (dto.RedimNovu == RedimNovu.Icaze)
                 {

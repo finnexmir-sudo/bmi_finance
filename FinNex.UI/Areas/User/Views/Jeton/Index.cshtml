@@ -126,9 +126,10 @@
                     <input type="radio" name="ujRedimNov" value="1" checked onchange="ujRedimNovChanged()" />
                     <span><i class="bi bi-clock"></i> İcazə (erkən çıxış)</span>
                 </label>
-                <label class="uj-radio">
-                    <input type="radio" name="ujRedimNov" value="2" onchange="ujRedimNovChanged()" />
-                    <span><i class="bi bi-cash-coin"></i> Maaşa əlavə</span>
+                <label class="uj-radio uj-radio--disabled" title="Hələlik deaktivdir — gələcəkdə əlavə olunacaq"
+                       style="opacity:.45;cursor:not-allowed">
+                    <input type="radio" name="ujRedimNov" value="2" disabled />
+                    <span><i class="bi bi-cash-coin"></i> Maaşa əlavə <small style="color:#9ca3af">(tezliklə)</small></span>
                 </label>
             </div>
         </div>
