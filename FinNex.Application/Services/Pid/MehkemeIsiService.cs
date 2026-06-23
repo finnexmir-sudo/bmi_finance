@@ -96,6 +96,16 @@ public class MehkemeIsiService : IMehkemeIsiService
                 .ToListAsync();
         var zaminDict = zaminIdler.GroupBy(x => x).ToDictionary(g => g.Key, g => g.Count());
 
+        // "Son ödəniş tarixi" = Oracle "Son əməliyyat" (Detal səhifəsi ilə eyni mənbə).
+        // Canlı siyahını bir dəfə çəkib hər işə tətbiq edirik; Oracle əlçatmazsa DB snapshot qalır.
+        List<MehkemeKreditSatirDto>? canli = null;
+        try
+        {
+            var siyahi = await SiyahiGetirAsync();
+            if (siyahi.Satirlar.Count > 0) canli = siyahi.Satirlar;
+        }
+        catch { /* Oracle yoxdursa snapshot qalsın */ }
+
         return list.Select(x => new IcraIsiListDto
         {
             Id                = x.Id,
@@ -105,7 +115,7 @@ public class MehkemeIsiService : IMehkemeIsiService
             Status            = x.Status,
             MehkemeStatusMetn = x.MehkemeStatusMetn,
             QalanBorc         = x.QalanBorc,
-            SonOdenisTarixi   = x.SonOdenisTarixi,
+            SonOdenisTarixi   = CanliSonOdenis(x, canli) ?? x.SonOdenisTarixi,
             Qeydiyyati        = x.Qeydiyyati,
             EmekHaqqiMelumati = x.EmekHaqqiMelumati,
             AdinaSorgu        = x.AdinaSorgu,
@@ -286,6 +296,22 @@ public class MehkemeIsiService : IMehkemeIsiService
     private static DateTime? ParseTarix(string? s)
         => DateTime.TryParseExact((s ?? "").Trim(), "dd.MM.yyyy",
                CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : (DateTime?)null;
+
+    // İcra grid/export üçün: işin kreditini canlı Oracle siyahısında tapıb "Son əməliyyat"
+    // tarixini qaytar (Detal ilə eyni hesab+K.S. açarı). Tapılmasa null → DB snapshot işlənir.
+    private static DateTime? CanliSonOdenis(MehkemeIsi x, IReadOnlyList<MehkemeKreditSatirDto>? canli)
+    {
+        if (canli == null || canli.Count == 0) return null;
+        var hesab = !string.IsNullOrWhiteSpace(x.QeydiyyatNomresi) ? x.QeydiyyatNomresi.Trim()
+                  : (x.KreditHesabi ?? "").Trim();
+        var ks    = !string.IsNullOrWhiteSpace(x.KreditSubHesab) ? x.KreditSubHesab.Trim()
+                  : (x.Subkod ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(hesab)) return null;
+        var row = canli.FirstOrDefault(s =>
+            s.KreditHesabi.Trim() == hesab &&
+            (string.IsNullOrWhiteSpace(ks) || s.Ks.Trim() == ks));
+        return row == null ? null : ParseTarix(row.SonEmeliyyatTarixi);
+    }
 
     // ── Zamin icra qatı ──────────────────────────────────
     public async Task<int> ZaminElaveEtAsync(ZaminIcraCreateDto dto, int isciId)
