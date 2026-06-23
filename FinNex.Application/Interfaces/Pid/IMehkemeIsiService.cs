@@ -1,3 +1,4 @@
+using FinNex.Application.DTOs.Oracle;
 using FinNex.Application.DTOs.Pid;
 using FinNex.Domain.Entities.Pid;
 using Microsoft.AspNetCore.Http;
@@ -39,6 +40,9 @@ public interface IMehkemeIsiService
 
     // Yeni siyahı modeli: Oracle-dan bütün problemli kreditlər (canlı) + proqram izləməsi (SQL)
     Task<MehkemeSiyahiResultDto> SiyahiGetirAsync();
+
+    // Excel export: siyahı sorğusunun TAM xam nəticəsi (bütün sütunlar/sətirlər, sıra ilə)
+    Task<OracleNetice> SiyahiXamGetirAsync();
 
     // Qərardad yaz (qeyd yoxdursa kompozit açarla yaradır — upsert)
     Task<int> QerardadYazAsync(MehkemeKreditAcarDto acar, string? qerardad, int isciId);

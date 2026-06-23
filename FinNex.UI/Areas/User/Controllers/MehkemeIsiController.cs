@@ -1,3 +1,4 @@
+using FinNex.Application.DTOs.Oracle;
 using FinNex.Application.DTOs.Pid;
 using FinNex.Application.Interfaces.Pid;
 using FinNex.Domain;
@@ -69,20 +70,20 @@ public class MehkemeIsiController : Controller
     }
 
     // ── Excel export (hər grid səhifəsi) ──────────────────────────
+    // Aktiv Müştərilər — TAM Oracle sorğusu (bütün sütunlar/sətirlər), yalnız görünən cədvəl deyil.
     public async Task<IActionResult> IndexExcel()
     {
-        var r = await _service.SiyahiGetirAsync();
-        var satirlar = r.Satirlar;
-        var basliqlar = new[] { "№", "Region", "Borclu", "Kredit hesabı", "K.S.", "Tam qalıq",
-            "Qalıq", "VK qalıq", "Faiz məbləği", "VK faiz", "Son əməliyyat", "Status",
-            "Kredit növü", "Girovun növü", "Telefon", "Doğum tarixi", "İş açılıb?", "Mərhələ sayı" };
-        var setirler = satirlar.Select((x, idx) => new object?[]
+        OracleNetice n;
+        try
         {
-            idx + 1, x.Region, x.BorcluAd, x.KreditHesabi, x.Ks, x.TamQaliq, x.Qaliq, x.VkQaliq,
-            x.FaizMeblegi, x.VkFaizMeblegi, x.SonEmeliyyatTarixi, x.Status, x.KreditinNovu,
-            x.GirovunNovu, x.Telefon, x.DogumTarixi, x.IsAcilib, x.MerheleSayi
-        });
-        var bytes = ExcelExportHelper.Yarat("Aktiv Müştərilər", basliqlar, setirler);
+            n = await _service.SiyahiXamGetirAsync();
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = "Excel export alınmadı: " + ex.Message;
+            return RedirectToAction(nameof(Index));
+        }
+        var bytes = ExcelExportHelper.YaratXam("Aktiv Müştərilər", n.Sutunlar, n.Setirler);
         return File(bytes, ExcelExportHelper.ContentType, $"Aktiv_Musteriler_{DateTime.Now:yyyyMMdd}.xlsx");
     }
 

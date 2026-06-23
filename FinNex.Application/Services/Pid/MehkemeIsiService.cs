@@ -1,3 +1,4 @@
+using FinNex.Application.DTOs.Oracle;
 using FinNex.Application.DTOs.Pid;
 using FinNex.Application.Interfaces;
 using FinNex.Application.Interfaces.Oracle;
@@ -885,6 +886,21 @@ public class MehkemeIsiService : IMehkemeIsiService
         }
 
         return result;
+    }
+
+    // ── Excel export üçün: siyahı sorğusunun TAM xam nəticəsi (bütün sütunlar/sətirlər) ──
+    public async Task<OracleNetice> SiyahiXamGetirAsync()
+    {
+        var ayar = await _sistemAyar.GetirAsync();
+        if (ayar?.PidMehkemeSiyahiSorguId == null)
+            throw new InvalidOperationException("Sistem ayarlarında məhkəmə siyahı sorğusu seçilməyib.");
+
+        var sorguResult = await _sorguService.IdIleGetirAsync(ayar.PidMehkemeSiyahiSorguId.Value);
+        if (!sorguResult.Success || sorguResult.Data is null || !sorguResult.Data.Aktiv)
+            throw new InvalidOperationException("Oracle siyahı sorğusu tapılmadı və ya deaktivdir.");
+
+        // Tam dump — bütün sətirlər çıxsın deyə yüksək limit (grid 5000 ilə məhdudlaşır)
+        return await _oracle.SelectXamAsync(sorguResult.Data.SorguMetni, maxRows: 100000);
     }
 
     public async Task<int> QerardadYazAsync(MehkemeKreditAcarDto acar, string? qerardad, int isciId)
