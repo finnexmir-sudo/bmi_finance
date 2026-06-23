@@ -40,6 +40,16 @@
             <a asp-action="Isler" class="ms-btn ms-btn--ghost"><i class="bi bi-bank"></i> Məhkəmə İşləri</a>
             <a asp-action="Index" class="ms-btn ms-btn--ghost"><i class="bi bi-people"></i> Aktiv Müştərilər</a>
             <a asp-action="IcraIsleriExcel" asp-route-status="@st" class="ms-btn ms-btn--primary"><i class="bi bi-file-earmark-excel"></i> Excelə yüklə</a>
+            <form asp-action="IcraImport" method="post" enctype="multipart/form-data"
+                  style="display:flex;align-items:center;gap:6px;border-left:1px solid #e2e8f0;padding-left:8px"
+                  title="PID 'İCRADA OLAN İŞLƏR' vərəqini idxal et (hesab+subkod açarı ilə). Önizləmə işarəli ikən DB-yə yazılmır.">
+                @Html.AntiForgeryToken()
+                <input type="file" name="fayl" accept=".xls,.xlsx" required style="font-size:12px;max-width:160px" />
+                <label style="font-size:12px;display:flex;align-items:center;gap:4px;white-space:nowrap" title="İşarəli ikən yalnız sayır, yazmır">
+                    <input type="checkbox" name="onizleme" value="true" checked /> Önizləmə
+                </label>
+                <button type="submit" class="ms-btn ms-btn--ghost"><i class="bi bi-upload"></i> İcra import</button>
+            </form>
         </div>
     </div>
 

@@ -232,6 +232,133 @@ public class MehkemeIsiController : Controller
         return RedirectToAction(nameof(Isler));
     }
 
+    // ── Excel "İCRADA OLAN İŞLƏR" sheet → İcra fazası idxalı ──
+    // onizleme=true (defolt — checkbox işarəli): yalnız sayır, DB-yə yazmır.
+    // checkbox işarəsiz → onizleme=false → real idxal.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequestSizeLimit(20_000_000)]
+    public async Task<IActionResult> IcraImport(IFormFile? fayl, bool onizleme = true)
+    {
+        if (fayl == null || fayl.Length == 0)
+        {
+            TempData["Error"] = "Fayl seçilməyib.";
+            return RedirectToAction(nameof(IcraIsleri));
+        }
+
+        List<IcraCedvelImportDto> isler;
+        try
+        {
+            using var stream = fayl.OpenReadStream();
+            var ext = System.IO.Path.GetExtension(fayl.FileName).ToLowerInvariant();
+            IWorkbook wb = ext == ".xlsx"
+                ? new NPOI.XSSF.UserModel.XSSFWorkbook(stream)
+                : new NPOI.HSSF.UserModel.HSSFWorkbook(stream);
+            var sheet = SheetTap(wb, "İCRADA") ?? SheetTap(wb, "ICRADA") ?? SheetTap(wb, "İcra") ?? wb.GetSheetAt(0);
+
+            // Sütun xəritəsi (0-əsaslı): 1=son ödəniş/status, 2=qalan borc, 3=qeydiyyatı,
+            // 4=ə/h, 5=DYP tarix, 6=adına sorğu, 7=əmlaka həbs, 8=stop, 9=icra məmuru,
+            // 10=son işlər, 11=doğum, 12=ZAMİN adı, 13=borclu adı, 14=hesab, 15=subkod,
+            // 16=qətnamə tarixi, 17=iş yeri, 18/19=qeydlər
+            var qruplar = new Dictionary<string, IcraCedvelImportDto>(StringComparer.OrdinalIgnoreCase);
+            for (int r = 1; r <= sheet.LastRowNum; r++)
+            {
+                var row = sheet.GetRow(r);
+                if (row == null) continue;
+
+                var hesab = Metn(row, 14);
+                if (string.IsNullOrWhiteSpace(hesab)) continue;   // hesabsız sətir atılır
+                hesab = hesab.Trim();
+                var subkod = NormSubkod(Metn(row, 15));
+                var key = hesab + "|" + subkod;
+
+                if (!qruplar.TryGetValue(key, out var d))
+                {
+                    d = new IcraCedvelImportDto { Hesab = hesab, Subkod = subkod };
+                    qruplar[key] = d;
+                }
+
+                var ad = Metn(row, 13);
+                if (!string.IsNullOrWhiteSpace(ad) && string.IsNullOrWhiteSpace(d.BorcluAd))
+                    d.BorcluAd = ad.Trim();
+
+                var zaminAd = Metn(row, 12);
+                if (!string.IsNullOrWhiteSpace(zaminAd))
+                {
+                    // Zamin sətri — bu sətrin icra məlumatı zaminə aiddir
+                    d.Zaminler.Add(new IcraZaminImportDto
+                    {
+                        Ad               = zaminAd.Trim(),
+                        DogumTarixi      = Metn(row, 11),
+                        EmekHaqqiTutulma = Metn(row, 4),
+                        DypSorgu         = Metn(row, 5),
+                        AdinaSorgu       = Metn(row, 6),
+                        EmlakaHebs       = Metn(row, 7),
+                        Stop             = Metn(row, 8),
+                        IcraMemuru       = Metn(row, 9),
+                        IcraSonIsler     = Metn(row, 10),
+                        IsYeri           = Metn(row, 17),
+                        IcraQeyd         = Metn(row, 18) ?? Metn(row, 19)
+                    });
+                }
+                else
+                {
+                    // Borclu (iş) sətri — iş səviyyəsi sahələri (ilk boş olmayan dəyər saxlanır)
+                    var sonOdenis  = Tarix(row, 1);
+                    var statusMetn = Metn(row, 1);
+                    if (sonOdenis.HasValue) d.SonOdenisTarixi ??= sonOdenis;
+                    else if (!string.IsNullOrWhiteSpace(statusMetn)) d.StatusMetn ??= statusMetn;
+
+                    d.QalanBorc         ??= (decimal?)Reqem(row, 2);
+                    d.Qeydiyyati        ??= Metn(row, 3);
+                    d.EmekHaqqiMelumati ??= Metn(row, 4);
+                    d.DypSorguTarixi    ??= Tarix(row, 5);
+                    d.AdinaSorgu        ??= Metn(row, 6);
+                    d.EmlakaHebs        ??= Metn(row, 7);
+                    d.Stop              ??= Metn(row, 8);
+                    d.IcraMemuru        ??= Metn(row, 9);
+                    d.IcraSonIsler      ??= Metn(row, 10);
+                    d.DogumTarixi       ??= Tarix(row, 11);
+                    d.QetnameTarixi     ??= Tarix(row, 16);
+                    d.IsYeri            ??= Metn(row, 17);
+                    d.IcraQeyd          ??= Metn(row, 18) ?? Metn(row, 19);
+
+                    if (statusMetn != null && statusMetn.ToUpperInvariant().Contains("BAĞLAND"))
+                        d.Arxiv = true;
+                }
+            }
+
+            foreach (var d in qruplar.Values)
+                if (d.Subkod == "42") d.Arxiv = true;   // PID daxili kodu — aktiv deyil (arxiv)
+
+            isler = qruplar.Values.ToList();
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = "İmport xətası: " + ex.Message;
+            return RedirectToAction(nameof(IcraIsleri));
+        }
+
+        var isciId = await CurrentIsciIdAsync() ?? 0;
+        var n = await _service.IcraCedvelImportAsync(isler, isciId, onizleme);
+
+        var mesaj = (n.Onizleme ? "🔎 ÖNİZLƏMƏ (DB-yə yazılmadı) — " : "✅ İdxal edildi — ")
+            + $"{n.CemQrup} iş qrupu: {n.YeniIs} yeni, {n.Atlanan} mövcud (atlandı); "
+            + $"{n.Aktiv} aktiv / {n.Arxiv} arxiv; {n.Zamin} zamin"
+            + (n.Xeta > 0 ? $"; {n.Xeta} hesabsız" : "") + ".";
+        if (n.Numuneler.Count > 0)
+            mesaj += " Nümunə → " + string.Join("  •  ", n.Numuneler);
+        TempData["Success"] = mesaj;
+        return RedirectToAction(nameof(IcraIsleri));
+    }
+
+    private static string NormSubkod(string? s)
+    {
+        s = (s ?? "").Trim();
+        if (s.Length == 1 && char.IsDigit(s[0])) return "0" + s;   // "6" → "06"
+        return s;
+    }
+
     // ── NPOI xana köməkçiləri (Excel "Məhkəmə" sheet) ──────
     private static ISheet? SheetTap(IWorkbook wb, string contains)
     {

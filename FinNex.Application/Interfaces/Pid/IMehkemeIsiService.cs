@@ -52,4 +52,8 @@ public interface IMehkemeIsiService
 
     // Excel "Məhkəmə" sheet → MehkemeIsi (arxiv idxalı; təkrarları atlayır)
     Task<(int isSayi, int merheleSayi)> ExcelImportAsync(IList<MehkemeCedvelImportDto> rows, int isciId);
+
+    // Excel "İCRADA OLAN İŞLƏR" sheet → MehkemeIsi (icra fazası) + MehkemeZamin.
+    // hesab+subkod ilə dedup; onizleme=true olduqda DB-yə yazmır (yalnız sayır).
+    Task<IcraImportNeticeDto> IcraCedvelImportAsync(IList<IcraCedvelImportDto> isler, int isciId, bool onizleme);
 }

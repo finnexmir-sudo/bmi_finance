@@ -601,6 +601,108 @@ public class MehkemeIsiService : IMehkemeIsiService
         return (isSayi, merheleSayi);
     }
 
+    // ── Excel "İCRADA OLAN İŞLƏR" → MehkemeIsi (icra fazası) + MehkemeZamin ──
+    // hesab+subkod ilə dedup (mövcud qeyd toxunulmur). MehkemeZamin-də MehkemeIsi-yə
+    // naviqasiya yoxdur → iki fazalı: əvvəl işlər saxlanır (Id dolur), sonra zaminlər.
+    public async Task<IcraImportNeticeDto> IcraCedvelImportAsync(IList<IcraCedvelImportDto> isler, int isciId, bool onizleme)
+    {
+        var netice = new IcraImportNeticeDto { Onizleme = onizleme, CemQrup = isler?.Count ?? 0 };
+        if (isler == null || isler.Count == 0) return netice;
+
+        var movcud = await _uow.Repository<MehkemeIsi>().Query().AsNoTracking()
+            .Where(x => !x.Silinib)
+            .Select(x => new { x.QeydiyyatNomresi, x.KreditSubHesab })
+            .ToListAsync();
+        var acarlar = new HashSet<string>(
+            movcud.Select(m => Acar(m.QeydiyyatNomresi, m.KreditSubHesab)),
+            StringComparer.OrdinalIgnoreCase);
+
+        var repo = _uow.Repository<MehkemeIsi>();
+        var pending = new List<(MehkemeIsi e, List<IcraZaminImportDto> z)>();
+
+        foreach (var d in isler)
+        {
+            if (string.IsNullOrWhiteSpace(d.Hesab)) { netice.Xeta++; continue; }
+            if (d.Arxiv) netice.Arxiv++; else netice.Aktiv++;
+
+            var key = Acar(d.Hesab, d.Subkod);
+            if (!acarlar.Add(key)) { netice.Atlanan++; continue; }   // DB-də və ya bu faylda artıq var
+
+            netice.YeniIs++;
+            netice.Zamin += d.Zaminler.Count;
+            if (netice.Numuneler.Count < 6)
+                netice.Numuneler.Add(
+                    $"{(string.IsNullOrWhiteSpace(d.BorcluAd) ? "(adsız)" : d.BorcluAd)} " +
+                    $"[{d.Hesab}/{d.Subkod}] {(d.Arxiv ? "arxiv" : "aktiv")}, {d.Zaminler.Count} zamin");
+
+            if (onizleme) continue;
+
+            var entity = new MehkemeIsi
+            {
+                QeydiyyatNomresi  = d.Hesab,
+                KreditSubHesab    = d.Subkod,
+                KreditHesabi      = d.Hesab,
+                Subkod            = d.Subkod,
+                BorcluAd          = string.IsNullOrWhiteSpace(d.BorcluAd) ? "(naməlum)" : d.BorcluAd!.Trim(),
+                Nov               = MehkemeIsiNov.Diger,
+                Status            = d.Arxiv ? MehkemeIsiStatus.Baghlandi : MehkemeIsiStatus.Icra,
+                MehkemeStatusMetn = d.StatusMetn,
+                QalanBorc         = d.QalanBorc,
+                SonOdenisTarixi   = d.SonOdenisTarixi,
+                Qeydiyyati        = d.Qeydiyyati,
+                EmekHaqqiMelumati = d.EmekHaqqiMelumati,
+                DypSorguTarixi    = d.DypSorguTarixi,
+                AdinaSorgu        = d.AdinaSorgu,
+                EmlakaHebs        = d.EmlakaHebs,
+                Stop              = d.Stop,
+                IcraMemuru        = d.IcraMemuru,
+                IcraSonIsler      = d.IcraSonIsler,
+                DogumTarixi       = d.DogumTarixi,
+                QetnameTarixi     = d.QetnameTarixi,
+                IsYeri            = d.IsYeri,
+                IcraQeyd          = d.IcraQeyd,
+                YaradanIcraciId   = isciId,
+                YaradilmaTarixi   = DateTime.Now
+            };
+            await repo.YaratAsync(entity);
+            pending.Add((entity, d.Zaminler));
+        }
+
+        if (!onizleme && netice.YeniIs > 0)
+        {
+            await _uow.YaddaSaxlaAsync();   // MehkemeIsi.Id-lər dolur
+
+            var zrepo = _uow.Repository<MehkemeZamin>();
+            int zCount = 0;
+            foreach (var (e, zlist) in pending)
+                foreach (var z in zlist)
+                {
+                    if (string.IsNullOrWhiteSpace(z.Ad)) continue;
+                    await zrepo.YaratAsync(new MehkemeZamin
+                    {
+                        MehkemeIsiId     = e.Id,
+                        Ad               = z.Ad.Trim(),
+                        DogumTarixi      = z.DogumTarixi,
+                        EmekHaqqiTutulma = z.EmekHaqqiTutulma,
+                        DypSorgu         = z.DypSorgu,
+                        AdinaSorgu       = z.AdinaSorgu,
+                        EmlakaHebs       = z.EmlakaHebs,
+                        Stop             = z.Stop,
+                        IcraMemuru       = z.IcraMemuru,
+                        IcraSonIsler     = z.IcraSonIsler,
+                        IsYeri           = z.IsYeri,
+                        IcraQeyd         = z.IcraQeyd,
+                        YaradanIcraciId  = isciId,
+                        YaradilmaTarixi  = DateTime.Now
+                    });
+                    zCount++;
+                }
+            if (zCount > 0) await _uow.YaddaSaxlaAsync();
+        }
+
+        return netice;
+    }
+
     // ── Məhkəmə fazası (yalnız litiqasiya sahələri) ──
     public async Task<bool> MehkemeFazaYenileAsync(int id, MehkemeIsiUpdateDto dto, int isciId)
     {
