@@ -650,6 +650,41 @@ namespace FinNex.Application.Services.HR
             }
         }
 
+        // Adi icazəyə jeton əvəzləşdirmə (FIFO tutulma) baş verdikdə GÖRÜNƏN redim qeydi yaradır.
+        // Beləliklə işçi/HR "Xərcləmə Tarixçəsi"ndə jetonun niyə azaldığını adi redim kimi görür.
+        // Qeyd: jeton onsuz da FIFO ilə tutulub — bu yalnız görünüş qeydidir (tək başına xərcləmir).
+        public async Task<Result> IcazeEvezlesdirmeQeydiAsync(int isciId, decimal jetonSaat, DateTime icazeTarixi, TimeSpan baslama, TimeSpan bitis)
+        {
+            try
+            {
+                if (jetonSaat <= 0) return Result.Ok();
+
+                var redim = new JetonRedimTelebi
+                {
+                    IsciId = isciId,
+                    RedimNovu = RedimNovu.Icaze,
+                    CemiSaat = jetonSaat,
+                    Status = RedimStatus.Tesdiqlendi,
+                    IcazeTarixi = icazeTarixi,
+                    BaslamaSaati = baslama,
+                    BitisSaati = bitis,
+                    RehberTesdiq = true,
+                    RehberTesdiqTarixi = DateTime.Now,
+                    TelabTarixi = DateTime.Now,
+                    NeticeTarixi = DateTime.Now,
+                    Qeyd = "Adi icazəyə jeton əvəzləşdirməsi (rəhbər təsdiqində tutuldu)"
+                };
+
+                await _unitOfWork.Repository<JetonRedimTelebi>().YaratAsync(redim);
+                await _unitOfWork.YaddaSaxlaAsync();
+                return Result.Ok();
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail($"Xəta: {ex.Message}");
+            }
+        }
+
         public async Task<Result> RedimTelebiReddEtAsync(int redimId, string qeyd, int userId)
         {
             try

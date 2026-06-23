@@ -626,6 +626,11 @@ namespace FinNex.Application.Services
                 icaze.IsciId, icaze.JetonOdenenSaat, icaze.Id);
 
             if (!res.Success) return Result.Fail(res.Message ?? "Jeton xərclənmədi.");
+
+            // Görünən qeyd: əvəzləşdirmə Xərcləmə Tarixçəsində adi redim kimi görünsün
+            await _jetonService.IcazeEvezlesdirmeQeydiAsync(
+                icaze.IsciId, icaze.JetonOdenenSaat, icaze.IcazeTarixi, icaze.BaslamaSaati, icaze.BitisSaati);
+
             return Result.Ok();
         }
 
