@@ -42,13 +42,19 @@
             <a asp-action="IcraIsleriExcel" asp-route-status="@st" class="ms-btn ms-btn--primary"><i class="bi bi-file-earmark-excel"></i> Excelə yüklə</a>
             <form asp-action="IcraImport" method="post" enctype="multipart/form-data"
                   style="display:flex;align-items:center;gap:6px;border-left:1px solid #e2e8f0;padding-left:8px"
-                  title="PID 'İCRADA OLAN İŞLƏR' vərəqini idxal et (hesab+subkod açarı ilə). Önizləmə işarəli ikən DB-yə yazılmır.">
+                  title="PID 'İCRADA OLAN İŞLƏR' vərəqini idxal et (hesab+subkod açarı ilə).">
                 @Html.AntiForgeryToken()
                 <input type="file" name="fayl" accept=".xls,.xlsx" required style="font-size:12px;max-width:160px" />
-                <label style="font-size:12px;display:flex;align-items:center;gap:4px;white-space:nowrap" title="İşarəli ikən yalnız sayır, yazmır">
-                    <input type="checkbox" name="onizleme" value="true" checked /> Önizləmə
-                </label>
-                <button type="submit" class="ms-btn ms-btn--ghost"><i class="bi bi-upload"></i> İcra import</button>
+                <button type="submit" name="onizleme" value="true" class="ms-btn ms-btn--ghost"
+                        title="Yalnız sayır — DB-yə yazmır">
+                    <i class="bi bi-search"></i> Önizləmə
+                </button>
+                <button type="submit" name="onizleme" value="false" class="ms-btn ms-btn--primary"
+                        style="background:#15803d;border-color:#15803d"
+                        onclick="return confirm('REAL İDXAL — məlumat bazaya yazılacaq. Davam edək?');"
+                        title="Real idxal — DB-yə yazır">
+                    <i class="bi bi-database-add"></i> Real idxal
+                </button>
             </form>
         </div>
     </div>
