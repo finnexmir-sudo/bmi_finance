@@ -30,6 +30,9 @@ public interface IJetonService
     // İşçinin aktiv müsbət saat balansı
     Task<decimal> AktivSaatBalansiAsync(int isciId);
 
+    // Standart iş saatı (günlük token üçün modalda avtomatik tam gün doldurmaq) — ("09:00","17:45")
+    Task<(string Giris, string Cixis)> StandartIsSaatiGetirAsync();
+
     // İşçi: redim sorğusu göndər
     Task<Result> RedimTelebiYaratAsync(int isciId, JetonRedimTelebiCreateDto dto);
 

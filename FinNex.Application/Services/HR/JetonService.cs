@@ -279,13 +279,17 @@ namespace FinNex.Application.Services.HR
                     ? baseSaat * saatAmsali
                     : baseSaat * pulAmsali;
 
-                // İcazə sorğusunda istənilən saat aralığı jeton balansından çox ola bilməz
+                // İcazə sorğusunda istənilən İŞ saatı (nahar fasiləsi çıxılmaqla) jeton ödənişindən
+                // çox ola bilməz. Naharın çıxılması günlük tokenin tam iş gününə (09:00–17:45 = 8 iş
+                // saatı) uyğun gəlməsini təmin edir.
                 if (dto.RedimNovu == RedimNovu.Icaze)
                 {
-                    var istenilenSaat = (decimal)(dto.BitisSaati!.Value - dto.BaslamaSaati!.Value).TotalHours;
+                    var isParam = await _unitOfWork.Repository<IsParametri>()
+                        .Query().FirstOrDefaultAsync() ?? new IsParametri();
+                    var istenilenSaat = IsSaatiHesabla(dto.BaslamaSaati!.Value, dto.BitisSaati!.Value, isParam);
                     if (istenilenSaat > cemiSaat)
                         return Result.Fail(
-                            $"Seçdiyiniz saat aralığı ({istenilenSaat:0.##} saat) " +
+                            $"Seçdiyiniz iş saatı ({istenilenSaat:0.##} saat) " +
                             $"jeton ödənişindən ({cemiSaat:0.##} saat) çoxdur.");
                 }
 
@@ -331,6 +335,25 @@ namespace FinNex.Application.Services.HR
             {
                 return Result.Fail($"Xəta: {ex.Message}");
             }
+        }
+
+        // İki saat arasındakı İŞ saatlarını hesablayır — nahar fasiləsi aralığa düşürsə çıxılır.
+        private static decimal IsSaatiHesabla(TimeSpan bas, TimeSpan bitis, IsParametri p)
+        {
+            var saat = (decimal)(bitis - bas).TotalHours;
+            var naharBas = p.NaharBaslamaSaati;
+            var naharBitis = naharBas + TimeSpan.FromMinutes(p.NaharMuddetDeqiqe);
+            var oBas = bas > naharBas ? bas : naharBas;
+            var oBitis = bitis < naharBitis ? bitis : naharBitis;
+            if (oBitis > oBas) saat -= (decimal)(oBitis - oBas).TotalHours;
+            return saat < 0 ? 0 : saat;
+        }
+
+        // Günlük token üçün modalda avtomatik tam iş günü doldurmaq (UI-a verilir).
+        public async Task<(string Giris, string Cixis)> StandartIsSaatiGetirAsync()
+        {
+            var p = await _unitOfWork.Repository<IsParametri>().Query().FirstOrDefaultAsync() ?? new IsParametri();
+            return (p.StandartGirisVaxti.ToString(@"hh\:mm"), p.StandartCixisVaxti.ToString(@"hh\:mm"));
         }
 
         public async Task<Result> RedimRehberTesdiqleAsync(int redimId, int rehberUserId)
@@ -494,6 +517,31 @@ namespace FinNex.Application.Services.HR
                     icaze.HrId = hrIsciId;
 
                     await _unitOfWork.Repository<Icaze>().YaratAsync(icaze);
+
+                    // Möhkəmlik: həmin günü davamiyyətdə dərhal "İcazəli" et (Qayib qalıb maaşdan
+                    // kəsilməsin). Background marker yalnız qeydi olmayan günləri yazır — burada upsert.
+                    // Yalnız qeyd yoxdursa və ya Qayib-dirsə dəyişir; işçi gəlib (Isde/Gecikme) qeydə toxunulmur.
+                    var icazeGunu = redim.IcazeTarixi.Value.Date;
+                    var dav = await _unitOfWork.Repository<Davamiyyet>()
+                        .Query().FirstOrDefaultAsync(x => x.IsciId == redim.IsciId
+                            && x.Tarix.Date == icazeGunu && !x.Silinib);
+                    if (dav == null)
+                    {
+                        await _unitOfWork.Repository<Davamiyyet>().YaratAsync(new Davamiyyet
+                        {
+                            IsciId          = redim.IsciId,
+                            Tarix           = icazeGunu,
+                            Status          = DavamiyyetStatus.Icazeli,
+                            MaasdanKes      = false,
+                            YaradilmaTarixi = DateTime.Now
+                        });
+                    }
+                    else if (dav.Status == DavamiyyetStatus.Qayib)
+                    {
+                        dav.Status     = DavamiyyetStatus.Icazeli;
+                        dav.MaasdanKes = false;
+                        await _unitOfWork.Repository<Davamiyyet>().YenileAsync(dav);
+                    }
                 }
 
                 await _unitOfWork.Repository<JetonRedimTelebi>().YenileAsync(redim);

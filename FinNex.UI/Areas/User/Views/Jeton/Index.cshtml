@@ -3,6 +3,8 @@
     Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
     var balans = (decimal)(ViewBag.Balans ?? 0m);
     var qaraVar = (bool)(ViewBag.QaraVar ?? false);
+    var isGiris = (string)(ViewBag.IsGiris ?? "09:00");
+    var isCixis = (string)(ViewBag.IsCixis ?? "17:45");
     var musbetTeyinatlar = ViewBag.MusbetTeyinatlar as IList<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto>
         ?? new List<FinNex.Application.DTOs.HR.Jeton.JetonTeyinatiListDto>();
 }
@@ -153,6 +155,9 @@
                            pattern="^([01]?\d|2[0-3]):[0-5]\d$" />
                 </div>
             </div>
+            <div id="ujTamGunNote" style="display:none;margin-top:8px;padding:8px 10px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;color:#065f46;font-size:12px">
+                <i class="bi bi-calendar-check"></i> Günlük jeton — tam iş günü (<span id="ujTamGunAraliq"></span>) avtomatik seçildi. Maaşa təsir etmir.
+            </div>
             <small style="color:#6b7280;font-size:12px">
                 Sorğu rəhbər → HR təsdiqindən sonra avtomatik icazə qeydi yaranır.
             </small>
@@ -174,6 +179,8 @@
 <script>
 window.ujBalans = @balans;
 window.ujQaraVar = @(qaraVar ? "true" : "false");
+window.ujIsGiris = '@isGiris';
+window.ujIsCixis = '@isCixis';
 </script>
 <script src="~/js/User/user-jeton.js" asp-append-version="true"></script>
 }

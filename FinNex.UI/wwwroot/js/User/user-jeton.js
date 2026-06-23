@@ -91,6 +91,7 @@ function ujOpenRedimModal() {
     }
     ujSelectedIds.clear();
     ujRenderSelectList();
+    ujApplyGunToken();
     document.getElementById('ujSelectedInfo').style.display = 'none';
     document.getElementById('ujRedimOverlay').classList.add('uj-open');
     document.getElementById('ujRedimModal').classList.add('uj-open');
@@ -124,6 +125,33 @@ function ujToggleJeton(id, saat) {
     else ujSelectedIds.add(id);
     ujRenderSelectList();
     ujUpdateSelectedInfo();
+    ujApplyGunToken();
+}
+
+// Günlük (Gün) jeton seçiləndə icazə saatları avtomatik tam iş gününə (server konfiqurasiyası)
+// doldurulur və kilidlənir — "gəlib işləyib kimi" tam gün icazə.
+function ujApplyGunToken() {
+    const bas = document.getElementById('ujBaslamaSaati');
+    const bitis = document.getElementById('ujBitisSaati');
+    const note = document.getElementById('ujTamGunNote');
+    if (!bas || !bitis) return;
+    const gunSecili = ujJetonlar.some(j => ujSelectedIds.has(j.id) && j.jetonVahid === 2);
+    const giris = window.ujIsGiris || '09:00';
+    const cixis = window.ujIsCixis || '17:45';
+    if (gunSecili) {
+        bas.value = giris; bitis.value = cixis;
+        bas.readOnly = true; bitis.readOnly = true;
+        bas.style.background = '#f3f4f6'; bitis.style.background = '#f3f4f6';
+        if (note) {
+            const ar = document.getElementById('ujTamGunAraliq');
+            if (ar) ar.textContent = giris + '–' + cixis;
+            note.style.display = '';
+        }
+    } else {
+        bas.readOnly = false; bitis.readOnly = false;
+        bas.style.background = ''; bitis.style.background = '';
+        if (note) note.style.display = 'none';
+    }
 }
 
 function ujUpdateSelectedInfo() {
@@ -179,6 +207,7 @@ function ujRedimNovChanged() {
     const fields = document.getElementById('ujIcazeFields');
     if (!fields) return;
     fields.style.display = sel && parseInt(sel.value) === 1 ? '' : 'none';
+    ujApplyGunToken();
 }
 
 // ── Helpers ───────────────────────────────────────────────

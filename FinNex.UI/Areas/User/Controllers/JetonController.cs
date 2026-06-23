@@ -34,10 +34,13 @@ namespace FinNex.UI.Areas.User.Controllers
             var balans = await _jetonService.AktivSaatBalansiAsync(isciId);
             var qaraVar = await _jetonService.AktivQaraJetonuVarmiAsync(isciId);
             var teyinatlar = await _jetonService.JetonTeyinatlariGetirAsync();
+            var (isGiris, isCixis) = await _jetonService.StandartIsSaatiGetirAsync();
 
             ViewBag.Balans = balans;
             ViewBag.QaraVar = qaraVar;
             ViewBag.MusbetTeyinatlar = teyinatlar.Where(t => t.Nov == FinNex.Domain.Entities.HR.JetonNovu.Musbat).ToList();
+            ViewBag.IsGiris = isGiris;   // günlük token üçün modalda tam gün avtomatik dolur
+            ViewBag.IsCixis = isCixis;
             ViewData["Title"] = "Cüzdanım";
             return View();
         }
