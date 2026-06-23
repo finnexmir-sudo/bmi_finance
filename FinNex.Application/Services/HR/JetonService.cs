@@ -265,11 +265,12 @@ namespace FinNex.Application.Services.HR
                     .Where(x => dto.JetonIds.Contains(x.Id)
                         && x.IsciId == isciId
                         && x.Status == IsciJetonuStatus.Aktiv
+                        && x.RedimTelebiId == null   // başqa gözləyən sorğuya bağlı olmasın (ikiqat rezerv qarşısı)
                         && x.JetonTeyinati.Nov == JetonNovu.Musbat)
                     .ToListAsync();
 
                 if (jetonlar.Count != dto.JetonIds.Count)
-                    return Result.Fail("Seçilmiş jetonların bir hissəsi etibarsızdır.");
+                    return Result.Fail("Seçilmiş jetonların bir hissəsi etibarsız və ya artıq başqa sorğudadır.");
 
                 var baseSaat = jetonlar.Sum(x => x.QalanSaat ?? x.JetonTeyinati.SaatDeyeri);
 
