@@ -140,29 +140,22 @@ function ujApplyGunToken() {
     if (!bas || !bitis) return;
     const giris = window.ujIsGiris || '09:00';
     const cixis = window.ujIsCixis || '17:45';
-
-    // Bitiş həmişə günün sonu — kilidli
-    bitis.value = cixis;
-    bitis.readOnly = true;
-    bitis.style.background = '#f3f4f6';
-
     const secili = ujJetonlar.filter(j => ujSelectedIds.has(j.id));
     const gunSecili = secili.some(j => j.jetonVahid === 2);
     const cemiSaat = secili.reduce((a, j) => a + (j.qalanSaat ?? j.jetonSaatDeyeri ?? 0), 0);
 
+    // Saatlar SƏRBƏSTDİR — yalnız ağıllı default doldururuq (erkən çıxış); istifadəçi istədiyi
+    // aralığı (gec gəlmə, gün-ortası icazə və s.) seçə bilər. Server token saatından çoxunu rədd edir.
+    bas.readOnly = false; bitis.readOnly = false;
+    bas.style.background = ''; bitis.style.background = '';
+
     if (gunSecili) {
-        bas.value = giris;
-        bas.readOnly = true;
-        bas.style.background = '#f3f4f6';
-        if (note) { if (noteTxt) noteTxt.textContent = `Tam iş günü (${giris}–${cixis})`; note.style.display = ''; }
+        bas.value = giris; bitis.value = cixis;
+        if (note) { if (noteTxt) noteTxt.textContent = `Tam iş günü ${giris}–${cixis} — təsdiqlənsə maaşa təsir etmir.`; note.style.display = ''; }
     } else if (secili.length > 0) {
-        bas.readOnly = false;
-        bas.style.background = '';
-        bas.value = ujSaatCix(cixis, cemiSaat);
-        if (note) { if (noteTxt) noteTxt.textContent = `${bas.value}-də çıxış → günün sonuna (${cixis}) kimi`; note.style.display = ''; }
+        bas.value = ujSaatCix(cixis, cemiSaat); bitis.value = cixis;
+        if (note) { if (noteTxt) noteTxt.textContent = `Default: erkən çıxış ${bas.value}–${cixis}. Saatları sərbəst dəyişə bilərsiniz; təsdiqlənsə maaşa təsir etmir.`; note.style.display = ''; }
     } else {
-        bas.readOnly = false;
-        bas.style.background = '';
         if (note) note.style.display = 'none';
     }
 }
