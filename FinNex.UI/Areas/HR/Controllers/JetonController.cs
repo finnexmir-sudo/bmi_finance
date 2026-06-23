@@ -84,8 +84,9 @@ namespace FinNex.UI.Areas.HR.Controllers
 
             bool asRehber  = isRehber || isAdmin;   // rəhbər təsdiqi edə bilənlər
             bool asHrAdmin = isHr || isAdmin;       // HR final təsdiqi edə bilənlər
-            // Admin bütün departamentləri görür; təmiz rəhbər yalnız öz departamentini
-            int? departamentId = (isRehber && !isAdmin) ? await GetRehberDepartamentIdAsync() : null;
+            // Departament filtri YALNIZ təmiz rəhbərə tətbiq olunur. Admin/HR (məs. müdir
+            // müavini) bütün departamentlərin gözləyən sorğularını görür.
+            int? departamentId = (isRehber && !isAdmin && !isHr) ? await GetRehberDepartamentIdAsync() : null;
 
             var list = await _jetonService.GozleyenRedimlerGetirAsync(departamentId, asRehber, asHrAdmin);
             return Json(new { success = true, data = list });
