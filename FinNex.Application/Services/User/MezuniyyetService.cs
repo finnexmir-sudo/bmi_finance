@@ -473,6 +473,9 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     Status = davamiyyetStatusu
                 });
             }
+
+            // Üst-üstə düşən təsdiqlənmiş İcazələri ləğv et (gün məzuniyyətdir → İcazə artıqdır)
+            await _OrtulenIcazeleriLegvEtAsync(m.IsciId, m.BaslamaTarixi, m.BitmeTarixi);
         }
 
         await _unitOfWork.YaddaSaxlaAsync();
@@ -1764,6 +1767,34 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
     // itirməyə səbəb olurdu — köhnə illərin qalığı heç vaxt istifadə
     // edilmirdi.
     // ════════════════════════════════════════════════════════════
+    // Məzuniyyət bir günü tam örtürsə, həmin günkü TƏSDİQLƏNMİŞ İcazə artıqdır → ləğv olunur
+    // (saatı boşa getməsin). Jetonla ödənilibsə jeton geri qaytarılır. Bayram günündəki
+    // İcazəyə toxunulmur (məzuniyyət o günü onsuz da hesablamır).
+    // Çağıran tranzaksiya daxilində istifadə edir — YaddaSaxla çağıranın üzərindədir.
+    private async Task _OrtulenIcazeleriLegvEtAsync(int isciId, DateTime baslama, DateTime bitme)
+    {
+        var bayramlar = await _unitOfWork.Repository<BayramGunu>()
+            .HamisiniGetirAsync(x => x.Tarix >= baslama && x.Tarix <= bitme
+                && x.Tip == GunTipi.Bayram && !x.MezuniyyetdeHesablanir);
+
+        var icazeler = (await _unitOfWork.Repository<Icaze>()
+            .HamisiniGetirAsync(x => x.IsciId == isciId
+                && x.Status == IcazeStatus.Tesdiqlenib && !x.Silinib
+                && x.IcazeTarixi.Date >= baslama.Date && x.IcazeTarixi.Date <= bitme.Date))
+            .Where(ic => !bayramlar.Any(b => b.Tarix.Date == ic.IcazeTarixi.Date))
+            .ToList();
+
+        foreach (var ic in icazeler)
+        {
+            if (ic.JetonOdenenSaat > 0)
+                await _jetonService.IcazeJetonuGeriQaytarAsync(ic.IsciId, ic.JetonOdenenSaat);
+
+            ic.Status = IcazeStatus.ImtinaEdildi;
+            ic.ImtinaSebebi = "Məzuniyyət ilə əvəz olundu (həmin gün məzuniyyətdir).";
+            await _unitOfWork.Repository<Icaze>().YenileAsync(ic);
+        }
+    }
+
     private async Task BalansiFifoKesAsync(int isciId, MezuniyyetNovu nov, int gunu)
     {
         if (gunu <= 0) return;
@@ -2027,6 +2058,9 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                         yeniQeyd++;
                     }
                 }
+
+                // 7.1 Üst-üstə düşən təsdiqlənmiş İcazələri ləğv et (gün məzuniyyətdir → İcazə artıqdır)
+                await _OrtulenIcazeleriLegvEtAsync(dto.IsciId, dto.BaslamaTarixi, dto.BitmeTarixi);
 
                 await _unitOfWork.YaddaSaxlaAsync();
                 await transaction.CommitAsync();
