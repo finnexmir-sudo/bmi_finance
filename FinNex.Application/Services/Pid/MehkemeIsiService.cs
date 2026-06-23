@@ -67,6 +67,62 @@ public class MehkemeIsiService : IMehkemeIsiService
         }).ToList();
     }
 
+    // ── İcra işləri (Excel "İcrada olan işlər") ───────────────────────────
+    // status: "aktiv" (default) = İcra; "baglanmis" = Tamamlandı+Bağlandı; "hamisi" = hamısı
+    public async Task<IList<IcraIsiListDto>> IcraIsleriGetirAsync(string? status)
+    {
+        var q = _uow.Repository<MehkemeIsi>().Query().AsNoTracking().Where(x => !x.Silinib);
+
+        if (status == "baglanmis")
+            q = q.Where(x => x.Status == MehkemeIsiStatus.Tamamlandi || x.Status == MehkemeIsiStatus.Baghlandi);
+        else if (status == "hamisi")
+            q = q.Where(x => x.Status == MehkemeIsiStatus.Icra
+                          || x.Status == MehkemeIsiStatus.Tamamlandi
+                          || x.Status == MehkemeIsiStatus.Baghlandi);
+        else // "aktiv" — yalnız icrada olanlar (default)
+            q = q.Where(x => x.Status == MehkemeIsiStatus.Icra);
+
+        var list = await q
+            .OrderByDescending(x => x.YenilenmeTarixi ?? x.YaradilmaTarixi)
+            .ToListAsync();
+
+        // Zamin sayları — yalnız ID-ləri çəkib client-side qruplaşdırırıq (EF GroupBy tələsi yox)
+        var ids = list.Select(x => x.Id).ToList();
+        var zaminIdler = ids.Count == 0
+            ? new List<int>()
+            : await _uow.Repository<MehkemeZamin>().Query().AsNoTracking()
+                .Where(z => !z.Silinib && ids.Contains(z.MehkemeIsiId))
+                .Select(z => z.MehkemeIsiId)
+                .ToListAsync();
+        var zaminDict = zaminIdler.GroupBy(x => x).ToDictionary(g => g.Key, g => g.Count());
+
+        return list.Select(x => new IcraIsiListDto
+        {
+            Id                = x.Id,
+            BorcluAd          = x.BorcluAd,
+            QeydiyyatNomresi  = x.QeydiyyatNomresi,
+            Subkod            = string.IsNullOrWhiteSpace(x.Subkod) ? x.KreditSubHesab : x.Subkod,
+            Status            = x.Status,
+            MehkemeStatusMetn = x.MehkemeStatusMetn,
+            QalanBorc         = x.QalanBorc,
+            SonOdenisTarixi   = x.SonOdenisTarixi,
+            Qeydiyyati        = x.Qeydiyyati,
+            EmekHaqqiMelumati = x.EmekHaqqiMelumati,
+            AdinaSorgu        = x.AdinaSorgu,
+            DypSorguTarixi    = x.DypSorguTarixi,
+            EmlakaHebs        = x.EmlakaHebs,
+            Stop              = x.Stop,
+            IcraMemuru        = x.IcraMemuru,
+            IcraSonIsler      = x.IcraSonIsler,
+            DogumTarixi       = x.DogumTarixi,
+            Zamin             = x.Zamin,
+            ZaminSayi         = zaminDict.TryGetValue(x.Id, out var sy) ? sy : 0,
+            QetnameTarixi     = x.QetnameTarixi,
+            IsYeri            = x.IsYeri,
+            IcraQeyd          = x.IcraQeyd
+        }).ToList();
+    }
+
     public async Task<IList<YaxinlasanGorusDto>> YaxinlasanGoruslerAsync()
     {
         var bugun = DateTime.Today;
@@ -557,6 +613,9 @@ public class MehkemeIsiService : IMehkemeIsiService
         entity.IcraSonIsler      = dto.IcraSonIsler;
         entity.IcraQeyd          = dto.IcraQeyd;
         entity.Zamin             = dto.Zamin;
+        entity.QalanBorc         = dto.QalanBorc;
+        entity.SonOdenisTarixi   = dto.SonOdenisTarixi;
+        entity.DogumTarixi       = dto.DogumTarixi;
         entity.YenileyenIcraciId = isciId;
         entity.YenilenmeTarixi   = DateTime.Now;
 

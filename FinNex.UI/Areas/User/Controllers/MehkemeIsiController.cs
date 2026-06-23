@@ -51,6 +51,14 @@ public class MehkemeIsiController : Controller
         return View(model);
     }
 
+    // ── İcra işləri (icrada olan / bağlanmış işlər — Excel "İcrada olan işlər") ──
+    public async Task<IActionResult> IcraIsleri(string? status)
+    {
+        var model = await _service.IcraIsleriGetirAsync(status);
+        ViewBag.Status = string.IsNullOrWhiteSpace(status) ? "aktiv" : status;
+        return View(model);
+    }
+
     // ── Yaxınlaşan görüşlər (bütün işlər üzrə gələcək iclaslar) ──
     public async Task<IActionResult> Gorusler()
     {

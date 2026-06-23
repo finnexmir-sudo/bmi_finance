@@ -21,6 +21,33 @@ public class MehkemeIsiListDto
     public DateTime YaradilmaTarixi { get; set; }
 }
 
+// İcra işləri siyahısı (Excel "İcrada olan işlər" sheet) — icra fazası icmal grid-i
+public class IcraIsiListDto
+{
+    public int Id                  { get; set; }
+    public string BorcluAd         { get; set; } = null!;
+    public string QeydiyyatNomresi { get; set; } = null!;   // kredit hesabı
+    public string? Subkod          { get; set; }
+    public MehkemeIsiStatus Status { get; set; }
+    public string? MehkemeStatusMetn { get; set; }   // Excel status mətni (BORC BAĞLANDI...)
+    public decimal?  QalanBorc       { get; set; }
+    public DateTime? SonOdenisTarixi { get; set; }
+    public string?   Qeydiyyati      { get; set; }
+    public string?   EmekHaqqiMelumati{ get; set; }
+    public string?   AdinaSorgu      { get; set; }
+    public DateTime? DypSorguTarixi  { get; set; }
+    public string?   EmlakaHebs      { get; set; }
+    public string?   Stop            { get; set; }
+    public string?   IcraMemuru      { get; set; }
+    public string?   IcraSonIsler    { get; set; }
+    public DateTime? DogumTarixi     { get; set; }
+    public string?   Zamin           { get; set; }
+    public int       ZaminSayi       { get; set; }   // MehkemeZamin (icra subyekti) sayı
+    public DateTime? QetnameTarixi   { get; set; }
+    public string?   IsYeri          { get; set; }
+    public string?   IcraQeyd        { get; set; }
+}
+
 // Yaxınlaşan görüş/iclas (bütün işlər üzrə — gündəlik səhifəsi)
 public class YaxinlasanGorusDto
 {

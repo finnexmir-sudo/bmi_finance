@@ -7,6 +7,7 @@ namespace FinNex.Application.Interfaces.Pid;
 public interface IMehkemeIsiService
 {
     Task<IList<MehkemeIsiListDto>> HamisiniGetirAsync();
+    Task<IList<IcraIsiListDto>> IcraIsleriGetirAsync(string? status);
     Task<IList<YaxinlasanGorusDto>> YaxinlasanGoruslerAsync();
     Task<MehkemeIsiDetailDto?> DetailGetirAsync(int id);
     Task<MehkemeIsi> YaratAsync(MehkemeIsiCreateDto dto, int yaradanIsciId);

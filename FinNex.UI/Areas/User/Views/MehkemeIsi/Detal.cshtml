@@ -328,6 +328,9 @@
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@Model.Id" />
                                         <div class="mi-form-grid mi-form-grid--3">
+                                            <div class="mi-form-group"><label class="mi-lbl">Qalan borc (₼)</label><input name="QalanBorc" class="mi-input" type="number" step="0.01" min="0" value="@(Model.QalanBorc?.ToString(System.Globalization.CultureInfo.InvariantCulture))" /></div>
+                                            <div class="mi-form-group"><label class="mi-lbl">Son ödəniş tarixi</label><input name="SonOdenisTarixi" class="mi-input" type="date" value="@(Model.SonOdenisTarixi?.ToString("yyyy-MM-dd"))" /></div>
+                                            <div class="mi-form-group"><label class="mi-lbl">Doğum tarixi</label><input name="DogumTarixi" class="mi-input" type="date" value="@(Model.DogumTarixi?.ToString("yyyy-MM-dd"))" /></div>
                                             <div class="mi-form-group"><label class="mi-lbl">Qeydiyyatı (rayon)</label><input name="Qeydiyyati" class="mi-input" value="@Model.Qeydiyyati" /></div>
                                             <div class="mi-form-group"><label class="mi-lbl">Əmək haqqı məlumatı</label><input name="EmekHaqqiMelumati" class="mi-input" value="@Model.EmekHaqqiMelumati" /></div>
                                             <div class="mi-form-group"><label class="mi-lbl">İş yeri</label><input name="IsYeri" class="mi-input" value="@Model.IsYeri" /></div>

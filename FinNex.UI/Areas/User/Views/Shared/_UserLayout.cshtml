@@ -569,13 +569,13 @@
                                class="fn-nav-item @(currentController == "MehkemeIsi" && currentAction == "Isler" ? "active" : "")">
                                 <i class="bi bi-bank"></i> Məhkəmə İşləri
                             </a>
+                            <a asp-area="User" asp-controller="MehkemeIsi" asp-action="IcraIsleri"
+                               class="fn-nav-item @(currentController == "MehkemeIsi" && currentAction == "IcraIsleri" ? "active" : "")">
+                                <i class="bi bi-hammer"></i> İcra işləri
+                            </a>
                             <a asp-area="User" asp-controller="MehkemeIsi" asp-action="Gorusler"
                                class="fn-nav-item @(currentController == "MehkemeIsi" && currentAction == "Gorusler" ? "active" : "")">
                                 <i class="bi bi-calendar-event"></i> Yaxınlaşan görüşlər
-                            </a>
-                            <a asp-area="User" asp-controller="MehkemeIsi" asp-action="Yarat"
-                               class="fn-nav-item @(currentController == "MehkemeIsi" && currentAction == "Yarat" ? "active" : "")">
-                                <i class="bi bi-plus-circle"></i> Yeni iş
                             </a>
                             <a asp-area="User" asp-controller="OdenisNezareti" asp-action="Index"
                                class="fn-nav-item @(currentController == "OdenisNezareti" ? "active" : "")">

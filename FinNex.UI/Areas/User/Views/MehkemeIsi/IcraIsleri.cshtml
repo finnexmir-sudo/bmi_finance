@@ -1,0 +1,228 @@
+@using FinNex.Application.DTOs.Pid
+@using FinNex.Domain.Entities.Pid
+@model IList<IcraIsiListDto>
+@{
+    ViewData["Title"] = "İcra İşləri";
+    Layout = "~/Areas/User/Views/Shared/_UserLayout.cshtml";
+    var st = (ViewBag.Status as string) ?? "aktiv";
+
+    string D(DateTime? d) => d.HasValue ? d.Value.ToString("dd.MM.yyyy") : "—";
+    string Txt(string? s) => string.IsNullOrWhiteSpace(s) ? "—" : s;
+    string M(decimal? v) => v.HasValue ? v.Value.ToString("N2") + " ₼" : "—";
+
+    string StatusAd(MehkemeIsiStatus s) => s switch
+    {
+        MehkemeIsiStatus.Hazirlanir => "Hazırlanır",
+        MehkemeIsiStatus.Mehkemede  => "Məhkəmədə",
+        MehkemeIsiStatus.Icra       => "İcrada",
+        MehkemeIsiStatus.Tamamlandi => "Tamamlandı",
+        MehkemeIsiStatus.Baghlandi  => "Bağlandı",
+        _                           => s.ToString()
+    };
+    string StatusClass(MehkemeIsiStatus s) => s switch
+    {
+        MehkemeIsiStatus.Hazirlanir => "mi-badge--hazir",
+        MehkemeIsiStatus.Mehkemede  => "mi-badge--mehkeme",
+        MehkemeIsiStatus.Icra       => "mi-badge--icra",
+        MehkemeIsiStatus.Tamamlandi => "mi-badge--tamam",
+        MehkemeIsiStatus.Baghlandi  => "mi-badge--bagli",
+        _                           => "mi-badge--diger"
+    };
+}
+
+<div class="ms-page">
+    <div class="ms-head">
+        <div>
+            <h2 class="ms-title">İcra İşləri</h2>
+            <p class="ms-sub">İcrada olan və bağlanmış işlər — icra fazası izləməsi</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <a asp-action="Isler" class="ms-btn ms-btn--ghost"><i class="bi bi-bank"></i> Məhkəmə İşləri</a>
+            <a asp-action="Index" class="ms-btn ms-btn--ghost"><i class="bi bi-people"></i> Aktiv Müştərilər</a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="ms-alert ms-alert--success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="ms-alert ms-alert--error">@TempData["Error"]</div>
+    }
+
+    <div class="ms-filter">
+        <input type="text" id="icSearch" class="ms-input ms-grow" placeholder="🔍 Müştəri adı və ya kredit hesabı axtar…" />
+        <div class="ic-chips">
+            <a asp-action="IcraIsleri" asp-route-status="aktiv"     class="ic-chip @(st == "aktiv"     ? "active" : "")">İcrada olanlar</a>
+            <a asp-action="IcraIsleri" asp-route-status="baglanmis" class="ic-chip @(st == "baglanmis" ? "active" : "")">Bağlanmış</a>
+            <a asp-action="IcraIsleri" asp-route-status="hamisi"    class="ic-chip @(st == "hamisi"    ? "active" : "")">Hamısı</a>
+        </div>
+    </div>
+
+    <div class="ms-card">
+        <div class="ms-twrap">
+            <table class="ms-table" id="icTable">
+                <thead>
+                    <tr>
+                        <th style="width:42px">№</th>
+                        <th class="ms-col-ad">Müştəri</th>
+                        <th>Kredit hesabı</th>
+                        <th>Status</th>
+                        <th class="ms-num">Qalan borc</th>
+                        <th>Son ödəniş</th>
+                        <th>Qeydiyyatı</th>
+                        <th>Əmək haqqı barədə</th>
+                        <th>Adına sorğu</th>
+                        <th>Əmlaka həbs</th>
+                        <th>Stop</th>
+                        <th>İcra məmuru</th>
+                        <th>İcraçı son işlər / görüşmə</th>
+                        <th>Doğum tarixi</th>
+                        <th>Zamin</th>
+                        <th>Qətnamə tarixi</th>
+                        <th>İş yeri</th>
+                        <th>Qeyd</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        var i = 0;
+                        @foreach (var x in Model)
+                        {
+                            i++;
+                            var url = Url.Action("Detal", new { id = x.Id });
+                            <tr class="ic-row"
+                                data-href="@url"
+                                data-search="@($"{x.BorcluAd} {x.QeydiyyatNomresi} {x.Subkod}")">
+                                <td class="mx-sira">@i</td>
+                                <td class="ms-col-ad">
+                                    <a asp-action="Detal" asp-route-id="@x.Id" class="mx-name">@Txt(x.BorcluAd)</a>
+                                </td>
+                                <td>
+                                    <span class="mi-nomre">@Txt(x.QeydiyyatNomresi)</span>
+                                    @if (!string.IsNullOrWhiteSpace(x.Subkod))
+                                    {
+                                        <span class="ic-sub">· @x.Subkod</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="mi-badge @StatusClass(x.Status)">@StatusAd(x.Status)</span>
+                                    @if (!string.IsNullOrWhiteSpace(x.MehkemeStatusMetn))
+                                    {
+                                        <div class="ic-statmetn" title="@x.MehkemeStatusMetn">@x.MehkemeStatusMetn</div>
+                                    }
+                                </td>
+                                <td class="ms-num">@M(x.QalanBorc)</td>
+                                <td class="mi-date">@D(x.SonOdenisTarixi)</td>
+                                <td class="ic-clip" title="@Txt(x.Qeydiyyati)">@Txt(x.Qeydiyyati)</td>
+                                <td class="ic-clip" title="@Txt(x.EmekHaqqiMelumati)">@Txt(x.EmekHaqqiMelumati)</td>
+                                <td class="ic-clip" title="@Txt(x.AdinaSorgu)">
+                                    @Txt(x.AdinaSorgu)
+                                    @if (x.DypSorguTarixi.HasValue)
+                                    {
+                                        <span class="ic-sub">(@x.DypSorguTarixi.Value.ToString("dd.MM.yyyy"))</span>
+                                    }
+                                </td>
+                                <td class="ic-clip" title="@Txt(x.EmlakaHebs)">@Txt(x.EmlakaHebs)</td>
+                                <td class="ic-clip" title="@Txt(x.Stop)">@Txt(x.Stop)</td>
+                                <td class="ic-clip" title="@Txt(x.IcraMemuru)">@Txt(x.IcraMemuru)</td>
+                                <td class="ic-clip ic-clip--wide" title="@Txt(x.IcraSonIsler)">@Txt(x.IcraSonIsler)</td>
+                                <td class="mi-date">@D(x.DogumTarixi)</td>
+                                <td class="ic-clip" title="@Txt(x.Zamin)">
+                                    @if (x.ZaminSayi > 0)
+                                    {
+                                        <span class="ic-zamin" title="@x.ZaminSayi zamin (icra subyekti)"><i class="bi bi-person-badge"></i> @x.ZaminSayi</span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(x.Zamin))
+                                    {
+                                        <span>@x.Zamin</span>
+                                    }
+                                    else if (x.ZaminSayi == 0)
+                                    {
+                                        <span>—</span>
+                                    }
+                                </td>
+                                <td class="mi-date">@D(x.QetnameTarixi)</td>
+                                <td class="ic-clip" title="@Txt(x.IsYeri)">@Txt(x.IsYeri)</td>
+                                <td class="ic-clip" title="@Txt(x.IcraQeyd)">@Txt(x.IcraQeyd)</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr class="ic-empty-row">
+                            <td colspan="18">
+                                <div class="ms-empty">
+                                    <i class="bi bi-folder2-open"></i>
+                                    <div>Bu filtrdə icra işi yoxdur.</div>
+                                    <div style="margin-top:6px;font-size:13px">
+                                        İşi <a asp-action="Isler">Məhkəmə İşləri</a>-ndə açıb, Detal-da statusu <b>İcrada</b> seçdikdə burada görünür.
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="ms-foot" id="icCount">@Model.Count iş</div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/User/user-mehkeme.css" asp-append-version="true" />
+    <style>
+        #icTable tbody td { padding: 9px 14px; border-bottom: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; white-space: nowrap; vertical-align: middle; }
+        #icTable tbody td:last-child { border-right: none; }
+        #icTable tbody tr.ic-row { cursor: pointer; }
+        #icTable tbody tr.ic-row:nth-child(even) td { background: #f8fafc; }
+        #icTable tbody tr.ic-row:hover td { background: #eff6ff; }
+        .mx-sira { color: #94a3b8; font-weight: 700; text-align: center; }
+        .mx-name { font-weight: 700; color: #0f172a; text-decoration: none; }
+        .mx-name:hover { color: var(--fn-primary,#6366f1); text-decoration: underline; }
+        .ic-sub { color: #94a3b8; font-size: 12px; margin-left: 3px; }
+        .ic-statmetn { font-size: 11px; color: #64748b; margin-top: 2px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+        .ic-clip { max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+        .ic-clip--wide { max-width: 260px; }
+        .ic-zamin { display: inline-flex; align-items: center; gap: 3px; background: #eef2ff; color: #4338ca; border-radius: 6px; padding: 1px 7px; font-weight: 700; font-size: 12px; margin-right: 4px; }
+
+        /* Status filtr çipləri */
+        .ic-chips { display: flex; gap: 6px; }
+        .ic-chip { padding: 7px 14px; border-radius: 9px; background: #f1f5f9; color: #475569; font-weight: 600; font-size: 13px; text-decoration: none; border: 1.5px solid transparent; white-space: nowrap; }
+        .ic-chip:hover { background: #e2e8f0; }
+        .ic-chip.active { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
+    </style>
+}
+
+@section Scripts {
+<script>
+    // Sətrə klik → Detal (ad linkinə birbaşa klik öz işini görür)
+    document.querySelectorAll('#icTable tbody tr.ic-row').forEach(function (tr) {
+        tr.addEventListener('click', function (e) {
+            if (e.target.closest('a')) return;
+            var href = tr.dataset.href;
+            if (href) window.location.href = href;
+        });
+    });
+
+    // Axtarış (ad / kredit hesabı / subkod)
+    (function () {
+        var s   = document.getElementById('icSearch');
+        var cnt = document.getElementById('icCount');
+        var rows = Array.prototype.slice.call(document.querySelectorAll('#icTable tbody tr.ic-row'));
+        function f() {
+            var q = s.value.trim().toLowerCase();
+            var vis = 0;
+            rows.forEach(function (r) {
+                var ok = !q || (r.dataset.search || '').toLowerCase().includes(q);
+                r.style.display = ok ? '' : 'none';
+                if (ok) vis++;
+            });
+            cnt.textContent = vis + ' iş';
+        }
+        s.addEventListener('input', f);
+    })();
+</script>
+}
