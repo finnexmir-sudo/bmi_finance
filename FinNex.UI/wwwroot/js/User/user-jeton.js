@@ -128,30 +128,51 @@ function ujToggleJeton(id, saat) {
     ujApplyGunToken();
 }
 
-// Günlük (Gün) jeton seçiləndə icazə saatları avtomatik tam iş gününə (server konfiqurasiyası)
-// doldurulur və kilidlənir — "gəlib işləyib kimi" tam gün icazə.
+// İcazə = "erkən çıxış" → bitiş HƏMİŞƏ günün sonudur (kilidli). Belə icazə davamiyyətdə
+// "tez çıxdı" sayılmır (bitişi günün sonuna çatdığı üçün həm HR, həm İşçi panelində bağışlanır).
+//  • Günlük (Gün) token → başlama da kilidli = tam iş günü (09:00–17:45).
+//  • Saatlıq token      → başlama = çıxış − token saatı (dəyişilə bilər); günün sonuna kimi örtülür.
 function ujApplyGunToken() {
     const bas = document.getElementById('ujBaslamaSaati');
     const bitis = document.getElementById('ujBitisSaati');
     const note = document.getElementById('ujTamGunNote');
+    const noteTxt = document.getElementById('ujTamGunAraliq');
     if (!bas || !bitis) return;
-    const gunSecili = ujJetonlar.some(j => ujSelectedIds.has(j.id) && j.jetonVahid === 2);
     const giris = window.ujIsGiris || '09:00';
     const cixis = window.ujIsCixis || '17:45';
+
+    // Bitiş həmişə günün sonu — kilidli
+    bitis.value = cixis;
+    bitis.readOnly = true;
+    bitis.style.background = '#f3f4f6';
+
+    const secili = ujJetonlar.filter(j => ujSelectedIds.has(j.id));
+    const gunSecili = secili.some(j => j.jetonVahid === 2);
+    const cemiSaat = secili.reduce((a, j) => a + (j.qalanSaat ?? j.jetonSaatDeyeri ?? 0), 0);
+
     if (gunSecili) {
-        bas.value = giris; bitis.value = cixis;
-        bas.readOnly = true; bitis.readOnly = true;
-        bas.style.background = '#f3f4f6'; bitis.style.background = '#f3f4f6';
-        if (note) {
-            const ar = document.getElementById('ujTamGunAraliq');
-            if (ar) ar.textContent = giris + '–' + cixis;
-            note.style.display = '';
-        }
+        bas.value = giris;
+        bas.readOnly = true;
+        bas.style.background = '#f3f4f6';
+        if (note) { if (noteTxt) noteTxt.textContent = `Tam iş günü (${giris}–${cixis})`; note.style.display = ''; }
+    } else if (secili.length > 0) {
+        bas.readOnly = false;
+        bas.style.background = '';
+        bas.value = ujSaatCix(cixis, cemiSaat);
+        if (note) { if (noteTxt) noteTxt.textContent = `${bas.value}-də çıxış → günün sonuna (${cixis}) kimi`; note.style.display = ''; }
     } else {
-        bas.readOnly = false; bitis.readOnly = false;
-        bas.style.background = ''; bitis.style.background = '';
+        bas.readOnly = false;
+        bas.style.background = '';
         if (note) note.style.display = 'none';
     }
+}
+
+// "HH:MM" saatından N saat geri (sadə — naharsız; server nahar-nəzərə-alan yoxlama edir)
+function ujSaatCix(hhmm, saat) {
+    const [h, m] = hhmm.split(':').map(Number);
+    let dq = h * 60 + m - Math.round((saat || 0) * 60);
+    if (dq < 0) dq = 0;
+    return String(Math.floor(dq / 60)).padStart(2, '0') + ':' + String(dq % 60).padStart(2, '0');
 }
 
 function ujUpdateSelectedInfo() {
