@@ -500,7 +500,10 @@ namespace FinNex.Application.Services.HR
                         RehberTesdiqTarixi = redim.RehberTesdiqTarixi,
                         HrTesdiq = true,
                         HrTesdiqTarixi = DateTime.Now,
-                        JetonOdenenSaat = redim.CemiSaat
+                        JetonOdenenSaat = redim.CemiSaat,
+                        // Jeton icazəsi İŞ saatını ödəyir; nahar təqvim aralığını şişirtməsin
+                        // → tam iş günü 8.75 təqvim yox, 8 iş saatı kimi sayılır (jeton 8-i tam örtür).
+                        NaharNezereAlinmasin = true
                     };
 
                     // SobeReisiId, RehberId, HrId üçün Isci ID-ləri lazımdır.
