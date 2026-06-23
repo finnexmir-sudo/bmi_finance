@@ -949,16 +949,21 @@ namespace FinNex.Application.Services
 
         // Bir icazənin FAKTİKİ saatı (Dövriyyə və İzləmə eyni məntiqlə işləsin deyə tək yerdə):
         //  • adi icazə  → qayıdış − çıxış (hər iki vaxt olmalıdır, yoxdursa null)
-        //  • birdəfəlik → işçi qayıtmır, ona görə çıxışdan planlaşdırılan icazə sonuna
-        //    (BitisSaati) qədər sayılır. Çıxış yoxdursa, yaxud çıxış icazə sonundan
-        //    sonradırsa null (faktiki ölçülə bilmir).
+        //  • birdəfəlik VƏ YA icazə günün sonuna kimidir (qayıdış yoxdur) → işçi qayıtmır,
+        //    ona görə çıxışdan planlaşdırılan icazə sonuna (BitisSaati) qədər sayılır.
+        //    Çıxış yoxdursa, yaxud çıxış icazə sonundan sonradırsa null (faktiki ölçülə bilmir).
+        // gunSonu = StandartCixisVaxti (verilsə, günün sonuna kimi olan icazə də qayıtmayan sayılır).
         private static double? IcazeFaktikiSaat(
             DateTime? cixis, DateTime? qayidis, bool birdefelik,
-            DateTime icazeTarixi, TimeSpan bitisSaati)
+            DateTime icazeTarixi, TimeSpan bitisSaati, TimeSpan? gunSonu = null)
         {
             if (cixis == null) return null;
 
-            if (birdefelik)
+            // İşçi qayıtmır: birdəfəlik, yaxud icazə günün sonuna kimidir və qayıdış qeydi yoxdur.
+            bool qayitmir = birdefelik
+                || (qayidis == null && gunSonu.HasValue && bitisSaati >= gunSonu.Value);
+
+            if (qayitmir)
             {
                 var icazeSonu = icazeTarixi.Date + bitisSaati;
                 var saat = (icazeSonu - cixis.Value).TotalHours;
@@ -1062,7 +1067,7 @@ namespace FinNex.Application.Services
                             TesdiqSaat = g.Where(x => x.Status == IcazeStatus.Tesdiqlenib).Sum(x => EfektivSaat(x)),
                             FaktikiSaat = icazeDtolar
                                 .Select(d => IcazeFaktikiSaat(d.CixisVaxt, d.QayidisVaxt, d.Birdefelik,
-                                                              d.IcazeTarixi, d.BitisSaati))
+                                                              d.IcazeTarixi, d.BitisSaati, izParam?.StandartCixisVaxti))
                                 .Where(s => s.HasValue)
                                 .Sum(s => s!.Value),
                             SonIcazeTarixi = g.Max(x => (DateTime?)x.IcazeTarixi),
@@ -1086,6 +1091,10 @@ namespace FinNex.Application.Services
             try
             {
                 await IcazeCihazVaxtBerpaEtAsync();   // cihaz çıxış/qayıdışını xam punch-lardan bərpa edib saxla
+
+                // Günün sonuna kimi olan icazələrdə (qayıdış yox) faktikini hesablamaq üçün standart çıxış vaxtı
+                var dovParam = await _unitOfWork.Repository<IsParametri>()
+                    .Query().AsNoTracking().Where(x => !x.Silinib).FirstOrDefaultAsync();
 
                 var list = await _unitOfWork.Repository<IcazeCixisGiris>()
                     .HamisiniGetirAsync(
@@ -1137,7 +1146,7 @@ namespace FinNex.Application.Services
                         // yoxsa çıxış/qayıdış cütünə görə hesablanır.
                         double? faktiki = (!c.Birdefelik ? c.FaktikiSaat : null)
                             ?? IcazeFaktikiSaat(effCixis, effQayidis, c.Birdefelik,
-                                                c.Icaze.IcazeTarixi, c.Icaze.BitisSaati);
+                                                c.Icaze.IcazeTarixi, c.Icaze.BitisSaati, dovParam?.StandartCixisVaxti);
                         return new IcazeDovriyyeDto
                         {
                             IcazeId = c.IcazeId,
