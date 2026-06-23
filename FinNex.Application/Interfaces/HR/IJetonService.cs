@@ -63,9 +63,10 @@ public interface IJetonService
     // həmin jetonları "İstifadə olunub" edir. Tam xərclənir — qismən deyil.
     Task<Result<decimal>> IcazeUcunFifoJetonXercleAsync(int isciId, decimal teleblesaat, int? icazeId = null);
 
-    // Adi icazəyə jeton əvəzləşdirmə (rəhbər təsdiqində FIFO tutulma) üçün GÖRÜNƏN redim
-    // qeydi yaradır — Xərcləmə Tarixçəsində adi redim kimi görünsün (Status=Təsdiqləndi).
-    Task<Result> IcazeEvezlesdirmeQeydiAsync(int isciId, decimal jetonSaat, System.DateTime icazeTarixi, System.TimeSpan baslama, System.TimeSpan bitis);
+    // İcazə/məzuniyyətə jeton əvəzləşdirmə (FIFO tutulma) üçün GÖRÜNƏN redim qeydi yaradır —
+    // Xərcləmə Tarixçəsində adi redim kimi görünsün (Status=Təsdiqləndi). Məzuniyyətdə saat
+    // aralığı olmadığı üçün baslama/bitis null ötürülür.
+    Task<Result> JetonEvezlesdirmeQeydiAsync(int isciId, decimal jetonSaat, System.DateTime tarix, System.TimeSpan? baslama, System.TimeSpan? bitis, string qeyd);
 
     // İcazə ləğvində jetonu geri qaytarır (reverse-FIFO). Dəyişiklikləri stage edir
     // (save etmir) — çağıran tək tranzaksiyada saxlamalıdır.

@@ -1973,6 +1973,11 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                         dto.IsciId, isGunu * 8m, icazeId: null);
                     if (!jetonRes.Success)
                         return Result<MezuniyyetDto>.Fail($"Jeton xərclənmədi: {jetonRes.Message}");
+
+                    // Görünən qeyd: məzuniyyət jeton tutması da Xərcləmə Tarixçəsində görünsün
+                    await _jetonService.JetonEvezlesdirmeQeydiAsync(
+                        dto.IsciId, isGunu * 8m, dto.BaslamaTarixi, null, null,
+                        "Məzuniyyətə jeton əvəzləşdirməsi");
                 }
                 else if (dto.Nov == MezuniyyetNovu.Illik)
                 {

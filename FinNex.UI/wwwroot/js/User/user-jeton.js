@@ -73,7 +73,7 @@ async function ujLoadRedimler() {
         tbody.innerHTML = json.data.map(r => `
             <tr>
                 <td>${r.redimNovu === 1 ? '<i class="bi bi-clock"></i> İcazə' : '<i class="bi bi-cash-coin"></i> Maaşa əlavə'}</td>
-                <td><strong>${r.redimNovu === 1 ? r.icazeSaati : r.cemiSaat} saat</strong>${r.redimNovu === 1 ? `<br><small style="color:#9ca3af">jeton: ${r.cemiSaat} saat</small>` : ''}</td>
+                <td><strong>${(r.redimNovu === 1 && r.icazeSaati > 0) ? r.icazeSaati : r.cemiSaat} saat</strong>${(r.redimNovu === 1 && r.icazeSaati > 0) ? `<br><small style="color:#9ca3af">jeton: ${r.cemiSaat} saat</small>` : ''}</td>
                 <td>${ujDate(r.telabTarixi)}</td>
                 <td>${ujStatusBadge(r.status)}</td>
                 <td>${r.qeyd ?? '—'}</td>

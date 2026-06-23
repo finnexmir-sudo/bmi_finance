@@ -628,8 +628,9 @@ namespace FinNex.Application.Services
             if (!res.Success) return Result.Fail(res.Message ?? "Jeton xərclənmədi.");
 
             // Görünən qeyd: əvəzləşdirmə Xərcləmə Tarixçəsində adi redim kimi görünsün
-            await _jetonService.IcazeEvezlesdirmeQeydiAsync(
-                icaze.IsciId, icaze.JetonOdenenSaat, icaze.IcazeTarixi, icaze.BaslamaSaati, icaze.BitisSaati);
+            await _jetonService.JetonEvezlesdirmeQeydiAsync(
+                icaze.IsciId, icaze.JetonOdenenSaat, icaze.IcazeTarixi, icaze.BaslamaSaati, icaze.BitisSaati,
+                "Adi icazəyə jeton əvəzləşdirməsi (rəhbər təsdiqində tutuldu)");
 
             return Result.Ok();
         }
