@@ -344,11 +344,12 @@
                                 Jetonla ödənən saat
                                 <small style="color:#8a93a8">(maks: <span id="maxJetonLabel">@maxJeton.ToString("0.##")</span>)</small>
                             </label>
-                            <input type="number" name="jetonOdenenSaat" id="jetonInput" value="0"
-                                   min="0" max="@maxJeton" step="0.25"
+                            <input type="number" name="jetonOdenenSaat" id="jetonInput"
+                                   value="@(maxJeton.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))"
+                                   min="0" max="@(maxJeton.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))" step="0.25"
                                    style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px" />
                             <small style="color:#6b7280;font-size:11px;display:block;margin-top:4px">
-                                0 = tam adi icazə. Bu rəqəm təsdiqləndikdən sonra HR tərəfindən jetonlardan tutulur.
+                                Default: icazə tam jetonla örtülür (qalıq qalmasın). Tam <strong>adi</strong> icazə (jeton tutulmasın) üçün <strong>0</strong> yazın. Təsdiqdən sonra jeton FIFO ilə tutulur.
                             </small>
                         </div>
 
