@@ -66,7 +66,12 @@ function hjOpenTarixceDetay(r) {
         <div class="hj-redim-info">
             <div class="hj-redim-row"><strong>İşçi</strong><span>${r.isciTamAd ?? '—'}</span></div>
             <div class="hj-redim-row"><strong>Xərcləmə növü</strong><span>${hjRedimNov(r.redimNovu)}</span></div>
-            <div class="hj-redim-row"><strong>Cəmi saat</strong><span><b>${r.cemiSaat} saat</b></span></div>
+            ${r.redimNovu === 1 && r.icazeTarixi ? `
+                <div class="hj-redim-row"><strong>İcazə tarixi</strong><span>${hjDate(r.icazeTarixi).split(',')[0]}</span></div>
+                <div class="hj-redim-row"><strong>Saat aralığı</strong><span>${(r.baslamaSaati ?? '').slice(0,5)} – ${(r.bitisSaati ?? '').slice(0,5)}</span></div>
+                <div class="hj-redim-row"><strong>İcazə müddəti</strong><span><b>${r.icazeSaati} saat</b></span></div>
+                <div class="hj-redim-row"><strong>Jeton ödənişi</strong><span>${r.cemiSaat} saat</span></div>`
+                : `<div class="hj-redim-row"><strong>Cəmi saat</strong><span><b>${r.cemiSaat} saat</b></span></div>`}
             <div class="hj-redim-row"><strong>Sorğu tarixi</strong><span>${hjDate(r.telabTarixi)}</span></div>
             <div class="hj-redim-row"><strong>Cavab tarixi</strong><span>${r.neticeTarixi ? hjDate(r.neticeTarixi) : '—'}</span></div>
             <div class="hj-redim-row"><strong>Cavab verən</strong><span>${r.tesdiqleyenAd ?? '—'}</span></div>
@@ -194,8 +199,8 @@ async function hjLoadRedimler() {
         tbody.innerHTML = json.data.map(r => `
             <tr>
                 <td>${r.isciTamAd ?? '—'}</td>
-                <td>${hjRedimNov(r.redimNovu)}${r.icazeTarixi ? `<br><small style="color:#6b7280">${hjDate(r.icazeTarixi).split(',')[0]} ${r.baslamaSaati ?? ''}–${r.bitisSaati ?? ''}</small>` : ''}</td>
-                <td><strong>${r.cemiSaat} saat</strong></td>
+                <td>${hjRedimNov(r.redimNovu)}${r.icazeTarixi ? `<br><small style="color:#6b7280">${hjDate(r.icazeTarixi).split(',')[0]} ${(r.baslamaSaati ?? '').slice(0,5)}–${(r.bitisSaati ?? '').slice(0,5)}</small>` : ''}</td>
+                <td><strong>${r.redimNovu === 1 ? r.icazeSaati : r.cemiSaat} saat</strong>${r.redimNovu === 1 ? `<br><small style="color:#6b7280">jeton: ${r.cemiSaat} saat</small>` : ''}</td>
                 <td>${hjDate(r.telabTarixi)}</td>
                 <td>${hjStatusBadge(r.status + 10)}${r.rehberTesdiq ? '<br><small style="color:#16a34a">✓ Rəhbər</small>' : ''}</td>
                 <td>
@@ -306,7 +311,10 @@ function hjOpenRedimModal(r) {
         <div class="hj-redim-info">
             <div class="hj-redim-row"><strong>İşçi</strong><span>${r.isciTamAd ?? '—'}</span></div>
             <div class="hj-redim-row"><strong>Xərcləmə növü</strong><span>${hjRedimNov(r.redimNovu)}</span></div>
-            <div class="hj-redim-row"><strong>Cəmi saat</strong><span><b>${r.cemiSaat} saat</b></span></div>
+            ${r.redimNovu === 1
+                ? `<div class="hj-redim-row"><strong>İcazə müddəti</strong><span><b>${r.icazeSaati} saat</b></span></div>
+                   <div class="hj-redim-row"><strong>Jeton ödənişi</strong><span>${r.cemiSaat} saat</span></div>`
+                : `<div class="hj-redim-row"><strong>Cəmi saat</strong><span><b>${r.cemiSaat} saat</b></span></div>`}
             ${icazeBlock}
             <div class="hj-redim-row"><strong>Sorğu tarixi</strong><span>${hjDate(r.telabTarixi)}</span></div>
             ${rehberBlock}

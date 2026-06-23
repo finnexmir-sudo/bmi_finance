@@ -8,7 +8,8 @@ namespace FinNex.Application.DTOs.HR.Jeton
         public int IsciId { get; set; }
         public string IsciTamAd { get; set; } = null!;
         public RedimNovu RedimNovu { get; set; }
-        public decimal CemiSaat { get; set; }
+        public decimal CemiSaat { get; set; }                 // seçilmiş jeton(lar)ın ödəniş saatı (büdcə)
+        public decimal IcazeSaati { get; set; }               // istənilən icazə pəncərəsinin müddəti (Bitiş−Başlama)
         public RedimStatus Status { get; set; }
         public DateTime TelabTarixi { get; set; }
         public DateTime? NeticeTarixi { get; set; }

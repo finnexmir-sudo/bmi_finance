@@ -317,20 +317,32 @@ namespace FinNex.Application.Services.HR
                 }
                 await _unitOfWork.YaddaSaxlaAsync();
 
-                // İlk növbədə Rəhbərə bildiriş gedir (HR yox — rəhbərdən sonra)
-                var redimNovuAd = dto.RedimNovu == RedimNovu.Icaze ? "icazə" : "maaş bonusu";
+                // İcazə müddəti (istənilən pəncərə) — bildiriş və cavab mesajında göstərilir.
+                // Əsas məlumat PƏNCƏRƏdir; jeton (cemiSaat) yalnız büdcəni/ödənişi göstərir.
+                decimal icazeSaat = dto.RedimNovu == RedimNovu.Icaze
+                    ? (decimal)(dto.BitisSaati!.Value - dto.BaslamaSaati!.Value).TotalHours
+                    : 0;
+
+                // İlk növbədə Rəhbərə bildiriş gedir (HR yox — rəhbərdən sonra).
+                string bildirisMesaj = dto.RedimNovu == RedimNovu.Icaze
+                    ? $"İşçi {dto.IcazeTarixi!.Value:dd.MM.yyyy} tarixində " +
+                      $"{dto.BaslamaSaati!.Value:hh\\:mm}–{dto.BitisSaati!.Value:hh\\:mm} ({icazeSaat:0.##} saat) icazə istəyir. " +
+                      $"Jeton ödənişi: {cemiSaat:0.##} saat ({jetonlar.Count} jeton)."
+                    : $"İşçi {cemiSaat:0.##} saatlıq maaş bonusu istəyir ({jetonlar.Count} jeton).";
+
                 await _bildirisRouter.NotifyRolesAsync(
                     new[] { RoleNames.Rehber },
                     BildirisNovu.JetonVerildi,
-                    "Yeni Jeton Redim Sorğusu",
-                    $"İşçi {cemiSaat:0.##} saatlıq {jetonlar.Count} jetonu {redimNovuAd} kimi xərcləmək istəyir.",
+                    "Yeni Jeton Sorğusu",
+                    bildirisMesaj,
                     redirectUrl: "/HR/Jeton/Index?tab=redimler",
                     exceptIsciId: isciId);
 
-                var novLabel = dto.RedimNovu == RedimNovu.Icaze ? "İcazə" : "Maaşa əlavə";
                 var amsalGoster = dto.RedimNovu == RedimNovu.Icaze ? saatAmsali : pulAmsali;
                 var amsalMetn = amsalGoster != 1.00m ? $" (reytinq əmsalı: {amsalGoster}x)" : "";
-                return Result.Ok($"Sorğu göndərildi. Cəmi: {cemiSaat:0.##} saat{amsalMetn} ({novLabel}).");
+                return Result.Ok(dto.RedimNovu == RedimNovu.Icaze
+                    ? $"İcazə sorğusu göndərildi — {icazeSaat:0.##} saat (jeton ödənişi: {cemiSaat:0.##} saat{amsalMetn})."
+                    : $"Maaşa əlavə sorğusu göndərildi: {cemiSaat:0.##} saat{amsalMetn}.");
             }
             catch (Exception ex)
             {
@@ -366,7 +378,7 @@ namespace FinNex.Application.Services.HR
                     .Include(x => x.Isci)
                     .FirstOrDefaultAsync(x => x.Id == redimId);
 
-                if (redim == null) return Result.Fail("Redim sorğusu tapılmadı.");
+                if (redim == null) return Result.Fail("Sorğu tapılmadı.");
                 if (redim.Status != RedimStatus.Gozlenilir)
                     return Result.Fail("Bu sorğu artıq emal edilib.");
                 if (redim.RehberTesdiq.HasValue)
@@ -414,7 +426,7 @@ namespace FinNex.Application.Services.HR
                     .Include(x => x.Isci)
                     .FirstOrDefaultAsync(x => x.Id == redimId);
 
-                if (redim == null) return Result.Fail("Redim sorğusu tapılmadı.");
+                if (redim == null) return Result.Fail("Sorğu tapılmadı.");
                 if (redim.Status != RedimStatus.Gozlenilir)
                     return Result.Fail("Bu sorğu artıq emal edilib.");
 
@@ -461,7 +473,7 @@ namespace FinNex.Application.Services.HR
                     .FirstOrDefaultAsync(x => x.Id == redimId);
 
                 if (redim == null)
-                    return Result.Fail("Redim sorğusu tapılmadı.");
+                    return Result.Fail("Sorğu tapılmadı.");
 
                 if (redim.Status != RedimStatus.Gozlenilir)
                     return Result.Fail("Bu sorğu artıq emal edilib.");
@@ -563,7 +575,7 @@ namespace FinNex.Application.Services.HR
                     $"{redim.CemiSaat:0.##} saatlıq jeton sorğunuz {novAd} kimi təsdiqləndi.",
                     redirectUrl: "/User/Jeton/Index");
 
-                return Result.Ok("Redim sorğusu təsdiqləndi.");
+                return Result.Ok("Sorğu təsdiqləndi.");
             }
             catch (Exception ex)
             {
@@ -649,7 +661,7 @@ namespace FinNex.Application.Services.HR
                     .FirstOrDefaultAsync(x => x.Id == redimId);
 
                 if (redim == null)
-                    return Result.Fail("Redim sorğusu tapılmadı.");
+                    return Result.Fail("Sorğu tapılmadı.");
 
                 if (redim.Status != RedimStatus.Gozlenilir)
                     return Result.Fail("Bu sorğu artıq emal edilib.");
@@ -676,7 +688,7 @@ namespace FinNex.Application.Services.HR
                     $"Jeton sorğunuz rədd edildi. Səbəb: {qeyd}",
                     redirectUrl: "/User/Jeton/Index");
 
-                return Result.Ok("Redim sorğusu rədd edildi.");
+                return Result.Ok("Sorğu rədd edildi.");
             }
             catch (Exception ex)
             {
@@ -956,6 +968,9 @@ namespace FinNex.Application.Services.HR
             IsciTamAd = $"{x.Isci.Ad} {x.Isci.Soyad}".Trim(),
             RedimNovu = x.RedimNovu,
             CemiSaat = x.CemiSaat,
+            IcazeSaati = (x.RedimNovu == RedimNovu.Icaze && x.BaslamaSaati.HasValue && x.BitisSaati.HasValue)
+                ? Math.Round((decimal)(x.BitisSaati.Value - x.BaslamaSaati.Value).TotalHours, 2)
+                : 0,
             Status = x.Status,
             TelabTarixi = x.TelabTarixi,
             NeticeTarixi = x.NeticeTarixi,
