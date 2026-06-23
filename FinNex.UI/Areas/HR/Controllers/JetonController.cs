@@ -72,21 +72,23 @@ namespace FinNex.UI.Areas.HR.Controllers
         }
 
         // ── GET /HR/Jeton/GetRedimler ────────────────────────
-        // Rehber → öz departamentinin baxılmamış sorğuları
-        // HR/Admin → rehber təsdiqindən keçmiş sorğular
+        // Rehber → öz departamentinin baxılmamış sorğuları (rəhbər mərhələsi)
+        // HR/Admin → rəhbər təsdiqindən keçmiş sorğular (HR mərhələsi)
+        // Eyni şəxs həm rəhbər, həm admin/HR ola bilər → hər iki mərhələni görür (təsdiq per-sətir yönlənir).
         [HttpGet]
         public async Task<IActionResult> GetRedimler()
         {
-            var rehberView = User.IsInRole(RoleNames.Rehber)
-                && !User.IsInRole(RoleNames.HR)
-                && !User.IsInRole(RoleNames.Admin);
+            var isRehber = User.IsInRole(RoleNames.Rehber);
+            var isAdmin  = User.IsInRole(RoleNames.Admin);
+            var isHr     = User.IsInRole(RoleNames.HR);
 
-            int? departamentId = null;
-            if (rehberView)
-                departamentId = await GetRehberDepartamentIdAsync();
+            bool asRehber  = isRehber || isAdmin;   // rəhbər təsdiqi edə bilənlər
+            bool asHrAdmin = isHr || isAdmin;       // HR final təsdiqi edə bilənlər
+            // Admin bütün departamentləri görür; təmiz rəhbər yalnız öz departamentini
+            int? departamentId = (isRehber && !isAdmin) ? await GetRehberDepartamentIdAsync() : null;
 
-            var list = await _jetonService.GozleyenRedimlerGetirAsync(departamentId, rehberView);
-            return Json(new { success = true, data = list, rehberView });
+            var list = await _jetonService.GozleyenRedimlerGetirAsync(departamentId, asRehber, asHrAdmin);
+            return Json(new { success = true, data = list });
         }
 
         // ── POST /HR/Jeton/RehberTesdiq ──────────────────────

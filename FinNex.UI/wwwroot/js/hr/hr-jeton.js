@@ -2,6 +2,7 @@
 'use strict';
 
 let hjCurrentRedimId = null;
+let hjCurrentRedimStage = null;   // cari sorğunun rehberTesdiq mərhələsi (null=rəhbər, true=HR)
 let hjCurrentLegvetId = null;
 let hjSelectedJetonId = null;
 
@@ -181,10 +182,9 @@ async function hjLoadRedimler() {
         const res = await fetch('/HR/Jeton/GetRedimler');
         const json = await res.json();
         const badge = document.getElementById('hjRedimBadge');
-        hjRehberView = !!json.rehberView;
 
         if (!json.success || !json.data.length) {
-            tbody.innerHTML = `<tr><td colspan="6" class="hj-empty">${hjRehberView ? 'Sizin departament üçün gözləyən sorğu yoxdur.' : 'Rəhbər təsdiqindən keçmiş sorğu yoxdur.'}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="hj-empty">Gözləyən sorğu yoxdur.</td></tr>`;
             badge.style.display = 'none';
             return;
         }
@@ -287,6 +287,7 @@ async function hjSubmitLegvet() {
 // ── Redim Modal ───────────────────────────────────────────
 function hjOpenRedimModal(r) {
     hjCurrentRedimId = r.id;
+    hjCurrentRedimStage = r.rehberTesdiq;   // null=rəhbər mərhələsi, true=HR mərhələsi
     document.getElementById('hjBtnTesdiq').style.display = '';
     document.getElementById('hjBtnRedd').style.display = '';
     const jetonList = (r.xerclenenJetonlar || [])
@@ -324,8 +325,8 @@ function hjCloseRedimModal() {
     document.getElementById('hjRedimModal').classList.remove('hj-open');
 }
 async function hjTesdiqleRedim() {
-    // Rəhbər görünüşündə RehberTesdiq endpointinə, HR-də mövcud TesdiqleRedim-ə gedir
-    const url = hjRehberView ? '/HR/Jeton/RehberTesdiq' : '/HR/Jeton/TesdiqleRedim';
+    // Per-sətir: hələ rəhbər təsdiqi yoxdursa (null) → RehberTesdiq, varsa (true) → HR final TesdiqleRedim
+    const url = hjCurrentRedimStage ? '/HR/Jeton/TesdiqleRedim' : '/HR/Jeton/RehberTesdiq';
     const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -344,7 +345,7 @@ async function hjReddEtRedim() {
     const qeyd = document.getElementById('hjRedimQeyd').value.trim();
     if (!qeyd) return hjToast('Rədd etmə səbəbini daxil edin.', 'warn');
 
-    const url = hjRehberView ? '/HR/Jeton/RehberRedd' : '/HR/Jeton/ReddEtRedim';
+    const url = hjCurrentRedimStage ? '/HR/Jeton/ReddEtRedim' : '/HR/Jeton/RehberRedd';
     const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -676,7 +676,7 @@ namespace FinNex.Application.Services.HR
             }
         }
 
-        public async Task<IList<JetonRedimTelebiListDto>> GozleyenRedimlerGetirAsync(int? rehberDepartamentId = null, bool rehberView = false)
+        public async Task<IList<JetonRedimTelebiListDto>> GozleyenRedimlerGetirAsync(int? rehberDepartamentId, bool asRehber, bool asHrAdmin)
         {
             var query = _unitOfWork.Repository<JetonRedimTelebi>()
                 .Query()
@@ -686,9 +686,21 @@ namespace FinNex.Application.Services.HR
                     .ThenInclude(j => j.JetonTeyinati)
                 .Where(x => x.Status == RedimStatus.Gozlenilir);
 
-            if (rehberView)
+            // İstifadəçi həm rəhbər (RehberTesdiq==null; öz departamenti, admin hamısı), həm də
+            // HR/Admin (RehberTesdiq==true) ola bilər — hər iki mərhələ göstərilir (rol toqquşması həll).
+            if (asRehber && asHrAdmin)
             {
-                // Rəhbər: yalnız öz departamentindən və hələ baxılmamış sorğular
+                if (rehberDepartamentId.HasValue)
+                    query = query.Where(x =>
+                        (x.RehberTesdiq == null && x.Isci.IsciTeyinatlari
+                            .Any(t => t.Aktivdir && t.DepartamentId == rehberDepartamentId.Value))
+                        || x.RehberTesdiq == true);
+                else
+                    query = query.Where(x => x.RehberTesdiq == null || x.RehberTesdiq == true);
+            }
+            else if (asRehber)
+            {
+                // Yalnız rəhbər: öz departamentinin hələ baxılmamış sorğuları
                 query = query.Where(x => x.RehberTesdiq == null);
                 if (rehberDepartamentId.HasValue)
                     query = query.Where(x => x.Isci.IsciTeyinatlari
@@ -696,7 +708,7 @@ namespace FinNex.Application.Services.HR
             }
             else
             {
-                // HR/Admin: yalnız rəhbər tərəfindən təsdiqlənmiş sorğular
+                // Yalnız HR/Admin: rəhbər təsdiqindən keçmiş sorğular
                 query = query.Where(x => x.RehberTesdiq == true);
             }
 

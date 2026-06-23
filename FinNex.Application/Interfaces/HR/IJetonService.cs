@@ -51,7 +51,9 @@ public interface IJetonService
     // Gözləyən redim sorğuları (rola görə filtrlənir):
     //   Rehber → öz departamentinin RehberTesdiq=null olan sorğuları
     //   HR/Admin → RehberTesdiq=true olan sorğular (rəhbər artıq təsdiqləyib)
-    Task<IList<JetonRedimTelebiListDto>> GozleyenRedimlerGetirAsync(int? rehberDepartamentId = null, bool rehberView = false);
+    // asRehber: rəhbər mərhələsi (RehberTesdiq==null); asHrAdmin: HR final mərhələsi (RehberTesdiq==true).
+    // İkisi də true olduqda hər iki mərhələ qaytarılır (rəhbər+admin eyni şəxs ola bilər).
+    Task<IList<JetonRedimTelebiListDto>> GozleyenRedimlerGetirAsync(int? rehberDepartamentId, bool asRehber, bool asHrAdmin);
 
     // İcazə üçün FIFO ilə jeton xərclə (Variant 1 — Icaze formu yolu).
     // İşçinin aktiv jetonlarından ən köhnədən başlayaraq tələb olunan saat qədər seçir,
