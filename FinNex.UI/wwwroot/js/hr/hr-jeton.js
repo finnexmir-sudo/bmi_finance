@@ -377,6 +377,7 @@ function hjStatusBadge(status) {
         11: ['Gözlənilir', 'gozlenilir'],
         12: ['Təsdiqləndi', 'tesdiqlendi'],
         13: ['Rədd edildi', 'redd'],
+        14: ['Ləğv edildi', 'legvedildi'],
     };
     const [label, cls] = map[status] ?? ['—', 'aktiv'];
     return `<span class="hj-status hj-status--${cls}">${label}</span>`;

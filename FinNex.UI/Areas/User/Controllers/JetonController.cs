@@ -92,5 +92,23 @@ namespace FinNex.UI.Areas.User.Controllers
             var dto = await _reytingService.IsciCariReytinqiniGetirAsync(appUser.IsciId.Value);
             return Json(new { success = true, data = dto });
         }
+
+        // ── POST /User/Jeton/RedimLegvEt ─────────────────────
+        // İşçi öz sorğusunu təsdiqdən əvvəl ləğv edir
+        [HttpPost]
+        public async Task<IActionResult> RedimLegvEt([FromBody] RedimLegvRequestDto dto)
+        {
+            var appUser = await _userManager.GetUserAsync(User);
+            if (appUser?.IsciId == null)
+                return Json(new { success = false, message = "İşçi tapılmadı." });
+
+            var result = await _jetonService.RedimTelebiLegvEtAsync(dto.RedimId, appUser.IsciId.Value);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+    }
+
+    public class RedimLegvRequestDto
+    {
+        public int RedimId { get; set; }
     }
 }

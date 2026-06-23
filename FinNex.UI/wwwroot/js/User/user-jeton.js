@@ -61,13 +61,13 @@ async function ujLoadJetonlar() {
 // ── Redim tarixçəsi ──────────────────────────────────────
 async function ujLoadRedimler() {
     const tbody = document.getElementById('ujRedimBody');
-    tbody.innerHTML = '<tr><td colspan="5" class="uj-empty">Yüklənir…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="uj-empty">Yüklənir…</td></tr>';
 
     try {
         const res = await fetch('/User/Jeton/GetRedimTarixcesi');
         const json = await res.json();
         if (!json.success || !json.data.length) {
-            tbody.innerHTML = '<tr><td colspan="5" class="uj-empty">Xərcləmə tarixçəsi yoxdur.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="uj-empty">Xərcləmə tarixçəsi yoxdur.</td></tr>';
             return;
         }
         tbody.innerHTML = json.data.map(r => `
@@ -77,9 +77,34 @@ async function ujLoadRedimler() {
                 <td>${ujDate(r.telabTarixi)}</td>
                 <td>${ujStatusBadge(r.status)}</td>
                 <td>${r.qeyd ?? '—'}</td>
+                <td>${r.status === 1
+                    ? `<button class="uj-btn uj-btn--ghost" style="padding:4px 10px;font-size:12px" onclick="ujLegvEtRedim(${r.id})"><i class="bi bi-x-circle"></i> Ləğv et</button>`
+                    : '—'}</td>
             </tr>`).join('');
     } catch {
-        tbody.innerHTML = '<tr><td colspan="5" class="uj-empty">Xəta baş verdi.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="uj-empty">Xəta baş verdi.</td></tr>';
+    }
+}
+
+// İşçi öz sorğusunu təsdiqdən əvvəl ləğv edir
+async function ujLegvEtRedim(redimId) {
+    if (!confirm('Bu jeton sorğusunu ləğv etmək istəyirsiniz? Jetonlar geri qaytarılacaq.')) return;
+    try {
+        const res = await fetch('/User/Jeton/RedimLegvEt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ redimId })
+        });
+        const json = await res.json();
+        if (json.success) {
+            ujToast(json.message || 'Sorğu ləğv edildi.', 'success');
+            ujLoadRedimler();
+            ujLoadJetonlar();   // buraxılan jetonlar yenidən siyahıda görünsün
+        } else {
+            ujToast(json.message || 'Xəta baş verdi.', 'error');
+        }
+    } catch {
+        ujToast('Şəbəkə xətası.', 'error');
     }
 }
 
@@ -226,7 +251,7 @@ function ujRedimNovChanged() {
 
 // ── Helpers ───────────────────────────────────────────────
 function ujStatusBadge(status) {
-    const map = { 1: ['Gözlənilir', 'gozlenilir'], 2: ['Təsdiqləndi', 'tesdiqlendi'], 3: ['Rədd edildi', 'redd'] };
+    const map = { 1: ['Gözlənilir', 'gozlenilir'], 2: ['Təsdiqləndi', 'tesdiqlendi'], 3: ['Rədd edildi', 'redd'], 4: ['Ləğv edildi', 'legv'] };
     const [label, cls] = map[status] ?? ['—', 'gozlenilir'];
     return `<span class="uj-status uj-status--${cls}">${label}</span>`;
 }

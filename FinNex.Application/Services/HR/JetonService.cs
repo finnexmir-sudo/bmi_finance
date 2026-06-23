@@ -680,6 +680,42 @@ namespace FinNex.Application.Services.HR
             }
         }
 
+        // İşçi öz sorğusunu təsdiqdən ƏVVƏL (yalnız Gozlenilir) ləğv edir → rezerv jetonlar geri qayıdır.
+        public async Task<Result> RedimTelebiLegvEtAsync(int redimId, int isciId)
+        {
+            try
+            {
+                var redim = await _unitOfWork.Repository<JetonRedimTelebi>()
+                    .Query()
+                    .Include(x => x.XerclenenJetonlar)
+                    .FirstOrDefaultAsync(x => x.Id == redimId);
+
+                if (redim == null) return Result.Fail("Sorğu tapılmadı.");
+                if (redim.IsciId != isciId) return Result.Fail("Bu sorğu sizə aid deyil.");
+                if (redim.Status != RedimStatus.Gozlenilir)
+                    return Result.Fail("Yalnız təsdiq gözləyən sorğu ləğv edilə bilər.");
+
+                redim.Status = RedimStatus.Legv;
+                redim.NeticeTarixi = DateTime.Now;
+
+                // Rezerv olunmuş jetonları geri burax (Status Aktiv qalır, yalnız bağ açılır)
+                foreach (var j in redim.XerclenenJetonlar)
+                {
+                    j.RedimTelebiId = null;
+                    await _unitOfWork.Repository<IsciJetonu>().YenileAsync(j);
+                }
+
+                await _unitOfWork.Repository<JetonRedimTelebi>().YenileAsync(redim);
+                await _unitOfWork.YaddaSaxlaAsync();
+
+                return Result.Ok("Sorğunuz ləğv edildi, jetonlar geri qaytarıldı.");
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail($"Xəta: {ex.Message}");
+            }
+        }
+
         public async Task<IList<JetonRedimTelebiListDto>> GozleyenRedimlerGetirAsync(int? rehberDepartamentId, bool asRehber, bool asHrAdmin)
         {
             var query = _unitOfWork.Repository<JetonRedimTelebi>()

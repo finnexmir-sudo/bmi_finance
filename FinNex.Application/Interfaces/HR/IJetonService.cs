@@ -48,6 +48,9 @@ public interface IJetonService
     // HR: redim sorğusunu rədd et
     Task<Result> RedimTelebiReddEtAsync(int redimId, string qeyd, int userId);
 
+    // İşçi: öz sorğusunu təsdiqdən əvvəl (Gozlenilir) ləğv et — jetonlar geri qayıdır
+    Task<Result> RedimTelebiLegvEtAsync(int redimId, int isciId);
+
     // Gözləyən redim sorğuları (rola görə filtrlənir):
     //   Rehber → öz departamentinin RehberTesdiq=null olan sorğuları
     //   HR/Admin → RehberTesdiq=true olan sorğular (rəhbər artıq təsdiqləyib)
