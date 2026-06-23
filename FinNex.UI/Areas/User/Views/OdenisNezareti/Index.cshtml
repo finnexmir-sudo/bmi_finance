@@ -52,6 +52,7 @@
             <option value="BalansdanKenar" selected="@(balansFiltri == BalansNovu.BalansdanKenar)">Yalnız Balansdan kənar</option>
         </select>
         <button type="submit" class="on-btn on-btn--g"><i class="bi bi-funnel"></i> Filtr</button>
+        <a asp-action="IndexExcel" asp-route-balans="@balansFiltri" asp-route-axtaris="@axtaris" class="on-btn on-btn--g"><i class="bi bi-file-earmark-excel"></i> Excelə yüklə</a>
         <button type="button" class="on-btn on-btn--p" style="margin-left:auto" onclick="onOpenAdd()">
             <i class="bi bi-plus-lg"></i> Yeni qeyd
         </button>

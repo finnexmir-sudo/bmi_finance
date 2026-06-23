@@ -1,6 +1,8 @@
 using FinNex.Application.DTOs.Pid;
 using FinNex.Application.Interfaces.Pid;
 using FinNex.Domain;
+using FinNex.Domain.Entities.Pid;
+using FinNex.UI.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -65,6 +67,104 @@ public class MehkemeIsiController : Controller
         var model = await _service.YaxinlasanGoruslerAsync();
         return View(model);
     }
+
+    // ── Excel export (hər grid səhifəsi) ──────────────────────────
+    public async Task<IActionResult> IndexExcel()
+    {
+        var r = await _service.SiyahiGetirAsync();
+        var satirlar = r.Satirlar;
+        var basliqlar = new[] { "№", "Region", "Borclu", "Kredit hesabı", "K.S.", "Tam qalıq",
+            "Qalıq", "VK qalıq", "Faiz məbləği", "VK faiz", "Son əməliyyat", "Status",
+            "Kredit növü", "Girovun növü", "Telefon", "Doğum tarixi", "İş açılıb?", "Mərhələ sayı" };
+        var setirler = satirlar.Select((x, idx) => new object?[]
+        {
+            idx + 1, x.Region, x.BorcluAd, x.KreditHesabi, x.Ks, x.TamQaliq, x.Qaliq, x.VkQaliq,
+            x.FaizMeblegi, x.VkFaizMeblegi, x.SonEmeliyyatTarixi, x.Status, x.KreditinNovu,
+            x.GirovunNovu, x.Telefon, x.DogumTarixi, x.IsAcilib, x.MerheleSayi
+        });
+        var bytes = ExcelExportHelper.Yarat("Aktiv Müştərilər", basliqlar, setirler);
+        return File(bytes, ExcelExportHelper.ContentType, $"Aktiv_Musteriler_{DateTime.Now:yyyyMMdd}.xlsx");
+    }
+
+    public async Task<IActionResult> IslerExcel()
+    {
+        var list = await _service.HamisiniGetirAsync();
+        var basliqlar = new[] { "№", "Müştəri", "Qeydiyyat №", "Növ", "Təminat", "Status",
+            "Əsas borc", "Məhkəmə xərci", "Məhkəməyə verilmə", "Qətnamə tarixi",
+            "Növbəti iclas", "Hakim", "İclas sayı" };
+        var setirler = list.Select((x, idx) => new object?[]
+        {
+            idx + 1, x.BorcluAd, x.QeydiyyatNomresi, NovAd(x.Nov), x.Teminat, StatusAd(x.Status),
+            x.EsasBorc, x.MehkemeXerci, x.BaslamaTarixi, x.QetnameTarixi,
+            x.NovbetiIclasTarix.HasValue
+                ? x.NovbetiIclasTarix.Value.ToString("dd.MM.yyyy") + (string.IsNullOrWhiteSpace(x.NovbetiIclasSaat) ? "" : " " + x.NovbetiIclasSaat)
+                : "",
+            x.Hakim, x.MerheleCount
+        });
+        var bytes = ExcelExportHelper.Yarat("Məhkəmə İşləri", basliqlar, setirler);
+        return File(bytes, ExcelExportHelper.ContentType, $"Mehkeme_Isleri_{DateTime.Now:yyyyMMdd}.xlsx");
+    }
+
+    public async Task<IActionResult> IcraIsleriExcel(string? status)
+    {
+        var list = await _service.IcraIsleriGetirAsync(status);
+        var basliqlar = new[] { "№", "Müştəri", "Kredit hesabı", "Subkod", "Status", "Status mətni",
+            "Qalan borc", "Son ödəniş", "Qeydiyyatı", "Əmək haqqı barədə", "Adına sorğu",
+            "DYP sorğu tarixi", "Əmlaka həbs", "Stop", "İcra məmuru", "İcraçı son işlər",
+            "Doğum tarixi", "Zamin", "Zamin sayı", "Qətnamə tarixi", "İş yeri", "Qeyd" };
+        var setirler = list.Select((x, idx) => new object?[]
+        {
+            idx + 1, x.BorcluAd, x.QeydiyyatNomresi, x.Subkod, StatusAd(x.Status), x.MehkemeStatusMetn,
+            x.QalanBorc, x.SonOdenisTarixi, x.Qeydiyyati, x.EmekHaqqiMelumati, x.AdinaSorgu,
+            x.DypSorguTarixi, x.EmlakaHebs, x.Stop, x.IcraMemuru, x.IcraSonIsler,
+            x.DogumTarixi, x.Zamin, x.ZaminSayi, x.QetnameTarixi, x.IsYeri, x.IcraQeyd
+        });
+        var bytes = ExcelExportHelper.Yarat("İcra İşləri", basliqlar, setirler);
+        return File(bytes, ExcelExportHelper.ContentType, $"Icra_Isleri_{DateTime.Now:yyyyMMdd}.xlsx");
+    }
+
+    public async Task<IActionResult> GoruslerExcel()
+    {
+        var list = await _service.YaxinlasanGoruslerAsync();
+        var basliqlar = new[] { "№", "Borclu", "Qeydiyyat №", "Tarix", "Saat", "Növ", "İş №", "Hakim", "Qeyd" };
+        var setirler = list.Select((x, idx) => new object?[]
+        {
+            idx + 1, x.BorcluAd, x.QeydiyyatNomresi, x.Tarix, x.Saat, MerheleTipiAd(x.MerheleTipi),
+            x.IsNomresi, x.Hakim, x.Qeyd
+        });
+        var bytes = ExcelExportHelper.Yarat("Yaxınlaşan görüşlər", basliqlar, setirler);
+        return File(bytes, ExcelExportHelper.ContentType, $"Yaxinlasan_Goruslar_{DateTime.Now:yyyyMMdd}.xlsx");
+    }
+
+    // ── Enum → mətn (export üçün) ──
+    private static string StatusAd(MehkemeIsiStatus s) => s switch
+    {
+        MehkemeIsiStatus.Hazirlanir => "Hazırlanır",
+        MehkemeIsiStatus.Mehkemede  => "Məhkəmədə",
+        MehkemeIsiStatus.Icra       => "İcrada",
+        MehkemeIsiStatus.Tamamlandi => "Tamamlandı",
+        MehkemeIsiStatus.Baghlandi  => "Bağlandı",
+        _                           => s.ToString()
+    };
+    private static string NovAd(MehkemeIsiNov n) => n switch
+    {
+        MehkemeIsiNov.Ipoteka    => "İpoteka",
+        MehkemeIsiNov.Istehlak   => "İstehlak",
+        MehkemeIsiNov.KartKredit => "Kart krediti",
+        _                        => "Digər"
+    };
+    private static string MerheleTipiAd(MerheleTipi t) => t switch
+    {
+        MerheleTipi.MehkemeIclasi          => "Məhkəmə iclası",
+        MerheleTipi.QetnameGeldi           => "Qətnamə gəldi",
+        MerheleTipi.EkspertizayaGonderildi => "Ekspertizaya göndərildi",
+        MerheleTipi.GeriQaytarildi         => "Geri qaytarıldı",
+        MerheleTipi.IddiaVerildi           => "İddia verildi",
+        MerheleTipi.QerarVerildi           => "Qərar verildi",
+        MerheleTipi.IcraBaglandi           => "İcra bağlandı",
+        MerheleTipi.Odendi                 => "Ödənildi",
+        _                                  => "Digər"
+    };
 
     // ── Excel "Məhkəmə" sheet → MehkemeIsi arxivi ──────────
     [HttpPost]

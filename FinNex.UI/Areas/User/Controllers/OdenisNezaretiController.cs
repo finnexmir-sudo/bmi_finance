@@ -2,6 +2,7 @@ using FinNex.Application.DTOs.Pid;
 using FinNex.Application.Interfaces.Pid;
 using FinNex.Domain;
 using FinNex.Domain.Entities.Pid;
+using FinNex.UI.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -33,6 +34,21 @@ public class OdenisNezaretiController : Controller
         ViewData["BalansFiltri"] = balans;
         ViewData["Axtaris"] = axtaris;
         return View(list);
+    }
+
+    // ── Excel export ──────────────────────────────────────────────
+    public async Task<IActionResult> IndexExcel(BalansNovu? balans, string? axtaris)
+    {
+        var list = await _service.HamisiniGetirAsync(balans, axtaris);
+        var basliqlar = new[] { "№", "Balans / B-K", "Müştəri", "Hesab №", "Təyinat",
+            "Son ödəniş tarixi", "Ödənişin vəziyyəti", "Qeyd" };
+        var setirler = list.Select((x, idx) => new object?[]
+        {
+            idx + 1, x.BalansNovuAd, x.MusteriAdi, x.HesabNomresi, x.Teyinat,
+            x.SonOdenisTarixi, x.OdenisVeziyyeti, x.Qeyd
+        });
+        var bytes = ExcelExportHelper.Yarat("Ödənişə Nəzarət", basliqlar, setirler);
+        return File(bytes, ExcelExportHelper.ContentType, $"Odenise_Nezaret_{DateTime.Now:yyyyMMdd}.xlsx");
     }
 
     [HttpPost]
