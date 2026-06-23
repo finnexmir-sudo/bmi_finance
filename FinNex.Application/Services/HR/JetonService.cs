@@ -378,13 +378,17 @@ namespace FinNex.Application.Services.HR
                 await _unitOfWork.Repository<JetonRedimTelebi>().YenileAsync(redim);
                 await _unitOfWork.YaddaSaxlaAsync();
 
-                // HR-ə bildiriş — rəhbər təsdiqlədi, sıra HR-də
-                var redimNovuAd = redim.RedimNovu == RedimNovu.Icaze ? "icazə" : "maaş bonusu";
+                // İcazə sorğusu → rəhbər təsdiqi YEKUNDUR (adi icazə saatı kimi tək mərhələ):
+                // HR təsdiqini gözləmədən jetonu xərclə, İcazəni yarat və günü "İcazəli" et.
+                if (redim.RedimNovu == RedimNovu.Icaze)
+                    return await RedimTelebiTesdiqleAsync(redimId, rehberUserId);
+
+                // Pul (maaş bonusu) → maliyyə nəzarəti üçün HR final təsdiqi qalır
                 await _bildirisRouter.NotifyRolesAsync(
                     new[] { RoleNames.HR, RoleNames.Admin },
                     BildirisNovu.JetonVerildi,
                     "Rəhbər təsdiqindən keçdi",
-                    $"{redim.Isci.Ad} {redim.Isci.Soyad}-in {redim.CemiSaat:0.##} saatlıq {redimNovuAd} sorğusu rəhbər təsdiqindən keçib.",
+                    $"{redim.Isci.Ad} {redim.Isci.Soyad}-in {redim.CemiSaat:0.##} saatlıq maaş bonusu sorğusu rəhbər təsdiqindən keçib.",
                     redirectUrl: "/HR/Jeton/Index?tab=redimler",
                     exceptIsciId: redim.IsciId);
 
