@@ -53,6 +53,11 @@
         .iz-rank--2 { background:#c0c0c0; color:#444; }
         .iz-rank--3 { background:#cd7f32; color:#fff; }
         .iz-rank--n { background:#f0f2f7; color:#8590a6; }
+        .iz-jeton-tag {
+            display:inline-block; margin-left:6px; padding:1px 7px; white-space:nowrap;
+            font-size:.7rem; font-weight:600;
+            color:#7c3aed; background:#f3e8ff; border:1px solid #e9d5ff; border-radius:10px;
+        }
     </style>
 }
 
@@ -303,7 +308,18 @@
                                                         <tr>
                                                             <td>@ic.IcazeTarixi.ToString("dd.MM.yyyy")</td>
                                                             <td>@ic.BaslamaSaati.ToString(@"hh\:mm") – @ic.BitisSaati.ToString(@"hh\:mm")</td>
-                                                            <td><strong>@ic.IcazeSaati.ToString("0.#") saat</strong></td>
+                                                            <td>
+                                                                <strong>@ic.IcazeSaati.ToString("0.#") saat</strong>
+                                                                @if (ic.JetonOdenenSaat > 0)
+                                                                {
+                                                                    var jSaat = ic.JetonOdenenSaat.ToString("0.#");
+                                                                    var jTam = (ic.IcazeSaati - (double)ic.JetonOdenenSaat - (ic.NaharNezereAlinmasin ? 0.75 : 0.0)) <= 0.01;
+                                                                    <span class="iz-jeton-tag"
+                                                                          title="Jetonla ödənilib: @jSaat saat — maaşdan kəsilmir (mükafat günü, məzuniyyət deyil)">
+                                                                        🎫 @(jTam ? "Jeton · tam gün" : "Jeton")
+                                                                    </span>
+                                                                }
+                                                            </td>
                                                             <td>@(ic.CixisVaxt.HasValue ? ic.CixisVaxt.Value.ToString("HH:mm") : "—")</td>
                                                             <td>
                                                                 @if (ic.QayidisVaxt.HasValue)
