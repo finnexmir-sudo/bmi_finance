@@ -1067,6 +1067,7 @@ namespace FinNex.Application.Services
                             UmumSaat = g.Sum(x => EfektivSaat(x)),
                             TesdiqSaat = g.Where(x => x.Status == IcazeStatus.Tesdiqlenib).Sum(x => EfektivSaat(x)),
                             FaktikiSaat = icazeDtolar
+                                .Where(d => d.Status == IcazeStatus.Tesdiqlenib)
                                 .Select(d => IcazeFaktikiSaat(d.CixisVaxt, d.QayidisVaxt, d.Birdefelik,
                                                               d.IcazeTarixi, d.BitisSaati, izParam?.StandartCixisVaxti))
                                 .Where(s => s.HasValue)
