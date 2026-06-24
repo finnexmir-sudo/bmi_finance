@@ -29,12 +29,12 @@ namespace FinNex.UI.Areas.HR.ViewModels.Mezuniyyet
         public string? Sebeb { get; set; }
 
         /// <summary>
-        /// Əmr nömrəsi suffiksi (frekans). Default "G" — Geriyə.
-        /// HR seçimə uyğun başqa qısa kod verə bilər.
+        /// Əmr nömrəsi suffiksi (frekans). Default BOŞ (suffiksiz) — geriyə qeyd
+        /// adi nömrə alır. HR lazım olsa G/X/T seçə bilər.
         /// </summary>
         [MaxLength(4)]
         [Display(Name = "Əmr suffiksi")]
-        public string? EmrSuffiks { get; set; } = "G";
+        public string? EmrSuffiks { get; set; } = "";
 
         /// <summary>
         /// İSTƏGƏ BAĞLI — mövcud əmr nömrəsinə "araya əlavə et" rejimi.
@@ -56,10 +56,10 @@ namespace FinNex.UI.Areas.HR.ViewModels.Mezuniyyet
         /// <summary>Suffiks variantları üçün seçim siyahısı (UI-da dropdown).</summary>
         public List<SelectListItem> SuffiksSecimleri { get; set; } = new()
         {
+            new SelectListItem { Value = "",  Text = "(suffiksiz)" },
             new SelectListItem { Value = "G", Text = "G — Geriyə qeyd" },
             new SelectListItem { Value = "X", Text = "X — Xüsusi hal" },
-            new SelectListItem { Value = "T", Text = "T — Təcili" },
-            new SelectListItem { Value = "",  Text = "(suffiksiz)" }
+            new SelectListItem { Value = "T", Text = "T — Təcili" }
         };
 
         public int MaksimumKohneGun { get; set; } = 90;

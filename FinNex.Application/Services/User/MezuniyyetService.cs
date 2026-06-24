@@ -1919,14 +1919,16 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                     : $"[Geriyə qeyd — HR] {sebebTrim}";
 
                 // ── Əmr nömrəsi: 2 rejim ──────────────────────────────────
-                // 1) AVTOMATIK (DTO.EmrRegem null): cari il sırasının son+1 nömrəsi
-                //    + DTO-dan gələn suffiks (default "G"). Yeni əmr olur.
+                // 1) AVTOMATIK (DTO.EmrRegem null): VAHID EmrSayghaci sayğacından
+                //    növbəti nömrə (normal məzuniyyət əmrləri ilə eyni ardıcıllıq).
+                //    Suffiks default BOŞ (suffiksiz) — adi əmr kimi. Yeni əmr olur.
                 // 2) ARAYA ƏLAVƏ (DTO.EmrRegem dolu): HR mövcud nömrəni göstərir,
                 //    sistem yalnız (EmrIl, EmrRegem, EmrSuffiks) üçlüyünün
                 //    unikallığını yoxlayır. Əmr "K/M 5G 2026" kimi formalaşır
                 //    və sıralamada K/M 5 ilə K/M 6 arasında qalır.
+                // Default BOŞ — manuel "araya əlavə" rejimində aşağıda suffiks mütləq.
                 var suffiks = string.IsNullOrWhiteSpace(dto.EmrSuffiks)
-                    ? "G"
+                    ? null
                     : dto.EmrSuffiks.Trim().ToUpperInvariant();
 
                 int emrIl;
@@ -1964,12 +1966,13 @@ public class MezuniyyetService : ServiceAsync<Mezuniyyet, MezuniyyetDto, Mezuniy
                 }
                 else
                 {
-                    // Avtomatik rejim — yeni sıra
-                    emrIl = indi.Year;
-                    var sonRegem = await _unitOfWork.Repository<Mezuniyyet>().Query()
-                        .Where(x => !x.Silinib && x.EmrIl == emrIl && x.EmrRegem != null)
-                        .MaxAsync(x => (int?)x.EmrRegem) ?? 0;
-                    emrRegem = sonRegem + 1;
+                    // Avtomatik rejim — VAHID sayğacdan (normal məzuniyyət əmrləri ilə
+                    // EYNİ ardıcıllıq). ƏVVƏL max(Mezuniyyet.EmrRegem)+1 idi: EmrSayghaci
+                    // sayğacını artırmırdı, ona görə normal axın həmin nömrəni təkrar
+                    // verirdi (məs. hər ikisi 76). İndi sayğacdan gəlir → toqquşma yoxdur.
+                    var (nextNomre, nextIl) = await _emrService.NovbetiNomreAsync(EmrNovu.Mezuniyyet, indi);
+                    emrRegem = nextNomre;
+                    emrIl = nextIl;
                 }
 
                 var entity = new Mezuniyyet
