@@ -285,9 +285,21 @@ namespace FinNex.UI.Areas.HR.Controllers
                 setirler.Add((kliring, bank, m.NetMebleg - digerTutulma, Q("əmək haqqı")));
             }
 
-            // İşçidən digər tutulma — cəmi öhdəlik (Debet klirinq, Kredit öhdəlik hesabı)
+            // İşçidən digər tutulma (həyat sığortası) — sığorta ADI üzrə ayrı-ayrı
+            // öhdəlik sətri (Debet klirinq, Kredit öhdəlik hesabı). Ad açıqlamadan gəlir;
+            // ümumi cəm dəyişmir (eyni total adlara bölünür → klirinq balansı pozulmur).
             if (digerTutulmaCemi > 0)
-                setirler.Add((kliring, digerTutulmaHesab, digerTutulmaCemi, Q("işçidən digər tutulma")));
+            {
+                var digerTutulmaAdMap = await _digerTutulmaService.GetAyTutulmaAdMapAsync(il, ay);
+                foreach (var (ad, mebleg) in digerTutulmaAdMap.OrderBy(k => k.Key))
+                {
+                    if (mebleg <= 0) continue;
+                    var qeyd = string.IsNullOrWhiteSpace(ad)
+                        ? Q("işçidən digər tutulma")
+                        : Q($"həyat sığortası ödənişinin bağlanılması ({ad})");
+                    setirler.Add((kliring, digerTutulmaHesab, mebleg, qeyd));
+                }
+            }
 
             // ── Şablonu aç və doldur (avans ilə eyni üsul) ──
             var templatePath = Path.Combine(_env.ContentRootPath, "App_Data", "Muhasibat", "Emek_haqqi_hesablama.xls");

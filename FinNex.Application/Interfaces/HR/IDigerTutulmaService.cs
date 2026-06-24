@@ -18,5 +18,11 @@ namespace FinNex.Application.Interfaces.HR
         /// (yalnız aktiv və müddət daxilində olanlar). isciId → aylıq məbləğ.
         /// </summary>
         Task<Dictionary<int, decimal>> GetAyTutulmaMapAsync(int il, int ay);
+
+        /// <summary>
+        /// Provodka üçün: il/ay-da aktiv tutulmaların AÇIQLAMA (sığorta adı)
+        /// üzrə cəmi. Hər sığorta üçün adı ilə ayrıca öhdəlik sətri yaratmaq üçün.
+        /// </summary>
+        Task<Dictionary<string, decimal>> GetAyTutulmaAdMapAsync(int il, int ay);
     }
 }

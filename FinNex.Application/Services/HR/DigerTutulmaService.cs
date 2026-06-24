@@ -146,5 +146,29 @@ namespace FinNex.Application.Services.HR
             }
             return map;
         }
+
+        public async Task<Dictionary<string, decimal>> GetAyTutulmaAdMapAsync(int il, int ay)
+        {
+            // Rounding məntiqi GetAyTutulmaMapAsync ilə EYNİDİR (cəm dəqiq = Mebleg);
+            // yalnız qruplaşma AÇIQLAMA (sığorta adı) üzrədir → ümumi cəm dəyişmir.
+            var map = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+            var qeydler = await _uow.Repository<IsciDigerTutulma>().Query()
+                .Where(x => !x.Silinib && x.Aktiv)
+                .ToListAsync();
+
+            foreach (var x in qeydler)
+            {
+                int index = (il - x.BaslamaIl) * 12 + (ay - x.BaslamaAy);
+                if (index >= 0 && index < x.MuddetAy)
+                {
+                    decimal ayliq = index == x.MuddetAy - 1
+                        ? x.Mebleg - x.AyliqMebleg * (x.MuddetAy - 1)
+                        : x.AyliqMebleg;
+                    var ad = string.IsNullOrWhiteSpace(x.Aciqlama) ? "" : x.Aciqlama.Trim();
+                    map[ad] = (map.TryGetValue(ad, out var c) ? c : 0m) + ayliq;
+                }
+            }
+            return map;
+        }
     }
 }
